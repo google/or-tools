@@ -14,8 +14,8 @@
 #include "ortools/pdlp/termination.h"
 
 #include <cmath>
+#include <optional>
 
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/protobuf_util.h"
@@ -72,7 +72,7 @@ TEST_P(TerminationTest, NoTerminationWithEmptyIterationStats) {
 
 TEST_P(TerminationTest, TerminationWithNumericalError) {
   IterationStats stats;
-  absl::optional<TerminationReasonAndPointType> maybe_result =
+  std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
                                /*force_numerical_termination=*/true);
   EXPECT_THAT(
@@ -83,7 +83,7 @@ TEST_P(TerminationTest, TerminationWithNumericalError) {
 TEST_P(TerminationTest, TerminationWithTimeLimit) {
   const auto stats =
       ParseTextOrDie<IterationStats>(R"pb(cumulative_time_sec: 100.0)pb");
-  absl::optional<TerminationReasonAndPointType> maybe_result =
+  std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_TIME_LIMIT,
                                                POINT_TYPE_NONE)));
@@ -92,7 +92,7 @@ TEST_P(TerminationTest, TerminationWithTimeLimit) {
 TEST_P(TerminationTest, TerminationWithKktMatrixPassLimit) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     cumulative_kkt_matrix_passes: 2500)pb");
-  absl::optional<TerminationReasonAndPointType> maybe_result =
+  std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
   EXPECT_THAT(maybe_result,
               Optional(FieldsAre(TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT,
@@ -106,7 +106,7 @@ TEST_P(TerminationTest, PrimalInfeasibleFromIterateDifference) {
       max_dual_ray_infeasibility: 1.0e-16
       candidate_type: POINT_TYPE_ITERATE_DIFFERENCE
     })pb");
-  absl::optional<TerminationReasonAndPointType> maybe_result =
+  std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
   EXPECT_THAT(maybe_result,
               Optional(FieldsAre(TERMINATION_REASON_PRIMAL_INFEASIBLE,
@@ -153,7 +153,7 @@ TEST_P(TerminationTest, DualInfeasibleFromAverageIterate) {
       max_primal_ray_infeasibility: 1.0e-16
       candidate_type: POINT_TYPE_AVERAGE_ITERATE
     })pb");
-  absl::optional<TerminationReasonAndPointType> maybe_result =
+  std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
   EXPECT_THAT(maybe_result,
               Optional(FieldsAre(TERMINATION_REASON_DUAL_INFEASIBLE,
@@ -205,7 +205,7 @@ TEST_P(TerminationTest, Optimal) {
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
 
-  absl::optional<TerminationReasonAndPointType> maybe_result =
+  std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
@@ -224,7 +224,7 @@ TEST_P(TerminationTest, OptimalEvenWithNumericalError) {
     })pb");
   // Tests that OPTIMAL overrides NUMERICAL_ERROR when
   // force_numerical_termination == true.
-  absl::optional<TerminationReasonAndPointType> maybe_result =
+  std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
                                /*force_numerical_termination=*/true);
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
@@ -308,7 +308,7 @@ TEST_P(TerminationTest, ZeroToleranceZeroError) {
   test_criteria_.set_eps_optimal_absolute(0.0);
   test_criteria_.set_eps_optimal_relative(0.0);
 
-  absl::optional<TerminationReasonAndPointType> maybe_result =
+  std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
@@ -327,8 +327,8 @@ TEST(TerminationTest, L2AndLInfDiffer) {
 
   struct {
     double primal_residual;
-    absl::optional<TerminationReasonAndPointType> expected_l2;
-    absl::optional<TerminationReasonAndPointType> expected_l_inf;
+    std::optional<TerminationReasonAndPointType> expected_l2;
+    std::optional<TerminationReasonAndPointType> expected_l_inf;
   } test_configs[] = {
       {10.0,
        TerminationReasonAndPointType{.reason = TERMINATION_REASON_OPTIMAL,
@@ -352,7 +352,7 @@ TEST(TerminationTest, L2AndLInfDiffer) {
 
     test_criteria.set_optimality_norm(OPTIMALITY_NORM_L2);
 
-    absl::optional<TerminationReasonAndPointType> maybe_result =
+    std::optional<TerminationReasonAndPointType> maybe_result =
         CheckTerminationCriteria(test_criteria, stats, TestLpBoundNorms());
     ASSERT_TRUE(maybe_result.has_value() == config.expected_l2.has_value())
         << "primal_residual: " << config.primal_residual;

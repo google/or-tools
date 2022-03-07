@@ -25,7 +25,6 @@
 #include "Eigen/SparseCore"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
@@ -132,9 +131,9 @@ struct QuadraticProgram {
   Eigen::VectorXd constraint_lower_bounds, constraint_upper_bounds;
   Eigen::VectorXd variable_lower_bounds, variable_upper_bounds;
   // The problem, constraint, and variable names are optional.
-  absl::optional<std::string> problem_name;
-  absl::optional<std::vector<std::string>> variable_names;
-  absl::optional<std::vector<std::string>> constraint_names;
+  std::optional<std::string> problem_name;
+  std::optional<std::vector<std::string>> variable_names;
+  std::optional<std::vector<std::string>> constraint_names;
 
   // These fields are provided for convenience; they don't change the
   // mathematical definition of the problem, but they could change the objective

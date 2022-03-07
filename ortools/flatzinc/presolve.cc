@@ -21,7 +21,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/map_util.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/graph/cliques.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -494,7 +493,8 @@ Variable* Presolver::FindRepresentativeOfVar(Variable* var) {
   Variable* start_var = var;
   // First loop: find the top parent.
   for (;;) {
-    Variable* parent = gtl::FindWithDefault(var_representative_map_, var, var);
+    const auto& it = var_representative_map_.find(var);
+    Variable* parent = it == var_representative_map_.end() ? var : it->second;
     if (parent == var) break;
     var = parent;
   }
@@ -504,7 +504,8 @@ Variable* Presolver::FindRepresentativeOfVar(Variable* var) {
     var_representative_map_[start_var] = var;
     start_var = parent;
   }
-  return gtl::FindWithDefault(var_representative_map_, var, var);
+  const auto& iter = var_representative_map_.find(var);
+  return iter == var_representative_map_.end() ? var : iter->second;
 }
 
 void Presolver::SubstituteEverywhere(Model* model) {

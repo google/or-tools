@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_PACKING_ARC_FLOW_SOLVER_H_
 #define OR_TOOLS_PACKING_ARC_FLOW_SOLVER_H_
 
+#include <string>
+
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/packing/vector_bin_packing.pb.h"
 

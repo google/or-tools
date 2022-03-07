@@ -21,7 +21,6 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/pdlp/quadratic_program.h"

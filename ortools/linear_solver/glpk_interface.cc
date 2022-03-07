@@ -219,7 +219,7 @@ GLPKInterface::GLPKInterface(MPSolver* const solver, bool mip)
   lp_ = glp_create_prob();
   glp_set_prob_name(lp_, solver_->name_.c_str());
   glp_set_obj_dir(lp_, GLP_MIN);
-  mip_callback_info_ = absl::make_unique<GLPKInformation>(maximize_);
+  mip_callback_info_ = std::make_unique<GLPKInformation>(maximize_);
 }
 
 // Frees the LP memory allocations.

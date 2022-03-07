@@ -25,11 +25,11 @@
 
 #include <string>
 
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/util/sorted_interval_list.h"
 
 using ::operations_research::Domain;
 using ::operations_research::sat::CpModelProto;

@@ -49,7 +49,6 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/base/cleanup.h"
-#include "ortools/base/map_util.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
@@ -424,19 +423,19 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   for (const auto& entry : num_constraints_by_name) {
     const std::string& name = entry.first;
     constraints.push_back(absl::StrCat("#", name, ": ", entry.second));
-    if (gtl::ContainsKey(num_reif_constraints_by_name, name)) {
+    if (num_reif_constraints_by_name.contains(name)) {
       absl::StrAppend(&constraints.back(),
                       " (#enforced: ", num_reif_constraints_by_name[name], ")");
     }
-    if (gtl::ContainsKey(name_to_num_literals, name)) {
+    if (name_to_num_literals.contains(name)) {
       absl::StrAppend(&constraints.back(),
                       " (#literals: ", name_to_num_literals[name], ")");
     }
-    if (gtl::ContainsKey(name_to_num_terms, name)) {
+    if (name_to_num_terms.contains(name)) {
       absl::StrAppend(&constraints.back(),
                       " (#terms: ", name_to_num_terms[name], ")");
     }
-    if (gtl::ContainsKey(name_to_num_complex_domain, name)) {
+    if (name_to_num_complex_domain.contains(name)) {
       absl::StrAppend(&constraints.back(),
                       " (#complex_domain: ", name_to_num_complex_domain[name],
                       ")");
@@ -1406,7 +1405,8 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     lp_var.positive_var = positive_var;
     lp_var.model_var =
         mapping->GetProtoVariableFromIntegerVariable(positive_var);
-    lp_var.lp = gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+    const auto& it = lp_dispatcher->find(positive_var);
+    lp_var.lp = it != lp_dispatcher->end() ? it->second : nullptr;
 
     if (lp_var.model_var >= 0) {
       lp_vars->vars.push_back(lp_var);

@@ -25,7 +25,6 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/implied_bounds.h"
@@ -116,8 +115,9 @@ IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
   DCHECK(!integer_trail->IsCurrentlyIgnored(var));
 
   const IntegerVariable positive_var = PositiveVariable(var);
+  const auto& it = lp_dispatcher->find(positive_var);
   const LinearProgrammingConstraint* lp =
-      gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+      it == lp_dispatcher->end() ? nullptr : it->second;
 
   // We only use this if the sub-lp has a solution, and depending on the value
   // of exploit_all_lp_solution() if it is a pure-integer solution.

@@ -22,6 +22,7 @@
 #define OR_TOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -257,7 +258,7 @@ void RegisterConstraintHandler(ScipConstraintHandler<ConstraintData>* handler,
                                SCIP* scip) {
   internal::AddConstraintHandlerImpl(
       handler->description(),
-      absl::make_unique<internal::ScipCallbackRunnerImpl<ConstraintData>>(
+      std::make_unique<internal::ScipCallbackRunnerImpl<ConstraintData>>(
           handler),
       scip);
 }

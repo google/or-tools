@@ -13,6 +13,8 @@
 
 #include "ortools/packing/binpacking_2d_parser.h"
 
+#include <string>
+
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/logging.h"

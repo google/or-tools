@@ -34,7 +34,6 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/sat_base.h"
@@ -283,7 +282,7 @@ int MoveOneUnprocessedLiteralLast(
     const absl::btree_set<LiteralIndex>& processed, int relevant_prefix_size,
     std::vector<Literal>* literals) {
   if (literals->empty()) return -1;
-  if (!gtl::ContainsKey(processed, literals->back().Index())) {
+  if (!processed.contains(literals->back().Index())) {
     return std::min<int>(relevant_prefix_size, literals->size());
   }
 
@@ -298,7 +297,7 @@ int MoveOneUnprocessedLiteralLast(
   int num_not_processed = 0;
   int target_prefix_size = literals->size() - 1;
   for (int i = literals->size() - 1; i >= 0; i--) {
-    if (gtl::ContainsKey(processed, (*literals)[i].Index())) {
+    if (processed.contains((*literals)[i].Index())) {
       ++num_processed;
     } else {
       ++num_not_processed;
@@ -311,10 +310,9 @@ int MoveOneUnprocessedLiteralLast(
 
   // Once a prefix size has been decided, it is always better to
   // enqueue the literal already processed first.
-  std::stable_partition(literals->begin() + target_prefix_size, literals->end(),
-                        [&processed](Literal l) {
-                          return gtl::ContainsKey(processed, l.Index());
-                        });
+  std::stable_partition(
+      literals->begin() + target_prefix_size, literals->end(),
+      [&processed](Literal l) { return processed.contains(l.Index()); });
   return target_prefix_size;
 }
 

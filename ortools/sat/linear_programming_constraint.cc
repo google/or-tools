@@ -33,7 +33,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
@@ -635,13 +634,12 @@ glop::Fractional LinearProgrammingConstraint::GetVariableValueAtCpScale(
 
 double LinearProgrammingConstraint::GetSolutionValue(
     IntegerVariable variable) const {
-  return lp_solution_[gtl::FindOrDie(mirror_lp_variable_, variable).value()];
+  return lp_solution_[mirror_lp_variable_.at(variable).value()];
 }
 
 double LinearProgrammingConstraint::GetSolutionReducedCost(
     IntegerVariable variable) const {
-  return lp_reduced_cost_[gtl::FindOrDie(mirror_lp_variable_, variable)
-                              .value()];
+  return lp_reduced_cost_[mirror_lp_variable_.at(variable).value()];
 }
 
 void LinearProgrammingConstraint::UpdateBoundsOfLpVariables() {
@@ -887,7 +885,7 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
       // Simple copy for non-slack variables.
       if (var < first_new_var) {
         const glop::ColIndex col =
-            gtl::FindOrDie(mirror_lp_variable_, PositiveVariable(var));
+            mirror_lp_variable_.at(PositiveVariable(var));
         if (VariableIsPositive(var)) {
           tmp_scattered_vector_.Add(col, cut->coeffs[i]);
         } else {
@@ -906,8 +904,7 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
         for (const std::pair<IntegerVariable, IntegerValue>& term :
              ib_slack_infos[index].terms) {
           tmp_terms_.push_back(
-              {gtl::FindOrDie(mirror_lp_variable_,
-                              PositiveVariable(term.first)),
+              {mirror_lp_variable_.at(PositiveVariable(term.first)),
                VariableIsPositive(term.first) ? term.second : -term.second});
         }
         if (!tmp_scattered_vector_.AddLinearExpressionMultiple(multiplier,

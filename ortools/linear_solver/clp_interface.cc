@@ -147,7 +147,7 @@ CLPInterface::CLPInterface(MPSolver* const solver)
 CLPInterface::~CLPInterface() {}
 
 void CLPInterface::Reset() {
-  clp_ = absl::make_unique<ClpSimplex>();
+  clp_ = std::make_unique<ClpSimplex>();
   clp_->setOptimizationDirection(maximize_ ? -1 : 1);
   ResetExtractionInformation();
 }
@@ -445,7 +445,7 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
 
     // Start from a fresh set of default parameters and set them to
     // specified values.
-    options_ = absl::make_unique<ClpSolve>();
+    options_ = std::make_unique<ClpSolve>();
     SetParameters(param);
 
     // Solve

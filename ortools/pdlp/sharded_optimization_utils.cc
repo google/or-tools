@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <limits>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <utility>
 #include <vector>
@@ -27,7 +28,6 @@
 #include "Eigen/SparseCore"
 #include "absl/algorithm/container.h"
 #include "absl/random/distributions.h"
-#include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/quadratic_program.h"
@@ -575,8 +575,8 @@ double PowerMethodFailureProbability(int64_t dimension, double epsilon, int k) {
 SingularValueAndIterations EstimateMaximumSingularValue(
     const SparseMatrix<double, ColMajor, int64_t>& matrix,
     const SparseMatrix<double, ColMajor, int64_t>& matrix_transpose,
-    const absl::optional<VectorXd>& active_set_indicator,
-    const absl::optional<VectorXd>& transpose_active_set_indicator,
+    const std::optional<VectorXd>& active_set_indicator,
+    const std::optional<VectorXd>& transpose_active_set_indicator,
     const Sharder& matrix_sharder, const Sharder& matrix_transpose_sharder,
     const Sharder& primal_vector_sharder, const Sharder& dual_vector_sharder,
     const double desired_relative_error, const double failure_probability,
@@ -705,12 +705,12 @@ VectorXd ComputeDualActiveSetIndicator(
 
 SingularValueAndIterations EstimateMaximumSingularValueOfConstraintMatrix(
     const ShardedQuadraticProgram& sharded_qp,
-    const absl::optional<VectorXd>& primal_solution,
-    const absl::optional<VectorXd>& dual_solution,
+    const std::optional<VectorXd>& primal_solution,
+    const std::optional<VectorXd>& dual_solution,
     const double desired_relative_error, const double failure_probability,
     std::mt19937& mt_generator) {
-  absl::optional<VectorXd> primal_active_set_indicator;
-  absl::optional<VectorXd> dual_active_set_indicator;
+  std::optional<VectorXd> primal_active_set_indicator;
+  std::optional<VectorXd> dual_active_set_indicator;
   if (primal_solution.has_value()) {
     primal_active_set_indicator =
         ComputePrimalActiveSetIndicator(sharded_qp, *primal_solution);

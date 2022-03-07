@@ -74,7 +74,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )
@@ -91,7 +90,6 @@ cc_test(
         "//ortools/linear_solver:linear_solver_cc_proto",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )
@@ -163,7 +161,6 @@ cc_library(
         "//ortools/base:mathutil",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )
@@ -180,7 +177,6 @@ cc_test(
         ":sharder",
         ":solve_log_cc_proto",
         ":test_util",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )
@@ -193,7 +189,6 @@ cc_library(
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
         "//ortools/base",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
@@ -207,7 +202,6 @@ cc_test(
         ":solvers_cc_proto",
         ":termination",
         "//ortools/base:protobuf_util",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
@@ -223,7 +217,6 @@ cc_library(
         "//ortools/base",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )
@@ -283,7 +276,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )
@@ -304,7 +296,6 @@ cc_library(
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )
@@ -320,7 +311,6 @@ cc_test(
         ":solve_log_cc_proto",
         ":test_util",
         "//ortools/base:protobuf_util",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )
@@ -354,7 +344,6 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )
@@ -383,7 +372,6 @@ cc_test(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:optional",
         "@eigen//:eigen3",
     ],
 )

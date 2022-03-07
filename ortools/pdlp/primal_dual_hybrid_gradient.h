@@ -16,10 +16,10 @@
 
 #include <atomic>
 #include <functional>
+#include <optional>
 
 #include "Eigen/Core"
 #include "absl/status/statusor.h"
-#include "absl/types/optional.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/pdlp/quadratic_program.h"
@@ -131,7 +131,7 @@ SolverResult PrimalDualHybridGradient(
 // solution. NOTE: initial_solution is intentionally passed by value.
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
-    absl::optional<PrimalAndDualSolution> initial_solution,
+    std::optional<PrimalAndDualSolution> initial_solution,
     const std::atomic<bool>* interrupt_solve = nullptr,
     std::function<void(const IterationCallbackInfo&)> iteration_stats_callback =
         nullptr);

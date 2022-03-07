@@ -18,15 +18,15 @@
 #include <stdexcept>
 #include <string>
 
-#include "absl/strings/str_cat.h"
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
-#include "pybind11/eigen.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/pytypes.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/model_builder/wrappers/model_builder_helper.h"
+#include "pybind11/eigen.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/pytypes.h"
 
 using ::Eigen::SparseMatrix;
 using ::Eigen::VectorXd;

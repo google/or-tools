@@ -27,7 +27,6 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

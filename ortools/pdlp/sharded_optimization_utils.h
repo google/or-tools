@@ -19,10 +19,10 @@
 #define PDLP_SHARDED_OPTIMIZATION_UTILS_H_
 
 #include <limits>
+#include <optional>
 #include <random>
 
 #include "Eigen/Core"
-#include "absl/types/optional.h"
 #include "ortools/pdlp/sharded_quadratic_program.h"
 #include "ortools/pdlp/sharder.h"
 #include "ortools/pdlp/solve_log.pb.h"
@@ -182,8 +182,8 @@ struct SingularValueAndIterations {
 // starting point for the power method, in order to have deterministic results.
 SingularValueAndIterations EstimateMaximumSingularValueOfConstraintMatrix(
     const ShardedQuadraticProgram& sharded_qp,
-    const absl::optional<Eigen::VectorXd>& primal_solution,
-    const absl::optional<Eigen::VectorXd>& dual_solution,
+    const std::optional<Eigen::VectorXd>& primal_solution,
+    const std::optional<Eigen::VectorXd>& dual_solution,
     const double desired_relative_error, const double failure_probability,
     std::mt19937& mt_generator);
 

@@ -34,7 +34,6 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/graph/graph.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -72,7 +71,7 @@ class IdGenerator {
   // If the color was never seen before, then generate a new id, otherwise
   // return the previously generated id.
   int GetId(const std::vector<int64_t>& color) {
-    return gtl::LookupOrInsert(&id_map_, color, id_map_.size());
+    return id_map_.emplace(color, id_map_.size()).first->second;
   }
 
   int NextFreeId() const { return id_map_.size(); }

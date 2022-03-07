@@ -23,7 +23,6 @@
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -100,8 +99,7 @@ std::vector<std::pair<int, Domain>> DomainDeductions::ProcessClause(
   for (const int ref : clause) {
     const Index index = IndexFromLiteral(ref);
     for (int i = 0; i < to_process.size(); ++i) {
-      domains[i] = domains[i].UnionWith(
-          gtl::FindOrDieNoPrint(deductions_, {index, to_process[i]}));
+      domains[i] = domains[i].UnionWith(deductions_.at({index, to_process[i]}));
     }
   }
 

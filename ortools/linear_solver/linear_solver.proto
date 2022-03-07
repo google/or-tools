@@ -34,6 +34,7 @@ option java_multiple_files = true;
 
 import "ortools/util/optional_boolean.proto";
 
+
 package operations_research;
 
 // A variable is always constrained in the form:
@@ -638,7 +639,7 @@ message MPSolutionResponse {
 
   // Opaque solver-specific information.
   // For the PDLP solver, this is a serialized pdlp::SolveLog proto.
-  optional string solver_specific_info = 11;
+  optional bytes solver_specific_info = 11;
 
   // [Advanced usage.]
   // Values of the dual variables values in the same order as the

@@ -30,7 +30,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
@@ -1611,7 +1610,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
       clique = ExpandAtMostOne(clique, max_num_explored_nodes);
     }
     std::sort(clique.begin(), clique.end());
-    if (!gtl::InsertIfNotPresent(&max_cliques, clique)) {
+    if (!max_cliques.emplace(clique).second) {
       ++num_removed;
       clique.clear();
       continue;

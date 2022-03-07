@@ -18,7 +18,6 @@
 #include <utility>
 
 #include "Eigen/Core"
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/protobuf_util.h"

@@ -14,7 +14,8 @@
 #ifndef PDLP_TERMINATION_H_
 #define PDLP_TERMINATION_H_
 
-#include "absl/types/optional.h"
+#include <optional>
+
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
 
@@ -48,7 +49,7 @@ struct QuadraticProgramBoundNorms {
 // NOTE: This function assumes that the solution used to compute the stats
 // satisfies the primal and dual variable bounds; see
 // https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds.
-absl::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
+std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
     const QuadraticProgramBoundNorms& bound_norms,
     bool force_numerical_termination = false);

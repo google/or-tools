@@ -714,7 +714,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     CHECK_EQ(scip_constraint_handler_->mp_callback(), callback_);
   } else if (callback_ != nullptr) {
     scip_constraint_handler_ =
-        absl::make_unique<ScipConstraintHandlerForMPCallback>(callback_);
+        std::make_unique<ScipConstraintHandlerForMPCallback>(callback_);
     RegisterConstraintHandler<EmptyStruct>(scip_constraint_handler_.get(),
                                            scip_);
     AddCallbackConstraint<EmptyStruct>(scip_, scip_constraint_handler_.get(),

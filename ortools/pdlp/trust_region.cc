@@ -17,11 +17,11 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <utility>
 #include <vector>
 
 #include "Eigen/Core"
-#include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/quadratic_program.h"
@@ -178,8 +178,8 @@ double MedianOfShardMedians(
     const TrustRegionProblem& problem,
     const std::vector<std::vector<int64_t>>& indexed_components_by_shard,
     const Sharder& sharder) {
-  std::vector<absl::optional<double>> shard_medians(sharder.NumShards(),
-                                                    absl::nullopt);
+  std::vector<std::optional<double>> shard_medians(sharder.NumShards(),
+                                                   absl::nullopt);
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
     const auto& indexed_shard_components =
         indexed_components_by_shard[shard.Index()];

@@ -104,7 +104,6 @@ cc_library(
         ":model",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:map_util",
         "//ortools/graph:cliques",
         "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",

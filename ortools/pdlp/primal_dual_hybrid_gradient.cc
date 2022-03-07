@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <random>
 #include <string>
 #include <utility>
@@ -31,7 +32,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
@@ -236,7 +236,7 @@ class Solver {
   Solver& operator=(const Solver&) = delete;
 
   // Zero is used if initial_solution is nullopt.
-  SolverResult Solve(absl::optional<PrimalAndDualSolution> initial_solution,
+  SolverResult Solve(std::optional<PrimalAndDualSolution> initial_solution,
                      const std::atomic<bool>* interrupt_solve,
                      IterationStatsCallback iteration_stats_callback);
 
@@ -332,7 +332,7 @@ class Solver {
   // satisfied, otherwise returns nothing. Uses the primal and dual vectors to
   // compute solution statistics and adds them to the stats proto.
   // NOTE: The primal and dual input pair should be a scaled solution.
-  absl::optional<TerminationReasonAndPointType>
+  std::optional<TerminationReasonAndPointType>
   UpdateIterationStatsAndCheckTermination(bool force_numerical_termination,
                                           const VectorXd& primal_average,
                                           const VectorXd& dual_average,
@@ -354,7 +354,7 @@ class Solver {
   // state of the algorithm accordingly and computes a new primal weight.
   void ApplyRestartChoice(RestartChoice restart_to_apply);
 
-  absl::optional<SolverResult> MajorIterationAndTerminationCheck(
+  std::optional<SolverResult> MajorIterationAndTerminationCheck(
       bool force_numerical_termination, SolveLog& solve_log);
 
   bool ShouldDoAdaptiveRestartHeuristic(double candidate_normalized_gap) const;
@@ -397,8 +397,8 @@ class Solver {
   // presolve is enabled. If presolve solves the problem completely returns the
   // appropriate TerminationReason. Otherwise returns nullopt. If presolve
   // is disabled or an error occurs modifies nothing and returns nullopt.
-  absl::optional<TerminationReason> ApplyPresolveIfEnabled(
-      absl::optional<PrimalAndDualSolution>* initial_solution);
+  std::optional<TerminationReason> ApplyPresolveIfEnabled(
+      std::optional<PrimalAndDualSolution>* initial_solution);
 
   PrimalAndDualSolution RecoverOriginalSolution(
       PrimalAndDualSolution working_solution) const;
@@ -418,7 +418,7 @@ class Solver {
   QuadraticProgramBoundNorms original_bound_norms_;
 
   // Set iff presolve is enabled.
-  absl::optional<PresolveInfo> presolve_info_;
+  std::optional<PresolveInfo> presolve_info_;
 
   double step_size_;
   // For Malitsky-Pock linesearch only: step_size_ / previous_step_size
@@ -1009,7 +1009,7 @@ void LogInfoWithoutPrefix(absl::string_view message) {
       << message;
 }
 
-absl::optional<TerminationReasonAndPointType>
+std::optional<TerminationReasonAndPointType>
 Solver::UpdateIterationStatsAndCheckTermination(
     bool force_numerical_termination, const VectorXd& working_primal_average,
     const VectorXd& working_dual_average, IterationStats& stats) const {
@@ -1200,7 +1200,7 @@ void Solver::ApplyRestartChoice(const RestartChoice restart_to_apply) {
                /*dest=*/last_dual_start_point_);
 }
 
-absl::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
+std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
     bool force_numerical_termination, SolveLog& solve_log) {
   const int iteration_limit = params_.termination_criteria().iteration_limit();
   const int major_iteration_cycle =
@@ -1225,7 +1225,7 @@ absl::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
     VectorXd primal_average = PrimalAverage();
     VectorXd dual_average = DualAverage();
 
-    const absl::optional<TerminationReasonAndPointType>
+    const std::optional<TerminationReasonAndPointType>
         maybe_termination_reason = UpdateIterationStatsAndCheckTermination(
             force_numerical_termination, primal_average, dual_average, stats);
     if (params_.record_iteration_stats()) {
@@ -1555,8 +1555,8 @@ TerminationReason GlopStatusToTerminationReason(
 
 }  // namespace
 
-absl::optional<TerminationReason> Solver::ApplyPresolveIfEnabled(
-    absl::optional<PrimalAndDualSolution>* const initial_solution) {
+std::optional<TerminationReason> Solver::ApplyPresolveIfEnabled(
+    std::optional<PrimalAndDualSolution>* const initial_solution) {
   const bool presolve_enabled = params_.presolve_options().use_glop();
   if (!presolve_enabled) {
     return absl::nullopt;
@@ -1673,7 +1673,7 @@ PrimalAndDualSolution Solver::RecoverOriginalSolution(
 }
 
 SolverResult Solver::Solve(
-    absl::optional<PrimalAndDualSolution> initial_solution,
+    std::optional<PrimalAndDualSolution> initial_solution,
     const std::atomic<bool>* interrupt_solve,
     IterationStatsCallback iteration_stats_callback) {
   SolveLog solve_log;
@@ -1694,7 +1694,7 @@ SolverResult Solver::Solve(
   }
   timer_.Start();
   iteration_stats_callback_ = std::move(iteration_stats_callback);
-  absl::optional<TerminationReason> maybe_terminate =
+  std::optional<TerminationReason> maybe_terminate =
       ApplyPresolveIfEnabled(&initial_solution);
   if (maybe_terminate.has_value()) {
     // Glop also feeds zero primal and dual solutions when the preprocessor
@@ -1717,7 +1717,7 @@ SolverResult Solver::Solve(
         presolve_info_->trivial_col_scaling_vec,
         presolve_info_->trivial_row_scaling_vec, POINT_TYPE_PRESOLVER_SOLUTION,
         iteration_stats);
-    absl::optional<TerminationReasonAndPointType> earned_termination =
+    std::optional<TerminationReasonAndPointType> earned_termination =
         CheckTerminationCriteria(params_.termination_criteria(),
                                  iteration_stats, original_bound_norms_,
                                  /*force_numerical_termination=*/false);
@@ -1823,7 +1823,7 @@ SolverResult Solver::Solve(
     // This code performs the logic of the major iterations and termination
     // checks. It may modify the current solution and primal weight (e.g., when
     // performing a restart).
-    const absl::optional<SolverResult> maybe_result =
+    const std::optional<SolverResult> maybe_result =
         MajorIterationAndTerminationCheck(force_numerical_termination,
                                           solve_log);
     if (maybe_result.has_value()) {
@@ -1875,7 +1875,7 @@ SolverResult PrimalDualHybridGradient(
 
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
-    absl::optional<PrimalAndDualSolution> initial_solution,
+    std::optional<PrimalAndDualSolution> initial_solution,
     const std::atomic<bool>* interrupt_solve,
     IterationStatsCallback iteration_stats_callback) {
   const absl::Status params_status =

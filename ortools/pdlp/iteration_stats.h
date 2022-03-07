@@ -15,11 +15,11 @@
 #define PDLP_ITERATION_STATS_H_
 
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "Eigen/Core"
-#include "absl/types/optional.h"
 #include "ortools/pdlp/sharded_quadratic_program.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
@@ -80,18 +80,18 @@ Eigen::VectorXd ReducedCosts(const ShardedQuadraticProgram& scaled_sharded_qp,
 
 // Finds and returns the ConvergenceInformation with the specified
 // candidate_type, or absl::nullopt if no such candidate exists.
-absl::optional<ConvergenceInformation> GetConvergenceInformation(
+std::optional<ConvergenceInformation> GetConvergenceInformation(
     const IterationStats& stats, PointType candidate_type);
 
 // Finds and returns the InfeasibilityInformation with the specified
 // candidate_type, or absl::nullopt if no such candidate exists.
-absl::optional<InfeasibilityInformation> GetInfeasibilityInformation(
+std::optional<InfeasibilityInformation> GetInfeasibilityInformation(
     const IterationStats& stats, PointType candidate_type);
 
 // Finds and returns the PointMetadata with the specified
 // point_type, or absl::nullopt if no such point exists.
-absl::optional<PointMetadata> GetPointMetadata(const IterationStats& stats,
-                                               PointType point_type);
+std::optional<PointMetadata> GetPointMetadata(const IterationStats& stats,
+                                              PointType point_type);
 
 // For each entry in random_projection_seeds, computes a random projection of
 // the primal/dual solution pair onto pseudo-random vectors generated from that

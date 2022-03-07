@@ -100,4 +100,4 @@ Image has been generated using [plantuml](http://plantuml.com/):
 ```bash
 plantuml -Tsvg docs/{file}.dot
 ```
-So you can find the dot source files in [doc](doc).
+So you can find the dot source files in [docs](docs).

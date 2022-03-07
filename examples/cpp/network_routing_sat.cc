@@ -25,6 +25,7 @@
 
 // A random problem generator is also included.
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <random>
@@ -110,16 +111,16 @@ class NetworkRoutingData {
 
   // Returns the capacity of an arc, and 0 if the arc is not defined.
   int Capacity(int node1, int node2) const {
-    return gtl::FindWithDefault(
-        all_arcs_,
-        std::make_pair(std::min(node1, node2), std::max(node1, node2)), 0);
+    const auto& iter = all_arcs_.find(
+        std::make_pair(std::min(node1, node2), std::max(node1, node2)));
+    return iter != all_arcs_.end() ? iter->second : 0;
   }
 
   // Returns the demand between the source and the destination, and 0 if
   // there are no demands between the source and the destination.
   int Demand(int source, int destination) const {
-    return gtl::FindWithDefault(all_demands_,
-                                std::make_pair(source, destination), 0);
+    const auto& iter = all_demands_.find(std::make_pair(source, destination));
+    return iter != all_demands_.end() ? iter->second : 0;
   }
 
   // External building API.

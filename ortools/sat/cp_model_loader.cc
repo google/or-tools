@@ -30,7 +30,6 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/all_different.h"
@@ -805,7 +804,7 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
           std::vector<int>& vector_ref = enforcement_intersection[var];
           int new_size = 0;
           for (const int literal : vector_ref) {
-            if (gtl::ContainsKey(literals_set, literal)) {
+            if (literals_set.contains(literal)) {
               vector_ref[new_size++] = literal;
             }
           }

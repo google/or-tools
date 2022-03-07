@@ -15,8 +15,8 @@
 
 #include <cmath>
 #include <limits>
+#include <optional>
 
-#include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
@@ -87,7 +87,7 @@ bool DualInfeasibilityCriteriaMet(double eps_dual_infeasible,
 
 }  // namespace
 
-absl::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
+std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
     const QuadraticProgramBoundNorms& bound_norms,
     const bool force_numerical_termination) {

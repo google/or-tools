@@ -36,7 +36,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
@@ -4855,7 +4854,7 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
       const int64_t tail = proto.transition_tail(t);
       const int64_t label = proto.transition_label(t);
       const int64_t head = proto.transition_head(t);
-      if (!gtl::ContainsKey(reachable_states[time], tail)) continue;
+      if (!reachable_states[time].contains(tail)) continue;
       if (!context_->DomainContains(vars[time], label)) continue;
       reachable_states[time + 1].insert(head);
     }
@@ -4871,9 +4870,9 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
       const int64_t label = proto.transition_label(t);
       const int64_t head = proto.transition_head(t);
 
-      if (!gtl::ContainsKey(reachable_states[time], tail)) continue;
+      if (!reachable_states[time].contains(tail)) continue;
       if (!context_->DomainContains(vars[time], label)) continue;
-      if (!gtl::ContainsKey(reachable_states[time + 1], head)) continue;
+      if (!reachable_states[time + 1].contains(head)) continue;
       new_set.insert(tail);
       reached_values[time].insert(label);
     }

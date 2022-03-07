@@ -28,7 +28,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -740,7 +739,7 @@ IntegerVariable IntegerTrail::GetOrCreateConstantIntegerVariable(
     insert.first->second = new_var;
     if (value != 0) {
       // Note that this might invalidate insert.first->second.
-      gtl::InsertOrDie(&constant_map_, -value, NegationOf(new_var));
+      CHECK(constant_map_.emplace(-value, NegationOf(new_var)).second);
     }
     return new_var;
   }
@@ -1297,7 +1296,7 @@ bool IntegerTrail::EnqueueInternal(
   // we always map these to enqueued literals during conflict resolution.
   if ((*domains_)[var].NumIntervals() > 1) {
     const auto& domain = (*domains_)[var];
-    int index = var_to_current_lb_interval_index_.FindOrDie(var);
+    int index = var_to_current_lb_interval_index_.at(var);
     const int size = domain.NumIntervals();
     while (index < size && i_lit.bound > domain[index].end) {
       ++index;

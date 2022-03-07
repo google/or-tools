@@ -14,14 +14,14 @@
 #include <numeric>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/packing/arc_flow_builder.h"
@@ -40,7 +40,7 @@ ABSL_FLAG(int, max_bins, -1,
           "Maximum number of bins: default = -1 meaning no limits");
 
 namespace operations_research {
-void ParseAndSolve(const std::string& filename, const std::string& solver,
+void ParseAndSolve(const std::string& filename, absl::string_view solver,
                    const std::string& params) {
   std::string problem_name = filename;
   const size_t found = problem_name.find_last_of("/\\");
@@ -97,8 +97,7 @@ void ParseAndSolve(const std::string& filename, const std::string& solver,
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

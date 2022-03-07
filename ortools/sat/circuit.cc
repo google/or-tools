@@ -20,7 +20,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -75,8 +74,8 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
 
     // Tricky: For self-arc, we watch instead when the arc become false.
     const Literal watched_literal = tail == head ? literal.Negated() : literal;
-    int watch_index = gtl::FindWithDefault(literal_to_watch_index,
-                                           watched_literal.Index(), -1);
+    const auto& it = literal_to_watch_index.find(watched_literal.Index());
+    int watch_index = it != literal_to_watch_index.end() ? it->second : -1;
     if (watch_index == -1) {
       watch_index = watch_index_to_literal_.size();
       literal_to_watch_index[watched_literal.Index()] = watch_index;

@@ -42,7 +42,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/map_util.h"
 
 namespace operations_research {
 // ----- Main IntTupleSet class -----
@@ -200,8 +199,7 @@ bool IntTupleSet::Data::Contains(const std::vector<T>& candidate) const {
   }
   const int64_t fingerprint = Fingerprint(candidate);
   if (tuple_fprint_to_index_.contains(fingerprint)) {
-    const std::vector<int>& indices =
-        gtl::FindOrDie(tuple_fprint_to_index_, fingerprint);
+    const std::vector<int>& indices = tuple_fprint_to_index_.at(fingerprint);
     for (int i = 0; i < indices.size(); ++i) {
       const int tuple_index = indices[i];
       for (int j = 0; j < arity_; ++j) {

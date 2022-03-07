@@ -36,7 +36,6 @@
 #endif  // __PORTABLE_PLATFORM__
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/util.h"
 #include "ortools/port/proto_utils.h"
@@ -519,7 +518,7 @@ class IdGenerator {
   // a new id, otherwise return the previously generated id.
   int GetId(int type, Coefficient coefficient) {
     const std::pair<int, int64_t> key(type, coefficient.value());
-    return gtl::LookupOrInsert(&id_map_, key, id_map_.size());
+    return id_map_.emplace(key, id_map_.size()).first->second;
   }
 
  private:

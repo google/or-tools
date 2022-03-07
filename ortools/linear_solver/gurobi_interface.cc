@@ -1204,7 +1204,7 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   if (callback_ == nullptr) {
     CheckedGurobiCall(GRBsetcallbackfunc(model_, nullptr, nullptr));
   } else {
-    gurobi_context = absl::make_unique<GurobiMPCallbackContext>(
+    gurobi_context = std::make_unique<GurobiMPCallbackContext>(
         env_, &mp_var_to_gurobi_var_, num_gurobi_vars_,
         callback_->might_add_cuts(), callback_->might_add_lazy_constraints());
     mp_callback_with_context.context = gurobi_context.get();

@@ -13,6 +13,8 @@
 
 #include "ortools/linear_solver/sat_solver_utils.h"
 
+#include <memory>
+
 #include "absl/memory/memory.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
@@ -81,7 +83,7 @@ glop::ProblemStatus ApplyMipPresolveSteps(
   // Finally, we make sure all domains contain zero.
   if (!hint_is_present) {
     auto shift_bounds =
-        absl::make_unique<glop::ShiftVariableBoundsPreprocessor>(&glop_params);
+        std::make_unique<glop::ShiftVariableBoundsPreprocessor>(&glop_params);
     shift_bounds->UseInMipContext();
     const bool need_postsolve = shift_bounds->Run(&lp);
     if (shift_bounds->status() != glop::ProblemStatus::INIT) {

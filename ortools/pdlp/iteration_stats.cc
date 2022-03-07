@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <random>
 #include <string>
 #include <utility>
@@ -28,7 +29,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/quadratic_program.h"
@@ -504,7 +504,7 @@ VectorXd ReducedCosts(const ShardedQuadraticProgram& sharded_qp,
   return reduced_costs;
 }
 
-absl::optional<ConvergenceInformation> GetConvergenceInformation(
+std::optional<ConvergenceInformation> GetConvergenceInformation(
     const IterationStats& stats, PointType candidate_type) {
   for (const auto& convergence_information : stats.convergence_information()) {
     if (convergence_information.candidate_type() == candidate_type) {
@@ -514,7 +514,7 @@ absl::optional<ConvergenceInformation> GetConvergenceInformation(
   return absl::nullopt;
 }
 
-absl::optional<InfeasibilityInformation> GetInfeasibilityInformation(
+std::optional<InfeasibilityInformation> GetInfeasibilityInformation(
     const IterationStats& stats, PointType candidate_type) {
   for (const auto& infeasibility_information :
        stats.infeasibility_information()) {
@@ -525,8 +525,8 @@ absl::optional<InfeasibilityInformation> GetInfeasibilityInformation(
   return absl::nullopt;
 }
 
-absl::optional<PointMetadata> GetPointMetadata(const IterationStats& stats,
-                                               const PointType point_type) {
+std::optional<PointMetadata> GetPointMetadata(const IterationStats& stats,
+                                              const PointType point_type) {
   for (const auto& metadata : stats.point_metadata()) {
     if (metadata.point_type() == point_type) {
       return metadata;
