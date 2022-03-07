@@ -38,7 +38,8 @@ WORKDIR /project
 
 # Build project
 FROM devel AS build
-RUN cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_PYTHON=ON
+RUN cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DVENV_USE_SYSTEM_SITE_PACKAGES=ON \
+ -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build -v -j8
 # Rename wheel package ortools-version+musl-....
 RUN cp build/python/dist/ortools-*.whl .
