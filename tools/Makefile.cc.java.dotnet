@@ -121,8 +121,8 @@ ifeq ($(SYSTEM),win)
     PORT = VisualStudio$(VISUAL_STUDIO)-32b
     NETPLATFORM = x86
   endif
-  CC ?= cl
-  CXX ?= cl
+  CC := cl
+  CXX := cl
   # We can't use `where` since it's return all matching pathnames
   # so we ship which.exe and use it
   CC_BIN := $(shell $(WHICH) $(CC) 2> NUL)
