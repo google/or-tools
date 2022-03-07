@@ -302,6 +302,15 @@ if(USE_COINOR)
     COMPONENT Devel)
 endif()
 
+if(MSVC)
+# Bundle lib for MSVC
+configure_file(
+${PROJECT_SOURCE_DIR}/cmake/bundle-install.cmake.in
+${PROJECT_BINARY_DIR}/bundle-install.cmake
+@ONLY)
+install(SCRIPT ${PROJECT_BINARY_DIR}/bundle-install.cmake)
+endif()
+
 # add_cxx_sample()
 # CMake function to generate and build C++ sample.
 # Parameters:

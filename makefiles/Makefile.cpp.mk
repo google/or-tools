@@ -491,7 +491,7 @@ install_cc: | install_dirs
 	$(COPY) LICENSE "$(DESTDIR)$(prefix)"
 ifeq ($(SYSTEM),win)
 	$(COPYREC) /E /Y include "$(DESTDIR)$(prefix)"
-	$(COPY) "$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L*" "$(DESTDIR)$(prefix)$Slib"
+	$(COPY) "$(LIB_DIR)$S$(LIB_PREFIX)ortools_full.$L" "$(DESTDIR)$(prefix)$Slib$S$(LIB_PREFIX)ortools.$L"
 	$(COPYREC) /E /Y share "$(DESTDIR)$(prefix)"
 else
 	$(COPYREC) include "$(DESTDIR)$(prefix)$S"
