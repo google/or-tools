@@ -53,9 +53,6 @@ include $(OR_ROOT)Version.txt
 include $(OR_ROOT)makefiles/Makefile.port.mk
 OR_ROOT_FULL=$(OR_TOOLS_TOP)
 
-# Rules to fetch and build third party dependencies.
-include $(OR_ROOT)makefiles/Makefile.third_party.mk
-
 # Check SOURCE argument
 SOURCE_SUFFIX = $(suffix $(SOURCE))
 # will contain “/any/path/foo.cc” on unix and “\\any\\path\\foo.cc” on windows
@@ -101,7 +98,7 @@ endif
 help_usage:
 	@echo Use one of the following targets:
 	@echo help, help_all:	Print this help.
-	@echo all:	Build OR-Tools for all available languages \(need a call to \"make third_party\" first\).
+	@echo all:	Build OR-Tools for all available languages.
 	@echo check, check_all:	Check OR-Tools for all available languages.
 	@echo test, test_all:	Test OR-Tools for all available languages.
 	@echo clean, clean_all:	Clean output from previous build for all available languages \(won\'t clean third party\).
@@ -113,7 +110,7 @@ else
 endif
 
 .PHONY: help_all
-help_all: help_usage help_third_party help_cc help_python help_java help_dotnet help_archive help_doc
+help_all: help_usage help_cc help_python help_java help_dotnet help_archive help_doc
 
 # OR Tools unique library.
 .PHONY: build_all
@@ -131,14 +128,14 @@ test_all: test_cc test_python test_java test_dotnet
 	@echo Or-tools have been built and tested for "$(BUILT_LANGUAGES)"
 
 .PHONY: clean_all
-clean_all: clean_cc clean_python clean_java clean_dotnet clean_archive clean_third_party
+clean_all: clean_cc clean_python clean_java clean_dotnet clean_archive
 	-$(DELREC) $(BIN_DIR)
 	-$(DELREC) $(LIB_DIR)
 	-$(DELREC) $(OBJ_DIR)
 	@echo Or-Tools has been cleaned for "$(BUILT_LANGUAGES)"
 
 .PHONY: detect_all
-detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_dotnet detect_archive
+detect_all: detect_port detect_cc detect_python detect_java detect_dotnet detect_archive
 	@echo SOURCE = $(SOURCE)
 	@echo SOURCE_PATH = $(SOURCE_PATH)
 	@echo SOURCE_NAME = $(SOURCE_NAME)
