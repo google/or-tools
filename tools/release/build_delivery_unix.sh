@@ -79,8 +79,22 @@ function build_delivery() {
 
   cd "${RELEASE_DIR}" || exit 2
 
+  # Build env
+  docker build --tag ortools/linux_delivery:env \
+    --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
+    --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
+    --target=env \
+    -f Dockerfile .
+
+  # Build devel
+  docker build --tag ortools/linux_delivery:devel \
+    --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
+    --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
+    --target=devel \
+    -f Dockerfile .
+
   # Build delivery
-  docker build --tag ortools:linux_delivery \
+  docker build --tag ortools/linux_delivery:"${ORTOOLS_DELIVERY}" \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
     --build-arg ORTOOLS_TOKEN="${ORTOOLS_TOKEN}" \
@@ -101,8 +115,7 @@ function build_dotnet() {
   docker run --rm --init \
   -w /root/or-tools \
   -v "${ROOT_DIR}/export":/export \
-  ortools:linux_delivery /bin/bash -c \
-  "cp export/*nupkg /export/"
+  -t ortools/linux_delivery:dotnet "cp export/*nupkg /export/"
 }
 
 # Java build
@@ -113,8 +126,7 @@ function build_java() {
   docker run --rm --init \
   -w /root/or-tools \
   -v "${ROOT_DIR}/export":/export \
-  ortools:linux_delivery /bin/bash -c \
-  "cp export/*.jar* /export/"
+  -t ortools/linux_delivery:java "cp export/*.jar* /export/"
 }
 
 function build_archive() {

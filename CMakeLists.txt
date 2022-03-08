@@ -236,6 +236,8 @@ if(BUILD_JAVA)
   option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
   message(STATUS "Java: Create multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
 
+  # On Centos-7 this option (needed otherwise) is unrecognized and should be
+  # replaced by an empty string.
   set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
   message(STATUS "Java: Add GPG options: ${GPG_ARGS}")
 endif()

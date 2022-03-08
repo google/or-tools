@@ -161,7 +161,15 @@ function build_java() {
   echo "DONE" | tee -a build.log
 
   echo -n "Build Java..." | tee -a build.log
-  cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF
+
+  if [[ ! -v GPG_ARGS ]]; then
+    GPG_EXTRA=""
+  else
+    GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
+  fi
+
+  cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
+ -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java -j8 -v
   echo "DONE" | tee -a build.log
   #cmake --build temp_java --target test
