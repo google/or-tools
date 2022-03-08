@@ -7,13 +7,15 @@ cc_library(
             "glpk-5.0/src/*.h",
             "glpk-5.0/src/*/*.h",
         ],
-        exclude = ["glpk-5.0/src/proxy/main.c"],
+        exclude = [
+            "glpk-5.0/src/proxy/main.c",
+            "glpk-5.0/src/zlib/*",
+        ],
     ),
     hdrs = [
         "glpk-5.0/src/glpk.h",
     ],
     copts = [
-#        "-Wno-error",
         "-w",
         "-Iexternal/glpk/glpk-5.0/src",
         "-Iexternal/glpk/glpk-5.0/src/amd",
@@ -29,9 +31,8 @@ cc_library(
         "-Iexternal/glpk/glpk-5.0/src/npp",
         "-Iexternal/glpk/glpk-5.0/src/proxy",
         "-Iexternal/glpk/glpk-5.0/src/simplex",
-        "-Iexternal/glpk/glpk-5.0/src/zlib",
-        # "-DHAVE_ZLIB",
     ],
+    deps = ["@zlib"],
     includes = ["glpk-5.0/src"],
     visibility = ["//visibility:public"],
 )
