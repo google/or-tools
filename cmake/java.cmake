@@ -186,6 +186,11 @@ add_custom_target(java_native_package
     ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_DIR})
 
+add_custom_target(java_native_deploy
+  COMMAND ${MAVEN_EXECUTABLE} deploy
+  WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_DIR})
+add_dependencies(java_native_deploy java_native_package)
+
 ##########################
 ##  Java Maven Package  ##
 ##########################
@@ -232,7 +237,7 @@ add_custom_command(
     ${JAVA_PROJECT_DIR}/pom.xml
     ${JAVA_SRCS}
     Java${PROJECT_NAME}_proto
-  java_native_package
+    ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   BYPRODUCTS
     ${JAVA_PROJECT_DIR}/target
   COMMENT "Generate Java package ${JAVA_PROJECT} (${JAVA_PROJECT_DIR}/timestamp)"
@@ -242,6 +247,11 @@ add_custom_target(java_package ALL
   DEPENDS
     ${JAVA_PROJECT_DIR}/timestamp
   WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
+
+add_custom_target(java_deploy
+  COMMAND ${MAVEN_EXECUTABLE} deploy
+  WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
+add_dependencies(java_deploy java_package)
 
 #################
 ##  Java Test  ##
