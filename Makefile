@@ -112,7 +112,11 @@ endif
 .PHONY: help_all
 help_all: help_usage help_cc help_python help_java help_dotnet help_archive help_doc
 
-# OR Tools unique library.
+# Commands to build/clean all languages.
+.PHONY: compile
+compile:
+	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
+
 .PHONY: build_all
 build_all: 
 	$(MAKE) third_party BUILD_PYTHON=ON BUILD_JAVA=ON BUILD_DOTNET=ON
