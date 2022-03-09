@@ -52,7 +52,7 @@ function publish_delivery() {
   cd "${RELEASE_DIR}" || exit 2
 
   # Build delivery
-  docker build --tag ortools:linux_delivery \
+  docker build --tag ortools/linux_delivery:"publish_${ORTOOLS_DELIVERY}" \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
     --build-arg ORTOOLS_TOKEN="${ORTOOLS_TOKEN}" \

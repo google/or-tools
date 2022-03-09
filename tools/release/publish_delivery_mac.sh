@@ -64,8 +64,9 @@ function publish_java() {
   command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a publish.log
 
-  echo -n "Publish Java..." | tee -a publish.log
-  make publish_java_runtime -l 4 UNIX_PYTHON_VER=3.9
+  echo -n "Publish native Java..." | tee -a publish.log
+
+  cmake --build temp_java --target java_native_deploy -v
   echo "DONE" | tee -a publish.log
 
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_publish"
