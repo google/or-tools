@@ -37,7 +37,7 @@ endif()
 
 find_package(PkgConfig QUIET)
 if(PKG_CONFIG_FOUND)
-  pkg_check_modules(CoinUTILS QUIET coinutils IMPORTED_TARGET GLOBAL)
+  pkg_check_modules(CoinUtils QUIET coinutils IMPORTED_TARGET GLOBAL)
   if(CoinUtils_FOUND)
     add_library(Coin::CoinUtils ALIAS PkgConfig::CoinUtils)
   endif()
