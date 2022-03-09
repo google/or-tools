@@ -71,7 +71,6 @@ exit /B %ERRORLEVEL%
 if "%1"=="reset" (
 echo clean everything... | tee.exe -a build.log
 make.exe clean || exit 1
-make.exe clean_third_party || exit 1
 rm.exe -rf temp_dotnet
 rm.exe -rf temp_java
 for %%v in (6 7 8 9 10) do (
@@ -114,43 +113,7 @@ echo   cmd /c %PRG%
 exit /B 0
 
 
-:BUILD_CXX
-title Build C++
-set HASH=
-for /F "tokens=* delims=" %%x in (build_cxx.log) do (set HASH=%%x)
-if "%HASH%"=="%BRANCH% %SHA1%" (
-echo C++ build seems up to date, skipping
-exit /B 0
-)
-
-REM Check C++
-which.exe cmake || exit 1
-which.exe cmake | tee.exe -a build.log
-
-REM clean everything
-echo clean everything... | tee.exe -a build.log
-make.exe clean_third_party || exit 1
-make.exe clean || exit 1
-
-REM THIRD PARTY
-echo make third_party: ... | tee.exe -a build.log
-make.exe third_party WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make third_party: DONE | tee.exe -a build.log
-
-echo make cc: ... | tee.exe -a build.log
-make.exe cc WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make cc: DONE | tee.exe -a build.log
-REM make.exe test_cc WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-REM echo make test_cc: DONE | tee.exe -a build.log
-
-echo make fz: ... | tee.exe -a build.log
-make.exe fz WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make fz: DONE | tee.exe -a build.log
-
-echo %BRANCH% %SHA1%>build_cxx.log
-exit /B 0
-
-
+REM Build .Net
 :BUILD_DOTNET
 title Build .Net
 set HASH=
@@ -189,6 +152,7 @@ echo %BRANCH% %SHA1%>build_dotnet.log
 exit /B 0
 
 
+REM Build Java
 :BUILD_JAVA
 title Build Java
 set HASH=

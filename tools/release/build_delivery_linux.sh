@@ -41,37 +41,7 @@ function assert_defined(){
   fi
 }
 
-function build_cxx() {
-  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/cxx_build" -; then
-    echo "build C++ up to date!"
-    return 0
-  fi
-
-  # Check all prerequisite
-  command -v gcc | xargs echo "gcc: " | tee -a build.log
-  command -v cmake | xargs echo "cmake: " | tee -a build.log
-  command -v make | xargs echo "make: " | tee -a build.log
-
-  # Clean everything
-  cd "${ROOT_DIR}" || exit 2
-  make clean
-  make clean_third_party
-
-  #  Build Third Party
-  echo -n "Build Third Party..." | tee -a build.log
-  make third_party UNIX_PYTHON_VER=3
-  echo "DONE" | tee -a build.log
-
-  echo -n "Build C++..." | tee -a build.log
-  make cc -l 4 UNIX_PYTHON_VER=3
-  echo "DONE" | tee -a build.log
-  #make test_cc -l 4 UNIX_PYTHON_VER=3
-  #echo "make test_cc: DONE" | tee -a build.log
-
-  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/cxx_build"
-}
-
-# Net build
+# .Net build
 function build_dotnet() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/dotnet_build" -; then
     echo "build .Net up to date!"
@@ -180,22 +150,34 @@ function build_java() {
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
 }
 
-function build_fz() {
-  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/fz_build" -; then
-    echo "build Flatzinc up to date!" | tee -a build.log
+# Python 3
+# todo(mizux) Use `make --directory tools/docker python` instead
+function build_python() {
+  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python_build" -; then
+    echo "build python up to date!" | tee -a build.log
     return 0
   fi
-  build_cxx
 
-  # Clean fz
-  cd "${ROOT_DIR}" || exit 2
-  make clean_fz
+  command -v swig
+  command -v swig | xargs echo "swig: " | tee -a build.log
+  command -v python3 | xargs echo "python3: " | tee -a build.log
+  command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
+  protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
+  protoc-gen-mypy --version | grep "3\.2\.0"
 
-  echo -n "Build flatzinc..." | tee -a build.log
-  make fz -l 4 UNIX_PYTHON_VER=3
+  echo -n "Cleaning Python 3..." | tee -a build.log
+  rm -rf temp_python
   echo "DONE" | tee -a build.log
 
-  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/fz_build"
+  echo -n "Build Python 3..." | tee -a build.log
+  cmake -S . -B temp_python -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
+  cmake --build temp_python -j8 -v
+  echo "DONE" | tee -a build.log
+  #cmake --build test_python --target test
+  #echo "cmake test_python: DONE" | tee -a build.log
+
+  cp temp_python/python/dist/*.whl export/
+  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/python_build"
 }
 
 # Create Archive
@@ -204,7 +186,6 @@ function build_archive() {
     echo "build archive up to date!" | tee -a build.log
     return 0
   fi
-  build_fz
 
   # Clean archive
   cd "${ROOT_DIR}" || exit 2
@@ -253,36 +234,6 @@ function build_examples() {
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/examples_build"
 }
 
-# Python 3
-# todo(mizux) Use `make --directory tools/docker python` instead
-function build_python() {
-  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python_build" -; then
-    echo "build python up to date!" | tee -a build.log
-    return 0
-  fi
-
-  command -v swig
-  command -v swig | xargs echo "swig: " | tee -a build.log
-  command -v python3 | xargs echo "python3: " | tee -a build.log
-  command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
-  protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
-  protoc-gen-mypy --version | grep "3\.2\.0"
-
-  echo -n "Cleaning Python 3..." | tee -a build.log
-  rm -rf temp_python
-  echo "DONE" | tee -a build.log
-
-  echo -n "Build Python 3..." | tee -a build.log
-  cmake -S . -B temp_python -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
-  cmake --build temp_python -j8 -v
-  echo "DONE" | tee -a build.log
-  #cmake --build test_python --target test
-  #echo "cmake test_python: DONE" | tee -a build.log
-
-  cp temp_python/python/dist/*.whl export/
-  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/python_build"
-}
-
 # Main
 function main() {
   case ${1} in
@@ -305,7 +256,7 @@ function main() {
   mkdir -p export
 
   case ${1} in
-    cxx|dotnet|java|python|archive|examples)
+    dotnet|java|python|archive|examples)
       "build_$1"
       exit ;;
     all)
