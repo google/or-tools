@@ -48,7 +48,7 @@ ifneq ($(PLATFORM),WIN64)
 
   CMAKE := $(shell $(WHICH) cmake)
   ifeq ($(CMAKE),)
-  $(error Please add "cmake" to your PATH)
+    $(error Please add "cmake" to your PATH)
   endif
 
   ifdef UNIX_CPLEX_DIR
@@ -71,7 +71,7 @@ ifneq ($(PLATFORM),WIN64)
     # This is needed to find libz.a
     ZLIB_LNK = -lz
     ifdef UNIX_GLPK_DIR
-    GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
+      GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
     endif
     ifdef UNIX_CPLEX_DIR
       CPLEX_LNK = \
@@ -161,7 +161,6 @@ ifneq ($(PLATFORM),WIN64)
       XPRESS_LNK = -Wl,-rpath,$(UNIX_XPRESS_DIR)/lib -L$(UNIX_XPRESS_DIR)/lib -lxprs -lxprl
     endif
     SYS_LNK =
-    SET_COMPILER = CXX="$(CCC)"
 
     PRE_LIB = -L$(OR_ROOT)lib -l
     POST_LIB =
@@ -199,7 +198,7 @@ ifneq ($(PLATFORM),WIN64)
   # language targets
   HAS_PYTHON ?= ON
   ifeq ($(PYTHON_VERSION),)
-  HAS_PYTHON = OFF
+    HAS_PYTHON = OFF
   endif
 
   HAS_JAVA ?= ON
@@ -208,27 +207,24 @@ ifneq ($(PLATFORM),WIN64)
   JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
   MVN_BIN := $(shell $(WHICH) mvn)
   ifndef JAVAC_BIN
-  HAS_JAVA = OFF
+    HAS_JAVA = OFF
   endif
   ifndef JAR_BIN
-  HAS_JAVA = OFF
+    HAS_JAVA = OFF
   endif
   ifndef JAVA_BIN
-  HAS_JAVA = OFF
+    HAS_JAVA = OFF
   endif
   ifndef MVN_BIN
-  HAS_JAVA = OFF
+    HAS_JAVA = OFF
   endif
 
   HAS_DOTNET ?= ON
   DOTNET_BIN := $(shell $(WHICH) dotnet 2> /dev/null)
   ifndef DOTNET_BIN
-  HAS_DOTNET=OFF
+    HAS_DOTNET=OFF
   endif
-endif # !($(PLATFORM),WIN64)
-
-# Windows specific part.
-ifeq ("$(PLATFORM)","WIN64")
+else # Windows specific part.
   # Check 64 bit.
   ifneq ("$(Platform)","x64")  # Visual Studio 2019/2022 64 bit
     $(warning "Only 64 bit compilation is supported")
@@ -251,8 +247,7 @@ ifeq ("$(PLATFORM)","WIN64")
   ifeq ("$(VISUAL_STUDIO_YEAR)","")
     $(warning "Unrecognized visual studio version")
   endif
-
-# OS Specific
+  # OS Specific
   OS = Windows
   OR_TOOLS_TOP_AUX = $(shell cd)
   OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\win\\sed.exe -e "s/\\/\\\\/g" | tools\\win\\sed.exe -e "s/ //g")
@@ -304,7 +299,7 @@ ifeq ("$(PLATFORM)","WIN64")
 
   CMAKE := $(shell $(WHICH) cmake)
   ifeq ($(CMAKE),)
-  $(error Please add "cmake" to your PATH)
+    $(error Please add "cmake" to your PATH)
   endif
 
   # Compilation macros.
@@ -314,8 +309,8 @@ ifeq ("$(PLATFORM)","WIN64")
 
   # This is needed to find GLPK include files and libraries.
   ifdef WINDOWS_GLPK_DIR
-  GLPK_INC = /I"$(WINDOWS_GLPK_DIR)\\include" /DUSE_GLPK
-  GLPK_LNK = "$(WINDOWS_GLPK_DIR)\\lib\\glpk.lib"
+    GLPK_INC = /I"$(WINDOWS_GLPK_DIR)\\include" /DUSE_GLPK
+    GLPK_LNK = "$(WINDOWS_GLPK_DIR)\\lib\\glpk.lib"
   endif
   # This is needed to find CPLEX include files and libraries.
   ifdef WINDOWS_CPLEX_DIR
@@ -442,7 +437,7 @@ ifeq ("$(PLATFORM)","WIN64")
   # language targets
   HAS_PYTHON ?= ON
   ifeq ($(PYTHON_VERSION),)
-  HAS_PYTHON = OFF
+    HAS_PYTHON = OFF
   endif
 
   HAS_JAVA ?= ON
@@ -451,22 +446,22 @@ ifeq ("$(PLATFORM)","WIN64")
   JAR_BIN=$(shell $(WHICH) "$(JAVA_HOME)\bin\jar")
   MVN_BIN := $(shell $(WHICH) mvn.cmd)
   ifndef JAVAC_BIN
-  HAS_JAVA = OFF
+    HAS_JAVA = OFF
   endif
   ifndef JAR_BIN
-  HAS_JAVA = OFF
+    HAS_JAVA = OFF
   endif
   ifndef JAVA_BIN
-  HAS_JAVA = OFF
+    HAS_JAVA = OFF
   endif
   ifndef MVN_BIN
-  HAS_JAVA = OFF
+    HAS_JAVA = OFF
   endif
 
   HAS_DOTNET ?= ON
   DOTNET_BIN := $(shell $(WHICH) dotnet 2> NUL)
   ifndef DOTNET_BIN
-  HAS_DOTNET=OFF
+    HAS_DOTNET=OFF
   endif
 endif  # ($(PLATFORM),WIN64)
 
@@ -511,22 +506,22 @@ TEST_PATH = $(subst /,$S,$(TEST_DIR))
 # Get github revision level
 ifneq ($(wildcard .git),)
  ifneq ($(wildcard .git/shallow),)
- $(warning you are using a shallow copy)
- GIT_REVISION:= 9999
+  $(warning you are using a shallow copy)
+  GIT_REVISION:= 9999
  else
- GIT_REVISION:= $(shell git rev-list --count HEAD)
+   GIT_REVISION:= $(shell git rev-list --count HEAD)
  endif
  GIT_HASH:= $(shell git rev-parse --short HEAD)
 else
-GIT_REVISION:= 9999
-GIT_HASH:= "not_on_git"
+  GIT_REVISION:= 99999
+  GIT_HASH:= "not_on_git"
 endif
 
 OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(GIT_REVISION)
 OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
 ifdef PRE_RELEASE
-OR_TOOLS_VERSION := $(OR_TOOLS_VERSION)-beta
-OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_SHORT_VERSION)-beta
+  OR_TOOLS_VERSION := $(OR_TOOLS_VERSION)-beta
+  OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_SHORT_VERSION)-beta
 endif
 INSTALL_DIR = or-tools_$(PORT)_v$(OR_TOOLS_VERSION)
 FZ_INSTALL_DIR = or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
@@ -552,9 +547,7 @@ detect_port:
 	@echo HAS_PYTHON = $(HAS_PYTHON)
 	@echo HAS_JAVA = $(HAS_JAVA)
 	@echo HAS_DOTNET = $(HAS_DOTNET)
-ifeq ($(PLATFORM),WIN64)
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
-endif
 ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else
