@@ -78,4 +78,4 @@ FROM third_party AS build
 RUN make detect_cc \
 && make detect_java \
 && make detect_dotnet
-RUN make all JOBS=4
+RUN make compile JOBS=4

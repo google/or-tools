@@ -38,7 +38,7 @@ RUN make detect \
 
 # Build project
 FROM third_party AS build
-RUN make all JOBS=8
+RUN make compile JOBS=8
 
 RUN ln -s /root/or-tools/bin/fz /entry_data/fzn-exec
 
