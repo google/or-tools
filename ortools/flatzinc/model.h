@@ -264,6 +264,7 @@ struct Annotation {
     IDENTIFIER,
     FUNCTION_CALL,
     INT_VALUE,
+    INT_LIST,
     INTERVAL,
     VAR_REF,
     VAR_REF_ARRAY,
@@ -278,6 +279,7 @@ struct Annotation {
   static Annotation FunctionCall(absl::string_view id);
   static Annotation Interval(int64_t interval_min, int64_t interval_max);
   static Annotation IntegerValue(int64_t value);
+  static Annotation IntegerList(const std::vector<int64_t>& values);
   static Annotation VarRef(Variable* const var);
   static Annotation VarRefArray(std::vector<Variable*> variables);
   static Annotation String(absl::string_view str);
@@ -297,6 +299,7 @@ struct Annotation {
   std::string id;
   std::vector<Annotation> annotations;
   std::vector<Variable*> variables;
+  std::vector<int64_t> values;
   std::string string_value;
 };
 

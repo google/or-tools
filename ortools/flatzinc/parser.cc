@@ -43,6 +43,9 @@ bool ParseFlatzincFile(const std::string& filename, Model* model) {
     return false;
   }
   ParserContext context;
+  // Add known constants.
+  context.integer_map["true"] = 1;
+  context.integer_map["false"] = 0;
   bool ok = true;
   void* scanner = nullptr;
   orfz_lex_init(&scanner);
@@ -60,6 +63,9 @@ bool ParseFlatzincFile(const std::string& filename, Model* model) {
 bool ParseFlatzincString(const std::string& input, Model* model) {
   // Init.
   ParserContext context;
+  // Add known constants.
+  context.integer_map["true"] = 1;
+  context.integer_map["false"] = 0;
   bool ok = true;
   void* scanner = nullptr;
   orfz_lex_init(&scanner);

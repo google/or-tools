@@ -639,6 +639,10 @@ annotation:
     $$ = Annotation::VarRef(context->variable_map.at(id));
   } else if (context->variable_array_map.contains(id)) {
     $$ = Annotation::VarRefArray(context->variable_array_map.at(id));
+  } else if (context->integer_map.contains(id)) {
+    $$ = Annotation::IntegerValue(context->integer_map.at(id));
+  } else if (context->integer_array_map.contains(id)) {
+    $$ = Annotation::IntegerList(context->integer_array_map.at(id));
   } else {
     $$ = Annotation::Identifier(id);
   }
@@ -660,8 +664,28 @@ annotation:
 }
 | '[' annotation_arguments ']' {
   std::vector<Annotation>* const annotations = $2;
-  if (annotations != nullptr) {
-    $$ = Annotation::AnnotationList(std::move(*annotations));
+  if (annotations != nullptr && !annotations->empty()) {
+    bool all_integers = true;
+    bool all_vars = true;
+    for (const Annotation& ann : *annotations) {
+      if (ann.type != Annotation::INT_VALUE) all_integers = false;
+      if (ann.type != Annotation::VAR_REF) all_vars = false;
+    }
+    if (all_integers) {
+      std::vector<int64_t> values;
+      for (const Annotation& ann : *annotations) {
+        values.push_back(ann.interval_min);
+      }
+      $$ = Annotation::IntegerList(values);
+    } else if (all_vars) {
+      std::vector<Variable*> vars;
+      for (const Annotation& ann : *annotations) {
+        vars.push_back(ann.variables[0]);
+      }
+      $$ = Annotation::VarRefArray(vars);
+    } else {
+      $$ = Annotation::AnnotationList(std::move(*annotations));
+    }
     delete annotations;
   } else {
     $$ = Annotation::Empty();

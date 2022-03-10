@@ -986,9 +986,29 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
     fz::FlattenAnnotations(annotation, &flat_annotations);
   }
 
+  // CP-SAT rejects models containing variables duplicated in hints.
+  absl::flat_hash_set<int> hinted_vars;
+
   for (const fz::Annotation& annotation : flat_annotations) {
-    if (annotation.IsFunctionCallWithIdentifier("int_search") ||
-        annotation.IsFunctionCallWithIdentifier("bool_search")) {
+    if (annotation.IsFunctionCallWithIdentifier("warm_start")) {
+      CHECK_EQ(2, annotation.annotations.size());
+      const fz::Annotation& vars = annotation.annotations[0];
+      const fz::Annotation& values = annotation.annotations[1];
+      if (vars.type != fz::Annotation::VAR_REF_ARRAY ||
+          values.type != fz::Annotation::INT_LIST) {
+        continue;
+      }
+      for (int i = 0; i < vars.variables.size(); ++i) {
+        fz::Variable* fz_var = vars.variables[i];
+        const int var = fz_var_to_index.at(fz_var);
+        const int64_t value = values.values[i];
+        if (hinted_vars.insert(var).second) {
+          proto.mutable_solution_hint()->add_vars(var);
+          proto.mutable_solution_hint()->add_values(value);
+        }
+      }
+    } else if (annotation.IsFunctionCallWithIdentifier("int_search") ||
+               annotation.IsFunctionCallWithIdentifier("bool_search")) {
       const std::vector<fz::Annotation>& args = annotation.annotations;
       std::vector<fz::Variable*> vars;
       args[0].AppendAllVariables(&vars);

@@ -96,3 +96,19 @@ predicate int_lin_lt_imp(array [int] of int: as, array [int] of var int: bs,
                          int: c, var bool: r);
 predicate int_lin_ne_imp(array [int] of int: as, array [int] of var int: bs,
                          int: c, var bool: r);
+
+annotation warm_start_array( array[int] of ann: w );
+annotation warm_start( array[int] of var bool: x, array[int] of opt bool: v ) =
+    assert(index_sets_agree(x, v), "index sets of warm_start arguments don't agree",
+    let {
+        any: xx = [ x[i] | i in index_set(x) where occurs(v[i])];
+        any: vv = [ deopt(v[i]) | i in index_set(x) where occurs(v[i])];
+    } in warm_start(xx, vv));
+
+annotation warm_start( array[int] of var int: x, array[int] of opt int: v ) =
+    assert(index_sets_agree(x, v), "index sets of warm_start arguments don't agree",
+    let {
+        any: xx = [ x[i] | i in index_set(x) where occurs(v[i])];
+        any: vv = [ deopt(v[i]) | i in index_set(x) where occurs(v[i])];
+    } in warm_start(xx, vv));
+

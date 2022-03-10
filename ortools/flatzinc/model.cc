@@ -878,6 +878,14 @@ Annotation Annotation::IntegerValue(int64_t value) {
   return result;
 }
 
+Annotation Annotation::IntegerList(const std::vector<int64_t>& values) {
+  LOG(INFO) << "Create INT_LIST";
+  Annotation result;
+  result.type = INT_LIST;
+  result.values = values;
+  return result;
+}
+
 Annotation Annotation::VarRef(Variable* const var) {
   Annotation result;
   result.type = VAR_REF;
@@ -930,6 +938,9 @@ std::string Annotation::DebugString() const {
     }
     case INT_VALUE: {
       return absl::StrCat(interval_min);
+    }
+    case INT_LIST: {
+      return absl::StrFormat("[%s]", absl::StrJoin(values, ", "));
     }
     case VAR_REF: {
       return variables.front()->name;
