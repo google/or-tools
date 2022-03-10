@@ -513,7 +513,7 @@ ifneq ($(wildcard .git),)
  endif
  GIT_HASH:= $(shell git rev-parse --short HEAD)
 else
-  GIT_REVISION:= 99999
+  GIT_REVISION:= 9999
   GIT_HASH:= "not_on_git"
 endif
 

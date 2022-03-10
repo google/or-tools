@@ -607,7 +607,6 @@ detect_cc:
 	@echo BIN_DIR = $(BIN_DIR)
 	@echo prefix = $(prefix)
 	@echo OR_TOOLS_LIBS = $(OR_TOOLS_LIBS)
-	@echo Relevant info on third party:
 	@echo BUILD_TYPE = $(BUILD_TYPE)
 	@echo USE_GLOP = ON
 	@echo USE_PDLP = ON
