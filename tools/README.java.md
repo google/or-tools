@@ -10,11 +10,12 @@ Full installation instructions are located
 
 These modules have been tested under:
 
-  - Ubuntu 20.04 LTS (64 bit).
   - CentOS 8 (64 bit).
-  - Debian 10 (64 bit).
-  - MacOS Catalina with Xcode 10.x (64 bit).
-  - Microsoft Windows with Visual Studio 2019 (64-bit)
+  - Debian 11 (64 bit).
+  - Fedora 33 and up (64 bit).
+  - Ubuntu 18.04 LTS and up (64 bit).
+  - MacOS 12.2 Monterey (64 bit).
+  - Microsoft Windows with Visual Studio 2022 (64-bit)
 
 Upon decompressing the archive, you will get the following structure:
 

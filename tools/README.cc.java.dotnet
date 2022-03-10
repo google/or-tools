@@ -6,9 +6,12 @@ OR-Tools is located at https://developers.google.com/optimization
 
 These modules have been tested under:
 
-  - Ubuntu 16.04, 18.04 and 21.10 (64-bit).
-  - macOS 12 Monterey (64 bit).
-  - Microsoft Windows with Visual Studio Community 2019 (64-bit)
+  - CentOS 8 (64 bit).
+  - Debian 11 (64 bit).
+  - Fedora 33 and up (64 bit).
+  - Ubuntu 18.04 LTS and up (64 bit).
+  - MacOS 12.2 Monterey (64 bit).
+  - Microsoft Windows with Visual Studio 2022 (64-bit)
 
 Upon decompressing the archive, you will get the following structure:
 
