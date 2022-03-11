@@ -3053,22 +3053,27 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
   }
 
   bool changed = false;
+  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_start());
+  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_size());
+  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_end());
+
   if (ct->enforcement_literal().empty()) {
     // Size can't be negative.
+    if (context_->MinOf(interval->size()) < 0) {
+      LOG(INFO) << "Potential negative " << interval->size().DebugString();
+    }
+    bool domain_changed = false;
     if (!context_->IntersectDomainWith(
             interval->size(), Domain(0, std::numeric_limits<int64_t>::max()),
-            &changed)) {
+            &domain_changed)) {
       return false;
     }
-    if (changed) {
+    if (domain_changed) {
       context_->UpdateRuleStats(
           "interval: performed intervals must have a positive size");
     }
   }
 
-  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_start());
-  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_size());
-  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_end());
   return changed;
 }
 
