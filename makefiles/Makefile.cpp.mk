@@ -69,7 +69,7 @@ JOBS ?= 4
 .PHONY: test_fz # Run all Flatzinc test targets.
 
 # OR Tools unique library.
-cc: 
+cc:
 	$(MAKE) third_party
 	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 
@@ -454,7 +454,7 @@ test_cc_cpp: \
  SOURCE=examples/cpp/solve.cc \
  ARGS="--input examples/data/tests/test2.mps"
 
-rfz_%: $(BIN_DIR)/fz
+rfz_%: fz
 	$(BIN_DIR)$Sfz$E $(FZ_EX_PATH)$S$*.fzn
 
 #################
