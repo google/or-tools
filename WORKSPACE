@@ -6,7 +6,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_r
 # Bazel Skylib rules.
 git_repository(
     name = "bazel_skylib",
-    commit = "b2ed616",  # release 1.1.1
+    tag = "1.2.1",
     remote = "https://github.com/bazelbuild/bazel-skylib.git",
 )
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
@@ -15,55 +15,52 @@ bazel_skylib_workspace()
 # Bazel Platforms rules.
 git_repository(
     name = "platforms",
-    commit = "d4c9d7f",  # release 0.0.4
+    tag = "0.0.5",
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
 # Bazel Python rules.
 git_repository(
     name = "rules_python",
-    commit = "b842276",  # release 0.6.0
+    tag = "0.6.0",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
-# ZLIB
-http_archive(
-    name = "zlib",
-    build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
-    sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
-    strip_prefix = "zlib-1.2.11",
-    urls = [
-        "https://mirror.bazel.build/zlib.net/zlib-1.2.11.tar.gz",
-        "https://zlib.net/zlib-1.2.11.tar.gz",
-    ],
+# Abseil-cpp
+git_repository(
+    name = "com_google_absl",
+    tag = "20211102.0",
+    remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    commit = "22d0e26",  # release v3.19.4
+    tag = "v3.19.4",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
-git_repository(
-    name = "com_google_absl",
-    commit = "2151058", # release 20211102.0
-    remote = "https://github.com/abseil/abseil-cpp.git",
+# ZLIB
+new_git_repository(
+    name = "zlib",
+    build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
+    tag = "v1.2.11",
+    remote = "https://github.com/madler/zlib.git",
 )
 
 git_repository(
     name = "com_google_re2",
     patches = ["//bazel:re2.patch"],
-    commit = "0dade9f", # release 2021-11-01
+    tag = "2022-02-01",
     remote = "https://github.com/google/re2.git",
 )
 
 git_repository(
     name = "com_google_googletest",
-    commit = "e2239ee", # release-1.11.0
+    tag = "release-1.11.0",
     remote = "https://github.com/google/googletest.git",
 )
 
@@ -93,13 +90,10 @@ new_git_repository(
 )
 
 # Eigen has no Bazel build.
-http_archive(
+new_git_repository(
     name = "eigen",
-    sha256 = "b4c198460eba6f28d34894e3a5710998818515104d6e74e5cc331ce31e46e626",
-    strip_prefix = "eigen-3.4.0",
-    urls = [
-        "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.bz2",
-    ],
+    tag = "3.4.0",
+    remote = "https://gitlab.com/libeigen/eigen.git",
     build_file_content =
 """
 cc_library(
