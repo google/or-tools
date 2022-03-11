@@ -3059,9 +3059,6 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
 
   if (ct->enforcement_literal().empty()) {
     // Size can't be negative.
-    if (context_->MinOf(interval->size()) < 0) {
-      LOG(INFO) << "Potential negative " << interval->size().DebugString();
-    }
     bool domain_changed = false;
     if (!context_->IntersectDomainWith(
             interval->size(), Domain(0, std::numeric_limits<int64_t>::max()),
