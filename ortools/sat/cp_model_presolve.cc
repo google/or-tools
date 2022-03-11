@@ -3060,8 +3060,10 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
             &changed)) {
       return false;
     }
-    context_->UpdateRuleStats(
-        "interval: performed intervals must have a positive size");
+    if (changed) {
+      context_->UpdateRuleStats(
+          "interval: performed intervals must have a positive size");
+    }
   }
 
   changed |= CanonicalizeLinearExpression(*ct, interval->mutable_start());
