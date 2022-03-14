@@ -1,3 +1,25 @@
+diff --git a/CMake/AbseilHelpers.cmake b/CMake/AbseilHelpers.cmake
+index f2ce567..c1fab3e 100644
+--- a/CMake/AbseilHelpers.cmake
++++ b/CMake/AbseilHelpers.cmake
+@@ -236,7 +236,7 @@ Cflags: -I\${includedir}${PC_CFLAGS}\n")
+     # unconditionally.
+     set_property(TARGET ${_NAME} PROPERTY LINKER_LANGUAGE "CXX")
+ 
+-    target_include_directories(${_NAME}
++    target_include_directories(${_NAME} SYSTEM
+       PUBLIC
+         "$<BUILD_INTERFACE:${ABSL_COMMON_INCLUDE_DIRS}>"
+         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+@@ -284,7 +284,7 @@ Cflags: -I\${includedir}${PC_CFLAGS}\n")
+   else()
+     # Generating header-only library
+     add_library(${_NAME} INTERFACE)
+-    target_include_directories(${_NAME}
++    target_include_directories(${_NAME} SYSTEM
+       INTERFACE
+         "$<BUILD_INTERFACE:${ABSL_COMMON_INCLUDE_DIRS}>"
+         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 750a475..16ceca8 100644
 --- a/CMakeLists.txt
