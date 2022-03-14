@@ -65,7 +65,7 @@ ifneq ($(PLATFORM),WIN64)
     PLATFORM = LINUX
 
     CXX ?= g++
-    CCC = $(CXX) -fPIC -std=c++20 -fwrapv
+    CCC = $(CXX) -fPIC -std=c++17 -fwrapv
     L = so
 
     # This is needed to find libz.a
@@ -89,7 +89,7 @@ ifneq ($(PLATFORM),WIN64)
     LINK_FLAGS = \
   -Wl,-rpath,'$$ORIGIN' \
   -Wl,-rpath,'$$ORIGIN/../lib64' \
-  -Wl,-rpath,'$$ORIGIN/../lib'  
+  -Wl,-rpath,'$$ORIGIN/../lib'
     DISTRIBUTION_ID = $(shell lsb_release -i -s)
     DISTRIBUTION_NUMBER = $(shell lsb_release -r -s)
     DISTRIBUTION = $(DISTRIBUTION_ID)-$(DISTRIBUTION_NUMBER)
@@ -144,7 +144,7 @@ ifneq ($(PLATFORM),WIN64)
     MAC_MIN_VERSION = 10.15
     MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
     CXX ?= clang++
-    CCC = $(CXX) -fPIC -std=c++20  $(MAC_VERSION) -stdlib=libc++
+    CCC = $(CXX) -fPIC -std=c++17  $(MAC_VERSION) -stdlib=libc++
     L = dylib
 
     ZLIB_LNK = -lz
@@ -194,7 +194,7 @@ ifneq ($(PLATFORM),WIN64)
     $(GLPK_LNK) \
     $(CPLEX_LNK) \
     $(XPRESS_LNK)
-  
+
   # language targets
   HAS_PYTHON ?= ON
   ifeq ($(PYTHON_VERSION),)

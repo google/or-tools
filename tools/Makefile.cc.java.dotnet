@@ -67,7 +67,7 @@ ifeq ($(SYSTEM),unix)
   CC_BIN := $(shell command -v $(CC) 2> /dev/null)
   CXX_BIN := $(shell command -v $(CXX) 2> /dev/null)
   DEBUG = -O4 -DNDEBUG
-  CXXFLAGS = -fPIC -std=c++20 $(DEBUG) \
+  CXXFLAGS = -fPIC -std=c++17 $(DEBUG) \
  -I$(INC_DIR) -I. $(ARCH) -Wno-deprecated \
  -DUSE_BOP -DUSE_GLOP -DUSE_PDLP \
  -DUSE_CBC -DUSE_CLP \

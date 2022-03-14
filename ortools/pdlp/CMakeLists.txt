@@ -9,15 +9,17 @@ list(FILTER _SRCS EXCLUDE REGEX ".*/test.*")
 
 set(NAME ${PROJECT_NAME}_pdlp)
 
+if(MSVC)
+  set(STANDARD 20)
+else()
+  set(STANDARD 17)
+endif()
+
 # Will be merge in libortools.so
 #add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
 set_target_properties(${NAME} PROPERTIES
-if(WIN32)
-  CXX_STANDARD 20
-else()
-  CXX_STANDARD 17
-endif()
+  CXX_STANDARD ${STANDARD}
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
   POSITION_INDEPENDENT_CODE ON
