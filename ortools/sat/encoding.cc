@@ -16,7 +16,9 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <queue>
+#include <string>
 #include <vector>
 
 #include "ortools/base/logging.h"
@@ -31,10 +33,18 @@ namespace operations_research {
 namespace sat {
 
 EncodingNode::EncodingNode(Literal l)
-    : for_sorting_(l.Variable()),
-      child_a_(nullptr),
-      child_b_(nullptr),
-      literals_(1, l) {}
+    : for_sorting_(l.Variable()), literals_(1, l) {}
+
+EncodingNode::EncodingNode(int lb, int ub,
+                           std::function<Literal(int x)> create_lit)
+    : lb_(lb), ub_(ub), create_lit_(create_lit) {
+  CHECK_LT(lb, ub);
+  literals_.push_back(create_lit(lb));
+
+  // TODO(user): Not ideal, we should probably just provide index in the
+  // original objective for sorting purpose.
+  for_sorting_ = literals_[0].Variable();
+}
 
 void EncodingNode::InitializeFullNode(int n, EncodingNode* a, EncodingNode* b,
                                       SatSolver* solver) {
@@ -89,8 +99,13 @@ void EncodingNode::InitializeLazyCoreNode(Coefficient weight, EncodingNode* a,
 
 bool EncodingNode::IncreaseCurrentUB(SatSolver* solver) {
   if (current_ub() == ub_) return false;
-  literals_.emplace_back(BooleanVariable(solver->NumVariables()), true);
-  solver->SetNumVariables(solver->NumVariables() + 1);
+  if (create_lit_ != nullptr) {
+    literals_.emplace_back(create_lit_(current_ub()));
+  } else {
+    CHECK_NE(solver, nullptr);
+    literals_.emplace_back(BooleanVariable(solver->NumVariables()), true);
+    solver->SetNumVariables(solver->NumVariables() + 1);
+  }
   if (literals_.size() > 1) {
     solver->AddBinaryClause(literals_.back().Negated(),
                             literals_[literals_.size() - 2]);
@@ -131,12 +146,17 @@ void EncodingNode::ApplyWeightUpperBound(Coefficient gap, SatSolver* solver) {
   ub_ = lb_ + literals_.size();
 }
 
+bool EncodingNode::AssumptionIs(Literal other) const {
+  DCHECK(!HasNoWeight());
+  const int index = weight_lb_ - lb_;
+  return index < literals_.size() && literals_[index].Negated() == other;
+}
+
 Literal EncodingNode::GetAssumption(SatSolver* solver) {
   CHECK(!HasNoWeight());
   const int index = weight_lb_ - lb_;
   CHECK_GE(index, 0) << "Not reduced?";
   while (index >= literals_.size()) {
-    CHECK_NE(solver, nullptr);
     IncreaseNodeSize(this, solver);
   }
   return literals_[index].Negated();
@@ -203,6 +223,10 @@ void IncreaseNodeSize(EncodingNode* node, SatSolver* solver) {
     EncodingNode* a = n->child_a();
     EncodingNode* b = n->child_b();
     to_process.pop_back();
+
+    // Integer leaf node.
+    if (a == nullptr) continue;
+    CHECK_NE(solver, nullptr);
 
     // Note that since we were able to increase its size, n must have children.
     // n->GreaterThan(target) is the new literal of n.
@@ -503,8 +527,7 @@ Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
   Coefficient min_weight = kCoefficientMax;
   int index = 0;
   for (int i = 0; i < core.size(); ++i) {
-    for (; index < nodes.size() &&
-           nodes[index]->GetAssumption(nullptr) != core[i];
+    for (; index < nodes.size() && !nodes[index]->AssumptionIs(core[i]);
          ++index) {
     }
     CHECK_LT(index, nodes.size());
@@ -543,7 +566,7 @@ bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
     // Since the nodes appear in order in the core, we can find the
     // relevant "objective" variable efficiently with a simple linear scan
     // in the nodes vector (done with index).
-    for (; (*nodes)[index]->GetAssumption(nullptr) != core[i]; ++index) {
+    for (; !(*nodes)[index]->AssumptionIs(core[i]); ++index) {
       CHECK_LT(index, nodes->size());
       (*nodes)[new_node_index] = (*nodes)[index];
       ++new_node_index;
@@ -601,7 +624,7 @@ bool ProcessCoreWithAlternativeEncoding(const std::vector<Literal>& core,
     // relevant "objective" variable efficiently with a simple linear scan
     // in the nodes vector (done with index).
     CHECK_LT(index, nodes->size());
-    for (; (*nodes)[index]->GetAssumption(nullptr) != core[i]; ++index) {
+    for (; !(*nodes)[index]->AssumptionIs(core[i]); ++index) {
       CHECK_LT(index, nodes->size());
       new_nodes.push_back((*nodes)[index]);
     }
@@ -610,7 +633,7 @@ bool ProcessCoreWithAlternativeEncoding(const std::vector<Literal>& core,
     // We have a node from the core.
     // We will distinguish its first literal.
     EncodingNode* n = (*nodes)[index];
-    const Literal lit = n->GetAssumption(nullptr).Negated();
+    const Literal lit = core[i].Negated();
     n->IncreaseWeightLb();
     ++index;
     CHECK_GT(n->size(), 0);

@@ -1586,37 +1586,19 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       // Special case: If the objective was a single variable, we can transfer
       // the domain of var to the objective, and just completely remove this
       // equality constraint like it is done in ExpandObjective().
+      //
+      // TODO(user): Maybe if var has a complex domain, we might not want to
+      // substitute it?
       if (context_->ObjectiveMap().size() == 1) {
-        if (!context_->IntersectDomainWith(
-                var, context_->ObjectiveDomain().InverseMultiplicationBy(
-                         objective_coeff))) {
+        // This make sure the domain of var is restricted and the objective
+        // domain updated.
+        if (!context_->RecomputeSingletonObjectiveDomain()) {
           return true;
         }
 
-        // The intersection above might fix var, in which case, we just abort.
+        // The function above might fix var, in which case, we just abort.
         if (context_->IsFixed(var)) continue;
 
-        // This makes sure the domain of var is propagated back to the
-        // objective.
-        //
-        // Tricky: We cannot "simplify" the domain of the objective using the
-        // implied domain from the linear expression since we will substitute
-        // the variable.
-        //
-        // TODO(user): Maybe if var has a complex domain, we might not want to
-        // substitute it?
-        if (!context_->CanonicalizeObjective(/*simplify_domain=*/false)) {
-          return context_->NotifyThatModelIsUnsat();
-        }
-
-        // Normally, CanonicalizeObjective() shouldn't remove var because
-        // we work on a linear constraint that has been canonicalized. We keep
-        // the test here in case this ever happen so we are notified.
-        if (!context_->ObjectiveMap().contains(var)) {
-          LOG(WARNING) << "This was not supposed to happen and the presolve "
-                          "could be improved.";
-          continue;
-        }
         if (!context_->SubstituteVariableInObjective(var, coeff, *ct)) {
           if (context_->ModelIsUnsat()) return true;
           continue;
@@ -3052,14 +3034,9 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
     return MarkConstraintAsFalse(ct);
   }
 
-  bool changed = false;
-  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_start());
-  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_size());
-  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_end());
-
   if (ct->enforcement_literal().empty()) {
-    // Size can't be negative.
     bool domain_changed = false;
+    // Size can't be negative.
     if (!context_->IntersectDomainWith(
             interval->size(), Domain(0, std::numeric_limits<int64_t>::max()),
             &domain_changed)) {
@@ -3071,6 +3048,10 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
     }
   }
 
+  bool changed = false;
+  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_start());
+  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_size());
+  changed |= CanonicalizeLinearExpression(*ct, interval->mutable_end());
   return changed;
 }
 

@@ -18,10 +18,10 @@
 #include <deque>
 #include <limits>
 #include <memory>
-#include <set>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/memory/memory.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"

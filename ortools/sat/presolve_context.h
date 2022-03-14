@@ -392,6 +392,11 @@ class PresolveContext {
   void WriteObjectiveToProto() const;
   ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective();
 
+  // When the objective is singleton, we can always restrict the domain of var
+  // so that the current objective domain is non-constraining. Returns false
+  // on UNSAT.
+  bool RecomputeSingletonObjectiveDomain();
+
   // Some function need the domain to be up to date in the proto.
   // This make sures our in-memory domain are writted back to the proto.
   void WriteVariableDomainsToProto() const;

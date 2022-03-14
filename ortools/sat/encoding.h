@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -60,6 +61,10 @@ class EncodingNode {
 
   // Constructs a EncodingNode of size one, just formed by the given literal.
   explicit EncodingNode(Literal l);
+
+  // Constructs a node with value in [lb, ub].
+  // New literal "<=x" will be constructed using create_lit(x).
+  EncodingNode(int lb, int ub, std::function<Literal(int x)> create_lit);
 
   // Creates a "full" encoding node on n new variables, the represented number
   // beeing in [lb, ub = lb + n). The variables are added to the given solver
@@ -106,6 +111,7 @@ class EncodingNode {
   Coefficient Reduce(const SatSolver& solver);
 
   // GetAssumption() might need to create new literals.
+  bool AssumptionIs(Literal other) const;
   Literal GetAssumption(SatSolver* solver);
   bool HasNoWeight() const;
   void IncreaseWeightLb();
@@ -144,8 +150,11 @@ class EncodingNode {
   int weight_lb_ = 0;
 
   Coefficient weight_;
-  EncodingNode* child_a_;
-  EncodingNode* child_b_;
+  EncodingNode* child_a_ = nullptr;
+  EncodingNode* child_b_ = nullptr;
+
+  // If not null, will be used instead of creating new variable directly.
+  std::function<Literal(int x)> create_lit_ = nullptr;
 
   // The literals of this node in order.
   std::vector<Literal> literals_;

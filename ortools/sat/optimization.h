@@ -158,17 +158,19 @@ class CoreBasedOptimizer {
   // some of the work already done, so it might just never find anything.
   SatSolver::Status Optimize();
 
-  // A different way to encode the objective as core are found. This one do
-  // not introduce IntegerVariable and encode everything in Boolean.
+  // A different way to encode the objective as core are found.
+  //
+  // If the vector if literals is passed it will use that, otherwise it will
+  // encode the passed integer variables. In both cases, the vector used should
+  // be of the same size as the coefficients vector.
   //
   // It seems to be more powerful, but it isn't completely implemented yet.
   // TODO(user):
-  // - Make it work for integer variable in the objective.
-  // - Only call it if the objective domain is not too large?
   // - Support resuming for interleaved search.
   // - Implement all core heurisitics.
   SatSolver::Status OptimizeWithSatEncoding(
       const std::vector<Literal>& literals,
+      const std::vector<IntegerVariable>& vars,
       const std::vector<Coefficient>& coefficients, Coefficient offset);
 
  private:

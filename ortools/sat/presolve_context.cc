@@ -1696,6 +1696,23 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   return true;
 }
 
+bool PresolveContext::RecomputeSingletonObjectiveDomain() {
+  CHECK_EQ(objective_map_.size(), 1);
+  const int var = objective_map_.begin()->first;
+  const int64_t coeff = objective_map_.begin()->second;
+
+  // Transfer all the info to the domain of var.
+  if (!IntersectDomainWith(var,
+                           objective_domain_.InverseMultiplicationBy(coeff))) {
+    return false;
+  }
+
+  // Recompute a correct and non-constraining objective domain.
+  objective_domain_ = DomainOf(var).ContinuousMultiplicationBy(coeff);
+  objective_domain_is_constraining_ = false;
+  return true;
+}
+
 void PresolveContext::RemoveVariableFromObjective(int var) {
   objective_map_.erase(var);
   EraseFromVarToConstraint(var, kObjectiveConstraint);

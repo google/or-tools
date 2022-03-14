@@ -42,6 +42,7 @@
 #include <initializer_list>
 #include <iosfwd>
 #include <limits>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>

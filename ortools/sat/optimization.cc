@@ -1527,6 +1527,7 @@ bool CoreBasedOptimizer::CoverOptimization() {
 
 SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     const std::vector<Literal>& literals,
+    const std::vector<IntegerVariable>& vars,
     const std::vector<Coefficient>& coefficients, Coefficient offset) {
   // Create one initial nodes per variables with cost.
   // TODO(user): We could create EncodingNode out of IntegerVariable.
@@ -1539,10 +1540,43 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
   // non-overlapping core finder.
   // TODO(user): It could still be beneficial to add one. Experiments.
   std::deque<EncodingNode> repository;
-  Coefficient extra_offset = 0;
-  std::vector<EncodingNode*> nodes = CreateInitialEncodingNodes(
-      literals, coefficients, &extra_offset, &repository);
-  CHECK_EQ(extra_offset, 0);
+  std::vector<EncodingNode*> nodes;
+  if (vars.empty()) {
+    // All Booleans.
+    for (int i = 0; i < literals.size(); ++i) {
+      CHECK_GT(coefficients[i], 0);
+      repository.emplace_back(literals[i]);
+      nodes.push_back(&repository.back());
+      nodes.back()->set_weight(coefficients[i]);
+    }
+  } else {
+    // Use integer encoding.
+    CHECK_EQ(vars.size(), coefficients.size());
+    for (int i = 0; i < vars.size(); ++i) {
+      CHECK_GT(coefficients[i], 0);
+      const IntegerVariable var = vars[i];
+      const IntegerValue var_lb = integer_trail_->LowerBound(var);
+      const IntegerValue var_ub = integer_trail_->UpperBound(var);
+      if (var_ub - var_lb == 1) {
+        const Literal lit = integer_encoder_->GetOrCreateAssociatedLiteral(
+            IntegerLiteral::GreaterOrEqual(var, var_ub));
+        repository.emplace_back(lit);
+      } else {
+        // TODO(user): This might not be idea if there are holes in the domain.
+        // It should work by adding duplicates literal, but we should be able to
+        // be more efficient.
+        int lb = 0;
+        int ub = static_cast<int>(var_ub.value() - var_lb.value());
+        repository.emplace_back(lb, ub, [var, var_lb, this](int x) {
+          return integer_encoder_->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::GreaterOrEqual(var,
+                                             var_lb + IntegerValue(x + 1)));
+        });
+      }
+      nodes.push_back(&repository.back());
+      nodes.back()->set_weight(coefficients[i]);
+    }
+  }
 
   // Initialize the bounds.
   // This is in term of number of variables not at their minimal value.
@@ -1775,23 +1809,26 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
   if (!parameters_->interleave_search()) {
     Coefficient offset(0);
     std::vector<Literal> literals;
+    std::vector<IntegerVariable> vars;
     std::vector<Coefficient> coefficients;
     bool all_booleans = true;
+    IntegerValue range(0);
     for (const ObjectiveTerm& term : terms_) {
       const IntegerVariable var = term.var;
       const IntegerValue coeff = term.weight;
       const IntegerValue lb = integer_trail_->LowerBound(var);
       const IntegerValue ub = integer_trail_->UpperBound(var);
-      if (lb == ub) {
-        offset += Coefficient((lb * coeff).value());
-      } else if (ub - lb == 1) {
-        offset += Coefficient((lb * coeff).value());
+      offset += Coefficient((lb * coeff).value());
+      if (lb == ub) continue;
+
+      vars.push_back(var);
+      coefficients.push_back(Coefficient(coeff.value()));
+      if (ub - lb == 1) {
         literals.push_back(integer_encoder_->GetOrCreateAssociatedLiteral(
             IntegerLiteral::GreaterOrEqual(var, ub)));
-        coefficients.push_back(Coefficient(coeff.value()));
       } else {
         all_booleans = false;
-        break;
+        range += ub - lb;
       }
     }
     if (all_booleans) {
@@ -1805,7 +1842,10 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       // such core, we can always try to see if the "at most one" can be
       // extended.
       PresolveObjectiveWithAtMostOne(&literals, &coefficients, &offset);
-      return OptimizeWithSatEncoding(literals, coefficients, offset);
+      return OptimizeWithSatEncoding(literals, {}, coefficients, offset);
+    }
+    if (range < 1e8) {
+      return OptimizeWithSatEncoding({}, vars, coefficients, offset);
     }
   }
 
