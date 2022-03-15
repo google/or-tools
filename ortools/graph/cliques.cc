@@ -14,6 +14,7 @@
 #include "ortools/graph/cliques.h"
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <utility>
 #include <vector>

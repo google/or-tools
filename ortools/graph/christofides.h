@@ -27,6 +27,7 @@
 #define OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 
 #include <cstdint>
+#include <string>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"

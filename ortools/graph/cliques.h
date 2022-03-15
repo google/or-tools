@@ -28,6 +28,7 @@
 #include <functional>
 #include <limits>
 #include <numeric>
+#include <string>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
