@@ -69,7 +69,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       Sirius_Ref: antares_integration
-      XPRS_Path: ${{ github.workspace }}/xpressmp813
+      XPRESSDIR: ${{ github.workspace }}/xpressmp813
       XPRESS: ${{ github.workspace }}/xpressmp813/bin
       XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
       SIRIUS_INSTALL_PATH : ${{ github.workspace }}/sirius_install
@@ -167,7 +167,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp
-          path: ${{ env.XPRS_Path }}
+          path: ${{ env.XPRESSDIR }}
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
       - name: Checkout xpressmp813 windows
@@ -175,7 +175,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp-temp
-          path: ${{ env.XPRS_Path }}
+          path: ${{ env.XPRESSDIR }}
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
 
@@ -197,13 +197,13 @@ jobs:
         if: ${{ startsWith(matrix.os, 'windows') }}
         shell: bash
         run: |
-          echo "${{ env.XPRS_Path }}\bin" >> $GITHUB_PATH
+          echo "${{ env.XPRESS }}" >> $GITHUB_PATH
           echo "${{ env.SIRIUS_INSTALL_PATH }}\bin" >> $GITHUB_PATH
 
       - name: Configure or-tools
         shell: bash
         run: |
-             cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRS_Path }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
+             cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
 
       - name: check windows space
         if: ${{ startsWith(matrix.os, 'windows') }}
@@ -269,18 +269,18 @@ jobs:
         run: |
           cmake -Bbuild -S. \
                 -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" \
-                -DXPRESS_ROOT="${{ env.XPRS_Path }}" \
+                -DXPRESS_ROOT="${{ env.XPRESSDIR }}" \
                 -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
           cmake --build build
           ./build/linear_programming
       - name: Build & run CMake example project windows
         if: ${{ startsWith(matrix.os, 'NONOwindows') }}
         working-directory: ./examples/cmake/linear_programming/
-        env:
-          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
         shell: bash
         run: |
-          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ github.workspace }}/xpressmp813" -Dsirius_solver_DIR="${{ github.workspace }}/sirius-solver/SiriusInstall/cmake"
+          echo "${{ env.XPRESS }}" >> $GITHUB_PATH
+          echo "${{ env.SIRIUS_INSTALL_PATH }}\bin" >> $GITHUB_PATH
+          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ env.XPRESS }}" -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
           cmake --build build --config Release
           build\Release\linear_programming.exe
 
