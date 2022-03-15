@@ -225,6 +225,31 @@ jobs:
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
+      - name: set ld_library_path
+        shell: bash
+        run: |
+          LD_PATH="${{ env.SIRIUS_INSTALL_PATH }}/lib/:${{ env.XPRS_LIB_Path }}/"
+          echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
+
+      - name: Build & run CMake example project linux
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        working-directory: ./examples/cmake/linear_programming/
+        run: |
+          cmake -Bbuild -S. \
+                -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" \
+                -DXPRESS_ROOT="${{ env.XPRESSDIR }}" \
+                -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
+          cmake --build build
+          ./build/linear_programming
+      - name: Build & run CMake example project windows
+        if: ${{ startsWith(matrix.os, 'windows') && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}}}
+        working-directory: ./examples/cmake/linear_programming/
+        run: |
+          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
+          cmake --build build --config Release
+          build\Release\linear_programming.exe
+
+
       - name: check windows space
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: Get-PSDrive
@@ -263,29 +288,6 @@ jobs:
           asset_name: ${{ steps.or-install.outputs.ortools_archive_name }}
           asset_content_type: application/zip
 
-      - name: set ld_library_path
-        shell: bash
-        run: |
-          LD_PATH="${{ env.SIRIUS_INSTALL_PATH }}/lib/:${{ env.XPRS_LIB_Path }}/"
-          echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
-
-      - name: Build & run CMake example project linux
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        working-directory: ./examples/cmake/linear_programming/
-        run: |
-          cmake -Bbuild -S. \
-                -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" \
-                -DXPRESS_ROOT="${{ env.XPRESSDIR }}" \
-                -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
-          cmake --build build
-          ./build/linear_programming
-      - name: Build & run CMake example project windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        working-directory: ./examples/cmake/linear_programming/
-        run: |
-          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
-          cmake --build build --config Release
-          build\Release\linear_programming.exe
 
       - name: Run sirius_interface unittests
         if: ${{ matrix.sirius == 'ON' }}
