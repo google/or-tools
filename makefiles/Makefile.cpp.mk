@@ -514,7 +514,7 @@ ifeq ($(PLATFORM),WIN64)
 	$(COPYREC) /E /Y share "$(DESTDIR)$(prefix)"
 else
 	$(COPYREC) include "$(DESTDIR)$(prefix)$S"
-	$(COPY) $(LIB_DIR)*$S$(LIB_PREFIX)ortools.$L* "$(DESTDIR)$(prefix)$Slib$S"
+	$(COPY) $(LIB_DIR)*$S$(LIB_PREFIX)ortools*.$L* "$(DESTDIR)$(prefix)$Slib$S"
 	$(COPYREC) share "$(DESTDIR)$(prefix)$S"
 endif
 	$(COPY) bin$Sprotoc* "$(DESTDIR)$(prefix)$Sbin"
