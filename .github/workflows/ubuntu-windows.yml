@@ -243,7 +243,7 @@ jobs:
           ./build/linear_programming
 
       - name: Build & run CMake example project windows
-        if: ${{ ${{ startsWith(matrix.os, 'windows') }} && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}}}
+        if: ${{ ${{ startsWith(matrix.os, 'windows') }} && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./examples/cmake/linear_programming/
         run: |
           cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
