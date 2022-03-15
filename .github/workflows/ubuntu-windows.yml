@@ -288,7 +288,7 @@ jobs:
           echo "${{ env.SIRIUS_INSTALL_PATH }}\bin" >> $GITHUB_PATH
           cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
           cmake --build build --config Release
-          build\Release\linear_programming.exe
+          ./build/Release/linear_programming.exe
 
       - name: Run sirius_interface unittests
         if: ${{ matrix.sirius == 'ON' }}
