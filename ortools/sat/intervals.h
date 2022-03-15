@@ -528,8 +528,7 @@ inline void SchedulingConstraintHelper::AddGenericReason(
   }
   CHECK_NE(a.var, kNoIntegerVariable);
 
-  // Here we assume that the upper_bound on a comes from the lower bound of b +
-  // c.
+  // Here we assume that the upper_bound on a comes from the bound on b + c.
   const IntegerValue slack = upper_bound - integer_trail_->UpperBound(b) -
                              integer_trail_->UpperBound(c);
   CHECK_GE(slack, 0);
@@ -540,8 +539,8 @@ inline void SchedulingConstraintHelper::AddGenericReason(
     integer_reason_.push_back(b.LowerOrEqual(upper_bound - c.constant));
   } else {
     integer_trail_->AppendRelaxedLinearReason(
-        slack, {IntegerValue(1), IntegerValue(1)},
-        {NegationOf(b.var), NegationOf(c.var)}, &integer_reason_);
+        slack, {b.coeff, c.coeff}, {NegationOf(b.var), NegationOf(c.var)},
+        &integer_reason_);
   }
 }
 
