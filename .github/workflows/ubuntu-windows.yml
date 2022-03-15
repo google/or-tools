@@ -210,7 +210,7 @@ jobs:
         if: ${{ matrix.dotnet == 'ON' }}
         shell: bash
         run: |
-          cmake -S . -B build -DBUILD_CXX=OFF -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
+          cmake -S . -B build -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
 
       - name: check windows space
         if: ${{ startsWith(matrix.os, 'windows') }}
