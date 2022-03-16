@@ -95,8 +95,6 @@ jobs:
           - os: ubuntu-20.04
             shared: ON
             extras: OFF
-          - extras: OFF
-            dotnet: ON
         include:
           - extras: ON
             dotnet: ON
