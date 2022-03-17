@@ -677,7 +677,6 @@ extern std::function<int(GRBmodel *model)> GRBtunemodel;
 extern std::function<int(int nummodels, GRBmodel **models,GRBmodel *ignore, GRBmodel *hint)> GRBtunemodels;
 extern std::function<int(GRBmodel *model, int i)> GRBgettuneresult;
 extern std::function<int(GRBmodel *model, int i, char **logP)> GRBgettunelog;
-extern std::function<int(GRBmodel *model, GRBmodel *ignore, GRBmodel *hint)> GRBtunemodeladv;
 extern std::function<int(GRBmodel *model)> GRBsync;
 
 

@@ -432,8 +432,6 @@ std::function<int(int nummodels, GRBmodel** models, GRBmodel* ignore,
     GRBtunemodels = nullptr;
 std::function<int(GRBmodel* model, int i)> GRBgettuneresult = nullptr;
 std::function<int(GRBmodel* model, int i, char** logP)> GRBgettunelog = nullptr;
-std::function<int(GRBmodel* model, GRBmodel* ignore, GRBmodel* hint)>
-    GRBtunemodeladv = nullptr;
 std::function<int(GRBmodel* model)> GRBsync = nullptr;
 
 void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
@@ -655,14 +653,13 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBtunemodels, "GRBtunemodels");
   gurobi_dynamic_library->GetFunction(&GRBgettuneresult, "GRBgettuneresult");
   gurobi_dynamic_library->GetFunction(&GRBgettunelog, "GRBgettunelog");
-  gurobi_dynamic_library->GetFunction(&GRBtunemodeladv, "GRBtunemodeladv");
   gurobi_dynamic_library->GetFunction(&GRBsync, "GRBsync");
 }
 
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
   const std::vector<std::string> kGurobiVersions = {
-      "951", "950", "911", "910", "903", "902", "811", "801", "752"};
+      "952", "951", "950", "911", "910", "903", "902", "811", "801", "752"};
 
   // Look for libraries pointed by GUROBI_HOME first.
   const char* gurobi_home_from_env = getenv("GUROBI_HOME");
