@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <LangVersion>9.0</LangVersion>
-    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
+    @DOTNET_TFM@
     <RuntimeIdentifier>@RUNTIME_IDENTIFIER@</RuntimeIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>@DOTNET_PROJECT@</AssemblyName>

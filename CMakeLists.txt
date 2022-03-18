@@ -228,6 +228,12 @@ message(STATUS "XPRESS support: ${USE_XPRESS}")
 if(BUILD_DOTNET)
   option(UNIVERSAL_DOTNET_PACKAGE "Build a .Net multi OS Package" OFF)
   message(STATUS ".Net: Create multiple os package: ${UNIVERSAL_DOTNET_PACKAGE}")
+
+  option(USE_DOTNET_TFM_31 "Use .Net Core 3.1 LTS support" ON)
+  message(STATUS ".Net: Use .Net Core 3.1 LTS support: ${USE_DOTNET_TFM_31}")
+
+  option(USE_DOTNET_TFM_60 "Use .Net 6.0 LTS support" ON)
+  message(STATUS ".Net: Use .Net 6.0 LTS support: ${USE_DOTNET_TFM_60}")
 endif()
 
 if(BUILD_JAVA)

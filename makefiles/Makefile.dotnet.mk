@@ -87,6 +87,8 @@ $$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
 	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$$Sdotnet$$SSample.csproj.in \
  > $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
+	$$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
 	$$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
 	$$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
@@ -136,6 +138,8 @@ $$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
 	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$$Sdotnet$$SSample.csproj.in \
  > $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
+	$$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+ $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
 	$$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
 	$$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
@@ -184,6 +188,8 @@ $(TEMP_DOTNET_DIR)/tests/%/%.csproj: \
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$STest.csproj.in \
  > $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+ $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
 	$(SED) -i -e 's/@TEST_NAME@/$*/' \
@@ -484,6 +490,8 @@ $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
 	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
@@ -512,6 +520,8 @@ $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
 	$$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$$(GIT_REVISION)/' \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
@@ -570,7 +580,7 @@ nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
 
 .PHONY: nuget_upload # Upload Nuget Package
 nuget_upload: nuget_archive
-	@echo Uploading Nuget package for "net6.0".
+	@echo Uploading Nuget package for "netcoreapp3.1;net6.0".
 	$(warning Not Implemented)
 
 endif  # HAS_DOTNET=ON

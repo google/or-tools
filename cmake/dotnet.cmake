@@ -30,6 +30,8 @@ endif()
 # Needed by dotnet/CMakeLists.txt
 set(DOTNET_PACKAGE Google.OrTools)
 set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
+
+# see: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
 if(APPLE)
   set(RUNTIME_IDENTIFIER osx-x64)
 elseif(UNIX)
@@ -43,6 +45,17 @@ set(DOTNET_NATIVE_PROJECT ${DOTNET_PACKAGE}.runtime.${RUNTIME_IDENTIFIER})
 message(STATUS ".Net runtime project: ${DOTNET_NATIVE_PROJECT}")
 set(DOTNET_NATIVE_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_NATIVE_PROJECT})
 message(STATUS ".Net runtime project build path: ${DOTNET_NATIVE_PROJECT_DIR}")
+
+# see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
+if(USE_DOTNET_TFM_31 AND USE_DOTNET_TFM_60)
+  set(DOTNET_TFM "<TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>")
+elseif(USE_DOTNET_TFM_60)
+  set(DOTNET_TFM "<TargetFramework>net6.0</TargetFramework>")
+elseif(USE_DOTNET_TFM_31)
+  set(DOTNET_TFM "<TargetFramework>netcoreapp3.1</TargetFramework>")
+else()
+  message(FATAL_ERROR "No .Net SDK selected !")
+endif()
 
 set(DOTNET_PROJECT ${DOTNET_PACKAGE})
 message(STATUS ".Net project: ${DOTNET_PROJECT}")
@@ -368,10 +381,18 @@ function(add_dotnet_sample FILE_NAME)
     WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
 
   if(BUILD_TESTING)
-    add_test(
-      NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}
-      COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
-      WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
+    if(USE_DOTNET_TFM_31)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}
+        COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework netcoreapp3.1 -c Release
+        WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
+    endif()
+    if(USE_DOTNET_TFM_60)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}
+        COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
+        WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
+    endif()
   endif()
   message(STATUS "Configuring sample ${FILE_NAME} done")
 endfunction()
@@ -431,10 +452,18 @@ function(add_dotnet_example FILE_NAME)
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
 
   if(BUILD_TESTING)
-    add_test(
-      NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}
-      COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
-      WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
+    if(USE_DOTNET_TFM_31)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}
+        COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework netcoreapp3.1 -c Release
+        WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
+    endif()
+    if(USE_DOTNET_TFM_60)
+      add_test(
+        NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}
+        COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
+        WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
+    endif()
   endif()
   message(STATUS "Configuring example ${FILE_NAME} done")
 endfunction()
