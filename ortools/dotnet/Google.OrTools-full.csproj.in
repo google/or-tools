@@ -24,14 +24,6 @@
     <DelaySign>false</DelaySign>
   </PropertyGroup>
 
-  <!-- On windows we can build cross-platform netstandard and windows-only netframework.-->
-  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' And '$(OS)' != 'Windows' ">
-    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' Or '$(OS)' == 'Windows' ">
-    <TargetFrameworks>netcoreapp3.1;net6.0;net452</TargetFrameworks>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/algorithms/*.cs">
       <Link>algorithms/%(Filename)%(Extension)</Link>
