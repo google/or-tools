@@ -883,6 +883,10 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   // at the end of the presolve.
   const int64_t min_value = new_domain.Min();
   const int new_var = NewIntVar(new_domain.AdditionWith(Domain(-min_value)));
+  if (!working_model->variables(var).name().empty()) {
+    working_model->mutable_variables(new_var)->set_name(
+        working_model->variables(var).name());
+  }
   CHECK(StoreAffineRelation(var, new_var, mod, offset + mod * min_value,
                             /*debug_no_recursion=*/true));
   UpdateRuleStats("variables: canonicalize affine domain");

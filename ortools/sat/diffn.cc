@@ -84,10 +84,9 @@ void AddIsEqualToMaxOf(IntegerVariable max_var,
 
 }  // namespace
 
-void AddDiffnCumulativeRelationOnX(
-    const std::vector<IntervalVariable>& x_intervals,
-    SchedulingConstraintHelper* x, SchedulingConstraintHelper* y,
-    Model* model) {
+void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
+                                   SchedulingConstraintHelper* y,
+                                   Model* model) {
   int64_t min_starts = std::numeric_limits<int64_t>::max();
   int64_t max_ends = std::numeric_limits<int64_t>::min();
   std::vector<AffineExpression> sizes;
@@ -116,208 +115,27 @@ void AddDiffnCumulativeRelationOnX(
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
 
+  const SatParameters* params = model->GetOrCreate<SatParameters>();
+  const bool add_timetabling_relaxation =
+      params->use_timetabling_in_no_overlap_2d();
+  bool add_energetic_relaxation =
+      params->use_energetic_reasoning_in_no_overlap_2d();
+
   // Propagator responsible for applying Timetabling filtering rule. It
   // increases the minimum of the start variables, decrease the maximum of the
   // end variables, and increase the minimum of the capacity variable.
-  TimeTablingPerTask* time_tabling =
-      new TimeTablingPerTask(sizes, capacity, integer_trail, x);
-  time_tabling->RegisterWith(watcher);
-  model->TakeOwnership(time_tabling);
+  if (add_timetabling_relaxation) {
+    TimeTablingPerTask* time_tabling =
+        new TimeTablingPerTask(sizes, capacity, integer_trail, x);
+    time_tabling->RegisterWith(watcher);
+    model->TakeOwnership(time_tabling);
+  }
 
   // Propagator responsible for applying the Overload Checking filtering rule.
   // It increases the minimum of the capacity variable.
-  if (model->GetOrCreate<SatParameters>()
-          ->use_overload_checker_in_cumulative_constraint()) {
+  if (add_energetic_relaxation) {
     AddCumulativeOverloadChecker(sizes, capacity, x, model);
   }
-}
-
-#define RETURN_IF_FALSE(f) \
-  if (!(f)) return false;
-
-NonOverlappingRectanglesEnergyPropagator::
-    ~NonOverlappingRectanglesEnergyPropagator() {}
-
-bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
-  const int num_boxes = x_.NumTasks();
-  if (!x_.SynchronizeAndSetTimeDirection(true)) return false;
-  if (!y_.SynchronizeAndSetTimeDirection(true)) return false;
-
-  active_boxes_.clear();
-  cached_energies_.resize(num_boxes);
-  cached_rectangles_.resize(num_boxes);
-  for (int box = 0; box < num_boxes; ++box) {
-    cached_energies_[box] = x_.SizeMin(box) * y_.SizeMin(box);
-    if (cached_energies_[box] == 0) continue;
-    if (!x_.IsPresent(box) || !y_.IsPresent(box)) continue;
-
-    // The code needs the size min to be larger or equal to the mandatory part
-    // for it to works correctly. This is always enforced by the helper.
-    DCHECK_GE(x_.SizeMin(box), x_.EndMin(box) - x_.StartMax(box));
-    DCHECK_GE(y_.SizeMin(box), y_.EndMin(box) - y_.StartMax(box));
-
-    Rectangle& rectangle = cached_rectangles_[box];
-    rectangle.x_min = x_.ShiftedStartMin(box);
-    rectangle.x_max = x_.ShiftedEndMax(box);
-    rectangle.y_min = y_.ShiftedStartMin(box);
-    rectangle.y_max = y_.ShiftedEndMax(box);
-
-    active_boxes_.push_back(box);
-  }
-
-  absl::Span<int> initial_boxes = FilterBoxesThatAreTooLarge(
-      cached_rectangles_, cached_energies_, absl::MakeSpan(active_boxes_));
-  if (initial_boxes.size() <= 1) return true;
-
-  Rectangle conflicting_rectangle;
-  std::vector<absl::Span<int>> components =
-      GetOverlappingRectangleComponents(cached_rectangles_, initial_boxes);
-  for (absl::Span<int> boxes : components) {
-    // Computes the size on x and y past which there is no point doing any
-    // energetic reasonning. We do a few iterations since as we filter one size,
-    // we can potentially filter more on the transposed dimension.
-    threshold_x_ = kMaxIntegerValue;
-    threshold_y_ = kMaxIntegerValue;
-    for (int i = 0; i < 3; ++i) {
-      if (!AnalyzeIntervals(/*transpose=*/i == 1, boxes, cached_rectangles_,
-                            cached_energies_, &threshold_x_, &threshold_y_,
-                            &conflicting_rectangle)) {
-        return ReportEnergyConflict(conflicting_rectangle, boxes, &x_, &y_);
-      }
-      boxes = FilterBoxesAndRandomize(cached_rectangles_, boxes, threshold_x_,
-                                      threshold_y_, *random_);
-      if (boxes.size() <= 1) break;
-    }
-    if (boxes.size() <= 1) continue;
-
-    // Now that we removed boxes with a large domain, resplit everything.
-    const std::vector<absl::Span<int>> local_components =
-        GetOverlappingRectangleComponents(cached_rectangles_, boxes);
-    for (absl::Span<int> local_boxes : local_components) {
-      IntegerValue total_sum_of_areas(0);
-      for (const int box : local_boxes) {
-        total_sum_of_areas += cached_energies_[box];
-      }
-      for (const int box : local_boxes) {
-        RETURN_IF_FALSE(
-            FailWhenEnergyIsTooLarge(box, local_boxes, total_sum_of_areas));
-      }
-    }
-  }
-
-  return true;
-}
-
-int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
-    GenericLiteralWatcher* watcher) {
-  const int id = watcher->Register(this);
-  x_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
-                   /*watch_end_max=*/true);
-  y_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
-                   /*watch_end_max=*/true);
-  return id;
-}
-
-void NonOverlappingRectanglesEnergyPropagator::SortBoxesIntoNeighbors(
-    int box, absl::Span<const int> local_boxes,
-    IntegerValue total_sum_of_areas) {
-  const Rectangle& box_dim = cached_rectangles_[box];
-
-  neighbors_.clear();
-  for (const int other_box : local_boxes) {
-    if (other_box == box) continue;
-    const Rectangle& other_dim = cached_rectangles_[other_box];
-    const IntegerValue span_x = std::max(box_dim.x_max, other_dim.x_max) -
-                                std::min(box_dim.x_min, other_dim.x_min);
-    if (span_x > threshold_x_) continue;
-    const IntegerValue span_y = std::max(box_dim.y_max, other_dim.y_max) -
-                                std::min(box_dim.y_min, other_dim.y_min);
-    if (span_y > threshold_y_) continue;
-    const IntegerValue bounding_area = span_x * span_y;
-    if (bounding_area < total_sum_of_areas) {
-      neighbors_.push_back({other_box, bounding_area});
-    }
-  }
-  std::sort(neighbors_.begin(), neighbors_.end());
-}
-
-bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
-    int box, absl::Span<const int> local_boxes,
-    IntegerValue total_sum_of_areas) {
-  SortBoxesIntoNeighbors(box, local_boxes, total_sum_of_areas);
-
-  CapacityProfile bounding_area;
-  IntegerValue sum_of_areas = cached_energies_[box];
-  Rectangle area = cached_rectangles_[box];
-  bounding_area.AddRectangle(
-      cached_rectangles_[box].x_min, cached_rectangles_[box].x_max,
-      cached_rectangles_[box].y_min, cached_rectangles_[box].y_max);
-
-  const auto add_box_energy_in_rectangle_reason = [&](int b) {
-    x_.AddEnergyMinInIntervalReason(b, area.x_min, area.x_max);
-    y_.AddEnergyMinInIntervalReason(b, area.y_min, area.y_max);
-    x_.AddPresenceReason(b);
-    y_.AddPresenceReason(b);
-  };
-
-  // TODO(user): using the bounding area profile we can relax this reason.
-  const auto add_precise_box_energy_reason = [&](int b) {
-    x_.AddStartMinReason(b, x_.StartMin(b));
-    x_.AddEndMaxReason(b, x_.EndMax(b));
-    x_.AddSizeMinReason(b, x_.SizeMin(b));
-    y_.AddStartMinReason(b, y_.StartMin(b));
-    y_.AddEndMaxReason(b, y_.EndMax(b));
-    y_.AddSizeMinReason(b, y_.SizeMin(b));
-    x_.AddPresenceReason(b);
-    y_.AddPresenceReason(b);
-  };
-
-  for (int i = 0; i < neighbors_.size(); ++i) {
-    const int other_box = neighbors_[i].box;
-    const Rectangle& other = cached_rectangles_[other_box];
-    CHECK_GT(cached_energies_[other_box], 0);
-
-    // Update Bounding box.
-    area.TakeUnionWith(other);
-    if (area.x_max - area.x_min > threshold_x_) break;
-    if (area.y_max - area.y_min > threshold_y_) break;
-
-    // Update precise bounding area.
-    // TODO(user): speed up (cache, maintain profile, ...)
-    bounding_area.AddRectangle(other.x_min, other.x_max, other.y_min,
-                               other.y_max);
-
-    // Update sum of areas.
-    sum_of_areas += cached_energies_[other_box];
-    const IntegerValue bounding_rectangle_area =
-        (area.x_max - area.x_min) * (area.y_max - area.y_min);
-    const IntegerValue precise_area = bounding_area.GetBoundingArea();
-
-    if (precise_area >= total_sum_of_areas) {
-      // Nothing will be deduced. Exiting.
-      return true;
-    }
-
-    if (sum_of_areas > precise_area) {
-      x_.ClearReason();
-      y_.ClearReason();
-      if (sum_of_areas > bounding_rectangle_area) {
-        // Use the more general relaxation.
-        add_box_energy_in_rectangle_reason(box);
-        for (int j = 0; j <= i; ++j) {
-          add_box_energy_in_rectangle_reason(neighbors_[j].box);
-        }
-      } else {
-        add_precise_box_energy_reason(box);
-        for (int j = 0; j <= i; ++j) {
-          add_precise_box_energy_reason(neighbors_[j].box);
-        }
-      }
-      x_.ImportOtherReasons(y_);
-      return x_.ReportConflict();
-    }
-  }
-  return true;
 }
 
 namespace {
@@ -421,6 +239,9 @@ void NonOverlappingRectanglesDisjunctivePropagator::Register(
   global_x_.WatchAllTasks(slow_id, watcher_);
   global_y_.WatchAllTasks(slow_id, watcher_);
 }
+
+#define RETURN_IF_FALSE(f) \
+  if (!(f)) return false;
 
 bool NonOverlappingRectanglesDisjunctivePropagator::
     FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
