@@ -5,9 +5,7 @@ FROM ubuntu:18.04 AS env
 ##  SETUP  ##
 #############
 RUN apt update -qq \
-&& apt install -yq \
- git pkg-config wget make autoconf libtool zlib1g-dev gawk curl subversion \
- lsb-release \
+&& apt install -yq git wget build-essential zlib1g-dev \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

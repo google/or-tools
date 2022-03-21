@@ -1,19 +1,11 @@
 FROM ubuntu:20.04
 
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-&& DEBIAN_FRONTEND=noninteractive apt-get install -yq \
- build-essential zlib1g-dev \
+&& apt-get install -yq build-essential zlib1g-dev \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# GCC 11
-RUN apt update -qq \
-&& apt install -yq software-properties-common \
-&& add-apt-repository -y ppa:ubuntu-toolchain-r/test \
-&& apt install -yq gcc-11 g++-11 \
-&& apt clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV CC=gcc-11 CXX=g++-11
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
 

@@ -6,10 +6,9 @@ FROM ubuntu:21.10 AS env
 #############
 ##  SETUP  ##
 #############
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update -qq \
-&& DEBIAN_FRONTEND=noninteractive apt install -yq \
- git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
- lsb-release \
+&& apt install -yq git wget build-essential zlib1g-dev \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENTRYPOINT ["/usr/bin/bash", "-c"]

@@ -1,8 +1,8 @@
 FROM ubuntu:20.04
 
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq \
-&& DEBIAN_FRONTEND=noninteractive apt-get install -yq \
- build-essential zlib1g-dev default-jdk maven \
+&& apt-get install -yq build-essential zlib1g-dev default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV JAVA_HOME=/usr/lib/jvm/default-java
