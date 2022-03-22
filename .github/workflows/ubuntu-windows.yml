@@ -76,6 +76,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, ubuntu-20.04]
+        python-version: ['3.10']
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
@@ -84,6 +85,7 @@ jobs:
         exclude:
           - xprs: OFF
             sirius: OFF
+
           - os: windows-2019
             shared: ON
           - os: windows-2019
@@ -101,7 +103,6 @@ jobs:
             dotnet: ON
             java: ON
             python: OFF
-            python-version: '3.7'
           - extras: ON
             publish-or: OFF
             dotnet: OFF
@@ -131,8 +132,6 @@ jobs:
             java: OFF
             python: OFF
             dotnet: OFF
-            python-version: '3.7'
-
 
     steps:
       - name: check windows space
