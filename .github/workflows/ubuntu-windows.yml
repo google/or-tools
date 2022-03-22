@@ -12,6 +12,7 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
 
 jobs:
+
   build_sirius:
     name: ${{ matrix.os }} build sirius
     runs-on: ${{ matrix.os }}
@@ -75,11 +76,11 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, ubuntu-20.04]
-        python-version: [3.10]
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
+
         exclude:
           - xprs: OFF
             sirius: OFF
@@ -100,35 +101,38 @@ jobs:
             dotnet: ON
             java: ON
             python: OFF
+            python-version: '3.7'
           - extras: ON
             publish-or: OFF
             dotnet: OFF
             java: OFF
             python: ON
-            python-version: 3.7
+            python-version: '3.7'
           - extras: ON
             publish-or: OFF
             dotnet: OFF
             java: OFF
             python: ON
-            python-version: 3.8
+            python-version: '3.8'
           - extras: ON
             publish-or: OFF
             dotnet: OFF
             java: OFF
             python: ON
-            python-version: 3.9
+            python-version: '3.9'
           - extras: ON
             publish-or: OFF
             dotnet: OFF
             java: OFF
             python: ON
-            python-version: 3.10
+            python-version: '3.10'
           - extras: OFF
             publish-or: ON
             java: OFF
             python: OFF
             dotnet: OFF
+            python-version: '3.7'
+
 
     steps:
       - name: check windows space
