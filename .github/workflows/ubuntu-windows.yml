@@ -102,37 +102,31 @@ jobs:
             dotnet: ON
             java: ON
             python: OFF
-            python-version: '3.7'
           - extras: ON
             publish-or: OFF
             dotnet: OFF
             java: OFF
             python: ON
-            python-version: '3.7'
           - extras: ON
             publish-or: OFF
             dotnet: OFF
             java: OFF
             python: ON
-            python-version: '3.8'
           - extras: ON
             publish-or: OFF
             dotnet: OFF
             java: OFF
             python: ON
-            python-version: '3.9'
           - extras: ON
             publish-or: OFF
             dotnet: OFF
             java: OFF
             python: ON
-            python-version: '3.10'
           - extras: OFF
             publish-or: ON
             java: OFF
             python: OFF
             dotnet: OFF
-            python-version: '3.7'
 
 
     steps:
