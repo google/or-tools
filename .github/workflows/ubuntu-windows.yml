@@ -65,7 +65,7 @@ jobs:
 
   build:
     needs: [build_sirius]
-    name: ${{ matrix.os }} shared=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }} dotnet=${{ matrix.dotnet }}
+    name: ${{ matrix.os }} shrd=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }} python=${{ matrix.python }}-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     env:
       Sirius_Ref: antares_integration
@@ -76,7 +76,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, ubuntu-20.04]
-        python-version: ['3.7']
+
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
@@ -98,13 +98,41 @@ jobs:
             extras: OFF
         include:
           - extras: ON
+            publish-or: ON
             dotnet: ON
             java: ON
+            python: OFF
+            python-version: '3.7'
+          - extras: ON
+            publish-or: OFF
+            dotnet: OFF
+            java: OFF
             python: ON
+            python-version: '3.7'
+          - extras: ON
+            publish-or: OFF
+            dotnet: OFF
+            java: OFF
+            python: ON
+            python-version: '3.8'
+          - extras: ON
+            publish-or: OFF
+            dotnet: OFF
+            java: OFF
+            python: ON
+            python-version: '3.9'
+          - extras: ON
+            publish-or: OFF
+            dotnet: OFF
+            java: OFF
+            python: ON
+            python-version: '3.10'
           - extras: OFF
+            publish-or: ON
             java: OFF
             python: OFF
             dotnet: OFF
+            python-version: '3.7'
 
 
     steps:
@@ -217,7 +245,7 @@ jobs:
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
 
       - name: Build & run CMake example project linux
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.os, 'ubuntu') && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./examples/cmake/linear_programming/
         run: |
           cmake -Bbuild -S. \
@@ -236,7 +264,7 @@ jobs:
           build\Release\linear_programming.exe
 
       - name: Prepare ortools install
-        if: ${{ matrix.dotnet == 'OFF' }}
+        if: ${{ matrix.publish-or == 'ON' }}
         id: or-install
         shell: bash
         run: |
@@ -251,20 +279,19 @@ jobs:
 
       - name: Upload ortools install artifact
         uses: actions/upload-artifact@v2
-        if: ${{ matrix.dotnet == 'OFF' }}
+        if: ${{ matrix.publish-or == 'ON' }}
         with:
           name: ${{ steps.or-install.outputs.ortools_archive_name }}
           path: ${{ steps.or-install.outputs.ortools_archive_path }}
 
       - name: Publish ortools install asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.dotnet == 'OFF' }}
+        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.publish-or == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ${{ steps.or-install.outputs.ortools_archive_path }}
           asset_name: ${{ steps.or-install.outputs.ortools_archive_name }}
           asset_content_type: application/zip
-
 
       - name: Run sirius_interface unittests
         if: ${{ matrix.sirius == 'ON' }}
