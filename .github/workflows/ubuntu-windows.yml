@@ -76,7 +76,6 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, ubuntu-20.04]
-
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
@@ -175,7 +174,7 @@ jobs:
           os: ${{ matrix.os }}
           python-version: ${{ matrix.python-version }}
           dotnet: ${{ matrix.dotnet }}
-          python: ${{ matrix.python }}
+          python: 'ON'
 
       - name: Download sirius
         uses: actions/download-artifact@v2
