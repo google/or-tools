@@ -76,7 +76,8 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, ubuntu-20.04]
-        python-version: ['3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python: [ON, OFF]
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
@@ -96,6 +97,12 @@ jobs:
           - os: ubuntu-20.04
             shared: ON
             extras: OFF
+          - python: OFF
+            python-version: '3.7'
+          - python: OFF
+            python-version: '3.8'
+          - python: OFF
+            python-version: '3.9'
         include:
           - extras: ON
             publish-or: ON
