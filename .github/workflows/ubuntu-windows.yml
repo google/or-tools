@@ -81,11 +81,9 @@ jobs:
         sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
-
         exclude:
           - xprs: OFF
             sirius: OFF
-
           - os: windows-2019
             shared: ON
           - os: windows-2019
