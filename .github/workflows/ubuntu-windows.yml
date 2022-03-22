@@ -76,6 +76,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, ubuntu-20.04]
+        python-version: ['3.7']
         xprs: [ON, OFF]
         sirius: [ON, OFF]
         shared: [ON, OFF]
@@ -131,7 +132,6 @@ jobs:
         uses:
           bruceadams/get-release@v1.2.3
 
-
       - name: Checkout or-tools
         uses: actions/checkout@v2
 
@@ -145,7 +145,7 @@ jobs:
         uses: ./.github/workflows/setup-env
         with:
           os: ${{ matrix.os }}
-          python-version: '3.10'
+          python-version: ${{ matrix.python-version }}
           dotnet: ${{ matrix.dotnet }}
           python: ${{ matrix.python }}
 
@@ -194,13 +194,6 @@ jobs:
           echo "${{ env.SIRIUS_INSTALL_PATH }}\bin" >> $GITHUB_PATH
 
       - name: Configure or-tools
-        if: ${{ matrix.dotnet == 'OFF' }}
-        shell: bash
-        run: |
-          cmake -S . -B build -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
-
-      - name: Configure or-tools dotnet
-        if: ${{ matrix.dotnet == 'ON' }}
         shell: bash
         run: |
           cmake -S . -B build -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
@@ -212,8 +205,7 @@ jobs:
       - name: Build Linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
-        run: |
-          cmake --build build --config Release --target all install -j2
+        run: cmake --build build --config Release --target all install -j2
       - name: Build windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
@@ -243,11 +235,6 @@ jobs:
           cmake --build build --config Release
           build\Release\linear_programming.exe
 
-
-      - name: check windows space
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: Get-PSDrive
-
       - name: Prepare ortools install
         if: ${{ matrix.dotnet == 'OFF' }}
         id: or-install
@@ -261,10 +248,6 @@ jobs:
           zip -r "$ARCHIVE_PATH" ./install
           echo "::set-output name=ortools_archive_name::$ARCHIVE_NAME"
           echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
-
-      - name: check windows space
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: Get-PSDrive
 
       - name: Upload ortools install artifact
         uses: actions/upload-artifact@v2
