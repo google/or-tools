@@ -109,36 +109,20 @@ jobs:
             python-version: '3.9'
         include:
           - extras: ON
+            python: OFF
             publish-or: ON
             dotnet: ON
             java: ON
-            python: OFF
           - extras: ON
+            python: ON
             publish-or: OFF
             dotnet: OFF
             java: OFF
-            python: ON
-          - extras: ON
-            publish-or: OFF
-            dotnet: OFF
-            java: OFF
-            python: ON
-          - extras: ON
-            publish-or: OFF
-            dotnet: OFF
-            java: OFF
-            python: ON
-          - extras: ON
-            publish-or: OFF
-            dotnet: OFF
-            java: OFF
-            python: ON
           - extras: OFF
+            python: OFF
             publish-or: ON
             java: OFF
-            python: OFF
             dotnet: OFF
-
 
     steps:
       - name: check windows space
@@ -184,6 +168,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           dotnet: ${{ matrix.dotnet }}
           python: 'ON'
+
+      - name: Display Python version
+        run: python --version
 
       - name: Download sirius
         uses: actions/download-artifact@v2
