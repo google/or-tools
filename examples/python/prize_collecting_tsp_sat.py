@@ -150,13 +150,13 @@ def main():
 
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
-    solver.parameters.max_time_in_seconds = 10.0
     # To benefit from the linearization of the circuit constraint.
     solver.parameters.linearization_level = 2
+    solver.parameters.max_time_in_seconds = 10.0
+    #solver.parameters.log_search_progress = True
 
     solver.Solve(model)
-    print(solver.ResponseStats())
+    #print(solver.ResponseStats())
     print_solution(solver, visited_nodes, used_arcs, num_nodes)
 
 
