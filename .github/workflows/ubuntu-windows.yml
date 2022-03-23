@@ -180,6 +180,10 @@ jobs:
         shell: bash
         run: which python
 
+      - name: Display Github path
+        shell: bash
+        run: echo $GITHUB_PATH
+
       - name: Download sirius
         uses: actions/download-artifact@v2
         with:
