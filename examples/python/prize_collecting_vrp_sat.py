@@ -64,44 +64,52 @@ VISIT_VALUES = [60_000, 50_000, 40_000, 30_000] * (len(DISTANCE_MATRIX) // 4)
 VISIT_VALUES[0] = 0
 
 # Create a console solution printer.
-def print_solution(solver, visited_nodes, used_arcs, num_nodes):
+def print_solution(solver, visited_nodes, used_arcs, num_nodes, num_vehicles):
     """Prints solution on console."""
     # Display dropped nodes.
     dropped_nodes = 'Dropped nodes:'
-    for i in range(num_nodes):
-        if i == 0:
+    for node in range(num_nodes):
+        if node == 0:
             continue
-        if not solver.BooleanValue(visited_nodes[i]):
-            dropped_nodes += f' {i}({VISIT_VALUES[i]})'
+        is_visited = sum([solver.BooleanValue(visited_nodes[v][node]) for v in range(num_vehicles)])
+        if not is_visited:
+            dropped_nodes += f' {node}({VISIT_VALUES[node]})'
     print(dropped_nodes)
     # Display routes
-    current_node = 0
-    plan_output = 'Route for vehicle 0:\n'
-    route_distance = 0
-    value_collected = 0
-    route_is_finished = False
-    while not route_is_finished:
-        value_collected += VISIT_VALUES[current_node]
-        plan_output += f' {current_node} ->'
-        # find next node
-        for node in range(num_nodes):
-            if node == current_node:
-                continue
-            if solver.BooleanValue(used_arcs[current_node, node]):
-                route_distance += DISTANCE_MATRIX[current_node][node]
-                current_node = node
-                if current_node == 0:
-                    route_is_finished = True
-                break
-    plan_output += f' {current_node}\n'
-    plan_output += f'Distance of the route: {route_distance}m\n'
-    plan_output += f'Value collected: {value_collected}\n'
-    print(plan_output)
+    total_distance = 0
+    total_value_collected = 0
+    for v in range(num_vehicles):
+        current_node = 0
+        plan_output = f'Route for vehicle {v}:\n'
+        route_distance = 0
+        value_collected = 0
+        route_is_finished = False
+        while not route_is_finished:
+            value_collected += VISIT_VALUES[current_node]
+            plan_output += f' {current_node} ->'
+            # find next node
+            for node in range(num_nodes):
+                if node == current_node:
+                    continue
+                if solver.BooleanValue(used_arcs[v][current_node, node]):
+                    route_distance += DISTANCE_MATRIX[current_node][node]
+                    current_node = node
+                    if current_node == 0:
+                        route_is_finished = True
+                    break
+        plan_output += f' {current_node}\n'
+        plan_output += f'Distance of the route: {route_distance}m\n'
+        plan_output += f'Value collected: {value_collected}\n'
+        print(plan_output)
+        total_distance += route_distance
+        total_value_collected += value_collected
+    print(f'Total Distance: {total_distance}m')
+    print(f'Total Value collected: {total_value_collected}')
 
 def main():
     """Entry point of the program."""
     num_nodes = len(DISTANCE_MATRIX)
-    all_nodes = range(num_nodes)
+    num_vehicles = 4
     print(f'Num nodes = {num_nodes}')
 
     # Model.
@@ -109,40 +117,47 @@ def main():
 
     obj_vars = []
     obj_coeffs = []
-    visited_nodes = []
+    visited_nodes = {}
     used_arcs = {}
 
     # Create the circuit constraint.
-    arcs = []
-    for i in all_nodes:
-        is_visited = model.NewBoolVar(f'{i} is visited')
-        arcs.append([i, i, is_visited.Not()])
+    all_nodes = range(num_nodes)
+    for v in range(num_vehicles):
+        visited_nodes[v] = []
+        used_arcs[v] = {}
+        arcs = []
+        for i in all_nodes:
+            is_visited = model.NewBoolVar(f'{i} is visited')
+            arcs.append([i, i, is_visited.Not()])
 
-        obj_vars.append(is_visited)
-        obj_coeffs.append(VISIT_VALUES[i])
-        visited_nodes.append(is_visited)
+            obj_vars.append(is_visited)
+            obj_coeffs.append(VISIT_VALUES[i])
+            visited_nodes[v].append(is_visited)
 
-        for j in all_nodes:
-            if i == j:
-                used_arcs[i, j] = is_visited.Not()
-                continue
-            arc_is_used = model.NewBoolVar(f'{j} follows {i}')
-            arcs.append([i, j, arc_is_used])
+            for j in all_nodes:
+                if i == j:
+                    used_arcs[v][i, j] = is_visited.Not()
+                    continue
+                arc_is_used = model.NewBoolVar(f'{j} follows {i}')
+                arcs.append([i, j, arc_is_used])
 
-            obj_vars.append(arc_is_used)
-            obj_coeffs.append(-DISTANCE_MATRIX[i][j])
-            used_arcs[i, j] = arc_is_used
+                obj_vars.append(arc_is_used)
+                obj_coeffs.append(-DISTANCE_MATRIX[i][j])
+                used_arcs[v][i, j] = arc_is_used
 
-    model.AddCircuit(arcs)
+        model.AddCircuit(arcs)
 
-    # Node 0 must be visited.
-    model.Add(visited_nodes[0] == 1)
+        # Node 0 must be visited.
+        model.Add(visited_nodes[v][0] == 1)
 
-    # limit the route distance
-    model.Add(sum(used_arcs[i, j] * DISTANCE_MATRIX[i][j]
-        for i in all_nodes
-        for j in all_nodes) <= MAX_DISTANCE)
+        # limit the route distance
+        model.Add(sum(used_arcs[v][i, j] * DISTANCE_MATRIX[i][j]
+            for i in all_nodes
+            for j in all_nodes) <= MAX_DISTANCE)
 
+    # Each node is visited at most once
+    for node in range(1, num_nodes):
+        model.AddAtMostOne([visited_nodes[v][node] for v in range(num_vehicles)])
 
     # Maximize visited node values minus the travelled distance.
     model.Maximize(
@@ -157,7 +172,7 @@ def main():
 
     solver.Solve(model)
     print(solver.ResponseStats())
-    print_solution(solver, visited_nodes, used_arcs, num_nodes)
+    print_solution(solver, visited_nodes, used_arcs, num_nodes, num_vehicles)
 
 
 

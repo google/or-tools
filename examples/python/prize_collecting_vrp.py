@@ -11,9 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Simple prize collecting TSP problem with a max distance."""
+"""Simple prize collecting VRP problem with a max distance."""
 
-from ortools.sat.python import cp_model
+from ortools.constraint_solver import routing_enums_pb2
+from ortools.constraint_solver import pywrapcp
 
 DISTANCE_MATRIX = [
     [0, 10938, 4542, 2835, 29441, 2171, 1611, 9208, 9528, 11111, 16120, 22606, 22127, 20627, 21246, 23387, 16697, 33609, 26184, 24772, 22644, 20655, 30492, 23296, 32979, 18141, 19248, 17129, 17192, 15645, 12658, 11210, 12094, 13175, 18162, 4968, 12308, 10084, 13026, 15056],
@@ -63,102 +64,186 @@ MAX_DISTANCE = 80_000
 VISIT_VALUES = [60_000, 50_000, 40_000, 30_000] * (len(DISTANCE_MATRIX) // 4)
 VISIT_VALUES[0] = 0
 
+
 # Create a console solution printer.
-def print_solution(solver, visited_nodes, used_arcs, num_nodes):
-    """Prints solution on console."""
-    # Display dropped nodes.
+def print_solution(manager, routing, assignment):
+    """Prints assignment on console."""
+    print(f'Objective: {assignment.ObjectiveValue()}')
+   # Display dropped nodes.
     dropped_nodes = 'Dropped nodes:'
-    for i in range(num_nodes):
-        if i == 0:
+    for index in range(routing.Size()):
+        if routing.IsStart(index) or routing.IsEnd(index):
             continue
-        if not solver.BooleanValue(visited_nodes[i]):
-            dropped_nodes += f' {i}({VISIT_VALUES[i]})'
+        if assignment.Value(routing.NextVar(index)) == index:
+            node = manager.IndexToNode(index)
+            dropped_nodes += f' {node}({VISIT_VALUES[node]})'
     print(dropped_nodes)
     # Display routes
-    current_node = 0
-    plan_output = 'Route for vehicle 0:\n'
-    route_distance = 0
-    value_collected = 0
-    route_is_finished = False
-    while not route_is_finished:
-        value_collected += VISIT_VALUES[current_node]
-        plan_output += f' {current_node} ->'
-        # find next node
-        for node in range(num_nodes):
-            if node == current_node:
-                continue
-            if solver.BooleanValue(used_arcs[current_node, node]):
-                route_distance += DISTANCE_MATRIX[current_node][node]
-                current_node = node
-                if current_node == 0:
-                    route_is_finished = True
-                break
-    plan_output += f' {current_node}\n'
-    plan_output += f'Distance of the route: {route_distance}m\n'
-    plan_output += f'Value collected: {value_collected}\n'
-    print(plan_output)
+    total_distance = 0
+    total_value_collected = 0
+    for v in range(manager.GetNumberOfVehicles()):
+        index = routing.Start(v)
+        plan_output = f'Route for vehicle {v}:\n'
+        route_distance = 0
+        value_collected = 0
+        while not routing.IsEnd(index):
+            node = manager.IndexToNode(index)
+            value_collected += VISIT_VALUES[node]
+            plan_output += f' {node} ->'
+            previous_index = index
+            index = assignment.Value(routing.NextVar(index))
+            route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+        plan_output += f' {manager.IndexToNode(index)}\n'
+        plan_output += f'Distance of the route: {route_distance}m\n'
+        plan_output += f'Value collected: {value_collected}\n'
+        print(plan_output)
+        total_distance += route_distance
+        total_value_collected += value_collected
+    print(f'Total Distance: {total_distance}m')
+    print(f'Total Value collected: {total_value_collected}')
+
 
 def main():
     """Entry point of the program."""
     num_nodes = len(DISTANCE_MATRIX)
-    all_nodes = range(num_nodes)
     print(f'Num nodes = {num_nodes}')
+    num_vehicles = 4
+    depot = 0
+    all_nodes = range(num_nodes)
 
-    # Model.
-    model = cp_model.CpModel()
+    # Create the routing index manager.
+    manager = pywrapcp.RoutingIndexManager(
+            num_nodes,
+            num_vehicles,
+            depot)
 
-    obj_vars = []
-    obj_coeffs = []
-    visited_nodes = []
-    used_arcs = {}
+    # Create routing model.
+    routing = pywrapcp.RoutingModel(manager)
 
-    # Create the circuit constraint.
-    arcs = []
-    for i in all_nodes:
-        is_visited = model.NewBoolVar(f'{i} is visited')
-        arcs.append([i, i, is_visited.Not()])
+    # Create and register a transit callback.
+    def distance_callback(from_index, to_index):
+        """Returns the distance between the two nodes."""
+        # Convert from routing variable Index to distance matrix NodeIndex.
+        from_node = manager.IndexToNode(from_index)
+        to_node = manager.IndexToNode(to_index)
+        return DISTANCE_MATRIX[from_node][to_node]
 
-        obj_vars.append(is_visited)
-        obj_coeffs.append(VISIT_VALUES[i])
-        visited_nodes.append(is_visited)
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
 
-        for j in all_nodes:
-            if i == j:
-                used_arcs[i, j] = is_visited.Not()
-                continue
-            arc_is_used = model.NewBoolVar(f'{j} follows {i}')
-            arcs.append([i, j, arc_is_used])
+    # Define cost of each arc.
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
-            obj_vars.append(arc_is_used)
-            obj_coeffs.append(-DISTANCE_MATRIX[i][j])
-            used_arcs[i, j] = arc_is_used
+    # Limit Vehicle distance.
+    dimension_name = 'Distance'
+    routing.AddDimension(
+        transit_callback_index,
+        0,  # no slack
+        MAX_DISTANCE,  # vehicle maximum travel distance
+        True,  # start cumul to zero
+        dimension_name)
+    distance_dimension = routing.GetDimensionOrDie(dimension_name)
+    distance_dimension.SetGlobalSpanCostCoefficient(1)
 
-    model.AddCircuit(arcs)
+    # Allow to drop nodes.
+    for node in range(1, num_nodes):
+        routing.AddDisjunction(
+                [manager.NodeToIndex(node)],
+                VISIT_VALUES[node])
 
-    # Node 0 must be visited.
-    model.Add(visited_nodes[0] == 1)
+    # Setting first solution heuristic.
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+    search_parameters.first_solution_strategy = (
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+    search_parameters.local_search_metaheuristic = (
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+    search_parameters.time_limit.FromSeconds(10)
+    #search_parameters.log_search = True
 
-    # limit the route distance
-    model.Add(sum(used_arcs[i, j] * DISTANCE_MATRIX[i][j]
-        for i in all_nodes
-        for j in all_nodes) <= MAX_DISTANCE)
+    # Solve the problem.
+    assignment = routing.SolveWithParameters(search_parameters)
+
+    # Print solution on console.
+    if assignment:
+        print_solution(manager, routing, assignment)
 
 
-    # Maximize visited node values minus the travelled distance.
-    model.Maximize(
-        sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+    #obj_vars = []
+    #obj_coeffs = []
 
-    # Solve and print out the solution.
-    solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
-    solver.parameters.max_time_in_seconds = 10.0
-    # To benefit from the linearization of the circuit constraint.
-    solver.parameters.linearization_level = 2
+    #visited_nodes = []
+    #arc_literals = {}
 
-    solver.Solve(model)
-    print(solver.ResponseStats())
-    print_solution(solver, visited_nodes, used_arcs, num_nodes)
+    #arcs = []
+    #for i in all_nodes:
+    #    is_visited = model.NewBoolVar(f'{i} is visited')
+    #    arcs.append([i, i, is_visited.Not()])
 
+    #    obj_vars.append(is_visited)
+    #    obj_coeffs.append(VISIT_VALUES[i])
+
+    #    visited_nodes.append(is_visited)
+
+    #    for j in all_nodes:
+    #        if i == j:
+    #            continue
+
+    #        lit = model.NewBoolVar(f'{j} follows {i}')
+    #        arcs.append([i, j, lit])
+    #        arc_literals[i, j] = lit
+
+    #        obj_vars.append(lit)
+    #        obj_coeffs.append(-DISTANCE_MATRIX[i][j])
+
+    #model.AddCircuit(arcs)
+
+    ## Node 0 must be visited.
+    #model.Add(visited_nodes[0] == 1)
+
+    ## Maximize visited node values minus the travelled distance.
+    #model.Maximize(
+    #    sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+
+    ## Solve and print out the solution.
+    #solver = cp_model.CpSolver()
+    #solver.parameters.log_search_progress = True
+    ## To benefit from the linearization of the circuit constraint.
+    #solver.parameters.linearization_level = 2
+
+    #solver.Solve(model)
+    #print(solver.ResponseStats())
+
+    #first_visited_node = -1
+    #dropped_nodes = '['
+    #for i in all_nodes:
+    #    if not solver.BooleanValue(visited_nodes[i]):
+    #        dropped_nodes += (f'{i}({VISIT_VALUES[i]}) ')
+    #    elif first_visited_node == -1:
+    #        first_visited_node = i
+    #dropped_nodes += ']'
+    #print('Dropped nodes:', dropped_nodes)
+
+    #if first_visited_node != -1:
+    #    current_node = first_visited_node
+    #    str_route = f'{current_node}'
+    #    route_is_finished = False
+    #    route_distance = 0
+    #    value_collected = 0
+    #    while not route_is_finished:
+    #        value_collected += VISIT_VALUES[current_node]
+    #        for i in all_nodes:
+    #            if i == current_node:
+    #                continue
+    #            if solver.BooleanValue(arc_literals[current_node, i]):
+    #                str_route += f' -> {i}'
+    #                route_distance += DISTANCE_MATRIX[current_node][i]
+    #                current_node = i
+    #                if current_node == first_visited_node:
+    #                    route_is_finished = True
+    #                break
+
+    #    print('Route:', str_route)
+    #    print('Travelled distance:', route_distance)
+    #    print('Value collected: ', value_collected)
 
 
 if __name__ == '__main__':
