@@ -122,7 +122,6 @@ jobs:
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
           SIRIUS_BIN_DIR: "${{ github.workspace }}/sirius-solver/SiriusInstall/bin"
-          XPRESS_BIN_DIR: "${{ github.workspace }}/xpressmp813/bin"
       - name: Run specific java tests
         working-directory: ./or-tools/build
         env:
