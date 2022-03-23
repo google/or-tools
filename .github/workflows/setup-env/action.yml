@@ -23,7 +23,7 @@ runs:
       shell: bash
       run: which python
 
-    - name: install zip 7zip for windows
+    - name: install zip for windows
       if: ${{ startsWith(inputs.os, 'windows') }}
       shell: cmd
       run: |

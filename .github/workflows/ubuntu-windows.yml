@@ -136,6 +136,13 @@ jobs:
         shell: bash
         run: which python
 
+      - name: Pip install reqs
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
+
+
       - name: set name variables
         id: names
         shell: bash
