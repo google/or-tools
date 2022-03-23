@@ -75,12 +75,13 @@ jobs:
       XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
       SIRIUS_INSTALL_PATH : ${{ github.workspace }}/sirius_install
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-2019, ubuntu-20.04]
-        python-version: ['3.7', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
         python: [ON, OFF]
         xprs: [ON]
-        sirius: [ON]
+        sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
 
@@ -98,6 +99,8 @@ jobs:
           - os: ubuntu-20.04
             shared: ON
             extras: OFF
+          - extras: OFF
+            python: ON
           - python: OFF
             python-version: '3.7'
           - python: OFF
