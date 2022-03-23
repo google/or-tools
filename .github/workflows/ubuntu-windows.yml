@@ -132,6 +132,10 @@ jobs:
       - name: Display Python version
         run: python --version
 
+      - name: Display Python path
+        shell: bash
+        run: which python
+
       - name: set name variables
         id: names
         shell: bash
@@ -171,6 +175,10 @@ jobs:
 
       - name: Display Python version
         run: python --version
+
+      - name: Display Python path
+        shell: bash
+        run: which python
 
       - name: Download sirius
         uses: actions/download-artifact@v2
