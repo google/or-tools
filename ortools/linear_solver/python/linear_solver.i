@@ -32,7 +32,7 @@
 import os as _os
 if hasattr(_os, 'add_dll_directory'):
 try:
-    _os.add_dll_directory(_os.getenv('SIRIUS_BIN_DIR'))
+    _os.add_dll_directory(_os.getenv('SIRIUS'))
 catch AttributeError:
     pass
 try:

@@ -121,7 +121,7 @@ jobs:
         run: ctest -V -C Release -R python_python_linear_programming
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
-          SIRIUS_BIN_DIR: "${{ github.workspace }}/sirius-solver/SiriusInstall/bin"
+          SIRIUS: "${{ github.workspace }}/sirius-solver/SiriusInstall/bin"
       - name: Run specific java tests
         working-directory: ./or-tools/build
         env:
