@@ -136,13 +136,6 @@ jobs:
         shell: bash
         run: which python
 
-      - name: Pip install reqs
-        shell: bash
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
-
-
       - name: set name variables
         id: names
         shell: bash
@@ -239,19 +232,20 @@ jobs:
           echo "${{ env.XPRESS }}" >> $GITHUB_PATH
           echo "${{ env.SIRIUS_INSTALL_PATH }}\bin" >> $GITHUB_PATH
 
-      - name: Configure or-tools
+      - name: Configure or-tools Linux
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: |
           cmake -S . -B build -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
-
-      - name: check windows space
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: Get-PSDrive
 
       - name: Build Linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: cmake --build build --config Release --target all install -j2
+
+      - name: Configure or-tools Windows
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: cmake -S . -B build -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
       - name: Build windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
