@@ -24,63 +24,212 @@
 
 namespace operations_research {
 
-std::string ModelBuilderHelper::ExportModelProtoToMpsString(
-    const MPModelProto& input_model, const MPModelExportOptions& options) {
-  return operations_research::ExportModelAsMpsFormat(input_model, options)
+std::string ModelBuilderHelper::ExportToMpsString(
+    const MPModelExportOptions& options) {
+  return operations_research::ExportModelAsMpsFormat(request_.model(), options)
       .value_or("");
 }
 
-std::string ModelBuilderHelper::ExportModelProtoToLpString(
-    const MPModelProto& input_model, const MPModelExportOptions& options) {
-  return operations_research::ExportModelAsLpFormat(input_model, options)
+std::string ModelBuilderHelper::ExportToLpString(
+    const MPModelExportOptions& options) {
+  return operations_research::ExportModelAsLpFormat(request_.model(), options)
       .value_or("");
+}
+
+bool ModelBuilderHelper::WriteModelToFile(const std::string& filename) {
+  if (absl::EndsWith(filename, "txt")) {
+    return file::SetTextProto(filename, request_.model(), file::Defaults())
+        .ok();
+  } else {
+    return file::SetBinaryProto(filename, request_.model(), file::Defaults())
+        .ok();
+  }
+}
+
+bool ModelBuilderHelper::WriteRequestToFile(const std::string& filename) {
+  if (absl::EndsWith(filename, "txt")) {
+    return file::SetTextProto(filename, request_, file::Defaults()).ok();
+  } else {
+    return file::SetBinaryProto(filename, request_, file::Defaults()).ok();
+  }
 }
 
 // See comment in the header file why we need to wrap absl::Status code with
 // code having simpler APIs.
-MPModelProto ModelBuilderHelper::ImportFromMpsString(
-    const std::string& mps_string) {
+bool ModelBuilderHelper::ImportFromMpsString(const std::string& mps_string) {
   absl::StatusOr<MPModelProto> model_or =
       operations_research::glop::MpsDataToMPModelProto(mps_string);
-  if (model_or.ok()) return model_or.value();
-  MPModelProto model;
-  model.set_name("Invalid model");
-  return model;
+  if (!model_or.ok()) return false;
+  *request_.mutable_model() = model_or.value();
+  return true;
 }
 
-MPModelProto ModelBuilderHelper::ImportFromMpsFile(
-    const std::string& mps_file) {
+bool ModelBuilderHelper::ImportFromMpsFile(const std::string& mps_file) {
   absl::StatusOr<MPModelProto> model_or =
       operations_research::glop::MpsDataToMPModelProto(mps_file);
-  if (model_or.ok()) return model_or.value();
-  MPModelProto model;
-  model.set_name("Invalid model");
-  return model;
+  if (!model_or.ok()) return false;
+  *request_.mutable_model() = model_or.value();
+  return true;
 }
 
-MPModelProto ModelBuilderHelper::ImportFromLpString(
-    const std::string& lp_string) {
-  absl::StatusOr<MPModelProto> model_proto = ModelProtoFromLpFormat(lp_string);
-  if (model_proto.ok()) return model_proto.value();
-  MPModelProto model;
-  model.set_name("Invalid model");
-  return model;
+bool ModelBuilderHelper::ImportFromLpString(const std::string& lp_string) {
+  absl::StatusOr<MPModelProto> model_or = ModelProtoFromLpFormat(lp_string);
+  if (!model_or.ok()) return false;
+  *request_.mutable_model() = model_or.value();
+  return true;
 }
 
-MPModelProto ModelBuilderHelper::ImportFromLpFile(const std::string& lp_file) {
-  absl::StatusOr<MPModelProto> model_proto = ModelProtoFromLpFormat(lp_file);
-  if (model_proto.ok()) return model_proto.value();
-  MPModelProto model;
-  model.set_name("Invalid model");
-  return model;
+bool ModelBuilderHelper::ImportFromLpFile(const std::string& lp_file) {
+  absl::StatusOr<MPModelProto> model_or = ModelProtoFromLpFormat(lp_file);
+  if (!model_or.ok()) return false;
+  *request_.mutable_model() = model_or.value();
+  return true;
 }
 
-MPSolutionResponse ModelSolverHelper::Solve(const MPModelRequest& request) {
-  MPSolutionResponse response;
+const MPModelRequest& ModelBuilderHelper::request() const { return request_; }
+MPModelProto* ModelBuilderHelper::mutable_model() {
+  return request_.mutable_model();
+}
+MPModelRequest* ModelBuilderHelper::mutable_request() { return &request_; }
+
+int ModelBuilderHelper::AddVar() {
+  const int index = request_.model().variable_size();
+  request_.mutable_model()->add_variable();
+  return index;
+}
+
+void ModelBuilderHelper::SetVarLowerBound(int var_index, double lb) {
+  request_.mutable_model()->mutable_variable(var_index)->set_lower_bound(lb);
+}
+
+void ModelBuilderHelper::SetVarUpperBound(int var_index, double ub) {
+  request_.mutable_model()->mutable_variable(var_index)->set_upper_bound(ub);
+}
+
+void ModelBuilderHelper::SetVarInteger(int var_index, bool is_integer) {
+  request_.mutable_model()->mutable_variable(var_index)->set_is_integer(
+      is_integer);
+}
+
+void ModelBuilderHelper::SetVarObjectiveCoefficient(int var_index,
+                                                    double coeff) {
+  request_.mutable_model()
+      ->mutable_variable(var_index)
+      ->set_objective_coefficient(coeff);
+}
+
+void ModelBuilderHelper::SetVarName(int var_index, const std::string& name) {
+  request_.mutable_model()->mutable_variable(var_index)->set_name(name);
+}
+
+int ModelBuilderHelper::AddLinearConstraint() {
+  const int index = request_.model().constraint_size();
+  request_.mutable_model()->add_constraint();
+  return index;
+}
+
+void ModelBuilderHelper::SetConstraintLowerBound(int ct_index, double lb) {
+  request_.mutable_model()->mutable_constraint(ct_index)->set_lower_bound(lb);
+}
+
+void ModelBuilderHelper::SetConstraintUpperBound(int ct_index, double ub) {
+  request_.mutable_model()->mutable_constraint(ct_index)->set_upper_bound(ub);
+}
+
+void ModelBuilderHelper::AddConstraintTerm(int ct_index, int var_index,
+                                           double coeff) {
+  MPConstraintProto* ct_proto =
+      request_.mutable_model()->mutable_constraint(ct_index);
+  ct_proto->add_var_index(var_index);
+  ct_proto->add_coefficient(coeff);
+}
+
+void ModelBuilderHelper::SetConstraintName(int ct_index,
+                                           const std::string& name) {
+  request_.mutable_model()->mutable_constraint(ct_index)->set_name(name);
+}
+
+int ModelBuilderHelper::num_variables() const {
+  return request_.model().variable_size();
+}
+
+double ModelBuilderHelper::VarLowerBound(int var_index) const {
+  return request_.model().variable(var_index).lower_bound();
+}
+
+double ModelBuilderHelper::VarUpperBound(int var_index) const {
+  return request_.model().variable(var_index).upper_bound();
+}
+
+bool ModelBuilderHelper::VarIsInteger(int var_index) const {
+  return request_.model().variable(var_index).is_integer();
+}
+
+double ModelBuilderHelper::VarObjectiveCoefficient(int var_index) const {
+  return request_.model().variable(var_index).objective_coefficient();
+}
+
+std::string ModelBuilderHelper::VarName(int var_index) const {
+  return request_.model().variable(var_index).name();
+}
+
+int ModelBuilderHelper::num_constraints() const {
+  return request_.model().constraint_size();
+}
+
+double ModelBuilderHelper::ConstraintLowerBound(int ct_index) const {
+  return request_.model().constraint(ct_index).lower_bound();
+}
+
+double ModelBuilderHelper::ConstraintUpperBound(int ct_index) const {
+  return request_.model().constraint(ct_index).upper_bound();
+}
+
+std::string ModelBuilderHelper::ConstraintName(int ct_index) const {
+  return request_.model().constraint(ct_index).name();
+}
+
+std::vector<int> ModelBuilderHelper::ConstraintVarIndices(int ct_index) const {
+  const MPConstraintProto& ct_proto = request_.model().constraint(ct_index);
+  return {ct_proto.var_index().begin(), ct_proto.var_index().end()};
+}
+
+std::vector<double> ModelBuilderHelper::ConstraintCoefficients(
+    int ct_index) const {
+  const MPConstraintProto& ct_proto = request_.model().constraint(ct_index);
+  return {ct_proto.coefficient().begin(), ct_proto.coefficient().end()};
+}
+
+std::string ModelBuilderHelper::name() const { return request_.model().name(); }
+
+void ModelBuilderHelper::SetName(const std::string& name) {
+  request_.mutable_model()->set_name(name);
+}
+
+bool ModelBuilderHelper::maximize() const {
+  return request_.model().maximize();
+}
+
+void ModelBuilderHelper::SetMaximize(bool maximize) {
+  request_.mutable_model()->set_maximize(maximize);
+}
+
+bool ModelBuilderHelper::SetSolverType(const std::string& solver_type) {
+  MPSolver::OptimizationProblemType parsed_type;
+  if (!MPSolver::ParseSolverType(solver_type, &parsed_type)) return false;
+  MPModelRequest::SolverType type =
+      static_cast<MPModelRequest::SolverType>(parsed_type);
+  request_.set_solver_type(type);
+  return true;
+}
+
+void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
   // TODO(user): Make compatible with solvers that don't support interrupt.
   // TODO(user): Register the log callback.
-  MPSolver::SolveWithProto(request, &response, &interrupt_solve_);
-  return response;
+  response_.reset();
+  MPSolutionResponse temp;
+  MPSolver::SolveWithProto(model.request(), &temp, &interrupt_solve_);
+  response_ = std::move(temp);
 }
 
 void ModelSolverHelper::SetLogCallback(
@@ -98,6 +247,45 @@ void ModelSolverHelper::SetLogCallbackFromDirectorClass(
 bool ModelSolverHelper::InterruptSolve() {
   interrupt_solve_ = true;
   return true;
+}
+
+bool ModelSolverHelper::has_response() const { return response_.has_value(); }
+
+const MPSolutionResponse& ModelSolverHelper::response() const {
+  return response_.value();
+}
+
+MPSolverResponseStatus ModelSolverHelper::status() const {
+  if (!has_response()) return MPSolverResponseStatus::MPSOLVER_UNKNOWN_STATUS;
+  return response_.value().status();
+}
+
+double ModelSolverHelper::objective_value() const {
+  if (!response_.has_value()) return 0.0;
+  return response_.value().objective_value();
+}
+
+double ModelSolverHelper::best_objective_bound() const {
+  if (!response_.has_value()) return 0.0;
+  return response_.value().best_objective_bound();
+}
+
+double ModelSolverHelper::variable_value(int var_index) const {
+  if (!response_.has_value()) return 0.0;
+  if (var_index >= response_.value().variable_value_size()) return 0.0;
+  return response_.value().variable_value(var_index);
+}
+
+double ModelSolverHelper::reduced_cost(int var_index) const {
+  if (!response_.has_value()) return 0.0;
+  if (var_index >= response_.value().reduced_cost_size()) return 0.0;
+  return response_.value().reduced_cost(var_index);
+}
+
+double ModelSolverHelper::dual_value(int ct_index) const {
+  if (!response_.has_value()) return 0.0;
+  if (ct_index >= response_.value().dual_value_size()) return 0.0;
+  return response_.value().dual_value(ct_index);
 }
 
 }  // namespace operations_research

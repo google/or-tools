@@ -16,6 +16,8 @@
 
 #include <atomic>
 #include <functional>
+#include <limits>
+#include <optional>
 #include <string>
 
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -42,24 +44,62 @@ namespace operations_research {
 // absl::Status or absl::StatusOr.
 class ModelBuilderHelper {
  public:
-  static std::string ExportModelProtoToMpsString(
-      const operations_research::MPModelProto& input_model,
-      const operations_research::MPModelExportOptions& options =
-          MPModelExportOptions());
+  std::string ExportToMpsString(const operations_research::MPModelExportOptions&
+                                    options = MPModelExportOptions());
+  std::string ExportToLpString(const operations_research::MPModelExportOptions&
+                                   options = MPModelExportOptions());
+  bool WriteModelToFile(const std::string& filename);
+  bool WriteRequestToFile(const std::string& filename);
 
-  static std::string ExportModelProtoToLpString(
-      const operations_research::MPModelProto& input_model,
-      const operations_research::MPModelExportOptions& options =
-          MPModelExportOptions());
+  bool ImportFromMpsString(const std::string& mps_string);
+  bool ImportFromMpsFile(const std::string& mps_file);
+  bool ImportFromLpString(const std::string& lp_string);
+  bool ImportFromLpFile(const std::string& lp_file);
 
-  static operations_research::MPModelProto ImportFromMpsString(
-      const std::string& mps_string);
-  static operations_research::MPModelProto ImportFromMpsFile(
-      const std::string& mps_file);
-  static operations_research::MPModelProto ImportFromLpString(
-      const std::string& lp_string);
-  static operations_research::MPModelProto ImportFromLpFile(
-      const std::string& lp_file);
+  const operations_research::MPModelRequest& request() const;
+  MPModelProto* mutable_model();
+  MPModelRequest* mutable_request();
+
+  // Direct low level model building API.
+  int AddVar();
+  void SetVarLowerBound(int var_index, double lb);
+  void SetVarUpperBound(int var_index, double ub);
+  void SetVarInteger(int var_index, bool is_integer);
+  void SetVarObjectiveCoefficient(int var_index, double coeff);
+  void SetVarName(int var_index, const std::string& name);
+
+  int AddLinearConstraint();
+  void SetConstraintLowerBound(int ct_index, double lb);
+  void SetConstraintUpperBound(int ct_index, double ub);
+  void AddConstraintTerm(int ct_index, int var_index, double coeff);
+  void SetConstraintName(int ct_index, const std::string& name);
+
+  int num_variables() const;
+  double VarLowerBound(int var_index) const;
+  double VarUpperBound(int var_index) const;
+  bool VarIsInteger(int var_index) const;
+  double VarObjectiveCoefficient(int var_index) const;
+  std::string VarName(int var_index) const;
+
+  int num_constraints() const;
+  double ConstraintLowerBound(int ct_index) const;
+  double ConstraintUpperBound(int ct_index) const;
+  std::string ConstraintName(int ct_index) const;
+  std::vector<int> ConstraintVarIndices(int ct_index) const;
+  std::vector<double> ConstraintCoefficients(int ct_index) const;
+
+  std::string name() const;
+  void SetName(const std::string& name);
+
+  bool maximize() const;
+  void SetMaximize(bool maximize);
+
+  bool SetSolverType(const std::string& solver_type);
+
+  // TODO(user): set parameters.
+
+ private:
+  MPModelRequest request_;
 };
 
 // Simple director class for C#.
@@ -77,8 +117,7 @@ class LogCallback {
 // search.
 class ModelSolverHelper {
  public:
-  operations_research::MPSolutionResponse Solve(
-      const operations_research::MPModelRequest& request);
+  void Solve(const ModelBuilderHelper& model);
 
   // Returns true if the interrupt signal was correctly sent, that is if the
   // underlying solver supports it.
@@ -87,9 +126,23 @@ class ModelSolverHelper {
   void SetLogCallback(std::function<void(const std::string&)> log_callback);
   void SetLogCallbackFromDirectorClass(LogCallback* log_callback);
 
+  void SetSolverTimeLimitInSecond(double limit);
+
+  bool has_response() const;
+  const MPSolutionResponse& response() const;
+  MPSolverResponseStatus status() const;
+
+  // If not defined, or no solution, they will silently return 0.
+  double objective_value() const;
+  double best_objective_bound() const;
+  double variable_value(int var_index) const;
+  double reduced_cost(int var_index) const;
+  double dual_value(int ct_index) const;
+
  private:
   std::atomic<bool> interrupt_solve_;
   std::function<void(const std::string&)> log_callback_;
+  std::optional<MPSolutionResponse> response_;
 };
 
 }  // namespace operations_research
