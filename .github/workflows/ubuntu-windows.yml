@@ -65,7 +65,8 @@ jobs:
 
   build:
     needs: [build_sirius]
-    name: ${{ matrix.os }} shrd=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }} python=${{ matrix.python }}-${{ matrix.python-version }}
+#    name: ${{ matrix.os }} shrd=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }} python=${{ matrix.python }}-${{ matrix.python-version }}
+    name: ${{ matrix.os }} shrd=${{ matrix.shared }} extras=${{ matrix.extras }} java=${{ matrix.java }} python=${{ matrix.python }}-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     env:
       Sirius_Ref: antares_integration
@@ -76,10 +77,10 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, ubuntu-20.04]
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.10']
         python: [ON, OFF]
-        xprs: [ON, OFF]
-        sirius: [ON, OFF]
+        xprs: [ON]
+        sirius: [ON]
         shared: [ON, OFF]
         extras: [ON, OFF]
 
@@ -340,7 +341,7 @@ jobs:
         shell: bash
         run: |
           cd ./build/python/dist
-          MY_DIR="ortools_wheel${{ steps.names.outputs.appendix }}"
+          MY_DIR="ortools_wheel-${{ matrix.python-version }}${{ steps.names.outputs.appendix }}"
           mkdir ${MY_DIR}
           cp *.whl "${MY_DIR}"
           ARCHIVE_NAME="${MY_DIR}.zip"
