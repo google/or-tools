@@ -19,6 +19,11 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: install zip 7zip for windows
+      if: ${{ startsWith(inputs.os, 'windows') }}
+      shell: cmd
+      run: |
+        choco install zip 7zip.install --no-progress
     - name: Setup .NET 6.0
       if: ${{ inputs.dotnet == 'ON' }}
       uses: actions/setup-dotnet@v1
@@ -37,11 +42,6 @@ runs:
         python -m pip install --upgrade pip
         python3 -m pip install mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
 
-    - name: install zip for windows
-      if: ${{ startsWith(inputs.os, 'windows') }}
-      shell: cmd
-      run: |
-        choco install zip --no-progress
     - name: Install SWIG 4.0.2 for windows
       if: ${{ startsWith(inputs.os, 'windows') }}
       shell: pwsh
