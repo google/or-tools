@@ -93,7 +93,7 @@ def print_solution(manager, routing, assignment):
 
     plan_output += f' {manager.IndexToNode(index)}\n'
     plan_output += f'Distance of the route: {route_distance}m\n'
-    plan_output += f'Value collected: {value_collected}\n'
+    plan_output += f'Value collected: {value_collected}/{sum(VISIT_VALUES)}\n'
     print(plan_output)
 
 
@@ -150,7 +150,7 @@ def main():
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
-    search_parameters.time_limit.FromSeconds(10)
+    search_parameters.time_limit.FromSeconds(15)
     #search_parameters.log_search = True
 
     # Solve the problem.

@@ -95,7 +95,7 @@ def print_solution(solver, visited_nodes, used_arcs, num_nodes):
                 break
     plan_output += f' {current_node}\n'
     plan_output += f'Distance of the route: {route_distance}m\n'
-    plan_output += f'Value collected: {value_collected}\n'
+    plan_output += f'Value collected: {value_collected}/{sum(VISIT_VALUES)}\n'
     print(plan_output)
 
 def main():
@@ -152,7 +152,7 @@ def main():
     solver = cp_model.CpSolver()
     # To benefit from the linearization of the circuit constraint.
     solver.parameters.linearization_level = 2
-    solver.parameters.max_time_in_seconds = 10.0
+    solver.parameters.max_time_in_seconds = 15.0
     #solver.parameters.log_search_progress = True
 
     solver.Solve(model)

@@ -100,7 +100,7 @@ def print_solution(manager, routing, assignment):
         total_distance += route_distance
         total_value_collected += value_collected
     print(f'Total Distance: {total_distance}m')
-    print(f'Total Value collected: {total_value_collected}')
+    print(f'Total Value collected: {total_value_collected}/{sum(VISIT_VALUES)}')
 
 
 def main():
@@ -156,7 +156,7 @@ def main():
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
-    search_parameters.time_limit.FromSeconds(10)
+    search_parameters.time_limit.FromSeconds(15)
     #search_parameters.log_search = True
 
     # Solve the problem.

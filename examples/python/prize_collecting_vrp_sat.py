@@ -104,7 +104,7 @@ def print_solution(solver, visited_nodes, used_arcs, num_nodes, num_vehicles):
         total_distance += route_distance
         total_value_collected += value_collected
     print(f'Total Distance: {total_distance}m')
-    print(f'Total Value collected: {total_value_collected}')
+    print(f'Total Value collected: {total_value_collected}/{sum(VISIT_VALUES)}')
 
 def main():
     """Entry point of the program."""
@@ -167,7 +167,7 @@ def main():
     solver = cp_model.CpSolver()
     # To benefit from the linearization of the circuit constraint.
     solver.parameters.linearization_level = 2
-    solver.parameters.max_time_in_seconds = 10.0
+    solver.parameters.max_time_in_seconds = 15.0
     #solver.parameters.log_search_progress = True
 
     solver.Solve(model)
