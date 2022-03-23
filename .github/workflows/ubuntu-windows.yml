@@ -184,7 +184,9 @@ jobs:
         shell: bash
         run: |
           echo "${pythonLocation}/Scripts" >> $GITHUB_PATH
+          echo '::set-output name=action_echo::enabled'
           echo $GITHUB_PATH
+          echo '::set-output name=action_echo::disabled'
 
       - name: Download sirius
         uses: actions/download-artifact@v2
