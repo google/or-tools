@@ -27,7 +27,7 @@ runs:
       if: ${{ startsWith(inputs.os, 'windows') }}
       shell: cmd
       run: |
-        choco install zip 7zip.install --no-progress
+        choco install zip --no-progress
     - name: Setup .NET 6.0
       if: ${{ inputs.dotnet == 'ON' }}
       uses: actions/setup-dotnet@v1
