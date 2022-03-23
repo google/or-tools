@@ -15,7 +15,7 @@ inputs:
   python:
     description: 'should install python'
     required: false
-    default: 'OFF'
+    default: 'ON'
 runs:
   using: "composite"
   steps:
@@ -29,6 +29,7 @@ runs:
       uses: actions/setup-python@v3
       with:
         python-version: ${{ inputs.python-version }}
+        architecture: x64
     - name: Pip install reqs
       if: ${{ inputs.python == 'ON' }}
       shell: bash
