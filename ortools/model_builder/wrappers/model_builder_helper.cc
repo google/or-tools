@@ -106,7 +106,7 @@ void ModelBuilderHelper::SetVarUpperBound(int var_index, double ub) {
   request_.mutable_model()->mutable_variable(var_index)->set_upper_bound(ub);
 }
 
-void ModelBuilderHelper::SetVarInteger(int var_index, bool is_integer) {
+void ModelBuilderHelper::SetVarIntegrality(int var_index, bool is_integer) {
   request_.mutable_model()->mutable_variable(var_index)->set_is_integer(
       is_integer);
 }
@@ -161,7 +161,7 @@ double ModelBuilderHelper::VarUpperBound(int var_index) const {
   return request_.model().variable(var_index).upper_bound();
 }
 
-bool ModelBuilderHelper::VarIsInteger(int var_index) const {
+bool ModelBuilderHelper::VarIsIntegral(int var_index) const {
   return request_.model().variable(var_index).is_integer();
 }
 
@@ -214,9 +214,17 @@ void ModelBuilderHelper::SetMaximize(bool maximize) {
   request_.mutable_model()->set_maximize(maximize);
 }
 
-bool ModelBuilderHelper::SetSolverType(const std::string& solver_type) {
+double ModelBuilderHelper::ObjectiveOffset() const {
+  return request_.model().objective_offset();
+}
+
+void ModelBuilderHelper::SetObjectiveOffset(double offset) {
+  request_.mutable_model()->set_objective_offset(offset);
+}
+
+bool ModelBuilderHelper::SetSolverName(const std::string& solver_name) {
   MPSolver::OptimizationProblemType parsed_type;
-  if (!MPSolver::ParseSolverType(solver_type, &parsed_type)) return false;
+  if (!MPSolver::ParseSolverType(solver_name, &parsed_type)) return false;
   MPModelRequest::SolverType type =
       static_cast<MPModelRequest::SolverType>(parsed_type);
   request_.set_solver_type(type);
@@ -286,6 +294,11 @@ double ModelSolverHelper::dual_value(int ct_index) const {
   if (!response_.has_value()) return 0.0;
   if (ct_index >= response_.value().dual_value_size()) return 0.0;
   return response_.value().dual_value(ct_index);
+}
+
+std::string ModelSolverHelper::status_string() const {
+  if (!response_.has_value()) return "";
+  return response_.value().status_str();
 }
 
 }  // namespace operations_research

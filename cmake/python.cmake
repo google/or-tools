@@ -206,6 +206,7 @@ file(COPY
   ortools/linear_solver/linear_solver_natural_api.py
   DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver)
 file(COPY
+  ortools/model_builder/python/model_builder.py
   ortools/model_builder/python/model_builder_helper.py
   DESTINATION ${PYTHON_PROJECT_DIR}/model_builder/python)
 file(COPY

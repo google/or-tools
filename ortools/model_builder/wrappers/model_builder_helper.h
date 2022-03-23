@@ -64,7 +64,7 @@ class ModelBuilderHelper {
   int AddVar();
   void SetVarLowerBound(int var_index, double lb);
   void SetVarUpperBound(int var_index, double ub);
-  void SetVarInteger(int var_index, bool is_integer);
+  void SetVarIntegrality(int var_index, bool is_integer);
   void SetVarObjectiveCoefficient(int var_index, double coeff);
   void SetVarName(int var_index, const std::string& name);
 
@@ -77,7 +77,7 @@ class ModelBuilderHelper {
   int num_variables() const;
   double VarLowerBound(int var_index) const;
   double VarUpperBound(int var_index) const;
-  bool VarIsInteger(int var_index) const;
+  bool VarIsIntegral(int var_index) const;
   double VarObjectiveCoefficient(int var_index) const;
   std::string VarName(int var_index) const;
 
@@ -93,8 +93,10 @@ class ModelBuilderHelper {
 
   bool maximize() const;
   void SetMaximize(bool maximize);
+  double ObjectiveOffset() const;
+  void SetObjectiveOffset(double offset);
 
-  bool SetSolverType(const std::string& solver_type);
+  bool SetSolverName(const std::string& solver_name);
 
   // TODO(user): set parameters.
 
@@ -138,6 +140,8 @@ class ModelSolverHelper {
   double variable_value(int var_index) const;
   double reduced_cost(int var_index) const;
   double dual_value(int ct_index) const;
+
+  std::string status_string() const;
 
  private:
   std::atomic<bool> interrupt_solve_;

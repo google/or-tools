@@ -150,7 +150,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            arg("var_index"), arg("lb"))
       .def("SetVarUpperBound", &ModelBuilderHelper::SetVarUpperBound,
            arg("var_index"), arg("ub"))
-      .def("SetVarInteger", &ModelBuilderHelper::SetVarInteger,
+      .def("SetVarIntegrality", &ModelBuilderHelper::SetVarIntegrality,
            arg("var_index"), arg("is_integer"))
       .def("SetVarObjectiveCoefficient",
            &ModelBuilderHelper::SetVarObjectiveCoefficient, arg("var_index"),
@@ -161,28 +161,29 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("SetConstraintLowerBound",
            &ModelBuilderHelper::SetConstraintLowerBound, arg("ct_index"),
            arg("lb"))
-      .def("SetConstraintLowerBound",
-           &ModelBuilderHelper::SetConstraintLowerBound, arg("ct_index"),
+      .def("SetConstraintUpperBound",
+           &ModelBuilderHelper::SetConstraintUpperBound, arg("ct_index"),
            arg("ub"))
       .def("AddConstraintTerm", &ModelBuilderHelper::AddConstraintTerm,
            arg("ct_index"), arg("var_index"), arg("coeff"))
       .def("SetConstraintName", &ModelBuilderHelper::SetConstraintName,
            arg("ct_index"), arg("name"))
       .def("num_variables", &ModelBuilderHelper::num_variables)
-      .def("VarLowerBound", &ModelBuilderHelper::VarLowerBound,
+      .def("var_lower_bound", &ModelBuilderHelper::VarLowerBound,
            arg("var_index"))
-      .def("VarUpperBound", &ModelBuilderHelper::VarUpperBound,
+      .def("var_upper_bound", &ModelBuilderHelper::VarUpperBound,
            arg("var_index"))
-      .def("VarIsInteger", &ModelBuilderHelper::VarIsInteger, arg("var_index"))
-      .def("VarObjectiveCoefficient",
+      .def("var_is_integral", &ModelBuilderHelper::VarIsIntegral,
+           arg("var_index"))
+      .def("var_objective_coefficient",
            &ModelBuilderHelper::VarObjectiveCoefficient, arg("var_index"))
-      .def("VarName", &ModelBuilderHelper::VarName, arg("var_index"))
+      .def("var_name", &ModelBuilderHelper::VarName, arg("var_index"))
       .def("num_constraints", &ModelBuilderHelper::num_constraints)
-      .def("ConstraintLowerBound", &ModelBuilderHelper::ConstraintLowerBound,
+      .def("constraint_lower_bound", &ModelBuilderHelper::ConstraintLowerBound,
            arg("ct_index"))
-      .def("ConstraintUpperBound", &ModelBuilderHelper::ConstraintUpperBound,
+      .def("constraint_upper_bound", &ModelBuilderHelper::ConstraintUpperBound,
            arg("ct_index"))
-      .def("ConstraintName", &ModelBuilderHelper::ConstraintName,
+      .def("constraint_name", &ModelBuilderHelper::ConstraintName,
            arg("ct_index"))
       .def("ConstraintVarIndices", &ModelBuilderHelper::ConstraintVarIndices,
            arg("ct_index"))
@@ -192,8 +193,11 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("SetName", &ModelBuilderHelper::SetName, arg("name"))
       .def("maximize", &ModelBuilderHelper::maximize)
       .def("SetMaximize", &ModelBuilderHelper::SetMaximize, arg("maximize"))
-      .def("SetSolverType", &ModelBuilderHelper::SetSolverType,
-           arg("solver_type"));
+      .def("SetObjectiveOffset", &ModelBuilderHelper::SetObjectiveOffset,
+           arg("offset"))
+      .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset)
+      .def("SetSolverName", &ModelBuilderHelper::SetSolverName,
+           arg("solver_name"));
 
   pybind11::class_<ModelSolverHelper>(m, "ModelSolverHelper")
       .def(pybind11::init<>())
@@ -232,10 +236,10 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
              //    - Return the response proto
              return static_cast<int>(solver.status());
            })
+      .def("status_string", &ModelSolverHelper::status_string)
       .def("objective_value", &ModelSolverHelper::objective_value)
       .def("best_objective_bound", &ModelSolverHelper::best_objective_bound)
-      .def("variable_value", &ModelSolverHelper::variable_value,
-           arg("var_index"))
+      .def("var_value", &ModelSolverHelper::variable_value, arg("var_index"))
       .def("reduced_cost", &ModelSolverHelper::reduced_cost, arg("var_index"))
       .def("dual_value", &ModelSolverHelper::dual_value, arg("ct_index"))
       .def("VariableValues",
