@@ -34,6 +34,7 @@ using ::operations_research::ModelSolverHelper;
 using ::operations_research::MPConstraintProto;
 using ::operations_research::MPModelExportOptions;
 using ::operations_research::MPModelProto;
+using ::operations_research::MPModelRequest;
 using ::operations_research::MPSolutionResponse;
 using ::operations_research::MPVariableProto;
 using ::pybind11::arg;
@@ -117,8 +118,6 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            arg("options") = MPModelExportOptions())
       .def("WriteModelToFile", &ModelBuilderHelper::WriteModelToFile,
            arg("filename"))
-      .def("WriteRequestToFile", &ModelBuilderHelper::WriteRequestToFile,
-           arg("filename"))
       .def("ImportFromMpsString", &ModelBuilderHelper::ImportFromMpsString,
            arg("mps_string"))
       .def("ImportFromMpsFile", &ModelBuilderHelper::ImportFromMpsFile,
@@ -195,9 +194,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("SetMaximize", &ModelBuilderHelper::SetMaximize, arg("maximize"))
       .def("SetObjectiveOffset", &ModelBuilderHelper::SetObjectiveOffset,
            arg("offset"))
-      .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset)
-      .def("SetSolverName", &ModelBuilderHelper::SetSolverName,
-           arg("solver_name"));
+      .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset);
 
   pybind11::class_<ModelSolverHelper>(m, "ModelSolverHelper")
       .def(pybind11::init<>())
@@ -206,28 +203,36 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            // other things in parallel, e.g., log and interrupt.
            pybind11::call_guard<pybind11::gil_scoped_release>())
       .def(
-          "SolveSerialized",
-          [](ModelSolverHelper* solver_helper, const std::string& request_str) {
-            ModelBuilderHelper model_helper;
-            if (!model_helper.mutable_request()->ParseFromString(request_str)) {
+          "SolveSerializedRequest",
+          [](ModelSolverHelper* solver, const std::string& request_str) {
+            MPModelRequest request;
+
+            if (!request.ParseFromString(request_str)) {
               throw std::invalid_argument(
                   "Unable to parse request as MPModelRequest.");
             }
-            solver_helper->Solve(model_helper);
-            if (solver_helper->has_response()) {
-              return pybind11::bytes(
-                  solver_helper->response().SerializeAsString());
+            std::optional<MPSolutionResponse> solution =
+                solver->SolveRequest(request);
+            if (solution.has_value()) {
+              return pybind11::bytes(solution.value().SerializeAsString());
             } else {
               return pybind11::bytes();
             }
           },
-          // The GIL is released during the solve to allow Python threads to do
-          // other things in parallel, e.g., log and interrupt.
+          // The GIL is released during the solve to allow Python threads to
+          // do other things in parallel, e.g., log and interrupt.
           pybind11::call_guard<pybind11::gil_scoped_release>())
       .def("InterruptSolve", &ModelSolverHelper::InterruptSolve,
            "Returns true if the interrupt signal was correctly sent, that is, "
            "if the underlying solver supports it.")
       .def("SetLogCallback", &ModelSolverHelper::SetLogCallback)
+      .def("SetSolverName", &ModelSolverHelper::SetSolverName,
+           arg("solver_name"))
+      .def("SetTimeLimitInSeconds", &ModelSolverHelper::SetTimeLimitInSeconds,
+           arg("limit"))
+      .def("SetSolverSpecificParameters",
+           &ModelSolverHelper::SetSolverSpecificParameters,
+           arg("solver_specific_parameters"))
       .def("has_response", &ModelSolverHelper::has_response)
       .def("status",
            [](const ModelSolverHelper& solver) {

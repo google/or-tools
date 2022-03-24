@@ -49,16 +49,14 @@ class ModelBuilderHelper {
   std::string ExportToLpString(const operations_research::MPModelExportOptions&
                                    options = MPModelExportOptions());
   bool WriteModelToFile(const std::string& filename);
-  bool WriteRequestToFile(const std::string& filename);
 
   bool ImportFromMpsString(const std::string& mps_string);
   bool ImportFromMpsFile(const std::string& mps_file);
   bool ImportFromLpString(const std::string& lp_string);
   bool ImportFromLpFile(const std::string& lp_file);
 
-  const operations_research::MPModelRequest& request() const;
+  const MPModelProto& model() const;
   MPModelProto* mutable_model();
-  MPModelRequest* mutable_request();
 
   // Direct low level model building API.
   int AddVar();
@@ -96,12 +94,8 @@ class ModelBuilderHelper {
   double ObjectiveOffset() const;
   void SetObjectiveOffset(double offset);
 
-  bool SetSolverName(const std::string& solver_name);
-
-  // TODO(user): set parameters.
-
  private:
-  MPModelRequest request_;
+  MPModelProto model_;
 };
 
 // Simple director class for C#.
@@ -121,14 +115,16 @@ class ModelSolverHelper {
  public:
   void Solve(const ModelBuilderHelper& model);
 
+  // Only used by the CVXPY interface. Does not store the response internally.
+  // interrupt_solve_ is passed to the solve method.
+  std::optional<MPSolutionResponse> SolveRequest(const MPModelRequest& request);
+
   // Returns true if the interrupt signal was correctly sent, that is if the
   // underlying solver supports it.
   bool InterruptSolve();
 
   void SetLogCallback(std::function<void(const std::string&)> log_callback);
   void SetLogCallbackFromDirectorClass(LogCallback* log_callback);
-
-  void SetSolverTimeLimitInSecond(double limit);
 
   bool has_response() const;
   const MPSolutionResponse& response() const;
@@ -143,10 +139,22 @@ class ModelSolverHelper {
 
   std::string status_string() const;
 
+  // Solve parameters.
+  bool SetSolverName(const std::string& solver_name);
+  void SetTimeLimitInSeconds(double limit);
+  void SetSolverSpecificParameters(
+      const std::string& solver_specific_parameters);
+
+  // TODO(user): set parameters.
+
  private:
   std::atomic<bool> interrupt_solve_;
   std::function<void(const std::string&)> log_callback_;
   std::optional<MPSolutionResponse> response_;
+  MPModelRequest::SolverType solver_type_ =
+      MPModelRequest::GLOP_LINEAR_PROGRAMMING;
+  std::optional<double> time_limit_in_second_;
+  std::string solver_specific_parameters_;
 };
 
 }  // namespace operations_research
