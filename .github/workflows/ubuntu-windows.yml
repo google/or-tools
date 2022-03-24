@@ -284,7 +284,7 @@ jobs:
         working-directory: ./build
         run: ctest -V -C Release -R cxx_cpp_linear_programming
       - name: Run specific python tests
-        if: matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         env:
           XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
