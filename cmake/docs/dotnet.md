@@ -1,6 +1,6 @@
-| Linux | macOS | Windows |
-|-------|-------|---------|
-| [![Status][linux_dotnet_svg]][linux_dotnet_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
+Linux                                            | macOS                                            | Windows
+------------------------------------------------ | ------------------------------------------------ | -------
+[![Status][linux_dotnet_svg]][linux_dotnet_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link]
 
 [linux_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml/badge.svg?branch=master
 [linux_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml
@@ -10,35 +10,47 @@
 [windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml
 
 # Introduction
-Try to build a .NetStandard2.0 native (for win-x64, linux-x64 and osx-x64) nuget multi package using [`dotnet/cli`](https://github.com/dotnet/cli) and the *new* .csproj format.
 
-# Build the Binary Packages
+Try to build a .NetStandard2.0 native (for win-x64, linux-x64 and osx-x64) nuget
+multi package using [`dotnet/cli`](https://github.com/dotnet/cli) and the *new*
+.csproj format.
+
+## Build the Binary Packages
+
 To build the .Net nuget packages, simply run:
+
 ```sh
 cmake -S. -Bbuild -DBUILD_DOTNET=ON
 cmake --build build --target dotnet_package -v
 ```
-note: Since `dotnet_package` is in target `all`, you can also ommit the
+note: Since `dotnet_package` is in target `all`, you can also omit the
 `--target` option.
 
-# Testing
+## Testing
+
 To list tests:
+
 ```sh
 cd build
 ctest -N
 ```
 
 To only run .NET tests:
+
 ```sh
 cd build
 ctest -R "dotnet_.*"
 ```
 
-# Technical Notes
-First you should take a look at the [ortools/dotnet/README.md](../../ortools/dotnet/README.md) to understand the layout.  
+## Technical Notes
+
+First you should take a look at the
+[ortools/dotnet/README.md](../../ortools/dotnet/README.md) to understand the
+layout. \
 Here I will only focus on the CMake/SWIG tips and tricks.
 
-## Build directory layout
+### Build directory layout
+
 Since .Net use a `.csproj` project file to orchestrate everything we need to
 generate them and have the following layout:
 
@@ -89,4 +101,5 @@ generate them and have the following layout:
 ├── replace.cmake
 └── replace_runtime.cmake
 ```
+
 src: `tree build/dotnet --prune -I "obj|bin"`
