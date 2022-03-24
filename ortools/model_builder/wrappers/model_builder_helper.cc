@@ -70,7 +70,11 @@ bool ModelBuilderHelper::ImportFromLpString(const std::string& lp_string) {
 }
 
 bool ModelBuilderHelper::ImportFromLpFile(const std::string& lp_file) {
-  absl::StatusOr<MPModelProto> model_or = ModelProtoFromLpFormat(lp_file);
+  std::string lp_data;
+  if (!file::GetContents(lp_file, &lp_data, file::Defaults()).ok()) {
+    return false;
+  }
+  absl::StatusOr<MPModelProto> model_or = ModelProtoFromLpFormat(lp_data);
   if (!model_or.ok()) return false;
   model_ = model_or.value();
   return true;
