@@ -3,7 +3,7 @@
     <OutputType>Library</OutputType>
     <LangVersion>9.0</LangVersion>
     @DOTNET_TFM@
-    <RuntimeIdentifiers>win-x64;osx-x64;linux-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;osx-x64;win-x64;linux-arm64;osx-arm64</RuntimeIdentifiers>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>@DOTNET_PROJECT@</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>

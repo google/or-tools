@@ -33,9 +33,17 @@ set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
 
 # see: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
 if(APPLE)
-  set(RUNTIME_IDENTIFIER osx-x64)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
+    set(RUNTIME_IDENTIFIER osx-arm64)
+  else()
+    set(RUNTIME_IDENTIFIER osx-x64)
+  endif()
 elseif(UNIX)
-  set(RUNTIME_IDENTIFIER linux-x64)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
+    set(RUNTIME_IDENTIFIER linux-arm64)
+  else()
+    set(RUNTIME_IDENTIFIER linux-x64)
+  endif()
 elseif(WIN32)
   set(RUNTIME_IDENTIFIER win-x64)
 else()
@@ -45,6 +53,13 @@ set(DOTNET_NATIVE_PROJECT ${DOTNET_PACKAGE}.runtime.${RUNTIME_IDENTIFIER})
 message(STATUS ".Net runtime project: ${DOTNET_NATIVE_PROJECT}")
 set(DOTNET_NATIVE_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_NATIVE_PROJECT})
 message(STATUS ".Net runtime project build path: ${DOTNET_NATIVE_PROJECT_DIR}")
+
+# see: Platform
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
+  set(DOTNET_PLATFORM arm64)
+else()
+  set(DOTNET_PLATFORM x64)
+endif()
 
 # see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 if(USE_DOTNET_TFM_31 AND USE_DOTNET_TFM_60)
@@ -204,7 +219,7 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT ${DOTNET_NATIVE_PROJECT_DIR}/timestamp
-  COMMAND ${DOTNET_EXECUTABLE} build -c Release /p:Platform=x64 ${DOTNET_NATIVE_PROJECT}.csproj
+  COMMAND ${DOTNET_EXECUTABLE} build -c Release /p:Platform=${DOTNET_PLATFORM} ${DOTNET_NATIVE_PROJECT}.csproj
   COMMAND ${DOTNET_EXECUTABLE} pack -c Release ${DOTNET_NATIVE_PROJECT}.csproj
   COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_NATIVE_PROJECT_DIR}/timestamp
   DEPENDS
@@ -247,7 +262,7 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT ${DOTNET_PROJECT_DIR}/timestamp
-  COMMAND ${DOTNET_EXECUTABLE} build -c Release /p:Platform=x64 ${DOTNET_PROJECT}.csproj
+  COMMAND ${DOTNET_EXECUTABLE} build -c Release /p:Platform=${DOTNET_PLATFORM} ${DOTNET_PROJECT}.csproj
   COMMAND ${DOTNET_EXECUTABLE} pack -c Release ${DOTNET_PROJECT}.csproj
   COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_PROJECT_DIR}/timestamp
   DEPENDS
@@ -383,13 +398,13 @@ function(add_dotnet_sample FILE_NAME)
   if(BUILD_TESTING)
     if(USE_DOTNET_TFM_31)
       add_test(
-        NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}
+        NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_netcoreapp31
         COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework netcoreapp3.1 -c Release
         WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
     endif()
     if(USE_DOTNET_TFM_60)
       add_test(
-        NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}
+        NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_net60
         COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
         WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
     endif()
@@ -454,13 +469,13 @@ function(add_dotnet_example FILE_NAME)
   if(BUILD_TESTING)
     if(USE_DOTNET_TFM_31)
       add_test(
-        NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}
+        NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_netcoreapp31
         COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework netcoreapp3.1 -c Release
         WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
     endif()
     if(USE_DOTNET_TFM_60)
       add_test(
-        NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}
+        NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_net60
         COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
         WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
     endif()
