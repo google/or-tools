@@ -69,6 +69,8 @@ jobs:
       XPRESS: ${{ github.workspace }}/xpressmp813/bin
       XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
       SIRIUS_INSTALL_PATH : ${{ github.workspace }}/sirius_install
+      SIRIUS_BIN_DIR: ${{ github.workspace }}/sirius_install/bin
+      XPRESS_BIN_DIR: ${{ github.workspace }}/xpressmp813/bin
     strategy:
       fail-fast: false
       matrix:
@@ -282,8 +284,12 @@ jobs:
         working-directory: ./build
         run: ctest -V -C Release -R cxx_cpp_linear_programming
       - name: Run specific python tests
-        if: ${{ startsWith(matrix.os, 'ubuntu')  && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if: matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
+        env:
+          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
+          SIRIUS_BIN_DIR: "${{ github.workspace }}/sirius-solver/SiriusInstall/bin"
+          XPRESS_BIN_DIR: "${{ github.workspace }}/xpressmp813/bin"
         run: ctest -V -C Release -R python_python_linear_programming
       - name: Run specific java tests
         if: ${{ matrix.java == 'ON' }}
