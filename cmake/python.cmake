@@ -23,6 +23,18 @@ if(UNIX AND NOT APPLE)
 endif()
 
 # Find Python 3
+
+if (NOT DEFINED Python_FIND_REGISTRY)
+  set(Python_FIND_REGISTRY "LAST")
+endif ()
+if (NOT DEFINED Python_FIND_FRAMEWORK)
+  set(Python_FIND_FRAMEWORK "LAST")
+endif ()
+
+#find_package(Python
+#        REQUIRED COMPONENTS Interpreter
+#        OPTIONAL_COMPONENTS Development)
+
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
 
