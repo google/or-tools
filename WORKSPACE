@@ -53,7 +53,7 @@ new_git_repository(
 
 git_repository(
     name = "com_google_re2",
-    patches = ["//bazel:re2.patch"],
+    #patches = ["//bazel:re2.patch"],
     tag = "2022-02-01",
     remote = "https://github.com/google/re2.git",
 )

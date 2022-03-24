@@ -37,6 +37,9 @@ namespace glop {
 
 namespace {
 
+//using StringPiece = ::absl::string_view;
+using StringPiece = ::re2::StringPiece;
+
 using ::absl::StatusOr;
 
 enum class TokenType {
@@ -68,11 +71,11 @@ class LPParser {
   ABSL_MUST_USE_RESULT bool Parse(absl::string_view model, LinearProgram* lp);
 
  private:
-  bool ParseEmptyLine(absl::string_view line);
-  bool ParseObjective(absl::string_view objective);
-  bool ParseIntegerVariablesList(absl::string_view line);
-  bool ParseConstraint(absl::string_view constraint);
-  TokenType ConsumeToken(absl::string_view* sp);
+  bool ParseEmptyLine(StringPiece line);
+  bool ParseObjective(StringPiece objective);
+  bool ParseIntegerVariablesList(StringPiece line);
+  bool ParseConstraint(StringPiece constraint);
+  TokenType ConsumeToken(StringPiece* sp);
   bool SetVariableBounds(ColIndex col, Fractional lb, Fractional ub);
 
   // Linear program populated by the Parse() method. Not owned.
@@ -92,11 +95,11 @@ bool LPParser::Parse(absl::string_view model, LinearProgram* lp) {
   bounded_variables_.clear();
   lp_->Clear();
 
-  std::vector<absl::string_view> lines =
+  std::vector<StringPiece> lines =
       absl::StrSplit(model, ';', absl::SkipEmpty());
   bool has_objective = false;
 
-  for (absl::string_view line : lines) {
+  for (StringPiece line : lines) {
     if (!has_objective && ParseObjective(line)) {
       has_objective = true;
     } else if (!ParseConstraint(line) && !ParseIntegerVariablesList(line) &&
@@ -118,12 +121,12 @@ bool LPParser::Parse(absl::string_view model, LinearProgram* lp) {
   return true;
 }
 
-bool LPParser::ParseEmptyLine(absl::string_view line) {
+bool LPParser::ParseEmptyLine(StringPiece line) {
   if (ConsumeToken(&line) == TokenType::END) return true;
   return false;
 }
 
-bool LPParser::ParseObjective(absl::string_view objective) {
+bool LPParser::ParseObjective(StringPiece objective) {
   // Get the required optimization direction.
   if (ConsumeToken(&objective) != TokenType::NAME) return false;
   if (absl::EqualsIgnoreCase(consumed_name_, "min")) {
@@ -153,7 +156,7 @@ bool LPParser::ParseObjective(absl::string_view objective) {
   return token_type == TokenType::END;
 }
 
-bool LPParser::ParseIntegerVariablesList(absl::string_view line) {
+bool LPParser::ParseIntegerVariablesList(StringPiece line) {
   // Get the required "int" or "bin" keyword.
   bool binary_list = false;
   if (ConsumeToken(&line) != TokenType::NAME) return false;
@@ -181,9 +184,9 @@ bool LPParser::ParseIntegerVariablesList(absl::string_view line) {
   return true;
 }
 
-bool LPParser::ParseConstraint(absl::string_view constraint) {
+bool LPParser::ParseConstraint(StringPiece constraint) {
   const StatusOr<ParsedConstraint> parsed_constraint_or_status =
-      ::operations_research::glop::ParseConstraint(constraint);
+      ::operations_research::glop::ParseConstraint(constraint.as_string());
   if (!parsed_constraint_or_status.ok()) return false;
   const ParsedConstraint& parsed_constraint =
       parsed_constraint_or_status.value();
@@ -245,7 +248,7 @@ bool LPParser::SetVariableBounds(ColIndex col, Fractional lb, Fractional ub) {
   return true;
 }
 
-TokenType ConsumeToken(absl::string_view* sp, std::string* consumed_name,
+TokenType ConsumeToken(StringPiece* sp, std::string* consumed_name,
                        double* consumed_coeff) {
   DCHECK(consumed_name != nullptr);
   DCHECK(consumed_coeff != nullptr);
@@ -264,6 +267,7 @@ TokenType ConsumeToken(absl::string_view* sp, std::string* consumed_name,
   static const LazyRE2 kNamePattern1 = {R"(\s*(\w[\w[\]]*):)"};
   static const LazyRE2 kNamePattern2 = {R"((?i)\s*(int)\s*:?)"};
   static const LazyRE2 kNamePattern3 = {R"((?i)\s*(bin)\s*:?)"};
+
   if (RE2::Consume(sp, *kNamePattern1, consumed_name)) return TokenType::NAME;
   if (RE2::Consume(sp, *kNamePattern2, consumed_name)) return TokenType::NAME;
   if (RE2::Consume(sp, *kNamePattern3, consumed_name)) return TokenType::NAME;
@@ -333,17 +337,18 @@ TokenType ConsumeToken(absl::string_view* sp, std::string* consumed_name,
   return TokenType::ERROR;
 }
 
-TokenType LPParser::ConsumeToken(absl::string_view* sp) {
+TokenType LPParser::ConsumeToken(StringPiece* sp) {
   using ::operations_research::glop::ConsumeToken;
   return ConsumeToken(sp, &consumed_name_, &consumed_coeff_);
 }
 
 }  // namespace
 
-StatusOr<ParsedConstraint> ParseConstraint(absl::string_view constraint) {
+StatusOr<ParsedConstraint> ParseConstraint(absl::string_view constraint_view) {
   ParsedConstraint parsed_constraint;
   // Get the name, if present.
-  absl::string_view constraint_copy(constraint);
+  StringPiece constraint(constraint_view);
+  StringPiece constraint_copy{constraint_view};
   std::string consumed_name;
   Fractional consumed_coeff;
   if (ConsumeToken(&constraint_copy, &consumed_name, &consumed_coeff) ==
@@ -411,7 +416,7 @@ StatusOr<ParsedConstraint> ParseConstraint(absl::string_view constraint) {
     if (ConsumeToken(&constraint, &consumed_name, &consumed_coeff) !=
         TokenType::END) {
       return absl::InvalidArgumentError(
-          absl::StrCat("End of input was expected, found: ", constraint));
+          absl::StrCat("End of input was expected, found: ", constraint.as_string()));
     }
   }
 
