@@ -19,7 +19,9 @@
 
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#if defined(USE_LP_PARSER)
 #include "ortools/lp_data/lp_parser.h"
+#endif // #if defined(USE_LP_PARSER)
 #include "ortools/lp_data/mps_reader.h"
 
 namespace operations_research {
@@ -62,6 +64,7 @@ bool ModelBuilderHelper::ImportFromMpsFile(const std::string& mps_file) {
   return true;
 }
 
+#if defined(USE_LP_PARSER)
 bool ModelBuilderHelper::ImportFromLpString(const std::string& lp_string) {
   absl::StatusOr<MPModelProto> model_or = ModelProtoFromLpFormat(lp_string);
   if (!model_or.ok()) return false;
@@ -79,6 +82,7 @@ bool ModelBuilderHelper::ImportFromLpFile(const std::string& lp_file) {
   model_ = model_or.value();
   return true;
 }
+#endif // #if defined(USE_LP_PARSER)
 
 const MPModelProto& ModelBuilderHelper::model() const { return model_; }
 

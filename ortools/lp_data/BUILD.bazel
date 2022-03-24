@@ -239,6 +239,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_re2//:re2",
     ],
+    defines = ["USE_LP_PARSER"],
 )
 
 #cc_library(

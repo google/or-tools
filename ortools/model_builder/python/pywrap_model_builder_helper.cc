@@ -122,10 +122,12 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            arg("mps_string"))
       .def("ImportFromMpsFile", &ModelBuilderHelper::ImportFromMpsFile,
            arg("mps_file"))
+#if defined(USE_LP_PARSER)
       .def("ImportFromLpString", &ModelBuilderHelper::ImportFromLpString,
            arg("lp_string"))
       .def("ImportFromLpFile", &ModelBuilderHelper::ImportFromLpFile,
            arg("lp_file"))
+#endif // #if defined(USE_LP_PARSER)
       .def(
           "FillModelFromSparseData",
           [](ModelBuilderHelper* helper,

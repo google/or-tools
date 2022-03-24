@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#if defined(USE_LP_PARSER)
 
 #include "ortools/lp_data/lp_parser.h"
 
@@ -463,3 +464,4 @@ absl::StatusOr<MPModelProto> ModelProtoFromLpFormat(absl::string_view model) {
 }
 
 }  // namespace operations_research
+#endif  // #if defined(USE_LP_PARSER)

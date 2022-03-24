@@ -74,6 +74,8 @@
 #ifndef OR_TOOLS_LP_DATA_LP_PARSER_H_
 #define OR_TOOLS_LP_DATA_LP_PARSER_H_
 
+#if defined(USE_LP_PARSER)
+
 #include <string>
 #include <vector>
 
@@ -120,5 +122,7 @@ absl::StatusOr<ParsedConstraint> ParseConstraint(absl::string_view constraint);
 
 }  // namespace glop
 }  // namespace operations_research
+
+#endif  // #if defined(USE_LP_PARSER)
 
 #endif  // OR_TOOLS_LP_DATA_LP_PARSER_H_
