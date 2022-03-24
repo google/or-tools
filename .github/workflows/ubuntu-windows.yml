@@ -90,9 +90,9 @@ jobs:
           - os: windows-2019
             shared: OFF
             extras: OFF
-          - os: ubuntu-20.04
-            shared: OFF
-            extras: ON
+#          - os: ubuntu-20.04
+#            shared: OFF
+#            extras: ON
           - os: ubuntu-20.04
             shared: ON
             extras: OFF
