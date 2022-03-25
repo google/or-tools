@@ -203,7 +203,9 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   // Setup parameters.
   SatParameters parameters;
   parameters.set_log_search_progress(true);
-  parameters.set_use_cumulative_in_no_overlap_2d(true);
+  parameters.set_use_timetabling_in_no_overlap_2d(true);
+  parameters.set_use_energetic_reasoning_in_no_overlap_2d(true);
+
   // Parse the --params flag.
   if (!absl::GetFlag(FLAGS_params).empty()) {
     CHECK(google::protobuf::TextFormat::MergeFromString(
