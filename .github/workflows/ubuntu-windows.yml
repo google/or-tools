@@ -199,17 +199,17 @@ jobs:
           echo "${{ env.XPRESS }}" >> $GITHUB_PATH
           echo "${{ env.SIRIUS_INSTALL_PATH }}\bin" >> $GITHUB_PATH
 
-      - name: Configure or-tools
+      - name: Configure ortools
         shell: bash
         run: |
           cmake -S . -B build -DPython3_ROOT_DIR="${{ env.pythonLocation }}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
 
-      - name: Build Linux
+      - name: Build ortools Linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: cmake --build build --config Release --target all install -j2
 
-      - name: Build windows
+      - name: Build ortools windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
@@ -378,8 +378,8 @@ jobs:
           cd ./build/dotnet/packages/
           MY_DIR="ortools_dotnet${{ steps.names.outputs.appendix }}"
           mkdir ${MY_DIR}
-          cp Google.OrTools.[0-9]*.[0-9]*.[0-9]*.nupkg "${MY_DIR}"
-          cp Google.OrTools.runtime.*.[0-9]*.[0-9]*.[0-9]*.nupkg "${MY_DIR}"
+          cp Google.OrTools.*.nupkg "${MY_DIR}"
+          cp Google.OrTools.runtime.*.nupkg "${MY_DIR}"
           ARCHIVE_NAME="${MY_DIR}.zip"
           ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
           zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
