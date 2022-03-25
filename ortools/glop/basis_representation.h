@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
 #define OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
 
+#include <string>
+
 #include "ortools/base/logging.h"
 #include "ortools/glop/lu_factorization.h"
 #include "ortools/glop/parameters.pb.h"

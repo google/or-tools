@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_
 #define OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_
 
+#include <string>
+
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"

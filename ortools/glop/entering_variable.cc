@@ -13,6 +13,7 @@
 
 #include "ortools/glop/entering_variable.h"
 
+#include <algorithm>
 #include <queue>
 
 #include "ortools/base/timer.h"

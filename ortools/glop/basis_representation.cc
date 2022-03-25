@@ -13,6 +13,8 @@
 
 #include "ortools/glop/basis_representation.h"
 
+#include <algorithm>
+
 #include "ortools/base/stl_util.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_utils.h"

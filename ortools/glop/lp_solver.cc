@@ -13,8 +13,10 @@
 
 #include "ortools/glop/lp_solver.h"
 
+#include <algorithm>
 #include <cmath>
 #include <stack>
+#include <string>
 #include <vector>
 
 #include "absl/memory/memory.h"
@@ -213,6 +215,17 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   ProblemSolution solution(current_linear_program_.num_constraints(),
                            current_linear_program_.num_variables());
   solution.status = preprocessor.status();
+  // LoadAndVerifySolution() below updates primal_values_, dual_values_,
+  // variable_statuses_ and constraint_statuses_ with the values stored in
+  // solution by RunPrimalDualPathFollowingMethodIfNeeded() and
+  // RunRevisedSimplexIfNeeded(), and hence clears any results stored in them
+  // from a previous run. In contrast, primal_ray_, constraints_dual_ray_, and
+  // variable_bounds_dual_ray_ are modified directly by
+  // RunRevisedSimplexIfNeeded(), so we explicitly clear them from previous run
+  // results.
+  primal_ray_.clear();
+  constraints_dual_ray_.clear();
+  variable_bounds_dual_ray_.clear();
 
   // Do not launch the solver if the time limit was already reached. This might
   // mean that the pre-processors were not all run, and current_linear_program_

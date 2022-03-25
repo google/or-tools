@@ -13,6 +13,7 @@
 
 #include "ortools/glop/initial_basis.h"
 
+#include <algorithm>
 #include <queue>
 
 #include "ortools/glop/markowitz.h"

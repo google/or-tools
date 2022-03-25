@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_GLOP_VARIABLE_VALUES_H_
 #define OR_TOOLS_GLOP_VARIABLE_VALUES_H_
 
+#include <string>
+
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
 #include "ortools/glop/pricing.h"

@@ -271,7 +271,9 @@ class LPSolver {
   int num_revised_simplex_iterations_;
 
   // The current ProblemSolution.
-  // TODO(user): use a ProblemSolution directly?
+  // TODO(user): use a ProblemSolution directly? Note, that primal_ray_,
+  // constraints_dual_ray_ and variable_bounds_dual_ray_ are not currently in
+  // ProblemSolution and are filled directly by RunRevisedSimplexIfNeeded().
   DenseRow primal_values_;
   DenseColumn dual_values_;
   VariableStatusRow variable_statuses_;
