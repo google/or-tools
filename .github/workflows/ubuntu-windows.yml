@@ -249,23 +249,23 @@ jobs:
           ARCHIVE_NAME="ortools_install${{ steps.names.outputs.appendix }}.zip"
           ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
           zip -r "$ARCHIVE_PATH" ./install
-          echo "::set-output name=ortools_archive_name::$ARCHIVE_NAME"
-          echo "::set-output name=ortools_archive_path::$ARCHIVE_PATH"
+          echo "::set-output name=archive_name::$ARCHIVE_NAME"
+          echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
       - name: Upload ortools install artifact
         uses: actions/upload-artifact@v2
         if: ${{ matrix.publish-or == 'ON' }}
         with:
-          name: ${{ steps.or-install.outputs.ortools_archive_name }}
-          path: ${{ steps.or-install.outputs.ortools_archive_path }}
+          name: ${{ steps.or-install.outputs.archive_name }}
+          path: ${{ steps.or-install.outputs.archive_path }}
 
       - name: Publish ortools install asset
         if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.publish-or == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.or-install.outputs.ortools_archive_path }}
-          asset_name: ${{ steps.or-install.outputs.ortools_archive_name }}
+          asset_path: ${{ steps.or-install.outputs.archive_path }}
+          asset_name: ${{ steps.or-install.outputs.archive_name }}
           asset_content_type: application/zip
 
       - name: Run sirius_interface unittests
