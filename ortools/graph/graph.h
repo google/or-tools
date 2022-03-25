@@ -794,9 +794,7 @@ class SVector {
     }
     // Perform the actual copy of the payload.
     size_ = other.size_;
-    for (int i = -size_; i < size_; ++i) {
-      new (base_ + i) T(other.base_[i]);
-    }
+    CopyInternal(other, std::is_integral<T>());
     return *this;
   }
 
@@ -907,6 +905,22 @@ class SVector {
   }
 
  private:
+  // Copies other.base_ to base_ in this SVector. Avoids iteration by copying
+  // entire memory range in a single shot for the most commonly used integral
+  // types which should be safe to copy in this way.
+  void CopyInternal(const SVector& other, std::true_type) {
+    std::memcpy(base_ - other.size_, other.base_ - other.size_,
+                2LL * other.size_ * sizeof(T));
+  }
+
+  // Copies other.base_ to base_ in this SVector. Safe for all types as it uses
+  // constructor for each entry.
+  void CopyInternal(const SVector& other, std::false_type) {
+    for (int i = -size_; i < size_; ++i) {
+      new (base_ + i) T(other.base_[i]);
+    }
+  }
+
   T* Allocate(int capacity) const {
     return absl::IgnoreLeak(
         static_cast<T*>(malloc(2LL * capacity * sizeof(T))));
