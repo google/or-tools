@@ -181,6 +181,10 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
                               "An integer variable has an empty domain");
   }
 
+  // Coefficients really close to zero can cause issues.
+  // We remove them right away according to our parameters.
+  RemoveNearZeroTerms(params, mp_model, &logger);
+
   // Note(user): the LP presolvers API is a bit weird and keep a reference to
   // the given GlopParameters, so we need to make sure it outlive them.
   const glop::GlopParameters glop_params;
@@ -325,6 +329,10 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   // Convert the response.
   //
   // TODO(user): Implement the row and column status.
+  response.mutable_solve_info()->set_solve_wall_time_seconds(
+      cp_response.wall_time());
+  response.mutable_solve_info()->set_solve_user_time_seconds(
+      cp_response.user_time());
   response.set_status(
       ToMPSolverResponseStatus(cp_response.status(), cp_model.has_objective()));
   if (response.status() == MPSOLVER_FEASIBLE ||
