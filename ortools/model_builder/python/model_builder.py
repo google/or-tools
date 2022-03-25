@@ -883,22 +883,22 @@ class ModelSolver(object):
   procedure.
   """
 
-    def __init__(self):
-        self.__solve_helper = pwmb.ModelSolverHelper()
+    def __init__(self, solver_name):
+        self.__solve_helper = pwmb.ModelSolverHelper(solver_name)
         self.log_callback = None
 
     # Solver backend and parameters.
-    def set_solver(self, solver_name):
-        """Selects the solver backend."""
-        return self.__solve_helper.SetSolverName(solver_name)
-
     def set_time_limit_in_seconds(self, limit):
         """Sets a time limit for the solve() call."""
         self.__solve_helper.SetTimeLimitInSeconds(limit)
 
     def set_solver_specific_parameters(self, parameters):
-        """Set parameters specific to the solver backend."""
+        """Sets parameters specific to the solver backend."""
         self.__solve_helper.SetSolverSpecificParameters(parameters)
+
+    def enable_output(self, enabled):
+        """Controls the solver backend logs."""
+        self.__solve_helper.EnableOutput(enabled)
 
     def solve(self, model):
         """Solves a problem and passes each solution to the callback if not null."""
@@ -957,6 +957,14 @@ class ModelSolver(object):
     It can describe why the model is invalid.
     """
         return self.__solve_helper.status_string()
+
+    @property
+    def wall_time(self):
+        return self.__solve_helper.wall_time()
+
+    @property
+    def user_time(self):
+        return self.__solve_helper.user_time()
 
     # def WallTime(self):
     #   """Returns the wall time in seconds since the creation of the solver."""

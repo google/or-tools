@@ -199,7 +199,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset);
 
   pybind11::class_<ModelSolverHelper>(m, "ModelSolverHelper")
-      .def(pybind11::init<>())
+      .def(pybind11::init<const std::string&>())
       .def("Solve", &ModelSolverHelper::Solve, arg("model"),
            // The GIL is released during the solve to allow Python threads to do
            // other things in parallel, e.g., log and interrupt.
@@ -228,13 +228,12 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            "Returns true if the interrupt signal was correctly sent, that is, "
            "if the underlying solver supports it.")
       .def("SetLogCallback", &ModelSolverHelper::SetLogCallback)
-      .def("SetSolverName", &ModelSolverHelper::SetSolverName,
-           arg("solver_name"))
       .def("SetTimeLimitInSeconds", &ModelSolverHelper::SetTimeLimitInSeconds,
            arg("limit"))
       .def("SetSolverSpecificParameters",
            &ModelSolverHelper::SetSolverSpecificParameters,
            arg("solver_specific_parameters"))
+      .def("EnableOutput", &ModelSolverHelper::EnableOutput, arg("output"))
       .def("has_response", &ModelSolverHelper::has_response)
       .def("status",
            [](const ModelSolverHelper& solver) {
@@ -244,6 +243,8 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
              return static_cast<int>(solver.status());
            })
       .def("status_string", &ModelSolverHelper::status_string)
+      .def("wall_time", &ModelSolverHelper::wall_time)
+      .def("user_time", &ModelSolverHelper::user_time)
       .def("objective_value", &ModelSolverHelper::objective_value)
       .def("best_objective_bound", &ModelSolverHelper::best_objective_bound)
       .def("var_value", &ModelSolverHelper::variable_value, arg("var_index"))

@@ -115,6 +115,7 @@ class LogCallback {
 // search.
 class ModelSolverHelper {
  public:
+  explicit ModelSolverHelper(const std::string& solver_name);
   void Solve(const ModelBuilderHelper& model);
 
   // Only used by the CVXPY interface. Does not store the response internally.
@@ -140,23 +141,25 @@ class ModelSolverHelper {
   double dual_value(int ct_index) const;
 
   std::string status_string() const;
+  double wall_time() const;
+  double user_time() const;
 
   // Solve parameters.
-  bool SetSolverName(const std::string& solver_name);
   void SetTimeLimitInSeconds(double limit);
   void SetSolverSpecificParameters(
       const std::string& solver_specific_parameters);
+  void EnableOutput(bool enabled);
 
   // TODO(user): set parameters.
 
  private:
-  std::atomic<bool> interrupt_solve_;
+  std::atomic<bool> interrupt_solve_ = false;
   std::function<void(const std::string&)> log_callback_;
   std::optional<MPSolutionResponse> response_;
-  MPModelRequest::SolverType solver_type_ =
-      MPModelRequest::GLOP_LINEAR_PROGRAMMING;
+  std::optional<MPModelRequest::SolverType> solver_type_;
   std::optional<double> time_limit_in_second_;
   std::string solver_specific_parameters_;
+  bool solver_output_ = false;
 };
 
 }  // namespace operations_research

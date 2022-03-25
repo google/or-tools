@@ -19,6 +19,8 @@
 
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/sat_proto_solver.h"
+#include "ortools/linear_solver/scip_proto_solver.h"
 #if defined(USE_LP_PARSER)
 #include "ortools/lp_data/lp_parser.h"
 #endif // #if defined(USE_LP_PARSER)
@@ -217,22 +219,63 @@ std::optional<MPSolutionResponse> ModelSolverHelper::SolveRequest(
   return temp;
 }
 
+ModelSolverHelper::ModelSolverHelper(const std::string& solver_name) {
+  MPSolver::OptimizationProblemType parsed_type;
+  if (!MPSolver::ParseSolverType(solver_name, &parsed_type)) {
+    VLOG(1) << "Unsupported type " << solver_name;
+  } else {
+    solver_type_ = static_cast<MPModelRequest::SolverType>(parsed_type);
+  }
+}
+
 void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
-  // TODO(user): Make compatible with solvers that don't support interrupt.
-  // TODO(user): Register the log callback.
   response_.reset();
+  if (!solver_type_.has_value()) {
+    response_->set_status(
+        MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
+    return;
+  }
+
   MPModelRequest request;
   *request.mutable_model() = model.model();
-  request.set_solver_type(solver_type_);
+  request.set_solver_type(solver_type_.value());
+  request.set_enable_internal_solver_output(solver_output_);
   if (time_limit_in_second_.has_value()) {
     request.set_solver_time_limit_seconds(time_limit_in_second_.value());
   }
   if (!solver_specific_parameters_.empty()) {
     request.set_solver_specific_parameters(solver_specific_parameters_);
   }
-  MPSolutionResponse temp;
-  MPSolver::SolveWithProto(request, &temp, &interrupt_solve_);
-  response_ = std::move(temp);
+  switch (solver_type_.value()) {
+    case MPModelRequest::GLOP_LINEAR_PROGRAMMING: {
+      // TODO(user): Enable log_callback support.
+      MPSolutionResponse temp;
+      MPSolver::SolveWithProto(request, &temp, &interrupt_solve_);
+      response_ = std::move(temp);
+      break;
+    }
+    case MPModelRequest::SAT_INTEGER_PROGRAMMING: {
+      const auto temp =
+          SatSolveProto(request, &interrupt_solve_, log_callback_, nullptr);
+      if (temp.ok()) {
+        response_ = std::move(temp.value());
+      }
+      break;
+    }
+    case MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING: {
+      // TODO(user): Enable log_callback support.
+      // TODO(user): Enable interrupt_solve.
+      const auto temp = ScipSolveProto(request);
+      if (temp.ok()) {
+        response_ = std::move(temp.value());
+      }
+      break;
+    }
+    default: {
+      response_->set_status(
+          MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
+    }
+  }
 }
 
 void ModelSolverHelper::SetLogCallback(
@@ -304,11 +347,16 @@ std::string ModelSolverHelper::status_string() const {
   return response_.value().status_str();
 }
 
-bool ModelSolverHelper::SetSolverName(const std::string& solver_name) {
-  MPSolver::OptimizationProblemType parsed_type;
-  if (!MPSolver::ParseSolverType(solver_name, &parsed_type)) return false;
-  solver_type_ = static_cast<MPModelRequest::SolverType>(parsed_type);
-  return true;
+double ModelSolverHelper::wall_time() const {
+  if (!response_.has_value()) return 0.0;
+  if (!response_.value().has_solve_info()) return 0.0;
+  return response_.value().solve_info().solve_wall_time_seconds();
+}
+
+double ModelSolverHelper::user_time() const {
+  if (!response_.has_value()) return 0.0;
+  if (!response_.value().has_solve_info()) return 0.0;
+  return response_.value().solve_info().solve_user_time_seconds();
 }
 
 void ModelSolverHelper::SetTimeLimitInSeconds(double limit) {
@@ -319,5 +367,7 @@ void ModelSolverHelper::SetSolverSpecificParameters(
     const std::string& solver_specific_parameters) {
   solver_specific_parameters_ = solver_specific_parameters;
 }
+
+void ModelSolverHelper::EnableOutput(bool enabled) { solver_output_ = enabled; }
 
 }  // namespace operations_research
