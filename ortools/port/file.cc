@@ -13,6 +13,8 @@
 
 #include "ortools/port/file.h"
 
+#include <string>
+
 #include "absl/status/status.h"
 #include "ortools/base/logging.h"
 
