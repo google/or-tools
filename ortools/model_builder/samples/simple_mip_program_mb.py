@@ -21,17 +21,17 @@ from ortools.model_builder.python import model_builder
 
 
 def main():
-    # [START solver]
-    # Create the mip solver with the SCIP backend.
+    # [START model]
+    # Create the model.
     model = model_builder.ModelBuilder()
-    # [END solver]
+    # [END model]
 
     # [START variables]
     # x and y are integer non-negative variables.
     x = model.new_int_var(0.0, math.inf, 'x')
     y = model.new_int_var(0.0, math.inf, 'y')
 
-    print('Number of variables =', model.num_variables())
+    print('Number of variables =', model.num_variables)
     # [END variables]
 
     # [START constraints]
@@ -41,7 +41,7 @@ def main():
     # x <= 3.5.
     model.add(x <= 3.5)
 
-    print('Number of constraints =', model.num_constraints())
+    print('Number of constraints =', model.num_constraints)
     # [END constraints]
 
     # [START objective]
@@ -50,6 +50,7 @@ def main():
     # [END objective]
 
     # [START solve]
+    # Create the solver with the SCIP backend, and solve the model.
     solver = model_builder.ModelSolver('scip')
     status = solver.solve(model)
     # [END solve]
@@ -57,7 +58,7 @@ def main():
     # [START print_solution]
     if status == model_builder.OPTIMAL:
         print('Solution:')
-        print('Objective value =', solver.objective_value())
+        print('Objective value =', solver.objective_value)
         print('x =', solver.value(x))
         print('y =', solver.value(y))
     else:
@@ -66,7 +67,7 @@ def main():
 
     # [START advanced]
     print('\nAdvanced usage:')
-    print('Problem solved in %f milliseconds' % solver.wall_time)
+    print('Problem solved in %f seconds' % solver.wall_time)
     # [END advanced]
 
 

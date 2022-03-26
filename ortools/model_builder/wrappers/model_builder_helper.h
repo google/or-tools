@@ -116,6 +116,7 @@ class LogCallback {
 class ModelSolverHelper {
  public:
   explicit ModelSolverHelper(const std::string& solver_name);
+  bool SolverIsSupported() const;
   void Solve(const ModelBuilderHelper& model);
 
   // Only used by the CVXPY interface. Does not store the response internally.
@@ -130,6 +131,7 @@ class ModelSolverHelper {
   void SetLogCallbackFromDirectorClass(LogCallback* log_callback);
 
   bool has_response() const;
+  bool has_solution() const;
   const MPSolutionResponse& response() const;
   MPSolverResponseStatus status() const;
 

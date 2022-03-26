@@ -26,7 +26,7 @@ class ModelSolverHelper(pywrap_model_builder_helper.ModelSolverHelper):
         self, request: linear_solver_pb2.MPModelRequest
     ) -> linear_solver_pb2.MPSolutionResponse:
         return linear_solver_pb2.MPSolutionResponse.FromString(
-            super().SolveSerializedRequest(request.SerializeToString()))
+            super().solve_serialized_request(request.SerializeToString()))
 
 
 def is_integral(x):

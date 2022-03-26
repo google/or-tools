@@ -20,7 +20,9 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/sat_proto_solver.h"
+#if defined(USE_SCIP)
 #include "ortools/linear_solver/scip_proto_solver.h"
+#endif  // defined(USE_SCIP)
 #if defined(USE_LP_PARSER)
 #include "ortools/lp_data/lp_parser.h"
 #endif // #if defined(USE_LP_PARSER)
@@ -220,12 +222,17 @@ std::optional<MPSolutionResponse> ModelSolverHelper::SolveRequest(
 }
 
 ModelSolverHelper::ModelSolverHelper(const std::string& solver_name) {
+  if (solver_name.empty()) return;
   MPSolver::OptimizationProblemType parsed_type;
   if (!MPSolver::ParseSolverType(solver_name, &parsed_type)) {
     VLOG(1) << "Unsupported type " << solver_name;
   } else {
     solver_type_ = static_cast<MPModelRequest::SolverType>(parsed_type);
   }
+}
+
+bool ModelSolverHelper::SolverIsSupported() const {
+  return solver_type_.has_value();
 }
 
 void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
@@ -262,6 +269,7 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       }
       break;
     }
+#if defined(USE_SCIP)    
     case MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING: {
       // TODO(user): Enable log_callback support.
       // TODO(user): Enable interrupt_solve.
@@ -271,6 +279,7 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       }
       break;
     }
+#endif  // defined(USE_SCIP)    
     default: {
       response_->set_status(
           MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
@@ -295,7 +304,9 @@ bool ModelSolverHelper::InterruptSolve() {
   return true;
 }
 
-bool ModelSolverHelper::has_response() const {
+bool ModelSolverHelper::has_response() const { return response_.has_value(); }
+
+bool ModelSolverHelper::has_solution() const {
   return response_.has_value() &&
          (response_.value().status() ==
               MPSolverResponseStatus::MPSOLVER_OPTIMAL ||

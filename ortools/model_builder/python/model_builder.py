@@ -62,14 +62,14 @@ class LinearExpr(object):
   * You can define linear constraints as in:
 
   ```
-  model.Add(x + 2 * y <= 5.0)
-  model.Add(sum(array_of_vars) == 5.0)
+  model.add(x + 2 * y <= 5.0)
+  model.add(sum(array_of_vars) == 5.0)
   ```
 
   * In ModelBuilder, the objective is a linear expression:
 
   ```
-  model.Minimize(x + 2.0 * y + z)
+  model.minimize(x + 2.0 * y + z)
   ```
 
   * For large arrays, using the LinearExpr class is faster that using the python
@@ -77,8 +77,8 @@ class LinearExpr(object):
   linear expressions or coefficients as follows:
 
   ```
-  model.Minimize(model_builder.LinearExpr.sum(expressions))
-  model.Add(model_builder.LinearExpr.weighted_sum(expressions, coeffs) >= 0)
+  model.minimize(model_builder.LinearExpr.sum(expressions))
+  model.add(model_builder.LinearExpr.weighted_sum(expressions, coeffs) >= 0)
   ```
   """
 
@@ -131,7 +131,7 @@ class LinearExpr(object):
             elif isinstance(expr, _SumArray):
                 for e in expr.expressions:
                     to_process.append((e, coeff))
-                constant += expr.constant() * coeff
+                constant += expr.constant * coeff
             elif isinstance(expr, _WeightedSum):
                 for e, c in zip(expr.expressions, expr.coefficients):
                     to_process.append((e, coeff * c))
@@ -299,8 +299,8 @@ class _ProductCst(LinearExpr):
     def __init__(self, expr, coeff):
         coeff = mbh.assert_is_a_number(coeff)
         if isinstance(expr, _ProductCst):
-            self.__expr = expr.Expression()
-            self.__coef = expr.Coefficient() * coeff
+            self.__expr = expr.expression
+            self.__coef = expr.coefficient * coeff
         else:
             self.__expr = expr
             self.__coef = coeff
@@ -370,7 +370,7 @@ class _WeightedSum(LinearExpr):
         self.__constant = constant
         if len(expressions) != len(coefficients):
             raise TypeError(
-                'In the LinearExpr.WeightedSum method, the expression array and the '
+                'In the LinearExpr.weighted_sum method, the expression array and the '
                 ' coefficient array must have the same length.')
         for e, c in zip(expressions, coefficients):
             c = mbh.assert_is_a_number(c)
@@ -457,14 +457,14 @@ class Variable(LinearExpr):
             self.__index = int(lb)
             self.__helper = helper
         else:
-            index = helper.AddVar()
+            index = helper.add_var()
             self.__index = index
             self.__helper = helper
-            helper.SetVarLowerBound(index, lb)
-            helper.SetVarUpperBound(index, ub)
-            helper.SetVarIntegrality(index, is_integral)
+            helper.set_var_lower_bound(index, lb)
+            helper.set_var_upper_bound(index, ub)
+            helper.set_var_integrality(index, is_integral)
             if name:
-                helper.SetVarName(index, name)
+                helper.set_var_name(index, name)
 
     @property
     def index(self):
@@ -515,7 +515,7 @@ class Variable(LinearExpr):
     @name.setter
     def name(self, name):
         """Sets the name of the variable."""
-        self.__helper.SetVarName(self.__index, name)
+        self.__helper.set_var_name(self.__index, name)
 
     @property
     def lower_bound(self):
@@ -525,7 +525,7 @@ class Variable(LinearExpr):
     @lower_bound.setter
     def lower_bound(self, bound):
         """Sets the lower bound of the variable."""
-        self.__helper.SetVarLowerBound(self.__index, bound)
+        self.__helper.set_var_lower_bound(self.__index, bound)
 
     @property
     def upper_bound(self):
@@ -535,7 +535,7 @@ class Variable(LinearExpr):
     @upper_bound.setter
     def upper_bound(self, bound):
         """Sets the upper bound of the variable."""
-        self.__helper.SetVarUpperBound(self.__index, bound)
+        self.__helper.set_var_upper_bound(self.__index, bound)
 
     @property
     def is_integral(self):
@@ -545,7 +545,7 @@ class Variable(LinearExpr):
     @is_integral.setter
     def integrality(self, is_integral):
         """Sets the integrality of the variable."""
-        self.__helper.SetVarIntegrality(self.__index, is_integral)
+        self.__helper.set_var_integrality(self.__index, is_integral)
 
     @property
     def objective_coefficient(self):
@@ -553,14 +553,14 @@ class Variable(LinearExpr):
 
     @objective_coefficient.setter
     def objective_coefficient(self, coeff):
-        return self.__helper.SetVarObjectiveCoefficient(self.__index, coeff)
+        return self.__helper.set_var_objective_coefficient(self.__index, coeff)
 
 
 class BoundedLinearExpression(object):
     """Represents a linear constraint: `lb <= linear expression <= ub`.
 
   The only use of this class is to be added to the ModelBuilder through
-  `ModelBuilder.Add(bounded expression)`, as in:
+  `ModelBuilder.add(bounded expression)`, as in:
 
       model.Add(x + 2 * y -1 >= z)
   """
@@ -619,14 +619,14 @@ class LinearConstraint(object):
 
   Example:
 
-      x = model.NewVariable(0, 10, 'x')
-      y = model.NewVariable(0, 10, 'y')
+      x = model.new_num_var(0, 10, 'x')
+      y = model.new_num_var(0, 10, 'y')
 
-      model.Add(x + 2 * y == 5)
+      model.add(x + 2 * y == 5)
   """
 
     def __init__(self, helper):
-        self.__index = helper.AddLinearConstraint()
+        self.__index = helper.add_linear_constraint()
         self.__helper = helper
 
     @property
@@ -645,7 +645,7 @@ class LinearConstraint(object):
 
     @lower_bound.setter
     def lower_bound(self, bound):
-        self.__helper.SetConstraintLowerBound(self.__index, bound)
+        self.__helper.set_constraint_lower_bound(self.__index, bound)
 
     @property
     def upper_bound(self):
@@ -653,7 +653,7 @@ class LinearConstraint(object):
 
     @upper_bound.setter
     def upper_bound(self, bound):
-        self.__helper.SetConstraintUpperBound(self.__index, bound)
+        self.__helper.set_constraint_upper_bound(self.__index, bound)
 
     @property
     def name(self):
@@ -661,10 +661,10 @@ class LinearConstraint(object):
 
     @name.setter
     def name(self, name):
-        return self.__helper.SetConstraintName(self.__index, name)
+        return self.__helper.set_constraint_name(self.__index, name)
 
     def add_term(self, var, coeff):
-        self.__helper.AddConstraintTerm(self.__index, var.index, coeff)
+        self.__helper.add_term_to_constraint(self.__index, var.index, coeff)
 
 
 class ModelBuilder(object):
@@ -737,6 +737,7 @@ class ModelBuilder(object):
         """Rebuilds a variable object from the model and its index."""
         return Variable(self.__helper, index, None, None, None)
 
+    @property
     def num_variables(self):
         """Returns the number of variables in the model."""
         return self.__helper.num_variables()
@@ -766,11 +767,11 @@ class ModelBuilder(object):
             if not isinstance(t[0], Variable):
                 raise TypeError('Wrong argument' + str(t))
             c = mbh.assert_is_a_number(t[1])
-            self.__helper.AddConstraintTerm(index, t[0].index, c)
-        self.__helper.SetConstraintLowerBound(index, lb - constant)
-        self.__helper.SetConstraintUpperBound(index, ub - constant)
+            self.__helper.add_term_to_constraint(index, t[0].index, c)
+        self.__helper.set_constraint_lower_bound(index, lb - constant)
+        self.__helper.set_constraint_upper_bound(index, ub - constant)
         if name:
-            self.__helper.SetConstraintName(index, name)
+            self.__helper.set_constraint_name(index, name)
         return ct
 
     def add(self, ct, name=None):
@@ -795,6 +796,7 @@ class ModelBuilder(object):
         else:
             raise TypeError('Not supported: ModelBuilder.Add(' + str(ct) + ')')
 
+    @property
     def num_constraints(self):
         return self.__helper.num_constraints()
 
@@ -822,9 +824,9 @@ class ModelBuilder(object):
             if not isinstance(t[0], Variable):
                 raise TypeError('Wrong argument' + str(t))
             c = mbh.assert_is_a_number(t[1])
-            self.__helper.SetVarObjectiveCoefficient(t[0].index, c)
-        self.__helper.SetObjectiveOffset(constant)
-        self.__helper.SetMaximize(maximize)
+            self.__helper.set_var_objective_coefficient(t[0].index, c)
+        self.__helper.set_objective_offset(constant)
+        self.__helper.set_maximize(maximize)
 
     @property
     def objective_offset(self):
@@ -832,30 +834,30 @@ class ModelBuilder(object):
 
     @objective_offset.setter
     def objective_offset(self, value):
-        self.__helper.SetObjectiveOffset(value)
+        self.__helper.set_objective_offset(value)
 
     # Input/Output
     def export_to_lp_string(self, obfuscate=False):
         options = pwmb.MPModelExportOptions()
         options.obfuscate = obfuscate
-        return self.__helper.ExportToLpString(options)
+        return self.__helper.export_to_lp_string(options)
 
     def export_to_mps_string(self, obfuscate=False):
         options = pwmb.MPModelExportOptions()
         options.obfuscate = obfuscate
-        return self.__helper.ExportToMpsString(options)
+        return self.__helper.export_to_mps_string(options)
 
     def import_from_mps_string(self, mps_string):
-        return self.__helper.ImportFromMpsString(mps_string)
+        return self.__helper.import_from_mps_string(mps_string)
 
     def import_from_mps_file(self, mps_file):
-        return self.__helper.ImportFromMpsFile(mps_file)
+        return self.__helper.import_from_mps_file(mps_file)
 
     def import_from_lp_string(self, lp_string):
-        return self.__helper.ImportFromLpString(lp_string)
+        return self.__helper.import_from_lp_string(lp_string)
 
     def import_from_lp_file(self, lp_file):
-        return self.__helper.ImportFromLpFile(lp_file)
+        return self.__helper.import_from_lp_file(lp_file)
 
     # Utilities
     @property
@@ -864,7 +866,7 @@ class ModelBuilder(object):
 
     @name.setter
     def name(self, name):
-        self.__helper.SetName(name)
+        self.__helper.set_name(name)
 
     @property
     def helper(self):
@@ -876,10 +878,10 @@ class ModelSolver(object):
     """Main solver class.
 
   The purpose of this class is to search for a solution to the model provided
-  to the Solve() method.
+  to the solve() method.
 
-  Once Solve() is called, this class allows inspecting the solution found
-  with the Value() method, as well as general statistics about the solve
+  Once solve() is called, this class allows inspecting the solution found
+  with the value() method, as well as general statistics about the solve
   procedure.
   """
 
@@ -887,14 +889,18 @@ class ModelSolver(object):
         self.__solve_helper = pwmb.ModelSolverHelper(solver_name)
         self.log_callback = None
 
+    def solver_is_supported(self):
+        """Checks whether the requested solver backend was found."""
+        return self.__solve_helper.solver_is_supported()
+
     # Solver backend and parameters.
     def set_time_limit_in_seconds(self, limit):
         """Sets a time limit for the solve() call."""
-        self.__solve_helper.SetTimeLimitInSeconds(limit)
+        self.__solve_helper.set_time_limit_in_seconds(limit)
 
     def set_solver_specific_parameters(self, parameters):
         """Sets parameters specific to the solver backend."""
-        self.__solve_helper.SetSolverSpecificParameters(parameters)
+        self.__solve_helper.set_solver_specific_parameters(parameters)
 
     def enable_output(self, enabled):
         """Controls the solver backend logs."""
@@ -906,41 +912,43 @@ class ModelSolver(object):
         # swig_helper.SolveWrapper.SetSerializedParameters(
         #     self.parameters.SerializeToString(), solve_wrapper)
         if self.log_callback is not None:
-            self.__solve_helper.SetLogCallback(self.log_callback)
-        self.__solve_helper.Solve(model.helper)
+            self.__solve_helper.set_log_callback(self.log_callback)
+        self.__solve_helper.solve(model.helper)
         return self.__solve_helper.status()
 
     def stop_search(self):
         """Stops the current search asynchronously."""
-        self.__solve_helper.InterruptSolve()
+        self.__solve_helper.interrupt_solve()
 
     def value(self, var):
         """Returns the value of a linear expression after solve."""
-        if not self.__solve_helper.has_response():
+        if not self.__solve_helper.has_solution():
             raise RuntimeError('Solve() has not be called.')
         return self.__solve_helper.var_value(var.index)
 
     def reduced_cost(self, var):
         """Returns the reduced cost of a linear expression after solve."""
-        if not self.__solve_helper.has_response():
+        if not self.__solve_helper.has_solution():
             raise RuntimeError('Solve() has not be called.')
         return self.__solve_helper.reduced_cost(var.index)
 
     def dual_value(self, ct):
         """Returns the dual value of a linear constraint after solve."""
-        if not self.__solve_helper.has_response():
+        if not self.__solve_helper.has_solution():
             raise RuntimeError('Solve() has not be called.')
         return self.__solve_helper.dual_value(ct.index)
 
+    @property
     def objective_value(self):
         """Returns the value of the objective after solve."""
-        if not self.__solve_helper.has_response():
+        if not self.__solve_helper.has_solution():
             raise RuntimeError('Solve() has not be called.')
         return self.__solve_helper.objective_value()
 
+    @property
     def best_objective_bound(self):
         """Returns the best lower (upper) bound found when min(max)imizing."""
-        if not self.__solve_helper.has_response():
+        if not self.__solve_helper.has_solution():
             raise RuntimeError('Solve() has not be called.')
 
         return self.__solve_helper.best_objective_bound()
@@ -951,6 +959,7 @@ class ModelSolver(object):
             status = self.__solve_helper.status()
         return linear_solver_pb2.MPSolverResponseStatus.Name(status)
 
+    @property
     def status_string(self):
         """Returns additional information of the last solve.
 
@@ -965,11 +974,3 @@ class ModelSolver(object):
     @property
     def user_time(self):
         return self.__solve_helper.user_time()
-
-    # def WallTime(self):
-    #   """Returns the wall time in seconds since the creation of the solver."""
-    #   return self.__solution.wall_time
-
-    # def UserTime(self):
-    #   """Returns the user time in seconds since the creation of the solver."""
-    #   return self.__solution.user_time

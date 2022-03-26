@@ -112,24 +112,22 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
 
   pybind11::class_<ModelBuilderHelper>(m, "ModelBuilderHelper")
       .def(pybind11::init<>())
-      .def("ExportToMpsString", &ModelBuilderHelper::ExportToMpsString,
+      .def("export_to_mps_string", &ModelBuilderHelper::ExportToMpsString,
            arg("options") = MPModelExportOptions())
-      .def("ExportToLpString", &ModelBuilderHelper::ExportToLpString,
+      .def("export_to_lp_string", &ModelBuilderHelper::ExportToLpString,
            arg("options") = MPModelExportOptions())
-      .def("WriteModelToFile", &ModelBuilderHelper::WriteModelToFile,
+      .def("write_model_to_file", &ModelBuilderHelper::WriteModelToFile,
            arg("filename"))
-      .def("ImportFromMpsString", &ModelBuilderHelper::ImportFromMpsString,
+      .def("import_from_mps_string", &ModelBuilderHelper::ImportFromMpsString,
            arg("mps_string"))
-      .def("ImportFromMpsFile", &ModelBuilderHelper::ImportFromMpsFile,
+      .def("import_from_mps_file", &ModelBuilderHelper::ImportFromMpsFile,
            arg("mps_file"))
-#if defined(USE_LP_PARSER)
-      .def("ImportFromLpString", &ModelBuilderHelper::ImportFromLpString,
+      .def("import_from_lp_string", &ModelBuilderHelper::ImportFromLpString,
            arg("lp_string"))
-      .def("ImportFromLpFile", &ModelBuilderHelper::ImportFromLpFile,
+      .def("import_from_lp_file", &ModelBuilderHelper::ImportFromLpFile,
            arg("lp_file"))
-#endif // #if defined(USE_LP_PARSER)
       .def(
-          "FillModelFromSparseData",
+          "fill_model_from_sparse_data",
           [](ModelBuilderHelper* helper,
              const Eigen::Ref<const VectorXd>& variable_lower_bounds,
              const Eigen::Ref<const VectorXd>& variable_upper_bounds,
@@ -146,28 +144,28 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
           arg("variable_lower_bound"), arg("variable_upper_bound"),
           arg("objective_coefficients"), arg("constraint_lower_bounds"),
           arg("constraint_upper_bounds"), arg("constraint_matrix"))
-      .def("AddVar", &ModelBuilderHelper::AddVar)
-      .def("SetVarLowerBound", &ModelBuilderHelper::SetVarLowerBound,
+      .def("add_var", &ModelBuilderHelper::AddVar)
+      .def("set_var_lower_bound", &ModelBuilderHelper::SetVarLowerBound,
            arg("var_index"), arg("lb"))
-      .def("SetVarUpperBound", &ModelBuilderHelper::SetVarUpperBound,
+      .def("set_var_upper_bound", &ModelBuilderHelper::SetVarUpperBound,
            arg("var_index"), arg("ub"))
-      .def("SetVarIntegrality", &ModelBuilderHelper::SetVarIntegrality,
+      .def("set_var_integrality", &ModelBuilderHelper::SetVarIntegrality,
            arg("var_index"), arg("is_integer"))
-      .def("SetVarObjectiveCoefficient",
+      .def("set_var_objective_coefficient",
            &ModelBuilderHelper::SetVarObjectiveCoefficient, arg("var_index"),
            arg("coeff"))
-      .def("SetVarName", &ModelBuilderHelper::SetVarName, arg("var_index"),
+      .def("set_var_name", &ModelBuilderHelper::SetVarName, arg("var_index"),
            arg("name"))
-      .def("AddLinearConstraint", &ModelBuilderHelper::AddLinearConstraint)
-      .def("SetConstraintLowerBound",
+      .def("add_linear_constraint", &ModelBuilderHelper::AddLinearConstraint)
+      .def("set_constraint_lower_bound",
            &ModelBuilderHelper::SetConstraintLowerBound, arg("ct_index"),
            arg("lb"))
-      .def("SetConstraintUpperBound",
+      .def("set_constraint_upper_bound",
            &ModelBuilderHelper::SetConstraintUpperBound, arg("ct_index"),
            arg("ub"))
-      .def("AddConstraintTerm", &ModelBuilderHelper::AddConstraintTerm,
+      .def("add_term_to_constraint", &ModelBuilderHelper::AddConstraintTerm,
            arg("ct_index"), arg("var_index"), arg("coeff"))
-      .def("SetConstraintName", &ModelBuilderHelper::SetConstraintName,
+      .def("set_constraint_name", &ModelBuilderHelper::SetConstraintName,
            arg("ct_index"), arg("name"))
       .def("num_variables", &ModelBuilderHelper::num_variables)
       .def("var_lower_bound", &ModelBuilderHelper::VarLowerBound,
@@ -186,26 +184,27 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            arg("ct_index"))
       .def("constraint_name", &ModelBuilderHelper::ConstraintName,
            arg("ct_index"))
-      .def("ConstraintVarIndices", &ModelBuilderHelper::ConstraintVarIndices,
+      .def("constraint_var_indices", &ModelBuilderHelper::ConstraintVarIndices,
            arg("ct_index"))
-      .def("ConstraintCoefficients",
+      .def("constraint_coefficients",
            &ModelBuilderHelper::ConstraintCoefficients, arg("ct_index"))
       .def("name", &ModelBuilderHelper::name)
-      .def("SetName", &ModelBuilderHelper::SetName, arg("name"))
+      .def("set_name", &ModelBuilderHelper::SetName, arg("name"))
       .def("maximize", &ModelBuilderHelper::maximize)
-      .def("SetMaximize", &ModelBuilderHelper::SetMaximize, arg("maximize"))
-      .def("SetObjectiveOffset", &ModelBuilderHelper::SetObjectiveOffset,
+      .def("set_maximize", &ModelBuilderHelper::SetMaximize, arg("maximize"))
+      .def("set_objective_offset", &ModelBuilderHelper::SetObjectiveOffset,
            arg("offset"))
       .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset);
 
   pybind11::class_<ModelSolverHelper>(m, "ModelSolverHelper")
       .def(pybind11::init<const std::string&>())
-      .def("Solve", &ModelSolverHelper::Solve, arg("model"),
+      .def("solver_is_supported", &ModelSolverHelper::SolverIsSupported)
+      .def("solve", &ModelSolverHelper::Solve, arg("model"),
            // The GIL is released during the solve to allow Python threads to do
            // other things in parallel, e.g., log and interrupt.
            pybind11::call_guard<pybind11::gil_scoped_release>())
       .def(
-          "SolveSerializedRequest",
+          "solve_serialized_request",
           [](ModelSolverHelper* solver, const std::string& request_str) {
             MPModelRequest request;
 
@@ -224,16 +223,17 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
           // The GIL is released during the solve to allow Python threads to
           // do other things in parallel, e.g., log and interrupt.
           pybind11::call_guard<pybind11::gil_scoped_release>())
-      .def("InterruptSolve", &ModelSolverHelper::InterruptSolve,
+      .def("interrupt_solve", &ModelSolverHelper::InterruptSolve,
            "Returns true if the interrupt signal was correctly sent, that is, "
            "if the underlying solver supports it.")
-      .def("SetLogCallback", &ModelSolverHelper::SetLogCallback)
-      .def("SetTimeLimitInSeconds", &ModelSolverHelper::SetTimeLimitInSeconds,
-           arg("limit"))
-      .def("SetSolverSpecificParameters",
+      .def("set_log_callback", &ModelSolverHelper::SetLogCallback)
+      .def("set_time_limit_in_seconds",
+           &ModelSolverHelper::SetTimeLimitInSeconds, arg("limit"))
+      .def("set_solver_specific_parameters",
            &ModelSolverHelper::SetSolverSpecificParameters,
            arg("solver_specific_parameters"))
-      .def("EnableOutput", &ModelSolverHelper::EnableOutput, arg("output"))
+      .def("enable_output", &ModelSolverHelper::EnableOutput, arg("output"))
+      .def("has_solution", &ModelSolverHelper::has_solution)
       .def("has_response", &ModelSolverHelper::has_response)
       .def("status",
            [](const ModelSolverHelper& solver) {
@@ -250,7 +250,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("var_value", &ModelSolverHelper::variable_value, arg("var_index"))
       .def("reduced_cost", &ModelSolverHelper::reduced_cost, arg("var_index"))
       .def("dual_value", &ModelSolverHelper::dual_value, arg("ct_index"))
-      .def("VariableValues",
+      .def("variable_values",
            [](const ModelSolverHelper& helper) {
              if (!helper.has_response()) return Eigen::VectorXd();
              const MPSolutionResponse& response = helper.response();
@@ -260,7 +260,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
              }
              return vec;
            })
-      .def("ReducedCosts",
+      .def("reduced_costs",
            [](const ModelSolverHelper& helper) {
              if (!helper.has_response()) return Eigen::VectorXd();
              const MPSolutionResponse& response = helper.response();
@@ -270,7 +270,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
              }
              return vec;
            })
-      .def("DualValues", [](const ModelSolverHelper& helper) {
+      .def("dual_values", [](const ModelSolverHelper& helper) {
         if (!helper.has_response()) return Eigen::VectorXd();
         const MPSolutionResponse& response = helper.response();
         Eigen::VectorXd vec(response.dual_value_size());
