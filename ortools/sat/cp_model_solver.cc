@@ -1800,10 +1800,12 @@ void PostsolveResponseWithFullSolver(int num_variables_in_original_model,
     params.set_cp_model_probing_level(0);
   }
 
+  auto* response_manager = postsolve_model.GetOrCreate<SharedResponseManager>();
+  response_manager->InitializeObjective(mapping_proto);
+
   LoadCpModel(mapping_proto, &postsolve_model);
   SolveLoadedCpModel(mapping_proto, &postsolve_model);
-  const CpSolverResponse postsolve_response =
-      postsolve_model.GetOrCreate<SharedResponseManager>()->GetResponse();
+  const CpSolverResponse postsolve_response = response_manager->GetResponse();
   CHECK(postsolve_response.status() == CpSolverStatus::FEASIBLE ||
         postsolve_response.status() == CpSolverStatus::OPTIMAL)
       << CpSolverResponseStats(postsolve_response);

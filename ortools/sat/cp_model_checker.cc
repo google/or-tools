@@ -403,6 +403,29 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateElementConstraint(const CpModelProto& model,
+                                      const ConstraintProto& ct) {
+  const ElementConstraintProto& element = ct.element();
+
+  // We need to be able to manipulate expression like "target - var" without
+  // integer overflow.
+  LinearExpressionProto overflow_detection;
+  overflow_detection.add_vars(element.target());
+  overflow_detection.add_coeffs(1);
+  overflow_detection.add_vars(/*dummy*/ 0);
+  overflow_detection.add_coeffs(-1);
+  for (const int ref : element.vars()) {
+    overflow_detection.set_vars(1, ref);
+    if (PossibleIntegerOverflow(model, overflow_detection)) {
+      return absl::StrCat(
+          "Domain of the variables involved in element constraint may cause "
+          "overflow",
+          ProtobufShortDebugString(ct));
+    }
+  }
+  return "";
+}
+
 std::string ValidateTableConstraint(const CpModelProto& model,
                                     const ConstraintProto& ct) {
   const TableConstraintProto& arg = ct.table();
@@ -915,6 +938,9 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
           RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
         }
+        break;
+      case ConstraintProto::ConstraintCase::kElement:
+        RETURN_IF_NOT_EMPTY(ValidateElementConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kTable:
         RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));

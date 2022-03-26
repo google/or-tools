@@ -115,21 +115,22 @@ bool CpModelPresolver::PresolveEnforcementLiteral(ConstraintProto* ct) {
 
   int new_size = 0;
   const int old_size = ct->enforcement_literal().size();
+  context_->tmp_literal_set.clear();
   for (const int literal : ct->enforcement_literal()) {
     if (context_->LiteralIsTrue(literal)) {
       // We can remove a literal at true.
-      context_->UpdateRuleStats("true enforcement literal");
+      context_->UpdateRuleStats("enforcement: true literal");
       continue;
     }
 
     if (context_->LiteralIsFalse(literal)) {
-      context_->UpdateRuleStats("false enforcement literal");
+      context_->UpdateRuleStats("enforcement: false literal");
       return RemoveConstraint(ct);
     }
 
     if (context_->VariableIsUniqueAndRemovable(literal)) {
       // We can simply set it to false and ignore the constraint in this case.
-      context_->UpdateRuleStats("enforcement literal not used");
+      context_->UpdateRuleStats("enforcement: literal not used");
       CHECK(context_->SetLiteralToFalse(literal));
       return RemoveConstraint(ct);
     }
@@ -142,8 +143,24 @@ bool CpModelPresolver::PresolveEnforcementLiteral(ConstraintProto* ct) {
           context_->ObjectiveMap().at(PositiveRef(literal));
       if (RefIsPositive(literal) == (obj_coeff > 0)) {
         // It is just more advantageous to set it to false!
-        context_->UpdateRuleStats("enforcement literal with unique direction");
+        context_->UpdateRuleStats("enforcement: literal with unique direction");
         CHECK(context_->SetLiteralToFalse(literal));
+        return RemoveConstraint(ct);
+      }
+    }
+
+    // Deals with duplicate literals.
+    //
+    // TODO(user): Ideally we could do that just once during the first copy,
+    // and later never create such constraint.
+    if (old_size > 1) {
+      const auto [_, inserted] = context_->tmp_literal_set.insert(literal);
+      if (!inserted) {
+        context_->UpdateRuleStats("enforcement: removed duplicate literal");
+        continue;
+      }
+      if (context_->tmp_literal_set.contains(NegatedRef(literal))) {
+        context_->UpdateRuleStats("enforcement: can never be true");
         return RemoveConstraint(ct);
       }
     }
@@ -5581,7 +5598,8 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
   }
   CHECK(graph->DetectEquivalences());
   graph->TransformIntoMaxCliques(
-      &cliques, context_->params().merge_no_overlap_work_limit());
+      &cliques,
+      SafeDoubleToInt64(context_->params().merge_no_overlap_work_limit()));
 
   // Replace each no-overlap with an extended version, or remove if empty.
   int new_num_no_overlaps = 0;
@@ -5668,7 +5686,8 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     return (void)context_->NotifyThatModelIsUnsat();
   }
   graph->TransformIntoMaxCliques(
-      &cliques, context_->params().merge_at_most_one_work_limit());
+      &cliques,
+      SafeDoubleToInt64(context_->params().merge_at_most_one_work_limit()));
 
   // Add the Boolean variable equivalence detected by DetectEquivalences().
   // Those are needed because TransformIntoMaxCliques() will replace all
@@ -8341,7 +8360,9 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // Main propagation loop.
   for (int iter = 0; iter < context_->params().max_presolve_iterations();
        ++iter) {
+    if (context_->time_limit()->LimitReached()) break;
     context_->UpdateRuleStats("presolve: iteration");
+
     // Save some quantities to decide if we abort early the iteration loop.
     const int64_t old_num_presolve_op = context_->num_presolve_operations;
     int old_num_non_empty_constraints = 0;

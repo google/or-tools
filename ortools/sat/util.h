@@ -84,6 +84,13 @@ bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
 int64_t FloorSquareRoot(int64_t a);
 int64_t CeilSquareRoot(int64_t a);
 
+// Converts a double to int64_t and cap large magnitudes at kint64min/max.
+// We also arbitrarily returns 0 for NaNs.
+//
+// Note(user): This is similar to SaturatingFloatToInt(), but we use our own
+// since we need to open source it and the code is simple enough.
+int64_t SafeDoubleToInt64(double value);
+
 // Returns the multiple of base closest to value. If there is a tie, we return
 // the one closest to zero. This way we have ClosestMultiple(x) =
 // -ClosestMultiple(-x) which is important for how this is used.
@@ -260,6 +267,17 @@ class Percentile {
 // This method is exposed for testing purposes.
 void CompressTuples(absl::Span<const int64_t> domain_sizes, int64_t any_value,
                     std::vector<std::vector<int64_t>>* tuples);
+
+inline int64_t SafeDoubleToInt64(double value) {
+  if (std::isnan(value)) return 0;
+  if (value >= static_cast<double>(std::numeric_limits<int64_t>::max())) {
+    return std::numeric_limits<int64_t>::max();
+  }
+  if (value <= static_cast<double>(std::numeric_limits<int64_t>::min())) {
+    return std::numeric_limits<int64_t>::min();
+  }
+  return static_cast<int64_t>(value);
+}
 
 }  // namespace sat
 }  // namespace operations_research

@@ -55,9 +55,7 @@ template <typename ValueType>
 class SharedSolutionRepository {
  public:
   explicit SharedSolutionRepository(int num_solutions_to_keep)
-      : num_solutions_to_keep_(num_solutions_to_keep) {
-    CHECK_GE(num_solutions_to_keep_, 0);
-  }
+      : num_solutions_to_keep_(num_solutions_to_keep) {}
 
   // The solution format used by this class.
   struct Solution {
@@ -579,7 +577,7 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
 
 template <typename ValueType>
 void SharedSolutionRepository<ValueType>::Add(const Solution& solution) {
-  if (num_solutions_to_keep_ == 0) return;
+  if (num_solutions_to_keep_ <= 0) return;
   absl::MutexLock mutex_lock(&mutex_);
   AddInternal(solution);
 }

@@ -271,6 +271,8 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
   }
 
   if (num_removed > 0) {
+    // Note that when a variable is fixed to zero, the code here remove all its
+    // coefficients, so the largest magnitude can be quite large.
     SOLVER_LOG(logger, "Removed ", num_removed,
                " near zero terms with largest magnitude of ", largest_removed,
                ".");
