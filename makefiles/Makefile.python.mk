@@ -183,6 +183,7 @@ check_python: \
 test_python_tests: \
  rpy_lp_test \
  rpy_cp_model_test \
+ rpy_model_builder_test \
  rpy_sorted_interval_list_test \
  rpy_test_cp_api \
  rpy_test_routing_api \
