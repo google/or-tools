@@ -1,4 +1,4 @@
-# OR-Tools - Google Optimization Tools
+# fork by RTE of OR-Tools - Google Optimization Tools
 
 [![PyPI version](https://img.shields.io/pypi/v/ortools.svg)](https://pypi.org/project/ortools/)
 [![PyPI download](https://img.shields.io/pypi/dm/ortools.svg)](https://pypi.org/project/ortools/#files)
@@ -12,6 +12,21 @@
 [![Discord](https://img.shields.io/discord/693088862481678374?color=7289DA&logo=discord&style=plastic)](https://discord.gg/ENkQrdf)
 
 Google's software suite for combinatorial optimization.
+
+This fork add an improved support for Xpress solver and
+add the interface to the open source [Sirius](https://github.com/rte-france/sirius-solver) solver
+developed by [RTE](https://www.rte-france.com/).
+
+## Specificities of this ortools version
+### Using Xpress
+In order to use a version of ortools with the support of Xpress, a valid Xpress installation is required.
+Ortools looks for the environment variable `XPRESS` that contains the path of the dynamic libraries of the solver.
+
+### Using Sirius
+In order to use a version of ortools with the support of Sirius,
+the dynamic library of Sirius must be present on the machine.
+The environment must contain the variable `SIRIUS` set to the path where the `sirius_solver.so` or `sirius_solver.dll`
+can be found.
 
 ## Table of Contents
 

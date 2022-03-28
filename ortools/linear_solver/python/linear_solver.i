@@ -31,8 +31,14 @@
 %pythonbegin %{
 import os as _os
 if hasattr(_os, 'add_dll_directory'):
-    _os.add_dll_directory(_os.getenv('SIRIUS_BIN_DIR', ''))
-    _os.add_dll_directory(_os.getenv('XPRESS_BIN_DIR', ''))
+try:
+    _os.add_dll_directory(_os.getenv('SIRIUS'))
+catch AttributeError:
+    pass
+try:
+    _os.add_dll_directory(_os.getenv('XPRESS'))
+catch AttributeError:
+    pass
 %}
 
 %include "ortools/base/base.i"
