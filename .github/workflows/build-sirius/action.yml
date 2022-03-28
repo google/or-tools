@@ -21,7 +21,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: set sirius variables
+    - name: set sirius output variables
       id: sirius-variables
       shell: bash
       run: |

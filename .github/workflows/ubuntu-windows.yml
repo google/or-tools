@@ -67,10 +67,9 @@ jobs:
       Sirius_Ref: antares_integration
       XPRESSDIR: ${{ github.workspace }}/xpressmp813
       XPRESS: ${{ github.workspace }}/xpressmp813/bin
-      XPRS_LIB_Path: ${{ github.workspace }}/xpressmp813/lib
+      XPRS_LIB_PATH: ${{ github.workspace }}/xpressmp813/lib
       SIRIUS_INSTALL_PATH : ${{ github.workspace }}/sirius_install
-      SIRIUS_BIN_DIR: ${{ github.workspace }}/sirius_install/bin
-      XPRESS_BIN_DIR: ${{ github.workspace }}/xpressmp813/bin
+      SIRIUS: ${{ github.workspace }}/sirius_install/bin
     strategy:
       fail-fast: false
       matrix:
@@ -197,7 +196,7 @@ jobs:
         shell: bash
         run: |
           echo "${{ env.XPRESS }}" >> $GITHUB_PATH
-          echo "${{ env.SIRIUS_INSTALL_PATH }}\bin" >> $GITHUB_PATH
+          echo "${{ env.SIRIUS }}" >> $GITHUB_PATH
 
       - name: Configure ortools
         shell: bash
@@ -214,9 +213,10 @@ jobs:
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
       - name: set ld_library_path
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: |
-          LD_PATH="${{ env.SIRIUS_INSTALL_PATH }}/lib/:${{ env.XPRS_LIB_Path }}/"
+          LD_PATH="${{ env.SIRIUS_INSTALL_PATH }}/lib/:${{ env.XPRS_LIB_PATH }}/"
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
 
       - name: Build & run CMake example project linux
@@ -243,9 +243,8 @@ jobs:
         id: or-install
         shell: bash
         run: |
-          cd build/install
-          find bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
-          cd ..
+          find build/install/bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
+          cd build
           ARCHIVE_NAME="ortools_install${{ steps.names.outputs.appendix }}.zip"
           ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
           zip -r "$ARCHIVE_PATH" ./install
@@ -282,10 +281,6 @@ jobs:
       - name: Run specific python tests
         if: ${{ matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
-        env:
-          XPRESS: "${{ github.workspace }}/xpressmp813/bin/"
-          SIRIUS_BIN_DIR: "${{ github.workspace }}/sirius-solver/SiriusInstall/bin"
-          XPRESS_BIN_DIR: "${{ github.workspace }}/xpressmp813/bin"
         run: ctest -V -C Release -R python_python_linear_programming
       - name: Run specific java tests
         if: ${{ matrix.java == 'ON' }}
