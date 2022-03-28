@@ -3,44 +3,108 @@ digraph DockerDeps {
   //rankdir=BT;
   rankdir=TD;
   node [shape=cylinder, style="rounded,filled", color=black, fillcolor=royalblue];
-  DISTRO_IMG [label="<distro>:latest"];
-  PKG [label="Build packages\ne.g. cmake, g++", shape=box3d];
-  PYPKG [label="Python packages\ne.g. python-dev", shape=box3d, fillcolor=gold];
-  JAVAPKG [label="Java packages\ne.g. openjdk", shape=box3d, fillcolor=crimson];
-  DOTNETPKG [label=".Net packages\ne.g. dotnet-cli", shape=box3d, fillcolor=forestgreen];
+
+  CPP_PKG [label="C++ Tools\ne.g. cmake, g++", shape=box3d];
+  DOTNET_PKG [label=".Net Tools\ne.g. dotnet-sdk", shape=box3d, fillcolor=forestgreen];
+  JAVA_PKG [label="Java Tools\ne.g. openjdk, maven", shape=box3d, fillcolor=crimson];
   SRC [label="git repo", shape=folder];
 
-  subgraph clusterDockerfile {
-    ENV_IMG [label="or-tools/docker:<distro>_env\nenv"];
-    DEVEL_IMG [label="or-tools/docker:<distro>_devel\ndevel"];
-    TP_IMG [label="or-tools/docker:<distro>_third_party\nthird_party"];
-    BUILD_IMG [label="or-tools/docker:<distro>_build\nbuild"];
+  // ARCHIVE
+  subgraph clusterDocker {
+    DISTRO_IMG [label="<distro>:latest"];
+    ENV_IMG [label="or-tools/docker:<platform>_<distro>_env\nenv"];
+    DEVEL_IMG [label="or-tools/docker:<platform>_<distro>_devel\ndevel"];
+    CPP_BUILD_IMG [label="or-tools/docker:<platform>_<distro>_cpp_build\ncpp_build"];
+    DOTNET_BUILD_IMG [label="or-tools/docker:<platform>_<distro>_dotnet_build\ndotnet_build"];
+    JAVA_BUILD_IMG [label="or-tools/docker:<platform>_<distro>_java_build\njava_build"];
+    CPP_ARCHIVE_IMG [label="or-tools/docker:<platform>_<distro>_cpp_archive\ncpp_archive"];
+    DOTNET_ARCHIVE_IMG [label="or-tools/docker:<platform>_<distro>_dotnet_archive\ndotnet_archive"];
+    JAVA_ARCHIVE_IMG [label="or-tools/docker:<platform>_<distro>_java_archive\njava_archive"];
 
+    edge [color=black];
+    DISTRO_IMG -> ENV_IMG;
     ENV_IMG -> DEVEL_IMG;
-    DEVEL_IMG -> TP_IMG;
-    TP_IMG -> BUILD_IMG;
+    DEVEL_IMG -> CPP_BUILD_IMG;
+    DEVEL_IMG -> DOTNET_BUILD_IMG;
+    DEVEL_IMG -> JAVA_BUILD_IMG;
+    CPP_BUILD_IMG -> CPP_ARCHIVE_IMG;
+    DOTNET_BUILD_IMG -> DOTNET_ARCHIVE_IMG;
+    JAVA_BUILD_IMG -> JAVA_ARCHIVE_IMG;
+
+    subgraph clusterArchive {
+      node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+      CPP_OR_TAR [label="or-tools_cpp_<distro>_<platform>_vX.Y.Z.tar.gz"];
+      DOTNET_OR_TAR [label="or-tools_dotnet_<distro>_<platform>_vX.Y.Z.tar.gz"];
+      JAVA_OR_TAR [label="or-tools_java_<distro>_<platform>_vX.Y.Z.tar.gz"];
+
+      color=royalblue;
+      label = "export/archives/";
+    }
+    edge [color=red];
+    CPP_ARCHIVE_IMG -> CPP_OR_TAR [label="make <platform>_<distro>_cpp_archive"];
+    DOTNET_ARCHIVE_IMG -> DOTNET_OR_TAR [label="make <platform>_<distro>_dotnet_archive"];
+    JAVA_ARCHIVE_IMG -> JAVA_OR_TAR [label="make <platform>_<distro>_java_archive"];
+
+    subgraph clusterTestArchive {
+      TEST_CPP_IMG [label="or-tools/docker:<platform>_<distro>_cpp_test\ncpp_test"];
+      TEST_DOTNET_IMG [label="or-tools/docker:<platform>_<distro>_dotnet_test\ndotnet_test"];
+      TEST_JAVA_IMG [label="or-tools/docker:<platform>_<distro>_java_test\njava_test"];
+
+      edge [color=black];
+      CPP_OR_TAR -> TEST_CPP_IMG;
+      DOTNET_OR_TAR -> TEST_DOTNET_IMG;
+      JAVA_OR_TAR -> TEST_JAVA_IMG;
+
+      color=royalblue;
+      label = "test/<distro>/<lang>.Dockerfile";
+    }
+    edge [color=black];
+    ENV_IMG -> TEST_CPP_IMG;
+    ENV_IMG -> TEST_DOTNET_IMG;
+    ENV_IMG -> TEST_JAVA_IMG;
 
     color=royalblue;
-    label = "docker/<distro>/Dockerfile";
+    label = "images/<distro>.Dockerfile";
   }
-  DISTRO_IMG -> ENV_IMG;
-  PKG -> ENV_IMG [label="install", style="dashed"];
-  PYPKG -> ENV_IMG [label="install", style="dashed"];
-  JAVAPKG -> ENV_IMG [label="install", style="dashed"];
-  DOTNETPKG -> ENV_IMG [label="install", style="dashed"];
+  edge [color=black];
+  CPP_PKG -> ENV_IMG [label="install", style="dashed"];
+  DOTNET_PKG -> ENV_IMG [label="install", style="dashed"];
+  JAVA_PKG -> ENV_IMG [label="install", style="dashed"];
   SRC -> DEVEL_IMG [label="copy", style="dashed"];
 
-  subgraph clusterCache {
-    node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
-    OR_TAR [label="or-tools_<distro>_vX.Y.Z.tar.gz"];
-    FLATZINC_TAR [label="or-tools_flatzinc_<distro>_vX.Y.Z.tar.gz"];
+  // PYTHON
+  subgraph clusterPython {
+    PY_DISTRO_IMG [label="manylinux:latest"];
+    PY_PKG [label="Python Tools\ne.g. python, wheel", shape=box3d, fillcolor=gold];
+    PY_ENV_IMG [label="or-tools/docker:python_<platform>_env\nenv"];
+    PY_DEVEL_IMG [label="or-tools/docker:python_<platform>_devel\ndevel"];
+    PY_BUILD_IMG [label="or-tools/docker:python_<platform>_build\nbuild"];
+    edge [color=black];
+    PY_PKG -> PY_DISTRO_IMG [label="install", style="dashed"];
+    PY_DISTRO_IMG -> PY_ENV_IMG
+    PY_ENV_IMG -> PY_DEVEL_IMG
+    PY_DEVEL_IMG -> PY_BUILD_IMG
 
+    subgraph clusterPythonWheel {
+      node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+      OR_WHL [label="ortools.manylinux.X.Y.Z.whl"];
+
+      color=royalblue;
+      label = "export/python/archives/";
+    }
     edge [color=red];
-    BUILD_IMG -> OR_TAR [label="make <distro>_archive"];
-    BUILD_IMG -> FLATZINC_TAR [label="make <distro>_archive"];
+    PY_BUILD_IMG -> OR_WHL [label="make python_<platform>_<distro>_export"];
+
+    PY_TEST_IMG [label="or-tools/docker:python_<platform>_test\ntest"];
+    edge [color=black];
+    PY_DISTRO_IMG -> PY_TEST_IMG
+    OR_WHL -> PY_TEST_IMG
 
     color=royalblue;
-    label = "export/archives/";
+    label = "python/<platform>/Dockerfile";
   }
+  edge [color=black];
+  CPP_PKG -> PY_ENV_IMG [label="install", style="dashed"];
+  SRC -> PY_DEVEL_IMG [label="copy", style="dashed"];
 }
 @enddot
