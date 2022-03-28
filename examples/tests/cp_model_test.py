@@ -707,6 +707,24 @@ class CpModelTest(unittest.TestCase):
             if v0:
                 print('bool passed')
 
+    def testBadSum(self):
+        print('testBadSum')
+
+        model = cp_model.CpModel()
+        xx = dict()
+        for i in range(50):
+            xx[i] = model.NewBoolVar('xx%i' % (i))
+
+        b = model.NewBoolVar('b') # intermediate variable
+        z = model.NewBoolVar('z') # intermediate variable
+
+        # b implies sum of list is >20
+        model.Add(sum(xx[i] for i in range(50)) > 20).OnlyEnforceIf(b)
+        model.Add(sum(xx[i] for i in range(50)) <= 20).OnlyEnforceIf(b.Not())
+
+        model.Add(z == 1).OnlyEnforceIf(b)
+        model.Add(z == 0).OnlyEnforceIf(b.Not())
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

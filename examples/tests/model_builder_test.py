@@ -32,7 +32,7 @@ class ModelBuilderTest(unittest.TestCase):
         x1 = model.new_num_var(0.0, math.inf, 'x1')
         x2 = model.new_num_var(0.0, math.inf, 'x2')
         x3 = model.new_num_var(0.0, math.inf, 'x3')
-        self.assertEqual(3, model.num_variables())
+        self.assertEqual(3, model.num_variables)
         self.assertFalse(x1.is_integral)
         self.assertEqual(0.0, x1.lower_bound)
         self.assertEqual(math.inf, x2.upper_bound)
@@ -52,13 +52,12 @@ class ModelBuilderTest(unittest.TestCase):
         c2 = model.add(2.0 * x1 + 2.0 * x2 + 6.0 * x3 <= 300.0)
         self.assertEqual(-math.inf, c2.lower_bound)
 
-        solver = model_builder.ModelSolver()
-        self.assertTrue(solver.set_solver(solver_name))
+        solver = model_builder.ModelSolver(solver_name)
         self.assertEqual(model_builder.OPTIMAL, solver.solve(model))
 
         # The problem has an optimal solution.
         self.assertAlmostEqual(733.333333 + model.objective_offset,
-                               solver.objective_value(),
+                               solver.objective_value,
                                places=self.NUM_PLACES)
         self.assertAlmostEqual(33.333333,
                                solver.value(x1),
@@ -72,7 +71,7 @@ class ModelBuilderTest(unittest.TestCase):
                                 solver.dual_value(c1) * c1.upper_bound +
                                 solver.dual_value(c2) * c2.upper_bound +
                                 model.objective_offset)
-        self.assertAlmostEqual(solver.objective_value(),
+        self.assertAlmostEqual(solver.objective_value,
                                dual_objective_value,
                                places=self.NUM_PLACES)
 
@@ -134,8 +133,8 @@ ENDATA
 """
         model = model_builder.ModelBuilder()
         self.assertTrue(model.import_from_lp_string(lp_data))
-        self.assertEqual(6, model.num_variables())
-        self.assertEqual(3, model.num_constraints())
+        self.assertEqual(6, model.num_variables)
+        self.assertEqual(3, model.num_constraints)
         self.assertEqual(1, model.var_from_index(0).lower_bound)
         self.assertEqual(42, model.var_from_index(0).upper_bound)
         self.assertEqual('x', model.var_from_index(0).name)
