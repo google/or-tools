@@ -1,7 +1,7 @@
 # Create a virtual environment with all tools installed
-# Latest rolling aka 21.10
+# Latest rolling aka 22.04
 # ref: https://hub.docker.com/_/ubuntu
-FROM ubuntu:21.10 AS env
+FROM ubuntu:22.04 AS env
 
 #############
 ##  SETUP  ##
@@ -31,7 +31,7 @@ ENV JAVA_HOME=/usr/lib/jvm/default-java
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
 RUN apt-get update -qq \
 && apt-get install -yq apt-transport-https \
-&& wget -q https://packages.microsoft.com/config/ubuntu/21.04/packages-microsoft-prod.deb \
+&& wget -q https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
 && apt-get install -yq dotnet-sdk-3.1 dotnet-sdk-6.0 \
