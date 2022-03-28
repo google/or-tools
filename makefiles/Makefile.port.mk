@@ -173,7 +173,7 @@ else # Windows specific part.
   # OS Specific
   OS = Windows
   OR_TOOLS_TOP_AUX = $(shell cd)
-  OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\win\\sed.exe -e "s/\\/\\\\/g" | tools\\win\\sed.exe -e "s/ //g")
+  OR_TOOLS_TOP := $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\win\\sed.exe -e "s/\\/\\\\/g" | tools\\win\\sed.exe -e "s/ //g")
 
   # Compiler specific
   PORT = VisualStudio$(VISUAL_STUDIO_YEAR)-64bit
@@ -255,8 +255,8 @@ else # Windows specific part.
 endif  # ($(PLATFORM),WIN64)
 
 # C++ relevant directory
-SRC_DIR = $(OR_ROOT).
-BUILD_DIR = $(OR_ROOT)build_make
+SRC_DIR := $(OR_ROOT).
+BUILD_DIR := $(OR_ROOT)build_make
 INSTALL_DIR ?= $(OR_ROOT)install_make
 
 # Get github revision level
@@ -280,12 +280,12 @@ ifdef PRE_RELEASE
   OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_SHORT_VERSION)-beta
 endif
 
-#FZ_INSTALL_NAME = or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
-INSTALL_CPP_NAME = or-tools_cpp_$(PORT)_v$(OR_TOOLS_VERSION)
-INSTALL_DOTNET_NAME = or-tools_dotnet_$(PORT)_v$(OR_TOOLS_VERSION)
-INSTALL_JAVA_NAME = or-tools_java_$(PORT)_v$(OR_TOOLS_VERSION)
-INSTALL_PYTHON_NAME = or-tools_python_$(PORT)_v$(OR_TOOLS_VERSION)
-INSTALL_DATA_NAME = or-tools_data_v$(OR_TOOLS_VERSION)
+#FZ_INSTALL_NAME := or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_CPP_NAME := or-tools_cpp_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_DOTNET_NAME := or-tools_dotnet_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_JAVA_NAME := or-tools_java_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_PYTHON_NAME := or-tools_python_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_DATA_NAME := or-tools_data_v$(OR_TOOLS_VERSION)
 
 BUILD_DOTNET ?= OFF
 BUILD_JAVA ?= OFF

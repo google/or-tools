@@ -1,58 +1,110 @@
-##############################Windows specific part##############################
-
-# set this variable to the full path to your Python installation
-WINDOWS_PATH_TO_PYTHON =
-
-# Set this variable to use it as PYTHONPATH
-WINDOWS_PYTHONPATH =
-
-###############################Unix specific part################################
-
-# Set UNIX_PYTHON_VER to the version number of the Python installation on your computer that you wish to use with or-tools.
-#Example : UNIX_PYTHON_VER = 3.5 or UNIX_PYTHON_VER = 2.7
-UNIX_PYTHON_VER =
-
-# Set this variable to use it as PYTHONPATH.
-UNIX_PYTHONPATH =
-
-##################################################################################
-
-.PHONY: rpy install check
-
+VERSION := @PROJECT_VERSION@
 # Let's discover something about where we run
-ifeq "$(SHELL)" "cmd.exe"
-	SYSTEM = win
-else
-ifeq "$(SHELL)" "sh.exe"
+ifeq ($(OS),Windows_NT)
+OS = Windows
+endif
+ifeq ($(OS),Windows)
 SYSTEM = win
-	S = \\
 else
-	SYSTEM = unix
-	S = /
-endif
+SYSTEM = unix
 endif
 
+.SECONDARY:
+
+# Unix specific part.
+ifeq ($(SYSTEM),unix)
+  OS := $(shell uname -s)
+  S := /
+  TOUCH := touch
+  ifeq ($(OS),Linux)
+  endif # ifeq($(OS),Linux)
+  ifeq ($(OS),Darwin) # Assume Mac Os X
+  endif # ifeq($(OS),Darwin)
+  # Set UNIX_PYTHON_VER to the version number of the Python installation on your computer that you wish to use with or-tools.
+  # Example : UNIX_PYTHON_VER=3.10
+  UNIX_PYTHON_VER ?= 3
+  PYTHON_BIN := $(shell command -v python$(UNIX_PYTHON_VER) 2>/dev/null)
+  # Set this variable to use it as PYTHONPATH.
+  UNIX_PYTHONPATH ?=
+  ifneq ($(UNIX_PYTHONPATH),)
+  SET_PYTHONPATH = @PYTHONPATH=$(UNIX_PYTHONPATH)
+  endif
+endif # SYSTEM == unix
+
+# Windows specific part.
 ifeq ($(SYSTEM),win)
-PYTHON_EXECUTABLE = $(WINDOWS_PATH_TO_PYTHON)$Spython
-#Set PYTHONPATH only when WINDOWS_PYTHONPATH is used.
-ifneq ($(WINDOWS_PYTHONPATH),)
-SET_PYTHONPATH = @set PYTHONPATH=$(WINDOWS_PYTHONPATH) &&
+  S := \\
+  WHICH := bin$Swhich.exe
+  TOUCH := bin$Stouch.exe
+  # set this variable to the full path to your Python installation
+  PYTHON_BIN := $(shell $(WHICH) python 2> NUL)
+  # Set this variable to use it as PYTHONPATH
+  WINDOWS_PYTHONPATH ?=
+  ifneq ($(WINDOWS_PYTHONPATH),)
+  SET_PYTHONPATH = @set PYTHONPATH=$(WINDOWS_PYTHONPATH) &&
+  endif
+endif # SYSTEM == win
+
+.PHONY: all
+all: detect
+
+.PHONY: detect
+detect:
+	@echo VERSION = $(VERSION)
+	@echo SYSTEM = $(SYSTEM)
+	@echo OS = $(OS)
+	@echo SHELL = $(SHELL)
+	@echo PYTHON_BIN = $(PYTHON_BIN)
+	@echo SOURCE = $(SOURCE)
+	@echo SOURCE_PATH = $(SOURCE_PATH)
+	@echo SOURCE_NAME = $(SOURCE_NAME)
+	@echo SOURCE_SUFFIX = $(SOURCE_SUFFIX)
+ifeq ($(SYSTEM),win)
+	@echo off & echo(
+else
+	@echo
 endif
-else #UNIX
-PYTHON_EXECUTABLE = python$(UNIX_PYTHON_VER)
-#Set PYTHONPATH only when UNIX_PYTHONPATH is used.
-ifneq ($(UNIX_PYTHONPATH),)
-SET_PYTHONPATH = @PYTHONPATH=$(UNIX_PYTHONPATH)
-endif
 
-endif #ifeq ($(SYSTEM),win)
+python.log:
+	"$(PYTHON_BIN)" -m pip install --user "$(firstword $(wildcard ortools*.whl))"
+	@$(TOUCH) $@
 
-check:
-	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=INFO
+##############
+##  SOURCE  ##
+##############
+.PHONY: run # Run a Python program.
 
-rpy: $(EX)
-	@echo Running $(EX)
-	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=ERROR
-	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX) $(ARGS)
+# Check SOURCE argument
+SOURCE_SUFFIX := $(suffix $(SOURCE))
+# will contain “/any/path/foo.cc” on unix and “\\any\\path\\foo.cc” on windows
+SOURCE_PATH := $(subst /,$S,$(SOURCE))
+SOURCE_NAME := $(basename $(notdir $(SOURCE)))
+ifeq ($(SOURCE),) # Those rules will be used if SOURCE is empty
+
+run:
+	$(error no source file provided, the "$@" target must be used like so: \
+ make $@ SOURCE=relative/path/to/filename.extension)
+
+else #ifeq SOURCE
+
+run: $(SOURCE) | python.log
+	$(SET_PYTHONPATH) $(PYTHON_BIN) examples$S$(SOURCE_NAME).py $(ARGS)
+
+endif #ifeq SOURCE
+
+#############
+##  Tests  ##
+#############
+.PHONY: test
+test:
+	$(MAKE) run SOURCE=examples/basic_example.py
+	$(MAKE) run SOURCE=examples/tsp.py
+	$(MAKE) run SOURCE=examples/vrp.py
+
+############
+##  MISC  ##
+############
+# Include user makefile
+-include Makefile.user
 
 print-% : ; @echo $* = $($*)
