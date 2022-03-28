@@ -29,7 +29,7 @@ from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('params', 'num_search_workers:16, max_time_in_seconds:60',
+flags.DEFINE_string('params', 'num_search_workers:16, max_time_in_seconds:30',
                     'Sat solver parameters.')
 flags.DEFINE_string('proto_file', '',
                     'If not empty, output the proto to this file.')
@@ -54,7 +54,7 @@ class Task(object):
 
   - Simple baking tasks have a fixed duration. They are performed by workers.
   - Waiting/cooling/proofing tasks have a min and a max duration.
-    They are performed by machine or space resources.
+    They are performed by machine or they use space resources.
   """
 
     def __init__(self, name, min_duration, max_duration):
@@ -64,16 +64,16 @@ class Task(object):
 
 
 class Skill(object):
-    """The skill of a worker, of the capability of a machine."""
+    """The skill of a worker or the capability of a machine."""
 
     def __init__(self, name, efficiency):
         self.name = name
-        # Efficienty is currently not used.
+        # Efficiency is currently not used.
         self.efficiency = efficiency
 
 
 class Recipe(object):
-    """A recipe is a set of cooking tasks."""
+    """A recipe is a sequence of cooking tasks."""
 
     def __init__(self, name):
         self.name = name
@@ -113,7 +113,7 @@ class Order(object):
 
     Args:
       unique_id: A unique identifier for the order. Used to display the result.
-      recipe_name: The name of the recipe. It must match one of the recipe.
+      recipe_name: The name of the recipe. It must match one of the recipes.
       due_date: The due date in minutes since midnight.
       quantity: How many cakes to prepare.
     """
@@ -160,9 +160,9 @@ def set_up_data():
     baker1 = Resource('baker1', 1).add_skill(BAKING, 1.0)
     baker2 = Resource('baker2', 1).add_skill(BAKING, 1.0)
     decorator1 = Resource('decorator1', 1).add_skill(DECORATING, 1.0)
-    waiting_space = Resource('waiting_space', 10).add_skill(PROOFING, 1.0)
-    oven = Resource('oven', 10).add_skill(COOKING, 1.0)
-    display_space = Resource('display_space', 10).add_skill(DISPLAY, 1.0)
+    waiting_space = Resource('waiting_space', 4).add_skill(PROOFING, 1.0)
+    oven = Resource('oven', 4).add_skill(COOKING, 1.0)
+    display_space = Resource('display_space', 12).add_skill(DISPLAY, 1.0)
     resources = [baker1, baker2, decorator1, waiting_space, oven, display_space]
 
     # Orders
@@ -171,10 +171,10 @@ def set_up_data():
     croissant_9am = Order('croissant_9am', CROISSANT, 9 * 60, 2)
     croissant_10am = Order('croissant_10am', CROISSANT, 10 * 60, 1)
     croissant_11am = Order('croissant_11am', CROISSANT, 11 * 60, 1)
-    brioche_10am = Order('brioche_10am', BRIOCHE, 10 * 60, 4)
-    brioche_12pm = Order('brioche_12pm', BRIOCHE, 12 * 60, 4)
+    brioche_10am = Order('brioche_10am', BRIOCHE, 10 * 60, 8)
+    brioche_12pm = Order('brioche_12pm', BRIOCHE, 12 * 60, 8)
     apple_pie_1pm = Order('apple_pie_1pm', APPLE_PIE, 13 * 60, 10)
-    chocolate_4pm = Order('chocolate_4pm', CHOCOLATE_CAKE, 16 * 60, 12)
+    chocolate_4pm = Order('chocolate_4pm', CHOCOLATE_CAKE, 16 * 60, 10)
     orders = [
         croissant_7am, croissant_8am, croissant_9am, croissant_10am,
         croissant_11am, brioche_10am, brioche_12pm, apple_pie_1pm, chocolate_4pm
@@ -206,10 +206,9 @@ def solve_with_cp_sat(recipes, resources, orders):
     # Parse orders and create one optional copy per eligible resource and per
     # task.
     interval_list_by_resource_name = collections.defaultdict(list)
-    orders_sequence = collections.defaultdict(list)
+    orders_sequence_of_events = collections.defaultdict(list)
     sorted_orders = []
-    end_var_by_order_name = {}
-    sum_of_due_dates = 0
+    tardiness_vars = []
     for order in orders:
         for batch in range(order.quantity):
             order_id = f'{order.unique_id}_{batch}'
@@ -225,7 +224,8 @@ def solve_with_cp_sat(recipes, resources, orders):
                 if previous_end is None:
                     start = model.NewIntVar(start_work, horizon,
                                             f'start{suffix}')
-                    orders_sequence[order_id].append(start)
+                    orders_sequence_of_events[order_id].append(
+                        (start, f'start{suffix}'))
                 else:
                     start = previous_end
 
@@ -233,10 +233,18 @@ def solve_with_cp_sat(recipes, resources, orders):
                                        f'size{suffix}')
                 end = None
                 if task == recipe.tasks[-1]:
-                    end = model.NewIntVar(due_date, horizon, f'end{suffix}')
+                    # The order must end after the due_date. Ideally, exactly at the
+                    # due_date.
+                    tardiness = model.NewIntVar(0, horizon - due_date,
+                                                f'end{suffix}')
+                    end = tardiness + due_date
+
+                    # Store the end_var for the objective.
+                    tardiness_vars.append(tardiness)
                 else:
                     end = model.NewIntVar(start_work, horizon, f'end{suffix}')
-                orders_sequence[order_id].append(end)
+                orders_sequence_of_events[order_id].append(
+                    (end, f'end{suffix}'))
                 previous_end = end
 
                 # Per resource copy.
@@ -253,10 +261,6 @@ def solve_with_cp_sat(recipes, resources, orders):
                 # Only one copy will be performed.
                 model.AddExactlyOne(presence_literals)
 
-            # Store the end of the order for the objective.
-            end_var_by_order_name[order_id] = previous_end
-            sum_of_due_dates += due_date
-
     # Create resource constraints.
     for resource in resources:
         intervals = interval_list_by_resource_name[resource.name]
@@ -269,7 +273,7 @@ def solve_with_cp_sat(recipes, resources, orders):
     # The objective is to minimize the sum of the tardiness values of each jobs.
     # The tardiness is difference between the end time of an order and its
     # due date.
-    model.Minimize(sum(end_var_by_order_name.values()) - sum_of_due_dates)
+    model.Minimize(sum(tardiness_vars))
 
     # Solve model.
     solver = cp_model.CpSolver()
@@ -278,12 +282,12 @@ def solve_with_cp_sat(recipes, resources, orders):
     solver.parameters.log_search_progress = True
     status = solver.Solve(model)
 
-    if status == cp_model.OPTIMAL:
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         for order_id in sorted_orders:
             print(f'{order_id}:')
-            for var in orders_sequence[order_id]:
-                time = solver.Value(var)
-                print(f'  {var.Name()} at {time // 60}:{time % 60:02}')
+            for time_expr, event_id in orders_sequence_of_events[order_id]:
+                time = solver.Value(time_expr)
+                print(f'  {event_id} at {time // 60}:{time % 60:02}')
 
 
 def main(argv: Sequence[str]) -> None:
