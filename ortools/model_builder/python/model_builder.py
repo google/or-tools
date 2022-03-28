@@ -149,8 +149,7 @@ class LinearExpr(object):
         return object.__hash__(self)
 
     def __abs__(self):
-        raise NotImplementedError(
-            'calling abs() on a linear expression is not supported')
+        return NotImplemented
 
     def __add__(self, arg):
         if mbh.is_zero(arg):
@@ -158,9 +157,7 @@ class LinearExpr(object):
         return _Sum(self, arg)
 
     def __radd__(self, arg):
-        if mbh.is_zero(arg):
-            return self
-        return _Sum(self, arg)
+        return self.__add(arg)
 
     def __sub__(self, arg):
         if mbh.is_zero(arg):
@@ -179,12 +176,7 @@ class LinearExpr(object):
         return _ProductCst(self, arg)
 
     def __rmul__(self, arg):
-        arg = mbh.assert_is_a_number(arg)
-        if mbh.is_one(arg):
-            return self
-        elif mbh.is_zero(arg):
-            return 0
-        return _ProductCst(self, arg)
+        return self.__mul__(arg)
 
     def __div__(self, arg):
         coeff = mbh.assert_is_a_number(arg)
@@ -194,47 +186,41 @@ class LinearExpr(object):
         return self.__mul__(1.0 / coeff)
 
     def __truediv__(self, _):
-        raise NotImplementedError(
-            'calling // on a linear expression is not supported')
+        return NotImplemented
 
     def __mod__(self, _):
-        raise NotImplementedError(
-            'calling %% on a linear expression is not supported')
+        return NotImplemented
 
     def __pow__(self, _):
-        raise NotImplementedError(
-            'calling ** on a linear expression is not supported')
+        return NotImplemented
 
     def __lshift__(self, _):
-        raise NotImplementedError(
-            'calling left shift on a linear expression is not supported')
+        return NotImplemented
 
     def __rshift__(self, _):
-        raise NotImplementedError(
-            'calling right shift on a linear expression is not supported')
+        return NotImplemented
 
     def __and__(self, _):
-        raise NotImplementedError(
-            'calling and on a linear expression is not supported')
+        return NotImplemented
 
     def __or__(self, _):
-        raise NotImplementedError(
-            'calling or on a linear expression is not supported')
+        return NotImplemented
 
     def __xor__(self, _):
-        raise NotImplementedError(
-            'calling xor on a linear expression is not supported')
+        return NotImplemented
 
     def __neg__(self):
         return _ProductCst(self, -1)
 
     def __bool__(self):
         raise NotImplementedError(
-            'Evaluating a LinearExpr instance as a Boolean is not implemented.')
+            f'Cannot use a LinearExpr {self} as an Boolean value')
 
     def __eq__(self, arg):
         if arg is None:
             return False
+        if isinstance(self, Variable) and isinstance(arg, Variable):
+            return VarCompVar(self, arg, True)
         if mbh.is_a_number(arg):
             arg = mbh.assert_is_a_number(arg)
             return BoundedLinearExpression(self, arg, arg)
@@ -256,16 +242,15 @@ class LinearExpr(object):
             return BoundedLinearExpression(self - arg, -math.inf, 0)
 
     def __ne__(self, arg):
-        raise NotImplementedError(
-            'calling != on a linear expression is not supported')
+        if isinstance(self, Variable) and isinstance(arg, Variable):
+            return VarCompVar(self, arg, False)
+        return NotImplemented
 
     def __lt__(self, arg):
-        raise NotImplementedError(
-            'calling < on a linear expression is not supported')
+        return NotImplemented
 
     def __gt__(self, arg):
-        raise NotImplementedError(
-            'calling > on a linear expression is not supported')
+        return NotImplemented
 
 
 class _Sum(LinearExpr):
@@ -555,6 +540,42 @@ class Variable(LinearExpr):
     def objective_coefficient(self, coeff):
         return self.__helper.set_var_objective_coefficient(self.__index, coeff)
 
+    def __hash__(self):
+        return hash((self.__helper, self.__index))
+
+
+class VarCompVar(object):
+    """Represents var == /!= var."""
+
+    def __init__(self, left, right, is_equality):
+        self.__left = left
+        self.__right = right
+        self.__is_equality = is_equality
+
+    def __str__(self):
+        if self.__is_equality:
+            return f'{self.__left} == {self.__right}'
+        else:
+            return f'{self.__left} == {self.__right}'
+
+    def __repr__(self):
+        return f'VarEqVar({self.__left}, {self.__right}, {self.__is_equality})'
+
+    @property
+    def left(self):
+        return self.__left
+
+    @property
+    def right(self):
+        return self.__left
+
+    @property
+    def is_equality(self):
+        return self.__is_equality
+
+    def __bool__(self):
+        return (self.__left == self.__right) == self.__is_equality
+
 
 class BoundedLinearExpression(object):
     """Represents a linear constraint: `lb <= linear expression <= ub`.
@@ -597,21 +618,8 @@ class BoundedLinearExpression(object):
         return self.__ub
 
     def __bool__(self):
-        coeffs_map, constant = self.__expr.get_var_value_map()
-        all_coeffs = set(coeffs_map.values())
-        same_var = set([0])
-        different_vars = set([-1.0, 1.0])
-        if (len(coeffs_map) == 1 and all_coeffs == same_var and
-                constant == 0.0 and self.__lb == 0.0 and self.__ub == 0.0):
-            return True
-        if (len(coeffs_map) == 2 and all_coeffs == different_vars and
-                constant == 0.0 and self.__lb == 0.0 and self.__ub == 0.0):
-            variables = coeffs_map.keys()
-            return variables[0] == variables[1]
-
         raise NotImplementedError(
-            f'Evaluating a BoundedLinearExpression \'{self}\' as a Boolean value'
-            + ' is not supported.')
+            f'Cannot use a BoundedLinearExpression {self} as an Boolean value')
 
 
 class LinearConstraint(object):
@@ -787,6 +795,16 @@ class ModelBuilder(object):
         if isinstance(ct, BoundedLinearExpression):
             return self.add_linear_constraint(ct.expression, ct.lower_bound,
                                               ct.upper_bound, name)
+        elif isinstance(ct, VarCompVar):
+            if not ct.is_equality:
+                raise TypeError('Not supported: ModelBuilder.Add(' + str(ct) +
+                                ')')
+            new_ct = LinearConstraint(self.__helper)
+            new_ct.lower_bound = 0.0
+            new_ct.upper_bound = 0.0
+            new_ct.add_term(ct.left, 1.0)
+            new_ct.add_term(ct.right, -1.0)
+            return new_ct
         elif ct and isinstance(ct, bool):
             return self.add_linear_constraint(
                 linear_expr=0.0)  # Evaluate to True.
@@ -801,7 +819,6 @@ class ModelBuilder(object):
         return self.__helper.num_constraints()
 
     # Objective.
-
     def minimize(self, linear_expr):
         self.__optimize(linear_expr, False)
 
@@ -908,13 +925,16 @@ class ModelSolver(object):
 
     def solve(self, model):
         """Solves a problem and passes each solution to the callback if not null."""
-
-        # swig_helper.SolveWrapper.SetSerializedParameters(
-        #     self.parameters.SerializeToString(), solve_wrapper)
         if self.log_callback is not None:
             self.__solve_helper.set_log_callback(self.log_callback)
         self.__solve_helper.solve(model.helper)
         return self.__solve_helper.status()
+
+    def __check_has_feasible_solution(self):
+        """Checks that solve has run and has found a feasible solution."""
+        if not self.__solve_helper.has_solution():
+            raise RuntimeError(
+                'solve() has not be called, or no solution has been found.')
 
     def stop_search(self):
         """Stops the current search asynchronously."""
@@ -922,39 +942,33 @@ class ModelSolver(object):
 
     def value(self, var):
         """Returns the value of a linear expression after solve."""
-        if not self.__solve_helper.has_solution():
-            raise RuntimeError('Solve() has not be called.')
+        self.__check_has_feasible_solution()
         return self.__solve_helper.var_value(var.index)
 
     def reduced_cost(self, var):
         """Returns the reduced cost of a linear expression after solve."""
-        if not self.__solve_helper.has_solution():
-            raise RuntimeError('Solve() has not be called.')
+        self.__check_has_feasible_solution()
         return self.__solve_helper.reduced_cost(var.index)
 
     def dual_value(self, ct):
         """Returns the dual value of a linear constraint after solve."""
-        if not self.__solve_helper.has_solution():
-            raise RuntimeError('Solve() has not be called.')
+        self.__check_has_feasible_solution()
         return self.__solve_helper.dual_value(ct.index)
 
     @property
     def objective_value(self):
         """Returns the value of the objective after solve."""
-        if not self.__solve_helper.has_solution():
-            raise RuntimeError('Solve() has not be called.')
+        self.__check_has_feasible_solution()
         return self.__solve_helper.objective_value()
 
     @property
     def best_objective_bound(self):
         """Returns the best lower (upper) bound found when min(max)imizing."""
-        if not self.__solve_helper.has_solution():
-            raise RuntimeError('Solve() has not be called.')
-
+        self.__check_has_feasible_solution()
         return self.__solve_helper.best_objective_bound()
 
     def status_name(self, status=None):
-        """Returns the name of the status returned by Solve()."""
+        """Returns the name of the status returned by solve()."""
         if status is None:
             status = self.__solve_helper.status()
         return linear_solver_pb2.MPSolverResponseStatus.Name(status)
