@@ -49,7 +49,7 @@ ifeq ($(OS),Windows)
   JAVA_NATIVE_IDENTIFIER := win32-x86-64
 else
   ifeq ($(OS),Linux)
-  JAVA_NATIVE_IDENTIFIER := linux-x86-64
+    JAVA_NATIVE_IDENTIFIER := linux-x86-64
   else
     ifeq ($(OS),Darwin)
     JAVA_NATIVE_IDENTIFIER := darwin-x86-64
