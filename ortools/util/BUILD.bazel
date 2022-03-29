@@ -1,4 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -301,6 +302,12 @@ cc_proto_library(
     deps = [":optional_boolean_proto"],
 )
 
+py_proto_library(
+    name = "optional_boolean_py_pb2",
+    srcs = ["optional_boolean.proto"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "functions_swig_helpers",
     hdrs = [
@@ -455,5 +462,19 @@ cc_library(
     deps = [
         "//ortools/base:status_macros",
         "@com_google_absl//absl/status",
+    ],
+)
+
+cc_library(
+    name = "fp_roundtrip_conv",
+    srcs = ["fp_roundtrip_conv.cc"],
+    hdrs = ["fp_roundtrip_conv.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_builder",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )

@@ -15,6 +15,7 @@
 #define OR_TOOLS_UTIL_FILE_UTIL_H_
 
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "absl/status/statusor.h"

@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"

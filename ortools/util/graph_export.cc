@@ -14,6 +14,7 @@
 #include "ortools/util/graph_export.h"
 
 #include <memory>
+#include <string>
 
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"

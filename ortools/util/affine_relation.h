@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_UTIL_AFFINE_RELATION_H_
 #define OR_TOOLS_UTIL_AFFINE_RELATION_H_
 
+#include <algorithm>
 #include <vector>
 
 #include "ortools/base/iterator_adaptors.h"
