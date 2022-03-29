@@ -1,0 +1,44 @@
+# Python wrapper for model_builder.
+
+load("@ortools_deps//:requirements.bzl", "requirement")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_python//python:defs.bzl", "py_library")
+
+pybind_extension(
+    name = "pywrap_model_builder_helper",
+    srcs = ["pywrap_model_builder_helper.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_exporter",
+        "//ortools/model_builder/wrappers:model_builder_helper",
+        "@com_google_absl//absl/strings",
+        "@eigen//:eigen3",
+    ],
+)
+
+py_library(
+    name = "model_builder_helper",
+    srcs = ["model_builder_helper.py"],
+    data = [
+        ":pywrap_model_builder_helper.so",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        requirement("numpy"),
+        "//ortools/linear_solver:linear_solver_py_pb2",
+    ],
+)
+
+py_library(
+    name = "model_builder",
+    srcs = ["model_builder.py"],
+    data = [
+        ":pywrap_model_builder_helper.so",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":model_builder_helper",
+        "//ortools/linear_solver:linear_solver_py_pb2",
+    ],
+)

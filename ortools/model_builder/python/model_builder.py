@@ -157,7 +157,7 @@ class LinearExpr(object):
         return _Sum(self, arg)
 
     def __radd__(self, arg):
-        return self.__add(arg)
+        return self.__add__(arg)
 
     def __sub__(self, arg):
         if mbh.is_zero(arg):
@@ -219,8 +219,6 @@ class LinearExpr(object):
     def __eq__(self, arg):
         if arg is None:
             return False
-        if isinstance(self, Variable) and isinstance(arg, Variable):
-            return VarCompVar(self, arg, True)
         if mbh.is_a_number(arg):
             arg = mbh.assert_is_a_number(arg)
             return BoundedLinearExpression(self, arg, arg)
@@ -242,8 +240,6 @@ class LinearExpr(object):
             return BoundedLinearExpression(self - arg, -math.inf, 0)
 
     def __ne__(self, arg):
-        if isinstance(self, Variable) and isinstance(arg, Variable):
-            return VarCompVar(self, arg, False)
         return NotImplemented
 
     def __lt__(self, arg):
@@ -540,6 +536,25 @@ class Variable(LinearExpr):
     def objective_coefficient(self, coeff):
         return self.__helper.set_var_objective_coefficient(self.__index, coeff)
 
+    def __eq__(self, arg):
+        if arg is None:
+            return False
+        if isinstance(arg, Variable):
+            return VarCompVar(self, arg, True)
+        else:
+            if mbh.is_a_number(arg):
+                arg = mbh.assert_is_a_number(arg)
+                return BoundedLinearExpression(self, arg, arg)
+            else:
+                return BoundedLinearExpression(self - arg, 0, 0)
+
+    def __ne__(self, arg):
+        if arg is None:
+            return True
+        if isinstance(arg, Variable):
+            return VarCompVar(self, arg, False)
+        return NotImplemented
+
     def __hash__(self):
         return hash((self.__helper, self.__index))
 
@@ -559,7 +574,7 @@ class VarCompVar(object):
             return f'{self.__left} == {self.__right}'
 
     def __repr__(self):
-        return f'VarEqVar({self.__left}, {self.__right}, {self.__is_equality})'
+        return f'VarCompVar({self.__left}, {self.__right}, {self.__is_equality})'
 
     @property
     def left(self):
@@ -574,7 +589,7 @@ class VarCompVar(object):
         return self.__is_equality
 
     def __bool__(self):
-        return (self.__left == self.__right) == self.__is_equality
+        return (self.__left.index == self.__right.index) == self.__is_equality
 
 
 class BoundedLinearExpression(object):

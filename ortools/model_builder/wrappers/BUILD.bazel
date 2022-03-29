@@ -1,0 +1,31 @@
+# ModelBuilder: a lightweight implementation of the linear_solver API
+
+# Public exports.
+exports_files(
+    [
+        "README.md",
+        "BUILD.bazel",
+        "CMakeLists.txt",
+    ] + glob([
+        "*.cc",
+        "*.h",
+    ]),
+)
+
+cc_library(
+    name = "model_builder_helper",
+    srcs = ["model_builder_helper.cc"],
+    hdrs = ["model_builder_helper.h"],
+    visibility = ["//visibility:public"],
+    copts = [
+        "-DUSE_SCIP",
+    ],    
+    deps = [
+        "//ortools/linear_solver",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_exporter",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:mps_reader",
+        "//ortools/util:logging",
+    ],
+)

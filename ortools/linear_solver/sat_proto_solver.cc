@@ -24,6 +24,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/lp_utils.h"
+#include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
@@ -80,13 +81,17 @@ sat::CpSolverStatus FromMPSolverResponseStatus(MPSolverResponseStatus status) {
 
 MPSolutionResponse InfeasibleResponse(SolverLogger& logger,
                                       std::string message) {
+  SOLVER_LOG(&logger, "Infeasible model detected in sat_solve_proto.\n",
+             message);
+
   // This is needed for our benchmark scripts.
-  MPSolutionResponse response;
   if (logger.LoggingIsEnabled()) {
     sat::CpSolverResponse cp_response;
     cp_response.set_status(sat::CpSolverStatus::INFEASIBLE);
     SOLVER_LOG(&logger, CpSolverResponseStats(cp_response));
   }
+
+  MPSolutionResponse response;
   response.set_status(MPSolverResponseStatus::MPSOLVER_INFEASIBLE);
   response.set_status_str(message);
   return response;
@@ -94,13 +99,16 @@ MPSolutionResponse InfeasibleResponse(SolverLogger& logger,
 
 MPSolutionResponse ModelInvalidResponse(SolverLogger& logger,
                                         std::string message) {
+  SOLVER_LOG(&logger, "Invalid input detected in sat_solve_proto.\n", message);
+
   // This is needed for our benchmark scripts.
-  MPSolutionResponse response;
   if (logger.LoggingIsEnabled()) {
     sat::CpSolverResponse cp_response;
     cp_response.set_status(sat::CpSolverStatus::MODEL_INVALID);
     SOLVER_LOG(&logger, CpSolverResponseStats(cp_response));
   }
+
+  MPSolutionResponse response;
   response.set_status(MPSolverResponseStatus::MPSOLVER_MODEL_INVALID);
   response.set_status_str(message);
   return response;
@@ -173,6 +181,14 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   if (!sat::MPModelProtoValidationBeforeConversion(params, *mp_model,
                                                    &logger)) {
     return ModelInvalidResponse(logger, "Extra CP-SAT validation failed.");
+  }
+
+  {
+    const std::string error = sat::ValidateParameters(params);
+    if (!error.empty()) {
+      return ModelInvalidResponse(
+          logger, absl::StrCat("Invalid CP-SAT parameters: ", error));
+    }
   }
 
   // This is good to do before any presolve.

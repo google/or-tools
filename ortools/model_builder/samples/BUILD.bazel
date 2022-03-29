@@ -1,1 +1,11 @@
 # Samples code the model builder library.
+
+load(":code_samples.bzl", "code_sample_py")
+
+code_sample_py(name = "assignment_mb")
+
+code_sample_py(name = "bin_packing_mb")
+
+code_sample_py(name = "simple_lp_program_mb")
+
+code_sample_py(name = "simple_mip_program_mb")

@@ -269,7 +269,7 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       }
       break;
     }
-#if defined(USE_SCIP)    
+#if defined(USE_SCIP)
     case MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING: {
       // TODO(user): Enable log_callback support.
       // TODO(user): Enable interrupt_solve.
@@ -279,7 +279,7 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       }
       break;
     }
-#endif  // defined(USE_SCIP)    
+#endif  // defined(USE_SCIP)
     default: {
       response_->set_status(
           MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);

@@ -9,4 +9,5 @@ exports_files([
     "bliss-0.73.patch",
     #    "zlib.BUILD",
     "archive_helper.bzl",
+    "python_deps.txt",
 ])
