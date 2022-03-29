@@ -15,6 +15,7 @@
 #define OR_TOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_
 
 #include <cstdint>
+#include <string>
 
 #include "absl/strings/match.h"
 #include "ortools/base/integral_types.h"

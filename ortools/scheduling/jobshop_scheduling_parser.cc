@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <string>
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"

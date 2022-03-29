@@ -14,6 +14,7 @@
 #include "ortools/scheduling/rcpsp_parser.h"
 
 #include <cstdint>
+#include <string>
 
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
