@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "absl/strings/string_view.h"
@@ -95,6 +96,9 @@ class LbTreeSearch {
     // Points to adjacent nodes in the tree. Large if no connection.
     NodeIndex true_child = NodeIndex(std::numeric_limits<int32_t>::max());
     NodeIndex false_child = NodeIndex(std::numeric_limits<int32_t>::max());
+
+    // Indicates if this nodes was removed from the tree.
+    bool is_deleted = false;
   };
 
   // Display the current tree, this is mainly here to investigate ideas to
@@ -108,6 +112,16 @@ class LbTreeSearch {
   // Updates the objective of the node in the current branch at level n - 1 from
   // the one at level n.
   void UpdateParentObjective(int level);
+
+  // Returns false on conflict.
+  bool FullRestart();
+
+  // Mark the given node as deleted. Its literal is assumed to be set. We also
+  // delete the subtree that is not longer relevant.
+  void MarkAsDeletedNodeAndUnreachableSubtree(Node& node);
+
+  // Used in the solve logs.
+  std::string SmallProgressString() const;
 
   // Model singleton class used here.
   TimeLimit* time_limit_;
@@ -129,6 +143,7 @@ class LbTreeSearch {
   IntegerValue current_objective_lb_;
 
   // Memory for all the nodes.
+  int num_nodes_in_tree_ = 0;
   absl::StrongVector<NodeIndex, Node> nodes_;
 
   // The list of nodes in the current branch, in order from the root.
@@ -144,13 +159,12 @@ class LbTreeSearch {
   int64_t num_decisions_taken_ = 0;
 
   // Used to trigger the initial restarts and imports.
+  int num_full_restarts_ = 0;
   int64_t num_decisions_taken_at_last_restart_ = 0;
-  int64_t num_decisions_taken_at_last_import_ = 0;
+  int64_t num_decisions_taken_at_last_level_zero_ = 0;
 
-  // Count the number of hard restarts (where all nodes are cleared) and soft
-  // restarts (where the search backtracks to level 0 to import other solver
-  // changes).
-  int64_t num_imports_ = 0;
+  // Count the number of time we are back to decision level zero.
+  int64_t num_back_to_root_node_ = 0;
 
   // Used to display periodic info to the log.
   absl::Time last_logging_time_;

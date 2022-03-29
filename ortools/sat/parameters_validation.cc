@@ -38,6 +38,18 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
   TEST_IN_RANGE(solution_pool_size, 0, std::numeric_limits<int32_t>::max());
 
+  if (params.enumerate_all_solutions() && params.num_search_workers() > 1) {
+    return "Enumerating all solutions does not work in parallel";
+  }
+
+  if (params.enumerate_all_solutions() && params.interleave_search()) {
+    return "Enumerating all solutions does not work with interleaved search";
+  }
+
+  if (params.num_search_workers() < 0) {
+    return "Parameters num_search_workers must be positive";
+  }
+
   return "";
 }
 

@@ -157,6 +157,47 @@ void LbTreeSearch::DebugDisplayTree(NodeIndex root) const {
   LOG(INFO) << "num_nodes: " << num_nodes;
 }
 
+// Here we forgot the whole search tree and restart.
+//
+// The idea is that the heuristic has now more information so it will likely
+// take better decision which will result in a smaller overall tree.
+bool LbTreeSearch::FullRestart() {
+  ++num_full_restarts_;
+  num_decisions_taken_at_last_restart_ = num_decisions_taken_;
+  num_nodes_in_tree_ = 0;
+  nodes_.clear();
+  current_branch_.clear();
+  return sat_solver_->RestoreSolverToAssumptionLevel();
+}
+
+void LbTreeSearch::MarkAsDeletedNodeAndUnreachableSubtree(Node& node) {
+  std::vector<NodeIndex> to_delete;
+  if (sat_solver_->Assignment().LiteralIsTrue(node.literal)) {
+    to_delete.push_back(node.false_child);
+  } else {
+    to_delete.push_back(node.true_child);
+  }
+  --num_nodes_in_tree_;
+  node.is_deleted = true;
+  for (int i = 0; i < to_delete.size(); ++i) {
+    const NodeIndex n = to_delete[i];
+    if (n >= nodes_.size()) continue;
+
+    --num_nodes_in_tree_;
+    nodes_[n].is_deleted = true;
+
+    to_delete.push_back(nodes_[n].true_child);
+    to_delete.push_back(nodes_[n].false_child);
+  }
+}
+
+std::string LbTreeSearch::SmallProgressString() const {
+  return absl::StrCat(
+      "#nodes:", num_nodes_in_tree_, "/", nodes_.size(),
+      " #rc:", num_rc_detected_, " #decisions:", num_decisions_taken_,
+      " #@root:", num_back_to_root_node_, " #restarts:", num_full_restarts_);
+}
+
 SatSolver::Status LbTreeSearch::Search(
     const std::function<void()>& feasible_solution_observer) {
   if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
@@ -164,13 +205,13 @@ SatSolver::Status LbTreeSearch::Search(
   }
 
   // We currently restart the search tree from scratch from time to times:
-  //   - At most every kNumBranchesBeforePeriodicRestarts branches explored for
-  //     at most kMaxNumInitialRestarts times.
-  //   - Every time we backtrack to level zero, we count how many nodes are
-  //   worse than the best known objective lower bound. If this is true for more
-  //   than half of the existing nodes, we restart and clear all nodes.
-  //   If if this happens during the initial restarts phase, it reset the above
-  //   counter and uses 1 of the available initial restarts.
+  // - Initially, every kNumDecisionsBeforeInitialRestarts, for at most
+  //   kMaxNumInitialRestarts times.
+  // - Every time we backtrack to level zero, we count how many nodes are worse
+  //   than the best known objective lower bound. If this is true for more than
+  //   half of the existing nodes, we restart and clear all nodes. If if this
+  //   happens during the initial restarts phase, it reset the above counter and
+  //   uses 1 of the available initial restarts.
   //
   // This has 2 advantages:
   //   - It allows our "pseudo-cost" to kick in and experimentally result in
@@ -182,9 +223,8 @@ SatSolver::Status LbTreeSearch::Search(
   //
   // TODO(user): It would also be cool to exploit the reason for the LB increase
   // even more.
-  const int64_t kNumBranchesBeforePeriodicRestarts = 1000;
-  int64_t num_restarts = 0;
   const int kMaxNumInitialRestarts = 10;
+  const int64_t kNumDecisionsBeforeInitialRestarts = 1000;
 
   while (!time_limit_->LimitReached() && !shared_response_->ProblemIsSolved()) {
     // This is the current bound we try to improve. We cache it here to avoid
@@ -247,10 +287,8 @@ SatSolver::Status LbTreeSearch::Search(
       const IntegerValue bound = nodes_[current_branch_[0]].MinObjective();
       if (bound > current_objective_lb_) {
         shared_response_->UpdateInnerObjectiveBounds(
-            absl::StrCat("lb_tree_search #nodes:", nodes_.size(),
-                         " #rc:", num_rc_detected_, " #imports:", num_imports_,
-                         " #restarts:", num_restarts),
-            bound, integer_trail_->LevelZeroUpperBound(objective_var_));
+            absl::StrCat("lb_tree_search ", SmallProgressString()), bound,
+            integer_trail_->LevelZeroUpperBound(objective_var_));
         current_objective_lb_ = bound;
         if (VLOG_IS_ON(3)) DebugDisplayTree(current_branch_[0]);
       }
@@ -277,21 +315,13 @@ SatSolver::Status LbTreeSearch::Search(
 
     // Forget the whole tree and restart.
     // We will do it periodically at the beginning of the search each time we
-    // cross the k * kNumBranchesBeforeInitialRestarts branches explored.
-    // This will happen at most kMaxNumInitialRestarts times.
+    // cross the kNumDecisionsBeforeInitialRestarts decision since the last
+    // restart. This will happen at most kMaxNumInitialRestarts times.
     if (num_decisions_taken_ >= num_decisions_taken_at_last_restart_ +
-                                    kNumBranchesBeforePeriodicRestarts &&
-        num_restarts < kMaxNumInitialRestarts) {
-      ++num_restarts;
-      num_decisions_taken_at_last_restart_ = num_decisions_taken_;
-      VLOG(2) << "lb_tree_search initial_restart nodes: " << nodes_.size()
-              << ", branches:" << num_decisions_taken_
-              << ", restarts: " << num_restarts;
-      nodes_.clear();
-      current_branch_.clear();
-      if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
-        return sat_solver_->UnsatStatus();
-      }
+                                    kNumDecisionsBeforeInitialRestarts &&
+        num_full_restarts_ < kMaxNumInitialRestarts) {
+      VLOG(2) << "lb_tree_search initial_restart " << SmallProgressString();
+      if (!FullRestart()) return sat_solver_->UnsatStatus();
     }
 
     // Backtrack if needed.
@@ -314,8 +344,9 @@ SatSolver::Status LbTreeSearch::Search(
       int backtrack_level =
           std::max(0, static_cast<int>(current_branch_.size()) - 1);
 
-      // Periodic restart.
-      if (num_decisions_taken_ >= num_decisions_taken_at_last_import_ + 10000) {
+      // Periodic backtrack to level zero so we can import bounds.
+      if (num_decisions_taken_ >=
+          num_decisions_taken_at_last_level_zero_ + 10000) {
         backtrack_level = 0;
       }
 
@@ -325,11 +356,12 @@ SatSolver::Status LbTreeSearch::Search(
       }
     }
 
-    // This will import other workers bound if we are back to level zero.
     if (sat_solver_->CurrentDecisionLevel() == 0) {
-      ++num_imports_;
-      num_decisions_taken_at_last_import_ = num_decisions_taken_;
+      ++num_back_to_root_node_;
+      num_decisions_taken_at_last_level_zero_ = num_decisions_taken_;
     }
+
+    // This will import other workers bound if we are back to level zero.
     if (!search_helper_->BeforeTakingDecision()) {
       return sat_solver_->UnsatStatus();
     }
@@ -340,26 +372,25 @@ SatSolver::Status LbTreeSearch::Search(
     // heuristic to decide whether to retart the search from scratch or not.
     //
     // We ignore small search trees.
-    if (sat_solver_->CurrentDecisionLevel() == 0 && nodes_.size() > 50) {
+    if (sat_solver_->CurrentDecisionLevel() == 0 && num_nodes_in_tree_ > 50) {
       // Let's count how many nodes have worse objective bounds than the best
       // known external objective lower bound.
       const IntegerValue latest_lb =
           shared_response_->GetInnerObjectiveLowerBound();
+      int num_nodes = 0;
       int num_nodes_with_lower_objective = 0;
       for (const Node& node : nodes_) {
+        if (node.is_deleted) continue;
+        ++num_nodes;
         if (node.MinObjective() < latest_lb) num_nodes_with_lower_objective++;
       }
-      if (num_nodes_with_lower_objective * 2 > nodes_.size()) {
-        ++num_restarts;
-        num_decisions_taken_at_last_restart_ = num_decisions_taken_;
+      DCHECK_EQ(num_nodes_in_tree_, num_nodes);
+      if (num_nodes_with_lower_objective * 2 > num_nodes) {
         VLOG(2) << "lb_tree_search restart nodes: "
-                << num_nodes_with_lower_objective << "/" << nodes_.size()
-                << " : "
-                << 100.0 * num_nodes_with_lower_objective / nodes_.size() << "%"
-                << ", branches:" << num_decisions_taken_
-                << ", restarts: " << num_restarts;
-        nodes_.clear();
-        current_branch_.clear();
+                << num_nodes_with_lower_objective << "/" << num_nodes << " : "
+                << 100.0 * num_nodes_with_lower_objective / num_nodes << "%"
+                << ", decisions:" << num_decisions_taken_;
+        if (!FullRestart()) return sat_solver_->UnsatStatus();
       }
     }
 
@@ -390,6 +421,7 @@ SatSolver::Status LbTreeSearch::Search(
           n = node.false_child;
           new_lb = node.false_objective;
         }
+        MarkAsDeletedNodeAndUnreachableSubtree(node);
 
         // We jump directly to the subnode.
         // Else we will change the root.
@@ -400,7 +432,7 @@ SatSolver::Status LbTreeSearch::Search(
             nodes_[parent].true_child = n;
             nodes_[parent].UpdateTrueObjective(new_lb);
           } else {
-            CHECK(sat_solver_->Assignment().LiteralIsFalse(
+            DCHECK(sat_solver_->Assignment().LiteralIsFalse(
                 nodes_[parent].literal));
             nodes_[parent].false_child = n;
             nodes_[parent].UpdateFalseObjective(new_lb);
@@ -409,10 +441,11 @@ SatSolver::Status LbTreeSearch::Search(
         }
       } else {
         // If both lower bound are the same, we pick a random sub-branch.
-        bool choose_true = node.true_objective < node.false_objective;
-        if (node.true_objective == node.false_objective) {
-          choose_true = absl::Bernoulli(*random_, 0.5);
-        }
+        num_decisions_taken_++;
+        const bool choose_true =
+            node.true_objective == node.false_objective
+                ? absl::Bernoulli(*random_, 0.5)
+                : node.true_objective < node.false_objective;
         if (choose_true) {
           n = node.true_child;
           search_helper_->TakeDecision(node.literal);
@@ -420,8 +453,6 @@ SatSolver::Status LbTreeSearch::Search(
           n = node.false_child;
           search_helper_->TakeDecision(node.literal.Negated());
         }
-
-        num_decisions_taken_++;
 
         // Conflict?
         if (current_branch_.size() != sat_solver_->CurrentDecisionLevel()) {
@@ -444,11 +475,8 @@ SatSolver::Status LbTreeSearch::Search(
         if (lb > current_objective_lb_) break;
       }
 
-      shared_response_->LogPeriodicMessage(
-          "TreeS",
-          absl::StrCat("#nodes:", nodes_.size(), " #branches:",
-                       num_decisions_taken_, " #imports:", num_imports_),
-          &last_logging_time_);
+      shared_response_->LogPeriodicMessage("TreeS", SmallProgressString(),
+                                           &last_logging_time_);
 
       if (n < nodes_.size()) {
         current_branch_.push_back(n);
@@ -493,6 +521,7 @@ SatSolver::Status LbTreeSearch::Search(
     // Create a new node.
     // Note that the decision will be pushed to the solver on the next loop.
     const NodeIndex n(nodes_.size());
+    ++num_nodes_in_tree_;
     nodes_.emplace_back(Literal(decision),
                         std::max(current_objective_lb_,
                                  integer_trail_->LowerBound(objective_var_)));
