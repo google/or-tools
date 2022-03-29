@@ -199,18 +199,6 @@ $(OBJ_DIR)/swig: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sswig
 
 ##################
-##  Sat solver  ##
-##################
-sat: $(BIN_DIR)/sat_runner$E
-
-$(OBJ_DIR)/sat_runner.$O: \
- $(CC_EX_DIR)/sat_runner.cc \
- $(CC_EX_DIR)/opb_reader.h \
- $(CC_EX_DIR)/sat_cnf_reader.h \
- cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -I$(SRC_DIR) -c $(CC_EX_PATH)$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
-
-##################
 ##  C++ SOURCE  ##
 ##################
 ifeq ($(SOURCE_SUFFIX),.cc) # Those rules will be used if SOURCE contain a .cc file
