@@ -1,0 +1,61 @@
+name: "setup ubuntu environement"
+description: "setup dotnet python and compile sirius"
+inputs:
+  os:
+    description: 'operating system'
+    required: true
+  python-version:
+    description: 'python version'
+    required: false
+    default: '3.10'
+  dotnet:
+    description: 'should install dotnet ON OFF'
+    required: false
+    default: 'OFF'
+  python:
+    description: 'should install python'
+    required: false
+    default: 'ON'
+runs:
+  using: "composite"
+  steps:
+    - name: Display Python path
+      shell: bash
+      run: which python
+
+    - name: install zip for windows
+      if: ${{ startsWith(inputs.os, 'windows') }}
+      shell: cmd
+      run: |
+        choco install zip --no-progress
+    - name: Setup .NET 6.0
+      if: ${{ inputs.dotnet == 'ON' }}
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    - name: Set up Python
+      if: ${{ inputs.python == 'ON' }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ inputs.python-version }}
+        architecture: x64
+    - name: Pip install reqs
+      if: ${{ inputs.python == 'ON' }}
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
+
+    - name: Display Python path
+      shell: bash
+      run: which python
+
+    - name: Install SWIG 4.0.2 for windows
+      if: ${{ startsWith(inputs.os, 'windows') }}
+      shell: pwsh
+      run: |
+        (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip",".\swigwin-4.0.2.zip");
+        Expand-Archive .\swigwin-4.0.2.zip .;
+        echo "$((Get-Item .).FullName)/swigwin-4.0.2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        Remove-Item .\swigwin-4.0.2.zip
+

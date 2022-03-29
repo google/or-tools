@@ -1,0 +1,68 @@
+name: "setup ubuntu environement"
+description: "setup dotnet python and compile sirius"
+inputs:
+  sirius-ref:
+    description: 'sirius repository ref, tag or branch'
+    required: true
+  zip-sirius:
+    description: 'boolean, should create a sirius archive'
+    required: false
+    default: 'true'
+outputs:
+  sirius-install-path:
+    description: "path of the sirius installation"
+    value: ${{ steps.sirius-variables.outputs.sirius-install-path }}
+  sirius-archive-path:
+    description: "path of the sirius archive file"
+    value: ${{ steps.sirius-variables.outputs.sirius-archive-path }}
+  sirius-archive-name:
+    description: "filename of the sirius archive file"
+    value: ${{ steps.sirius-variables.outputs.sirius-archive-name }}
+runs:
+  using: "composite"
+  steps:
+    - name: set sirius output variables
+      id: sirius-variables
+      shell: bash
+      run: |
+        SIRIUS_WORKING_DIR=sirius-solver
+        SIRIUS_BASE_PATH="${{ github.workspace }}/${SIRIUS_WORKING_DIR}"
+        SIRIUS_INSTALL_DIR=SiriusInstall
+        SIRIUS_INSTALL_PATH="${SIRIUS_BASE_PATH}/${SIRIUS_INSTALL_DIR}"
+        ARCHIVE_NAME="sirius_install.zip"
+        ARCHIVE_PATH="${SIRIUS_BASE_PATH}/${ARCHIVE_NAME}"
+        echo "::set-output name=sirius-working-dir::$SIRIUS_WORKING_DIR"
+        echo "::set-output name=sirius-base-path::$SIRIUS_BASE_PATH"
+        echo "::set-output name=sirius-install-dir::$SIRIUS_INSTALL_DIR"
+        echo "::set-output name=sirius-install-path::$SIRIUS_INSTALL_PATH"
+        echo "::set-output name=sirius-archive-name::$ARCHIVE_NAME"
+        echo "::set-output name=sirius-archive-path::$ARCHIVE_PATH"
+
+    - name: Checkout Sirius repo
+      uses: actions/checkout@v2
+      with:
+        repository: rte-france/sirius-solver
+        path: "${{ steps.sirius-variables.outputs.sirius-working-dir }}"
+        ref: ${{ inputs.sirius-ref }}
+    - name: Configure Sirius
+      shell: bash
+      run: |
+        cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
+        cmake -S src \
+              -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX="${{ steps.sirius-variables.outputs.sirius-install-dir }}"
+
+    - name: Build & Install Sirius
+      shell: bash
+      run: |
+        cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
+        cmake --build build --config Release --target install -j14
+
+    - name: Zip Install Sirius
+      if : ${{ inputs.zip-sirius == 'true' }}
+      shell: bash
+      run: |
+        cd ${{ steps.sirius-variables.outputs.sirius-working-dir }}
+        ARCHIVE_NAME="${{ steps.sirius-variables.outputs.sirius-archive-name }}"
+        zip -r $ARCHIVE_NAME "${{ steps.sirius-variables.outputs.sirius-install-dir }}"
