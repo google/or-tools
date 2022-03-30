@@ -1384,7 +1384,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
         if (x_lb == x_ub || y_lb == y_ub) return true;
 
         // TODO(user): Compute a better bound (int_max / 4 ?).
-        const int64_t kMaxSafeInteger = (int64_t{1} << 53) - 1;
+        constexpr int64_t kMaxSafeInteger = (int64_t{1} << 53) - 1;
 
         // Check for overflow with the product of expression bounds and the
         // product of one expression bound times the constant part of the other
