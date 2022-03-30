@@ -26,9 +26,17 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 
-#if !defined(__wasm__) && !defined(ANDROID) && !defined(__APPLE__)
 #define OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
+#if defined(__wasm__) || defined(ANDROID)
+  #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
 #endif
+#if defined(__APPLE__)
+  #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
+#endif
+#if defined(__GCC__) && _GCC__ < 11
+  #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
+#endif
+
 
 namespace operations_research {
 namespace {
