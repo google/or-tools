@@ -75,12 +75,13 @@ help:
 	@echo -e "\t\t${BOLD}centos-8${RESET} (latest)"
 	@echo -e "\t\t${BOLD}centos-7${RESET} (Centos 7 LTS)"
 	@echo -e "\t\t${BOLD}debian-11${RESET} (bullseye, latest)"
+	@echo -e "\t\t${BOLD}debian-10${RESET} (buster)"
 	@echo -e "\t\t${BOLD}fedora-35${RESET} (latest)"
 	@echo -e "\t\t${BOLD}fedora-34${RESET}"
 	@echo -e "\t\t${BOLD}fedora-33${RESET}"
 	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
-	@echo -e "\t\t${BOLD}ubuntu-21.10${RESET} (rolling)"
-	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS, latest)"
+	@echo -e "\t\t${BOLD}ubuntu-22.04${RESET} (Ubuntu 22.04 LTS, latest)"
+	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}:"
@@ -96,9 +97,9 @@ help:
 	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) SWIG wrappers"
 	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Core 3.1 and .Net 5.0 SWIG wrappers"
 	@echo
-	@echo -e "\te.g. 'make ubuntu-18.04_archive'"
-	@echo -e "\te.g. 'make sh_ubuntu-18.04_build'"
-	@echo -e "\te.g. 'make ubuntu-18.04_test_cc'"
+	@echo -e "\te.g. 'make ubuntu-22.04_archive'"
+	@echo -e "\te.g. 'make sh_ubuntu-22.04_build'"
+	@echo -e "\te.g. 'make ubuntu-22.04_test_cc'"
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo
@@ -353,10 +354,10 @@ python: python_export
 DISTROS = \
  alpine-edge \
  centos-7 centos-8 \
- debian-11 \
+ debian-10 debian-11 \
  fedora-33 fedora-34 fedora-35 \
  opensuse-leap \
- ubuntu-18.04 ubuntu-20.04 ubuntu-21.10
+ ubuntu-18.04 ubuntu-20.04 ubuntu-22.04
 STAGES = env devel third_party build
 
 export/%/or-tools.snk: or-tools.snk | export
