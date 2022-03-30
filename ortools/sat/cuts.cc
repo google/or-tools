@@ -1403,10 +1403,8 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
         // callback.
 
         // Cut -z + x_coeff * x + y_coeff* y <= rhs
-        auto try_add_above_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
-                                  x, y, z, model, x_max_amp, y_max_amp,
-                                  &lp_values](int64_t x_coeff, int64_t y_coeff,
-                                              int64_t rhs) {
+        auto try_add_above_cut = [&](int64_t x_coeff, int64_t y_coeff,
+                                     int64_t rhs) {
           if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff >=
               rhs + kMinCutViolation) {
             // Checks for overflows.
@@ -1423,10 +1421,8 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
         };
 
         // Cut -z + x_coeff * x + y_coeff* y >= rhs
-        auto try_add_below_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
-                                  x, y, z, model, x_max_amp, y_max_amp,
-                                  &lp_values](int64_t x_coeff, int64_t y_coeff,
-                                              int64_t rhs) {
+        auto try_add_below_cut = [&](int64_t x_coeff, int64_t y_coeff,
+                                     int64_t rhs) {
           if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff <=
               rhs - kMinCutViolation) {
             // Checks for overflow.
