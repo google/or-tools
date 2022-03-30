@@ -205,12 +205,12 @@ $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/eigen3
 	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/man
 ifeq ($(PLATFORM),WIN64)
-	$(COPY) "$(LIB_DIR)$S$(LIB_PREFIX)flatzinc.$L*" "$(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib"
+	$(COPY) "lib$S$(LIB_PREFIX)flatzinc.$L*" "$(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib"
 else
-	$(COPY) $(LIB_DIR)*$S$(LIB_PREFIX)flatzinc*.$L* "$(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib"
+	$(COPY) lib*$S$(LIB_PREFIX)flatzinc*.$L* "$(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib"
 endif
-	$(COPY) $(BIN_DIR)$Sfz$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$S$(FZ_EXE)
-	$(COPY) $(BIN_DIR)$Sparser_main$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sparser-or-tools$E
+	$(COPY) bin$Sfz$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$S$(FZ_EXE)
+	$(COPY) bin$Sparser_main$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sparser-or-tools$E
 	-$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare
 	-$(MKDIR) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
 	$(COPY) ortools$Sflatzinc$Smznlib$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc

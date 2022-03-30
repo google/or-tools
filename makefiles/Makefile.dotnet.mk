@@ -21,7 +21,7 @@ check_dotnet: dotnet
 
 else # HAS_DOTNET=ON
 
-DOTNET_BUILD_DIR = $(BUILD_DIR)$Sdotnet
+DOTNET_BUILD_PATH = $(BUILD_DIR)$Sdotnet
 
 # All libraries and dependencies
 TEMP_DOTNET_DIR = temp_dotnet
@@ -38,10 +38,14 @@ DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
 # OR Tools unique library.
 dotnet:
 	$(MAKE) third_party BUILD_DOTNET=ON
-	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
+	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 
-temp_dotnet:
-	mkdir temp_dotnet
+$(TEMP_DOTNET_DIR):
+	$(MKDIR) $(TEMP_DOTNET_DIR)
+
+package_dotnet: dotnet
+	-$(DEL) $.*pkg
+	$(COPY) $(DOTNET_BUILD_PATH)$Spackages$S*.*pkg .
 
 ###################
 ##  .NET SOURCE  ##
@@ -54,7 +58,7 @@ SOURCE_PROJECT_DIR := $(subst /$(SOURCE_NAME).cs,, $(SOURCE_PROJECT_DIR))
 SOURCE_PROJECT_PATH = $(subst /,$S,$(SOURCE_PROJECT_DIR))
 
 .PHONY: build # Build a .Net C# program.
-build: $(SOURCE) $(SOURCE)proj $(DOTNET_ORTOOLS_NUPKG)
+build: $(SOURCE) $(SOURCE)proj dotnet
 	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" build -c Release $(ARGS)
 	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" pack -c Release
 
@@ -67,111 +71,113 @@ run_test: build
 	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" test --no-build -c Release $(ARGS)
 endif
 
-#############################
-##  .NET Examples/Samples  ##
-#############################
-DOTNET_SAMPLES := algorithms graph constraint_solver linear_solver sat
+###################################
+##  .NET Samples/Examples/Tests  ##
+###################################
 
+# Samples
 define dotnet-sample-target =
-$$(TEMP_DOTNET_DIR)/$1: | $$(TEMP_DOTNET_DIR)
-	-$$(MKDIR) $$(TEMP_DOTNET_DIR)$$S$1
+$(TEMP_DOTNET_DIR)/$1: | $(TEMP_DOTNET_DIR)
+	-$(MKDIR) $(TEMP_DOTNET_DIR)$S$1
 
-$$(TEMP_DOTNET_DIR)/$1/%: \
- $$(SRC_DIR)/ortools/$1/samples/%.cs \
- | $$(TEMP_DOTNET_DIR)/$1
-	-$$(MKDIR) $$(TEMP_DOTNET_DIR)$$S$1$$S$$*
+$(TEMP_DOTNET_DIR)/$1/%: \
+ $(SRC_DIR)/ortools/$1/samples/%.cs \
+ | $(TEMP_DOTNET_DIR)/$1
+	-$(MKDIR) $(TEMP_DOTNET_DIR)$S$1$S$$*
 
-$$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
+$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  $${SRC_DIR}/ortools/dotnet/Sample.csproj.in \
- | $$(TEMP_DOTNET_DIR)/$1/%
-	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
- ortools$$Sdotnet$$SSample.csproj.in \
- > $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$$(GIT_REVISION)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
+ | $(TEMP_DOTNET_DIR)/$1/%
+	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
+ ortools$Sdotnet$SSample.csproj.in \
+ > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 
-$$(TEMP_DOTNET_DIR)/$1/%/%.cs: \
- $$(SRC_DIR)/ortools/$1/samples/%.cs \
- | $$(TEMP_DOTNET_DIR)/$1/%
-	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.cs \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*
+$(TEMP_DOTNET_DIR)/$1/%/%.cs: \
+ $(SRC_DIR)/ortools/$1/samples/%.cs \
+ | $(TEMP_DOTNET_DIR)/$1/%
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.cs \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*
 
 rdotnet_%: \
- $(DOTNET_ORTOOLS_NUPKG) \
- $$(TEMP_DOTNET_DIR)/$1/%/%.csproj \
- $$(TEMP_DOTNET_DIR)/$1/%/%.cs \
+ dotnet \
+ $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
+ $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
-	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" build -c Release
-	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $$(ARGS)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
 endef
 
+DOTNET_SAMPLES := algorithms graph constraint_solver linear_solver model_builder sat
 $(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-target,$(sample))))
 
-DOTNET_EXAMPLES := contrib dotnet
-
+# Examples
 define dotnet-example-target =
-$$(TEMP_DOTNET_DIR)/$1: | $$(TEMP_DOTNET_DIR)
-	-$$(MKDIR) $$(TEMP_DOTNET_DIR)$$S$1
+$(TEMP_DOTNET_DIR)/$1: | $(TEMP_DOTNET_DIR)
+	-$(MKDIR) $(TEMP_DOTNET_DIR)$S$1
 
-$$(TEMP_DOTNET_DIR)/$1/%: \
- $$(SRC_DIR)/examples/$1/%.cs \
- | $$(TEMP_DOTNET_DIR)/$1
-	-$$(MKDIR) $$(TEMP_DOTNET_DIR)$$S$1$$S$$*
+$(TEMP_DOTNET_DIR)/$1/%: \
+ $(SRC_DIR)/examples/$1/%.cs \
+ | $(TEMP_DOTNET_DIR)/$1
+	-$(MKDIR) $(TEMP_DOTNET_DIR)$S$1$S$$*
 
-$$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
+$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  $${SRC_DIR}/ortools/dotnet/Sample.csproj.in \
- | $$(TEMP_DOTNET_DIR)/$1/%
-	$$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
- ortools$$Sdotnet$$SSample.csproj.in \
- > $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$$(GIT_REVISION)/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
-	$$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*$$S$$*.csproj
+ | $(TEMP_DOTNET_DIR)/$1/%
+	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
+ ortools$Sdotnet$SSample.csproj.in \
+ > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 
-$$(TEMP_DOTNET_DIR)/$1/%/%.cs: \
- $$(SRC_DIR)/examples/$1/%.cs \
- | $$(TEMP_DOTNET_DIR)/$1/%
-	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.cs \
- $$(TEMP_DOTNET_DIR)$$S$1$$S$$*
+$(TEMP_DOTNET_DIR)/$1/%/%.cs: \
+ $(SRC_DIR)/examples/$1/%.cs \
+ | $(TEMP_DOTNET_DIR)/$1/%
+	$(COPY) $(SRC_DIR)$Sexamples$S$1$S$$*.cs \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*
 
 rdotnet_%: \
- $(DOTNET_ORTOOLS_NUPKG) \
- $$(TEMP_DOTNET_DIR)/$1/%/%.csproj \
- $$(TEMP_DOTNET_DIR)/$1/%/%.cs \
+ dotnet \
+ $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
+ $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
-	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" build -c Release
-	cd $$(TEMP_DOTNET_DIR)$$S$1$$S$$* && "$$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $$(ARGS)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
 endef
 
+DOTNET_EXAMPLES := contrib dotnet
 $(foreach example,$(DOTNET_EXAMPLES),$(eval $(call dotnet-example-target,$(example))))
 
+# Tests
 DOTNET_TESTS := tests
 
 $(TEMP_DOTNET_DIR)/tests: | $(TEMP_DOTNET_DIR)
@@ -214,16 +220,17 @@ $(TEMP_DOTNET_DIR)/tests/%/%.cs: \
  $(TEMP_DOTNET_DIR)$Stests$S$*
 
 rdotnet_%: \
- $(DOTNET_ORTOOLS_NUPKG) \
+ dotnet \
  $(TEMP_DOTNET_DIR)/tests/%/%.cs \
  $(TEMP_DOTNET_DIR)/tests/%/%.csproj \
  FORCE
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build -c Release
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build -c Release $(ARGS)
 
-#############################
-##  .NET Examples/Samples  ##
-#############################
+####################
+##  Test targets  ##
+####################
+
 .PHONY: test_dotnet_algorithms_samples # Build and Run all .Net LP Samples (located in ortools/algorithms/samples)
 test_dotnet_algorithms_samples: \
 	rdotnet_Knapsack
@@ -473,62 +480,62 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/data: | $(TEMP_DOTNET_DIR)/ortools_
 	$(MKDIR) $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdata
 
 define dotnet-sample-archive =
-$$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
+$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  ortools/$1/samples/%.cs \
- | $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
-	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.cs \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet
-	$$(COPY) ortools$$Sdotnet$$SSample.csproj.in \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$$(GIT_REVISION)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ | $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.cs \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet
+	$(COPY) ortools$Sdotnet$SSample.csproj.in \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 endef
 
 DOTNET_SAMPLES := algorithms graph constraint_solver linear_solver sat
 $(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-archive,$(sample))))
 
 define dotnet-example-archive =
-$$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
+$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  examples/$1/%.cs \
- | $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
-	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.cs \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet
-	$$(COPY) ortools$$Sdotnet$$SSample.csproj.in \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$$(GIT_REVISION)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ | $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
+	$(COPY) $(SRC_DIR)$Sexamples$S$1$S$$*.cs \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet
+	$(COPY) ortools$Sdotnet$SSample.csproj.in \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-	$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
- $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 endef
 
 DOTNET_EXAMPLES := contrib dotnet
@@ -565,17 +572,13 @@ endif
 ##  Nuget artifact  ##
 ######################
 
-package_dotnet: cc
-	-$(DEL) $.*pkg
-	$(COPY) $(DOTNET_BUILD_DIR)$Spackages$S*.*pkg .
-
 .PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
 nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
 	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f net6.0 \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  ortools$Sdotnet$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).csproj
 	"$(DOTNET_BIN)" pack -c Release $(NUGET_PACK_ARGS) --no-build \
- -o "..$S..$S..$S$(BIN_DIR)" \
+ -o "..$S..$S.." \
  ortools$Sdotnet
 
 .PHONY: nuget_upload # Upload Nuget Package
@@ -590,43 +593,8 @@ endif  # HAS_DOTNET=ON
 ################
 .PHONY: clean_dotnet # Clean files
 clean_dotnet:
-	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sbin
-	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sobj
 #	-$(DEL) $(DOTNET_ORTOOLS_SNK_PATH)
 	-$(DELREC) $(TEMP_DOTNET_DIR)
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.cs
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*csharp_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.cs
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*csharp_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.cs
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*csharp_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.cs
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*csharp_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.cs
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*csharp_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.cs
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*csharp_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*.cs
-	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*csharp_wrap*
-	-$(DEL) $(OBJ_DIR)$Sswig$S*_csharp_wrap.$O
-#	-$(DEL) $(LIB_DIR)$S$(DOTNET_ORTOOLS_NATIVE).*
-#	-$(DEL) $(BIN_DIR)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).*
-	-$(DELREC) $(DOTNET_EX_PATH)$Sbin
-	-$(DELREC) $(DOTNET_EX_PATH)$Sobj
-	-$(DELREC) $(CONTRIB_EX_PATH)$Sbin
-	-$(DELREC) $(CONTRIB_EX_PATH)$Sobj
-	-$(DELREC) $(TEST_PATH)$Sbin
-	-$(DELREC) $(TEST_PATH)$Sobj
-	-$(DELREC) ortools$Salgorithms$Ssamples$Sbin
-	-$(DELREC) ortools$Salgorithms$Ssamples$Sobj
-	-$(DELREC) ortools$Sconstraint_solver$Ssamples$Sbin
-	-$(DELREC) ortools$Sconstraint_solver$Ssamples$Sobj
-	-$(DELREC) ortools$Sgraph$Ssamples$Sbin
-	-$(DELREC) ortools$Sgraph$Ssamples$Sobj
-	-$(DELREC) ortools$Slinear_solver$Ssamples$Sbin
-	-$(DELREC) ortools$Slinear_solver$Ssamples$Sobj
-	-$(DELREC) ortools$Ssat$Ssamples$Sbin
-	-$(DELREC) ortools$Ssat$Ssamples$Sobj
 	-$(DEL) *.nupkg
 	-$(DEL) *.snupkg
 	-@"$(DOTNET_BIN)" nuget locals all --clear
@@ -648,6 +616,7 @@ detect_dotnet:
 	@echo DOTNET_ORTOOLS_RUNTIME_NUPKG = $(DOTNET_ORTOOLS_RUNTIME_NUPKG)
 	@echo DOTNET_ORTOOLS_ASSEMBLY_NAME = $(DOTNET_ORTOOLS_ASSEMBLY_NAME)
 	@echo DOTNET_ORTOOLS_NUPKG = $(DOTNET_ORTOOLS_NUPKG)
+	@echo INSTALL_DOTNET_NAME = $(INSTALL_DOTNET_NAME)
 ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else
