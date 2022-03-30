@@ -11,7 +11,7 @@ help_doc:
 doc: doxy-doc python-doc java-doc
 
 .PHONY: doxy-doc # Create doxygen ref documentation.
-doxy-doc: cc python java dotnet
+doxy-doc: cpp python java dotnet
 	bash -c "command -v doxygen"
 	python3 tools/doc/gen_ref_doc.py
 

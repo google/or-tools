@@ -22,9 +22,6 @@ detect: detect_all
 # $(OR_TOOLS_TOP)/ or $(OR_TOOLS_TOP)\\ depending on the platform. It
 # contains the trailing separator if not empty.
 #
-# INC_DIR is like OR_ROOT, but with a default of '.' instead of
-# empty.  It is used for instance in include directives (-I.).
-#
 # OR_ROOT_FULL is always the complete path to or-tools. It is useful
 # to store path informations inside libraries for instance.
 ifeq ($(OR_TOOLS_TOP),)
@@ -118,28 +115,25 @@ compile:
 	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 
 .PHONY: build_all
-build_all: 
+build_all:
 	$(MAKE) third_party BUILD_PYTHON=ON BUILD_JAVA=ON BUILD_DOTNET=ON
-	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
+	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 	@echo Or-tools has been built for "$(BUILT_LANGUAGES)"
 
 .PHONY: check_all
-check_all: check_cc check_python check_java check_dotnet
+check_all: check_cpp check_python check_java check_dotnet
 	@echo Or-tools has been built and checked for "$(BUILT_LANGUAGES)"
 
 .PHONY: test_all
-test_all: test_cc test_python test_java test_dotnet
+test_all: test_cpp test_python test_java test_dotnet
 	@echo Or-tools have been built and tested for "$(BUILT_LANGUAGES)"
 
 .PHONY: clean_all
-clean_all: clean_cc clean_python clean_java clean_dotnet clean_archive
-	-$(DELREC) $(BIN_DIR)
-	-$(DELREC) $(LIB_DIR)
-	-$(DELREC) $(OBJ_DIR)
+clean_all: clean_cpp clean_python clean_java clean_dotnet clean_archive
 	@echo Or-Tools has been cleaned for "$(BUILT_LANGUAGES)"
 
 .PHONY: detect_all
-detect_all: detect_port detect_cc detect_python detect_java detect_dotnet detect_archive
+detect_all: detect_port detect_cpp detect_python detect_java detect_dotnet detect_archive
 	@echo SOURCE = $(SOURCE)
 	@echo SOURCE_PATH = $(SOURCE_PATH)
 	@echo SOURCE_NAME = $(SOURCE_NAME)

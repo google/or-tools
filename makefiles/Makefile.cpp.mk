@@ -45,378 +45,441 @@ third_party:
  -DUSE_CPLEX=$(USE_CPLEX) \
  -DUSE_XPRESS=$(USE_XPRESS) \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
- -DCMAKE_INSTALL_PREFIX=$(OR_ROOT_FULL) \
+ -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR) \
  $(CMAKE_ARGS) \
  -G $(GENERATOR)
 
-# All libraries and dependecies
-ifeq ($(PLATFORM),WIN64)
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
-else
-ifeq ($(PLATFORM),MACOSX)
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(OR_TOOLS_MAJOR).$L
-else # linux
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L.$(OR_TOOLS_MAJOR)
-endif
-endif
-
 JOBS ?= 4
 
+TEMP_CPP_DIR=temp_cpp
+
 # Main target
-.PHONY: cc # Build C++ OR-Tools library.
-.PHONY: test_cc # Run all C++ OR-Tools test targets.
+.PHONY: cpp # Build C++ OR-Tools library.
+.PHONY: check_cpp # Run all C++ OR-Tools test targets.
+.PHONY: test_cpp # Run all C++ OR-Tools test targets.
 .PHONY: fz # Build Flatzinc.
 .PHONY: test_fz # Run all Flatzinc test targets.
+.PHONY: package_cc # Create C++ OR-Tools package.
 
 # OR Tools unique library.
-cc:
+cpp:
 	$(MAKE) third_party
-	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
+	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 
-test_cc: \
- cc \
+check_cpp: check_cpp_pimpl
+
+test_cpp: \
+ cpp \
  test_cc_tests \
  test_cc_contrib \
  test_cc_cpp
 
-# Now flatzinc is build with cc
-fz: cc
+# Now flatzinc is build with cpp
+fz: cpp
 
 test_fz: \
- cc \
+ cpp \
  rfz_golomb \
  rfz_alpha
 
-$(GEN_DIR):
-	-$(MKDIR_P) $(GEN_PATH)
+$(TEMP_CPP_DIR):
+	$(MKDIR) $(TEMP_CPP_DIR)
 
-$(GEN_DIR)/ortools: | $(GEN_DIR)
-	-$(MKDIR_P) $(GEN_PATH)$Sortools
+.PHONY: detect_cc
+detect_cc: detect_cpp
+	$(warning $@ is deprecated please use detect_cpp instead.)
 
-$(GEN_DIR)/ortools/algorithms: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Salgorithms
+.PHONY: cc
+cc: cpp
+	$(warning $@ is deprecated please use @< instead.)
 
-$(GEN_DIR)/ortools/bop: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sbop
+.PHONY: check_cc
+check_cc: check_cpp
+	$(warning $@ is deprecated please use $< instead.)
 
-$(GEN_DIR)/ortools/constraint_solver: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sconstraint_solver
+.PHONY: check_cpp_%
+check_cc_%: check_cpp_%
+	$(warning $@ is deprecated please use @< instead.)
 
-$(GEN_DIR)/ortools/flatzinc: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sflatzinc
+.PHONY: test_cc
+test_cc: test_cpp
+	$(warning $@ is deprecated please use @< instead.)
 
-$(GEN_DIR)/ortools/glop: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sglop
+.PHONY: test_cc_%
+test_cc_%: test_cpp_%
+	$(warning $@ is deprecated please use @< instead.)
 
-$(GEN_DIR)/ortools/graph: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sgraph
-
-$(GEN_DIR)/ortools/gscip: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sgscip
-
-$(GEN_DIR)/ortools/init: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sinit
-
-$(GEN_DIR)/ortools/linear_solver: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Slinear_solver
-
-$(GEN_DIR)/ortools/packing: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Spacking
-
-$(GEN_DIR)/ortools/sat: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Ssat
-
-$(GEN_DIR)/ortools/scheduling: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sscheduling
-
-$(GEN_DIR)/ortools/util: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sutil
-
-$(GEN_DIR)/examples: | $(GEN_DIR)
-	-$(MKDIR) $(GEN_PATH)$Sexamples
-
-$(GEN_DIR)/examples/cpp: | $(GEN_DIR)/examples
-	-$(MKDIR) $(GEN_PATH)$Sexamples$Scpp
-
-$(BIN_DIR):
-	-$(MKDIR) $(BIN_DIR)
-
-$(LIB_DIR):
-	-$(MKDIR) $(LIB_DIR)
-
-$(OBJ_DIR):
-	-$(MKDIR) $(OBJ_DIR)
-
-$(OBJ_DIR)/algorithms: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Salgorithms
-
-$(OBJ_DIR)/base: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sbase
-
-$(OBJ_DIR)/bop: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sbop
-
-$(OBJ_DIR)/constraint_solver: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sconstraint_solver
-
-$(OBJ_DIR)/flatzinc: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sflatzinc
-
-$(OBJ_DIR)/glop: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sglop
-
-$(OBJ_DIR)/graph: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sgraph
-
-$(OBJ_DIR)/gscip: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sgscip
-
-$(OBJ_DIR)/gurobi: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sgurobi
-
-$(OBJ_DIR)/linear_solver: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Slinear_solver
-
-$(OBJ_DIR)/lp_data: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Slp_data
-
-$(OBJ_DIR)/packing: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Spacking
-
-$(OBJ_DIR)/port: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sport
-
-$(OBJ_DIR)/sat: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Ssat
-
-$(OBJ_DIR)/scheduling: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sscheduling
-
-$(OBJ_DIR)/util: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sutil
-
-$(OBJ_DIR)/swig: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sswig
-
+.PHONY: clean_cc
+clean_cc: clean_cpp
+	$(warning $@ is deprecated please use $< instead.)
 ##################
 ##  C++ SOURCE  ##
 ##################
 ifeq ($(SOURCE_SUFFIX),.cc) # Those rules will be used if SOURCE contain a .cc file
-$(OBJ_DIR)/$(SOURCE_NAME).$O: $(SOURCE) cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) \
- -c $(SOURCE_PATH) \
- $(OBJ_OUT)$(OBJ_DIR)$S$(SOURCE_NAME).$O
 
-$(BIN_DIR)/$(SOURCE_NAME)$E: $(OBJ_DIR)/$(SOURCE_NAME).$O cc | $(BIN_DIR)
-	$(CCC) $(CFLAGS) \
- $(OBJ_DIR)$S$(SOURCE_NAME).$O \
- $(LDFLAGS) \
- $(EXE_OUT)$(BIN_DIR)$S$(SOURCE_NAME)$E
+SOURCE_PROJECT_DIR := $(SOURCE)
+SOURCE_PROJECT_DIR := $(subst /$(SOURCE_NAME).cc,, $(SOURCE_PROJECT_DIR))
+SOURCE_PROJECT_PATH = $(subst /,$S,$(SOURCE_PROJECT_DIR))
+
+$(TEMP_CPP_DIR)/$(SOURCE_NAME): | $(TEMP_CPP_DIR)
+	$(MKDIR) $(TEMP_CPP_DIR)$S$(SOURCE_NAME)
+
+$(TEMP_CPP_DIR)/$(SOURCE_NAME)/CMakeLists.txt: ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in | $(TEMP_CPP_DIR)/$(SOURCE_NAME)
+	$(SED) -e "s;@CPP_PREFIX_PATH@;$(OR_ROOT_FULL)$S$(INSTALL_DIR);" \
+ ortools$Scpp$SCMakeLists.txt.in \
+ > $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$SCMakeLists.txt
+	$(SED) -i -e 's/@CPP_NAME@/$(SOURCE_NAME)/' \
+ $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$SCMakeLists.txt
+	$(SED) -i -e 's/@CPP_FILE_NAME@/$(SOURCE_NAME).cc/' \
+ $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$SCMakeLists.txt
+	$(SED) -i -e 's;@TEST_ARGS@;$(ARGS);' \
+ $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$SCMakeLists.txt
 
 .PHONY: build # Build a C++ program.
-build: $(BIN_DIR)/$(SOURCE_NAME)$E
+build: cpp \
+	$(SOURCE) \
+	$(TEMP_CPP_DIR)/$(SOURCE_NAME)/CMakeLists.txt
+	-$(DELREC) $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$Sbuild
+	$(COPY) $(subst /,$S,$(SOURCE)) $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$S$(SOURCE_NAME).cc
+	cd $(TEMP_CPP_DIR)$S$(SOURCE_NAME) &&\
+ cmake -S. -Bbuild \
+ -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+ -G $(GENERATOR) \
+ $(CMAKE_ARGS)
+ifneq ($(PLATFORM),WIN64)
+	cd $(TEMP_CPP_DIR)$S$(SOURCE_NAME) && cmake --build build --config $(BUILD_TYPE) --target all -v
+else
+	cd $(TEMP_CPP_DIR)$S$(SOURCE_NAME) && cmake --build build --config $(BUILD_TYPE) --target ALL_BUILD -v
+endif
 
 .PHONY: run # Run a C++ program.
 run: build
-	$(BIN_DIR)$S$(SOURCE_NAME)$E $(ARGS)
+ifneq ($(PLATFORM),WIN64)
+	cd $(TEMP_CPP_DIR)$S$(SOURCE_NAME) && cmake --build build --config $(BUILD_TYPE) --target test -v
+else
+	cd $(TEMP_CPP_DIR)$S$(SOURCE_NAME) && cmake --build build --config $(BUILD_TYPE) --target RUN_TESTS -v
+endif
 endif
 
 ##################################
 ##  CPP Tests/Examples/Samples  ##
 ##################################
-# Generic Command
-$(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(TEST_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
-$(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+# Samples
+define cpp-sample-target =
+$(TEMP_CPP_DIR)/$1: | $(TEMP_CPP_DIR)
+	-$(MKDIR) $(TEMP_CPP_DIR)$S$1
 
-$(OBJ_DIR)/%.$O: $(CONTRIB_EX_DIR)/%.cc cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CONTRIB_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+$(TEMP_CPP_DIR)/$1/%: \
+ $(SRC_DIR)/ortools/$1/samples/%.cc \
+ | $(TEMP_CPP_DIR)/$1
+	-$(MKDIR) $(TEMP_CPP_DIR)$S$1$S$$*
 
-$(OBJ_DIR)/%.$O: ortools/algorithms/samples/%.cc cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c ortools$Salgorithms$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+$(TEMP_CPP_DIR)/$1/%/CMakeLists.txt: \
+ ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in \
+ | $(TEMP_CPP_DIR)/$1/%
+	$(SED) -e "s;@CPP_PREFIX_PATH@;$(OR_ROOT_FULL)$S$(INSTALL_DIR);" \
+ ortools$Scpp$SCMakeLists.txt.in \
+ > $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
+	$(SED) -i -e 's/@CPP_NAME@/$$*/' \
+ $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
+	$(SED) -i -e 's/@CPP_FILE_NAME@/$$*.cc/' \
+ $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
+	$(SED) -i -e 's/@TEST_ARGS@//' \
+ $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
 
-$(OBJ_DIR)/%.$O: ortools/graph/samples/%.cc cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c ortools$Sgraph$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+$(TEMP_CPP_DIR)/$1/%/%.cc: \
+ $(SRC_DIR)/ortools/$1/samples/%.cc \
+ | $(TEMP_CPP_DIR)/$1/%
+	$(MKDIR_P) $(TEMP_CPP_DIR)$S$1$S$$*
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.cc \
+ $(TEMP_CPP_DIR)$S$1$S$$*
 
-$(OBJ_DIR)/%.$O: ortools/linear_solver/samples/%.cc cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c ortools$Slinear_solver$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+rcpp_%: \
+ cpp \
+ $(TEMP_CPP_DIR)/$1/%/CMakeLists.txt \
+ $(TEMP_CPP_DIR)/$1/%/%.cc \
+ FORCE
+	cd $(TEMP_CPP_DIR)$S$1$S$$* &&\
+ cmake -S. -Bbuild \
+ -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+ -DCMAKE_INSTALL_PREFIX=install \
+ $(CMAKE_ARGS) \
+ -G $(GENERATOR)
+ifneq ($(PLATFORM),WIN64)
+	cd $(TEMP_CPP_DIR)$S$1$S$$* && cmake --build build --config $(BUILD_TYPE) --target all -v
+	cd $(TEMP_CPP_DIR)$S$1$S$$* && cmake --build build --config $(BUILD_TYPE) --target test -v
+else
+	cd $(TEMP_CPP_DIR)$S$1$S$$* && cmake --build build --config $(BUILD_TYPE) --target ALL_BUILD -v
+	cd $(TEMP_CPP_DIR)$S$1$S$$* && cmake --build build --config $(BUILD_TYPE) --target RUN_TESTS -v
+endif
+endef
 
-$(OBJ_DIR)/%.$O: ortools/constraint_solver/samples/%.cc cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c ortools$Sconstraint_solver$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+CPP_SAMPLES := algorithms graph glop constraint_solver linear_solver model_builder routing sat
+$(foreach sample,$(CPP_SAMPLES),$(eval $(call cpp-sample-target,$(sample))))
 
-$(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c ortools$Ssat$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+# Examples
+define cpp-example-target =
+$(TEMP_CPP_DIR)/$1: | $(TEMP_CPP_DIR)
+	-$(MKDIR) $(TEMP_CPP_DIR)$S$1
 
-$(OBJ_DIR)/%.$O: ortools/routing/samples/%.cc cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c ortools$Srouting$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+$(TEMP_CPP_DIR)/$1/%: $(SRC_DIR)/examples/$1/%.cc | $(TEMP_CPP_DIR)/$1
+	-$(MKDIR) $(TEMP_CPP_DIR)$S$1$S$$*
 
-$(BIN_DIR)/%$E: $(OBJ_DIR)/%.$O cc | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$S$*.$O $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
+$(TEMP_CPP_DIR)/$1/%/CMakeLists.txt: ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in | $(TEMP_CPP_DIR)/$1/%
+	$(SED) -e "s;@CPP_PREFIX_PATH@;$(OR_ROOT_FULL)$S$(INSTALL_DIR);" \
+ ortools$Scpp$SCMakeLists.txt.in \
+ > $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
+	$(SED) -i -e 's/@CPP_NAME@/$$*/' \
+ $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
+	$(SED) -i -e 's/@CPP_FILE_NAME@/$$*.cc/' \
+ $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
+	$(SED) -i -e 's/@TEST_ARGS@//' \
+ $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
 
-rcc_%: $(BIN_DIR)/%$E FORCE
-	$(BIN_DIR)$S$*$E $(ARGS)
+$(TEMP_CPP_DIR)/$1/%/%.cc: \
+ $(SRC_DIR)/examples/$1/%.cc \
+ | $(TEMP_CPP_DIR)/$1/%
+	$(MKDIR_P) $(TEMP_CPP_DIR)$S$1$S$$*
+	$(COPY) $(SRC_DIR)$Sexamples$S$1$S$$*.cc \
+ $(TEMP_CPP_DIR)$S$1$S$$*
+
+rcpp_%: \
+ cpp \
+ $(TEMP_CPP_DIR)/$1/%/CMakeLists.txt \
+ $(TEMP_CPP_DIR)/$1/%/%.cc \
+ FORCE
+	cd $(TEMP_CPP_DIR)$S$1$S$$* &&\
+ cmake -S. -Bbuild \
+ -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+ -DCMAKE_INSTALL_PREFIX=install \
+ $(CMAKE_ARGS) \
+ -G $(GENERATOR)
+ifneq ($(PLATFORM),WIN64)
+	cd $(TEMP_CPP_DIR)$S$1$S$$* && cmake --build build --config $(BUILD_TYPE) --target all -v
+	cd $(TEMP_CPP_DIR)$S$1$S$$* && cmake --build build --config $(BUILD_TYPE) --target test -v
+else
+	cd $(TEMP_CPP_DIR)$S$1$S$$* && cmake --build build --config $(BUILD_TYPE) --target ALL_BUILD -v
+	cd $(TEMP_CPP_DIR)$S$1$S$$* && cmake --build build --config $(BUILD_TYPE) --target RUN_TESTS -v
+endif
+endef
+
+CPP_EXAMPLES := contrib cpp
+$(foreach example,$(CPP_EXAMPLES),$(eval $(call cpp-example-target,$(example))))
+
+# Tests
+CPP_TESTS := tests
+
+$(TEMP_CPP_DIR)/tests: | $(TEMP_CPP_DIR)
+	-$(MKDIR) $(TEMP_CPP_DIR)$Stests
+
+$(TEMP_CPP_DIR)/tests/%: \
+	$(SRC_DIR)/examples/tests/%.cc \
+	| $(TEMP_CPP_DIR)/tests
+	-$(MKDIR) $(TEMP_CPP_DIR)$Stests$S$*
+
+$(TEMP_CPP_DIR)/tests/%/CMakeLists.txt: ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in | $(TEMP_CPP_DIR)/tests/%
+	$(SED) -e "s;@CPP_PREFIX_PATH@;$(OR_ROOT_FULL)$S$(INSTALL_DIR);" \
+ ortools$Scpp$SCMakeLists.txt.in \
+ > $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
+	$(SED) -i -e 's/@CPP_NAME@/$*/' \
+ $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
+	$(SED) -i -e 's/@CPP_FILE_NAME@/$*.cc/' \
+ $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
+	$(SED) -i -e 's/@TEST_ARGS@//' \
+ $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
+
+$(TEMP_CPP_DIR)/tests/%/%.cc: \
+ $(SRC_DIR)/examples/tests/%.cc \
+ | $(TEMP_CPP_DIR)/tests/%
+	$(MKDIR_P) $(TEMP_CPP_DIR)$Stests$S$*
+	$(COPY) $(SRC_DIR)$Sexamples$Stests$S$*.cc \
+ $(TEMP_CPP_DIR)$Stests$S$*
+
+rcpp_%: \
+ cpp \
+ $(TEMP_CPP_DIR)/tests/%/CMakeLists.txt \
+ $(TEMP_CPP_DIR)/tests/%/%.cc \
+ FORCE
+	cd $(TEMP_CPP_DIR)$Stests$S$* && \
+ cmake -S. -Bbuild \
+ -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+ -DCMAKE_INSTALL_PREFIX=install \
+ $(CMAKE_ARGS) \
+ -G $(GENERATOR)
+ifneq ($(PLATFORM),WIN64)
+	cd $(TEMP_CPP_DIR)$Stests$S$* && cmake --build build --config $(BUILD_TYPE) --target all -v
+	cd $(TEMP_CPP_DIR)$Stests$S$* && cmake --build build --config $(BUILD_TYPE) --target test -v
+else
+	cd $(TEMP_CPP_DIR)$Stests$S$* && cmake --build build --config $(BUILD_TYPE) --target ALL_BUILD -v
+	cd $(TEMP_CPP_DIR)$Stests$S$* && cmake --build build --config $(BUILD_TYPE) --target RUN_TESTS -v
+endif
 
 ##################################
 ##  Course scheduling example   ##
 ##################################
+# TODO(mizux) Port it to CMake
+# examples/cpp/course_scheduling.proto: ;
+#
+# $(SRC_DIR)/examples/cpp/course_scheduling.pb.cc: \
+#  $(SRC_DIR)/examples/cpp/course_scheduling.proto | $(TEMP_CPP_DIR)/examples/cpp
+# 	$(PROTOC) \
+#  --proto_path=$(INSTALL_DIR)/include \
+#  $(PROTOBUF_PROTOC_INC) \
+#  --cpp_out=. \
+#  $(SRC_DIR)/examples/cpp/course_scheduling.proto
+#
+# $(SRC_DIR)/examples/cpp/course_scheduling.pb.h: $(SRC_DIR)/examples/cpp/course_scheduling.pb.cc
+# 	$(TOUCH) examples$Scpp$Scourse_scheduling.pb.h
+#
+# bin/course_scheduling$E: \
+#  $(SRC_DIR)/examples/cpp/course_scheduling.h \
+#  $(SRC_DIR)/examples/cpp/course_scheduling.cc \
+#  $(SRC_DIR)/examples/cpp/course_scheduling.pb.h \
+#  $(SRC_DIR)/examples/cpp/course_scheduling.pb.cc \
+#  $(SRC_DIR)/examples/cpp/course_scheduling_run.cc \
+#  cpp \
+#  | bin
+# 	cmake build to generate bin$Scourse_scheduling$E
+#
+# rcpp_course_scheduling: bin/course_scheduling$E FORCE
+# 	bin$S$*$E $(ARGS)
 
-examples/cpp/course_scheduling.proto: ;
-
-$(CC_GEN_DIR)/course_scheduling.pb.cc: \
- $(SRC_DIR)/examples/cpp/course_scheduling.proto | $(GEN_DIR)/examples/cpp
-	$(PROTOC) --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/examples/cpp/course_scheduling.proto
-
-$(CC_GEN_DIR)/course_scheduling.pb.h: \
-  $(CC_GEN_DIR)/course_scheduling.pb.cc
-	$(TOUCH) $(GEN_PATH)$Scourse_scheduling.pb.h
-
-$(OBJ_DIR)/course_scheduling.$O: $(CC_EX_DIR)/course_scheduling.cc $(CC_EX_DIR)/course_scheduling.h $(CC_GEN_DIR)/course_scheduling.pb.h cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scourse_scheduling.cc $(OBJ_OUT)$(OBJ_DIR)$Scourse_scheduling.$O
-
-$(OBJ_DIR)/course_scheduling_run.$O: $(CC_EX_DIR)/course_scheduling_run.cc $(CC_EX_DIR)/course_scheduling.h $(CC_GEN_DIR)/course_scheduling.pb.h cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scourse_scheduling_run.cc $(OBJ_OUT)$(OBJ_DIR)$Scourse_scheduling_run.$O
-
-
-$(OBJ_DIR)/course_scheduling.pb.$O: $(CC_GEN_DIR)/course_scheduling.pb.cc $(CC_GEN_DIR)/course_scheduling.pb.h cc | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_GEN_PATH)$Scourse_scheduling.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Scourse_scheduling.pb.$O
-
-$(BIN_DIR)/course_scheduling$E: $(OBJ_DIR)/course_scheduling.$O $(OBJ_DIR)/course_scheduling_run.$O $(OBJ_DIR)/course_scheduling.pb.$O cc | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scourse_scheduling.$O $(OBJ_DIR)$Scourse_scheduling_run.$O $(OBJ_DIR)$Scourse_scheduling.pb.$O $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scourse_scheduling$E
-
-rcc_course_scheduling: $(BIN_DIR)/course_scheduling$E FORCE
-	$(BIN_DIR)$S$*$E $(ARGS)
-
-##################################
-##  Test targets                ##
-##################################
+####################
+##  Test targets  ##
+####################
 
 .PHONY: test_cc_algorithms_samples # Build and Run all C++ Algorithms Samples (located in ortools/algorithms/samples)
 test_cc_algorithms_samples: \
- rcc_knapsack \
- rcc_simple_knapsack_program
+ rcpp_knapsack \
+ rcpp_simple_knapsack_program
 
 .PHONY: test_cc_graph_samples # Build and Run all C++ Graph Samples (located in ortools/graph/samples)
 test_cc_graph_samples: \
- rcc_simple_max_flow_program \
- rcc_simple_min_cost_flow_program
-
-.PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
-test_cc_linear_solver_samples: \
- rcc_assignment_mip \
- rcc_basic_example \
- rcc_bin_packing_mip \
- rcc_integer_programming_example \
- rcc_linear_programming_example \
- rcc_mip_var_array \
- rcc_multiple_knapsack_mip \
- rcc_simple_lp_program \
- rcc_simple_mip_program \
- rcc_stigler_diet
+ rcpp_simple_max_flow_program \
+ rcpp_simple_min_cost_flow_program
 
 .PHONY: test_cc_constraint_solver_samples # Build and Run all C++ CP Samples (located in ortools/constraint_solver/samples)
 test_cc_constraint_solver_samples: \
- rcc_minimal_jobshop_cp \
- rcc_nurses_cp \
- rcc_rabbits_and_pheasants_cp \
- rcc_simple_ls_program \
- rcc_simple_cp_program \
- rcc_simple_routing_program \
- rcc_tsp \
- rcc_tsp_cities \
- rcc_tsp_circuit_board \
- rcc_tsp_distance_matrix \
- rcc_vrp \
- rcc_vrp_breaks \
- rcc_vrp_capacity \
- rcc_vrp_drop_nodes \
- rcc_vrp_global_span \
- rcc_vrp_initial_routes \
- rcc_vrp_pickup_delivery \
- rcc_vrp_pickup_delivery_fifo \
- rcc_vrp_pickup_delivery_lifo \
- rcc_vrp_resources \
- rcc_vrp_starts_ends \
- rcc_vrp_time_windows \
- rcc_vrp_with_time_limit
+ rcpp_minimal_jobshop_cp \
+ rcpp_nurses_cp \
+ rcpp_rabbits_and_pheasants_cp \
+ rcpp_simple_ls_program \
+ rcpp_simple_cp_program \
+ rcpp_simple_routing_program \
+ rcpp_tsp \
+ rcpp_tsp_cities \
+ rcpp_tsp_circuit_board \
+ rcpp_tsp_distance_matrix \
+ rcpp_vrp \
+ rcpp_vrp_breaks \
+ rcpp_vrp_capacity \
+ rcpp_vrp_drop_nodes \
+ rcpp_vrp_global_span \
+ rcpp_vrp_initial_routes \
+ rcpp_vrp_pickup_delivery \
+ rcpp_vrp_pickup_delivery_fifo \
+ rcpp_vrp_pickup_delivery_lifo \
+ rcpp_vrp_resources \
+ rcpp_vrp_starts_ends \
+ rcpp_vrp_time_windows \
+ rcpp_vrp_with_time_limit
+
+.PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
+test_cc_linear_solver_samples: \
+ rcpp_assignment_mip \
+ rcpp_basic_example \
+ rcpp_bin_packing_mip \
+ rcpp_integer_programming_example \
+ rcpp_linear_programming_example \
+ rcpp_mip_var_array \
+ rcpp_multiple_knapsack_mip \
+ rcpp_simple_lp_program \
+ rcpp_simple_mip_program \
+ rcpp_stigler_diet
+
+.PHONY: test_cc_model_builder_samples # Build and Run all C++ CP Samples (located in ortools/model_builder/samples)
+test_cc_model_builder_samples: \
+
 
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \
- rcc_assignment_sat \
- rcc_assumptions_sample_sat \
- rcc_binpacking_problem_sat \
- rcc_bool_or_sample_sat \
- rcc_channeling_sample_sat \
- rcc_cp_is_fun_sat \
- rcc_earliness_tardiness_cost_sample_sat \
- rcc_interval_sample_sat \
- rcc_literal_sample_sat \
- rcc_no_overlap_sample_sat \
- rcc_optional_interval_sample_sat \
- rcc_rabbits_and_pheasants_sat \
- rcc_ranking_sample_sat \
- rcc_reified_sample_sat \
- rcc_search_for_all_solutions_sample_sat \
- rcc_simple_sat_program \
- rcc_solution_hinting_sample_sat \
- rcc_solve_and_print_intermediate_solutions_sample_sat \
- rcc_solve_with_time_limit_sample_sat \
- rcc_step_function_sample_sat \
- rcc_stop_after_n_solutions_sample_sat
+ rcpp_assignment_sat \
+ rcpp_assumptions_sample_sat \
+ rcpp_binpacking_problem_sat \
+ rcpp_bool_or_sample_sat \
+ rcpp_channeling_sample_sat \
+ rcpp_cp_is_fun_sat \
+ rcpp_earliness_tardiness_cost_sample_sat \
+ rcpp_interval_sample_sat \
+ rcpp_literal_sample_sat \
+ rcpp_no_overlap_sample_sat \
+ rcpp_optional_interval_sample_sat \
+ rcpp_rabbits_and_pheasants_sat \
+ rcpp_ranking_sample_sat \
+ rcpp_reified_sample_sat \
+ rcpp_search_for_all_solutions_sample_sat \
+ rcpp_simple_sat_program \
+ rcpp_solution_hinting_sample_sat \
+ rcpp_solve_and_print_intermediate_solutions_sample_sat \
+ rcpp_solve_with_time_limit_sample_sat \
+ rcpp_step_function_sample_sat \
+ rcpp_stop_after_n_solutions_sample_sat
 
-.PHONY: check_cc_pimpl
-check_cc_pimpl: \
+.PHONY: check_cpp_pimpl
+check_cpp_pimpl: \
  test_cc_algorithms_samples \
  test_cc_constraint_solver_samples \
  test_cc_graph_samples \
  test_cc_linear_solver_samples \
+ test_cc_model_builder_samples \
  test_cc_sat_samples \
  \
- rcc_linear_programming \
- rcc_constraint_programming_cp \
- rcc_integer_programming \
- rcc_knapsack \
- rcc_max_flow \
- rcc_min_cost_flow ;
+ rcpp_linear_programming \
+ rcpp_constraint_programming_cp \
+ rcpp_integer_programming \
+ rcpp_knapsack \
+ rcpp_max_flow \
+ rcpp_min_cost_flow ;
 
 .PHONY: test_cc_tests # Build and Run all C++ Tests (located in ortools/examples/tests)
 test_cc_tests: \
- rcc_lp_test \
- rcc_bug_fz1 \
- rcc_cpp11_test \
- rcc_forbidden_intervals_test \
- rcc_issue57 \
- rcc_min_max_test
-#	$(MAKE) rcc_issue173 # error: too long
+ rcpp_lp_test \
+ rcpp_bug_fz1 \
+ rcpp_cpp11_test \
+ rcpp_forbidden_intervals_test \
+ rcpp_issue57 \
+ rcpp_min_max_test
+#	$(MAKE) rcpp_issue173 # error: too long
 
 .PHONY: test_cc_contrib # Build and Run all C++ Contrib (located in ortools/examples/contrib)
 test_cc_contrib: ;
 
 .PHONY: test_cc_cpp # Build and Run all C++ Examples (located in ortools/examples/cpp)
 test_cc_cpp: \
- rcc_costas_array_sat \
- rcc_cryptarithm_sat \
- rcc_cvrp_disjoint_tw \
- rcc_cvrptw \
- rcc_cvrptw_with_breaks \
- rcc_cvrptw_with_refueling \
- rcc_cvrptw_with_resources \
- rcc_cvrptw_with_stop_times_and_resources \
- rcc_flow_api \
- rcc_linear_assignment_api \
- rcc_linear_solver_protocol_buffers \
- rcc_magic_sequence_sat \
- rcc_magic_square_sat \
- rcc_nqueens \
- rcc_random_tsp \
- rcc_slitherlink_sat \
- rcc_strawberry_fields_with_column_generation \
- rcc_uncapacitated_facility_location \
- rcc_weighted_tardiness_sat
-	$(MAKE) run \
- SOURCE=examples/cpp/dimacs_assignment.cc \
- ARGS=examples/data/dimacs/assignment/small.asn
+ rcpp_costas_array_sat \
+ rcpp_cryptarithm_sat \
+ rcpp_flow_api \
+ rcpp_linear_assignment_api \
+ rcpp_linear_solver_protocol_buffers \
+ rcpp_magic_sequence_sat \
+ rcpp_magic_square_sat \
+ rcpp_nqueens \
+ rcpp_random_tsp \
+ rcpp_slitherlink_sat \
+ rcpp_strawberry_fields_with_column_generation \
+ rcpp_uncapacitated_facility_location \
+# rcpp_weighted_tardiness_sat # need input file
+# TODO(mizux) how to build cvrptwlib and depends on it
+# rcpp_cvrp_disjoint_tw \
+# rcpp_cvrptw \
+# rcpp_cvrptw_with_breaks \
+# rcpp_cvrptw_with_refueling \
+# rcpp_cvrptw_with_resources \
+# rcpp_cvrptw_with_stop_times_and_resources
+#	$(MAKE) run \
+# SOURCE=examples/cpp/dimacs_assignment.cc \
+# ARGS=examples/data/dimacs/assignment/small.asn
 	$(MAKE) run \
  SOURCE=examples/cpp/dobble_ls.cc \
  ARGS="--time_limit_in_ms=10000"
@@ -436,14 +499,75 @@ test_cc_cpp: \
  SOURCE=examples/cpp/sports_scheduling_sat.cc \
  ARGS="--params max_time_in_seconds:10.0"
 #	$(MAKE) run SOURCE=examples/cpp/frequency_assignment_problem.cc  # Need data file
-#	$(MAKE) run SOURCE=examples/cpp/pdptw.cc ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
-	$(MAKE) run SOURCE=examples/cpp/shift_minimization_sat.cc  ARGS="--input examples/data/shift_scheduling/minimization/data_1_23_40_66.dat"
+#	$(MAKE) run SOURCE=examples/cpp/pdptw.cc ARGS="--pdp_file $(OR_ROOT_FULL)/examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
+	$(MAKE) run \
+ SOURCE=examples/cpp/shift_minimization_sat.cc \
+ ARGS="--input $(OR_ROOT_FULL)/examples/data/shift_scheduling/minimization/data_1_23_40_66.dat"
 	$(MAKE) run \
  SOURCE=examples/cpp/solve.cc \
- ARGS="--input examples/data/tests/test2.mps"
+ ARGS="--input $(OR_ROOT_FULL)/examples/data/tests/test2.mps"
 
 rfz_%: fz
-	$(BIN_DIR)$Sfz$E $(FZ_EX_PATH)$S$*.fzn
+	$(INSTALL_DIR)$Sbin$Sfz$E $(FZ_EX_PATH)$S$*.fzn
+
+###############
+##  Archive  ##
+###############
+.PHONY: archive_cpp # Add C++ OR-Tools to archive.
+archive_cpp: $(INSTALL_CPP_NAME)$(ARCHIVE_EXT)
+
+$(INSTALL_CPP_NAME):
+	$(MKDIR) $(INSTALL_CPP_NAME)
+
+$(INSTALL_CPP_NAME)/examples: | $(INSTALL_CPP_NAME)
+	$(MKDIR) $(INSTALL_CPP_NAME)$Sexamples
+
+define cpp-sample-archive =
+$(INSTALL_CPP_NAME)/examples/%/CMakeLists.txt: \
+ $(TEMP_CPP_DIR)/$1/%/CMakeLists.txt \
+ $(SRC_DIR)/ortools/$1/samples/%.cc \
+ | $(INSTALL_CPP_NAME)/examples
+	-$(MKDIR_P) $(INSTALL_CPP_NAME)$Sexamples$S$$*
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.cc $(INSTALL_CPP_NAME)$Sexamples$S$$*
+	$(COPY) $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt $(INSTALL_CPP_NAME)$Sexamples$S$$*
+endef
+
+$(foreach sample,$(CPP_SAMPLES),$(eval $(call cpp-sample-archive,$(sample))))
+
+define cpp-example-archive =
+$(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/%/CMakeLists.txt: \
+ $(TEMP_CPP_DIR)/$1/%/CMakeLists.xml \
+ $(SRC_DIR)/examples/$1/%.cc \
+ | $(INSTALL_CPP_NAME)/examples
+	-$(MKDIR_P) $(INSTALL_CPP_NAME)$Sexamples$S$$*
+	$(COPY) $(SRC_DIR)$Sexamples$S$1$S$$*.cc $(INSTALL_CPP_NAME)$Sexamples$S$$*
+	$(COPY) $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt $(INSTALL_CPP_NAME)$Sexamples$S$$*
+endef
+
+$(foreach example,$(CPP_EXAMPLES),$(eval $(call cpp-example-archive,$(example))))
+
+SAMPLE_CPP_FILES = \
+  $(addsuffix /CMakeLists.txt,$(addprefix $(INSTALL_CPP_NAME)/examples/,$(basename $(notdir $(wildcard ortools/*/samples/*.cc)))))
+
+EXAMPLE_CPP_FILES = \
+  $(addsuffix /CMakeLists.txt,$(addprefix $(INSTALL_CPP_NAME)/examples/,$(basename $(notdir $(wildcard examples/contrib/*.cc))))) \
+  $(addsuffix /CMakeLists.txt,$(addprefix $(INSTALL_CPP_NAME)/examples/,$(basename $(notdir $(wildcard examples/cpp/*.cc)))))
+
+$(INSTALL_CPP_NAME)$(ARCHIVE_EXT): \
+ $(SAMPLE_CPP_FILES) \
+ $(EXAMPLE_CPP_FILES)
+	$(MAKE) third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=OFF INSTALL_DIR=$(OR_ROOT)$(INSTALL_CPP_NAME)
+	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
+ifeq ($(PLATFORM),WIN64)
+	$(ZIP) -r $(INSTALL_CPP_NAME)$(ARCHIVE_EXT) $(INSTALL_CPP_NAME)
+else
+	$(TAR) --no-same-owner -czvf $(INSTALL_CPP_NAME)$(ARCHIVE_EXT) $(INSTALL_CPP_NAME)
+endif
+
+
+
+
+
 
 #################
 ##  Packaging  ##
@@ -456,7 +580,7 @@ $(TEMP_PACKAGE_CC_DIR):
 $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR): | $(TEMP_PACKAGE_CC_DIR)
 	$(MKDIR) $(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
 
-package_cc: cc | $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR)
+package_cc: cpp | $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR)
 ifeq ($(PLATFORM),WIN64)
 	cd $(TEMP_PACKAGE_CC_DIR)\$(INSTALL_DIR) && \
 		..\..\$(TAR) -C ..\.. -c -v include | ..\..\$(TAR) xvm
@@ -498,11 +622,11 @@ install_cc: | install_dirs
 	$(COPY) LICENSE "$(DESTDIR)$(prefix)"
 ifeq ($(PLATFORM),WIN64)
 	$(COPYREC) /E /Y include "$(DESTDIR)$(prefix)"
-	$(COPY) "$(LIB_DIR)$S$(LIB_PREFIX)ortools_full.$L" "$(DESTDIR)$(prefix)$Slib$S$(LIB_PREFIX)ortools.$L"
+	$(COPY) "$(INSTALL_DIR)$Slib$S$(LIB_PREFIX)ortools_full.$L" "$(DESTDIR)$(prefix)$Slib$S$(LIB_PREFIX)ortools.$L"
 	$(COPYREC) /E /Y share "$(DESTDIR)$(prefix)"
 else
 	$(COPYREC) include "$(DESTDIR)$(prefix)$S"
-	$(COPY) $(LIB_DIR)*$S$(LIB_PREFIX)ortools*.$L* "$(DESTDIR)$(prefix)$Slib$S"
+	$(COPY) $(INSTALL_DIR)$Slib*$S$(LIB_PREFIX)ortools*.$L* "$(DESTDIR)$(prefix)$Slib$S"
 	$(COPYREC) share "$(DESTDIR)$(prefix)$S"
 endif
 	$(COPY) bin$Sprotoc* "$(DESTDIR)$(prefix)$Sbin"
@@ -512,9 +636,6 @@ endif
 ##  EXAMPLE ARCHIVE  ##
 #######################
 TEMP_CC_DIR=temp_cpp
-
-$(TEMP_CC_DIR):
-	$(MKDIR) $(TEMP_CC_DIR)
 
 $(TEMP_CC_DIR)/ortools_examples: | $(TEMP_CC_DIR)
 	$(MKDIR) $(TEMP_CC_DIR)$Sortools_examples
@@ -566,35 +687,23 @@ endif
 ################
 ##  Cleaning  ##
 ################
-.PHONY: clean_cc # Clean C++ output from previous build.
-clean_cc:
+.PHONY: clean_cpp # Clean C++ output from previous build.
+clean_cpp:
 	-$(DELREC) $(BUILD_DIR)
-	-$(DELREC) bin
-	-$(DELREC) include
-	-$(DELREC) share
-	-$(DELREC) lib
-	-$(DEL) cmake$Sprotobuf-*.cmake
-	-$(DELREC) $(TEMP_PACKAGE_CC_DIR)
-	-$(DELREC) $(TEMP_CC_DIR)
+	-$(DELREC) $(INSTALL_DIR)
+	-$(DELREC) $(TEMP_CPP_DIR)
+	-$(DELREC) $(INSTALL_CPP_NAME)
 
 #############
 ##  DEBUG  ##
 #############
-.PHONY: detect_cc # Show variables used to build C++ OR-Tools.
-detect_cc:
+.PHONY: detect_cpp # Show variables used to build C++ OR-Tools.
+detect_cpp:
 	@echo Relevant info for the C++ build:
-	@echo PROTOC = $(PROTOC)
-	@echo CCC = $(CCC)
-	@echo CFLAGS = $(CFLAGS)
-	@echo LDFLAGS = $(LDFLAGS)
 	@echo SRC_DIR = $(SRC_DIR)
-	@echo GEN_DIR = $(GEN_DIR)
-	@echo CC_EX_DIR = $(CC_EX_DIR)
-	@echo OBJ_DIR = $(OBJ_DIR)
-	@echo LIB_DIR = $(LIB_DIR)
-	@echo BIN_DIR = $(BIN_DIR)
+	@echo BUILD_DIR = $(BUILD_DIR)
+	@echo INSTALL_DIR = $(INSTALL_DIR)
 	@echo prefix = $(prefix)
-	@echo OR_TOOLS_LIBS = $(OR_TOOLS_LIBS)
 	@echo BUILD_TYPE = $(BUILD_TYPE)
 	@echo USE_GLOP = ON
 	@echo USE_PDLP = ON
@@ -612,6 +721,7 @@ endif
 ifdef XPRESS_ROOT
 	@echo XPRESS_ROOT = $(XPRESS_ROOT)
 endif
+	@echo INSTALL_CPP_NAME = $(INSTALL_CPP_NAME)
 ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else

@@ -65,7 +65,6 @@ ifneq ($(PLATFORM),WIN64)
     PLATFORM = LINUX
 
     CXX ?= g++
-    CCC = $(CXX) -fPIC -std=c++17 -fwrapv
     L = so
 
     # This is needed to find libz.a
@@ -84,7 +83,7 @@ ifneq ($(PLATFORM),WIN64)
 
     SYS_LNK = -lrt -lpthread -Wl,--no-as-needed -ldl
 
-    PRE_LIB = -L$(OR_ROOT_FULL)/lib64 -L$(OR_ROOT_FULL)/lib -l
+    PRE_LIB = -L$(OR_ROOT_FULL)/install/lib64 -L$(OR_ROOT_FULL)/install/lib -l
     POST_LIB =
     LINK_FLAGS = \
   -Wl,-rpath,'$$ORIGIN' \
@@ -144,7 +143,6 @@ ifneq ($(PLATFORM),WIN64)
     MAC_MIN_VERSION = 10.15
     MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
     CXX ?= clang++
-    CCC = $(CXX) -fPIC -std=c++17  $(MAC_VERSION) -stdlib=libc++
     L = dylib
 
     ZLIB_LNK = -lz
@@ -466,22 +464,16 @@ else # Windows specific part.
 endif  # ($(PLATFORM),WIN64)
 
 # C++ relevant directory
-BUILD_DIR = $(OR_ROOT)dependencies
-INC_DIR = $(OR_ROOT)include
 SRC_DIR = $(OR_ROOT).
+BUILD_DIR = $(OR_ROOT)build_make
+INSTALL_DIR ?= $(OR_ROOT)install_make
+
 GEN_DIR = $(OR_ROOT)ortools/gen
 GEN_PATH = $(subst /,$S,$(GEN_DIR))
-OBJ_DIR = $(OR_ROOT)objs
+INC_DIR = $(OR_ROOT)include
 LIB_DIR = $(OR_ROOT)lib
-BIN_DIR = $(OR_ROOT)bin
 FZ_EX_DIR  = $(OR_ROOT)examples/flatzinc
 FZ_EX_PATH = $(subst /,$S,$(FZ_EX_DIR))
-
-# C++ examples relevant directory
-CC_EX_DIR  = $(OR_ROOT)examples/cpp
-CC_GEN_DIR  = $(GEN_DIR)/examples/cpp
-CC_EX_PATH = $(subst /,$S,$(CC_EX_DIR))
-CC_GEN_PATH = $(subst /,$S,$(CC_GEN_DIR))
 
 # Python relevant directory
 PYTHON_EX_DIR  = $(OR_ROOT)examples/python
@@ -523,31 +515,35 @@ ifdef PRE_RELEASE
   OR_TOOLS_VERSION := $(OR_TOOLS_VERSION)-beta
   OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_SHORT_VERSION)-beta
 endif
-INSTALL_DIR = or-tools_$(PORT)_v$(OR_TOOLS_VERSION)
 FZ_INSTALL_DIR = or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
-DATA_INSTALL_DIR = or-tools_data_v$(OR_TOOLS_VERSION)
 
-BUILD_PYTHON ?= OFF
-BUILD_JAVA ?= OFF
+INSTALL_CPP_NAME = or-tools_cpp_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_DOTNET_NAME = or-tools_dotnet_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_JAVA_NAME = or-tools_java_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_PYTHON_NAME = or-tools_python_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_DATA_NAME = or-tools_data_v$(OR_TOOLS_VERSION)
+
 BUILD_DOTNET ?= OFF
+BUILD_JAVA ?= OFF
+BUILD_PYTHON ?= OFF
 
 .PHONY: detect_port # Show variables used to build OR-Tools.
 detect_port:
 	@echo Relevant info on the system:
+	@echo OR_TOOLS_TOP = $(OR_TOOLS_TOP)
+	@echo SHELL = $(SHELL)
 	@echo OS = $(OS)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PORT = $(PORT)
-	@echo SHELL = $(SHELL)
-	@echo OR_TOOLS_TOP = $(OR_TOOLS_TOP)
 	@echo OR_TOOLS_VERSION = $(OR_TOOLS_VERSION)
 	@echo OR_TOOLS_SHORT_VERSION = $(OR_TOOLS_SHORT_VERSION)
 	@echo GIT_REVISION = $(GIT_REVISION)
 	@echo GIT_HASH = $(GIT_HASH)
 	@echo CMAKE = $(CMAKE)
-	@echo HAS_PYTHON = $(HAS_PYTHON)
-	@echo HAS_JAVA = $(HAS_JAVA)
-	@echo HAS_DOTNET = $(HAS_DOTNET)
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
+	@echo HAS_DOTNET = $(HAS_DOTNET)
+	@echo HAS_JAVA = $(HAS_JAVA)
+	@echo HAS_PYTHON = $(HAS_PYTHON)
 ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else
