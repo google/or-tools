@@ -74,6 +74,8 @@ ABSL_FLAG(bool, test_instance, false,
           "Solve the test TSP instead of a random instance.");
 ABSL_FLAG(int, threads, 0,
           "How many threads to solve with, or solver default if <= 0.");
+ABSL_FLAG(bool, solve_logs, false,
+          "Have the solver print logs to standard out.");
 
 namespace {
 
@@ -260,6 +262,7 @@ absl::StatusOr<Cycle> SolveTsp(
     model.AddLinearConstraint(neighbors == 2, absl::StrCat("n_", i));
   }
   math_opt::SolveArguments args;
+  args.parameters.enable_output = absl::GetFlag(FLAGS_solve_logs);
   const int threads = absl::GetFlag(FLAGS_threads);
   if (threads > 0) {
     args.parameters.threads = threads;

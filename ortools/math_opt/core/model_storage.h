@@ -170,13 +170,14 @@ class ModelStorage {
   ModelStorage(const ModelStorage&) = delete;
   ModelStorage& operator=(const ModelStorage&) = delete;
 
-  // Returns a clone of the model.
+  // Returns a clone of the model, optionally changing model's name.
   //
   // The variables and constraints have the same ids. The clone will also not
   // reused any id of variable/constraint that was deleted in the original.
   //
   // Note that the returned model does not have any update tracker.
-  std::unique_ptr<ModelStorage> Clone() const;
+  std::unique_ptr<ModelStorage> Clone(
+      std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline const std::string& name() const { return name_; }
 

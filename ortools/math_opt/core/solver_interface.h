@@ -49,8 +49,9 @@ inline constexpr absl::string_view kMessageCallbackNotSupported =
 //
 // This interface is not meant to be used directly. The actual API is the one of
 // the Solver class. The Solver class validates the models before calling this
-// interface. It also makes sure no concurrent calls happen on Solve(),
-// CanUpdate() and Update().
+// interface. It makes sure no concurrent calls happen on Solve(), CanUpdate()
+// and Update(). It makes sure no other function is called after Solve(),
+// Update() or a callback have failed.
 //
 // Implementations of this interface should not have public constructors but
 // instead have a static `New` function with the signature of Factory function

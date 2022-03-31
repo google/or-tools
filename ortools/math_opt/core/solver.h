@@ -135,7 +135,12 @@ class Solver {
   absl::Mutex mutex_;
 
   const std::unique_ptr<SolverInterface> underlying_solver_;
+
   ModelSummary model_summary_;
+
+  // Set to true if a previous call to Solve() or Update() returned a failing
+  // status.
+  bool fatal_failure_occurred_ = false;
 };
 
 namespace internal {

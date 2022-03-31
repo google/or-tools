@@ -658,12 +658,12 @@ absl::Status Main() {
   absl::Time start = absl::Now();
   RETURN_IF_ERROR(FullProblem(instance, absl::GetFlag(FLAGS_solver_type)))
       << "full solve failed";
-  std::cout << "Full solve time : " << absl::Now() - start << std::endl;
+  std::cout << "Full solve time: " << absl::Now() - start << std::endl;
   start = absl::Now();
   RETURN_IF_ERROR(Benders(instance, absl::GetFlag(FLAGS_benders_precission),
                           absl::GetFlag(FLAGS_solver_type)))
       << "Benders solve failed";
-  std::cout << "Benders solve time : " << absl::Now() - start << std::endl;
+  std::cout << "Benders solve time: " << absl::Now() - start << std::endl;
   return absl::OkStatus();
 }
 }  // namespace

@@ -751,11 +751,11 @@ absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
     const absl::Time start, const ModelSolveParametersProto& model_parameters) {
   SolveResultProto result;
 
-  // TODO(b/195295177): Add tests for rays in unbounded MIPs
-  RETURN_IF_ERROR(FillRays(model_parameters, result));
-
   ASSIGN_OR_RETURN((auto [solutions, solution_claims]),
                    GetSolutions(model_parameters));
+
+  // TODO(b/195295177): Add tests for rays in unbounded MIPs
+  RETURN_IF_ERROR(FillRays(model_parameters, solution_claims, result));
 
   for (auto& solution : solutions) {
     *result.add_solutions() = std::move(solution);
@@ -1147,10 +1147,14 @@ GurobiSolver::GetLpDualSolutionIfAvailable(
 
 absl::Status GurobiSolver::FillRays(
     const ModelSolveParametersProto& model_parameters,
-    SolveResultProto& result) {
+    const SolutionClaims solution_claims, SolveResultProto& result) {
   ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
-  if (gurobi_->IsAttrAvailable(GRB_DBL_ATTR_UNBDRAY) &&
-      num_gurobi_variables_ > 0) {
+  // GRB_DBL_ATTR_UNBDRAY is sometimes incorrectly available for problems
+  // without variables. We also give priority to the conclusions obtained from
+  // dual solutions or bounds.
+  if (!solution_claims.dual_feasible_solution_exists &&
+      num_gurobi_variables_ > 0 &&
+      gurobi_->IsAttrAvailable(GRB_DBL_ATTR_UNBDRAY)) {
     ASSIGN_OR_RETURN(const std::vector<double> grb_ray_var_values,
                      gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_UNBDRAY,
                                                  num_gurobi_variables_));
@@ -1159,8 +1163,12 @@ absl::Status GurobiSolver::FillRays(
                                      *primal_ray->mutable_variable_values(),
                                      model_parameters.variable_values_filter());
   }
-  if (gurobi_->IsAttrAvailable(GRB_DBL_ATTR_FARKASDUAL) &&
-      num_gurobi_constraints() + num_gurobi_variables_ > 0) {
+  // GRB_DBL_ATTR_FARKASDUAL is sometimes incorrectly available for problems
+  // without constraints. We also give priority to the conclusions obtained from
+  // primal solutions.
+  if (!solution_claims.primal_feasible_solution_exists &&
+      num_gurobi_constraints() > 0 &&
+      gurobi_->IsAttrAvailable(GRB_DBL_ATTR_FARKASDUAL)) {
     ASSIGN_OR_RETURN(
         DualRayProto dual_ray,
         GetGurobiDualRay(model_parameters.dual_values_filter(),
@@ -1174,17 +1182,10 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQpSolution(
     const ModelSolveParametersProto& model_parameters) {
   ASSIGN_OR_RETURN((auto [primal_solution, found_primal_feasible_solution]),
                    GetConvexPrimalSolutionIfAvailable(model_parameters));
-
-  // TODO(b/195295177): Update, seems GRB_DBL_ATTR_OBJBOUND is unavailable
-  // even for GRB_OPTIMAL, so the code below will only give a finite bound
-  // and a dual feasible status for GRB_OPTIMAL.
-  ASSIGN_OR_RETURN(const int grb_termination,
-                   gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
-  bool dual_feasible_solution_exists = false;
-  ASSIGN_OR_RETURN(double best_dual_bound, GetBestDualBound());
-  if (grb_termination == GRB_OPTIMAL || std::isfinite(best_dual_bound)) {
-    dual_feasible_solution_exists = true;
-  }
+  // TODO(b/225189115): Expand QpDualsTest to check maximization problems and
+  // other edge cases.
+  ASSIGN_OR_RETURN((auto [dual_solution, found_dual_feasible_solution]),
+                   GetLpDualSolutionIfAvailable(model_parameters));
   // Basis information is available when Gurobi uses QP simplex. As of v9.1 this
   // is not the default [1], so a user will need to explicitly set the Method
   // parameter in order for the following call to do anything interesting.
@@ -1193,7 +1194,7 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQpSolution(
 
   const SolutionClaims solution_claims = {
       .primal_feasible_solution_exists = found_primal_feasible_solution,
-      .dual_feasible_solution_exists = dual_feasible_solution_exists};
+      .dual_feasible_solution_exists = found_dual_feasible_solution};
 
   if (!primal_solution.has_value() && !basis.has_value()) {
     return GurobiSolver::SolutionsAndClaims{.solution_claims = solution_claims};
@@ -1202,10 +1203,13 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQpSolution(
   SolutionProto& solution =
       solution_and_claims.solutions.emplace_back(SolutionProto());
   if (primal_solution.has_value()) {
-    *solution.mutable_primal_solution() = std::move(*primal_solution);
+    *solution.mutable_primal_solution() = *std::move(primal_solution);
+  }
+  if (dual_solution.has_value()) {
+    *solution.mutable_dual_solution() = *std::move(dual_solution);
   }
   if (basis.has_value()) {
-    *solution.mutable_basis() = std::move(*basis);
+    *solution.mutable_basis() = *std::move(basis);
   }
   return solution_and_claims;
 }

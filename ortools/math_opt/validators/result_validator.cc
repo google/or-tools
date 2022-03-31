@@ -181,7 +181,6 @@ absl::Status CheckDualSolutionAndStatusConsistency(
 
 // Assumes ValidateTermination has been called and ValidateProblemStatusProto
 // has been called on result.solve_stats.problem_status.
-// TODO(b/212685946): add ray checks
 absl::Status ValidateTerminationConsistency(const SolveResultProto& result) {
   const ProblemStatusProto status = result.solve_stats().problem_status();
   switch (result.termination().reason()) {
@@ -286,11 +285,25 @@ absl::Status ValidateResult(const SolveResultProto& result,
   RETURN_IF_ERROR(
       ValidateSolutions(result.solutions(), parameters, model_summary));
 
+  if (result.primal_rays_size() > 0 &&
+      result.solve_stats().problem_status().dual_status() ==
+          FEASIBILITY_STATUS_FEASIBLE) {
+    return absl::InvalidArgumentError(
+        "solve_stats.problem_status.dual_status = FEASIBILITY_STATUS_FEASIBLE, "
+        "but a primal ray is returned");
+  }
   for (int i = 0; i < result.primal_rays_size(); ++i) {
     RETURN_IF_ERROR(ValidatePrimalRay(result.primal_rays(i),
                                       parameters.variable_values_filter(),
                                       model_summary))
         << "Invalid primal_rays[" << i << "]";
+  }
+  if (result.dual_rays_size() > 0 &&
+      result.solve_stats().problem_status().primal_status() ==
+          FEASIBILITY_STATUS_FEASIBLE) {
+    return absl::InvalidArgumentError(
+        "solve_stats.problem_status.primal_status = "
+        "FEASIBILITY_STATUS_FEASIBLE, but a dual ray is returned");
   }
   for (int i = 0; i < result.dual_rays_size(); ++i) {
     RETURN_IF_ERROR(

@@ -40,8 +40,9 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/types/span.h"
 #include "ortools/base/source_location.h"
+#include "absl/types/span.h"
+
 #include "ortools/gurobi/environment.h"
 
 namespace operations_research::math_opt {

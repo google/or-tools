@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <string>
 
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/integral_types.h"

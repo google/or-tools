@@ -95,6 +95,7 @@
 #include <iterator>
 #include <limits>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
@@ -231,8 +232,8 @@ class LinearExpression {
   // to this.
   //
   // Example:
-  //   Variable a = ...;
-  //   Variable b = ...;
+  //   const Variable a = ...;
+  //   const Variable b = ...;
   //   const std::vector<Variable> vars = {a, b};
   //   LinearExpression expr(8.0);
   //   expr.AddSum(vars);
@@ -251,6 +252,13 @@ class LinearExpression {
   template <typename Iterable>
   inline void AddSum(const Iterable& items);
 
+  // Creates a new LinearExpression object equal to the sum. The implementation
+  // is equivalent to:
+  //   LinearExpression expr;
+  //   expr.AddSum(items);
+  template <typename Iterable>
+  static inline LinearExpression Sum(const Iterable& items);
+
   // Adds the inner product of left and right to this.
   //
   // Specifically, letting
@@ -261,8 +269,8 @@ class LinearExpression {
   // to this.
   //
   // Example:
-  //   Variable a = ...;
-  //   Variable b = ...;
+  //   const Variable a = ...;
+  //   const Variable b = ...;
   //   const std::vector<Variable> left = {a, b};
   //   const std::vector<double> right = {10.0, 2.0};
   //   LinearExpression expr(3.0);
@@ -280,7 +288,7 @@ class LinearExpression {
   // Runtime requirements (or CHECK fails):
   //  * left and right have an equal number of elements.
   //
-  // Note: The implementation is equivalent to:
+  // Note: The implementation is equivalent to the following pseudocode:
   //   for(const auto& [l, r] : zip(left, right)) {
   //     *this += l * r;
   //   }
@@ -290,6 +298,14 @@ class LinearExpression {
   template <typename LeftIterable, typename RightIterable>
   inline void AddInnerProduct(const LeftIterable& left,
                               const RightIterable& right);
+
+  // Creates a new LinearExpression object equal to the inner product. The
+  // implementation is equivalent to:
+  //   LinearExpression expr;
+  //   expr.AddInnerProduct(left, right);
+  template <typename LeftIterable, typename RightIterable>
+  static inline LinearExpression InnerProduct(const LeftIterable& left,
+                                              const RightIterable& right);
 
   // Returns the terms in this expression.
   inline const VariableMap<double>& terms() const;
@@ -331,7 +347,7 @@ class LinearExpression {
   double offset_ = 0.0;
 };
 
-// Returns the sum of the elements of items.
+// Returns the sum of the elements of items as a LinearExpression.
 //
 // Specifically, letting
 //   (i_1, i_2, ..., i_n) = items
@@ -339,8 +355,8 @@ class LinearExpression {
 //   i_1 + i_2 + ... + i_n.
 //
 // Example:
-//   Variable a = ...;
-//   Variable b = ...;
+//   const Variable a = ...;
+//   const Variable b = ...;
 //   const std::vector<Variable> vars = {a, b, a};
 //   Sum(vars)
 //     => 2.0 * a + b
@@ -351,10 +367,13 @@ class LinearExpression {
 //   expr.AddSum(items);
 //
 // See LinearExpression::AddSum() for a precise contract on the type Iterable.
+//
+// If the inner product cannot be represented as a LinearExpression, consider
+// instead QuadraticExpression::Sum().
 template <typename Iterable>
 inline LinearExpression Sum(const Iterable& items);
 
-// Returns the inner product of left and right.
+// Returns the inner product of left and right as a LinearExpression.
 //
 // Specifically, letting
 //   (l_1, l_2 ..., l_n) = left,
@@ -363,8 +382,8 @@ inline LinearExpression Sum(const Iterable& items);
 //   l_1 * r_1 + l_2 * r_2 + ... + l_n * r_n.
 //
 // Example:
-//   Variable a = ...;
-//   Variable b = ...;
+//   const Variable a = ...;
+//   const Variable b = ...;
 //   const std::vector<Variable> left = {a, b};
 //   const std::vector<double> right = {10.0, 2.0};
 //   InnerProduct(left, right);
@@ -377,6 +396,9 @@ inline LinearExpression Sum(const Iterable& items);
 //
 // Requires that left and right have equal size, see
 // LinearExpression::AddInnerProduct for a precise contract on template types.
+//
+// If the inner product cannot be represented as a LinearExpression, consider
+// instead QuadraticExpression::InnerProduct().
 template <typename LeftIterable, typename RightIterable>
 inline LinearExpression InnerProduct(const LeftIterable& left,
                                      const RightIterable& right);
@@ -628,6 +650,9 @@ class QuadraticTermKey {
   QuadraticProductId variable_ids_;
 };
 
+inline std::ostream& operator<<(std::ostream& ostr,
+                                const QuadraticTermKey& key);
+
 inline bool operator==(const QuadraticTermKey lhs, const QuadraticTermKey rhs);
 inline bool operator!=(const QuadraticTermKey lhs, const QuadraticTermKey rhs);
 
@@ -737,6 +762,131 @@ class QuadraticExpression {
   inline QuadraticExpression& operator-=(const QuadraticExpression& expr);
   inline QuadraticExpression& operator*=(double value);
   inline QuadraticExpression& operator/=(double value);
+
+  // Adds each element of items to this.
+  //
+  // Specifically, letting
+  //   (i_1, i_2, ..., i_n) = items
+  // adds
+  //   i_1 + i_2 + ... + i_n
+  // to this.
+  //
+  // Example:
+  //   const Variable a = ...;
+  //   const Variable b = ...;
+  //   const std::vector<Variable> vars = {a, b};
+  //   const std::vector<QuadraticTerm> terms = {2 * a * b};
+  //   QuadraticExpression expr = 8;
+  //   expr.AddSum(vars);
+  //   expr.AddSum(terms);
+  // Results in expr having the value 2 * a * b + a + b + 8.0.
+  //
+  // Compile time requirements:
+  //  * Iterable is a sequence (an array or object with begin() and end()).
+  //  * The type of an element of items is one of double, Variable, LinearTerm,
+  //    LinearExpression, QuadraticTerm, or QuadraticExpression (or is
+  //    implicitly convertible to one of these types, e.g. int).
+  //
+  // Note: The implementation is equivalent to:
+  //   for(const auto item : items) {
+  //     *this += item;
+  //   }
+  template <typename Iterable>
+  inline void AddSum(const Iterable& items);
+
+  // Returns the sum of the elements of items.
+  //
+  // Specifically, letting
+  //   (i_1, i_2, ..., i_n) = items
+  // returns
+  //   i_1 + i_2 + ... + i_n.
+  //
+  // Example:
+  //   const Variable a = ...;
+  //   const Variable b = ...;
+  //   const std::vector<QuadraticTerm> terms = {a * a, 2 * a * b, 3 * b * a};
+  //   QuadraticExpression::Sum(vars)
+  //     => a^2 + 5 a * b
+  // Note, instead of:
+  //   QuadraticExpression expr(3.0);
+  //   expr += QuadraticExpression::Sum(items);
+  // Prefer:
+  //   expr.AddSum(items);
+  //
+  // See QuadraticExpression::AddSum() for a precise contract on the type
+  // Iterable.
+  template <typename Iterable>
+  static inline QuadraticExpression Sum(const Iterable& items);
+
+  // Adds the inner product of left and right to this.
+  //
+  // Specifically, letting
+  //   (l_1, l_2 ..., l_n) = left,
+  //   (r_1, r_2, ..., r_n) = right,
+  // adds
+  //   l_1 * r_1 + l_2 * r_2 + ... + l_n * r_n
+  // to this.
+  //
+  // Example:
+  //   const Variable a = ...;
+  //   const Variable b = ...;
+  //   const std::vector<Variable> vars = {a, b};
+  //   const std::vector<double> coeffs = {10.0, 2.0};
+  //   QuadraticExpression expr = 3.0;
+  //   expr.AddInnerProduct(coeffs, vars);
+  //   expr.AddInnerProduct(vars, vars);
+  // Results in expr having the value a^2 + b^2 + 10.0 * a + 2.0 * b + 3.0.
+  //
+  // Compile time requirements:
+  //  * LeftIterable and RightIterable are both sequences (arrays or objects
+  //    with begin() and end())
+  //  * For both left and right, their elements are of type double, Variable,
+  //    LinearTerm, LinearExpression, QuadraticTerm, or QuadraticExpression (or
+  //    is implicitly convertible to one of these types, e.g. int).
+  // Runtime requirements (or CHECK fails):
+  //  * The inner product value, and its constitutive intermediate terms, can be
+  //    represented as a QuadraticExpression (potentially through an implicit
+  //    conversion).
+  //  * left and right have an equal number of elements.
+  //
+  // Note: The implementation is equivalent to the following pseudocode:
+  //   for(const auto& [l, r] : zip(left, right)) {
+  //     *this += l * r;
+  //   }
+  // In particular, the multiplication will be performed on the types of the
+  // elements in left and right (take care with low precision types), but the
+  // addition will always use double precision.
+  template <typename LeftIterable, typename RightIterable>
+  inline void AddInnerProduct(const LeftIterable& left,
+                              const RightIterable& right);
+
+  // Returns the inner product of left and right.
+  //
+  // Specifically, letting
+  //   (l_1, l_2 ..., l_n) = left,
+  //   (r_1, r_2, ..., r_n) = right,
+  // returns
+  //   l_1 * r_1 + l_2 * r_2 + ... + l_n * r_n.
+  //
+  // Example:
+  //   const Variable a = ...;
+  //   const Variable b = ...;
+  //   const std::vector<Variable> left = {a, a};
+  //   const std::vector<Variable> left = {a, b};
+  //   QuadraticExpression::InnerProduct(left, right);
+  //     -=> a^2 + a * b
+  // Note, instead of:
+  //   QuadraticExpression expr(3.0);
+  //   expr += QuadraticExpression::InnerProduct(left, right);
+  // Prefer:
+  //   expr.AddInnerProduct(left, right);
+  //
+  // Requires that left and right have equal size, see
+  // QuadraticExpression::AddInnerProduct() for a precise contract on template
+  // types.
+  template <typename LeftIterable, typename RightIterable>
+  static inline QuadraticExpression InnerProduct(const LeftIterable& left,
+                                                 const RightIterable& right);
 
   // Compute the numeric value of this expression when variables are substituted
   // by their values in variable_values.
@@ -1217,23 +1367,30 @@ void LinearExpression::AddSum(const Iterable& items) {
 }
 
 template <typename Iterable>
-LinearExpression Sum(const Iterable& items) {
+LinearExpression LinearExpression::Sum(const Iterable& items) {
   LinearExpression result;
   result.AddSum(items);
   return result;
 }
 
-template <typename LeftIterable, typename RightIterable>
-void LinearExpression::AddInnerProduct(const LeftIterable& left,
-                                       const RightIterable& right) {
+template <typename Iterable>
+LinearExpression Sum(const Iterable& items) {
+  return LinearExpression::Sum(items);
+}
+
+namespace internal {
+
+template <typename LeftIterable, typename RightIterable, typename Expression>
+void AddInnerProduct(const LeftIterable& left, const RightIterable& right,
+                     Expression& expr) {
   using std::begin;
   using std::end;
   auto l = begin(left);
   auto r = begin(right);
-  auto l_end = end(left);
-  auto r_end = end(right);
+  const auto l_end = end(left);
+  const auto r_end = end(right);
   for (; l != l_end && r != r_end; ++l, ++r) {
-    *this += (*l) * (*r);
+    expr += (*l) * (*r);
   }
   CHECK(l == l_end)
       << "left had more elements than right, sizes should be equal";
@@ -1241,12 +1398,26 @@ void LinearExpression::AddInnerProduct(const LeftIterable& left,
       << "right had more elements than left, sizes should be equal";
 }
 
+}  // namespace internal
+
 template <typename LeftIterable, typename RightIterable>
-LinearExpression InnerProduct(const LeftIterable& left,
-                              const RightIterable& right) {
+void LinearExpression::AddInnerProduct(const LeftIterable& left,
+                                       const RightIterable& right) {
+  internal::AddInnerProduct(left, right, *this);
+}
+
+template <typename LeftIterable, typename RightIterable>
+LinearExpression LinearExpression::InnerProduct(const LeftIterable& left,
+                                                const RightIterable& right) {
   LinearExpression result;
   result.AddInnerProduct(left, right);
   return result;
+}
+
+template <typename LeftIterable, typename RightIterable>
+LinearExpression InnerProduct(const LeftIterable& left,
+                              const RightIterable& right) {
+  return LinearExpression::InnerProduct(left, right);
 }
 
 const VariableMap<double>& LinearExpression::terms() const { return terms_; }
@@ -1627,6 +1798,12 @@ template <typename H>
 H AbslHashValue(H h, const QuadraticTermKey& key) {
   return H::combine(std::move(h), key.typed_id().first.value(),
                     key.typed_id().second.value(), key.storage());
+}
+
+std::ostream& operator<<(std::ostream& ostr, const QuadraticTermKey& key) {
+  ostr << "(" << Variable(key.storage(), key.typed_id().first) << ", "
+       << Variable(key.storage(), key.typed_id().second) << ")";
+  return ostr;
 }
 
 bool operator==(const QuadraticTermKey lhs, const QuadraticTermKey rhs) {
@@ -2227,6 +2404,34 @@ QuadraticExpression& QuadraticExpression::operator/=(const double value) {
   // NOTE: Not adding/removing/altering variables in expression, just modifying
   // coefficients, so no need to check that models agree.
   return *this;
+}
+
+template <typename Iterable>
+void QuadraticExpression::AddSum(const Iterable& items) {
+  for (const auto& item : items) {
+    *this += item;
+  }
+}
+
+template <typename Iterable>
+QuadraticExpression QuadraticExpression::Sum(const Iterable& items) {
+  QuadraticExpression result;
+  result.AddSum(items);
+  return result;
+}
+
+template <typename LeftIterable, typename RightIterable>
+void QuadraticExpression::AddInnerProduct(const LeftIterable& left,
+                                          const RightIterable& right) {
+  internal::AddInnerProduct(left, right, *this);
+}
+
+template <typename LeftIterable, typename RightIterable>
+QuadraticExpression QuadraticExpression::InnerProduct(
+    const LeftIterable& left, const RightIterable& right) {
+  QuadraticExpression result;
+  result.AddInnerProduct(left, right);
+  return result;
 }
 
 }  // namespace math_opt

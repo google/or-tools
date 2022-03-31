@@ -57,6 +57,7 @@
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
+#include "ortools/math_opt/solvers/glpk/glpk_sparse_vector.h"
 #include "ortools/math_opt/solvers/glpk/rays.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
@@ -833,18 +834,13 @@ double OffsetOnlyObjVal(glp_prob* const problem) {
 // glp_interior()).
 int OptStatus(glp_prob*) { return GLP_OPT; }
 
-// Returns the error when a model or an update contains a quadratic objective.
-absl::Status QuadraticObjectiveError() {
-  return absl::InvalidArgumentError(
-      "GLPK does not support quadratic objectives");
-}
-
 }  // namespace
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GlpkSolver::New(
     const ModelProto& model, const InitArgs& init_args) {
   if (!model.objective().quadratic_coefficients().row_ids().empty()) {
-    return QuadraticObjectiveError();
+    return absl::InvalidArgumentError(
+        "GLPK does not support quadratic objectives");
   }
   return absl::WrapUnique(new GlpkSolver(model));
 }
@@ -1368,25 +1364,7 @@ void GlpkSolver::UpdateLinearConstraintMatrix(
   {
     // We reuse the same vectors for all calls to GLPK's API to limit
     // reallocations of these temporary buffers.
-    //
-    // We use constant size vectors to remove inefficiencies of
-    // std::vector::resize() that has linear cost in the size change (due to
-    // reset to 0 of values in the existing capacity on grow on resize).
-    //
-    // The value at index 0 is never used by GLPK's API (which are one-based).
-    std::vector<int> data_indices(variables_.ids.size() + 1);
-    std::vector<double> data_values(variables_.ids.size() + 1);
-
-    // This shared vector (to prevent reallocation) will be used to store for
-    // each GLPK column the corresponding index in data_xxx vectors. The value
-    // kColNotPresent being used as a guard value to indicate that the column is
-    // not present.
-    //
-    // This uses the GLPK convention of ignoring the element 0 and using
-    // one-based indices.
-    constexpr int kColNotPresent = std::numeric_limits<int>::max();
-    std::vector<int> col_to_data_element(variables_.ids.size() + 1,
-                                         kColNotPresent);
+    GlpkSparseVector data(static_cast<int>(variables_.ids.size()));
     for (const auto& [row_id, row_coefficients] :
          SparseSubmatrixByRows(matrix_updates,
                                /*start_row_id=*/0,
@@ -1399,65 +1377,27 @@ void GlpkSolver::UpdateLinearConstraintMatrix(
       CHECK_EQ(linear_constraints_.ids[row_index - 1], row_id);
 
       // Read the current row coefficients.
-      const int initial_non_zeros = glp_get_mat_row(
-          problem_, row_index, data_indices.data(), data_values.data());
-      CHECK_LE(initial_non_zeros + 1, data_indices.size());
-      CHECK_LE(initial_non_zeros + 1, data_values.size());
-
-      // Update the col to data_xxx elements map.
-      for (int i = 1; i <= initial_non_zeros; ++i) {
-        col_to_data_element[data_indices[i]] = i;
-      }
+      data.Load([&](int* const indices, double* const values) {
+        return glp_get_mat_row(problem_, row_index, indices, values);
+      });
 
       // Update the row data.
-      int non_zeros = initial_non_zeros;
       for (const auto [col_id, coefficient] : row_coefficients) {
         const int col_index = variables_.id_to_index.at(col_id);
         CHECK_EQ(variables_.ids[col_index - 1], col_id);
-
-        // Here there are two cases: either a coefficient already exists for the
-        // given column, and we simply replace its value (potentially with a
-        // zero, which will remove the coefficient in the GLPK matrix), or we
-        // need to append it.
-        if (const int i = col_to_data_element[col_index]; i == kColNotPresent) {
-          ++non_zeros;
-          data_indices[non_zeros] = col_index;
-          data_values[non_zeros] = coefficient;
-        } else {
-          CHECK_EQ(data_indices[i], col_index);
-          data_values[i] = coefficient;
-        }
+        data.Set(col_index, coefficient);
       }
-      CHECK_LE(non_zeros + 1, data_indices.size());
-      CHECK_LE(non_zeros + 1, data_values.size());
 
       // Change the row values.
-      glp_set_mat_row(problem_, row_index, non_zeros, data_indices.data(),
-                      data_values.data());
-
-      // Cleanup the used data_xxx items to make sure we don't reuse those
-      // values by mistake later.
-      for (int i = 1; i <= non_zeros; ++i) {
-        data_indices[i] = 0;
-        data_values[i] = 0;
-      }
-
-      // Resets the elements of the map we modified. Here we ignore the new
-      // column indices that we have added in data_indices since those have
-      // not been put in the map.
-      for (int i = 1; i <= initial_non_zeros; ++i) {
-        col_to_data_element[data_indices[i]] = kColNotPresent;
-      }
+      glp_set_mat_row(problem_, row_index, data.size(), data.indices(),
+                      data.values());
     }
   }
 
   // Add new columns's coefficients of existing rows. The coefficients of new
   // columns in new rows will be added when adding new rows below.
   if (first_new_var_id.has_value()) {
-    // See the documentation for the existing rows above of the variables with
-    // the same names.
-    std::vector<int> data_indices(linear_constraints_.ids.size() + 1);
-    std::vector<double> data_values(linear_constraints_.ids.size() + 1);
+    GlpkSparseVector data(static_cast<int>(linear_constraints_.ids.size()));
     for (const auto& [col_id, col_coefficients] : TransposeSparseSubmatrix(
              SparseSubmatrixByRows(matrix_updates,
                                    /*start_row_id=*/0,
@@ -1471,37 +1411,22 @@ void GlpkSolver::UpdateLinearConstraintMatrix(
 
       // Prepare the column data replacing MathOpt ids by GLPK one-based row
       // indices.
-      int non_zeros = 0;
+      data.Clear();
       for (const auto [row_id, coefficient] : MakeView(col_coefficients)) {
         const int row_index = linear_constraints_.id_to_index.at(row_id);
         CHECK_EQ(linear_constraints_.ids[row_index - 1], row_id);
-
-        ++non_zeros;
-        data_indices[non_zeros] = row_index;
-        data_values[non_zeros] = coefficient;
+        data.Set(row_index, coefficient);
       }
-      CHECK_LE(non_zeros + 1, data_indices.size());
-      CHECK_LE(non_zeros + 1, data_values.size());
 
       // Change the column values.
-      glp_set_mat_col(problem_, col_index, non_zeros, data_indices.data(),
-                      data_values.data());
-
-      // Cleanup the used data_xxx items to make sure we don't reuse those
-      // values by mistake later.
-      for (int i = 1; i <= non_zeros; ++i) {
-        data_indices[i] = 0;
-        data_values[i] = 0;
-      }
+      glp_set_mat_col(problem_, col_index, data.size(), data.indices(),
+                      data.values());
     }
   }
 
   // Add new rows, including the new columns' coefficients.
   if (first_new_cstr_id.has_value()) {
-    // See the documentation for the existing rows above of the variables with
-    // the same names.
-    std::vector<int> data_indices(variables_.ids.size() + 1);
-    std::vector<double> data_values(variables_.ids.size() + 1);
+    GlpkSparseVector data(static_cast<int>(variables_.ids.size()));
     for (const auto& [row_id, row_coefficients] :
          SparseSubmatrixByRows(matrix_updates,
                                /*start_row_id=*/*first_new_cstr_id,
@@ -1515,28 +1440,16 @@ void GlpkSolver::UpdateLinearConstraintMatrix(
 
       // Prepare the row data replacing MathOpt ids by GLPK one-based column
       // indices.
-      int non_zeros = 0;
+      data.Clear();
       for (const auto [col_id, coefficient] : row_coefficients) {
         const int col_index = variables_.id_to_index.at(col_id);
         CHECK_EQ(variables_.ids[col_index - 1], col_id);
-
-        ++non_zeros;
-        data_indices[non_zeros] = col_index;
-        data_values[non_zeros] = coefficient;
+        data.Set(col_index, coefficient);
       }
-      CHECK_LE(non_zeros + 1, data_indices.size());
-      CHECK_LE(non_zeros + 1, data_values.size());
 
       // Change the row values.
-      glp_set_mat_row(problem_, row_index, non_zeros, data_indices.data(),
-                      data_values.data());
-
-      // Cleanup the used data_xxx items to make sure we don't reuse those
-      // values by mistake later.
-      for (int i = 1; i <= non_zeros; ++i) {
-        data_indices[i] = 0;
-        data_values[i] = 0;
-      }
+      glp_set_mat_row(problem_, row_index, data.size(), data.indices(),
+                      data.values());
     }
   }
 }
@@ -1649,13 +1562,6 @@ absl::Status GlpkSolver::AddPrimalOrDualRay(
 }
 
 absl::Status GlpkSolver::Update(const ModelUpdateProto& model_update) {
-  if (!model_update.objective_updates()
-           .quadratic_coefficients()
-           .row_ids()
-           .empty()) {
-    return QuadraticObjectiveError();
-  }
-
   // TODO(b/187027049): GLPK should not support modifying the model from another
   // thread (the allocation depends on the per-thread environment). We should
   // unit test that and see what is the actual behavior. If GLPK itself does not
@@ -1735,11 +1641,10 @@ absl::Status GlpkSolver::Update(const ModelUpdateProto& model_update) {
 }
 
 bool GlpkSolver::CanUpdate(const ModelUpdateProto& model_update) {
-  // We return true even if we have a quadratic objective so that we don't force
-  // the caller to create a full model to get the error that quadratic
-  // objectives are not supported. The caller will get the correct error
-  // returned by GlpkSolver::Update().
-  return true;
+  return model_update.objective_updates()
+      .quadratic_coefficients()
+      .row_ids()
+      .empty();
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_GLPK, GlpkSolver::New)

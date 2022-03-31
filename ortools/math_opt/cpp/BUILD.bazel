@@ -326,3 +326,13 @@ cc_library(
         "@com_google_absl//absl/types:span",
     ],
 )
+
+cc_library(
+    name = "statistics",
+    srcs = ["statistics.cc"],
+    hdrs = ["statistics.h"],
+    deps = [
+        ":model",
+        "//ortools/math_opt/core:model_storage",
+    ],
+)

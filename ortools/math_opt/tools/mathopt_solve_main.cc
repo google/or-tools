@@ -42,12 +42,18 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/cpp/math_opt.h"
+#include "ortools/math_opt/cpp/statistics.h"
 #include "ortools/math_opt/io/mps_converter.h"
+#include "ortools/math_opt/io/names_removal.h"
+#include "ortools/math_opt/io/proto_converter.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/util/status_macros.h"
 
 inline constexpr absl::string_view kMathOptBinaryFormat = "mathopt";
 inline constexpr absl::string_view kMathOptTextFormat = "mathopt_txt";
+inline constexpr absl::string_view kLinearSolverBinaryFormat = "linear_solver";
+inline constexpr absl::string_view kLinearSolverTextFormat =
+    "linear_solver_txt";
 inline constexpr absl::string_view kMPSFormat = "mps";
 inline constexpr absl::string_view kAutoFormat = "auto";
 
@@ -73,17 +79,30 @@ struct SolverTypeProtoFormatter {
 ABSL_FLAG(std::string, input_file, "",
           "the file containing the model to solve; use --format to specify the "
           "file format");
-ABSL_FLAG(std::string, format, "auto",
-          absl::StrCat(
-              "the format of the --input_file; possible values:\n", "* ",
-              kMathOptBinaryFormat, ": for a MathOpt ModelProto in binary\n",
-              "* ", kMathOptTextFormat, ": when the proto is in text\n", "* ",
-              kMPSFormat, ": for MPS file (which can be GZiped)\n", "* ",
-              kAutoFormat, ": to guess the format from the file extension:\n",
-              "  - '", kPbExt, "', '", kProtoExt, "': ", kMathOptBinaryFormat,
-              "\n", "  - '", kPbTxtExt, "', '", kTextProtoExt,
-              "': ", kMathOptTextFormat, "\n", "  - '", kMPSExt, "', '",
-              kMPSGzipExt, "': ", kMPSFormat));
+ABSL_FLAG(
+    std::string, format, "auto",
+    absl::StrCat(
+        "the format of the --input_file; possible values:\n",
+        //
+        "* ", kMathOptBinaryFormat, ": for a MathOpt ModelProto in binary\n",
+        //
+        "* ", kMathOptTextFormat, ": when the proto is in text\n",
+        //
+        "* ", kLinearSolverBinaryFormat,
+        ": for a LinearSolver MPModelProto in binary\n",
+        //
+        "* ", kLinearSolverTextFormat, ": when the proto is in text\n",
+        //
+        "* ", kMPSFormat, ": for MPS file (which can be GZiped)\n",
+        //
+        "* ", kAutoFormat, ": to guess the format from the file extension:\n",
+        //
+        "  - '", kPbExt, "', '", kProtoExt, "': ", kMathOptBinaryFormat, "\n",
+        //
+        "  - '", kPbTxtExt, "', '", kTextProtoExt, "': ", kMathOptTextFormat,
+        "\n",
+        //
+        "  - '", kMPSExt, "', '", kMPSGzipExt, "': ", kMPSFormat));
 ABSL_FLAG(
     std::vector<std::string>, update_files, {},
     absl::StrCat(
@@ -102,6 +121,12 @@ ABSL_FLAG(bool, solver_logs, false,
           "use a message callback to print the solver convergence logs");
 ABSL_FLAG(absl::Duration, time_limit, absl::InfiniteDuration(),
           "the time limit to use for the solve");
+ABSL_FLAG(bool, names, true,
+          "use the names in the input models; ignoring names is useful when "
+          "the input contains duplicates");
+ABSL_FLAG(bool, ranges, false,
+          "prints statistics about the ranges of the model values");
+ABSL_FLAG(bool, print_model, false, "prints the model to stdout");
 
 namespace operations_research {
 namespace math_opt {
@@ -138,6 +163,15 @@ absl::StatusOr<ModelProto> ReadModel(const absl::string_view file_path,
   if (format == kMathOptTextFormat) {
     return file::GetTextProto<ModelProto>(file_path, file::Defaults());
   }
+  if (format == kLinearSolverBinaryFormat ||
+      format == kLinearSolverTextFormat) {
+    ASSIGN_OR_RETURN(
+        MPModelProto linear_solver_model,
+        format == kLinearSolverBinaryFormat
+            ? file::GetBinaryProto<MPModelProto>(file_path, file::Defaults())
+            : file::GetTextProto<MPModelProto>(file_path, file::Defaults()));
+    return MPModelProtoToMathOptModel(linear_solver_model);
+  }
   if (format == kMPSFormat) {
     return ReadMpsFile(file_path);
   }
@@ -157,6 +191,28 @@ absl::StatusOr<ModelUpdateProto> ReadModelUpdate(
   }
   return absl::InternalError(
       absl::StrCat("invalid format in ReadModelUpdate(): ", format));
+}
+
+// Prints the model.
+void PrintModel(Model& model) {
+  if (model.is_maximize()) {
+    std::cout << "max";
+  } else {
+    std::cout << "min";
+  }
+  std::cout << ' ' << model.ObjectiveAsQuadraticExpression() << std::endl;
+
+  std::cout << "variables:" << std::endl;
+  for (const Variable v : model.SortedVariables()) {
+    std::cout << ' ' << v.lower_bound() << " ≤ " << v << " ≤ "
+              << v.upper_bound() << std::endl;
+  }
+
+  std::cout << "constraints:" << std::endl;
+  for (const LinearConstraint c : model.SortedLinearConstraints()) {
+    std::cout << ' ' << c << ": " << model.AsBoundedLinearExpression(c)
+              << std::endl;
+  }
 }
 
 // Prints the summary of the solve result.
@@ -212,7 +268,7 @@ absl::Status RunSolver() {
                 << ".";
   }
 
-  OR_ASSIGN_OR_RETURN3(const ModelProto model_proto,
+  OR_ASSIGN_OR_RETURN3(ModelProto model_proto,
                        ReadModel(input_file_path, format),
                        _ << "failed to read " << input_file_path);
 
@@ -223,7 +279,14 @@ absl::Status RunSolver() {
     model_updates.emplace_back(std::move(update));
   }
 
-  // Solve the problem.
+  if (!absl::GetFlag(FLAGS_names)) {
+    RemoveNames(model_proto);
+    for (ModelUpdateProto& update : model_updates) {
+      RemoveNames(update);
+    }
+  }
+
+  // Parse the problem and the updates.
   ASSIGN_OR_RETURN(const std::unique_ptr<Model> model,
                    Model::FromModelProto(model_proto));
   for (int u = 0; u < model_updates.size(); ++u) {
@@ -232,6 +295,17 @@ absl::Status RunSolver() {
         << "failed to apply the update file: " << update_file_paths[u];
   }
 
+  if (absl::GetFlag(FLAGS_ranges)) {
+    std::cout << "Ranges of finite non-zero values in the model:\n"
+              << ComputeModelRanges(*model) << std::endl;
+  }
+
+  // Optionally prints the problem.
+  if (absl::GetFlag(FLAGS_print_model)) {
+    PrintModel(*model);
+  }
+
+  // Solve the problem.
   SolveArguments solve_args = {
       .parameters = {.time_limit = absl::GetFlag(FLAGS_time_limit)},
   };

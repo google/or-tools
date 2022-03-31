@@ -115,6 +115,8 @@ enum EmphasisProto {
 }
 
 // Configures if potentially bad solver input is a warning or an error.
+//
+// TODO(b/196132970): implement this feature.
 message StrictnessProto {
   bool bad_parameter = 1;
 }

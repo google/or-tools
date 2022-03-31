@@ -120,7 +120,7 @@ class Model {
   Model(const Model&) = delete;
   Model& operator=(const Model&) = delete;
 
-  // Returns a clone of this model.
+  // Returns a clone of this model, optionally changing the model's name.
   //
   // The variables and constraints have the same integer ids. The clone will
   // also not reused any id of variable/constraint that was deleted in the
@@ -137,7 +137,8 @@ class Model {
   //   * in an arbitrary order using Variables() and LinearConstraints().
   //
   // Note that the returned model does not have any update tracker.
-  std::unique_ptr<Model> Clone() const;
+  std::unique_ptr<Model> Clone(
+      std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline const std::string& name() const;
 

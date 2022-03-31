@@ -204,9 +204,14 @@ void ModelStorage::UpdateLinearConstraintCoefficients(
   }
 }
 
-std::unique_ptr<ModelStorage> ModelStorage::Clone() const {
+std::unique_ptr<ModelStorage> ModelStorage::Clone(
+    const std::optional<absl::string_view> new_name) const {
+  ModelProto model_proto = ExportModel();
+  if (new_name.has_value()) {
+    model_proto.set_name(std::string(*new_name));
+  }
   absl::StatusOr<std::unique_ptr<ModelStorage>> clone =
-      ModelStorage::FromModelProto(ExportModel());
+      ModelStorage::FromModelProto(model_proto);
   // Unless there is a very serious bug, a model exported by ExportModel()
   // should always be valid.
   CHECK_OK(clone.status());

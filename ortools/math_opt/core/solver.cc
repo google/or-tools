@@ -156,6 +156,14 @@ class ConcurrentCallsGuard {
   absl::Mutex* mutex_;
 };
 
+// Returns the Status returned by Solve() & Update() when called after a
+// previous call to one of them failed.
+absl::Status PreviousFatalFailureOccurred() {
+  return absl::InvalidArgumentError(
+      "a previous call to Solve() or Update() failed, the Solver can't be used "
+      "anymore");
+}
+
 }  // namespace
 
 absl::StatusOr<SolveResultProto> Solver::NonIncrementalSolve(
@@ -191,6 +199,13 @@ absl::StatusOr<std::unique_ptr<Solver>> Solver::New(
 
 absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
   ASSIGN_OR_RETURN(const auto guard, ConcurrentCallsGuard::TryAcquire(mutex_));
+
+  if (fatal_failure_occurred_) {
+    return PreviousFatalFailureOccurred();
+  }
+
+  // We will reset it in code paths where no error occur.
+  fatal_failure_occurred_ = true;
 
   // TODO(b/168037341): we should validate the result maths. Since the result
   // can be filtered, this should be included in the solver_interface
@@ -231,18 +246,29 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
   RETURN_IF_ERROR(ToInternalError(
       ValidateResult(result, arguments.model_parameters, model_summary_)));
 
+  fatal_failure_occurred_ = false;
   return result;
 }
 
 absl::StatusOr<bool> Solver::Update(const ModelUpdateProto& model_update) {
   ASSIGN_OR_RETURN(const auto guard, ConcurrentCallsGuard::TryAcquire(mutex_));
 
+  if (fatal_failure_occurred_) {
+    return PreviousFatalFailureOccurred();
+  }
+
+  // We will reset it in code paths where no error occur.
+  fatal_failure_occurred_ = true;
+
   RETURN_IF_ERROR(ValidateModelUpdateAndSummary(model_update, model_summary_));
   if (!underlying_solver_->CanUpdate(model_update)) {
+    fatal_failure_occurred_ = false;
     return false;
   }
   UpdateSummaryFromModelUpdate(model_update, model_summary_);
   RETURN_IF_ERROR(underlying_solver_->Update(model_update));
+
+  fatal_failure_occurred_ = false;
   return true;
 }
 

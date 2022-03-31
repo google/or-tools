@@ -124,7 +124,13 @@ H AbslHashValue(H h, const LinearConstraint& linear_constraint) {
 
 std::ostream& operator<<(std::ostream& ostr,
                          const LinearConstraint& linear_constraint) {
-  ostr << linear_constraint.name();
+  // TODO(b/170992529): handle quoting of invalid characters in the name.
+  const std::string& name = linear_constraint.name();
+  if (name.empty()) {
+    ostr << "__lin_con#" << linear_constraint.id() << "__";
+  } else {
+    ostr << name;
+  }
   return ostr;
 }
 
