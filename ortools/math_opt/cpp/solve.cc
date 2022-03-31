@@ -27,6 +27,7 @@
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/cpp/model.h"
+#include "ortools/util/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -141,7 +142,8 @@ absl::StatusOr<IncrementalSolver::UpdateResult> IncrementalSolver::Update() {
     return UpdateResult(true, std::move(model_update));
   }
 
-  ASSIGN_OR_RETURN(const bool did_update, solver_->Update(*model_update));
+  OR_ASSIGN_OR_RETURN3(const bool did_update, solver_->Update(*model_update),
+                       _ << "update failed");
   RETURN_IF_ERROR(update_tracker_->Checkpoint());
 
   if (did_update) {
@@ -150,8 +152,10 @@ absl::StatusOr<IncrementalSolver::UpdateResult> IncrementalSolver::Update() {
 
   ASSIGN_OR_RETURN(const ModelProto model_proto,
                    update_tracker_->ExportModel());
-  ASSIGN_OR_RETURN(solver_, Solver::New(EnumToProto(solver_type_), model_proto,
-                                        ToSolverInitArgs(init_args_)));
+  OR_ASSIGN_OR_RETURN3(solver_,
+                       Solver::New(EnumToProto(solver_type_), model_proto,
+                                   ToSolverInitArgs(init_args_)),
+                       _ << "solver re-creation failed");
 
   return UpdateResult(false, std::move(model_update));
 }

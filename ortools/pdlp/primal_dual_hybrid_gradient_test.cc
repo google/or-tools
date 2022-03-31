@@ -135,6 +135,19 @@ void VerifyTerminationReasonAndIterationCount(
   }
 }
 
+// Verifies the primal and dual objective values.
+void VerifyObjectiveValues(const SolverResult& result,
+                           const double objective_value,
+                           const double tolerance) {
+  const auto& convergence_info = GetConvergenceInformation(
+      result.solve_log.solution_stats(), result.solve_log.solution_type());
+  ASSERT_TRUE(convergence_info.has_value());
+  EXPECT_THAT(convergence_info->primal_objective(),
+              DoubleNear(objective_value, tolerance));
+  EXPECT_THAT(convergence_info->dual_objective(),
+              DoubleNear(objective_value, tolerance));
+}
+
 class PrimalDualHybridGradientLPTest
     : public testing::TestWithParam<
           std::tuple</*enable_scaling=*/bool, /*num_threads=*/int,
@@ -241,15 +254,11 @@ TEST_P(PrimalDualHybridGradientLPTest, UnboundedVariables) {
 
   SolverResult output = PrimalDualHybridGradient(TestLp(), params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, -34.0, 1.0e-6);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({-1, 8, 1, 2.5}, 1.0e-4));
   EXPECT_THAT(output.dual_solution,
               EigenArrayNear<double>({-2, 0, 2.375, 2.0 / 3}, 1.0e-4));
-  const auto convergence_info = GetConvergenceInformation(
-      output.solve_log.solution_stats(), output.solve_log.solution_type());
-  ASSERT_TRUE(convergence_info.has_value());
-  EXPECT_THAT(convergence_info->primal_objective(), DoubleNear(-34.0, 1.0e-6));
-  EXPECT_THAT(convergence_info->dual_objective(), DoubleNear(-34.0, 1.0e-6));
 
   EXPECT_EQ(output.solve_log.original_problem_stats().num_variables(), 4);
   EXPECT_LE(output.solve_log.preprocessed_problem_stats().num_variables(), 4);
@@ -266,6 +275,7 @@ TEST_P(PrimalDualHybridGradientLPTest, Tiny) {
 
   SolverResult output = PrimalDualHybridGradient(TinyLp(), params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, -1.0, 1.0e-4);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({1, 0, 6, 2}, 1.0e-4));
   EXPECT_THAT(output.dual_solution,
@@ -288,6 +298,7 @@ TEST_P(PrimalDualHybridGradientLPTest, CorrelationClusteringOne) {
   SolverResult output =
       PrimalDualHybridGradient(CorrelationClusteringLp(), params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, 1.0, 1.0e-14);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({1, 1, 0, 1, 0, 0}, 1.0e-14));
   ASSERT_EQ(output.dual_solution.size(), 3);
@@ -318,7 +329,7 @@ TEST_P(PrimalDualHybridGradientLPTest, CorrelationClusteringStar) {
   SolverResult output =
       PrimalDualHybridGradient(CorrelationClusteringStarLp(), params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
-
+  VerifyObjectiveValues(output, 1.5, 1.0e-6);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({0.5, 0.5, 0.5, 0.0, 0.0, 0.0}, 1.0e-6));
   EXPECT_THAT(output.dual_solution,
@@ -346,6 +357,7 @@ TEST_P(PrimalDualHybridGradientLPTest, InactiveTwoSidedConstraint) {
   qp.constraint_lower_bounds[1] = -10;
   SolverResult output = PrimalDualHybridGradient(qp, params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, -34.0, 1.0e-6);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({-1, 8, 1, 2.5}, 1.0e-7));
   EXPECT_THAT(output.dual_solution,
@@ -436,6 +448,7 @@ TEST_P(PrimalDualHybridGradientDiagonalQPTest, DiagonalQp1) {
 
   SolverResult output = PrimalDualHybridGradient(TestDiagonalQp1(), params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, 6.0, 1.0e-6);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({1.0, 0.0}, 1.0e-6));
   EXPECT_THAT(output.dual_solution,
@@ -456,6 +469,7 @@ TEST_P(PrimalDualHybridGradientDiagonalQPTest, DiagonalQp2) {
 
   SolverResult output = PrimalDualHybridGradient(TestDiagonalQp2(), params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, -5.0, 1.0e-6);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({3.0, 1.0}, 1.0e-6));
   EXPECT_THAT(output.dual_solution, ElementsAre(DoubleNear(0.0, 1.0e-6)));
@@ -471,6 +485,7 @@ TEST_P(PrimalDualHybridGradientDiagonalQPTest, DiagonalQp3) {
 
   SolverResult output = PrimalDualHybridGradient(TestDiagonalQp3(), params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, 2.0, 1.0e-6);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({2.0, 0.0, 1.0}, 1.0e-6));
   EXPECT_THAT(output.dual_solution,
@@ -478,8 +493,8 @@ TEST_P(PrimalDualHybridGradientDiagonalQPTest, DiagonalQp3) {
   EXPECT_THAT(output.reduced_costs, EigenArrayNear<double>({0, 0, 0}, 1.0e-6));
 }
 
-// This is like the previous test except it starts with a near-optimal solution
-// and uses a shorter iteration limit.
+// This is like DiagonalQp1 except it starts with a near-optimal solution and
+// uses a shorter iteration limit.
 TEST_P(PrimalDualHybridGradientDiagonalQPTest, QpWarmStart) {
   const int iteration_upperbound = 35;
   PrimalDualHybridGradientParams params =
@@ -500,6 +515,7 @@ TEST_P(PrimalDualHybridGradientDiagonalQPTest, QpWarmStart) {
   SolverResult output = PrimalDualHybridGradient(TestDiagonalQp1(), params,
                                                  std::move(initial_solution));
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, 6.0, 1.0e-6);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({1.0, 0.0}, 1.0e-6));
   EXPECT_THAT(output.dual_solution,
@@ -521,6 +537,7 @@ TEST_P(PrimalDualHybridGradientLPTest, LpWithoutConstraints) {
 
   SolverResult output = PrimalDualHybridGradient(qp, params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, -9.0, 1.0e-6);
   EXPECT_THAT(output.primal_solution,
               EigenArrayNear<double>({-1, 4, -2}, 1.0e-6));
   EXPECT_THAT(output.dual_solution, SizeIs(0));
@@ -543,6 +560,7 @@ TEST_P(PrimalDualHybridGradientLPTest, LpWithoutVariables) {
 
   SolverResult output = PrimalDualHybridGradient(qp, params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
+  VerifyObjectiveValues(output, 0.0, 1.0e-6);
   EXPECT_THAT(output.primal_solution, SizeIs(0));
   EXPECT_THAT(output.dual_solution, EigenArrayNear<double>({0, 0, 0}, 1.0e-6));
   EXPECT_EQ(output.solve_log.original_problem_stats().num_variables(), 0);

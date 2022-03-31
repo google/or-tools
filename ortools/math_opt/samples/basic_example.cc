@@ -50,8 +50,8 @@ absl::Status Main() {
   switch (result.termination.reason) {
     case math_opt::TerminationReason::kOptimal:
     case math_opt::TerminationReason::kFeasible:
-      std::cout << "objective value: " << result.objective_value() << std::endl
-                << "value for variable x: " << result.variable_values().at(x)
+      std::cout << "Objective value: " << result.objective_value() << std::endl
+                << "Value for variable x: " << result.variable_values().at(x)
                 << std::endl;
       return absl::OkStatus();
     default:

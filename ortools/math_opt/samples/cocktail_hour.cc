@@ -28,7 +28,7 @@
 //
 // In latex mode, the output can be piped directly to pdflatex, e.g.
 //   blaze run -c opt \
-//     ortools/math_opt/examples/cocktail_hour \
+//     ortools/math_opt/examples/cpp/cocktail_hour \
 //     -- --num_ingredients 10 --mode latex | pdflatex -output-directory /tmp
 // will create a PDF in /tmp.
 #include <iostream>

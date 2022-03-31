@@ -58,7 +58,7 @@ absl::Status Main() {
     case math_opt::TerminationReason::kOptimal:
     case math_opt::TerminationReason::kFeasible:
       std::cout << "Problem solved in " << result.solve_time() << std::endl;
-      std::cout << "objective value: " << result.objective_value() << std::endl;
+      std::cout << "Objective value: " << result.objective_value() << std::endl;
       std::cout << "Variable values: [x=" << result.variable_values().at(x)
                 << ", y=" << result.variable_values().at(y) << "]" << std::endl;
       return absl::OkStatus();

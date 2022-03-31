@@ -142,6 +142,7 @@ class GurobiSolver : public SolverInterface {
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters);
   absl::Status FillRays(const ModelSolveParametersProto& model_parameters,
+                        const SolutionClaims solution_claims,
                         SolveResultProto& result);
   absl::StatusOr<GurobiSolver::SolutionsAndClaims> GetSolutions(
       const ModelSolveParametersProto& model_parameters);

@@ -106,28 +106,70 @@ namespace math_opt {
 constexpr double kMatcherDefaultTolerance = 1e-5;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Matchers for IdMap<Variable,double> and IdMap<LinearConstraint, double>
+// Matchers for IdMap
 ////////////////////////////////////////////////////////////////////////////////
 
-// Checks that the maps have identical keys and values within tolerance.
+// Checks that the maps have identical keys and values within tolerance. This
+// factory will CHECK-fail if expected contains any NaN values.
 testing::Matcher<VariableMap<double>> IsNear(
     VariableMap<double> expected, double tolerance = kMatcherDefaultTolerance);
 
 // Checks that the keys of actual are a subset of the keys of expected, and that
-// for all shared keys, the values are within tolerance.
+// for all shared keys, the values are within tolerance. This factory will
+// CHECK-fail if expected contains any NaN values, and any NaN values in the
+// expression compared against will result in the matcher failing.
 testing::Matcher<VariableMap<double>> IsNearlySubsetOf(
     VariableMap<double> expected, double tolerance = kMatcherDefaultTolerance);
 
-// Checks that the maps have identical keys and values within tolerance.
+// Checks that the maps have identical keys and values within tolerance. This
+// factory will CHECK-fail if expected contains any NaN values, and any NaN
+// values in the expression compared against will result in the matcher failing.
 testing::Matcher<LinearConstraintMap<double>> IsNear(
     LinearConstraintMap<double> expected,
     double tolerance = kMatcherDefaultTolerance);
 
 // Checks that the keys of actual are a subset of the keys of expected, and that
-// for all shared keys, the values are within tolerance.
+// for all shared keys, the values are within tolerance. This factory will
+// CHECK-fail if expected contains any NaN values, and any NaN values in the
+// expression compared against will result in the matcher failing.
 testing::Matcher<LinearConstraintMap<double>> IsNearlySubsetOf(
     LinearConstraintMap<double> expected,
     double tolerance = kMatcherDefaultTolerance);
+
+// Checks that the maps have identical keys and values within tolerance. Works
+// for VariableMap, LinearConstraintMap, among other realizations of IdMap. This
+// factory will CHECK-fail if expected contains any NaN values, and any NaN
+// values in the expression compared against will result in the matcher failing.
+template <typename K>
+testing::Matcher<IdMap<K, double>> IsNear(
+    IdMap<K, double> expected,
+    const double tolerance = kMatcherDefaultTolerance);
+
+// Checks that the keys of actual are a subset of the keys of expected, and that
+// for all shared keys, the values are within tolerance. Works for VariableMap,
+// LinearConstraintMap, among other realizations of IdMap. This factory will
+// CHECK-fail if expected contains any NaN values, and any NaN values in the
+// expression compared against will result in the matcher failing.
+template <typename K>
+testing::Matcher<IdMap<K, double>> IsNearlySubsetOf(
+    IdMap<K, double> expected,
+    const double tolerance = kMatcherDefaultTolerance);
+
+////////////////////////////////////////////////////////////////////////////////
+// Matchers for LinearExpression and QuadraticExpression
+////////////////////////////////////////////////////////////////////////////////
+
+// Checks that the expressions are structurally identical (i.e., internal maps
+// have the same keys and storage, coefficients are exactly equal). This factory
+// will CHECK-fail if expected contains any NaN values, and any NaN values in
+// the expression compared against will result in the matcher failing.
+testing::Matcher<LinearExpression> IsIdentical(LinearExpression expected);
+
+// Checks that the expressions are structurally identical (i.e., internal maps
+// have the same keys and storage, coefficients are exactly equal). This factory
+// will CHECK-fail if expected contains any NaN values, and any NaN values in
+// the expression compared against will result in the matcher failing.
+testing::Matcher<QuadraticExpression> IsIdentical(QuadraticExpression expected);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Matchers for solutions

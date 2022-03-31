@@ -150,6 +150,13 @@ TEST(SharderTest, UniformSharderExcessiveShards) {
   VerifySharder(sharder, 7, {1, 1, 1, 1, 1});
 }
 
+// Regression test for b/225385276
+TEST(SharderTest, UniformSharderHugeNumShards) {
+  Sharder sharder(/*num_elements=*/5, /*num_shards=*/1'000'000'000, nullptr);
+  EXPECT_THAT(sharder.ShardStartsForTesting(), ElementsAre(0, 1, 2, 3, 4, 5));
+  VerifySharder(sharder, 7, {1, 1, 1, 1, 1});
+}
+
 TEST(SharderTest, UniformSharderOneShard) {
   Sharder sharder(/*num_elements=*/5, /*num_shards=*/1, nullptr);
   EXPECT_THAT(sharder.ShardStartsForTesting(), ElementsAre(0, 5));
@@ -172,6 +179,9 @@ TEST(SharderTest, UniformSharderZeroElementVector) {
   });
 }
 
+// MOE:begin_strip
+// Regression test for b/214330472.
+// MOE:end_strip
 TEST(SharderTest, UniformSharderFromOtherZeroElementSharder) {
   Sharder empty_sharder(/*num_elements=*/0, /*num_shards=*/3, nullptr);
   EXPECT_THAT(empty_sharder.ShardStartsForTesting(), ElementsAre(0));

@@ -28,6 +28,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/math_opt.h"
+#include "ortools/math_opt/cpp/variable_and_expressions.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -40,6 +41,7 @@ using ::testing::AnyOf;
 using ::testing::AnyOfArray;
 using ::testing::Contains;
 using ::testing::DoubleNear;
+using ::testing::Eq;
 using ::testing::ExplainMatchResult;
 using ::testing::Field;
 using ::testing::IsEmpty;
@@ -48,6 +50,7 @@ using ::testing::MatcherInterface;
 using ::testing::MatchResultListener;
 using ::testing::Optional;
 using ::testing::PrintToString;
+using ::testing::Property;
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -229,6 +232,48 @@ Matcher<LinearConstraintMap<double>> IsNear(
   return Matcher<LinearConstraintMap<double>>(
       new IdMapMatcher<LinearConstraint>(std::move(expected), /*all_keys=*/true,
                                          tolerance));
+}
+
+template <typename K>
+Matcher<IdMap<K, double>> IsNear(IdMap<K, double> expected,
+                                 const double tolerance) {
+  return Matcher<IdMap<K, double>>(
+      new IdMapMatcher<K>(std::move(expected), /*all_keys=*/true, tolerance));
+}
+
+template <typename K>
+Matcher<IdMap<K, double>> IsNearlySubsetOf(IdMap<K, double> expected,
+                                           const double tolerance) {
+  return Matcher<IdMap<K, double>>(
+      new IdMapMatcher<K>(std::move(expected), /*all_keys=*/false, tolerance));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Matchers for LinearExpression and QuadraticExpression
+////////////////////////////////////////////////////////////////////////////////
+
+testing::Matcher<LinearExpression> IsIdentical(LinearExpression expected) {
+  CHECK(!std::isnan(expected.offset())) << "Illegal NaN-valued offset";
+  return AllOf(
+      Property("storage", &LinearExpression::storage, Eq(expected.storage())),
+      Property("offset", &LinearExpression::offset,
+               testing::Eq(expected.offset())),
+      Property("terms", &LinearExpression::terms,
+               IsNear(expected.terms(), /*tolerance=*/0)));
+}
+
+testing::Matcher<QuadraticExpression> IsIdentical(
+    QuadraticExpression expected) {
+  CHECK(!std::isnan(expected.offset())) << "Illegal NaN-valued offset";
+  return AllOf(
+      Property("storage", &QuadraticExpression::storage,
+               Eq(expected.storage())),
+      Property("offset", &QuadraticExpression::offset,
+               testing::Eq(expected.offset())),
+      Property("linear_terms", &QuadraticExpression::linear_terms,
+               IsNear(expected.linear_terms(), /*tolerance=*/0)),
+      Property("quadratic_terms", &QuadraticExpression::quadratic_terms,
+               IsNear(expected.quadratic_terms(), /*tolerance=*/0)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -15,8 +15,6 @@
 #define OR_TOOLS_MATH_OPT_SOLVERS_PDLP_SOLVER_H_
 
 #include <memory>
-#include <string>
-#include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -30,7 +28,6 @@
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solvers/pdlp_bridge.h"
 #include "ortools/pdlp/primal_dual_hybrid_gradient.h"
-#include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/solvers.pb.h"
 
 namespace operations_research {

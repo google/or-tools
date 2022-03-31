@@ -44,8 +44,9 @@ Model::Model(const absl::string_view name)
 Model::Model(std::unique_ptr<ModelStorage> storage)
     : storage_(std::move(storage)) {}
 
-std::unique_ptr<Model> Model::Clone() const {
-  return std::make_unique<Model>(storage_->Clone());
+std::unique_ptr<Model> Model::Clone(
+    const std::optional<absl::string_view> new_name) const {
+  return std::make_unique<Model>(storage_->Clone(new_name));
 }
 
 LinearConstraint Model::AddLinearConstraint(

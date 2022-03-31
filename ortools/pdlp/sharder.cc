@@ -42,6 +42,10 @@ Sharder::Sharder(const int64_t num_elements, const int num_shards,
     return;
   }
   CHECK_GE(num_shards, 1);
+  shard_starts_.reserve(
+      std::min(static_cast<int64_t>(num_shards), num_elements) + 1);
+  shard_masses_.reserve(
+      std::min(static_cast<int64_t>(num_shards), num_elements));
   int64_t overall_mass = 0;
   for (int64_t elem = 0; elem < num_elements; ++elem) {
     overall_mass += element_mass(elem);
@@ -73,8 +77,10 @@ Sharder::Sharder(const int64_t num_elements, const int num_shards,
     return;
   }
   CHECK_GE(num_shards, 1);
-  shard_starts_.reserve(num_shards + 1);
-  shard_masses_.reserve(num_shards);
+  shard_starts_.reserve(
+      std::min(static_cast<int64_t>(num_shards), num_elements) + 1);
+  shard_masses_.reserve(
+      std::min(static_cast<int64_t>(num_shards), num_elements));
   for (int shard = 0; shard < num_shards; ++shard) {
     const int64_t this_shard_start = ((num_elements * shard) / num_shards);
     const int64_t next_shard_start =
