@@ -33,7 +33,7 @@
 #if defined(__APPLE__)
   #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
 #endif
-#if defined(__GCC__) && _GCC__ < 11
+#if defined(__GCC__) && __GCC__ < 11
   #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
 #endif
 
