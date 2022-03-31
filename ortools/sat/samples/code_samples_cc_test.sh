@@ -1,7 +1,9 @@
 #!/bin/bash
 
-function test::operations_research_examples::code_samples_sat_cc() {
-    EXPECT_SUCCEED "${TEST_SRCDIR}/google3/ortools/sat/samples"/$1_cc"
+declare -r DIR="${TEST_SRCDIR}/com_google_ortools/ortools/sat/samples"
+
+function test::ortools::code_samples_sat_cc() {
+    "${DIR}/$1_cc"
 }
 
-test::operations_research_examples::code_samples_sat_cc $1
+test::ortools::code_samples_sat_cc $1

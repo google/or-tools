@@ -15,17 +15,13 @@ def code_sample_cc(name):
         ],
     )
 
-    native.cc_test(
+    native.sh_test(
         name = name + "_cc_test",
         size = "small",
-        srcs = [name + ".cc"],
+        srcs = ["code_samples_cc_test.sh"],
         args = [name],
-        deps = [
+        data = [
             ":" + name + "_cc",
-            "//ortools/sat:cp_model",
-            "//ortools/sat:cp_model_solver",
-            "//ortools/util:sorted_interval_list",
-            "@com_google_absl//absl/types:span",
         ],
     )
 
