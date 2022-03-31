@@ -14,7 +14,7 @@
 # [START program]
 """From Taha 'Introduction to Operations Research', example 6.4-2."""
 # [START import]
-from ortools.graph import pywrapgraph
+from ortools.graph.python import max_flow
 # [END import]
 
 
@@ -22,7 +22,7 @@ def main():
     """MaxFlow simple interface example."""
     # [START solver]
     # Instantiate a SimpleMaxFlow solver.
-    max_flow = pywrapgraph.SimpleMaxFlow()
+    smf = max_flow.SimpleMaxFlow()
     # [END solver]
 
     # [START data]
@@ -37,28 +37,27 @@ def main():
     # [START constraints]
     # Add each arc.
     for arc in zip(start_nodes, end_nodes, capacities):
-        max_flow.AddArcWithCapacity(arc[0], arc[1], arc[2])
+        smf.add_arc_with_capacity(arc[0], arc[1], arc[2])
     # [END constraints]
 
     # [START solve]
     # Find the maximum flow between node 0 and node 4.
-    status = max_flow.Solve(0, 4)
+    status = smf.solve(0, 4)
     # [END solve]
 
     # [START print_solution]
-    if status != max_flow.OPTIMAL:
+    if status != smf.OPTIMAL:
         print('There was an issue with the max flow input.')
         print(f'Status: {status}')
         exit(1)
-    print('Max flow:', max_flow.OptimalFlow())
+    print('Max flow:', smf.optimal_flow())
     print('')
     print('  Arc    Flow / Capacity')
-    for i in range(max_flow.NumArcs()):
+    for i in range(smf.num_arcs()):
         print('%1s -> %1s   %3s  / %3s' %
-              (max_flow.Tail(i), max_flow.Head(i), max_flow.Flow(i),
-               max_flow.Capacity(i)))
-    print('Source side min-cut:', max_flow.GetSourceSideMinCut())
-    print('Sink side min-cut:', max_flow.GetSinkSideMinCut())
+              (smf.tail(i), smf.head(i), smf.flow(i), smf.capacity(i)))
+    print('Source side min-cut:', smf.get_source_side_min_cut())
+    print('Sink side min-cut:', smf.get_sink_side_min_cut())
     # [END print_solution]
 
 

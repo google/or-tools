@@ -14,14 +14,14 @@
 # [START program]
 """Solve assignment problem using linear assignment solver."""
 # [START import]
-from ortools.graph import pywrapgraph
+from ortools.graph.python import linear_sum_assignment
 # [END import]
 
 
 def main():
     """Linear Sum Assignment example."""
     # [START solver]
-    assignment = pywrapgraph.LinearSumAssignment()
+    assignment = linear_sum_assignment.SimpleLinearSumAssignment()
     # [END solver]
 
     # [START data]
@@ -39,19 +39,19 @@ def main():
     for worker in range(num_workers):
         for task in range(num_tasks):
             if costs[worker][task]:
-                assignment.AddArcWithCost(worker, task, costs[worker][task])
+                assignment.add_arc_with_cost(worker, task, costs[worker][task])
     # [END constraints]
 
     # [START solve]
-    status = assignment.Solve()
+    status = assignment.solve()
     # [END solve]
 
     # [START print_solution]
     if status == assignment.OPTIMAL:
-        print(f'Total cost = {assignment.OptimalCost()}\n')
-        for i in range(0, assignment.NumNodes()):
-            print(f'Worker {i} assigned to task {assignment.RightMate(i)}.' +
-                  f'  Cost = {assignment.AssignmentCost(i)}')
+        print(f'Total cost = {assignment.optimal_cost()}\n')
+        for i in range(0, assignment.num_nodes()):
+            print(f'Worker {i} assigned to task {assignment.right_mate(i)}.' +
+                  f'  Cost = {assignment.assignment_cost(i)}')
     elif status == assignment.INFEASIBLE:
         print('No assignment is possible.')
     elif status == assignment.POSSIBLE_OVERFLOW:

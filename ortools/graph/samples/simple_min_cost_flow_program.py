@@ -14,7 +14,7 @@
 # [START program]
 """From Bradley, Hax and Maganti, 'Applied Mathematical Programming', figure 8.1."""
 # [START import]
-from ortools.graph import pywrapgraph
+from ortools.graph.python import min_cost_flow
 # [END import]
 
 
@@ -22,7 +22,7 @@ def main():
     """MinCostFlow simple interface example."""
     # [START solver]
     # Instantiate a SimpleMinCostFlow solver.
-    min_cost_flow = pywrapgraph.SimpleMinCostFlow()
+    smcf = min_cost_flow.SimpleMinCostFlow()
     # [END solver]
 
     # [START data]
@@ -41,32 +41,31 @@ def main():
     # [START constraints]
     # Add each arc.
     for arc in zip(start_nodes, end_nodes, capacities, unit_costs):
-        min_cost_flow.AddArcWithCapacityAndUnitCost(arc[0], arc[1], arc[2],
-                                                    arc[3])
+        smcf.add_arc_with_capacity_and_unit_cost(arc[0], arc[1], arc[2], arc[3])
 
     # Add node supply.
     for count, supply in enumerate(supplies):
-        min_cost_flow.SetNodeSupply(count, supply)
+        smcf.set_node_supply(count, supply)
     # [END constraints]
 
     # [START solve]
     # Find the min cost flow.
-    status = min_cost_flow.Solve()
+    status = smcf.solve()
     # [END solve]
 
     # [START print_solution]
-    if status != min_cost_flow.OPTIMAL:
+    if status != smcf.OPTIMAL:
         print('There was an issue with the min cost flow input.')
         print(f'Status: {status}')
         exit(1)
-    print('Minimum cost: ', min_cost_flow.OptimalCost())
+    print('Minimum cost: ', smcf.optimal_cost())
     print('')
     print(' Arc   Flow / Capacity  Cost')
-    for i in range(min_cost_flow.NumArcs()):
-        cost = min_cost_flow.Flow(i) * min_cost_flow.UnitCost(i)
-        print('%1s -> %1s    %3s   / %3s   %3s' %
-              (min_cost_flow.Tail(i), min_cost_flow.Head(i),
-               min_cost_flow.Flow(i), min_cost_flow.Capacity(i), cost))
+    for i in range(smcf.num_arcs()):
+        cost = smcf.flow(i) * smcf.unit_cost(i)
+        print(
+            '%1s -> %1s    %3s   / %3s   %3s' %
+            (smcf.tail(i), smcf.head(i), smcf.flow(i), smcf.capacity(i), cost))
     # [END print_solution]
 
 

@@ -1,0 +1,31 @@
+# Python wrapper for graph libraries.
+
+load("@ortools_deps//:requirements.bzl", "requirement")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+
+pybind_extension(
+    name = "linear_sum_assignment",
+    srcs = ["linear_sum_assignment.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/graph:assignment"
+    ],
+)
+
+pybind_extension(
+    name = "max_flow",
+    srcs = ["max_flow.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/graph:max_flow"
+    ],
+)
+
+pybind_extension(
+    name = "min_cost_flow",
+    srcs = ["min_cost_flow.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/graph:min_cost_flow"
+    ],
+)
