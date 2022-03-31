@@ -1054,7 +1054,7 @@ class RestoreAssignment : public DecisionBuilder {
 
   ~RestoreAssignment() override {}
 
-  Decision* Next(Solver* const solver) override {
+  Decision* Next(Solver* const /*solver*/) override {
     assignment_->Restore();
     return nullptr;
   }
@@ -1071,7 +1071,7 @@ class StoreAssignment : public DecisionBuilder {
 
   ~StoreAssignment() override {}
 
-  Decision* Next(Solver* const solver) override {
+  Decision* Next(Solver* const /*solver*/) override {
     assignment_->Store();
     return nullptr;
   }
