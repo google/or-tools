@@ -51,3 +51,14 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+proto_library(
+    name = "course_scheduling_proto",
+    srcs = ["course_scheduling.proto"],
+)
+
+cc_proto_library(
+    name = "course_scheduling_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":course_scheduling_proto"],
+)
