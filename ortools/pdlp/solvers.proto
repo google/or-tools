@@ -13,13 +13,9 @@
 
 syntax = "proto2";
 
-import "ortools/glop/parameters.proto";
-
 package operations_research.pdlp;
 
-option java_package = "com.google.ortools.pdlp";
-option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.Pdlp";
+import "ortools/glop/parameters.proto";
 
 enum OptimalityNorm {
   OPTIMALITY_NORM_UNSPECIFIED = 0;
@@ -146,7 +142,16 @@ message MalitskyPockParams {
   optional double step_size_interpolation = 3 [default = 1];
 }
 
-// Parameters for PrimalDualHybridGradient() in primal_dual_hybrid_gradient.h
+// Parameters for PrimalDualHybridGradient() in primal_dual_hybrid_gradient.h.
+// While the defaults are generally good, it is usually worthwhile to perform a
+// parameter sweep to find good settings for a particular family of problems.
+// The following parameters should be considered for tuning:
+// - restart_strategy (jointly with major_iteration_frequency)
+// - primal_weight_update_smoothing (jointly with initial_primal_weight)
+// - presolve_options.use_glop
+// - l_inf_ruiz_iterations
+// - l2_norm_rescaling
+// In addition, tune num_threads to speed up the solve.
 message PrimalDualHybridGradientParams {
   enum RestartStrategy {
     RESTART_STRATEGY_UNSPECIFIED = 0;
@@ -191,6 +196,9 @@ message PrimalDualHybridGradientParams {
   optional TerminationCriteria termination_criteria = 1;
 
   // The number of threads to use. Must be positive.
+  // Try various values of num_threads, up to the number of physical cores.
+  // Performance may not be monotonically increasing with the number of threads
+  // because of memory bandwidth limitations.
   optional int32 num_threads = 2 [default = 1];
 
   // For more efficient parallel computation, the matrices and vectors are
@@ -225,10 +233,10 @@ message PrimalDualHybridGradientParams {
 
   // The frequency at which extra work is performed to make major algorithmic
   // decisions, e.g., performing restarts and updating the primal weight. Major
-  // iterations also trigger a termination check. For best performance using
-  // the NO_RESTARTS or EVERY_MAJOR_ITERATION rule, one should perform a
-  // log-scale grid search over this parameter. ADAPTIVE_HEURISTIC is mostly
-  // insensitive to this value.
+  // iterations also trigger a termination check. For best performance using the
+  // NO_RESTARTS or EVERY_MAJOR_ITERATION rule, one should perform a log-scale
+  // grid search over this parameter, for example, over powers of two.
+  // ADAPTIVE_HEURISTIC is mostly insensitive to this value.
   optional int32 major_iteration_frequency = 4 [default = 64];
 
   // The frequency (based on a counter reset every major iteration) to check for
@@ -236,13 +244,19 @@ message PrimalDualHybridGradientParams {
   // checks do not affect algorithmic progress unless termination is triggered.
   optional int32 termination_check_frequency = 5 [default = 64];
 
+  // NO_RESTARTS and EVERY_MAJOR_ITERATION occasionally outperform the default.
+  // If using a strategy other than ADAPTIVE_HEURISTIC, you must also tune
+  // major_iteration_frequency.
   optional RestartStrategy restart_strategy = 6 [default = ADAPTIVE_HEURISTIC];
 
   // This parameter controls exponential smoothing of log(primal_weight) when a
   // primal weight update occurs (i.e., when the ratio of primal and dual step
   // sizes is adjusted). At 0.0, the primal weight will be frozen at its initial
   // value and there will be no dynamic updates in the algorithm. At 1.0, there
-  // is no smoothing in the updates.
+  // is no smoothing in the updates. The default of 0.5 generally performs well,
+  // but has been observed on occasion to trigger unstable swings in the primal
+  // weight. We recommend also trying 0.0 (disabling primal weight updates), in
+  // which case you must also tune initial_primal_weight.
   optional double primal_weight_update_smoothing = 7 [default = 0.5];
 
   // The initial value of the primal weight (i.e., the ratio of primal and dual
@@ -250,14 +264,19 @@ message PrimalDualHybridGradientParams {
   // primal_weight_update_smoothing = 0.0. If unset, the default is the ratio of
   // the norm of the objective vector to the L2 norm of the combined constraint
   // bounds vector (as defined above). If this ratio is not finite and positive,
-  // then the default is 1.0 instead.
+  // then the default is 1.0 instead. For tuning, try powers of 10, for example,
+  // from 10^{-6} to 10^6.
   optional double initial_primal_weight = 8;
 
   message PresolveOptions {
-    // If true runs glop's presolver on the given instance prior to solving.
-    // Note that convergence criteria are interpreted with respect to the
-    // presolved problem. Certificates may not be available if presolve detects
-    // infeasibility.
+    // If true runs Glop's presolver on the given instance prior to solving.
+    // Note that convergence criteria are still interpreted with respect to the
+    // original problem. Certificates may not be available if presolve detects
+    // infeasibility. Glop's presolver cannot apply to problems with quadratic
+    // objectives or problems with more than 2^31 variables or constraints. It's
+    // often beneficial to enable the presolver, especially on medium-sized
+    // problems. At some larger scales, the presolver can become a serial
+    // bottleneck.
     optional bool use_glop = 1;
 
     // Parameters to control glop's presolver. Only used when use_glop is true.
@@ -267,7 +286,8 @@ message PrimalDualHybridGradientParams {
   optional PresolveOptions presolve_options = 16;
 
   // Number of L_infinity Ruiz rescaling iterations to apply to the constraint
-  // matrix. Zero disables this rescaling pass.
+  // matrix. Zero disables this rescaling pass. Recommended values to try when
+  // tuning are 0, 5, and 10.
   optional int32 l_inf_ruiz_iterations = 9 [default = 5];
 
   // If true, applies L_2 norm rescaling after the Ruiz rescaling. Heuristically

@@ -16,13 +16,9 @@
 
 syntax = "proto2";
 
-import "ortools/pdlp/solvers.proto";
-
 package operations_research.pdlp;
 
-option java_package = "com.google.ortools.pdlp";
-option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.Pdlp";
+import "ortools/pdlp/solvers.proto";
 
 // Easy-to-compute statistics for the quadratic program.
 message QuadraticProgramStats {

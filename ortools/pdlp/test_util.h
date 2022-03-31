@@ -121,7 +121,7 @@ QuadraticProgram TestDiagonalQp1();
 // Optimal solutions:
 //   Primal: [3, 1]
 //   Dual: [0]
-//   Value: 0
+//   Value: -5
 //   Reduced costs: [0, 0]
 QuadraticProgram TestDiagonalQp2();
 
@@ -133,7 +133,7 @@ QuadraticProgram TestDiagonalQp2();
 // Optimal solutions:
 //   Primal: [2, 0, 1]
 //   Dual: [-1, 1]
-//   Value: 3
+//   Value: 2
 //   Reduced costs: [0, 0, 0]
 QuadraticProgram TestDiagonalQp3();
 
@@ -265,7 +265,7 @@ std::string GetMatcherDescriptionAsString(
 // Example:
 // vector<double> output = ComputeVector();
 // vector<double> expected({-1.5333, sqrt(2), M_PI});
-// EXPECT_THAT(output, FloatArrayNear(expected, 1e-3));
+// EXPECT_THAT(output, FloatArrayNear(expected, 1.0e-3));
 template <typename ContainerType>
 decltype(testing::Pointwise(internal::TupleIsNear(0.0), ContainerType()))
 FloatArrayNear(const ContainerType& container, double tolerance) {
@@ -313,7 +313,7 @@ absl::Span<const Scalar> EigenArrayAsSpan(
 //
 // Example:
 // Eigen::ArrayXf expected = ...
-// EXPECT_THAT(actual_arrayxf, EigenArrayNear(expected, 1e-5));
+// EXPECT_THAT(actual_arrayxf, EigenArrayNear(expected, 1.0e-5));
 MATCHER_P2(EigenArrayNear, expected_array, tolerance,
            "array is near " + testing::PrintToString(expected_array) +
                " within tolerance " + testing::PrintToString(tolerance)) {

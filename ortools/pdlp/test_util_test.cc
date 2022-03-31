@@ -38,8 +38,8 @@ using ::testing::Not;
 TEST(FloatArrayNearTest, TypicalUse) {
   std::vector<double> test_vector({0.998, -1.414, 3.142});
   std::vector<double> reference_vector({1.0, -M_SQRT2, M_PI});
-  EXPECT_THAT(test_vector, FloatArrayNear(reference_vector, 1e-2));
-  EXPECT_THAT(test_vector, Not(FloatArrayNear(reference_vector, 1e-4)));
+  EXPECT_THAT(test_vector, FloatArrayNear(reference_vector, 1.0e-2));
+  EXPECT_THAT(test_vector, Not(FloatArrayNear(reference_vector, 1.0e-4)));
 }
 
 template <typename ContainerType>
@@ -56,22 +56,22 @@ TYPED_TEST(FloatArrayNearContainerTypeTest, MatchesApproximately) {
   auto reference_values = {0.5f, 1.0f, -1.0f, 2.0f};
   ContainerType reference_container(reference_values);
 
-  const Matcher<ContainerType> m1 = FloatArrayNear(reference_container, 1e-2);
+  const Matcher<ContainerType> m1 = FloatArrayNear(reference_container, 1.0e-2);
   EXPECT_TRUE(m1.Matches(test_container));
-  const Matcher<ContainerType> m2 = FloatArrayNear(reference_container, 1e-3);
+  const Matcher<ContainerType> m2 = FloatArrayNear(reference_container, 1.0e-3);
   EXPECT_FALSE(m2.Matches(test_container));
 }
 
 TYPED_TEST(FloatArrayNearContainerTypeTest, DoesNotMatchWrongSize) {
   using ContainerType = TypeParam;
   EXPECT_THAT(ContainerType({1.0f, 2.0f}),
-              Not(FloatArrayNear(ContainerType({1.0f, 2.0f, 3.0f}), 1e-2)));
+              Not(FloatArrayNear(ContainerType({1.0f, 2.0f, 3.0f}), 1.0e-2)));
 }
 
 TYPED_TEST(FloatArrayNearContainerTypeTest, DoesNotMatchWrongOrder) {
   using ContainerType = TypeParam;
   EXPECT_THAT(ContainerType({1.0f, 3.0f, 2.0f}),
-              Not(FloatArrayNear(ContainerType({1.0f, 2.0f, 3.0f}), 1e-2)));
+              Not(FloatArrayNear(ContainerType({1.0f, 2.0f, 3.0f}), 1.0e-2)));
 }
 
 TYPED_TEST(FloatArrayNearContainerTypeTest, DoesNotMatchNaNs) {
@@ -80,8 +80,8 @@ TYPED_TEST(FloatArrayNearContainerTypeTest, DoesNotMatchNaNs) {
   ContainerType test_container(test_values);
 
   EXPECT_THAT(test_container,
-              Not(FloatArrayNear(ContainerType({1.0f, 2.0f}), 1e0)));
-  EXPECT_THAT(test_container, Not(FloatArrayNear(test_container, 1e0)));
+              Not(FloatArrayNear(ContainerType({1.0f, 2.0f}), 1.0e0)));
+  EXPECT_THAT(test_container, Not(FloatArrayNear(test_container, 1.0e0)));
 }
 
 TEST(FloatArrayNearTest, WithIntegerElements) {
@@ -95,12 +95,12 @@ TEST(FloatArrayNearTest, WithIntegerElements) {
 }
 
 TEST(FloatArrayEqTest, TypicalUse) {
-  std::vector<float> reference_vector({1e6, -M_SQRT2, M_PI});
+  std::vector<float> reference_vector({1.0e6, -M_SQRT2, M_PI});
   // Values are within 4 ULPs.
-  std::vector<float> test_vector({1e6 + 0.25, -1.41421323, 3.14159262});
+  std::vector<float> test_vector({1.0e6 + 0.25, -1.41421323, 3.14159262});
   EXPECT_THAT(test_vector, FloatArrayEq(reference_vector));
   // Create a difference of 5 ULPs in the first element.
-  test_vector[0] = 1e6 + 0.3125;
+  test_vector[0] = 1.0e6 + 0.3125;
   EXPECT_THAT(test_vector, Not(FloatArrayEq(reference_vector)));
 }
 
@@ -111,15 +111,15 @@ TYPED_TEST_SUITE(FloatArrayEqContainerTypeTest, TestContainerTypes);
 
 TYPED_TEST(FloatArrayEqContainerTypeTest, MatchesApproximately) {
   using ContainerType = TypeParam;
-  auto reference_values = {-1e6f, 0.0f, 1.0f};
+  auto reference_values = {-1.0e6f, 0.0f, 1.0f};
   ContainerType reference_container(reference_values);
   const Matcher<ContainerType> m = FloatArrayEq(reference_container);
   EXPECT_TRUE(m.Matches(reference_container));
-  EXPECT_TRUE(m.Matches(ContainerType({-1e6 + 0.25, 5e-45, 1.0000002})));
-  EXPECT_TRUE(m.Matches(ContainerType({-1e6 - 0.25, -5e-45, 0.9999998})));
-  EXPECT_FALSE(m.Matches(ContainerType({-1e6 + 0.3125, 0.0, 1.0})));
-  EXPECT_FALSE(m.Matches(ContainerType({-1e6, 1e-44, 1.0})));
-  EXPECT_FALSE(m.Matches(ContainerType({-1e6, 0.0, 1.0000006})));
+  EXPECT_TRUE(m.Matches(ContainerType({-1.0e6 + 0.25, 5.0e-45, 1.0000002})));
+  EXPECT_TRUE(m.Matches(ContainerType({-1.0e6 - 0.25, -5.0e-45, 0.9999998})));
+  EXPECT_FALSE(m.Matches(ContainerType({-1.0e6 + 0.3125, 0.0, 1.0})));
+  EXPECT_FALSE(m.Matches(ContainerType({-1.0e6, 1.0e-44, 1.0})));
+  EXPECT_FALSE(m.Matches(ContainerType({-1.0e6, 0.0, 1.0000006})));
 }
 
 TYPED_TEST(FloatArrayEqContainerTypeTest, DoesNotMatchWrongSize) {
@@ -153,13 +153,13 @@ TYPED_TEST(FloatArrayEqContainerTypeTest, HandlesInfinities) {
   EXPECT_FALSE(m.Matches(ContainerType({1.0f, 2.0f, 3.0f})));
 }
 
-static const double kEps = 1e-6;
+static const double kEps = 1.0e-6;
 
 TEST(EigenArrayNearTest, ArrayXd) {
   const Eigen::ArrayXd expected = Eigen::ArrayXd::Random(4);
   Eigen::ArrayXd actual = expected;
   EXPECT_THAT(actual, EigenArrayNear(expected, kEps));
-  EXPECT_THAT(actual, EigenArrayNear(expected, 1e-100));
+  EXPECT_THAT(actual, EigenArrayNear(expected, 1.0e-100));
 
   actual += 100;
   EXPECT_THAT(actual, Not(EigenArrayNear(expected, kEps)));
@@ -194,7 +194,7 @@ TEST(EigenArrayNearTest, ArrayXXf) {
   const Eigen::ArrayXXf expected = Eigen::ArrayXXf::Random(4, 5);
   Eigen::ArrayXXf actual = expected;
   EXPECT_THAT(actual, EigenArrayNear(expected, kEps));
-  EXPECT_THAT(actual, EigenArrayNear(expected, 1e-100));
+  EXPECT_THAT(actual, EigenArrayNear(expected, 1.0e-100));
 
   actual.row(2) += 100;
   EXPECT_THAT(actual, Not(EigenArrayNear(expected, kEps)));
@@ -271,7 +271,7 @@ TEST(EigenArrayEqTest, ArrayXdInlinedValues) {
   Eigen::ArrayXd actual(3);
   actual << 1.0, 2.0, 3.0;
   EXPECT_THAT(actual, EigenArrayEq<double>({1.0, 2.0, 3.0}));
-  EXPECT_THAT(actual, EigenArrayEq<double>({1.0, 2.0 + 5e-7, 3.0}));
+  EXPECT_THAT(actual, EigenArrayEq<double>({1.0, 2.0 + 5.0e-7, 3.0}));
 
   EXPECT_THAT(actual, Not(EigenArrayEq<double>({1.0, 2.0, 5.0})));
   // Wrong shape.
@@ -320,7 +320,7 @@ TEST(EigenArrayEqTest, ArrayXXfInlinedValues) {
   EXPECT_THAT(actual, EigenArrayEq<float>({{1.0, 2.0, 3.0},  //
                                            {4.0, -5.0, -6.0}}));
   EXPECT_THAT(actual, EigenArrayEq<float>({{1.0, 2.0, 3.0},  //
-                                           {4.0, -5.0, -6.0 - 1e-6}}));
+                                           {4.0, -5.0, -6.0 - 1.0e-6}}));
   EXPECT_THAT(actual, Not(EigenArrayEq<float>({{1.0, 2.0, 3.0},  //
                                                {4.0, -5.0, -8.0}})));
   // Wrong shape.

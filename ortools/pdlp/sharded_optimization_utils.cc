@@ -133,15 +133,21 @@ double MinOrZero(const VectorXd& vec) {
   }
 }
 
-VectorInfo ComputeVectorInfo(const Eigen::Ref<const VectorXd>& vec,
-                             const Sharder& sharder) {
+// TODO(b/223148482): Switch `vec` to const Eigen::Ref<const VectorXd> if/when
+// Sharder supports Eigen::Ref, to avoid a copy when called on
+// qp.Qp().objective_matrix->diagonal().
+VectorInfo ComputeVectorInfo(const VectorXd& vec, const Sharder& sharder) {
   VectorXd local_max(sharder.NumShards());
   VectorXd local_min(sharder.NumShards());
   VectorXd local_sum(sharder.NumShards());
   VectorXd local_sum_squared(sharder.NumShards());
   std::vector<int64_t> local_num_nonzero(sharder.NumShards());
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
-    const VectorXd shard_abs = shard(vec).cwiseAbs();
+    // `shard_abs' is a description of a computation so the absolute computation
+    // will be repeated each time shard_abs is used. This is intentional, as
+    // we'd rather risk paying a little extra CPU in this rarely-called function
+    // than risk increasing the peak RAM.
+    const auto shard_abs = shard(vec).cwiseAbs();
     local_max[shard.Index()] = shard_abs.maxCoeff();
     local_min[shard.Index()] = shard_abs.minCoeff();
     local_sum[shard.Index()] = shard_abs.sum();
@@ -371,7 +377,7 @@ void DivideBySquareRootOfDivisor(const VectorXd& divisor,
                                  const Sharder& sharder, VectorXd& vector) {
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
     auto vec_shard = shard(vector);
-    auto divisor_shard = shard(divisor);
+    const auto divisor_shard = shard(divisor);
     for (int64_t index = 0; index < vec_shard.size(); ++index) {
       if (divisor_shard[index] != 0) {
         vec_shard[index] /= std::sqrt(divisor_shard[index]);
@@ -516,18 +522,18 @@ double DualSubgradientCoefficient(const double constraint_lower_bound,
 }
 
 LagrangianPart ComputeDualGradient(const ShardedQuadraticProgram& sharded_qp,
-                                   const Eigen::VectorXd& dual_solution,
-                                   const Eigen::VectorXd& primal_product) {
+                                   const VectorXd& dual_solution,
+                                   const VectorXd& primal_product) {
   LagrangianPart result{.gradient = VectorXd(sharded_qp.DualSize())};
   const QuadraticProgram& qp = sharded_qp.Qp();
   VectorXd value_parts(sharded_qp.DualSharder().NumShards());
   sharded_qp.DualSharder().ParallelForEachShard(
       [&](const Sharder::Shard& shard) {
-        auto constraint_lower_bounds = shard(qp.constraint_lower_bounds);
-        auto constraint_upper_bounds = shard(qp.constraint_upper_bounds);
-        auto dual_solution_shard = shard(dual_solution);
+        const auto constraint_lower_bounds = shard(qp.constraint_lower_bounds);
+        const auto constraint_upper_bounds = shard(qp.constraint_upper_bounds);
+        const auto dual_solution_shard = shard(dual_solution);
         auto dual_gradient_shard = shard(result.gradient);
-        auto primal_product_shard = shard(primal_product);
+        const auto primal_product_shard = shard(primal_product);
         double value_sum = 0.0;
         for (int64_t i = 0; i < dual_gradient_shard.size(); ++i) {
           dual_gradient_shard[i] = DualSubgradientCoefficient(
