@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - feature/*
-      - merge*
+      - fix/*
   release:
     types: [ created ]
 

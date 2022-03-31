@@ -31,14 +31,14 @@
 %pythonbegin %{
 import os as _os
 if hasattr(_os, 'add_dll_directory'):
-try:
-    _os.add_dll_directory(_os.getenv('SIRIUS'))
-catch AttributeError:
-    pass
-try:
-    _os.add_dll_directory(_os.getenv('XPRESS'))
-catch AttributeError:
-    pass
+    try:
+        _os.add_dll_directory(_os.getenv('SIRIUS'))
+    except AttributeError:
+        pass
+    try:
+        _os.add_dll_directory(_os.getenv('XPRESS'))
+    except AttributeError:
+        pass
 %}
 
 %include "ortools/base/base.i"
