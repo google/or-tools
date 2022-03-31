@@ -7,10 +7,10 @@ load("@rules_python//python:defs.bzl", "py_library")
 pybind_extension(
     name = "swig_helper",
     srcs = ["swig_helper.cc"],
-    visibility = ["//visibility:public"],
     data = [
         "//ortools/util/python:sorted_interval_list.so",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:swig_helper",
@@ -21,10 +21,10 @@ pybind_extension(
 py_library(
     name = "cp_model_helper",
     srcs = ["cp_model_helper.py"],
-    visibility = ["//visibility:public"],
     data = [
         ":swig_helper.so",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         requirement("numpy"),
     ],

@@ -47,7 +47,7 @@ std::string ValidateParameters(const SatParameters& params) {
   }
 
   if (params.num_search_workers() < 0) {
-    return "Parameters num_search_workers must be positive";
+    return "Parameters num_search_workers must be non-negative";
   }
 
   return "";

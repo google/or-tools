@@ -114,8 +114,8 @@ int main(int argc, char** argv) {
   int board_size = 8;
   if (argc > 1) {
     if (!absl::SimpleAtoi(argv[1], &board_size)) {
-      LOG(INFO) << "Cannot parse '" << argv[1] 
-                << "', using default value = 8.";
+      LOG(INFO) << "Cannot parse '" << argv[1]
+                << "', using the default value of 8.";
       board_size = 8;
     }
   }

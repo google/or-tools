@@ -16,7 +16,7 @@ def code_sample_cc(name):
     )
 
     native.cc_test(
-        name = name + "_test",
+        name = name + "_cc_test",
         size = "small",
         srcs = [name + ".cc"],
         args = [name],
@@ -54,4 +54,4 @@ def code_sample_py(name):
 
 def code_sample_cc_py(name):
     code_sample_cc(name = name)
-    code_sample_py(name = name)    
+    code_sample_py(name = name)
