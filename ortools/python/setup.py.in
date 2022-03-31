@@ -53,7 +53,11 @@ setup(
         '@PROJECT_NAME@.algorithms':['$<TARGET_FILE_NAME:pywrapknapsack_solver>'],
         '@PROJECT_NAME@.bop':['*.pyi'],
         '@PROJECT_NAME@.glop':['*.pyi'],
-        '@PROJECT_NAME@.graph':['$<TARGET_FILE_NAME:pywrapgraph>'],
+        '@PROJECT_NAME@.graph.python':[
+            '$<TARGET_FILE_NAME:linear_sum_assignment_pybind11>',
+            '$<TARGET_FILE_NAME:max_flow_pybind11>',
+            '$<TARGET_FILE_NAME:min_cost_flow_pybind11>'
+        ],
         '@PROJECT_NAME@.constraint_solver':['$<TARGET_FILE_NAME:pywrapcp>', '*.pyi'],
         '@PROJECT_NAME@.linear_solver':['$<TARGET_FILE_NAME:pywraplp>', '*.pyi'],
         '@PROJECT_NAME@.model_builder.python':['$<TARGET_FILE_NAME:pywrap_model_builder_helper>', '*.pyi'],
