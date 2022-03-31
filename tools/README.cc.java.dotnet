@@ -29,6 +29,9 @@ or-tools/
   bin/      <- directory containing executable files
 ```
 
+Warning: While OR-Tools ships with SCIP, please consult the SCIP license
+to ensure that you are complying with it if you want to use this solver.
+
 # C++
 
 Running the examples will involve compiling them, then running them.
