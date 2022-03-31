@@ -27,7 +27,7 @@
 #include "ortools/base/status_builder.h"
 
 #define OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
-#if defined(__wasm__) || defined(ANDROID)
+#if defined(__wasm__) || defined(ANDROID) || defined(_MSC_VER)
   #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
 #endif
 #if defined(__APPLE__)
