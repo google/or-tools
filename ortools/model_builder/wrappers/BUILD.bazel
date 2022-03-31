@@ -16,10 +16,10 @@ cc_library(
     name = "model_builder_helper",
     srcs = ["model_builder_helper.cc"],
     hdrs = ["model_builder_helper.h"],
-    visibility = ["//visibility:public"],
     copts = [
         "-DUSE_SCIP",
-    ],    
+    ],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",

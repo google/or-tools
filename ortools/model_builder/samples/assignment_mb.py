@@ -60,10 +60,11 @@ def main():
 
     # Objective
     # [START objective]
-    model.minimize(
-        sum(costs[i][j] * x[i, j]
-            for i in range(num_workers)
-            for j in range(num_tasks)))
+    objective_expr = 0
+    for i in range(num_workers):
+        for j in range(num_tasks):
+            objective_expr += costs[i][j] * x[i, j]
+    model.minimize(objective_expr)
     # [END objective]
 
     # [START solve]
