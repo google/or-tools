@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/*
+      - merge*
       - fix/*
   release:
     types: [ created ]
@@ -307,7 +308,7 @@ jobs:
         working-directory: ./build
         run: ctest --output-on-failure -C Release -R cxx_cpp -E cxx_cpp_linear_programming
       - name: Run other python tests
-        if: ${{ startsWith(matrix.os, 'ubuntu') && matrix.python == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
+        if: ${{ matrix.python == 'ON' && matrix.xprs == 'ON' && matrix.sirius == 'ON' }}
         working-directory: ./build
         run: ctest --output-on-failure -C Release -R python_python -E python_python_linear_programming
       - name: Run other java tests
