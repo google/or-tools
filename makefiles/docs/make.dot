@@ -63,31 +63,31 @@ digraph Make {
     subgraph clusterCXX {
       node [shape=box, style="rounded,filled", color=black, fillcolor=royalblue];
       OR_SRC [label="OR-Tools src\nortools/...", shape=folder];
-      OR_CC [label="C++\nTarget: cc"];
-      PKG_CC [label=".tar.gz/.zip Archive\nTarget: package_cc", shape=box3d];
+      OR_CPP [label="C++\nTarget: cpp"];
+      PKG_CPP [label=".tar.gz/.zip Archive\nTarget: package_cpp", shape=box3d];
 
       subgraph clusterCXXTest {
-        EX_CC [label="C++ Samples", shape=note];
+        EX_CPP [label="C++ Samples", shape=note];
 
-        label = "Examples\nTarget: test_cc";
+        label = "Examples\nTarget: test_cpp";
       }
-      OR_CC -> EX_CC;
+      OR_CPP -> EX_CPP;
 
-      Z -> OR_CC;
-      ABSL -> OR_CC;
-      PB -> OR_CC;
-      CLP -> OR_CC;
-      CBC -> OR_CC;
+      Z -> OR_CPP;
+      ABSL -> OR_CPP;
+      PB -> OR_CPP;
+      CLP -> OR_CPP;
+      CBC -> OR_CPP;
 
-      GLPK -> OR_CC;
-      SCIP -> OR_CC;
-      CPLEX -> OR_CC;
-      GUROBI -> OR_CC;
+      GLPK -> OR_CPP;
+      SCIP -> OR_CPP;
+      CPLEX -> OR_CPP;
+      GUROBI -> OR_CPP;
 
-      OR_CC -> PKG_CC [label="WIP", style="dotted", color=dimgrey];
+      OR_CPP -> PKG_CPP [label="WIP", style="dotted", color=dimgrey];
 
       color=royalblue;
-      label = "C++\nTarget: cc";
+      label = "C++\nTarget: cpp";
     } // clusterCXX
 
     subgraph clusterPython {
@@ -103,8 +103,8 @@ digraph Make {
       }
       OR_PY -> EX_PY [color=gold];
 
-      OR_CC -> OR_WPY [label="swig", color=chocolate];
-      OR_CC -> OR_PY [label="swig", color=chocolate];
+      OR_CPP -> OR_WPY [label="swig", color=chocolate];
+      OR_CPP -> OR_PY [label="swig", color=chocolate];
       OR_WPY -> OR_PY [label="python", color=gold];
       OR_PY -> PKG_PY [label="python setup.py", color=gold];
 
@@ -125,8 +125,8 @@ digraph Make {
       }
       OR_JV -> EX_JV [color=crimson];
 
-      OR_CC -> OR_WJV [label="swig", color=chocolate];
-      OR_CC -> OR_JV [label="swig", color=chocolate];
+      OR_CPP -> OR_WJV [label="swig", color=chocolate];
+      OR_CPP -> OR_JV [label="swig", color=chocolate];
       OR_WJV -> OR_JV [label="javac", color=crimson];
       OR_JV -> PKG_JV [label="maven (WIP)", style="dotted", color=crimson];
 
@@ -152,8 +152,8 @@ digraph Make {
       OR_NET -> EX_NET [color=forestgreen];
       OR_FS -> EX_FS [color=forestgreen];
 
-      OR_CC -> OR_WNET [label="swig", color=chocolate];
-      OR_CC -> OR_NET [label="swig", color=chocolate];
+      OR_CPP -> OR_WNET [label="swig", color=chocolate];
+      OR_CPP -> OR_NET [label="swig", color=chocolate];
       OR_WNET -> OR_NET [label="dotnet", color=forestgreen];
       OR_NET -> OR_FS [label="dotnet", color=forestgreen];
       PKG_NET -> OR_FS [label="dotnet", color=forestgreen];
