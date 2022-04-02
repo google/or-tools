@@ -83,7 +83,7 @@ JAVA_SRC_PATH := $(subst /,$S,$(JAVA_SRC_DIR))
 JAVA_TEST_DIR := src/test/java/com/google/ortools
 JAVA_TEST_PATH := $(subst /,$S,$(JAVA_TEST_DIR))
 
-JAVA_SAMPLES := algorithms graph constraint_solver linear_solver sat
+JAVA_SAMPLES := algorithms graph constraint_solver linear_solver sat model_builder
 
 define java-sample-target =
 $$(TEMP_JAVA_DIR)/$1: | $$(TEMP_JAVA_DIR)
