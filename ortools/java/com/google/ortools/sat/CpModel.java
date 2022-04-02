@@ -34,7 +34,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// TODO(user): Rewrite API to be closer to the C++ CpModel class.
 /**
  * Main modeling class.
  *
