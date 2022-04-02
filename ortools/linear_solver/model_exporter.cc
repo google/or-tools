@@ -820,6 +820,12 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   // RHS (right-hand-side) section.
   current_mps_column_ = 0;
   std::string rhs_section;
+  // Follow Gurobi's MPS format for objective offsets.
+  // See https://www.gurobi.com/documentation/9.1/refman/mps_format.html
+  if (proto_.objective_offset() != 0) {
+    AppendMpsTermWithContext("RHS", "COST", -proto_.objective_offset(),
+                             &rhs_section);
+  }
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     const double lb = ct_proto.lower_bound();
