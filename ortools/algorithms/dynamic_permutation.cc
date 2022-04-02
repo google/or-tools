@@ -14,6 +14,7 @@
 #include "ortools/algorithms/dynamic_permutation.h"
 
 #include <algorithm>
+#include <string>
 
 #include "ortools/algorithms/sparse_permutation.h"
 

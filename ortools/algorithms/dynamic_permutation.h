@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <set>  // TODO(user): remove when no longer used.
+#include <string>
 #include <vector>
 
 #include "ortools/base/logging.h"
