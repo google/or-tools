@@ -267,6 +267,10 @@ class DataWrapper<LinearProgram> {
     data_->SetMaximizationProblem(maximize);
   }
 
+  void SetObjectiveOffset(double objective_offset) {
+    data_->SetObjectiveOffset(objective_offset);
+  }
+
   int FindOrCreateConstraint(const std::string& name) {
     return data_->FindOrCreateConstraint(name).value();
   }
@@ -338,6 +342,10 @@ class DataWrapper<MPModelProto> {
   void SetName(const std::string& name) { data_->set_name(name); }
 
   void SetObjectiveDirection(bool maximize) { data_->set_maximize(maximize); }
+
+  void SetObjectiveOffset(double objective_offset) {
+    data_->set_objective_offset(objective_offset);
+  }
 
   int FindOrCreateConstraint(const std::string& name) {
     const auto it = constraint_indices_by_name_.find(name);
@@ -876,6 +884,13 @@ absl::Status MPSReaderImpl::StoreRightHandSide(const std::string& row_name,
     const Fractional upper_bound =
         (data->ConstraintUpperBound(row) == kInfinity) ? kInfinity : value;
     data->SetConstraintBounds(row, lower_bound, upper_bound);
+  } else {
+    // We treat minus the right hand side of COST as the objective offset, in
+    // line with what the MPS writer does and what Gurobi's MPS format
+    // expects.
+    Fractional value;
+    ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value));
+    data->SetObjectiveOffset(-value);
   }
   return absl::OkStatus();
 }
