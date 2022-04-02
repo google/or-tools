@@ -91,6 +91,7 @@ class ModelBuilderHelper {
   std::string name() const;
   void SetName(const std::string& name);
 
+  void ClearObjective();
   bool maximize() const;
   void SetMaximize(bool maximize);
   double ObjectiveOffset() const;
@@ -105,6 +106,22 @@ class LogCallback {
  public:
   virtual ~LogCallback() {}
   virtual void NewMessage(const std::string& message) = 0;
+};
+
+enum SolveStatus {
+  OPTIMAL,
+  FEASIBLE,
+  INFEASIBLE,
+  UNBOUNDED,
+  ABNORMAL,
+  NOT_SOLVED,
+  MODEL_IS_VALID,
+  CANCELLED_BY_USER,
+  UNKNOWN_STATUS,
+  MODEL_INVALID,
+  INVALID_SOLVER_PARAMETERS,
+  SOLVER_TYPE_UNAVAILABLE,
+  INCOMPATIBLE_OPTIONS,
 };
 
 // Class used to solve a request. This class is not meant to be exposed to the
@@ -133,7 +150,7 @@ class ModelSolverHelper {
   bool has_response() const;
   bool has_solution() const;
   const MPSolutionResponse& response() const;
-  MPSolverResponseStatus status() const;
+  SolveStatus status() const;
 
   // If not defined, or no solution, they will silently return 0.
   double objective_value() const;

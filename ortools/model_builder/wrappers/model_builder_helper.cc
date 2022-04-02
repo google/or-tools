@@ -199,6 +199,11 @@ std::string ModelBuilderHelper::name() const { return model_.name(); }
 void ModelBuilderHelper::SetName(const std::string& name) {
   model_.set_name(name);
 }
+void ModelBuilderHelper::ClearObjective() {
+  for (MPVariableProto& var : *model_.mutable_variable()) {
+    var.clear_objective_coefficient();
+  }
+}
 
 bool ModelBuilderHelper::maximize() const { return model_.maximize(); }
 
@@ -220,6 +225,43 @@ std::optional<MPSolutionResponse> ModelSolverHelper::SolveRequest(
   MPSolver::SolveWithProto(request, &temp, &interrupt_solve_);
   return temp;
 }
+
+namespace {
+SolveStatus MPSolverResponseStatusToSolveStatus(MPSolverResponseStatus s) {
+  switch (s) {
+    case MPSOLVER_OPTIMAL:
+      return SolveStatus::OPTIMAL;
+    case MPSOLVER_FEASIBLE:
+      return SolveStatus::FEASIBLE;
+    case MPSOLVER_INFEASIBLE:
+      return SolveStatus::INFEASIBLE;
+    case MPSOLVER_UNBOUNDED:
+      return SolveStatus::UNBOUNDED;
+    case MPSOLVER_ABNORMAL:
+      return SolveStatus::ABNORMAL;
+    case MPSOLVER_NOT_SOLVED:
+      return SolveStatus::NOT_SOLVED;
+    case MPSOLVER_MODEL_IS_VALID:
+      return SolveStatus::MODEL_IS_VALID;
+    case MPSOLVER_CANCELLED_BY_USER:
+      return SolveStatus::CANCELLED_BY_USER;
+    case MPSOLVER_UNKNOWN_STATUS:
+      return SolveStatus::UNKNOWN_STATUS;
+    case MPSOLVER_MODEL_INVALID:
+      return SolveStatus::MODEL_INVALID;
+    case MPSOLVER_MODEL_INVALID_SOLUTION_HINT:
+      return SolveStatus::MODEL_INVALID;
+    case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
+      return SolveStatus::INVALID_SOLVER_PARAMETERS;
+    case MPSOLVER_SOLVER_TYPE_UNAVAILABLE:
+      return SolveStatus::SOLVER_TYPE_UNAVAILABLE;
+    case MPSOLVER_INCOMPATIBLE_OPTIONS:
+      return SolveStatus::INCOMPATIBLE_OPTIONS;
+    default:
+      return SolveStatus::UNKNOWN_STATUS;
+  }
+}
+}  // namespace
 
 ModelSolverHelper::ModelSolverHelper(const std::string& solver_name) {
   if (solver_name.empty()) return;
@@ -318,11 +360,11 @@ const MPSolutionResponse& ModelSolverHelper::response() const {
   return response_.value();
 }
 
-MPSolverResponseStatus ModelSolverHelper::status() const {
+SolveStatus ModelSolverHelper::status() const {
   if (!response_.has_value()) {
-    return MPSolverResponseStatus::MPSOLVER_UNKNOWN_STATUS;
+    return SolveStatus::UNKNOWN_STATUS;
   }
-  return response_.value().status();
+  return MPSolverResponseStatusToSolveStatus(response_.value().status());
 }
 
 double ModelSolverHelper::objective_value() const {

@@ -75,7 +75,8 @@ def main():
 
     # Print solution.
     # [START print_solution]
-    if status == model_builder.OPTIMAL or status == model_builder.FEASIBLE:
+    if (status == model_builder.SolveStatus.OPTIMAL or
+            status == model_builder.SolveStatus.FEASIBLE):
         print(f'Total cost = {solver.objective_value}\n')
         for i in range(num_workers):
             for j in range(num_tasks):

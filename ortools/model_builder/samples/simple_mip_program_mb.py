@@ -56,7 +56,7 @@ def main():
     # [END solve]
 
     # [START print_solution]
-    if status == model_builder.OPTIMAL:
+    if status == model_builder.SolveStatus.OPTIMAL:
         print('Solution:')
         print('Objective value =', solver.objective_value)
         print('x =', solver.value(x))

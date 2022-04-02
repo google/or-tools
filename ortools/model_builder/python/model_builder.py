@@ -33,21 +33,11 @@ rather than for solving specific optimization problems.
 
 import math
 
-from ortools.linear_solver import linear_solver_pb2
 from ortools.model_builder.python import model_builder_helper as mbh
 from ortools.model_builder.python import pywrap_model_builder_helper as pwmb
 
 # Forward solve statuses.
-OPTIMAL = linear_solver_pb2.MPSOLVER_OPTIMAL
-FEASIBLE = linear_solver_pb2.MPSOLVER_FEASIBLE
-INFEASIBLE = linear_solver_pb2.MPSOLVER_INFEASIBLE
-UNBOUNDED = linear_solver_pb2.MPSOLVER_UNBOUNDED
-ABNORMAL = linear_solver_pb2.MPSOLVER_ABNORMAL
-NOT_SOLVED = linear_solver_pb2.MPSOLVER_NOT_SOLVED
-MODEL_IS_VALID = linear_solver_pb2.MPSOLVER_MODEL_IS_VALID
-CANCELLED_BY_USER = linear_solver_pb2.MPSOLVER_CANCELLED_BY_USER
-UNKNOWN_STATUS = linear_solver_pb2.MPSOLVER_UNKNOWN_STATUS
-MODEL_INVALID = linear_solver_pb2.MPSOLVER_MODEL_INVALID
+SolveStatus = pwmb.SolveStatus
 
 
 class LinearExpr(object):
@@ -842,6 +832,7 @@ class ModelBuilder(object):
 
     def __optimize(self, linear_expr, maximize):
         """Defines the objective."""
+        self.helper.clear_objective()
         coeffs_map = {}
         # constant = 0.0
         if isinstance(linear_expr, LinearExpr):
@@ -943,7 +934,7 @@ class ModelSolver(object):
         if self.log_callback is not None:
             self.__solve_helper.set_log_callback(self.log_callback)
         self.__solve_helper.solve(model.helper)
-        return self.__solve_helper.status()
+        return SolveStatus(self.__solve_helper.status())
 
     def __check_has_feasible_solution(self):
         """Checks that solve has run and has found a feasible solution."""
@@ -981,12 +972,6 @@ class ModelSolver(object):
         """Returns the best lower (upper) bound found when min(max)imizing."""
         self.__check_has_feasible_solution()
         return self.__solve_helper.best_objective_bound()
-
-    def status_name(self, status=None):
-        """Returns the name of the status returned by solve()."""
-        if status is None:
-            status = self.__solve_helper.status()
-        return linear_solver_pb2.MPSolverResponseStatus.Name(status)
 
     @property
     def status_string(self):

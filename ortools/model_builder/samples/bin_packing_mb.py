@@ -84,7 +84,7 @@ def main():
     # [END solve]
 
     # [START print_solution]
-    if status == model_builder.OPTIMAL:
+    if status == model_builder.SolveStatus.OPTIMAL:
         num_bins = 0.
         for j in data['bins']:
             if solver.value(y[j]) == 1:

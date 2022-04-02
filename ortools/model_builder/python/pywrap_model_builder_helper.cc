@@ -37,6 +37,7 @@ using ::operations_research::MPModelProto;
 using ::operations_research::MPModelRequest;
 using ::operations_research::MPSolutionResponse;
 using ::operations_research::MPVariableProto;
+using ::operations_research::SolveStatus;
 using ::pybind11::arg;
 
 // TODO(user): The interface uses serialized protos because of issues building
@@ -190,11 +191,29 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            &ModelBuilderHelper::ConstraintCoefficients, arg("ct_index"))
       .def("name", &ModelBuilderHelper::name)
       .def("set_name", &ModelBuilderHelper::SetName, arg("name"))
+      .def("clear_objective", &ModelBuilderHelper::ClearObjective)
       .def("maximize", &ModelBuilderHelper::maximize)
       .def("set_maximize", &ModelBuilderHelper::SetMaximize, arg("maximize"))
       .def("set_objective_offset", &ModelBuilderHelper::SetObjectiveOffset,
            arg("offset"))
       .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset);
+
+  pybind11::enum_<SolveStatus>(m, "SolveStatus")
+      .value("OPTIMAL", SolveStatus::OPTIMAL)
+      .value("FEASIBLE", SolveStatus::FEASIBLE)
+      .value("INFEASIBLE", SolveStatus::INFEASIBLE)
+      .value("UNBOUNDED", SolveStatus::UNBOUNDED)
+      .value("ABNORMAL", SolveStatus::ABNORMAL)
+      .value("NOT_SOLVED", SolveStatus::NOT_SOLVED)
+      .value("MODEL_IS_VALID", SolveStatus::MODEL_IS_VALID)
+      .value("CANCELLED_BY_USER", SolveStatus::CANCELLED_BY_USER)
+      .value("UNKNOWN_STATUS", SolveStatus::UNKNOWN_STATUS)
+      .value("MODEL_INVALID", SolveStatus::MODEL_INVALID)
+      .value("INVALID_SOLVER_PARAMETERS",
+             SolveStatus::INVALID_SOLVER_PARAMETERS)
+      .value("SOLVER_TYPE_UNAVAILABLE", SolveStatus::SOLVER_TYPE_UNAVAILABLE)
+      .value("INCOMPATIBLE_OPTIONS", SolveStatus::INCOMPATIBLE_OPTIONS)
+      .export_values();
 
   pybind11::class_<ModelSolverHelper>(m, "ModelSolverHelper")
       .def(pybind11::init<const std::string&>())
