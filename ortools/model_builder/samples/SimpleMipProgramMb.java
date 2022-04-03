@@ -65,9 +65,9 @@ public final class SimpleMipProgramMb {
     // [START print_solution]
     if (status == SolveStatus.OPTIMAL) {
       System.out.println("Solution:");
-      System.out.println("Objective value = " + solver.objectiveValue());
-      System.out.println("x = " + solver.value(x));
-      System.out.println("y = " + solver.value(y));
+      System.out.println("Objective value = " + solver.getObjectiveValue());
+      System.out.println("x = " + solver.getValue(x));
+      System.out.println("y = " + solver.getValue(y));
     } else {
       System.err.println("The problem does not have an optimal solution!");
     }
@@ -75,7 +75,8 @@ public final class SimpleMipProgramMb {
 
     // [START advanced]
     System.out.println("\nAdvanced usage:");
-    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+    System.out.println("Problem solved in " + solver.getWallTime() + " seconds");
+    // [END advanced]
   }
 
   private SimpleMipProgramMb() {}

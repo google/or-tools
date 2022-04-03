@@ -35,19 +35,14 @@ public class LinearConstraint {
     return helper.getConstraintLowerBound(index);
   }
 
-  /** Returns the upper bound of the variable. */
-  public double getUpperBound() {
-    return helper.getConstraintUpperBound(index);
-  }
-
-  /** Returns the name of the variable given upon creation. */
-  public String getName() {
-    return helper.getConstraintName(index);
-  }
-
   /** Returns the lower bound of the variable. */
   public void setLowerBound(double lb) {
     helper.setConstraintLowerBound(index, lb);
+  }
+
+  /** Returns the upper bound of the variable. */
+  public double getUpperBound() {
+    return helper.getConstraintUpperBound(index);
   }
 
   /** Returns the upper bound of the variable. */
@@ -55,14 +50,19 @@ public class LinearConstraint {
     helper.setConstraintUpperBound(index, ub);
   }
 
+  /** Returns the name of the variable given upon creation. */
+  public String getName() {
+    return helper.getConstraintName(index);
+  }
+
+  // Sets the name of the variable. */
+  public void setName(String name) {
+    helper.setConstraintName(index, name);
+  }
+
   // Adds var * coeff to the constraint.
   public void addTerm(Variable var, double coeff) {
     helper.addConstraintTerm(index, var.getIndex(), coeff);
-  }
-
-  /** Returns the name of the variable given upon creation. */
-  public void setName(String name) {
-    helper.setConstraintName(index, name);
   }
 
   /** Inline setter */

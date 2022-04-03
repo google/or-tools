@@ -184,6 +184,18 @@ public final class ModelBuilder {
     helper.setMaximize(maximize);
   }
 
+  // Model getters, import, export.
+
+  /** Returns the name of the model. */
+  public String getName() {
+    return helper.getName();
+  }
+
+  /** Sets the name of the model. */
+  public void setName(String name) {
+    helper.setName(name);
+  }
+
   /**
    * Write the model as a protocol buffer to 'file'.
    *
@@ -191,8 +203,32 @@ public final class ModelBuilder {
    *     written as a text file, otherwise, the binary format will be used.
    * @return true if the model was correctly written.
    */
-  public Boolean exportToFile(String file) {
+  public boolean exportToFile(String file) {
     return helper.writeModelToFile(file);
+  }
+
+  public String exportToMpsString(boolean obfuscate) {
+    return helper.exportToMpsString(obfuscate);
+  }
+
+  public String exportToLpString(boolean obfuscate) {
+    return helper.exportToLpString(obfuscate);
+  }
+
+  public boolean importFromMpsString(String mpsString) {
+    return helper.importFromMpsString(mpsString);
+  }
+
+  public boolean importFromMpsFile(String mpsFile) {
+    return helper.importFromMpsString(mpsFile);
+  }
+
+  public boolean importFromLpString(String lpString) {
+    return helper.importFromLpString(lpString);
+  }
+
+  public boolean importFromLpFile(String lpFile) {
+    return helper.importFromMpsString(lpFile);
   }
 
   // Getters.

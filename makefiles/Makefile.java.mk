@@ -275,6 +275,11 @@ test_java_linear_solver_samples: \
  rjava_SimpleMipProgram \
  rjava_StiglerDiet
 
+.PHONY: test_java_model_builder_samples # Build and Run all Java MB Samples (located in ortools/model_builder/samples)
+test_java_model_builder_samples: \
+ rjava_SimpleLpProgramMb \
+ rjava_SimpleMipProgramMb
+ 
 .PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
 test_java_sat_samples: \
  rjava_AssignmentSat \
@@ -305,6 +310,7 @@ check_java: \
  test_java_constraint_solver_samples \
  test_java_graph_samples \
  test_java_linear_solver_samples \
+ test_java_model_builder_samples \
  test_java_sat_samples \
  \
  rjava_LinearProgramming \

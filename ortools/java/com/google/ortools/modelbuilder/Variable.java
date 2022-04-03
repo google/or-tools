@@ -45,14 +45,39 @@ public class Variable implements LinearArgument {
     return helper.getVarLowerBound(index);
   }
 
+  /** Sets the lower bound of the variable. */
+  public void setLowerBound(double lowerBound) {
+    helper.setVarLowerBound(index, lowerBound);
+  }
+
   /** Returns the upper bound of the variable. */
   public double getUpperBound() {
     return helper.getVarUpperBound(index);
   }
 
+  /** Sets the upper bound of the variable. */
+  public void setUpperBound(double upperBound) {
+    helper.setVarUpperBound(index, upperBound);
+  }
+
   /** Returns whether the variable is integral. */
-  public boolean isIntegral() {
-    return helper.getVarIsIntegral(index);
+  public boolean getVarIntegrality() {
+    return helper.getVarIntegrality(index);
+  }
+
+  /** Sets the integrality of the variable. */
+  public void setVarIntegrality(boolean isIntegral) {
+    helper.setVarIntegrality(index, isIntegral);
+  }
+
+  /** Returns the objective coefficient of the variable. */
+  public double getObjectiveCoefficient() {
+    return helper.getVarObjectiveCoefficient(index);
+  }
+
+  /** Sets the objective coefficient of the variable in the objective. */
+  public void setObjectiveCoefficient(double objectiveCoefficient) {
+    helper.setVarObjectiveCoefficient(index, objectiveCoefficient);
   }
 
   /** Returns the name of the variable given upon creation. */
@@ -60,9 +85,8 @@ public class Variable implements LinearArgument {
     return helper.getVarName(index);
   }
 
-  /** Returns the objective coefficient of the variable. */
-  public double getObjectiveCoefficient() {
-    return helper.getVarObjectiveCoefficient(index);
+  public void setName(String name) {
+    helper.setVarName(index, name);
   }
 
   @Override

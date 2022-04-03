@@ -13,6 +13,8 @@
 
 package com.google.ortools.modelbuilder;
 
+import java.util.function.Consumer;
+
 /** Model solver class */
 public final class ModelSolver {
   static class ModelSolverException extends RuntimeException {
@@ -22,11 +24,15 @@ public final class ModelSolver {
     }
   }
 
+  /** Creates the solver with the supplied solver backend. */
   public ModelSolver(String solverName) {
     this.helper = new ModelSolverHelper(solverName);
+    this.logCallback = null;
   }
 
+  /** Solves given model, and returns the status of the response. */
   public SolveStatus solve(ModelBuilder model) {
+    helper.setLogCallback(logCallback);
     helper.solve(model.getHelper());
     if (!helper.hasResponse()) {
       return SolveStatus.UNKNOWN_STATUS;
@@ -34,25 +40,100 @@ public final class ModelSolver {
     return helper.getStatus();
   }
 
-  public double objectiveValue() {
+  /** Enables or disables the underlying solver output. */
+  public void enableOutput(boolean enable) {
+    helper.enableOutput(enable);
+  }
+
+  /** Sets the time limit for the solve in seconds. */
+  public void setTimeLimitInSeconds(double limit) {
+    helper.setTimeLimitInSeconds(limit);
+  }
+
+  /** Sets solver specific parameters as string. */
+  public void setSolverSpecificParameters(String parameters) {
+    helper.setSolverSpecificParameters(parameters);
+  }
+
+  /** Returns whether solver specified during the ctor was found and correctly installed. */
+  public boolean solverIsSupported() {
+    return helper.solverIsSupported();
+  }
+
+  /** Tries to interrupt the solve. Returns true if the feature is supported. */
+  public boolean interruptSolve() {
+    return helper.interruptSolve();
+  }
+
+  /** Returns true if solve() was called, and a response was returned. */
+  public boolean hasResponse() {
+    return helper.hasResponse();
+  }
+
+  /** Returns true if solve() was called, and a solution was returned. */
+  public boolean hasSolution() {
+    return helper.hasSolution();
+  }
+
+  /** Checks that the solver has found a solution, and returns the objective value. */
+  public double getObjectiveValue() {
     if (!helper.hasSolution()) {
       throw new ModelSolverException(
-          "ModelSolver.objectiveValue()", "solve() was not called or no solution was found");
+          "ModelSolver.getObjectiveValue()", "solve() was not called or no solution was found");
     }
     return helper.getObjectiveValue();
   }
 
-  public double value(Variable var) {
+  /** Checks that the solver has found a solution, and returns the objective value. */
+  public double getBestObjectiveBound() {
     if (!helper.hasSolution()) {
       throw new ModelSolverException(
-          "ModelSolver.value())", "solve() was not called or no solution was found");
+          "ModelSolver.getBestObjectiveBound()", "solve() was not called or no solution was found");
+    }
+    return helper.getBestObjectiveBound();
+  }
+
+  /** Checks that the solver has found a solution, and value of the given variable. */
+  public double getValue(Variable var) {
+    if (!helper.hasSolution()) {
+      throw new ModelSolverException(
+          "ModelSolver.getValue())", "solve() was not called or no solution was found");
     }
     return helper.getVariableValue(var.getIndex());
   }
+  /** Checks that the solver has found a solution, and reduced cost of the given variable. */
+  public double getReducedCost(Variable var) {
+    if (!helper.hasSolution()) {
+      throw new ModelSolverException(
+          "ModelSolver.getReducedCost())", "solve() was not called or no solution was found");
+    }
+    return helper.getReducedCost(var.getIndex());
+  }
 
-  public double wallTime() {
+  /** Checks that the solver has found a solution, and dual value of the given constraint. */
+  public double getDualValue(LinearConstraint ct) {
+    if (!helper.hasSolution()) {
+      throw new ModelSolverException(
+          "ModelSolver.getDualValue())", "solve() was not called or no solution was found");
+    }
+    return helper.getDualValue(ct.getIndex());
+  }
+
+  /** Sets the log callback for the solver. */
+  public void setLogCallback(Consumer<String> cb) {
+    this.logCallback = cb;
+  }
+
+  /** Returns the elapsed time since the creation of the solver. */
+  public double getWallTime() {
     return helper.getWallTime();
   }
 
-  ModelSolverHelper helper;
+  /** Returns the user time since the creation of the solver. */
+  public double getUserTime() {
+    return helper.getUserTime();
+  }
+
+  private final ModelSolverHelper helper;
+  private Consumer<String> logCallback;
 }

@@ -29,6 +29,27 @@
 // TODO(user): cleanup java/functions.i and move the code there.
 %{
 #include <memory> // std::make_shared<GlobalRefGuard>
+
+/* Global JNI reference deleter. Instantiate it via std::make_shared<> */
+class GlobalRefGuard {
+  JavaVM *jvm_;
+  jobject jref_;
+  // non-copyable
+  GlobalRefGuard(const GlobalRefGuard &) = delete;
+  GlobalRefGuard &operator=(const GlobalRefGuard &) = delete;
+ public:
+  GlobalRefGuard(JavaVM *jvm, jobject jref): jvm_(jvm), jref_(jref) {}
+  ~GlobalRefGuard() {
+    JNIEnv *jenv = NULL;
+    JavaVMAttachArgs args;
+    args.version = JNI_VERSION_1_2;
+    args.name = NULL;
+    args.group = NULL;
+    jvm_->AttachCurrentThread((void**)&jenv, &args);
+    jenv->DeleteGlobalRef(jref_);
+    jvm_->DetachCurrentThread();
+  }
+};
 %}
 
 %typemap(in) std::function<void(const std::string&)> %{
@@ -65,6 +86,20 @@
 %typemap(jstype) std::function<void(const std::string&)> "java.util.function.Consumer<String>" // Type used in the Proxy class.
 %typemap(javain) std::function<void(const std::string&)> "$javainput" // passing the Callback to JNI java class.
 
+%extend operations_research::ModelBuilderHelper {
+  std::string exportToMpsString(bool obfuscate) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscate;
+    return $self->ExportToMpsString(options);
+  }
+
+  std::string exportToLpString(bool obfuscate) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscate;
+    return $self->ExportToLpString(options);
+  }
+}  // Extend operations_research::ModelBuilderHelper
+
 %ignoreall
 
 %unignore operations_research;
@@ -76,7 +111,7 @@
 
 // Var API.
 %rename (addVar) operations_research::ModelBuilderHelper::AddVar;
-%rename (getVarIsIntegral) operations_research::ModelBuilderHelper::VarIsIntegral;
+%rename (getVarIntegrality) operations_research::ModelBuilderHelper::VarIsIntegral;
 %rename (getVarLowerBound) operations_research::ModelBuilderHelper::VarLowerBound;
 %rename (getVarName) operations_research::ModelBuilderHelper::VarName;
 %rename (getVarObjectiveCoefficient) operations_research::ModelBuilderHelper::VarObjectiveCoefficient;
@@ -116,11 +151,14 @@
 %rename (importFromMpsFile) operations_research::ModelBuilderHelper::ImportFromMpsFile;
 %rename (importFromLpString) operations_research::ModelBuilderHelper::ImportFromLpString;
 %rename (importFromLpFile) operations_research::ModelBuilderHelper::ImportFromLpFile;
+%unignore operations_research::ModelBuilderHelper::exportToMpsString;
+%unignore operations_research::ModelBuilderHelper::exportToLpString;
 
 %unignore operations_research::ModelSolverHelper;
 %unignore operations_research::ModelSolverHelper::ModelSolverHelper(const std::string&);
-%rename (solverIsSupported) operations_research::ModelSolverHelper::solverIsSupported;
+%rename (solverIsSupported) operations_research::ModelSolverHelper::SolverIsSupported;
 %rename (solve) operations_research::ModelSolverHelper::Solve;
+%rename (interruptSolve) operations_research::ModelSolverHelper::InterruptSolve;
 %rename (hasResponse) operations_research::ModelSolverHelper::has_response;
 %rename (hasSolution) operations_research::ModelSolverHelper::has_solution;
 %rename (getStatus) operations_research::ModelSolverHelper::status;
@@ -131,7 +169,11 @@
 %rename (getDualValue) operations_research::ModelSolverHelper::dual_value;
 %rename (getStatusString) operations_research::ModelSolverHelper::status_string;
 %rename (getWallTime) operations_research::ModelSolverHelper::wall_time;
+%rename (getUserTime) operations_research::ModelSolverHelper::user_time;
 %rename (enableOutput) operations_research::ModelSolverHelper::EnableOutput;
+%rename (setLogCallback) operations_research::ModelSolverHelper::SetLogCallback;
+%rename (setTimeLimitInSeconds) operations_research::ModelSolverHelper::SetTimeLimitInSeconds;
+%rename (setSolverSpecificParameters) operations_research::ModelSolverHelper::SetSolverSpecificParameters;
 
 %unignore operations_research::SolveStatus;
 %unignore operations_research::OPTIMAL;
