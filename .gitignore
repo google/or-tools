@@ -1,9 +1,14 @@
 Makefile.local
 Makefile.local~
 
-dependencies/
-include/
-share/
+/build_make/
+/install_make/
+/dependencies/
+/or-tools_cpp*
+/or-tools_dotnet*
+/or-tools_java*
+/or-tools_python*
+/or-tools_data*
 
 or-tools*.tar.gz
 or-tools*.zip
@@ -31,10 +36,13 @@ temp_test/
 temp_fz/
 temp_fz_test/
 temp_cpp/
+temp_cpp_test/
 temp_dotnet/
 temp_dotnet_test/
 temp_java/
+temp_java_test/
 temp_python*
+temp_python*_test/
 temp_archive/
 temp_fz_archive/
 lib/
@@ -47,7 +55,6 @@ or-tools.snk
 private-key.gpg
 settings.xml
 export
-
 
 ortools/bazel-*
 examples/bazel-*
