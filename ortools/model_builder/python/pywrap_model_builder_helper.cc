@@ -246,6 +246,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            "Returns true if the interrupt signal was correctly sent, that is, "
            "if the underlying solver supports it.")
       .def("set_log_callback", &ModelSolverHelper::SetLogCallback)
+      .def("clear_log_callback", &ModelSolverHelper::ClearLogCallback)
       .def("set_time_limit_in_seconds",
            &ModelSolverHelper::SetTimeLimitInSeconds, arg("limit"))
       .def("set_solver_specific_parameters",

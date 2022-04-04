@@ -933,6 +933,8 @@ class ModelSolver(object):
         """Solves a problem and passes each solution to the callback if not null."""
         if self.log_callback is not None:
             self.__solve_helper.set_log_callback(self.log_callback)
+        else:
+            self.__solver_helper.clear_log_callback()
         self.__solve_helper.solve(model.helper)
         return SolveStatus(self.__solve_helper.status())
 
