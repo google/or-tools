@@ -918,7 +918,7 @@ public final class CpModel {
     for (int i = 0; i < e.numElements(); ++i) {
       obj.addVars(e.getVariableIndex(i)).addCoeffs(e.getCoefficient(i));
     }
-    obj.setOffset(e.getOffset());
+    obj.setOffset((double) e.getOffset());
   }
 
   public void minimize(DoubleLinearExpr expr) {
@@ -940,7 +940,7 @@ public final class CpModel {
     for (int i = 0; i < e.numElements(); ++i) {
       obj.addVars(e.getVariableIndex(i)).addCoeffs(-e.getCoefficient(i));
     }
-    obj.setOffset(-e.getOffset());
+    obj.setOffset((double) -e.getOffset());
     obj.setScalingFactor(-1.0);
   }
 
