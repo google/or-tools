@@ -179,9 +179,6 @@ TEST(SharderTest, UniformSharderZeroElementVector) {
   });
 }
 
-// MOE:begin_strip
-// Regression test for b/214330472.
-// MOE:end_strip
 TEST(SharderTest, UniformSharderFromOtherZeroElementSharder) {
   Sharder empty_sharder(/*num_elements=*/0, /*num_shards=*/3, nullptr);
   EXPECT_THAT(empty_sharder.ShardStartsForTesting(), ElementsAre(0));
