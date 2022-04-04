@@ -69,7 +69,7 @@ public final class LinearExprBuilder implements LinearArgument {
 
   public LinearExprBuilder addWeightedSum(LinearArgument[] exprs, long[] coeffs) {
     for (int i = 0; i < exprs.length; ++i) {
-      addTerm(exprs[i], coeffs[i]);
+      addTerm(exprs[i], (double) coeffs[i]);
     }
     return this;
   }

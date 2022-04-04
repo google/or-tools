@@ -13,6 +13,7 @@
 
 package com.google.ortools.modelbuilder;
 
+import java.time.Duration;
 import java.util.function.Consumer;
 
 /** Model solver class */
@@ -50,8 +51,8 @@ public final class ModelSolver {
   }
 
   /** Sets the time limit for the solve in seconds. */
-  public void setTimeLimitInSeconds(double limit) {
-    helper.setTimeLimitInSeconds(limit);
+  public void setTimeLimit(Duration limit) {
+    helper.setTimeLimitInSeconds((double) limit.toMillis() / 1000.0);
   }
 
   /** Sets solver specific parameters as string. */
