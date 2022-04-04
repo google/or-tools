@@ -32,7 +32,11 @@ public final class ModelSolver {
 
   /** Solves given model, and returns the status of the response. */
   public SolveStatus solve(ModelBuilder model) {
-    helper.setLogCallback(logCallback);
+    if (logCallback == null) {
+      helper.clearLogCallback();
+    } else {
+      helper.setLogCallback(logCallback);
+    }
     helper.solve(model.getHelper());
     if (!helper.hasResponse()) {
       return SolveStatus.UNKNOWN_STATUS;
