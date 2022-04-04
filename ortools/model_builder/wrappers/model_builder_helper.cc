@@ -25,7 +25,7 @@
 #endif  // defined(USE_SCIP)
 #if defined(USE_LP_PARSER)
 #include "ortools/lp_data/lp_parser.h"
-#endif // #if defined(USE_LP_PARSER)
+#endif  // defined(USE_LP_PARSER)
 #include "ortools/lp_data/mps_reader.h"
 
 namespace operations_research {

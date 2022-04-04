@@ -55,7 +55,7 @@ class ModelBuilderHelper {
 #if defined(USE_LP_PARSER)
   bool ImportFromLpString(const std::string& lp_string);
   bool ImportFromLpFile(const std::string& lp_file);
-#endif // #if defined(USE_LP_PARSER)
+#endif  // defined(USE_LP_PARSER)
 
   const MPModelProto& model() const;
   MPModelProto* mutable_model();
