@@ -171,6 +171,7 @@ class GlobalRefGuard {
 %rename (getWallTime) operations_research::ModelSolverHelper::wall_time;
 %rename (getUserTime) operations_research::ModelSolverHelper::user_time;
 %rename (enableOutput) operations_research::ModelSolverHelper::EnableOutput;
+%rename (clearLogCallback) operations_research::ModelSolverHelper::ClearLogCallback;
 %rename (setLogCallback) operations_research::ModelSolverHelper::SetLogCallback;
 %rename (setTimeLimitInSeconds) operations_research::ModelSolverHelper::SetTimeLimitInSeconds;
 %rename (setSolverSpecificParameters) operations_research::ModelSolverHelper::SetSolverSpecificParameters;

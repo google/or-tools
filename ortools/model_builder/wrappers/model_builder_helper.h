@@ -146,6 +146,7 @@ class ModelSolverHelper {
 
   void SetLogCallback(std::function<void(const std::string&)> log_callback);
   void SetLogCallbackFromDirectorClass(LogCallback* log_callback);
+  void ClearLogCallback();
 
   bool has_response() const;
   bool has_solution() const;

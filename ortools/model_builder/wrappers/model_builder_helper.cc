@@ -341,6 +341,8 @@ void ModelSolverHelper::SetLogCallbackFromDirectorClass(
   };
 }
 
+void ModelSolverHelper::ClearLogCallback() { log_callback_ = nullptr; }
+
 bool ModelSolverHelper::InterruptSolve() {
   interrupt_solve_ = true;
   return true;
