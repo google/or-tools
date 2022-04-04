@@ -312,7 +312,6 @@ check_java: \
  test_java_linear_solver_samples \
  test_java_model_builder_samples \
  test_java_sat_samples \
- \
  rjava_LinearProgramming \
  rjava_IntegerProgramming
 
@@ -327,6 +326,7 @@ test_java_tests: \
  rjava_CpModelTest \
  rjava_CpSolverTest \
  rjava_SatSolverTest \
+ rjava_ModelBuilderTest
 
 .PHONY: test_java_contrib # Build and Run all Java Contrib (located in examples/contrib)
 test_java_contrib: \

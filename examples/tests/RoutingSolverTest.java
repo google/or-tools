@@ -20,10 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.auto.value.AutoValue;
 import com.google.ortools.Loader;
-import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingModelParameters;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.protobuf.Duration;
@@ -360,9 +356,8 @@ public final class RoutingSolverTest {
     dimension.setSpanCostCoefficientForAllVehicles(2);
 
     RoutingSearchParameters searchParameters =
-        RoutingSearchParameters.newBuilder()
-            .mergeFrom(main.defaultRoutingSearchParameters())
-            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+        main.defaultRoutingSearchParameters()
+            .toBuilder()
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
 
@@ -388,9 +383,8 @@ public final class RoutingSolverTest {
     model.setArcCostEvaluatorOfAllVehicles(pair.getFirst());
 
     RoutingSearchParameters searchParameters =
-        RoutingSearchParameters.newBuilder()
-            .mergeFrom(main.defaultRoutingSearchParameters())
-            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+        main.defaultRoutingSearchParameters()
+            .toBuilder()
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
 
@@ -422,9 +416,8 @@ public final class RoutingSolverTest {
     model.setArcCostEvaluatorOfAllVehicles(pair.getFirst());
 
     final RoutingSearchParameters searchParameters =
-        RoutingSearchParameters.newBuilder()
-            .mergeFrom(main.defaultRoutingSearchParameters())
-            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+        main.defaultRoutingSearchParameters()
+            .toBuilder()
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
 
@@ -470,9 +463,8 @@ public final class RoutingSolverTest {
     }
 
     RoutingSearchParameters searchParameters =
-        RoutingSearchParameters.newBuilder()
-            .mergeFrom(main.defaultRoutingSearchParameters())
-            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+        main.defaultRoutingSearchParameters()
+            .toBuilder()
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
 

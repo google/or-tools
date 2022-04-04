@@ -519,10 +519,8 @@ public final class CpModelTest {
     final IntVar y = model.newIntVar(0, 10, "y");
     List<Constraint> constraints = new ArrayList<>();
     for (int i = 0; i < 10; ++i) {
-      Constraint ct =
-          model.addLinearExpressionInDomain(
-              LinearExpr.newBuilder().add(x).add(y),
-              Domain.fromFlatIntervals(new long[] {6 + i, 92 - i}));
+      Constraint ct = model.addLinearExpressionInDomain(LinearExpr.newBuilder().add(x).add(y),
+          Domain.fromFlatIntervals(new long[] {6 + i, 92 - i}));
       constraints.add(ct);
     }
 
@@ -548,4 +546,49 @@ public final class CpModelTest {
     }
   }
 
+  @Test
+  public void testCpModel_minimize() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+
+    final IntVar x1 = model.newIntVar(0, 5, "x1");
+    final IntVar x2 = model.newIntVar(0, 5, "x2");
+    final IntVar x3 = model.newIntVar(0, 5, "x3");
+
+    model.minimize(LinearExpr.sum(new IntVar[] {x1, x2}));
+    assertThat(model.getBuilder().getObjectiveBuilder().getVarsCount()).isEqualTo(2);
+    assertThat(model.getBuilder().hasFloatingPointObjective()).isFalse();
+
+    model.minimize(x3);
+    assertThat(model.getBuilder().getObjectiveBuilder().getVarsCount()).isEqualTo(1);
+    assertThat(model.getBuilder().hasFloatingPointObjective()).isFalse();
+
+    model.minimize(LinearExpr.sum(new IntVar[] {x1, x2}));
+    assertThat(model.getBuilder().getObjectiveBuilder().getVarsCount()).isEqualTo(2);
+    assertThat(model.getBuilder().hasFloatingPointObjective()).isFalse();
+
+    model.minimize(DoubleLinearExpr.weightedSum(new IntVar[] {x1, x2}, new double[] {2.5, 3.5}));
+    assertThat(model.getBuilder().getFloatingPointObjectiveBuilder().getVarsCount()).isEqualTo(2);
+    assertThat(model.getBuilder().hasObjective()).isFalse();
+
+    model.minimize(DoubleLinearExpr.affine(x3, 1.4, 1.2));
+    assertThat(model.getBuilder().getFloatingPointObjectiveBuilder().getVarsCount()).isEqualTo(1);
+    assertThat(model.getBuilder().hasObjective()).isFalse();
+
+    model.maximize(LinearExpr.sum(new IntVar[] {x1, x2}));
+    assertThat(model.getBuilder().getObjectiveBuilder().getVarsCount()).isEqualTo(2);
+    assertThat(model.getBuilder().hasFloatingPointObjective()).isFalse();
+
+    model.maximize(x3);
+    assertThat(model.getBuilder().getObjectiveBuilder().getVarsCount()).isEqualTo(1);
+    assertThat(model.getBuilder().hasFloatingPointObjective()).isFalse();
+
+    model.maximize(DoubleLinearExpr.weightedSum(new IntVar[] {x1, x2}, new double[] {2.5, 3.5}));
+    assertThat(model.getBuilder().getFloatingPointObjectiveBuilder().getVarsCount()).isEqualTo(2);
+    assertThat(model.getBuilder().hasObjective()).isFalse();
+
+    model.maximize(DoubleLinearExpr.affine(x3, 1.4, 1.2));
+    assertThat(model.getBuilder().getFloatingPointObjectiveBuilder().getVarsCount()).isEqualTo(1);
+    assertThat(model.getBuilder().hasObjective()).isFalse();
+  }
 }

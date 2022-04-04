@@ -20,8 +20,6 @@ namespace Google.OrTools.Tests
 {
 public class SatSolverTest
 {
-    private const int LargeCount = 100000;
-
     static IntegerVariableProto NewIntegerVariable(long lb, long ub)
     {
         IntegerVariableProto var = new IntegerVariableProto();
@@ -296,11 +294,10 @@ public class SatSolverTest
     public void LargeWeightedSumLong()
     {
         CpModel model = new CpModel();
-        model.Model.Variables.Capacity = LargeCount;
-        List<IntVar> vars = new List<IntVar>(LargeCount);
-        List<long> coeffs = new List<long>(LargeCount);
+        List<IntVar> vars = new List<IntVar>();
+        List<long> coeffs = new List<long>();
 
-        for (int i = 0; i < LargeCount; ++i)
+        for (int i = 0; i < 100000; ++i)
         {
             vars.Add(model.NewBoolVar(""));
             coeffs.Add(i + 1);
@@ -317,11 +314,10 @@ public class SatSolverTest
     public void LargeWeightedSumInt()
     {
         CpModel model = new CpModel();
-        model.Model.Variables.Capacity = LargeCount;
-        List<IntVar> vars = new List<IntVar>(LargeCount);
-        List<int> coeffs = new List<int>(LargeCount);
+        List<IntVar> vars = new List<IntVar>();
+        List<int> coeffs = new List<int>();
 
-        for (int i = 0; i < LargeCount; ++i)
+        for (int i = 0; i < 100000; ++i)
         {
             vars.Add(model.NewBoolVar(""));
             coeffs.Add(i);
@@ -338,10 +334,9 @@ public class SatSolverTest
     public void LargeWeightedSumExpr()
     {
         CpModel model = new CpModel();
-        model.Model.Variables.Capacity = LargeCount;
-        List<LinearExpr> exprs = new List<LinearExpr>(LargeCount);
+        List<LinearExpr> exprs = new List<LinearExpr>();
 
-        for (int i = 0; i < LargeCount; ++i)
+        for (int i = 0; i < 100000; ++i)
         {
             exprs.Add(model.NewBoolVar("") * i);
         }
@@ -357,11 +352,10 @@ public class SatSolverTest
     public void LargeWeightedSumBuilder()
     {
         CpModel model = new CpModel();
-        model.Model.Variables.Capacity = LargeCount;
-        List<IntVar> vars = new List<IntVar>(LargeCount);
-        List<long> coeffs = new List<long>(LargeCount);
+        List<IntVar> vars = new List<IntVar>();
+        List<long> coeffs = new List<long>();
 
-        for (int i = 0; i < LargeCount; ++i)
+        for (int i = 0; i < 100000; ++i)
         {
             vars.Add(model.NewBoolVar(""));
             coeffs.Add(i + 1);
@@ -369,7 +363,7 @@ public class SatSolverTest
 
         var watch = System.Diagnostics.Stopwatch.StartNew();
         LinearExprBuilder obj = LinearExpr.NewBuilder();
-        for (int i = 0; i < LargeCount; ++i)
+        for (int i = 0; i < 100000; ++i)
         {
             obj.AddTerm(vars[i], coeffs[i]);
         }

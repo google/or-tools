@@ -53,7 +53,7 @@ class ModelBuilderTest(unittest.TestCase):
         self.assertEqual(-math.inf, c2.lower_bound)
 
         solver = model_builder.ModelSolver(solver_name)
-        self.assertEqual(model_builder.OPTIMAL, solver.solve(model))
+        self.assertEqual(model_builder.SolveStatus.OPTIMAL, solver.solve(model))
 
         # The problem has an optimal solution.
         self.assertAlmostEqual(733.333333 + model.objective_offset,
@@ -122,6 +122,13 @@ ENDATA
         self.assertTrue(model.import_from_mps_string(mps_data))
         self.assertEqual(model.name, 'SupportedMaximizationProblem')
 
+    def test_import_from_mps_file(self):
+        mps_path = resources.GetResourceFilename('ortools.linear_solver/'
+                                                 'testdata/maximization.mps')
+        model = model_builder.ModelBuilder()
+        self.assertTrue(model.import_from_mps_file(mps_path))
+        self.assertEqual(model.name, 'SupportedMaximizationProblem')
+
     def test_import_from_lp_string(self):
         lp_data = """
       min: x + y;
@@ -138,6 +145,43 @@ ENDATA
         self.assertEqual(1, model.var_from_index(0).lower_bound)
         self.assertEqual(42, model.var_from_index(0).upper_bound)
         self.assertEqual('x', model.var_from_index(0).name)
+
+    def test_import_from_lp_file(self):
+        lp_path = resources.GetResourceFilename('testdata/small_model.lp')
+        model = model_builder.ModelBuilder()
+        self.assertTrue(model.import_from_lp_file(lp_path))
+        self.assertEqual(6, model.num_variables)
+        self.assertEqual(3, model.num_constraints)
+        self.assertEqual(1, model.var_from_index(0).lower_bound)
+        self.assertEqual(42, model.var_from_index(0).upper_bound)
+        self.assertEqual('x', model.var_from_index(0).name)
+
+    def test_variables(self):
+        model = model_builder.ModelBuilder()
+        x = model.new_int_var(0.0, 4.0, 'x')
+        self.assertEqual(0, x.index)
+        self.assertEqual(0.0, x.lower_bound)
+        self.assertEqual(4.0, x.upper_bound)
+        self.assertEqual('x', x.name)
+        x.lower_bound = 1.0
+        x.upper_bound = 3.0
+        self.assertEqual(1.0, x.lower_bound)
+        self.assertEqual(3.0, x.upper_bound)
+        self.assertTrue(x.is_integral)
+
+        # Tests the equality operator.
+        y = model.new_int_var(0.0, 4.0, 'y')
+        x_copy = model.var_from_index(0)
+        self.assertEqual(x, x)
+        self.assertEqual(x, x_copy)
+        self.assertNotEqual(x, y)
+
+        # Tests the hash method.
+        var_set = set()
+        var_set.add(x)
+        self.assertIn(x, var_set)
+        self.assertIn(x_copy, var_set)
+        self.assertNotIn(y, var_set)
 
 
 if __name__ == '__main__':
