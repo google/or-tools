@@ -1,6 +1,5 @@
 # This file is just an orchestration
 cmake_minimum_required(VERSION 3.18)
-list(APPEND CMAKE_PREFIX_PATH "@CPP_PREFIX_PATH@")
 
 option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" OFF)
 

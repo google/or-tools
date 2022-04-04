@@ -125,9 +125,7 @@ $(TEMP_CPP_DIR)/$(SOURCE_NAME): | $(TEMP_CPP_DIR)
 	$(MKDIR) $(TEMP_CPP_DIR)$S$(SOURCE_NAME)
 
 $(TEMP_CPP_DIR)/$(SOURCE_NAME)/CMakeLists.txt: ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in | $(TEMP_CPP_DIR)/$(SOURCE_NAME)
-	$(SED) -e "s;@CPP_PREFIX_PATH@;$(OR_ROOT_FULL)$S$(INSTALL_DIR);" \
- ortools$Scpp$SCMakeLists.txt.in \
- > $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$SCMakeLists.txt
+	$(COPY) ortools$Scpp$SCMakeLists.txt.in $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$SCMakeLists.txt
 	$(SED) -i -e 's/@CPP_NAME@/$(SOURCE_NAME)/' \
  $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$SCMakeLists.txt
 	$(SED) -i -e 's/@CPP_FILE_NAME@/$(SOURCE_NAME).cc/' \
@@ -178,9 +176,7 @@ $(TEMP_CPP_DIR)/$1/%: \
 $(TEMP_CPP_DIR)/$1/%/CMakeLists.txt: \
  ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in \
  | $(TEMP_CPP_DIR)/$1/%
-	$(SED) -e "s;@CPP_PREFIX_PATH@;$(OR_ROOT_FULL)$S$(INSTALL_DIR);" \
- ortools$Scpp$SCMakeLists.txt.in \
- > $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
+	$(COPY) ortools$Scpp$SCMakeLists.txt.in $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
 	$(SED) -i -e 's/@CPP_NAME@/$$*/' \
  $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
 	$(SED) -i -e 's/@CPP_FILE_NAME@/$$*.cc/' \
@@ -203,6 +199,7 @@ rcpp_%: \
 	cd $(TEMP_CPP_DIR)$S$1$S$$* &&\
  cmake -S. -Bbuild \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+ -DCMAKE_PREFIX_PATH=$(INSTALL_DIR) \
  -DCMAKE_INSTALL_PREFIX=install \
  $(CMAKE_ARGS) \
  -G $(GENERATOR)
@@ -227,9 +224,7 @@ $(TEMP_CPP_DIR)/$1/%: $(SRC_DIR)/examples/$1/%.cc | $(TEMP_CPP_DIR)/$1
 	-$(MKDIR) $(TEMP_CPP_DIR)$S$1$S$$*
 
 $(TEMP_CPP_DIR)/$1/%/CMakeLists.txt: ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in | $(TEMP_CPP_DIR)/$1/%
-	$(SED) -e "s;@CPP_PREFIX_PATH@;$(OR_ROOT_FULL)$S$(INSTALL_DIR);" \
- ortools$Scpp$SCMakeLists.txt.in \
- > $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
+	$(COPY) ortools$Scpp$SCMakeLists.txt.in $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
 	$(SED) -i -e 's/@CPP_NAME@/$$*/' \
  $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
 	$(SED) -i -e 's/@CPP_FILE_NAME@/$$*.cc/' \
@@ -252,6 +247,7 @@ rcpp_%: \
 	cd $(TEMP_CPP_DIR)$S$1$S$$* &&\
  cmake -S. -Bbuild \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+ -DCMAKE_PREFIX_PATH=$(INSTALL_DIR) \
  -DCMAKE_INSTALL_PREFIX=install \
  $(CMAKE_ARGS) \
  -G $(GENERATOR)
@@ -279,9 +275,7 @@ $(TEMP_CPP_DIR)/tests/%: \
 	-$(MKDIR) $(TEMP_CPP_DIR)$Stests$S$*
 
 $(TEMP_CPP_DIR)/tests/%/CMakeLists.txt: ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in | $(TEMP_CPP_DIR)/tests/%
-	$(SED) -e "s;@CPP_PREFIX_PATH@;$(OR_ROOT_FULL)$S$(INSTALL_DIR);" \
- ortools$Scpp$SCMakeLists.txt.in \
- > $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
+	$(COPY) ortools$Scpp$SCMakeLists.txt.in $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
 	$(SED) -i -e 's/@CPP_NAME@/$*/' \
  $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
 	$(SED) -i -e 's/@CPP_FILE_NAME@/$*.cc/' \
@@ -304,6 +298,7 @@ rcpp_%: \
 	cd $(TEMP_CPP_DIR)$Stests$S$* && \
  cmake -S. -Bbuild \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+ -DCMAKE_PREFIX_PATH=$(INSTALL_DIR) \
  -DCMAKE_INSTALL_PREFIX=install \
  $(CMAKE_ARGS) \
  -G $(GENERATOR)
