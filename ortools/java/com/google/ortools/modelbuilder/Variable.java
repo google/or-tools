@@ -61,12 +61,12 @@ public class Variable implements LinearArgument {
   }
 
   /** Returns whether the variable is integral. */
-  public boolean getVarIntegrality() {
+  public boolean getIntegrality() {
     return helper.getVarIntegrality(index);
   }
 
   /** Sets the integrality of the variable. */
-  public void setVarIntegrality(boolean isIntegral) {
+  public void setIntegrality(boolean isIntegral) {
     helper.setVarIntegrality(index, isIntegral);
   }
 

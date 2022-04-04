@@ -86,7 +86,7 @@ bool ModelBuilderHelper::ImportFromLpFile(const std::string& lp_file) {
   model_ = model_or.value();
   return true;
 }
-#endif // #if defined(USE_LP_PARSER)
+#endif  // #if defined(USE_LP_PARSER)
 
 const MPModelProto& ModelBuilderHelper::model() const { return model_; }
 

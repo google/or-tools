@@ -48,7 +48,7 @@ public interface LinearExpr extends LinearArgument {
   }
 
   /** Shortcut for newBuilder().addSum(exprs).build() */
-  static LinearExpr sum(LinearExpr[] exprs) {
+  static LinearExpr sum(LinearArgument[] exprs) {
     return newBuilder().addSum(exprs).build();
   }
 

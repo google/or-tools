@@ -184,6 +184,16 @@ public final class ModelBuilder {
     helper.setMaximize(maximize);
   }
 
+  /** returns the objective offset. */
+  double getObjectiveOffset() {
+    return helper.getObjectiveOffset();
+  }
+
+  /** Sets the objective offset. */
+  void setObjectiveOffset(double offset) {
+    helper.setObjectiveOffset(offset);
+  }
+
   // Model getters, import, export.
 
   /** Returns the name of the model. */
