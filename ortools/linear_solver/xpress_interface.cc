@@ -1857,7 +1857,7 @@ const char * stringToCharPtr(std::string& var) { return var.c_str(); }
 	auto matchingParamIter = targetMap.find(paramAndValuePair.first);\
 	if (matchingParamIter != targetMap.end())\
 	{\
-		LOG(INFO) << "Setting parameter " << paramName << " to value " << paramAndValuePair.second << std::endl;\
+		LOG(INFO) << "Setting parameter " << paramAndValuePair.first << " to value " << paramAndValuePair.second << std::endl;\
 		setter(mLp, matchingParamIter->second, converter(paramAndValuePair.second));\
 		continue;\
 	}\
