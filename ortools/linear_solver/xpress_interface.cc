@@ -1891,7 +1891,6 @@ bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& par
 		setParamIfPossible_MACRO(mapDoubleControls_, XPRSsetdblcontrol, std::stod);
 		setParamIfPossible_MACRO(mapStringControls_, XPRSsetstrcontrol, stringToCharPtr);
 		setParamIfPossible_MACRO(mapInteger64Controls_, XPRSsetintcontrol64, std::stoll);
-	
 		LOG(ERROR) << "Unknown parameter " << paramName << " : function " << __FUNCTION__ << std::endl;
 		return false;
 	}
