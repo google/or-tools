@@ -1857,7 +1857,7 @@ const char * stringToCharPtr(std::string& var) { return var.c_str(); }
 	auto matchingParamIter = targetMap.find(paramAndValuePair.first);\
 	if (matchingParamIter != targetMap.end())\
 	{\
-		LOG(INFO) << "Setting parameter " << paramName << " to value " << paramAndValuePair.second << std::endl;\
+		LOG(INFO) << "Setting parameter " << paramAndValuePair.first << " to value " << paramAndValuePair.second << std::endl;\
 		setter(mLp, matchingParamIter->second, converter(paramAndValuePair.second));\
 		continue;\
 	}\
@@ -1891,7 +1891,6 @@ bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& par
 		setParamIfPossible_MACRO(mapDoubleControls_, XPRSsetdblcontrol, std::stod);
 		setParamIfPossible_MACRO(mapStringControls_, XPRSsetstrcontrol, stringToCharPtr);
 		setParamIfPossible_MACRO(mapInteger64Controls_, XPRSsetintcontrol64, std::stoll);
-	
 		LOG(ERROR) << "Unknown parameter " << paramName << " : function " << __FUNCTION__ << std::endl;
 		return false;
 	}
