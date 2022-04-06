@@ -202,7 +202,7 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
   // TODO(user): PartialDomainEncoding() filter pair corresponding to literal
   // set to false, however the initial variable Domain is not always updated. As
   // a result, these min/max can be larger than in reality. Try to fix this even
-  // if in practice this is a rare occurence, as the presolve should have
+  // if in practice this is a rare occurrence, as the presolve should have
   // propagated most of what we can.
   const auto [min_not_encoded, max_not_encoded] =
       GetMinAndMaxNotEncoded(var, encoded_values, model);
@@ -333,21 +333,6 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
 }
 
 namespace {
-// Adds enforcing_lit => target <= bounding_var to relaxation.
-void AppendEnforcedUpperBound(const Literal enforcing_lit,
-                              const IntegerVariable target,
-                              const IntegerVariable bounding_var, Model* model,
-                              LinearRelaxation* relaxation) {
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  const IntegerValue max_target_value = integer_trail->UpperBound(target);
-  const IntegerValue min_var_value = integer_trail->LowerBound(bounding_var);
-  const IntegerValue max_term_value = max_target_value - min_var_value;
-  LinearConstraintBuilder lc(model, kMinIntegerValue, max_term_value);
-  lc.AddTerm(target, IntegerValue(1));
-  lc.AddTerm(bounding_var, IntegerValue(-1));
-  CHECK(lc.AddLiteralTerm(enforcing_lit, max_term_value));
-  relaxation->linear_constraints.push_back(lc.Build());
-}
 
 // Adds {enforcing_lits} => rhs_domain_min <= expr <= rhs_domain_max.
 // Requires expr offset to be 0.
@@ -703,8 +688,7 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
   relaxation->linear_constraints.push_back(lc.Build());
 }
 
-void AppendCumulativeRelaxation(const CpModelProto& model_proto,
-                                const ConstraintProto& ct, Model* model,
+void AppendCumulativeRelaxation(const ConstraintProto& ct, Model* model,
                                 LinearRelaxation* relaxation) {
   CHECK(ct.has_cumulative());
   if (HasEnforcementLiteral(ct)) return;
@@ -732,8 +716,7 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
                           model, relaxation);
 }
 
-void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
-                               const ConstraintProto& ct, Model* model,
+void AppendNoOverlapRelaxation(const ConstraintProto& ct, Model* model,
                                LinearRelaxation* relaxation) {
   CHECK(ct.has_no_overlap());
   if (HasEnforcementLiteral(ct)) return;
@@ -1100,14 +1083,14 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
     case ConstraintProto::ConstraintCase::kNoOverlap: {
       if (linearization_level > 1) {
-        AppendNoOverlapRelaxation(model_proto, ct, model, relaxation);
+        AppendNoOverlapRelaxation(ct, model, relaxation);
         AddNoOverlapCutGenerator(ct, model, relaxation);
       }
       break;
     }
     case ConstraintProto::ConstraintCase::kCumulative: {
       if (linearization_level > 1) {
-        AppendCumulativeRelaxation(model_proto, ct, model, relaxation);
+        AppendCumulativeRelaxation(ct, model, relaxation);
         AddCumulativeCutGenerator(ct, model, relaxation);
       }
       break;
@@ -1430,8 +1413,7 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
 // TODO(user): We can do something similar with just an at most one, however
 // it is harder to detect that if all literal are false then none of the implied
 // value can be taken.
-void AppendElementEncodingRelaxation(const CpModelProto& model_proto, Model* m,
-                                     LinearRelaxation* relaxation) {
+void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
   auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
 
   int num_exactly_one_elements = 0;
@@ -1525,7 +1507,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
   // TODO(user): This is similar to AppendRelaxationForEqualityEncoding() above.
   // Investigate if we can merge the code.
   if (params.linearization_level() >= 2) {
-    AppendElementEncodingRelaxation(model_proto, m, &relaxation);
+    AppendElementEncodingRelaxation(m, &relaxation);
   }
 
   // TODO(user): I am not sure this is still needed. Investigate and explain why

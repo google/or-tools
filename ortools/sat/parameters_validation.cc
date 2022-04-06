@@ -46,6 +46,9 @@ std::string ValidateParameters(const SatParameters& params) {
     return "Enumerating all solutions does not work with interleaved search";
   }
 
+  if (params.num_workers() < 0) {
+    return "Parameters num_workers must be non-negative";
+  }
   if (params.num_search_workers() < 0) {
     return "Parameters num_search_workers must be non-negative";
   }

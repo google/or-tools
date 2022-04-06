@@ -201,7 +201,7 @@ class LinearConstraintManager {
   int64_t num_simplifications_ = 0;
   int64_t num_merged_constraints_ = 0;
   int64_t num_shortened_constraints_ = 0;
-  int64_t num_splitted_constraints_ = 0;
+  int64_t num_split_constraints_ = 0;
   int64_t num_coeff_strenghtening_ = 0;
 
   int64_t num_cuts_ = 0;

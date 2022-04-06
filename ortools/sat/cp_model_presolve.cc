@@ -3349,7 +3349,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     }
   }
 
-  // Should have been taken care of ealier.
+  // Should have been taken care of earlier.
   DCHECK(!context_->IsFixed(index_ref));
 
   // If a variable (target or index) appears only in this constraint, it does

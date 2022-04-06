@@ -18,11 +18,11 @@
 #include <cstddef>
 #include <cstdlib>
 #include <limits>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
@@ -69,9 +69,9 @@ std::string LinearConstraintManager::Statistics() const {
     absl::StrAppend(
         &result, "  shortened constraints: ", num_shortened_constraints_, "\n");
   }
-  if (num_splitted_constraints_ > 0) {
-    absl::StrAppend(
-        &result, "  splitted constraints: ", num_splitted_constraints_, "\n");
+  if (num_split_constraints_ > 0) {
+    absl::StrAppend(&result, "  split constraints: ", num_split_constraints_,
+                    "\n");
   }
   if (num_coeff_strenghtening_ > 0) {
     absl::StrAppend(&result,
@@ -405,7 +405,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   // computation. We should check this.
   if (ct->ub != kMaxIntegerValue && max_magnitude > max_sum - ct->ub) {
     if (ct->lb != kMinIntegerValue) {
-      ++num_splitted_constraints_;
+      ++num_split_constraints_;
     } else {
       term_changed = true;
       ++num_coeff_strenghtening_;
@@ -430,7 +430,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
 
   if (ct->lb != kMinIntegerValue && max_magnitude > ct->lb - min_sum) {
     if (ct->ub != kMaxIntegerValue) {
-      ++num_splitted_constraints_;
+      ++num_split_constraints_;
     } else {
       term_changed = true;
       ++num_coeff_strenghtening_;

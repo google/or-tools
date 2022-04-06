@@ -56,12 +56,10 @@ namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
     CpModelProto const* model_proto, SatParameters const* parameters,
-    SharedResponseManager* shared_response, SharedTimeLimit* shared_time_limit,
-    SharedBoundsManager* shared_bounds)
+    SharedResponseManager* shared_response, SharedBoundsManager* shared_bounds)
     : SubSolver(""),
       parameters_(*parameters),
       model_proto_(*model_proto),
-      shared_time_limit_(shared_time_limit),
       shared_bounds_(shared_bounds),
       shared_response_(shared_response) {
   CHECK(shared_response_ != nullptr);

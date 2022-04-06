@@ -1049,19 +1049,6 @@ void LinearProgrammingConstraint::AddCGCuts() {
 
 namespace {
 
-// For each element of a, adds a random one in b and append the pair to output.
-void RandomPick(const std::vector<RowIndex>& a, const std::vector<RowIndex>& b,
-                ModelRandomGenerator* random,
-                std::vector<std::pair<RowIndex, RowIndex>>* output) {
-  if (a.empty() || b.empty()) return;
-  for (const RowIndex row : a) {
-    const RowIndex other = b[absl::Uniform<int>(*random, 0, b.size())];
-    if (other != row) {
-      output->push_back({row, other});
-    }
-  }
-}
-
 template <class ListOfTerms>
 IntegerValue GetCoeff(ColIndex col, const ListOfTerms& terms) {
   for (const auto& term : terms) {
@@ -1503,7 +1490,7 @@ bool LinearProgrammingConstraint::Propagate() {
          cuts_round < max_cuts_rounds) {
     // We wait for the first batch of problem constraints to be added before we
     // begin to generate cuts. Note that we rely on num_solves_ since on some
-    // problems there is no other constriants than the cuts.
+    // problems there is no other constraints than the cuts.
     cuts_round++;
     if (num_solves_ > 1) {
       // This must be called first.

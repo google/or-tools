@@ -174,7 +174,7 @@ class VarDomination {
 
   // This do not change after EndFirstPhase().
   //
-  // We will add to the Dynamic partion, a set of subset S, each meaning that
+  // We will add to the Dynamic partition, a set of subset S, each meaning that
   // any variable in S can only dominate or be dominated by another variable in
   // S.
   std::vector<int> tmp_vars_;

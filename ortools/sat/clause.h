@@ -520,9 +520,9 @@ class BinaryImplicationGraph : public SatPropagator {
                                     std::vector<Literal>* c);
   void MinimizeConflictFirst(const Trail& trail, std::vector<Literal>* c,
                              SparseBitset<BooleanVariable>* marked);
-  void MinimizeConflictFirstWithTransitiveReduction(
-      const Trail& trail, std::vector<Literal>* c,
-      SparseBitset<BooleanVariable>* marked, absl::BitGenRef random);
+  void MinimizeConflictFirstWithTransitiveReduction(const Trail& trail,
+                                                    std::vector<Literal>* c,
+                                                    absl::BitGenRef random);
 
   // This must only be called at decision level 0 after all the possible
   // propagations. It:

@@ -43,7 +43,7 @@ namespace sat {
 // assignment order) the idea is to compute (as efficiently as possible) for
 // each permutation added to this class what is called the first (under the
 // trail assignment order) non-symmetric literal. A literal 'l' is said to be
-// non-symmetric under a given assignement and for a given permutation 'p' if
+// non-symmetric under a given assignment and for a given permutation 'p' if
 // 'l' is assigned to true but not 'p(l)'.
 //
 // If a first non-symmetric literal 'l' for a permutation 'p' is not a decision,

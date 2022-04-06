@@ -897,7 +897,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
 // first UIP conflict.
 void BinaryImplicationGraph::MinimizeConflictFirstWithTransitiveReduction(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<BooleanVariable>* marked, absl::BitGenRef random) {
+    absl::BitGenRef random) {
   SCOPED_TIME_STAT(&stats_);
   const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
@@ -1097,8 +1097,8 @@ class SccGraph {
           previous_node_to_explore_at_most_one_.resize(start + 1);
         }
 
-        // In the presence of at_most_ones_ contraints, expanding them
-        // implicitely to implications in the SCC computation can result in a
+        // In the presence of at_most_ones_ constraints, expanding them
+        // implicitly to implications in the SCC computation can result in a
         // quadratic complexity rather than a linear one in term of the input
         // data structure size. So this test here is critical on problem with
         // large at_most ones like the "ivu06-big.mps.gz" where without it, the

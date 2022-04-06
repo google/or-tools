@@ -862,6 +862,7 @@ struct PrecedenceEvent {
   IntegerValue end_max;
   AffineExpression end;
   IntegerValue demand_min;
+  IntegerValue duration_min;
 };
 
 void GeneratePrecedenceCuts(
@@ -869,6 +870,7 @@ void GeneratePrecedenceCuts(
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<PrecedenceEvent> events, IntegerValue capacity_max,
     Model* model, LinearConstraintManager* manager) {
+  TopNCuts top_n_cuts(15);
   const int num_events = events.size();
   if (num_events <= 1) return;
 
@@ -878,7 +880,42 @@ void GeneratePrecedenceCuts(
                      (e1.start_min == e2.start_min && e1.end_max < e2.end_max);
             });
 
-  const double tolerance = 1e-4;
+  // Balas disjunctive cuts on 2 tasks a and b:
+  //   start_a * (duration_a + start_min_a - start_min_b) +
+  //   start_b * (duration_b + start_min_b - start_min_a) >=
+  //       duration_a * duration_b +
+  //       start_min_a * duration_b +
+  //       start_min_b * duration_a
+  // From: David L. Applegate, William J. Cook:
+  //   A Computational Study of the Job-Shop Scheduling Problem. 149-156
+  //   INFORMS Journal on Computing, Volume 3, Number 1, Winter 1991
+  const auto check_balas_disjunctive_cut =
+      [&](const std::string& local_cut_name, IntegerValue start_min_1,
+          IntegerValue duration_min_1, AffineExpression start_1,
+          IntegerValue start_min_2, IntegerValue duration_min_2,
+          AffineExpression start_2) {
+        // Checks hypothesis from the cut.
+        if (start_min_2 >= start_min_1 + duration_min_1 ||
+            start_min_1 >= start_min_2 + duration_min_2) {
+          return;
+        }
+        const IntegerValue e1_coeff =
+            duration_min_1 + start_min_1 - start_min_2;
+        const IntegerValue e2_coeff =
+            duration_min_2 + start_min_2 - start_min_1;
+        const IntegerValue rhs = duration_min_1 * duration_min_2 +
+                                 duration_min_1 * start_min_2 +
+                                 duration_min_2 * start_min_1;
+
+        if (ToDouble(e1_coeff) * start_1.LpValue(lp_values) +
+                ToDouble(e2_coeff) * start_2.LpValue(lp_values) <=
+            ToDouble(rhs) - kMinCutViolation) {
+          LinearConstraintBuilder cut(model, rhs, kMaxIntegerValue);
+          cut.AddTerm(start_1, e1_coeff);
+          cut.AddTerm(start_2, e2_coeff);
+          top_n_cuts.AddCut(cut.Build(), local_cut_name, lp_values);
+        }
+      };
 
   for (int i = 0; i + 1 < num_events; ++i) {
     const PrecedenceEvent& e1 = events[i];
@@ -894,22 +931,33 @@ void GeneratePrecedenceCuts(
 
       if (interval_1_can_precede_2 && !interval_2_can_precede_1 &&
           e1.end.LpValue(lp_values) >=
-              e2.start.LpValue(lp_values) + tolerance) {
+              e2.start.LpValue(lp_values) + kMinCutViolation) {
         // interval1.end <= interval2.start
         LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
         cut.AddTerm(e1.end, IntegerValue(1));
         cut.AddTerm(e2.start, IntegerValue(-1));
+        top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
       } else if (interval_2_can_precede_1 && !interval_1_can_precede_2 &&
                  e2.end.LpValue(lp_values) >=
-                     e1.start.LpValue(lp_values) + tolerance) {
+                     e1.start.LpValue(lp_values) + kMinCutViolation) {
         // interval2.end <= interval1.start
         LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
         cut.AddTerm(e2.end, IntegerValue(1));
         cut.AddTerm(e1.start, IntegerValue(-1));
-        manager->AddCut(cut.Build(), cut_name, lp_values);
+        top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
+      } else {
+        check_balas_disjunctive_cut(cut_name + "DisjuntiveOnStart",
+                                    e1.start_min, e1.duration_min, e1.start,
+                                    e2.start_min, e2.duration_min, e2.start);
+        // TODO(user): Do we need to check this if durations are fixed.
+        check_balas_disjunctive_cut(
+            cut_name + "DisjuntiveOnEnd", -e1.end_max, e1.duration_min,
+            e1.end.Negated(), -e2.end_max, e2.duration_min, e2.end.Negated());
       }
     }
   }
+
+  top_n_cuts.TransferToManager(lp_values, manager);
 }
 
 CutGenerator CreateCumulativePrecedenceCutGenerator(
@@ -938,6 +986,7 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
 
         const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
         std::vector<PrecedenceEvent> events;
+
         for (int t = 0; t < helper->NumTasks(); ++t) {
           if (!helper->IsPresent(t)) continue;
           PrecedenceEvent event;
@@ -948,8 +997,10 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
           event.end_max = helper->EndMax(t);
           event.end = helper->Ends()[t];
           event.demand_min = integer_trail->LowerBound(demands[t]);
+          event.duration_min = helper->SizeMin(t);
           events.push_back(event);
         }
+
         GeneratePrecedenceCuts("CumulativePrecedence", lp_values,
                                std::move(events), capacity_max, model, manager);
         return true;
@@ -977,6 +1028,7 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
         if (trail->CurrentDecisionLevel() > 0) return true;
 
         std::vector<PrecedenceEvent> events;
+
         for (int t = 0; t < helper->NumTasks(); ++t) {
           if (!helper->IsPresent(t)) continue;
           PrecedenceEvent event;
@@ -987,8 +1039,10 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
           event.end_max = helper->EndMax(t);
           event.end = helper->Ends()[t];
           event.demand_min = IntegerValue(1);
+          event.duration_min = helper->SizeMin(t);
           events.push_back(event);
         }
+
         GeneratePrecedenceCuts("NoOverlapPrecedence", lp_values,
                                std::move(events), IntegerValue(1), model,
                                manager);

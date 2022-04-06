@@ -32,7 +32,7 @@ namespace sat {
 // objective bounds per unit change in the variable bounds.
 class PseudoCosts {
  public:
-  // Helper struct to get information relavant for pseudo costs from branching
+  // Helper struct to get information relevant for pseudo costs from branching
   // decisions.
   struct VariableBoundChange {
     IntegerVariable var = kNoIntegerVariable;

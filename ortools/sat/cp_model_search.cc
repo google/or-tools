@@ -477,6 +477,10 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     SatParameters new_params = base_params;
     new_params.set_optimize_with_lb_tree_search(true);
     new_params.set_linearization_level(2);
+    if (base_params.use_dual_scheduling_heuristics()) {
+      new_params.set_use_overload_checker_in_cumulative_constraint(true);
+      new_params.set_use_timetable_edge_finding_in_cumulative_constraint(true);
+    }
 
     // We do not want to change the objective_var lb from outside as it gives
     // better result to only use locally derived reason in that algo.
@@ -488,6 +492,10 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     SatParameters new_params = base_params;
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
+    if (base_params.use_dual_scheduling_heuristics()) {
+      new_params.set_use_overload_checker_in_cumulative_constraint(true);
+      new_params.set_use_timetable_edge_finding_in_cumulative_constraint(true);
+    }
     strategies["probing"] = new_params;
   }
 
@@ -510,9 +518,18 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     strategies["quick_restart_no_lp"] = new_params;
 
     // We force the max lp here too.
-    new_params.set_linearization_level(2);
-    new_params.set_search_branching(SatParameters::LP_SEARCH);
-    strategies["reduced_costs"] = new_params;
+    // We add strong cumulative propagation.
+    {
+      SatParameters local_param = new_params;
+      local_param.set_linearization_level(2);
+      local_param.set_search_branching(SatParameters::LP_SEARCH);
+      if (base_params.use_dual_scheduling_heuristics()) {
+        local_param.set_use_overload_checker_in_cumulative_constraint(true);
+        local_param.set_use_timetable_edge_finding_in_cumulative_constraint(
+            true);
+      }
+      strategies["reduced_costs"] = local_param;
+    }
 
     // For this one, we force other param too.
     new_params.set_linearization_level(2);

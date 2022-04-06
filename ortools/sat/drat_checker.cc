@@ -186,7 +186,7 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
     if (HasRupProperty(i, Literals(clause))) {
       continue;
     }
-    // or the Reverse Asymetric Tautology (RAT) property. This property is
+    // or the Reverse Asymmetric Tautology (RAT) property. This property is
     // defined by the fact that all clauses which contain the negation of
     // the RAT literal of 'clause', after resolution with 'clause', must have
     // the RUP property.

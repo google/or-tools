@@ -766,7 +766,6 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto, Model* m) {
 
 // Used by NewFeasibleSolutionObserver to register observers.
 struct SolutionObservers {
-  explicit SolutionObservers(Model* model) {}
   std::vector<std::function<void(const CpSolverResponse& response)>> observers;
 };
 
@@ -2847,7 +2846,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
   // Synchronize() is called before any LNS neighborhood solvers.
   auto unique_helper = absl::make_unique<NeighborhoodGeneratorHelper>(
-      &model_proto, &params, shared.response, shared.time_limit, shared.bounds);
+      &model_proto, &params, shared.response, shared.bounds);
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
@@ -3455,8 +3454,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                    mapping_proto, postsolve_mapping, solution);
         });
     shared_response_manager->AddResponsePostprocessor(
-        [&model_proto, &params, &mapping_proto, &postsolve_mapping, wall_timer,
-         model](CpSolverResponse* response) {
+        [&model_proto, &params, &mapping_proto,
+         &postsolve_mapping](CpSolverResponse* response) {
           // Map back the sufficient assumptions for infeasibility.
           for (int& ref :
                *(response

@@ -98,7 +98,7 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
 std::string LinearBooleanProblemToCnfString(
     const LinearBooleanProblem& problem);
 
-// Store a variable assignment into the given BooleanAssignement proto.
+// Store a variable assignment into the given BooleanAssignment proto.
 // Note that only the assigned variables are stored, so the assignment may be
 // incomplete.
 void StoreAssignment(const VariablesAssignment& assignment,

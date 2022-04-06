@@ -563,17 +563,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 // Important: only positive variable do appear here.
 class LinearProgrammingDispatcher
     : public absl::flat_hash_map<IntegerVariable,
-                                 LinearProgrammingConstraint*> {
- public:
-  explicit LinearProgrammingDispatcher(Model* model) {}
-};
+                                 LinearProgrammingConstraint*> {};
 
 // A class that stores the collection of all LP constraints in a model.
 class LinearProgrammingConstraintCollection
-    : public std::vector<LinearProgrammingConstraint*> {
- public:
-  LinearProgrammingConstraintCollection() {}
-};
+    : public std::vector<LinearProgrammingConstraint*> {};
 
 // Cut generator for the circuit constraint, where in any feasible solution, the
 // arcs that are present (variable at 1) must form a circuit through all the

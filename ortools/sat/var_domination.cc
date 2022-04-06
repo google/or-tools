@@ -162,7 +162,7 @@ void VarDomination::MakeRankEqualToStartOfPart(
 }
 
 void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
-  // The rank can be wrong and need to be recomputed because of how we splitted
+  // The rank can be wrong and need to be recomputed because of how we split
   // tmp_ranks_ into spans.
   MakeRankEqualToStartOfPart(span);
 
@@ -446,12 +446,12 @@ void VarDomination::FilterUsingTempRanks() {
 
   // The activity of the variable in tmp_rank must not decrease.
   for (const IntegerVariableWithRank entry : tmp_ranks_) {
-    // The only variables that can be paired with a var-- in the constriants are
+    // The only variables that can be paired with a var-- in the constraints are
     // the var++ in the constraints with the same rank or higher.
     //
     // Note that we only filter the var-- domination lists here, we do not
     // remove the var-- appearing in all the lists corresponding to wrong var++.
-    // This is left to the tranpose operation in EndSecondPhase().
+    // This is left to the transpose operation in EndSecondPhase().
     {
       IntegerVariableSpan& span = dominating_vars_[entry.var];
       if (span.size == 0) continue;

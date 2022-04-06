@@ -101,7 +101,6 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   NeighborhoodGeneratorHelper(CpModelProto const* model_proto,
                               SatParameters const* parameters,
                               SharedResponseManager* shared_response,
-                              SharedTimeLimit* shared_time_limit = nullptr,
                               SharedBoundsManager* shared_bounds = nullptr);
 
   // SubSolver interface.
@@ -245,10 +244,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   const SatParameters& parameters_;
   const CpModelProto& model_proto_;
   int shared_bounds_id_;
-  SharedTimeLimit* shared_time_limit_;
   SharedBoundsManager* shared_bounds_;
   SharedResponseManager* shared_response_;
-  SharedRelaxationSolutionRepository* shared_relaxation_solutions_;
 
   // This proto will only contain the field variables() with an updated version
   // of the domains compared to model_proto_.variables(). We do it like this to

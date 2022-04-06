@@ -1659,7 +1659,7 @@ void IntegerTrail::MergeReasonInto(absl::Span<const IntegerLiteral> literals,
 // everything is explained in term of Literal.
 void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
   // All relevant trail indices will be >= vars_.size(), so we can safely use
-  // zero to means that no literal refering to this variable is in the queue.
+  // zero to means that no literal referring to this variable is in the queue.
   DCHECK(std::all_of(tmp_var_to_trail_index_in_queue_.begin(),
                      tmp_var_to_trail_index_in_queue_.end(),
                      [](int v) { return v == 0; }));
@@ -1693,7 +1693,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
     std::pop_heap(tmp_queue_.begin(), tmp_queue_.end());
     tmp_queue_.pop_back();
 
-    // Skip any stale queue entry. Amongst all the entry refering to a given
+    // Skip any stale queue entry. Amongst all the entry referring to a given
     // variable, only the latest added to the queue is valid and we detect it
     // using its trail index.
     if (tmp_var_to_trail_index_in_queue_[entry.var] != trail_index) {
@@ -1738,7 +1738,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
     // variable entry.var in their reason, we must process it again because we
     // cannot easily detect if it was needed to infer the current entry.
     //
-    // Important: the queue might already contains entries refering to the same
+    // Important: the queue might already contains entries referring to the same
     // variable. The code act like if we deleted all of them at this point, we
     // just do that lazily. tmp_var_to_trail_index_in_queue_[var] will
     // only refer to newly added entries.
@@ -1755,7 +1755,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
       // Only add literals that are not "implied" by the ones already present.
       // For instance, do not add (x >= 4) if we already have (x >= 7). This
       // translate into only adding a trail index if it is larger than the one
-      // in the queue refering to the same variable.
+      // in the queue referring to the same variable.
       const int index_in_queue =
           tmp_var_to_trail_index_in_queue_[next_entry.var];
       if (index_in_queue != std::numeric_limits<int32_t>::max())

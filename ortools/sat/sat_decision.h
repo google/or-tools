@@ -53,7 +53,7 @@ class SatDecisionPolicy {
   // variables are assigned.
   Literal NextBranch();
 
-  // Updates statistics about literal occurences in constraints.
+  // Updates statistics about literal occurrences in constraints.
   // Input is a canonical linear constraint of the form (terms <= rhs).
   void UpdateWeightedSign(const std::vector<LiteralWithCoeff>& terms,
                           Coefficient rhs);
@@ -111,7 +111,7 @@ class SatDecisionPolicy {
   // Rescales activity value of all variables when one of them reached the max.
   void RescaleVariableActivities(double scaling_factor);
 
-  // Reinitializes the inital polarity of all the variables with an index
+  // Reinitializes the initial polarity of all the variables with an index
   // greater than or equal to the given one.
   void ResetInitialPolarity(int from, bool inverted = false);
 
@@ -206,7 +206,7 @@ class SatDecisionPolicy {
   absl::StrongVector<BooleanVariable, double> tie_breakers_;
   absl::StrongVector<BooleanVariable, int64_t> num_bumps_;
 
-  // If the polarity if forced (externally) we alway use this first.
+  // If the polarity if forced (externally) we always use this first.
   absl::StrongVector<BooleanVariable, bool> has_forced_polarity_;
   absl::StrongVector<BooleanVariable, bool> forced_polarity_;
 

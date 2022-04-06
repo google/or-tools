@@ -235,8 +235,6 @@ struct AssignmentType {
 // and the information of each assignment.
 class Trail {
  public:
-  explicit Trail(Model* model) : Trail() {}
-
   Trail() {
     current_info_.trail_index = 0;
     current_info_.level = 0;
@@ -484,7 +482,7 @@ class SatPropagator {
   // on the trail and were propagated by this class.
   //
   // The interpretation is that because all the literals of a reason were
-  // assigned to false, we could deduce the assignement of the given variable.
+  // assigned to false, we could deduce the assignment of the given variable.
   //
   // The returned Span has to be valid until the literal is untrailed. A client
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory

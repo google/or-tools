@@ -96,7 +96,7 @@ class TaskSet {
   //   [Bunch of tasks]   ...   [Bunch of tasks]     ...    [critical tasks].
   //
   // We call "critical tasks" the last group. These tasks will be solely
-  // responsible for for the end-min of the whole set. The returned
+  // responsible for the end-min of the whole set. The returned
   // critical_index will be the index of the first critical task in
   // SortedTasks().
   //

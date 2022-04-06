@@ -143,15 +143,13 @@ void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
 // Adds linearization of no overlap constraints.
 // It adds an energetic equation linking the duration of all potential tasks to
 // the actual span of the no overlap constraint.
-void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
-                               const ConstraintProto& ct, Model* model,
+void AppendNoOverlapRelaxation(const ConstraintProto& ct, Model* model,
                                LinearRelaxation* relaxation);
 
 // Adds linearization of cumulative constraints.The second part adds an
 // energetic equation linking the duration of all potential tasks to the actual
 // max span * capacity of the cumulative constraint.
-void AppendCumulativeRelaxation(const CpModelProto& model_proto,
-                                const ConstraintProto& ct, Model* model,
+void AppendCumulativeRelaxation(const ConstraintProto& ct, Model* model,
                                 LinearRelaxation* relaxation);
 
 // Cut generators.

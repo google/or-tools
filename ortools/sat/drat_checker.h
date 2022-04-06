@@ -57,7 +57,7 @@ class DratChecker {
 
   // Adds a clause which is infered from the problem clauses and the previously
   // infered clauses (that are have not been deleted). Infered clauses must be
-  // added after the problem clauses. Clauses with the Reverse Asymetric
+  // added after the problem clauses. Clauses with the Reverse Asymmetric
   // Tautology (RAT) property for literal l must start with this literal. The
   // given clause must not contain a literal and its negation. Must not be
   // called after Check().
@@ -71,7 +71,7 @@ class DratChecker {
   // Checks that the infered clauses form a DRAT proof that the problem clauses
   // are UNSAT. For this the last added infered clause must be the empty clause
   // and each infered clause must have either the Reverse Unit Propagation (RUP)
-  // or the Reverse Asymetric Tautology (RAT) property with respect to the
+  // or the Reverse Asymmetric Tautology (RAT) property with respect to the
   // problem clauses and the previously infered clauses which are not deleted.
   // Returns VALID if the proof is valid, INVALID if it is not, and UNKNOWN if
   // the check timed out.

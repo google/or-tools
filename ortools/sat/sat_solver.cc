@@ -835,7 +835,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                SatParameters::
                    BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION) {
       binary_implication_graph_->MinimizeConflictFirstWithTransitiveReduction(
-          *trail_, &learned_conflict_, &is_marked_,
+          *trail_, &learned_conflict_,
           *model_->GetOrCreate<ModelRandomGenerator>());
     }
     DCHECK(IsConflictValid(learned_conflict_));

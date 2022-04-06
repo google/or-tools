@@ -606,7 +606,7 @@ bool StampingSimplifier::DoOneRound(bool log_info) {
   if (!stamps_are_already_computed_) {
     // We need a DAG so that we don't have cycle while we sample the tree.
     // TODO(user): We could probably deal with it if needed so that we don't
-    // need to do equivalence detetion each time we want to run this.
+    // need to do equivalence detection each time we want to run this.
     implication_graph_->RemoveFixedVariables();
     if (!implication_graph_->DetectEquivalences(log_info)) return true;
     SampleTreeAndFillParent();

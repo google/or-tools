@@ -300,17 +300,13 @@ struct AffineExpression {
 };
 
 // A model singleton that holds the INITIAL integer variable domains.
-struct IntegerDomains : public absl::StrongVector<IntegerVariable, Domain> {
-  explicit IntegerDomains(Model* model) {}
-};
+struct IntegerDomains : public absl::StrongVector<IntegerVariable, Domain> {};
 
 // A model singleton used for debugging. If this is set in the model, then we
 // can check that various derived constraint do not exclude this solution (if it
 // is a known optimal solution for instance).
 struct DebugSolution
-    : public absl::StrongVector<IntegerVariable, IntegerValue> {
-  explicit DebugSolution(Model* model) {}
-};
+    : public absl::StrongVector<IntegerVariable, IntegerValue> {};
 
 // A value and a literal.
 struct ValueLiteralPair {
