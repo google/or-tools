@@ -49,8 +49,10 @@
 //       --dump_response=/tmp/foo.response \
 //       2>/tmp/foo.err
 
+#include <algorithm>
 #include <cstdio>
 #include <string>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
