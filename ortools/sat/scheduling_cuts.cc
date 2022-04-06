@@ -854,7 +854,10 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
 }
 
 // Cached Information about one interval.
-struct PrecedenceEvent {
+// Note that everything must correspond to level zero bounds, otherwise the
+// generated cut are not valid.
+
+struct CachedIntervalData {
   IntegerValue start_min;
   IntegerValue start_max;
   AffineExpression start;
@@ -865,31 +868,31 @@ struct PrecedenceEvent {
   IntegerValue duration_min;
 };
 
-void GeneratePrecedenceCuts(
+void GenerateCutsBetweenPairOfNonOverlappingTasks(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    std::vector<PrecedenceEvent> events, IntegerValue capacity_max,
+    std::vector<CachedIntervalData> events, IntegerValue capacity_max,
     Model* model, LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(15);
   const int num_events = events.size();
   if (num_events <= 1) return;
 
   std::sort(events.begin(), events.end(),
-            [](const PrecedenceEvent& e1, const PrecedenceEvent& e2) {
+            [](const CachedIntervalData& e1, const CachedIntervalData& e2) {
               return e1.start_min < e2.start_min ||
                      (e1.start_min == e2.start_min && e1.end_max < e2.end_max);
             });
 
   // Balas disjunctive cuts on 2 tasks a and b:
-  //   start_a * (duration_a + start_min_a - start_min_b) +
-  //   start_b * (duration_b + start_min_b - start_min_a) >=
-  //       duration_a * duration_b +
-  //       start_min_a * duration_b +
-  //       start_min_b * duration_a
+  //   start_1 * (duration_1 + start_min_1 - start_min_2) +
+  //   start_2 * (duration_2 + start_min_2 - start_min_1) >=
+  //       duration_1 * duration_2 +
+  //       start_min_1 * duration_2 +
+  //       start_min_2 * duration_1
   // From: David L. Applegate, William J. Cook:
   //   A Computational Study of the Job-Shop Scheduling Problem. 149-156
   //   INFORMS Journal on Computing, Volume 3, Number 1, Winter 1991
-  const auto check_balas_disjunctive_cut =
+  const auto add_balas_disjunctive_cut =
       [&](const std::string& local_cut_name, IntegerValue start_min_1,
           IntegerValue duration_min_1, AffineExpression start_1,
           IntegerValue start_min_2, IntegerValue duration_min_2,
@@ -899,28 +902,26 @@ void GeneratePrecedenceCuts(
             start_min_1 >= start_min_2 + duration_min_2) {
           return;
         }
-        const IntegerValue e1_coeff =
-            duration_min_1 + start_min_1 - start_min_2;
-        const IntegerValue e2_coeff =
-            duration_min_2 + start_min_2 - start_min_1;
+        const IntegerValue coeff_1 = duration_min_1 + start_min_1 - start_min_2;
+        const IntegerValue coeff_2 = duration_min_2 + start_min_2 - start_min_1;
         const IntegerValue rhs = duration_min_1 * duration_min_2 +
                                  duration_min_1 * start_min_2 +
                                  duration_min_2 * start_min_1;
 
-        if (ToDouble(e1_coeff) * start_1.LpValue(lp_values) +
-                ToDouble(e2_coeff) * start_2.LpValue(lp_values) <=
+        if (ToDouble(coeff_1) * start_1.LpValue(lp_values) +
+                ToDouble(coeff_2) * start_2.LpValue(lp_values) <=
             ToDouble(rhs) - kMinCutViolation) {
           LinearConstraintBuilder cut(model, rhs, kMaxIntegerValue);
-          cut.AddTerm(start_1, e1_coeff);
-          cut.AddTerm(start_2, e2_coeff);
+          cut.AddTerm(start_1, coeff_1);
+          cut.AddTerm(start_2, coeff_2);
           top_n_cuts.AddCut(cut.Build(), local_cut_name, lp_values);
         }
       };
 
   for (int i = 0; i + 1 < num_events; ++i) {
-    const PrecedenceEvent& e1 = events[i];
+    const CachedIntervalData& e1 = events[i];
     for (int j = i + 1; j < num_events; ++j) {
-      const PrecedenceEvent& e2 = events[j];
+      const CachedIntervalData& e2 = events[j];
       if (e2.start_min >= e1.end_max) break;  // Break out of the index2 loop.
 
       // Encode only the interesting pairs.
@@ -936,7 +937,9 @@ void GeneratePrecedenceCuts(
         LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
         cut.AddTerm(e1.end, IntegerValue(1));
         cut.AddTerm(e2.start, IntegerValue(-1));
-        top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
+        top_n_cuts.AddCut(cut.Build(),
+                          absl::StrCat(cut_name, "DetectedPrecedence"),
+                          lp_values);
       } else if (interval_2_can_precede_1 && !interval_1_can_precede_2 &&
                  e2.end.LpValue(lp_values) >=
                      e1.start.LpValue(lp_values) + kMinCutViolation) {
@@ -944,15 +947,17 @@ void GeneratePrecedenceCuts(
         LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
         cut.AddTerm(e2.end, IntegerValue(1));
         cut.AddTerm(e1.start, IntegerValue(-1));
-        top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
+        top_n_cuts.AddCut(cut.Build(),
+                          absl::StrCat(cut_name, "DetectedPrecedence"),
+                          lp_values);
       } else {
-        check_balas_disjunctive_cut(cut_name + "DisjuntiveOnStart",
-                                    e1.start_min, e1.duration_min, e1.start,
-                                    e2.start_min, e2.duration_min, e2.start);
-        // TODO(user): Do we need to check this if durations are fixed.
-        check_balas_disjunctive_cut(
-            cut_name + "DisjuntiveOnEnd", -e1.end_max, e1.duration_min,
-            e1.end.Negated(), -e2.end_max, e2.duration_min, e2.end.Negated());
+        add_balas_disjunctive_cut(absl::StrCat(cut_name, "DisjunctionOnStart"),
+                                  e1.start_min, e1.duration_min, e1.start,
+                                  e2.start_min, e2.duration_min, e2.start);
+        add_balas_disjunctive_cut(absl::StrCat(cut_name, "DisjuntionOnEnd"),
+                                  -e1.end_max, e1.duration_min,
+                                  e1.end.Negated(), -e2.end_max,
+                                  e2.duration_min, e2.end.Negated());
       }
     }
   }
@@ -984,12 +989,10 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return true;
 
-        const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
-        std::vector<PrecedenceEvent> events;
-
+        std::vector<CachedIntervalData> events;
         for (int t = 0; t < helper->NumTasks(); ++t) {
           if (!helper->IsPresent(t)) continue;
-          PrecedenceEvent event;
+          CachedIntervalData event;
           event.start_min = helper->StartMin(t);
           event.start_max = helper->StartMax(t);
           event.start = helper->Starts()[t];
@@ -1001,8 +1004,10 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
           events.push_back(event);
         }
 
-        GeneratePrecedenceCuts("CumulativePrecedence", lp_values,
-                               std::move(events), capacity_max, model, manager);
+        const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
+        GenerateCutsBetweenPairOfNonOverlappingTasks(
+            "Cumulative", lp_values, std::move(events), capacity_max, model,
+            manager);
         return true;
       };
   return result;
@@ -1027,11 +1032,10 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return true;
 
-        std::vector<PrecedenceEvent> events;
-
+        std::vector<CachedIntervalData> events;
         for (int t = 0; t < helper->NumTasks(); ++t) {
           if (!helper->IsPresent(t)) continue;
-          PrecedenceEvent event;
+          CachedIntervalData event;
           event.start_min = helper->StartMin(t);
           event.start_max = helper->StartMax(t);
           event.start = helper->Starts()[t];
@@ -1043,9 +1047,9 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
           events.push_back(event);
         }
 
-        GeneratePrecedenceCuts("NoOverlapPrecedence", lp_values,
-                               std::move(events), IntegerValue(1), model,
-                               manager);
+        GenerateCutsBetweenPairOfNonOverlappingTasks(
+            "NoOverlap", lp_values, std::move(events), IntegerValue(1), model,
+            manager);
         return true;
       };
 
