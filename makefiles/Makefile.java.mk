@@ -29,7 +29,7 @@ package_java: java
 
 else  # HAS_JAVA=ON
 
-JAVA_BUILD_DIR = $(BUILD_DIR)$Sjava
+JAVA_BUILD_PATH = $(BUILD_DIR)$Sjava
 TEMP_JAVA_DIR = temp_java
 JAVA_ORTOOLS_PACKAGE := com.google.ortools
 
@@ -42,7 +42,7 @@ JAVA_ORTOOLS_PACKAGE := com.google.ortools
 # OR Tools unique library.
 java:
 	$(MAKE) third_party BUILD_JAVA=ON
-	cmake --build dependencies --target install --config $(BUILD_TYPE) -j $(JOBS) -v
+	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 
 # Detect RuntimeIDentifier
 ifeq ($(OS),Windows)
@@ -68,120 +68,142 @@ JAVA_PATH := $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Ssrc$Smain
 $(TEMP_JAVA_DIR):
 	$(MKDIR) $(TEMP_JAVA_DIR)
 
-package_java: cc
+package_java: java
 	-$(DEL) *.jar
-	$(COPY) $(JAVA_BUILD_DIR)$Sortools-java$Starget$S*.jar .
-	$(COPY) $(JAVA_BUILD_DIR)$Sortools-$(JAVA_NATIVE_IDENTIFIER)$Starget$S*.jar .
+	$(COPY) $(JAVA_BUILD_PATH)$Sortools-java$Starget$S*.jar .
+	$(COPY) $(JAVA_BUILD_PATH)$Sortools-$(JAVA_NATIVE_IDENTIFIER)$Starget$S*.jar .
 
+###################
+##  Java SOURCE  ##
+###################
+ifeq ($(SOURCE_SUFFIX),.java) # Those rules will be used if SOURCE contain a .java file
 
-#############################
-##  Java Examples/Samples  ##
-#############################
+SOURCE_PROJECT_DIR := $(SOURCE)
+SOURCE_PROJECT_DIR := $(subst /$(SOURCE_NAME).java,, $(SOURCE_PROJECT_DIR))
+SOURCE_PROJECT_PATH = $(subst /,$S,$(SOURCE_PROJECT_DIR))
+
+.PHONY: build # Build a Java program.
+build: $(SOURCE) #$(SOURCE_PROJECT_DIR)/pom.xml  java
+	$(warning This is not supported.\
+ Prefer to place your java file in a samples/ or examples/ java directory\
+ and call "make rjava_$(SOURCE_NAME)" target instead.)
+#	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" compile -b $(ARGS)
+#	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" pack -c Release
+
+.PHONY: run # Run a Java program.
+run: build
+endif
+
+###################################
+##  Java Samples/Examples/Tests  ##
+###################################
 JAVA_SRC_DIR := src/main/java/com/google/ortools
 JAVA_SRC_PATH := $(subst /,$S,$(JAVA_SRC_DIR))
 
 JAVA_TEST_DIR := src/test/java/com/google/ortools
 JAVA_TEST_PATH := $(subst /,$S,$(JAVA_TEST_DIR))
 
-JAVA_SAMPLES := algorithms graph constraint_solver linear_solver sat model_builder
-
+# Samples
 define java-sample-target =
-$$(TEMP_JAVA_DIR)/$1: | $$(TEMP_JAVA_DIR)
-	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1
+$(TEMP_JAVA_DIR)/$1: | $(TEMP_JAVA_DIR)
+	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1
 
-$$(TEMP_JAVA_DIR)/$1/%: \
- $$(SRC_DIR)/ortools/$1/samples/%.java \
- | $$(TEMP_JAVA_DIR)/$1
-	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1$$S$$*
+$(TEMP_JAVA_DIR)/$1/%: \
+ $(SRC_DIR)/ortools/$1/samples/%.java \
+ | $(TEMP_JAVA_DIR)/$1
+	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1$S$$*
 
-$$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
- $${SRC_DIR}/ortools/java/pom-sample.xml.in \
- | $$(TEMP_JAVA_DIR)/$1/%
-	$$(SED) -e "s/@JAVA_PACKAGE@/$$(JAVA_ORTOOLS_PACKAGE)/" \
- ortools$$Sjava$$Spom-sample.xml.in \
- > $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@JAVA_SAMPLE_PROJECT@/$$*/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@JAVA_MAIN_CLASS@/com.google.ortools.$2.samples.$$*/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$$(GIT_REVISION)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
+ ${SRC_DIR}/ortools/java/pom-sample.xml.in \
+ | $(TEMP_JAVA_DIR)/$1/%
+	$(SED) -e "s/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/" \
+ ortools$Sjava$Spom-sample.xml.in \
+ > $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_SAMPLE_PROJECT@/$$*/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_MAIN_CLASS@/com.google.ortools.$2.samples.$$*/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 
-$$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java: \
- $$(SRC_DIR)/ortools/$1/samples/%.java \
- | $$(TEMP_JAVA_DIR)/$1/%
-	$$(MKDIR_P) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
-	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.java \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
-
-rjava_%: \
- $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
- $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
- FORCE
-	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile -B
-	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
-endef
-
-$(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-target,$(sample),$(subst _,,$(sample)))))
-
-JAVA_EXAMPLES := contrib java
-
-define java-example-target =
-$$(TEMP_JAVA_DIR)/$1: | $$(TEMP_JAVA_DIR)
-	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1
-
-$$(TEMP_JAVA_DIR)/$1/%: \
- $$(SRC_DIR)/examples/$1/%.java \
- | $$(TEMP_JAVA_DIR)/$1
-	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1$$S$$*
-
-$$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
- $${SRC_DIR}/ortools/java/pom-sample.xml.in \
- | $$(TEMP_JAVA_DIR)/$1/%
-	$$(SED) -e "s/@JAVA_PACKAGE@/$$(JAVA_ORTOOLS_PACKAGE)/" \
- ortools$$Sjava$$Spom-sample.xml.in \
- > $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@JAVA_SAMPLE_PROJECT@/$$*/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@JAVA_MAIN_CLASS@/com.google.ortools.$1.$$*/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$$(GIT_REVISION)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
-
-$$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java: \
- $$(SRC_DIR)/examples/$1/%.java \
- | $$(TEMP_JAVA_DIR)/$1/%
-	$$(MKDIR_P) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
-	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.java \
- $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
+$(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java: \
+ $(SRC_DIR)/ortools/$1/samples/%.java \
+ | $(TEMP_JAVA_DIR)/$1/%
+	$(MKDIR_P) $(TEMP_JAVA_DIR)$S$1$S$$*$S$(JAVA_SRC_PATH)
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.java \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$S$(JAVA_SRC_PATH)
 
 rjava_%: \
  java \
- $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
- $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
+ $(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ $(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java \
  FORCE
-	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile -B
-	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
+	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" compile -B
+	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" exec:java $(ARGS)
 endef
 
+JAVA_SAMPLES := algorithms graph constraint_solver linear_solver model_builder sat
+$(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-target,$(sample),$(subst _,,$(sample)))))
+
+# Examples
+define java-example-target =
+$(TEMP_JAVA_DIR)/$1: | $(TEMP_JAVA_DIR)
+	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1
+
+$(TEMP_JAVA_DIR)/$1/%: \
+ $(SRC_DIR)/examples/$1/%.java \
+ | $(TEMP_JAVA_DIR)/$1
+	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1$S$$*
+
+$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
+ ${SRC_DIR}/ortools/java/pom-sample.xml.in \
+ | $(TEMP_JAVA_DIR)/$1/%
+	$(SED) -e "s/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/" \
+ ortools$Sjava$Spom-sample.xml.in \
+ > $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_SAMPLE_PROJECT@/$$*/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_MAIN_CLASS@/com.google.ortools.$1.$$*/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+
+$(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java: \
+ $(SRC_DIR)/examples/$1/%.java \
+ | $(TEMP_JAVA_DIR)/$1/%
+	$(MKDIR_P) $(TEMP_JAVA_DIR)$S$1$S$$*$S$(JAVA_SRC_PATH)
+	$(COPY) $(SRC_DIR)$Sexamples$S$1$S$$*.java \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$S$(JAVA_SRC_PATH)
+
+rjava_%: \
+ java \
+ $(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ $(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java \
+ FORCE
+	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" compile -B
+	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" exec:java $(ARGS)
+endef
+
+JAVA_EXAMPLES := contrib java
 $(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-target,$(example))))
 
+# Tests
 JAVA_TESTS := tests
 
 $(TEMP_JAVA_DIR)/tests: | $(TEMP_JAVA_DIR)
@@ -226,9 +248,10 @@ rjava_%: \
 	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" compile -B
 	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" test $(ARGS)
 
-#############################
-##  Java Examples/Samples  ##
-#############################
+####################
+##  Test targets  ##
+####################
+
 .PHONY: test_java_algorithms_samples # Build and Run all Java Algorithms Samples (located in ortools/algorithms/samples)
 test_java_algorithms_samples: \
  rjava_Knapsack
@@ -401,8 +424,6 @@ publish_java: java
 #######################
 ##  EXAMPLE ARCHIVE  ##
 #######################
-TEMP_JAVA_DIR=temp_java
-
 $(TEMP_JAVA_DIR)/ortools_examples: | $(TEMP_JAVA_DIR)
 	$(MKDIR) $(TEMP_JAVA_DIR)$Sortools_examples
 
@@ -416,29 +437,29 @@ $(TEMP_JAVA_DIR)/ortools_examples/examples/data: | $(TEMP_JAVA_DIR)/ortools_exam
 	$(MKDIR) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sdata
 
 define java-sample-archive =
-$$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
- $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
+$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
+ $(TEMP_JAVA_DIR)/$1/%/pom.xml \
  ortools/$1/samples/%.java \
- | $$(TEMP_JAVA_DIR)/ortools_examples/examples/java
-	-$$(MKDIR_P) $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
-	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.java \
- $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
-	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
- $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*
+ | $(TEMP_JAVA_DIR)/ortools_examples/examples/java
+	-$(MKDIR_P) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava$S$$*$S$(JAVA_SRC_PATH)
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.java \
+ $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava$S$$*$S$(JAVA_SRC_PATH)
+	$(COPY) $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml \
+ $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava$S$$*
 endef
 
 $(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-archive,$(sample))))
 
 define java-example-archive =
-$$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
- $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
+$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
+ $(TEMP_JAVA_DIR)/$1/%/pom.xml \
  examples/$1/%.java \
- | $$(TEMP_JAVA_DIR)/ortools_examples/examples/java
-	-$$(MKDIR_P) $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
-	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.java \
- $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
-	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
- $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*
+ | $(TEMP_JAVA_DIR)/ortools_examples/examples/java
+	-$(MKDIR_P) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava$S$$*$S$(JAVA_SRC_PATH)
+	$(COPY) $(SRC_DIR)$Sexamples$S$1$S$$*.java \
+ $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava$S$$*$S$(JAVA_SRC_PATH)
+	$(COPY) $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml \
+ $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava$S$$*
 endef
 
 $(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-archive,$(example))))
@@ -477,21 +498,8 @@ endif  # HAS_JAVA=ON
 ################
 .PHONY: clean_java # Clean Java output from previous build.
 clean_java:
-	-$(DELREC) $(GEN_PATH)$Sjava
-	-$(DELREC) $(OBJ_DIR)$Scom
-	-$(DEL) $(CLASS_DIR)$S*.class
-	-$(DELREC) $(CLASS_DIR)
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*java_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*java_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*java_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*java_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*java_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*java_wrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*java_wrap*
-	-$(DEL) $(OBJ_DIR)$Sswig$S*_java_wrap.$O
-	-$(DEL) $(LIB_DIR)$S*.jar
-	-$(DEL) *.jar
 	-$(DELREC) $(TEMP_JAVA_DIR)
+	-$(DEL) *.jar
 
 #############
 ##  DEBUG  ##
@@ -510,6 +518,7 @@ detect_java:
 	@echo JAVA_ORTOOLS_PACKAGE = $(JAVA_ORTOOLS_PACKAGE)
 	@echo JAVA_ORTOOLS_NATIVE_PROJECT = $(JAVA_ORTOOLS_NATIVE_PROJECT)
 	@echo JAVA_ORTOOLS_PROJECT = $(JAVA_ORTOOLS_PROJECT)
+	@echo INSTALL_JAVA_NAME = $(INSTALL_JAVA_NAME)
 ifeq ($(PLATFORM),WIN64)
 	@echo off & echo(
 else

@@ -113,7 +113,6 @@ message(STATUS "Build Java samples: ${BUILD_JAVA_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_SAMPLES "Build dotnet samples" ON "BUILD_SAMPLES;BUILD_DOTNET" OFF)
 message(STATUS "Build .Net samples: ${BUILD_DOTNET_SAMPLES}")
 
-
 option(BUILD_EXAMPLES "Build examples" ON)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx examples" ON "BUILD_EXAMPLES;BUILD_CXX" OFF)
@@ -125,6 +124,8 @@ message(STATUS "Build Java examples: ${BUILD_JAVA_EXAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_EXAMPLES "Build dotnet examples" ON "BUILD_EXAMPLES;BUILD_DOTNET" OFF)
 message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 
+CMAKE_DEPENDENT_OPTION(INSTALL_DOC "Install doc" ON "BUILD_CXX" OFF)
+message(STATUS "Install doc: ${INSTALL_DOC}")
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 

@@ -250,7 +250,9 @@ add_subdirectory(ortools/model_builder/wrappers)
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_model_builder_wrappers>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_model_builder_wrappers)
 
-# Install rules
+###################
+## Install rules ##
+###################
 include(GNUInstallDirs)
 include(GenerateExportHeader)
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
@@ -269,12 +271,12 @@ install(EXPORT ${PROJECT_NAME}Targets
   NAMESPACE ${PROJECT_NAMESPACE}::
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 install(DIRECTORY ortools
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  TYPE INCLUDE
   COMPONENT Devel
   FILES_MATCHING
   PATTERN "*.h")
 install(DIRECTORY ${PROJECT_BINARY_DIR}/ortools
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  TYPE INCLUDE
   COMPONENT Devel
   FILES_MATCHING
   PATTERN "*.pb.h"
@@ -314,6 +316,23 @@ ${PROJECT_BINARY_DIR}/bundle-install.cmake
 install(SCRIPT ${PROJECT_BINARY_DIR}/bundle-install.cmake)
 endif()
 
+install(FILES "${PROJECT_SOURCE_DIR}/LICENSE"
+  DESTINATION "${CMAKE_INSTALL_DOCDIR}"
+  COMPONENT Devel)
+if(INSTALL_DOC)
+install(DIRECTORY ortools/sat/docs/
+  DESTINATION "${CMAKE_INSTALL_DOCDIR}/sat"
+  FILES_MATCHING
+  PATTERN "*.md")
+install(DIRECTORY ortools/constraint_solver/docs/
+  DESTINATION "${CMAKE_INSTALL_DOCDIR}/constraint_solver"
+  FILES_MATCHING
+  PATTERN "*.md")
+endif()
+
+############################
+## Samples/Examples/Tests ##
+############################
 # add_cxx_sample()
 # CMake function to generate and build C++ sample.
 # Parameters:

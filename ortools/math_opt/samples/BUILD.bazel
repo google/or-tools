@@ -2,7 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "basic_example",
-    srcs = ["basic_example.cc"],
+    srcs = ["basic_example_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -13,7 +13,7 @@ cc_binary(
 
 cc_binary(
     name = "cocktail_hour",
-    srcs = ["cocktail_hour.cc"],
+    srcs = ["cocktail_hour_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -28,7 +28,7 @@ cc_binary(
 
 cc_binary(
     name = "linear_programming",
-    srcs = ["linear_programming.cc"],
+    srcs = ["linear_programming_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -41,7 +41,7 @@ cc_binary(
 
 cc_binary(
     name = "integer_programming",
-    srcs = ["integer_programming.cc"],
+    srcs = ["integer_programming_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -53,7 +53,7 @@ cc_binary(
 
 cc_binary(
     name = "cutting_stock",
-    srcs = ["cutting_stock.cc"],
+    srcs = ["cutting_stock_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -66,7 +66,7 @@ cc_binary(
 
 cc_binary(
     name = "facility_lp_benders",
-    srcs = ["facility_lp_benders.cc"],
+    srcs = ["facility_lp_benders_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -84,7 +84,7 @@ cc_binary(
 
 cc_binary(
     name = "lagrangian_relaxation",
-    srcs = ["lagrangian_relaxation.cc"],
+    srcs = ["lagrangian_relaxation_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:container_logging",
@@ -102,7 +102,7 @@ cc_binary(
 
 cc_binary(
     name = "tsp",
-    srcs = ["tsp.cc"],
+    srcs = ["tsp_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
