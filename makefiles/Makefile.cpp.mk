@@ -51,7 +51,7 @@ third_party:
 
 JOBS ?= 4
 
-TEMP_CPP_DIR=temp_cpp
+TEMP_CPP_DIR := temp_cpp
 
 # Main target
 .PHONY: cpp # Build C++ OR-Tools library.
@@ -199,7 +199,7 @@ rcpp_%: \
 	cd $(TEMP_CPP_DIR)$S$1$S$$* &&\
  cmake -S. -Bbuild \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
- -DCMAKE_PREFIX_PATH=$(INSTALL_DIR) \
+ -DCMAKE_PREFIX_PATH=$(OR_ROOT_FULL)/$(INSTALL_DIR) \
  -DCMAKE_INSTALL_PREFIX=install \
  $(CMAKE_ARGS) \
  -G $(GENERATOR)
@@ -212,7 +212,7 @@ else
 endif
 endef
 
-CPP_SAMPLES := algorithms graph glop constraint_solver linear_solver model_builder routing sat
+CPP_SAMPLES := algorithms graph glop constraint_solver linear_solver math_opt model_builder routing sat
 $(foreach sample,$(CPP_SAMPLES),$(eval $(call cpp-sample-target,$(sample))))
 
 # Examples
@@ -247,7 +247,7 @@ rcpp_%: \
 	cd $(TEMP_CPP_DIR)$S$1$S$$* &&\
  cmake -S. -Bbuild \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
- -DCMAKE_PREFIX_PATH=$(INSTALL_DIR) \
+ -DCMAKE_PREFIX_PATH=$(OR_ROOT_FULL)/$(INSTALL_DIR) \
  -DCMAKE_INSTALL_PREFIX=install \
  $(CMAKE_ARGS) \
  -G $(GENERATOR)
@@ -298,7 +298,7 @@ rcpp_%: \
 	cd $(TEMP_CPP_DIR)$Stests$S$* && \
  cmake -S. -Bbuild \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
- -DCMAKE_PREFIX_PATH=$(INSTALL_DIR) \
+ -DCMAKE_PREFIX_PATH=$(OR_ROOT_FULL)/$(INSTALL_DIR) \
  -DCMAKE_INSTALL_PREFIX=install \
  $(CMAKE_ARGS) \
  -G $(GENERATOR)
@@ -344,18 +344,18 @@ endif
 ##  Test targets  ##
 ####################
 
-.PHONY: test_cc_algorithms_samples # Build and Run all C++ Algorithms Samples (located in ortools/algorithms/samples)
-test_cc_algorithms_samples: \
+.PHONY: test_cpp_algorithms_samples # Build and Run all C++ Algorithms Samples (located in ortools/algorithms/samples)
+test_cpp_algorithms_samples: \
  rcpp_knapsack \
  rcpp_simple_knapsack_program
 
-.PHONY: test_cc_graph_samples # Build and Run all C++ Graph Samples (located in ortools/graph/samples)
-test_cc_graph_samples: \
+.PHONY: test_cpp_graph_samples # Build and Run all C++ Graph Samples (located in ortools/graph/samples)
+test_cpp_graph_samples: \
  rcpp_simple_max_flow_program \
  rcpp_simple_min_cost_flow_program
 
-.PHONY: test_cc_constraint_solver_samples # Build and Run all C++ CP Samples (located in ortools/constraint_solver/samples)
-test_cc_constraint_solver_samples: \
+.PHONY: test_cpp_constraint_solver_samples # Build and Run all C++ CP Samples (located in ortools/constraint_solver/samples)
+test_cpp_constraint_solver_samples: \
  rcpp_minimal_jobshop_cp \
  rcpp_nurses_cp \
  rcpp_rabbits_and_pheasants_cp \
@@ -380,8 +380,8 @@ test_cc_constraint_solver_samples: \
  rcpp_vrp_time_windows \
  rcpp_vrp_with_time_limit
 
-.PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
-test_cc_linear_solver_samples: \
+.PHONY: test_cpp_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
+test_cpp_linear_solver_samples: \
  rcpp_assignment_mip \
  rcpp_basic_example \
  rcpp_bin_packing_mip \
@@ -397,8 +397,8 @@ test_cc_linear_solver_samples: \
 test_cc_model_builder_samples: \
 
 
-.PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
-test_cc_sat_samples: \
+.PHONY: test_cpp_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
+test_cpp_sat_samples: \
  rcpp_assignment_sat \
  rcpp_assumptions_sample_sat \
  rcpp_binpacking_problem_sat \
@@ -423,12 +423,12 @@ test_cc_sat_samples: \
 
 .PHONY: check_cpp_pimpl
 check_cpp_pimpl: \
- test_cc_algorithms_samples \
- test_cc_constraint_solver_samples \
- test_cc_graph_samples \
- test_cc_linear_solver_samples \
- test_cc_model_builder_samples \
- test_cc_sat_samples \
+ test_cpp_algorithms_samples \
+ test_cpp_constraint_solver_samples \
+ test_cpp_graph_samples \
+ test_cpp_linear_solver_samples \
+ test_cpp_model_builder_samples \
+ test_cpp_sat_samples \
  \
  rcpp_linear_programming \
  rcpp_constraint_programming_cp \
@@ -530,8 +530,8 @@ endef
 $(foreach sample,$(CPP_SAMPLES),$(eval $(call cpp-sample-archive,$(sample))))
 
 define cpp-example-archive =
-$(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/%/CMakeLists.txt: \
- $(TEMP_CPP_DIR)/$1/%/CMakeLists.xml \
+$(INSTALL_CPP_NAME)/examples/%/CMakeLists.txt: \
+ $(TEMP_CPP_DIR)/$1/%/CMakeLists.txt \
  $(SRC_DIR)/examples/$1/%.cc \
  | $(INSTALL_CPP_NAME)/examples
 	-$(MKDIR_P) $(INSTALL_CPP_NAME)$Sexamples$S$$*
@@ -550,134 +550,33 @@ EXAMPLE_CPP_FILES = \
 
 $(INSTALL_CPP_NAME)$(ARCHIVE_EXT): \
  $(SAMPLE_CPP_FILES) \
- $(EXAMPLE_CPP_FILES)
+ $(EXAMPLE_CPP_FILES) \
+ tools/README.cpp.md tools/Makefile.cpp
 	$(MAKE) third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=OFF INSTALL_DIR=$(OR_ROOT)$(INSTALL_CPP_NAME)
 	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
+	$(COPY) tools$SREADME.cpp.md $(INSTALL_CPP_NAME)$SREADME.md
+	$(COPY) tools$SMakefile.cpp $(INSTALL_CPP_NAME)$SMakefile
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(INSTALL_CPP_NAME)$SMakefile
 ifeq ($(PLATFORM),WIN64)
 	$(ZIP) -r $(INSTALL_CPP_NAME)$(ARCHIVE_EXT) $(INSTALL_CPP_NAME)
 else
 	$(TAR) --no-same-owner -czvf $(INSTALL_CPP_NAME)$(ARCHIVE_EXT) $(INSTALL_CPP_NAME)
 endif
 
-
-
-
-
-
-#################
-##  Packaging  ##
-#################
-TEMP_PACKAGE_CC_DIR = temp_package_cc
-
-$(TEMP_PACKAGE_CC_DIR):
-	-$(MKDIR_P) $(TEMP_PACKAGE_CC_DIR)
-
-$(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR): | $(TEMP_PACKAGE_CC_DIR)
-	$(MKDIR) $(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
-
-package_cc: cpp | $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR)
+# Test archive
+TEMP_CPP_TEST_DIR := temp_cpp_test
+.PHONY: test_archive_cpp # Test C++ OR-Tools archive is OK.
+test_archive_cpp: $(INSTALL_CPP_NAME)$(ARCHIVE_EXT)
+	-$(DELREC) $(TEMP_CPP_TEST_DIR)
+	-$(MKDIR) $(TEMP_CPP_TEST_DIR)
 ifeq ($(PLATFORM),WIN64)
-	cd $(TEMP_PACKAGE_CC_DIR)\$(INSTALL_DIR) && \
-		..\..\$(TAR) -C ..\.. -c -v include | ..\..\$(TAR) xvm
-	cd $(TEMP_PACKAGE_CC_DIR)\$(INSTALL_DIR) && \
-		..\..\$(TAR) -C ..\.. -c -v lib | ..\..\$(TAR) xvm
-	cd $(TEMP_PACKAGE_CC_DIR)\$(INSTALL_DIR) && \
-		..\..\$(TAR) -C ..\.. -c -v share | ..\..\$(TAR) xvm
+	$(UNZIP) $< -d $(TEMP_CPP_TEST_DIR)
 else
-	cd $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR) && \
-		tar -C ../.. -c -v include | tar xvm
-	cd $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR) && \
-		tar -C ../.. -c -v lib | tar xvm
-	cd $(TEMP_PACKAGE_CC_DIR)/$(INSTALL_DIR) && \
-		tar -C ../.. -c -v share | tar xvm
+	$(TAR) -xvf $< -C $(TEMP_CPP_TEST_DIR)
 endif
-ifeq ($(PLATFORM),WIN64)
-	cd $(TEMP_PACKAGE_CC_DIR) && ..$S$(ZIP) -r ..$S$(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
-else
-	$(TAR) -C $(TEMP_PACKAGE_CC_DIR) --no-same-owner -czvf $(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
-endif
-
-###############
-##  INSTALL  ##
-###############
-# ref: https://www.gnu.org/prep/standards/html_node/Directory-Variables.html#index-prefix
-# ref: https://www.gnu.org/prep/standards/html_node/DESTDIR.html
-.PHONY: install_dirs
-install_dirs:
-	-$(MKDIR_P) "$(DESTDIR)$(prefix)"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sbin"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare"
-	-$(MKDIR_P) "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat"
-
-# Install C++ OR-Tools to $(DESTDIR)$(prefix)
-.PHONY: install_cc
-install_cc: | install_dirs
-	$(COPY) LICENSE "$(DESTDIR)$(prefix)"
-ifeq ($(PLATFORM),WIN64)
-	$(COPYREC) /E /Y include "$(DESTDIR)$(prefix)"
-	$(COPY) "$(INSTALL_DIR)$Slib$S$(LIB_PREFIX)ortools_full.$L" "$(DESTDIR)$(prefix)$Slib$S$(LIB_PREFIX)ortools.$L"
-	$(COPYREC) /E /Y share "$(DESTDIR)$(prefix)"
-else
-	$(COPYREC) include "$(DESTDIR)$(prefix)$S"
-	$(COPY) $(INSTALL_DIR)$Slib*$S$(LIB_PREFIX)ortools*.$L* "$(DESTDIR)$(prefix)$Slib$S"
-	$(COPYREC) share "$(DESTDIR)$(prefix)$S"
-endif
-	$(COPY) bin$Sprotoc* "$(DESTDIR)$(prefix)$Sbin"
-	$(COPY) ortools$Ssat$Sdocs$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdocs$Sortools$Ssat"
-
-#######################
-##  EXAMPLE ARCHIVE  ##
-#######################
-TEMP_CC_DIR=temp_cpp
-
-$(TEMP_CC_DIR)/ortools_examples: | $(TEMP_CC_DIR)
-	$(MKDIR) $(TEMP_CC_DIR)$Sortools_examples
-
-$(TEMP_CC_DIR)/ortools_examples/examples: | $(TEMP_CC_DIR)/ortools_examples
-	$(MKDIR) $(TEMP_CC_DIR)$Sortools_examples$Sexamples
-
-$(TEMP_CC_DIR)/ortools_examples/examples/cpp: | $(TEMP_CC_DIR)/ortools_examples/examples
-	$(MKDIR) $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-
-$(TEMP_CC_DIR)/ortools_examples/examples/data: | $(TEMP_CC_DIR)/ortools_examples/examples
-	$(MKDIR) $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Sdata
-
-.PHONY: cc_examples_archive # Build stand-alone C++ examples archive file for redistribution.
-cc_examples_archive: | \
- $(TEMP_CC_DIR)/ortools_examples/examples/cpp \
- $(TEMP_CC_DIR)/ortools_examples/examples/data
-	$(COPY) $(CC_EX_PATH)$S*.h $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-	$(COPY) $(CC_EX_PATH)$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-#	$(COPY) $(CONTRIB_EX_PATH)$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-	$(COPY) ortools$Salgorithms$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-	$(COPY) ortools$Sgraph$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-	$(COPY) ortools$Slinear_solver$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-	$(COPY) ortools$Sconstraint_solver$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-	$(COPY) ortools$Ssat$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-	$(COPY) tools$SREADME.cpp.md $(TEMP_CC_DIR)$Sortools_examples$SREADME.md
-	$(COPY) LICENSE $(TEMP_CC_DIR)$Sortools_examples
-ifeq ($(PLATFORM),WIN64)
-	cd $(TEMP_CC_DIR)\ortools_examples \
- && ..\..\$(TAR) -C ..\.. -c -v \
- --exclude *svn* --exclude *roadef* --exclude *vector_packing* \
- examples\data | ..\..\$(TAR) xvm
-	cd $(TEMP_CC_DIR) \
- && ..\$(ZIP) \
- -r ..\or-tools_cpp_examples_v$(OR_TOOLS_VERSION).zip \
- ortools_examples
-else
-	cd $(TEMP_CC_DIR)/ortools_examples \
- && tar -C ../.. -c -v \
- --exclude *svn* --exclude *roadef* --exclude *vector_packing* \
- examples/data | tar xvm
-	cd $(TEMP_CC_DIR) \
- && tar -c -v -z --no-same-owner \
- -f ../or-tools_cpp_examples$(PYPI_OS)_v$(OR_TOOLS_VERSION).tar.gz \
- ortools_examples
-endif
-	-$(DELREC) $(TEMP_CC_DIR)$Sortools_examples
+	cd $(TEMP_CPP_TEST_DIR)$S$(INSTALL_CPP_NAME) \
+ && $(MAKE) MAKEFLAGS= \
+ && $(MAKE) MAKEFLAGS= test
 
 ################
 ##  Cleaning  ##
@@ -688,6 +587,9 @@ clean_cpp:
 	-$(DELREC) $(INSTALL_DIR)
 	-$(DELREC) $(TEMP_CPP_DIR)
 	-$(DELREC) $(INSTALL_CPP_NAME)
+	-$(DELREC) or-tools_cpp_*
+	-$(DELREC) $(TEMP_CPP_TEST_DIR)
+	-$(DEL) *.deb
 
 #############
 ##  DEBUG  ##

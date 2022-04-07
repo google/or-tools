@@ -79,9 +79,9 @@ BUILT_LANGUAGES +=, .Net (6.0)
 endif
 
 include $(OR_ROOT)makefiles/Makefile.cpp.mk
-include $(OR_ROOT)makefiles/Makefile.python.mk
-include $(OR_ROOT)makefiles/Makefile.java.mk
 include $(OR_ROOT)makefiles/Makefile.dotnet.mk
+include $(OR_ROOT)makefiles/Makefile.java.mk
+include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
 ifneq ($(PLATFORM),WIN64)
 include $(OR_ROOT)makefiles/Makefile.doc.mk
@@ -107,7 +107,7 @@ else
 endif
 
 .PHONY: help_all
-help_all: help_usage help_cc help_python help_java help_dotnet help_archive help_doc
+help_all: help_usage help_cc help_dotnet help_java help_python help_archive help_doc
 
 # Commands to build/clean all languages.
 .PHONY: compile
@@ -116,24 +116,32 @@ compile:
 
 .PHONY: build_all
 build_all:
-	$(MAKE) third_party BUILD_PYTHON=ON BUILD_JAVA=ON BUILD_DOTNET=ON
+	$(MAKE) third_party BUILD_DOTNET=ON BUILD_JAVA=ON BUILD_PYTHON=ON
 	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 	@echo Or-tools has been built for "$(BUILT_LANGUAGES)"
 
 .PHONY: check_all
-check_all: check_cpp check_python check_java check_dotnet
+check_all: check_cpp check_dotnet check_java check_python
 	@echo Or-tools has been built and checked for "$(BUILT_LANGUAGES)"
 
 .PHONY: test_all
-test_all: test_cpp test_python test_java test_dotnet
+test_all: test_cpp test_dotnet test_java test_python
 	@echo Or-tools have been built and tested for "$(BUILT_LANGUAGES)"
 
+.PHONY: archive_all
+archive_all: archive_cpp archive_dotnet archive_java archive_python archive_data
+	@echo Or-tools has been built and archived
+
+.PHONY: test_archive_all
+test_archive_all: test_archive_cpp test_archive_dotnet test_archive_java test_archive_python
+	@echo Or-tools archives have been checked
+
 .PHONY: clean_all
-clean_all: clean_cpp clean_python clean_java clean_dotnet clean_archive
+clean_all: clean_cpp clean_dotnet clean_java clean_python clean_archive
 	@echo Or-Tools has been cleaned for "$(BUILT_LANGUAGES)"
 
 .PHONY: detect_all
-detect_all: detect_port detect_cpp detect_python detect_java detect_dotnet detect_archive
+detect_all: detect_port detect_cpp detect_dotnet detect_java detect_python detect_archive
 	@echo SOURCE = $(SOURCE)
 	@echo SOURCE_PATH = $(SOURCE_PATH)
 	@echo SOURCE_NAME = $(SOURCE_NAME)

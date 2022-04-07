@@ -21,7 +21,7 @@ check_python: python
 
 else  # HAS_PYTHON=ON
 
-PYTHON_BUILD_PATH = $(BUILD_DIR)$Spython
+PYTHON_BUILD_PATH := $(BUILD_DIR)$Spython
 
 # Main target
 .PHONY: python # Build Python OR-Tools.
@@ -64,7 +64,7 @@ rpy_%: \
 	"$(PYTHON_EXECUTABLE)" ortools$S$1$Ssamples$S$$*.py $(ARGS)
 endef
 
-PYTHON_SAMPLES := algorithms graph constraint_solver linear_solver model_builder sat
+PYTHON_SAMPLES := algorithms graph constraint_solver linear_solver math_opt model_builder routing sat
 $(foreach sample,$(PYTHON_SAMPLES),$(eval $(call python-sample-target,$(sample))))
 
 # Examples
@@ -386,12 +386,12 @@ test_python: \
 #####################
 ##  Pypi artifact  ##
 #####################
-PYPI_ARCHIVE_TEMP_DIR = temp_python$(PYTHON_VERSION)
+PYPI_ARCHIVE_TEMP_DIR := temp_python$(PYTHON_VERSION)
 
 # PEP 513 auditwheel repair overwrite rpath to $ORIGIN/<ortools_root>/.libs
 # We need to copy all dynamic libs here
 ifneq ($(PLATFORM),WIN64)
-PYPI_ARCHIVE_LIBS = $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs
+	PYPI_ARCHIVE_LIBS := $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs
 endif
 
 MISSING_PYPI_FILES = \
@@ -532,7 +532,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 
 ifneq ($(PYTHON_EXECUTABLE),)
-package_python: cc
+package_python: python
 	-$(DEL) $.*whl
 	$(COPY) $(PYTHON_BUILD_PATH)$Sdist$S*.whl .
 
@@ -594,7 +594,7 @@ uninstall_python:
 #######################
 ##  EXAMPLE ARCHIVE  ##
 #######################
-TEMP_PYTHON_DIR=temp_python
+TEMP_PYTHON_DIR := temp_python
 
 $(TEMP_PYTHON_DIR):
 	$(MKDIR) $(TEMP_PYTHON_DIR)
@@ -659,12 +659,86 @@ endif
 
 endif  # HAS_PYTHON=ON
 
+###############
+##  Archive  ##
+###############
+.PHONY: archive_python # Generate Python OR-Tools archive.
+archive_python: $(INSTALL_PYTHON_NAME)$(ARCHIVE_EXT)
+
+$(INSTALL_PYTHON_NAME):
+	$(MKDIR) $(INSTALL_PYTHON_NAME)
+
+$(INSTALL_PYTHON_NAME)/examples: | $(INSTALL_PYTHON_NAME)
+	$(MKDIR) $(INSTALL_PYTHON_NAME)$Sexamples
+
+define python-sample-archive =
+$(INSTALL_PYTHON_NAME)/examples/%.py: \
+ $(SRC_DIR)/ortools/$1/samples/%.py \
+ | $(INSTALL_PYTHON_NAME)/examples
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.py $(INSTALL_PYTHON_NAME)$Sexamples
+endef
+
+$(foreach sample,$(PYTHON_SAMPLES),$(eval $(call python-sample-archive,$(sample))))
+
+define python-example-archive =
+$(INSTALL_PYTHON_NAME)/examples/%.py: \
+ $(SRC_DIR)/examples/$1/%.py \
+ | $(INSTALL_PYTHON_NAME)/examples
+	$(COPY) $(SRC_DIR)$Sexamples$S$1$S$$*.py $(INSTALL_PYTHON_NAME)$Sexamples
+endef
+
+$(foreach example,$(PYTHON_EXAMPLES),$(eval $(call python-example-archive,$(example))))
+
+SAMPLE_PYTHON_FILES = \
+  $(addsuffix .py,$(addprefix $(INSTALL_PYTHON_NAME)/examples/,$(basename $(notdir $(wildcard ortools/*/samples/*.py)))))
+
+EXAMPLE_PYTHON_FILES = \
+  $(addsuffix .py,$(addprefix $(INSTALL_PYTHON_NAME)/examples/,$(basename $(notdir $(wildcard examples/contrib/*.py))))) \
+  $(addsuffix .py,$(addprefix $(INSTALL_PYTHON_NAME)/examples/,$(basename $(notdir $(wildcard examples/python/*.py)))))
+
+$(INSTALL_PYTHON_NAME)$(ARCHIVE_EXT): \
+ python \
+ $(SAMPLE_PYTHON_FILES) \
+ $(EXAMPLE_PYTHON_FILES) \
+ LICENSE tools/README.python.md tools/Makefile.python
+	$(COPY) $(PYTHON_BUILD_PATH)$Sdist$S*.whl $(INSTALL_PYTHON_NAME)$S
+	$(COPY) LICENSE $(INSTALL_PYTHON_NAME)$SLICENSE
+	$(COPY) tools$SREADME.python.md $(INSTALL_PYTHON_NAME)$SREADME.md
+	$(COPY) tools$SMakefile.python $(INSTALL_PYTHON_NAME)$SMakefile
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(INSTALL_PYTHON_NAME)$SMakefile
+ifeq ($(PLATFORM),WIN64)
+	$(MKDIR) $(INSTALL_PYTHON_NAME)$Sbin
+	$(COPY) $(WHICH) $(INSTALL_PYTHON_NAME)$Sbin$S
+	$(COPY) $(TOUCH) $(INSTALL_JAVA_NAME)$Sbin$S
+	$(ZIP) -r $(INSTALL_PYTHON_NAME)$(ARCHIVE_EXT) $(INSTALL_PYTHON_NAME)
+else
+	$(TAR) --no-same-owner -czvf $(INSTALL_PYTHON_NAME)$(ARCHIVE_EXT) $(INSTALL_PYTHON_NAME)
+endif
+
+# Test archive
+TEMP_PYTHON_TEST_DIR := temp_python_test
+.PHONY: test_archive_python # Test C++ OR-Tools archive is OK.
+test_archive_python: $(INSTALL_PYTHON_NAME)$(ARCHIVE_EXT)
+	-$(DELREC) $(TEMP_PYTHON_TEST_DIR)
+	-$(MKDIR) $(TEMP_PYTHON_TEST_DIR)
+ifeq ($(PLATFORM),WIN64)
+	$(UNZIP) $< -d $(TEMP_PYTHON_TEST_DIR)
+else
+	$(TAR) -xvf $< -C $(TEMP_PYTHON_TEST_DIR)
+endif
+	cd $(TEMP_PYTHON_TEST_DIR)$S$(INSTALL_PYTHON_NAME) \
+ && $(MAKE) MAKEFLAGS= \
+ && $(MAKE) MAKEFLAGS= test
+
 ################
 ##  Cleaning  ##
 ################
 .PHONY: clean_python # Clean Python output from previous build.
 clean_python:
 	-$(DELREC) $(TEMP_PYTHON_DIR)*
+	-$(DELREC) $(INSTALL_PYTHON_NAME)
+	-$(DELREC) or-tools_python_*
+	-$(DELREC) $(TEMP_PYTHON_TEST_DIR)
 	-$(DEL) *.whl
 
 #############
