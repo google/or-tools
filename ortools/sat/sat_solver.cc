@@ -31,6 +31,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/port/sysinfo.h"
@@ -195,11 +196,12 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
 }
 
 // Note(user): we assume there is no duplicate literals in the clauses added
-// here. Most of the code works, but some advanced algo might be
-// wrong/suboptimal if this is the case. So even when presolve is off we need
+// here if is_safe is true. Most of the code works, but some advanced algo might
+// be wrong/suboptimal if this is the case. So even when presolve is off we need
 // some "cleanup" to enforce this invariant. Alternatively we could have robut
 // algo in all the stack, but that seems a worse design.
-bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
+bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
+                                 bool is_safe) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
   if (model_is_unsat_) return false;
@@ -210,6 +212,15 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
     if (trail_->Assignment().LiteralIsTrue(l)) return true;
     if (trail_->Assignment().LiteralIsFalse(l)) continue;
     literals_scratchpad_.push_back(l);
+  }
+
+  if (!is_safe) {
+    gtl::STLSortAndRemoveDuplicates(&literals_scratchpad_);
+    for (int i = 0; i + 1 < literals_scratchpad_.size(); ++i) {
+      if (literals_scratchpad_[i] == literals_scratchpad_[i + 1].Negated()) {
+        return true;
+      }
+    }
   }
 
   AddProblemClauseInternal(literals_scratchpad_);

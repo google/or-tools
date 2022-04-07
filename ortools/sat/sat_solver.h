@@ -109,7 +109,8 @@ class SatSolver {
   // TODO(user): Rename this to AddClause(), also get rid of the specialized
   // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
   // just end up calling this?
-  bool AddProblemClause(absl::Span<const Literal> literals);
+  bool AddProblemClause(absl::Span<const Literal> literals,
+                        bool is_safe = true);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this
