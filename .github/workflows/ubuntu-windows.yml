@@ -14,59 +14,11 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
 
 jobs:
-
-  build_sirius:
-    name: ${{ matrix.os }} build sirius
-    runs-on: ${{ matrix.os }}
-    env:
-      Sirius_Ref: antares_integration
-    strategy:
-      matrix:
-        os: [windows-2019, ubuntu-20.04]
-    steps:
-      - name: Get release
-        if: github.event_name == 'release' && github.event.action == 'created'
-        id: get_release
-        uses:
-          bruceadams/get-release@v1.2.3
-
-      - name: install zip for windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        shell: cmd
-        run: |
-          choco install zip --no-progress
-
-      - name: Checkout or-tools
-        uses: actions/checkout@v2
-
-      - name: setup sirius
-        id: setup
-        uses: ./.github/workflows/build-sirius
-        with:
-          sirius-ref: ${{ env.Sirius_Ref }}
-
-      - name: Upload sirius install
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.os }}_sirius
-          path: ${{ steps.setup.outputs.sirius-install-path }}
-
-      - name: Publish sirius install
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' }}
-        uses: actions/upload-release-asset@v1.0.2
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.setup.outputs.sirius-archive-path }}
-          asset_name: ${{ matrix.os }}_${{ steps.setup.outputs.sirius-archive-name }}
-          asset_content_type: application/zip
-
-
   build:
-    needs: [build_sirius]
     name: ${{ matrix.os }} shrd=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }} extras=${{ matrix.extras }} java=${{ matrix.java }} dotnet=${{ matrix.dotnet }} python=${{ matrix.python }}-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     env:
-      Sirius_Ref: antares_integration
+      SIRIUS_RELEASE_TAG: antares-integration-v1.0
       XPRESSDIR: ${{ github.workspace }}/xpressmp813
       XPRESS: ${{ github.workspace }}/xpressmp813/bin
       XPRS_LIB_PATH: ${{ github.workspace }}/xpressmp813/lib
@@ -146,11 +98,19 @@ jobs:
           SIRIUS=${{ matrix.sirius }}
           [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
           OS="_${{ matrix.os }}"
-          APPENDIX="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}"
+          APPENDIX="${OS}${WITH_SIRIUS}${WITH_XPRS}"
           echo "::set-output name=appendix::$APPENDIX"
+          APPENDIX_WITH_SHARED="${OS}${WITH_SHARED}${WITH_SIRIUS}${WITH_XPRS}"
+          echo "::set-output name=appendix_with_shared::$APPENDIX_WITH_SHARED"
+
+      - name: is release created
+        shell: bash
+        run: |
+          release_created=${{ github.event_name == 'release' && github.event.action == 'created' }}
+          echo "RELEASE_CREATED=$release_created" >> $GITHUB_ENV
 
       - name: Get release
-        if: github.event_name == 'release' && github.event.action == 'created'
+        if: ${{ env.RELEASE_CREATED == 'true' }}
         id: get_release
         uses:
           bruceadams/get-release@v1.2.3
@@ -170,15 +130,16 @@ jobs:
           os: ${{ matrix.os }}
           python-version: ${{ matrix.python-version }}
           dotnet: ${{ matrix.dotnet }}
-          python: 'ON'
 
-      - name: Download sirius
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ matrix.os }}_sirius
-          path: ${{ env.SIRIUS_INSTALL_PATH }}
+      - name: Download Sirius
+        shell: bash
+        run: |
+          zipfile=${{ matrix.os }}_sirius-solver.zip
+          wget https://github.com/rte-france/sirius-solver/releases/download/${{ env.SIRIUS_RELEASE_TAG }}/$zipfile
+          unzip $zipfile
+          mv "${{ matrix.os }}_sirius-solver-install" "${{ env.SIRIUS_INSTALL_PATH }}"
 
-      - name: Checkout xpressmp813 linux
+      - name: Checkout Xpress linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         uses: actions/checkout@v2
         with:
@@ -186,7 +147,7 @@ jobs:
           path: ${{ env.XPRESSDIR }}
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
-      - name: Checkout xpressmp813 windows
+      - name: Checkout Xpress windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         uses: actions/checkout@v2
         with:
@@ -212,17 +173,17 @@ jobs:
           echo "${{ env.XPRESS }}" >> $GITHUB_PATH
           echo "${{ env.SIRIUS }}" >> $GITHUB_PATH
 
-      - name: Configure ortools
+      - name: Configure OR-Tools
         shell: bash
         run: |
           cmake -S . -B build -DPython3_ROOT_DIR="${{ env.pythonLocation }}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
 
-      - name: Build ortools Linux
+      - name: Build OR-Tools Linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: cmake --build build --config Release --target all install -j2
 
-      - name: Build ortools windows
+      - name: Build OR-Tools windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
@@ -252,28 +213,28 @@ jobs:
           cmake --build build --config Release
           build\Release\linear_programming.exe
 
-      - name: Prepare ortools install
+      - name: Prepare OR-Tools install
         if: ${{ matrix.publish-or == 'ON' }}
         id: or-install
         shell: bash
         run: |
           find build/install/bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
           cd build
-          ARCHIVE_NAME="ortools_install${{ steps.names.outputs.appendix }}.zip"
+          ARCHIVE_NAME="ortools_cxx${{ steps.names.outputs.appendix_with_shared }}.zip"
           ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
           zip -r "$ARCHIVE_PATH" ./install
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
 
-      - name: Upload ortools install artifact
+      - name: Upload OR-Tools install artifact
         uses: actions/upload-artifact@v2
-        if: ${{ matrix.publish-or == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.publish-or == 'ON' }}
         with:
           name: ${{ steps.or-install.outputs.archive_name }}
           path: ${{ steps.or-install.outputs.archive_path }}
 
-      - name: Publish ortools install asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.publish-or == 'ON' }}
+      - name: Publish OR-Tools install asset
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.publish-or == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -320,14 +281,13 @@ jobs:
         working-directory: ./build
         run: ctest --output-on-failure -C Release -R dotnet_dotnet -E dotnet_dotnet_cslinearprogramming
 
-
-      - name: prepare ortools wheel
+      - name: prepare OR-Tools wheel
         if: ${{ matrix.python == 'ON' }}
         id: wheel
         shell: bash
         run: |
           cd ./build/python/dist
-          MY_DIR="ortools_wheel-${{ matrix.python-version }}${{ steps.names.outputs.appendix }}"
+          MY_DIR="ortools_python-${{ matrix.python-version }}${{ steps.names.outputs.appendix }}"
           mkdir ${MY_DIR}
           cp *.whl "${MY_DIR}"
           ARCHIVE_NAME="${MY_DIR}.zip"
@@ -335,14 +295,14 @@ jobs:
           zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
-      - name: Upload ortools wheel artifact
-        if: ${{ matrix.python == 'ON' }}
+      - name: Upload OR-Tools wheel artifact
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.python == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.wheel.outputs.archive_name }}
           path: ${{ steps.wheel.outputs.archive_path }}
-      - name: Publish ortools wheel asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.python == 'ON' }}
+      - name: Publish OR-Tools wheel asset
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.python == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -350,13 +310,13 @@ jobs:
           asset_name: ${{ steps.wheel.outputs.archive_name }}
           asset_content_type: application/zip
 
-      - name: prepare ortools jar
+      - name: prepare OR-Tools jar
         if: ${{ matrix.java == 'ON' }}
         id: jar
         shell: bash
         run: |
           cd ./build/java
-          MY_DIR="ortools_jar${{ steps.names.outputs.appendix }}"
+          MY_DIR="ortools_java${{ steps.names.outputs.appendix }}"
           mkdir ${MY_DIR}
           cp ortools-*/target/*.jar "${MY_DIR}"
           ARCHIVE_NAME="${MY_DIR}.zip"
@@ -364,14 +324,14 @@ jobs:
           zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
-      - name: Upload ortools jar artifact
-        if: ${{ matrix.java == 'ON' }}
+      - name: Upload OR-Tools jar artifact
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.java == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.jar.outputs.archive_name }}
           path: ${{ steps.jar.outputs.archive_path }}
-      - name: Publish ortools jar asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.java == 'ON' }}
+      - name: Publish OR-Tools jar asset
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.java == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -379,7 +339,7 @@ jobs:
           asset_name: ${{ steps.jar.outputs.archive_name }}
           asset_content_type: application/zip
 
-      - name: prepare ortools dotnet
+      - name: prepare OR-Tools dotnet
         if: ${{ matrix.dotnet == 'ON' }}
         id: dotnet
         shell: bash
@@ -394,14 +354,14 @@ jobs:
           zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
-      - name: Upload ortools dotnet artifact
-        if: ${{ matrix.dotnet == 'ON' }}
+      - name: Upload OR-Tools dotnet artifact
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.dotnet == 'ON' }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.dotnet.outputs.archive_name }}
           path: ${{ steps.dotnet.outputs.archive_path }}
-      - name: Publish ortools dotnet asset
-        if:  ${{ github.event_name == 'release' && github.event.action == 'created' && matrix.dotnet == 'ON' }}
+      - name: Publish OR-Tools dotnet asset
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.dotnet == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
