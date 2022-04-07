@@ -569,6 +569,35 @@ class LinearProgrammingDispatcher
 class LinearProgrammingConstraintCollection
     : public std::vector<LinearProgrammingConstraint*> {};
 
+// TODO(user): Move the cut "graph" based cut generator out of this class, there
+// is no reason to keep them here.
+
+// Given a graph with nodes in [0, num_nodes) and a set of arcs (the order is
+// important), this will:
+//   - Start with each nodes in separate "subsets".
+//   - Consider the arc in order, and each time one connects two separate
+//     subsets, merge the two subsets into a new one.
+//   - Stops when there is only 2 subset left.
+//   - Output all subsets generated this way (at most 2 * num_nodes). The
+//     subsets spans will point in the subset_data vector (which will be of size
+//     exactly num_nodes).
+//
+// Only subsets of size >= min_subset_size will be returned. This is mainly here
+// to exclude subsets of size 1.
+//
+// This is an heuristic to generate interesting cuts for TSP or other graph
+// based constraints. We roughly follow the algorithm described in section 6 of
+// "The Traveling Salesman Problem, A computational Study", David L. Applegate,
+// Robert E. Bixby, Vasek Chvatal, William J. Cook.
+//
+// Note that this is mainly a "symmetric" case algo, but it does still work for
+// the asymmetric case.
+void GenerateInterestingSubsets(int num_nodes,
+                                const std::vector<std::pair<int, int>>& arcs,
+                                int min_subset_size, int stop_at_num_components,
+                                std::vector<int>* subset_data,
+                                std::vector<absl::Span<const int>>* subsets);
+
 // Cut generator for the circuit constraint, where in any feasible solution, the
 // arcs that are present (variable at 1) must form a circuit through all the
 // nodes of the graph. Self arc are forbidden in this case.
@@ -590,6 +619,26 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
                                     const std::vector<Literal>& literals,
                                     const std::vector<int64_t>& demands,
                                     int64_t capacity, Model* model);
+
+// Try to find a subset where the current LP capacity of the outgoing or
+// incoming arc is not enough to satisfy the demands.
+//
+// We support the special value -1 for tail or head that means that the arc
+// comes from (or is going to) outside the nodes in [0, num_nodes). Such arc
+// must still have a capacity assigned to it.
+//
+// TODO(user): Support general linear expression for capacities.
+// TODO(user): Some model applies the same capacity to both an arc and its
+// reverse. Also support this case.
+CutGenerator CreateFlowCutGenerator(
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<AffineExpression>& arc_capacities,
+    std::function<void(const std::vector<bool>& in_subset,
+                       IntegerValue* min_incoming_flow,
+                       IntegerValue* min_outgoing_flow)>
+        get_flows,
+    Model* model);
+
 }  // namespace sat
 }  // namespace operations_research
 

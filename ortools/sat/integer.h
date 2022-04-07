@@ -280,6 +280,8 @@ struct AffineExpression {
     return ToDouble(coeff) * lp_values[var] + ToDouble(constant);
   }
 
+  bool IsConstant() const { return var == kNoIntegerVariable; }
+
   const std::string DebugString() const {
     if (var == kNoIntegerVariable) return absl::StrCat(constant.value());
     if (constant == 0) {

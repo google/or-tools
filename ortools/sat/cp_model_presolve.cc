@@ -1310,6 +1310,55 @@ bool CpModelPresolver::PresolveIntMod(ConstraintProto* ct) {
   const LinearExpressionProto expr = ct->int_mod().exprs(0);
   const LinearExpressionProto mod = ct->int_mod().exprs(1);
 
+  if (context_->MinOf(target) > 0) {
+    bool domain_changed = false;
+    if (!context_->IntersectDomainWith(
+            expr, Domain(0, std::numeric_limits<int64_t>::max()),
+            &domain_changed)) {
+      return false;
+    }
+    if (domain_changed) {
+      context_->UpdateRuleStats(
+          "int_mod: non negative target implies positive expression");
+    }
+  }
+
+  if (context_->MinOf(target) >= context_->MaxOf(mod) ||
+      context_->MaxOf(target) <= -context_->MaxOf(mod)) {
+    return context_->NotifyThatModelIsUnsat(
+        "int_mod: incompatible target and mod");
+  }
+
+  if (context_->MaxOf(target) < 0) {
+    bool domain_changed = false;
+    if (!context_->IntersectDomainWith(
+            expr, Domain(std::numeric_limits<int64_t>::min(), 0),
+            &domain_changed)) {
+      return false;
+    }
+    if (domain_changed) {
+      context_->UpdateRuleStats(
+          "int_mod: non positive target implies negative expression");
+    }
+  }
+
+  if (context_->IsFixed(target) && context_->IsFixed(mod) &&
+      context_->FixedValue(mod) > 1 && ct->enforcement_literal().empty() &&
+      expr.vars().size() == 1) {
+    // We can intersect the domain of expr with {k * mod + target}.
+    const int64_t fixed_mod = context_->FixedValue(mod);
+    const int64_t fixed_target = context_->FixedValue(target);
+
+    if (!context_->CanonicalizeAffineVariable(expr.vars(0), expr.coeffs(0),
+                                              fixed_mod,
+                                              fixed_target - expr.offset())) {
+      return false;
+    }
+
+    context_->UpdateRuleStats("int_mod: fixed mod and target");
+    return RemoveConstraint(ct);
+  }
+
   bool domain_changed = false;
   if (!context_->IntersectDomainWith(
           target,
@@ -8486,6 +8535,39 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // Adds all needed affine relation to context_->working_model.
   EncodeAllAffineRelations();
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
+
+  // Final cleaning of the scheduling constraints. Probing could have set
+  // some literal to false, turning the intervals into empty constraints, while
+  // not having cleaned up the scheduling constraints.
+  {
+    const int num_constraints = context_->working_model->constraints_size();
+    for (int c = 0; c < num_constraints; ++c) {
+      ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+      switch (ct->constraint_case()) {
+        case ConstraintProto::kNoOverlap: {
+          // Filter out absent intervals.
+          if (PresolveNoOverlap(ct)) {
+            context_->UpdateConstraintVariableUsage(c);
+          }
+          break;
+        }
+        case ConstraintProto::kNoOverlap2D:
+          // Filter out absent intervals.
+          if (PresolveNoOverlap2D(c, ct)) {
+            context_->UpdateConstraintVariableUsage(c);
+          }
+          break;
+        case ConstraintProto::kCumulative:
+          // Filter out absent intervals.
+          if (PresolveCumulative(ct)) {
+            context_->UpdateConstraintVariableUsage(c);
+          }
+          break;
+        default: {
+        }
+      }
+    }
+  }
 
   // The strategy variable indices will be remapped in ApplyVariableMapping()
   // but first we use the representative of the affine relations for the

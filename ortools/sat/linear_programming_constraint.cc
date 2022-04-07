@@ -2377,6 +2377,109 @@ void AddOutgoingCut(
 
 }  // namespace
 
+void GenerateInterestingSubsets(int num_nodes,
+                                const std::vector<std::pair<int, int>>& arcs,
+                                int min_subset_size, int stop_at_num_components,
+                                std::vector<int>* subset_data,
+                                std::vector<absl::Span<const int>>* subsets) {
+  subset_data->resize(num_nodes);
+  subsets->clear();
+
+  // We will do a union-find by adding one by one the arc of the lp solution
+  // in the order above. Every intermediate set during this construction will
+  // be a candidate for a cut.
+  //
+  // In parallel to the union-find, to efficiently reconstruct these sets (at
+  // most num_nodes), we construct a "decomposition forest" of the different
+  // connected components. Note that we don't exploit any asymmetric nature of
+  // the graph here. This is exactly the algo 6.3 in the book above.
+  int num_components = num_nodes;
+  std::vector<int> parent(num_nodes);
+  std::vector<int> root(num_nodes);
+  for (int i = 0; i < num_nodes; ++i) {
+    parent[i] = i;
+    root[i] = i;
+  }
+  auto get_root_and_compress_path = [&root](int node) {
+    int r = node;
+    while (root[r] != r) r = root[r];
+    while (root[node] != r) {
+      const int next = root[node];
+      root[node] = r;
+      node = next;
+    }
+    return r;
+  };
+  for (const auto& [initial_tail, initial_head] : arcs) {
+    if (num_components <= stop_at_num_components) break;
+    const int tail = get_root_and_compress_path(initial_tail);
+    const int head = get_root_and_compress_path(initial_head);
+    if (tail != head) {
+      // Update the decomposition forest, note that the number of nodes is
+      // growing.
+      const int new_node = parent.size();
+      parent.push_back(new_node);
+      parent[head] = new_node;
+      parent[tail] = new_node;
+      --num_components;
+
+      // It is important that the union-find representative is the same node.
+      root.push_back(new_node);
+      root[head] = new_node;
+      root[tail] = new_node;
+    }
+  }
+
+  // For each node in the decomposition forest, try to add a cut for the set
+  // formed by the nodes and its children. To do that efficiently, we first
+  // order the nodes so that for each node in a tree, the set of children forms
+  // a consecutive span in the subset_data vector. This vector just lists the
+  // nodes in the "pre-order" graph traversal order. The Spans will point inside
+  // the subset_data vector, it is why we initialize it once and for all.
+  int new_size = 0;
+  {
+    std::vector<absl::InlinedVector<int, 2>> graph(parent.size());
+    for (int i = 0; i < parent.size(); ++i) {
+      if (parent[i] != i) graph[parent[i]].push_back(i);
+    }
+    std::vector<int> queue;
+    std::vector<bool> seen(graph.size(), false);
+    std::vector<int> start_index(parent.size());
+    for (int i = 0; i < parent.size(); ++i) {
+      // Note that because of the way we constructed 'parent', the graph is a
+      // binary tree. This is not required for the correctness of the algorithm
+      // here though.
+      CHECK(graph[i].empty() || graph[i].size() == 2);
+      if (parent[i] != i) continue;
+
+      // Explore the subtree rooted at node i.
+      CHECK(!seen[i]);
+      queue.push_back(i);
+      while (!queue.empty()) {
+        const int node = queue.back();
+        if (seen[node]) {
+          queue.pop_back();
+          // All the children of node are in the span [start, end) of the
+          // subset_data vector.
+          const int start = start_index[node];
+          if (new_size - start >= min_subset_size) {
+            subsets->emplace_back(&(*subset_data)[start], new_size - start);
+          }
+          continue;
+        }
+        seen[node] = true;
+        start_index[node] = new_size;
+        if (node < num_nodes) (*subset_data)[new_size++] = node;
+        for (const int child : graph[node]) {
+          if (!seen[child]) queue.push_back(child);
+        }
+      }
+    }
+  }
+
+  DCHECK_EQ(new_size, num_nodes);
+}
+
 // We roughly follow the algorithm described in section 6 of "The Traveling
 // Salesman Problem, A computational Study", David L. Applegate, Robert E.
 // Bixby, Vasek Chvatal, William J. Cook.
@@ -2423,99 +2526,16 @@ void SeparateSubtourInequalities(
             arc_by_decreasing_lp_values.end(),
             std::greater<std::pair<double, int>>());
 
-  // We will do a union-find by adding one by one the arc of the lp solution
-  // in the order above. Every intermediate set during this construction will
-  // be a candidate for a cut.
-  //
-  // In parallel to the union-find, to efficiently reconstruct these sets (at
-  // most num_nodes), we construct a "decomposition forest" of the different
-  // connected components. Note that we don't exploit any asymmetric nature of
-  // the graph here. This is exactly the algo 6.3 in the book above.
-  int num_components = num_nodes;
-  std::vector<int> parent(num_nodes);
-  std::vector<int> root(num_nodes);
-  for (int i = 0; i < num_nodes; ++i) {
-    parent[i] = i;
-    root[i] = i;
+  std::vector<std::pair<int, int>> ordered_arcs;
+  for (const auto& [score, arc] : arc_by_decreasing_lp_values) {
+    ordered_arcs.push_back({tails[arc], heads[arc]});
   }
-  auto get_root_and_compress_path = [&root](int node) {
-    int r = node;
-    while (root[r] != r) r = root[r];
-    while (root[node] != r) {
-      const int next = root[node];
-      root[node] = r;
-      node = next;
-    }
-    return r;
-  };
-  for (const auto& pair : arc_by_decreasing_lp_values) {
-    if (num_components == 2) break;
-    const int tail = get_root_and_compress_path(tails[pair.second]);
-    const int head = get_root_and_compress_path(heads[pair.second]);
-    if (tail != head) {
-      // Update the decomposition forest, note that the number of nodes is
-      // growing.
-      const int new_node = parent.size();
-      parent.push_back(new_node);
-      parent[head] = new_node;
-      parent[tail] = new_node;
-      --num_components;
-
-      // It is important that the union-find representative is the same node.
-      root.push_back(new_node);
-      root[head] = new_node;
-      root[tail] = new_node;
-    }
-  }
-
-  // For each node in the decomposition forest, try to add a cut for the set
-  // formed by the nodes and its children. To do that efficiently, we first
-  // order the nodes so that for each node in a tree, the set of children forms
-  // a consecutive span in the pre_order vector. This vector just lists the
-  // nodes in the "pre-order" graph traversal order. The Spans will point inside
-  // the pre_order vector, it is why we initialize it once and for all.
-  int new_size = 0;
-  std::vector<int> pre_order(num_nodes);
+  std::vector<int> subset_data;
   std::vector<absl::Span<const int>> subsets;
-  {
-    std::vector<absl::InlinedVector<int, 2>> graph(parent.size());
-    for (int i = 0; i < parent.size(); ++i) {
-      if (parent[i] != i) graph[parent[i]].push_back(i);
-    }
-    std::vector<int> queue;
-    std::vector<bool> seen(graph.size(), false);
-    std::vector<int> start_index(parent.size());
-    for (int i = num_nodes; i < parent.size(); ++i) {
-      // Note that because of the way we constructed 'parent', the graph is a
-      // binary tree. This is not required for the correctness of the algorithm
-      // here though.
-      CHECK(graph[i].empty() || graph[i].size() == 2);
-      if (parent[i] != i) continue;
-
-      // Explore the subtree rooted at node i.
-      CHECK(!seen[i]);
-      queue.push_back(i);
-      while (!queue.empty()) {
-        const int node = queue.back();
-        if (seen[node]) {
-          queue.pop_back();
-          // All the children of node are in the span [start, end) of the
-          // pre_order vector.
-          const int start = start_index[node];
-          if (new_size - start > 1) {
-            subsets.emplace_back(&pre_order[start], new_size - start);
-          }
-          continue;
-        }
-        seen[node] = true;
-        start_index[node] = new_size;
-        if (node < num_nodes) pre_order[new_size++] = node;
-        for (const int child : graph[node]) {
-          if (!seen[child]) queue.push_back(child);
-        }
-      }
-    }
-  }
+  GenerateInterestingSubsets(num_nodes, ordered_arcs,
+                             /*min_subset_size=*/2,
+                             /*stop_at_num_components=*/2, &subset_data,
+                             &subsets);
 
   // Compute the total demands in order to know the minimum incoming/outgoing
   // flow.
@@ -2525,11 +2545,10 @@ void SeparateSubtourInequalities(
   }
 
   // Process each subsets and add any violated cut.
-  CHECK_EQ(pre_order.size(), num_nodes);
   std::vector<bool> in_subset(num_nodes, false);
   for (const absl::Span<const int> subset : subsets) {
-    CHECK_GT(subset.size(), 1);
-    CHECK_LT(subset.size(), num_nodes);
+    DCHECK_GT(subset.size(), 1);
+    DCHECK_LT(subset.size(), num_nodes);
 
     // These fields will be left untouched if demands.empty().
     bool contain_depot = false;
@@ -2656,6 +2675,175 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
         SeparateSubtourInequalities(num_nodes, tails, heads, literals,
                                     lp_values, demands, capacity, manager,
                                     model);
+        return true;
+      };
+  return result;
+}
+
+// This is really similar to SeparateSubtourInequalities, see the reference
+// there.
+void SeparateFlowInequalities(
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<AffineExpression>& arc_capacities,
+    std::function<void(const std::vector<bool>& in_subset,
+                       IntegerValue* min_incoming_flow,
+                       IntegerValue* min_outgoing_flow)>
+        get_flows,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    LinearConstraintManager* manager, Model* model) {
+  // We will collect only the arcs with a positive lp capacity value to speed up
+  // some computation below.
+  struct Arc {
+    int tail;
+    int head;
+    double lp_value;
+    IntegerValue offset;
+  };
+  std::vector<Arc> relevant_arcs;
+
+  // Often capacities have a coeff > 1.
+  // We currently exploit this if all coeff have a gcd > 1.
+  int64_t gcd = 0;
+
+  // Sort the arcs by non-increasing lp_values.
+  std::vector<std::pair<double, int>> arc_by_decreasing_lp_values;
+  for (int i = 0; i < arc_capacities.size(); ++i) {
+    const double lp_value = arc_capacities[i].LpValue(lp_values);
+    if (!arc_capacities[i].IsConstant()) {
+      gcd = MathUtil::GCD64(gcd, std::abs(arc_capacities[i].coeff.value()));
+    }
+    if (lp_value < 1e-6 && arc_capacities[i].constant == 0) continue;
+    relevant_arcs.push_back(
+        {tails[i], heads[i], lp_value, arc_capacities[i].constant});
+    arc_by_decreasing_lp_values.push_back({lp_value, i});
+  }
+  if (gcd == 0) return;
+  std::sort(arc_by_decreasing_lp_values.begin(),
+            arc_by_decreasing_lp_values.end(),
+            std::greater<std::pair<double, int>>());
+
+  std::vector<std::pair<int, int>> ordered_arcs;
+  for (const auto& [score, arc] : arc_by_decreasing_lp_values) {
+    if (tails[arc] == -1) continue;
+    if (heads[arc] == -1) continue;
+    ordered_arcs.push_back({tails[arc], heads[arc]});
+  }
+  std::vector<int> subset_data;
+  std::vector<absl::Span<const int>> subsets;
+  GenerateInterestingSubsets(num_nodes, ordered_arcs,
+                             /*min_subset_size=*/1,
+                             /*stop_at_num_components=*/1, &subset_data,
+                             &subsets);
+
+  // Process each subsets and add any violated cut.
+  std::vector<bool> in_subset(num_nodes, false);
+  for (const absl::Span<const int> subset : subsets) {
+    DCHECK(!subset.empty());
+    DCHECK_LE(subset.size(), num_nodes);
+
+    // Initialize "in_subset" and the subset demands.
+    for (const int n : subset) in_subset[n] = true;
+
+    IntegerValue min_incoming_flow;
+    IntegerValue min_outgoing_flow;
+    get_flows(in_subset, &min_incoming_flow, &min_outgoing_flow);
+
+    // We will sum the offset of all incoming/outgoing arc capacities.
+    // Note that all arcs with a non-zero offset are part of relevant_arcs.
+    IntegerValue incoming_offset(0);
+    IntegerValue outgoing_offset(0);
+
+    // Compute the current flow in and out of the subset.
+    //
+    // This can take a significant portion of the running time, it is why it is
+    // faster to do it only on arcs with non-zero lp values which should be in
+    // linear number rather than the total number of arc which can be quadratic.
+    double lp_outgoing_flow = 0.0;
+    double lp_incoming_flow = 0.0;
+    for (const auto arc : relevant_arcs) {
+      if (arc.tail != -1 && in_subset[arc.tail]) {
+        if (arc.head == -1 || !in_subset[arc.head]) {
+          incoming_offset += arc.offset;
+          lp_outgoing_flow += arc.lp_value;
+        }
+      } else {
+        if (arc.head != -1 && in_subset[arc.head]) {
+          outgoing_offset += arc.offset;
+          lp_incoming_flow += arc.lp_value;
+        }
+      }
+    }
+
+    // If the gcd is greater than one, because all variables are integer we
+    // can round the flow lower bound to the next multiple of the gcd.
+    //
+    // TODO(user): Alternatively, try MIR heuristics if the coefficients in
+    // the capacities are not all the same.
+    if (gcd > 1) {
+      const IntegerValue test_incoming = min_incoming_flow - incoming_offset;
+      const IntegerValue new_incoming =
+          CeilRatio(test_incoming, IntegerValue(gcd)) * IntegerValue(gcd);
+      const IntegerValue incoming_delta = new_incoming - test_incoming;
+      if (incoming_delta > 0) min_incoming_flow += incoming_delta;
+    }
+    if (gcd > 1) {
+      const IntegerValue test_outgoing = min_outgoing_flow - outgoing_offset;
+      const IntegerValue new_outgoing =
+          CeilRatio(test_outgoing, IntegerValue(gcd)) * IntegerValue(gcd);
+      const IntegerValue outgoing_delta = new_outgoing - test_outgoing;
+      if (outgoing_delta > 0) min_outgoing_flow += outgoing_delta;
+    }
+
+    if (lp_incoming_flow < ToDouble(min_incoming_flow) - 1e-6) {
+      VLOG(2) << "INCOMING CUT " << lp_incoming_flow
+              << " >= " << min_incoming_flow << " size " << subset.size()
+              << " offset " << incoming_offset << " gcd " << gcd;
+      LinearConstraintBuilder cut(model, min_incoming_flow, kMaxIntegerValue);
+      for (int i = 0; i < tails.size(); ++i) {
+        if ((tails[i] == -1 || !in_subset[tails[i]]) &&
+            (heads[i] != -1 && in_subset[heads[i]])) {
+          cut.AddTerm(arc_capacities[i], 1.0);
+        }
+      }
+      manager->AddCut(cut.Build(), "IncomingFlow", lp_values);
+    }
+
+    if (lp_outgoing_flow < ToDouble(min_outgoing_flow) - 1e-6) {
+      VLOG(2) << "OUGOING CUT " << lp_outgoing_flow
+              << " >= " << min_outgoing_flow << " size " << subset.size()
+              << " offset " << outgoing_offset << " gcd " << gcd;
+      LinearConstraintBuilder cut(model, min_outgoing_flow, kMaxIntegerValue);
+      for (int i = 0; i < tails.size(); ++i) {
+        if ((tails[i] != -1 && in_subset[tails[i]]) &&
+            (heads[i] == -1 || !in_subset[heads[i]])) {
+          cut.AddTerm(arc_capacities[i], 1.0);
+        }
+      }
+      manager->AddCut(cut.Build(), "OutgoingFlow", lp_values);
+    }
+
+    // Sparse clean up.
+    for (const int n : subset) in_subset[n] = false;
+  }
+}
+
+CutGenerator CreateFlowCutGenerator(
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<AffineExpression>& arc_capacities,
+    std::function<void(const std::vector<bool>& in_subset,
+                       IntegerValue* min_incoming_flow,
+                       IntegerValue* min_outgoing_flow)>
+        get_flows,
+    Model* model) {
+  CutGenerator result;
+  for (const AffineExpression expr : arc_capacities) {
+    if (!expr.IsConstant()) result.vars.push_back(expr.var);
+  }
+  result.generate_cuts =
+      [=](const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        SeparateFlowInequalities(num_nodes, tails, heads, arc_capacities,
+                                 get_flows, lp_values, manager, model);
         return true;
       };
   return result;

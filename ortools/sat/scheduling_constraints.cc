@@ -343,6 +343,7 @@ std::function<void(Model*)> SpanOfIntervals(
     std::vector<AffineExpression> starts;
     std::vector<AffineExpression> ends;
     std::vector<Literal> clause;
+    absl::flat_hash_set<LiteralIndex> added_literals;
     bool at_least_one_interval_is_present = false;
     const Literal true_literal =
         model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
@@ -353,7 +354,9 @@ std::function<void(Model*)> SpanOfIntervals(
       if (repository->IsOptional(interval)) {
         const Literal task_lit = repository->PresenceLiteral(interval);
         presence_literals.push_back(task_lit);
-        clause.push_back(task_lit);
+        if (added_literals.insert(task_lit.Index()).second) {
+          clause.push_back(task_lit);
+        }
 
         if (repository->IsOptional(span)) {
           // task is present => target is present.
@@ -372,7 +375,10 @@ std::function<void(Model*)> SpanOfIntervals(
     if (!at_least_one_interval_is_present) {
       // enforcement_literal is true => one of the task is present.
       if (repository->IsOptional(span)) {
-        clause.push_back(repository->PresenceLiteral(span).Negated());
+        const Literal span_literal = repository->PresenceLiteral(span);
+        if (added_literals.insert(span_literal.Negated().Index()).second) {
+          clause.push_back(span_literal.Negated());
+        }
       }
       sat_solver->AddProblemClause(clause);
     }
