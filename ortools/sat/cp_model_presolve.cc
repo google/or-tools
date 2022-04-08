@@ -8318,39 +8318,6 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // Initialize the initial context.working_model domains.
   context_->InitializeNewDomains();
 
-  // Before initializing the constraint <-> variable graph (which is costly), we
-  // run a bunch of simple presolve rules. Note that these function should NOT
-  // use the graph, or the part that uses it should properly check for
-  // context_->ConstraintVariableGraphIsUpToDate() before doing anything that
-  // depends on the graph.
-  if (context_->params().cp_model_presolve()) {
-    for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
-      ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-      PresolveEnforcementLiteral(ct);
-      switch (ct->constraint_case()) {
-        case ConstraintProto::kBoolOr:
-          PresolveBoolOr(ct);
-          break;
-        case ConstraintProto::kBoolAnd:
-          PresolveBoolAnd(ct);
-          break;
-        case ConstraintProto::kAtMostOne:
-          PresolveAtMostOne(ct);
-          break;
-        case ConstraintProto::kExactlyOne:
-          PresolveExactlyOne(ct);
-          break;
-        case ConstraintProto::kLinear:
-          CanonicalizeLinear(ct);
-          break;
-        default:
-          break;
-      }
-      if (context_->ModelIsUnsat()) break;
-    }
-  }
-  if (context_->ModelIsUnsat()) return InfeasibleStatus();
-
   // If the objective is a floating point one, we scale it.
   //
   // TODO(user): We should probably try to delay this even more. For that we
@@ -8373,6 +8340,10 @@ CpSolverStatus CpModelPresolver::Presolve() {
   }
 
   // Initialize the objective and the constraint <-> variable graph.
+  //
+  // Note that we did some basic presolving during the first copy of the model.
+  // This is important has initializing the constraint <-> variable graph can
+  // be costly, so better to remove trivially feasible constraint for instance.
   context_->ReadObjectiveFromProto();
   if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
   context_->UpdateNewConstraintsVariableUsage();
@@ -8535,39 +8506,6 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // Adds all needed affine relation to context_->working_model.
   EncodeAllAffineRelations();
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
-
-  // Final cleaning of the scheduling constraints. Probing could have set
-  // some literal to false, turning the intervals into empty constraints, while
-  // not having cleaned up the scheduling constraints.
-  {
-    const int num_constraints = context_->working_model->constraints_size();
-    for (int c = 0; c < num_constraints; ++c) {
-      ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-      switch (ct->constraint_case()) {
-        case ConstraintProto::kNoOverlap: {
-          // Filter out absent intervals.
-          if (PresolveNoOverlap(ct)) {
-            context_->UpdateConstraintVariableUsage(c);
-          }
-          break;
-        }
-        case ConstraintProto::kNoOverlap2D:
-          // Filter out absent intervals.
-          if (PresolveNoOverlap2D(c, ct)) {
-            context_->UpdateConstraintVariableUsage(c);
-          }
-          break;
-        case ConstraintProto::kCumulative:
-          // Filter out absent intervals.
-          if (PresolveCumulative(ct)) {
-            context_->UpdateConstraintVariableUsage(c);
-          }
-          break;
-        default: {
-        }
-      }
-    }
-  }
 
   // The strategy variable indices will be remapped in ApplyVariableMapping()
   // but first we use the representative of the affine relations for the
