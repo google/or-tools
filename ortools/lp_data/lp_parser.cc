@@ -14,6 +14,7 @@
 
 #include "ortools/lp_data/lp_parser.h"
 
+#include <algorithm>
 #include <set>
 #include <string>
 #include <vector>
@@ -38,9 +39,7 @@ namespace glop {
 
 namespace {
 
-//using StringPiece = ::absl::string_view;
 using StringPiece = ::re2::StringPiece;
-
 using ::absl::StatusOr;
 
 enum class TokenType {
@@ -268,7 +267,6 @@ TokenType ConsumeToken(StringPiece* sp, std::string* consumed_name,
   static const LazyRE2 kNamePattern1 = {R"(\s*(\w[\w[\]]*):)"};
   static const LazyRE2 kNamePattern2 = {R"((?i)\s*(int)\s*:?)"};
   static const LazyRE2 kNamePattern3 = {R"((?i)\s*(bin)\s*:?)"};
-
   if (RE2::Consume(sp, *kNamePattern1, consumed_name)) return TokenType::NAME;
   if (RE2::Consume(sp, *kNamePattern2, consumed_name)) return TokenType::NAME;
   if (RE2::Consume(sp, *kNamePattern3, consumed_name)) return TokenType::NAME;
@@ -348,8 +346,8 @@ TokenType LPParser::ConsumeToken(StringPiece* sp) {
 StatusOr<ParsedConstraint> ParseConstraint(absl::string_view constraint_view) {
   ParsedConstraint parsed_constraint;
   // Get the name, if present.
-  StringPiece constraint(constraint_view);
-  StringPiece constraint_copy{constraint_view};
+  StringPiece constraint{constraint_view};
+  StringPiece constraint_copy{constraint};
   std::string consumed_name;
   Fractional consumed_coeff;
   if (ConsumeToken(&constraint_copy, &consumed_name, &consumed_coeff) ==
@@ -416,8 +414,8 @@ StatusOr<ParsedConstraint> ParseConstraint(absl::string_view constraint_view) {
     right_bound = consumed_coeff;
     if (ConsumeToken(&constraint, &consumed_name, &consumed_coeff) !=
         TokenType::END) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("End of input was expected, found: ", constraint.as_string()));
+      return absl::InvalidArgumentError(absl::StrCat(
+          "End of input was expected, found: ", constraint.as_string()));
     }
   }
 
