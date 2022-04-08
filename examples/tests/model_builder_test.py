@@ -17,6 +17,7 @@ import math
 
 from ortools.model_builder.python import model_builder
 import unittest
+import os
 
 
 class ModelBuilderTest(unittest.TestCase):
@@ -123,8 +124,7 @@ ENDATA
         self.assertEqual(model.name, 'SupportedMaximizationProblem')
 
     def test_import_from_mps_file(self):
-        mps_path = resources.GetResourceFilename('ortools.linear_solver/'
-                                                 'testdata/maximization.mps')
+        mps_path = f'{os.path.dirname(__file__)}/../data/tests/maximization.mps'
         model = model_builder.ModelBuilder()
         self.assertTrue(model.import_from_mps_file(mps_path))
         self.assertEqual(model.name, 'SupportedMaximizationProblem')
@@ -147,7 +147,7 @@ ENDATA
         self.assertEqual('x', model.var_from_index(0).name)
 
     def test_import_from_lp_file(self):
-        lp_path = resources.GetResourceFilename('testdata/small_model.lp')
+        lp_path = f'{os.path.dirname(__file__)}/../data/tests/small_model.lp'
         model = model_builder.ModelBuilder()
         self.assertTrue(model.import_from_lp_file(lp_path))
         self.assertEqual(6, model.num_variables)
