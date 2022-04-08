@@ -105,6 +105,8 @@ class SatSolver {
 
   // Adds a clause to the problem. Returns false if the problem is detected to
   // be UNSAT.
+  // If is_safe is false, we will do some basic presolving like removing
+  // duplicate literals.
   //
   // TODO(user): Rename this to AddClause(), also get rid of the specialized
   // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
