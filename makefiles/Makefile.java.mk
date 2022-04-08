@@ -10,6 +10,14 @@ else
 	@echo
 endif
 
+# Main targets.
+.PHONY: detect_java # Show variables used to build Java OR-Tools.
+.PHONY: java_runtime # Build Java OR-Tools runtime.
+.PHONY: java # Build Java OR-Tools.
+.PHONY: check_java # Quick check only running Java OR-Tools samples.
+.PHONY: test_java # Test Java OR-Tools using various examples.
+.PHONY: archive_java # Generate OR-Tools's maven archive.
+.PHONY: clean_java # Clean Java output from previous build.
 
 ifeq ($(HAS_JAVA),OFF)
 java_runtime: java
@@ -32,12 +40,6 @@ else  # HAS_JAVA=ON
 JAVA_BUILD_PATH := $(BUILD_DIR)$Sjava
 TEMP_JAVA_DIR := temp_java
 JAVA_ORTOOLS_PACKAGE := com.google.ortools
-
-# Main target
-.PHONY: java_runtime # Build Java OR-Tools runtime.
-.PHONY: java # Build Java OR-Tools.
-.PHONY: test_java # Test Java OR-Tools using various examples.
-.PHONY: package_java # Create jar OR-Tools Maven package.
 
 # OR Tools unique library.
 java:
@@ -68,6 +70,7 @@ JAVA_PATH := $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Ssrc$Smain
 $(TEMP_JAVA_DIR):
 	$(MKDIR) $(TEMP_JAVA_DIR)
 
+.PHONY: package_java
 package_java: java
 	-$(DEL) *.jar
 	$(COPY) $(JAVA_BUILD_PATH)$Sortools-java$Starget$S*.jar .
@@ -416,7 +419,6 @@ test_java: \
 ###############
 ##  Archive  ##
 ###############
-.PHONY: archive_java # Add C++ OR-Tools to archive.
 archive_java: $(INSTALL_JAVA_NAME)$(ARCHIVE_EXT)
 
 $(INSTALL_JAVA_NAME):
@@ -576,7 +578,6 @@ endif  # HAS_JAVA=ON
 ################
 ##  Cleaning  ##
 ################
-.PHONY: clean_java # Clean Java output from previous build.
 clean_java:
 	-$(DELREC) $(TEMP_JAVA_DIR)
 	-$(DELREC) $(INSTALL_JAVA_NAME)
@@ -587,7 +588,6 @@ clean_java:
 #############
 ##  DEBUG  ##
 #############
-.PHONY: detect_java # Show variables used to build Java OR-Tools.
 detect_java:
 	@echo Relevant info for the Java build:
 	@echo BUILD_JAVA = $(BUILD_JAVA)
