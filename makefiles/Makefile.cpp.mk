@@ -25,10 +25,17 @@ USE_SCIP ?= ON
 USE_GLPK ?= OFF
 USE_CPLEX ?= OFF
 USE_XPRESS ?= OFF
-PROTOC ?= $(OR_TOOLS_TOP)$Sbin$Sprotoc
+JOBS ?= 4
 
-# Main target.
+# Main targets.
+.PHONY: detect_cpp # Show variables used to build C++ OR-Tools.
 .PHONY: third_party # Build OR-Tools Prerequisite
+.PHONY: cpp # Build C++ OR-Tools library.
+.PHONY: check_cpp # Run all C++ OR-Tools samples and examples targets.
+.PHONY: test_cpp # Run all C++ OR-Tools test targets.
+.PHONY: test_fz # Run all Flatzinc test targets.
+.PHONY: archive_cpp # Add C++ OR-Tools to archive.
+.PHONY: clean_cpp # Clean C++ output from previous build.
 
 GENERATOR ?= $(CMAKE_PLATFORM)
 
@@ -49,18 +56,6 @@ third_party:
  $(CMAKE_ARGS) \
  -G $(GENERATOR)
 
-JOBS ?= 4
-
-TEMP_CPP_DIR := temp_cpp
-
-# Main target
-.PHONY: cpp # Build C++ OR-Tools library.
-.PHONY: check_cpp # Run all C++ OR-Tools test targets.
-.PHONY: test_cpp # Run all C++ OR-Tools test targets.
-.PHONY: fz # Build Flatzinc.
-.PHONY: test_fz # Run all Flatzinc test targets.
-.PHONY: package_cc # Create C++ OR-Tools package.
-
 # OR Tools unique library.
 cpp:
 	$(MAKE) third_party
@@ -74,17 +69,17 @@ test_cpp: \
  test_cc_contrib \
  test_cc_cpp
 
-# Now flatzinc is build with cpp
-fz: cpp
-
 test_fz: \
  cpp \
  rfz_golomb \
  rfz_alpha
 
+TEMP_CPP_DIR := temp_cpp
+
 $(TEMP_CPP_DIR):
 	$(MKDIR) $(TEMP_CPP_DIR)
 
+# Deprecated alias
 .PHONY: detect_cc
 detect_cc: detect_cpp
 	$(warning $@ is deprecated please use detect_cpp instead.)
@@ -109,9 +104,22 @@ test_cc: test_cpp
 test_cc_%: test_cpp_%
 	$(warning $@ is deprecated please use @< instead.)
 
+.PHONY: package_cpp
+package_cpp: archive_cpp
+	$(warning $@ is deprecated please use @< instead.)
+
+.PHONY: package_cc
+package_cc: package_cpp
+	$(warning $@ is deprecated please use @< instead.)
+
 .PHONY: clean_cc
 clean_cc: clean_cpp
 	$(warning $@ is deprecated please use $< instead.)
+
+# Now flatzinc is build with cpp
+fz: cpp
+	$(warning $@ is deprecated please use $< instead.)
+
 ##################
 ##  C++ SOURCE  ##
 ##################
@@ -424,8 +432,8 @@ test_cpp_sat_samples: \
 .PHONY: check_cpp_pimpl
 check_cpp_pimpl: \
  test_cpp_algorithms_samples \
- test_cpp_constraint_solver_samples \
  test_cpp_graph_samples \
+ test_cpp_constraint_solver_samples \
  test_cpp_linear_solver_samples \
  test_cpp_model_builder_samples \
  test_cpp_sat_samples \
@@ -435,7 +443,7 @@ check_cpp_pimpl: \
  rcpp_integer_programming \
  rcpp_knapsack \
  rcpp_max_flow \
- rcpp_min_cost_flow ;
+ rcpp_min_cost_flow
 
 .PHONY: test_cc_tests # Build and Run all C++ Tests (located in ortools/examples/tests)
 test_cc_tests: \
@@ -448,7 +456,7 @@ test_cc_tests: \
 #	$(MAKE) rcpp_issue173 # error: too long
 
 .PHONY: test_cc_contrib # Build and Run all C++ Contrib (located in ortools/examples/contrib)
-test_cc_contrib: ;
+test_cc_contrib:
 
 .PHONY: test_cc_cpp # Build and Run all C++ Examples (located in ortools/examples/cpp)
 test_cc_cpp: \
@@ -508,7 +516,6 @@ rfz_%: fz
 ###############
 ##  Archive  ##
 ###############
-.PHONY: archive_cpp # Add C++ OR-Tools to archive.
 archive_cpp: $(INSTALL_CPP_NAME)$(ARCHIVE_EXT)
 
 $(INSTALL_CPP_NAME):
@@ -581,7 +588,6 @@ endif
 ################
 ##  Cleaning  ##
 ################
-.PHONY: clean_cpp # Clean C++ output from previous build.
 clean_cpp:
 	-$(DELREC) $(BUILD_DIR)
 	-$(DELREC) $(INSTALL_DIR)
@@ -594,7 +600,6 @@ clean_cpp:
 #############
 ##  DEBUG  ##
 #############
-.PHONY: detect_cpp # Show variables used to build C++ OR-Tools.
 detect_cpp:
 	@echo Relevant info for the C++ build:
 	@echo SRC_DIR = $(SRC_DIR)
