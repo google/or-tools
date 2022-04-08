@@ -10,26 +10,30 @@ else
 	@echo
 endif
 
+# Main targets.
+.PHONY: detect_python # Show variables used to build Python OR-Tools.
+.PHONY: python # Build Python OR-Tools.
+.PHONY: check_python # Quick check only running Python OR-Tools samples.
+.PHONY: test_python # Run all Python OR-Tools test targets.
+.PHONY: archive_python # Generate Python OR-Tools archive.
+.PHONY: clean_python # Clean Python output from previous build.
+
+# deprecated
+.PHONY: package_python # Create Python ortools Wheel package.
+.PHONY: test_package_python # Test Python "ortools" Wheel package
+.PHONY: install_python # Install Python OR-Tools on the host system
 
 ifeq ($(HAS_PYTHON),OFF)
 python:
 	$(warning Either Python support was turned off, or the python3 binary was not found.)
 
+check_python: python
 test_python: python
 package_python: python
-check_python: python
 
 else  # HAS_PYTHON=ON
 
 PYTHON_BUILD_PATH := $(BUILD_DIR)$Spython
-
-# Main target
-.PHONY: python # Build Python OR-Tools.
-.PHONY: check_python # Quick check only running Python OR-Tools samples.
-.PHONY: test_python # Run all Python OR-Tools test targets.
-.PHONY: package_python # Create Python ortools Wheel package.
-.PHONY: test_package_python # Test Python "ortools" Wheel package
-.PHONY: install_python # Install Python OR-Tools on the host system
 
 # OR Tools unique library.
 python:
@@ -662,7 +666,6 @@ endif  # HAS_PYTHON=ON
 ###############
 ##  Archive  ##
 ###############
-.PHONY: archive_python # Generate Python OR-Tools archive.
 archive_python: $(INSTALL_PYTHON_NAME)$(ARCHIVE_EXT)
 
 $(INSTALL_PYTHON_NAME):
@@ -733,7 +736,6 @@ endif
 ################
 ##  Cleaning  ##
 ################
-.PHONY: clean_python # Clean Python output from previous build.
 clean_python:
 	-$(DELREC) $(TEMP_PYTHON_DIR)*
 	-$(DELREC) $(INSTALL_PYTHON_NAME)
@@ -744,7 +746,6 @@ clean_python:
 #############
 ##  DEBUG  ##
 #############
-.PHONY: detect_python # Show variables used to build Python OR-Tools.
 detect_python:
 	@echo Relevant info for the Python build:
 	@echo BUILD_PYTHON = $(BUILD_PYTHON)
