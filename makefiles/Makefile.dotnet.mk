@@ -10,42 +10,44 @@ else
 	@echo
 endif
 
+# Main targets.
+.PHONY: detect_dotnet # Show variables used to build dotnet OR-Tools.
+.PHONY: dotnet # Build .Net OR-Tools library.
+.PHONY: check_dotnet # Quick check only running .Net OR-Tools samples.
+.PHONY: test_dotnet # Run all .Net OR-Tools test targets.
+.PHONY: archive_dotnet # Add C++ OR-Tools to archive.
+.PHONY: clean_dotnet # Clean files
 
 ifeq ($(HAS_DOTNET),OFF)
 dotnet:
 	$(warning Either .NET support was turned of, of the dotnet binary was not found.)
 
+check_dotnet: dotnet
 test_dotnet: dotnet
 package_dotnet: dotnet
-check_dotnet: dotnet
 
 else # HAS_DOTNET=ON
 
 DOTNET_BUILD_PATH := $(BUILD_DIR)$Sdotnet
 
 # All libraries and dependencies
-TEMP_DOTNET_DIR := temp_dotnet
 DOTNET_PACKAGE_DIR := temp_dotnet/packages
 DOTNET_PACKAGE_PATH := $(subst /,$S,$(DOTNET_PACKAGE_DIR))
 DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
-
-# Main target
-.PHONY: dotnet # Build .Net OR-Tools library.
-.PHONY: check_dotnet # Quick check only running .Net OR-Tools samples.
-.PHONY: test_dotnet # Run all .Net OR-Tools test targets.
-.PHONY: package_dotnet # Create .Net OR-Tools Nuget package.
+TEMP_DOTNET_DIR := temp_dotnet
 
 # OR Tools unique library.
 dotnet:
 	$(MAKE) third_party BUILD_DOTNET=ON
 	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 
-$(TEMP_DOTNET_DIR):
-	$(MKDIR) $(TEMP_DOTNET_DIR)
-
+.PHONY: package_dotnet
 package_dotnet: dotnet
 	-$(DEL) $.*pkg
 	$(COPY) $(DOTNET_BUILD_PATH)$Spackages$S*.*pkg .
+
+$(TEMP_DOTNET_DIR):
+	$(MKDIR) $(TEMP_DOTNET_DIR)
 
 ###################
 ##  .NET SOURCE  ##
@@ -74,7 +76,6 @@ endif
 ###################################
 ##  .NET Samples/Examples/Tests  ##
 ###################################
-
 # Samples
 define dotnet-sample-target =
 $(TEMP_DOTNET_DIR)/$1: | $(TEMP_DOTNET_DIR)
@@ -230,7 +231,6 @@ rdotnet_%: \
 ####################
 ##  Test targets  ##
 ####################
-
 .PHONY: test_dotnet_algorithms_samples # Build and Run all .Net LP Samples (located in ortools/algorithms/samples)
 test_dotnet_algorithms_samples: \
 	rdotnet_Knapsack
@@ -467,7 +467,6 @@ test_dotnet: \
 ###############
 ##  Archive  ##
 ###############
-.PHONY: archive_dotnet # Add C++ OR-Tools to archive.
 archive_dotnet: $(INSTALL_DOTNET_NAME)$(ARCHIVE_EXT)
 
 $(INSTALL_DOTNET_NAME):
@@ -648,7 +647,6 @@ endif
 ######################
 ##  Nuget artifact  ##
 ######################
-
 .PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
 nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
 	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f net6.0 \
@@ -668,7 +666,6 @@ endif  # HAS_DOTNET=ON
 ################
 ##  Cleaning  ##
 ################
-.PHONY: clean_dotnet # Clean files
 clean_dotnet:
 #	-$(DEL) $(DOTNET_ORTOOLS_SNK_PATH)
 	-$(DELREC) $(TEMP_DOTNET_DIR)
@@ -682,7 +679,6 @@ clean_dotnet:
 #############
 ##  DEBUG  ##
 #############
-.PHONY: detect_dotnet # Show variables used to build dotnet OR-Tools.
 detect_dotnet:
 	@echo Relevant info for the dotnet build:
 	@echo BUILD_DOTNET = $(BUILD_DOTNET)
