@@ -13,9 +13,11 @@ jobs:
       run: tools\make --version
     - name: Check system
       run: tools\make detect_port
+    - name: Check C++
+      run: make detect_cpp
     - name: Build C++
-      run: tools\make cc JOBS=4
+      run: tools\make cpp JOBS=4
     - name: Test C++
-      run: tools\make test_cc
+      run: tools\make test_cpp
     - name: Install
-      run: tools\make install_cc
+      run: tools\make install_cpp

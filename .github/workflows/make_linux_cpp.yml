@@ -16,10 +16,10 @@ jobs:
     - name: Check system
       run: make detect_port
     - name: Check C++
-      run: make detect_cc
+      run: make detect_cpp
     - name: Build C++
-      run: make cc JOBS=4
+      run: make cpp JOBS=4
     - name: Test C++
-      run: make test_cc
+      run: make test_cpp
     - name: Install
-      run: make install_cc DESTDIR=install
+      run: make install_cpp DESTDIR=install

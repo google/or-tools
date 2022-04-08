@@ -61,7 +61,7 @@ help:
 	@echo -e "\t\t${BOLD}build${RESET}"
 	@echo -e "\t\t${BOLD}test${RESET}"
 	@echo -e "\t\t${BOLD}package${RESET}"
-	@echo -e "\te.g. 'make make_alpine_cpp_build'"
+	@echo -e "\te.g. 'make alpine_cpp_build'"
 	@echo
 	@echo
 	@echo -e "\t${BOLD}clean${RESET}: Remove cache and docker image."
