@@ -53,9 +53,7 @@ new_git_repository(
 
 git_repository(
     name = "com_google_re2",
-    patches = ["//patches:re2-2022-02-01.patch"],
-    patch_args = ["-p1"],
-    tag = "2022-02-01",
+    tag = "2022-04-01",
     remote = "https://github.com/google/re2.git",
 )
 
@@ -131,7 +129,7 @@ git_repository(
 
 new_git_repository(
     name = "pybind11",
-    build_file = "@pybind11_bazel//:pybind11.BUILD",    
+    build_file = "@pybind11_bazel//:pybind11.BUILD",
     tag = "v2.9.1",
     remote = "https://github.com/pybind/pybind11.git",
 )
