@@ -149,6 +149,7 @@ build: cpp \
 	$(COPY) $(subst /,$S,$(SOURCE)) $(TEMP_CPP_DIR)$S$(SOURCE_NAME)$S$(SOURCE_NAME).cc
 	cd $(TEMP_CPP_DIR)$S$(SOURCE_NAME) &&\
  cmake -S. -Bbuild \
+ -DCMAKE_PREFIX_PATH=$(OR_ROOT_FULL)/$(INSTALL_DIR) \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
  -G $(GENERATOR) \
  $(CMAKE_ARGS)
