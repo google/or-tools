@@ -20,13 +20,19 @@ https://copr.fedorainfracloud.org/coprs/vbatts/bazel/repo/epel-8/vbatts-bazel-ep
 && dnf clean all \
 && rm -rf /var/cache/dnf
 
+# Install Python
+RUN dnf -y update \
+&& dnf -y install python39-devel \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
+
 FROM env AS devel
 WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
 RUN bazel version
-RUN bazel build --curses=no --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel build -c opt --cxxopt=-std=c++17 ...
 
 FROM build AS test
-RUN bazel test -c opt --curses=no --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel test -c opt --cxxopt=-std=c++17 ...

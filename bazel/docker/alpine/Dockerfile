@@ -17,13 +17,17 @@ RUN rm /usr/lib/jvm/default-jvm/jre
 ENV JAVA_HOME=/usr/lib/jvm/default-jvm
 ENV PATH=$JAVA_HOME/bin:$PATH
 
+# Install Python
+RUN apk add --no-cache python3-dev py3-pip
+RUN ln -s $(command -v python3) /usr/bin/python
+
 FROM env AS devel
 WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
 RUN bazel version
-RUN bazel build --curses=no --host_javabase=@local_jdk//:jdk --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel build --host_javabase=@local_jdk//:jdk --cxxopt=-std=c++17 ...
 
 FROM build AS test
-RUN bazel test --curses=no --host_javabase=@local_jdk//:jdk --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel test --host_javabase=@local_jdk//:jdk --cxxopt=-std=c++17 ...

@@ -9,13 +9,18 @@ RUN zypper update -y \
 && zypper clean -a
 ENV CC=gcc CXX=g++
 
+# Install Python
+RUN zypper update -y \
+&& zypper install -y python3 python3-pip python3-devel \
+&& zypper clean -a
+
 FROM env AS devel
 WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
 RUN bazel version
-RUN bazel build --curses=no --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel build -c opt --cxxopt=-std=c++17 ...
 
 FROM build AS test
-RUN bazel test -c opt --curses=no --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel test -c opt --cxxopt=-std=c++17 ...

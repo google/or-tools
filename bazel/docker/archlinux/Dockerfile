@@ -6,13 +6,17 @@ LABEL maintainer="corentinl@google.com"
 ENV PATH=/usr/local/bin:$PATH
 RUN pacman -Syu --noconfirm git base-devel bazel
 
+# Install Python
+RUN pacman -Syu --noconfirm python python-pip
+RUN pacman -Syu --noconfirm python python-setuptools
+
 FROM env AS devel
 WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
 RUN bazel version
-RUN bazel build --curses=no --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel build -c opt --cxxopt=-std=c++17 ...
 
 FROM build AS test
-RUN bazel test -c opt --curses=no --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel test -c opt --cxxopt=-std=c++17 ...

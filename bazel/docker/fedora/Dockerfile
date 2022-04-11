@@ -10,7 +10,12 @@ RUN dnf -y update \
 && dnf -y install gcc-c++ zlib-devel \
 && dnf -y install dnf-plugins-core \
 && dnf -y copr enable vbatts/bazel \
-&& dnf -y install bazel4 \
+&& dnf -y install bazel5 \
+&& dnf clean all
+
+# Install Python
+RUN dnf -y update \
+&& dnf -y install python3 python3-devel python3-pip \
 && dnf clean all
 
 FROM env AS devel
@@ -19,7 +24,7 @@ COPY . .
 
 FROM devel AS build
 RUN bazel version
-RUN bazel build --curses=no --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel build -c opt --cxxopt=-std=c++17 ...
 
 FROM build AS test
-RUN bazel test -c opt --curses=no --cxxopt=-std=c++20 --copt='-Wno-sign-compare' //...:all
+RUN bazel test -c opt --cxxopt=-std=c++17 ...
