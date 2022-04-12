@@ -1,0 +1,40 @@
+diff --git a/python_configure.bzl b/python_configure.bzl
+index 1f5bffa..7809dce 100644
+--- a/python_configure.bzl
++++ b/python_configure.bzl
+@@ -213,8 +213,14 @@ def _get_python_lib(repository_ctx, python_bin):
+                  "try:\n" +
+                  "  library_paths = site.getsitepackages()\n" +
+                  "except AttributeError:\n" +
+-                 " from distutils.sysconfig import get_python_lib\n" +
+-                 " library_paths = [get_python_lib()]\n" +
++                 "  import sys\n" +
++                 "  USE_SYSCONFIG = sys.version_info >= (3, 10)\n" +
++                 "  if not USE_SYSCONFIG:\n" +
++                 "    from distutils import sysconfig as ds\n" +
++                 "    library_paths = [ds.get_python_lib(plat_specific=True)]\n" +
++                 "  else:\n" +
++                 "    import sysconfig as s\n" +
++                 "    library_paths = [s.get_path('platlib')]\n" +
+                  "all_paths = set(python_paths + library_paths)\n" +
+                  "paths = []\n" +
+                  "for path in all_paths:\n" +
+@@ -251,9 +257,15 @@ def _get_python_include(repository_ctx, python_bin):
+         [
+             python_bin,
+             "-c",
+-            "from __future__ import print_function;" +
+-            "from distutils import sysconfig;" +
+-            "print(sysconfig.get_python_inc())",
++            "from __future__ import print_function\n" +
++            "import sys\n" +
++            "USE_SYSCONFIG = sys.version_info >= (3, 10)\n" +
++            "if not USE_SYSCONFIG:\n" +
++            "  from distutils import sysconfig as ds\n" +
++            "  print(ds.get_python_inc(plat_specific=True))\n" +
++            "else:\n" +
++            "  import sysconfig as s\n" +
++            "  print(s.get_path('platinclude'))\n",
+         ],
+         error_msg = "Problem getting python include path.",
+         error_details = ("Is the Python binary path set up right? " +

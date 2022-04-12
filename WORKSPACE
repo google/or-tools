@@ -19,13 +19,6 @@ git_repository(
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
-# Bazel Python rules.
-git_repository(
-    name = "rules_python",
-    tag = "0.6.0",
-    remote = "https://github.com/bazelbuild/rules_python.git",
-)
-
 # Abseil-cpp
 git_repository(
     name = "com_google_absl",
@@ -105,11 +98,12 @@ cc_library(
 """
 )
 
-http_archive(
+# Python
+## Bazel Python rules.
+git_repository(
     name = "rules_python",
-    sha256 = "9fcf91dbcc31fde6d1edb15f117246d912c33c36f44cf681976bd886538deba6",
-    strip_prefix = "rules_python-0.8.0",
-    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.8.0.tar.gz",
+    tag = "0.8.0",
+    remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
 load("@rules_python//python:pip.bzl", "pip_install")
@@ -124,13 +118,15 @@ pip_install(
 git_repository(
     name = "pybind11_bazel",
     commit = "72cbbf1fbc830e487e3012862b7b720001b70672",
+    patches = ["//patches:pybind11_bazel.patch"], # see pybind/pybind11_bazel#38
+    patch_args = ["-p1"],
     remote = "https://github.com/pybind/pybind11_bazel.git",
 )
 
 new_git_repository(
     name = "pybind11",
     build_file = "@pybind11_bazel//:pybind11.BUILD",
-    tag = "v2.9.1",
+    tag = "v2.9.2",
     remote = "https://github.com/pybind/pybind11.git",
 )
 
