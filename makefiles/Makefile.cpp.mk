@@ -106,7 +106,6 @@ test_cc_%: test_cpp_%
 
 .PHONY: package_cpp
 package_cpp: archive_cpp
-	$(warning $@ is deprecated please use @< instead.)
 
 .PHONY: package_cc
 package_cc: package_cpp

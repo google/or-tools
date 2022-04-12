@@ -19,5 +19,5 @@ jobs:
       run: tools\make cpp JOBS=4
     - name: Test C++
       run: tools\make test_cpp
-    - name: Install
-      run: tools\make install_cpp
+    - name: Create archive
+      run: tools\make archive_cpp
