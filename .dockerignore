@@ -3,7 +3,6 @@
 
 .git
 .gitignore
-
 .travis.yml
 .travis
 .appveyor.yml
@@ -44,17 +43,20 @@ CONTRIBUTING.md
 #LICENSE-2.0.txt
 
 # Native CMake/Make build
-classes
 dependencies/sources
 dependencies/install
 ortools/gen
-objs
-lib
+bazel-*
 bin
+classes
+lib
+objs
 packages
 build/
 build_cmake/
 build_cross/
+build_make/
+temp_*/
 examples/data/vector_packing
 examples/data/rcpsp
 examples/data/binpacking
