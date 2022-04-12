@@ -12,7 +12,7 @@ ENV CC=gcc CXX=g++
 # https://software.opensuse.org/package/bazel4.2
 RUN zypper ar -Gf \
 https://download.opensuse.org/repositories/devel:tools:building/openSUSE_Factory/devel:tools:building.repo \
-&& zypper install -y bazel4.2 \
+&& zypper install -y bazel4.2 findutils \
 && zypper clean -a
 
 # Install Python
