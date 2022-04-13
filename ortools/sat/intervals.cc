@@ -207,6 +207,10 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
   emin = std::max(emin, smin + dmin);
   emax = std::min(emax, smax + dmax);
 
+  if (emin != cached_end_min_[t]) {
+    recompute_energy_profile_ = true;
+  }
+
   cached_start_min_[t] = smin;
   cached_end_min_[t] = emin;
   cached_negated_start_max_[t] = -smax;
@@ -216,6 +220,7 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
   // Note that we use the cached value here for EndMin()/StartMax().
   const IntegerValue new_shifted_start_min = EndMin(t) - dmin;
   if (new_shifted_start_min != cached_shifted_start_min_[t]) {
+    recompute_energy_profile_ = true;
     recompute_shifted_start_min_ = true;
     cached_shifted_start_min_[t] = new_shifted_start_min;
   }
@@ -281,6 +286,7 @@ void SchedulingConstraintHelper::InitSortedVectors() {
     task_by_negated_shifted_end_max_[t].task_index = t;
   }
 
+  recompute_energy_profile_ = true;
   recompute_shifted_start_min_ = true;
   recompute_negated_shifted_end_max_ = true;
 }
@@ -297,6 +303,7 @@ void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
     std::swap(task_by_increasing_shifted_start_min_,
               task_by_negated_shifted_end_max_);
 
+    recompute_energy_profile_ = true;
     std::swap(cached_start_min_, cached_negated_end_max_);
     std::swap(cached_end_min_, cached_negated_start_max_);
     std::swap(cached_shifted_start_min_, cached_negated_shifted_end_max_);
@@ -313,8 +320,9 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
     }
   } else {
     for (int t = 0; t < recompute_cache_.size(); ++t) {
-      if (recompute_cache_[t])
+      if (recompute_cache_[t]) {
         if (!UpdateCachedValues(t)) return false;
+      }
     }
   }
   recompute_all_cache_ = false;
@@ -388,6 +396,32 @@ SchedulingConstraintHelper::TaskByIncreasingShiftedStartMin() {
                     task_by_increasing_shifted_start_min_.end());
   }
   return task_by_increasing_shifted_start_min_;
+}
+
+// TODO(user): Avoid recomputing it if nothing changed.
+const std::vector<SchedulingConstraintHelper::ProfileEvent>&
+SchedulingConstraintHelper::GetEnergyProfile() {
+  if (energy_profile_.empty()) {
+    const int num_tasks = NumTasks();
+    for (int t = 0; t < num_tasks; ++t) {
+      energy_profile_.push_back(
+          {cached_shifted_start_min_[t], t, /*is_first=*/true});
+      energy_profile_.push_back({cached_end_min_[t], t, /*is_first=*/false});
+    }
+  } else {
+    if (!recompute_energy_profile_) return energy_profile_;
+    for (ProfileEvent& ref : energy_profile_) {
+      const int t = ref.task;
+      if (ref.is_first) {
+        ref.time = cached_shifted_start_min_[t];
+      } else {
+        ref.time = cached_end_min_[t];
+      }
+    }
+  }
+  IncrementalSort(energy_profile_.begin(), energy_profile_.end());
+  recompute_energy_profile_ = false;
+  return energy_profile_;
 }
 
 // Produces a relaxed reason for StartMax(before) < EndMin(after).

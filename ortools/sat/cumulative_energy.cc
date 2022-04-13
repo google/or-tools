@@ -296,64 +296,77 @@ CumulativeIsAfterSubsetConstraint::CumulativeIsAfterSubsetConstraint(
 }
 
 bool CumulativeIsAfterSubsetConstraint::Propagate() {
-  const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
+  if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
 
-  if (!helper_->SynchronizeAndSetTimeDirection(true)) {
-    return false;
-  }
-
-  // Compute the total energy.
-  // Compute the profile deltas in energy if all task are packed left.
-  IntegerValue energy_after_time(0);
-  std::vector<std::pair<IntegerValue, IntegerValue>> energy_changes;
-  for (int t = 0; t < helper_->NumTasks(); ++t) {
-    if (!is_in_subtasks_[t]) continue;
-    if (!helper_->IsPresent(t)) continue;
-    if (helper_->SizeMin(t) == 0) continue;
-
-    const IntegerValue demand = integer_trail_->LowerBound(demands_[t]);
-    if (demand == 0) continue;
-
-    const IntegerValue size_min = helper_->SizeMin(t);
-    const IntegerValue end_min = helper_->EndMin(t);
-    energy_changes.push_back({end_min - size_min, demand});
-    energy_changes.push_back({end_min, -demand});
-    energy_after_time += size_min * demand;
-  }
-
-  IntegerValue best_time = kMinIntegerValue;
+  IntegerValue best_time = kMaxIntegerValue;
   IntegerValue best_end_min = kMinIntegerValue;
 
-  IntegerValue previous_time = kMinIntegerValue;
+  IntegerValue previous_time = kMaxIntegerValue;
+  IntegerValue energy_after_time(0);
   IntegerValue profile_height(0);
+
+  // If the capacity_max is low enough, we compute the exact possible subset
+  // of reachable "sum of demands" of all tasks used in the energy. We will use
+  // the highest reachable as the capacity max.
+  const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
+  dp_.Reset(capacity_max.value());
 
   // We consider the energy after a given time.
   // From that we derive a bound on the end_min of the subtasks.
-  std::sort(energy_changes.begin(), energy_changes.end());
-  for (int i = 0; i < energy_changes.size();) {
-    const IntegerValue time = energy_changes[i].first;
+  const auto& profile = helper_->GetEnergyProfile();
+  for (int i = profile.size() - 1; i >= 0;) {
+    // Skip tasks not relevant for this propagator.
+    {
+      const int t = profile[i].task;
+      if (!helper_->IsPresent(t) || !is_in_subtasks_[t]) {
+        --i;
+        continue;
+      }
+    }
+
+    const IntegerValue time = profile[i].time;
     if (profile_height > 0) {
-      energy_after_time -= profile_height * (time - previous_time);
+      energy_after_time += profile_height * (previous_time - time);
     }
     previous_time = time;
+    const IntegerValue saved_capa_max = dp_.CurrentMax();
 
-    while (i < energy_changes.size() && energy_changes[i].first == time) {
-      profile_height += energy_changes[i].second;
-      ++i;
+    for (; i >= 0 && profile[i].time == time; --i) {
+      // Skip tasks not relevant for this propagator.
+      const int t = profile[i].task;
+      if (!helper_->IsPresent(t) || !is_in_subtasks_[t]) continue;
+
+      const IntegerValue demand_min = integer_trail_->LowerBound(demands_[t]);
+      const IntegerValue delta = profile[i].is_first ? -demand_min : demand_min;
+      profile_height += delta;
+      if (delta > 0) {
+        if (demands_[t].IsConstant()) {
+          dp_.Add(delta.value());
+        } else {
+          dp_.Add(capacity_max.value());  // Abort DP.
+        }
+      }
     }
 
     // We prefer higher time in case of ties since that should reduce the
     // explanation size.
+    //
+    // Note that if the energy is zero, we don't push anything. Other propagator
+    // will make sure that the end_min is greater than the end_min of any of
+    // the task considered here. TODO(user): actually, we will push using the
+    // last task, and the reason will be non-optimal, fix.
+    if (energy_after_time == 0) continue;
+    DCHECK_GT(saved_capa_max, 0);
     const IntegerValue end_min =
-        time + CeilRatio(energy_after_time, capacity_max);
-    if (end_min >= best_end_min) {
+        time + CeilRatio(energy_after_time, saved_capa_max);
+    if (end_min > best_end_min) {
       best_time = time;
       best_end_min = end_min;
     }
   }
-  CHECK_EQ(profile_height, 0);
-  CHECK_EQ(energy_after_time, 0);
+  DCHECK_EQ(profile_height, 0);
 
+  if (best_end_min == kMinIntegerValue) return true;
   if (best_end_min + offset_ > integer_trail_->LowerBound(var_to_push_)) {
     // Compute the reason.
     // It is just the reason for the energy after time.
@@ -361,13 +374,16 @@ bool CumulativeIsAfterSubsetConstraint::Propagate() {
     for (int t = 0; t < helper_->NumTasks(); ++t) {
       if (!is_in_subtasks_[t]) continue;
       if (!helper_->IsPresent(t)) continue;
-      if (helper_->SizeMin(t) == 0) continue;
-
-      const IntegerValue demand = integer_trail_->LowerBound(demands_[t]);
-      if (demand == 0) continue;
 
       const IntegerValue size_min = helper_->SizeMin(t);
+      if (size_min == 0) continue;
+
+      const IntegerValue demand_min = integer_trail_->LowerBound(demands_[t]);
+      if (demand_min == 0) continue;
+
       const IntegerValue end_min = helper_->EndMin(t);
+      if (end_min <= best_time) continue;
+
       helper_->AddEndMinReason(t, std::min(best_time + size_min, end_min));
       helper_->AddSizeMinReason(t);
       helper_->AddPresenceReason(t);

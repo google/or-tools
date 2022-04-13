@@ -835,7 +835,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
-    CHECK_GT(target_size, 0) << difficulty << " " << num_active_vars;
+    if (target_size == 0) return helper_.FullNeighborhood();
 
     const int first_var =
         helper_.ActiveVariablesWhileHoldingLock()[absl::Uniform<int>(
@@ -899,7 +899,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
-    CHECK_GT(target_size, 0);
+    if (target_size == 0) return helper_.FullNeighborhood();
 
     // Start by a random constraint.
     const int num_active_constraints = helper_.ConstraintToVar().size();

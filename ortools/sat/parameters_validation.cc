@@ -27,10 +27,49 @@ namespace sat {
                         max, "]. Current value is ", params.name());        \
   }
 
+#define TEST_NOT_NAN(name)                                 \
+  if (std::isnan(params.name())) {                         \
+    return absl::StrCat("parameter '", #name, "' is NaN"); \
+  }
+
 std::string ValidateParameters(const SatParameters& params) {
   if (params.max_time_in_seconds() < 0) {
     return "Parameters max_time_in_seconds should be non-negative";
   }
+
+  // Test that all floating point parameters are not NaN.
+  TEST_NOT_NAN(random_polarity_ratio);
+  TEST_NOT_NAN(random_branches_ratio);
+  TEST_NOT_NAN(initial_variables_activity);
+  TEST_NOT_NAN(clause_cleanup_ratio);
+  TEST_NOT_NAN(pb_cleanup_ratio);
+  TEST_NOT_NAN(variable_activity_decay);
+  TEST_NOT_NAN(max_variable_activity_value);
+  TEST_NOT_NAN(glucose_max_decay);
+  TEST_NOT_NAN(glucose_decay_increment);
+  TEST_NOT_NAN(clause_activity_decay);
+  TEST_NOT_NAN(max_clause_activity_value);
+  TEST_NOT_NAN(restart_dl_average_ratio);
+  TEST_NOT_NAN(restart_lbd_average_ratio);
+  TEST_NOT_NAN(blocking_restart_multiplier);
+  TEST_NOT_NAN(strategy_change_increase_ratio);
+  TEST_NOT_NAN(max_time_in_seconds);
+  TEST_NOT_NAN(max_deterministic_time);
+  TEST_NOT_NAN(absolute_gap_limit);
+  TEST_NOT_NAN(relative_gap_limit);
+  TEST_NOT_NAN(log_frequency_in_seconds);
+  TEST_NOT_NAN(presolve_probing_deterministic_time_limit);
+  TEST_NOT_NAN(merge_no_overlap_work_limit);
+  TEST_NOT_NAN(merge_at_most_one_work_limit);
+  TEST_NOT_NAN(min_orthogonality_for_lp_constraints);
+  TEST_NOT_NAN(cut_max_active_count_value);
+  TEST_NOT_NAN(cut_active_count_decay);
+  TEST_NOT_NAN(shaving_search_deterministic_time);
+  TEST_NOT_NAN(mip_max_bound);
+  TEST_NOT_NAN(mip_var_scaling);
+  TEST_NOT_NAN(mip_wanted_precision);
+  TEST_NOT_NAN(mip_check_precision);
+  TEST_NOT_NAN(mip_max_valid_magnitude);
 
   // TODO(user): Consider using annotations directly in the proto for these
   // validation. It is however not open sourced.
@@ -57,6 +96,7 @@ std::string ValidateParameters(const SatParameters& params) {
 }
 
 #undef TEST_IN_RANGE
+#undef TEST_NOT_NAN
 
 }  // namespace sat
 }  // namespace operations_research

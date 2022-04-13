@@ -291,6 +291,25 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   const std::vector<TaskTime>& TaskByDecreasingEndMax();
   const std::vector<TaskTime>& TaskByIncreasingShiftedStartMin();
 
+  // Returns a sorted vector where each task appear twice, the first occurrence
+  // is at size (end_min - size_min) and the second one at (end_min).
+  //
+  // This is quite usage specific.
+  struct ProfileEvent {
+    IntegerValue time;
+    int task;
+    bool is_first;
+
+    bool operator<(const ProfileEvent& other) const {
+      if (time == other.time) {
+        if (task == other.task) return is_first > other.is_first;
+        return task < other.task;
+      }
+      return time < other.time;
+    }
+  };
+  const std::vector<ProfileEvent>& GetEnergyProfile();
+
   // Functions to clear and then set the current reason.
   void ClearReason();
   void AddPresenceReason(int t);
@@ -434,6 +453,10 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   std::vector<TaskTime> task_by_increasing_end_min_;
   std::vector<TaskTime> task_by_decreasing_start_max_;
   std::vector<TaskTime> task_by_decreasing_end_max_;
+
+  // Sorted vector returned by GetEnergyProfile().
+  bool recompute_energy_profile_ = true;
+  std::vector<ProfileEvent> energy_profile_;
 
   // This one is the most commonly used, so we optimized a bit more its
   // computation by detecting when there is nothing to do.

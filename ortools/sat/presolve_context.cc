@@ -1835,6 +1835,7 @@ bool PresolveContext::SubstituteVariableInObjective(
 bool PresolveContext::ExploitExactlyOneInObjective(
     absl::Span<const int> exactly_one) {
   if (objective_map_.empty()) return false;
+  if (exactly_one.empty()) return false;
 
   int64_t min_coeff = std::numeric_limits<int64_t>::max();
   for (const int ref : exactly_one) {

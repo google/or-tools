@@ -182,9 +182,40 @@ int MoveOneUnprocessedLiteralLast(
     const absl::btree_set<LiteralIndex>& processed, int relevant_prefix_size,
     std::vector<Literal>* literals);
 
-// ============================================================================
-// Implementation.
-// ============================================================================
+// Simple DP to compute the maximum reachable value of a "subset sum" under
+// a given bound (inclusive). Note that we abort as soon as the computation
+// become too important.
+//
+// Precondition: Both bound and all added values must be >= 0.
+//
+// TODO(user): Compute gcd of all value so we can return a better bound for
+// large sets?
+class MaxBoundedSubsetSum {
+ public:
+  MaxBoundedSubsetSum() { Reset(0); }
+  explicit MaxBoundedSubsetSum(int64_t bound) { Reset(bound); }
+
+  // Resets to an empty set of values.
+  // We look for the maximum sum <= bound.
+  void Reset(int64_t bound);
+
+  // Add a value to the base set for which subset sums will be taken.
+  void Add(int64_t value);
+
+  // Returns an upper bound (inclusive) on the maximum sum <= bound_.
+  // This might return bound_ if we aborted the computation.
+  int64_t CurrentMax() const { return current_max_; }
+
+  int64_t Bound() const { return bound_; }
+
+ private:
+  static constexpr int kMaxComplexityPerAdd = 50;
+
+  int64_t bound_;
+  int64_t current_max_;
+  std::vector<int64_t> sums_;
+  std::vector<bool> expanded_sums_;
+};
 
 // Manages incremental averages.
 class IncrementalAverage {
@@ -267,6 +298,10 @@ class Percentile {
 // This method is exposed for testing purposes.
 void CompressTuples(absl::Span<const int64_t> domain_sizes, int64_t any_value,
                     std::vector<std::vector<int64_t>>* tuples);
+
+// ============================================================================
+// Implementation.
+// ============================================================================
 
 inline int64_t SafeDoubleToInt64(double value) {
   if (std::isnan(value)) return 0;

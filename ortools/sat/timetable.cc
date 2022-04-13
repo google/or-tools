@@ -581,7 +581,7 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
 
   // State of the task to be pushed.
   helper_->AddEndMinReason(task_id, left + 1);
-  helper_->AddSizeMinReason(task_id, IntegerValue(1));
+  helper_->AddSizeMinReason(task_id);
   if (demands_[task_id].var != kNoIntegerVariable) {
     helper_->MutableIntegerReason()->push_back(
         integer_trail_->LowerBoundAsLiteral(demands_[task_id].var));
@@ -591,6 +591,9 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
   return helper_->IncreaseStartMin(task_id, right);
 }
 
+// TODO(user): we might be able to remove some tasks from the profile, as long
+// as the profile is high enough for the task not to be able to fit in the
+// interval [left, right].
 void TimeTablingPerTask::AddProfileReason(IntegerValue left,
                                           IntegerValue right) {
   for (int i = 0; i < num_profile_tasks_; ++i) {

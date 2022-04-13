@@ -143,6 +143,10 @@ std::function<void(Model*)> Cumulative(
     //
     // TODO(user): There is a bit of code duplication with the disjunctive
     // precedence propagator. Abstract more?
+    //
+    // TODO(user): We compute this only once, so we should explore the full
+    // precedence graph, not just task in direct precedence. Make sure not to
+    // create to many such constraints though.
     {
       std::vector<IntegerVariable> index_to_end_vars;
       std::vector<int> index_to_task;
@@ -165,9 +169,11 @@ std::function<void(Model*)> Cumulative(
 
         IntegerValue min_offset = kMaxIntegerValue;
         std::vector<int> subtasks;
+        IntegerValue sum_of_demand_max(0);
         for (; i < size && before[i].var == var; ++i) {
           const int t = index_to_task[before[i].index];
           subtasks.push_back(t);
+          sum_of_demand_max += integer_trail->LevelZeroUpperBound(demands[t]);
 
           // We have var >= end_exp.var + offset, so
           // var >= (end_exp.var + end_exp.cte) + (offset - end_exp.cte)
@@ -177,7 +183,10 @@ std::function<void(Model*)> Cumulative(
               std::min(min_offset, before[i].offset - end_exp.constant);
         }
 
-        if (subtasks.size() > 1) {
+        // There is no point adding this if all tasks can fit at the same time
+        // in the minimum capacity.
+        if (subtasks.size() > 1 &&
+            sum_of_demand_max > integer_trail->LevelZeroLowerBound(capacity)) {
           CumulativeIsAfterSubsetConstraint* constraint =
               new CumulativeIsAfterSubsetConstraint(var, min_offset, capacity,
                                                     demands, subtasks,

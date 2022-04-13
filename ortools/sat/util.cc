@@ -403,5 +403,56 @@ void CompressTuples(absl::Span<const int64_t> domain_sizes, int64_t any_value,
   }
 }
 
+void MaxBoundedSubsetSum::Reset(int64_t bound) {
+  DCHECK_GE(bound, 0);
+  sums_ = {0};
+  current_max_ = 0;
+  bound_ = bound;
+}
+
+void MaxBoundedSubsetSum::Add(int64_t value) {
+  DCHECK_GE(value, 0);
+
+  // The max is already reachable or we aborted.
+  if (current_max_ == bound_) return;
+  if (value > bound_) return;  // Can be ignored.
+
+  // Mode 1: vector of all possible sums (with duplicates).
+  if (!sums_.empty() && sums_.size() <= kMaxComplexityPerAdd) {
+    const int old_size = sums_.size();
+    for (int i = 0; i < old_size; ++i) {
+      const int64_t s = sums_[i] + value;
+      if (s <= bound_) {
+        sums_.push_back(s);
+        current_max_ = std::max(current_max_, s);
+      }
+    }
+    return;
+  }
+
+  // Mode 2: bitset of all possible sums.
+  if (bound_ <= kMaxComplexityPerAdd) {
+    if (!sums_.empty()) {
+      expanded_sums_.assign(bound_ + 1, false);
+      for (const int64_t s : sums_) {
+        expanded_sums_[s] = true;
+      }
+      sums_.clear();
+    }
+
+    // The reverse order is important to not add the current value twice.
+    for (int i = bound_ - value; i >= 0; --i) {
+      if (expanded_sums_[i]) {
+        expanded_sums_[i + value] = true;
+        current_max_ = std::max(current_max_, i + value);
+      }
+    }
+    return;
+  }
+
+  // Abort.
+  current_max_ = bound_;
+}
+
 }  // namespace sat
 }  // namespace operations_research

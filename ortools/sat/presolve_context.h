@@ -403,6 +403,8 @@ class PresolveContext {
 
   // Checks if the given exactly_one is included in the objective, and simplify
   // the objective by adding a constant value to all the exactly one terms.
+  //
+  // Returns true if a simplification was done.
   bool ExploitExactlyOneInObjective(absl::Span<const int> exactly_one);
 
   // Allows to manipulate the objective coefficients.

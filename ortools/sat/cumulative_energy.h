@@ -21,6 +21,7 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/theta_tree.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -101,6 +102,10 @@ class CumulativeIsAfterSubsetConstraint : public PropagatorInterface {
 
   // Computed at construction time, this is const.
   std::vector<bool> is_in_subtasks_;
+
+  // Temporary data used by the algorithm.
+  MaxBoundedSubsetSum dp_;
+  std::vector<std::pair<IntegerValue, IntegerValue>> energy_changes_;
 
   IntegerTrail* integer_trail_;
   SchedulingConstraintHelper* helper_;
