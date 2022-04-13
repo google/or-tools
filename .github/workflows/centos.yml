@@ -101,6 +101,7 @@ jobs:
           mv centos-7_sirius-solver-install ${{ env.SIRIUS_INSTALL_DIR }}
 
       - name: set Sirius variables
+        if : ${{ matrix.sirius == 'ON' }}
         run: |
           cd ${{ env.SIRIUS_INSTALL_DIR }}
           echo "SIRIUS=$PWD/lib" >> $GITHUB_ENV
