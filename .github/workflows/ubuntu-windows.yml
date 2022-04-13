@@ -132,6 +132,7 @@ jobs:
           dotnet: ${{ matrix.dotnet }}
 
       - name: Download Sirius
+        if: ${{ matrix.sirius == 'ON' }}
         shell: bash
         run: |
           zipfile=${{ matrix.os }}_sirius-solver.zip
@@ -140,7 +141,7 @@ jobs:
           mv "${{ matrix.os }}_sirius-solver-install" "${{ env.SIRIUS_INSTALL_PATH }}"
 
       - name: Checkout Xpress linux
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.os, 'ubuntu') && matrix.xprs == 'ON' }}
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp
@@ -148,7 +149,7 @@ jobs:
           ref: master
           token: ${{ secrets.ACCESS_TOKEN }}
       - name: Checkout Xpress windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.os, 'windows') && matrix.xprs == 'ON' }}
         uses: actions/checkout@v2
         with:
           repository: rte-france/xpress-mp-temp
