@@ -135,7 +135,6 @@ $(info version: ${OR_TOOLS_VERSION})
 # Docker image name prefix.
 IMAGE := or-tools/docker
 
-DOCKER_RUN_CMD := docker run --rm --init
 ifdef NOCACHE
 DOCKER_BUILD_CMD := docker build --no-cache
 DOCKER_BUILDX_CMD := docker buildx build --no-cache
@@ -143,6 +142,8 @@ else
 DOCKER_BUILD_CMD := docker build
 DOCKER_BUILDX_CMD := docker buildx build
 endif
+DOCKER_RUN_CMD := docker run --rm --init
+
 #################
 ###  DELIVERY  ##
 #################
