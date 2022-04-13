@@ -3,7 +3,7 @@ name: Make Docker
 on: [push, pull_request]
 
 jobs:
-  Distros:
+  make:
     runs-on: ubuntu-latest
     strategy:
       matrix:

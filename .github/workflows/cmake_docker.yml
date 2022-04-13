@@ -3,7 +3,7 @@ name: CMake Docker
 on: [push, pull_request]
 
 jobs:
-  Distros:
+  cmake:
     runs-on: ubuntu-latest
     strategy:
       matrix:

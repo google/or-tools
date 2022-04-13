@@ -3,14 +3,14 @@ name: Bazel Docker
 on: [push, pull_request]
 
 jobs:
-  Distros:
+  bazel:
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.allow_failure }}
     strategy:
-      fail-fast: false
       matrix:
         distro: [alpine, archlinux, centos, debian, fedora, opensuse, ubuntu]
         allow_failure: [false]
+      fail-fast: false
     env:
       DISTRO: ${{ matrix.distro }}
     steps:
