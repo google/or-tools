@@ -5,12 +5,9 @@ for orchestration.
 
 pros:
 
-*   You are independent of third party CI runner config (e.g. github actions
-    runners or Travis-CI VM images).
-*   You can run it locally on your linux system.
-*   Most CI provide runner with docker and Makefile already installed (e.g.
-    tarvis-ci
-    [minimal images](https://docs.travis-ci.com/user/languages/minimal-and-generic/).
+* You are independent of third party CI runner VM images (e.g. [github actions/virtual-environments](https://github.com/actions/virtual-environments)).
+* You can run it locally on any host having a linux docker image support.
+* Most CI provide runner with docker and Makefile installed.
 
 cons:
 
