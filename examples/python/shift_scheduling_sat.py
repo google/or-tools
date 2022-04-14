@@ -16,11 +16,10 @@
 from absl import app
 from absl import flags
 
-from ortools.sat.python import cp_model
 from google.protobuf import text_format
+from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS
-
 flags.DEFINE_string('output_proto', '',
                     'Output file to write the cp_model proto to.')
 flags.DEFINE_string('params', 'max_time_in_seconds:10.0',
@@ -420,7 +419,7 @@ def solve_shift_scheduling(params, output_proto):
     print('  - wall time       : %f s' % solver.WallTime())
 
 
-def main(_):
+def main(_=None):
     solve_shift_scheduling(FLAGS.params, FLAGS.output_proto)
 
 

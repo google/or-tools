@@ -27,7 +27,7 @@ from ortools.sat.python import cp_model
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('problem', 2, 'Problem id to solve.')
-flags.DEFINE_boolean('break_symmetries', True,
+flags.DEFINE_bool('break_symmetries', True,
                      'Break symmetries between equivalent orders.')
 flags.DEFINE_string(
     'solver', 'mip_column', 'Method used to solve: sat, sat_table, sat_column, '
@@ -736,7 +736,7 @@ def steel_mill_slab_with_mip_column_generation(problem):
         print('No solution')
 
 
-def main(_):
+def main(_=None):
     if FLAGS.solver == 'sat':
         steel_mill_slab(FLAGS.problem, FLAGS.break_symmetries)
     elif FLAGS.solver == 'sat_table':

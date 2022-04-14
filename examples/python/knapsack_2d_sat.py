@@ -18,14 +18,12 @@ https://yetanothermathprogrammingconsultant.blogspot.com/2021/10/2d-knapsack-pro
 """
 
 import io
-
 from absl import app
 from absl import flags
 import numpy as np
 import pandas as pd
 
 from google.protobuf import text_format
-
 from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS
@@ -360,15 +358,19 @@ def solve_with_rotations(data, max_height, max_width):
         print(data)
 
 
-def main(_):
+def solve_knapsack(model):
     """Solve the problem with all models."""
     data, max_height, max_width = build_data()
-    if FLAGS.model == 'duplicate':
+    if model == 'duplicate':
         solve_with_duplicate_items(data, max_height, max_width)
-    elif FLAGS.model == 'optional':
+    elif model == 'optional':
         solve_with_duplicate_optional_items(data, max_height, max_width)
     else:
         solve_with_rotations(data, max_height, max_width)
+
+
+def main(_=None):
+    solve_knapsack(FLAGS.model)
 
 
 if __name__ == '__main__':
