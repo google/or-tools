@@ -1270,7 +1270,7 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
       CreateCumulativePrecedenceCutGenerator(intervals, capacity, demands, m));
 
   // Checks if at least one rectangle has a variable size, is optional, or if
-  // the demand if variable.
+  // the demand or the capacity are variable.
   bool has_variable_part = false;
   IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (int i = 0; i < intervals.size(); ++i) {
@@ -1284,7 +1284,7 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
       break;
     }
   }
-  if (has_variable_part) {
+  if (has_variable_part || !integer_trail->IsFixed(capacity)) {
     relaxation->cut_generators.push_back(CreateCumulativeEnergyCutGenerator(
         intervals, capacity, demands, energies, m));
   }

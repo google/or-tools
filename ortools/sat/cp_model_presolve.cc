@@ -7594,7 +7594,12 @@ void CpModelPresolver::PresolveToFixPoint() {
     });
   }
 
-  while (!queue.empty() && !context_->ModelIsUnsat()) {
+  // We put a hard limit on the number of loop to prevent some corner case with
+  // propagation loops. Note that the limit is quite high so it shouldn't really
+  // be reached in most situation.
+  constexpr int kMaxNumLoops = 1000;
+  for (int i = 0;
+       i < kMaxNumLoops && !queue.empty() && !context_->ModelIsUnsat(); ++i) {
     if (time_limit->LimitReached()) break;
     if (context_->num_presolve_operations > max_num_operations) break;
     while (!queue.empty() && !context_->ModelIsUnsat()) {

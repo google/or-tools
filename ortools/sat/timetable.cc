@@ -572,12 +572,7 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
 bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
                                             IntegerValue right) {
   helper_->ClearReason();
-
-  AddProfileReason(left, right);
-  if (capacity_.var != kNoIntegerVariable) {
-    helper_->MutableIntegerReason()->push_back(
-        integer_trail_->UpperBoundAsLiteral(capacity_.var));
-  }
+  AddProfileReason(task_id, left, right);
 
   // State of the task to be pushed.
   helper_->AddEndMinReason(task_id, left + 1);
@@ -591,11 +586,37 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
   return helper_->IncreaseStartMin(task_id, right);
 }
 
-// TODO(user): we might be able to remove some tasks from the profile, as long
-// as the profile is high enough for the task not to be able to fit in the
-// interval [left, right].
-void TimeTablingPerTask::AddProfileReason(IntegerValue left,
+// TODO(user): there is more room for improvements in the reason.
+// Note that compared to the "easiest" reason (mode == 2) this doesn't seems
+// to help much. Still the more relaxed the reason, the better it should be.
+void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
                                           IntegerValue right) {
+  const IntegerValue capa_max = integer_trail_->UpperBound(capacity_);
+  IntegerValue sum_of_demand(0);
+
+  // We optimize a bit the reason depending on the case.
+  int mode;
+  DCHECK_GT(right, left);
+  DCHECK(task_id >= 0 || left + 1 == right);
+  if (left + 1 == right) {
+    // Here we can easily remove extra tasks if the demand is already high
+    // enough.
+    mode = 0;
+    if (task_id >= 0) {
+      // If task_id == -1, the reason is used to push the capacity min.
+      // If we are above the capa_max, we will have a conflict and we can
+      // potentially reduce the reason a bit.
+      sum_of_demand = integer_trail_->LowerBound(demands_[task_id]);
+    }
+  } else if (right - left < helper_->SizeMin(task_id) + 2) {
+    // In this case, only the profile in [left, left + 1) and [right - 1, right)
+    // is enough to push the task. We don't care about what happen in the middle
+    // since the task will not fit.
+    mode = 1;
+  } else {
+    mode = 2;
+  }
+
   for (int i = 0; i < num_profile_tasks_; ++i) {
     const int t = profile_tasks_[i];
 
@@ -606,11 +627,28 @@ void TimeTablingPerTask::AddProfileReason(IntegerValue left,
     if (end_min <= left) continue;
 
     helper_->AddPresenceReason(t);
-    helper_->AddStartMaxReason(t, std::max(left, start_max));
-    helper_->AddEndMinReason(t, std::min(right, end_min));
     if (demands_[t].var != kNoIntegerVariable) {
       helper_->MutableIntegerReason()->push_back(
           integer_trail_->LowerBoundAsLiteral(demands_[t].var));
+    }
+
+    if (mode == 0) {
+      helper_->AddStartMaxReason(t, left);
+      helper_->AddEndMinReason(t, right);
+
+      // No need to include more tasks if we have enough demand already.
+      //
+      // TODO(user): Improve what task we "exclude" instead of always taking
+      // the last ones? Note however that profile_tasks_ should be in order in
+      // which task have a mandatory part.
+      sum_of_demand += integer_trail_->LowerBound(demands_[t]);
+      if (sum_of_demand > capa_max) break;
+    } else if (mode == 1) {
+      helper_->AddStartMaxReason(t, start_max <= left ? left : right - 1);
+      helper_->AddEndMinReason(t, end_min >= right ? right : left + 1);
+    } else {
+      helper_->AddStartMaxReason(t, std::max(left, start_max));
+      helper_->AddEndMinReason(t, std::min(right, end_min));
     }
   }
 }
@@ -620,7 +658,7 @@ bool TimeTablingPerTask::IncreaseCapacity(IntegerValue time,
   if (new_min <= CapacityMin()) return true;
 
   helper_->ClearReason();
-  AddProfileReason(time, time + 1);
+  AddProfileReason(-1, time, time + 1);
   if (capacity_.var == kNoIntegerVariable) {
     return helper_->ReportConflict();
   }

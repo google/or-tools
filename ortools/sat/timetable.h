@@ -154,10 +154,10 @@ class TimeTablingPerTask : public PropagatorInterface {
   // the mandatory parts that overlap time.
   bool IncreaseCapacity(IntegerValue time, IntegerValue new_min);
 
-  // Explains the state of the profile in the time interval [left, right). The
-  // reason is all the mandatory parts that overlap the interval. The current
-  // reason is not cleared when this method is called.
-  void AddProfileReason(IntegerValue left, IntegerValue right);
+  // Explains the state of the profile in the time interval [left, right) that
+  // allow to push task_id. The reason is all the mandatory parts that overlap
+  // the interval. The current reason is not cleared when this method is called.
+  void AddProfileReason(int task_id, IntegerValue left, IntegerValue right);
 
   IntegerValue CapacityMin() const {
     return integer_trail_->LowerBound(capacity_);
