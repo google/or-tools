@@ -27,7 +27,7 @@ from ortools.sat.python import cp_model
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('problem', 2, 'Problem id to solve.')
-flags.DEFINE_boolean('break_symmetries', True,
+flags.DEFINE_bool('break_symmetries', True,
                      'Break symmetries between equivalent orders.')
 flags.DEFINE_string(
     'solver', 'mip_column', 'Method used to solve: sat, sat_table, sat_column, '

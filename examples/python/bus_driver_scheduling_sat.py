@@ -1978,7 +1978,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
     return int(solver.ObjectiveValue())
 
 
-def main(_):
+def solve_bus_driver_scheduling():
     """Optimize the bus driver allocation in two passes."""
     print('----------- first pass: minimize the number of drivers')
     num_drivers = bus_driver_scheduling(True, -1)
@@ -1987,6 +1987,10 @@ def main(_):
     else:
         print('----------- second pass: minimize the sum of working times')
         bus_driver_scheduling(False, num_drivers)
+
+
+def main(_):
+    solve_bus_driver_scheduling()
 
 
 if __name__ == '__main__':

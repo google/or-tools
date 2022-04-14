@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# [START program]
 """Appointment selection.
 
 This module maximizes the number of appointments that can
@@ -21,10 +22,12 @@ ratio of appointment types.
 # overloaded sum() clashes with pytype.
 # pytype: disable=wrong-arg-types
 
+# [START import]
 from absl import app
 from absl import flags
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
+# [END import]
 
 FLAGS = flags.FLAGS
 flags.DEFINE_integer('load_min', 480, 'Minimum load in minutes.')
@@ -204,7 +207,7 @@ def GetOptimalSchedule(demand):
     return output
 
 
-def main(_):
+def solve_appointments(_):
     demand = [(45.0, 'Type1', 90), (30.0, 'Type2', 120), (25.0, 'Type3', 180)]
     print('*** input problem ***')
     print('Appointments: ')
@@ -221,6 +224,7 @@ def main(_):
     for a in demand:
         installed_per_type[a[1]] = 0
 
+    # [START print_solution]
     print('*** output solution ***')
     for template in selection:
         num_instances = template[0]
@@ -238,7 +242,9 @@ def main(_):
         per_type = installed_per_type[name]
         print(('   %d (%.2f%%) installations of type %s planned' %
                (per_type, per_type * 100.0 / installed, name)))
+    # [END print_solution]
 
 
 if __name__ == '__main__':
-    app.run(main)
+    app.run(solve_appointments)
+# [END program]

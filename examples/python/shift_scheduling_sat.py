@@ -16,11 +16,10 @@
 from absl import app
 from absl import flags
 
-from ortools.sat.python import cp_model
 from google.protobuf import text_format
+from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS
-
 flags.DEFINE_string('output_proto', '',
                     'Output file to write the cp_model proto to.')
 flags.DEFINE_string('params', 'max_time_in_seconds:10.0',

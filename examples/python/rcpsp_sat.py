@@ -22,17 +22,12 @@ from ortools.sat.python import cp_model
 from ortools.scheduling import pywraprcpsp
 
 FLAGS = flags.FLAGS
-
 flags.DEFINE_string('input', '', 'Input file to parse and solve.')
-flags.DEFINE_string('output_proto', '',
-                    'Output file to write the cp_model proto to.')
+flags.DEFINE_string('output_proto', '', 'Output file to write the cp_model proto to.')
 flags.DEFINE_string('params', '', 'Sat solver parameters.')
-flags.DEFINE_bool('use_interval_makespan', True,
-                  'Whether we encode the makespan using an interval or not.')
+flags.DEFINE_bool('use_interval_makespan', True, 'Whether we encode the makespan using an interval or not.')
 flags.DEFINE_integer('horizon', -1, 'Force horizon.')
-flags.DEFINE_bool(
-    'use_main_interval_for_tasks', True,
-    'Creates a main interval for each task, and use it in precedences')
+flags.DEFINE_bool('use_main_interval_for_tasks', True, 'Creates a main interval for each task, and use it in precedences')
 
 
 def PrintProblemStatistics(problem):
