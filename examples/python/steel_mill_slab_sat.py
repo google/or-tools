@@ -736,7 +736,7 @@ def steel_mill_slab_with_mip_column_generation(problem):
         print('No solution')
 
 
-def main(_):
+def main(_=None):
     if FLAGS.solver == 'sat':
         steel_mill_slab(FLAGS.problem, FLAGS.break_symmetries)
     elif FLAGS.solver == 'sat_table':

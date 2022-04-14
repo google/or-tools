@@ -369,7 +369,7 @@ def solve_knapsack(model):
         solve_with_rotations(data, max_height, max_width)
 
 
-def main(_):
+def main(_=None):
     solve_knapsack(FLAGS.model)
 
 

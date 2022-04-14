@@ -189,7 +189,7 @@ def solve_hidato(puzzle, index):
             print('  - wall time : %f s' % solver.WallTime())
 
 
-def main(_):
+def main(_=None):
     for pb in range(1, 7):
         solve_hidato(build_puzzle(pb), pb)
 

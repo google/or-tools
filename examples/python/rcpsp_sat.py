@@ -300,7 +300,7 @@ def SolveRcpsp(problem, proto_file, params):
     solver.Solve(model)
 
 
-def main(_):
+def main(_=None):
     rcpsp_parser = pywraprcpsp.RcpspParser()
     rcpsp_parser.ParseFile(FLAGS.input)
     SolveRcpsp(rcpsp_parser.Problem(), FLAGS.output_proto, FLAGS.params)

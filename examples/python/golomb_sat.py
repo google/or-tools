@@ -85,7 +85,7 @@ def solve_golomb_ruler(order, params):
     print(f'- wall time: {solver.WallTime()}s\n')
 
 
-def main(_):
+def main(_=None):
     solve_golomb_ruler(FLAGS.order, FLAGS.params)
 
 

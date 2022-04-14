@@ -93,7 +93,7 @@ def solve_golomb_ruler(order):
     print(f'- total wall time: {solver.WallTime()}ms\n')
 
 
-def main(_):
+def main(_=None):
     solve_golomb_ruler(FLAGS.order)
 
 

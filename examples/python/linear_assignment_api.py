@@ -49,7 +49,7 @@ def RunAssignmentOn4x4Matrix():
             'Some input costs are too large and may cause an integer overflow.')
 
 
-def main(_):
+def main(_=None):
     RunAssignmentOn4x4Matrix()
 
 

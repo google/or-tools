@@ -419,7 +419,7 @@ def solve_shift_scheduling(params, output_proto):
     print('  - wall time       : %f s' % solver.WallTime())
 
 
-def main(_):
+def main(_=None):
     solve_shift_scheduling(FLAGS.params, FLAGS.output_proto)
 
 

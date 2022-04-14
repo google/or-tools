@@ -72,7 +72,7 @@ def MinCostFlow():
         print('There was an issue with the min cost flow input.')
 
 
-def main(_):
+def main(_=None):
     MaxFlow()
     MinCostFlow()
 

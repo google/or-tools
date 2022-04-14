@@ -1989,7 +1989,7 @@ def solve_bus_driver_scheduling():
         bus_driver_scheduling(False, num_drivers)
 
 
-def main(_):
+def main(_=None):
     solve_bus_driver_scheduling()
 
 
