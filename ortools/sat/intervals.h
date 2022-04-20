@@ -43,6 +43,8 @@ namespace sat {
 DEFINE_STRONG_INDEX_TYPE(IntervalVariable);
 const IntervalVariable kNoIntervalVariable(-1);
 
+class SchedulingConstraintHelper;
+
 // This class maintains a set of intervals which correspond to three integer
 // variables (start, end and size). It automatically registers with the
 // PrecedencesPropagator the relation between the bounds of each interval and
@@ -140,6 +142,11 @@ class IntervalsRepository {
     return result;
   }
 
+  // Returns a SchedulingConstraintHelper corresponding to the given variables.
+  // Note that the order of interval in the helper will be the same.
+  SchedulingConstraintHelper* GetOrCreateHelper(
+      const std::vector<IntervalVariable>& variables);
+
  private:
   // External classes needed.
   Model* model_;
@@ -154,6 +161,12 @@ class IntervalsRepository {
   absl::StrongVector<IntervalVariable, AffineExpression> starts_;
   absl::StrongVector<IntervalVariable, AffineExpression> ends_;
   absl::StrongVector<IntervalVariable, AffineExpression> sizes_;
+
+  // We can share the helper for all the propagators that work on the same set
+  // of intervals.
+  absl::flat_hash_map<std::vector<IntervalVariable>,
+                      SchedulingConstraintHelper*>
+      helper_repository_;
 
   DISALLOW_COPY_AND_ASSIGN(IntervalsRepository);
 };

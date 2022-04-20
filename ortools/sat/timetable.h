@@ -141,10 +141,13 @@ class TimeTablingPerTask : public PropagatorInterface {
   // Tries to increase the minimum start time of each task according to the
   // current profile. This function can be called after ReverseProfile() and
   // ReverseVariables to update the maximum end time of each task.
-  bool SweepAllTasks(bool is_forward);
+  bool SweepAllTasks();
 
-  // Tries to increase the minimum start time of task_id.
-  bool SweepTask(int task_id);
+  // Tries to increase the minimum start time of task_id. This assumes tasks are
+  // processed by increasing start_min so that the starting profile_index only
+  // increase.
+  bool SweepTask(int task_id, IntegerValue initial_start_min,
+                 int* profile_index);
 
   // Updates the starting time of task_id to right and explain it. The reason is
   // all the mandatory parts contained in [left, right).
@@ -199,15 +202,6 @@ class TimeTablingPerTask : public PropagatorInterface {
   // Reversible starting height of the reduced profile. This corresponds to the
   // height of the leftmost profile rectangle that can be used for propagation.
   IntegerValue starting_profile_height_;
-
-  // Reversible sets of tasks to consider for the forward (resp. backward)
-  // propagation. A task with a fixed start do not need to be considered for the
-  // forward pass, same for task with fixed end for the backward pass. It is why
-  // we use two sets.
-  std::vector<int> forward_tasks_to_sweep_;
-  std::vector<int> backward_tasks_to_sweep_;
-  int forward_num_tasks_to_sweep_;
-  int backward_num_tasks_to_sweep_;
 
   // Reversible set (with random access) of tasks to consider for building the
   // profile. The set contains the tasks in the [0, num_profile_tasks_) prefix

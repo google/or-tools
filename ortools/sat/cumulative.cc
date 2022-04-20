@@ -93,14 +93,35 @@ std::function<void(Model*)> Cumulative(
       // does. That is, the interval [2,2) will be assumed to be in
       // disjunction with [1, 3) for instance. We need to uniformize the
       // handling of interval with size zero.
-      //
-      // TODO(user): improve the condition (see CL147454185).
       std::vector<IntervalVariable> in_disjunction;
+      IntegerValue min_of_demands = kMaxIntegerValue;
+      const IntegerValue capa_max = integer_trail->UpperBound(capacity);
       for (int i = 0; i < vars.size(); ++i) {
-        if (intervals->MinSize(vars[i]) > 0 &&
-            2 * integer_trail->LowerBound(demands[i]) >
-                integer_trail->UpperBound(capacity)) {
+        const IntegerValue size_min = intervals->MinSize(vars[i]);
+        if (size_min == 0) continue;
+        const IntegerValue demand_min = integer_trail->LowerBound(demands[i]);
+        if (2 * demand_min > capa_max) {
           in_disjunction.push_back(vars[i]);
+          min_of_demands = std::min(min_of_demands, demand_min);
+        }
+      }
+
+      // Liftable? We might be able to add one more interval!
+      if (!in_disjunction.empty()) {
+        IntervalVariable lift_var;
+        IntegerValue lift_size(0);
+        for (int i = 0; i < vars.size(); ++i) {
+          const IntegerValue size_min = intervals->MinSize(vars[i]);
+          if (size_min == 0) continue;
+          const IntegerValue demand_min = integer_trail->LowerBound(demands[i]);
+          if (2 * demand_min > capa_max) continue;
+          if (min_of_demands + demand_min > capa_max && size_min > lift_size) {
+            lift_var = vars[i];
+            lift_size = size_min;
+          }
+        }
+        if (lift_size > 0) {
+          in_disjunction.push_back(lift_var);
         }
       }
 
@@ -125,8 +146,7 @@ std::function<void(Model*)> Cumulative(
     }
 
     if (helper == nullptr) {
-      helper = new SchedulingConstraintHelper(vars, model);
-      model->TakeOwnership(helper);
+      helper = intervals->GetOrCreateHelper(vars);
     }
 
     // For each variables that is after a subset of task ends (i.e. like a
@@ -147,7 +167,7 @@ std::function<void(Model*)> Cumulative(
     // TODO(user): We compute this only once, so we should explore the full
     // precedence graph, not just task in direct precedence. Make sure not to
     // create to many such constraints though.
-    {
+    if (parameters.use_hard_precedences_in_cumulative_constraint()) {
       std::vector<IntegerVariable> index_to_end_vars;
       std::vector<int> index_to_task;
       std::vector<PrecedencesPropagator::IntegerPrecedences> before;

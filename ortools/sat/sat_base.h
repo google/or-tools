@@ -377,6 +377,11 @@ class Trail {
   int NumVariables() const { return trail_.size(); }
   int64_t NumberOfEnqueues() const { return num_untrailed_enqueues_ + Index(); }
   int Index() const { return current_info_.trail_index; }
+  // This accessor can return trail_.end(). operator[] cannot. This allows
+  // normal std:vector operations, such as assign(begin, end).
+  const std::vector<Literal>::const_iterator IteratorAt(int index) const {
+    return trail_.begin() + index;
+  }
   const Literal& operator[](int index) const { return trail_[index]; }
   const VariablesAssignment& Assignment() const { return assignment_; }
   const AssignmentInfo& Info(BooleanVariable var) const {

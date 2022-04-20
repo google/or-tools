@@ -49,7 +49,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands,
-    const std::vector<LinearExpression>& energies, Model* model);
+    const std::vector<std::optional<LinearExpression>>& energies, Model* model);
 
 // For a given set of intervals and demands, we first compute the mandatory part
 // of the interval as [start_max , end_min]. We use this to calculate mandatory
@@ -74,7 +74,7 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands,
-    const std::vector<LinearExpression>& energies, Model* model);
+    const std::vector<std::optional<LinearExpression>>& energies, Model* model);
 
 // For a given set of intervals in a cumulative constraint, we detect violated
 // mandatory precedences and create a cut for these.

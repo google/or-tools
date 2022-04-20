@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -600,11 +601,12 @@ void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
   relaxation->linear_constraints.push_back(zero_node_balance_lc.Build());
 }
 
-void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
-                             const std::vector<AffineExpression>& demands,
-                             const std::vector<LinearExpression>& energies,
-                             IntegerValue capacity_upper_bound, Model* model,
-                             LinearRelaxation* relaxation) {
+void AddCumulativeRelaxation(
+    const std::vector<IntervalVariable>& intervals,
+    const std::vector<AffineExpression>& demands,
+    const std::vector<std::optional<LinearExpression>>& energies,
+    IntegerValue capacity_upper_bound, Model* model,
+    LinearRelaxation* relaxation) {
   // TODO(user): Keep a map intervals -> helper, or ct_index->helper to avoid
   // creating many helpers for the same constraint.
   auto* helper = new SchedulingConstraintHelper(intervals, model);
@@ -669,11 +671,10 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
     if (!helper->IsOptional(i)) {
       if (demand_is_fixed) {
         lc.AddTerm(helper->Sizes()[i], demand_lower_bound);
-      } else if (!helper->SizeIsFixed(i) &&
-                 (!energies[i].vars.empty() || energies[i].offset != -1)) {
+      } else if (!helper->SizeIsFixed(i) && energies[i].has_value()) {
         // We prefer the energy additional info instead of the McCormick
         // relaxation.
-        lc.AddLinearExpression(energies[i]);
+        lc.AddLinearExpression(energies[i].value());
       } else {
         lc.AddQuadraticLowerBound(helper->Sizes()[i], demands[i],
                                   integer_trail);
@@ -704,14 +705,15 @@ void AppendCumulativeRelaxation(const ConstraintProto& ct, Model* model,
   IntervalsRepository* intervals_repository =
       model->GetOrCreate<IntervalsRepository>();
 
-  std::vector<LinearExpression> energies;
+  std::vector<std::optional<LinearExpression>> energies;
   std::vector<AffineExpression> demands;
   std::vector<AffineExpression> sizes;
   for (int i = 0; i < ct.cumulative().demands_size(); ++i) {
     demands.push_back(mapping->Affine(ct.cumulative().demands(i)));
     sizes.push_back(intervals_repository->Size(intervals[i]));
+    energies.push_back(
+        TryToLinearizeProduct(demands.back(), sizes.back(), model));
   }
-  LinearizeInnerProduct(demands, sizes, model, &energies);
   AddCumulativeRelaxation(intervals, demands, energies, capacity_upper_bound,
                           model, relaxation);
 }
@@ -1252,14 +1254,13 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   IntervalsRepository* intervals_repository =
       m->GetOrCreate<IntervalsRepository>();
 
-  std::vector<LinearExpression> energies;
+  std::vector<std::optional<LinearExpression>> energies;
   std::vector<AffineExpression> demands;
-  std::vector<AffineExpression> sizes;
   for (int i = 0; i < intervals.size(); ++i) {
     demands.push_back(mapping->Affine(ct.cumulative().demands(i)));
-    sizes.push_back(intervals_repository->Size(intervals[i]));
+    energies.push_back(TryToLinearizeProduct(
+        demands.back(), intervals_repository->Size(intervals[i]), m));
   }
-  LinearizeInnerProduct(demands, sizes, m, &energies);
 
   relaxation->cut_generators.push_back(
       CreateCumulativeTimeTableCutGenerator(intervals, capacity, demands, m));

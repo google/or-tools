@@ -84,7 +84,8 @@ void SatDecisionPolicy::BeforeConflict(int trail_index) {
   }
 
   if (trail_index > best_partial_assignment_.size()) {
-    best_partial_assignment_.assign(&trail_[0], &trail_[trail_index]);
+    best_partial_assignment_.assign(trail_.IteratorAt(0),
+                                    trail_.IteratorAt(trail_index));
   }
 
   --num_conflicts_until_rephase_;

@@ -109,6 +109,21 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
   }
 }
 
+// TODO(user): Ideally we should sort the vector of variables, but right now
+// we cannot since we often use this with a parallel vector of demands. So this
+// "sorting" should happen in the presolver so we can share as much as possible.
+SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
+    const std::vector<IntervalVariable>& variables) {
+  const auto it = helper_repository_.find(variables);
+  if (it != helper_repository_.end()) return it->second;
+
+  SchedulingConstraintHelper* helper =
+      new SchedulingConstraintHelper(variables, model_);
+  helper_repository_[variables] = helper;
+  model_->TakeOwnership(helper);
+  return helper;
+}
+
 SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
                                                        Model* model)
     : trail_(model->GetOrCreate<Trail>()),
