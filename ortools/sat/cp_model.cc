@@ -409,6 +409,18 @@ DoubleLinearExpr& DoubleLinearExpr::AddTerm(BoolVar var, double coeff) {
   return *this;
 }
 
+DoubleLinearExpr& DoubleLinearExpr::AddExpression(const LinearExpr& expr,
+                                                  double coeff) {
+  const std::vector<int>& indices = expr.variables();
+  const std::vector<int64_t> coefficients = expr.coefficients();
+  for (int i = 0; i < indices.size(); ++i) {
+    variables_.push_back(indices[i]);
+    coefficients_.push_back(1.0 * static_cast<double>(coefficients[i]) * coeff);
+  }
+
+  return *this;
+}
+
 DoubleLinearExpr& DoubleLinearExpr::operator-=(double value) {
   constant_ -= value;
   return *this;

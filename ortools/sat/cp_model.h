@@ -370,6 +370,9 @@ class DoubleLinearExpr {
   DoubleLinearExpr& AddTerm(IntVar var, double coeff);
   DoubleLinearExpr& AddTerm(BoolVar var, double coeff);
 
+  /// Adds a linear expression to the double linear expression.
+  DoubleLinearExpr& AddExpression(const LinearExpr& exprs, double coeff = 1.0);
+
   /// Adds a constant value to the linear expression.
   DoubleLinearExpr& operator-=(double value);
 

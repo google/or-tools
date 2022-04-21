@@ -143,14 +143,16 @@ void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
 // Adds linearization of no overlap constraints.
 // It adds an energetic equation linking the duration of all potential tasks to
 // the actual span of the no overlap constraint.
-void AppendNoOverlapRelaxation(const ConstraintProto& ct, Model* model,
-                               LinearRelaxation* relaxation);
+void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
+                                              Model* model,
+                                              LinearRelaxation* relaxation);
 
 // Adds linearization of cumulative constraints.The second part adds an
 // energetic equation linking the duration of all potential tasks to the actual
 // max span * capacity of the cumulative constraint.
-void AppendCumulativeRelaxation(const ConstraintProto& ct, Model* model,
-                                LinearRelaxation* relaxation);
+void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
+                                               Model* model,
+                                               LinearRelaxation* relaxation);
 
 // Cut generators.
 void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
@@ -168,14 +170,32 @@ void AddCircuitCutGenerator(const ConstraintProto& ct, Model* m,
 void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation);
 
-void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
-                               LinearRelaxation* relaxation);
-
-void AddNoOverlapCutGenerator(const ConstraintProto& ct, Model* m,
-                              LinearRelaxation* relaxation);
-
 void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
                                 LinearRelaxation* relaxation);
+
+// Scheduling relaxations and cut generators.
+
+// Adds linearization of cumulative constraints.The second part adds an
+// energetic equation linking the duration of all potential tasks to the actual
+// max span * capacity of the cumulative constraint.
+void AddCumulativeRelaxation(
+    SchedulingConstraintHelper* helper,
+    const std::vector<AffineExpression>& demands,
+    const AffineExpression& capacity,
+    const std::vector<std::optional<LinearExpression>>& energies, Model* model,
+    LinearRelaxation* relaxation);
+
+void AddCumulativeCutGenerator(
+    SchedulingConstraintHelper* helper,
+    const std::vector<AffineExpression>& demands,
+    const AffineExpression& capacity,
+    const std::vector<std::optional<LinearExpression>>& energies,
+    std::optional<AffineExpression>& makespan, Model* m,
+    LinearRelaxation* relaxation);
+
+void AddNoOverlapCutGenerator(SchedulingConstraintHelper* helper,
+                              const std::optional<AffineExpression>& makespan,
+                              Model* m, LinearRelaxation* relaxation);
 
 // Adds linearization of different types of constraints.
 void TryToLinearizeConstraint(const CpModelProto& model_proto,

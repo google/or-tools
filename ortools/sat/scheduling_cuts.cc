@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -151,15 +152,18 @@ void GenerateCumulativeEnergeticCuts(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<EnergyEvent> events, const AffineExpression capacity,
-    Model* model, LinearConstraintManager* manager) {
+    std::optional<AffineExpression> makespan, Model* model,
+    LinearConstraintManager* manager) {
   // Compute relevant time points.
   // TODO(user): We could reduce this set.
   absl::btree_set<IntegerValue> time_points_set;
+  IntegerValue max_end_min = kMinIntegerValue;
   for (const EnergyEvent& event : events) {
     time_points_set.insert(event.x_start_min);
     time_points_set.insert(event.x_start_max);
     time_points_set.insert(event.x_end_min);
     time_points_set.insert(event.x_end_max);
+    max_end_min = std::max(max_end_min, event.x_end_min);
   }
   const std::vector<IntegerValue> time_points(time_points_set.begin(),
                                               time_points_set.end());
@@ -173,6 +177,10 @@ void GenerateCumulativeEnergeticCuts(
   // add it either to energy_lp, or to the cut.
   // It returns false if it tried to generate the cut, and failed.
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+  // Checks the precondition of the code.
+  DCHECK(!makespan.has_value() || integer_trail->IsFixed(capacity));
+
   const auto add_one_event = [integer_trail, &lp_values](
                                  const EnergyEvent& event,
                                  IntegerValue window_start,
@@ -285,13 +293,26 @@ void GenerateCumulativeEnergeticCuts(
   };
   std::vector<OverloadedTimeWindow> overloaded_time_windows;
   const double capacity_lp = capacity.LpValue(lp_values);
+  const double makespan_lp = makespan.has_value()
+                                 ? makespan->LpValue(lp_values)
+                                 : std::numeric_limits<double>::infinity();
+
   const int num_time_points = time_points.size();
   for (int i = 0; i + 1 < num_time_points; ++i) {
     const IntegerValue window_start = time_points[i];
+    // After max_end_min, all tasks can fit before window_start.
+    if (window_start >= max_end_min) break;
+
+    // if (ToDouble(window_start) >= makespan_lp) continue;
     for (int j = i + 1; j < num_time_points; ++j) {
       const IntegerValue window_end = time_points[j];
       const double max_energy_lp =
           ToDouble(window_end - window_start) * capacity_lp;
+      const double energy_up_to_makespan_lp =
+          makespan.has_value()
+              ? capacity_lp * (makespan_lp - ToDouble(window_start))
+              : std::numeric_limits<double>::infinity();
+
       if (max_energy_lp >= sum_of_energies_lp) break;
 
       // Scan all events and sum their energetic contributions.
@@ -303,8 +324,10 @@ void GenerateCumulativeEnergeticCuts(
           break;  // Abort.
         }
       }
-      if (energy_correctly_computed &&
-          energy_lp > max_energy_lp * (1.0 + kMinCutViolation)) {
+      if (!energy_correctly_computed) continue;
+
+      if (energy_lp >= std::min(max_energy_lp, energy_up_to_makespan_lp) *
+                           (1.0 + kMinCutViolation)) {
         overloaded_time_windows.push_back({window_start, window_end});
       }
     }
@@ -323,8 +346,24 @@ void GenerateCumulativeEnergeticCuts(
     bool add_lifted_to_name = false;
     bool add_quadratic_to_name = false;
     bool add_energy_to_name = false;
+    bool use_makespan_in_cut = false;
     LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
-    cut.AddTerm(capacity, window_start - window_end);
+    double max_energy_lp = ToDouble(window_end - window_start) * capacity_lp;
+    if (makespan.has_value()) {
+      const double energy_up_to_makespan_lp =
+          capacity_lp * (makespan_lp - ToDouble(window_start));
+      if (energy_up_to_makespan_lp < max_energy_lp) {
+        max_energy_lp = energy_up_to_makespan_lp;
+        use_makespan_in_cut = true;
+      }
+    }
+    if (use_makespan_in_cut) {
+      IntegerValue capacity_value = integer_trail->FixedValue(capacity);
+      cut.AddConstant(capacity_value * window_start);
+      cut.AddTerm(makespan.value(), -capacity_value);
+    } else {
+      cut.AddTerm(capacity, window_start - window_end);
+    }
     for (const EnergyEvent& event : events) {
       if (!add_one_event(event, window_start, window_end,
                          /*energy_lp=*/nullptr, &cut, &add_energy_to_name,
@@ -341,6 +380,7 @@ void GenerateCumulativeEnergeticCuts(
       if (add_quadratic_to_name) full_name.append("_quadratic");
       if (add_lifted_to_name) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
+      if (use_makespan_in_cut) full_name.append("_makespan");
       top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
     }
   }
@@ -385,15 +425,11 @@ double ComputeEnergyLp(
 }
 
 CutGenerator CreateCumulativeEnergyCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
+    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands,
     const std::vector<std::optional<LinearExpression>>& energies,
-    Model* model) {
+    const std::optional<AffineExpression>& makespan, Model* model) {
   CutGenerator result;
-
-  SchedulingConstraintHelper* helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
 
   Trail* trail = model->GetOrCreate<Trail>();
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
@@ -408,11 +444,13 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   result.generate_cuts =
-      [capacity, demands, energies, trail, integer_trail, helper, model,
-       encoder](const absl::StrongVector<IntegerVariable, double>& lp_values,
-                LinearConstraintManager* manager) {
+      [makespan, capacity, demands, energies, trail, helper, model, encoder](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return true;
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
+
+        IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
         std::vector<EnergyEvent> events;
         for (int i = 0; i < helper->NumTasks(); ++i) {
@@ -429,9 +467,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
           e.x_end_max = helper->EndMax(i);
           e.x_size = helper->Sizes()[i];
           e.y_size = demands[i];
-          if (energies[i].has_value()) {
-            e.energy = energies[i];
-          }
+          e.energy = energies[i];
           e.x_size_min = helper->SizeMin(i);
           e.y_size_min = integer_trail->LevelZeroLowerBound(demands[i]);
           if (!helper->IsPresent(i)) {
@@ -444,7 +480,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
         }
 
         GenerateCumulativeEnergeticCuts("CumulativeEnergy", lp_values, events,
-                                        capacity, model, manager);
+                                        capacity, makespan, model, manager);
         return true;
       };
 
@@ -452,28 +488,27 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
 }
 
 CutGenerator CreateNoOverlapEnergyCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model) {
+    SchedulingConstraintHelper* helper,
+    const std::optional<AffineExpression>& makespan, Model* model) {
   CutGenerator result;
 
   Trail* trail = model->GetOrCreate<Trail>();
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-  SchedulingConstraintHelper* helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
 
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   // We need to convert AffineExpression to LinearExpression for the energy.
   std::vector<LinearExpression> sizes;
-  sizes.reserve(intervals.size());
-  for (int i = 0; i < intervals.size(); ++i) {
+  sizes.reserve(helper->NumTasks());
+  for (int i = 0; i < helper->NumTasks(); ++i) {
     LinearConstraintBuilder builder(model);
     builder.AddTerm(helper->Sizes()[i], IntegerValue(1));
     sizes.push_back(builder.BuildExpression());
   }
 
   result.generate_cuts =
-      [sizes, trail, helper, model, encoder](
+      [makespan, sizes, trail, helper, model, encoder](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return true;
@@ -508,7 +543,8 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
         }
 
         GenerateCumulativeEnergeticCuts("NoOverlapEnergy", lp_values, events,
-                                        IntegerValue(1), model, manager);
+                                        IntegerValue(1), makespan, model,
+                                        manager);
         return true;
       };
   return result;
@@ -536,9 +572,7 @@ void GenerateNoOverlap2dEnergyCut(
     e.y_min = y_helper->StartMin(rect);
     e.y_max = y_helper->EndMax(rect);
     e.y_size = y_helper->Sizes()[rect];
-    if (energies[rect].has_value()) {
-      e.energy = energies[rect];
-    }
+    e.energy = energies[rect];
     e.presence_literal_index =
         x_helper->IsPresent(rect)
             ? (y_helper->IsPresent(rect)
@@ -806,12 +840,9 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
 }
 
 CutGenerator CreateCumulativeTimeTableCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
+    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands, Model* model) {
   CutGenerator result;
-  SchedulingConstraintHelper* helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
@@ -1033,13 +1064,9 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
 }
 
 CutGenerator CreateCumulativePrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
+    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands, Model* model) {
   CutGenerator result;
-
-  SchedulingConstraintHelper* helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);
@@ -1081,11 +1108,8 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
 }
 
 CutGenerator CreateNoOverlapPrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model) {
+    SchedulingConstraintHelper* helper, Model* model) {
   CutGenerator result;
-
-  SchedulingConstraintHelper* helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
 
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
@@ -1337,11 +1361,8 @@ void GenerateCompletionTimeCuts(
 }
 
 CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model) {
+    SchedulingConstraintHelper* helper, Model* model) {
   CutGenerator result;
-
-  SchedulingConstraintHelper* helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
 
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
@@ -1387,15 +1408,11 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
 }
 
 CutGenerator CreateCumulativeCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
+    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands,
     const std::vector<std::optional<LinearExpression>>& energies,
     Model* model) {
   CutGenerator result;
-
-  SchedulingConstraintHelper* helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   AppendVariablesToCumulativeCut(capacity, demands, integer_trail, &result);

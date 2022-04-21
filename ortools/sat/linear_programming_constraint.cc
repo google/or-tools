@@ -556,7 +556,7 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   if (objective_is_defined_) {
     watcher->WatchUpperBound(objective_cp_, watcher_id);
   }
-  watcher->SetPropagatorPriority(watcher_id, 2);
+  watcher->SetPropagatorPriority(watcher_id, 4);
   watcher->AlwaysCallAtLevelZero(watcher_id);
 
   // Registering it with the trail make sure this class is always in sync when

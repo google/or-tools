@@ -46,10 +46,10 @@ namespace sat {
 //
 // The maximum energy is capacity * span of intervals at level 0.
 CutGenerator CreateCumulativeEnergyCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
+    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands,
-    const std::vector<std::optional<LinearExpression>>& energies, Model* model);
+    const std::vector<std::optional<LinearExpression>>& energies,
+    const std::optional<AffineExpression>& makespan, Model* model);
 
 // For a given set of intervals and demands, we first compute the mandatory part
 // of the interval as [start_max , end_min]. We use this to calculate mandatory
@@ -63,24 +63,21 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
 //   sum(demands of always present intervals)
 //   + sum(presence_literal * min_of_demand) <= capacity.
 CutGenerator CreateCumulativeTimeTableCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
+    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands, Model* model);
 
 // Completion time cuts for the cumulative constraint. It is a simple relaxation
 // where we replace a cumulative task with demand k and duration d by a
 // no_overlap task with duration d * k / capacity_max.
 CutGenerator CreateCumulativeCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
+    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands,
     const std::vector<std::optional<LinearExpression>>& energies, Model* model);
 
 // For a given set of intervals in a cumulative constraint, we detect violated
 // mandatory precedences and create a cut for these.
 CutGenerator CreateCumulativePrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
+    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
     const std::vector<AffineExpression>& demands, Model* model);
 
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
@@ -117,18 +114,19 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
 //   sum(sizes of always present intervals)
 //   + sum(presence_literal * min_of_size) <= span of all intervals.
 CutGenerator CreateNoOverlapEnergyCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+    SchedulingConstraintHelper* helper,
+    const std::optional<AffineExpression>& makespan, Model* model);
 
 // For a given set of intervals in a no_overlap constraint, we detect violated
 // mandatory precedences and create a cut for these.
 CutGenerator CreateNoOverlapPrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+    SchedulingConstraintHelper* helper, Model* model);
 
 // For a given set of intervals in a no_overlap constraint, we detect violated
 // area based cuts from Queyranne 93 [see note in the code] and create a cut for
 // these.
 CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+    SchedulingConstraintHelper* helper, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research
