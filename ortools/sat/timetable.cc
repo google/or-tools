@@ -366,7 +366,7 @@ bool TimeTablingPerTask::BuildProfile() {
   profile_.clear();
 
   // Start and height of the highest profile rectangle.
-  profile_max_height_ = kMinIntegerValue;
+  profile_max_height_ = 0;
   IntegerValue max_height_start = kMinIntegerValue;
 
   // Add a sentinel to simplify the algorithm.
@@ -435,8 +435,7 @@ void TimeTablingPerTask::ReverseProfile() {
 
 bool TimeTablingPerTask::SweepAllTasks() {
   // Tasks with a lower or equal demand will not be pushed.
-  const IntegerValue demand_threshold(
-      CapSub(CapacityMax().value(), profile_max_height_.value()));
+  const IntegerValue demand_threshold = CapacityMax() - profile_max_height_;
 
   // TODO(user): On some problem, a big chunk of the time is spend just checking
   // these conditions below because it requires indirect memory access to fetch
@@ -562,6 +561,10 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
                                             IntegerValue right) {
   helper_->ClearReason();
   AddProfileReason(task_id, left, right);
+  if (capacity_.var != kNoIntegerVariable) {
+    helper_->MutableIntegerReason()->push_back(
+        integer_trail_->UpperBoundAsLiteral(capacity_.var));
+  }
 
   // State of the task to be pushed.
   helper_->AddEndMinReason(task_id, left + 1);
@@ -655,9 +658,6 @@ bool TimeTablingPerTask::IncreaseCapacity(IntegerValue time,
   if (capacity_.var == kNoIntegerVariable) {
     return helper_->ReportConflict();
   }
-
-  helper_->MutableIntegerReason()->push_back(
-      integer_trail_->UpperBoundAsLiteral(capacity_.var));
   return helper_->PushIntegerLiteral(capacity_.GreaterOrEqual(new_min));
 }
 

@@ -150,6 +150,10 @@ message NoOverlap2DConstraintProto {
 // a capacity. Note that intervals are interpreted as [start, end) and as
 // such intervals like [2,3) and [3,4) do not overlap for the point of view of
 // this constraint. Moreover, intervals of size zero are ignored.
+//
+// All demands must not contain any negative value in their domains. This is
+// checked at validation. The capacity can currently contains negative values,
+// but it will be propagated to >= 0 right away.
 message CumulativeConstraintProto {
   LinearExpressionProto capacity = 1;
   repeated int32 intervals = 2;

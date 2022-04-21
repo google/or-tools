@@ -19,15 +19,15 @@
  * print out the solution.
  * \code
  CpModelBuilder cp_model;
- Domain all_animals(0, 20);
- IntVar rabbits = cp_model.NewIntVar(all_animals).WithName("rabbits");
- IntVar pheasants = cp_model.NewIntVar(all_animals).WithName("pheasants");
+ const Domain all_animals(0, 20);
+ const IntVar rabbits = cp_model.NewIntVar(all_animals).WithName("rabbits");
+ const IntVar pheasants = cp_model.NewIntVar(all_animals).WithName("pheasants");
 
  cp_model.AddEquality(rabbits + pheasants, 20);
  cp_model.AddEquality(4 * rabbits + 2 * pheasants, 56);
 
  const CpSolverResponse response = Solve(cp_model.Build());
- if (response.status() == CpSolverStatus::FEASIBLE) {
+ if (response.status() == CpSolverStatus::OPTIMAL) {
    LOG(INFO) << SolutionIntegerValue(response, rabbits)
              << " rabbits, and " << SolutionIntegerValue(response, pheasants)
              << " pheasants.";
@@ -314,13 +314,7 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
 
 /**
  * A dedicated container for linear expressions with double coefficients.
- *
- * This class helps building and manipulating linear expressions.
- * Note that Not(x) will be silently transformed into 1 - x when added to the
- * linear expression.
- *
- * Furthermore, static methods allows sums and scalar products, with or without
- * an additional constant.
+ * This is currently only usable to define a floating point objective.
  *
  * Usage:
  * \code
@@ -531,7 +525,7 @@ class Constraint {
    * (controlled by a literal l) and its negation (controlled by the negation of
    * l).
    *
-   * Important: as of September 2018, only a few constraint support enforcement:
+   * [Important] currently, only a few constraints support enforcement:
    * - bool_or, bool_and, linear: fully supported.
    * - interval: only support a single enforcement literal.
    * - other: no support (but can be added on a per-demand basis).
@@ -777,7 +771,7 @@ class CpModelBuilder {
   /// Adds the constraint that at least one of the literals must be true.
   Constraint AddBoolOr(absl::Span<const BoolVar> literals);
 
-  /// Same as AddBoolOr. Sum literals >= 1.
+  /// Same as AddBoolOr(). Sum literals >= 1.
   Constraint AddAtLeastOne(absl::Span<const BoolVar> literals);
 
   /// At most one literal is true. Sum literals <= 1.
@@ -795,6 +789,12 @@ class CpModelBuilder {
   /// Adds a => b.
   Constraint AddImplication(BoolVar a, BoolVar b) {
     return AddBoolOr({a.Not(), b});
+  }
+
+  /// Adds implication: if all lhs vars are true then all rhs vars must be true.
+  Constraint AddImplication(absl::Span<const BoolVar> lhs,
+                            absl::Span<const BoolVar> rhs) {
+    return AddBoolAnd(rhs).OnlyEnforceIf(lhs);
   }
 
   /// Adds left == right.
@@ -1029,15 +1029,15 @@ class CpModelBuilder {
   /// Adds a linear minimization objective.
   void Minimize(const LinearExpr& expr);
 
-  /// Adds a linear minimization objective after rescaling of the double
-  /// coefficients.
+  /// Adds a linear floating point minimization objective.
+  /// Note that the coefficients will be internally scaled to integer.
   void Minimize(const DoubleLinearExpr& expr);
 
   /// Adds a linear maximization objective.
   void Maximize(const LinearExpr& expr);
 
-  /// Adds a linear maximization objective after rescaling of the double
-  /// coefficients.
+  /// Adds a linear floating point maximization objective.
+  /// Note that the coefficients will be internally scaled to integer.
   void Maximize(const DoubleLinearExpr& expr);
 
   /// Adds a decision strategy on a list of integer variables.
@@ -1070,8 +1070,7 @@ class CpModelBuilder {
   /// Remove all assumptions from the model.
   void ClearAssumptions();
 
-  const CpModelProto& Build() const { return Proto(); }
-
+  const CpModelProto& Build() const { return cp_model_; }
   const CpModelProto& Proto() const { return cp_model_; }
   CpModelProto* MutableProto() { return &cp_model_; }
 
