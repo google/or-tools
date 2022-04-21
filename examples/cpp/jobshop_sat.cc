@@ -101,12 +101,12 @@ int64_t ComputeHorizon(const JsspInputProblem& problem) {
 }
 
 // A job is a sequence of tasks. For each task, we store the main interval, as
-// well as its start, size, and end variables.
+// well as its start, size, and end expressions.
 struct JobTaskData {
   IntervalVar interval;
-  IntVar start;
+  LinearExpr start;
   LinearExpr duration;
-  IntVar end;
+  LinearExpr end;
 };
 
 // Create the job structure as a chain of tasks. Fills in the job_to_tasks
@@ -143,13 +143,19 @@ void CreateJobs(const JsspInputProblem& problem, int64_t horizon,
       }
 
       const IntVar start = cp_model.NewIntVar(Domain(hard_start, hard_end));
-      const IntVar duration = cp_model.NewIntVar(Domain::FromValues(durations));
-      const IntVar end = cp_model.NewIntVar(Domain(hard_start, hard_end));
-      const IntervalVar interval =
-          cp_model.NewIntervalVar(start, duration, end);
-
-      // Fill in job_to_tasks.
-      task_data.push_back({interval, start, duration, end});
+      if (min_duration == max_duration) {
+        const IntervalVar interval =
+            cp_model.NewFixedSizeIntervalVar(start, min_duration);
+        task_data.push_back(
+            {interval, start, min_duration, start + min_duration});
+      } else {
+        const IntVar duration =
+            cp_model.NewIntVar(Domain::FromValues(durations));
+        const IntVar end = cp_model.NewIntVar(Domain(hard_start, hard_end));
+        const IntervalVar interval =
+            cp_model.NewIntervalVar(start, duration, end);
+        task_data.push_back({interval, start, duration, end});
+      }
 
       // Chain the task belonging to the same job.
       if (t > 0) {
@@ -217,7 +223,7 @@ void CreateAlternativeTasks(
           const int64_t alt_duration = task.duration(a);
           const int alt_machine = task.machine(a);
           DCHECK_GE(hard_end - hard_start, alt_duration);
-          const IntVar alt_start =
+          const LinearExpr alt_start =
               absl::GetFlag(FLAGS_use_optional_variables)
                   ? cp_model.NewIntVar(
                         Domain(hard_start, hard_end - alt_duration))
@@ -234,77 +240,28 @@ void CreateAlternativeTasks(
           } else {
             alt_interval = cp_model.NewOptionalFixedSizeIntervalVar(
                 alt_start, alt_duration, alt_presence);
+            if (!tasks[t].duration.IsConstant()) {
+              cp_model.AddEquality(tasks[t].duration, alt_duration)
+                  .OnlyEnforceIf(alt_presence);
+            }
           }
 
           // Link local and global variables.
           if (absl::GetFlag(FLAGS_use_optional_variables)) {
             cp_model.AddEquality(tasks[t].start, alt_start)
                 .OnlyEnforceIf(alt_presence);
-            cp_model.AddEquality(tasks[t].duration, alt_duration)
-                .OnlyEnforceIf(alt_presence);
           }
 
           alternatives.push_back({alt_machine, alt_interval, alt_presence});
         }
+
         // Exactly one alternative interval is present.
         std::vector<BoolVar> interval_presences;
         for (const AlternativeTaskData& alternative : alternatives) {
           interval_presences.push_back(alternative.presence);
         }
-        cp_model.AddEquality(LinearExpr::Sum(interval_presences), 1);
+        cp_model.AddExactlyOne(interval_presences);
       }
-    }
-  }
-}
-
-// Add a linear equation that links the duration of a task with all the
-// alternative durations and presence literals.
-void AddAlternativeTaskDurationRelaxation(
-    const JsspInputProblem& problem,
-    const std::vector<std::vector<JobTaskData>>& job_to_tasks,
-    std::vector<std::vector<std::vector<AlternativeTaskData>>>&
-        job_task_to_alternatives,
-    CpModelBuilder& cp_model) {
-  const int num_jobs = problem.jobs_size();
-
-  for (int j = 0; j < num_jobs; ++j) {
-    const Job& job = problem.jobs(j);
-    const int num_tasks_in_job = job.tasks_size();
-    const std::vector<JobTaskData>& tasks = job_to_tasks[j];
-    for (int t = 0; t < num_tasks_in_job; ++t) {
-      const Task& task = job.tasks(t);
-      const int num_alternatives = task.machine_size();
-
-      int64_t min_duration = std::numeric_limits<int64_t>::max();
-      int64_t max_duration = std::numeric_limits<int64_t>::min();
-      for (const int64_t alt_duration : task.duration()) {
-        min_duration = std::min(min_duration, alt_duration);
-        max_duration = std::max(max_duration, alt_duration);
-      }
-
-      // If all all_duration are equals, then the equation is redundant with the
-      // interval constraint of the main task.
-      if (min_duration == max_duration) return;
-
-      // Shifting all durations by their min value, improves the propagation
-      // of the linear equation.
-      std::vector<BoolVar> presence_literals;
-      std::vector<int64_t> shifted_durations;
-      for (int a = 0; a < num_alternatives; ++a) {
-        const int64_t alt_duration = task.duration(a);
-        if (alt_duration != min_duration) {
-          shifted_durations.push_back(alt_duration - min_duration);
-          presence_literals.push_back(
-              job_task_to_alternatives[j][t][a].presence);
-        }
-      }
-      // end == start + min_duration +
-      //        sum(shifted_duration[i] * presence_literals[i])
-      cp_model.AddEquality(
-          tasks[t].end,
-          tasks[t].start +
-              LinearExpr::WeightedSum(presence_literals, shifted_durations) +
-              min_duration);
     }
   }
 }
@@ -470,10 +427,7 @@ void CreateObjective(
     const std::vector<std::vector<std::vector<AlternativeTaskData>>>&
         job_task_to_alternatives,
     int64_t horizon, IntVar makespan, CpModelBuilder& cp_model) {
-  int64_t objective_offset = 0;
-  std::vector<IntVar> objective_vars;
-  std::vector<int64_t> objective_coeffs;
-
+  LinearExpr objective;
   const int num_jobs = problem.jobs_size();
   for (int j = 0; j < num_jobs; ++j) {
     const Job& job = problem.jobs(j);
@@ -487,9 +441,8 @@ void CreateObjective(
       for (int a = 0; a < num_alternatives; ++a) {
         // Add cost if present.
         if (task.cost_size() > 0) {
-          objective_vars.push_back(
-              IntVar(job_task_to_alternatives[j][t][a].presence));
-          objective_coeffs.push_back(task.cost(a));
+          objective +=
+              job_task_to_alternatives[j][t][a].presence * task.cost(a);
         }
       }
     }
@@ -498,15 +451,13 @@ void CreateObjective(
     const int64_t lateness_penalty = job.lateness_cost_per_time_unit();
     if (lateness_penalty != 0L) {
       const int64_t due_date = job.late_due_date();
-      const IntVar job_end = job_to_tasks[j].back().end;
+      const LinearExpr job_end = job_to_tasks[j].back().end;
       if (due_date == 0) {
-        objective_vars.push_back(job_end);
-        objective_coeffs.push_back(lateness_penalty);
+        objective += job_end * lateness_penalty;
       } else {
         const IntVar lateness_var = cp_model.NewIntVar(Domain(0, horizon));
         cp_model.AddMaxEquality(lateness_var, {0, job_end - due_date});
-        objective_vars.push_back(lateness_var);
-        objective_coeffs.push_back(lateness_penalty);
+        objective += lateness_var * lateness_penalty;
       }
     }
 
@@ -514,37 +465,27 @@ void CreateObjective(
     const int64_t earliness_penalty = job.earliness_cost_per_time_unit();
     if (earliness_penalty != 0L) {
       const int64_t due_date = job.early_due_date();
-      const IntVar job_end = job_to_tasks[j].back().end;
+      const LinearExpr job_end = job_to_tasks[j].back().end;
 
       if (due_date > 0) {
         const IntVar earliness_var = cp_model.NewIntVar(Domain(0, horizon));
         cp_model.AddMaxEquality(earliness_var, {0, due_date - job_end});
-        objective_vars.push_back(earliness_var);
-        objective_coeffs.push_back(earliness_penalty);
+        objective += earliness_var * earliness_penalty;
       }
     }
   }
 
   // Makespan objective.
   if (problem.makespan_cost_per_time_unit() != 0L) {
-    objective_coeffs.push_back(problem.makespan_cost_per_time_unit());
-    objective_vars.push_back(makespan);
+    objective += makespan * problem.makespan_cost_per_time_unit();
   }
 
   // Add the objective to the model.
+  cp_model.Minimize(objective);
   if (problem.has_scaling_factor()) {
-    std::vector<double> double_objective_coeffs;
-    for (const int64_t coeff : objective_coeffs) {
-      double_objective_coeffs.push_back(1.0 * coeff /
-                                        problem.scaling_factor().value());
-    }
-    cp_model.Minimize(
-        DoubleLinearExpr::WeightedSum(objective_vars, double_objective_coeffs) +
-        static_cast<double>(objective_offset));
-  } else {
-    cp_model.Minimize(
-        LinearExpr::WeightedSum(objective_vars, objective_coeffs) +
-        objective_offset);
+    // We use the protobuf API to set the scaling factor.
+    cp_model.MutableProto()->mutable_objective()->set_scaling_factor(
+        1.0 / problem.scaling_factor().value());
   }
 }
 
@@ -695,11 +636,6 @@ void Solve(const JsspInputProblem& problem) {
   CreateAlternativeTasks(problem, job_to_tasks, horizon,
                          job_task_to_alternatives, cp_model);
 
-  // Note that this is the only place where the duration of a task is linked
-  // with the duration of its alternatives.
-  AddAlternativeTaskDurationRelaxation(problem, job_to_tasks,
-                                       job_task_to_alternatives, cp_model);
-
   // Create the makespan variable and interval.
   // If this flag is true, we will add to each no overlap constraint a special
   // "makespan interval" that must necessarily be last by construction. This
@@ -751,9 +687,10 @@ void Solve(const JsspInputProblem& problem) {
 
   // Add job precedences.
   for (const JobPrecedence& precedence : problem.precedences()) {
-    const IntVar start =
+    const LinearExpr start =
         job_to_tasks[precedence.second_job_index()].front().start;
-    const IntVar end = job_to_tasks[precedence.first_job_index()].back().end;
+    const LinearExpr end =
+        job_to_tasks[precedence.first_job_index()].back().end;
     cp_model.AddLessOrEqual(end + precedence.min_delay(), start);
   }
 
@@ -837,7 +774,7 @@ void Solve(const JsspInputProblem& problem) {
   if (problem.makespan_cost_per_time_unit() != 0) {
     int64_t makespan = 0;
     for (const std::vector<JobTaskData>& tasks : job_to_tasks) {
-      const IntVar job_end = tasks.back().end;
+      const LinearExpr job_end = tasks.back().end;
       makespan = std::max(makespan, SolutionIntegerValue(response, job_end));
     }
     final_cost += makespan * problem.makespan_cost_per_time_unit();
