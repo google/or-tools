@@ -13,6 +13,8 @@
 
 #include "ortools/base/version.h"
 
+#include <string>
+
 #include "absl/strings/str_cat.h"
 
 namespace operations_research {
