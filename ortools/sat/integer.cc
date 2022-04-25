@@ -1302,7 +1302,8 @@ bool IntegerTrail::EnqueueInternal(
       ++index;
     }
     if (index == size) {
-      return ReportConflict(literal_reason, integer_reason);
+      // We will be out of bound and deal with that below.
+      DCHECK_GT(i_lit.bound, UpperBound(var));
     } else {
       var_to_current_lb_interval_index_.Set(var, index);
       i_lit.bound = std::max(i_lit.bound, IntegerValue(domain[index].start));

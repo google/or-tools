@@ -338,21 +338,22 @@ bool TryToReconcileEncodings(
 bool DetectLinearEncodingOfProducts(const AffineExpression& left,
                                     const AffineExpression& right, Model* model,
                                     LinearConstraintBuilder* builder) {
-  CHECK(builder != nullptr);
+  DCHECK(builder != nullptr);
   builder->Clear();
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
-
   if (integer_trail->IsFixed(left)) {
-    const IntegerValue value = integer_trail->FixedValue(left);
-    builder->AddTerm(right, value);
+    if (integer_trail->IsFixed(right)) {
+      builder->AddConstant(integer_trail->FixedValue(left) *
+                           integer_trail->FixedValue(right));
+      return true;
+    }
+    builder->AddTerm(right, integer_trail->FixedValue(left));
     return true;
   }
 
   if (integer_trail->IsFixed(right)) {
-    const IntegerValue value = integer_trail->FixedValue(right);
-    builder->AddTerm(left, value);
+    builder->AddTerm(left, integer_trail->FixedValue(right));
     return true;
   }
 
@@ -373,6 +374,7 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
   }
 
   // Fill in the encodings for the left variable.
+  ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
   const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
       left_encodings = implied_bounds->GetElementEncodings(left.var);
 
@@ -452,7 +454,9 @@ std::optional<LinearExpression> TryToLinearizeProduct(
     const AffineExpression& left, const AffineExpression& right, Model* model) {
   LinearConstraintBuilder builder(model);
   if (DetectLinearEncodingOfProducts(left, right, model, &builder)) {
-    return builder.BuildExpression();
+    // The expression must only have positive coefficient because we will call
+    // LinExprLowerBound() on it and that function expect it this way.
+    return CanonicalizeExpr(builder.BuildExpression());
   } else {
     return std::optional<LinearExpression>();
   }

@@ -217,11 +217,11 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
                                     const AffineExpression& right, Model* model,
                                     LinearConstraintBuilder* builder);
 
-// Try to linearize left * right.
-// If the linearization not possible at position i, then the optional expression
-// will not be set.
+// Try to linearize left * right and returns the result. If we cannot linearize
+// the result will have no value.
 std::optional<LinearExpression> TryToLinearizeProduct(
     const AffineExpression& left, const AffineExpression& right, Model* model);
+
 }  // namespace sat
 }  // namespace operations_research
 

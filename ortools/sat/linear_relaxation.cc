@@ -670,12 +670,13 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
   }
 
   SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  if (!helper->SynchronizeAndSetTimeDirection(true)) return;
   std::vector<std::optional<LinearExpression>> energies;
   energies.reserve(helper->NumTasks());
   for (int i = 0; i < helper->NumTasks(); ++i) {
     LinearConstraintBuilder e(model);
     e.AddTerm(helper->Sizes()[i], one);
-    energies.push_back(e.BuildExpression());
+    energies.push_back(CanonicalizeExpr(e.BuildExpression()));
   }
 
   AddCumulativeRelaxation(helper, demands, /*capacity=*/one, energies, model,
@@ -708,6 +709,7 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
 
   // We try to linearize the energy of each task (size * demand).
   SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  if (!helper->SynchronizeAndSetTimeDirection(true)) return;
   std::vector<std::optional<LinearExpression>> energies;
   energies.reserve(helper->NumTasks());
   for (int i = 0; i < helper->NumTasks(); ++i) {
@@ -808,6 +810,8 @@ void AddCumulativeRelaxation(
   lc.AddTerm(span_end, -integer_trail->UpperBound(capacity));
   lc.AddTerm(span_start, integer_trail->UpperBound(capacity));
   for (int i = 0; i < num_intervals; ++i) {
+    if (helper->IsAbsent(i)) continue;
+
     if (!helper->IsOptional(i)) {
       if (energies[i].has_value()) {
         // The energy is defined if built from a constant value, a linear
@@ -1193,7 +1197,6 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
     case ConstraintProto::ConstraintCase::kCumulative: {
       AppendCumulativeRelaxationAndCutGenerator(ct, model, relaxation);
-
       break;
     }
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {

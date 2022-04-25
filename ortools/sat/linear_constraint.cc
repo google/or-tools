@@ -294,6 +294,7 @@ IntegerValue LinearExpression::Min(IntegerTrail* integer_trail) const {
 }
 
 std::string LinearExpression::DebugString() const {
+  if (vars.empty()) return absl::StrCat(offset.value());
   std::string result;
   for (int i = 0; i < vars.size(); ++i) {
     absl::StrAppend(&result, i > 0 ? " " : "",
