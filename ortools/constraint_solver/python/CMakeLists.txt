@@ -4,7 +4,7 @@ set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS -nofastunpack)
 swig_add_library(pywrapcp
-  TYPE SHARED
+  TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR ${PYTHON_PROJECT_DIR}/constraint_solver
   SOURCES routing.i)

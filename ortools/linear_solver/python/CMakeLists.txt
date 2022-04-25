@@ -3,7 +3,7 @@ set_property(SOURCE linear_solver.i PROPERTY SWIG_MODULE_NAME pywraplp)
 set_property(SOURCE linear_solver.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 swig_add_library(pywraplp
-  TYPE SHARED
+  TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR ${PYTHON_PROJECT_DIR}/linear_solver
   SOURCES linear_solver.i)

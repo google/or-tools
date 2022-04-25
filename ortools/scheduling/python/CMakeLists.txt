@@ -3,7 +3,7 @@ set_property(SOURCE rcpsp.i PROPERTY SWIG_MODULE_NAME pywraprcpsp)
 set_property(SOURCE rcpsp.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 swig_add_library(pywraprcpsp
-  TYPE SHARED
+  TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR ${PYTHON_PROJECT_DIR}/scheduling
   SOURCES rcpsp.i)
