@@ -558,11 +558,11 @@ EXAMPLE_CPP_FILES = \
 $(INSTALL_CPP_NAME)$(ARCHIVE_EXT): \
  $(SAMPLE_CPP_FILES) \
  $(EXAMPLE_CPP_FILES) \
- tools/README.cpp.md tools/Makefile.cpp
+ tools/README.cpp.md tools/Makefile.cpp.mk
 	$(MAKE) third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=OFF INSTALL_DIR=$(OR_ROOT)$(INSTALL_CPP_NAME)
 	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 	$(COPY) tools$SREADME.cpp.md $(INSTALL_CPP_NAME)$SREADME.md
-	$(COPY) tools$SMakefile.cpp $(INSTALL_CPP_NAME)$SMakefile
+	$(COPY) tools$SMakefile.cpp.mk $(INSTALL_CPP_NAME)$SMakefile
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(INSTALL_CPP_NAME)$SMakefile
 ifeq ($(PLATFORM),WIN64)
 	$(ZIP) -r $(INSTALL_CPP_NAME)$(ARCHIVE_EXT) $(INSTALL_CPP_NAME)

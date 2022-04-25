@@ -461,12 +461,12 @@ EXAMPLE_JAVA_FILES = \
 $(INSTALL_JAVA_NAME)$(ARCHIVE_EXT): java \
  $(SAMPLE_JAVA_FILES) \
  $(EXAMPLE_JAVA_FILES) \
- LICENSE tools/README.java.md tools/Makefile.java
+ LICENSE tools/README.java.md tools/Makefile.java.mk
 	$(COPY) $(JAVA_BUILD_PATH)$Sortools-java$Starget$S*.jar $(INSTALL_JAVA_NAME)$S
 	$(COPY) $(JAVA_BUILD_PATH)$Sortools-$(JAVA_NATIVE_IDENTIFIER)$Starget$S*.jar $(INSTALL_JAVA_NAME)$S
 	$(COPY) LICENSE $(INSTALL_JAVA_NAME)$SLICENSE
 	$(COPY) tools$SREADME.java.md $(INSTALL_JAVA_NAME)$SREADME.md
-	$(COPY) tools$SMakefile.java $(INSTALL_JAVA_NAME)$SMakefile
+	$(COPY) tools$SMakefile.java.mk $(INSTALL_JAVA_NAME)$SMakefile
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(INSTALL_JAVA_NAME)$SMakefile
 ifeq ($(PLATFORM),WIN64)
 	$(MKDIR) $(INSTALL_JAVA_NAME)$Sbin

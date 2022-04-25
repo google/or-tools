@@ -703,11 +703,11 @@ $(INSTALL_PYTHON_NAME)$(ARCHIVE_EXT): \
  python \
  $(SAMPLE_PYTHON_FILES) \
  $(EXAMPLE_PYTHON_FILES) \
- LICENSE tools/README.python.md tools/Makefile.python
+ LICENSE tools/README.python.md tools/Makefile.python.mk
 	$(COPY) $(PYTHON_BUILD_PATH)$Sdist$S*.whl $(INSTALL_PYTHON_NAME)$S
 	$(COPY) LICENSE $(INSTALL_PYTHON_NAME)$SLICENSE
 	$(COPY) tools$SREADME.python.md $(INSTALL_PYTHON_NAME)$SREADME.md
-	$(COPY) tools$SMakefile.python $(INSTALL_PYTHON_NAME)$SMakefile
+	$(COPY) tools$SMakefile.python.mk $(INSTALL_PYTHON_NAME)$SMakefile
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(INSTALL_PYTHON_NAME)$SMakefile
 ifeq ($(PLATFORM),WIN64)
 	$(MKDIR) $(INSTALL_PYTHON_NAME)$Sbin

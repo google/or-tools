@@ -511,11 +511,11 @@ EXAMPLE_DOTNET_FILES = \
 $(INSTALL_DOTNET_NAME)$(ARCHIVE_EXT): dotnet \
  $(SAMPLE_DOTNET_FILES) \
  $(EXAMPLE_DOTNET_FILES) \
- LICENSE tools/README.dotnet.md tools/Makefile.dotnet
+ LICENSE tools/README.dotnet.md tools/Makefile.dotnet.mk
 	$(COPY) $(BUILD_DIR)$Sdotnet$Spackages$S*nupkg $(INSTALL_DOTNET_NAME)$S
 	$(COPY) LICENSE $(INSTALL_DOTNET_NAME)$SLICENSE
 	$(COPY) tools$SREADME.dotnet.md $(INSTALL_DOTNET_NAME)$SREADME.md
-	$(COPY) tools$SMakefile.dotnet $(INSTALL_DOTNET_NAME)$SMakefile
+	$(COPY) tools$SMakefile.dotnet.mk $(INSTALL_DOTNET_NAME)$SMakefile
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(INSTALL_DOTNET_NAME)$SMakefile
 ifeq ($(PLATFORM),WIN64)
 	$(MKDIR) $(INSTALL_DOTNET_NAME)$Sbin
