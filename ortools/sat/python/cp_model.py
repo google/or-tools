@@ -2001,7 +2001,8 @@ class CpModel(object):
         self._SetObjective(obj, minimize=False)
 
     def HasObjective(self):
-        return self.__model.HasField('objective')
+        return (self.__model.HasField('objective')
+                or self.__model.HasField('floating_point_objective'))
 
     def AddDecisionStrategy(self, variables, var_strategy, domain_strategy):
         """Adds a search strategy to the model.
