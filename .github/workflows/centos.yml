@@ -81,6 +81,7 @@ jobs:
           git clone $GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git -b ${BRANCH_NAME} .
 
       - name: Checkout Xpress linux
+        if: ${{ matrix.xprs == 'ON' }}
         run: |
           git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/rte-france/xpress-mp.git ${{ env.XPRESS_INSTALL_DIR }}
 
@@ -92,6 +93,7 @@ jobs:
           echo "XPRESS_LIB=$PWD/lib" >> $GITHUB_ENV
 
       - name: Download Sirius
+        if : ${{ matrix.sirius == 'ON' }}
         run: |
           zipfile=centos-7_sirius-solver.zip
           wget https://github.com/rte-france/sirius-solver/releases/download/${{ env.SIRIUS_RELEASE_TAG }}/$zipfile
@@ -99,6 +101,7 @@ jobs:
           mv centos-7_sirius-solver-install ${{ env.SIRIUS_INSTALL_DIR }}
 
       - name: set Sirius variables
+        if : ${{ matrix.sirius == 'ON' }}
         run: |
           cd ${{ env.SIRIUS_INSTALL_DIR }}
           echo "SIRIUS=$PWD/lib" >> $GITHUB_ENV
