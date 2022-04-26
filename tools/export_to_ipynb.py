@@ -88,35 +88,41 @@ for idx, (c_block, s, e) in enumerate(
     print(f'block[{idx}]: {c_block}')
     c_text = '\n'.join(lines[s:e])
     # Clean boilerplate header and description
-    if (idx == 0 and isinstance(c_block, ast.Expr) and
-            isinstance(c_block.value, ast.Constant)):
+    if (idx == 0 and isinstance(c_block, ast.Expr)
+            and isinstance(c_block.value, ast.Constant)):
         print('Adding description cell...')
         filtered_lines = lines[s:e]
         #filtered_lines = list(filter(lambda l: not l.startswith('#!'), lines[s:e]))
-        filtered_lines = list(filter(lambda l: not re.search(r'^#!', l), filtered_lines))
-        filtered_lines = list(filter(lambda l: not re.search(r'# \[START .*\]$', l), filtered_lines))
-        filtered_lines = list(filter(lambda l: not re.search(r'# \[END .*\]$', l), filtered_lines))
+        filtered_lines = list(
+            filter(lambda l: not re.search(r'^#!', l), filtered_lines))
+        filtered_lines = list(
+            filter(lambda l: not re.search(r'# \[START .*\]$', l),
+                   filtered_lines))
+        filtered_lines = list(
+            filter(lambda l: not re.search(r'# \[END .*\]$', l),
+                   filtered_lines))
         # TODO(mizux): Remove only copyright not all line with '^#'
-        filtered_lines = list(filter(lambda l: not l.startswith(r'#'), filtered_lines))
+        filtered_lines = list(
+            filter(lambda l: not l.startswith(r'#'), filtered_lines))
         filtered_lines = [s.replace(r'"""', '') for s in filtered_lines]
         filtered_text = '\n'.join(filtered_lines)
-        nbook['cells'].append(v4.new_markdown_cell(source=filtered_text, id='description'))
+        nbook['cells'].append(
+            v4.new_markdown_cell(source=filtered_text, id='description'))
     # Remove absl app and flags import
     elif (isinstance(c_block, ast.ImportFrom) and c_block.module == 'absl'
-            and c_block.names[0].name in ('flags', 'app')):
+          and c_block.names[0].name in ('flags', 'app')):
         print(f'Removing import {c_block.module}.{c_block.names[0].name}...')
     # Rewrite `FLAGS = flags.FLAGS`
-    elif (isinstance(c_block, ast.Assign) and
-          isinstance(c_block.targets[0], ast.Name) and
-          c_block.targets[0].id == 'FLAGS'):
+    elif (isinstance(c_block, ast.Assign)
+          and isinstance(c_block.targets[0], ast.Name)
+          and c_block.targets[0].id == 'FLAGS'):
         print('Adding FLAGS class...')
         fixed_lines = ['class FLAGS: pass\n']
         full_text += '\n'.join(fixed_lines) + '\n'
     # Rewrite `flags.DEFINE_*(*)`
-    elif (isinstance(c_block, ast.Expr) and
-          isinstance(c_block.value, ast.Call) and
-          isinstance(c_block.value.func, ast.Attribute) and
-          c_block.value.func.value.id == 'flags'):
+    elif (isinstance(c_block, ast.Expr) and isinstance(c_block.value, ast.Call)
+          and isinstance(c_block.value.func, ast.Attribute)
+          and c_block.value.func.value.id == 'flags'):
         print('Adding FLAGS field...')
         fixed_lines = []
         attr = c_block.value.func.attr
@@ -147,10 +153,11 @@ for idx, (c_block, s, e) in enumerate(
             sys.exit(2)
         full_text += '\n'.join(fixed_lines)
         # Add empty line after the last flags.DEFINE
-        if e-2 >= s and lines[e-1] == '' and lines[e-2] == '':
+        if e - 2 >= s and lines[e - 1] == '' and lines[e - 2] == '':
             full_text += '\n'
     # Unwrap __main__ function
-    elif (isinstance(c_block, ast.If) and c_block.test.comparators[0].s == '__main__'):
+    elif (isinstance(c_block, ast.If)
+          and c_block.test.comparators[0].s == '__main__'):
         print('Unwrapping main function...')
         c_lines = lines[s + 1:e]
         # remove start and de-indent lines
@@ -161,16 +168,26 @@ for idx, (c_block, s, e) in enumerate(
             for n_line in c_lines
         ]
         filtered_lines = fixed_lines
-        filtered_lines = list(filter(lambda l: not re.search(r'# \[START .*\]$', l), filtered_lines))
-        filtered_lines = list(filter(lambda l: not re.search(r'# \[END .*\]$', l), filtered_lines))
-        filtered_lines = [re.sub(r'app.run\((.*)\)$', r'\1()', s) for s in filtered_lines]
+        filtered_lines = list(
+            filter(lambda l: not re.search(r'# \[START .*\]$', l),
+                   filtered_lines))
+        filtered_lines = list(
+            filter(lambda l: not re.search(r'# \[END .*\]$', l),
+                   filtered_lines))
+        filtered_lines = [
+            re.sub(r'app.run\((.*)\)$', r'\1()', s) for s in filtered_lines
+        ]
         full_text += '\n'.join(filtered_lines) + '\n'
     # Others
     else:
         print('Appending block...')
         filtered_lines = lines[s:e]
-        filtered_lines = list(filter(lambda l: not re.search(r'# \[START .*\]$', l), filtered_lines))
-        filtered_lines = list(filter(lambda l: not re.search(r'# \[END .*\]$', l), filtered_lines))
+        filtered_lines = list(
+            filter(lambda l: not re.search(r'# \[START .*\]$', l),
+                   filtered_lines))
+        filtered_lines = list(
+            filter(lambda l: not re.search(r'# \[END .*\]$', l),
+                   filtered_lines))
         full_text += '\n'.join(filtered_lines) + '\n'
 
 nbook['cells'].append(v4.new_code_cell(source=full_text, id='code'))
