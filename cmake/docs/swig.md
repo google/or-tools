@@ -194,7 +194,7 @@ You can use `OUTPUT_DIR` to change the output directory for the `.py` file e.g.:
 
 ```cmake
 swig_add_library(pyFoo
-  TYPE SHARED
+  TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR ${CMAKE_BINARY_DIR}/python/${PROJECT_NAME}/Foo
   SOURCES foo.i)

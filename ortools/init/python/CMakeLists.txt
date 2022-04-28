@@ -3,7 +3,7 @@ set_property(SOURCE init.i PROPERTY SWIG_MODULE_NAME pywrapinit)
 set_property(SOURCE init.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 swig_add_library(pywrapinit
-  TYPE SHARED
+  TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR  ${PYTHON_PROJECT_DIR}/init
   SOURCES init.i)

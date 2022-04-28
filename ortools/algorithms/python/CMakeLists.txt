@@ -3,7 +3,7 @@ set_property(SOURCE knapsack_solver.i PROPERTY SWIG_MODULE_NAME pywrapknapsack_s
 set_property(SOURCE knapsack_solver.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 swig_add_library(pywrapknapsack_solver
-  TYPE SHARED
+  TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR  ${PYTHON_PROJECT_DIR}/algorithms
   SOURCES knapsack_solver.i)
