@@ -40,6 +40,6 @@ RUN make detect \
 FROM third_party AS build
 RUN make compile JOBS=8
 
-RUN ln -s /root/or-tools/bin/fz /entry_data/fzn-exec
+RUN ln -s /root/or-tools/bin/fzn-ortools /entry_data/fzn-exec
 
 RUN cp /root/or-tools/ortools/flatzinc/mznlib/*mzn /entry_data/mzn-lib

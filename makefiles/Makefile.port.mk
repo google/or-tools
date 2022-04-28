@@ -28,7 +28,7 @@ ifneq ($(PLATFORM),WIN64)
   PDB = .pdb
   EXP = .exp
   ARCHIVE_EXT = .tar.gz
-  FZ_EXE = fzn-or-tools$E
+  FZ_EXE = fzn-ortools$E
   OBJ_OUT = -o # need the space
   EXE_OUT = -o # need the space
   S = /
@@ -194,7 +194,7 @@ else # Windows specific part.
   PDB = .pdb
   EXP = .exp
   ARCHIVE_EXT = .zip
-  FZ_EXE = fzn-or-tools$E
+  FZ_EXE = fzn-ortools$E
   OBJ_OUT = /Fo
   EXE_OUT = /Fe
   S = \\

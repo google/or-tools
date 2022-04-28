@@ -510,8 +510,8 @@ test_cc_cpp: \
  SOURCE=examples/cpp/solve.cc \
  ARGS="--input $(OR_ROOT_FULL)/examples/data/tests/test2.mps"
 
-rfz_%: fz
-	$(INSTALL_DIR)$Sbin$Sfz$E $(FZ_EX_PATH)$S$*.fzn
+rfz_%: cpp
+	$(INSTALL_DIR)$Sbin$Sfzn-ortools$E $(OR_ROOT_FULL)/examples/flatzinc/$*.fzn
 
 ###############
 ##  Archive  ##
