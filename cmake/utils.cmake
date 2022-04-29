@@ -6,18 +6,21 @@ function(get_patch_from_git VERSION_PATCH)
   else()
     # If no tags can be found, it is a git shallow clone
     execute_process(COMMAND
-      ${GIT_EXECUTABLE} describe --tags
-      RESULT_VARIABLE _OUTPUT_VAR
-      OUTPUT_VARIABLE FULL
+      ${GIT_EXECUTABLE} describe --tags --long
+      RESULT_VARIABLE _RESULT_VAR
+      OUTPUT_VARIABLE _FULL_VAR
       ERROR_QUIET
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    if(NOT _OUTPUT_VAR)
-      execute_process(COMMAND
-        ${GIT_EXECUTABLE} rev-list HEAD --count
-        RESULT_VARIABLE _OUTPUT_VAR
-        OUTPUT_VARIABLE PATCH
-        ERROR_QUIET
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    if(NOT _RESULT_VAR) # since 0 is success, need invert it
+      if(${_FULL_VAR} MATCHES "v[0-9]+\.[0-9]+-([0-9]+)-g.*")
+        set(PATCH ${CMAKE_MATCH_1})
+      else()
+        execute_process(COMMAND
+          ${GIT_EXECUTABLE} rev-list HEAD --count
+          OUTPUT_VARIABLE PATCH
+          ERROR_QUIET
+          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      endif()
       STRING(STRIP PATCH ${PATCH})
       STRING(REGEX REPLACE "\n$" "" PATCH ${PATCH})
       STRING(REGEX REPLACE " " "" PATCH ${PATCH})
