@@ -13,6 +13,7 @@
 
 #include "ortools/graph/min_cost_flow.h"
 
+#include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
@@ -26,6 +27,9 @@ PYBIND11_MODULE(min_cost_flow, m) {
   smcf.def("add_arc_with_capacity_and_unit_cost",
            &SimpleMinCostFlow::AddArcWithCapacityAndUnitCost, arg("tail"),
            arg("head"), arg("capacity"), arg("unit_cost"));
+  smcf.def(
+      "add_arcs_with_capacity_and_unit_cost",
+      pybind11::vectorize(&SimpleMinCostFlow::AddArcWithCapacityAndUnitCost));
   smcf.def("set_node_supply", &SimpleMinCostFlow::SetNodeSupply, arg("node"),
            arg("supply"));
   smcf.def("num_nodes", &SimpleMinCostFlow::NumNodes);

@@ -13,6 +13,7 @@
 
 #include "ortools/graph/max_flow.h"
 
+#include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
@@ -25,6 +26,8 @@ PYBIND11_MODULE(max_flow, m) {
   smf.def(pybind11::init<>());
   smf.def("add_arc_with_capacity", &SimpleMaxFlow::AddArcWithCapacity,
           arg("tail"), arg("head"), arg("capacity"));
+  smf.def("add_arcs_with_capacity",
+          pybind11::vectorize(&SimpleMaxFlow::AddArcWithCapacity));
   smf.def("set_arc_capacity", &SimpleMaxFlow::SetArcCapacity, arg("arc"),
           arg("capacity"));
   smf.def("num_nodes", &SimpleMaxFlow::NumNodes);

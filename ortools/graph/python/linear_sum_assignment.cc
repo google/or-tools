@@ -12,6 +12,8 @@
 // limitations under the License.
 
 #include "ortools/graph/assignment.h"
+
+#include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
@@ -25,6 +27,8 @@ PYBIND11_MODULE(linear_sum_assignment, m) {
   slsa.def(pybind11::init<>());
   slsa.def("add_arc_with_cost", &SimpleLinearSumAssignment::AddArcWithCost,
            arg("left_node"), arg("right_node"), arg("cost"));
+  slsa.def("add_arcs_with_cost",
+           pybind11::vectorize(&SimpleLinearSumAssignment::AddArcWithCost));
   slsa.def("num_nodes", &SimpleLinearSumAssignment::NumNodes);
   slsa.def("num_arcs", &SimpleLinearSumAssignment::NumArcs);
   slsa.def("left_node", &SimpleLinearSumAssignment::LeftNode, arg("arc"));

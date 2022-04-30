@@ -15,6 +15,8 @@
 """From Taha 'Introduction to Operations Research', example 6.4-2."""
 # [START import]
 from ortools.graph.python import max_flow
+
+import numpy as np
 # [END import]
 
 
@@ -29,15 +31,15 @@ def main():
     # Define three parallel arrays: start_nodes, end_nodes, and the capacities
     # between each pair. For instance, the arc from node 0 to node 1 has a
     # capacity of 20.
-    start_nodes = [0, 0, 0, 1, 1, 2, 2, 3, 3]
-    end_nodes = [1, 2, 3, 2, 4, 3, 4, 2, 4]
-    capacities = [20, 30, 10, 40, 30, 10, 20, 5, 20]
+    start_nodes = np.array([0, 0, 0, 1, 1, 2, 2, 3, 3])
+    end_nodes = np.array([1, 2, 3, 2, 4, 3, 4, 2, 4])
+    capacities = np.array([20, 30, 10, 40, 30, 10, 20, 5, 20])
     # [END data]
 
     # [START constraints]
-    # Add each arc.
-    for arc in zip(start_nodes, end_nodes, capacities):
-        smf.add_arc_with_capacity(arc[0], arc[1], arc[2])
+    # Add arcs in bulk. 
+    #   note: we could have used add_arc_with_capacity(start, end, capacity)
+    smf.add_arcs_with_capacity(start_nodes, end_nodes, capacities)
     # [END constraints]
 
     # [START solve]

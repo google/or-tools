@@ -15,6 +15,8 @@
 """From Bradley, Hax and Maganti, 'Applied Mathematical Programming', figure 8.1."""
 # [START import]
 from ortools.graph.python import min_cost_flow
+
+import numpy as np
 # [END import]
 
 
@@ -29,19 +31,18 @@ def main():
     # Define four parallel arrays: sources, destinations, capacities,
     # and unit costs between each pair. For instance, the arc from node 0
     # to node 1 has a capacity of 15.
-    start_nodes = [0, 0, 1, 1, 1, 2, 2, 3, 4]
-    end_nodes = [1, 2, 2, 3, 4, 3, 4, 4, 2]
-    capacities = [15, 8, 20, 4, 10, 15, 4, 20, 5]
-    unit_costs = [4, 4, 2, 2, 6, 1, 3, 2, 3]
+    start_nodes = np.array([0, 0, 1, 1, 1, 2, 2, 3, 4])
+    end_nodes = np.array([1, 2, 2, 3, 4, 3, 4, 4, 2])
+    capacities = np.array([15, 8, 20, 4, 10, 15, 4, 20, 5])
+    unit_costs = np.array([4, 4, 2, 2, 6, 1, 3, 2, 3])
 
     # Define an array of supplies at each node.
     supplies = [20, 0, 0, -5, -15]
     # [END data]
 
     # [START constraints]
-    # Add each arc.
-    for arc in zip(start_nodes, end_nodes, capacities, unit_costs):
-        smcf.add_arc_with_capacity_and_unit_cost(arc[0], arc[1], arc[2], arc[3])
+    # Add arcs, capacities and costs in bulk using numpy.
+    smcf.add_arcs_with_capacity_and_unit_cost(start_nodes, end_nodes, capacities, unit_costs)
 
     # Add node supply.
     for count, supply in enumerate(supplies):
