@@ -29,6 +29,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <string>
 
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_solution.h"

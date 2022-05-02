@@ -13,7 +13,9 @@
 
 #include "ortools/bop/complete_optimizer.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <string>
 
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"

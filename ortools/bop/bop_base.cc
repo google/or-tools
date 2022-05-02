@@ -13,6 +13,7 @@
 
 #include "ortools/bop/bop_base.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <string>

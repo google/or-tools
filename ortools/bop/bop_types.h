@@ -15,6 +15,7 @@
 #define OR_TOOLS_BOP_BOP_TYPES_H_
 
 #include <cstdint>
+#include <string>
 
 #include "ortools/base/basictypes.h"
 #include "ortools/base/strong_vector.h"

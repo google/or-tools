@@ -15,6 +15,7 @@
 #define OR_TOOLS_BOP_BOP_PORTFOLIO_H_
 
 #include <cstdint>
+#include <string>
 
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"

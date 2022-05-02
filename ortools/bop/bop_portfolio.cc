@@ -13,8 +13,11 @@
 
 #include "ortools/bop/bop_portfolio.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <string>
+#include <utility>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"

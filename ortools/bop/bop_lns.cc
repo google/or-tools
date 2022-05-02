@@ -13,6 +13,7 @@
 
 #include "ortools/bop/bop_lns.h"
 
+#include <algorithm>
 #include <deque>
 #include <string>
 #include <vector>

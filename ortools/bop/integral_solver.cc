@@ -15,8 +15,10 @@
 
 #include <math.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "ortools/bop/bop_solver.h"

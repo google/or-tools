@@ -13,9 +13,11 @@
 
 #include "ortools/bop/bop_fs.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/memory/memory.h"

@@ -14,6 +14,7 @@
 #include "ortools/bop/bop_solution.h"
 
 #include <cstdint>
+#include <string>
 
 namespace operations_research {
 namespace bop {

@@ -13,6 +13,7 @@
 
 #include "ortools/bop/bop_util.h"
 
+#include <algorithm>
 #include <limits>
 #include <vector>
 
