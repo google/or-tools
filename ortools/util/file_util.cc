@@ -87,7 +87,10 @@ bool ReadFileToProto(absl::string_view filename,
     VLOG(1) << "ReadFileToProto(): input is a text proto";
     return true;
   }
-  if (JsonStringToMessage(data, proto, JsonParseOptions()).ok()) {
+  const auto status = JsonStringToMessage(data, proto, JsonParseOptions());
+  if (!status.ok()) {
+    VLOG(1) << status;
+  } else {
     // NOTE(user): We protect against the JSON proto3 parser being very lenient
     // and easily accepting any JSON as a valid JSON for our proto: if the
     // parsed proto's size is too small compared to the JSON, we probably parsed

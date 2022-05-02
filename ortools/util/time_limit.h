@@ -399,6 +399,13 @@ class SharedTimeLimit {
     return time_limit_->GetElapsedDeterministicTime();
   }
 
+  std::atomic<bool>* ExternalBooleanAsLimit() const {
+    absl::ReaderMutexLock lock(&mutex_);
+    // We can simply return the "external bool" and remain thread-safe because
+    // it's wrapped in std::atomic.
+    return time_limit_->ExternalBooleanAsLimit();
+  }
+
  private:
   mutable absl::Mutex mutex_;
   TimeLimit* time_limit_ ABSL_GUARDED_BY(mutex_);
@@ -510,9 +517,9 @@ inline void TimeLimit::ResetTimers(double limit_in_seconds,
 #endif  // HAS_PERF_SUBSYSTEM
   start_ns_ = absl::GetCurrentTimeNanos();
   last_ns_ = start_ns_;
-  limit_ns_ = limit_in_seconds >= 1e-9 * (kint64max - start_ns_)
-                  ? kint64max
-                  : static_cast<int64_t>(limit_in_seconds * 1e9) + start_ns_;
+  // Note that duration arithmetic is properly saturated.
+  limit_ns_ = (absl::Seconds(limit_in_seconds) + absl::Nanoseconds(start_ns_)) /
+              absl::Nanoseconds(1);
 }
 
 template <typename Parameters>
