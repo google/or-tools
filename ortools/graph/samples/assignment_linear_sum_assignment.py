@@ -15,6 +15,8 @@
 """Solve assignment problem using linear assignment solver."""
 # [START import]
 from ortools.graph.python import linear_sum_assignment
+
+import numpy as np
 # [END import]
 
 
@@ -25,21 +27,22 @@ def main():
     # [END solver]
 
     # [START data]
-    costs = [
+    costs = np.array([
         [90, 76, 75, 70],
         [35, 85, 55, 65],
         [125, 95, 90, 105],
         [45, 110, 95, 115],
-    ]
-    num_workers = len(costs)
-    num_tasks = len(costs[0])
+    ])
+
+    # Let's transform this into 3 parallel vectors (start_nodes, end_nodes, arc_costs)
+    end_nodes_unraveled, start_nodes_unraveled = np.meshgrid(np.arange(costs.shape[1]),np.arange(costs.shape[0]))
+    start_nodes = start_nodes_unraveled.ravel()
+    end_nodes = end_nodes_unraveled.ravel()
+    arc_costs = costs.ravel()
     # [END data]
 
     # [START constraints]
-    for worker in range(num_workers):
-        for task in range(num_tasks):
-            if costs[worker][task]:
-                assignment.add_arc_with_cost(worker, task, costs[worker][task])
+    assignment.add_arcs_with_cost(start_nodes, end_nodes, arc_costs)
     # [END constraints]
 
     # [START solve]
