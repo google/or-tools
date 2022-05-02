@@ -13,6 +13,7 @@
 
 #include "ortools/glop/reduced_costs.h"
 
+#include <algorithm>
 #include <random>
 
 #ifdef OMP

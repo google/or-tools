@@ -75,6 +75,7 @@
 
 #include <cstdint>
 #include <queue>
+#include <string>
 
 #include "absl/container/inlined_vector.h"
 #include "ortools/base/logging.h"

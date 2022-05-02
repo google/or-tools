@@ -13,8 +13,11 @@
 
 #include "ortools/glop/preprocessor.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <string>
+#include <utility>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/iterator_adaptors.h"

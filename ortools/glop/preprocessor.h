@@ -22,6 +22,7 @@
 #define OR_TOOLS_GLOP_PREPROCESSOR_H_
 
 #include <memory>
+#include <string>
 
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"

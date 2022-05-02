@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <string>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"

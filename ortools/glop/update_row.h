@@ -15,6 +15,7 @@
 #define OR_TOOLS_GLOP_UPDATE_ROW_H_
 
 #include <cstdint>
+#include <string>
 
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"

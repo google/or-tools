@@ -13,8 +13,11 @@
 
 #include "ortools/graph/perfect_matching.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <string>
+#include <utility>
 
 #include "absl/memory/memory.h"
 #include "ortools/util/saturated_arithmetic.h"

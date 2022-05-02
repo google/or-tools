@@ -27,7 +27,9 @@
 #define OR_TOOLS_GRAPH_PERFECT_MATCHING_H_
 
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "absl/base/attributes.h"

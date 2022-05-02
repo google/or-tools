@@ -13,6 +13,7 @@
 
 #include "ortools/glop/lu_factorization.h"
 
+#include <algorithm>
 #include <cstddef>
 
 #include "ortools/lp_data/lp_types.h"

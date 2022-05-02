@@ -14,6 +14,9 @@
 #ifndef OR_TOOLS_GLOP_PRICING_H_
 #define OR_TOOLS_GLOP_PRICING_H_
 
+#include <random>
+#include <string>
+
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "ortools/lp_data/lp_types.h"

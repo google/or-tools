@@ -13,6 +13,7 @@
 
 #include "ortools/glop/status.h"
 
+#include <string>
 #include <utility>
 
 #include "ortools/base/logging.h"

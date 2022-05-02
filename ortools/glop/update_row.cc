@@ -13,6 +13,8 @@
 
 #include "ortools/glop/update_row.h"
 
+#include <string>
+
 #include "ortools/lp_data/lp_utils.h"
 
 namespace operations_research {
