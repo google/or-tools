@@ -78,12 +78,12 @@ below).
 *   ZLIB (`BUILD_ZLIB`),
 *   Google Abseil-cpp (`BUILD_absl`),
 *   Google Protobuf (`BUILD_Protobuf`),
-*   SCIP (`BUILD_SCIP`),<br>
-  note: You can disable the support of SCIP solvers
-  by using `-DUSE_SCIP=OFF` (`ON` by default).
 *   GLPK (`BUILD_GLPK`),<br>
-  note: You can disable the support of GLPK solvers
+  note: You can disable the support of GLPK solver
   by using `-DUSE_GLPK=OFF` (`ON` by default).
+*   SCIP (`BUILD_SCIP`),<br>
+  note: You can disable the support of SCIP solver
+  by using `-DUSE_SCIP=OFF` (`ON` by default).
 
 *   COIN-OR solvers,
 
@@ -167,16 +167,19 @@ cmake -S. -Bbuild -LH
 | `BUILD_ZLIB`  | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | `BUILD_absl`  | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | `BUILD_Protobuf`  | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `USE_SCIP`  | ON\* | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_SCIP`  | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
-| `USE_GLPK`  | ON\* | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_GLPK`  | OFF\* | Static build the GLPK libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_re2`  | OFF* | Static build the re2 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_Eigen3`  | OFF* | Static build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| | | |
 | `USE_COINOR`  | ON\* | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_CoinUtils`  | OFF\* | Static build the CoinUtils library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Osi`  | OFF\* | Static build the Osi library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Clp`  | OFF\* | Static build the Clp library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Cgl`  | OFF\* | Static build the Cgl library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `USE_GLPK`  | ON\* | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_GLPK`  | OFF\* | Static build the GLPK libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
+| `USE_SCIP`  | ON\* | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_SCIP`  | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
 | `USE_CPLEX`  | OFF | Enable CPLEX support |
 | `USE_XPRESS`  | OFF | Enable XPRESS support |
 | | | |
