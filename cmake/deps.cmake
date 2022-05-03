@@ -88,7 +88,7 @@ if(USE_GLPK)
   endif()
 endif()
 
-if(USE_PLDP)
+if(USE_PDLP)
   if(NOT BUILD_PDLP)
     find_package(PDLP REQUIRED)
   else()
