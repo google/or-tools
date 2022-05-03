@@ -21,8 +21,9 @@ endif
 # Checks if the user has overwritten default libraries and binaries.
 BUILD_TYPE ?= Release
 USE_COINOR ?= ON
-USE_SCIP ?= ON
 USE_GLPK ?= OFF
+USE_PDLP := ON # OFF not supported
+USE_SCIP ?= ON
 USE_CPLEX ?= OFF
 USE_XPRESS ?= OFF
 JOBS ?= 4
@@ -47,8 +48,9 @@ third_party:
  -DBUILD_EXAMPLES=OFF \
  -DBUILD_SAMPLES=OFF \
  -DUSE_COINOR=$(USE_COINOR) \
- -DUSE_SCIP=$(USE_SCIP) \
  -DUSE_GLPK=$(USE_GLPK) \
+ -DUSE_PDLP=$(USE_PDLP) \
+ -DUSE_SCIP=$(USE_SCIP) \
  -DUSE_CPLEX=$(USE_CPLEX) \
  -DUSE_XPRESS=$(USE_XPRESS) \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
