@@ -1,4 +1,6 @@
 build
+build_make
+install_make
 build_cross
 dependencies/install
 dependencies/sources
