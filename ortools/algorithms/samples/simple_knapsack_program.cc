@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <algorithm>
 #include <cstdint>
 #include <iterator>
 #include <numeric>

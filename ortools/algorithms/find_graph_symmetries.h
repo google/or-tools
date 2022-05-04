@@ -25,6 +25,7 @@
 #define OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "absl/numeric/int128.h"

@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <queue>
+#include <string>
 #include <utility>
 
 #include "ortools/base/logging.h"
