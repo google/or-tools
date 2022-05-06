@@ -1,4 +1,4 @@
-blank_issues_enabled: enable
+blank_issues_enabled: true
 
 contact_links:
 - name: Modeling/Usage problem
