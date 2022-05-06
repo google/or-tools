@@ -14,6 +14,7 @@
 #include "ortools/algorithms/sparse_permutation.h"
 
 #include <algorithm>
+#include <string>
 
 #include "absl/strings/str_join.h"
 #include "ortools/base/logging.h"

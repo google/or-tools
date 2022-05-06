@@ -32,7 +32,7 @@ portable software suite for solving combinatorial optimization problems.
 The suite contains:
 
 *   A constraint programming solver;
-*   A linear programming solver;
+*   Two linear programming solvers;
 *   Wrappers around commercial and other open source solvers, including mixed
     integer solvers;
 *   Bin packing and knapsack algorithms;
@@ -64,8 +64,10 @@ This software suite is composed of the following components:
         *   [samples](ortools/graph/samples) Carefully crafted samples.
     *   [linear_solver](ortools/linear_solver) Linear solver wrapper.
         *   [samples](ortools/linear_solver/samples) Carefully crafted samples.
-    *   [glop](ortools/glop) Google linear solver.
+    *   [glop](ortools/glop) Simplex-based linear programming solver.
         *   [samples](ortools/glop/samples) Carefully crafted samples.
+    *   [pdlp](ortools/pdlp) First-order linear programming solver.
+        *   [samples](ortools/pdlp/samples) Carefully crafted samples.
     *   [lp_data](ortools/lp_data) Data structures for linear models.
     *   [constraint_solver](ortools/constraint_solver) Constraint and Routing
         solver.
