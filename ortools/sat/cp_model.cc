@@ -1187,8 +1187,7 @@ CumulativeConstraint CpModelBuilder::AddCumulative(LinearExpr capacity) {
 }
 
 void CpModelBuilder::Minimize(const LinearExpr& expr) {
-  cp_model_.clear_objective();
-  cp_model_.clear_floating_point_objective();
+  ClearObjective();
   for (const int x : expr.variables()) {
     cp_model_.mutable_objective()->add_vars(x);
   }
@@ -1199,8 +1198,7 @@ void CpModelBuilder::Minimize(const LinearExpr& expr) {
 }
 
 void CpModelBuilder::Maximize(const LinearExpr& expr) {
-  cp_model_.clear_objective();
-  cp_model_.clear_floating_point_objective();
+  ClearObjective();
   for (const int x : expr.variables()) {
     cp_model_.mutable_objective()->add_vars(x);
   }
@@ -1212,8 +1210,7 @@ void CpModelBuilder::Maximize(const LinearExpr& expr) {
 }
 
 void CpModelBuilder::Minimize(const DoubleLinearExpr& expr) {
-  cp_model_.clear_objective();
-  cp_model_.clear_floating_point_objective();
+  ClearObjective();
   for (int i = 0; i < expr.variables().size(); ++i) {
     cp_model_.mutable_floating_point_objective()->add_vars(expr.variables()[i]);
     cp_model_.mutable_floating_point_objective()->add_coeffs(
@@ -1224,8 +1221,7 @@ void CpModelBuilder::Minimize(const DoubleLinearExpr& expr) {
 }
 
 void CpModelBuilder::Maximize(const DoubleLinearExpr& expr) {
-  cp_model_.clear_objective();
-  cp_model_.clear_floating_point_objective();
+  ClearObjective();
   for (int i = 0; i < expr.variables().size(); ++i) {
     cp_model_.mutable_floating_point_objective()->add_vars(expr.variables()[i]);
     cp_model_.mutable_floating_point_objective()->add_coeffs(
@@ -1233,6 +1229,15 @@ void CpModelBuilder::Maximize(const DoubleLinearExpr& expr) {
   }
   cp_model_.mutable_floating_point_objective()->set_offset(expr.constant());
   cp_model_.mutable_floating_point_objective()->set_maximize(true);
+}
+
+void CpModelBuilder::ClearObjective() {
+  cp_model_.clear_objective();
+  cp_model_.clear_floating_point_objective();
+}
+
+bool CpModelBuilder::HasObjective() const {
+  return cp_model_.has_objective() || cp_model_.has_floating_point_objective();
 }
 
 void CpModelBuilder::AddDecisionStrategy(

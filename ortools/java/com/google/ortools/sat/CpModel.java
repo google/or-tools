@@ -911,8 +911,7 @@ public final class CpModel {
 
   /** Adds a minimization objective of a linear expression. */
   public void minimize(LinearArgument expr) {
-    modelBuilder.clearObjective();
-    modelBuilder.clearFloatingPointObjective();
+    clearObjective();
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     final LinearExpr e = expr.build();
     for (int i = 0; i < e.numElements(); ++i) {
@@ -921,9 +920,9 @@ public final class CpModel {
     obj.setOffset((double) e.getOffset());
   }
 
+  /** Adds a minimization objective of a linear expression. */
   public void minimize(DoubleLinearExpr expr) {
-    modelBuilder.clearObjective();
-    modelBuilder.clearFloatingPointObjective();
+    clearObjective();
     FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
       obj.addVars(expr.getVariableIndex(i)).addCoeffs(expr.getCoefficient(i));
@@ -933,8 +932,7 @@ public final class CpModel {
 
   /** Adds a maximization objective of a linear expression. */
   public void maximize(LinearArgument expr) {
-    modelBuilder.clearObjective();
-    modelBuilder.clearFloatingPointObjective();
+    clearObjective();
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     final LinearExpr e = expr.build();
     for (int i = 0; i < e.numElements(); ++i) {
@@ -944,14 +942,25 @@ public final class CpModel {
     obj.setScalingFactor(-1.0);
   }
 
+  /** Adds a maximization objective of a linear expression. */
   public void maximize(DoubleLinearExpr expr) {
-    modelBuilder.clearObjective();
-    modelBuilder.clearFloatingPointObjective();
+    clearObjective();
     FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
       obj.addVars(expr.getVariableIndex(i)).addCoeffs(expr.getCoefficient(i));
     }
     obj.setOffset(expr.getOffset()).setMaximize(true);
+  }
+
+  /** Clears the objective. */
+  public void clearObjective() {
+    modelBuilder.clearObjective();
+    modelBuilder.clearFloatingPointObjective();
+  }
+
+  /** Checks if the model contains an objective. */
+  public boolean hasObjective() {
+    return modelBuilder.hasObjective() || modelBuilder.hasFloatingPointObjective();
   }
 
   // DecisionStrategy

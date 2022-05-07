@@ -1043,6 +1043,12 @@ class CpModelBuilder {
   /// Note that the coefficients will be internally scaled to integer.
   void Maximize(const DoubleLinearExpr& expr);
 
+  /// Removes the objective from the model.
+  void ClearObjective();
+
+  /// Checks whether the model contains an objective.
+  bool HasObjective() const;
+
   /// Adds a decision strategy on a list of integer variables.
   void AddDecisionStrategy(
       absl::Span<const IntVar> variables,

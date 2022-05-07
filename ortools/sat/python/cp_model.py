@@ -1952,8 +1952,7 @@ class CpModel(object):
 
     def _SetObjective(self, obj, minimize):
         """Sets the objective of the model."""
-        self.__model.ClearField('objective')
-        self.__model.ClearField('floating_point_objective')
+        self.ClearObjective()
         if isinstance(obj, IntVar):
             self.__model.objective.coeffs.append(1)
             self.__model.objective.offset = 0
@@ -2003,6 +2002,10 @@ class CpModel(object):
     def HasObjective(self):
         return (self.__model.HasField('objective')
                 or self.__model.HasField('floating_point_objective'))
+
+    def ClearObjective(self):
+        self.__model.ClearField('objective')
+        self.__model.ClearField('floating_point_objective')
 
     def AddDecisionStrategy(self, variables, var_strategy, domain_strategy):
         """Adds a search strategy to the model.

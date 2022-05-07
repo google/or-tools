@@ -1012,7 +1012,8 @@ public class CpModel
     /** <summary>Returns whether the model contains an objective.</summary>*/
     bool HasObjective()
     {
-        return model_.Objective is not null;
+        return model_.Objective is not null ||
+            model_.FloatingPointObjective is not null;
     }
 
     // Search Decision.
