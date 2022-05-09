@@ -390,6 +390,14 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
                     objective_string, "\n");
   }
+  if (num_vars_per_domains.contains(Domain(0, 1))) {
+    // We always list Boolean first.
+    const int num_bools = num_vars_per_domains[Domain(0, 1)];
+    const std::string temp = absl::StrCat("  - ", num_bools, " Booleans in ",
+                                          Domain(0, 1).ToString(), "\n");
+    absl::StrAppend(&result, Summarize(temp));
+    num_vars_per_domains.erase(Domain(0, 1));
+  }
   if (num_vars_per_domains.size() < 100) {
     for (const auto& entry : num_vars_per_domains) {
       const std::string temp = absl::StrCat("  - ", entry.second, " in ",
