@@ -311,20 +311,25 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
   };
 }
 
-std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
+std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
+    const CpModelProto& cp_model_proto, Model* model) {
+  std::vector<DecisionStrategyProto> strategies;
+  for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
+    strategies.push_back(proto);
+  }
+  return ConstructSearchStrategyInternal(strategies, model);
+}
+
+std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model) {
   std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
 
   // We start by the user specified heuristic.
-  {
-    std::vector<DecisionStrategyProto> strategies;
-    for (const DecisionStrategyProto& proto :
-         cp_model_proto.search_strategy()) {
-      strategies.push_back(proto);
-    }
-    heuristics.push_back(ConstructSearchStrategyInternal(strategies, model));
+  const auto& params = *model->GetOrCreate<SatParameters>();
+  if (params.search_branching() != SatParameters::PARTIAL_FIXED_SEARCH) {
+    heuristics.push_back(ConstructUserSearchStrategy(cp_model_proto, model));
   }
 
   // If there are some scheduling constraint, we complete with a custom
@@ -334,7 +339,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
   }
 
   // If needed, we finish by instantiating anything left.
-  if (model->GetOrCreate<SatParameters>()->instantiate_all_variables()) {
+  if (params.instantiate_all_variables()) {
     std::vector<IntegerVariable> decisions;
     for (const IntegerVariable var : variable_mapping) {
       if (var == kNoIntegerVariable) continue;
@@ -480,6 +485,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (base_params.use_dual_scheduling_heuristics()) {
       new_params.set_use_overload_checker_in_cumulative_constraint(true);
       new_params.set_use_timetable_edge_finding_in_cumulative_constraint(true);
+      new_params.set_use_hard_precedences_in_cumulative_constraint(true);
     }
 
     // We do not want to change the objective_var lb from outside as it gives
@@ -495,6 +501,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (base_params.use_dual_scheduling_heuristics()) {
       new_params.set_use_overload_checker_in_cumulative_constraint(true);
       new_params.set_use_timetable_edge_finding_in_cumulative_constraint(true);
+      new_params.set_use_hard_precedences_in_cumulative_constraint(true);
     }
     strategies["probing"] = new_params;
   }
@@ -525,6 +532,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (base_params.use_dual_scheduling_heuristics()) {
       new_params.set_use_overload_checker_in_cumulative_constraint(true);
       new_params.set_use_timetable_edge_finding_in_cumulative_constraint(true);
+      new_params.set_use_hard_precedences_in_cumulative_constraint(true);
     }
     strategies["reduced_costs"] = new_params;
   }

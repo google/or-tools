@@ -692,6 +692,14 @@ void ConfigureSearchHeuristics(Model* model) {
       heuristics.restart_policies = {no_restart};
       return;
     }
+    case SatParameters::PARTIAL_FIXED_SEARCH: {
+      heuristics.decision_policies = {
+          SequentialSearch({heuristics.user_search, SatSolverHeuristic(model),
+                            heuristics.fixed_search})};
+      auto no_restart = []() { return false; };
+      heuristics.restart_policies = {no_restart};
+      return;
+    }
     case SatParameters::HINT_SEARCH: {
       CHECK(heuristics.hint_search != nullptr);
       heuristics.decision_policies = {

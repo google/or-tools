@@ -1673,6 +1673,51 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
   return SatSolver::FEASIBLE;  // shouldn't reach here.
 }
 
+void PresolveBooleanLinearExpression(std::vector<Literal>* literals,
+                                     std::vector<Coefficient>* coefficients,
+                                     Coefficient* offset) {
+  // Sorting by literal index regroup duplicate or negated literal together.
+  std::vector<std::pair<LiteralIndex, Coefficient>> pairs;
+  const int size = literals->size();
+  for (int i = 0; i < size; ++i) {
+    pairs.push_back({(*literals)[i].Index(), (*coefficients)[i]});
+  }
+  std::sort(pairs.begin(), pairs.end());
+
+  // Merge terms if needed.
+  int new_size = 0;
+  for (const auto& [index, coeff] : pairs) {
+    if (new_size > 0) {
+      if (pairs[new_size - 1].first == index) {
+        pairs[new_size - 1].second += coeff;
+        continue;
+      } else if (pairs[new_size - 1].first == Literal(index).NegatedIndex()) {
+        // The term is coeff *( 1 - X).
+        pairs[new_size - 1].second -= coeff;
+        *offset += coeff;
+        continue;
+      }
+    }
+    pairs[new_size++] = {index, coeff};
+  }
+  pairs.resize(new_size);
+
+  // Rebuild with positive coeff.
+  literals->clear();
+  coefficients->clear();
+  for (const auto& [index, coeff] : pairs) {
+    if (coeff > 0) {
+      literals->push_back(Literal(index));
+      coefficients->push_back(coeff);
+    } else if (coeff < 0) {
+      // coeff * X = coeff - coeff * (1 - X).
+      *offset += coeff;
+      literals->push_back(Literal(index).Negated());
+      coefficients->push_back(-coeff);
+    }
+  }
+}
+
 void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
     std::vector<Literal>* literals, std::vector<Coefficient>* coefficients,
     Coefficient* offset) {
@@ -1832,6 +1877,11 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       }
     }
     if (all_booleans) {
+      // In some corner case, it is possible the GetOrCreateAssociatedLiteral()
+      // returns identical or negated literal of another term. We don't support
+      // this below, so we need to make sure this is not the case.
+      PresolveBooleanLinearExpression(&literals, &coefficients, &offset);
+
       // TODO(user): It might be interesting to redo this kind of presolving
       // once high cost booleans have been fixed as we might have more at most
       // one between literal in the objective by then.

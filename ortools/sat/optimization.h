@@ -137,6 +137,17 @@ void RestrictObjectiveDomainWithBinarySearch(
     IntegerVariable objective_var,
     const std::function<void()>& feasible_solution_observer, Model* model);
 
+// Transforms the given linear expression so that:
+//  - duplicate terms are merged.
+//  - terms with a literal and its negation are merged.
+//  - all weight are positive.
+//
+// TODO(user): Merge this with similar code like
+// ComputeBooleanLinearExpressionCanonicalForm().
+void PresolveBooleanLinearExpression(std::vector<Literal>* literals,
+                                     std::vector<Coefficient>* coefficients,
+                                     Coefficient* offset);
+
 // Same as MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
 // a core-based approach instead. Note that the given objective_var is just used
 // for reporting the lower-bound/upper-bound and do not need to be linked with

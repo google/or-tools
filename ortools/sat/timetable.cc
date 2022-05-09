@@ -324,6 +324,10 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
 // Note that we relly on being called again to reach a fixed point.
 bool TimeTablingPerTask::Propagate() {
   // This can fail if the profile exceeds the resource capacity.
+  //
+  // TODO(user): If we forget the "makespan" task, we don't really care about
+  // any profile rectangle that is low enough to not propagate anything. We
+  // could exploit that for a faster algo maybe.
   if (!BuildProfile()) return false;
 
   // Update the minimum start times.
@@ -455,16 +459,12 @@ bool TimeTablingPerTask::SweepAllTasks() {
 bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
                                    int* profile_index) {
   const IntegerValue start_max = helper_->StartMax(task_id);
-  const IntegerValue size_min = helper_->SizeMin(task_id);
   const IntegerValue initial_end_min = helper_->EndMin(task_id);
-
-  IntegerValue new_start_min = initial_start_min;
-  IntegerValue new_end_min = initial_end_min;
 
   // Find the profile rectangle that overlaps the minimum start time of task_id.
   // The sentinel prevents out of bound exceptions.
   DCHECK(std::is_sorted(profile_.begin(), profile_.end()));
-  while (profile_[*profile_index].start <= new_start_min) {
+  while (profile_[*profile_index].start <= initial_start_min) {
     ++*profile_index;
   }
   int rec_id = *profile_index - 1;
@@ -473,26 +473,9 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
   // conflict_height.
   const IntegerValue conflict_height = CapacityMax() - DemandMin(task_id);
 
-  // True if the task is in conflict with at least one profile rectangle.
-  bool conflict_found = false;
-
   // Last time point during which task_id was in conflict with a profile
   // rectangle before being pushed.
-  IntegerValue last_initial_conflict = kMinIntegerValue;
-
-  // If the task is part of the profile, we try to push its demand max.
-  //
-  // TODO(user): we are suboptimal. We should find the highest rectangle instead
-  // of just using the first time point were the task appear in the profile.
-  bool push_demand_max = false;
-  IntegerValue demand_push = CapacityMax();
-  if (IsInProfile(task_id)) {
-    const IntegerValue delta = DemandMax(task_id) - DemandMin(task_id);
-    if (delta > 0) {
-      push_demand_max = true;
-      demand_push -= delta;
-    }
-  }
+  IntegerValue explanation_start_time = kMinIntegerValue;
 
   // Push the task from left to right until it does not overlap any conflicting
   // rectangle. Pushing the task may push the end of its compulsory part on the
@@ -500,67 +483,85 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
   // take care of rebuilding the profile with these possible changes and to
   // propagate again in order to reach the timetabling consistency or to fail if
   // the profile exceeds the resource capacity.
-  IntegerValue limit = std::min(start_max, new_end_min);
-  for (; profile_[rec_id].start < limit; ++rec_id) {
-    if (push_demand_max && start_max < profile_[rec_id + 1].start) {
-      if (profile_[rec_id].height > demand_push) {
+  //
+  // For optimization purpose we have a separate code if the task is in the
+  // profile or not.
+  IntegerValue new_start_min = initial_start_min;
+  if (IsInProfile(task_id)) {
+    DCHECK_LE(start_max, initial_end_min);
+    for (; profile_[rec_id].start < start_max; ++rec_id) {
+      // If the profile rectangle is not conflicting, go to the next rectangle.
+      if (profile_[rec_id].height <= conflict_height) continue;
+
+      // Compute the next minimum start and end times of task_id. The variables
+      // are not updated yet.
+      new_start_min = profile_[rec_id + 1].start;  // i.e. profile_[rec_id].end
+      if (start_max < new_start_min) {
+        // Because the task is part of the profile, we cannot push it further.
+        new_start_min = start_max;
+        explanation_start_time = start_max - 1;
+        break;
+      }
+      explanation_start_time = new_start_min - 1;
+    }
+
+    // Since the task is part of the profile, try to lower its demand max
+    // if possible.
+    const IntegerValue delta = DemandMax(task_id) - DemandMin(task_id);
+    if (delta > 0) {
+      const IntegerValue threshold = CapacityMax() - delta;
+      if (profile_[rec_id].start > start_max) --rec_id;
+      for (; profile_[rec_id].start < initial_end_min; ++rec_id) {
+        DCHECK_GT(profile_[rec_id + 1].start, start_max);
+        if (profile_[rec_id].height <= threshold) continue;
         const IntegerValue new_max =
             CapacityMax() - profile_[rec_id].height + DemandMin(task_id);
 
-        // Note that the task_id is already part of the profile reason, so there
-        // is nothing else needed.
+        // Note that the task_id is already part of the profile reason, so
+        // there is nothing else needed.
         helper_->ClearReason();
-        AddProfileReason(task_id, start_max, start_max + 1);
+        const IntegerValue time = std::max(start_max, profile_[rec_id].start);
+        AddProfileReason(task_id, time, time + 1, CapacityMax());
         if (!helper_->PushIntegerLiteralIfTaskPresent(
                 task_id, demands_[task_id].LowerOrEqual(new_max))) {
           return false;
         }
       }
     }
+  } else {
+    IntegerValue limit = initial_end_min;
+    const IntegerValue size_min = helper_->SizeMin(task_id);
+    for (; profile_[rec_id].start < limit; ++rec_id) {
+      // If the profile rectangle is not conflicting, go to the next rectangle.
+      if (profile_[rec_id].height <= conflict_height) continue;
 
-    // If the profile rectangle is not conflicting, go to the next rectangle.
-    if (profile_[rec_id].height <= conflict_height) continue;
+      // Compute the next minimum start and end times of task_id. The variables
+      // are not updated yet.
+      new_start_min = profile_[rec_id + 1].start;  // i.e. profile_[rec_id].end
+      limit = std::max(limit, new_start_min + size_min);
+      if (profile_[rec_id].start < initial_end_min) {
+        explanation_start_time = std::min(new_start_min, initial_end_min) - 1;
+      }
 
-    conflict_found = true;
-
-    // Compute the next minimum start and end times of task_id. The variables
-    // are not updated yet.
-    new_start_min = profile_[rec_id + 1].start;  // i.e. profile_[rec_id].end
-    if (start_max < new_start_min) {
-      if (IsInProfile(task_id)) {
-        // Because the task is part of the profile, we cannot push it further.
-        new_start_min = start_max;
-        last_initial_conflict = new_start_min - 1;
+      if (new_start_min > start_max) {
+        // We have a conflict. We optimize the reason a bit.
+        new_start_min = std::max(profile_[rec_id].start + 1, start_max + 1);
+        explanation_start_time =
+            std::min(explanation_start_time, new_start_min - 1);
         break;
-      } else {
-        // We have a conflict or we can push the task absence. In both cases
-        // we don't need more than start_max + 1 in the explanation below.
-        new_start_min = start_max + 1;
       }
     }
-
-    new_end_min = std::max(new_end_min, new_start_min + size_min);
-    limit = std::min(start_max, new_end_min);
-
-    if (profile_[rec_id].start < initial_end_min) {
-      last_initial_conflict = std::min(new_start_min, initial_end_min) - 1;
-    }
   }
 
-  if (!conflict_found) return true;
-
-  if (initial_start_min != new_start_min &&
-      !UpdateStartingTime(task_id, last_initial_conflict, new_start_min)) {
-    return false;
-  }
-
-  return true;
+  if (new_start_min == initial_start_min) return true;
+  return UpdateStartingTime(task_id, explanation_start_time, new_start_min);
 }
 
 bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
                                             IntegerValue right) {
+  DCHECK_LT(left, right);
   helper_->ClearReason();
-  AddProfileReason(task_id, left, right);
+  AddProfileReason(task_id, left, right, CapacityMax() - DemandMin(task_id));
   if (capacity_.var != kNoIntegerVariable) {
     helper_->MutableIntegerReason()->push_back(
         integer_trail_->UpperBoundAsLiteral(capacity_.var));
@@ -582,8 +583,8 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
 // Note that compared to the "easiest" reason (mode == 2) this doesn't seems
 // to help much. Still the more relaxed the reason, the better it should be.
 void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
-                                          IntegerValue right) {
-  const IntegerValue capa_max = integer_trail_->UpperBound(capacity_);
+                                          IntegerValue right,
+                                          IntegerValue capacity_threshold) {
   IntegerValue sum_of_demand(0);
 
   // We optimize a bit the reason depending on the case.
@@ -594,12 +595,6 @@ void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
     // Here we can easily remove extra tasks if the demand is already high
     // enough.
     mode = 0;
-    if (task_id >= 0) {
-      // If task_id == -1, the reason is used to push the capacity min.
-      // If we are above the capa_max, we will have a conflict and we can
-      // potentially reduce the reason a bit.
-      sum_of_demand = integer_trail_->LowerBound(demands_[task_id]);
-    }
   } else if (right - left < helper_->SizeMin(task_id) + 2) {
     // In this case, only the profile in [left, left + 1) and [right - 1, right)
     // is enough to push the task. We don't care about what happen in the middle
@@ -638,7 +633,7 @@ void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
       // the last ones? Note however that profile_tasks_ should be in order in
       // which task have a mandatory part.
       sum_of_demand += integer_trail_->LowerBound(demands_[t]);
-      if (sum_of_demand > capa_max) break;
+      if (sum_of_demand > capacity_threshold) break;
     } else if (mode == 1) {
       helper_->AddStartMaxReason(t, start_max <= left ? left : right - 1);
       helper_->AddEndMinReason(t, end_min >= right ? right : left + 1);
@@ -654,7 +649,7 @@ bool TimeTablingPerTask::IncreaseCapacity(IntegerValue time,
   if (new_min <= CapacityMin()) return true;
 
   helper_->ClearReason();
-  AddProfileReason(-1, time, time + 1);
+  AddProfileReason(-1, time, time + 1, std::min(CapacityMax(), new_min));
   if (capacity_.var == kNoIntegerVariable) {
     return helper_->ReportConflict();
   }

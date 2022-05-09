@@ -206,10 +206,15 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
 
   // In addition to computing the min/max possible sum, we also often compare
   // it with the constraint bounds, so we do not want max - min to overflow.
-  if (sum_min < 0 && sum_min + std::numeric_limits<int64_t>::max() < sum_max) {
-    return true;
-  }
+  // We might also create an intermediate variable to represent the sum. It
+  if (sum_min < std::numeric_limits<int64_t>::min() / 2) return true;
+  if (sum_max > std::numeric_limits<int64_t>::max() / 2) return true;
   return false;
+  //  if (sum_min < 0 && sum_min + std::numeric_limits<int64_t>::max() <
+  //  sum_max) {
+  //    return true;
+  //  }
+  //  return false;
 }
 
 int64_t MinOfRef(const CpModelProto& model, int ref) {

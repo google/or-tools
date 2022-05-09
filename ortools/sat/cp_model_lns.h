@@ -196,6 +196,10 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   std::vector<int> GetActiveIntervals(
       const CpSolverResponse& initial_solution) const;
 
+  // Returns the set of unique intervals list appearing in a no_overlap,
+  // cumulative, or as a dimension of a no_overlap_2d constraint.
+  std::vector<std::vector<int>> GetUniqueIntervalSets() const;
+
   // Returns one sub-vector per circuit or per single vehicle ciruit in a routes
   // constraints. Each circuit is non empty, and does not contain any
   // self-looping arcs. Path are sorted, starting from the arc with the lowest
@@ -544,6 +548,27 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, absl::BitGenRef random) final;
+};
+
+// Similar to SchedulingTimeWindowNeighborhoodGenerator except that it relaxes
+// one independent time window per resource (1 for each dimension in the
+// no_overlap_2d case).
+class SchedulingResourceWindowsNeighborhoodGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit SchedulingResourceWindowsNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper,
+      const std::vector<std::vector<int>>& intervals_in_constraints,
+      const std::string& name)
+      : NeighborhoodGenerator(name, helper),
+        intervals_in_constraints_(intervals_in_constraints) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+
+ private:
+  const std::vector<std::vector<int>> intervals_in_constraints_;
+  absl::flat_hash_set<int> intervals_to_relax_;
 };
 
 // This routing based LNS generator will relax random arcs in all the paths of

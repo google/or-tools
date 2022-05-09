@@ -103,27 +103,28 @@ void LinearConstraintBuilder::AddConstant(IntegerValue value) {
 
 ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
     Literal lit, IntegerValue coeff) {
-  bool has_direct_view = encoder_.GetLiteralView(lit) != kNoIntegerVariable;
+  DCHECK(encoder_ != nullptr);
+  bool has_direct_view = encoder_->GetLiteralView(lit) != kNoIntegerVariable;
   bool has_opposite_view =
-      encoder_.GetLiteralView(lit.Negated()) != kNoIntegerVariable;
+      encoder_->GetLiteralView(lit.Negated()) != kNoIntegerVariable;
 
   // If a literal has both views, we want to always keep the same
   // representative: the smallest IntegerVariable. Note that AddTerm() will
   // also make sure to use the associated positive variable.
   if (has_direct_view && has_opposite_view) {
-    if (encoder_.GetLiteralView(lit) <=
-        encoder_.GetLiteralView(lit.Negated())) {
+    if (encoder_->GetLiteralView(lit) <=
+        encoder_->GetLiteralView(lit.Negated())) {
       has_opposite_view = false;
     } else {
       has_direct_view = false;
     }
   }
   if (has_direct_view) {
-    AddTerm(encoder_.GetLiteralView(lit), coeff);
+    AddTerm(encoder_->GetLiteralView(lit), coeff);
     return true;
   }
   if (has_opposite_view) {
-    AddTerm(encoder_.GetLiteralView(lit.Negated()), -coeff);
+    AddTerm(encoder_->GetLiteralView(lit.Negated()), -coeff);
     offset_ += coeff;
     return true;
   }

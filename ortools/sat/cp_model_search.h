@@ -72,11 +72,14 @@ class CpModelView {
   const IntegerEncoder& integer_encoder_;
 };
 
-// Constructs the search strategy specified in the given CpModelProto. A
-// positive variable ref in the proto is mapped to variable_mapping[ref] in the
-// model. All the variables referred in the search strategy must be correctly
-// mapped, the other entries can be set to kNoIntegerVariable.
-std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
+// Constructs the search strategy specified in the given CpModelProto.
+std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
+    const CpModelProto& cp_model_proto, Model* model);
+
+// Constructs our "fixed" search strategy which start with
+// ConstructUserSearchStrategy() but is completed by a couple of automatic
+// heuristics.
+std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model);

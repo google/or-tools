@@ -854,7 +854,9 @@ message SatParameters {
   // The search branching will be used to decide how to branch on unfixed nodes.
   enum SearchBranching {
     // Try to fix all literals using the underlying SAT solver's heuristics,
-    // then generate and fix literals until integer variables are fixed.
+    // then generate and fix literals until integer variables are fixed. New
+    // literals on integer variables are generated using the fixed search
+    // specified by the user or our default one.
     AUTOMATIC_SEARCH = 0;
 
     // If used then all decisions taken by the solver are made using a fixed
@@ -863,17 +865,16 @@ message SatParameters {
     FIXED_SEARCH = 1;
 
     // If used, the solver will use various generic heuristics in turn.
+    // This is not often used, prefer just using multi thread.
     PORTFOLIO_SEARCH = 2;
 
     // If used, the solver will use heuristics from the LP relaxation. This
     // exploit the reduced costs of the variables in the relaxation.
-    //
-    // TODO(user): Maybe rename REDUCED_COST_SEARCH?
     LP_SEARCH = 3;
 
     // If used, the solver uses the pseudo costs for branching. Pseudo costs
     // are computed using the historical change in objective bounds when some
-    // decision are taken.
+    // decision are taken. Note that this works whether we use an LP or not.
     PSEUDO_COST_SEARCH = 4;
 
     // Mainly exposed here for testing. This quickly tries a lot of randomized
@@ -885,6 +886,12 @@ message SatParameters {
     // solution_hint field of the CpModelProto rather than using the information
     // provided in the search_strategy.
     HINT_SEARCH = 6;
+
+    // Similar to FIXED_SEARCH, but differ in how the variable not listed into
+    // the fixed search heuristics are branched on. This will always start the
+    // search tree according to the specified fixed search strategy, but will
+    // complete it using the default automatic search.
+    PARTIAL_FIXED_SEARCH = 7;
   }
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];
 

@@ -126,7 +126,7 @@ class ImpliedBoundsProcessor {
     IntegerValue bound_diff;
     IntegerVariable bool_var = kNoIntegerVariable;
   };
-  BestImpliedBoundInfo GetCachedImpliedBoundInfo(IntegerVariable var);
+  BestImpliedBoundInfo GetCachedImpliedBoundInfo(IntegerVariable var) const;
 
   // As we compute the best implied bounds for each variable, we add violated
   // cuts here.
@@ -148,6 +148,112 @@ class ImpliedBoundsProcessor {
 
   // Temporary memory used by ProcessUpperBoundedConstraint().
   mutable std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
+};
+
+// A single node flow relaxation is a constraint of the form
+//     Sum in_flow - Sum out_flow <= demand
+// where each flow variable F_i is in [0, capacity_i] and satisfy
+//     F_i <= capacity_i B_i
+// with B_i a Boolean representing the arc usage.
+//
+// From a generic constraint sum coeff_i X_i <= b, we try to put it in this
+// format. We can first transform all variables to be in [0, max_value].
+//
+// Then we cover different cases:
+// 1/ A coeff * Boolean, can be easily transformed.
+// 2/ A coeff * Integer in [0, capacity] with Bool => integer == 0 too.
+// 3/ For a general integer, we can always use a Bool == 1 for the arc usage.
+//
+// TODO(user): cover case 3/. We loose a lot of relaxation here, except if
+// the variable is at is upper/lower bound.
+//
+// TODO(user): Altough the cut should still be correct, we might use the same
+// Boolean more than once in the implied bound. Or this Boolean might already
+// appear in the constraint. Not sure if we can do something smarter here.
+struct FlowInfo {
+  // Flow is always in [0, capacity] with the given current value in the
+  // lp relaxation. Now that we usually only consider tight constraint were
+  // flow_lp_value = capacity * bool_lp_value.
+  IntegerValue capacity;
+  double flow_lp_value;
+  double bool_lp_value;
+
+  // The definition of the flow variable and the arc usage variable in term
+  // of original problem variables. After we compute a cut on the flow and
+  // usage variable, we can just directly substitute these variable by the
+  // expression here to have a cut in term of the original problem variables.
+  LinearExpression flow_expr;
+  LinearExpression bool_expr;
+};
+
+struct SingleNodeFlow {
+  bool empty() const { return in_flow.empty() && out_flow.empty(); }
+  void clear() {
+    demand = IntegerValue(0);
+    in_flow.clear();
+    out_flow.clear();
+  }
+  std::string DebugString() const;
+
+  IntegerValue demand;
+  std::vector<FlowInfo> in_flow;
+  std::vector<FlowInfo> out_flow;
+
+  // Stats filled during extraction.
+  int num_bool = 0;
+  int num_to_lb = 0;
+  int num_to_ub = 0;
+};
+
+class FlowCoverCutHelper {
+ public:
+  // Try to extract a nice SingleNodeFlow relaxation for the given upper bounded
+  // linear constraint.
+  SingleNodeFlow ComputeFlowCoverRelaxation(
+      const LinearConstraint& base_ct,
+      const absl::StrongVector<IntegerVariable, double>& lp_values,
+      IntegerTrail* integer_trail, ImpliedBoundsProcessor* ib_helper);
+
+  // Try to generate a cut for the given single node flow problem. Returns true
+  // if a cut was generated. It can be accessed by cut()/mutable_cut().
+  bool GenerateCut(const SingleNodeFlow& data);
+
+  // If successful, info about the last generated cut.
+  LinearConstraint* mutable_cut() { return &cut_; }
+  const LinearConstraint& cut() const { return cut_; }
+
+  // Single line of text that we append to the cut log line.
+  const std::string Info() {
+    return absl::StrCat("lift=", num_lifting_, " slack=", slack_.value(),
+                        " #in=", num_in_ignored_, "|", num_in_flow_, "|",
+                        num_in_bin_, " #out:", num_out_capa_, "|",
+                        num_out_flow_, "|", num_out_bin_);
+  }
+
+ private:
+  // Helpers used by ComputeFlowCoverRelaxation() to convert one linear term.
+  bool TryXminusLB(IntegerVariable var, double lp_value, IntegerValue lb,
+                   IntegerValue ub, IntegerValue coeff,
+                   ImpliedBoundsProcessor* ib_helper,
+                   SingleNodeFlow* result) const;
+  bool TryUBminusX(IntegerVariable var, double lp_value, IntegerValue lb,
+                   IntegerValue ub, IntegerValue coeff,
+                   ImpliedBoundsProcessor* ib_helper,
+                   SingleNodeFlow* result) const;
+
+  int num_lifting_ = 0;
+
+  // Stats, mainly to debug/investigate the code.
+  IntegerValue slack_;
+  int num_in_ignored_;
+  int num_in_flow_;
+  int num_in_bin_;
+  int num_out_capa_;
+  int num_out_flow_;
+  int num_out_bin_;
+
+  LinearConstraintBuilder cut_builder_;
+  LinearConstraint cut_;
 };
 
 // Visible for testing. Returns a function f on integers such that:
@@ -245,7 +351,7 @@ class IntegerRoundingCutHelper {
   std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
 };
 
-// Helper to find knapsack or flow cover cuts (not yet implemented).
+// Helper to find knapsack cover cuts.
 class CoverCutHelper {
  public:
   // Try to find a cut with a knapsack heuristic.
@@ -262,6 +368,35 @@ class CoverCutHelper {
   // Single line of text that we append to the cut log line.
   const std::string Info() { return absl::StrCat("lift=", num_lifting_); }
 
+  // Provides an alternative cut with a different lifting procedure.
+  // This one use
+  LinearConstraint* mutable_alt_cut() { return &alt_cut_; }
+  const LinearConstraint& alt_cut() const { return alt_cut_; }
+
+  // Visible for testing.
+  //
+  // Applies the lifting procedure described in "On Lifted Cover Inequalities: A
+  // New Lifting Procedure with Unusual Properties", Adam N. Letchford, Georgia
+  // Souli.
+  //
+  // The algo is pretty simple, given a cover C for a given rhs. We compute
+  // a rational weight p/q so that sum_C min(w_i, p/q) = rhs. Note that q is
+  // pretty small (lower or equal to the size of C). The generated cut is then
+  // of the form
+  //  sum X_i in C for which w_i <= p / q
+  //  + sum gamma_i X_i for the other variable  <= |C| - 1.
+  //
+  // gamma_i being the smallest k such that w_i <= sum of the k + 1 largest
+  // min(w_i, p/q) for i in C. In particular, it is zero if w_i <= p/q.
+  //
+  // Note that this accept a general constraint that has been canonicalized to
+  // sum coeff_i * X_i <= base_rhs. Each coeff_i >= 0 and each X_i >= 0.
+  void GenerateLetchfordSouliLifting(
+      IntegerValue base_rhs, const LinearConstraint base_ct,
+      const std::vector<IntegerValue>& lower_bounds,
+      const std::vector<IntegerValue>& upper_bounds,
+      const std::vector<bool>& in_cover);
+
  private:
   struct Term {
     int index;
@@ -274,150 +409,9 @@ class CoverCutHelper {
 
   LinearConstraint cut_;
   int num_lifting_;
+
+  LinearConstraint alt_cut_;
 };
-
-// If a variable is away from its upper bound by more than value 1.0, then it
-// cannot be part of a cover that will violate the lp solution. This method
-// returns a reduced constraint by removing such variables from the given
-// constraint.
-LinearConstraint GetPreprocessedLinearConstraint(
-    const LinearConstraint& constraint,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
-    const IntegerTrail& integer_trail);
-
-// Returns true if sum of all the variables in the given constraint is less than
-// or equal to constraint upper bound. This method assumes that all the
-// coefficients are non negative.
-bool ConstraintIsTriviallyTrue(const LinearConstraint& constraint,
-                               const IntegerTrail& integer_trail);
-
-// If the left variables in lp solution satisfies following inequality, we prove
-// that there does not exist any knapsack cut which is violated by the solution.
-// Let |Cmin| = smallest possible cover size.
-// Let S = smallest (var_ub - lp_values[var]) first |Cmin| variables.
-// Let cut lower bound = sum_(var in S)(var_ub - lp_values[var])
-// For any cover,
-// If cut lower bound >= 1
-// ==> sum_(var in S)(var_ub - lp_values[var]) >= 1
-// ==> sum_(var in cover)(var_ub - lp_values[var]) >= 1
-// ==> The solution already satisfies cover. Since this is true for all covers,
-// this method returns false in such cases.
-// This method assumes that the constraint is preprocessed and has only non
-// negative coefficients.
-bool CanBeFilteredUsingCutLowerBound(
-    const LinearConstraint& preprocessed_constraint,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
-    const IntegerTrail& integer_trail);
-
-// Struct to help compute upper bound for knapsack instance.
-struct KnapsackItem {
-  double profit;
-  double weight;
-  bool operator>(const KnapsackItem& other) const {
-    return profit * other.weight > other.profit * weight;
-  }
-};
-
-// Gets upper bound on profit for knapsack instance by solving the linear
-// relaxation.
-double GetKnapsackUpperBound(std::vector<KnapsackItem> items, double capacity);
-
-// Returns true if the linear relaxation upper bound for the knapsack instance
-// shows that this constraint cannot be used to form a cut. This method assumes
-// that all the coefficients are non negative.
-bool CanBeFilteredUsingKnapsackUpperBound(
-    const LinearConstraint& constraint,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
-    const IntegerTrail& integer_trail);
-
-// Returns true if the given constraint passes all the filters described above.
-// This method assumes that the constraint is preprocessed and has only non
-// negative coefficients.
-bool CanFormValidKnapsackCover(
-    const LinearConstraint& preprocessed_constraint,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
-    const IntegerTrail& integer_trail);
-
-// Converts the given constraint into canonical knapsack form (described
-// below) and adds it to 'knapsack_constraints'.
-// Canonical knapsack form:
-//  - Constraint has finite upper bound.
-//  - All coefficients are positive.
-// For constraint with finite lower bound, this method also adds the negation of
-// the given constraint after converting it to canonical knapsack form.
-void ConvertToKnapsackForm(const LinearConstraint& constraint,
-                           std::vector<LinearConstraint>* knapsack_constraints,
-                           IntegerTrail* integer_trail);
-
-// Returns true if the cut is lifted. Lifting procedure is described below.
-//
-// First we decide a lifting sequence for the binary variables which are not
-// already in cut. We lift the cut for each lifting candidate one by one.
-//
-// Given the original constraint where the lifting candidate is fixed to one, we
-// compute the maximum value the cut can take and still be feasible using a
-// knapsack problem. We can then lift the variable in the cut using the
-// difference between the cut upper bound and this maximum value.
-bool LiftKnapsackCut(
-    const LinearConstraint& constraint,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
-    const std::vector<IntegerValue>& cut_vars_original_coefficients,
-    const IntegerTrail& integer_trail, TimeLimit* time_limit,
-    LinearConstraint* cut);
-
-// A cut generator that creates knpasack cover cuts.
-//
-// For a constraint of type
-// \sum_{i=1..n}(a_i * x_i) <= b
-// where x_i are integer variables with upper bound u_i, a cover of size k is a
-// subset C of {1 , .. , n} such that \sum_{c \in C}(a_c * u_c) > b.
-//
-// A knapsack cover cut is a constraint of the form
-// \sum_{c \in C}(u_c - x_c) >= 1
-// which is equivalent to \sum_{c \in C}(x_c) <= \sum_{c \in C}(u_c) - 1.
-// In other words, in a feasible solution, at least some of the variables do
-// not take their maximum value.
-//
-// If all x_i are binary variables then the cover cut becomes
-// \sum_{c \in C}(x_c) <= |C| - 1.
-//
-// The major difficulty for generating Knapsack cover cuts is finding a minimal
-// cover set C that cut a given floating point solution. There are many ways to
-// heuristically generate the cover but the following method that uses a
-// solution of the LP relaxation of the constraint works the best.
-//
-// Look at a given linear relaxation solution for the integer problem x'
-// and try to solve the following knapsack problem:
-//   Minimize \sum_{i=1..n}(z_i * (u_i - x_i')),
-//   such that \sum_{i=1..n}(a_i * u_i * z_i) > b,
-// where z_i is a binary decision variable and x_i' are values of the variables
-// in the given relaxation solution x'. If the objective of the optimal solution
-// of this problem is less than 1, this algorithm does not generate any cuts.
-// Otherwise, it adds a knapsack cover cut in the form
-//   \sum_{i=1..n}(z_i' * x_i) <= cb,
-// where z_i' is the value of z_i in the optimal solution of the above
-// problem and cb is the upper bound for the cut constraint. Note that the above
-// problem can be converted into a standard kanpsack form by replacing z_i by 1
-// - y_i. In that case the problem becomes
-//   Maximize \sum_{i=1..n}((u_i - x_i') * (y_i - 1)),
-//   such that
-//     \sum_{i=1..n}(a_i * u_i * y_i) <= \sum_{i=1..n}(a_i * u_i) - b - 1.
-//
-// Solving this knapsack instance would help us find the smallest cover with
-// maximum LP violation.
-//
-// Cut strengthning:
-// Let lambda = \sum_{c \in C}(a_c * u_c) - b and max_coeff = \max_{c
-// \in C}(a_c), then cut can be strengthened as
-//   \sum_{c \in C}(u_c - x_c) >= ceil(lambda / max_coeff)
-//
-// For further information about knapsack cover cuts see
-// A. Atamtürk, Cover and Pack Inequalities for (Mixed) Integer Programming
-// Annals of Operations Research Volume 139, Issue 1 , pp 21-38, 2005.
-// TODO(user): Implement cut lifting.
-CutGenerator CreateKnapsackCoverCutGenerator(
-    const std::vector<LinearConstraint>& base_constraints,
-    const std::vector<IntegerVariable>& vars, Model* model);
 
 // A cut generator for z = x * y (x and y >= 0).
 CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,

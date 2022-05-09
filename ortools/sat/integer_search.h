@@ -88,6 +88,10 @@ struct SearchHeuristics {
   std::function<BooleanOrIntegerLiteral()> fixed_search = nullptr;
   std::function<BooleanOrIntegerLiteral()> hint_search = nullptr;
 
+  // This is currently only filled and used by PARTIAL_FIXED_SEARCH.
+  // It contains only the part specified in the input cp model proto.
+  std::function<BooleanOrIntegerLiteral()> user_search = nullptr;
+
   // Some search strategy need to take more than one decision at once. They can
   // set this function that will be called on the next decision. It will be
   // automatically deleted the first time it returns an empty decision.

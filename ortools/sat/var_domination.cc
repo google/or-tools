@@ -209,7 +209,7 @@ void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
 
 // TODO(user): Use more heuristics to not miss as much dominance relation when
 // we crop initial lists.
-void VarDomination::EndFirstPhase() {
+bool VarDomination::EndFirstPhase() {
   CHECK_EQ(phase_, 0);
   phase_ = 1;
 
@@ -334,6 +334,10 @@ void VarDomination::EndFirstPhase() {
   VLOG(1) << "Buffer size: " << buffer_.size();
   gtl::STLClearObject(&initial_candidates_);
   gtl::STLClearObject(&shared_buffer_);
+
+  // A second phase is only needed if there are some potential dominance
+  // relations.
+  return !buffer_.empty();
 }
 
 void VarDomination::EndSecondPhase() {
@@ -946,7 +950,13 @@ void DetectDominanceRelations(
       }
     }
 
-    if (phase == 0) var_domination->EndFirstPhase();
+    if (phase == 0) {
+      // Early abort if no possible relations can be found.
+      //
+      // TODO(user): We might be able to detect that nothing can be done earlier
+      // during the constraint scanning.
+      if (!var_domination->EndFirstPhase()) return;
+    }
     if (phase == 1) var_domination->EndSecondPhase();
   }
 

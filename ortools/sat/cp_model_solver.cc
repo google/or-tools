@@ -1416,7 +1416,11 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Initialize the fixed_search strategy.
   auto* search_heuristics = model->GetOrCreate<SearchHeuristics>();
-  search_heuristics->fixed_search = ConstructSearchStrategy(
+  if (parameters.search_branching() == SatParameters::PARTIAL_FIXED_SEARCH) {
+    search_heuristics->user_search =
+        ConstructUserSearchStrategy(model_proto, model);
+  }
+  search_heuristics->fixed_search = ConstructFixedSearchStrategy(
       model_proto, mapping->GetVariableMapping(), objective_var, model);
   if (VLOG_IS_ON(3)) {
     search_heuristics->fixed_search =
@@ -1926,7 +1930,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
               get_literal(ct.enforcement_literal(0)).Negated();
           for (const int ref : ct.bool_and().literals()) {
             const Literal b = get_literal(ref);
-            solver->AddProblemClause({not_a, b});
+            solver->AddProblemClause({not_a, b}, /*is_safe=*/false);
           }
         }
         break;
@@ -1939,7 +1943,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
         for (const int ref : ct.enforcement_literal()) {
           temp.push_back(get_literal(ref).Negated());
         }
-        solver->AddProblemClause(temp);
+        solver->AddProblemClause(temp, /*is_safe=*/false);
         break;
       default:
         LOG(FATAL) << "Not supported";
@@ -2556,7 +2560,7 @@ class LnsSolver : public SubSolver {
       data.deterministic_time = local_time_limit->GetElapsedDeterministicTime();
 
       bool new_solution = false;
-      bool display_lns_info = false;
+      bool display_lns_info = VLOG_IS_ON(2);
       if (generator_->IsRelaxationGenerator()) {
         bool has_feasible_solution = false;
         if (local_response.status() == CpSolverStatus::OPTIMAL ||
@@ -2895,6 +2899,17 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             absl::make_unique<SchedulingNeighborhoodGenerator>(
                 helper,
                 absl::StrCat("scheduling_random_lns_", local_params.name())),
+            local_params, helper, &shared));
+      }
+
+      const std::vector<std::vector<int>> intervals_in_constraints =
+          helper->GetUniqueIntervalSets();
+      if (intervals_in_constraints.size() > 2) {
+        subsolvers.push_back(absl::make_unique<LnsSolver>(
+            absl::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
+                helper, intervals_in_constraints,
+                absl::StrCat("scheduling_resource_windows_lns_",
+                             local_params.name())),
             local_params, helper, &shared));
       }
     }

@@ -160,7 +160,8 @@ class TimeTablingPerTask : public PropagatorInterface {
   // Explains the state of the profile in the time interval [left, right) that
   // allow to push task_id. The reason is all the mandatory parts that overlap
   // the interval. The current reason is not cleared when this method is called.
-  void AddProfileReason(int task_id, IntegerValue left, IntegerValue right);
+  void AddProfileReason(int task_id, IntegerValue left, IntegerValue right,
+                        IntegerValue capacity_threshold);
 
   IntegerValue CapacityMin() const {
     return integer_trail_->LowerBound(capacity_);

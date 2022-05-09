@@ -17,8 +17,10 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <random>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -416,6 +418,115 @@ std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
   }
   return active_intervals;
 }
+
+std::vector<std::vector<int>>
+NeighborhoodGeneratorHelper::GetUniqueIntervalSets() const {
+  std::vector<std::vector<int>> intervals_in_constraints;
+  absl::flat_hash_set<std::vector<int>> added_intervals_sets;
+  const auto add_interval_list_only_once =
+      [&intervals_in_constraints,
+       &added_intervals_sets](const auto& intervals) {
+        std::vector<int> candidate({intervals.begin(), intervals.end()});
+        gtl::STLSortAndRemoveDuplicates(&candidate);
+        if (added_intervals_sets.insert(candidate).second) {
+          intervals_in_constraints.push_back(candidate);
+        }
+      };
+  for (const int ct_index : TypeToConstraints(ConstraintProto::kNoOverlap)) {
+    add_interval_list_only_once(
+        model_proto_.constraints(ct_index).no_overlap().intervals());
+  }
+  for (const int ct_index : TypeToConstraints(ConstraintProto::kCumulative)) {
+    add_interval_list_only_once(
+        model_proto_.constraints(ct_index).cumulative().intervals());
+  }
+  for (const int ct_index : TypeToConstraints(ConstraintProto::kNoOverlap2D)) {
+    add_interval_list_only_once(
+        model_proto_.constraints(ct_index).no_overlap_2d().x_intervals());
+    add_interval_list_only_once(
+        model_proto_.constraints(ct_index).no_overlap_2d().y_intervals());
+  }
+  return intervals_in_constraints;
+}
+
+namespace {
+
+int64_t GetLinearExpressionValue(const LinearExpressionProto& expr,
+                                 const CpSolverResponse& initial_solution) {
+  int64_t result = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    result += expr.coeffs(i) * initial_solution.solution(expr.vars(i));
+  }
+  return result;
+}
+
+struct StartEndInterval {
+  int64_t start;
+  int64_t end;
+  int interval_index;
+  bool operator<(const StartEndInterval& o) const {
+    return std::tie(start, end, interval_index) <
+           std::tie(o.start, o.end, o.interval_index);
+  }
+};
+
+// Selects all intervals in a random time window to meet the difficulty
+// requirement.
+std::vector<int> SelectIntervalsInRandomTimeWindow(
+    const std::vector<int>& intervals, const CpModelProto& model_proto,
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  std::vector<StartEndInterval> start_end_intervals;
+  for (const int i : intervals) {
+    const ConstraintProto& interval_ct = model_proto.constraints(i);
+    // We only look at intervals that are performed in the solution. The
+    // unperformed intervals should be automatically freed during the
+    // generation phase.
+    if (interval_ct.enforcement_literal().size() == 1) {
+      const int enforcement_ref = interval_ct.enforcement_literal(0);
+      const int enforcement_var = PositiveRef(enforcement_ref);
+      const int64_t value = initial_solution.solution(enforcement_var);
+      if (RefIsPositive(enforcement_ref) == (value == 0)) {
+        continue;
+      }
+    }
+    const int64_t start_value = GetLinearExpressionValue(
+        interval_ct.interval().start(), initial_solution);
+    const int64_t end_value = GetLinearExpressionValue(
+        interval_ct.interval().end(), initial_solution);
+    start_end_intervals.push_back({start_value, end_value, i});
+  }
+
+  if (start_end_intervals.empty()) return {};
+
+  std::sort(start_end_intervals.begin(), start_end_intervals.end());
+  const int relaxed_size = std::floor(difficulty * start_end_intervals.size());
+
+  std::uniform_int_distribution<int> random_var(
+      0, start_end_intervals.size() - relaxed_size - 1);
+  // TODO(user): Consider relaxing more than one time window
+  // intervals. This seems to help with Giza models.
+  const int random_start_index = random_var(random);
+
+  // We want to minimize the time window relaxed, so we now sort the interval
+  // after the first selected intervals by end value.
+  // TODO(user): We could do things differently (include all tasks <= some
+  // end). The difficulty is that the number of relaxed tasks will differ from
+  // the target. We could also tie break tasks randomly.
+  std::sort(start_end_intervals.begin() + random_start_index,
+            start_end_intervals.end(),
+            [](const StartEndInterval& a, const StartEndInterval& b) {
+              return std::tie(a.end, a.interval_index) <
+                     std::tie(b.end, b.interval_index);
+            });
+  std::vector<int> result;
+  for (int i = random_start_index; i < random_start_index + relaxed_size; ++i) {
+    result.push_back(start_end_intervals[i].interval_index);
+  }
+  return result;
+}
+
+}  // namespace
 
 std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
     const CpSolverResponse& initial_solution) const {
@@ -945,15 +1056,6 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 
 namespace {
 
-int64_t GetLinearExpressionValue(const LinearExpressionProto& expr,
-                                 const CpSolverResponse& initial_solution) {
-  int64_t result = expr.offset();
-  for (int i = 0; i < expr.vars_size(); ++i) {
-    result += expr.coeffs(i) * initial_solution.solution(expr.vars(i));
-  }
-  return result;
-}
-
 void AddLinearExpressionToConstraint(const int64_t coeff,
                                      const LinearExpressionProto& expr,
                                      LinearConstraintProto* constraint,
@@ -965,14 +1067,24 @@ void AddLinearExpressionToConstraint(const int64_t coeff,
   }
 }
 
-void AddPrecedenceConstraints(const absl::Span<const int> intervals,
-                              const absl::flat_hash_set<int>& ignored_intervals,
-                              const CpSolverResponse& initial_solution,
-                              const NeighborhoodGeneratorHelper& helper,
-                              Neighborhood* neighborhood) {
+// Add precedences constraints to enforce the natural full ordering of a subset
+// of intervals in a no overlap constraints.
+void AddPrecedenceConstraintsOnNoOverlap(
+    const absl::Span<const int> intervals,
+    const absl::flat_hash_set<int>& ignored_intervals,
+    const CpSolverResponse& initial_solution,
+    const NeighborhoodGeneratorHelper& helper, Neighborhood* neighborhood) {
   // Sort all non-relaxed intervals of this constraint by current start
   // time.
-  std::vector<std::pair<int64_t, int>> start_interval_pairs;
+  struct StartIntervalPair {
+    int64_t start;
+    int interval_index;
+    bool operator<(const StartIntervalPair& o) const {
+      return std::tie(start, interval_index) <
+             std::tie(o.start, o.interval_index);
+    }
+  };
+  std::vector<StartIntervalPair> to_sort;
   for (const int i : intervals) {
     if (ignored_intervals.contains(i)) continue;
     const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
@@ -981,50 +1093,37 @@ void AddPrecedenceConstraints(const absl::Span<const int> intervals,
     const LinearExpressionProto& size_var = interval_ct.interval().size();
     if (GetLinearExpressionValue(size_var, initial_solution) == 0) continue;
 
-    const LinearExpressionProto& start_var = interval_ct.interval().start();
-    const int64_t start_value =
-        GetLinearExpressionValue(start_var, initial_solution);
+    const int64_t start_value = GetLinearExpressionValue(
+        interval_ct.interval().start(), initial_solution);
 
-    start_interval_pairs.push_back({start_value, i});
+    to_sort.push_back({start_value, i});
   }
-  std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
+  if (to_sort.empty()) return;
+  const int num_intervals = to_sort.size();
+
+  std::sort(to_sort.begin(), to_sort.end());
 
   // Add precedence between the remaining intervals, forcing their order.
-  for (int i = 0; i + 1 < start_interval_pairs.size(); ++i) {
-    const LinearExpressionProto& before_start =
-        helper.ModelProto()
-            .constraints(start_interval_pairs[i].second)
-            .interval()
-            .start();
+  for (int i = 0; i + 1 < num_intervals; ++i) {
     const LinearExpressionProto& before_end =
         helper.ModelProto()
-            .constraints(start_interval_pairs[i].second)
+            .constraints(to_sort[i].interval_index)
             .interval()
             .end();
     const LinearExpressionProto& after_start =
         helper.ModelProto()
-            .constraints(start_interval_pairs[i + 1].second)
+            .constraints(to_sort[i + 1].interval_index)
             .interval()
             .start();
 
-    // If the end was smaller we keep it that way, otherwise we just order the
-    // start variables.
+    // We just add the precedence before_end <= after_start.
     LinearConstraintProto* linear =
         neighborhood->delta.add_constraints()->mutable_linear();
     linear->add_domain(std::numeric_limits<int64_t>::min());
+    DCHECK_LE(GetLinearExpressionValue(before_end, initial_solution),
+              GetLinearExpressionValue(after_start, initial_solution));
     int64_t rhs_offset = 0;
-    if (GetLinearExpressionValue(before_end, initial_solution) <=
-        GetLinearExpressionValue(after_start, initial_solution)) {
-      // If the end was smaller than the next start, keep it that way.
-      AddLinearExpressionToConstraint(1, before_end, linear, &rhs_offset);
-    } else {
-      // Otherwise, keep the same minimum separation. This is done in order
-      // to "simplify" the neighborhood.
-      rhs_offset = GetLinearExpressionValue(before_start, initial_solution) -
-                   GetLinearExpressionValue(after_start, initial_solution);
-      AddLinearExpressionToConstraint(1, before_start, linear, &rhs_offset);
-    }
-
+    AddLinearExpressionToConstraint(1, before_end, linear, &rhs_offset);
     AddLinearExpressionToConstraint(-1, after_start, linear, &rhs_offset);
     linear->add_domain(rhs_offset);
 
@@ -1040,6 +1139,78 @@ void AddPrecedenceConstraints(const absl::Span<const int> intervals,
     }
   }
 }
+
+void AddPrecedenceConstraintsOnCumulative(
+    const absl::Span<const int> intervals,
+    const absl::flat_hash_set<int>& ignored_intervals,
+    const CpSolverResponse& initial_solution,
+    const NeighborhoodGeneratorHelper& helper, Neighborhood* neighborhood) {
+  // Sort all non-relaxed intervals of this constraint by current start
+  // time.
+  std::vector<StartEndInterval> start_end_intervals;
+  for (const int i : intervals) {
+    if (ignored_intervals.contains(i)) continue;
+    const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
+
+    // TODO(user): we ignore size zero for now.
+    const LinearExpressionProto& size_var = interval_ct.interval().size();
+    if (GetLinearExpressionValue(size_var, initial_solution) == 0) continue;
+
+    const int64_t start_value = GetLinearExpressionValue(
+        interval_ct.interval().start(), initial_solution);
+    const int64_t end_value = GetLinearExpressionValue(
+        interval_ct.interval().end(), initial_solution);
+
+    start_end_intervals.push_back({start_value, end_value, i});
+  }
+  if (start_end_intervals.empty()) return;
+  const int num_intervals = start_end_intervals.size();
+  std::sort(start_end_intervals.begin(), start_end_intervals.end());
+
+  // Adds a partial order. Interval j must be after interval i if it was already
+  // the case in the initial_solution.
+  for (int i = 0; i + 1 < num_intervals; ++i) {
+    const StartEndInterval& before = start_end_intervals[i];
+    const LinearExpressionProto& before_end =
+        helper.ModelProto()
+            .constraints(start_end_intervals[i].interval_index)
+            .interval()
+            .end();
+
+    int j = i + 1;
+    while (j < num_intervals && start_end_intervals[j].start < before.end) {
+      j++;
+    }
+    if (j == num_intervals) continue;
+
+    // min_end records the first time when any interval starting at min_end do
+    // not need a precedence between before and current as there will be a valid
+    // precedence with the task ending at min_end.
+    int64_t min_end = start_end_intervals[j].end;
+    for (; j < num_intervals; ++j) {
+      const StartEndInterval& current = start_end_intervals[j];
+      // Any intervals that starts after min_end will be covered by the
+      // precedence created in the current loop.
+      if (current.start >= min_end) break;
+
+      min_end = std::min(min_end, current.end);
+
+      const LinearExpressionProto& after_start =
+          helper.ModelProto()
+              .constraints(start_end_intervals[j].interval_index)
+              .interval()
+              .start();
+      LinearConstraintProto* linear =
+          neighborhood->delta.add_constraints()->mutable_linear();
+      linear->add_domain(std::numeric_limits<int64_t>::min());
+      int64_t rhs_offset = 0;
+      AddLinearExpressionToConstraint(1, before_end, linear, &rhs_offset);
+      AddLinearExpressionToConstraint(-1, after_start, linear, &rhs_offset);
+      linear->add_domain(rhs_offset);
+    }
+  }
+}
+
 }  // namespace
 
 Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
@@ -1047,9 +1218,6 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     const CpSolverResponse& initial_solution,
     const NeighborhoodGeneratorHelper& helper) {
   Neighborhood neighborhood = helper.FullNeighborhood();
-  neighborhood.is_reduced =
-      (intervals_to_relax.size() <
-       helper.TypeToConstraints(ConstraintProto::kInterval).size());
 
   // We will extend the set with some interval that we cannot fix.
   absl::flat_hash_set<int> ignored_intervals(intervals_to_relax.begin(),
@@ -1084,21 +1252,30 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     neighborhood.delta.mutable_variables(enforcement_var)->add_domain(value);
   }
 
+  neighborhood.is_reduced =
+      (ignored_intervals.size() <
+       helper.TypeToConstraints(ConstraintProto::kInterval).size());
+  if (!neighborhood.is_reduced) {  // Returns the full neighborhood.
+    helper.AddSolutionHinting(initial_solution, &neighborhood.delta);
+    neighborhood.is_generated = true;
+    return neighborhood;
+  }
+
   for (const int c : helper.TypeToConstraints(ConstraintProto::kNoOverlap)) {
-    AddPrecedenceConstraints(
+    AddPrecedenceConstraintsOnNoOverlap(
         helper.ModelProto().constraints(c).no_overlap().intervals(),
         ignored_intervals, initial_solution, helper, &neighborhood);
   }
   for (const int c : helper.TypeToConstraints(ConstraintProto::kCumulative)) {
-    AddPrecedenceConstraints(
+    AddPrecedenceConstraintsOnCumulative(
         helper.ModelProto().constraints(c).cumulative().intervals(),
         ignored_intervals, initial_solution, helper, &neighborhood);
   }
   for (const int c : helper.TypeToConstraints(ConstraintProto::kNoOverlap2D)) {
-    AddPrecedenceConstraints(
+    AddPrecedenceConstraintsOnCumulative(
         helper.ModelProto().constraints(c).no_overlap_2d().x_intervals(),
         ignored_intervals, initial_solution, helper, &neighborhood);
-    AddPrecedenceConstraints(
+    AddPrecedenceConstraintsOnCumulative(
         helper.ModelProto().constraints(c).no_overlap_2d().y_intervals(),
         ignored_intervals, initial_solution, helper, &neighborhood);
   }
@@ -1124,34 +1301,33 @@ Neighborhood SchedulingNeighborhoodGenerator::Generate(
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  std::vector<std::pair<int64_t, int>> start_interval_pairs;
   const std::vector<int> active_intervals =
       helper_.GetActiveIntervals(initial_solution);
-  std::vector<int> intervals_to_relax;
 
   if (active_intervals.empty()) return helper_.FullNeighborhood();
 
-  for (const int i : active_intervals) {
-    const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
-    const LinearExpressionProto& start_var = interval_ct.interval().start();
-    const int64_t start_value =
-        GetLinearExpressionValue(start_var, initial_solution);
-    start_interval_pairs.push_back({start_value, i});
-  }
-  std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
-  const int relaxed_size = std::floor(difficulty * start_interval_pairs.size());
-
-  std::uniform_int_distribution<int> random_var(
-      0, start_interval_pairs.size() - relaxed_size - 1);
-  const int random_start_index = random_var(random);
-
-  // TODO(user): Consider relaxing more than one time window
-  // intervals. This seems to help with Giza models.
-  for (int i = random_start_index; i < relaxed_size; ++i) {
-    intervals_to_relax.push_back(start_interval_pairs[i].second);
-  }
-
+  const std::vector<int> intervals_to_relax =
+      SelectIntervalsInRandomTimeWindow(active_intervals, helper_.ModelProto(),
+                                        initial_solution, difficulty, random);
   return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
+                                                     initial_solution, helper_);
+}
+
+Neighborhood SchedulingResourceWindowsNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  intervals_to_relax_.clear();
+  for (const std::vector<int>& intervals : intervals_in_constraints_) {
+    const std::vector<int> selected = SelectIntervalsInRandomTimeWindow(
+        intervals, helper_.ModelProto(), initial_solution, difficulty, random);
+    intervals_to_relax_.insert(selected.begin(), selected.end());
+  }
+
+  if (intervals_to_relax_.empty()) return helper_.FullNeighborhood();
+
+  const std::vector<int> intervals(
+      {intervals_to_relax_.begin(), intervals_to_relax_.end()});
+  return GenerateSchedulingNeighborhoodForRelaxation(intervals,
                                                      initial_solution, helper_);
 }
 
@@ -1311,7 +1487,7 @@ bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
 }
 
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, double difficulty,
+    const CpSolverResponse& /*initial_solution*/, double /*difficulty*/,
     absl::BitGenRef random) {
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
@@ -1404,7 +1580,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
 }
 
 Neighborhood ConsecutiveConstraintsRelaxationNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, double difficulty,
+    const CpSolverResponse& /*initial_solution*/, double difficulty,
     absl::BitGenRef random) {
   std::vector<int> removable_constraints;
   const int num_constraints = helper_.ModelProto().constraints_size();
@@ -1531,7 +1707,7 @@ void WeightedRandomRelaxationNeighborhoodGenerator::
 }
 
 Neighborhood WeightedRandomRelaxationNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, double difficulty,
+    const CpSolverResponse& /*initial_solution*/, double difficulty,
     absl::BitGenRef random) {
   const int target_size =
       std::round((1.0 - difficulty) * num_removable_constraints_);

@@ -556,7 +556,7 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   if (objective_is_defined_) {
     watcher->WatchUpperBound(objective_cp_, watcher_id);
   }
-  watcher->SetPropagatorPriority(watcher_id, 4);
+  watcher->SetPropagatorPriority(watcher_id, 2);
   watcher->AlwaysCallAtLevelZero(watcher_id);
 
   // Registering it with the trail make sure this class is always in sync when
@@ -749,9 +749,22 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   const IntegerVariable first_new_var(expanded_lp_solution_.size());
   CHECK_EQ(first_new_var.value() % 2, 0);
 
+  bool at_least_one_added = false;
   LinearConstraint copy_in_debug;
   if (DEBUG_MODE) {
     copy_in_debug = cut_;
+  }
+
+  // Try single node flow cover cut.
+  //
+  // TODO(user): We should probably deal with slack here too. We can always
+  // add slack and integrate them if they lead to better cuts.
+  const SingleNodeFlow snf = flow_cover_cut_helper_.ComputeFlowCoverRelaxation(
+      cut_, expanded_lp_solution_, integer_trail_, &implied_bounds_processor_);
+  if (flow_cover_cut_helper_.GenerateCut(snf)) {
+    at_least_one_added |= constraint_manager_.AddCut(
+        flow_cover_cut_helper_.cut(), absl::StrCat(name, "_F"),
+        expanded_lp_solution_, flow_cover_cut_helper_.Info());
   }
 
   // Unlike for the knapsack cuts, it might not be always beneficial to
@@ -823,8 +836,6 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     }
   }
 
-  bool at_least_one_added = false;
-
   // Try cover approach to find cut.
   {
     if (cover_cut_helper_.TrySimpleKnapsack(cut_, tmp_lp_values_, tmp_var_lbs_,
@@ -832,6 +843,9 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
       at_least_one_added |= PostprocessAndAddCut(
           absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_new_var,
           first_slack, tmp_ib_slack_infos_, cover_cut_helper_.mutable_cut());
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_K2"), "", first_new_var, first_slack,
+          tmp_ib_slack_infos_, cover_cut_helper_.mutable_alt_cut());
     }
   }
 

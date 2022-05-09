@@ -166,9 +166,16 @@ class LinearConstraintBuilder {
   // Assumes that the 'model' has IntegerEncoder. The bounds can either be
   // specified at construction or during the Build() call.
   explicit LinearConstraintBuilder(const Model* model)
-      : encoder_(*model->Get<IntegerEncoder>()), lb_(0), ub_(0) {}
+      : encoder_(model->Get<IntegerEncoder>()), lb_(0), ub_(0) {}
   LinearConstraintBuilder(const Model* model, IntegerValue lb, IntegerValue ub)
-      : encoder_(*model->Get<IntegerEncoder>()), lb_(lb), ub_(ub) {}
+      : encoder_(model->Get<IntegerEncoder>()), lb_(lb), ub_(ub) {}
+
+  // Warning: this version without encoder cannot be used to add literals, so
+  // one shouldn't call AddLiteralTerm() on it. All other functions works.
+  //
+  // TODO(user): Have a subclass so we can enforce than caller using
+  // AddLiteralTerm() must construct the Builder with an encoder.
+  LinearConstraintBuilder() : encoder_(nullptr), lb_(0), ub_(0) {}
 
   // Adds the corresponding term to the current linear expression.
   void AddConstant(IntegerValue value);
@@ -219,7 +226,7 @@ class LinearConstraintBuilder {
   LinearExpression BuildExpression();
 
  private:
-  const IntegerEncoder& encoder_;
+  const IntegerEncoder* encoder_;
   const IntegerValue lb_;
   const IntegerValue ub_;
 

@@ -105,7 +105,9 @@ class VarDomination {
   // once. One then needs to redo the calls to ActivityShouldNotIncrease() and
   // ActivityShouldNotDecrease(). And finally call EndSecondPhase() before
   // querying the domination information.
-  void EndFirstPhase();
+  //
+  // If EndFirstPhase() return false, there is no point continuing.
+  bool EndFirstPhase();
   void EndSecondPhase();
 
   // This is true if this variable was never restricted by any call. We can thus
