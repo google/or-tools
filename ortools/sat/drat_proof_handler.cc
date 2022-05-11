@@ -23,7 +23,6 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
-#include "absl/memory/memory.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/drat_checker.h"
@@ -42,7 +41,7 @@ DratProofHandler::DratProofHandler(bool in_binary_format, File* output,
     : variable_index_(0),
       drat_writer_(new DratWriter(in_binary_format, output)) {
   if (check) {
-    drat_checker_ = absl::make_unique<DratChecker>();
+    drat_checker_ = std::make_unique<DratChecker>();
   }
 }
 

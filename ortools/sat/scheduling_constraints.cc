@@ -209,8 +209,6 @@ bool SelectedMinPropagator::Propagate() {
   // All propagations and checks belows rely of the presence of the target.
   if (!assignment.LiteralIsTrue(enforcement_literal_)) return true;
 
-  DCHECK_GE(integer_trail_->LowerBound(target_), min_of_mins);
-
   // Note that the case num_possible == 1, num_selected_vars == 0 shouldn't
   // happen because we assume that the enforcement <=> at_least_one_present
   // clause has already been propagated.

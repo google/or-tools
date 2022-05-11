@@ -54,7 +54,7 @@ class VarDomination {
   VarDomination() {}
 
   // This is the translation used from "ref" to IntegerVariable. The API
-  // understand the cp_mode.proto ref, but internally we only store
+  // understand the cp_model.proto ref, but internally we only store
   // IntegerVariable.
   static IntegerVariable RefToIntegerVariable(int ref) {
     return RefIsPositive(ref) ? IntegerVariable(2 * ref)
@@ -65,7 +65,7 @@ class VarDomination {
                                    : NegatedRef(var.value() / 2);
   }
 
-  // Reset the class to a clean state.
+  // Resets the class to a clean state.
   // At the beginning, we assume that there is no constraint.
   void Reset(int num_variables);
 
@@ -111,7 +111,8 @@ class VarDomination {
   void EndSecondPhase();
 
   // This is true if this variable was never restricted by any call. We can thus
-  // fix it to its lower bound.
+  // fix it to its lower bound. Note that we don't do that here as the
+  // DualBoundStrengthening class will take care of that.
   bool CanFreelyDecrease(int ref) const;
   bool CanFreelyDecrease(IntegerVariable var) const;
 

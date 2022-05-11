@@ -38,7 +38,6 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
-#include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -1861,10 +1860,10 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
       File* output;
       CHECK_OK(file::Open(absl::GetFlag(FLAGS_drat_output), "w", &output,
                           file::Defaults()));
-      drat_proof_handler = absl::make_unique<DratProofHandler>(
+      drat_proof_handler = std::make_unique<DratProofHandler>(
           /*in_binary_format=*/false, output, absl::GetFlag(FLAGS_drat_check));
     } else {
-      drat_proof_handler = absl::make_unique<DratProofHandler>();
+      drat_proof_handler = std::make_unique<DratProofHandler>();
     }
     solver->SetDratProofHandler(drat_proof_handler.get());
   }
@@ -2085,7 +2084,7 @@ class FullProblemSolver : public SubSolver {
       : SubSolver(name),
         shared_(shared),
         split_in_chunks_(split_in_chunks),
-        local_model_(absl::make_unique<Model>(name)) {
+        local_model_(std::make_unique<Model>(name)) {
     // Setup the local model parameters and time limit.
     *(local_model_->GetOrCreate<SatParameters>()) = local_parameters;
     shared_->time_limit->UpdateLocalLimit(
@@ -2269,7 +2268,7 @@ class FeasibilityPumpSolver : public SubSolver {
                         SharedClasses* shared)
       : SubSolver("feasibility_pump"),
         shared_(shared),
-        local_model_(absl::make_unique<Model>(name_)) {
+        local_model_(std::make_unique<Model>(name_)) {
     // Setup the local model parameters and time limit.
     *(local_model_->GetOrCreate<SatParameters>()) = local_parameters;
     shared_->time_limit->UpdateLocalLimit(
@@ -2476,7 +2475,7 @@ class LnsSolver : public SubSolver {
       // Presolve and solve the LNS fragment.
       CpModelProto lns_fragment;
       CpModelProto mapping_proto;
-      auto context = absl::make_unique<PresolveContext>(
+      auto context = std::make_unique<PresolveContext>(
           &local_model, &lns_fragment, &mapping_proto);
 
       *lns_fragment.mutable_variables() = neighborhood.delta.variables();
@@ -2759,20 +2758,20 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (params.share_level_zero_bounds()) {
-    shared_bounds_manager = absl::make_unique<SharedBoundsManager>(model_proto);
+    shared_bounds_manager = std::make_unique<SharedBoundsManager>(model_proto);
   }
 
   std::unique_ptr<SharedRelaxationSolutionRepository>
       shared_relaxation_solutions;
   if (params.use_relaxation_lns()) {
     shared_relaxation_solutions =
-        absl::make_unique<SharedRelaxationSolutionRepository>(
+        std::make_unique<SharedRelaxationSolutionRepository>(
             /*num_solutions_to_keep=*/10);
     global_model->Register<SharedRelaxationSolutionRepository>(
         shared_relaxation_solutions.get());
   }
 
-  auto shared_lp_solutions = absl::make_unique<SharedLPSolutionRepository>(
+  auto shared_lp_solutions = std::make_unique<SharedLPSolutionRepository>(
       /*num_solutions_to_keep=*/10);
   global_model->Register<SharedLPSolutionRepository>(shared_lp_solutions.get());
 
@@ -2784,14 +2783,14 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       !params.use_lns_only() && !params.interleave_search();
   if (use_feasibility_pump) {
     shared_incomplete_solutions =
-        absl::make_unique<SharedIncompleteSolutionManager>();
+        std::make_unique<SharedIncompleteSolutionManager>();
     global_model->Register<SharedIncompleteSolutionManager>(
         shared_incomplete_solutions.get());
   }
 
   std::unique_ptr<SharedClausesManager> shared_clauses;
   if (params.share_binary_clauses()) {
-    shared_clauses = absl::make_unique<SharedClausesManager>();
+    shared_clauses = std::make_unique<SharedClausesManager>();
   }
 
   SharedClasses shared;
@@ -2810,7 +2809,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   std::vector<std::unique_ptr<SubSolver>> subsolvers;
 
   // Add a synchronization point for the shared classes.
-  subsolvers.push_back(absl::make_unique<SynchronizationPoint>([&shared]() {
+  subsolvers.push_back(std::make_unique<SynchronizationPoint>([&shared]() {
     shared.response->Synchronize();
     shared.response->MutableSolutionsRepository()->Synchronize();
     if (shared.bounds != nullptr) {
@@ -2831,7 +2830,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     SatParameters local_params = params;
     local_params.set_stop_after_first_solution(true);
     local_params.set_linearization_level(0);
-    subsolvers.push_back(absl::make_unique<FullProblemSolver>(
+    subsolvers.push_back(std::make_unique<FullProblemSolver>(
         "first_solution", local_params,
         /*split_in_chunks=*/false, &shared));
   } else {
@@ -2840,7 +2839,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       // TODO(user): This is currently not supported here.
       if (params.optimize_with_max_hs()) continue;
 
-      subsolvers.push_back(absl::make_unique<FullProblemSolver>(
+      subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
           /*split_in_chunks=*/params.interleave_search(), &shared));
     }
@@ -2850,14 +2849,14 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Add FeasibilityPumpSolver if enabled.
   if (use_feasibility_pump) {
     subsolvers.push_back(
-        absl::make_unique<FeasibilityPumpSolver>(params, &shared));
+        std::make_unique<FeasibilityPumpSolver>(params, &shared));
   }
 
   // Add LNS SubSolver(s).
 
   // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
   // Synchronize() is called before any LNS neighborhood solvers.
-  auto unique_helper = absl::make_unique<NeighborhoodGeneratorHelper>(
+  auto unique_helper = std::make_unique<NeighborhoodGeneratorHelper>(
       &model_proto, &params, shared.response, shared.bounds);
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
@@ -2876,20 +2875,20 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     if (model_proto.has_objective()) {
       // Enqueue all the possible LNS neighborhood subsolvers.
       // Each will have their own metrics.
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<RelaxRandomVariablesGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RelaxRandomVariablesGenerator>(
               helper, absl::StrCat("rnd_var_lns_", local_params.name())),
           local_params, helper, &shared));
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<RelaxRandomConstraintsGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RelaxRandomConstraintsGenerator>(
               helper, absl::StrCat("rnd_cst_lns_", local_params.name())),
           local_params, helper, &shared));
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<VariableGraphNeighborhoodGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<VariableGraphNeighborhoodGenerator>(
               helper, absl::StrCat("graph_var_lns_", local_params.name())),
           local_params, helper, &shared));
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<ConstraintGraphNeighborhoodGenerator>(
               helper, absl::StrCat("graph_cst_lns_", local_params.name())),
           local_params, helper, &shared));
 
@@ -2898,13 +2897,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
           !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty() ||
           !helper->TypeToConstraints(ConstraintProto::kCumulative).empty()) {
-        subsolvers.push_back(absl::make_unique<LnsSolver>(
-            absl::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
+        subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
                 helper, absl::StrCat("scheduling_time_window_lns_",
                                      local_params.name())),
             local_params, helper, &shared));
-        subsolvers.push_back(absl::make_unique<LnsSolver>(
-            absl::make_unique<SchedulingNeighborhoodGenerator>(
+        subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<SchedulingNeighborhoodGenerator>(
                 helper,
                 absl::StrCat("scheduling_random_lns_", local_params.name())),
             local_params, helper, &shared));
@@ -2913,8 +2912,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       const std::vector<std::vector<int>> intervals_in_constraints =
           helper->GetUniqueIntervalSets();
       if (intervals_in_constraints.size() > 2) {
-        subsolvers.push_back(absl::make_unique<LnsSolver>(
-            absl::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
+        subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
                 helper, intervals_in_constraints,
                 absl::StrCat("scheduling_resource_windows_lns_",
                              local_params.name())),
@@ -2927,19 +2926,19 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     const int num_routes =
         helper->TypeToConstraints(ConstraintProto::kRoutes).size();
     if (num_circuit + num_routes > 0) {
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<RoutingRandomNeighborhoodGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RoutingRandomNeighborhoodGenerator>(
               helper, absl::StrCat("routing_random_lns_", local_params.name())),
           local_params, helper, &shared));
 
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<RoutingPathNeighborhoodGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RoutingPathNeighborhoodGenerator>(
               helper, absl::StrCat("routing_path_lns_", local_params.name())),
           local_params, helper, &shared));
     }
     if (num_routes > 0 || num_circuit > 1) {
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<RoutingFullPathNeighborhoodGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RoutingFullPathNeighborhoodGenerator>(
               helper,
               absl::StrCat("routing_full_path_lns_", local_params.name())),
           local_params, helper, &shared));
@@ -2954,16 +2953,16 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       // create RINS/RENS lns generators.
 
       // RINS.
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RelaxationInducedNeighborhoodGenerator>(
               helper, shared.response, shared.relaxation_solutions,
               shared.lp_solutions, /*incomplete_solutions=*/nullptr,
               absl::StrCat("rins_lns_", local_params.name())),
           local_params, helper, &shared));
 
       // RENS.
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RelaxationInducedNeighborhoodGenerator>(
               helper, /*respons_manager=*/nullptr, shared.relaxation_solutions,
               shared.lp_solutions, shared.incomplete_solutions,
               absl::StrCat("rens_lns_", local_params.name())),
@@ -2971,14 +2970,14 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     }
 
     if (params.use_relaxation_lns()) {
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<
               ConsecutiveConstraintsRelaxationNeighborhoodGenerator>(
               helper, absl::StrCat("rnd_rel_lns_", local_params.name())),
           local_params, helper, &shared));
 
-      subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<WeightedRandomRelaxationNeighborhoodGenerator>(
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<WeightedRandomRelaxationNeighborhoodGenerator>(
               helper, absl::StrCat("wgt_rel_lns_", local_params.name())),
           local_params, helper, &shared));
     }
@@ -2987,7 +2986,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Add a synchronization point for the gap integral that is executed last.
   // This way, after each batch, the proper deterministic time is updated and
   // then the function to integrate take the value of the new gap.
-  subsolvers.push_back(absl::make_unique<SynchronizationPoint>(
+  subsolvers.push_back(std::make_unique<SynchronizationPoint>(
       [&shared]() { shared.response->UpdateGapIntegral(); }));
 
   // Log the name of all our SubSolvers.
@@ -3285,8 +3284,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
              absl::StrFormat("Starting presolve at %.2fs", wall_timer->Get()));
   CpModelProto new_cp_model_proto;
   CpModelProto mapping_proto;
-  auto context = absl::make_unique<PresolveContext>(model, &new_cp_model_proto,
-                                                    &mapping_proto);
+  auto context = std::make_unique<PresolveContext>(model, &new_cp_model_proto,
+                                                   &mapping_proto);
 
   if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
     VLOG(1) << "Model found infeasible during copy";

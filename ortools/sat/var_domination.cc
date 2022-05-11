@@ -23,7 +23,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
@@ -44,7 +43,7 @@ namespace sat {
 void VarDomination::Reset(int num_variables) {
   phase_ = 0;
   num_vars_with_negation_ = 2 * num_variables;
-  partition_ = absl::make_unique<DynamicPartition>(num_vars_with_negation_);
+  partition_ = std::make_unique<DynamicPartition>(num_vars_with_negation_);
 
   can_freely_decrease_.assign(num_vars_with_negation_, true);
 
@@ -791,11 +790,16 @@ void DetectDominanceRelations(
   int64_t max_activity = std::numeric_limits<int64_t>::max();
 
   for (int var = 0; var < num_vars; ++var) {
+    // Ignore variables that have been substitued already or are unused.
+    if (context.IsFixed(var) || context.VariableWasRemoved(var) ||
+        context.VariableIsNotUsedAnymore(var)) {
+      dual_bound_strengthening->CannotMove({var});
+      var_domination->CanOnlyDominateEachOther({var});
+      continue;
+    }
+
     // Deal with the affine relations that are not part of the proto.
     // Those only need to be processed in the first pass.
-    //
-    // TODO(user): This is not ideal since if only the representative is still
-    // used, we shouldn't restrict any dominance relation involving it.
     const AffineRelation::Relation r = context.GetAffineRelation(var);
     if (r.representative != var) {
       dual_bound_strengthening->CannotMove({var, r.representative});
@@ -808,13 +812,6 @@ void DetectDominanceRelations(
         var_domination->CanOnlyDominateEachOther({var});
         var_domination->CanOnlyDominateEachOther({r.representative});
       }
-    }
-
-    // Also ignore variables that have been substitued already or are unused.
-    if (context.IsFixed(var) || context.VariableWasRemoved(var) ||
-        context.VariableIsNotUsedAnymore(var)) {
-      dual_bound_strengthening->CannotMove({var});
-      var_domination->CanOnlyDominateEachOther({var});
     }
   }
 
@@ -984,6 +981,41 @@ void DetectDominanceRelations(
           << " num_dominance_relations=" << num_dominance_relations;
 }
 
+namespace {
+
+bool ProcessAtMostOne(absl::Span<const int> literals,
+                      const std::string& message,
+                      const VarDomination& var_domination,
+                      absl::StrongVector<IntegerVariable, bool>* in_constraints,
+                      PresolveContext* context) {
+  for (const int ref : literals) {
+    (*in_constraints)[VarDomination::RefToIntegerVariable(ref)] = true;
+  }
+  for (const int ref : literals) {
+    if (context->IsFixed(ref)) continue;
+
+    const auto dominating_ivars = var_domination.DominatingVariables(ref);
+    if (dominating_ivars.empty()) continue;
+    for (const IntegerVariable ivar : dominating_ivars) {
+      if (!(*in_constraints)[ivar]) continue;
+      if (context->IsFixed(VarDomination::IntegerVariableToRef(ivar))) {
+        continue;
+      }
+
+      // We can set the dominated variable to false.
+      context->UpdateRuleStats(message);
+      if (!context->SetLiteralToFalse(ref)) return false;
+      break;
+    }
+  }
+  for (const int ref : literals) {
+    (*in_constraints)[VarDomination::RefToIntegerVariable(ref)] = false;
+  }
+  return true;
+}
+
+}  // namespace
+
 bool ExploitDominanceRelations(const VarDomination& var_domination,
                                PresolveContext* context) {
   const CpModelProto& cp_model = *context->working_model;
@@ -1044,34 +1076,21 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
     if (!ct.enforcement_literal().empty()) continue;
 
-    // TODO(user): Also deal with exactly one.
     // TODO(user): More generally, combine with probing? if a dominated variable
     // implies one of its dominant to zero, then it can be set to zero. It seems
     // adding the implication below should have the same effect? but currently
     // it requires a lot of presolve rounds.
     if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
-      for (const int ref : ct.at_most_one().literals()) {
-        in_constraints[VarDomination::RefToIntegerVariable(ref)] = true;
+      if (!ProcessAtMostOne(ct.at_most_one().literals(),
+                            "domination: in at most one", var_domination,
+                            &in_constraints, context)) {
+        return false;
       }
-      for (const int ref : ct.at_most_one().literals()) {
-        if (context->IsFixed(ref)) continue;
-
-        const auto dominating_ivars = var_domination.DominatingVariables(ref);
-        if (dominating_ivars.empty()) continue;
-        for (const IntegerVariable ivar : dominating_ivars) {
-          if (!in_constraints[ivar]) continue;
-          if (context->IsFixed(VarDomination::IntegerVariableToRef(ivar))) {
-            continue;
-          }
-
-          // We can set the dominated variable to false.
-          context->UpdateRuleStats("domination: in at most one");
-          if (!context->SetLiteralToFalse(ref)) return false;
-          break;
-        }
-      }
-      for (const int ref : ct.at_most_one().literals()) {
-        in_constraints[VarDomination::RefToIntegerVariable(ref)] = false;
+    } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      if (!ProcessAtMostOne(ct.exactly_one().literals(),
+                            "domination: in exactly one", var_domination,
+                            &in_constraints, context)) {
+        return false;
       }
     }
 

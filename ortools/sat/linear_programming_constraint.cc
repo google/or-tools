@@ -774,10 +774,15 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // and if we complement or not before the MIR rounding. Other solvers seems
   // to try different complementation strategies in a "potprocessing" and we
   // don't. Try this too.
+  //
+  // TODO(user): substitute_only_inner_variables = true is really helpful on
+  // some instance like "mtest4ma.mps". We should probably have a dedicated
+  // heuristic depending on the type of cut we do below.
+  const bool substitute_only_inner_variables = absl::Bernoulli(*random_, 0.5);
   tmp_ib_slack_infos_.clear();
   implied_bounds_processor_.ProcessUpperBoundedConstraintWithSlackCreation(
-      /*substitute_only_inner_variables=*/false, first_new_var,
-      expanded_lp_solution_, &cut_, &tmp_ib_slack_infos_);
+      substitute_only_inner_variables, first_new_var, expanded_lp_solution_,
+      &cut_, &tmp_ib_slack_infos_);
   DCHECK(implied_bounds_processor_.DebugSlack(first_new_var, copy_in_debug,
                                               cut_, tmp_ib_slack_infos_));
 

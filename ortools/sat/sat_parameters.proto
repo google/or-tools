@@ -737,8 +737,9 @@ message SatParameters {
       [default = false];
 
   // When set, it activates a few scheduling parameters to improve the lower
-  // bound of scheduling problems.
-  optional bool use_dual_scheduling_heuristics = 214 [default = false];
+  // bound of scheduling problems. This is only effective with multiple workers
+  // as it modifies the reduced_cost, lb_tree_search, and probing workers.
+  optional bool use_dual_scheduling_heuristics = 214 [default = true];
 
   // A non-negative level indicating the type of constraints we consider in the
   // LP relaxation. At level zero, no LP relaxation is used. At level 1, only

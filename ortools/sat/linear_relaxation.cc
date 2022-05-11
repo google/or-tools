@@ -679,7 +679,6 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
     energies.push_back(CanonicalizeExpr(e.BuildExpression()));
   }
 
-  // We can now add the relaxation and the cut generators.
   AddCumulativeRelaxation(helper, demands, /*capacity=*/one, energies, model,
                           relaxation);
   if (model->GetOrCreate<SatParameters>()->linearization_level() > 1) {

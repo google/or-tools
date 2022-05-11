@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/memory/memory.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"

@@ -21,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
@@ -1364,7 +1363,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
       VLOG(1) << "UNSAT during presolve.";
 
       // This is just here to reset the SatSolver::Solve() statistics.
-      (*solver) = absl::make_unique<SatSolver>();
+      (*solver) = std::make_unique<SatSolver>();
       return SatSolver::INFEASIBLE;
     }
 
@@ -1374,7 +1373,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     }
 
     // Load the presolved problem in a new solver.
-    (*solver) = absl::make_unique<SatSolver>();
+    (*solver) = std::make_unique<SatSolver>();
     (*solver)->SetDratProofHandler(drat_proof_handler);
     (*solver)->SetParameters(parameters);
     presolver.LoadProblemIntoSatSolver((*solver).get());

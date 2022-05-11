@@ -50,21 +50,14 @@ void TimeTableEdgeFinding::RegisterWith(GenericLiteralWatcher* watcher) {
   for (int t = 0; t < num_tasks_; t++) {
     watcher->WatchLowerBound(demands_[t].var, id);
   }
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
 bool TimeTableEdgeFinding::Propagate() {
-  while (true) {
-    const int64_t old_timestamp = integer_trail_->num_enqueues();
-
-    if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
-    if (!TimeTableEdgeFindingPass()) return false;
-
-    if (!helper_->SynchronizeAndSetTimeDirection(false)) return false;
-    if (!TimeTableEdgeFindingPass()) return false;
-
-    // Stop if no propagation.
-    if (old_timestamp == integer_trail_->num_enqueues()) break;
-  }
+  if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
+  if (!TimeTableEdgeFindingPass()) return false;
+  if (!helper_->SynchronizeAndSetTimeDirection(false)) return false;
+  if (!TimeTableEdgeFindingPass()) return false;
   return true;
 }
 

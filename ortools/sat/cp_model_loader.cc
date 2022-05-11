@@ -24,7 +24,6 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/memory/memory.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -312,7 +311,7 @@ void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m) {
 
     // Convert the variable symmetry to a "literal" one.
     auto literal_permutation =
-        absl::make_unique<SparsePermutation>(num_literals);
+        std::make_unique<SparsePermutation>(num_literals);
     int support_index = 0;
     const int num_cycle = perm.cycle_sizes().size();
     for (int i = 0; i < num_cycle; ++i) {

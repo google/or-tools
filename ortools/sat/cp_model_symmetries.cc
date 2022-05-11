@@ -24,7 +24,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/memory/memory.h"
 #include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
@@ -114,7 +113,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   CHECK(initial_equivalence_classes != nullptr);
 
   const int num_variables = problem.variables_size();
-  auto graph = absl::make_unique<Graph>();
+  auto graph = std::make_unique<Graph>();
 
   // Each node will be created with a given color. Two nodes of different color
   // can never be send one into another by a symmetry. The first element of
