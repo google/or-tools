@@ -2519,6 +2519,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
     }
 
     // The other transformations below require a non-reified constraint.
+    if (ct_index == -1) continue;
     if (!ct->enforcement_literal().empty()) continue;
 
     // Given a variable that only appear in one constraint and in the
@@ -2681,6 +2682,16 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
               mapping_linear_ct->mutable_coeffs()->at(i));
     return RemoveConstraint(ct);
   }
+
+  // special case.
+  if (ct_index == -1) {
+    if (new_bounds) {
+      context_->UpdateRuleStats(
+          "linear: reduced variable domains in derived constraint");
+    }
+    return false;
+  }
+
   if (new_bounds) {
     context_->UpdateRuleStats("linear: reduced variable domains");
   }
@@ -6021,56 +6032,106 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
     return true;
   }
 
-  if (subset_ct->constraint_case() == ConstraintProto::kExactlyOne &&
+  if ((subset_ct->constraint_case() == ConstraintProto::kExactlyOne ||
+       subset_ct->constraint_case() == ConstraintProto::kAtMostOne) &&
       superset_ct->constraint_case() == ConstraintProto::kLinear) {
+    tmp_set->clear();
+    int64_t min_sum = 0;
+    int64_t max_sum = 0;
+    if (subset_ct->constraint_case() == ConstraintProto::kExactlyOne) {
+      min_sum = std::numeric_limits<int64_t>::max();
+      max_sum = std::numeric_limits<int64_t>::min();
+      tmp_set->insert(subset_ct->exactly_one().literals().begin(),
+                      subset_ct->exactly_one().literals().end());
+    } else {
+      tmp_set->insert(subset_ct->at_most_one().literals().begin(),
+                      subset_ct->at_most_one().literals().end());
+    }
+
+    // Compute the min/max on the subset of the sum that correspond the
+    // exactly_one or at_most_one.
+    int num_matches = 0;
+    temp_ct_.Clear();
+    Domain reachable(0);
+    for (int i = 0; i < superset_ct->linear().vars().size(); ++i) {
+      const int var = superset_ct->linear().vars(i);
+      const int64_t coeff = superset_ct->linear().coeffs(i);
+      if (tmp_set->contains(var)) {
+        ++num_matches;
+        min_sum = std::min(min_sum, coeff);
+        max_sum = std::max(max_sum, coeff);
+      } else {
+        reachable =
+            reachable
+                .AdditionWith(
+                    context_->DomainOf(var).ContinuousMultiplicationBy(coeff))
+                .RelaxIfTooComplex();
+        temp_ct_.mutable_linear()->add_vars(var);
+        temp_ct_.mutable_linear()->add_coeffs(coeff);
+      }
+    }
+
+    // If a linear constraint contains more than one at_most_one or exactly_one,
+    // after processing one, we might no longer have an inclusion.
+    //
+    // TODO(user): If we have multiple disjoint inclusion, we can propagate
+    // more. For instance on neos-1593097.mps we basically have a
+    // weighted_sum_over_at_most_one1 >= weighted_sum_over_at_most_one2.
+    if (num_matches != tmp_set->size()) return true;
+    if (subset_ct->constraint_case() == ConstraintProto::kExactlyOne) {
+      context_->UpdateRuleStats("setppc: exactly_one included in linear");
+    } else {
+      context_->UpdateRuleStats("setppc: at_most_one included in linear");
+    }
+
+    reachable = reachable.AdditionWith(Domain(min_sum, max_sum));
+    if (reachable.IsIncludedIn(ReadDomainFromProto(superset_ct->linear()))) {
+      // The constraint is trivial !
+      context_->UpdateRuleStats("setppc: removed trivial linear constraint");
+      *remove_superset = true;
+      return true;
+    }
+
+    // We reuse the normal linear constraint code to propagate domains of
+    // the other variable using the inclusion information.
+    if (superset_ct->enforcement_literal().empty()) {
+      CHECK_GT(num_matches, 0);
+      FillDomainInProto(ReadDomainFromProto(superset_ct->linear())
+                            .AdditionWith(Domain(-max_sum, -min_sum)),
+                        temp_ct_.mutable_linear());
+      PropagateDomainsInLinear(/*ct_index=*/-1, &temp_ct_);
+    }
+
     // If we have an exactly one in a linear, we can shift the coefficients of
-    // all these variables by any constant value. For now, since we only deal
-    // with positive coefficient, we shift by the min.
+    // all these variables by any constant value. For now, we only shift by the
+    // min if it is strictly positive.
     //
     // TODO(user): It might be more interesting to maximize the number of terms
     // that are shifted to zero to reduce the constraint size.
-    tmp_set->clear();
-    tmp_set->insert(subset_ct->exactly_one().literals().begin(),
-                    subset_ct->exactly_one().literals().end());
-    int64_t min_coeff = std::numeric_limits<int64_t>::max();
-    int num_matches = 0;
-    for (int i = 0; i < superset_ct->linear().vars().size(); ++i) {
-      const int var = superset_ct->linear().vars(i);
-      if (tmp_set->contains(var)) {
-        ++num_matches;
-        min_coeff =
-            std::min(min_coeff, std::abs(superset_ct->linear().coeffs(i)));
+    if (subset_ct->constraint_case() == ConstraintProto::kExactlyOne &&
+        min_sum > 0) {
+      int new_size = 0;
+      for (int i = 0; i < superset_ct->linear().vars().size(); ++i) {
+        const int var = superset_ct->linear().vars(i);
+        int64_t coeff = superset_ct->linear().coeffs(i);
+        if (tmp_set->contains(var)) {
+          if (coeff == min_sum) continue;  // delete term.
+          coeff -= min_sum;
+        }
+        superset_ct->mutable_linear()->set_vars(new_size, var);
+        superset_ct->mutable_linear()->set_coeffs(new_size, coeff);
+        ++new_size;
       }
+
+      superset_ct->mutable_linear()->mutable_vars()->Truncate(new_size);
+      superset_ct->mutable_linear()->mutable_coeffs()->Truncate(new_size);
+      FillDomainInProto(ReadDomainFromProto(superset_ct->linear())
+                            .AdditionWith(Domain(-min_sum)),
+                        superset_ct->mutable_linear());
+      context_->UpdateConstraintVariableUsage(superset_c);
+      context_->UpdateRuleStats("setppc: reduced linear coefficients.");
     }
 
-    // If a linear constraint contains more than one at most one, after
-    // processing one, we might no longer have an inclusion.
-    if (num_matches != tmp_set->size()) return true;
-
-    // TODO(user): It would be cool to propagate other variable domains with
-    // the knowledge that the partial sum in is [min_coeff, max_coeff]. I am
-    // a bit relunctant to duplicate the code for that here.
-    int new_size = 0;
-    for (int i = 0; i < superset_ct->linear().vars().size(); ++i) {
-      const int var = superset_ct->linear().vars(i);
-      int64_t coeff = superset_ct->linear().coeffs(i);
-      if (tmp_set->contains(var)) {
-        CHECK_GE(coeff, 0);
-        if (coeff == min_coeff) continue;  // delete term.
-        coeff -= min_coeff;
-      }
-      superset_ct->mutable_linear()->set_vars(new_size, var);
-      superset_ct->mutable_linear()->set_coeffs(new_size, coeff);
-      ++new_size;
-    }
-
-    superset_ct->mutable_linear()->mutable_vars()->Truncate(new_size);
-    superset_ct->mutable_linear()->mutable_coeffs()->Truncate(new_size);
-    FillDomainInProto(ReadDomainFromProto(superset_ct->linear())
-                          .AdditionWith(Domain(-min_coeff)),
-                      superset_ct->mutable_linear());
-    context_->UpdateConstraintVariableUsage(superset_c);
-    context_->UpdateRuleStats("setppc: reduced linear coefficients.");
     return true;
   }
 
@@ -6138,24 +6199,22 @@ void CpModelPresolver::ProcessSetPPC() {
       const int size = ct->linear().vars().size();
       if (size <= 2) continue;
 
-      // TODO(user): We only deal with every literal having a positive coeff
-      // here. We should probably do the same with all negative. We can also
-      // consider NegatedRef(var).
+      // TODO(user): We only deal with positive var here. Ideally we should
+      // match the VARIABLES of the at_most_one/exactly_one with the VARIABLES
+      // of the linear, and complement all variable to have a literal inclusion.
       temp_literals.clear();
       for (int i = 0; i < size; ++i) {
         const int var = ct->linear().vars(i);
-        const int64_t coeff = ct->linear().coeffs(i);
         if (!context_->CanBeUsedAsLiteral(var)) continue;
         if (!RefIsPositive(var)) continue;
-        if (coeff < 0) continue;
         temp_literals.push_back(
             Literal(BooleanVariable(var), true).Index().value());
       }
-      if (temp_literals.size() <= 2) continue;
-
-      // Note that we only care about the linear being the superset.
-      relevant_constraints.push_back(c);
-      detector.AddPotentialSuperset(storage.Add(temp_literals));
+      if (temp_literals.size() > 2) {
+        // Note that we only care about the linear being the superset.
+        relevant_constraints.push_back(c);
+        detector.AddPotentialSuperset(storage.Add(temp_literals));
+      }
     }
   }
 

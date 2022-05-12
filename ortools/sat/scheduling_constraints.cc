@@ -206,7 +206,7 @@ bool SelectedMinPropagator::Propagate() {
     }
   }
 
-  // All propagations and checks belows rely of the presence of the target.
+  // All propagations and checks belows rely on the presence of the target.
   if (!assignment.LiteralIsTrue(enforcement_literal_)) return true;
 
   // Note that the case num_possible == 1, num_selected_vars == 0 shouldn't

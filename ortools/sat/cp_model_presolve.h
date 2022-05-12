@@ -147,7 +147,7 @@ class CpModelPresolver {
 
   // For the linear constraints, we have more than one function.
   bool CanonicalizeLinear(ConstraintProto* ct);
-  bool PropagateDomainsInLinear(int c, ConstraintProto* ct);
+  bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
   bool PresolveLinearOfSizeOne(ConstraintProto* ct);
@@ -258,6 +258,10 @@ class CpModelPresolver {
 
   // Used by CanonicalizeLinearExpressionInternal().
   std::vector<std::pair<int, int64_t>> tmp_terms_;
+
+  // Used by ProcessSetPPCSubset() to propagate linear with an at_most_one or
+  // exactly_one included inside.
+  ConstraintProto temp_ct_;
 };
 
 // This helper class perform copy with simplification from a model and a
