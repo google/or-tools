@@ -47,7 +47,7 @@ grepc -rn "typedef.*int64_t;" /lib/gcc
 So we need to find this compiler macro definition
 
 ```sh
-gcc -dM -E -x c /dev/null | grep __INT64                 
+gcc -dM -E -x c /dev/null | grep __INT64
 #define __INT64_C(c) c ## L
 #define __INT64_MAX__ 0x7fffffffffffffffL
 #define __INT64_TYPE__ long int
@@ -165,6 +165,7 @@ PRIMITIVE_TYPEMAP(unsigned long int, long long);
 ```
 
 and this for .Net:
+
 ```swig
 #if defined(SWIGCSHARP)
 #if defined(SWIGWORDSIZE64)

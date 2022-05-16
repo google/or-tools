@@ -2,8 +2,9 @@
 """Transform any Python sample or example to Python NoteBook."""
 import ast
 import os
-import sys
 import re
+import sys
+
 from nbformat import v3
 from nbformat import v4
 
