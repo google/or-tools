@@ -41,6 +41,7 @@ jobs:
             dotnet: OFF
           - xprs: OFF
             sirius: ON
+            shared: ON
             extras: OFF
             python: OFF
             publish-or: ON

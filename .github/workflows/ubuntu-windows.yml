@@ -90,6 +90,7 @@ jobs:
             publish-or: ON
             java: OFF
             dotnet: ON
+            shared: ON
             xprs: OFF
             sirius: ON
 
