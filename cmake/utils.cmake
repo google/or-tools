@@ -75,7 +75,7 @@ endfunction()
 #   URL
 #     https://github.com/abseil/abseil-cpp.git
 #   TAG
-#     master
+#     main
 #   PATCH_COMMAND
 #     "git apply ${CMAKE_SOURCE_DIR}/patches/abseil-cpp.patch"
 # )

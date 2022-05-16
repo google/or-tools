@@ -13,7 +13,7 @@ RUN echo "source /opt/rh/gcc-toolset-11/enable" >> /etc/bashrc
 SHELL ["/bin/bash", "--login", "-c"]
 
 # Install bazel 5
-# see: https://docs.bazel.build/versions/master/install-redhat.html#installing-on-centos-7
+# see: https://docs.bazel.build/versions/main/install-redhat.html#installing-on-centos-7
 RUN dnf config-manager --add-repo \
 https://copr.fedorainfracloud.org/coprs/vbatts/bazel/repo/epel-8/vbatts-bazel-epel-8.repo \
 && dnf -y install bazel5 \
