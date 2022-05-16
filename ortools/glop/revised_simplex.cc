@@ -439,6 +439,41 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
           problem_status_ = ProblemStatus::IMPRECISE;
         }
       }
+
+      // Validate the dual ray that prove primal infeasibility.
+      //
+      // By taking the linear combination of the constraint, we should arrive
+      // to an infeasible <= 0 constraint using the variable bounds.
+      const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
+      const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+      Fractional implied_lb = 0.0;
+      Fractional error = 0.0;
+      for (ColIndex col(0); col < num_cols_; ++col) {
+        const Fractional coeff = solution_dual_ray_row_combination_[col];
+        if (coeff > 0) {
+          if (lower_bounds[col] == -kInfinity) {
+            error = std::max(error, coeff);
+          } else {
+            implied_lb += coeff * lower_bounds[col];
+          }
+        } else if (coeff < 0) {
+          if (upper_bounds[col] == kInfinity) {
+            error = std::max(error, -coeff);
+          } else {
+            implied_lb += coeff * upper_bounds[col];
+          }
+        }
+      }
+      SOLVER_LOG(logger_, "Dual ray error=", error,
+                 " infeasibility=", implied_lb);
+      if (implied_lb < tolerance || error > tolerance) {
+        SOLVER_LOG(logger_,
+                   "DUAL_UNBOUNDED was reported, but the dual ray is not "
+                   "proving infeasibility with high enough tolerance");
+        if (parameters_.change_status_to_imprecise()) {
+          problem_status_ = ProblemStatus::IMPRECISE;
+        }
+      }
       break;
     }
 
