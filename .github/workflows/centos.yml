@@ -39,7 +39,12 @@ jobs:
             publish-or: ON
             java: OFF
             dotnet: OFF
-
+          - xprs: OFF
+            sirius: ON
+            extras: OFF
+            python: OFF
+            publish-or: ON
+            java: OFF
     steps:
       - name: set name variables
         id: names
