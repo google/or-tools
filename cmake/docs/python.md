@@ -115,7 +115,7 @@ const char *_PyImport_DynLoadFiletab[] = {
 ```
 
 ref:
-https://github.com/python/cpython/blob/master/Python/dynload_shlib.c#L36-L48
+https://github.com/python/cpython/blob/main/Python/dynload_shlib.c#L37-L49
 
 i.e. `pywrapXXX` -> `_pywrapXXX.so` -> `libortools.dylib`
 
