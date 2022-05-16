@@ -1,8 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$interfaceGoogle_1_1OrTools_1_1Sat_1_1ILiteral.html" title="Holds a Boolean variable or its negation." alt="" coords="17,5,84,32"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1BoolVar.html" title="Holds a Boolean variable." alt="" coords="329,31,403,57"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1Sat_1_1NotBoolVar.html" title=" " alt="" coords="165,31,261,57"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html" title="Holds a linear expression: sum (ai * xi) + b." alt="" coords="5,81,96,108"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html" title="Holds a integer variable with a discrete domain." alt="" coords="182,81,243,108"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1Sat_1_1LinearExprBuilder.html" title="A builder class for linear expressions." alt="" coords="144,132,281,159"/>
-</map>
