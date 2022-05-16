@@ -53,7 +53,7 @@ COPY or-tools.snk /root/or-tools.snk
 ENV DOTNET_SNK=/root/or-tools.snk
 
 ARG SRC_GIT_BRANCH
-ENV SRC_GIT_BRANCH ${SRC_GIT_BRANCH:-master}
+ENV SRC_GIT_BRANCH ${SRC_GIT_BRANCH:-main}
 ARG SRC_GIT_SHA1
 ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 

@@ -22,7 +22,7 @@ FROM env AS devel
 ENV GIT_URL https://github.com/google/or-tools
 
 ARG GIT_BRANCH
-ENV GIT_BRANCH ${GIT_BRANCH:-master}
+ENV GIT_BRANCH ${GIT_BRANCH:-main}
 ARG GIT_SHA1
 ENV GIT_SHA1 ${GIT_SHA1:-unknown}
 

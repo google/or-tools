@@ -52,11 +52,11 @@ basename = '# ' + os.path.basename(input_file).replace('.py', '')
 nbook['cells'].append(v4.new_markdown_cell(source=basename, id='basename'))
 
 print('Adding link cell...')
-github_logo = 'https://raw.githubusercontent.com/google/or-tools/master/tools/github_32px.png'
-github_path = 'https://github.com/google/or-tools/blob/master/' + input_file
+github_logo = 'https://raw.githubusercontent.com/google/or-tools/main/tools/github_32px.png'
+github_path = 'https://github.com/google/or-tools/blob/main/' + input_file
 
-colab_path = 'https://colab.research.google.com/github/google/or-tools/blob/master/' + output_file
-colab_logo = 'https://raw.githubusercontent.com/google/or-tools/master/tools/colab_32px.png'
+colab_path = 'https://colab.research.google.com/github/google/or-tools/blob/main/' + output_file
+colab_logo = 'https://raw.githubusercontent.com/google/or-tools/main/tools/colab_32px.png'
 link = f'''<table align=\"left\">
 <td>
 <a href=\"{colab_path}\"><img src=\"{colab_logo}\"/>Run in Google Colab</a>
