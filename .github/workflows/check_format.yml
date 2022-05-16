@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Fetch origin/master
-      run: git fetch origin master
+    - name: Fetch origin/main
+      run: git fetch origin main
     - name: List of changed file(s)
       run: git diff --name-only FETCH_HEAD
 
