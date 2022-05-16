@@ -351,7 +351,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
             (*num_booleans)++;
           }
         }
-        *num_integers = model_proto.objective().vars_size() - *num_booleans;
+        *num_integers = vars.size() - *num_booleans;
       };
 
   {
