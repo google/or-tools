@@ -2,11 +2,11 @@ Linux                                        | macOS                            
 -------------------------------------------- | -------------------------------------------- | -------
 [![Status][linux_java_svg]][linux_java_link] | [![Status][macos_java_svg]][macos_java_link] | [![Status][windows_java_svg]][windows_java_link]
 
-[linux_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_java.yml/badge.svg?branch=master
+[linux_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_java.yml/badge.svg?branch=main
 [linux_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_java.yml
-[macos_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_java.yml/badge.svg?branch=master
+[macos_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_java.yml/badge.svg?branch=main
 [macos_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_java.yml
-[windows_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_java.yml/badge.svg?branch=master
+[windows_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_java.yml/badge.svg?branch=main
 [windows_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_java.yml
 
 # Introduction

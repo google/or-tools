@@ -5,16 +5,16 @@
 | MacOS    | [![Status][macos_svg]][macos_link] |
 | Windows  | [![Status][windows_svg]][windows_link] |
 
-[linux_svg]: https://github.com/google/or-tools/actions/workflows/bazel_linux.yml/badge.svg?branch=master
+[linux_svg]: https://github.com/google/or-tools/actions/workflows/bazel_linux.yml/badge.svg?branch=main
 [linux_link]: https://github.com/google/or-tools/actions/workflows/bazel_linux.yml
-[macos_svg]: https://github.com/google/or-tools/actions/workflows/bazel_macos.yml/badge.svg?branch=master
+[macos_svg]: https://github.com/google/or-tools/actions/workflows/bazel_macos.yml/badge.svg?branch=main
 [macos_link]: https://github.com/google/or-tools/actions/workflows/bazel_macos.yml
-[windows_svg]: https://github.com/google/or-tools/actions/workflows/bazel_windows.yml/badge.svg?branch=master
+[windows_svg]: https://github.com/google/or-tools/actions/workflows/bazel_windows.yml/badge.svg?branch=main
 [windows_link]: https://github.com/google/or-tools/actions/workflows/bazel_windows.yml
 
 Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]: [![Status][docker_svg]][docker_link]
 
-[docker_svg]: https://github.com/google/or-tools/actions/workflows/bazel_docker.yml/badge.svg?branch=master
+[docker_svg]: https://github.com/google/or-tools/actions/workflows/bazel_docker.yml/badge.svg?branch=main
 [docker_link]: https://github.com/google/or-tools/actions/workflows/bazel_docker.yml
 
 ## Introduction

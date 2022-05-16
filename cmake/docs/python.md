@@ -2,11 +2,11 @@ Linux                                            | macOS                        
 ------------------------------------------------ | ------------------------------------------------ | -------
 [![Status][linux_python_svg]][linux_python_link] | [![Status][macos_python_svg]][macos_python_link] | [![Status][windows_python_svg]][windows_python_link]
 
-[linux_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_python.yml/badge.svg?branch=master
+[linux_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_python.yml/badge.svg?branch=main
 [linux_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_python.yml
-[macos_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_python.yml/badge.svg?branch=master
+[macos_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_python.yml/badge.svg?branch=main
 [macos_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_python.yml
-[windows_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_python.yml/badge.svg?branch=master
+[windows_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_python.yml/badge.svg?branch=main
 [windows_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_python.yml
 
 # Introduction

@@ -2,11 +2,11 @@ Linux                                            | macOS                        
 ------------------------------------------------ | ------------------------------------------------ | -------
 [![Status][linux_dotnet_svg]][linux_dotnet_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link]
 
-[linux_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml/badge.svg?branch=master
+[linux_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml/badge.svg?branch=main
 [linux_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml
-[macos_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_dotnet.yml/badge.svg?branch=master
+[macos_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_dotnet.yml/badge.svg?branch=main
 [macos_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_dotnet.yml
-[windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml/badge.svg?branch=master
+[windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml/badge.svg?branch=main
 [windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml
 
 # Introduction

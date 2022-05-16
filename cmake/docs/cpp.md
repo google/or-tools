@@ -2,11 +2,11 @@ Linux                                      | macOS                              
 ------------------------------------------ | ------------------------------------------ | -------
 [![Status][linux_cpp_svg]][linux_cpp_link] | [![Status][macos_cpp_svg]][macos_cpp_link] | [![Status][windows_cpp_svg]][windows_cpp_link]
 
-[linux_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml/badge.svg?branch=master
+[linux_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml/badge.svg?branch=main
 [linux_cpp_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml
-[macos_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_cpp.yml/badge.svg?branch=master
+[macos_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_cpp.yml/badge.svg?branch=main
 [macos_cpp_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_cpp.yml
-[windows_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_cpp.yml/badge.svg?branch=master
+[windows_cpp_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_cpp.yml/badge.svg?branch=main
 [windows_cpp_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_cpp.yml
 
 # Introduction
