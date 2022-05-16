@@ -1,8 +1,75 @@
+diff --git a/build_defs.bzl b/build_defs.bzl
+index 1e55548..c9fd601 100644
+--- a/build_defs.bzl
++++ b/build_defs.bzl
+@@ -38,6 +38,10 @@ def pybind_extension(
+ 
+     native.cc_binary(
+         name = name + ".so",
++        target_compatible_with = select({
++          "@platforms//os:windows": ["@platforms//:incompatible"],
++          "//conditions:default": [],
++        }),
+         copts = copts + PYBIND_COPTS + ["-fvisibility=hidden"],
+         features = features + PYBIND_FEATURES,
+         linkopts = linkopts + select({
+@@ -50,6 +54,33 @@ def pybind_extension(
+         **kwargs
+     )
+ 
++    native.cc_binary(
++        name = name + ".dll",
++        target_compatible_with = select({
++          "@platforms//os:windows": [],
++          "//conditions:default": ["@platforms//:incompatible"],
++        }),
++        copts = copts + PYBIND_COPTS,
++        features = features + PYBIND_FEATURES,
++        linkopts = linkopts,
++        linkshared = 1,
++        tags = tags,
++        deps = deps + PYBIND_DEPS,
++        **kwargs
++    )
++
++    native.genrule(
++        name = name + "_pyd",
++        target_compatible_with = select({
++          "@platforms//os:windows": [],
++          "//conditions:default": ["@platforms//:incompatible"],
++        }),
++        srcs = [name + ".dll"],
++        outs = [name + ".pyd"],
++        cmd = "cp $< $@"
++    )
++
++
+ # Builds a pybind11 compatible library. This can be linked to a pybind_extension.
+ def pybind_library(
+         name,
 diff --git a/python_configure.bzl b/python_configure.bzl
-index 1f5bffa..7809dce 100644
+index 1f5bffa..c5724b3 100644
 --- a/python_configure.bzl
 +++ b/python_configure.bzl
-@@ -213,8 +213,14 @@ def _get_python_lib(repository_ctx, python_bin):
+@@ -161,6 +161,8 @@ def _get_python_bin(repository_ctx):
+ 
+     python_bin = repository_ctx.os.environ.get(_PYTHON_BIN_PATH)
+     if python_bin != None:
++        if _is_windows(repository_ctx):
++            python_bin = _norm_path(python_bin)
+         return python_bin
+ 
+     python_short_name = "python" + repository_ctx.attr.python_version
+@@ -196,6 +198,8 @@ def _get_python_lib(repository_ctx, python_bin):
+     """Gets the python lib path."""
+     python_lib = repository_ctx.os.environ.get(_PYTHON_LIB_PATH)
+     if python_lib != None:
++        if _is_windows(repository_ctx):
++            python_lib = _norm_path(python_lib)
+         return python_lib
+     print_lib = ("<<END\n" +
+                  "from __future__ import print_function\n" +
+@@ -213,8 +217,14 @@ def _get_python_lib(repository_ctx, python_bin):
                   "try:\n" +
                   "  library_paths = site.getsitepackages()\n" +
                   "except AttributeError:\n" +
@@ -19,7 +86,7 @@ index 1f5bffa..7809dce 100644
                   "all_paths = set(python_paths + library_paths)\n" +
                   "paths = []\n" +
                   "for path in all_paths:\n" +
-@@ -251,9 +257,15 @@ def _get_python_include(repository_ctx, python_bin):
+@@ -251,9 +261,15 @@ def _get_python_include(repository_ctx, python_bin):
          [
              python_bin,
              "-c",
