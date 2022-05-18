@@ -293,4 +293,4 @@ Image has been generated using [plantuml](http://plantuml.com/):
 plantuml -Tpng docs/{file}.dot
 ```
 
-So you can find the dot source files in [doc](doc).
+So you can find the dot source files in [docs](docs).
