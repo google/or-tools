@@ -86,7 +86,7 @@ class GurobiInterface : public MPSolverInterface {
   // ----- Solve -----
   // Solves the problem using the parameter values specified.
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  absl::optional<MPSolutionResponse> DirectlySolveProto(
+  std::optional<MPSolutionResponse> DirectlySolveProto(
       const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   // Writes the model.
   void Write(const std::string& filename) override;
@@ -266,9 +266,10 @@ class GurobiInterface : public MPSolverInterface {
 
 namespace {
 
+constexpr int kGurobiOkCode = 0;
 void CheckedGurobiCall(int err, GRBenv* const env) {
-  CHECK_EQ(0, err) << "Fatal error with code " << err << ", due to "
-                   << GRBgeterrormsg(env);
+  CHECK_EQ(kGurobiOkCode, err)
+      << "Fatal error with code " << err << ", due to " << GRBgeterrormsg(env);
 }
 
 // For interacting directly with the Gurobi C API for callbacks.
@@ -1320,10 +1321,10 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-absl::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
+std::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
     const MPModelRequest& request, std::atomic<bool>* interrupt) {
   // Interruption via atomic<bool> is not directly supported by Gurobi.
-  if (interrupt != nullptr) return absl::nullopt;
+  if (interrupt != nullptr) return std::nullopt;
 
   // Here we reuse the Gurobi environment to support single-use license that
   // forbids creating a second environment if one already exists.
@@ -1331,7 +1332,7 @@ absl::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
   if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
-  if (absl::IsUnimplemented(status_or.status())) return absl::nullopt;
+  if (absl::IsUnimplemented(status_or.status())) return std::nullopt;
 
   if (request.enable_internal_solver_output()) {
     LOG(INFO) << "Invalid Gurobi status: " << status_or.status();

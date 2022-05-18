@@ -886,7 +886,7 @@ class MPSolver {
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
-  mutable absl::optional<absl::flat_hash_map<std::string, int> >
+  mutable std::optional<absl::flat_hash_map<std::string, int> >
       variable_name_to_index_;
   // Whether variables have been extracted to the underlying interface.
   std::vector<bool> variable_is_extracted_;
@@ -894,7 +894,7 @@ class MPSolver {
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  mutable absl::optional<absl::flat_hash_map<std::string, int> >
+  mutable std::optional<absl::flat_hash_map<std::string, int> >
       constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
@@ -1595,12 +1595,12 @@ class MPSolverInterface {
   // Returns {} (eg. absl::nullopt) if direct-solve is not supported by the
   // underlying solver (possibly because interrupt != nullptr), in which case
   // the user should fall back to using MPSolver.
-  virtual absl::optional<MPSolutionResponse> DirectlySolveProto(
+  virtual std::optional<MPSolutionResponse> DirectlySolveProto(
       const MPModelRequest& request,
       // `interrupt` is non-const because the internal
       // solver may set it to true itself, in some cases.
       std::atomic<bool>* interrupt) {
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   // Writes the model using the solver internal write function.  Currently only

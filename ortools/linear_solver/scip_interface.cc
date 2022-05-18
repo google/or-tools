@@ -68,7 +68,7 @@ class SCIPInterface : public MPSolverInterface {
 
   void SetOptimizationDirection(bool maximize) override;
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  absl::optional<MPSolutionResponse> DirectlySolveProto(
+  std::optional<MPSolutionResponse> DirectlySolveProto(
       const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   void Reset() override;
 
@@ -862,19 +862,19 @@ void SCIPInterface::SetSolution(SCIP_SOL* solution) {
   }
 }
 
-absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
+std::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
     const MPModelRequest& request, std::atomic<bool>* interrupt) {
   // ScipSolveProto doesn't solve concurrently.
-  if (solver_->GetNumThreads() > 1) return absl::nullopt;
+  if (solver_->GetNumThreads() > 1) return std::nullopt;
 
   // Interruption via atomic<bool> is not directly supported by SCIP.
-  if (interrupt != nullptr) return absl::nullopt;
+  if (interrupt != nullptr) return std::nullopt;
 
   const auto status_or = ScipSolveProto(request);
   if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
-  if (absl::IsUnimplemented(status_or.status())) return absl::nullopt;
+  if (absl::IsUnimplemented(status_or.status())) return std::nullopt;
 
   if (request.enable_internal_solver_output()) {
     LOG(INFO) << "Invalid SCIP status: " << status_or.status();

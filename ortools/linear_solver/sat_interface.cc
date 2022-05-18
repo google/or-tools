@@ -49,7 +49,7 @@ class SatInterface : public MPSolverInterface {
 
   // ----- Solve -----
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  absl::optional<MPSolutionResponse> DirectlySolveProto(
+  std::optional<MPSolutionResponse> DirectlySolveProto(
       const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   bool InterruptSolve() override;
 
@@ -166,7 +166,7 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-absl::optional<MPSolutionResponse> SatInterface::DirectlySolveProto(
+std::optional<MPSolutionResponse> SatInterface::DirectlySolveProto(
     const MPModelRequest& request, std::atomic<bool>* interrupt) {
   absl::StatusOr<MPSolutionResponse> status_or =
       SatSolveProto(request, interrupt);

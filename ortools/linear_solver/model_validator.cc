@@ -680,7 +680,7 @@ std::string FindErrorInMPModelProto(
   return std::string();
 }
 
-absl::optional<LazyMutableCopy<MPModelProto>>
+std::optional<LazyMutableCopy<MPModelProto>>
 ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
                                             MPSolutionResponse* response) {
   CHECK(response != nullptr);
@@ -688,13 +688,13 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
   if (!request.has_model() && !request.has_model_delta()) {
     response->set_status(MPSOLVER_OPTIMAL);
     response->set_status_str("Requests without model are considered OPTIMAL");
-    return absl::nullopt;
+    return std::nullopt;
   }
   if (request.has_model() && request.has_model_delta()) {
     response->set_status(MPSOLVER_MODEL_INVALID);
     response->set_status_str(
         "Fields 'model' and 'model_delta' are mutually exclusive");
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   // Extract the baseline model.
@@ -710,7 +710,7 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
       response->set_status_str(
           "Error when reading model_delta.baseline_model_file_path: '" +
           file_read_status.ToString());
-      return absl::nullopt;
+      return std::nullopt;
     }
     if (!model.get_mutable()->ParseFromString(contents)) {
       response->set_status(MPSOLVER_MODEL_INVALID);
@@ -718,7 +718,7 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
           absl::StrFormat("The contents of baseline model file '%s' couldn't "
                           "be parsed as a raw serialized MPModelProto",
                           request.model_delta().baseline_model_file_path()));
-      return absl::nullopt;
+      return std::nullopt;
     }
   }
 
@@ -742,7 +742,7 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
                              ? MPSOLVER_INFEASIBLE
                              : MPSOLVER_MODEL_INVALID);
     response->set_status_str(error);
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   if (model.get().variable_size() == 0 && model.get().constraint_size() == 0 &&
@@ -752,7 +752,7 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
     response->set_best_objective_bound(response->objective_value());
     response->set_status_str(
         "Requests without variables and constraints are considered OPTIMAL");
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   return std::move(model);
@@ -760,7 +760,7 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
 
 bool ExtractValidMPModelInPlaceOrPopulateResponseStatus(
     MPModelRequest* request, MPSolutionResponse* response) {
-  absl::optional<LazyMutableCopy<MPModelProto>> lazy_copy =
+  std::optional<LazyMutableCopy<MPModelProto>> lazy_copy =
       ExtractValidMPModelOrPopulateResponseStatus(*request, response);
   if (!lazy_copy) return false;
   if (lazy_copy->was_copied()) {

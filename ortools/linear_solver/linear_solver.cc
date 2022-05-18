@@ -98,7 +98,7 @@ bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   if (var == nullptr) return 0.0;
-  return gtl::FindWithDefault(coefficients_, var, 0.0);
+  return gtl::FindWithDefault(coefficients_, var);
 }
 
 void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
@@ -179,7 +179,7 @@ bool MPConstraint::ContainsNewVariables() {
 double MPObjective::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   if (var == nullptr) return 0.0;
-  return gtl::FindWithDefault(coefficients_, var, 0.0);
+  return gtl::FindWithDefault(coefficients_, var);
 }
 
 void MPObjective::SetCoefficient(const MPVariable* const var, double coeff) {

@@ -54,7 +54,7 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
  * If the model is valid and non-empty, returns it (possibly after extracting
  * the model_delta). If invalid or empty, updates `response` and returns null.
  */
-absl::optional<LazyMutableCopy<MPModelProto>>
+std::optional<LazyMutableCopy<MPModelProto>>
 ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
                                             MPSolutionResponse* response);
 

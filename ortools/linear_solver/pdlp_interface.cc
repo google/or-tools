@@ -41,7 +41,7 @@ class PdlpInterface : public MPSolverInterface {
 
   // ----- Solve -----
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  absl::optional<MPSolutionResponse> DirectlySolveProto(
+  std::optional<MPSolutionResponse> DirectlySolveProto(
       const MPModelRequest& request, std::atomic<bool>* interrupt) override;
 
   // ----- Model modifications and extraction -----
@@ -169,7 +169,7 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-absl::optional<MPSolutionResponse> PdlpInterface::DirectlySolveProto(
+std::optional<MPSolutionResponse> PdlpInterface::DirectlySolveProto(
     const MPModelRequest& request, std::atomic<bool>* interrupt) {
   absl::StatusOr<MPSolutionResponse> response =
       PdlpSolveProto(request, /*relax_integer_variables=*/true, interrupt);
