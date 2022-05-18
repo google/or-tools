@@ -84,7 +84,7 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "  use_make_active: BOOL_TRUE"
       "  use_relocate_and_make_active: BOOL_FALSE"  // costly if true by default
       "  use_make_inactive: BOOL_TRUE"
-      "  use_make_chain_inactive: BOOL_FALSE"
+      "  use_make_chain_inactive: BOOL_TRUE"
       "  use_swap_active: BOOL_TRUE"
       "  use_extended_swap_active: BOOL_FALSE"
       "  use_node_pair_swap_active: BOOL_TRUE"
@@ -148,7 +148,16 @@ bool IsValidNonNegativeDuration(const google::protobuf::Duration& d) {
 
 std::string FindErrorInRoutingSearchParameters(
     const RoutingSearchParameters& search_parameters) {
+  const std::vector<std::string> errors =
+      FindErrorsInRoutingSearchParameters(search_parameters);
+  return (errors.empty()) ? "" : errors[0];
+}
+
+std::vector<std::string> FindErrorsInRoutingSearchParameters(
+    const RoutingSearchParameters& search_parameters) {
   using absl::StrCat;
+  std::vector<std::string> errors;
+
   // Check that all local search operators are set to either BOOL_TRUE or
   // BOOL_FALSE (and not BOOL_UNSPECIFIED).
   {
@@ -167,152 +176,134 @@ std::string FindErrorInRoutingSearchParameters(
         DLOG(FATAL)
             << "In RoutingSearchParameters::LocalSearchNeighborhoodOperators,"
             << " field '" << field->name() << "' is not an OptionalBoolean.";
-        return "The file 'routing_search_parameters.proto' itself is invalid!";
+      } else {
+        const int value = ls_reflection->GetEnum(operators, field)->number();
+        if (!OptionalBoolean_IsValid(value) || value == 0) {
+          errors.emplace_back(absl::StrFormat(
+              "local_search_neighborhood_operator.%s should be set to "
+              "BOOL_TRUE or BOOL_FALSE instead of %s (value: %d)",
+              field->name(),
+              OptionalBoolean_Name(static_cast<OptionalBoolean>(value)),
+              value));
+        }
       }
-      const int value = ls_reflection->GetEnum(operators, field)->number();
-      if (!OptionalBoolean_IsValid(value) || value == 0) {
-        return StrCat("local_search_neighborhood_operator.", field->name(),
-                      " should be set to BOOL_TRUE or BOOL_FALSE instead of ",
-                      OptionalBoolean_Name(static_cast<OptionalBoolean>(value)),
-                      " (value: ", value, ")");
-      }
     }
   }
-  {
-    const double ratio = search_parameters.savings_neighbors_ratio();
-    if (std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-      return StrCat("Invalid savings_neighbors_ratio:", ratio);
-    }
+  if (const double ratio = search_parameters.savings_neighbors_ratio();
+      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
+    errors.emplace_back(StrCat("Invalid savings_neighbors_ratio: ", ratio));
   }
-  {
-    const double max_memory =
-        search_parameters.savings_max_memory_usage_bytes();
-    if (std::isnan(max_memory) || max_memory <= 0 || max_memory > 1e10) {
-      return StrCat("Invalid savings_max_memory_usage_bytes: ", max_memory);
-    }
+  if (const double max_memory =
+          search_parameters.savings_max_memory_usage_bytes();
+      std::isnan(max_memory) || max_memory <= 0 || max_memory > 1e10) {
+    errors.emplace_back(
+        StrCat("Invalid savings_max_memory_usage_bytes: ", max_memory));
   }
-  {
-    const double coefficient = search_parameters.savings_arc_coefficient();
-    if (std::isnan(coefficient) || coefficient <= 0 ||
-        std::isinf(coefficient)) {
-      return StrCat("Invalid savings_arc_coefficient:", coefficient);
-    }
+  if (const double coefficient = search_parameters.savings_arc_coefficient();
+      std::isnan(coefficient) || coefficient <= 0 || std::isinf(coefficient)) {
+    errors.emplace_back(
+        StrCat("Invalid savings_arc_coefficient: ", coefficient));
   }
-  {
-    const double ratio =
-        search_parameters.cheapest_insertion_farthest_seeds_ratio();
-    if (std::isnan(ratio) || ratio < 0 || ratio > 1) {
-      return StrCat("Invalid cheapest_insertion_farthest_seeds_ratio:", ratio);
-    }
+  if (const double ratio =
+          search_parameters.cheapest_insertion_farthest_seeds_ratio();
+      std::isnan(ratio) || ratio < 0 || ratio > 1) {
+    errors.emplace_back(
+        StrCat("Invalid cheapest_insertion_farthest_seeds_ratio: ", ratio));
   }
-  {
-    const double ratio =
-        search_parameters.cheapest_insertion_first_solution_neighbors_ratio();
-    if (std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-      return StrCat(
-          "Invalid cheapest_insertion_first_solution_neighbors_ratio: ", ratio);
-    }
+  if (const double ratio =
+          search_parameters.cheapest_insertion_first_solution_neighbors_ratio();
+      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
+    errors.emplace_back(StrCat(
+        "Invalid cheapest_insertion_first_solution_neighbors_ratio: ", ratio));
   }
-  {
-    const int32_t min_neighbors =
-        search_parameters.cheapest_insertion_first_solution_min_neighbors();
-    if (min_neighbors < 1) {
-      return StrCat("Invalid cheapest_insertion_first_solution_min_neighbors: ",
-                    min_neighbors, ". Must be greater or equal to 1.");
-    }
+  if (const int32_t min_neighbors =
+          search_parameters.cheapest_insertion_first_solution_min_neighbors();
+      min_neighbors < 1) {
+    errors.emplace_back(
+        StrCat("Invalid cheapest_insertion_first_solution_min_neighbors: ",
+               min_neighbors, ". Must be greater or equal to 1."));
   }
-  {
-    const double ratio =
-        search_parameters.cheapest_insertion_ls_operator_neighbors_ratio();
-    if (std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-      return StrCat("Invalid cheapest_insertion_ls_operator_neighbors_ratio: ",
-                    ratio);
-    }
+  if (const double ratio =
+          search_parameters.cheapest_insertion_ls_operator_neighbors_ratio();
+      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
+    errors.emplace_back(StrCat(
+        "Invalid cheapest_insertion_ls_operator_neighbors_ratio: ", ratio));
   }
-  {
-    const int32_t min_neighbors =
-        search_parameters.cheapest_insertion_ls_operator_min_neighbors();
-    if (min_neighbors < 1) {
-      return StrCat("Invalid cheapest_insertion_ls_operator_min_neighbors: ",
-                    min_neighbors, ". Must be greater or equal to 1.");
-    }
+  if (const int32_t min_neighbors =
+          search_parameters.cheapest_insertion_ls_operator_min_neighbors();
+      min_neighbors < 1) {
+    errors.emplace_back(StrCat(
+        "Invalid cheapest_insertion_ls_operator_min_neighbors: ", min_neighbors,
+        ". Must be greater or equal to 1."));
   }
-  {
-    const int32_t num_arcs =
-        search_parameters.relocate_expensive_chain_num_arcs_to_consider();
-    if (num_arcs < 2 || num_arcs > 1e6) {
-      return StrCat("Invalid relocate_expensive_chain_num_arcs_to_consider: ",
-                    num_arcs, ". Must be between 2 and 10^6 (included).");
-    }
+  if (const int32_t num_arcs =
+          search_parameters.relocate_expensive_chain_num_arcs_to_consider();
+      num_arcs < 2 || num_arcs > 1e6) {
+    errors.emplace_back(StrCat(
+        "Invalid relocate_expensive_chain_num_arcs_to_consider: ", num_arcs,
+        ". Must be between 2 and 10^6 (included)."));
   }
-  {
-    const int32_t num_arcs =
-        search_parameters.heuristic_expensive_chain_lns_num_arcs_to_consider();
-    if (num_arcs < 2 || num_arcs > 1e6) {
-      return StrCat(
-          "Invalid heuristic_expensive_chain_lns_num_arcs_to_consider: ",
-          num_arcs, ". Must be between 2 and 10^6 (included).");
-    }
+  if (const int32_t num_arcs =
+          search_parameters
+              .heuristic_expensive_chain_lns_num_arcs_to_consider();
+      num_arcs < 2 || num_arcs > 1e6) {
+    errors.emplace_back(
+        StrCat("Invalid heuristic_expensive_chain_lns_num_arcs_to_consider: ",
+               num_arcs, ". Must be between 2 and 10^6 (included)."));
   }
-  {
-    const int32_t num_nodes =
-        search_parameters.heuristic_close_nodes_lns_num_nodes();
-    if (num_nodes < 0 || num_nodes > 1e4) {
-      return StrCat("Invalid heuristic_close_nodes_lns_num_nodes: ", num_nodes,
-                    ". Must be between 0 and 10000 (included).");
-    }
+  if (const int32_t num_nodes =
+          search_parameters.heuristic_close_nodes_lns_num_nodes();
+      num_nodes < 0 || num_nodes > 1e4) {
+    errors.emplace_back(
+        StrCat("Invalid heuristic_close_nodes_lns_num_nodes: ", num_nodes,
+               ". Must be between 0 and 10000 (included)."));
   }
-  {
-    const double gls_coefficient =
-        search_parameters.guided_local_search_lambda_coefficient();
-    if (std::isnan(gls_coefficient) || gls_coefficient < 0 ||
-        std::isinf(gls_coefficient)) {
-      return StrCat("Invalid guided_local_search_lambda_coefficient: ",
-                    gls_coefficient);
-    }
+  if (const double gls_coefficient =
+          search_parameters.guided_local_search_lambda_coefficient();
+      std::isnan(gls_coefficient) || gls_coefficient < 0 ||
+      std::isinf(gls_coefficient)) {
+    errors.emplace_back(StrCat(
+        "Invalid guided_local_search_lambda_coefficient: ", gls_coefficient));
   }
-  {
-    const double step = search_parameters.optimization_step();
-    if (std::isnan(step) || step < 0.0) {
-      return StrCat("Invalid optimization_step: ", step);
-    }
+  if (const double step = search_parameters.optimization_step();
+      std::isnan(step) || step < 0.0) {
+    errors.emplace_back(StrCat("Invalid optimization_step: ", step));
   }
-  {
-    const int32_t num = search_parameters.number_of_solutions_to_collect();
-    if (num < 1) return StrCat("Invalid number_of_solutions_to_collect:", num);
+  if (const int32_t num = search_parameters.number_of_solutions_to_collect();
+      num < 1) {
+    errors.emplace_back(
+        StrCat("Invalid number_of_solutions_to_collect: ", num));
   }
-  {
-    const int64_t lim = search_parameters.solution_limit();
-    if (lim < 1) return StrCat("Invalid solution_limit:", lim);
-  }
+  if (const int64_t lim = search_parameters.solution_limit(); lim < 1)
+    errors.emplace_back(StrCat("Invalid solution_limit: ", lim));
   if (!IsValidNonNegativeDuration(search_parameters.time_limit())) {
-    return "Invalid time_limit: " +
-           search_parameters.time_limit().ShortDebugString();
+    errors.emplace_back("Invalid time_limit: " +
+                        search_parameters.time_limit().ShortDebugString());
   }
   if (!IsValidNonNegativeDuration(search_parameters.lns_time_limit())) {
-    return "Invalid lns_time_limit: " +
-           search_parameters.lns_time_limit().ShortDebugString();
+    errors.emplace_back("Invalid lns_time_limit: " +
+                        search_parameters.lns_time_limit().ShortDebugString());
   }
   if (!FirstSolutionStrategy::Value_IsValid(
           search_parameters.first_solution_strategy())) {
-    return StrCat("Invalid first_solution_strategy: ",
-                  search_parameters.first_solution_strategy());
+    errors.emplace_back(StrCat("Invalid first_solution_strategy: ",
+                               search_parameters.first_solution_strategy()));
   }
   if (!LocalSearchMetaheuristic::Value_IsValid(
           search_parameters.local_search_metaheuristic())) {
-    return StrCat("Invalid metaheuristic: ",
-                  search_parameters.local_search_metaheuristic());
+    errors.emplace_back(StrCat("Invalid metaheuristic: ",
+                               search_parameters.local_search_metaheuristic()));
   }
 
   const double scaling_factor = search_parameters.log_cost_scaling_factor();
   if (scaling_factor == 0 || std::isnan(scaling_factor) ||
       std::isinf(scaling_factor)) {
-    return StrCat("Invalid value for log_cost_scaling_factor: ",
-                  scaling_factor);
+    errors.emplace_back(
+        StrCat("Invalid value for log_cost_scaling_factor: ", scaling_factor));
   }
   const double offset = search_parameters.log_cost_offset();
   if (std::isnan(offset) || std::isinf(offset)) {
-    return StrCat("Invalid value for log_cost_offset: ", offset);
+    errors.emplace_back(StrCat("Invalid value for log_cost_offset: ", offset));
   }
   const RoutingSearchParameters::SchedulingSolver continuous_scheduling_solver =
       search_parameters.continuous_scheduling_solver();
@@ -320,18 +311,21 @@ std::string FindErrorInRoutingSearchParameters(
           RoutingSearchParameters::SCHEDULING_UNSET ||
       continuous_scheduling_solver ==
           RoutingSearchParameters::SCHEDULING_CP_SAT) {
-    return StrCat("Invalid value for continuous_scheduling_solver: ",
-                  RoutingSearchParameters::SchedulingSolver_Name(
-                      continuous_scheduling_solver));
+    errors.emplace_back(
+        StrCat("Invalid value for continuous_scheduling_solver: ",
+               RoutingSearchParameters::SchedulingSolver_Name(
+                   continuous_scheduling_solver)));
   }
-  const RoutingSearchParameters::SchedulingSolver
-      mixed_integer_scheduling_solver =
-          search_parameters.mixed_integer_scheduling_solver();
-  if (mixed_integer_scheduling_solver ==
+
+  if (const RoutingSearchParameters::SchedulingSolver
+          mixed_integer_scheduling_solver =
+              search_parameters.mixed_integer_scheduling_solver();
+      mixed_integer_scheduling_solver ==
       RoutingSearchParameters::SCHEDULING_UNSET) {
-    return StrCat("Invalid value for mixed_integer_scheduling_solver: ",
-                  RoutingSearchParameters::SchedulingSolver_Name(
-                      mixed_integer_scheduling_solver));
+    errors.emplace_back(
+        StrCat("Invalid value for mixed_integer_scheduling_solver: ",
+               RoutingSearchParameters::SchedulingSolver_Name(
+                   mixed_integer_scheduling_solver)));
   }
 
   if (search_parameters.has_improvement_limit_parameters()) {
@@ -340,59 +334,54 @@ std::string FindErrorInRoutingSearchParameters(
             .improvement_rate_coefficient();
     if (std::isnan(improvement_rate_coefficient) ||
         improvement_rate_coefficient <= 0) {
-      return StrCat(
-          "Invalid value for "
-          "improvement_limit_parameters.improvement_rate_coefficient: ",
-          improvement_rate_coefficient);
+      errors.emplace_back(
+          StrCat("Invalid value for "
+                 "improvement_limit_parameters.improvement_rate_coefficient: ",
+                 improvement_rate_coefficient));
     }
 
     const int32_t improvement_rate_solutions_distance =
         search_parameters.improvement_limit_parameters()
             .improvement_rate_solutions_distance();
     if (improvement_rate_solutions_distance <= 0) {
-      return StrCat(
+      errors.emplace_back(StrCat(
           "Invalid value for "
           "improvement_limit_parameters.improvement_rate_solutions_distance: ",
-          improvement_rate_solutions_distance);
+          improvement_rate_solutions_distance));
     }
   }
 
-  {
-    const double memory_coefficient =
-        search_parameters
-            .multi_armed_bandit_compound_operator_memory_coefficient();
-    if (std::isnan(memory_coefficient) || memory_coefficient < 0 ||
-        memory_coefficient > 1) {
-      return StrCat(
-          "Invalid value for "
-          "multi_armed_bandit_compound_operator_memory_coefficient: ",
-          memory_coefficient);
-    }
+  if (const double memory_coefficient =
+          search_parameters
+              .multi_armed_bandit_compound_operator_memory_coefficient();
+      std::isnan(memory_coefficient) || memory_coefficient < 0 ||
+      memory_coefficient > 1) {
+    errors.emplace_back(
+        StrCat("Invalid value for "
+               "multi_armed_bandit_compound_operator_memory_coefficient: ",
+               memory_coefficient));
   }
-  {
-    const double exploration_coefficient =
-        search_parameters
-            .multi_armed_bandit_compound_operator_exploration_coefficient();
-    if (std::isnan(exploration_coefficient) || exploration_coefficient < 0) {
-      return StrCat(
-          "Invalid value for "
-          "multi_armed_bandit_compound_operator_exploration_coefficient: ",
-          exploration_coefficient);
-    }
+  if (const double exploration_coefficient =
+          search_parameters
+              .multi_armed_bandit_compound_operator_exploration_coefficient();
+      std::isnan(exploration_coefficient) || exploration_coefficient < 0) {
+    errors.emplace_back(
+        StrCat("Invalid value for "
+               "multi_armed_bandit_compound_operator_exploration_coefficient: ",
+               exploration_coefficient));
   }
 
-  {
-    const sat::SatParameters& sat_parameters =
-        search_parameters.sat_parameters();
-    if (sat_parameters.enumerate_all_solutions() &&
-        (sat_parameters.num_search_workers() > 1 ||
-         sat_parameters.interleave_search())) {
-      return "sat_parameters.enumerate_all_solutions cannot be true in parallel"
-             " search";
-    }
+  if (const sat::SatParameters& sat_parameters =
+          search_parameters.sat_parameters();
+      sat_parameters.enumerate_all_solutions() &&
+      (sat_parameters.num_search_workers() > 1 ||
+       sat_parameters.interleave_search())) {
+    errors.emplace_back(
+        "sat_parameters.enumerate_all_solutions cannot be true in parallel"
+        " search");
   }
 
-  return "";  // = Valid (No error).
+  return errors;
 }
 
 }  // namespace operations_research

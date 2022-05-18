@@ -122,6 +122,8 @@ class BasePathFilter : public IntVarLocalSearchFilter {
     return new_synchronized_unperformed_nodes_.PositionsSetAtLeastOnce();
   }
 
+  bool lns_detected() const { return lns_detected_; }
+
  private:
   enum Status { UNKNOWN, ENABLED, DISABLED };
 
@@ -157,6 +159,7 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   std::vector<int> ranks_;
 
   Status status_;
+  bool lns_detected_;
 };
 
 }  // namespace operations_research

@@ -43,7 +43,7 @@
 // Make the SWIG-generated constructor public.
 // This is necessary as it will be called from the sat package.
 SWIG_JAVABODY_PROXY(/*PTRCTOR_VISIBILITY=*/public,
-                    /*CPTR_VISIBILITY=*/protected,
+                    /*CPTR_VISIBILITY=*/public,
                     /*TYPE...=*/SWIGTYPE)
 
 // Wrap the domain class here.

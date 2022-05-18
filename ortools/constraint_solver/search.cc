@@ -3521,7 +3521,7 @@ void GuidedLocalSearchPenaltiesMap::Reset() {
 
 int64_t GuidedLocalSearchPenaltiesMap::Value(const Arc& arc) const {
   if (penalized_.Get(arc.first)) {
-    return gtl::FindWithDefault(penalties_, arc, 0);
+    return gtl::FindWithDefault(penalties_, arc);
   }
   return 0;
 }
@@ -3586,8 +3586,8 @@ GuidedLocalSearch::GuidedLocalSearch(Solver* const s, IntVar* objective,
   if (!vars.empty()) {
     // TODO(user): Remove scoped_array.
     assignment_.Add(vars_);
-    current_penalized_values_ = absl::make_unique<int64_t[]>(vars_.size());
-    delta_cache_ = absl::make_unique<int64_t[]>(vars_.size());
+    current_penalized_values_ = std::make_unique<int64_t[]>(vars_.size());
+    delta_cache_ = std::make_unique<int64_t[]>(vars_.size());
     memset(current_penalized_values_.get(), 0,
            vars_.size() * sizeof(*current_penalized_values_.get()));
   }
@@ -3595,10 +3595,10 @@ GuidedLocalSearch::GuidedLocalSearch(Solver* const s, IntVar* objective,
     indices_[vars_[i]] = i;
   }
   if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
-    penalties_ = absl::make_unique<GuidedLocalSearchPenaltiesMap>(vars_.size());
+    penalties_ = std::make_unique<GuidedLocalSearchPenaltiesMap>(vars_.size());
   } else {
     penalties_ =
-        absl::make_unique<GuidedLocalSearchPenaltiesTable>(vars_.size());
+        std::make_unique<GuidedLocalSearchPenaltiesTable>(vars_.size());
   }
 }
 
@@ -3946,7 +3946,7 @@ int64_t TernaryGuidedLocalSearch::PenalizedValue(int64_t i, int64_t j,
     const double penalized_value_fp =
         penalty_factor_ * penalty * objective_function_(i, j, k);
     const int64_t penalized_value =
-        (penalized_value_fp <= std::numeric_limits<int64_t>::max())
+        (penalized_value_fp < std::numeric_limits<int64_t>::max())
             ? static_cast<int64_t>(penalized_value_fp)
             : std::numeric_limits<int64_t>::max();
     if (maximize_) {

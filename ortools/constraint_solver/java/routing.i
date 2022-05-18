@@ -20,6 +20,8 @@
 %include "ortools/constraint_solver/java/routing_types.i"
 %include "ortools/constraint_solver/java/routing_index_manager.i"
 
+%import "ortools/util/java/sorted_interval_list.i"
+
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
@@ -58,6 +60,8 @@ namespace operations_research {
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingModel %{
+// Used to wrap Domain
+import com.google.ortools.util.Domain;
 // Used to wrap RoutingTransitCallback2
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
@@ -286,6 +290,60 @@ import java.util.function.LongBinaryOperator;
 
 // Generic rename rules.
 %rename (buildSolution) *::BuildSolution;
+
+// Add needed import to mainJNI.java
+%pragma(java) jniclassimports=%{
+// Used to wrap Domain
+import com.google.ortools.util.Domain;
+
+// Used to wrap std::function<std::string()>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/Supplier.html
+import java.util.function.Supplier;
+
+// Used to wrap std::function<bool()>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/BooleanSupplier.html
+import java.util.function.BooleanSupplier;
+
+// Used to wrap std::function<int(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
+import java.util.function.LongToIntFunction;
+
+// Used to wrap std::function<int64_t(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
+import java.util.function.LongUnaryOperator;
+
+// Used to wrap std::function<int64_t(int64_t, int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
+import java.util.function.LongBinaryOperator;
+
+// Used to wrap std::function<int64_t(int64_t, int64_t, int64_t)>
+// note: Java does not provide TernaryOperator so we provide it
+import com.google.ortools.constraintsolver.LongTernaryOperator;
+
+// Used to wrap std::function<int64_t(int, int)>
+// note: Java does not provide it, so we provide it.
+import com.google.ortools.constraintsolver.IntIntToLongFunction;
+
+// Used to wrap std::function<bool(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongPredicate.html
+import java.util.function.LongPredicate;
+
+// Used to wrap std::function<bool(int64_t, int64_t, int64_t)>
+// note: Java does not provide TernaryPredicate so we provide it
+import com.google.ortools.constraintsolver.LongTernaryPredicate;
+
+// Used to wrap std::function<void(Solver*)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/Consumer.html
+import java.util.function.Consumer;
+
+// Used to wrap std::function<void(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
+import java.util.function.LongConsumer;
+
+// Used to wrap std::function<void()>
+// see https://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html
+import java.lang.Runnable;
+%}
 
 // Protobuf support
 PROTO_INPUT(operations_research::RoutingSearchParameters,

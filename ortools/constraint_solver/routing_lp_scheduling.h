@@ -277,7 +277,7 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
     // RoutingDimension but we would need to store cumul offsets and use them
     // when checking intervals).
     allowed_intervals_[index] =
-        absl::make_unique<SortedDisjointIntervalList>(starts, ends);
+        std::make_unique<SortedDisjointIntervalList>(starts, ends);
   }
   int64_t GetVariableLowerBound(int index) const override {
     return linear_program_.variable_lower_bounds()[glop::ColIndex(index)];
@@ -580,6 +580,7 @@ class DimensionCumulOptimizerCore {
 
   std::vector<DimensionSchedulingStatus> OptimizeSingleRouteWithResources(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
       const std::vector<RoutingModel::ResourceGroup::Resource>& resources,
       const std::vector<int>& resource_indices, bool optimize_vehicle_costs,
       RoutingLinearSolverWrapper* solver,
@@ -629,6 +630,7 @@ class DimensionCumulOptimizerCore {
   // Returns false if some infeasibility was detected, true otherwise.
   bool SetRouteCumulConstraints(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
       int64_t cumul_offset, bool optimize_costs,
       RoutingLinearSolverWrapper* solver, int64_t* route_transit_cost,
       int64_t* route_cost_offset);
@@ -723,6 +725,7 @@ class LocalDimensionCumulOptimizer {
   std::vector<DimensionSchedulingStatus>
   ComputeRouteCumulCostsForResourcesWithoutFixedTransits(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
+      const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
       const std::vector<RoutingModel::ResourceGroup::Resource>& resources,
       const std::vector<int>& resource_indices, bool optimize_vehicle_costs,
       std::vector<int64_t>* optimal_costs_without_transits,
@@ -814,6 +817,7 @@ class ResourceAssignmentOptimizer {
   //   (secondary_vehicle_to_resource_assignment_costs[v] can never be empty).
   // If non-null, 'resource_indices' contains the index of the resource assigned
   // to each vehicle.
+  // TODO(user): Return std::optional<int64_t> to catch infeasibilities.
   int64_t ComputeBestAssignmentCost(
       const std::vector<std::vector<int64_t>>&
           primary_vehicle_to_resource_assignment_costs,
@@ -832,6 +836,7 @@ class ResourceAssignmentOptimizer {
   // are also set in cumul_values and break_values, if non-null.
   bool ComputeAssignmentCostsForVehicle(
       int v, const std::function<int64_t(int64_t)>& next_accessor,
+      const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
       bool optimize_vehicle_costs, std::vector<int64_t>* assignment_costs,
       std::vector<std::vector<int64_t>>* cumul_values,
       std::vector<std::vector<int64_t>>* break_values);
