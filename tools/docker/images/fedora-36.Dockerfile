@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/fedora
-FROM fedora:35 AS env
+FROM fedora:36 AS env
 
 #############
 ##  SETUP  ##
