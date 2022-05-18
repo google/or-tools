@@ -25,28 +25,32 @@ message QuadraticProgramStats {
   optional int64 num_variables = 1;
   optional int64 num_constraints = 2;
 
-  // Minimum row and column infinity norms of the constraint matrix. If the
-  // constraint matrix is empty, the values returned are 0.0.
+  // Minimum row and column infinity norms of the constraint matrix. All-zero
+  // rows and columns are excluded. If the constraint matrix contains no nonzero
+  // entries, the values returned are 0.0.
   optional double constraint_matrix_col_min_l_inf_norm = 3;
   optional double constraint_matrix_row_min_l_inf_norm = 4;
 
+  // The number of (finite) nonzero entries in the constraint matrix.
   optional int64 constraint_matrix_num_nonzeros = 5;
 
-  // Max/min/mean of absolute values of nonzero elements in constraint matrix.
+  // Max/min/mean/l2_norm of absolute values of (finite) elements in constraint
+  // matrix. Explicit zeros are included in the mean, but excluded from the min.
   // Note that the maximum absolute value is also equal to the maximal row and
-  // column infinity norms of the constraint matrix. If the constraint matrix
-  // is empty, the values returned are 0 for the maximum and minimum, and
-  // NaN for the average.
+  // column infinity norms of the constraint matrix. If the constraint matrix is
+  // empty, the values returned are 0.0 for the maximum, minimum, and l2_norm,
+  // and NaN for the average.
   optional double constraint_matrix_abs_max = 6;
   optional double constraint_matrix_abs_min = 7;
   optional double constraint_matrix_abs_avg = 8;
+  optional double constraint_matrix_l2_norm = 25;
 
   // Statistics of the combined vector of the constraint lower and upper bounds.
   // Given parallel lower and upper bounds vectors, the "combined bounds" vector
   // takes the maximum absolute value of each pair of bounds, ignoring all non-
   // finite values. The comment in solvers.proto:TerminationCriteria provides an
-  // example of the combined bounds vector.
-  // If there are no constraints, the values returned are 0 for the
+  // example of the combined bounds vector. The min is over the nonzero combined
+  // bounds. If there are no constraints, the values returned are 0 for the
   // maximum, minimum, and l2 norm and NaN for the average.
   optional double combined_bounds_max = 9;
   optional double combined_bounds_min = 10;
@@ -57,14 +61,16 @@ message QuadraticProgramStats {
   // between the upper and lower bounds on primal feasible solutions.
   optional int64 variable_bound_gaps_num_finite = 12;
 
-  // Max/min/mean over all finite variable bound gaps. When there are no finite
-  // gaps, the values returned are 0 for the maximum and minimum and NaN for the
-  // average.
+  // Max/min/mean/l2_norm over all finite variable bound gaps. The min excludes
+  // zero bound gaps (i.e., fixed variables). When there are no finite gaps, the
+  // values returned are 0 for the maximum, minimum, and l2_norm, and NaN for
+  // the average.
   optional double variable_bound_gaps_max = 13;
   optional double variable_bound_gaps_min = 14;
   optional double variable_bound_gaps_avg = 15;
+  optional double variable_bound_gaps_l2_norm = 26;
 
-  // Statistics of the objective vector.
+  // Statistics of the objective vector. The min is over the nonzero terms.
   optional double objective_vector_abs_max = 16;
   optional double objective_vector_abs_min = 17;
   optional double objective_vector_abs_avg = 18;
@@ -72,12 +78,13 @@ message QuadraticProgramStats {
 
   optional int64 objective_matrix_num_nonzeros = 19;
 
-  // Max/min/mean of absolute values of nonzero elements of the objective
-  // matrix. If the objective matrix is empty, the returned values are 0.0, 0.0
-  // and NaN respectively.
+  // Max/min/mean/l2_norm of absolute values of elements of the objective
+  // matrix. The min is over nonzero terms. If the objective matrix is empty,
+  // the returned values are 0.0, 0.0, NaN, and 0.0 respectively.
   optional double objective_matrix_abs_max = 20;
   optional double objective_matrix_abs_min = 21;
   optional double objective_matrix_abs_avg = 22;
+  optional double objective_matrix_l2_norm = 27;
 }
 
 // Specifies whether a restart was performed on a given iteration.

@@ -165,6 +165,25 @@ VectorXd TransposedMatrixVectorProduct(
   return answer;
 }
 
+void SetZero(const Sharder& sharder, VectorXd& dest) {
+  dest.resize(sharder.NumElements());
+  sharder.ParallelForEachShard(
+      [&](const Sharder::Shard& shard) { shard(dest).setZero(); });
+}
+
+VectorXd ZeroVector(const Sharder& sharder) {
+  VectorXd result(sharder.NumElements());
+  SetZero(sharder, result);
+  return result;
+}
+
+VectorXd OnesVector(const Sharder& sharder) {
+  VectorXd result(sharder.NumElements());
+  sharder.ParallelForEachShard(
+      [&](const Sharder::Shard& shard) { shard(result).setOnes(); });
+  return result;
+}
+
 void AddScaledVector(const double scale, const VectorXd& increment,
                      const Sharder& sharder, VectorXd& dest) {
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
@@ -184,7 +203,6 @@ VectorXd CloneVector(const VectorXd& vec, const Sharder& sharder) {
   return dest;
 }
 
-// Like vector = vector.cwiseProduct(scale).
 void CoefficientWiseProductInPlace(const VectorXd& scale,
                                    const Sharder& sharder, VectorXd& dest) {
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
@@ -192,7 +210,6 @@ void CoefficientWiseProductInPlace(const VectorXd& scale,
   });
 }
 
-// Like vector = vector.cwiseQuotient(scale).
 void CoefficientWiseQuotientInPlace(const VectorXd& scale,
                                     const Sharder& sharder, VectorXd& dest) {
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {

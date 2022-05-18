@@ -61,17 +61,31 @@ using ::Eigen::VectorXd;
 using IterationStatsCallback =
     std::function<void(const IterationCallbackInfo&)>;
 
-// Returns infinity norm of the given matrix viewed as a vector.
-double MaxAbsCoefficient(
-    const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix) {
-  // Note: matrix.coeffs().lpNorm<Eigen::Infinity>() gives a link error.
-  return matrix.nonZeros() ? matrix.coeffs().cwiseAbs().maxCoeff() : 0;
+// Computes a `num_threads' that is capped by the problem size and num_shards,
+// if specified, to avoid creating unusable threads.
+int NumThreads(const int num_threads, const int num_shards,
+               const QuadraticProgram& qp) {
+  int capped_num_threads = num_threads;
+  if (num_shards > 0) {
+    capped_num_threads = std::min(capped_num_threads, num_shards);
+  }
+  const int64_t problem_limit = std::max(qp.variable_lower_bounds.size(),
+                                         qp.constraint_lower_bounds.size());
+  capped_num_threads =
+      static_cast<int>(std::min(int64_t{capped_num_threads}, problem_limit));
+  capped_num_threads = std::max(capped_num_threads, 1);
+  if (capped_num_threads != num_threads) {
+    LOG(WARNING) << "Reducing num_threads from " << num_threads << " to "
+                 << capped_num_threads
+                 << " because additional threads would be useless.";
+  }
+  return capped_num_threads;
 }
 
 // If `num_shards' is positive, returns it. Otherwise returns a reasonable
 // number of shards to use with ShardedQuadraticProgram for the given number of
 // threads.
-int NumShards(const int num_shards, const int num_threads) {
+int NumShards(const int num_threads, const int num_shards) {
   if (num_shards > 0) return num_shards;
   return num_threads == 1 ? 1 : 4 * num_threads;
 }
@@ -259,9 +273,9 @@ class Solver {
           preprocessor(&preprocessor_parameters),
           sharded_original_qp(std::move(original_qp)),
           trivial_col_scaling_vec(
-              VectorXd::Ones(sharded_original_qp.PrimalSize())),
+              OnesVector(sharded_original_qp.PrimalSharder())),
           trivial_row_scaling_vec(
-              VectorXd::Ones(sharded_original_qp.DualSize())) {}
+              OnesVector(sharded_original_qp.DualSharder())) {}
     glop::GlopParameters preprocessor_parameters;
     glop::MainLpPreprocessor preprocessor;
     ShardedQuadraticProgram sharded_original_qp;
@@ -333,10 +347,10 @@ class Solver {
   // compute solution statistics and adds them to the stats proto.
   // NOTE: The primal and dual input pair should be a scaled solution.
   std::optional<TerminationReasonAndPointType>
-  UpdateIterationStatsAndCheckTermination(bool force_numerical_termination,
-                                          const VectorXd& primal_average,
-                                          const VectorXd& dual_average,
-                                          IterationStats& stats) const;
+  UpdateIterationStatsAndCheckTermination(
+      bool force_numerical_termination, const VectorXd& primal_average,
+      const VectorXd& dual_average, const std::atomic<bool>* interrupt_solve,
+      IterationStats& stats) const;
 
   double DistanceTraveledFromLastStart(const VectorXd& primal_solution,
                                        const VectorXd& dual_solution) const;
@@ -355,7 +369,8 @@ class Solver {
   void ApplyRestartChoice(RestartChoice restart_to_apply);
 
   std::optional<SolverResult> MajorIterationAndTerminationCheck(
-      bool force_numerical_termination, SolveLog& solve_log);
+      bool force_numerical_termination,
+      const std::atomic<bool>* interrupt_solve, SolveLog& solve_log);
 
   bool ShouldDoAdaptiveRestartHeuristic(double candidate_normalized_gap) const;
 
@@ -405,6 +420,7 @@ class Solver {
 
   WallTimer timer_;
   const PrimalDualHybridGradientParams params_;
+  const int num_threads_;
   const int num_shards_;
   // This is the QP that PDHG is run on. It has been reduced by presolve and/or
   // rescaled, if those are enabled. The original problem is available in
@@ -462,8 +478,9 @@ class Solver {
 Solver::Solver(QuadraticProgram qp,
                const PrimalDualHybridGradientParams& params)
     : params_(params),
-      num_shards_(NumShards(params.num_shards(), params.num_threads())),
-      sharded_working_qp_(std::move(qp), params.num_threads(), num_shards_),
+      num_threads_(NumThreads(params.num_threads(), params.num_shards(), qp)),
+      num_shards_(NumShards(num_threads_, params.num_shards())),
+      sharded_working_qp_(std::move(qp), num_threads_, num_shards_),
       primal_average_(&sharded_working_qp_.PrimalSharder()),
       dual_average_(&sharded_working_qp_.DualSharder()) {}
 
@@ -1012,7 +1029,8 @@ void LogInfoWithoutPrefix(absl::string_view message) {
 std::optional<TerminationReasonAndPointType>
 Solver::UpdateIterationStatsAndCheckTermination(
     bool force_numerical_termination, const VectorXd& working_primal_average,
-    const VectorXd& working_dual_average, IterationStats& stats) const {
+    const VectorXd& working_dual_average,
+    const std::atomic<bool>* interrupt_solve, IterationStats& stats) const {
   if (presolve_info_.has_value()) {
     {  // This block exists to destroy `original_current` to save RAM.
       PrimalAndDualSolution original_current =
@@ -1111,7 +1129,7 @@ Solver::UpdateIterationStatsAndCheckTermination(
   }
 
   return CheckTerminationCriteria(params_.termination_criteria(), stats,
-                                  original_bound_norms_,
+                                  original_bound_norms_, interrupt_solve,
                                   force_numerical_termination);
 }
 
@@ -1201,23 +1219,26 @@ void Solver::ApplyRestartChoice(const RestartChoice restart_to_apply) {
 }
 
 std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
-    bool force_numerical_termination, SolveLog& solve_log) {
-  const int iteration_limit = params_.termination_criteria().iteration_limit();
+    bool force_numerical_termination, const std::atomic<bool>* interrupt_solve,
+    SolveLog& solve_log) {
   const int major_iteration_cycle =
       iterations_completed_ % params_.major_iteration_frequency();
   const bool is_major_iteration =
       major_iteration_cycle == 0 && iterations_completed_ > 0;
-  const bool check_termination =
-      major_iteration_cycle % params_.termination_check_frequency() == 0 ||
-      iterations_completed_ == iteration_limit || force_numerical_termination;
-  // We check termination on every major iteration.
-  DCHECK(!is_major_iteration || check_termination);
   // Just decide what to do for now. The actual restart, if any, is
   // performed after the termination check.
   const RestartChoice restart = force_numerical_termination
                                     ? RESTART_CHOICE_NO_RESTART
                                     : ChooseRestartToApply(is_major_iteration);
   IterationStats stats = CreateSimpleIterationStats(restart);
+  const bool check_termination =
+      major_iteration_cycle % params_.termination_check_frequency() == 0 ||
+      CheckSimpleTerminationCriteria(params_.termination_criteria(), stats,
+                                     interrupt_solve)
+          .has_value() ||
+      force_numerical_termination;
+  // We check termination on every major iteration.
+  DCHECK(!is_major_iteration || check_termination);
   if (check_termination) {
     // Check for termination and update iteration stats with both simple and
     // solution statistics. The later are computationally harder to compute and
@@ -1227,7 +1248,8 @@ std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
 
     const std::optional<TerminationReasonAndPointType>
         maybe_termination_reason = UpdateIterationStatsAndCheckTermination(
-            force_numerical_termination, primal_average, dual_average, stats);
+            force_numerical_termination, primal_average, dual_average,
+            interrupt_solve, stats);
     if (params_.record_iteration_stats()) {
       *solve_log.add_iteration_stats() = stats;
     }
@@ -1589,18 +1611,19 @@ std::optional<TerminationReason> Solver::ApplyPresolveIfEnabled(
   presolve_info_->preprocessor.Run(&glop_lp);
   presolve_info_->presolved_problem_was_maximization =
       glop_lp.IsMaximizationProblem();
-  // MpModelProto doesn't support scaling factors so any scaling factor was
-  // eliminated when we converted to MpModelProto. Nothing afterwards should set
-  // scaling factor.
-  CHECK_EQ(glop_lp.objective_scaling_factor(), 1.0);
   MPModelProto output;
   glop::LinearProgramToMPModelProto(glop_lp, &output);
   // This will only fail if given an invalid LP, which shouldn't happen.
   absl::StatusOr<QuadraticProgram> presolved_qp =
       QpFromMpModelProto(output, /*relax_integer_variables=*/false);
   CHECK_OK(presolved_qp.status());
-  sharded_working_qp_ = ShardedQuadraticProgram(
-      std::move(*presolved_qp), params_.num_threads(), num_shards_);
+  // MPModelProto doesn't support scaling factors, so if glop_lp has an
+  // objective_scaling_factor it won't set in output and presolved_qp. The
+  // scaling factor of presolved_qp isn't actually used anywhere, but we set it
+  // for completeness.
+  presolved_qp->objective_scaling_factor = glop_lp.objective_scaling_factor();
+  sharded_working_qp_ = ShardedQuadraticProgram(std::move(*presolved_qp),
+                                                num_threads_, num_shards_);
   primal_average_ =
       ShardedWeightedAverage(&sharded_working_qp_.PrimalSharder());
   dual_average_ = ShardedWeightedAverage(&sharded_working_qp_.DualSharder());
@@ -1608,8 +1631,8 @@ std::optional<TerminationReason> Solver::ApplyPresolveIfEnabled(
   // problem that needs solving. Other statuses mean the preprocessor solved
   // the problem completely.
   if (presolve_info_->preprocessor.status() != glop::ProblemStatus::INIT) {
-    col_scaling_vec_.setOnes(sharded_working_qp_.PrimalSize());
-    row_scaling_vec_.setOnes(sharded_working_qp_.DualSize());
+    col_scaling_vec_ = OnesVector(sharded_working_qp_.PrimalSharder());
+    row_scaling_vec_ = OnesVector(sharded_working_qp_.DualSharder());
     return GlopStatusToTerminationReason(presolve_info_->preprocessor.status());
   }
   return absl::nullopt;
@@ -1672,6 +1695,135 @@ PrimalAndDualSolution Solver::RecoverOriginalSolution(
   }
 }
 
+namespace {
+
+std::optional<SolverResult> CheckProblemStats(
+    const QuadraticProgramStats& problem_stats) {
+  const double kExcessiveInputValue = 1e50;
+  const double kExcessivelySmallInputValue = 1e-50;
+  const double kMaxDynamicRange = 1e20;
+  if (std::isnan(problem_stats.constraint_matrix_l2_norm())) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "Constraint matrix has a NAN.");
+  }
+  if (problem_stats.constraint_matrix_abs_max() > kExcessiveInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Constraint matrix has a non-zero with absolute value ",
+                     problem_stats.constraint_matrix_abs_max(),
+                     " which exceeds limit of ", kExcessiveInputValue, "."));
+  }
+  if (problem_stats.constraint_matrix_abs_max() >
+      kMaxDynamicRange * problem_stats.constraint_matrix_abs_min()) {
+    LOG(WARNING) << "Constraint matrix has largest absolute value "
+                 << problem_stats.constraint_matrix_abs_max()
+                 << " and smallest non-zero absolute value "
+                 << problem_stats.constraint_matrix_abs_min()
+                 << " performance may suffer.";
+  }
+  if (problem_stats.constraint_matrix_col_min_l_inf_norm() > 0 &&
+      problem_stats.constraint_matrix_col_min_l_inf_norm() <
+          kExcessivelySmallInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Constraint matrix has a column with Linf norm ",
+                     problem_stats.constraint_matrix_col_min_l_inf_norm(),
+                     " which is less than limit of ",
+                     kExcessivelySmallInputValue, "."));
+  }
+  if (problem_stats.constraint_matrix_row_min_l_inf_norm() > 0 &&
+      problem_stats.constraint_matrix_row_min_l_inf_norm() <
+          kExcessivelySmallInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Constraint matrix has a row with Linf norm ",
+                     problem_stats.constraint_matrix_row_min_l_inf_norm(),
+                     " which is less than limit of ",
+                     kExcessivelySmallInputValue, "."));
+  }
+  if (std::isnan(problem_stats.combined_bounds_l2_norm())) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "Constraint bounds vector has a NAN.");
+  }
+  if (problem_stats.combined_bounds_max() > kExcessiveInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Combined constraint bounds vector has a non-zero with "
+                     "absolute value ",
+                     problem_stats.combined_bounds_max(),
+                     " which exceeds limit of ", kExcessiveInputValue, "."));
+  }
+  if (problem_stats.combined_bounds_max() >
+      kMaxDynamicRange * problem_stats.combined_bounds_min()) {
+    LOG(WARNING)
+        << "Combined constraint bounds vector has largest absolute value "
+        << problem_stats.combined_bounds_max()
+        << " and smallest non-zero absolute value "
+        << problem_stats.combined_bounds_min() << "; performance may suffer.";
+  }
+  if (std::isnan(problem_stats.variable_bound_gaps_l2_norm())) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "Variable bounds vector has a NAN.");
+  }
+  if (problem_stats.variable_bound_gaps_max() > kExcessiveInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Variable bound gaps vector has a finite non-zero with "
+                     "absolute value ",
+                     problem_stats.variable_bound_gaps_max(),
+                     " which exceeds limit of ", kExcessiveInputValue, "."));
+  }
+  if (problem_stats.variable_bound_gaps_max() >
+      kMaxDynamicRange * problem_stats.variable_bound_gaps_min()) {
+    LOG(WARNING) << "Variable bound gap vector has largest absolute value "
+                 << problem_stats.variable_bound_gaps_max()
+                 << " and smallest non-zero absolute value "
+                 << problem_stats.variable_bound_gaps_min()
+                 << "; performance may suffer.";
+  }
+  if (std::isnan(problem_stats.objective_vector_l2_norm())) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "Objective vector has a NAN.");
+  }
+  if (problem_stats.objective_vector_abs_max() > kExcessiveInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Objective vector has a non-zero with absolute value ",
+                     problem_stats.objective_vector_abs_max(),
+                     " which exceeds limit of ", kExcessiveInputValue, "."));
+  }
+  if (problem_stats.objective_vector_abs_max() >
+      kMaxDynamicRange * problem_stats.objective_vector_abs_min()) {
+    LOG(WARNING) << "Objective vector has largest absolute value "
+                 << problem_stats.objective_vector_abs_max()
+                 << " and smallest non-zero absolute value "
+                 << problem_stats.objective_vector_abs_min()
+                 << "; performance may suffer.";
+  }
+  if (std::isnan(problem_stats.objective_matrix_l2_norm())) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "Objective matrix has a NAN.");
+  }
+  if (problem_stats.objective_matrix_abs_max() > kExcessiveInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Objective matrix has a non-zero with absolute value ",
+                     problem_stats.objective_matrix_abs_max(),
+                     " which exceeds limit of ", kExcessiveInputValue, "."));
+  }
+  if (problem_stats.objective_matrix_abs_max() >
+      kMaxDynamicRange * problem_stats.objective_matrix_abs_min()) {
+    LOG(WARNING) << "Objective matrix has largest absolute value "
+                 << problem_stats.objective_matrix_abs_max()
+                 << " and smallest non-zero absolute value "
+                 << problem_stats.objective_matrix_abs_min()
+                 << "; performance may suffer.";
+  }
+  return std::nullopt;
+}
+
+}  // namespace
+
 SolverResult Solver::Solve(
     std::optional<PrimalAndDualSolution> initial_solution,
     const std::atomic<bool>* interrupt_solve,
@@ -1683,8 +1835,13 @@ SolverResult Solver::Solve(
   *solve_log.mutable_params() = params_;
   *solve_log.mutable_original_problem_stats() = ComputeStats(
       sharded_working_qp_, params_.infinite_constraint_bound_threshold());
-  original_bound_norms_ =
-      BoundNormsFromProblemStats(solve_log.original_problem_stats());
+  const QuadraticProgramStats& original_problem_stats =
+      solve_log.original_problem_stats();
+  if (auto maybe_result = CheckProblemStats(original_problem_stats);
+      maybe_result.has_value()) {
+    return *maybe_result;
+  }
+  original_bound_norms_ = BoundNormsFromProblemStats(original_problem_stats);
   const std::string preprocessing_string = absl::StrCat(
       params_.presolve_options().use_glop() ? "presolving and " : "",
       "rescaling:");
@@ -1702,13 +1859,11 @@ SolverResult Solver::Solve(
     // vectors have length 0. When the status is something else the lengths
     // may be non-zero, but that's OK since we don't promise to produce a
     // meaningful solution in that case.
-    const int working_dual_size = sharded_working_qp_.DualSize();
-    const int working_primal_size = sharded_working_qp_.PrimalSize();
     IterationStats iteration_stats;
     iteration_stats.set_cumulative_time_sec(timer_.Get());
     solve_log.set_preprocessing_time_sec(iteration_stats.cumulative_time_sec());
-    VectorXd working_primal = VectorXd::Zero(working_primal_size);
-    VectorXd working_dual = VectorXd::Zero(working_dual_size);
+    VectorXd working_primal = ZeroVector(sharded_working_qp_.PrimalSharder());
+    VectorXd working_dual = ZeroVector(sharded_working_qp_.DualSharder());
     PrimalAndDualSolution original = RecoverOriginalSolution(
         {.primal_solution = working_primal, .dual_solution = working_dual});
     AddConvergenceAndInfeasibilityInformation(
@@ -1720,6 +1875,7 @@ SolverResult Solver::Solve(
     std::optional<TerminationReasonAndPointType> earned_termination =
         CheckTerminationCriteria(params_.termination_criteria(),
                                  iteration_stats, original_bound_norms_,
+                                 interrupt_solve,
                                  /*force_numerical_termination=*/false);
     TerminationReason final_termination_reason;
     if (earned_termination.has_value() &&
@@ -1747,8 +1903,8 @@ SolverResult Solver::Solve(
     current_primal_solution_ = std::move(initial_solution->primal_solution);
     current_dual_solution_ = std::move(initial_solution->dual_solution);
   } else {
-    current_primal_solution_.setZero(sharded_working_qp_.PrimalSize());
-    current_dual_solution_.setZero(sharded_working_qp_.DualSize());
+    SetZero(sharded_working_qp_.PrimalSharder(), current_primal_solution_);
+    SetZero(sharded_working_qp_.DualSharder(), current_dual_solution_);
   }
   // The following projections are necessary since all our checks assume that
   // the primal and dual variable bounds are satisfied.
@@ -1825,7 +1981,7 @@ SolverResult Solver::Solve(
     // performing a restart).
     const std::optional<SolverResult> maybe_result =
         MajorIterationAndTerminationCheck(force_numerical_termination,
-                                          solve_log);
+                                          interrupt_solve, solve_log);
     if (maybe_result.has_value()) {
       return maybe_result.value();
     }

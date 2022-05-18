@@ -200,7 +200,7 @@ VectorXd ObjectiveProduct(const ShardedQuadraticProgram& sharded_qp,
   CHECK_EQ(primal_solution.size(), sharded_qp.PrimalSize());
   VectorXd result(primal_solution.size());
   if (IsLinearProgram(sharded_qp.Qp())) {
-    result.setZero();
+    SetZero(sharded_qp.PrimalSharder(), result);
   } else {
     sharded_qp.PrimalSharder().ParallelForEachShard(
         [&](const Sharder::Shard& shard) {
@@ -389,7 +389,7 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
   // Compute primal infeasibility information.
   VectorXd scaled_primal_gradient = PrimalGradientFromObjectiveProduct(
       scaled_sharded_qp, scaled_dual_ray,
-      VectorXd::Zero(scaled_sharded_qp.PrimalSize()),
+      ZeroVector(scaled_sharded_qp.PrimalSharder()),
       /*use_zero_primal_objective=*/true);
   ResidualNorms dual_residuals =
       DualResidualNorms(scaled_sharded_qp, col_scaling_vec, scaled_primal_ray,
@@ -466,8 +466,8 @@ ConvergenceInformation ComputeScaledConvergenceInformation(
     const ShardedQuadraticProgram& sharded_qp, const VectorXd& primal_solution,
     const VectorXd& dual_solution, PointType candidate_type) {
   return ComputeConvergenceInformation(
-      sharded_qp, VectorXd::Ones(sharded_qp.PrimalSize()),
-      VectorXd::Ones(sharded_qp.DualSize()), primal_solution, dual_solution,
+      sharded_qp, OnesVector(sharded_qp.PrimalSharder()),
+      OnesVector(sharded_qp.DualSharder()), primal_solution, dual_solution,
       candidate_type);
 }
 
@@ -477,7 +477,7 @@ VectorXd ReducedCosts(const ShardedQuadraticProgram& sharded_qp,
                       bool use_zero_primal_objective) {
   VectorXd objective_product;
   if (use_zero_primal_objective) {
-    objective_product = VectorXd::Zero(sharded_qp.PrimalSize());
+    objective_product = ZeroVector(sharded_qp.PrimalSharder());
   } else {
     objective_product = ObjectiveProduct(sharded_qp, primal_solution);
   }

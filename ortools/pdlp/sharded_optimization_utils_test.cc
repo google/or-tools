@@ -117,6 +117,19 @@ TEST(ShardedWeightedAverageTest, AveragesEqualWithoutRoundoff) {
   EXPECT_THAT(average.ComputeAverage(), ElementsAreArray(data));
 }
 
+TEST(ShardedWeightedAverageTest, AddsZeroWeight) {
+  Sharder sharder(/*num_elements=*/1, /*num_shards=*/1,
+                  /*thread_pool=*/nullptr);
+
+  ShardedWeightedAverage average(&sharder);
+  ASSERT_FALSE(average.HasNonzeroWeight());
+  VectorXd data(1);
+  data << 1.0;
+  average.Add(data, 0.0);
+  EXPECT_FALSE(average.HasNonzeroWeight());
+  EXPECT_THAT(average.ComputeAverage(), ElementsAre(0.0));
+}
+
 // The combined bounds vector for TestLp() is [12, 7, 4, 1].
 // L_inf norm: 12.0
 // L_2 norm: sqrt(210.0) ≈ 14.49
@@ -133,6 +146,7 @@ TEST(ProblemStatsTest, TestLp) {
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_max(), 4.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_avg(), 14.5 / 9.0);
+  EXPECT_DOUBLE_EQ(stats.constraint_matrix_l2_norm(), std::sqrt(31.25));
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_max(), 5.5);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_avg(), 2.375);
@@ -141,10 +155,12 @@ TEST(ProblemStatsTest, TestLp) {
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_min(), 0.0);
   EXPECT_THAT(stats.objective_matrix_abs_avg(), IsNan());
+  EXPECT_DOUBLE_EQ(stats.objective_matrix_l2_norm(), 0.0);
   EXPECT_EQ(stats.variable_bound_gaps_num_finite(), 1);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_max(), 1.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_avg(), 1.0);
+  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_l2_norm(), 1.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_max(), 12.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_avg(), 6.0);
@@ -163,6 +179,7 @@ TEST(ProblemStatsTest, TinyLp) {
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_max(), 2.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_avg(), 1.25);
+  EXPECT_DOUBLE_EQ(stats.constraint_matrix_l2_norm(), std::sqrt(14.0));
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_max(), 5.0);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_avg(), 2.25);
@@ -171,10 +188,12 @@ TEST(ProblemStatsTest, TinyLp) {
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_min(), 0.0);
   EXPECT_THAT(stats.objective_matrix_abs_avg(), IsNan());
+  EXPECT_DOUBLE_EQ(stats.objective_matrix_l2_norm(), 0.0);
   EXPECT_EQ(stats.variable_bound_gaps_num_finite(), 4);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_max(), 6.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_min(), 2.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_avg(), 3.75);
+  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_l2_norm(), std::sqrt(65.0));
   EXPECT_DOUBLE_EQ(stats.combined_bounds_max(), 12.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_avg(), 20.0 / 3.0);
@@ -193,6 +212,7 @@ TEST(ProblemStatsTest, TestDiagonalQp1) {
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_max(), 1.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_avg(), 1.0);
+  EXPECT_DOUBLE_EQ(stats.constraint_matrix_l2_norm(), std::sqrt(2.0));
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_max(), 1.0);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_avg(), 1.0);
@@ -201,10 +221,12 @@ TEST(ProblemStatsTest, TestDiagonalQp1) {
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_max(), 4.0);
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_avg(), 2.5);
+  EXPECT_DOUBLE_EQ(stats.objective_matrix_l2_norm(), std::sqrt(17.0));
   EXPECT_EQ(stats.variable_bound_gaps_num_finite(), 2);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_max(), 6.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_avg(), 3.5);
+  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_l2_norm(), std::sqrt(37.0));
   EXPECT_DOUBLE_EQ(stats.combined_bounds_max(), 1.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_avg(), 1.0);
@@ -220,12 +242,14 @@ TEST(ProblemStatsTest, ModifiedTestDiagonalQp1) {
 
   EXPECT_EQ(stats.objective_matrix_num_nonzeros(), 1);
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_max(), 2.0);
-  EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_min(), 0.0);
+  EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_min(), 2.0);
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_avg(), 1.0);
+  EXPECT_DOUBLE_EQ(stats.objective_matrix_l2_norm(), 2.0);
 }
 
 // This is like SmallLp, except that an infinite_bound_threshold of 10 treats
-// the first bound as infinite, leaving [7, 4, 1] as the combined bounds vector.
+// the first bound as infinite, leaving [0, 7, 4, 1] as the combined bounds
+// vector.
 TEST(ProblemStatsTest, TestLpWithInfiniteConstraintBoundThreshold) {
   ShardedQuadraticProgram lp(TestLp(), 2, 2);
   const QuadraticProgramStats stats =
@@ -239,6 +263,7 @@ TEST(ProblemStatsTest, TestLpWithInfiniteConstraintBoundThreshold) {
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_max(), 4.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_avg(), 14.5 / 9.0);
+  EXPECT_DOUBLE_EQ(stats.constraint_matrix_l2_norm(), std::sqrt(31.25));
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_max(), 5.5);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_avg(), 2.375);
@@ -247,12 +272,14 @@ TEST(ProblemStatsTest, TestLpWithInfiniteConstraintBoundThreshold) {
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_min(), 0.0);
   EXPECT_THAT(stats.objective_matrix_abs_avg(), IsNan());
+  EXPECT_DOUBLE_EQ(stats.objective_matrix_l2_norm(), 0.0);
   EXPECT_EQ(stats.variable_bound_gaps_num_finite(), 1);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_max(), 1.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_avg(), 1.0);
+  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_l2_norm(), 1.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_max(), 7.0);
-  EXPECT_DOUBLE_EQ(stats.combined_bounds_min(), 0.0);
+  EXPECT_DOUBLE_EQ(stats.combined_bounds_min(), 1.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_avg(), 3.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_l2_norm(), std::sqrt(66.0));
 }
@@ -265,6 +292,7 @@ TEST(ProblemStatsTest, NoFiniteGaps) {
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_min(), 0.0);
   EXPECT_THAT(stats.variable_bound_gaps_avg(), IsNan());
+  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_l2_norm(), 0.0);
 }
 
 TEST(ProblemStatsTest, LpWithoutConstraints) {
@@ -276,11 +304,13 @@ TEST(ProblemStatsTest, LpWithoutConstraints) {
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_min(), 0.0);
   EXPECT_THAT(stats.constraint_matrix_abs_avg(), IsNan());
+  EXPECT_DOUBLE_EQ(stats.constraint_matrix_l2_norm(), 0.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_col_min_l_inf_norm(), 0.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_row_min_l_inf_norm(), 0.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_min(), 0.0);
   EXPECT_THAT(stats.combined_bounds_avg(), IsNan());
+  EXPECT_DOUBLE_EQ(stats.combined_bounds_l2_norm(), 0.0);
 }
 
 TEST(ProblemStatsTest, EmptyLp) {
@@ -296,6 +326,7 @@ TEST(ProblemStatsTest, EmptyLp) {
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_min(), 0.0);
   EXPECT_THAT(stats.constraint_matrix_abs_avg(), IsNan());
+  EXPECT_DOUBLE_EQ(stats.constraint_matrix_l2_norm(), 0.0);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.objective_vector_abs_min(), 0.0);
   EXPECT_THAT(stats.objective_vector_abs_avg(), IsNan());
@@ -304,10 +335,12 @@ TEST(ProblemStatsTest, EmptyLp) {
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_min(), 0.0);
   EXPECT_THAT(stats.objective_matrix_abs_avg(), IsNan());
+  EXPECT_DOUBLE_EQ(stats.objective_matrix_l2_norm(), 0.0);
   EXPECT_EQ(stats.variable_bound_gaps_num_finite(), 0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_min(), 0.0);
   EXPECT_THAT(stats.variable_bound_gaps_avg(), IsNan());
+  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_l2_norm(), 0.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_max(), 0.0);
   EXPECT_DOUBLE_EQ(stats.combined_bounds_min(), 0.0);
   EXPECT_THAT(stats.combined_bounds_avg(), IsNan());

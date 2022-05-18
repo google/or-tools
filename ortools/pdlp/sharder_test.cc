@@ -179,6 +179,9 @@ TEST(SharderTest, UniformSharderZeroElementVector) {
   });
 }
 
+// MOE:begin_strip
+// Regression test for b/214330472.
+// MOE:end_strip
 TEST(SharderTest, UniformSharderFromOtherZeroElementSharder) {
   Sharder empty_sharder(/*num_elements=*/0, /*num_shards=*/3, nullptr);
   EXPECT_THAT(empty_sharder.ShardStartsForTesting(), ElementsAre(0));
@@ -263,6 +266,24 @@ TEST(MatrixVectorProductTest, SmallExample) {
   vec << 1, 2, 3;
   VectorXd ans = TransposedMatrixVectorProduct(mat, vec, sharder);
   EXPECT_THAT(ans, ElementsAre(6.0, -0.5, 6.0, 19));
+}
+
+TEST(SetZeroTest, SmallExample) {
+  Sharder sharder(3, /*num_shards=*/2, nullptr);
+  VectorXd vec(2);
+  vec << 1, 7;
+  SetZero(sharder, vec);
+  EXPECT_THAT(vec, ElementsAre(0.0, 0.0, 0.0));
+}
+
+TEST(ZeroVectorTest, SmallExample) {
+  Sharder sharder(3, /*num_shards=*/2, nullptr);
+  EXPECT_THAT(ZeroVector(sharder), ElementsAre(0.0, 0.0, 0.0));
+}
+
+TEST(OnesVectorTest, SmallExample) {
+  Sharder sharder(3, /*num_shards=*/2, nullptr);
+  EXPECT_THAT(OnesVector(sharder), ElementsAre(1.0, 1.0, 1.0));
 }
 
 TEST(AddScaledVectorTest, SmallExample) {

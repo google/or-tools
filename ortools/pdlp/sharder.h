@@ -246,6 +246,16 @@ Eigen::VectorXd TransposedMatrixVectorProduct(
 // int, ThreadPool*) constructor.
 ////////////////////////////////////////////////////////////////////////////////
 
+// Like dest.setZero(sharder.NumElements()). Note that if dest.size() !=
+// sharder.NumElements(), dest will be resized.
+void SetZero(const Sharder& sharder, Eigen::VectorXd& dest);
+
+// Like VectorXd::Zero(sharder.NumElements())
+Eigen::VectorXd ZeroVector(const Sharder& sharder);
+
+// Like VectorXd::Ones(sharder.NumElements())
+Eigen::VectorXd OnesVector(const Sharder& sharder);
+
 // Like dest += scale * increment
 void AddScaledVector(double scale, const Eigen::VectorXd& increment,
                      const Sharder& sharder, Eigen::VectorXd& dest);

@@ -44,8 +44,6 @@ namespace operations_research::pdlp {
 // TODO(user): Update internal helper functions to use references instead of
 // pointers.
 
-using ::operations_research::glop::MPSReader;
-
 QuadraticProgram ReadQuadraticProgramOrDie(const std::string& filename,
                                            bool include_names) {
   if (absl::EndsWith(filename, ".mps") || absl::EndsWith(filename, ".mps.gz") ||
@@ -65,13 +63,15 @@ QuadraticProgram ReadQuadraticProgramOrDie(const std::string& filename,
 
 QuadraticProgram ReadMpsLinearProgramOrDie(const std::string& lp_file,
                                            bool include_names) {
-  MPModelProto lp_proto;
   LOG(INFO) << "Reading " << lp_file;
-  QCHECK_OK(MPSReader().ParseFile(lp_file, &lp_proto));
-  // MPSReader sometimes fails silently if the file isn't read properly.
-  QCHECK_GT(lp_proto.variable_size(), 0)
+  absl::StatusOr<MPModelProto> lp_proto =
+      operations_research::glop::MpsFileToMPModelProto(lp_file);
+  QCHECK_OK(lp_proto);
+  // MpsFileToMPModelProto sometimes fails silently if the file isn't read
+  // properly.
+  QCHECK_GT(lp_proto->variable_size(), 0)
       << "No variables in LP. Error reading file? " << lp_file;
-  auto result = QpFromMpModelProto(lp_proto, /*relax_integer_variables=*/true,
+  auto result = QpFromMpModelProto(*lp_proto, /*relax_integer_variables=*/true,
                                    include_names);
   QCHECK_OK(result);
   return *std::move(result);

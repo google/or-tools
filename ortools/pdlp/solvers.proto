@@ -318,7 +318,7 @@ message PrimalDualHybridGradientParams {
   // linesearch_rule == CONSTANT_STEP_SIZE_RULE).
   optional double initial_step_size_scaling = 25 [default = 1.0];
 
-  reserved 13, 14, 15;
+  reserved 13, 14, 15, 20;
 
   // Seeds for generating (pseudo-)random projections of iterates during
   // termination checks. For each seed, the projection of the primal and dual
@@ -326,7 +326,7 @@ message PrimalDualHybridGradientParams {
   // added the IterationStats if record_iteration_stats is true. The random
   // planes generated will be determined by the seeds, the primal and dual
   // dimensions, and num_threads.
-  repeated double random_projection_seeds = 20 [packed = true];
+  repeated int32 random_projection_seeds = 28 [packed = true];
 
   // When computing relative feasibility norms, constraint bounds with absolute
   // value at least this threshold are treated as infinite, and hence not

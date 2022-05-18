@@ -13,6 +13,9 @@
 
 #include "ortools/pdlp/solvers_proto_validation.h"
 
+#include <limits>
+#include <string>
+
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -38,43 +41,82 @@ TEST(ValidateTerminationCriteria, BadOptimalityNorm) {
 }
 
 TEST(ValidateTerminationCriteria, BadEpsOptimalAbsolute) {
-  TerminationCriteria criteria;
-  criteria.set_eps_optimal_absolute(-1.0);
-  const absl::Status status = ValidateTerminationCriteria(criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("eps_optimal_absolute"));
+  TerminationCriteria criteria_negative;
+  criteria_negative.set_eps_optimal_absolute(-1.0);
+  const absl::Status status_negative =
+      ValidateTerminationCriteria(criteria_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(), HasSubstr("eps_optimal_absolute"));
+
+  TerminationCriteria criteria_nan;
+  criteria_nan.set_eps_optimal_absolute(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateTerminationCriteria(criteria_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("eps_optimal_absolute"));
 }
 
 TEST(ValidateTerminationCriteria, BadEpsOptimalRelative) {
-  TerminationCriteria criteria;
-  criteria.set_eps_optimal_relative(-1.0);
-  const absl::Status status = ValidateTerminationCriteria(criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("eps_optimal_relative"));
+  TerminationCriteria criteria_negative;
+  criteria_negative.set_eps_optimal_relative(-1.0);
+  const absl::Status status_negative =
+      ValidateTerminationCriteria(criteria_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(), HasSubstr("eps_optimal_relative"));
+
+  TerminationCriteria criteria_nan;
+  criteria_nan.set_eps_optimal_relative(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateTerminationCriteria(criteria_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("eps_optimal_relative"));
 }
 
 TEST(ValidateTerminationCriteria, BadEpsPriamlInfeasible) {
-  TerminationCriteria criteria;
-  criteria.set_eps_primal_infeasible(-1.0);
-  const absl::Status status = ValidateTerminationCriteria(criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("eps_primal_infeasible"));
+  TerminationCriteria criteria_negative;
+  criteria_negative.set_eps_primal_infeasible(-1.0);
+  const absl::Status status_negative =
+      ValidateTerminationCriteria(criteria_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(), HasSubstr("eps_primal_infeasible"));
+
+  TerminationCriteria criteria_nan;
+  criteria_nan.set_eps_primal_infeasible(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateTerminationCriteria(criteria_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("eps_primal_infeasible"));
 }
 
 TEST(ValidateTerminationCriteria, BadEpsDualInfeasible) {
-  TerminationCriteria criteria;
-  criteria.set_eps_dual_infeasible(-1.0);
-  const absl::Status status = ValidateTerminationCriteria(criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("eps_dual_infeasible"));
+  TerminationCriteria criteria_negative;
+  criteria_negative.set_eps_dual_infeasible(-1.0);
+  const absl::Status status_negative =
+      ValidateTerminationCriteria(criteria_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(), HasSubstr("eps_dual_infeasible"));
+
+  TerminationCriteria criteria_nan;
+  criteria_nan.set_eps_dual_infeasible(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateTerminationCriteria(criteria_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("eps_dual_infeasible"));
 }
 
 TEST(ValidateTerminationCriteria, BadTimeSecLimit) {
-  TerminationCriteria criteria;
-  criteria.set_time_sec_limit(-1.0);
-  const absl::Status status = ValidateTerminationCriteria(criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("time_sec_limit"));
+  TerminationCriteria criteria_negative;
+  criteria_negative.set_time_sec_limit(-1.0);
+  const absl::Status status_negative =
+      ValidateTerminationCriteria(criteria_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(), HasSubstr("time_sec_limit"));
+
+  TerminationCriteria criteria_nan;
+  criteria_nan.set_time_sec_limit(std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateTerminationCriteria(criteria_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("time_sec_limit"));
 }
 
 TEST(ValidateTerminationCriteria, BadIterationLimit) {
@@ -86,11 +128,19 @@ TEST(ValidateTerminationCriteria, BadIterationLimit) {
 }
 
 TEST(ValidateTerminationCriteria, BadKktMatrixPassLimit) {
-  TerminationCriteria criteria;
-  criteria.set_kkt_matrix_pass_limit(-1.0);
-  const absl::Status status = ValidateTerminationCriteria(criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("kkt_matrix_pass_limit"));
+  TerminationCriteria criteria_negative;
+  criteria_negative.set_kkt_matrix_pass_limit(-1.0);
+  const absl::Status status_negative =
+      ValidateTerminationCriteria(criteria_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(), HasSubstr("kkt_matrix_pass_limit"));
+
+  TerminationCriteria criteria_nan;
+  criteria_nan.set_kkt_matrix_pass_limit(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateTerminationCriteria(criteria_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("kkt_matrix_pass_limit"));
 }
 
 TEST(ValidateAdaptiveLinesearchParams, DefaultIsValid) {
@@ -100,19 +150,33 @@ TEST(ValidateAdaptiveLinesearchParams, DefaultIsValid) {
 }
 
 TEST(ValidateAdaptiveLinesearchParams, BadReductionExponent) {
-  AdaptiveLinesearchParams params;
-  params.set_step_size_reduction_exponent(0.0);
-  const absl::Status status = ValidateAdaptiveLinesearchParams(params);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("step_size_reduction_exponent"));
+  AdaptiveLinesearchParams params_low;
+  params_low.set_step_size_reduction_exponent(0.0);
+  const absl::Status status_low = ValidateAdaptiveLinesearchParams(params_low);
+  EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_low.message(), HasSubstr("step_size_reduction_exponent"));
+
+  AdaptiveLinesearchParams params_nan;
+  params_nan.set_step_size_reduction_exponent(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateAdaptiveLinesearchParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("step_size_reduction_exponent"));
 }
 
 TEST(ValidateAdaptiveLinesearchParams, BadGrowthExponent) {
-  AdaptiveLinesearchParams params;
-  params.set_step_size_growth_exponent(0.0);
-  const absl::Status status = ValidateAdaptiveLinesearchParams(params);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("step_size_growth_exponent"));
+  AdaptiveLinesearchParams params_low;
+  params_low.set_step_size_growth_exponent(0.0);
+  const absl::Status status_low = ValidateAdaptiveLinesearchParams(params_low);
+  EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_low.message(), HasSubstr("step_size_growth_exponent"));
+
+  AdaptiveLinesearchParams params_nan;
+  params_nan.set_step_size_growth_exponent(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateAdaptiveLinesearchParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("step_size_growth_exponent"));
 }
 
 TEST(ValidateMalitskyPockParams, DefaultIsValid) {
@@ -122,39 +186,62 @@ TEST(ValidateMalitskyPockParams, DefaultIsValid) {
 }
 
 TEST(ValidateMalitskyPockParams, BadDownscalingFactor) {
-  MalitskyPockParams params0;
-  params0.set_step_size_downscaling_factor(0.0);
-  const absl::Status status0 = ValidateMalitskyPockParams(params0);
-  EXPECT_EQ(status0.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status0.message(), HasSubstr("step_size_downscaling_factor"));
+  MalitskyPockParams params_low;
+  params_low.set_step_size_downscaling_factor(0.0);
+  const absl::Status status_low = ValidateMalitskyPockParams(params_low);
+  EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_low.message(), HasSubstr("step_size_downscaling_factor"));
 
-  MalitskyPockParams params1;
-  params1.set_step_size_downscaling_factor(1.0);
-  const absl::Status status1 = ValidateMalitskyPockParams(params1);
-  EXPECT_EQ(status1.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status1.message(), HasSubstr("step_size_downscaling_factor"));
+  MalitskyPockParams params_high;
+  params_high.set_step_size_downscaling_factor(1.0);
+  const absl::Status status_high = ValidateMalitskyPockParams(params_high);
+  EXPECT_EQ(status_high.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_high.message(), HasSubstr("step_size_downscaling_factor"));
+
+  MalitskyPockParams params_nan;
+  params_nan.set_step_size_downscaling_factor(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateMalitskyPockParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("step_size_downscaling_factor"));
 }
 
-TEST(ValidateMalitskyPockParams, BadConstractionFactor) {
-  MalitskyPockParams params0;
-  params0.set_linesearch_contraction_factor(0.0);
-  const absl::Status status0 = ValidateMalitskyPockParams(params0);
-  EXPECT_EQ(status0.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status0.message(), HasSubstr("linesearch_contraction_factor"));
+TEST(ValidateMalitskyPockParams, BadContractionFactor) {
+  MalitskyPockParams params_low;
+  params_low.set_linesearch_contraction_factor(0.0);
+  const absl::Status status_low = ValidateMalitskyPockParams(params_low);
+  EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_low.message(), HasSubstr("linesearch_contraction_factor"));
 
-  MalitskyPockParams params1;
-  params1.set_linesearch_contraction_factor(1.0);
-  const absl::Status status1 = ValidateMalitskyPockParams(params1);
-  EXPECT_EQ(status1.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status1.message(), HasSubstr("linesearch_contraction_factor"));
+  MalitskyPockParams params_high;
+  params_high.set_linesearch_contraction_factor(1.0);
+  const absl::Status status_high = ValidateMalitskyPockParams(params_high);
+  EXPECT_EQ(status_high.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_high.message(),
+              HasSubstr("linesearch_contraction_factor"));
+
+  MalitskyPockParams params_nan;
+  params_nan.set_linesearch_contraction_factor(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateMalitskyPockParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("linesearch_contraction_factor"));
 }
 
 TEST(ValidateMalitskyPockParams, BadStepSizeInterpolation) {
-  MalitskyPockParams params;
-  params.set_step_size_interpolation(-1.0);
-  const absl::Status status = ValidateMalitskyPockParams(params);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("step_size_interpolation"));
+  MalitskyPockParams params_negative;
+  params_negative.set_step_size_interpolation(-1.0);
+  const absl::Status status_negative =
+      ValidateMalitskyPockParams(params_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(), HasSubstr("step_size_interpolation"));
+
+  MalitskyPockParams params_nan;
+  params_nan.set_step_size_interpolation(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan = ValidateMalitskyPockParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("step_size_interpolation"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams, DefaultIsValid) {
@@ -165,7 +252,7 @@ TEST(ValidatePrimalDualHybridGradientParams, DefaultIsValid) {
 
 TEST(ValidatePrimalDualHybridGradientParams, BadTerminationCriteria) {
   PrimalDualHybridGradientParams params;
-  params.mutable_termination_criteria()->set_eps_dual_infeasible(-1);
+  params.mutable_termination_criteria()->set_eps_dual_infeasible(-1.0);
   const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("eps_dual_infeasible"));
@@ -228,22 +315,47 @@ TEST(ValidatePrimalDualHybridGradientParams, BadPrimalWeightUpdateSmoothing) {
   EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_low.message(),
               HasSubstr("primal_weight_update_smoothing"));
+
+  PrimalDualHybridGradientParams params_nan;
+  params_nan.set_primal_weight_update_smoothing(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan =
+      ValidatePrimalDualHybridGradientParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(),
+              HasSubstr("primal_weight_update_smoothing"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams, BadInitialPrimalWeight) {
-  PrimalDualHybridGradientParams params;
-  params.set_initial_primal_weight(-1);
-  const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("initial_primal_weight"));
+  PrimalDualHybridGradientParams params_negative;
+  params_negative.set_initial_primal_weight(-1.0);
+  const absl::Status status_negative =
+      ValidatePrimalDualHybridGradientParams(params_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(), HasSubstr("initial_primal_weight"));
+
+  PrimalDualHybridGradientParams params_nan;
+  params_nan.set_initial_primal_weight(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan =
+      ValidatePrimalDualHybridGradientParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("initial_primal_weight"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams, BadLInfRuizIterations) {
   PrimalDualHybridGradientParams params;
   params.set_l_inf_ruiz_iterations(-1);
-  const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("l_inf_ruiz_iterations"));
+  const absl::Status status_low =
+      ValidatePrimalDualHybridGradientParams(params);
+  EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_low.message(), HasSubstr("l_inf_ruiz_iterations"));
+
+  params.set_l_inf_ruiz_iterations(1000);
+  const absl::Status status_high =
+      ValidatePrimalDualHybridGradientParams(params);
+  EXPECT_EQ(status_high.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_high.message(), HasSubstr("l_inf_ruiz_iterations"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams, BadSufficientReductionForRestart) {
@@ -261,6 +373,15 @@ TEST(ValidatePrimalDualHybridGradientParams, BadSufficientReductionForRestart) {
       ValidatePrimalDualHybridGradientParams(params_low);
   EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_low.message(),
+              HasSubstr("sufficient_reduction_for_restart"));
+
+  PrimalDualHybridGradientParams params_nan;
+  params_nan.set_sufficient_reduction_for_restart(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan =
+      ValidatePrimalDualHybridGradientParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(),
               HasSubstr("sufficient_reduction_for_restart"));
 }
 
@@ -281,6 +402,15 @@ TEST(ValidatePrimalDualHybridGradientParams, BadNecessaryReductionForRestart) {
   EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_low.message(),
               HasSubstr("necessary_reduction_for_restart"));
+
+  PrimalDualHybridGradientParams params_nan;
+  params_nan.set_necessary_reduction_for_restart(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan =
+      ValidatePrimalDualHybridGradientParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(),
+              HasSubstr("necessary_reduction_for_restart"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams, BadLinesearchRule) {
@@ -295,7 +425,7 @@ TEST(ValidatePrimalDualHybridGradientParams, BadLinesearchRule) {
 TEST(ValidatePrimalDualHybridGradientParams, BadAdaptiveLinesearchParameters) {
   PrimalDualHybridGradientParams params;
   params.mutable_adaptive_linesearch_parameters()
-      ->set_step_size_reduction_exponent(-1);
+      ->set_step_size_reduction_exponent(-1.0);
   const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("step_size_reduction_exponent"));
@@ -304,37 +434,67 @@ TEST(ValidatePrimalDualHybridGradientParams, BadAdaptiveLinesearchParameters) {
 TEST(ValidatePrimalDualHybridGradientParams, BadMalitskyPockParameters) {
   PrimalDualHybridGradientParams params;
   params.mutable_malitsky_pock_parameters()->set_linesearch_contraction_factor(
-      -1);
+      -1.0);
   const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("linesearch_contraction_factor"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams, BadInitialStepSizeScaling) {
-  PrimalDualHybridGradientParams params;
-  params.set_initial_step_size_scaling(-1.0);
-  const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("initial_step_size_scaling"));
+  PrimalDualHybridGradientParams params_negative;
+  params_negative.set_initial_step_size_scaling(-1.0);
+  const absl::Status status_negative =
+      ValidatePrimalDualHybridGradientParams(params_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(),
+              HasSubstr("initial_step_size_scaling"));
+
+  PrimalDualHybridGradientParams params_nan;
+  params_nan.set_initial_step_size_scaling(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan =
+      ValidatePrimalDualHybridGradientParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("initial_step_size_scaling"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams,
      BadInfiniteConstraintBoundThreshold) {
-  PrimalDualHybridGradientParams params;
-  params.set_infinite_constraint_bound_threshold(-1.0);
-  const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
+  PrimalDualHybridGradientParams params_negative;
+  params_negative.set_infinite_constraint_bound_threshold(-1.0);
+  const absl::Status status_negative =
+      ValidatePrimalDualHybridGradientParams(params_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(),
+              HasSubstr("infinite_constraint_bound_threshold"));
+
+  PrimalDualHybridGradientParams params_nan;
+  params_nan.set_infinite_constraint_bound_threshold(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan =
+      ValidatePrimalDualHybridGradientParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(),
               HasSubstr("infinite_constraint_bound_threshold"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams,
      BadDiagonalTrustRegionSolverTolerance) {
-  PrimalDualHybridGradientParams params;
-  params.set_diagonal_qp_trust_region_solver_tolerance(-1.0);
-  const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
+  PrimalDualHybridGradientParams params_negative;
+  params_negative.set_diagonal_qp_trust_region_solver_tolerance(-1.0);
+  const absl::Status status_negative =
+      ValidatePrimalDualHybridGradientParams(params_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(),
+              HasSubstr("diagonal_qp_trust_region_solver_tolerance"));
+
+  PrimalDualHybridGradientParams params_nan;
+  params_nan.set_diagonal_qp_trust_region_solver_tolerance(
+      std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan =
+      ValidatePrimalDualHybridGradientParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(),
               HasSubstr("diagonal_qp_trust_region_solver_tolerance"));
 }
 

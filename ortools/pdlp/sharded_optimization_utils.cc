@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <numeric>
 #include <optional>
 #include <random>
 #include <utility>
@@ -26,7 +25,6 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
-#include "absl/algorithm/container.h"
 #include "absl/random/distributions.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -44,7 +42,7 @@ using ::Eigen::VectorXi;
 
 ShardedWeightedAverage::ShardedWeightedAverage(const Sharder* sharder)
     : sharder_(sharder) {
-  average_ = VectorXd::Zero(sharder->NumElements());
+  average_ = ZeroVector(*sharder_);
 }
 
 // We considered the five averaging algorithms M_* listed on the first page of
@@ -56,18 +54,19 @@ ShardedWeightedAverage::ShardedWeightedAverage(const Sharder* sharder)
 void ShardedWeightedAverage::Add(const VectorXd& datapoint, double weight) {
   CHECK_GE(weight, 0.0);
   CHECK_EQ(datapoint.size(), average_.size());
-  const double weight_ratio = weight / (sum_weights_ + weight);
-  sharder_->ParallelForEachShard([&](const Sharder::Shard& shard) {
-    shard(average_) += weight_ratio * (shard(datapoint) - shard(average_));
-  });
-  sum_weights_ += weight;
+  // This `if` protects against NaN if sum_weights_ also == 0.0.
+  if (weight > 0.0) {
+    const double weight_ratio = weight / (sum_weights_ + weight);
+    sharder_->ParallelForEachShard([&](const Sharder::Shard& shard) {
+      shard(average_) += weight_ratio * (shard(datapoint) - shard(average_));
+    });
+    sum_weights_ += weight;
+  }
   ++num_terms_;
 }
 
 void ShardedWeightedAverage::Clear() {
-  // TODO(user): There may be a performance gain from using the sharder to
-  // zero-out the vectors.
-  average_.setZero();
+  SetZero(*sharder_, average_);
   sum_weights_ = 0.0;
   num_terms_ = 0;
 }
@@ -94,155 +93,144 @@ double CombineBounds(const double v1, const double v2,
 }
 
 struct VectorInfo {
-  int64_t num_finite = 0;
-  int64_t num_nonzero = 0;
+  int64_t num_finite_nonzero = 0;
+  int64_t num_infinite = 0;
+  int64_t num_zero = 0;
+  // The largest absolute value of the finite non-zero values.
   double largest = 0.0;
+  // The smallest absolute value of the finite non-zero values.
   double smallest = 0.0;
+  // The average absolute value of the finite values.
   double average = 0.0;
+  // The L2 norm of the finite values.
   double l2_norm = 0.0;
 };
 
 struct InfNormInfo {
-  double max_col_norm;
-  double min_col_norm;
-  double max_row_norm;
-  double min_row_norm;
+  VectorInfo row_norms;
+  VectorInfo col_norms;
 };
 
-// The functions below are used to generate default values for
-// QuadraticProgramStats when the underlying program is empty or has no
-// constraints.
+// VectorInfoAccumulator accumulates values for a VectorInfo.
+// NOTE: In VectorInfo, the max and min of an empty set is 0.0 by convention.
+// In VectorInfoAccumulator, it is -kInfinity and kInfinity to simplify adding
+// additional values.
+class VectorInfoAccumulator {
+ public:
+  VectorInfoAccumulator() {}
+  // Move-only even though move and copy are the same cost, to help catch
+  // unintentional moves/copies (which are probably performance bugs).
+  VectorInfoAccumulator(const VectorInfoAccumulator&) = delete;
+  VectorInfoAccumulator& operator=(const VectorInfoAccumulator&) = delete;
+  VectorInfoAccumulator(VectorInfoAccumulator&&) = default;
+  VectorInfoAccumulator& operator=(VectorInfoAccumulator&&) = default;
+  void Add(double value);
+  void Add(const VectorInfoAccumulator& other);
+  explicit operator VectorInfo() const;
 
-double MaxOrZero(const VectorXd& vec) {
-  if (vec.size() == 0) {
-    return 0.0;
-  } else if (std::isinf(vec.maxCoeff())) {
-    return 0.0;
+ private:
+  int64_t num_infinite_ = 0;
+  int64_t num_zero_ = 0;
+  int64_t num_finite_nonzero_ = 0;
+  double max_ = -kInfinity;
+  double min_ = kInfinity;
+  double sum_ = 0.0;
+  double sum_squared_ = 0.0;
+};
+
+void VectorInfoAccumulator::Add(const double value) {
+  if (std::isinf(value)) {
+    ++num_infinite_;
+  } else if (value == 0) {
+    ++num_zero_;
   } else {
-    return vec.maxCoeff();
+    ++num_finite_nonzero_;
+    const double abs_value = std::abs(value);
+    max_ = std::max(max_, abs_value);
+    min_ = std::min(min_, abs_value);
+    sum_ += abs_value;
+    sum_squared_ += abs_value * abs_value;
   }
 }
 
-double MinOrZero(const VectorXd& vec) {
-  if (vec.size() == 0) {
-    return 0.0;
-  } else if (std::isinf(vec.minCoeff())) {
-    return 0.0;
-  } else {
-    return vec.minCoeff();
+void VectorInfoAccumulator::Add(const VectorInfoAccumulator& other) {
+  num_infinite_ += other.num_infinite_;
+  num_zero_ += other.num_zero_;
+  num_finite_nonzero_ += other.num_finite_nonzero_;
+  max_ = std::max(max_, other.max_);
+  min_ = std::min(min_, other.min_);
+  sum_ += other.sum_;
+  sum_squared_ += other.sum_squared_;
+}
+
+VectorInfoAccumulator::operator VectorInfo() const {
+  return VectorInfo{
+      .num_finite_nonzero = num_finite_nonzero_,
+      .num_infinite = num_infinite_,
+      .num_zero = num_zero_,
+      .largest = num_finite_nonzero_ > 0 ? max_ : 0.0,
+      .smallest = num_finite_nonzero_ > 0 ? min_ : 0.0,
+      .average = num_finite_nonzero_ + num_zero_ > 0
+                     ? sum_ / (num_finite_nonzero_ + num_zero_)
+                     : std::numeric_limits<double>::quiet_NaN(),
+      .l2_norm = std::sqrt(sum_squared_),
+  };
+}
+
+VectorInfo CombineAccumulators(
+    const std::vector<VectorInfoAccumulator>& accumulators) {
+  VectorInfoAccumulator result;
+  for (const VectorInfoAccumulator& accumulator : accumulators) {
+    result.Add(accumulator);
   }
+  return VectorInfo(result);
 }
 
 // TODO(b/223148482): Switch `vec` to const Eigen::Ref<const VectorXd> if/when
 // Sharder supports Eigen::Ref, to avoid a copy when called on
 // qp.Qp().objective_matrix->diagonal().
 VectorInfo ComputeVectorInfo(const VectorXd& vec, const Sharder& sharder) {
-  VectorXd local_max(sharder.NumShards());
-  VectorXd local_min(sharder.NumShards());
-  VectorXd local_sum(sharder.NumShards());
-  VectorXd local_sum_squared(sharder.NumShards());
-  std::vector<int64_t> local_num_nonzero(sharder.NumShards());
+  std::vector<VectorInfoAccumulator> local_accumulator(sharder.NumShards());
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
-    // `shard_abs' is a description of a computation so the absolute computation
-    // will be repeated each time shard_abs is used. This is intentional, as
-    // we'd rather risk paying a little extra CPU in this rarely-called function
-    // than risk increasing the peak RAM.
-    const auto shard_abs = shard(vec).cwiseAbs();
-    local_max[shard.Index()] = shard_abs.maxCoeff();
-    local_min[shard.Index()] = shard_abs.minCoeff();
-    local_sum[shard.Index()] = shard_abs.sum();
-    local_sum_squared[shard.Index()] = shard_abs.squaredNorm();
-    for (double element : shard_abs) {
-      if (element != 0) {
-        local_num_nonzero[shard.Index()] += 1;
-      }
+    VectorInfoAccumulator shard_accumulator;
+    for (double element : shard(vec)) {
+      shard_accumulator.Add(element);
     }
+    local_accumulator[shard.Index()] = std::move(shard_accumulator);
   });
-  const int64_t num_elements = vec.size();
-  return VectorInfo{
-      .num_finite = num_elements,
-      .num_nonzero = std::accumulate(local_num_nonzero.begin(),
-                                     local_num_nonzero.end(), int64_t{0}),
-      .largest = MaxOrZero(local_max),
-      .smallest = MinOrZero(local_min),
-      .average = (num_elements > 0) ? local_sum.sum() / num_elements : NAN,
-      .l2_norm = (num_elements > 0) ? std::sqrt(local_sum_squared.sum()) : 0.0};
+  return CombineAccumulators(local_accumulator);
 }
 
 VectorInfo VariableBoundGapInfo(const VectorXd& lower_bounds,
                                 const VectorXd& upper_bounds,
                                 const Sharder& sharder) {
-  VectorXd local_max(sharder.NumShards());
-  VectorXd local_min(sharder.NumShards());
-  VectorXd local_sum(sharder.NumShards());
-  std::vector<int64_t> local_num_finite(sharder.NumShards());
-  std::vector<int64_t> local_num_nonzero(sharder.NumShards());
+  std::vector<VectorInfoAccumulator> local_accumulator(sharder.NumShards());
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
-    const auto gap_shard = shard(upper_bounds) - shard(lower_bounds);
-    double max = -kInfinity;
-    double min = kInfinity;
-    double sum = 0.0;
-    int64_t num_finite = 0;
-    int64_t num_nonzero = 0;
-    for (int64_t i = 0; i < gap_shard.size(); ++i) {
-      if (std::isfinite(gap_shard[i])) {
-        max = std::max(max, gap_shard[i]);
-        min = std::min(min, gap_shard[i]);
-        sum += gap_shard[i];
-        num_finite += 1;
-        if (gap_shard[i] != 0) {
-          num_nonzero += 1;
-        }
-      }
+    VectorInfoAccumulator shard_accumulator;
+    for (double element : shard(upper_bounds) - shard(lower_bounds)) {
+      shard_accumulator.Add(element);
     }
-    local_max[shard.Index()] = max;
-    local_min[shard.Index()] = min;
-    local_sum[shard.Index()] = sum;
-    local_num_finite[shard.Index()] = num_finite;
-    local_num_nonzero[shard.Index()] = num_nonzero;
+    local_accumulator[shard.Index()] = std::move(shard_accumulator);
   });
-  // If an empty model was given, local_sum could be an empty vector,
-  // in which case calling .sum() directly would crash.
-  const int64_t num_finite = std::accumulate(
-      local_num_finite.begin(), local_num_finite.end(), int64_t{0});
-  return VectorInfo{
-      .num_finite = num_finite,
-      .num_nonzero = std::accumulate(local_num_nonzero.begin(),
-                                     local_num_nonzero.end(), int64_t{0}),
-      .largest = MaxOrZero(local_max),
-      .smallest = MinOrZero(local_min),
-      .average = (num_finite > 0) ? local_sum.sum() / num_finite : NAN};
+  return CombineAccumulators(local_accumulator);
 }
 
 VectorInfo MatrixAbsElementInfo(
     const SparseMatrix<double, ColMajor, int64_t>& matrix,
     const Sharder& sharder) {
-  VectorXd local_max(sharder.NumShards());
-  VectorXd local_min(sharder.NumShards());
-  VectorXd local_sum(sharder.NumShards());
+  std::vector<VectorInfoAccumulator> local_accumulator(sharder.NumShards());
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
+    VectorInfoAccumulator shard_accumulator;
     const auto matrix_shard = shard(matrix);
-    double max = -kInfinity;
-    double min = kInfinity;
-    double sum = 0.0;
     for (int64_t col_idx = 0; col_idx < matrix_shard.outerSize(); ++col_idx) {
       for (decltype(matrix_shard)::InnerIterator it(matrix_shard, col_idx); it;
            ++it) {
-        max = std::max(max, std::abs(it.value()));
-        min = std::min(min, std::abs(it.value()));
-        sum += std::abs(it.value());
+        shard_accumulator.Add(it.value());
       }
     }
-    local_max[shard.Index()] = max;
-    local_min[shard.Index()] = min;
-    local_sum[shard.Index()] = sum;
+    local_accumulator[shard.Index()] = std::move(shard_accumulator);
   });
-  const int64_t num_nonzeros = matrix.nonZeros();
-  return VectorInfo{
-      .num_finite = num_nonzeros,
-      .largest = MaxOrZero(local_max),
-      .smallest = MinOrZero(local_min),
-      .average = (num_nonzeros > 0) ? local_sum.sum() / num_nonzeros : NAN};
+  return CombineAccumulators(local_accumulator);
 }
 
 VectorInfo CombinedBoundsInfo(const VectorXd& rhs_upper_bounds,
@@ -250,60 +238,37 @@ VectorInfo CombinedBoundsInfo(const VectorXd& rhs_upper_bounds,
                               const Sharder& sharder,
                               const double infinite_bound_threshold =
                                   std::numeric_limits<double>::infinity()) {
-  VectorXd local_max(sharder.NumShards());
-  VectorXd local_min(sharder.NumShards());
-  VectorXd local_sum(sharder.NumShards());
-  VectorXd local_sum_squared(sharder.NumShards());
+  std::vector<VectorInfoAccumulator> local_accumulator(sharder.NumShards());
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
+    VectorInfoAccumulator shard_accumulator;
     const auto lb_shard = shard(rhs_lower_bounds);
     const auto ub_shard = shard(rhs_upper_bounds);
-    double max = -kInfinity;
-    double min = kInfinity;
-    double sum = 0.0;
-    double sum_squared = 0.0;
     for (int64_t i = 0; i < lb_shard.size(); ++i) {
-      const double combined =
-          CombineBounds(ub_shard[i], lb_shard[i], infinite_bound_threshold);
-      max = std::max(max, combined);
-      min = std::min(min, combined);
-      sum += combined;
-      sum_squared += combined * combined;
+      shard_accumulator.Add(
+          CombineBounds(ub_shard[i], lb_shard[i], infinite_bound_threshold));
     }
-    local_max[shard.Index()] = max;
-    local_min[shard.Index()] = min;
-    local_sum[shard.Index()] = sum;
-    local_sum_squared[shard.Index()] = sum_squared;
+    local_accumulator[shard.Index()] = std::move(shard_accumulator);
   });
-  const int num_constraints = rhs_lower_bounds.size();
-  return VectorInfo{
-      .num_finite = num_constraints,
-      .largest = MaxOrZero(local_max),
-      .smallest = MinOrZero(local_min),
-      .average =
-          (num_constraints > 0) ? local_sum.sum() / num_constraints : NAN,
-      .l2_norm =
-          (num_constraints > 0) ? std::sqrt(local_sum_squared.sum()) : 0.0};
+  return CombineAccumulators(local_accumulator);
 }
 
 InfNormInfo ConstraintMatrixRowColInfo(
     const SparseMatrix<double, ColMajor, int64_t>& constraint_matrix,
     const SparseMatrix<double, ColMajor, int64_t>& constraint_matrix_transpose,
-    const Sharder& matrix_sharder, const Sharder& matrix_transpose_sharder) {
+    const Sharder& matrix_sharder, const Sharder& matrix_transpose_sharder,
+    const Sharder& primal_sharder, const Sharder& dual_sharder) {
+  VectorXd row_norms = ScaledColLInfNorm(
+      constraint_matrix_transpose,
+      /*col_scaling_vec=*/OnesVector(primal_sharder),
+      /*row_scaling_vec=*/OnesVector(dual_sharder), matrix_transpose_sharder);
   VectorXd col_norms = ScaledColLInfNorm(
       constraint_matrix,
-      /*row_scaling_vec=*/VectorXd::Ones(constraint_matrix.rows()),
-      /*col_scaling_vec=*/VectorXd::Ones(constraint_matrix.cols()),
-      matrix_sharder);
-  VectorXd row_norms =
-      ScaledColLInfNorm(constraint_matrix_transpose,
-                        VectorXd::Ones(constraint_matrix_transpose.rows()),
-                        VectorXd::Ones(constraint_matrix_transpose.cols()),
-                        matrix_transpose_sharder);
-  return InfNormInfo{.max_col_norm = MaxOrZero(col_norms),
-                     .min_col_norm = MinOrZero(col_norms),
-                     .max_row_norm = MaxOrZero(row_norms),
-                     .min_row_norm = MinOrZero(row_norms)};
+      /*row_scaling_vec=*/OnesVector(dual_sharder),
+      /*col_scaling_vec=*/OnesVector(primal_sharder), matrix_sharder);
+  return InfNormInfo{.row_norms = ComputeVectorInfo(row_norms, dual_sharder),
+                     .col_norms = ComputeVectorInfo(col_norms, primal_sharder)};
 }
+
 }  // namespace
 
 QuadraticProgramStats ComputeStats(
@@ -313,7 +278,8 @@ QuadraticProgramStats ComputeStats(
   // (like .coeffs().maxCoeff() or .minCoeff()) will fail.
   InfNormInfo cons_matrix_norm_info = ConstraintMatrixRowColInfo(
       qp.Qp().constraint_matrix, qp.TransposedConstraintMatrix(),
-      qp.ConstraintMatrixSharder(), qp.TransposedConstraintMatrixSharder());
+      qp.ConstraintMatrixSharder(), qp.TransposedConstraintMatrixSharder(),
+      qp.PrimalSharder(), qp.DualSharder());
   VectorInfo cons_matrix_info = MatrixAbsElementInfo(
       qp.Qp().constraint_matrix, qp.ConstraintMatrixSharder());
   VectorInfo combined_bounds_info = CombinedBoundsInfo(
@@ -328,21 +294,25 @@ QuadraticProgramStats ComputeStats(
   program_stats.set_num_variables(qp.PrimalSize());
   program_stats.set_num_constraints(qp.DualSize());
   program_stats.set_constraint_matrix_col_min_l_inf_norm(
-      cons_matrix_norm_info.min_col_norm);
+      cons_matrix_norm_info.col_norms.smallest);
   program_stats.set_constraint_matrix_row_min_l_inf_norm(
-      cons_matrix_norm_info.min_row_norm);
-  program_stats.set_constraint_matrix_num_nonzeros(cons_matrix_info.num_finite);
+      cons_matrix_norm_info.row_norms.smallest);
+  program_stats.set_constraint_matrix_num_nonzeros(
+      cons_matrix_info.num_finite_nonzero);
   program_stats.set_constraint_matrix_abs_max(cons_matrix_info.largest);
   program_stats.set_constraint_matrix_abs_min(cons_matrix_info.smallest);
   program_stats.set_constraint_matrix_abs_avg(cons_matrix_info.average);
+  program_stats.set_constraint_matrix_l2_norm(cons_matrix_info.l2_norm);
   program_stats.set_combined_bounds_max(combined_bounds_info.largest);
   program_stats.set_combined_bounds_min(combined_bounds_info.smallest);
   program_stats.set_combined_bounds_avg(combined_bounds_info.average);
   program_stats.set_combined_bounds_l2_norm(combined_bounds_info.l2_norm);
-  program_stats.set_variable_bound_gaps_num_finite(gaps_info.num_finite);
+  program_stats.set_variable_bound_gaps_num_finite(
+      gaps_info.num_finite_nonzero + gaps_info.num_zero);
   program_stats.set_variable_bound_gaps_max(gaps_info.largest);
   program_stats.set_variable_bound_gaps_min(gaps_info.smallest);
   program_stats.set_variable_bound_gaps_avg(gaps_info.average);
+  program_stats.set_variable_bound_gaps_l2_norm(gaps_info.l2_norm);
   program_stats.set_objective_vector_abs_max(obj_vec_info.largest);
   program_stats.set_objective_vector_abs_min(obj_vec_info.smallest);
   program_stats.set_objective_vector_abs_avg(obj_vec_info.average);
@@ -351,15 +321,18 @@ QuadraticProgramStats ComputeStats(
     program_stats.set_objective_matrix_num_nonzeros(0);
     program_stats.set_objective_matrix_abs_max(0);
     program_stats.set_objective_matrix_abs_min(0);
-    program_stats.set_objective_matrix_abs_avg(NAN);
+    program_stats.set_objective_matrix_abs_avg(
+        std::numeric_limits<double>::quiet_NaN());
+    program_stats.set_objective_matrix_l2_norm(0);
   } else {
     VectorInfo obj_matrix_info = ComputeVectorInfo(
         qp.Qp().objective_matrix->diagonal(), qp.PrimalSharder());
     program_stats.set_objective_matrix_num_nonzeros(
-        obj_matrix_info.num_nonzero);
+        obj_matrix_info.num_finite_nonzero);
     program_stats.set_objective_matrix_abs_max(obj_matrix_info.largest);
     program_stats.set_objective_matrix_abs_min(obj_matrix_info.smallest);
     program_stats.set_objective_matrix_abs_avg(obj_matrix_info.average);
+    program_stats.set_objective_matrix_l2_norm(obj_matrix_info.l2_norm);
   }
   return program_stats;
 }
@@ -445,8 +418,8 @@ void L2NormRescaling(const ShardedQuadraticProgram& sharded_qp,
 ScalingVectors ApplyRescaling(const RescalingOptions& rescaling_options,
                               ShardedQuadraticProgram& sharded_qp) {
   ScalingVectors scaling{
-      .row_scaling_vec = VectorXd::Ones(sharded_qp.DualSize()),
-      .col_scaling_vec = VectorXd::Ones(sharded_qp.PrimalSize())};
+      .row_scaling_vec = OnesVector(sharded_qp.DualSharder()),
+      .col_scaling_vec = OnesVector(sharded_qp.PrimalSharder())};
   bool do_rescale = false;
   if (rescaling_options.l_inf_ruiz_iterations > 0) {
     do_rescale = true;

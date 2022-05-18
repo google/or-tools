@@ -569,6 +569,25 @@ TEST_P(PrimalDualHybridGradientLPTest, LpWithoutVariables) {
   EXPECT_EQ(output.solve_log.preprocessed_problem_stats().num_constraints(), 3);
 }
 
+TEST_P(PrimalDualHybridGradientLPTest, LpWithOnlyFixedVariable) {
+  const int iteration_upperbound = 2;
+  PrimalDualHybridGradientParams params =
+      CreateSolverParamsForFixture(iteration_upperbound,
+                                   /*eps_optimal_absolute=*/0.0);
+
+  QuadraticProgram qp(1, 0);
+  qp.variable_lower_bounds << 1;
+  qp.variable_upper_bounds << 1;
+  qp.objective_vector << 1;
+
+  SolverResult output = PrimalDualHybridGradient(qp, params);
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+  EXPECT_THAT(output.primal_solution,
+              EigenArrayNear(Eigen::ArrayXd::Constant(1, 1.0), 1.0e-6));
+  EXPECT_THAT(output.dual_solution, testing::SizeIs(0));
+  EXPECT_LE(output.solve_log.iteration_count(), iteration_upperbound);
+}
+
 TEST_P(PrimalDualHybridGradientLPTest, InfeasibleLpWithoutVariables) {
   const int iteration_upperbound = 2;
   PrimalDualHybridGradientParams params =
@@ -828,6 +847,24 @@ TEST(PrimalDualHybridGradientTest, StepSizeScaling) {
             initial_step_size * kStepSizeScaling);
 }
 
+// This verifies that the kkt_matrix_pass_limit is checked every iteration.
+TEST(PrimalDualHybridGradientTest, KktMatrixPassTermination) {
+  const int kkt_matrix_pass_limit = 13;
+  PrimalDualHybridGradientParams params = ParamsWithNoLimits();
+  params.mutable_termination_criteria()->set_kkt_matrix_pass_limit(
+      kkt_matrix_pass_limit);
+  params.set_linesearch_rule(
+      PrimalDualHybridGradientParams::CONSTANT_STEP_SIZE_RULE);
+
+  SolverResult output = PrimalDualHybridGradient(TestLp(), params);
+
+  ASSERT_FALSE(output.solve_log.iteration_stats().empty());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT);
+  EXPECT_EQ(output.solve_log.solution_stats().cumulative_kkt_matrix_passes(),
+            kkt_matrix_pass_limit);
+}
+
 TEST(PrimalDualHybridGradientTest,
      StatsAtEachIterationWithRecordIterationStatsOn) {
   // An arbitrarily chosen major iteration frequency.
@@ -992,6 +1029,126 @@ TEST(PrimalDualHybridGradientTest, DetectsInvalidParameters) {
             TERMINATION_REASON_INVALID_PARAMETER);
 }
 
+TEST(PrimalDualHybridGradientTest, DetectsNanInConstraintMatrix) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_matrix.coeffRef(0, 0) =
+      std::numeric_limits<double>::quiet_NaN();
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsExcessiveConstraintMatrix) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_matrix.coeffRef(0, 0) = 1e60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest,
+     DetectsExcessivelySmallColNormConstraintMatrix) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_matrix.coeffRef(0, 1) = 1e-60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest,
+     DetectsExcessivelySmallRowNormConstraintMatrix) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_matrix.coeffRef(2, 0) = 1e-60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsNanInConstraintBounds) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_upper_bounds[1] = std::numeric_limits<double>::quiet_NaN();
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsExcessiveConstraintUpperBound) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_upper_bounds[1] = 1e60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsExcessiveConstraintLowerBound) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_lower_bounds[2] = -1e60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsNanInVariableBound) {
+  QuadraticProgram qp = TestLp();
+  qp.variable_lower_bounds[3] = std::numeric_limits<double>::quiet_NaN();
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsExcessiveVariableBoundGap) {
+  QuadraticProgram qp = TestLp();
+  qp.variable_lower_bounds[3] = -1e60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsNanInObjectiveVector) {
+  QuadraticProgram qp = TestLp();
+  qp.objective_vector[3] = std::numeric_limits<double>::quiet_NaN();
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsExcessiveObjectiveVector) {
+  QuadraticProgram qp = TestLp();
+  qp.objective_vector[3] = -1e60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsNanInObjectiveMatrix) {
+  QuadraticProgram qp = TestDiagonalQp1();
+  qp.objective_matrix->diagonal()[0] = std::numeric_limits<double>::quiet_NaN();
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsExcessiveObjectiveMatrix) {
+  QuadraticProgram qp = TestDiagonalQp1();
+  qp.objective_matrix->diagonal()[0] = 1e60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
 TEST(PrimalDualHybridGradientTest, ChecksTerminationAtCorrectFrequency) {
   // termination_check_frequency is chosen so that it does not divide the
   // major_iteration_frequency.
@@ -1147,6 +1304,30 @@ TEST(PrimalDualHybridGradientTest, IgnoresFalseInterrupt) {
             TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT);
 }
 
+TEST(PrimalDualHybridGradientTest, HugeNumThreads) {
+  const int iteration_upperbound = 10;
+  PrimalDualHybridGradientParams params = ParamsWithNoLimits();
+  params.mutable_termination_criteria()->set_iteration_limit(
+      iteration_upperbound);
+  params.set_num_threads(1'000'000'000);
+
+  SolverResult output = PrimalDualHybridGradient(TestLp(), params);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_ITERATION_LIMIT);
+}
+
+TEST(PrimalDualHybridGradientTest, HugeNumShards) {
+  const int iteration_upperbound = 10;
+  PrimalDualHybridGradientParams params = ParamsWithNoLimits();
+  params.mutable_termination_criteria()->set_iteration_limit(
+      iteration_upperbound);
+  params.set_num_shards(1'000'000'000);
+
+  SolverResult output = PrimalDualHybridGradient(TestLp(), params);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_ITERATION_LIMIT);
+}
+
 // Verifies that the primal and dual solution satisfy the bounds constraints.
 // This function uses ASSERTS rather than EXPECTs because it's used with large
 // QPs that would spam the logs otherwise.
@@ -1207,6 +1388,27 @@ TEST(PresolveTest, PresolveSolvesToOptimality) {
   EXPECT_DOUBLE_EQ(convergence_info->l_inf_dual_variable(), 2.375);
   EXPECT_THAT(convergence_info->l2_dual_variable(),
               DoubleNear(3.17569983538, 1.0e-10));
+}
+
+TEST(PresolveTest, SolvesWithGlopScalingEnabled) {
+  PrimalDualHybridGradientParams params;
+  params.mutable_presolve_options()->set_use_glop(true);
+  params.mutable_presolve_options()->mutable_glop_parameters()->set_use_scaling(
+      true);
+  params.mutable_presolve_options()
+      ->mutable_glop_parameters()
+      ->set_use_preprocessing(false);
+  QuadraticProgram test_lp = TestLp();
+  // Change the objective scale, so that glop's presolve scaling will react.
+  test_lp.objective_scaling_factor = 0.1;
+  SolverResult output = PrimalDualHybridGradient(test_lp, params);
+  VerifyTerminationReasonAndIterationCount(params, output,
+                                           /*use_iteration_limit=*/false);
+  VerifyObjectiveValues(output, -3.4, 1.0e-6);
+  EXPECT_THAT(output.primal_solution,
+              EigenArrayNear<double>({-1, 8, 1, 2.5}, 1.0e-4));
+  EXPECT_THAT(output.dual_solution,
+              EigenArrayNear<double>({-2, 0, 2.375, 2.0 / 3}, 1.0e-4));
 }
 
 TEST(PresolveTest, PresolveInfeasible) {

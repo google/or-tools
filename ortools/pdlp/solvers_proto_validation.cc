@@ -13,6 +13,8 @@
 
 #include "ortools/pdlp/solvers_proto_validation.h"
 
+#include <cmath>
+
 #include "absl/status/status.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/pdlp/solvers.pb.h"
@@ -27,23 +29,41 @@ absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
       criteria.optimality_norm() != OPTIMALITY_NORM_L2) {
     return InvalidArgumentError("invalid value for optimality_norm");
   }
+  if (std::isnan(criteria.eps_optimal_absolute())) {
+    return InvalidArgumentError("eps_optimal_absolute is NAN");
+  }
   if (criteria.eps_optimal_absolute() < 0) {
     return InvalidArgumentError("eps_optimal_absolute must be non-negative");
+  }
+  if (std::isnan(criteria.eps_optimal_relative())) {
+    return InvalidArgumentError("eps_optimal_relative is NAN");
   }
   if (criteria.eps_optimal_relative() < 0) {
     return InvalidArgumentError("eps_optimal_relative must be non-negative");
   }
+  if (std::isnan(criteria.eps_primal_infeasible())) {
+    return InvalidArgumentError("eps_primal_infeasible is NAN");
+  }
   if (criteria.eps_primal_infeasible() < 0) {
     return InvalidArgumentError("eps_primal_infeasible must be non-negative");
   }
+  if (std::isnan(criteria.eps_dual_infeasible())) {
+    return InvalidArgumentError("eps_dual_infeasible is NAN");
+  }
   if (criteria.eps_dual_infeasible() < 0) {
     return InvalidArgumentError("eps_dual_infeasible must be non-negative");
+  }
+  if (std::isnan(criteria.time_sec_limit())) {
+    return InvalidArgumentError("time_sec_limit is NAN");
   }
   if (criteria.time_sec_limit() < 0) {
     return InvalidArgumentError("time_sec_limit must be non-negative");
   }
   if (criteria.iteration_limit() < 0) {
     return InvalidArgumentError("iteration_limit must be non-negative");
+  }
+  if (std::isnan(criteria.kkt_matrix_pass_limit())) {
+    return InvalidArgumentError("kkt_matrix_pass_limit is NAN");
   }
   if (criteria.kkt_matrix_pass_limit() < 0) {
     return InvalidArgumentError("kkt_matrix_pass_limit must be non-negative");
@@ -53,9 +73,15 @@ absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
 
 absl::Status ValidateAdaptiveLinesearchParams(
     const AdaptiveLinesearchParams& params) {
+  if (std::isnan(params.step_size_reduction_exponent())) {
+    return InvalidArgumentError("step_size_reduction_exponent is NAN");
+  }
   if (params.step_size_reduction_exponent() <= 0) {
     return InvalidArgumentError(
         "step_size_reduction_exponent must be positive");
+  }
+  if (std::isnan(params.step_size_growth_exponent())) {
+    return InvalidArgumentError("step_size_growth_exponent is NAN");
   }
   if (params.step_size_growth_exponent() <= 0) {
     return InvalidArgumentError("step_size_growth_exponent must be positive");
@@ -64,15 +90,24 @@ absl::Status ValidateAdaptiveLinesearchParams(
 }
 
 absl::Status ValidateMalitskyPockParams(const MalitskyPockParams& params) {
+  if (std::isnan(params.step_size_downscaling_factor())) {
+    return InvalidArgumentError("step_size_downscaling_factor is NAN");
+  }
   if (params.step_size_downscaling_factor() <= 0 ||
       params.step_size_downscaling_factor() >= 1) {
     return InvalidArgumentError(
         "step_size_downscaling_factor must be between 0 and 1 exclusive");
   }
+  if (std::isnan(params.linesearch_contraction_factor())) {
+    return InvalidArgumentError("linesearch_contraction_factor is NAN");
+  }
   if (params.linesearch_contraction_factor() <= 0 ||
       params.linesearch_contraction_factor() >= 1) {
     return InvalidArgumentError(
         "linesearch_contraction_factor must be between 0 and 1 exclusive");
+  }
+  if (std::isnan(params.step_size_interpolation())) {
+    return InvalidArgumentError("step_size_interpolation is NAN");
   }
   if (params.step_size_interpolation() < 0) {
     return InvalidArgumentError("step_size_interpolation must be non-negative");
@@ -106,10 +141,16 @@ absl::Status ValidatePrimalDualHybridGradientParams(
           PrimalDualHybridGradientParams::ADAPTIVE_DISTANCE_BASED) {
     return InvalidArgumentError("invalid restart_strategy");
   }
+  if (std::isnan(params.primal_weight_update_smoothing())) {
+    return InvalidArgumentError("primal_weight_update_smoothing is NAN");
+  }
   if (params.primal_weight_update_smoothing() < 0 ||
       params.primal_weight_update_smoothing() > 1) {
     return InvalidArgumentError(
         "primal_weight_update_smoothing must be between 0 and 1 inclusive");
+  }
+  if (std::isnan(params.initial_primal_weight())) {
+    return InvalidArgumentError("initial_primal_weight is NAN");
   }
   if (params.has_initial_primal_weight() &&
       params.initial_primal_weight() <= 0) {
@@ -119,10 +160,19 @@ absl::Status ValidatePrimalDualHybridGradientParams(
   if (params.l_inf_ruiz_iterations() < 0) {
     return InvalidArgumentError("l_inf_ruiz_iterations must be non-negative");
   }
+  if (params.l_inf_ruiz_iterations() > 100) {
+    return InvalidArgumentError("l_inf_ruiz_iterations must be at most 100");
+  }
+  if (std::isnan(params.sufficient_reduction_for_restart())) {
+    return InvalidArgumentError("sufficient_reduction_for_restart is NAN");
+  }
   if (params.sufficient_reduction_for_restart() <= 0 ||
       params.sufficient_reduction_for_restart() >= 1) {
     return InvalidArgumentError(
         "sufficient_reduction_for_restart must be between 0 and 1 exclusive");
+  }
+  if (std::isnan(params.necessary_reduction_for_restart())) {
+    return InvalidArgumentError("necessary_reduction_for_restart is NAN");
   }
   if (params.necessary_reduction_for_restart() <
           params.sufficient_reduction_for_restart() ||
@@ -144,13 +194,23 @@ absl::Status ValidatePrimalDualHybridGradientParams(
       << "adaptive_linesearch_parameters invalid";
   RETURN_IF_ERROR(ValidateMalitskyPockParams(params.malitsky_pock_parameters()))
       << "malitsky_pock_parameters invalid";
+  if (std::isnan(params.initial_step_size_scaling())) {
+    return InvalidArgumentError("initial_step_size_scaling is NAN");
+  }
   if (params.initial_step_size_scaling() <= 0.0) {
     return InvalidArgumentError("initial_step_size_scaling must be positive");
   }
 
+  if (std::isnan(params.infinite_constraint_bound_threshold())) {
+    return InvalidArgumentError("infinite_constraint_bound_threshold is NAN");
+  }
   if (params.infinite_constraint_bound_threshold() < 0.0) {
     return InvalidArgumentError(
         "infinite_constraint_bound_threshold must be non-negative");
+  }
+  if (std::isnan(params.diagonal_qp_trust_region_solver_tolerance())) {
+    return InvalidArgumentError(
+        "diagonal_qp_trust_region_solver_tolerance is NAN");
   }
   if (params.diagonal_qp_trust_region_solver_tolerance() < 0.0) {
     return InvalidArgumentError(

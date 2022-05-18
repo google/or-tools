@@ -87,9 +87,35 @@ bool DualInfeasibilityCriteriaMet(double eps_dual_infeasible,
 
 }  // namespace
 
+std::optional<TerminationReasonAndPointType> CheckSimpleTerminationCriteria(
+    const TerminationCriteria& criteria, const IterationStats& stats,
+    const std::atomic<bool>* interrupt_solve) {
+  if (stats.iteration_number() >= criteria.iteration_limit()) {
+    return TerminationReasonAndPointType{
+        .reason = TERMINATION_REASON_ITERATION_LIMIT, .type = POINT_TYPE_NONE};
+  }
+  if (stats.cumulative_kkt_matrix_passes() >=
+      criteria.kkt_matrix_pass_limit()) {
+    return TerminationReasonAndPointType{
+        .reason = TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT,
+        .type = POINT_TYPE_NONE};
+  }
+  if (stats.cumulative_time_sec() >= criteria.time_sec_limit()) {
+    return TerminationReasonAndPointType{
+        .reason = TERMINATION_REASON_TIME_LIMIT, .type = POINT_TYPE_NONE};
+  }
+  if (interrupt_solve != nullptr && interrupt_solve->load() == true) {
+    return TerminationReasonAndPointType{
+        .reason = TERMINATION_REASON_INTERRUPTED_BY_USER,
+        .type = POINT_TYPE_NONE};
+  }
+  return std::nullopt;
+}
+
 std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
     const QuadraticProgramBoundNorms& bound_norms,
+    const std::atomic<bool>* interrupt_solve,
     const bool force_numerical_termination) {
   for (const auto& convergence_stats : stats.convergence_information()) {
     if (OptimalityCriteriaMet(
@@ -114,19 +140,10 @@ std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
           .type = infeasibility_stats.candidate_type()};
     }
   }
-  if (stats.iteration_number() >= criteria.iteration_limit()) {
-    return TerminationReasonAndPointType{
-        .reason = TERMINATION_REASON_ITERATION_LIMIT, .type = POINT_TYPE_NONE};
-  }
-  if (stats.cumulative_kkt_matrix_passes() >=
-      criteria.kkt_matrix_pass_limit()) {
-    return TerminationReasonAndPointType{
-        .reason = TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT,
-        .type = POINT_TYPE_NONE};
-  }
-  if (stats.cumulative_time_sec() >= criteria.time_sec_limit()) {
-    return TerminationReasonAndPointType{
-        .reason = TERMINATION_REASON_TIME_LIMIT, .type = POINT_TYPE_NONE};
+  if (const auto termination =
+          CheckSimpleTerminationCriteria(criteria, stats, interrupt_solve);
+      termination.has_value()) {
+    return termination;
   }
   if (force_numerical_termination) {
     return TerminationReasonAndPointType{

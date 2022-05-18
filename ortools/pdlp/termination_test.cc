@@ -36,6 +36,18 @@ QuadraticProgramBoundNorms TestLpBoundNorms() {
           .l_inf_norm_constraint_bounds = 12.0};
 }
 
+class SimpleTerminationTest : public testing::Test {
+ protected:
+  void SetUp() override {
+    test_criteria_ = ParseTextOrDie<TerminationCriteria>(R"pb(
+      time_sec_limit: 1.0
+      kkt_matrix_pass_limit: 2000
+      iteration_limit: 10)pb");
+  }
+
+  TerminationCriteria test_criteria_;
+};
+
 class TerminationTest : public testing::TestWithParam<OptimalityNorm> {
  protected:
   void SetUp() override {
@@ -64,39 +76,76 @@ TEST_P(TerminationTest, NoTerminationWithLargeGap) {
             absl::nullopt);
 }
 
+TEST_F(SimpleTerminationTest, NoTerminationWithEmptyIterationStats) {
+  IterationStats stats;
+  EXPECT_EQ(CheckSimpleTerminationCriteria(test_criteria_, stats),
+            absl::nullopt);
+}
+
 TEST_P(TerminationTest, NoTerminationWithEmptyIterationStats) {
   IterationStats stats;
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
             absl::nullopt);
 }
 
+TEST_F(SimpleTerminationTest, TerminationWithInterruptSolve) {
+  IterationStats stats;
+  std::atomic<bool> interrupt_solve = true;
+  std::optional<TerminationReasonAndPointType> maybe_result =
+      CheckSimpleTerminationCriteria(test_criteria_, stats, &interrupt_solve);
+  EXPECT_THAT(maybe_result,
+              Optional(FieldsAre(TERMINATION_REASON_INTERRUPTED_BY_USER,
+                                 POINT_TYPE_NONE)));
+}
+
 TEST_P(TerminationTest, TerminationWithNumericalError) {
   IterationStats stats;
   std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
+                               /*interrupt_solve=*/nullptr,
                                /*force_numerical_termination=*/true);
   EXPECT_THAT(
       maybe_result,
       Optional(FieldsAre(TERMINATION_REASON_NUMERICAL_ERROR, POINT_TYPE_NONE)));
 }
 
-TEST_P(TerminationTest, TerminationWithTimeLimit) {
+TEST_F(SimpleTerminationTest, TerminationWithTimeLimit) {
   const auto stats =
       ParseTextOrDie<IterationStats>(R"pb(cumulative_time_sec: 100.0)pb");
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
+      CheckSimpleTerminationCriteria(test_criteria_, stats);
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_TIME_LIMIT,
                                                POINT_TYPE_NONE)));
 }
 
-TEST_P(TerminationTest, TerminationWithKktMatrixPassLimit) {
+TEST_F(SimpleTerminationTest, TerminationWithKktMatrixPassLimit) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     cumulative_kkt_matrix_passes: 2500)pb");
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
+      CheckSimpleTerminationCriteria(test_criteria_, stats);
   EXPECT_THAT(maybe_result,
               Optional(FieldsAre(TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT,
                                  POINT_TYPE_NONE)));
+}
+
+TEST_F(SimpleTerminationTest, TerminationWithIterationLimit) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    iteration_number: 20)pb");
+  std::optional<TerminationReasonAndPointType> maybe_result =
+      CheckSimpleTerminationCriteria(test_criteria_, stats);
+  EXPECT_THAT(
+      maybe_result,
+      Optional(FieldsAre(TERMINATION_REASON_ITERATION_LIMIT, POINT_TYPE_NONE)));
+}
+
+TEST_P(TerminationTest, TerminationWithIterationLimit) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    iteration_number: 20)pb");
+  std::optional<TerminationReasonAndPointType> maybe_result =
+      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
+  EXPECT_THAT(
+      maybe_result,
+      Optional(FieldsAre(TERMINATION_REASON_ITERATION_LIMIT, POINT_TYPE_NONE)));
 }
 
 TEST_P(TerminationTest, PrimalInfeasibleFromIterateDifference) {
@@ -226,7 +275,28 @@ TEST_P(TerminationTest, OptimalEvenWithNumericalError) {
   // force_numerical_termination == true.
   std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
+                               /*interrupt_solve=*/nullptr,
                                /*force_numerical_termination=*/true);
+  EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
+                                               POINT_TYPE_CURRENT_ITERATE)));
+}
+
+TEST_P(TerminationTest, OptimalEvenWithInterrupt) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.0
+      dual_objective: 1.0
+      l_inf_primal_residual: 0.0
+      l_inf_dual_residual: 0.0
+      l2_primal_residual: 0.0
+      l2_dual_residual: 0.0
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+  std::atomic<bool> interrupt_solve = true;
+  // Tests that OPTIMAL overrides interrupt_solve.
+  std::optional<TerminationReasonAndPointType> maybe_result =
+      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
+                               &interrupt_solve);
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
 }

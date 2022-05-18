@@ -35,6 +35,17 @@ struct QuadraticProgramBoundNorms {
   double l_inf_norm_constraint_bounds;
 };
 
+// Checks if any of the simple termination criteria are satisfied by `stats`,
+// and returns a termination reason if so, and nullopt otherwise. The "simple"
+// termination criteria are `time_sec_limit`, `iteration_limit`,
+// `kkt_matrix_pass_limit`, and `interrupt_solve`. The corresponding fields of
+// `stats` (`cumulative_time_sec`, `iteration_number`,
+// `cumulative_kkt_matrix_passes`) are the only ones accessed. If returning a
+// termination reason, the PointType will be set to POINT_TYPE_NONE.
+std::optional<TerminationReasonAndPointType> CheckSimpleTerminationCriteria(
+    const TerminationCriteria& criteria, const IterationStats& stats,
+    const std::atomic<bool>* interrupt_solve = nullptr);
+
 // Checks if any termination criteria are satisfied by the solution state
 // described by the IterationStats instance stats (see definitions of
 // termination criteria in solvers.proto). bound_norms provides the instance-
@@ -52,6 +63,7 @@ struct QuadraticProgramBoundNorms {
 std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
     const QuadraticProgramBoundNorms& bound_norms,
+    const std::atomic<bool>* interrupt_solve = nullptr,
     bool force_numerical_termination = false);
 
 // Extracts the norms needed for the termination criteria from the full problem
