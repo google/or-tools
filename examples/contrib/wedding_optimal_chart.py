@@ -36,7 +36,7 @@ At the very least, it can provide a starting point and hopefully
 minimize stress and arguments.
 
 Adapted from
-https://github.com/google/or-tools/blob/master/examples/csharp/wedding_optimal_chart.cs
+https://github.com/google/or-tools/blob/main/examples/csharp/wedding_optimal_chart.cs
 """
 
 
