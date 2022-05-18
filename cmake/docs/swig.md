@@ -11,8 +11,10 @@ will also call swig and generate `_module.so`.
 
 UseSWIG is impacted by two policies:
 
-* [CMP0078](https://cmake.org/cmake/help/latest/policy/CMP0078.html):UseSWIG generates standard target names (CMake 3.13+).
-* [CMP0086](https://cmake.org/cmake/help/latest/policy/CMP0086.html): UseSWIG honors `SWIG_MODULE_NAME` via `-module` flag (CMake 3.14+).
+*   [CMP0078](https://cmake.org/cmake/help/latest/policy/CMP0078.html):UseSWIG
+    generates standard target names (CMake 3.13+).
+*   [CMP0086](https://cmake.org/cmake/help/latest/policy/CMP0086.html): UseSWIG
+    honors `SWIG_MODULE_NAME` via `-module` flag (CMake 3.14+).
 
 That's why I recommnend to use CMake >= 3.14 with both policies set to new for
 SWIG development.
@@ -103,7 +105,8 @@ https://web.archive.org/web/20190803041507/http://nadeausoftware.com/articles/20
 
 ### Windows
 
-Contrary to macOS and Linux, Windows 64bits (x86_64) try hard to keep compatibility, so we have:
+Contrary to macOS and Linux, Windows 64bits (x86_64) try hard to keep
+compatibility, so we have:
 
 ```
 sizeof(long int): 4

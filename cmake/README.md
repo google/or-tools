@@ -32,7 +32,8 @@
 [windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml/badge.svg?branch=main
 [windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml
 
-Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++, Python, Java, .Net]: [![Status][docker_svg]][docker_link]
+Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++,
+Python, Java, .Net]: [![Status][docker_svg]][docker_link]
 
 [docker_svg]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml/badge.svg?branch=main
 [docker_link]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml
