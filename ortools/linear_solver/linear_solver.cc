@@ -19,6 +19,7 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstddef>

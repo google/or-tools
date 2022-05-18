@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
+#include <string>
 
 #include "absl/strings/str_cat.h"
 #include "ortools/base/integral_types.h"

@@ -15,6 +15,7 @@
 
 #if defined(USE_GLPK)
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>

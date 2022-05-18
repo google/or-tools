@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_MODEL_VALIDATOR_H_
 #define OR_TOOLS_LINEAR_SOLVER_MODEL_VALIDATOR_H_
 
+#include <optional>
 #include <string>
 
 #include "absl/types/optional.h"

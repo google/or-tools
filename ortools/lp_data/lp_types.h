@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <string>
 
 #include "ortools/base/basictypes.h"
 #include "ortools/base/logging.h"

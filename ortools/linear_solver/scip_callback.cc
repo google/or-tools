@@ -15,7 +15,10 @@
 
 #include "ortools/linear_solver/scip_callback.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <string>
+#include <utility>
 
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"

@@ -13,6 +13,7 @@
 
 #include "ortools/lp_data/lp_decomposer.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "absl/synchronization/mutex.h"

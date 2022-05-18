@@ -13,6 +13,8 @@
 
 #include "ortools/linear_solver/linear_solver_callback.h"
 
+#include <string>
+
 #include "ortools/base/logging.h"
 
 namespace operations_research {

@@ -16,6 +16,9 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <optional>
+#include <string>
+#include <utility>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"

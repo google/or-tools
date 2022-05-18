@@ -14,6 +14,9 @@
 #include "ortools/lp_data/sparse.h"
 
 #include <algorithm>
+#include <initializer_list>
+#include <string>
+#include <utility>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"

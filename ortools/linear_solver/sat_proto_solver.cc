@@ -14,6 +14,9 @@
 #include "ortools/linear_solver/sat_proto_solver.h"
 
 #include <cstdint>
+#include <functional>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/status/statusor.h"

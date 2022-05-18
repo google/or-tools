@@ -16,6 +16,8 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <string>
+#include <utility>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"

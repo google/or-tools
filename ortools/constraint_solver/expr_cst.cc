@@ -14,11 +14,13 @@
 //
 //  Expression constraints
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_format.h"

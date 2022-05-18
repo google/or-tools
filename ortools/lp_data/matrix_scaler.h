@@ -60,6 +60,7 @@
 #ifndef OR_TOOLS_LP_DATA_MATRIX_SCALER_H_
 #define OR_TOOLS_LP_DATA_MATRIX_SCALER_H_
 
+#include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"

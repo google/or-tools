@@ -29,6 +29,7 @@
 #ifndef OR_TOOLS_LP_DATA_SPARSE_H_
 #define OR_TOOLS_LP_DATA_SPARSE_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 

@@ -17,6 +17,7 @@
 
 #include "ortools/constraint_solver/constraint_solver.h"
 
+#include <algorithm>
 #include <csetjmp>
 #include <cstdint>
 #include <deque>

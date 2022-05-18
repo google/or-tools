@@ -21,6 +21,7 @@
 //   var unperformed implies all intervals unperformed, cover var
 //   performed implis at least one interval performed).
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <string>

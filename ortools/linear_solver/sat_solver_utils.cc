@@ -14,6 +14,8 @@
 #include "ortools/linear_solver/sat_solver_utils.h"
 
 #include <memory>
+#include <string>
+#include <utility>
 
 #include "absl/memory/memory.h"
 #include "ortools/glop/parameters.pb.h"

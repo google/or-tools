@@ -13,7 +13,9 @@
 
 #include "ortools/linear_solver/linear_expr.h"
 
+#include <algorithm>
 #include <limits>
+#include <string>
 
 #include "absl/strings/str_join.h"
 #include "ortools/base/logging.h"

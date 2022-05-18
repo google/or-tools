@@ -13,6 +13,8 @@
 
 #include "ortools/lp_data/lp_types.h"
 
+#include <string>
+
 namespace operations_research {
 namespace glop {
 

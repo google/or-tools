@@ -14,6 +14,7 @@
 #include "ortools/lp_data/mps_reader.h"
 
 #include <cstdint>
+#include <string>
 
 #include "absl/container/btree_set.h"
 #include "absl/status/status.h"

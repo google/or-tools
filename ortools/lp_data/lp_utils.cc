@@ -13,6 +13,8 @@
 
 #include "ortools/lp_data/lp_utils.h"
 
+#include <algorithm>
+
 #include "ortools/lp_data/sparse_column.h"
 
 namespace operations_research {

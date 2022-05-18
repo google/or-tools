@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <limits>
 #include <map>
+#include <string>
 #include <vector>
 
 #include "absl/status/status.h"

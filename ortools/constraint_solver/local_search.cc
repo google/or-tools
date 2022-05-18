@@ -13,11 +13,13 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
+#include <random>
 #include <set>
 #include <string>
 #include <utility>

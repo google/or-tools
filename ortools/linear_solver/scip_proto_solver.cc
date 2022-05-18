@@ -15,6 +15,7 @@
 
 #include "ortools/linear_solver/scip_proto_solver.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <memory>
