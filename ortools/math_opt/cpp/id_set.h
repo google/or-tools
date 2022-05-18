@@ -217,7 +217,7 @@ IdSet<K>::const_iterator::const_iterator(
 
 template <typename K>
 IdSet<K>::IdSet(const ModelStorage* storage, StorageType values)
-    : storage_(storage), set_(std::move(values)) {
+    : storage_(values.empty() ? nullptr : storage), set_(std::move(values)) {
   if (!set_.empty()) {
     CHECK(storage_ != nullptr);
   }

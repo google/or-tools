@@ -36,6 +36,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/file.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
@@ -117,6 +118,9 @@ ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
                   operations_research::math_opt::AllSolversRegistry::Instance()
                       ->RegisteredSolvers(),
                   ", ", SolverTypeProtoFormatter())));
+ABSL_FLAG(std::string, solve_parameters, "",
+          "SolveParameters in text-proto format. Note that the time limit is "
+          "overridden by the --time_limit flag.");
 ABSL_FLAG(bool, solver_logs, false,
           "use a message callback to print the solver convergence logs");
 ABSL_FLAG(absl::Duration, time_limit, absl::InfiniteDuration(),
@@ -306,9 +310,16 @@ absl::Status RunSolver() {
   }
 
   // Solve the problem.
+  SolveParametersProto solve_parameters_proto;
+  QCHECK(google::protobuf::TextFormat::ParseFromString(
+      absl::GetFlag(FLAGS_solve_parameters), &solve_parameters_proto))
+      << "Unable to parse --solve_parameters";
+  ASSIGN_OR_RETURN(const SolveParameters solve_parameters,
+                   SolveParameters::FromProto(solve_parameters_proto));
   SolveArguments solve_args = {
-      .parameters = {.time_limit = absl::GetFlag(FLAGS_time_limit)},
+      .parameters = solve_parameters,
   };
+  solve_args.parameters.time_limit = absl::GetFlag(FLAGS_time_limit);
   if (absl::GetFlag(FLAGS_solver_logs)) {
     solve_args.message_callback = PrinterMessageCallback(std::cout, "logs| ");
   }

@@ -477,8 +477,8 @@ inline bool operator!=(const Variable& lhs, const Variable& rhs);
 
 // A LinearExpression with a lower bound.
 struct LowerBoundedLinearExpression {
-  // Users are not expected to use this constructor. Instead they should build
-  // this object using the overloads of >= and <= operators. For example `x + y
+  // Users are not expected to use this constructor. Instead, they should build
+  // this object using overloads of the >= and <= operators. For example, `x + y
   // >= 3`.
   inline LowerBoundedLinearExpression(LinearExpression expression,
                                       double lower_bound);
@@ -489,7 +489,7 @@ struct LowerBoundedLinearExpression {
 // A LinearExpression with an upper bound.
 struct UpperBoundedLinearExpression {
   // Users are not expected to use this constructor. Instead they should build
-  // this object using the overloads of >= and <= operators. For example `x + y
+  // this object using overloads of the >= and <= operators. For example, `x + y
   // <= 3`.
   inline UpperBoundedLinearExpression(LinearExpression expression,
                                       double upper_bound);
@@ -500,8 +500,8 @@ struct UpperBoundedLinearExpression {
 // A LinearExpression with upper and lower bounds.
 struct BoundedLinearExpression {
   // Users are not expected to use this constructor. Instead they should build
-  // this object using the overloads of >= and <= operators. For example `3 <= x
-  // + y <= 3`.
+  // this object using overloads of the >=, <=, and == operators. For example,
+  // `3 <= x + y <= 3`.
   inline BoundedLinearExpression(LinearExpression expression,
                                  double lower_bound, double upper_bound);
   // Users are not expected to use this constructor. This implicit conversion
@@ -1018,6 +1018,207 @@ inline QuadraticExpression operator*(const LinearExpression& lhs,
 inline QuadraticExpression operator*(QuadraticExpression lhs, double rhs);
 
 inline QuadraticExpression operator/(QuadraticExpression lhs, double rhs);
+
+// A QuadraticExpression with a lower bound.
+struct LowerBoundedQuadraticExpression {
+  // Users are not expected to use this constructor. Instead, they should build
+  // this object using overloads of the >= and <= operators. For example, `x * y
+  // >= 3`.
+  inline LowerBoundedQuadraticExpression(QuadraticExpression expression,
+                                         double lower_bound);
+  // Users are not expected to explicitly use the following constructor.
+  inline LowerBoundedQuadraticExpression(  // NOLINT
+      LowerBoundedLinearExpression lb_expression);
+
+  QuadraticExpression expression;
+  double lower_bound;
+};
+
+// A QuadraticExpression with an upper bound.
+struct UpperBoundedQuadraticExpression {
+  // Users are not expected to use this constructor. Instead, they should build
+  // this object using overloads of the >= and <= operators. For example, `x * y
+  // <= 3`.
+  inline UpperBoundedQuadraticExpression(QuadraticExpression expression,
+                                         double upper_bound);
+  // Users are not expected to explicitly use the following constructor.
+  inline UpperBoundedQuadraticExpression(  // NOLINT
+      UpperBoundedLinearExpression ub_expression);
+
+  QuadraticExpression expression;
+  double upper_bound;
+};
+
+// A QuadraticExpression with upper and lower bounds.
+struct BoundedQuadraticExpression {
+  // Users are not expected to use this constructor. Instead, they should build
+  // this object using overloads of the >=, <=, and == operators. For example,
+  // `3 <= x * y <= 3`.
+  inline BoundedQuadraticExpression(QuadraticExpression expression,
+                                    double lower_bound, double upper_bound);
+
+  // Users are not expected to explicitly use the following constructors.
+  inline BoundedQuadraticExpression(  // NOLINT
+      internal::VariablesEquality var_equality);
+  inline BoundedQuadraticExpression(  // NOLINT
+      LowerBoundedLinearExpression lb_expression);
+  inline BoundedQuadraticExpression(  // NOLINT
+      UpperBoundedLinearExpression ub_expression);
+  inline BoundedQuadraticExpression(  // NOLINT
+      BoundedLinearExpression bounded_expression);
+  inline BoundedQuadraticExpression(  // NOLINT
+      LowerBoundedQuadraticExpression lb_expression);
+  inline BoundedQuadraticExpression(  // NOLINT
+      UpperBoundedQuadraticExpression ub_expression);
+
+  // Returns the actual lower_bound after taking into account the quadratic
+  // expression offset.
+  inline double lower_bound_minus_offset() const;
+  // Returns the actual upper_bound after taking into account the quadratic
+  // expression offset.
+  inline double upper_bound_minus_offset() const;
+
+  QuadraticExpression expression;
+  double lower_bound;
+  double upper_bound;
+};
+
+std::ostream& operator<<(std::ostream& ostr,
+                         const BoundedQuadraticExpression& bounded_expression);
+
+// We intentionally pass the QuadraticExpression argument by value so that we
+// don't make unnecessary copies of temporary objects by using the move
+// constructor and the returned values optimization (RVO).
+inline LowerBoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                                  double rhs);
+inline LowerBoundedQuadraticExpression operator>=(QuadraticTerm lhs,
+                                                  double rhs);
+inline LowerBoundedQuadraticExpression operator<=(double lhs,
+                                                  QuadraticExpression rhs);
+inline LowerBoundedQuadraticExpression operator<=(double lhs,
+                                                  QuadraticTerm rhs);
+
+inline UpperBoundedQuadraticExpression operator>=(double lhs,
+                                                  QuadraticExpression rhs);
+inline UpperBoundedQuadraticExpression operator>=(double lhs,
+                                                  QuadraticTerm rhs);
+inline UpperBoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                                  double rhs);
+inline UpperBoundedQuadraticExpression operator<=(QuadraticTerm lhs,
+                                                  double rhs);
+
+// We intentionally pass the UpperBoundedQuadraticExpression and
+// LowerBoundedQuadraticExpression arguments by value so that we don't
+// make unnecessary copies of temporary objects by using the move constructor
+// and the returned values optimization (RVO).
+inline BoundedQuadraticExpression operator>=(
+    UpperBoundedQuadraticExpression lhs, double rhs);
+inline BoundedQuadraticExpression operator>=(
+    double lhs, LowerBoundedQuadraticExpression rhs);
+inline BoundedQuadraticExpression operator<=(
+    LowerBoundedQuadraticExpression lhs, double rhs);
+inline BoundedQuadraticExpression operator<=(
+    double lhs, UpperBoundedQuadraticExpression rhs);
+// We intentionally pass one QuadraticExpression argument by value so that we
+// don't make unnecessary copies of temporary objects by using the move
+// constructor and the returned values optimization (RVO).
+
+// Comparisons with lhs = QuadraticExpression
+inline BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                             const QuadraticExpression& rhs);
+inline BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                             QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                             const LinearExpression& rhs);
+inline BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                             LinearTerm rhs);
+inline BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                             Variable rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                             const QuadraticExpression& rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                             QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                             const LinearExpression& rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                             LinearTerm rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                             Variable rhs);
+inline BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                             const QuadraticExpression& rhs);
+inline BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                             QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                             const LinearExpression& rhs);
+inline BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                             LinearTerm rhs);
+inline BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                             Variable rhs);
+inline BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                             double rhs);
+// Comparisons with lhs = QuadraticTerm
+inline BoundedQuadraticExpression operator>=(QuadraticTerm lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator>=(QuadraticTerm lhs,
+                                             QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator>=(QuadraticTerm lhs,
+                                             LinearExpression rhs);
+inline BoundedQuadraticExpression operator>=(QuadraticTerm lhs, LinearTerm rhs);
+inline BoundedQuadraticExpression operator>=(QuadraticTerm lhs, Variable rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticTerm lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticTerm lhs,
+                                             QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticTerm lhs,
+                                             LinearExpression rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticTerm lhs, LinearTerm rhs);
+inline BoundedQuadraticExpression operator<=(QuadraticTerm lhs, Variable rhs);
+inline BoundedQuadraticExpression operator==(QuadraticTerm lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator==(QuadraticTerm lhs,
+                                             QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator==(QuadraticTerm lhs,
+                                             LinearExpression rhs);
+inline BoundedQuadraticExpression operator==(QuadraticTerm lhs, LinearTerm rhs);
+inline BoundedQuadraticExpression operator==(QuadraticTerm lhs, Variable rhs);
+inline BoundedQuadraticExpression operator==(QuadraticTerm lhs, double rhs);
+// Comparisons with lhs = LinearExpression
+inline BoundedQuadraticExpression operator>=(const LinearExpression& lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator>=(LinearExpression lhs,
+                                             QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator<=(const LinearExpression& lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator<=(LinearExpression lhs,
+                                             QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator==(const LinearExpression& lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator==(LinearExpression lhs,
+                                             QuadraticTerm rhs);
+// Comparisons with lhs = LinearTerm
+inline BoundedQuadraticExpression operator>=(LinearTerm lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator>=(LinearTerm lhs, QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator<=(LinearTerm lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator<=(LinearTerm lhs, QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator==(LinearTerm lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator==(LinearTerm lhs, QuadraticTerm rhs);
+// Comparisons with lhs = Variable
+inline BoundedQuadraticExpression operator>=(Variable lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator>=(Variable lhs, QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator<=(Variable lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator<=(Variable lhs, QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator==(Variable lhs,
+                                             QuadraticExpression rhs);
+inline BoundedQuadraticExpression operator==(Variable lhs, QuadraticTerm rhs);
+// Comparisons with lhs = Double
+inline BoundedQuadraticExpression operator==(double lhs, QuadraticTerm rhs);
+inline BoundedQuadraticExpression operator==(double lhs,
+                                             QuadraticExpression rhs);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2432,6 +2633,405 @@ QuadraticExpression QuadraticExpression::InnerProduct(
   QuadraticExpression result;
   result.AddInnerProduct(left, right);
   return result;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// LowerBoundedQuadraticExpression
+// UpperBoundedQuadraticExpression
+// BoundedQuadraticExpression
+////////////////////////////////////////////////////////////////////////////////
+
+LowerBoundedQuadraticExpression::LowerBoundedQuadraticExpression(
+    QuadraticExpression expression, const double lower_bound)
+    : expression(std::move(expression)), lower_bound(lower_bound) {}
+LowerBoundedQuadraticExpression::LowerBoundedQuadraticExpression(
+    LowerBoundedLinearExpression lb_expression)
+    : expression(std::move(lb_expression.expression)),
+      lower_bound(lb_expression.lower_bound) {}
+
+UpperBoundedQuadraticExpression::UpperBoundedQuadraticExpression(
+    QuadraticExpression expression, const double upper_bound)
+    : expression(std::move(expression)), upper_bound(upper_bound) {}
+UpperBoundedQuadraticExpression::UpperBoundedQuadraticExpression(
+    UpperBoundedLinearExpression ub_expression)
+    : expression(std::move(ub_expression.expression)),
+      upper_bound(ub_expression.upper_bound) {}
+
+BoundedQuadraticExpression::BoundedQuadraticExpression(
+    QuadraticExpression expression, const double lower_bound,
+    const double upper_bound)
+    : expression(std::move(expression)),
+      lower_bound(lower_bound),
+      upper_bound(upper_bound) {}
+BoundedQuadraticExpression::BoundedQuadraticExpression(
+    internal::VariablesEquality var_equality)
+    : lower_bound(0), upper_bound(0) {
+  expression += var_equality.lhs;
+  expression -= var_equality.rhs;
+}
+BoundedQuadraticExpression::BoundedQuadraticExpression(
+    LowerBoundedLinearExpression lb_expression)
+    : expression(std::move(lb_expression.expression)),
+      lower_bound(lb_expression.lower_bound),
+      upper_bound(std::numeric_limits<double>::infinity()) {}
+BoundedQuadraticExpression::BoundedQuadraticExpression(
+    UpperBoundedLinearExpression ub_expression)
+    : expression(std::move(ub_expression.expression)),
+      lower_bound(-std::numeric_limits<double>::infinity()),
+      upper_bound(ub_expression.upper_bound) {}
+BoundedQuadraticExpression::BoundedQuadraticExpression(
+    BoundedLinearExpression bounded_expression)
+    : expression(std::move(bounded_expression.expression)),
+      lower_bound(bounded_expression.lower_bound),
+      upper_bound(bounded_expression.upper_bound) {}
+BoundedQuadraticExpression::BoundedQuadraticExpression(
+    LowerBoundedQuadraticExpression lb_expression)
+    : expression(std::move(lb_expression.expression)),
+      lower_bound(lb_expression.lower_bound),
+      upper_bound(std::numeric_limits<double>::infinity()) {}
+BoundedQuadraticExpression::BoundedQuadraticExpression(
+    UpperBoundedQuadraticExpression ub_expression)
+    : expression(std::move(ub_expression.expression)),
+      lower_bound(-std::numeric_limits<double>::infinity()),
+      upper_bound(ub_expression.upper_bound) {}
+
+double BoundedQuadraticExpression::lower_bound_minus_offset() const {
+  return lower_bound - expression.offset();
+}
+
+double BoundedQuadraticExpression::upper_bound_minus_offset() const {
+  return upper_bound - expression.offset();
+}
+
+LowerBoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                           const double rhs) {
+  return LowerBoundedQuadraticExpression(std::move(lhs), rhs);
+}
+LowerBoundedQuadraticExpression operator>=(const QuadraticTerm lhs,
+                                           const double rhs) {
+  return LowerBoundedQuadraticExpression(lhs, rhs);
+}
+LowerBoundedQuadraticExpression operator<=(const double lhs,
+                                           QuadraticExpression rhs) {
+  return LowerBoundedQuadraticExpression(std::move(rhs), lhs);
+}
+LowerBoundedQuadraticExpression operator<=(const double lhs,
+                                           const QuadraticTerm rhs) {
+  return LowerBoundedQuadraticExpression(rhs, lhs);
+}
+
+UpperBoundedQuadraticExpression operator>=(const double lhs,
+                                           QuadraticExpression rhs) {
+  return UpperBoundedQuadraticExpression(std::move(rhs), lhs);
+}
+UpperBoundedQuadraticExpression operator>=(const double lhs,
+                                           const QuadraticTerm rhs) {
+  return UpperBoundedQuadraticExpression(rhs, lhs);
+}
+UpperBoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                           const double rhs) {
+  return UpperBoundedQuadraticExpression(std::move(lhs), rhs);
+}
+UpperBoundedQuadraticExpression operator<=(const QuadraticTerm lhs,
+                                           const double rhs) {
+  return UpperBoundedQuadraticExpression(lhs, rhs);
+}
+
+BoundedQuadraticExpression operator>=(UpperBoundedQuadraticExpression lhs,
+                                      const double rhs) {
+  return BoundedQuadraticExpression(std::move(lhs.expression), rhs,
+                                    lhs.upper_bound);
+}
+BoundedQuadraticExpression operator>=(const double lhs,
+                                      LowerBoundedQuadraticExpression rhs) {
+  return BoundedQuadraticExpression(std::move(rhs.expression), rhs.lower_bound,
+                                    lhs);
+}
+BoundedQuadraticExpression operator<=(LowerBoundedQuadraticExpression lhs,
+                                      const double rhs) {
+  return BoundedQuadraticExpression(std::move(lhs.expression), lhs.lower_bound,
+                                    rhs);
+}
+BoundedQuadraticExpression operator<=(const double lhs,
+                                      UpperBoundedQuadraticExpression rhs) {
+  return BoundedQuadraticExpression(std::move(rhs.expression), lhs,
+                                    rhs.upper_bound);
+}
+
+BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                      const QuadraticExpression& rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                      const QuadraticTerm rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                      const LinearExpression& rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                      const LinearTerm rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator>=(QuadraticExpression lhs,
+                                      const Variable rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                      const QuadraticExpression& rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(
+      std::move(lhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                      const QuadraticTerm rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(
+      std::move(lhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                      const LinearExpression& rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(
+      std::move(lhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                      const LinearTerm rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(
+      std::move(lhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator<=(QuadraticExpression lhs,
+                                      const Variable rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(
+      std::move(lhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                      const QuadraticExpression& rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                      const QuadraticTerm rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                      const LinearExpression& rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                      const LinearTerm rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                      const Variable rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(QuadraticExpression lhs,
+                                      const double rhs) {
+  lhs -= rhs;
+  return BoundedQuadraticExpression(std::move(lhs), 0, 0);
+}
+
+BoundedQuadraticExpression operator>=(const QuadraticTerm lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(
+      std::move(rhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator>=(const QuadraticTerm lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(
+      rhs - lhs, -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator>=(const QuadraticTerm lhs,
+                                      LinearExpression rhs) {
+  return BoundedQuadraticExpression(
+      std::move(rhs) - lhs, -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator>=(const QuadraticTerm lhs,
+                                      const LinearTerm rhs) {
+  return BoundedQuadraticExpression(
+      rhs - lhs, -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator>=(const QuadraticTerm lhs,
+                                      const Variable rhs) {
+  return BoundedQuadraticExpression(
+      rhs - lhs, -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator<=(const QuadraticTerm lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(std::move(rhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator<=(const QuadraticTerm lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator<=(const QuadraticTerm lhs,
+                                      LinearExpression rhs) {
+  return BoundedQuadraticExpression(std::move(rhs) - lhs, 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator<=(const QuadraticTerm lhs,
+                                      const LinearTerm rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator<=(const QuadraticTerm lhs,
+                                      const Variable rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator==(const QuadraticTerm lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(std::move(rhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(const QuadraticTerm lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0, 0);
+}
+BoundedQuadraticExpression operator==(const QuadraticTerm lhs,
+                                      LinearExpression rhs) {
+  return BoundedQuadraticExpression(std::move(rhs) - lhs, 0, 0);
+}
+BoundedQuadraticExpression operator==(const QuadraticTerm lhs,
+                                      const LinearTerm rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0, 0);
+}
+BoundedQuadraticExpression operator==(const QuadraticTerm lhs,
+                                      const Variable rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0, 0);
+}
+BoundedQuadraticExpression operator==(const QuadraticTerm lhs,
+                                      const double rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0, 0);
+}
+
+BoundedQuadraticExpression operator>=(const LinearExpression& lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(
+      std::move(rhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator>=(LinearExpression lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(
+      rhs - std::move(lhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator<=(const LinearExpression& lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(std::move(rhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator<=(LinearExpression lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(rhs - std::move(lhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator==(const LinearExpression& lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(std::move(rhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(LinearExpression lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(rhs - std::move(lhs), 0, 0);
+}
+// LinearTerm --
+BoundedQuadraticExpression operator>=(const LinearTerm lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(
+      std::move(rhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator>=(const LinearTerm lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(
+      rhs - lhs, -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator<=(const LinearTerm lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(std::move(rhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator<=(const LinearTerm lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator==(const LinearTerm lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(std::move(rhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(const LinearTerm lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0, 0);
+}
+// Variable --
+BoundedQuadraticExpression operator>=(const Variable lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(
+      std::move(rhs), -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator>=(const Variable lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(
+      rhs - lhs, -std::numeric_limits<double>::infinity(), 0);
+}
+BoundedQuadraticExpression operator<=(const Variable lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(std::move(rhs), 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator<=(const Variable lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0,
+                                    std::numeric_limits<double>::infinity());
+}
+BoundedQuadraticExpression operator==(const Variable lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(std::move(rhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(const Variable lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0, 0);
+}
+
+// Double --
+BoundedQuadraticExpression operator==(const double lhs,
+                                      QuadraticExpression rhs) {
+  rhs -= lhs;
+  return BoundedQuadraticExpression(std::move(rhs), 0, 0);
+}
+BoundedQuadraticExpression operator==(const double lhs,
+                                      const QuadraticTerm rhs) {
+  return BoundedQuadraticExpression(rhs - lhs, 0, 0);
 }
 
 }  // namespace math_opt

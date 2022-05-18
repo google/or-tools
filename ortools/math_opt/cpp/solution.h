@@ -20,6 +20,7 @@
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "ortools/math_opt/core/model_storage.h"
+#include "ortools/math_opt/cpp/basis_status.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
@@ -43,26 +44,6 @@ enum class SolutionStatus {
 
 MATH_OPT_DEFINE_ENUM(SolutionStatus, SOLUTION_STATUS_UNSPECIFIED);
 
-// Status of a variable/constraint in a LP basis.
-enum class BasisStatus : int8_t {
-  // The variable/constraint is free (it has no finite bounds).
-  kFree = BASIS_STATUS_FREE,
-
-  // The variable/constraint is at its lower bound (which must be finite).
-  kAtLowerBound = BASIS_STATUS_AT_LOWER_BOUND,
-
-  // The variable/constraint is at its upper bound (which must be finite).
-  kAtUpperBound = BASIS_STATUS_AT_UPPER_BOUND,
-
-  // The variable/constraint has identical finite lower and upper bounds.
-  kFixedValue = BASIS_STATUS_FIXED_VALUE,
-
-  // The variable/constraint is basic.
-  kBasic = BASIS_STATUS_BASIC,
-};
-
-MATH_OPT_DEFINE_ENUM(BasisStatus, BASIS_STATUS_UNSPECIFIED);
-
 // A solution to an optimization problem.
 //
 // E.g. consider a simple linear program:
@@ -76,9 +57,17 @@ MATH_OPT_DEFINE_ENUM(BasisStatus, BASIS_STATUS_UNSPECIFIED);
 // For the general case of a MathOpt optimization model, see
 // go/mathopt-solutions for details.
 struct PrimalSolution {
-  static PrimalSolution FromProto(
+  // Returns the PrimalSolution equivalent of primal_solution_proto.
+  //
+  // Returns an error when:
+  //  * VariableValuesFromProto(primal_solution_proto.variable_values) fails.
+  //  * the feasibility_status is not specified.
+  static absl::StatusOr<PrimalSolution> FromProto(
       const ModelStorage* model,
       const PrimalSolutionProto& primal_solution_proto);
+
+  // Returns the proto equivalent of this.
+  PrimalSolutionProto Proto() const;
 
   VariableMap<double> variable_values;
   double objective_value = 0.0;
@@ -107,8 +96,15 @@ struct PrimalSolution {
 // For the general case of a MathOpt optimization model, see
 // go/mathopt-solutions for details.
 struct PrimalRay {
-  static PrimalRay FromProto(const ModelStorage* model,
-                             const PrimalRayProto& primal_ray_proto);
+  // Returns the PrimalRay equivalent of primal_ray_proto.
+  //
+  // Returns an error when
+  // VariableValuesFromProto(primal_ray_proto.variable_values) fails.
+  static absl::StatusOr<PrimalRay> FromProto(
+      const ModelStorage* model, const PrimalRayProto& primal_ray_proto);
+
+  // Returns the proto equivalent of this.
+  PrimalRayProto Proto() const;
 
   VariableMap<double> variable_values;
 };
@@ -128,8 +124,17 @@ struct PrimalRay {
 // For the general case, see go/mathopt-solutions and go/mathopt-dual (and
 // note that the dual objective depends on r in the general case).
 struct DualSolution {
-  static DualSolution FromProto(const ModelStorage* model,
-                                const DualSolutionProto& dual_solution_proto);
+  // Returns the DualSolution equivalent of dual_solution_proto.
+  //
+  // Returns an error when any of:
+  //  * VariableValuesFromProto(dual_solution_proto.reduced_costs) fails.
+  //  * LinearConstraintValuesFromProto(dual_solution_proto.dual_values) fails.
+  //  * dual_solution_proto.feasibility_status is not specified.
+  static absl::StatusOr<DualSolution> FromProto(
+      const ModelStorage* model, const DualSolutionProto& dual_solution_proto);
+
+  // Returns the proto equivalent of this.
+  DualSolutionProto Proto() const;
 
   LinearConstraintMap<double> dual_values;
   VariableMap<double> reduced_costs;
@@ -159,8 +164,16 @@ struct DualSolution {
 // For the general case, see go/mathopt-solutions and go/mathopt-dual (and
 // note that the dual objective depends on r in the general case).
 struct DualRay {
-  static DualRay FromProto(const ModelStorage* model,
-                           const DualRayProto& dual_ray_proto);
+  // Returns the DualRay equivalent of dual_ray_proto.
+  //
+  // Returns an error when either of:
+  //  * VariableValuesFromProto(dual_ray_proto.reduced_costs) fails.
+  //  * LinearConstraintValuesFromProto(dual_ray_proto.dual_values) fails.
+  static absl::StatusOr<DualRay> FromProto(const ModelStorage* model,
+                                           const DualRayProto& dual_ray_proto);
+
+  // Returns the proto equivalent of this.
+  DualRayProto Proto() const;
 
   LinearConstraintMap<double> dual_values;
   VariableMap<double> reduced_costs;
@@ -193,12 +206,17 @@ struct DualRay {
 // See go/mathopt-basis for treatment of the general case and an explanation
 // of how a dual solution is determined for a basis.
 struct Basis {
-  // Returns a Basis built from the input indexed_basis, CHECKing that no
-  // values is BASIS_STATUS_UNSPECIFIED. No check is done on other values so
-  // out of bounds values e.g. BasisStatusProto_MAX+1 won't raise an
-  // assertion. See SpaseBasisStatusVectorIsValid().
-  static Basis FromProto(const ModelStorage* model,
-                         const BasisProto& basis_proto);
+  // Returns the equivalent Basis object for basis_proto.
+  //
+  // Returns an error if:
+  //  * VariableBasisFromProto(basis_proto.variable_status) fails.
+  //  * LinearConstraintBasisFromProto(basis_proto.constraint_status) fails.
+  //  * basis_proto.basic_dual_feasibility is unspecified.
+  static absl::StatusOr<Basis> FromProto(const ModelStorage* model,
+                                         const BasisProto& basis_proto);
+
+  // Returns the proto equivalent of this.
+  BasisProto Proto() const;
 
   LinearConstraintMap<BasisStatus> constraint_status;
   VariableMap<BasisStatus> variable_status;
@@ -218,8 +236,16 @@ struct Basis {
 //   3. Other continuous solvers often return a primal and dual solution
 //      solution that are connected in a solver-dependent form.
 struct Solution {
-  static Solution FromProto(const ModelStorage* model,
-                            const SolutionProto& solution_proto);
+  // Returns the Solution equivalent of solution_proto.
+  //
+  // Returns an error if FromProto() fails on any field that is not std::nullopt
+  // (see the static FromProto() functions for each field type for details).
+  static absl::StatusOr<Solution> FromProto(
+      const ModelStorage* model, const SolutionProto& solution_proto);
+
+  // Returns the proto equivalent of this.
+  SolutionProto Proto() const;
+
   std::optional<PrimalSolution> primal_solution;
   std::optional<DualSolution> dual_solution;
   std::optional<Basis> basis;

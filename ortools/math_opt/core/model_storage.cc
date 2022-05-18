@@ -151,7 +151,7 @@ absl::StatusOr<std::unique_ptr<ModelStorage>> ModelStorage::FromModelProto(
   // models. Thus a model built by ModelStorage can contain duplicated
   // names. And since we use FromModelProto() to implement Clone(), we must make
   // sure duplicated names don't fail.
-  RETURN_IF_ERROR(ValidateModel(model_proto, /*check_names=*/false));
+  RETURN_IF_ERROR(ValidateModel(model_proto, /*check_names=*/false).status());
 
   auto storage = std::make_unique<ModelStorage>(model_proto.name());
 
@@ -810,21 +810,23 @@ absl::Status ModelStorage::ApplyUpdateProto(
     const ModelUpdateProto& update_proto) {
   // Check the update first.
   {
-    ModelSummary summary;
-    // We have to use sorted keys since IdNameBiMap expect Insert() to be called
-    // in sorted order.
+    // Do not check for duplicate names, as with FromModelProto();
+    ModelSummary summary(/*check_names=*/false);
+    // IdNameBiMap requires Insert() calls to be in sorted id order.
     for (const auto id : SortedVariables()) {
-      summary.variables.Insert(id.value(), variable_name(id));
+      RETURN_IF_ERROR(summary.variables.Insert(id.value(), variable_name(id)))
+          << "invalid variable id in model";
     }
-    summary.variables.SetNextFreeId(next_variable_id_.value());
+    RETURN_IF_ERROR(summary.variables.SetNextFreeId(next_variable_id_.value()));
     for (const auto id : SortedLinearConstraints()) {
-      summary.linear_constraints.Insert(id.value(), linear_constraint_name(id));
+      RETURN_IF_ERROR(summary.linear_constraints.Insert(
+          id.value(), linear_constraint_name(id)))
+          << "invalid linear constraint id in model";
     }
-    summary.linear_constraints.SetNextFreeId(
-        next_linear_constraint_id_.value());
-    // We don't check the names for the same reason as in FromModelProto().
-    RETURN_IF_ERROR(ValidateModelUpdateAndSummary(update_proto, summary,
-                                                  /*check_names=*/false));
+    RETURN_IF_ERROR(summary.linear_constraints.SetNextFreeId(
+        next_linear_constraint_id_.value()));
+    RETURN_IF_ERROR(ValidateModelUpdate(update_proto, summary))
+        << "update not valid";
   }
 
   // Remove deleted variables and constraints.

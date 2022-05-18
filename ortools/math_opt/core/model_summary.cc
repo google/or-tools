@@ -22,12 +22,116 @@
 
 namespace operations_research {
 namespace math_opt {
+namespace {
+
+// TODO(b/232526223): this is an exact copy of
+// CheckIdsRangeAndStrictlyIncreasing from ids_validator.h, find a way to share
+// the code.
+absl::Status CheckIdsRangeAndStrictlyIncreasing2(
+    absl::Span<const int64_t> ids) {
+  int64_t previous{-1};
+  for (int i = 0; i < ids.size(); previous = ids[i], ++i) {
+    if (ids[i] < 0 || ids[i] == std::numeric_limits<int64_t>::max()) {
+      return util::InvalidArgumentErrorBuilder()
+             << "Expected ids to be nonnegative and not max(int64_t) but at "
+                "index "
+             << i << " found id: " << ids[i];
+    }
+    if (ids[i] <= previous) {
+      return util::InvalidArgumentErrorBuilder()
+             << "Expected ids to be strictly increasing, but at index " << i
+             << " found id: " << ids[i] << " and at previous index " << i - 1
+             << " found id: " << ids[i - 1];
+    }
+  }
+  return absl::OkStatus();
+}
+
+}  // namespace
 
 IdNameBiMap::IdNameBiMap(
-    std::initializer_list<std::pair<int64_t, absl::string_view>> ids) {
+    std::initializer_list<std::pair<int64_t, absl::string_view>> ids)
+    : IdNameBiMap(/*check_names=*/true) {
   for (const auto& pair : ids) {
-    Insert(pair.first, std::string(pair.second));
+    CHECK_OK(Insert(pair.first, std::string(pair.second)));
   }
+}
+
+IdNameBiMap::IdNameBiMap(const IdNameBiMap& other) { *this = other; }
+
+IdNameBiMap& IdNameBiMap::operator=(const IdNameBiMap& other) {
+  if (&other == this) {
+    return *this;
+  }
+  next_free_id_ = other.next_free_id_;
+  id_to_name_ = other.id_to_name_;
+  if (!other.nonempty_name_to_id_.has_value()) {
+    nonempty_name_to_id_ = std::nullopt;
+  } else {
+    nonempty_name_to_id_.emplace();
+    for (const auto& [id, name] : id_to_name_) {
+      if (!name.empty()) {
+        const auto [it, success] =
+            nonempty_name_to_id_->insert({absl::string_view(name), id});
+        CHECK(success);  // CHECK is OK, other cannot have duplicate names and
+                         // non nullopt nonempty_name_to_id_.
+      }
+    }
+  }
+
+  return *this;
+}
+
+absl::Status IdNameBiMap::BulkUpdate(
+    absl::Span<const int64_t> deleted_ids, absl::Span<const int64_t> new_ids,
+    const absl::Span<const std::string* const> names) {
+  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
+      << "invalid deleted ids";
+  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(new_ids))
+      << "invalid new ids";
+  if (!names.empty() && names.size() != new_ids.size()) {
+    return util::InvalidArgumentErrorBuilder()
+           << "names had size " << names.size()
+           << " but should either be empty of have size matching new_ids which "
+              "has size "
+           << new_ids.size();
+  }
+  for (const int64_t id : deleted_ids) {
+    RETURN_IF_ERROR(Erase(id));
+  }
+  for (int i = 0; i < new_ids.size(); ++i) {
+    RETURN_IF_ERROR(
+        Insert(new_ids[i], names.empty() ? std::string{} : *names[i]));
+  }
+  return absl::OkStatus();
+}
+
+ModelSummary::ModelSummary(const bool check_names)
+    : variables(check_names), linear_constraints(check_names) {}
+
+absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
+                                                  const bool check_names) {
+  ModelSummary summary(check_names);
+  RETURN_IF_ERROR(summary.variables.BulkUpdate({}, model.variables().ids(),
+                                               model.variables().names()))
+      << "Model.variables are invalid";
+  RETURN_IF_ERROR(summary.linear_constraints.BulkUpdate(
+      {}, model.linear_constraints().ids(), model.linear_constraints().names()))
+      << "Model.linear_constraints are invalid";
+  return summary;
+}
+
+absl::Status ModelSummary::Update(const ModelUpdateProto& model_update) {
+  RETURN_IF_ERROR(variables.BulkUpdate(model_update.deleted_variable_ids(),
+                                       model_update.new_variables().ids(),
+                                       model_update.new_variables().names()))
+      << "invalid variables";
+  RETURN_IF_ERROR(linear_constraints.BulkUpdate(
+      model_update.deleted_linear_constraint_ids(),
+      model_update.new_linear_constraints().ids(),
+      model_update.new_linear_constraints().names()))
+      << "invalid linear constraints";
+  return absl::OkStatus();
 }
 
 }  // namespace math_opt

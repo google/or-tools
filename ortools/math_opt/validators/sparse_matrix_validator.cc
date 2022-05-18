@@ -88,13 +88,12 @@ absl::Status SparseMatrixValid(const SparseDoubleMatrixProto& matrix,
   return absl::OkStatus();
 }
 
-absl::Status SparseMatrixIdsAreKnown(
-    const SparseDoubleMatrixProto& matrix,
-    const absl::Span<const int64_t> row_ids,
-    const absl::Span<const int64_t> column_ids) {
-  RETURN_IF_ERROR(CheckSortedIdsSubset(matrix.row_ids(), row_ids))
+absl::Status SparseMatrixIdsAreKnown(const SparseDoubleMatrixProto& matrix,
+                                     const IdNameBiMap& row_ids,
+                                     const IdNameBiMap& column_ids) {
+  RETURN_IF_ERROR(CheckIdsSubset(matrix.row_ids(), row_ids))
       << "Unknown row_id";
-  RETURN_IF_ERROR(CheckUnsortedIdsSubset(matrix.column_ids(), column_ids))
+  RETURN_IF_ERROR(CheckIdsSubset(matrix.column_ids(), column_ids))
       << "Unknown column_id";
   return absl::OkStatus();
 }

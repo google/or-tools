@@ -22,6 +22,13 @@
 namespace operations_research {
 namespace math_opt {
 
+// Checks that:
+//  * termination.reason is not UNSPECIFIED,
+//  * termination.limit is set (not UNSPECIFIED) iff termination.reason is
+//    either FEASIBLE or NO_SOLUTION_FOUND,
+//  * termination.limit is not CUTOFF when termination.reason is FEASIBLE.
+absl::Status ValidateTermination(const TerminationProto& termination);
+
 // Validates the input result.
 absl::Status ValidateResult(const SolveResultProto& result,
                             const ModelSolveParametersProto& parameters,

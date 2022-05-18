@@ -24,22 +24,19 @@
 namespace operations_research {
 namespace math_opt {
 
-// Checks that the input ids are in [0, max(int64_t)) range and that their are
+// Checks that the input ids are in [0, max(int64_t)) range and that they are
 // strictly increasing.
 absl::Status CheckIdsRangeAndStrictlyIncreasing(absl::Span<const int64_t> ids);
 
-// Checks that the elements of ids are a subset of universe.
+// Checks that the elements of ids are a subset of universe. Elements of ids
+// do not need to be sorted or distinct. If upper_bound is set, elements must be
+// strictly less than upper_bound.
 //
-// Assumed: ids and universe are sorted in increasing order, repeats allowed.
-absl::Status CheckSortedIdsSubset(const absl::Span<const int64_t> ids,
-                                  const absl::Span<const int64_t> universe);
-
-// Checks that the elements of ids are a subset of universe.
-//
-// Assumed: universe are sorted in strictly increasing order (no repeats). No
-// assumptions on ids.
-absl::Status CheckUnsortedIdsSubset(const absl::Span<const int64_t> ids,
-                                    const absl::Span<const int64_t> universe);
+// TODO(b/232526223): try merge this with the CheckIdsSubset overload below, or
+// at least have one call the other.
+absl::Status CheckIdsSubset(absl::Span<const int64_t> ids,
+                            const IdNameBiMap& universe,
+                            std::optional<int64_t> upper_bound = std::nullopt);
 
 // Checks that the elements of ids are a subset of universe. Elements of ids
 // do not need to be sorted or distinct.
@@ -53,50 +50,6 @@ absl::Status CheckIdsIdentical(absl::Span<const int64_t> first_ids,
                                const IdNameBiMap& second_ids,
                                absl::string_view first_description,
                                absl::string_view second_description);
-
-// Provides a unified view of the id sets:
-//   * NOT_DELETED = old - deleted
-//   * FINAL = old - deleted + new
-// so users can validate if a list of ids (sorted or unsorted) is a subset of
-// either of the sets above.
-//
-// Implementation note: this class does not allocate by default, but some
-// functions will allocate at most O(#deleted + #new).
-class IdUpdateValidator {
- public:
-  // deleted_ids and new_ids must be sorted with unique strictly increasing
-  // entries.
-  IdUpdateValidator(const IdNameBiMap& old_ids,
-                    const absl::Span<const int64_t> deleted_ids,
-                    const absl::Span<const int64_t> new_ids)
-      : old_ids_(old_ids), deleted_ids_(deleted_ids), new_ids_(new_ids) {}
-
-  // Returns true if the sets of ids passed to the constructor are valid.
-  absl::Status IsValid() const;
-
-  // Checks that ids is a subset of NOT_DELETED = old_ids_ - deleted_ids_.
-  //
-  // ids must be sorted in increasing order (repeats are allowed).
-  absl::Status CheckSortedIdsSubsetOfNotDeleted(
-      const absl::Span<const int64_t> ids) const;
-
-  // Checks that ids is a subset of FINAL = old_ids_ - deleted_ids_ + new_ids_.
-  //
-  // ids must be sorted in increasing order (repeats are allowed).
-  absl::Status CheckSortedIdsSubsetOfFinal(
-      const absl::Span<const int64_t> ids) const;
-
-  // Checks that ids is a subset of FINAL = old_ids_ - deleted_ids_ + new_ids_.
-  //
-  // If ids is sorted, prefer CheckSortedIdsSubsetOfFinal.
-  absl::Status CheckIdsSubsetOfFinal(const absl::Span<const int64_t> ids) const;
-
- private:
-  // NOT OWNED
-  const IdNameBiMap& old_ids_;
-  const absl::Span<const int64_t> deleted_ids_;
-  const absl::Span<const int64_t> new_ids_;
-};
 
 }  // namespace math_opt
 }  // namespace operations_research

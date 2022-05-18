@@ -13,6 +13,42 @@ cc_library(
 )
 
 cc_library(
+    name = "basis_status",
+    srcs = ["basis_status.cc"],
+    hdrs = ["basis_status.h"],
+    deps = [
+        ":enums",
+        "//ortools/math_opt:solution_cc_proto",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "sparse_containers",
+    srcs = ["sparse_containers.cc"],
+    hdrs = ["sparse_containers.h"],
+    deps = [
+        ":basis_status",
+        ":linear_constraint",
+        ":variable_and_expressions",
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:model_storage",
+        "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/math_opt/validators:ids_validator",
+        "//ortools/math_opt/validators:sparse_vector_validator",
+        "//ortools/util:status_macros",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "model",
     srcs = ["model.cc"],
     hdrs = ["model.h"],
@@ -84,8 +120,10 @@ cc_library(
     srcs = ["solution.cc"],
     hdrs = ["solution.h"],
     deps = [
+        ":basis_status",
         ":enums",
         ":linear_constraint",
+        ":sparse_containers",
         ":variable_and_expressions",
         "//ortools/base",
         "//ortools/base:intops",
@@ -112,11 +150,13 @@ cc_library(
         "//ortools/base",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
+        "//ortools/util:status_macros",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt/core:model_storage",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
@@ -143,6 +183,7 @@ cc_library(
         ":enums",
         ":key_types",
         ":map_filter",
+        ":sparse_containers",
         ":variable_and_expressions",
         "//ortools/base",
         "//ortools/base:intops",

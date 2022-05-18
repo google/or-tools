@@ -31,20 +31,13 @@
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/cpp/map_filter.h"
+#include "ortools/math_opt/cpp/sparse_containers.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
 namespace math_opt {
 namespace {
-
-std::vector<std::pair<VariableId, double>> SortedVariableValues(
-    const VariableMap<double>& var_map) {
-  std::vector<std::pair<VariableId, double>> result(var_map.raw_map().begin(),
-                                                    var_map.raw_map().end());
-  std::sort(result.begin(), result.end());
-  return result;
-}
 
 // Container must be an iterable on some type T where
 //   const ModelStorage* T::storage() const
@@ -111,8 +104,8 @@ CallbackData::CallbackData(const ModelStorage* storage,
       mip_stats(proto.mip_stats()) {
   CHECK(EnumFromProto(proto.event()).has_value());
   if (proto.has_primal_solution_vector()) {
-    solution = VariableMap<double>(
-        storage, MakeView(proto.primal_solution_vector()).as_map<VariableId>());
+    solution = VariableValuesFromProto(storage, proto.primal_solution_vector())
+                   .value();
   }
   auto maybe_time = util_time::DecodeGoogleApiProto(proto.runtime());
   CHECK_OK(maybe_time.status());
@@ -153,11 +146,7 @@ CallbackResultProto CallbackResult::Proto() const {
   CallbackResultProto result;
   result.set_terminate(terminate);
   for (const VariableMap<double>& solution : suggested_solutions) {
-    SparseDoubleVectorProto* solution_vector = result.add_suggested_solutions();
-    for (const auto& [typed_id, value] : SortedVariableValues(solution)) {
-      solution_vector->add_ids(typed_id.value());
-      solution_vector->add_values(value);
-    }
+    *result.add_suggested_solutions() = VariableValuesToProto(solution);
   }
   for (const GeneratedLinearConstraint& constraint : new_constraints) {
     CallbackResultProto::GeneratedLinearConstraint* constraint_proto =
@@ -167,11 +156,8 @@ CallbackResultProto CallbackResult::Proto() const {
         constraint.linear_constraint.lower_bound_minus_offset());
     constraint_proto->set_upper_bound(
         constraint.linear_constraint.upper_bound_minus_offset());
-    for (const auto& [typed_id, value] : SortedVariableValues(
-             constraint.linear_constraint.expression.terms())) {
-      constraint_proto->mutable_linear_expression()->add_ids(typed_id.value());
-      constraint_proto->mutable_linear_expression()->add_values(value);
-    }
+    *constraint_proto->mutable_linear_expression() =
+        VariableValuesToProto(constraint.linear_constraint.expression.terms());
   }
   return result;
 }

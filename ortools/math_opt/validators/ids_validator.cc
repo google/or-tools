@@ -30,89 +30,7 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 
-namespace operations_research {
-namespace math_opt {
-
-namespace {
-absl::Status CheckSortedIdsSubsetWithIndexOffset(
-    const absl::Span<const int64_t> ids,
-    const absl::Span<const int64_t> universe, const int64_t offset) {
-  int id_index = 0;
-  int universe_index = 0;
-  // NOTE(user): in the common case where ids and/or universe is consecutive,
-  // we can avoid iterating though the list and do interval based checks.
-  while (id_index < ids.size() && universe_index < universe.size()) {
-    if (universe[universe_index] < ids[id_index]) {
-      ++universe_index;
-    } else if (universe[universe_index] == ids[id_index]) {
-      ++id_index;
-    } else {
-      break;
-    }
-  }
-  if (id_index < ids.size()) {
-    return util::InvalidArgumentErrorBuilder()
-           << "Bad id: " << ids[id_index] << " (at index: " << id_index + offset
-           << ") found";
-  }
-  return absl::OkStatus();
-}
-
-// Given a sorted, strictly increasing set of ids, provides `contains()` to
-// check if another id is in the set in O(1) time.
-//
-// Implementation note: when ids are consecutive, they are stored as a single
-// interval [lb, ub), otherwise they are stored as a hash table of integers.
-class FastIdCheck {
- public:
-  // ids must be sorted with unique strictly increasing entries.
-  explicit FastIdCheck(const absl::Span<const int64_t> ids) {
-    if (ids.empty()) {
-      interval_mode_ = true;
-    } else if (ids.size() == ids.back() + 1 - ids.front()) {
-      interval_mode_ = true;
-      interval_lb_ = ids.front();
-      interval_ub_ = ids.back() + 1;
-    } else {
-      ids_ = absl::flat_hash_set<int64_t>(ids.begin(), ids.end());
-    }
-  }
-  bool contains(int64_t id) const {
-    if (interval_mode_) {
-      return id >= interval_lb_ && id < interval_ub_;
-    } else {
-      return ids_.contains(id);
-    }
-  }
-
- private:
-  bool interval_mode_ = false;
-  int64_t interval_lb_ = 0;
-  int64_t interval_ub_ = 0;
-  absl::flat_hash_set<int64_t> ids_;
-};
-
-// Checks that the elements of ids and bad_list have no overlap.
-//
-// Assumed: ids and bad_list are sorted in increasing order, repeats allowed.
-absl::Status CheckSortedIdsNotBad(const absl::Span<const int64_t> ids,
-                                  const absl::Span<const int64_t> bad_list) {
-  int id_index = 0;
-  int bad_index = 0;
-  while (id_index < ids.size() && bad_index < bad_list.size()) {
-    if (bad_list[bad_index] < ids[id_index]) {
-      ++bad_index;
-    } else if (bad_list[bad_index] > ids[id_index]) {
-      ++id_index;
-    } else {
-      return util::InvalidArgumentErrorBuilder()
-             << "Bad id: " << ids[id_index] << " (at index: " << id_index
-             << ") found";
-    }
-  }
-  return absl::OkStatus();
-}
-}  // namespace
+namespace operations_research::math_opt {
 
 absl::Status CheckIdsRangeAndStrictlyIncreasing(absl::Span<const int64_t> ids) {
   int64_t previous{-1};
@@ -133,95 +51,17 @@ absl::Status CheckIdsRangeAndStrictlyIncreasing(absl::Span<const int64_t> ids) {
   return absl::OkStatus();
 }
 
-absl::Status CheckSortedIdsSubset(const absl::Span<const int64_t> ids,
-                                  const absl::Span<const int64_t> universe) {
-  RETURN_IF_ERROR(CheckSortedIdsSubsetWithIndexOffset(ids, universe, 0));
-  return absl::OkStatus();
-}
-
-absl::Status CheckUnsortedIdsSubset(const absl::Span<const int64_t> ids,
-                                    const absl::Span<const int64_t> universe) {
-  if (ids.empty()) {
-    return absl::OkStatus();
-  }
-  const FastIdCheck id_check(universe);
-  for (int i = 0; i < ids.size(); ++i) {
-    if (!id_check.contains(ids[i])) {
+absl::Status CheckIdsSubset(absl::Span<const int64_t> ids,
+                            const IdNameBiMap& universe,
+                            std::optional<int64_t> upper_bound) {
+  for (const int64_t id : ids) {
+    if (upper_bound.has_value() && id >= *upper_bound) {
       return util::InvalidArgumentErrorBuilder()
-             << "Bad id: " << ids[i] << " (at index: " << i << ") not found";
+             << "id " << id
+             << " should be less than upper bound: " << *upper_bound;
     }
-  }
-  return absl::OkStatus();
-}
-
-absl::Status IdUpdateValidator::IsValid() const {
-  for (int i = 0; i < deleted_ids_.size(); ++i) {
-    const int64_t deleted_id = deleted_ids_[i];
-    if (!old_ids_.HasId(deleted_id)) {
-      return util::InvalidArgumentErrorBuilder()
-             << "Tried to delete id: " << deleted_id << " (at index: " << i
-             << ") but it was not present";
-    }
-  }
-  if (!new_ids_.empty() && new_ids_.front() < old_ids_.next_free_id()) {
-    return util::InvalidArgumentErrorBuilder()
-           << "All new ids should be greater or equal to the first unused id: "
-           << old_ids_.next_free_id()
-           << " but the first new id was: " << new_ids_.front();
-  }
-  return absl::OkStatus();
-}
-
-absl::Status IdUpdateValidator::CheckSortedIdsSubsetOfNotDeleted(
-    const absl::Span<const int64_t> ids) const {
-  RETURN_IF_ERROR(CheckSortedIdsNotBad(ids, deleted_ids_)) << " was deleted";
-  for (int i = 0; i < ids.size(); ++i) {
-    if (!old_ids_.HasId(ids[i])) {
-      return util::InvalidArgumentErrorBuilder()
-             << "Bad id: " << ids[i] << " (at index: " << i << ") not found";
-    }
-  }
-  return absl::OkStatus();
-}
-
-absl::Status IdUpdateValidator::CheckSortedIdsSubsetOfFinal(
-    const absl::Span<const int64_t> ids) const {
-  // Implementation:
-  //  * Partition ids into "old" and "new"
-  //  * Check that the old ids are in old_ids_ but not deleted_ids_.
-  //  * Check that the new ids are in new_ids_.
-  size_t split_point = ids.size();
-  if (!new_ids_.empty()) {
-    split_point = std::distance(
-        ids.begin(), std::lower_bound(ids.begin(), ids.end(), new_ids_[0]));
-  }
-  RETURN_IF_ERROR(
-      CheckSortedIdsSubsetOfNotDeleted(ids.subspan(0, split_point)));
-  RETURN_IF_ERROR(CheckSortedIdsSubsetWithIndexOffset(ids.subspan(split_point),
-                                                      new_ids_, split_point));
-  return absl::OkStatus();
-}
-
-absl::Status IdUpdateValidator::CheckIdsSubsetOfFinal(
-    const absl::Span<const int64_t> ids) const {
-  if (ids.empty()) {
-    return absl::OkStatus();
-  }
-  const FastIdCheck deleted_fast(deleted_ids_);
-  const FastIdCheck new_fast(new_ids_);
-  for (int i = 0; i < ids.size(); ++i) {
-    const int64_t id = ids[i];
-    if (!new_ids_.empty() && id >= new_ids_[0]) {
-      if (!new_fast.contains(id)) {
-        return util::InvalidArgumentErrorBuilder()
-               << "Bad id: " << id << " (at index: " << i << ") not found";
-      }
-    } else if (!old_ids_.HasId(id)) {
-      return util::InvalidArgumentErrorBuilder()
-             << "Bad id: " << id << " (at index: " << i << ") not found";
-    } else if (deleted_fast.contains(id)) {
-      return util::InvalidArgumentErrorBuilder()
-             << "Bad id: " << id << " (at index: " << i << ") was deleted";
+    if (!universe.HasId(id)) {
+      return util::InvalidArgumentErrorBuilder() << "id " << id << " not found";
     }
   }
   return absl::OkStatus();
@@ -256,5 +96,4 @@ absl::Status CheckIdsIdentical(absl::Span<const int64_t> first_ids,
   return absl::OkStatus();
 }
 
-}  // namespace math_opt
-}  // namespace operations_research
+}  // namespace operations_research::math_opt

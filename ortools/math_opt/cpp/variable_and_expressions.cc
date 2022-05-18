@@ -267,6 +267,24 @@ std::ostream& operator<<(std::ostream& ostr, const QuadraticExpression& expr) {
   return ostr;
 }
 
+std::ostream& operator<<(std::ostream& ostr,
+                         const BoundedQuadraticExpression& bounded_expression) {
+  // TODO(b/170991498): use bijective conversion from double to base-10 string
+  // to make sure we can reproduce bugs.
+  const double lb = bounded_expression.lower_bound;
+  const double ub = bounded_expression.upper_bound;
+  if (lb == ub) {
+    ostr << bounded_expression.expression << " = " << lb;
+  } else if (lb == -kInf) {
+    ostr << bounded_expression.expression << " ≤ " << ub;
+  } else if (ub == kInf) {
+    ostr << bounded_expression.expression << " ≥ " << lb;
+  } else {
+    ostr << lb << " ≤ " << bounded_expression.expression << " ≤ " << ub;
+  }
+  return ostr;
+}
+
 #ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
 QuadraticExpression::QuadraticExpression() { ++num_calls_default_constructor_; }
 

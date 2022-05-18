@@ -331,6 +331,23 @@ class Gurobi {
   // Deletes all quadratic objective coefficients.
   absl::Status DelQ();
 
+  // Calls GRBaddqconstr().
+  //
+  // Requirements:
+  //  * lind and lval must be equal length.
+  //  * qrow, qcol, and qval must be equal length.
+  absl::Status AddQConstr(absl::Span<const int> lind,
+                          absl::Span<const double> lval,
+                          absl::Span<const int> qrow,
+                          absl::Span<const int> qcol,
+                          absl::Span<const double> qval, char sense, double rhs,
+                          const std::string& name);
+
+  // Calls GRBdelqconstrs().
+  //
+  // Deletes the specified quadratic constraints.
+  absl::Status DelQConstrs(const absl::Span<const int> ind);
+
   //////////////////////////////////////////////////////////////////////////////
   // Linear constraint matrix queries.
   //////////////////////////////////////////////////////////////////////////////

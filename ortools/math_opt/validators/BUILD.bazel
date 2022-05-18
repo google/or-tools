@@ -54,30 +54,11 @@ cc_library(
 )
 
 cc_library(
-    name = "name_validator",
-    srcs = ["name_validator.cc"],
-    hdrs = ["name_validator.h"],
-    deps = [
-        ":sparse_vector_validator",
-        "//ortools/base",
-        "//ortools/base:map_util",
-        "//ortools/base:status_macros",
-        "//ortools/math_opt/core:model_summary",
-        "//ortools/math_opt/core:sparse_vector_view",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-    ],
-)
-
-cc_library(
     name = "model_validator",
     srcs = ["model_validator.cc"],
     hdrs = ["model_validator.h"],
     deps = [
         ":ids_validator",
-        ":name_validator",
         ":scalar_validator",
         ":sparse_matrix_validator",
         ":sparse_vector_validator",

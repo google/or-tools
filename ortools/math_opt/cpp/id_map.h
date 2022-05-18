@@ -158,6 +158,9 @@ class IdMap {
   inline void insert(InputIt first, InputIt last);
   inline void insert(std::initializer_list<value_type> ilist);
 
+  template <typename M>
+  inline std::pair<iterator, bool> insert_or_assign(const K& k, M&& v);
+
   inline std::pair<iterator, bool> emplace(const K& k, V v);
   template <typename... Args>
   inline std::pair<iterator, bool> try_emplace(const K& k, Args&&... args);
@@ -349,7 +352,7 @@ IdMap<K, V>::const_iterator::const_iterator(
 
 template <typename K, typename V>
 IdMap<K, V>::IdMap(const ModelStorage* storage, StorageType values)
-    : storage_(storage), map_(std::move(values)) {
+    : storage_(values.empty() ? nullptr : storage), map_(std::move(values)) {
   if (!map_.empty()) {
     CHECK(storage_ != nullptr);
   }
@@ -419,6 +422,16 @@ void IdMap<K, V>::insert(const InputIt first, const InputIt last) {
 template <typename K, typename V>
 void IdMap<K, V>::insert(std::initializer_list<value_type> ilist) {
   insert(ilist.begin(), ilist.end());
+}
+
+template <typename K, typename V>
+template <typename M>
+std::pair<typename IdMap<K, V>::iterator, bool> IdMap<K, V>::insert_or_assign(
+    const K& k, M&& v) {
+  CheckOrSetModel(k);
+  auto initial_ret = map_.insert_or_assign(k.typed_id(), std::forward<M>(v));
+  return std::make_pair(iterator(this, std::move(initial_ret.first)),
+                        initial_ret.second);
 }
 
 template <typename K, typename V>

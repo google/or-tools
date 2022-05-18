@@ -51,39 +51,6 @@ namespace math_opt {
 
 namespace {
 
-template <typename IdNameContainer>
-void UpdateIdNameMap(const absl::Span<const int64_t> deleted_ids,
-                     const IdNameContainer& container, IdNameBiMap& bimap) {
-  for (const int64_t deleted_id : deleted_ids) {
-    bimap.Erase(deleted_id);
-  }
-  for (int i = 0; i < container.ids_size(); ++i) {
-    std::string name;
-    if (!container.names().empty()) {
-      name = container.names(i);
-    }
-    bimap.Insert(container.ids(i), std::move(name));
-  }
-}
-
-ModelSummary MakeSummary(const ModelProto& model) {
-  ModelSummary summary;
-  UpdateIdNameMap<VariablesProto>({}, model.variables(), summary.variables);
-  UpdateIdNameMap<LinearConstraintsProto>({}, model.linear_constraints(),
-                                          summary.linear_constraints);
-  return summary;
-}
-
-void UpdateSummaryFromModelUpdate(const ModelUpdateProto& model_update,
-                                  ModelSummary& summary) {
-  UpdateIdNameMap<VariablesProto>(model_update.deleted_variable_ids(),
-                                  model_update.new_variables(),
-                                  summary.variables);
-  UpdateIdNameMap<LinearConstraintsProto>(
-      model_update.deleted_linear_constraint_ids(),
-      model_update.new_linear_constraints(), summary.linear_constraints);
-}
-
 // Returns an InternalError with the input status message if the input status is
 // not OK.
 absl::Status ToInternalError(const absl::Status original) {
@@ -188,12 +155,12 @@ absl::StatusOr<std::unique_ptr<Solver>> Solver::New(
     const SolverTypeProto solver_type, const ModelProto& model,
     const InitArgs& arguments) {
   RETURN_IF_ERROR(internal::ValidateInitArgs(arguments, solver_type));
-  RETURN_IF_ERROR(ValidateModel(model));
+  ASSIGN_OR_RETURN(ModelSummary summary, ValidateModel(model));
   ASSIGN_OR_RETURN(
       auto underlying_solver,
       AllSolversRegistry::Instance()->Create(solver_type, model, arguments));
   auto result = absl::WrapUnique(
-      new Solver(std::move(underlying_solver), MakeSummary(model)));
+      new Solver(std::move(underlying_solver), std::move(summary)));
   return result;
 }
 
@@ -259,13 +226,18 @@ absl::StatusOr<bool> Solver::Update(const ModelUpdateProto& model_update) {
 
   // We will reset it in code paths where no error occur.
   fatal_failure_occurred_ = true;
+  // TODO(b/232264333): we are modifying model_summary_ but when CanUpdate
+  // returns false we are not in a good state. With a different design we can
+  // avoid this copy, which can be non-negligible.
+  ModelSummary backup = model_summary_;
+  RETURN_IF_ERROR(ValidateModelUpdate(model_update, model_summary_));
 
-  RETURN_IF_ERROR(ValidateModelUpdateAndSummary(model_update, model_summary_));
   if (!underlying_solver_->CanUpdate(model_update)) {
+    model_summary_ = std::move(backup);
     fatal_failure_occurred_ = false;
     return false;
   }
-  UpdateSummaryFromModelUpdate(model_update, model_summary_);
+
   RETURN_IF_ERROR(underlying_solver_->Update(model_update));
 
   fatal_failure_occurred_ = false;

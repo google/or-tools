@@ -26,35 +26,16 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
-namespace {
-
-// Converts a map with BasisStatusProto values to a map with BasisStatus values
-// CHECKing that no values are BASIS_STATUS_UNSPECIFIED (the validation code
-// should have tested that).
-//
-// TODO(b/201344491): use FromProto() factory methods on solution members and
-// remove the need for this conversion from `IndexedSolutions`.
-template <typename TypedIndex>
-absl::flat_hash_map<TypedIndex, BasisStatus> BasisStatusMapFromProto(
-    const absl::flat_hash_map<TypedIndex, BasisStatusProto>& proto_map) {
-  absl::flat_hash_map<TypedIndex, BasisStatus> cpp_map;
-  for (const auto& [id, proto_value] : proto_map) {
-    const std::optional<BasisStatus> opt_status = EnumFromProto(proto_value);
-    CHECK(opt_status.has_value());
-    cpp_map.emplace(id, *opt_status);
-  }
-  return cpp_map;
-}
-
-}  // namespace
 
 std::optional<absl::string_view> Enum<FeasibilityStatus>::ToOptString(
     FeasibilityStatus value) {
@@ -173,12 +154,10 @@ Termination Termination::NoSolutionFound(const Limit limit,
   return termination;
 }
 
-TerminationProto Termination::ToProto() const {
+TerminationProto Termination::Proto() const {
   TerminationProto proto;
   proto.set_reason(EnumToProto(reason));
-  if (limit.has_value()) {
-    proto.set_limit(EnumToProto(*limit));
-  }
+  proto.set_limit(EnumToProto(limit));
   proto.set_detail(detail);
   return proto;
 }
@@ -188,32 +167,16 @@ bool Termination::limit_reached() const {
          reason == TerminationReason::kNoSolutionFound;
 }
 
-Termination Termination::FromProto(const TerminationProto& termination_proto) {
-  const bool limit_reached =
-      termination_proto.reason() == TERMINATION_REASON_FEASIBLE ||
-      termination_proto.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND;
-  const bool has_limit = termination_proto.limit() != LIMIT_UNSPECIFIED;
-  CHECK_EQ(limit_reached, has_limit)
-      << "Termination reason should be TERMINATION_REASON_FEASIBLE or "
-         "TERMINATION_REASON_NO_SOLUTION_FOUND if and only if limit is "
-         "specified, but found reason="
-      << ProtoEnumToString(termination_proto.reason())
-      << " and limit=" << ProtoEnumToString(termination_proto.limit());
-
-  if (has_limit) {
-    const std::optional<Limit> opt_limit =
-        EnumFromProto(termination_proto.limit());
-    CHECK(opt_limit.has_value());
-    if (termination_proto.reason() == TERMINATION_REASON_FEASIBLE) {
-      return Feasible(*opt_limit, termination_proto.detail());
-    }
-    return NoSolutionFound(*opt_limit, termination_proto.detail());
-  }
-
-  const std::optional<TerminationReason> opt_reason =
+absl::StatusOr<Termination> Termination::FromProto(
+    const TerminationProto& termination_proto) {
+  const std::optional<TerminationReason> reason =
       EnumFromProto(termination_proto.reason());
-  CHECK(opt_reason.has_value());
-  return Termination(*opt_reason, termination_proto.detail());
+  if (!reason.has_value()) {
+    return absl::InvalidArgumentError("reason must be specified");
+  }
+  Termination result(*reason, termination_proto.detail());
+  result.limit = EnumFromProto(termination_proto.limit());
+  return result;
 }
 
 std::ostream& operator<<(std::ostream& ostr, const Termination& termination) {
@@ -235,7 +198,7 @@ std::string Termination::ToString() const {
   return stream.str();
 }
 
-ProblemStatusProto ProblemStatus::ToProto() const {
+ProblemStatusProto ProblemStatus::Proto() const {
   ProblemStatusProto proto;
   proto.set_primal_status(EnumToProto(primal_status));
   proto.set_dual_status(EnumToProto(dual_status));
@@ -243,21 +206,22 @@ ProblemStatusProto ProblemStatus::ToProto() const {
   return proto;
 }
 
-ProblemStatus ProblemStatus::FromProto(
+absl::StatusOr<ProblemStatus> ProblemStatus::FromProto(
     const ProblemStatusProto& problem_status_proto) {
-  ProblemStatus result;
-  // TODO(b/209014770): consider adding a function to simplify this pattern.
-  const std::optional<FeasibilityStatus> opt_primal_status =
+  const std::optional<FeasibilityStatus> primal_status =
       EnumFromProto(problem_status_proto.primal_status());
-  const std::optional<FeasibilityStatus> opt_dual_status =
+  if (!primal_status.has_value()) {
+    return absl::InvalidArgumentError("primal_status must be specified");
+  }
+  const std::optional<FeasibilityStatus> dual_status =
       EnumFromProto(problem_status_proto.dual_status());
-  CHECK(opt_primal_status.has_value());
-  CHECK(opt_dual_status.has_value());
-  result.primal_status = *opt_primal_status;
-  result.dual_status = *opt_dual_status;
-  result.primal_or_dual_infeasible =
-      problem_status_proto.primal_or_dual_infeasible();
-  return result;
+  if (!dual_status.has_value()) {
+    return absl::InvalidArgumentError("dual_status must be specified");
+  }
+  return ProblemStatus{.primal_status = *primal_status,
+                       .dual_status = *dual_status,
+                       .primal_or_dual_infeasible =
+                           problem_status_proto.primal_or_dual_infeasible()};
 }
 
 std::ostream& operator<<(std::ostream& ostr,
@@ -276,13 +240,14 @@ std::string ProblemStatus::ToString() const {
   return stream.str();
 }
 
-SolveStatsProto SolveStats::ToProto() const {
+absl::StatusOr<SolveStatsProto> SolveStats::Proto() const {
   SolveStatsProto proto;
-  CHECK_OK(
-      util_time::EncodeGoogleApiProto(solve_time, proto.mutable_solve_time()));
+  RETURN_IF_ERROR(
+      util_time::EncodeGoogleApiProto(solve_time, proto.mutable_solve_time()))
+      << "invalid solve_time (value must be finite)";
   proto.set_best_primal_bound(best_primal_bound);
   proto.set_best_dual_bound(best_dual_bound);
-  *proto.mutable_problem_status() = problem_status.ToProto();
+  *proto.mutable_problem_status() = problem_status.Proto();
   proto.set_simplex_iterations(simplex_iterations);
   proto.set_barrier_iterations(barrier_iterations);
   proto.set_first_order_iterations(first_order_iterations);
@@ -290,14 +255,19 @@ SolveStatsProto SolveStats::ToProto() const {
   return proto;
 }
 
-SolveStats SolveStats::FromProto(const SolveStatsProto& solve_stats_proto) {
+absl::StatusOr<SolveStats> SolveStats::FromProto(
+    const SolveStatsProto& solve_stats_proto) {
   SolveStats result;
-  result.solve_time =
-      util_time::DecodeGoogleApiProto(solve_stats_proto.solve_time()).value();
+  OR_ASSIGN_OR_RETURN3(
+      result.solve_time,
+      util_time::DecodeGoogleApiProto(solve_stats_proto.solve_time()),
+      _ << "invalid solve_time");
   result.best_primal_bound = solve_stats_proto.best_primal_bound();
   result.best_dual_bound = solve_stats_proto.best_dual_bound();
-  result.problem_status =
-      ProblemStatus::FromProto(solve_stats_proto.problem_status());
+  OR_ASSIGN_OR_RETURN3(
+      result.problem_status,
+      ProblemStatus::FromProto(solve_stats_proto.problem_status()),
+      _ << "invalid problem_status");
   result.simplex_iterations = solve_stats_proto.simplex_iterations();
   result.barrier_iterations = solve_stats_proto.barrier_iterations();
   result.first_order_iterations = solve_stats_proto.first_order_iterations();
@@ -324,25 +294,78 @@ std::string SolveStats::ToString() const {
   return stream.str();
 }
 
-SolveResult SolveResult::FromProto(const ModelStorage* model,
-                                   const SolveResultProto& solve_result_proto) {
-  SolveResult result(Termination::FromProto(solve_result_proto.termination()));
-  result.solve_stats = SolveStats::FromProto(solve_result_proto.solve_stats());
+absl::Status CheckSolverSpecificOutputEmpty(const SolveResultProto& result) {
+  if (result.solver_specific_output_case() ==
+      SolveResultProto::SOLVER_SPECIFIC_OUTPUT_NOT_SET) {
+    return absl::OkStatus();
+  }
+  return util::InvalidArgumentErrorBuilder()
+         << "cannot set solver specific output twice, was already "
+         << static_cast<int>(result.solver_specific_output_case());
+}
 
-  for (const SolutionProto& solution : solve_result_proto.solutions()) {
-    result.solutions.push_back(Solution::FromProto(model, solution));
+absl::StatusOr<SolveResultProto> SolveResult::Proto() const {
+  SolveResultProto result;
+  *result.mutable_termination() = termination.Proto();
+  OR_ASSIGN_OR_RETURN3(*result.mutable_solve_stats(), solve_stats.Proto(),
+                       _ << "invalid solve_stats");
+  for (const Solution& solution : solutions) {
+    *result.add_solutions() = solution.Proto();
   }
-  for (const PrimalRayProto& primal_ray : solve_result_proto.primal_rays()) {
-    result.primal_rays.push_back(PrimalRay::FromProto(model, primal_ray));
+  for (const PrimalRay& primal_ray : primal_rays) {
+    *result.add_primal_rays() = primal_ray.Proto();
   }
-  for (const DualRayProto& dual_ray : solve_result_proto.dual_rays()) {
-    result.dual_rays.push_back(DualRay::FromProto(model, dual_ray));
+  for (const DualRay& dual_ray : dual_rays) {
+    *result.add_dual_rays() = dual_ray.Proto();
   }
-  if (solve_result_proto.has_gscip_output()) {
-    result.gscip_solver_specific_output =
-        std::move(solve_result_proto.gscip_output());
+  // See yaqs/5107601535926272 on checking if a proto is empty.
+  if (gscip_solver_specific_output.ByteSizeLong() > 0) {
+    *result.mutable_gscip_output() = gscip_solver_specific_output;
   }
   return result;
+}
+
+absl::StatusOr<SolveResult> SolveResult::FromProto(
+    const ModelStorage* model, const SolveResultProto& solve_result_proto) {
+  OR_ASSIGN_OR_RETURN3(auto termination,
+                       Termination::FromProto(solve_result_proto.termination()),
+                       _ << "invalid termination");
+  SolveResult result(std::move(termination));
+  OR_ASSIGN_OR_RETURN3(result.solve_stats,
+                       SolveStats::FromProto(solve_result_proto.solve_stats()),
+                       _ << "invalid solve_stats");
+
+  for (int i = 0; i < solve_result_proto.solutions_size(); ++i) {
+    OR_ASSIGN_OR_RETURN3(
+        auto solution,
+        Solution::FromProto(model, solve_result_proto.solutions(i)),
+        _ << "invalid solution at index " << i);
+    result.solutions.push_back(std::move(solution));
+  }
+  for (int i = 0; i < solve_result_proto.primal_rays_size(); ++i) {
+    OR_ASSIGN_OR_RETURN3(
+        auto primal_ray,
+        PrimalRay::FromProto(model, solve_result_proto.primal_rays(i)),
+        _ << "invalid primal ray at index " << i);
+    result.primal_rays.push_back(std::move(primal_ray));
+  }
+  for (int i = 0; i < solve_result_proto.dual_rays_size(); ++i) {
+    OR_ASSIGN_OR_RETURN3(
+        auto dual_ray,
+        DualRay::FromProto(model, solve_result_proto.dual_rays(i)),
+        _ << "invalid dual ray at index " << i);
+    result.dual_rays.push_back(std::move(dual_ray));
+  }
+  switch (solve_result_proto.solver_specific_output_case()) {
+    case SolveResultProto::kGscipOutput:
+      result.gscip_solver_specific_output = solve_result_proto.gscip_output();
+      return result;
+    case SolveResultProto::SOLVER_SPECIFIC_OUTPUT_NOT_SET:
+      return result;
+  }
+  return util::InvalidArgumentErrorBuilder()
+         << "unexpected value of solver_specific_output_case "
+         << solve_result_proto.solver_specific_output_case();
 }
 
 bool SolveResult::has_primal_feasible_solution() const {

@@ -31,33 +31,6 @@ namespace operations_research {
 namespace math_opt {
 namespace {
 
-absl::Status ValidateTermination(const TerminationProto& termination) {
-  if (termination.reason() == TERMINATION_REASON_UNSPECIFIED) {
-    return absl::InvalidArgumentError("termination reason must be specified");
-  }
-  if (termination.reason() == TERMINATION_REASON_FEASIBLE ||
-      termination.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND) {
-    if (termination.limit() == LIMIT_UNSPECIFIED) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("for reason ", ProtoEnumToString(termination.reason()),
-                       ", limit must be specified"));
-    }
-    if (termination.limit() == LIMIT_CUTOFF &&
-        termination.reason() == TERMINATION_REASON_FEASIBLE) {
-      return absl::InvalidArgumentError(
-          "For LIMIT_CUTOFF expected no solutions");
-    }
-  } else {
-    if (termination.limit() != LIMIT_UNSPECIFIED) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("for reason:", ProtoEnumToString(termination.reason()),
-                       ", limit should be unspecified, but was set to: ",
-                       ProtoEnumToString(termination.limit())));
-    }
-  }
-  return absl::OkStatus();
-}
-
 bool HasPrimalFeasibleSolution(const SolutionProto& solution) {
   return solution.has_primal_solution() &&
          solution.primal_solution().feasibility_status() ==
@@ -145,6 +118,33 @@ absl::Status RequireNoDualFeasibleSolution(const SolveResultProto& result) {
   return absl::OkStatus();
 }
 }  // namespace
+
+absl::Status ValidateTermination(const TerminationProto& termination) {
+  if (termination.reason() == TERMINATION_REASON_UNSPECIFIED) {
+    return absl::InvalidArgumentError("termination reason must be specified");
+  }
+  if (termination.reason() == TERMINATION_REASON_FEASIBLE ||
+      termination.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND) {
+    if (termination.limit() == LIMIT_UNSPECIFIED) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("for reason ", ProtoEnumToString(termination.reason()),
+                       ", limit must be specified"));
+    }
+    if (termination.limit() == LIMIT_CUTOFF &&
+        termination.reason() == TERMINATION_REASON_FEASIBLE) {
+      return absl::InvalidArgumentError(
+          "For LIMIT_CUTOFF expected no solutions");
+    }
+  } else {
+    if (termination.limit() != LIMIT_UNSPECIFIED) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("for reason:", ProtoEnumToString(termination.reason()),
+                       ", limit should be unspecified, but was set to: ",
+                       ProtoEnumToString(termination.limit())));
+    }
+  }
+  return absl::OkStatus();
+}
 
 absl::Status CheckHasPrimalSolution(const SolveResultProto& result) {
   if (!HasPrimalFeasibleSolution(result)) {

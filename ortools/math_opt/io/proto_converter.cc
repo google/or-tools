@@ -50,10 +50,6 @@ absl::Status IsSupported(const MPModelProto& model) {
   return absl::OkStatus();
 }
 
-absl::Status IsSupported(const math_opt::ModelProto& model) {
-  return ValidateModel(model);
-}
-
 bool AnyVarNamed(const MPModelProto& model) {
   for (const MPVariableProto& var : model.variable()) {
     if (var.name().length() > 0) {
@@ -205,7 +201,7 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
 
 absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
     const ::operations_research::math_opt::ModelProto& model) {
-  RETURN_IF_ERROR(IsSupported(model));
+  RETURN_IF_ERROR(ValidateModel(model).status());
 
   const bool vars_have_name = model.variables().names_size() > 0;
   const bool constraints_have_name =

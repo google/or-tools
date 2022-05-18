@@ -232,6 +232,8 @@ enum LimitProto {
 
 // All information regarding why a call to Solve() terminated.
 message TerminationProto {
+  // Additional information in `limit` when value is TERMINATION_REASON_FEASIBLE
+  // or TERMINATION_REASON_NO_SOLUTION_FOUND, see `limit` for details.
   TerminationReasonProto reason = 1;
 
   // Is LIMIT_UNSPECIFIED unless reason is TERMINATION_REASON_FEASIBLE or

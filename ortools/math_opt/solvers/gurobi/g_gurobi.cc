@@ -17,6 +17,7 @@
 #include <string_view>
 #include <utility>
 
+#include "ortools/base/logging.h"
 #include "ortools/base/cleanup.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -180,7 +181,7 @@ absl::Status Gurobi::AddVars(const absl::Span<const int> vbegin,
                              const absl::Span<const char> vtype,
                              const absl::Span<const std::string> names) {
   CHECK_EQ(vind.size(), vval.size());
-  const int num_vars = lb.size();
+  const int num_vars = static_cast<int>(lb.size());
   CHECK_EQ(ub.size(), num_vars);
   CHECK_EQ(vtype.size(), num_vars);
   double* c_obj = nullptr;
@@ -220,7 +221,7 @@ absl::Status Gurobi::DelVars(const absl::Span<const int> ind) {
 absl::Status Gurobi::AddConstrs(const absl::Span<const char> sense,
                                 const absl::Span<const double> rhs,
                                 const absl::Span<const std::string> names) {
-  const int num_cons = sense.size();
+  const int num_cons = static_cast<int>(sense.size());
   CHECK_EQ(rhs.size(), num_cons);
   char** c_names = nullptr;
   std::vector<char*> c_names_data;
@@ -247,7 +248,7 @@ absl::Status Gurobi::DelConstrs(const absl::Span<const int> ind) {
 absl::Status Gurobi::AddQpTerms(const absl::Span<const int> qrow,
                                 const absl::Span<const int> qcol,
                                 const absl::Span<const double> qval) {
-  const int numqnz = qrow.size();
+  const int numqnz = static_cast<int>(qrow.size());
   CHECK_EQ(qcol.size(), numqnz);
   CHECK_EQ(qval.size(), numqnz);
   return ToStatus(GRBaddqpterms(
@@ -257,10 +258,43 @@ absl::Status Gurobi::AddQpTerms(const absl::Span<const int> qrow,
 
 absl::Status Gurobi::DelQ() { return ToStatus(GRBdelq(gurobi_model_)); }
 
+absl::Status Gurobi::AddQConstr(const absl::Span<const int> lind,
+                                const absl::Span<const double> lval,
+                                const absl::Span<const int> qrow,
+                                const absl::Span<const int> qcol,
+                                const absl::Span<const double> qval,
+                                const char sense, const double rhs,
+                                const std::string& name) {
+  const int numlnz = static_cast<int>(lind.size());
+  CHECK_EQ(lval.size(), numlnz);
+
+  const int numqlnz = static_cast<int>(qrow.size());
+  CHECK_EQ(qcol.size(), numqlnz);
+  CHECK_EQ(qval.size(), numqlnz);
+
+  return ToStatus(GRBaddqconstr(
+      /*model=*/gurobi_model_,
+      /*numlnz=*/numlnz,
+      /*lind=*/const_cast<int*>(lind.data()),
+      /*lval=*/const_cast<double*>(lval.data()),
+      /*numqlnz=*/numqlnz,
+      /*qrow=*/const_cast<int*>(qrow.data()),
+      /*qcol=*/const_cast<int*>(qcol.data()),
+      /*qval=*/const_cast<double*>(qval.data()),
+      /*sense=*/sense,
+      /*rhs=*/rhs,
+      /*constrname=*/const_cast<char*>(name.c_str())));
+}
+
+absl::Status Gurobi::DelQConstrs(const absl::Span<const int> ind) {
+  return ToStatus(GRBdelqconstrs(gurobi_model_, static_cast<int>(ind.size()),
+                                 const_cast<int*>(ind.data())));
+}
+
 absl::Status Gurobi::ChgCoeffs(const absl::Span<const int> cind,
                                const absl::Span<const int> vind,
                                const absl::Span<const double> val) {
-  const int num_changes = cind.size();
+  const int num_changes = static_cast<int>(cind.size());
   CHECK_EQ(vind.size(), num_changes);
   CHECK_EQ(val.size(), num_changes);
   return ToStatus(GRBchgcoeffs(
@@ -451,7 +485,7 @@ absl::StatusOr<std::vector<char>> Gurobi::GetCharAttrArray(
 absl::Status Gurobi::SetIntAttrList(const char* const name,
                                     const absl::Span<const int> ind,
                                     const absl::Span<const int> new_values) {
-  const int len = ind.size();
+  const int len = static_cast<int>(ind.size());
   CHECK_EQ(new_values.size(), len);
   return ToStatus(GRBsetintattrlist(gurobi_model_, name, len,
                                     const_cast<int*>(ind.data()),
@@ -461,7 +495,7 @@ absl::Status Gurobi::SetIntAttrList(const char* const name,
 absl::Status Gurobi::SetDoubleAttrList(
     const char* const name, const absl::Span<const int> ind,
     const absl::Span<const double> new_values) {
-  const int len = ind.size();
+  const int len = static_cast<int>(ind.size());
   CHECK_EQ(new_values.size(), len);
   return ToStatus(GRBsetdblattrlist(gurobi_model_, name, len,
                                     const_cast<int*>(ind.data()),
@@ -471,7 +505,7 @@ absl::Status Gurobi::SetDoubleAttrList(
 absl::Status Gurobi::SetCharAttrList(const char* const name,
                                      const absl::Span<const int> ind,
                                      const absl::Span<const char> new_values) {
-  const int len = ind.size();
+  const int len = static_cast<int>(ind.size());
   CHECK_EQ(new_values.size(), len);
   return ToStatus(GRBsetcharattrlist(gurobi_model_, name, len,
                                      const_cast<int*>(ind.data()),
@@ -559,7 +593,7 @@ absl::StatusOr<std::string> Gurobi::CallbackContext::CbGetMessage() const {
 absl::Status Gurobi::CallbackContext::CbCut(
     const absl::Span<const int> cutind, const absl::Span<const double> cutval,
     const char cutsense, const double cutrhs) const {
-  const int cut_len = cutind.size();
+  const int cut_len = static_cast<int>(cutind.size());
   CHECK_EQ(cutval.size(), cut_len);
   return gurobi_->ToStatus(
       GRBcbcut(cb_data_, cut_len, const_cast<int*>(cutind.data()),
@@ -569,7 +603,7 @@ absl::Status Gurobi::CallbackContext::CbCut(
 absl::Status Gurobi::CallbackContext::CbLazy(
     const absl::Span<const int> lazyind, const absl::Span<const double> lazyval,
     const char lazysense, const double lazyrhs) const {
-  const int lazy_len = lazyind.size();
+  const int lazy_len = static_cast<int>(lazyind.size());
   CHECK_EQ(lazyval.size(), lazy_len);
   return gurobi_->ToStatus(
       GRBcblazy(cb_data_, lazy_len, const_cast<int*>(lazyind.data()),

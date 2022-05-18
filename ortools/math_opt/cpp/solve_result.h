@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -79,10 +80,11 @@ struct ProblemStatus {
   // infeasibility, unboundedness, or both).
   bool primal_or_dual_infeasible = false;
 
-  static ProblemStatus FromProto(
+  // Returns an error if the primal_status or dual_status is unspecified.
+  static absl::StatusOr<ProblemStatus> FromProto(
       const ProblemStatusProto& problem_status_proto);
 
-  ProblemStatusProto ToProto() const;
+  ProblemStatusProto Proto() const;
   std::string ToString() const;
 };
 
@@ -108,7 +110,6 @@ struct SolveStats {
   //     may be non-trivial even when no primal feasible solutions are returned.
   //   * best_dual_bound is always better (smaller for minimization and larger
   //     for maximization) than best_primal_bound.
-
   double best_primal_bound = 0.0;
 
   // Solver claims the optimal value is equal or worse (larger for
@@ -137,10 +138,12 @@ struct SolveStats {
 
   int node_count = 0;
 
-  // Will CHECK fail on invalid input, if problem_status is invalid.
-  static SolveStats FromProto(const SolveStatsProto& solve_stats_proto);
+  // Returns an error if converting the problem_status or solve_time fails.
+  static absl::StatusOr<SolveStats> FromProto(
+      const SolveStatsProto& solve_stats_proto);
 
-  SolveStatsProto ToProto() const;
+  // Will return an error if solve_time is not finite.
+  absl::StatusOr<SolveStatsProto> Proto() const;
   std::string ToString() const;
 };
 
@@ -258,9 +261,15 @@ struct Termination {
   // functions Feasible and NoSolutionFound.
   explicit Termination(TerminationReason reason, std::string detail = {});
 
+  // Additional information in `limit` when value is kFeasible or
+  // kNoSolutionFound, see `limit` for details.
   TerminationReason reason;
 
-  // Is set iff reason is kFeasible or kNoSolutionFound.
+  // A Termination within a SolveResult returned by math_opt::Solve() satisfies
+  // some additional invariants:
+  //  * limit is set iff reason is kFeasible or kNoSolutionFound.
+  //  * if the limit is kCutoff, the termination reason will be
+  //  kNoSolutionFound.
   std::optional<Limit> limit;
 
   // Additional typically solver specific information about termination.
@@ -272,20 +281,16 @@ struct Termination {
   // kNoSolutionFound, and limit is not empty).
   bool limit_reached() const;
 
-  // Will CHECK fail on invalid input, if reason is unspecified, if limit is
-  // set when reason is not TERMINATION_REASON_FEASIBLE or
-  // TERMINATION_REASON_NO_SOLUTION_FOUND, or if limit is unspecified when
-  // reason is TERMINATION_REASON_FEASIBLE or
-  // TERMINATION_REASON_NO_SOLUTION_FOUND (see solution_validator.h).
-  static Termination FromProto(const TerminationProto& termination_proto);
-
   // Sets the reason to kFeasible
   static Termination Feasible(Limit limit, std::string detail = {});
 
   // Sets the reason to kNoSolutionFound
   static Termination NoSolutionFound(Limit limit, std::string detail = {});
 
-  TerminationProto ToProto() const;
+  // Will return an error if termination_proto.reason is UNSPECIFIED.
+  static absl::StatusOr<Termination> FromProto(
+      const TerminationProto& termination_proto);
+  TerminationProto Proto() const;
   std::string ToString() const;
 };
 
@@ -332,15 +337,43 @@ struct SolveResult {
   // Solver specific output from Gscip. Only populated if Gscip is used.
   GScipOutput gscip_solver_specific_output;
 
-  static SolveResult FromProto(const ModelStorage* model,
-                               const SolveResultProto& solve_result_proto);
+  // Returns the SolveResult equivalent of solve_result_proto.
+  //
+  // Returns an error if:
+  //  * Any solution or ray cannot be read from proto (e.g. on a subfield,
+  //      ids.size != values.size).
+  //  * termination or solve_result cannot be read from proto.
+  // See the FromProto() functions for these types for details.
+  //
+  // Note: this is (intentionally) a much weaker test than ValidateResult(). The
+  // guarantees are just strong enough to ensure that a SolveResult and
+  // SolveResultProto can round trip cleanly, e.g. we do not check that a
+  // termination reason optimal implies that there is at least one primal
+  // feasible solution.
+  //
+  // While ValidateResult() is called automatically when you are solving
+  // locally, users who are reading a solution from disk, solving remotely, or
+  // getting their SolveResultProto (or SolveResult) by any other means are
+  // encouraged to either call ValidateResult() themselves, do their own
+  // validation, or not rely on the strong guarantees of ValidateResult()
+  // and just treat SolveResult as a simple struct.
+  static absl::StatusOr<SolveResult> FromProto(
+      const ModelStorage* model, const SolveResultProto& solve_result_proto);
+
+  // Returns the proto equivalent of this.
+  //
+  // Note that the proto uses a oneof for solver specific output. This method
+  // will fail if multiple solver specific outputs are set. TODO(b/231134639):
+  // investigate removing the oneof from the proto.
+  absl::StatusOr<SolveResultProto> Proto() const;
 
   absl::Duration solve_time() const { return solve_stats.solve_time; }
 
   // Indicates if at least one primal feasible solution is available.
   //
-  // When termination.reason is TerminationReason::kOptimal, this is guaranteed
-  // to be true and need not be checked.
+  // When termination.reason is TerminationReason::kOptimal or
+  // TerminationReason::kFeasible, this is guaranteed to be true and need not be
+  // checked.
   bool has_primal_feasible_solution() const;
 
   // The objective value of the best primal feasible solution. Will CHECK fail
@@ -367,20 +400,27 @@ struct SolveResult {
   // are no primal rays.
   const VariableMap<double>& ray_variable_values() const;
 
-  // Indicates if the best primal solution has an associated dual feasible
-  // solution.
+  // Indicates if the best solution has an associated dual feasible solution.
   //
   // This is NOT guaranteed to be true when termination.reason is
-  // TerminationReason::kOptimal. It also may be true even when the best primal
-  // solution is not feasible.
+  // TerminationReason::kOptimal. It also may be true even when the best
+  // solution does not have an associated primal feasible solution.
   bool has_dual_feasible_solution() const;
 
-  // The dual values from the best dual solution. Will CHECK fail if there
-  // are no dual solutions.
+  // The dual values associated to the best solution.
+  //
+  // If there is at least one primal feasible solution, this corresponds to the
+  // dual values associated to the best primal feasible solution. Will CHECK
+  // fail if the best solution does not have an associated dual feasible
+  // solution.
   const LinearConstraintMap<double>& dual_values() const;
 
-  // The reduced from the best dual solution. Will CHECK fail if there
-  // are no dual solutions.
+  // The reduced costs associated to the best solution.
+  //
+  // If there is at least one primal feasible solution, this corresponds to the
+  // reduced costs associated to the best primal feasible solution. Will CHECK
+  // fail if the best solution does not have an associated dual feasible
+  // solution.
   const VariableMap<double>& reduced_costs() const;
 
   // Indicates if at least one dual ray is available.
@@ -397,13 +437,13 @@ struct SolveResult {
   // are no dual rays.
   const VariableMap<double>& ray_reduced_costs() const;
 
-  // Indicates if at least one basis is available.
+  // Indicates if the best solution has an associated basis.
   bool has_basis() const;
 
-  // The constraint basis status for the first primal/dual pair.
+  // The constraint basis status for the best solution.
   const LinearConstraintMap<BasisStatus>& constraint_status() const;
 
-  // The variable basis status for the first primal/dual pair.
+  // The variable basis status for the best solution.
   const VariableMap<BasisStatus>& variable_status() const;
 };
 

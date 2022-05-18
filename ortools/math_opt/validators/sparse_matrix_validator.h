@@ -18,6 +18,7 @@
 
 #include "absl/status/status.h"
 #include "absl/types/span.h"
+#include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model.pb.h"
 
 namespace operations_research::math_opt {
@@ -36,8 +37,8 @@ absl::Status SparseMatrixValid(const SparseDoubleMatrixProto& matrix,
 //   1. matrix.row_ids is a subset of row_ids.
 //   2. matrix.column_ids is a subset of column_ids.
 absl::Status SparseMatrixIdsAreKnown(const SparseDoubleMatrixProto& matrix,
-                                     absl::Span<const int64_t> row_ids,
-                                     absl::Span<const int64_t> column_ids);
+                                     const IdNameBiMap& row_ids,
+                                     const IdNameBiMap& column_ids);
 
 }  // namespace operations_research::math_opt
 
