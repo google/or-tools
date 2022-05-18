@@ -39,7 +39,7 @@
 <scm>
   <connection>scm:git:git://github.com/google/or-tools.git</connection>
   <developerConnection>scm:git:ssh://github.com:google/or-tools.git</developerConnection>
-  <url>http://github.com/google/or-tools/tree/master</url>
+  <url>http://github.com/google/or-tools/tree/main</url>
   <tag>HEAD</tag>
 </scm>
 
