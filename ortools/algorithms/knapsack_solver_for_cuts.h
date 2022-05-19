@@ -57,8 +57,8 @@
 
 namespace operations_research {
 
-// ----- KnapsackAssignementForCuts -----
-// KnapsackAssignementForCuts is a small struct used to pair an item with
+// ----- KnapsackAssignmentForCuts -----
+// KnapsackAssignmentForCuts is a small struct used to pair an item with
 // its assignment. It is mainly used for search nodes and updates.
 struct KnapsackAssignmentForCuts {
   KnapsackAssignmentForCuts(int item_id, bool is_in)
@@ -96,7 +96,7 @@ using KnapsackItemForCutsPtr = std::unique_ptr<KnapsackItemForCuts>;
 // KnapsackSearchNodeForCuts is a class used to describe a decision in the
 // decision search tree.
 // The node is defined by a pointer to the parent search node and an
-// assignment (see KnapsackAssignementForCuts).
+// assignment (see KnapsackAssignmentForCuts).
 // As the current state is not explicitly stored in a search node, one should
 // go through the search tree to incrementally build a partial solution from
 // a previous search node.
@@ -296,7 +296,7 @@ class KnapsackPropagatorForCuts {
 // ----- KnapsackSolverForCuts -----
 // KnapsackSolverForCuts is the one-dimensional knapsack solver class.
 // In the current implementation, the next item to assign is given by the
-// master propagator. Using SetMasterPropagator allows changing the default
+// primary propagator. Using SetPrimaryPropagator allows changing the default
 // (propagator of the first dimension).
 class KnapsackSolverForCuts {
  public:

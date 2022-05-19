@@ -48,6 +48,70 @@ namespace operations_research {
 
 using util::GraphIsSymmetric;
 
+std::vector<int> CountTriangles(const ::util::StaticGraph<int, int>& graph,
+                                int max_degree) {
+  std::vector<int> num_triangles(graph.num_nodes(), 0);
+  absl::flat_hash_set<std::pair<int, int>> arcs;
+  arcs.reserve(graph.num_arcs());
+  for (int a = 0; a < graph.num_arcs(); ++a) {
+    arcs.insert({graph.Tail(a), graph.Head(a)});
+  }
+  for (int node = 0; node < graph.num_nodes(); ++node) {
+    if (graph.OutDegree(node) > max_degree) continue;
+    int triangles = 0;
+    for (int neigh1 : graph[node]) {
+      for (int neigh2 : graph[node]) {
+        if (arcs.contains({neigh1, neigh2})) ++triangles;
+      }
+    }
+    num_triangles[node] = triangles;
+  }
+  return num_triangles;
+}
+
+void LocalBfs(const ::util::StaticGraph<int, int>& graph, int source,
+              int stop_after_num_nodes, std::vector<int>* visited,
+              std::vector<int>* num_within_radius,
+              // For performance, the user provides us with an already-
+              // allocated bitmask of size graph.num_nodes() with all values set
+              // to "false", which we'll restore in the same state upon return.
+              std::vector<bool>* tmp_mask) {
+  const int n = graph.num_nodes();
+  visited->clear();
+  num_within_radius->clear();
+  num_within_radius->push_back(1);
+  DCHECK_EQ(tmp_mask->size(), n);
+  DCHECK(absl::c_find(*tmp_mask, true) == tmp_mask->end());
+  visited->push_back(source);
+  (*tmp_mask)[source] = true;
+  int num_settled = 0;
+  int next_distance_change = 1;
+  while (num_settled < visited->size()) {
+    const int from = (*visited)[num_settled++];
+    for (const int child : graph[from]) {
+      if ((*tmp_mask)[child]) continue;
+      (*tmp_mask)[child] = true;
+      visited->push_back(child);
+    }
+    if (num_settled == next_distance_change) {
+      // We already know all the nodes at the next distance.
+      num_within_radius->push_back(visited->size());
+      if (num_settled >= stop_after_num_nodes) break;
+      next_distance_change = visited->size();
+    }
+  }
+  // Clean up 'tmp_mask' sparsely.
+  for (const int node : *visited) (*tmp_mask)[node] = false;
+  // If we explored the whole connected component, num_within_radius contains
+  // a spurious entry: remove it.
+  if (num_settled == visited->size()) {
+    DCHECK_GE(num_within_radius->size(), 2);
+    DCHECK_EQ(num_within_radius->back(),
+              (*num_within_radius)[num_within_radius->size() - 2]);
+    num_within_radius->pop_back();
+  }
+}
+
 namespace {
 // Some routines used below.
 void SwapFrontAndBack(std::vector<int>* v) {

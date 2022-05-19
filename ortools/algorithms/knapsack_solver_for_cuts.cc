@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <queue>
 #include <string>
 #include <utility>
@@ -25,7 +26,6 @@ namespace operations_research {
 namespace {
 
 const int kNoSelection(-1);
-const int kDefaultMasterPropagatorId(0);
 const double kInfinity = std::numeric_limits<double>::infinity();
 
 // Comparator used to sort item in decreasing efficiency order
@@ -144,7 +144,7 @@ void KnapsackPropagatorForCuts::Init(const std::vector<double>& profits,
 
   for (int i = 0; i < number_of_items; ++i) {
     items_.emplace_back(
-        absl::make_unique<KnapsackItemForCuts>(i, weights[i], profits[i]));
+        std::make_unique<KnapsackItemForCuts>(i, weights[i], profits[i]));
   }
   capacity_ = capacity;
   current_profit_ = 0;
@@ -229,7 +229,7 @@ void KnapsackPropagatorForCuts::InitPropagator() {
   sorted_items_.clear();
   sorted_items_.reserve(items().size());
   for (int i(0); i < items().size(); ++i) {
-    sorted_items_.emplace_back(absl::make_unique<KnapsackItemForCuts>(
+    sorted_items_.emplace_back(std::make_unique<KnapsackItemForCuts>(
         i, items()[i]->weight, items()[i]->profit));
   }
   profit_max_ = 0;
@@ -329,7 +329,7 @@ double KnapsackSolverForCuts::Solve(TimeLimit* time_limit,
   SearchQueue search_queue;
   const KnapsackAssignmentForCuts assignment(kNoSelection, true);
   auto root_node =
-      absl::make_unique<KnapsackSearchNodeForCuts>(nullptr, assignment);
+      std::make_unique<KnapsackSearchNodeForCuts>(nullptr, assignment);
   root_node->set_current_profit(GetCurrentProfit());
   root_node->set_profit_upper_bound(GetAggregatedProfitUpperBound());
   root_node->set_next_item_id(GetNextItemId());
@@ -440,7 +440,7 @@ bool KnapsackSolverForCuts::MakeNewNode(const KnapsackSearchNodeForCuts& node,
 
   // The node is relevant.
   auto relevant_node =
-      absl::make_unique<KnapsackSearchNodeForCuts>(&node, assignment);
+      std::make_unique<KnapsackSearchNodeForCuts>(&node, assignment);
   relevant_node->set_current_profit(new_node.current_profit());
   relevant_node->set_profit_upper_bound(new_node.profit_upper_bound());
   relevant_node->set_next_item_id(new_node.next_item_id());

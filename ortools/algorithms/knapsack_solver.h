@@ -234,7 +234,7 @@ class KnapsackSolver {
    */
   void set_time_limit(double time_limit_seconds) {
     time_limit_seconds_ = time_limit_seconds;
-    time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds_);
+    time_limit_ = std::make_unique<TimeLimit>(time_limit_seconds_);
   }
 
  private:
@@ -272,12 +272,12 @@ class KnapsackSolver {
 //
 // Constraints are enforced using KnapsackPropagator objects, in the current
 // code there is one propagator per dimension (KnapsackCapacityPropagator).
-// One of those propagators, named master propagator, is used to guide the
+// One of those propagators, named primary propagator, is used to guide the
 // search, i.e. decides which item should be assigned next.
 // Roughly speaking the search algorithm is:
 //  - While not optimal
 //    - Select next search node to expand
-//    - Select next item_i to assign (using master propagator)
+//    - Select next item_i to assign (using primary propagator)
 //    - Generate a new search node where item_i is in the knapsack
 //      - Check validity of this new partial solution (using propagators)
 //      - If valid, add this new search node to the search
@@ -605,7 +605,7 @@ class BaseKnapsackSolver {
 // ----- KnapsackGenericSolver -----
 // KnapsackGenericSolver is the multi-dimensional knapsack solver class.
 // In the current implementation, the next item to assign is given by the
-// master propagator. Using SetMasterPropagator allows changing the default
+// primary propagator. Using SetPrimaryPropagator allows changing the default
 // (propagator of the first dimension), and selecting another dimension when
 // more constrained.
 // TODO(user): In the case of a multi-dimensional knapsack problem, implement
@@ -626,10 +626,10 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
                                      int64_t* upper_bound) override;
 
   // Sets which propagator should be used to guide the search.
-  // 'master_propagator_id' should be in 0..p-1 with p the number of
+  // 'primary_propagator_id' should be in 0..p-1 with p the number of
   // propagators.
-  void set_master_propagator_id(int master_propagator_id) {
-    master_propagator_id_ = master_propagator_id;
+  void set_primary_propagator_id(int primary_propagator_id) {
+    primary_propagator_id_ = primary_propagator_id;
   }
 
   // Solves the problem and returns the profit of the optimal solution.
@@ -662,14 +662,14 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
   int64_t GetAggregatedProfitUpperBound() const;
   bool HasOnePropagator() const { return propagators_.size() == 1; }
   int64_t GetCurrentProfit() const {
-    return propagators_.at(master_propagator_id_)->current_profit();
+    return propagators_.at(primary_propagator_id_)->current_profit();
   }
   int64_t GetNextItemId() const {
-    return propagators_.at(master_propagator_id_)->GetNextItemId();
+    return propagators_.at(primary_propagator_id_)->GetNextItemId();
   }
 
   std::vector<KnapsackPropagator*> propagators_;
-  int master_propagator_id_;
+  int primary_propagator_id_;
   std::vector<KnapsackSearchNode*> search_nodes_;
   KnapsackState state_;
   int64_t best_solution_profit_;
