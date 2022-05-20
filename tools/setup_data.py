@@ -27,7 +27,7 @@ setup(
     version='VVVV',
     install_requires=install_requires,
     license='Apache 2.0',
-    author='Google Inc',
+    author='Google LLC',
     author_email='or-tools@google.com',
     description='Google OR-Tools python libraries and modules',
     keywords=('operations research, constraint programming, ' +

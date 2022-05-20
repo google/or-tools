@@ -73,3 +73,15 @@ message SparseDoubleMatrixProto {
   // May not contain NaN.
   repeated double coefficients = 3;
 }
+
+// A sparse representation of a linear expression (a weighted sum of variables,
+// plus a constant offset).
+message LinearExpressionProto {
+  // Ids of variables. Must be sorted (in increasing ordering) with all elements
+  // distinct.
+  repeated int64 ids = 1;
+  // Must have equal length to ids. Values must be finite may not be NaN.
+  repeated double coefficients = 2;
+  // Must be finite and may not be NaN.
+  double offset = 3;
+}
