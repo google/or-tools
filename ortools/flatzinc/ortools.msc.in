@@ -6,11 +6,9 @@
   "mznlib": "../ortools",
   "executable": "@FZ_REL_INSTALL_BINARY@",
   "tags": ["ortools", "cp", "lcg", "float", "int"],
-  "stdFlags": ["-a","-f","-n","-p","-r","-s","-v"],
+  "stdFlags": ["-a","-f","-n","-p","-r","-s","-v","-l"],
   "extraFlags": [
     ["--cp_model_params", "Provide parameters interpreted as a text SatParameters proto", "string", ""],
-    ["--fz_floats_are_ints", "Interpret floats as integers", "bool:false:true", "true"],
-    ["-l", "Print logging information", "bool", "false"]
   ],
   "supportsMzn": false,
   "supportsFzn": true,
