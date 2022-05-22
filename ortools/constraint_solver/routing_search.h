@@ -123,6 +123,10 @@ AutomaticFirstSolutionStrategy(bool has_pickup_deliveries,
                                bool has_node_precedences,
                                bool has_single_vehicle_node);
 
+/// Computes and returns the first node in the end chain of each vehicle in the
+/// model, based on the current bound NextVar values.
+std::vector<int64_t> ComputeVehicleEndChainStarts(const RoutingModel& model);
+
 /// Decision builder building a solution using heuristics with local search
 /// filters to evaluate its feasibility. This is very fast but can eventually
 /// fail when the solution is restored if filters did not detect all
@@ -281,7 +285,7 @@ class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
 
  protected:
   bool StopSearch() override { return model_->CheckLimit(); }
-  virtual void SetVehicleIndex(int64_t node, int vehicle) {}
+  virtual void SetVehicleIndex(int64_t /*node*/, int /*vehicle*/) {}
   virtual void ResetVehicleIndices() {}
   bool VehicleIsEmpty(int vehicle) const {
     return Value(model()->Start(vehicle)) == model()->End(vehicle);
@@ -556,32 +560,50 @@ class GlobalCheapestInsertionFilteredHeuristic
       AdjustablePriorityQueue<PairEntry>* priority_queue,
       std::vector<PairEntries>* pickup_to_entries,
       std::vector<PairEntries>* delivery_to_entries);
-  /// Updates all pair entries inserting a node after node "insert_after" and
-  /// updates the priority queue accordingly.
-  bool UpdatePairPositions(const std::vector<int>& pair_indices, int vehicle,
+  /// Updates all existing pair entries inserting a node after nodes of the
+  /// chain starting at 'insert_after_start' and ending before
+  /// 'insert_after_end', and updates the priority queue accordingly.
+  bool UpdateExistingPairEntriesOnChain(
+      int64_t insert_after_start, int64_t insert_after_end,
+      AdjustablePriorityQueue<PairEntry>* priority_queue,
+      std::vector<PairEntries>* pickup_to_entries,
+      std::vector<PairEntries>* delivery_to_entries);
+  /// Adds pair entries inserting either a pickup or a delivery after
+  /// "insert_after". When inserting pickups after "insert_after", will skip
+  /// entries inserting their delivery after
+  /// "skip_entries_inserting_delivery_after". This can be used to avoid the
+  /// insertion of redundant entries.
+  bool AddPairEntriesAfter(const std::vector<int>& pair_indices, int vehicle,
                            int64_t insert_after,
+                           int64_t skip_entries_inserting_delivery_after,
                            AdjustablePriorityQueue<PairEntry>* priority_queue,
                            std::vector<PairEntries>* pickup_to_entries,
                            std::vector<PairEntries>* delivery_to_entries) {
-    return UpdatePickupPositions(pair_indices, vehicle, insert_after,
-                                 priority_queue, pickup_to_entries,
-                                 delivery_to_entries) &&
-           UpdateDeliveryPositions(pair_indices, vehicle, insert_after,
-                                   priority_queue, pickup_to_entries,
-                                   delivery_to_entries);
+    return AddPairEntriesWithDeliveryAfter(pair_indices, vehicle, insert_after,
+                                           priority_queue, pickup_to_entries,
+                                           delivery_to_entries) &&
+           AddPairEntriesWithPickupAfter(pair_indices, vehicle, insert_after,
+                                         skip_entries_inserting_delivery_after,
+                                         priority_queue, pickup_to_entries,
+                                         delivery_to_entries);
   }
-  /// Updates all pair entries inserting their pickup node after node
-  /// "insert_after" and updates the priority queue accordingly.
-  bool UpdatePickupPositions(const std::vector<int>& pair_indices, int vehicle,
-                             int64_t pickup_insert_after,
-                             AdjustablePriorityQueue<PairEntry>* priority_queue,
-                             std::vector<PairEntries>* pickup_to_entries,
-                             std::vector<PairEntries>* delivery_to_entries);
-  /// Updates all pair entries inserting their delivery node after node
-  /// "insert_after" and updates the priority queue accordingly.
-  bool UpdateDeliveryPositions(
-      const std::vector<int>& pair_indices, int vehicle,
-      int64_t delivery_insert_after,
+  /// Adds pair entries inserting a pickup after node "insert_after" and a
+  /// delivery in a position after the pickup, and updates the priority queue
+  /// accordingly.
+  /// Will skip entries inserting their delivery after
+  /// "skip_entries_inserting_delivery_after". This can be used to avoid the
+  /// insertion of redundant entries.
+  bool AddPairEntriesWithPickupAfter(
+      const std::vector<int>& pair_indices, int vehicle, int64_t insert_after,
+      int64_t skip_entries_inserting_delivery_after,
+      AdjustablePriorityQueue<PairEntry>* priority_queue,
+      std::vector<PairEntries>* pickup_to_entries,
+      std::vector<PairEntries>* delivery_to_entries);
+  /// Adds pair entries inserting a delivery after node "insert_after" and a
+  /// pickup in a position before "insert_after", and updates the priority queue
+  /// accordingly.
+  bool AddPairEntriesWithDeliveryAfter(
+      const std::vector<int>& pair_indices, int vehicle, int64_t insert_after,
       AdjustablePriorityQueue<PairEntry>* priority_queue,
       std::vector<PairEntries>* pickup_to_entries,
       std::vector<PairEntries>* delivery_to_entries);
@@ -630,12 +652,26 @@ class GlobalCheapestInsertionFilteredHeuristic
       int64_t node, const absl::flat_hash_set<int>& vehicles,
       AdjustablePriorityQueue<NodeEntry>* priority_queue,
       std::vector<NodeEntries>* position_to_node_entries);
-  /// Updates all node entries inserting a node after node "insert_after" and
-  /// updates the priority queue accordingly.
-  bool UpdatePositions(const std::vector<int>& nodes, int vehicle,
-                       int64_t insert_after, bool all_vehicles,
-                       AdjustablePriorityQueue<NodeEntry>* priority_queue,
-                       std::vector<NodeEntries>* node_entries);
+  /// Performs all the necessary updates after 'node' was successfully inserted
+  /// on the 'vehicle' after 'insert_after'.
+  bool UpdateAfterNodeInsertion(
+      const std::vector<int>& nodes, int vehicle, int64_t node,
+      int64_t insert_after, bool all_vehicles,
+      AdjustablePriorityQueue<NodeEntry>* priority_queue,
+      std::vector<NodeEntries>* node_entries);
+  /// Updates all existing node entries inserting a node after nodes of the
+  /// chain starting at 'insert_after_start' and ending before
+  /// 'insert_after_end', and updates the priority queue accordingly.
+  bool UpdateExistingNodeEntriesOnChain(
+      int64_t insert_after_start, int64_t insert_after_end,
+      AdjustablePriorityQueue<NodeEntry>* priority_queue,
+      std::vector<NodeEntries>* node_entries);
+  /// Adds node entries inserting a node after "insert_after" and updates the
+  /// priority queue accordingly.
+  bool AddNodeEntriesAfter(const std::vector<int>& nodes, int vehicle,
+                           int64_t insert_after, bool all_vehicles,
+                           AdjustablePriorityQueue<NodeEntry>* priority_queue,
+                           std::vector<NodeEntries>* node_entries);
   /// Deletes an entry, removing it from the priority queue and the appropriate
   /// node entry sets.
   void DeleteNodeEntry(NodeEntry* entry,

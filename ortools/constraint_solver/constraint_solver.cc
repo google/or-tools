@@ -1376,8 +1376,8 @@ class FailDecision : public Decision {
 class BalancingDecision : public Decision {
  public:
   ~BalancingDecision() override {}
-  void Apply(Solver* const s) override {}
-  void Refute(Solver* const s) override {}
+  void Apply(Solver* const /*s*/) override {}
+  void Refute(Solver* const /*s*/) override {}
 };
 }  // namespace
 
@@ -1431,9 +1431,9 @@ Solver::Solver(const std::string& name)
 
 void Solver::Init() {
   CheckSolverParameters(parameters_);
-  queue_ = absl::make_unique<Queue>(this);
-  trail_ = absl::make_unique<Trail>(parameters_.trail_block_size(),
-                                    parameters_.compress_trail());
+  queue_ = std::make_unique<Queue>(this);
+  trail_ = std::make_unique<Trail>(parameters_.trail_block_size(),
+                                   parameters_.compress_trail());
   state_ = OUTSIDE_SEARCH;
   branches_ = 0;
   fails_ = 0;
@@ -1442,14 +1442,14 @@ void Solver::Init() {
   filtered_neighbors_ = 0;
   accepted_neighbors_ = 0;
   optimization_direction_ = NOT_SET;
-  timer_ = absl::make_unique<ClockTimer>();
+  timer_ = std::make_unique<ClockTimer>();
   searches_.assign(1, new Search(this, 0));
   fail_stamp_ = uint64_t{1};
-  balancing_decision_ = absl::make_unique<BalancingDecision>();
+  balancing_decision_ = std::make_unique<BalancingDecision>();
   fail_intercept_ = nullptr;
   true_constraint_ = nullptr;
   false_constraint_ = nullptr;
-  fail_decision_ = absl::make_unique<FailDecision>();
+  fail_decision_ = std::make_unique<FailDecision>();
   constraint_index_ = 0;
   additional_constraint_index_ = 0;
   num_int_vars_ = 0;
@@ -2538,9 +2538,9 @@ std::string DecisionBuilder::GetName() const {
 }
 
 void DecisionBuilder::AppendMonitors(
-    Solver* const solver, std::vector<SearchMonitor*>* const extras) {}
+    Solver* const /*solver*/, std::vector<SearchMonitor*>* const /*extras*/) {}
 
-void DecisionBuilder::Accept(ModelVisitor* const visitor) const {}
+void DecisionBuilder::Accept(ModelVisitor* const /*visitor*/) const {}
 
 // ---------- Decision and DecisionVisitor ----------
 
@@ -3240,7 +3240,7 @@ std::string Solver::SearchContext(const Search* search) const {
 
 Assignment* Solver::GetOrCreateLocalSearchState() {
   if (local_search_state_ == nullptr) {
-    local_search_state_ = absl::make_unique<Assignment>(this);
+    local_search_state_ = std::make_unique<Assignment>(this);
   }
   return local_search_state_.get();
 }

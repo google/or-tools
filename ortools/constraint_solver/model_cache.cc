@@ -101,7 +101,7 @@ void Double(C*** array_ptr, int* size_ptr) {
       (*array_ptr)[position] = to_reinsert;
     }
   }
-  delete[](old_cell_array);
+  delete[] (old_cell_array);
 }
 
 // ----- Cache objects built with 1 object -----

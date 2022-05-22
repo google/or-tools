@@ -6596,7 +6596,7 @@ IntExpr* Solver::MakeSum(IntExpr* const left, IntExpr* const right) {
 IntExpr* Solver::MakeSum(IntExpr* const expr, int64_t value) {
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
-    return MakeIntConst(expr->Min() + value);
+    return MakeIntConst(CapAdd(expr->Min(), value));
   }
   if (value == 0) {
     return expr;
@@ -6786,7 +6786,7 @@ IntExpr* Solver::MakeProd(IntExpr* const expr, int64_t value) {
     IntExpr* m_expr = nullptr;
     int64_t coefficient = 1;
     if (IsProduct(expr, &m_expr, &coefficient)) {
-      coefficient *= value;
+      coefficient = CapProd(coefficient, value);
     } else {
       m_expr = expr;
       coefficient = value;

@@ -28,6 +28,11 @@ RoutingSearchParameters DefaultRoutingSearchParameters();
 std::string FindErrorInRoutingSearchParameters(
     const RoutingSearchParameters& search_parameters);
 
+/// Returns a list of std::string describing the errors in the routing search
+/// parameters. Returns an empty vector if the parameters are valid.
+std::vector<std::string> FindErrorsInRoutingSearchParameters(
+    const RoutingSearchParameters& search_parameters);
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_

@@ -383,7 +383,6 @@ class RoutingModel {
     // clang-format on
   };
 
-  #if !defined(SWIG)
   /// A ResourceGroup defines a set of available Resources with attributes on
   /// one or multiple dimensions.
   /// For every ResourceGroup in the model, each (used) vehicle in the solution
@@ -474,7 +473,6 @@ class RoutingModel {
     /// All indices of dimensions affected by this resource group.
     absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
   };
-  #endif  // !defined(SWIG)
 
   /// Constant used to express a hard constraint instead of a soft penalty.
   static const int64_t kNoPenalty;
@@ -657,34 +655,26 @@ class RoutingModel {
   }
   /// Returns dimensions with soft or vehicle span costs.
   std::vector<RoutingDimension*> GetDimensionsWithSoftOrSpanCosts() const;
-  // clang-format off
-  /// Returns [global|local]_dimension_optimizers_, which are empty if the model
-  /// has not been closed.
-  const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >&
-  GetGlobalDimensionCumulOptimizers() const {
-    return global_dimension_optimizers_;
-  }
-  const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >&
-  GetGlobalDimensionCumulMPOptimizers() const {
-    return global_dimension_mp_optimizers_;
-  }
-  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >&
-  GetLocalDimensionCumulOptimizers() const {
-    return local_dimension_optimizers_;
-  }
-  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >&
-  GetLocalDimensionCumulMPOptimizers() const {
-    return local_dimension_mp_optimizers_;
-  }
-  // clang-format on
+  /// Returns the dimensions which have [global|local]_dimension_optimizers_.
+  std::vector<const RoutingDimension*> GetDimensionsWithGlobalCumulOptimizers()
+      const;
+  std::vector<const RoutingDimension*> GetDimensionsWithLocalCumulOptimizers()
+      const;
 
+  /// Returns whether the given dimension has global/local cumul optimizers.
+  bool HasGlobalCumulOptimizer(const RoutingDimension& dimension) const {
+    return GetGlobalCumulOptimizerIndex(dimension) >= 0;
+  }
+  bool HasLocalCumulOptimizer(const RoutingDimension& dimension) const {
+    return GetLocalCumulOptimizerIndex(dimension) >= 0;
+  }
   /// Returns the global/local dimension cumul optimizer for a given dimension,
   /// or nullptr if there is none.
-  GlobalDimensionCumulOptimizer* GetMutableGlobalCumulOptimizer(
+  GlobalDimensionCumulOptimizer* GetMutableGlobalCumulLPOptimizer(
       const RoutingDimension& dimension) const;
   GlobalDimensionCumulOptimizer* GetMutableGlobalCumulMPOptimizer(
       const RoutingDimension& dimension) const;
-  LocalDimensionCumulOptimizer* GetMutableLocalCumulOptimizer(
+  LocalDimensionCumulOptimizer* GetMutableLocalCumulLPOptimizer(
       const RoutingDimension& dimension) const;
   LocalDimensionCumulOptimizer* GetMutableLocalCumulMPOptimizer(
       const RoutingDimension& dimension) const;
@@ -714,7 +704,6 @@ class RoutingModel {
   /// Adds a resource group to the routing model. Returns its index in
   /// resource_groups_.
   int AddResourceGroup();
-#if !defined(SWIG)
   // clang-format off
   const std::vector<std::unique_ptr<ResourceGroup> >& GetResourceGroups()
       const {
@@ -725,7 +714,6 @@ class RoutingModel {
     DCHECK_LT(rg_index, resource_groups_.size());
     return resource_groups_[rg_index].get();
   }
-#endif  // !defined(SWIG)
 
   /// Returns the indices of resource groups for this dimension. This method can
   /// only be called after the model has been closed.
@@ -1194,6 +1182,8 @@ class RoutingModel {
   int64_t ComputeLowerBound();
   /// Returns the current status of the routing model.
   Status status() const { return status_; }
+  /// Returns the value of the internal enable_deep_serialization_ parameter.
+  bool enable_deep_serialization() const { return enable_deep_serialization_; }
   /// Applies a lock chain to the next search. 'locks' represents an ordered
   /// vector of nodes representing a partial route which will be fixed during
   /// the next search; it will constrain next variables such that:
@@ -1307,7 +1297,8 @@ class RoutingModel {
   /// Returns the assignment resulting from allocating these packed cumuls with
   /// the solver, and nullptr if these cumuls could not be set by the solver.
   const Assignment* PackCumulsOfOptimizerDimensionsFromAssignment(
-      const Assignment* original_assignment, absl::Duration duration_limit);
+      const Assignment* original_assignment, absl::Duration duration_limit,
+      bool* time_limit_was_reached = nullptr);
 #ifndef SWIG
   // TODO(user): Revisit if coordinates are added to the RoutingModel class.
   void SetSweepArranger(SweepArranger* sweep_arranger);
@@ -1545,6 +1536,10 @@ class RoutingModel {
   /// Returns true if a vehicle/node matching problem is detected.
   bool IsMatchingModel() const;
 
+  /// Returns true if routes are interdependent. This means that any
+  /// modification to a route might impact another.
+  bool AreRoutesInterdependent(const RoutingSearchParameters& parameters) const;
+
 #ifndef SWIG
   /// Sets the callback returning the variable to use for the Tabu Search
   /// metaheuristic.
@@ -1665,6 +1660,14 @@ class RoutingModel {
     int index;
     CostClassIndex cost_class_index;
     int64_t cost;
+  };
+
+  /// Internal struct used to store the lp/mp versions of the local and global
+  /// cumul optimizers for a given dimension.
+  template <class DimensionCumulOptimizer>
+  struct DimensionCumulOptimizers {
+    std::unique_ptr<DimensionCumulOptimizer> lp_optimizer;
+    std::unique_ptr<DimensionCumulOptimizer> mp_optimizer;
   };
 
   /// Internal methods.
@@ -1914,6 +1917,11 @@ class RoutingModel {
     same_vehicle_groups_[group].push_back(index);
   }
 
+  /// Returns the internal global/local optimizer index for the given dimension
+  /// if any, and -1 otherwise.
+  int GetGlobalCumulOptimizerIndex(const RoutingDimension& dimension) const;
+  int GetLocalCumulOptimizerIndex(const RoutingDimension& dimension) const;
+
   /// Model
   std::unique_ptr<Solver> solver_;
   int nodes_;
@@ -1954,16 +1962,12 @@ class RoutingModel {
   /// TODO(user): Define a new Dimension[Global|Local]OptimizerIndex type
   /// and use it to define ITIVectors and for the dimension to optimizer index
   /// mappings below.
-  std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >
+  std::vector<DimensionCumulOptimizers<GlobalDimensionCumulOptimizer> >
       global_dimension_optimizers_;
-  std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >
-      global_dimension_mp_optimizers_;
   absl::StrongVector<DimensionIndex, int> global_optimizer_index_;
-  std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >
+  std::vector<DimensionCumulOptimizers<LocalDimensionCumulOptimizer> >
       local_dimension_optimizers_;
-  std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >
-      local_dimension_mp_optimizers_;
-  // clang-format off
+  // clang-format on
   absl::StrongVector<DimensionIndex, int> local_optimizer_index_;
   std::string primary_constrained_dimension_;
   /// Costs
@@ -2001,6 +2005,7 @@ class RoutingModel {
   std::function<int(int64_t)> vehicle_start_class_callback_;
   /// Disjunctions
   absl::StrongVector<DisjunctionIndex, Disjunction> disjunctions_;
+  // clang-format off
   std::vector<std::vector<DisjunctionIndex> > index_to_disjunctions_;
   /// Same vehicle costs
   std::vector<ValuedNodes<int64_t> > same_vehicle_costs_;
@@ -2013,7 +2018,6 @@ class RoutingModel {
   IndexPairs implicit_pickup_delivery_pairs_without_alternatives_;
   std::vector<std::pair<DisjunctionIndex, DisjunctionIndex> >
       pickup_delivery_disjunctions_;
-  // clang-format off
   // If node_index is a pickup, index_to_pickup_index_pairs_[node_index] is the
   // vector of pairs {pair_index, pickup_index} such that
   // (pickup_delivery_pairs_[pair_index].first)[pickup_index] == node_index
@@ -2943,7 +2947,7 @@ class RoutingDimension {
   void SetSoftSpanUpperBoundForVehicle(SimpleBoundCosts::BoundCost bound_cost,
                                        int vehicle) {
     if (!HasSoftSpanUpperBounds()) {
-      vehicle_soft_span_upper_bound_ = absl::make_unique<SimpleBoundCosts>(
+      vehicle_soft_span_upper_bound_ = std::make_unique<SimpleBoundCosts>(
           model_->vehicles(), SimpleBoundCosts::BoundCost{kint64max, 0});
     }
     vehicle_soft_span_upper_bound_->bound_cost(vehicle) = bound_cost;
@@ -2962,7 +2966,7 @@ class RoutingDimension {
       SimpleBoundCosts::BoundCost bound_cost, int vehicle) {
     if (!HasQuadraticCostSoftSpanUpperBounds()) {
       vehicle_quadratic_cost_soft_span_upper_bound_ =
-          absl::make_unique<SimpleBoundCosts>(
+          std::make_unique<SimpleBoundCosts>(
               model_->vehicles(), SimpleBoundCosts::BoundCost{kint64max, 0});
     }
     vehicle_quadratic_cost_soft_span_upper_bound_->bound_cost(vehicle) =

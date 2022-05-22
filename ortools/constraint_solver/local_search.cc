@@ -4412,7 +4412,7 @@ void FindOneNeighbor::SynchronizeAll(Solver* solver) {
     Assignment* delta = nullptr;
     if (last_synchronized_assignment_ == nullptr) {
       last_synchronized_assignment_ =
-          absl::make_unique<Assignment>(reference_assignment);
+          std::make_unique<Assignment>(reference_assignment);
     } else {
       MakeDelta(last_synchronized_assignment_.get(), reference_assignment,
                 filter_assignment_delta_);
@@ -4863,7 +4863,7 @@ class DefaultSolutionPool : public SolutionPool {
   ~DefaultSolutionPool() override {}
 
   void Initialize(Assignment* const assignment) override {
-    reference_assignment_ = absl::make_unique<Assignment>(assignment);
+    reference_assignment_ = std::make_unique<Assignment>(assignment);
   }
 
   void RegisterNewSolution(Assignment* const assignment) override {
