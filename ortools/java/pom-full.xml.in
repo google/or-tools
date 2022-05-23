@@ -88,9 +88,23 @@
     <scope>runtime</scope>
   </dependency>
   <dependency>
+    <groupId>@JAVA_PACKAGE@</groupId>
+    <artifactId>ortools-linux-aarch64</artifactId>
+    <version>@PROJECT_VERSION@</version>
+    <type>jar</type>
+    <scope>runtime</scope>
+  </dependency>
+  <dependency>
+    <groupId>@JAVA_PACKAGE@</groupId>
+    <artifactId>ortools-darwin-aarch64</artifactId>
+    <version>@PROJECT_VERSION@</version>
+    <type>jar</type>
+    <scope>runtime</scope>
+  </dependency>
+  <dependency>
     <groupId>net.java.dev.jna</groupId>
     <artifactId>jna-platform</artifactId>
-    <version>5.8.0</version>
+    <version>5.11.0</version>
   </dependency>
   <dependency>
     <groupId>com.google.protobuf</groupId>
