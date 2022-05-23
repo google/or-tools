@@ -2829,6 +2829,7 @@ class RoutingDimension {
       std::vector<IntervalVar*> breaks, int vehicle,
       std::vector<int64_t> node_visit_transits,
       std::function<int64_t(int64_t, int64_t)> delays);
+#endif  /// !defined(SWIGPYTHON)
 
   /// Returns the break intervals set by SetBreakIntervalsOfVehicle().
   const std::vector<IntervalVar*>& GetBreakIntervalsOfVehicle(
@@ -2838,8 +2839,8 @@ class RoutingDimension {
   // clang-format off
   const std::vector<std::pair<int64_t, int64_t> >&
       GetBreakDistanceDurationOfVehicle(int vehicle) const;
+
   // clang-format on
-#endif  /// !defined(SWIGPYTHON)
   int GetPreTravelEvaluatorOfVehicle(int vehicle) const;
   int GetPostTravelEvaluatorOfVehicle(int vehicle) const;
 
