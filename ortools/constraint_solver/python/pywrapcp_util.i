@@ -11,23 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .h file cannot be used in isolation!
+// This .i file cannot be used in isolation!
 // It represents some of the inlined C++ content of ./constraint_solver.i,
 // and was split out because it's a large enough chunk of C++ code.
 //
 // It can only be interpreted in the context of ./constraint_solver.i, where
 // it is included.
-
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_PYTHON_PYWRAPCP_UTIL_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_PYTHON_PYWRAPCP_UTIL_H_
-
+%{
 #include <string>
-
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-
 using std::string;
-
 class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
  public:
   explicit CallPyDecisionBuilder(PyObject* pydb)
@@ -39,7 +33,6 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
     str_func_ = PyObject_GetAttrString(pydb_, "DebugString");
     Py_XINCREF(str_func_);
   }
-
   ~CallPyDecisionBuilder() override {
     Py_CLEAR(pydb_);
     Py_CLEAR(func_);
@@ -47,20 +40,23 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
     Py_CLEAR(pysolver_);
     Py_CLEAR(pyarg_);
   }
-
   operations_research::Decision* Next(
       operations_research::Solver* const s) override {
     if (pysolver_ == nullptr) {
+//swiglint: disable swigtype-name
       pysolver_ = SWIG_NewPointerObj(s, SWIGTYPE_p_operations_research__Solver,
                                      SWIG_POINTER_EXCEPTION);
+//swiglint: enable swigtype-name
       pyarg_ = Py_BuildValue("(O)", pysolver_);
     }
     operations_research::Decision* result = nullptr;
     PyObject* pyresult = PyEval_CallObject(func_, pyarg_);
     if (pyresult) {
+//swiglint: disable swigtype-name
       if (SWIG_ConvertPtr(pyresult, reinterpret_cast<void**>(&result),
                           SWIGTYPE_p_operations_research__Decision,
                           SWIG_POINTER_EXCEPTION | 0) == -1) {
+//swiglint: enable swigtype-name
         LOG(INFO) << "Error in type from python Decision";
       }
       Py_DECREF(pyresult);
@@ -71,7 +67,6 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
     }
     return result;
   }
-
   std::string DebugString() const override {
     std::string result = "PyDecisionBuilder";
     if (str_func_) {
@@ -83,7 +78,6 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
     }
     return result;
   }
-
  private:
   PyObject* pysolver_;
   PyObject* pyarg_;
@@ -91,5 +85,4 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
   PyObject* func_;
   PyObject* str_func_;
 };
-
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_PYTHON_PYWRAPCP_UTIL_H_
+%}

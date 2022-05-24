@@ -789,18 +789,32 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::OptimizeAndPack(
   // Note: We pass a non-nullptr cost to the Optimize() method so the costs
   // are optimized by the solver.
   int64_t cost = 0;
+  const glop::GlopParameters original_params = GetGlopParametersForGlobalLP();
+  glop::GlopParameters packing_parameters;
+  if (!solver->IsCPSATSolver()) {
+    packing_parameters = original_params;
+    packing_parameters.set_use_dual_simplex(false);
+    packing_parameters.set_use_preprocessing(true);
+    solver->SetParameters(packing_parameters.SerializeAsString());
+  }
+  DimensionSchedulingStatus status = DimensionSchedulingStatus::OPTIMAL;
   if (Optimize(next_accessor, solver,
                /*cumul_values=*/nullptr, /*break_values=*/nullptr,
                /*resource_indices_per_group=*/nullptr, &cost,
                /*transit_cost=*/nullptr,
                /*clear_lp=*/false) == DimensionSchedulingStatus::INFEASIBLE) {
-    return DimensionSchedulingStatus::INFEASIBLE;
+    status = DimensionSchedulingStatus::INFEASIBLE;
   }
-  std::vector<int> vehicles(dimension()->model()->vehicles());
-  std::iota(vehicles.begin(), vehicles.end(), 0);
-  // Subtle: Even if the status was RELAXED_OPTIMAL_ONLY we try to pack just in
-  // case packing manages to make the solution completely feasible.
-  DimensionSchedulingStatus status = PackRoutes(vehicles, solver);
+  if (status != DimensionSchedulingStatus::INFEASIBLE) {
+    std::vector<int> vehicles(dimension()->model()->vehicles());
+    std::iota(vehicles.begin(), vehicles.end(), 0);
+    // Subtle: Even if the status was RELAXED_OPTIMAL_ONLY we try to pack just
+    // in case packing manages to make the solution completely feasible.
+    status = PackRoutes(vehicles, solver, packing_parameters);
+  }
+  if (!solver->IsCPSATSolver()) {
+    solver->SetParameters(original_params.SerializeAsString());
+  }
   if (status == DimensionSchedulingStatus::INFEASIBLE) {
     return status;
   }
@@ -821,6 +835,15 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
     const RoutingModel::ResourceGroup::Resource* resource,
     RoutingLinearSolverWrapper* solver, std::vector<int64_t>* cumul_values,
     std::vector<int64_t>* break_values) {
+  const glop::GlopParameters original_params = GetGlopParametersForLocalLP();
+  glop::GlopParameters packing_parameters;
+  if (!solver->IsCPSATSolver()) {
+    packing_parameters = original_params;
+    packing_parameters.set_use_dual_simplex(false);
+    packing_parameters.set_use_preprocessing(true);
+    solver->SetParameters(packing_parameters.SerializeAsString());
+  }
+  DimensionSchedulingStatus status = DimensionSchedulingStatus::OPTIMAL;
   if (resource == nullptr) {
     // Note: We pass a non-nullptr cost to the OptimizeSingleRoute() method so
     // the costs are optimized by the LP.
@@ -830,7 +853,7 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
                             &cost, /*transit_cost=*/nullptr,
                             /*clear_lp=*/false) ==
         DimensionSchedulingStatus::INFEASIBLE) {
-      return DimensionSchedulingStatus::INFEASIBLE;
+      status = DimensionSchedulingStatus::INFEASIBLE;
     }
   } else {
     std::vector<int64_t> costs_without_transits;
@@ -844,11 +867,17 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
             /*clear_lp=*/false);
     DCHECK_EQ(statuses.size(), 1);
     if (statuses[0] == DimensionSchedulingStatus::INFEASIBLE) {
-      return DimensionSchedulingStatus::INFEASIBLE;
+      status = DimensionSchedulingStatus::INFEASIBLE;
     }
   }
 
-  const DimensionSchedulingStatus status = PackRoutes({vehicle}, solver);
+  if (status != DimensionSchedulingStatus::INFEASIBLE) {
+    status = PackRoutes({vehicle}, solver, packing_parameters);
+  }
+  if (!solver->IsCPSATSolver()) {
+    solver->SetParameters(original_params.SerializeAsString());
+  }
+
   if (status == DimensionSchedulingStatus::INFEASIBLE) {
     return DimensionSchedulingStatus::INFEASIBLE;
   }
@@ -863,7 +892,8 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
 }
 
 DimensionSchedulingStatus DimensionCumulOptimizerCore::PackRoutes(
-    std::vector<int> vehicles, RoutingLinearSolverWrapper* solver) {
+    std::vector<int> vehicles, RoutingLinearSolverWrapper* solver,
+    const glop::GlopParameters& packing_parameters) {
   const RoutingModel* model = dimension_->model();
 
   // NOTE(user): Given our constraint matrix, our problem *should* always
@@ -885,9 +915,25 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::PackRoutes(
         index_to_cumul_variable_[model->End(vehicle)], 1);
   }
 
+  glop::GlopParameters current_params;
+  const auto retry_solving = [&current_params, model, solver]() {
+    // NOTE: To bypass some cases of false negatives due to imprecisions, we try
+    // running Glop with a different use_dual_simplex parameter when running
+    // into an infeasible status.
+    current_params.set_use_dual_simplex(!current_params.use_dual_simplex());
+    solver->SetParameters(current_params.SerializeAsString());
+    return solver->Solve(model->RemainingTime());
+  };
   if (solver->Solve(model->RemainingTime()) ==
       DimensionSchedulingStatus::INFEASIBLE) {
-    return DimensionSchedulingStatus::INFEASIBLE;
+    if (solver->IsCPSATSolver()) {
+      return DimensionSchedulingStatus::INFEASIBLE;
+    }
+
+    current_params = packing_parameters;
+    if (retry_solving() == DimensionSchedulingStatus::INFEASIBLE) {
+      return DimensionSchedulingStatus::INFEASIBLE;
+    }
   }
 
   // Maximize the route start times without increasing the cost or the route end
@@ -904,7 +950,13 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::PackRoutes(
     solver->SetObjectiveCoefficient(
         index_to_cumul_variable_[model->Start(vehicle)], -1);
   }
-  return solver->Solve(model->RemainingTime());
+
+  DimensionSchedulingStatus status = solver->Solve(model->RemainingTime());
+  if (!solver->IsCPSATSolver() &&
+      status == DimensionSchedulingStatus::INFEASIBLE) {
+    status = retry_solving();
+  }
+  return status;
 }
 
 void DimensionCumulOptimizerCore::InitOptimizer(
@@ -1541,13 +1593,13 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraints(
     solver->SetCoefficient(ct, first_cumul_var, -1);
   }
 
-  const RoutingModel& model = *dimension_->model();
   if (!solver->IsCPSATSolver()) {
     // The resource attributes conditional constraints can only be added with
     // the CP-SAT MIP solver.
     return true;
   }
 
+  const RoutingModel& model = *dimension_->model();
   const int num_vehicles = model.vehicles();
   const auto& resource_groups = model.GetResourceGroups();
   for (int rg_index : model.GetDimensionResourceGroupIndices(dimension_)) {

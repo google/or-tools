@@ -40,6 +40,8 @@
 %include "ortools/util/python/functions.i"
 %include "ortools/util/python/vector.i"
 
+%include "ortools/constraint_solver/python/pywrapcp_util.i"
+
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2019-07, with
 // types such as operations_research::Solver.
@@ -66,7 +68,6 @@ struct FailureProtect {
 };
 
 // This #includes constraint_solver.h, and inlines some C++ helpers.
-#include "ortools/constraint_solver/python/pywrapcp_util.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"

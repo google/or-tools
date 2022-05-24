@@ -185,6 +185,9 @@ class RoutingLinearSolverWrapper {
   virtual double GetValue(int index) const = 0;
   virtual bool SolutionIsInteger() const = 0;
 
+  // This function is meant to override the parameters of the solver.
+  virtual void SetParameters(const std::string& parameters) = 0;
+
   // Adds a variable with bounds [lower_bound, upper_bound].
   int AddVariable(int64_t lower_bound, int64_t upper_bound) {
     CHECK_LE(lower_bound, upper_bound);
@@ -319,13 +322,30 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
   }
   bool IsCPSATSolver() override { return false; }
   void AddObjectiveConstraint() override {
-    const int ct = CreateNewConstraint(0, GetObjectiveValue());
+    double max_coefficient = 0;
+    for (int variable = 0; variable < NumVariables(); variable++) {
+      const double coefficient = GetObjectiveCoefficient(variable);
+      max_coefficient = std::max(MathUtil::Abs(coefficient), max_coefficient);
+    }
+    DCHECK_GE(max_coefficient, 0);
+    if (max_coefficient == 0) {
+      // There are no terms in the objective.
+      return;
+    }
+    const glop::RowIndex ct = linear_program_.CreateNewConstraint();
+    double normalized_objective_value = 0;
     for (int variable = 0; variable < NumVariables(); variable++) {
       const double coefficient = GetObjectiveCoefficient(variable);
       if (coefficient != 0) {
-        SetCoefficient(ct, variable, coefficient);
+        const double normalized_coeff = coefficient / max_coefficient;
+        SetCoefficient(ct.value(), variable, normalized_coeff);
+        normalized_objective_value += normalized_coeff * GetValue(variable);
       }
     }
+    normalized_objective_value = std::max(
+        normalized_objective_value, GetObjectiveValue() / max_coefficient);
+    linear_program_.SetConstraintBounds(ct, -glop::kInfinity,
+                                        normalized_objective_value);
   }
   void AddMaximumConstraint(int max_var, std::vector<int> vars) override {}
   void AddProductConstraint(int product_var, std::vector<int> vars) override {}
@@ -373,6 +393,13 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
   bool SolutionIsInteger() const override {
     return linear_program_.SolutionIsInteger(lp_solver_.variable_values(),
                                              /*absolute_tolerance*/ 1e-3);
+  }
+
+  void SetParameters(const std::string& parameters) override {
+    glop::GlopParameters params;
+    const bool status = params.ParseFromString(parameters);
+    DCHECK(status);
+    lp_solver_.SetParameters(params);
   }
 
  private:
@@ -474,24 +501,13 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
   }
   bool IsCPSATSolver() override { return true; }
   void AddObjectiveConstraint() override {
-    // Scale the objective to get its integer representation.
-    const sat::FloatObjectiveProto& fp_objective =
-        model_.floating_point_objective();
-    std::vector<std::pair<int, double>> terms;
-    for (int i = 0; i < fp_objective.vars_size(); ++i) {
-      terms.push_back({fp_objective.vars(i), fp_objective.coeffs(i)});
-    }
-    SolverLogger logger;
-    const bool status =
-        sat::ScaleAndSetObjective(parameters_, terms, fp_objective.offset(),
-                                  fp_objective.maximize(), &model_, &logger);
-    DCHECK(status);
-    const sat::CpObjectiveProto& objective = model_.objective();
+    const sat::CpObjectiveProto& objective = response_.integer_objective();
     int64_t activity = 0;
     for (int i = 0; i < objective.vars_size(); ++i) {
       activity += response_.solution(objective.vars(i)) * objective.coeffs(i);
     }
-    const int ct = CreateNewConstraint(0, activity);
+    const int ct =
+        CreateNewConstraint(std::numeric_limits<int64_t>::min(), activity);
     for (int i = 0; i < objective.vars_size(); ++i) {
       SetCoefficient(ct, objective.vars(i), objective.coeffs(i));
     }
@@ -552,6 +568,9 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     return response_.solution(index);
   }
   bool SolutionIsInteger() const override { return true; }
+
+  // NOTE: This function is not implemented for the CP-SAT solver.
+  void SetParameters(const std::string& parameters) override { DCHECK(false); }
 
  private:
   sat::CpModelProto model_;
@@ -661,8 +680,9 @@ class DimensionCumulOptimizerCore {
   // setting the coefficient of the route ends to 1, to first minimize the route
   // ends' cumuls, and then maximizes the starts' cumuls without increasing the
   // ends.
-  DimensionSchedulingStatus PackRoutes(std::vector<int> vehicles,
-                                       RoutingLinearSolverWrapper* solver);
+  DimensionSchedulingStatus PackRoutes(
+      std::vector<int> vehicles, RoutingLinearSolverWrapper* solver,
+      const glop::GlopParameters& packing_parameters);
 
   std::unique_ptr<CumulBoundsPropagator> propagator_;
   std::vector<int64_t> current_route_min_cumuls_;

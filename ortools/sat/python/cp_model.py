@@ -2000,8 +2000,8 @@ class CpModel(object):
         self._SetObjective(obj, minimize=False)
 
     def HasObjective(self):
-        return (self.__model.HasField('objective')
-                or self.__model.HasField('floating_point_objective'))
+        return (self.__model.HasField('objective') or
+                self.__model.HasField('floating_point_objective'))
 
     def ClearObjective(self):
         self.__model.ClearField('objective')
@@ -2015,8 +2015,8 @@ class CpModel(object):
       var_strategy: heuristic to choose the next variable to assign.
       domain_strategy: heuristic to reduce the domain of the selected variable.
         Currently, this is advanced code: the union of all strategies added to
-          the model must be complete, i.e. instantiates all variables.
-          Otherwise, Solve() will fail.
+        the model must be complete, i.e. instantiates all variables. Otherwise,
+        Solve() will fail.
     """
 
         strategy = self.__model.search_strategy.add()
