@@ -24,7 +24,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 216
+// NEXT TAG: 218
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -467,6 +467,20 @@ message SatParameters {
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];
   optional bool use_sat_inprocessing = 163 [default = false];
+
+  // If true, we detect variable that are unique to a table constraint and only
+  // there to encode a cost on each tuple. This is usually the case when a WCSP
+  // (weighted constraint program) is encoded into CP-SAT format.
+  //
+  // This can lead to a dramatic speed-up for such problems but is still
+  // experimental at this point.
+  optional bool detect_table_with_cost = 216 [default = false];
+
+  // How much we try to "compress" a table constraint. Compressing more leads to
+  // less Booleans and faster propagation but can reduced the quality of the lp
+  // relaxation. Values goes from 0 to 3 where we always try to fully compress a
+  // table. At 2, we try to automatically decide if it is worth it.
+  optional int32 table_compression_level = 217 [default = 2];
 
   // If true, expand all_different constraints that are not permutations.
   // Permutations (#Variables = #Values) are always expanded.

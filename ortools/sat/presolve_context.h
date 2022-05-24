@@ -408,8 +408,9 @@ class PresolveContext {
   bool ExploitExactlyOneInObjective(absl::Span<const int> exactly_one);
 
   // Allows to manipulate the objective coefficients.
-  void RemoveVariableFromObjective(int var);
+  void RemoveVariableFromObjective(int ref);
   void AddToObjective(int var, int64_t value);
+  void AddLiteralToObjective(int ref, int64_t value);
 
   // Given a variable defined by the given inequality that also appear in the
   // objective, remove it from the objective by transferring its cost to other

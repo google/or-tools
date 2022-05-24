@@ -181,12 +181,13 @@ void IntegerRoundingCutHelper::ComputeCut(
   adjusted_coeffs_.clear();
 
   // Compute the maximum magnitude for non-fixed variables.
-  IntegerValue max_magnitude(0);
+  IntegerValue tmp(0);
   for (int i = 0; i < size; ++i) {
     if (lower_bounds[i] == upper_bounds[i]) continue;
     const IntegerValue magnitude = IntTypeAbs(cut->coeffs[i]);
-    max_magnitude = std::max(max_magnitude, magnitude);
+    tmp = std::max(tmp, magnitude);
   }
+  const IntegerValue max_magnitude = tmp;
 
   // Shift each variable using its lower/upper bound so that no variable can
   // change sign. We eventually do a change of variable to its negation so
@@ -277,21 +278,24 @@ void IntegerRoundingCutHelper::ComputeCut(
   double best_scaled_violation = 0.01;
   const IntegerValue remainder_threshold(max_magnitude / 1000);
 
-  // The cut->ub might have grown quite a bit with the bound substitution, so
-  // we need to include it too since we will apply the rounding function on it.
-  max_magnitude = std::max(max_magnitude, IntTypeAbs(cut->ub));
-
   // Make sure that when we multiply the rhs or the coefficient by a factor t,
   // we do not have an integer overflow. Actually, we need a bit more room
   // because we might round down a value to the next multiple of
   // max_magnitude.
-  const IntegerValue threshold = kMaxIntegerValue / 2;
-  if (overflow || max_magnitude >= threshold) {
-    VLOG(2) << "Issue, overflow.";
-    *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
-    return;
+  //
+  // The cut->ub might have grown quite a bit with the bound substitution, so
+  // we need to include it too since we will apply the rounding function on it.
+  {
+    const IntegerValue m = std::max(max_magnitude, IntTypeAbs(cut->ub));
+    const IntegerValue overflow_threshold = kMaxIntegerValue / 2;
+    if (overflow || m >= overflow_threshold) {
+      VLOG(2) << "Issue, overflow.";
+      *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
+      return;
+    }
+    tmp = overflow_threshold / m;
   }
-  const IntegerValue max_t = threshold / max_magnitude;
+  const IntegerValue max_t = tmp;
 
   // There is no point trying twice the same divisor or a divisor that is too
   // small. Note that we use a higher threshold than the remainder_threshold

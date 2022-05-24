@@ -330,6 +330,7 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
   sum_of_squared_objective_coeffs_ += coeff_as_double * coeff_as_double;
 }
 
+// TODO(user): Also consider partial gcd simplification? see presolve.
 bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   bool term_changed = false;
 

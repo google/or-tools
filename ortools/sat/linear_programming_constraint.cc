@@ -971,7 +971,7 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
       absl::StrCat(info, " num_ib_substitutions=", ib_slack_infos.size());
 
   const double new_violation =
-      ComputeActivity(*cut, expanded_lp_solution_) - ToDouble(cut_.ub);
+      ComputeActivity(*cut, expanded_lp_solution_) - ToDouble(cut->ub);
   if (std::abs(violation - new_violation) >= 1e-4) {
     VLOG(1) << "Violation discrepancy after slack removal. "
             << " before = " << violation << " after = " << new_violation;

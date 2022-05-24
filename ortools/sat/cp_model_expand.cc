@@ -574,8 +574,7 @@ void LinkLiteralsAndValues(const std::vector<int>& literals,
 
   // We use a map to make this method deterministic.
   //
-  // TODO(user): Make sure this does not appear in the profile. We could use
-  // the same code as in ProcessOneVariable() otherwise.
+  // TODO(user): Make sure this does not appear in the profile.
   absl::btree_map<int, std::vector<int>> encoding_lit_to_support;
 
   // If a value is false (i.e not possible), then the tuple with this
@@ -954,12 +953,11 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Compress tuples.
-  const int64_t any_value = std::numeric_limits<int64_t>::min();
   std::vector<int64_t> domain_sizes;
   for (int i = 0; i < num_vars; ++i) {
     domain_sizes.push_back(context->DomainOf(table.vars(i)).Size());
   }
-  CompressTuples(domain_sizes, any_value, &tuples);
+  CompressTuples(domain_sizes, &tuples);
 
   // For each tuple, forbid the variables values to be this tuple.
   std::vector<int> clause;
@@ -967,7 +965,7 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
     clause.clear();
     for (int i = 0; i < num_vars; ++i) {
       const int64_t value = tuple[i];
-      if (value == any_value) continue;
+      if (value == kTableAnyValue) continue;
 
       const int literal =
           context->GetOrCreateVarValueEncoding(table.vars(i), value);
@@ -985,31 +983,37 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
-// Add the implications and clauses to link one variable of a table to the
-// literals controlling if the tuples are possible or not. The parallel vectors
-// (tuple_literals, values) contains all valid projected tuples.
+// Add the implications and clauses to link one variable (i.e. column) of a
+// table to the literals controlling if the tuples are possible or not.
 //
-// The special value "any_value" is used to indicate literal that will support
-// any value.
-void ProcessOneVariable(const std::vector<int>& tuple_literals,
-                        const std::vector<int64_t>& values, int variable,
-                        int64_t any_value, PresolveContext* context) {
-  VLOG(2) << "Process var(" << variable << ") with domain "
-          << context->DomainOf(variable) << " and " << values.size()
-          << " tuples.";
-  CHECK_EQ(tuple_literals.size(), values.size());
+// We list of each tuple the possible values the variable can take.
+// If the list is empty, then this encode "any value".
+void ProcessOneCompressedColumn(
+    int variable, const std::vector<int>& tuple_literals,
+    const std::vector<absl::InlinedVector<int64_t, 2>>& values,
+    PresolveContext* context) {
+  DCHECK_EQ(tuple_literals.size(), values.size());
 
   // Collect pairs of value-literal.
-  std::vector<int> tuples_with_any;
+  // Add the constraint literal => one of values.
+  //
+  // TODO(user): If we have n - 1 values, we could add the constraint that
+  // tuple literal => not(last_value) instead?
   std::vector<std::pair<int64_t, int>> pairs;
+  std::vector<int> any_values_literals;
   for (int i = 0; i < values.size(); ++i) {
-    const int64_t value = values[i];
-    if (value == any_value) {
-      tuples_with_any.push_back(tuple_literals[i]);
+    if (values[i].empty()) {
+      any_values_literals.push_back(tuple_literals[i]);
       continue;
     }
-    CHECK(context->DomainContains(variable, value));
-    pairs.emplace_back(value, tuple_literals[i]);
+    ConstraintProto* clause = context->working_model->add_constraints();
+    clause->add_enforcement_literal(tuple_literals[i]);
+    for (const int64_t v : values[i]) {
+      DCHECK(context->DomainContains(variable, v));
+      clause->mutable_bool_or()->add_literals(
+          context->GetOrCreateVarValueEncoding(variable, v));
+      pairs.emplace_back(v, tuple_literals[i]);
+    }
   }
 
   // Regroup literal with the same value and add for each the clause: If all the
@@ -1023,25 +1027,19 @@ void ProcessOneVariable(const std::vector<int>& tuple_literals,
       selected.push_back(pairs[i].second);
     }
 
-    CHECK(!selected.empty() || !tuples_with_any.empty());
-    if (selected.size() == 1 && tuples_with_any.empty()) {
-      context->InsertVarValueEncoding(selected.front(), variable, value);
-    } else {
-      const int value_literal =
-          context->GetOrCreateVarValueEncoding(variable, value);
-      BoolArgumentProto* no_support =
-          context->working_model->add_constraints()->mutable_bool_or();
-      for (const int lit : selected) {
-        no_support->add_literals(lit);
-        context->AddImplication(lit, value_literal);
-      }
-      for (const int lit : tuples_with_any) {
-        no_support->add_literals(lit);
-      }
-
-      // And the "value" literal.
-      no_support->add_literals(NegatedRef(value_literal));
+    BoolArgumentProto* no_support =
+        context->working_model->add_constraints()->mutable_bool_or();
+    for (const int lit : selected) {
+      no_support->add_literals(lit);
     }
+    for (const int lit : any_values_literals) {
+      no_support->add_literals(lit);
+    }
+
+    // And the "value" literal.
+    const int value_literal =
+        context->GetOrCreateVarValueEncoding(variable, value);
+    no_support->add_literals(NegatedRef(value_literal));
   }
 }
 
@@ -1067,8 +1065,8 @@ void AddSizeTwoTable(
   for (const auto& tuple : tuples) {
     const int64_t left_value(tuple[0]);
     const int64_t right_value(tuple[1]);
-    CHECK(context->DomainContains(left_var, left_value));
-    CHECK(context->DomainContains(right_var, right_value));
+    DCHECK(context->DomainContains(left_var, left_value));
+    DCHECK(context->DomainContains(right_var, right_value));
 
     const int left_literal =
         context->GetOrCreateVarValueEncoding(left_var, left_value);
@@ -1115,13 +1113,332 @@ void AddSizeTwoTable(
           << " implications";
 }
 
+// A "WCSP" (weighted constraint programming) problem is usually encoded as
+// a set of table, with one or more variable only there to carry a cost.
+//
+// If this is the case, we can do special presolving.
+bool ReduceTableInPresenceOfUniqueVariableWithCosts(
+    std::vector<int>* vars, std::vector<std::vector<int64_t>>* tuples,
+    PresolveContext* context) {
+  const int num_vars = vars->size();
+
+  std::vector<bool> only_here_and_in_objective(num_vars, false);
+  std::vector<int64_t> objective_coeffs(num_vars, 0.0);
+  std::vector<int> new_vars;
+  std::vector<int> deleted_vars;
+  for (int var_index = 0; var_index < num_vars; ++var_index) {
+    const int var = (*vars)[var_index];
+    // We do not use VariableWithCostIsUniqueAndRemovable() since this one
+    // return false if the objective is constraining but we don't care here.
+    if (context->VariableWithCostIsUnique(var) &&
+        context->VariableIsRemovable(var)) {
+      context->UpdateRuleStats("table: removed unused column with cost");
+      only_here_and_in_objective[var_index] = true;
+      objective_coeffs[var_index] =
+          RefIsPositive(var) ? context->ObjectiveMap().at(var)
+                             : -context->ObjectiveMap().at(PositiveRef(var));
+      context->RemoveVariableFromObjective(var);
+      context->MarkVariableAsRemoved(var);
+      deleted_vars.push_back(var);
+    } else if (context->VariableIsUniqueAndRemovable(var)) {
+      // If there is no cost, we can remove that variable using the same code by
+      // just setting the cost to zero.
+      context->UpdateRuleStats("table: removed unused column");
+      only_here_and_in_objective[var_index] = true;
+      objective_coeffs[var_index] = 0;
+      context->MarkVariableAsRemoved(var);
+      deleted_vars.push_back(var);
+    } else {
+      new_vars.push_back(var);
+    }
+  }
+  if (new_vars.size() == num_vars) return false;
+
+  // Rewrite the tuples.
+  // put the cost last.
+  int64_t min_cost = std::numeric_limits<int64_t>::max();
+  std::vector<int64_t> temp;
+  for (int i = 0; i < tuples->size(); ++i) {
+    int64_t cost = 0;
+    int new_size = 0;
+    temp.clear();
+    for (int var_index = 0; var_index < num_vars; ++var_index) {
+      const int64_t value = (*tuples)[i][var_index];
+      if (only_here_and_in_objective[var_index]) {
+        temp.push_back(value);
+        const int64_t objective_coeff = objective_coeffs[var_index];
+        cost += value * objective_coeff;
+      } else {
+        (*tuples)[i][new_size++] = value;
+      }
+    }
+    (*tuples)[i].resize(new_size);
+    (*tuples)[i].push_back(cost);
+    min_cost = std::min(min_cost, cost);
+
+    // Hack: we store the deleted value here so that we can properly encode
+    // the postsolve constraints below.
+    (*tuples)[i].insert((*tuples)[i].end(), temp.begin(), temp.end());
+  }
+
+  // Remove tuples that only differ by their cost.
+  // Make sure we will assign the proper value of the removed variable at
+  // postsolve.
+  {
+    int new_size = 0;
+    const int old_size = tuples->size();
+    std::sort(tuples->begin(), tuples->end());
+    for (int i = 0; i < tuples->size(); ++i) {
+      // If the prefix (up to new_vars.size()) is the same, skip this tuple.
+      if (new_size > 0) {
+        bool skip = true;
+        for (int var_index = 0; var_index < new_vars.size(); ++var_index) {
+          if ((*tuples)[i][var_index] != (*tuples)[new_size - 1][var_index]) {
+            skip = false;
+            break;
+          }
+        }
+        if (skip) continue;
+      }
+
+      // If this tuple is selected, then fix the removed variable value in the
+      // mapping model.
+      for (int j = 0; j < deleted_vars.size(); ++j) {
+        ConstraintProto* new_ct = context->mapping_model->add_constraints();
+        for (int var_index = 0; var_index < new_vars.size(); ++var_index) {
+          new_ct->add_enforcement_literal(context->GetOrCreateVarValueEncoding(
+              new_vars[var_index], (*tuples)[i][var_index]));
+        }
+        new_ct->mutable_linear()->add_vars(deleted_vars[j]);
+        new_ct->mutable_linear()->add_coeffs(1);
+        new_ct->mutable_linear()->add_domain(
+            (*tuples)[i][new_vars.size() + 1 + j]);
+        new_ct->mutable_linear()->add_domain(
+            (*tuples)[i][new_vars.size() + 1 + j]);
+      }
+      (*tuples)[i].resize(new_vars.size() + 1);
+      (*tuples)[new_size++] = (*tuples)[i];
+    }
+    tuples->resize(new_size);
+    if (new_size < old_size) {
+      context->UpdateRuleStats(
+          "table: removed duplicate tuples with different costs");
+    }
+  }
+
+  if (min_cost > 0) {
+    context->AddToObjectiveOffset(min_cost);
+    context->UpdateRuleStats("table: transferred min_cost to objective offset");
+    for (int i = 0; i < tuples->size(); ++i) {
+      (*tuples)[i].back() -= min_cost;
+    }
+  }
+
+  // This comes from the WCSP litterature. Basically, if by fixing a variable to
+  // a value, we have only tuples with a non-zero cost, we can substract the
+  // minimum cost of these tuples and transfer it to the variable cost.
+  for (int var_index = 0; var_index < new_vars.size(); ++var_index) {
+    absl::flat_hash_map<int64_t, int64_t> value_to_min_cost;
+    const int num_tuples = tuples->size();
+    for (int i = 0; i < num_tuples; ++i) {
+      const int64_t v = (*tuples)[i][var_index];
+      const int64_t cost = (*tuples)[i].back();
+      auto insert = value_to_min_cost.insert({v, cost});
+      if (!insert.second) {
+        insert.first->second = std::min(insert.first->second, cost);
+      }
+    }
+    for (int i = 0; i < num_tuples; ++i) {
+      const int64_t v = (*tuples)[i][var_index];
+      (*tuples)[i].back() -= value_to_min_cost.at(v);
+    }
+    for (const auto entry : value_to_min_cost) {
+      if (entry.second == 0) continue;
+      context->UpdateRuleStats("table: transferred cost to encoding");
+      const int value_literal = context->GetOrCreateVarValueEncoding(
+          new_vars[var_index], entry.first);
+      context->AddLiteralToObjective(value_literal, entry.second);
+    }
+  }
+
+  context->UpdateRuleStats(absl::StrCat(
+      "table: expansion with column(s) only in objective. Arity = ",
+      new_vars.size()));
+
+  *vars = new_vars;
+  return true;
+}
+
+// Important: the table and variable domains must be presolved before this
+// is called. Some checks will fail otherwise.
+void CompressAndExpandPositiveTable(bool last_column_is_cost,
+                                    const std::vector<int>& vars,
+                                    std::vector<std::vector<int64_t>>* tuples,
+                                    PresolveContext* context) {
+  const int num_tuples_before_compression = tuples->size();
+
+  // If the last column is actually the tuple cost, we compress the table like
+  // if this was a normal variable, but afterwards we treat it differently.
+  std::vector<int64_t> domain_sizes;
+  for (const int var : vars) {
+    domain_sizes.push_back(context->DomainOf(var).Size());
+  }
+  if (last_column_is_cost) {
+    domain_sizes.push_back(std::numeric_limits<int64_t>::max());
+  }
+
+  // We start by compressing the table with kTableAnyValue only.
+  const int compression_level = context->params().table_compression_level();
+  if (compression_level > 0) {
+    CompressTuples(domain_sizes, tuples);
+  }
+  const int num_tuples_after_first_compression = tuples->size();
+
+  // Tricky: If the table is big, it is better to compress it as much as
+  // possible to reduce the number of created booleans. Otherwise, the more
+  // verbose encoding can lead to better linear relaxation. Probably because the
+  // tuple literal can encode each variable as sum literal * value. Also because
+  // we have more direct implied bounds, which might lead to better cuts.
+  //
+  // For instance, on lot_sizing_cp_pigment15c.psp, compressing the table more
+  // is a lot worse (at least until we can produce better cut).
+  //
+  // TODO(user): Tweak the heuristic, maybe compute the reduction achieve and
+  // decide based on that.
+  std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> compressed_table;
+  if (compression_level > 2 ||
+      (compression_level == 2 && num_tuples_after_first_compression > 1000)) {
+    compressed_table = FullyCompressTuples(domain_sizes, tuples);
+    if (compressed_table.size() < num_tuples_before_compression) {
+      context->UpdateRuleStats("table: fully compress tuples");
+    }
+  } else {
+    // Convert the kTableAnyValue to an empty list format.
+    for (int i = 0; i < tuples->size(); ++i) {
+      compressed_table.push_back({});
+      for (const int64_t v : (*tuples)[i]) {
+        if (v == kTableAnyValue) {
+          compressed_table.back().push_back({});
+        } else {
+          compressed_table.back().push_back({v});
+        }
+      }
+    }
+    if (compressed_table.size() < num_tuples_before_compression) {
+      context->UpdateRuleStats("table: compress tuples");
+    }
+  }
+
+  VLOG(2) << "Table compression"
+          << " var=" << vars.size()
+          << " cost=" << domain_sizes.size() - vars.size()
+          << " tuples= " << num_tuples_before_compression << " -> "
+          << num_tuples_after_first_compression << " -> "
+          << compressed_table.size();
+
+  // Affect mznc2017_aes_opt_r10 instance!
+  std::sort(compressed_table.begin(), compressed_table.end());
+
+  const int num_vars = vars.size();
+  if (compressed_table.size() == 1) {
+    // Domains are propagated. We can remove the constraint.
+    context->UpdateRuleStats("table: one tuple");
+    if (last_column_is_cost) {
+      // TODO(user): Because we transfer the cost, this should always be zero,
+      // so not needed.
+      context->AddToObjectiveOffset(compressed_table[0].back()[0]);
+    }
+    return;
+  }
+
+  // Optimization. If a value is unique and appear alone in a cell, we can use
+  // the encoding literal for this line tuple literal instead of creating a new
+  // one.
+  std::vector<bool> has_any(num_vars, false);
+  std::vector<absl::flat_hash_map<int64_t, int>> var_index_to_value_count(
+      num_vars);
+  for (int i = 0; i < compressed_table.size(); ++i) {
+    for (int var_index = 0; var_index < num_vars; ++var_index) {
+      if (compressed_table[i][var_index].empty()) {
+        has_any[var_index] = true;
+        continue;
+      }
+      for (const int64_t v : compressed_table[i][var_index]) {
+        DCHECK_NE(v, kTableAnyValue);
+        DCHECK(context->DomainContains(vars[var_index], v));
+        var_index_to_value_count[var_index][v]++;
+      }
+    }
+  }
+
+  // Create one Boolean variable per tuple to indicate if it can still be
+  // selected or not. Enforce an exactly one between them.
+  BoolArgumentProto* exactly_one =
+      context->working_model->add_constraints()->mutable_exactly_one();
+
+  int64_t num_reused_variables = 0;
+  std::vector<int> tuple_literals(compressed_table.size());
+  for (int i = 0; i < compressed_table.size(); ++i) {
+    bool create_new_var = true;
+    for (int var_index = 0; var_index < num_vars; ++var_index) {
+      if (has_any[var_index]) continue;
+      if (compressed_table[i][var_index].size() != 1) continue;
+      const int64_t v = compressed_table[i][var_index][0];
+      if (var_index_to_value_count[var_index][v] != 1) continue;
+
+      ++num_reused_variables;
+      create_new_var = false;
+      tuple_literals[i] =
+          context->GetOrCreateVarValueEncoding(vars[var_index], v);
+      break;
+    }
+    if (create_new_var) {
+      tuple_literals[i] = context->NewBoolVar();
+    }
+    exactly_one->add_literals(tuple_literals[i]);
+  }
+  if (num_reused_variables > 0) {
+    context->UpdateRuleStats("table: reused literals");
+  }
+
+  // Set the cost to the corresponding tuple literal. If there is more than one
+  // cost, we just choose the first one which is the smallest one.
+  if (last_column_is_cost) {
+    for (int i = 0; i < tuple_literals.size(); ++i) {
+      context->AddLiteralToObjective(tuple_literals[i],
+                                     compressed_table[i].back()[0]);
+    }
+  }
+
+  std::vector<absl::InlinedVector<int64_t, 2>> column;
+  for (int var_index = 0; var_index < num_vars; ++var_index) {
+    if (context->IsFixed(vars[var_index])) continue;
+
+    column.clear();
+    for (int i = 0; i < tuple_literals.size(); ++i) {
+      column.push_back(compressed_table[i][var_index]);
+    }
+    ProcessOneCompressedColumn(vars[var_index], tuple_literals, column,
+                               context);
+  }
+
+  context->UpdateRuleStats("table: expanded positive constraint");
+}
+
+// TODO(user): reinvestigate ExploreSubsetOfVariablesAndAddNegatedTables.
+//
+// TODO(user): if 2 table constraints share the same valid prefix, the
+// tuple literals can be reused.
+//
+// TODO(user): investigate different encoding for prefix tables. Maybe
+// we can remove the need to create tuple literals.
 void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   const TableConstraintProto& table = ct->table();
   const int num_vars = table.vars_size();
   const int num_original_tuples = table.values_size() / num_vars;
 
   // Read tuples flat array and recreate the vector of tuples.
-  const std::vector<int> vars(table.vars().begin(), table.vars().end());
+  std::vector<int> vars(table.vars().begin(), table.vars().end());
   std::vector<std::vector<int64_t>> tuples(num_original_tuples);
   int count = 0;
   for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
@@ -1152,7 +1469,6 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
     }
   }
   tuples.resize(new_size);
-  const int num_valid_tuples = tuples.size();
 
   if (tuples.empty()) {
     context->UpdateRuleStats("table: empty");
@@ -1184,7 +1500,11 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Tables with two variables do not need tuple literals.
-  if (num_vars == 2) {
+  //
+  // TODO(user): If there is an unique variable with cost, it is better to
+  // detect it. But if the detection fail, we should still call
+  // AddSizeTwoTable() unlike what happen here.
+  if (num_vars == 2 && !context->params().detect_table_with_cost()) {
     AddSizeTwoTable(vars, tuples, values_per_var, context);
     context->UpdateRuleStats(
         "table: expanded positive constraint with two variables");
@@ -1192,108 +1512,13 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
     return;
   }
 
-  // It is easier to compute this before compression, as compression will merge
-  // tuples.
-  int num_prefix_tuples = 0;
-  {
-    absl::flat_hash_set<absl::Span<const int64_t>> prefixes;
-    for (const std::vector<int64_t>& tuple : tuples) {
-      prefixes.insert(absl::MakeSpan(tuple.data(), num_vars - 1));
-    }
-    num_prefix_tuples = prefixes.size();
+  bool last_column_is_cost = false;
+  if (context->params().detect_table_with_cost()) {
+    last_column_is_cost =
+        ReduceTableInPresenceOfUniqueVariableWithCosts(&vars, &tuples, context);
   }
 
-  // TODO(user): reinvestigate ExploreSubsetOfVariablesAndAddNegatedTables.
-
-  // Compress tuples.
-  const int64_t any_value = std::numeric_limits<int64_t>::min();
-  std::vector<int64_t> domain_sizes;
-  for (int i = 0; i < num_vars; ++i) {
-    domain_sizes.push_back(values_per_var[i].size());
-  }
-  const int num_tuples_before_compression = tuples.size();
-  CompressTuples(domain_sizes, any_value, &tuples);
-  const int num_compressed_tuples = tuples.size();
-  if (num_compressed_tuples < num_tuples_before_compression) {
-    context->UpdateRuleStats("table: compress tuples");
-  }
-
-  if (num_compressed_tuples == 1) {
-    // Domains are propagated. We can remove the constraint.
-    context->UpdateRuleStats("table: one tuple");
-    ct->Clear();
-    return;
-  }
-
-  // Detect if prefix tuples are all different.
-  const bool prefixes_are_all_different = num_prefix_tuples == num_valid_tuples;
-  if (prefixes_are_all_different) {
-    context->UpdateRuleStats(
-        "TODO table: last value implied by previous values");
-  }
-  // TODO(user): if 2 table constraints share the same valid prefix, the
-  // tuple literals can be reused.
-  // TODO(user): investigate different encoding for prefix tables. Maybe
-  // we can remove the need to create tuple literals.
-
-  // Debug message to log the status of the expansion.
-  if (VLOG_IS_ON(2)) {
-    // Compute the maximum number of prefix tuples.
-    int64_t max_num_prefix_tuples = 1;
-    for (int var_index = 0; var_index + 1 < num_vars; ++var_index) {
-      max_num_prefix_tuples =
-          CapProd(max_num_prefix_tuples, values_per_var[var_index].size());
-    }
-
-    std::string message =
-        absl::StrCat("Table: ", num_vars,
-                     " variables, original tuples = ", num_original_tuples);
-    if (num_valid_tuples != num_original_tuples) {
-      absl::StrAppend(&message, ", valid tuples = ", num_valid_tuples);
-    }
-    if (prefixes_are_all_different) {
-      if (num_prefix_tuples < max_num_prefix_tuples) {
-        absl::StrAppend(&message, ", partial prefix = ", num_prefix_tuples, "/",
-                        max_num_prefix_tuples);
-      } else {
-        absl::StrAppend(&message, ", full prefix = true");
-      }
-    } else {
-      absl::StrAppend(&message, ", num prefix tuples = ", num_prefix_tuples);
-    }
-    if (num_compressed_tuples != num_valid_tuples) {
-      absl::StrAppend(&message,
-                      ", compressed tuples = ", num_compressed_tuples);
-    }
-    VLOG(2) << message;
-  }
-
-  // Log if we have only two tuples.
-  if (num_compressed_tuples == 2) {
-    context->UpdateRuleStats("TODO table: two tuples");
-  }
-
-  // Create one Boolean variable per tuple to indicate if it can still be
-  // selected or not.
-  std::vector<int> tuple_literals(num_compressed_tuples);
-  BoolArgumentProto* exactly_one =
-      context->working_model->add_constraints()->mutable_exactly_one();
-  for (int i = 0; i < num_compressed_tuples; ++i) {
-    tuple_literals[i] = context->NewBoolVar();
-    exactly_one->add_literals(tuple_literals[i]);
-  }
-
-  std::vector<int64_t> values(num_compressed_tuples);
-  for (int var_index = 0; var_index < num_vars; ++var_index) {
-    if (values_per_var[var_index].size() == 1) continue;
-    for (int i = 0; i < num_compressed_tuples; ++i) {
-      values[i] = tuples[i][var_index];
-    }
-    ProcessOneVariable(tuple_literals, values, vars[var_index], any_value,
-                       context);
-  }
-
-  context->UpdateRuleStats("table: expanded positive constraint");
+  CompressAndExpandPositiveTable(last_column_is_cost, vars, &tuples, context);
   ct->Clear();
 }
 

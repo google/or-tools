@@ -526,6 +526,326 @@ std::vector<int> SelectIntervalsInRandomTimeWindow(
   return result;
 }
 
+struct Demand {
+  int interval_index;
+  int64_t start;
+  int64_t size;
+  int64_t height;
+
+  bool operator<(const Demand& other) const {
+    return std::tie(start, size) < std::tie(other.start, other.size);
+  }
+};
+
+struct Rectangle {
+  int interval_index;
+  int64_t x_start;
+  int64_t x_size;
+  int64_t y_min;
+  int64_t y_max;
+
+  bool operator<(const Rectangle& other) const {
+    return std::tie(x_start, x_size) < std::tie(other.x_start, other.x_size);
+  }
+};
+
+void AddPrecedencesOnSortedListOfDemands(
+    const std::vector<Demand>& demands,
+    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+  for (int i = 0; i + 1 < demands.size(); ++i) {
+    DCHECK_LT(demands[i].start, demands[i + 1].start);
+    precedences->insert(
+        {demands[i].interval_index, demands[i + 1].interval_index});
+  }
+}
+
+void GetNoOverlapPrecedences(
+    const CpSolverResponse& initial_solution, const CpModelProto& model_proto,
+    int no_overlap_index,
+    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+  std::vector<Demand> demands;
+  const NoOverlapConstraintProto& no_overlap =
+      model_proto.constraints(no_overlap_index).no_overlap();
+  for (const int interval_index : no_overlap.intervals()) {
+    const ConstraintProto& interval_ct =
+        model_proto.constraints(interval_index);
+    // We only look at intervals that are performed in the solution. The
+    // unperformed intervals should be automatically freed during the generation
+    // phase.
+    if (interval_ct.enforcement_literal().size() == 1) {
+      const int enforcement_ref = interval_ct.enforcement_literal(0);
+      const int enforcement_var = PositiveRef(enforcement_ref);
+      const int value = initial_solution.solution(enforcement_var);
+      if (RefIsPositive(enforcement_ref) == (value == 0)) {
+        continue;
+      }
+    }
+
+    const int64_t start_value = GetLinearExpressionValue(
+        interval_ct.interval().start(), initial_solution);
+    const int64_t size_value = GetLinearExpressionValue(
+        interval_ct.interval().size(), initial_solution);
+    if (size_value == 0) continue;
+    demands.push_back({interval_index, start_value, size_value, 1});
+  }
+
+  std::sort(demands.begin(), demands.end());
+  AddPrecedencesOnSortedListOfDemands(demands, precedences);
+}
+
+void ProcessDemandListFromCumulativeConstraint(
+    std::vector<Demand> demands, int64_t capacity,
+    std::list<std::pair<std::vector<Demand>, int64_t>>* to_process,
+    absl::BitGenRef random,
+    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+  if (demands.size() <= 1) return;
+
+  // Checks if all pairs of tasks cannot overlap.
+  std::vector<int64_t> all_heights;
+  for (const Demand& demand : demands) {
+    all_heights.push_back(demand.height);
+  }
+  std::sort(all_heights.begin(), all_heights.end());
+  if (capacity == 1 || all_heights[0] + all_heights[1] > capacity) {
+    AddPrecedencesOnSortedListOfDemands(demands, precedences);
+    return;
+  }
+
+  // Split the resource in 2 and dispatch demands on the 2 parts.
+  const int64_t capacity1 = capacity / 2;
+  absl::flat_hash_map<int64_t, int64_t> usage1;
+  std::vector<Demand> demands1;
+
+  const int64_t capacity2 = capacity - capacity1;
+  absl::flat_hash_map<int64_t, int64_t> usage2;
+  std::vector<Demand> demands2;
+
+  // Dispatch all demands.
+  for (const Demand& d : demands) {
+    const int64_t slack1 = capacity1 - usage1[d.start];
+    const int64_t slack2 = capacity2 - usage2[d.start];
+
+    const bool prefer2 =
+        slack2 >= slack1 || (slack2 == slack1 && absl::Bernoulli(random, 0.5));
+
+    absl::flat_hash_map<int64_t, int64_t>& usage_low =
+        prefer2 ? usage1 : usage2;
+    absl::flat_hash_map<int64_t, int64_t>& usage_high =
+        prefer2 ? usage2 : usage1;
+    std::vector<Demand>& demands_low = prefer2 ? demands1 : demands2;
+    std::vector<Demand>& demands_high = prefer2 ? demands2 : demands1;
+
+    const int64_t max_slack = std::max(slack1, slack2);
+
+    const int64_t assigned_to_high = std::min(max_slack, d.height);
+    DCHECK_GT(assigned_to_high, 0)
+        << "slack1 = " << slack1 << ", slack2 = " << slack2
+        << ", demand height= " << d.height;
+    for (int64_t t = d.start; t < d.start + d.size; ++t) {
+      usage_high[t] += assigned_to_high;
+    }
+    demands_high.push_back(
+        {d.interval_index, d.start, d.size, assigned_to_high});
+
+    if (d.height > max_slack) {
+      const int64_t residual = d.height - max_slack;
+      DCHECK_GT(residual, 0);
+      for (int64_t t = d.start; t < d.start + d.size; ++t) {
+        usage_low[t] += residual;
+      }
+      demands_low.push_back({d.interval_index, d.start, d.size, residual});
+    }
+  }
+
+  if (demands1.size() > 1) {
+    to_process->push_back(std::make_pair(std::move(demands1), capacity1));
+  }
+  if (demands2.size() > 1) {
+    to_process->push_back(std::make_pair(std::move(demands2), capacity2));
+  }
+}
+
+void GetCumulativePrecedences(
+    const CpSolverResponse& initial_solution, const CpModelProto& model_proto,
+    int cumulative_index, absl::BitGenRef random,
+    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+  const CumulativeConstraintProto& cumulative =
+      model_proto.constraints(cumulative_index).cumulative();
+
+  std::vector<Demand> demands;
+  for (int i = 0; i < cumulative.intervals().size(); ++i) {
+    const int interval_index = cumulative.intervals(i);
+    const ConstraintProto& interval_ct =
+        model_proto.constraints(interval_index);
+    // We only look at intervals that are performed in the solution. The
+    // unperformed intervals should be automatically freed during the generation
+    // phase.
+    if (interval_ct.enforcement_literal().size() == 1) {
+      const int enforcement_ref = interval_ct.enforcement_literal(0);
+      const int enforcement_var = PositiveRef(enforcement_ref);
+      const int value = initial_solution.solution(enforcement_var);
+      if (RefIsPositive(enforcement_ref) == (value == 0)) {
+        continue;
+      }
+    }
+
+    const int64_t start_value = GetLinearExpressionValue(
+        interval_ct.interval().start(), initial_solution);
+    const int64_t size_value = GetLinearExpressionValue(
+        interval_ct.interval().size(), initial_solution);
+    const int64_t demand_value =
+        GetLinearExpressionValue(cumulative.demands(i), initial_solution);
+    if (size_value == 0 || demand_value == 0) continue;
+    demands.push_back({interval_index, start_value, size_value, demand_value});
+  }
+  std::sort(demands.begin(), demands.end());
+
+  const int64_t capacity_value =
+      GetLinearExpressionValue(cumulative.capacity(), initial_solution);
+
+  // Copying all these demands is memory intensive. Let's be careful here.
+  std::list<std::pair<std::vector<Demand>, int64_t>> to_process;
+  to_process.emplace_back(std::move(demands), capacity_value);
+
+  while (!to_process.empty()) {
+    auto& next_task = to_process.front();
+    ProcessDemandListFromCumulativeConstraint(std::move(next_task.first),
+                                              next_task.second, &to_process,
+                                              random, precedences);
+    to_process.pop_front();
+  }
+}
+
+void GetRectanglePredecences(
+    const std::vector<Rectangle>& rectangles,
+    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+  absl::flat_hash_set<int64_t> interesting_points;
+  for (const Rectangle& r : rectangles) {
+    interesting_points.insert(r.y_max - 1);
+  }
+  for (const int64_t t : interesting_points) {
+    std::vector<Demand> demands;
+    for (const Rectangle& r : rectangles) {
+      if (r.y_min > t || r.y_max <= t) continue;
+      demands.push_back({r.interval_index, r.x_start, r.x_size, 1});
+    }
+    std::sort(demands.begin(), demands.end());
+    AddPrecedencesOnSortedListOfDemands(demands, precedences);
+  }
+}
+
+void GetNoOverlap2dPrecedences(
+    const CpSolverResponse& initial_solution, const CpModelProto& model_proto,
+    int no_overlap_2d_index,
+    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+  std::vector<Demand> demands;
+  const NoOverlap2DConstraintProto& no_overlap_2d =
+      model_proto.constraints(no_overlap_2d_index).no_overlap_2d();
+  std::vector<Rectangle> x_main;
+  std::vector<Rectangle> y_main;
+  for (int i = 0; i < no_overlap_2d.x_intervals_size(); ++i) {
+    // Ignore unperformed rectangles.
+    const int x_interval_index = no_overlap_2d.x_intervals(i);
+    const ConstraintProto& x_interval_ct =
+        model_proto.constraints(x_interval_index);
+    if (x_interval_ct.enforcement_literal().size() == 1) {
+      const int enforcement_ref = x_interval_ct.enforcement_literal(0);
+      const int enforcement_var = PositiveRef(enforcement_ref);
+      const int value = initial_solution.solution(enforcement_var);
+      if (RefIsPositive(enforcement_ref) == (value == 0)) {
+        continue;
+      }
+    }
+
+    const int y_interval_index = no_overlap_2d.y_intervals(i);
+    const ConstraintProto& y_interval_ct =
+        model_proto.constraints(y_interval_index);
+    if (y_interval_ct.enforcement_literal().size() == 1) {
+      const int enforcement_ref = y_interval_ct.enforcement_literal(0);
+      const int enforcement_var = PositiveRef(enforcement_ref);
+      const int value = initial_solution.solution(enforcement_var);
+      if (RefIsPositive(enforcement_ref) == (value == 0)) {
+        continue;
+      }
+    }
+
+    const int64_t x_start_value = GetLinearExpressionValue(
+        x_interval_ct.interval().start(), initial_solution);
+    const int64_t x_size_value = GetLinearExpressionValue(
+        x_interval_ct.interval().size(), initial_solution);
+    const int64_t y_start_value = GetLinearExpressionValue(
+        y_interval_ct.interval().start(), initial_solution);
+    const int64_t y_size_value = GetLinearExpressionValue(
+        y_interval_ct.interval().size(), initial_solution);
+
+    // Ignore rectangles with zero area.
+    if (x_size_value == 0 || y_size_value == 0) continue;
+
+    x_main.push_back({x_interval_index, x_start_value, x_size_value,
+                      y_start_value, y_start_value + y_size_value});
+    y_main.push_back({y_interval_index, y_start_value, y_size_value,
+                      x_start_value, x_start_value + x_size_value});
+  }
+
+  if (x_main.empty() || y_main.empty()) return;
+
+  std::sort(x_main.begin(), x_main.end());
+  GetRectanglePredecences(x_main, precedences);
+  std::sort(y_main.begin(), y_main.end());
+  GetRectanglePredecences(y_main, precedences);
+}
+
+void ReducePrecedences(const CpModelProto& model_proto,
+                       const CpSolverResponse& initial_solution,
+                       absl::flat_hash_set<IntervalPrecedence>* precedences) {
+  const int num_precedences = precedences->size();
+  LOG(INFO) << "Reduce graph from " << num_precedences;
+  absl::flat_hash_map<int, absl::flat_hash_set<int>> outgoing;
+  for (const IntervalPrecedence& prec : *precedences) {
+    outgoing[prec.before].insert(prec.after);
+  }
+  std::vector<IntervalPrecedence> to_delete;
+  for (const IntervalPrecedence& candidate : *precedences) {
+    const int64_t after_start = GetLinearExpressionValue(
+        model_proto.constraints(candidate.after).interval().start(),
+        initial_solution);
+    std::list<int> to_process;
+    absl::flat_hash_set<int> marked;
+    for (const int next : outgoing[candidate.before]) {
+      if (next == candidate.after) continue;
+      const int64_t next_end = GetLinearExpressionValue(
+          model_proto.constraints(next).interval().end(), initial_solution);
+      if (next_end >= after_start) continue;
+      to_process.push_back(next);
+    }
+    while (!to_process.empty()) {
+      const int current = to_process.front();
+      marked.insert(current);
+      to_process.pop_front();
+      for (const int next : outgoing[current]) {
+        if (marked.contains(next)) continue;
+        const int64_t next_end = GetLinearExpressionValue(
+            model_proto.constraints(next).interval().end(), initial_solution);
+        if (next_end >= after_start) continue;
+        if (next == candidate.after) {
+          to_process.clear();
+          to_delete.push_back(candidate);
+          break;
+        }
+        to_process.push_back(next);
+      }
+    }
+  }
+
+  for (const auto& prec : to_delete) {
+    precedences->erase(prec);
+  }
+  if (precedences->size() < num_precedences) {
+    LOG(INFO) << "Reduce graph from " << num_precedences << " to "
+              << precedences->size();
+  }
+}
+
 }  // namespace
 
 std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
@@ -611,6 +931,25 @@ std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
   }
 
   return result;
+}
+
+absl::flat_hash_set<IntervalPrecedence>
+NeighborhoodGeneratorHelper::GetSchedulingPrecedences(
+    const CpSolverResponse& initial_solution, absl::BitGenRef random) const {
+  absl::flat_hash_set<IntervalPrecedence> precedences;
+  for (const int c : TypeToConstraints(ConstraintProto::kNoOverlap)) {
+    GetNoOverlapPrecedences(initial_solution, ModelProto(), c, &precedences);
+  }
+  for (const int c : TypeToConstraints(ConstraintProto::kCumulative)) {
+    GetCumulativePrecedences(initial_solution, ModelProto(), c, random,
+                             &precedences);
+  }
+  for (const int c : TypeToConstraints(ConstraintProto::kNoOverlap2D)) {
+    GetNoOverlap2dPrecedences(initial_solution, ModelProto(), c, &precedences);
+  }
+
+  // ReducePrecedences(ModelProto(), initial_solution, &precedences);
+  return precedences;
 }
 
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
@@ -858,7 +1197,8 @@ void NeighborhoodGenerator::Synchronize() {
 
 namespace {
 
-void GetRandomSubset(double relative_size, std::vector<int>* base,
+template <class T>
+void GetRandomSubset(double relative_size, std::vector<T>* base,
                      absl::BitGenRef random) {
   if (base->empty()) return;
 
@@ -1214,6 +1554,44 @@ void AddPrecedenceConstraintsOnCumulative(
 }  // namespace
 
 Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
+    const absl::Span<const IntervalPrecedence> precedences,
+    const CpSolverResponse& initial_solution,
+    const NeighborhoodGeneratorHelper& helper) {
+  Neighborhood neighborhood = helper.FullNeighborhood();
+
+  neighborhood.is_reduced = !precedences.empty();
+  if (!neighborhood.is_reduced) {  // Returns the full neighborhood.
+    helper.AddSolutionHinting(initial_solution, &neighborhood.delta);
+    neighborhood.is_generated = true;
+    return neighborhood;
+  }
+
+  for (const IntervalPrecedence& prec : precedences) {
+    const LinearExpressionProto& before_end =
+        helper.ModelProto().constraints(prec.before).interval().end();
+    const LinearExpressionProto& after_start =
+        helper.ModelProto().constraints(prec.after).interval().start();
+    CHECK_LE(GetLinearExpressionValue(before_end, initial_solution),
+             GetLinearExpressionValue(after_start, initial_solution));
+
+    LinearConstraintProto* linear =
+        neighborhood.delta.add_constraints()->mutable_linear();
+    linear->add_domain(std::numeric_limits<int64_t>::min());
+    int64_t rhs_offset = 0;
+    AddLinearExpressionToConstraint(1, before_end, linear, &rhs_offset);
+    AddLinearExpressionToConstraint(-1, after_start, linear, &rhs_offset);
+    linear->add_domain(rhs_offset);
+  }
+
+  // Set the current solution as a hint.
+  helper.AddSolutionHinting(initial_solution, &neighborhood.delta);
+  neighborhood.is_generated = true;
+
+  return neighborhood;
+}
+
+#if 0
+Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     const absl::Span<const int> intervals_to_relax,
     const CpSolverResponse& initial_solution,
     const NeighborhoodGeneratorHelper& helper) {
@@ -1286,15 +1664,140 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 
   return neighborhood;
 }
+#else
+Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
+    const absl::Span<const int> intervals_to_relax,
+    const CpSolverResponse& initial_solution, absl::BitGenRef random,
+    const NeighborhoodGeneratorHelper& helper) {
+  Neighborhood neighborhood = helper.FullNeighborhood();
 
-Neighborhood SchedulingNeighborhoodGenerator::Generate(
+  // We will extend the set with some interval that we cannot fix.
+  absl::flat_hash_set<int> ignored_intervals(intervals_to_relax.begin(),
+                                             intervals_to_relax.end());
+
+  // Fix the presence/absence of non-relaxed intervals.
+  for (const int i : helper.TypeToConstraints(ConstraintProto::kInterval)) {
+    DCHECK_GE(i, 0);
+    if (ignored_intervals.contains(i)) continue;
+
+    const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
+    if (interval_ct.enforcement_literal().empty()) continue;
+
+    CHECK_EQ(interval_ct.enforcement_literal().size(), 1);
+    const int enforcement_ref = interval_ct.enforcement_literal(0);
+    const int enforcement_var = PositiveRef(enforcement_ref);
+    const int value = initial_solution.solution(enforcement_var);
+
+    // If the interval is not enforced, we just relax it. If it belongs to an
+    // exactly one constraint, and the enforced interval is not relaxed, then
+    // propagation will force this interval to stay not enforced. Otherwise,
+    // LNS will be able to change which interval will be enforced among all
+    // alternatives.
+    if (RefIsPositive(enforcement_ref) == (value == 0)) {
+      ignored_intervals.insert(i);
+      continue;
+    }
+
+    // Fix the value.
+    neighborhood.delta.mutable_variables(enforcement_var)->clear_domain();
+    neighborhood.delta.mutable_variables(enforcement_var)->add_domain(value);
+    neighborhood.delta.mutable_variables(enforcement_var)->add_domain(value);
+  }
+
+  neighborhood.is_reduced =
+      (ignored_intervals.size() <
+       helper.TypeToConstraints(ConstraintProto::kInterval).size());
+  if (!neighborhood.is_reduced) {  // Returns the full neighborhood.
+    helper.AddSolutionHinting(initial_solution, &neighborhood.delta);
+    neighborhood.is_generated = true;
+    return neighborhood;
+  }
+
+  absl::flat_hash_map<int, absl::flat_hash_set<int>> incoming;
+  absl::flat_hash_map<int, absl::flat_hash_set<int>> outgoing;
+  absl::flat_hash_set<IntervalPrecedence> precedences =
+      helper.GetSchedulingPrecedences(initial_solution, random);
+
+  for (const IntervalPrecedence& prec : precedences) {
+    incoming[prec.after].insert(prec.before);
+    outgoing[prec.before].insert(prec.after);
+  }
+
+  for (const int to_remove : ignored_intervals) {
+    if (!incoming.contains(to_remove)) continue;
+    if (!outgoing.contains(to_remove)) continue;
+    // We tried connecting all predecessors of to_remove to all successors
+    // of to_remove. It is better to choose one successor randomly for each
+    // predecessor.
+    std::vector<int> outgoing_list(outgoing[to_remove].begin(),
+                                   outgoing[to_remove].end());
+    for (const int before : incoming[to_remove]) {
+      const int after_index =
+          absl::Uniform<int>(random, 0, outgoing_list.size());
+      const int after = outgoing_list[after_index];
+      outgoing[before].insert(after);
+      incoming[after].insert(before);
+    }
+
+    for (const int before : incoming[to_remove]) {
+      outgoing[before].erase(to_remove);
+    }
+    for (const int after : outgoing[to_remove]) {
+      incoming[after].erase(to_remove);
+    }
+    incoming.erase(to_remove);
+    outgoing.erase(to_remove);
+  }
+
+  for (const auto& [before, afters] : outgoing) {
+    for (const int after : afters) {
+      const LinearExpressionProto& before_end =
+          helper.ModelProto().constraints(before).interval().end();
+      const LinearExpressionProto& after_start =
+          helper.ModelProto().constraints(after).interval().start();
+      CHECK_LE(GetLinearExpressionValue(before_end, initial_solution),
+               GetLinearExpressionValue(after_start, initial_solution));
+
+      LinearConstraintProto* linear =
+          neighborhood.delta.add_constraints()->mutable_linear();
+      linear->add_domain(std::numeric_limits<int64_t>::min());
+      int64_t rhs_offset = 0;
+      AddLinearExpressionToConstraint(1, before_end, linear, &rhs_offset);
+      AddLinearExpressionToConstraint(-1, after_start, linear, &rhs_offset);
+      linear->add_domain(rhs_offset);
+    }
+  }
+
+  // Set the current solution as a hint.
+  helper.AddSolutionHinting(initial_solution, &neighborhood.delta);
+  neighborhood.is_generated = true;
+
+  return neighborhood;
+}
+#endif
+
+Neighborhood RandomIntervalSchedulingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
   std::vector<int> intervals_to_relax =
       helper_.GetActiveIntervals(initial_solution);
   GetRandomSubset(difficulty, &intervals_to_relax, random);
 
-  return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
+  return GenerateSchedulingNeighborhoodForRelaxation(
+      intervals_to_relax, initial_solution, random, helper_);
+}
+
+Neighborhood RandomPrecedenceSchedulingNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  const absl::flat_hash_set<IntervalPrecedence> precedences =
+      helper_.GetSchedulingPrecedences(initial_solution, random);
+  std::vector<IntervalPrecedence> precedence_vector(precedences.begin(),
+                                                    precedences.end());
+  // We sort the vector to be deterministic.
+  std::sort(precedence_vector.begin(), precedence_vector.end());
+  GetRandomSubset(1.0 - difficulty, &precedence_vector, random);
+  return GenerateSchedulingNeighborhoodForRelaxation(precedence_vector,
                                                      initial_solution, helper_);
 }
 
@@ -1309,8 +1812,8 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
   const std::vector<int> intervals_to_relax =
       SelectIntervalsInRandomTimeWindow(active_intervals, helper_.ModelProto(),
                                         initial_solution, difficulty, random);
-  return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
-                                                     initial_solution, helper_);
+  return GenerateSchedulingNeighborhoodForRelaxation(
+      intervals_to_relax, initial_solution, random, helper_);
 }
 
 Neighborhood SchedulingResourceWindowsNeighborhoodGenerator::Generate(
@@ -1327,8 +1830,8 @@ Neighborhood SchedulingResourceWindowsNeighborhoodGenerator::Generate(
 
   const std::vector<int> intervals(
       {intervals_to_relax_.begin(), intervals_to_relax_.end()});
-  return GenerateSchedulingNeighborhoodForRelaxation(intervals,
-                                                     initial_solution, helper_);
+  return GenerateSchedulingNeighborhoodForRelaxation(
+      intervals, initial_solution, random, helper_);
 }
 
 Neighborhood RoutingRandomNeighborhoodGenerator::Generate(

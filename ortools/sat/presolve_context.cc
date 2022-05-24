@@ -1717,14 +1717,32 @@ bool PresolveContext::RecomputeSingletonObjectiveDomain() {
   return true;
 }
 
-void PresolveContext::RemoveVariableFromObjective(int var) {
+void PresolveContext::RemoveVariableFromObjective(int ref) {
+  const int var = PositiveRef(ref);
   objective_map_.erase(var);
   EraseFromVarToConstraint(var, kObjectiveConstraint);
 }
 
 void PresolveContext::AddToObjective(int var, int64_t value) {
+  CHECK(RefIsPositive(var));
   int64_t& map_ref = objective_map_[var];
   map_ref += value;
+  if (map_ref == 0) {
+    RemoveVariableFromObjective(var);
+  } else {
+    var_to_constraints_[var].insert(kObjectiveConstraint);
+  }
+}
+
+void PresolveContext::AddLiteralToObjective(int ref, int64_t value) {
+  const int var = PositiveRef(ref);
+  int64_t& map_ref = objective_map_[var];
+  if (RefIsPositive(ref)) {
+    map_ref += value;
+  } else {
+    AddToObjectiveOffset(value);
+    map_ref -= value;
+  }
   if (map_ref == 0) {
     RemoveVariableFromObjective(var);
   } else {

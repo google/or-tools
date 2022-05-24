@@ -2166,7 +2166,9 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
   return false;
 }
 
-// We use a simple heuristic for now.
+// This tries to decompose the constraint into coeff * part1 + part2 and show
+// that the value that part2 take is not important, thus the constraint can
+// only be transformed on a constraint on the first part.
 void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
     int c, ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return;
@@ -2177,31 +2179,131 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
   const Domain rhs = ReadDomainFromProto(lin);
   if (rhs.NumIntervals() != 1) return;
 
-  // As an heuristic we try the smallest coeff above 10 as a base, and try to
-  // express everything as a multiple of it.
-  //
-  // TODO(user): Find something better.
-  int64_t base = std::numeric_limits<int64_t>::max();
+  // Precompute a bunch of quantities and "canonicalize" the constraint.
+  int64_t lb_sum = 0;
+  int64_t ub_sum = 0;
+  int64_t max_variation = 0;
+  struct Entry {
+    int64_t magnitude;
+    int64_t max_variation;
+  };
+  std::vector<Entry> entries;
+  std::vector<int> vars;
   std::vector<int64_t> coeffs;
+  std::vector<int64_t> magnitudes;
   std::vector<int64_t> lbs;
   std::vector<int64_t> ubs;
-  uint64_t gcd = 0;
+  int64_t max_magnitude = 0;
   const int num_terms = lin.vars().size();
   for (int i = 0; i < num_terms; ++i) {
     const int64_t coeff = lin.coeffs(i);
-    if (coeff > 0) {
-      coeffs.push_back(coeff);
-      lbs.push_back(context_->MinOf(lin.vars(i)));
-      ubs.push_back(context_->MaxOf(lin.vars(i)));
-    } else {
-      coeffs.push_back(-coeff);
-      lbs.push_back(-context_->MaxOf(lin.vars(i)));
-      ubs.push_back(-context_->MinOf(lin.vars(i)));
-    }
     const int64_t magnitude = std::abs(lin.coeffs(i));
-    gcd = MathUtil::GCD64(gcd, magnitude);
-    if (magnitude >= 10) {
-      base = std::min(base, std::abs(lin.coeffs(i)));
+    if (magnitude == 0) continue;
+    max_magnitude = std::max(max_magnitude, magnitude);
+
+    int64_t lb;
+    int64_t ub;
+    if (coeff > 0) {
+      lb = context_->MinOf(lin.vars(i));
+      ub = context_->MaxOf(lin.vars(i));
+    } else {
+      lb = -context_->MaxOf(lin.vars(i));
+      ub = -context_->MinOf(lin.vars(i));
+    }
+    lb_sum += lb * magnitude;
+    ub_sum += ub * magnitude;
+
+    // Abort if fixed term, that might mess up code below.
+    if (lb == ub) return;
+
+    vars.push_back(lin.vars(i));
+    lbs.push_back(lb);
+    ubs.push_back(ub);
+    coeffs.push_back(coeff);
+    magnitudes.push_back(magnitude);
+    entries.push_back({magnitude, magnitude * (ub - lb)});
+    max_variation += entries.back().max_variation;
+  }
+
+  // Mark trivially false constraint as such. This should have been already
+  // done, but we require non-negative quantity below.
+  if (lb_sum > rhs.Max() || rhs.Min() > ub_sum) {
+    (void)MarkConstraintAsFalse(ct);
+    context_->UpdateConstraintVariableUsage(c);
+    return;
+  }
+  const IntegerValue rhs_ub(CapSub(rhs.Max(), lb_sum));
+  const IntegerValue rhs_lb(CapSub(ub_sum, rhs.Min()));
+  const bool use_ub = max_variation > rhs_ub;
+  const bool use_lb = max_variation > rhs_lb;
+  if (!use_ub && !use_lb) {
+    (void)RemoveConstraint(ct);
+    context_->UpdateConstraintVariableUsage(c);
+    return;
+  }
+
+  // No point doing more work for constraint with all coeff at +/-1.
+  if (max_magnitude <= 1) return;
+
+  // Process entries by decreasing magnitude. Update max_error to correspond
+  // only to the sum of the not yet processed terms.
+  //
+  // TODO(user): we could use partial dynamic programming to also compute
+  // the maximum reachable value instead of just relying on gcds.
+  uint64_t gcd = 0;
+  int64_t max_error = max_variation;
+  std::sort(entries.begin(), entries.end(),
+            [](const Entry& a, Entry& b) { return a.magnitude > b.magnitude; });
+  std::vector<int64_t> divisors;
+  for (const Entry& e : entries) {
+    gcd = MathUtil::GCD64(gcd, e.magnitude);
+    max_error -= e.max_variation;
+    if (e.magnitude == 1) break;  // No point continuing, and gcd == 1.
+
+    if ((!use_ub ||
+         max_error <= PositiveRemainder(rhs_ub, IntegerValue(e.magnitude))) &&
+        (!use_lb ||
+         max_error <= PositiveRemainder(rhs_lb, IntegerValue(e.magnitude)))) {
+      if (divisors.empty() || e.magnitude != divisors.back()) {
+        divisors.push_back(e.magnitude);
+      }
+    }
+
+    if (max_error == 0) break;  // Last term.
+    if ((!use_ub ||
+         max_error <= PositiveRemainder(rhs_ub, IntegerValue(gcd))) &&
+        (!use_lb ||
+         max_error <= PositiveRemainder(rhs_lb, IntegerValue(gcd)))) {
+      // We have a simplification using gcd * part1 + part2, we know that part2
+      // can be ignored.
+      int64_t shift_lb = 0;
+      int64_t shift_ub = 0;
+      int64_t local_max_variation = 0;
+      context_->UpdateRuleStats("linear: simplify using partial gcd");
+      LinearConstraintProto* mutable_linear = ct->mutable_linear();
+
+      mutable_linear->clear_vars();
+      mutable_linear->clear_coeffs();
+      for (int i = 0; i < magnitudes.size(); ++i) {
+        const int64_t m = magnitudes[i];
+        if (m < e.magnitude) continue;
+        shift_lb += lbs[i] * m;
+        shift_ub += ubs[i] * m;
+        local_max_variation += m * (ubs[i] - lbs[i]);
+        mutable_linear->add_vars(vars[i]);
+        mutable_linear->add_coeffs(coeffs[i]);
+      }
+
+      // The constraint become:
+      //   sum ci (X - lb) <= rhs_ub
+      //   sum ci (ub - X) <= rhs_lb
+      //   sum ci ub - rhs_lb <= sum ci X <= rhs_ub + sum ci lb.
+      int64_t new_rhs_lb = use_lb ? shift_ub - rhs_lb.value() : shift_lb;
+      int64_t new_rhs_ub = use_ub ? shift_lb + rhs_ub.value() : shift_ub;
+      FillDomainInProto(Domain(new_rhs_lb, new_rhs_ub), mutable_linear);
+      DivideLinearByGcd(ct);
+      context_->UpdateConstraintVariableUsage(c);
+      return;
     }
   }
 
@@ -2213,43 +2315,49 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
     }
     return;
   }
-  if (base == std::numeric_limits<int64_t>::max()) return;
 
-  // Try the <= side first.
-  int64_t new_ub;
-  if (!LinearInequalityCanBeReducedWithClosestMultiple(base, coeffs, lbs, ubs,
-                                                       rhs.Max(), &new_ub)) {
-    return;
-  }
-
-  // The other side.
-  int64_t minus_new_lb;
-  for (int i = 0; i < num_terms; ++i) {
-    std::swap(lbs[i], ubs[i]);
-    lbs[i] = -lbs[i];
-    ubs[i] = -ubs[i];
-  }
-  if (!LinearInequalityCanBeReducedWithClosestMultiple(
-          base, coeffs, lbs, ubs, -rhs.Min(), &minus_new_lb)) {
-    return;
-  }
-
-  // Rewrite the constraint !
-  context_->UpdateRuleStats("linear: reduce coefficients");
-  int new_size = 0;
-  LinearConstraintProto* mutable_linear = ct->mutable_linear();
-  for (int i = 0; i < num_terms; ++i) {
-    const int64_t new_coeff = ClosestMultiple(lin.coeffs(i), base) / base;
-    if (new_coeff != 0) {
-      mutable_linear->set_vars(new_size, lin.vars(i));
-      mutable_linear->set_coeffs(new_size, new_coeff);
-      new_size++;
+  // Limit the number of "divisor" we try for approximate gcd.
+  if (divisors.size() > 3) divisors.resize(3);
+  for (const int64_t divisor : divisors) {
+    // Try the <= side first.
+    int64_t new_ub;
+    if (!LinearInequalityCanBeReducedWithClosestMultiple(
+            divisor, magnitudes, lbs, ubs, rhs.Max(), &new_ub)) {
+      continue;
     }
+
+    // The other side.
+    int64_t minus_new_lb;
+    for (int i = 0; i < lbs.size(); ++i) {
+      std::swap(lbs[i], ubs[i]);
+      lbs[i] = -lbs[i];
+      ubs[i] = -ubs[i];
+    }
+    if (!LinearInequalityCanBeReducedWithClosestMultiple(
+            divisor, magnitudes, lbs, ubs, -rhs.Min(), &minus_new_lb)) {
+      for (int i = 0; i < lbs.size(); ++i) {
+        std::swap(lbs[i], ubs[i]);
+        lbs[i] = -lbs[i];
+        ubs[i] = -ubs[i];
+      }
+      continue;
+    }
+
+    // Rewrite the constraint !
+    context_->UpdateRuleStats("linear: simplify using approximate gcd");
+    LinearConstraintProto* mutable_linear = ct->mutable_linear();
+    mutable_linear->clear_vars();
+    mutable_linear->clear_coeffs();
+    for (int i = 0; i < coeffs.size(); ++i) {
+      const int64_t new_coeff = ClosestMultiple(coeffs[i], divisor) / divisor;
+      if (new_coeff == 0) continue;
+      mutable_linear->add_vars(vars[i]);
+      mutable_linear->add_coeffs(new_coeff);
+    }
+    FillDomainInProto(Domain(-minus_new_lb, new_ub), mutable_linear);
+    context_->UpdateConstraintVariableUsage(c);
+    return;
   }
-  mutable_linear->mutable_vars()->Truncate(new_size);
-  mutable_linear->mutable_coeffs()->Truncate(new_size);
-  FillDomainInProto(Domain(-minus_new_lb, new_ub), mutable_linear);
-  context_->UpdateConstraintVariableUsage(c);
 }
 
 namespace {
@@ -6633,10 +6741,6 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     if (implied_superset_domain.IsIncludedIn(superset_ct_domain)) {
       context_->UpdateRuleStats(
           "linear inclusion: redundant containing constraint");
-      for (const int var : context_->ConstraintToVars(superset_c)) {
-        context_->var_to_lb_only_constraints[var].erase(superset_c);
-        context_->var_to_ub_only_constraints[var].erase(superset_c);
-      }
       context_->working_model->mutable_constraints(superset_c)->Clear();
       constraint_indices_to_clean.push_back(superset_c);
       detector.StopProcessingCurrentSuperset();
@@ -6650,10 +6754,6 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     if (implied_subset_domain.IsIncludedIn(subset_ct_domain)) {
       context_->UpdateRuleStats(
           "linear inclusion: redundant included constraint");
-      for (const int var : context_->ConstraintToVars(subset_c)) {
-        context_->var_to_lb_only_constraints[var].erase(subset_c);
-        context_->var_to_ub_only_constraints[var].erase(subset_c);
-      }
       context_->working_model->mutable_constraints(subset_c)->Clear();
       constraint_indices_to_clean.push_back(subset_c);
       detector.StopProcessingCurrentSubset();
@@ -6697,8 +6797,37 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
         constraint_indices_to_clean.push_back(superset_c);
         detector.StopProcessingCurrentSuperset();
         return;
+      } else {
+        // Propagate domain on the superset - subset variables.
+        // TODO(user): We can probably still do that if the inclusion is not
+        // perfect.
+        temp_ct_.Clear();
+        auto* mutable_linear = temp_ct_.mutable_linear();
+        for (int i = 0; i < superset_lin.vars().size(); ++i) {
+          const int var = superset_lin.vars(i);
+          const int64_t coeff = superset_lin.coeffs(i);
+          const auto it = coeff_map.find(var);
+          if (it != coeff_map.end()) continue;
+          mutable_linear->add_vars(var);
+          mutable_linear->add_coeffs(coeff);
+        }
+        FillDomainInProto(superset_ct_domain.AdditionWith(
+                              subset_ct_domain.MultiplicationBy(-factor)),
+                          mutable_linear);
+        PropagateDomainsInLinear(/*ct_index=*/-1, &temp_ct_);
       }
       if (superset_ct_domain.IsFixed()) {
+        if (subset_lin.vars().size() + 1 == superset_lin.vars().size()) {
+          // Because we propagated the equation on the singleton variable above,
+          // and we have an equality, the subset is redundant!
+          context_->UpdateRuleStats(
+              "linear inclusion: subset + singleton is equality");
+          context_->working_model->mutable_constraints(subset_c)->Clear();
+          constraint_indices_to_clean.push_back(subset_c);
+          detector.StopProcessingCurrentSubset();
+          return;
+        }
+
         // This one could make sense if subset is large vs superset.
         context_->UpdateRuleStats(
             "TODO linear inclusion: superset is equality");
@@ -6707,6 +6836,10 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
   });
 
   for (const int c : constraint_indices_to_clean) {
+    for (const int var : context_->ConstraintToVars(c)) {
+      context_->var_to_lb_only_constraints[var].erase(c);
+      context_->var_to_ub_only_constraints[var].erase(c);
+    }
     context_->UpdateConstraintVariableUsage(c);
   }
 

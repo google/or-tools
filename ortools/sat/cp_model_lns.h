@@ -90,6 +90,24 @@ struct Neighborhood {
   std::vector<int> variables_that_can_be_fixed_to_local_optimum;
 };
 
+struct IntervalPrecedence {
+  int before;
+  int after;
+
+  bool operator==(const IntervalPrecedence& other) const {
+    return before == other.before && after == other.after;
+  }
+
+  bool operator<(const IntervalPrecedence& other) const {
+    return std::tie(before, after) < std::tie(other.before, other.after);
+  }
+};
+
+template <typename H>
+H AbslHashValue(H h, const IntervalPrecedence& p) {
+  return H::combine(std::move(h), p.before, p.after);
+}
+
 // Contains pre-computed information about a given CpModelProto that is meant
 // to be used to generate LNS neighborhood. This class can be shared between
 // more than one generator in order to reduce memory usage.
@@ -102,7 +120,6 @@ class NeighborhoodGeneratorHelper : public SubSolver {
                               SatParameters const* parameters,
                               SharedResponseManager* shared_response,
                               SharedBoundsManager* shared_bounds = nullptr);
-
   // SubSolver interface.
   bool TaskIsAvailable() override { return false; }
   std::function<void()> GenerateTask(int64_t task_id) override { return {}; }
@@ -207,6 +224,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // closed. Each entry correspond to the arc literal on the circuit.
   std::vector<std::vector<int>> GetRoutingPaths(
       const CpSolverResponse& initial_solution) const;
+
+  // Returns all precedences extracted from the scheduling constraint and the
+  // initial solution.
+  absl::flat_hash_set<IntervalPrecedence> GetSchedulingPrecedences(
+      const CpSolverResponse& initial_solution, absl::BitGenRef random) const;
 
   // The initial problem.
   // Note that the domain of the variables are not updated here.
@@ -520,17 +542,32 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 // constraints, it adds strict relation order between the non-relaxed intervals.
 Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     const absl::Span<const int> intervals_to_relax,
-    const CpSolverResponse& initial_solution,
+    const CpSolverResponse& initial_solution, absl::BitGenRef random,
     const NeighborhoodGeneratorHelper& helper);
 
 // Only make sense for scheduling problem. This select a random set of interval
-// of the problem according to the difficulty. Then, for each no_overlap
+// of the problem according to the difficulty. Then, for each scheduling
 // constraints, it adds strict relation order between the non-relaxed intervals.
-//
-// TODO(user): Also deal with cumulative constraint.
-class SchedulingNeighborhoodGenerator : public NeighborhoodGenerator {
+class RandomIntervalSchedulingNeighborhoodGenerator
+    : public NeighborhoodGenerator {
  public:
-  explicit SchedulingNeighborhoodGenerator(
+  explicit RandomIntervalSchedulingNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
+// Only make sense for scheduling problem. This select a random set of
+// precedences between intervals of the problem according to the difficulty.
+// These precedences are extracted from the scheduling constraints and their
+// configuration in the current solution. Then, for each scheduling constraints,
+// it adds strict relation order between the non-relaxed intervals.
+class RandomPrecedenceSchedulingNeighborhoodGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit RandomPrecedenceSchedulingNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
 

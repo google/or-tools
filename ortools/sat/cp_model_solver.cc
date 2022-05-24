@@ -2898,26 +2898,31 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty() ||
           !helper->TypeToConstraints(ConstraintProto::kCumulative).empty()) {
         subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
+                helper, absl::StrCat("scheduling_random_intervals_lns_",
+                                     local_params.name())),
+            local_params, helper, &shared));
+        subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
+                helper, absl::StrCat("scheduling_random_precedences_lns_",
+                                     local_params.name())),
+            local_params, helper, &shared));
+        subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
                 helper, absl::StrCat("scheduling_time_window_lns_",
                                      local_params.name())),
             local_params, helper, &shared));
-        subsolvers.push_back(std::make_unique<LnsSolver>(
-            std::make_unique<SchedulingNeighborhoodGenerator>(
-                helper,
-                absl::StrCat("scheduling_random_lns_", local_params.name())),
-            local_params, helper, &shared));
-      }
 
-      const std::vector<std::vector<int>> intervals_in_constraints =
-          helper->GetUniqueIntervalSets();
-      if (intervals_in_constraints.size() > 2) {
-        subsolvers.push_back(std::make_unique<LnsSolver>(
-            std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
-                helper, intervals_in_constraints,
-                absl::StrCat("scheduling_resource_windows_lns_",
-                             local_params.name())),
-            local_params, helper, &shared));
+        const std::vector<std::vector<int>> intervals_in_constraints =
+            helper->GetUniqueIntervalSets();
+        if (intervals_in_constraints.size() > 2) {
+          subsolvers.push_back(std::make_unique<LnsSolver>(
+              std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
+                  helper, intervals_in_constraints,
+                  absl::StrCat("scheduling_resource_windows_lns_",
+                               local_params.name())),
+              local_params, helper, &shared));
+        }
       }
     }
 
