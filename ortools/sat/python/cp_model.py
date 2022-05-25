@@ -627,7 +627,6 @@ class IntVar(LinearExpr):
 
     def __init__(self, model, domain, name):
         """See CpModel.NewIntVar below."""
-        self.__model = model
         self.__negation = None
         # Python do not support multiple __init__ methods.
         # This method is only called from the CpModel class.
@@ -821,6 +820,18 @@ class Constraint(object):
             else:
                 self.__constraint.enforcement_literal.append(lit.Index())
         return self
+
+    def WithName(self, name):
+        """Sets the name of the constraint."""
+        if name:
+            self.__constraint.name = name
+        else:
+            self.__constraint.ClearField('name')
+        return self
+
+    def Name(self):
+        """Returns the name of the constraint."""
+        return self.__constraint.name
 
     def Index(self):
         """Returns the index of the constraint in the model."""
@@ -2156,7 +2167,6 @@ class CpSolver(object):
   """
 
     def __init__(self):
-        self.__model = None
         self.__solution: cp_model_pb2.CpSolverResponse = None
         self.parameters = sat_parameters_pb2.SatParameters()
         self.log_callback = None
