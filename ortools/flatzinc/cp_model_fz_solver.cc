@@ -13,10 +13,13 @@
 
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <string>
 #include <tuple>
 
 #include "absl/container/flat_hash_map.h"

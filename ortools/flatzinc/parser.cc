@@ -14,6 +14,7 @@
 #include "ortools/flatzinc/parser.h"
 
 #include <cstdio>
+#include <string>
 
 #include "ortools/flatzinc/parser.tab.hh"
 

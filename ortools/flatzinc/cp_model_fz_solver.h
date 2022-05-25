@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
 #define OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
 
+#include <string>
+
 #include "ortools/flatzinc/model.h"
 
 namespace operations_research {
