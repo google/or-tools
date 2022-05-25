@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <stack>
 #include <string>
 #include <vector>
@@ -282,7 +283,7 @@ void LPSolver::SetInitialBasis(
     }
   }
   if (revised_simplex_ == nullptr) {
-    revised_simplex_ = absl::make_unique<RevisedSimplex>();
+    revised_simplex_ = std::make_unique<RevisedSimplex>();
     revised_simplex_->SetLogger(&logger_);
   }
   revised_simplex_->LoadStateForNextSolve(state);
@@ -589,7 +590,7 @@ void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution,
   current_linear_program_.ClearTransposeMatrix();
   if (solution->status != ProblemStatus::INIT) return;
   if (revised_simplex_ == nullptr) {
-    revised_simplex_ = absl::make_unique<RevisedSimplex>();
+    revised_simplex_ = std::make_unique<RevisedSimplex>();
     revised_simplex_->SetLogger(&logger_);
   }
   revised_simplex_->SetParameters(parameters_);

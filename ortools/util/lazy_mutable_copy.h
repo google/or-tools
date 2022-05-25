@@ -55,7 +55,7 @@ class LazyMutableCopy {
   const T& get() const { return copy_ != nullptr ? *copy_ : *original_; }
   T* get_mutable() {
     if (copy_ == nullptr) {
-      copy_ = absl::make_unique<T>(*original_);
+      copy_ = std::make_unique<T>(*original_);
       original_ = nullptr;
     }
     return copy_.get();

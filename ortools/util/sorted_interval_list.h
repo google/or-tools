@@ -15,6 +15,7 @@
 #define OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 
 #include <iterator>
+#include <ostream>
 #include <set>
 #include <string>
 #include <utility>

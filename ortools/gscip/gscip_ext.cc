@@ -13,6 +13,8 @@
 
 #include "ortools/gscip/gscip_ext.h"
 
+#include <string>
+
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 

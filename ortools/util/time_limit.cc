@@ -13,6 +13,10 @@
 
 #include "ortools/util/time_limit.h"
 
+#include <algorithm>
+#include <string>
+#include <utility>
+
 #include "absl/strings/str_cat.h"
 
 ABSL_FLAG(bool, time_limit_use_usertime, false,

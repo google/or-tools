@@ -14,8 +14,10 @@
 #include "ortools/util/piecewise_linear_function.h"
 
 #include <algorithm>
+#include <functional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/btree_set.h"

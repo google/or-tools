@@ -13,7 +13,9 @@
 
 #include "ortools/util/logging.h"
 
+#include <functional>
 #include <iostream>
+#include <string>
 
 #include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"

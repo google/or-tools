@@ -26,6 +26,8 @@
 #ifndef OR_TOOLS_GSCIP_GSCIP_EXT_H_
 #define OR_TOOLS_GSCIP_GSCIP_EXT_H_
 
+#include <string>
+
 #include "absl/status/status.h"
 #include "ortools/gscip/gscip.h"
 #include "scip/scip.h"

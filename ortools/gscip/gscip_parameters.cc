@@ -13,6 +13,9 @@
 
 #include "ortools/gscip/gscip_parameters.h"
 
+#include <algorithm>
+#include <string>
+
 #include "ortools/base/logging.h"
 
 namespace operations_research {

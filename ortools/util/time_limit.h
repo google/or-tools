@@ -20,6 +20,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "absl/base/port.h"
 #include "absl/container/flat_hash_map.h"
@@ -133,10 +134,9 @@ class TimeLimit {
    * deterministic time and instruction count limit.
    */
   static std::unique_ptr<TimeLimit> Infinite() {
-    return absl::make_unique<TimeLimit>(
-        std::numeric_limits<double>::infinity(),
-        std::numeric_limits<double>::infinity(),
-        std::numeric_limits<double>::infinity());
+    return std::make_unique<TimeLimit>(std::numeric_limits<double>::infinity(),
+                                       std::numeric_limits<double>::infinity(),
+                                       std::numeric_limits<double>::infinity());
   }
 
   /**
@@ -144,9 +144,9 @@ class TimeLimit {
    */
   static std::unique_ptr<TimeLimit> FromDeterministicTime(
       double deterministic_limit) {
-    return absl::make_unique<TimeLimit>(
-        std::numeric_limits<double>::infinity(), deterministic_limit,
-        std::numeric_limits<double>::infinity());
+    return std::make_unique<TimeLimit>(std::numeric_limits<double>::infinity(),
+                                       deterministic_limit,
+                                       std::numeric_limits<double>::infinity());
   }
 
   /**
@@ -159,9 +159,9 @@ class TimeLimit {
   template <typename Parameters>
   static std::unique_ptr<TimeLimit> FromParameters(
       const Parameters& parameters) {
-    return absl::make_unique<TimeLimit>(
-        parameters.max_time_in_seconds(), parameters.max_deterministic_time(),
-        std::numeric_limits<double>::infinity());
+    return std::make_unique<TimeLimit>(parameters.max_time_in_seconds(),
+                                       parameters.max_deterministic_time(),
+                                       std::numeric_limits<double>::infinity());
   }
 
   /**
@@ -467,7 +467,7 @@ class NestedTimeLimit {
   template <typename Parameters>
   static std::unique_ptr<NestedTimeLimit> FromBaseTimeLimitAndParameters(
       TimeLimit* time_limit, const Parameters& parameters) {
-    return absl::make_unique<NestedTimeLimit>(
+    return std::make_unique<NestedTimeLimit>(
         time_limit, parameters.max_time_in_seconds(),
         parameters.max_deterministic_time());
   }

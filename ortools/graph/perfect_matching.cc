@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -25,7 +26,7 @@
 namespace operations_research {
 
 void MinCostPerfectMatching::Reset(int num_nodes) {
-  graph_ = absl::make_unique<BlossomGraph>(num_nodes);
+  graph_ = std::make_unique<BlossomGraph>(num_nodes);
   optimal_cost_ = 0;
   matches_.assign(num_nodes, -1);
 }

@@ -13,7 +13,9 @@
 
 #include "ortools/util/stats.h"
 
+#include <algorithm>
 #include <cmath>
+#include <string>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/stl_util.h"

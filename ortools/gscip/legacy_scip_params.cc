@@ -14,6 +14,7 @@
 #include "ortools/gscip/legacy_scip_params.h"
 
 #include <cstdint>
+#include <string>
 
 #include "absl/status/status.h"
 #include "absl/strings/numbers.h"

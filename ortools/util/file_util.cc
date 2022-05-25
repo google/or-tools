@@ -29,7 +29,6 @@
 
 namespace operations_research {
 
-using ::google::protobuf::TextFormat;
 using google::protobuf::util::JsonParseOptions;
 using google::protobuf::util::JsonStringToMessage;
 
