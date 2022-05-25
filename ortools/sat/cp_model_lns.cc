@@ -538,7 +538,7 @@ struct Demand {
 };
 
 void AddPrecedencesOnSortedListOfDemands(
-    const std::vector<Demand>& demands,
+    std::vector<Demand> demands,
     absl::flat_hash_set<IntervalPrecedence>* precedences) {
   for (int i = 0; i + 1 < demands.size(); ++i) {
     DCHECK_LE(demands[i].end, demands[i + 1].start);
@@ -578,7 +578,7 @@ void GetNoOverlapPrecedences(
   }
 
   std::sort(demands.begin(), demands.end());
-  AddPrecedencesOnSortedListOfDemands(demands, precedences);
+  AddPrecedencesOnSortedListOfDemands(std::move(demands), precedences);
 }
 
 void ProcessDemandListFromCumulativeConstraint(
@@ -602,11 +602,11 @@ void ProcessDemandListFromCumulativeConstraint(
 
   DCHECK_GT(sum_of_min_two_capacities, 1);
   if (sum_of_min_two_capacities > capacity) {
-    AddPrecedencesOnSortedListOfDemands(demands, precedences);
+    AddPrecedencesOnSortedListOfDemands(std::move(demands), precedences);
     return;
   }
 
-  // Split the resource in 2 and dispatch demands on the 2 parts.
+  // Split the capacity in 2 and dispatch all demands on the 2 parts.
   const int64_t capacity1 = capacity / 2;
   absl::flat_hash_map<int64_t, int64_t> usage1;
   std::vector<Demand> demands1;
@@ -621,8 +621,16 @@ void ProcessDemandListFromCumulativeConstraint(
     const int64_t slack1 = capacity1 - usage1[d.start];
     const int64_t slack2 = capacity2 - usage2[d.start];
 
+    const int64_t min_slack = std::min(slack1, slack2);
+    const int64_t max_slack = std::max(slack1, slack2);
+
+    // We differ from the ICAPS article. If it fits in both sub-cumulatives, We
+    // choose the smallest slack. If it fits into at most one, we choose the
+    // biggest slack. If both slacks are equal, we choose randomly.
     const bool prefer2 =
-        slack2 > slack1 || (slack2 == slack1 && absl::Bernoulli(random, 0.5));
+        slack1 == slack2
+            ? absl::Bernoulli(random, 0.5)
+            : (d.height <= min_slack ? slack2 < slack1 : slack2 > slack1);
 
     absl::flat_hash_map<int64_t, int64_t>& usage_low =
         prefer2 ? usage1 : usage2;
@@ -630,8 +638,6 @@ void ProcessDemandListFromCumulativeConstraint(
         prefer2 ? usage2 : usage1;
     std::vector<Demand>& demands_low = prefer2 ? demands1 : demands2;
     std::vector<Demand>& demands_high = prefer2 ? demands2 : demands1;
-
-    const int64_t max_slack = std::max(slack1, slack2);
 
     const int64_t assigned_to_high = std::min(max_slack, d.height);
     DCHECK_GT(assigned_to_high, 0)
@@ -654,10 +660,10 @@ void ProcessDemandListFromCumulativeConstraint(
   }
 
   if (demands1.size() > 1) {
-    to_process->push_back(std::make_pair(std::move(demands1), capacity1));
+    to_process->emplace_back(std::move(demands1), capacity1);
   }
   if (demands2.size() > 1) {
-    to_process->push_back(std::make_pair(std::move(demands2), capacity2));
+    to_process->emplace_back(std::move(demands2), capacity2);
   }
 }
 
@@ -729,18 +735,20 @@ struct Rectangle {
 void GetRectanglePredecences(
     const std::vector<Rectangle>& rectangles,
     absl::flat_hash_set<IntervalPrecedence>* precedences) {
+  // TODO(user): Refine set of interesting points.
   absl::flat_hash_set<int64_t> interesting_points;
   for (const Rectangle& r : rectangles) {
     interesting_points.insert(r.y_end - 1);
   }
+  std::vector<Demand> demands;
   for (const int64_t t : interesting_points) {
-    std::vector<Demand> demands;
+    demands.clear();
     for (const Rectangle& r : rectangles) {
       if (r.y_start > t || r.y_end <= t) continue;
       demands.push_back({r.interval_index, r.x_start, r.x_end, 1});
     }
     std::sort(demands.begin(), demands.end());
-    AddPrecedencesOnSortedListOfDemands(demands, precedences);
+    AddPrecedencesOnSortedListOfDemands(std::move(demands), precedences);
   }
 }
 
@@ -807,6 +815,9 @@ void GetNoOverlap2dPrecedences(
 
 }  // namespace
 
+// TODO(user): We could scan for model precedences and add them to the list
+// of precedences. This could enable more simplifications in the transitive
+// reduction phase.
 absl::flat_hash_set<IntervalPrecedence>
 NeighborhoodGeneratorHelper::GetSchedulingPrecedences(
     const CpSolverResponse& initial_solution, absl::BitGenRef random) const {
@@ -1493,7 +1504,7 @@ Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
     outgoing.erase(to_remove);
   }
 
-  // TODO(user): Reduce precedences after the removal of intervals.
+  // TODO(user): Reduce the precedences graph after the removal of intervals.
 
   for (const auto& [before, afters] : outgoing) {
     for (const int after : afters) {
