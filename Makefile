@@ -2,6 +2,9 @@
 .PHONY: help
 help: help_all
 
+.PHONY: detect
+detect: detect_all
+
 .PHONY: all
 all: build_all
 
@@ -11,11 +14,11 @@ check: check_all
 .PHONY: test
 test: test_all
 
+.PHONY: archive
+archive: archive_all
+
 .PHONY: clean
 clean: clean_all
-
-.PHONY: detect
-detect: detect_all
 
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is
@@ -107,7 +110,11 @@ else
 endif
 
 .PHONY: help_all
-help_all: help_usage help_cc help_dotnet help_java help_python help_archive help_doc
+help_all: help_usage help_cpp help_dotnet help_java help_python help_archive help_doc
+
+.PHONY: check_all
+check_all: check_cpp check_dotnet check_java check_python
+	@echo Or-tools has been built and checked for "$(BUILT_LANGUAGES)"
 
 # Commands to build/clean all languages.
 .PHONY: compile
@@ -120,21 +127,17 @@ build_all:
 	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 	@echo Or-tools has been built for "$(BUILT_LANGUAGES)"
 
-.PHONY: check_all
-check_all: check_cpp check_dotnet check_java check_python
-	@echo Or-tools has been built and checked for "$(BUILT_LANGUAGES)"
-
 .PHONY: test_all
 test_all: test_cpp test_dotnet test_java test_python
 	@echo Or-tools have been built and tested for "$(BUILT_LANGUAGES)"
 
 .PHONY: archive_all
 archive_all: archive_cpp archive_dotnet archive_java archive_python archive_data
-	@echo Or-tools has been built and archived
+	@echo Or-tools has been built and archived for "$(BUILT_LANGUAGES)"
 
 .PHONY: test_archive_all
 test_archive_all: test_archive_cpp test_archive_dotnet test_archive_java test_archive_python
-	@echo Or-tools archives have been checked
+	@echo Or-tools archives have been checked for "$(BUILT_LANGUAGES)"
 
 .PHONY: clean_all
 clean_all: clean_cpp clean_dotnet clean_java clean_python clean_archive
