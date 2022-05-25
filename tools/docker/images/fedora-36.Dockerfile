@@ -13,23 +13,29 @@ RUN dnf -y update \
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 
+# Install SWIG
 RUN dnf -y update \
 && dnf -y install swig \
 && dnf clean all
 
-# Java Install
-RUN dnf -y update \
-&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
-&& dnf clean all
-ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
-
-# .Net Install
+# Install .Net
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
 RUN dnf -y update \
 && dnf -y install dotnet-sdk-3.1 dotnet-sdk-6.0 \
 && dnf clean all
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
+
+# Install Java
+RUN dnf -y update \
+&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
+&& dnf clean all
+ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
+
+# Install Python
+RUN dnf -y update \
+&& dnf -y install python3 python3-devel python3-pip \
+&& dnf clean all
 
 ################
 ##  OR-TOOLS  ##
@@ -51,17 +57,40 @@ ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch https://github.com/google/or-tools \
 && echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
 && echo "expected sha1: ${SRC_GIT_SHA1}"
-
-# Build third parties
-FROM devel AS build
 WORKDIR /root/or-tools
 
-ARG BUILD_LANG
-ENV BUILD_LANG ${BUILD_LANG:-cpp}
+# C++
+## build
+FROM devel AS cpp_build
+RUN make detect_cpp \
+&& make cpp JOBS=4
+## archive
+FROM cpp_build AS cpp_archive
+RUN make archive_cpp
 
-RUN make detect_${BUILD_LANG} \
-&& make ${BUILD_LANG} JOBS=4
+# .Net
+## build
+FROM cpp_build AS dotnet_build
+RUN make detect_dotnet \
+&& make dotnet JOBS=4
+## archive
+FROM dotnet_build AS dotnet_archive
+RUN make archive_dotnet
 
-# Create archive
-FROM build AS archive
-RUN make archive_${BUILD_LANG}
+# Java
+## build
+FROM cpp_build AS java_build
+RUN make detect_java \
+&& make java JOBS=4
+## archive
+FROM java_build AS java_archive
+RUN make archive_java
+
+# Python
+## build
+FROM cpp_build AS python_build
+RUN make detect_python \
+&& make python JOBS=4
+## archive
+FROM python_build AS python_archive
+RUN make archive_python

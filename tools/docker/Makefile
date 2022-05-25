@@ -101,11 +101,13 @@ help:
 	@echo
 	@echo -e "\t${BOLD}<lang>${RESET}: Language to build"
 	@echo -e "\t\t${BOLD}cpp${RESET} C++"
-	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) SWIG wrappers"
-	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Core 3.1 and .Net 5.0 SWIG wrappers"
+	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Core 3.1 and/or .Net 6.0 wrappers"
+	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) wrappers"
+	@echo -e "\t\t${BOLD}python${RESET} Python 3.6+ wrappers"
 	@echo
 	@echo -e "\te.g. 'make sh_amd64_ubuntu-22.04_cpp_build'"
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_archive'"
+	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_export'"
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_test'"
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
@@ -324,6 +326,16 @@ $(foreach stage,${PYTHON_STAGES} export,$(eval $(call python_distro_merge,amd64,
 $(foreach stage,${PYTHON_STAGES} export,$(eval $(call python_distro_merge,arm64v8,${stage})))
 
 ## MERGE PLATFORM ##
+define clean_python_platform =
+#$$(info clean_python_platform: PLATFORM:'$1')
+
+.PHONY: clean_python_$1
+clean_python_$1: $(addprefix clean_python_$1_, ${PYTHON_STAGES})
+endef
+
+$(foreach platform,${PYTHON_PLATFORMS},$(eval $(call clean_python_platform,${platform})))
+
+
 define python_platform_merge =
 #$$(info python_platform_merge: STAGE:'$1')
 
@@ -338,14 +350,13 @@ endef
 $(foreach stage,${PYTHON_STAGES} export,$(eval $(call python_platform_merge,${stage})))
 
 # Alias
-.PHONY: python_amd64
-python_amd64: python_amd64_export
-
-.PHONY: python_arm64v8
-python_arm64v8: python_arm64v8_export
-
 .PHONY: python
-python: python_export
+python: python_amd64_export
+
+.PHONY: clean_python
+clean_python: $(addprefix clean_python_, ${PYTHON_PLATFORMS})
+	-rm -rf cache/python/*
+	-rm -rf export/python
 
 #################
 ###  ARCHIVES  ##
@@ -429,7 +440,7 @@ endef
 $(foreach platform,${PLATFORMS},$(eval $(call build_platform,${platform})))
 
 # List language dependent stages
-LANGS := cpp java dotnet
+LANGS := cpp dotnet java python
 LANG_STAGES := build archive
 
 define build_lang_stage =
@@ -442,8 +453,7 @@ $1_$2_$3_$4: images/$2.Dockerfile | export/$1/$2/or-tools.snk
  --tag ${IMAGE}:$$@ \
  --build-arg SRC_GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg SRC_GIT_SHA1=${OR_TOOLS_SHA1} \
- --build-arg BUILD_LANG=$3 \
- --target=$4 \
+ --target=$3_$4 \
  -f $$< \
  export/$1/$2
 
@@ -492,7 +502,7 @@ define export_archive =
 $1_$2_$3_export: export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz \
 
 export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz: $1_$2_$3_archive | export/archives
-	-rm -f export/archives/or-tools_$3_$2_$1_v*.tar.gz
+	-rm -f export/archives/or-tools_$1_$2_$3_v*.tar.gz
 	-mkdir -p export/$1/$2
 	${DOCKER_RUN_CMD} \
  -w /root/or-tools \
@@ -503,7 +513,7 @@ export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz: $1_$2_$3_archive 
 
 .PHONY: clean_$1_$2_$3_export
 clean_$1_$2_$3_export:
-	rm -f export/archives/or-tools_$3_$2_$1_v${OR_TOOLS_VERSION}.tar.gz
+	rm -f export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz
 endef
 
 define export_distro =
@@ -545,25 +555,32 @@ $$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,cpp_$${sta
 $$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,dotnet_$${stage})))
 $$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,java_$${stage})))
 
-.PHONY: \
- $(addprefix $1_, ${STAGES} export) \
+build_targets := $(addprefix $1_, ${STAGES} export) \
  $(addprefix $1_cpp_, ${LANG_STAGES} export) \
  $(addprefix $1_dotnet_, ${LANG_STAGES} export) \
  $(addprefix $1_java_, ${LANG_STAGES} export)
-$1_%: $(addprefix $1_, $(addsuffix _%, ${DISTROS}))
+.PHONY: $${build_targets}
+$${build_targets}: $1_%: $(addprefix $1_, $(addsuffix _%, ${DISTROS}))
 
-.PHONY: \
- $(addprefix clean_$1_, ${STAGES} export) \
+clean_targets := $(addprefix clean_$1_, ${STAGES} export) \
  $(addprefix clean_$1_cpp_, ${LANG_STAGES} export) \
  $(addprefix clean_$1_dotnet_, ${LANG_STAGES} export) \
  $(addprefix clean_$1_java_, ${LANG_STAGES} export)
-clean_$1_%: $(addprefix clean_$1_, $(addsuffix _%, ${DISTROS}))
+.PHONY: $${clean_targets}
+$${clean_targets}: clean_$1_%: $(addprefix clean_$1_, $(addsuffix _%, ${DISTROS}))
+
+.PHONY: clean_$1
+clean_$1: $${clean_targets}
 endef
 
 $(foreach platform,${PLATFORMS},$(eval $(call merge_platform,${platform})))
 
+# Alias
 .PHONY: archives
 archives: amd64_export
+
+.PHONY: clean_archives
+clean_archives: clean_amd64
 
 ############
 ##  TEST  ##
@@ -616,13 +633,6 @@ define test_platform =
 #$$(info test_platform: PLATFORM:'$1')
 
 $$(foreach distro,${DISTROS},$$(eval $$(call test_distro,$1,$${distro})))
-endef
-
-$(foreach platform,${PLATFORMS},$(eval $(call test_platform,${platform})))
-
-## MERGE ##
-define merge_test_platform =
-#$$(info merge_test_platform: PLATFORM:'$1')
 
 .PHONY: $1_test
 $1_test: $(addprefix $1_, $(addsuffix _test, ${DISTROS}))
@@ -631,8 +641,9 @@ $1_test: $(addprefix $1_, $(addsuffix _test, ${DISTROS}))
 clean_$1_test: $(addprefix clean_$1_, $(addsuffix _test, ${DISTROS}))
 endef
 
-$(foreach platform,${PLATFORMS},$(eval $(call merge_test_platform,${platform})))
+$(foreach platform,${PLATFORMS},$(eval $(call test_platform,${platform})))
 
+# Alias
 .PHONY: test
 test: $(addsuffix _test, ${PLATFORMS})
 
@@ -642,44 +653,10 @@ test: $(addprefix clean_, $(addsuffix _test, ${PLATFORMS}))
 #############
 ##  CLEAN  ##
 #############
-define clean_platform =
-#$$(info clean_platform: PLATFORM:'$1')
-
-clean_targets := $(addprefix clean_$1_, ${DISTROS})
-.PHONY: ${clean_targets}
-$${clean_targets}: clean_$1_%: \
- $(addprefix clean_$1_%_, ${STAGES}) \
- clean_$1_%_export \
- $(addprefix clean_$1_%_cpp_, ${LANG_STAGES}) \
- $(addprefix clean_$1_%_dotnet_, ${LANG_STAGES}) \
- $(addprefix clean_$1_%_java_, ${LANG_STAGES}) \
- clean_$1_%_test
-	-rmdir cache/$1/$$*
-	-rm -f export/archives/*.tar.gz
-	-rm -f export/$1/$$*/or-tools.snk
-	-rmdir export/$1/$$*
-endef
-
-$(foreach platform,${PLATFORMS},$(eval $(call clean_platform,${platform})))
-
-define clean_python_platform =
-#$$(info clean_python_platform: PLATFORM:'$1')
-
-.PHONY: clean_python_$1
-clean_python_$1: $(addprefix clean_python_$1_, ${PYTHON_STAGES})
-endef
-
-$(foreach platform,${PYTHON_PLATFORMS},$(eval $(call clean_python_platform,${platform})))
-
-.PHONY: clean_python
-clean_python: $(addprefix clean_python_, ${PYTHON_PLATFORMS})
-	-rm -rf cache/python/*
-	-rm -rf export/python
-
 .PHONY: clean
 clean: \
  clean_python \
- $(addprefix clean_, ${PLATFORMS}) \
+ clean_archives \
  clean_test
 	docker container prune -f
 	docker image prune -f

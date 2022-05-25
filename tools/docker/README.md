@@ -40,6 +40,12 @@ Dockerfile is split in several stages.
 
 ![docker](docs/deps.svg)
 
+Legend:
+
+* `<platform>`: amd64, arm64, riscv64.
+* `<distro>`: alpine-edge, archlinux, centos, debian, fedora, opensuse, ubuntu.
+* `<lang>`: cpp, dotnet, java, python.
+
 ### Docker `aarch64` on `x86_64` machine
 
 You can build and run aarch64 docker container on a `x86_64` by enabling qemu

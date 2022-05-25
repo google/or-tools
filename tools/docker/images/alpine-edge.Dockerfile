@@ -1,30 +1,24 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/_/alpine
 FROM alpine:edge AS env
-LABEL maintainer="corentinl@google.com"
-# Install system build dependencies
+
+#############
+##  SETUP  ##
+#############
 ENV PATH=/usr/local/bin:$PATH
 RUN apk add --no-cache git build-base linux-headers cmake xfce4-dev-tools
 ENTRYPOINT ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
 
-# SWIG
+# Install Swig
 RUN apk add --no-cache swig
 
-# Python
-RUN apk add --no-cache python3-dev py3-pip py3-wheel
-RUN python3 -m pip install absl-py mypy-protobuf
-
-# Java
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
-RUN apk add --no-cache openjdk8 maven
-
-# .NET install
+# Install .Net
 RUN apk add --no-cache wget icu-libs libintl \
 && mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
-
-# see: https://dotnet.microsoft.com/download/dotnet-core/3.1
+## .Net 3.1
+## see: https://dotnet.microsoft.com/download/dotnet-core/3.1
 RUN dotnet_sdk_version=3.1.415 \
 && wget -qO dotnet.tar.gz \
 "https://dotnetcli.azureedge.net/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-musl-x64.tar.gz" \
@@ -32,10 +26,8 @@ RUN dotnet_sdk_version=3.1.415 \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
 && rm dotnet.tar.gz
-# Trigger first run experience by running arbitrary cmd
-RUN dotnet --info
-
-# see: https://dotnet.microsoft.com/download/dotnet-core/6.0
+## .Net 6.0
+## see: https://dotnet.microsoft.com/download/dotnet-core/6.0
 RUN dotnet_sdk_version=6.0.100 \
 && wget -qO dotnet.tar.gz \
 "https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-${dotnet_sdk_version}-linux-musl-x64.tar.gz" \
@@ -45,6 +37,14 @@ RUN dotnet_sdk_version=6.0.100 \
 && rm dotnet.tar.gz
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
+
+# Install Java
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
+RUN apk add --no-cache openjdk8 maven
+
+# Install Python
+RUN apk add --no-cache python3-dev py3-pip py3-wheel
+RUN python3 -m pip install absl-py mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##
@@ -66,17 +66,40 @@ ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch https://github.com/google/or-tools \
 && echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
 && echo "expected sha1: ${SRC_GIT_SHA1}"
-
-# Build third parties
-FROM devel AS build
 WORKDIR /root/or-tools
 
-ARG BUILD_LANG
-ENV BUILD_LANG ${BUILD_LANG:-cpp}
+# C++
+## build
+FROM devel AS cpp_build
+RUN make detect_cpp \
+&& make cpp JOBS=4
+## archive
+FROM cpp_build AS cpp_archive
+RUN make archive_cpp
 
-RUN make detect_${BUILD_LANG} \
-&& make ${BUILD_LANG} JOBS=4
+# .Net
+## build
+FROM cpp_build AS dotnet_build
+RUN make detect_dotnet \
+&& make dotnet JOBS=4
+## archive
+FROM dotnet_build AS dotnet_archive
+RUN make archive_dotnet
 
-# Create archive
-FROM build AS archive
-RUN make archive_${BUILD_LANG}
+# Java
+## build
+FROM cpp_build AS java_build
+RUN make detect_java \
+&& make java JOBS=4
+## archive
+FROM java_build AS java_archive
+RUN make archive_java
+
+# Python
+## build
+FROM cpp_build AS python_build
+RUN make detect_python \
+&& make python JOBS=4
+## archive
+FROM python_build AS python_archive
+RUN make archive_python

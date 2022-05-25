@@ -1,5 +1,5 @@
+# ref: https://hub.docker.com/_/fedora
 FROM fedora:35
-LABEL maintainer="corentinl@google.com"
 
 RUN dnf -y update \
 && dnf -y install git \
@@ -15,6 +15,6 @@ RUN dnf -y update \
 ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 
 WORKDIR /root
-ADD or-tools_amd64_fedora-35_v*.tar.gz .
+ADD or-tools_amd64_fedora-35_java_v*.tar.gz .
 
-RUN cd or-tools_*_v* && make test_java
+RUN cd or-tools_*_v* && make test

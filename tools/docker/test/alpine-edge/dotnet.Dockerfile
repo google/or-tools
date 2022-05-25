@@ -1,12 +1,16 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/_/alpine
 FROM alpine:edge AS env
-LABEL maintainer="corentinl@google.com"
-# Install system build dependencies
-ENV PATH=/usr/local/bin:$PATH
-RUN apk add --no-cache git build-base linux-headers cmake xfce4-dev-tools
 
-# .NET install
+#############
+##  SETUP  ##
+#############
+ENV PATH=/usr/local/bin:$PATH
+RUN apk add --no-cache git build-base linux-headers make
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["/bin/sh"]
+
+# Install .Net
 RUN apk add --no-cache wget icu-libs libintl \
 && mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
@@ -33,6 +37,6 @@ RUN dotnet_sdk_version=6.0.100 \
 RUN dotnet --info
 
 WORKDIR /root
-ADD or-tools_amd64_alpine-edge_v*.tar.gz .
+ADD or-tools_amd64_alpine-edge_dotnet_v*.tar.gz .
 
-RUN cd or-tools_*_v* && make test_dotnet
+RUN cd or-tools_*_v* && make test

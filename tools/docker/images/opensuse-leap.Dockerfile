@@ -1,8 +1,10 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/r/opensuse/leap
 FROM opensuse/leap AS env
-LABEL maintainer="corentinl@google.com"
-# Install system build dependencies
+
+#############
+##  SETUP  ##
+#############
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper refresh \
 && zypper install -y git gcc11 gcc11-c++ cmake \
@@ -13,31 +15,22 @@ ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 
 # Install CMake 3.21.1
-RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
-&& chmod a+x cmake-3.21.1-linux-x86_64.sh \
-&& ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.21.1-linux-x86_64.sh
+RUN ARCH=$(uname -m) \
+&& wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-${ARCH}.sh" \
+&& chmod a+x cmake-3.21.1-linux-${ARCH}.sh \
+&& ./cmake-3.21.1-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.21.1-linux-${ARCH}.sh
 
-# Swig Install
+# Install SWIG
 RUN zypper install -y swig \
 && zypper clean -a
 
-# Java install (openjdk-8)
-RUN zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
-&& zypper clean -a
-
-# Python Install
-RUN zypper install -y python3-devel python3-pip python3-wheel \
-&& zypper clean -a
-RUN python3 -m pip install absl-py mypy-protobuf
-
-# .Net Install
+# Install .Net
 RUN zypper install -y wget tar gzip libicu-devel
-
 RUN mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
-
-# see: https://dotnet.microsoft.com/download/dotnet-core/3.1
+## .Net 3.1
+## see: https://dotnet.microsoft.com/download/dotnet-core/3.1
 RUN dotnet_sdk_version=3.1.415 \
 && wget -qO dotnet.tar.gz \
 "https://dotnetcli.azureedge.net/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-x64.tar.gz" \
@@ -45,10 +38,8 @@ RUN dotnet_sdk_version=3.1.415 \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
 && rm dotnet.tar.gz
-# Trigger first run experience by running arbitrary cmd
-RUN dotnet --info
-
-# see: https://dotnet.microsoft.com/download/dotnet-core/6.0
+## .Net 6.0
+## see: https://dotnet.microsoft.com/download/dotnet-core/6.0
 RUN dotnet_sdk_version=6.0.100 \
 && wget -qO dotnet.tar.gz \
 "https://dotnetcli.azureedge.net/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-x64.tar.gz" \
@@ -58,6 +49,15 @@ RUN dotnet_sdk_version=6.0.100 \
 && rm dotnet.tar.gz
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
+
+# Install Java (openjdk-8)
+RUN zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
+&& zypper clean -a
+
+# Install Python
+RUN zypper install -y python3-devel python3-pip python3-wheel \
+&& zypper clean -a
+#RUN python3 -m pip install absl-py mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##
@@ -79,17 +79,40 @@ ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch https://github.com/google/or-tools \
 && echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
 && echo "expected sha1: ${SRC_GIT_SHA1}"
-
-# Build third parties
-FROM devel AS build
 WORKDIR /root/or-tools
 
-ARG BUILD_LANG
-ENV BUILD_LANG ${BUILD_LANG:-cpp}
+# C++
+## build
+FROM devel AS cpp_build
+RUN make detect_cpp \
+&& make cpp JOBS=4
+## archive
+FROM cpp_build AS cpp_archive
+RUN make archive_cpp
 
-RUN make detect_${BUILD_LANG} \
-&& make ${BUILD_LANG} JOBS=4
+# .Net
+## build
+FROM cpp_build AS dotnet_build
+RUN make detect_dotnet \
+&& make dotnet JOBS=4
+## archive
+FROM dotnet_build AS dotnet_archive
+RUN make archive_dotnet
 
-# Create archive
-FROM build AS archive
-RUN make archive_${BUILD_LANG}
+# Java
+## build
+FROM cpp_build AS java_build
+RUN make detect_java \
+&& make java JOBS=4
+## archive
+FROM java_build AS java_archive
+RUN make archive_java
+
+# Python
+## build
+FROM cpp_build AS python_build
+RUN make detect_python \
+&& make python JOBS=4
+## archive
+FROM python_build AS python_archive
+RUN make archive_python

@@ -1,20 +1,14 @@
+# ref: https://hub.docker.com/_/centos
 FROM centos:7
-LABEL maintainer="corentinl@google.com"
 
+#############
+##  SETUP  ##
+#############
 RUN yum -y update \
 && yum -y groupinstall 'Development Tools' \
 && yum -y install zlib-devel \
 && yum clean all \
 && rm -rf /var/cache/yum
-
-# Bump to gcc-9
-RUN yum -y update \
-&& yum -y install centos-release-scl \
-&& yum -y install devtoolset-9 \
-&& yum clean all \
-&& echo "source /opt/rh/devtoolset-9/enable" >> /etc/bashrc
-SHELL ["/bin/bash", "--login", "-c"]
-# RUN gcc --version
 
 # Install .Net
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-
@@ -26,10 +20,7 @@ RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-p
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-#ENV TZ=America/Los_Angeles
-#RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
 WORKDIR /root
-ADD or-tools_amd64_centos-8_v*.tar.gz .
+ADD or-tools_amd64_centos-7_dotnet_v*.tar.gz .
 
-RUN cd or-tools_*_v* && make test_dotnet
+RUN cd or-tools_*_v* && make test

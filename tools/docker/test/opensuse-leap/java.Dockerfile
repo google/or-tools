@@ -17,6 +17,6 @@ RUN zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
 && zypper clean -a
 
 WORKDIR /root
-ADD or-tools_amd64_opensuse-leap_v*.tar.gz .
+ADD or-tools_amd64_opensuse-leap_java_v*.tar.gz .
 
-RUN cd or-tools_*_v* && make test_java
+RUN cd or-tools_*_v* && make test

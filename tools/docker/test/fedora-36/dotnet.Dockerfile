@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/fedora
-FROM fedora:34
+FROM fedora:36
 
 RUN dnf -y update \
 && dnf -y install git \
@@ -8,13 +8,15 @@ RUN dnf -y update \
 && dnf -y install gcc-c++ cmake \
 && dnf clean all
 
-# Java Install
+# Install .Net
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
 RUN dnf -y update \
-&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
+&& dnf -y install dotnet-sdk-3.1 dotnet-sdk-6.0 \
 && dnf clean all
-ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
+# Trigger first run experience by running arbitrary cmd
+RUN dotnet --info
 
 WORKDIR /root
-ADD or-tools_amd64_fedora-34_java_v*.tar.gz .
+ADD or-tools_amd64_fedora-36_dotnet_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test

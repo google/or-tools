@@ -22,10 +22,11 @@ CMD ["/usr/bin/bash", "--login"]
 # RUN g++ --version
 
 # Install CMake 3.21.1
-RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
-&& chmod a+x cmake-3.21.1-linux-x86_64.sh \
-&& ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.21.1-linux-x86_64.sh
+RUN ARCH=$(uname -m) \
+&& wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-${ARCH}.sh" \
+&& chmod a+x cmake-3.21.1-linux-${ARCH}.sh \
+&& ./cmake-3.21.1-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.21.1-linux-${ARCH}.sh
 
 # Install Swig 4.0.2
 RUN curl --location-trusted \
@@ -40,14 +41,7 @@ RUN curl --location-trusted \
 && cd .. \
 && rm -rf swig-4.0.2
 
-# Install Java 8 SDK
-RUN yum -y update \
-&& yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
-&& yum clean all \
-&& rm -rf /var/cache/yum
-ENV JAVA_HOME=/usr/lib/jvm/java
-
-# Install dotnet
+# Install .Net
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-
 RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm \
 && yum -y update \
@@ -56,6 +50,19 @@ RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-p
 && rm -rf /var/cache/yum
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
+
+# Install Java 8 SDK
+RUN yum -y update \
+&& yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
+&& yum clean all \
+&& rm -rf /var/cache/yum
+ENV JAVA_HOME=/usr/lib/jvm/java
+
+# Install Python
+RUN yum -y update \
+&& yum -y install python3 python3-devel python3-pip numpy \
+&& yum clean all \
+&& rm -rf /var/cache/yum
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -80,17 +87,40 @@ ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch https://github.com/google/or-tools \
 && echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
 && echo "expected sha1: ${SRC_GIT_SHA1}"
-
-# Build third parties
-FROM devel AS build
 WORKDIR /root/or-tools
 
-ARG BUILD_LANG
-ENV BUILD_LANG ${BUILD_LANG:-cpp}
+# C++
+## build
+FROM devel AS cpp_build
+RUN make detect_cpp \
+&& make cpp JOBS=4
+## archive
+FROM cpp_build AS cpp_archive
+RUN make archive_cpp
 
-RUN make detect_${BUILD_LANG} \
-&& make ${BUILD_LANG} JOBS=4
+# .Net
+## build
+FROM cpp_build AS dotnet_build
+RUN make detect_dotnet \
+&& make dotnet JOBS=4
+## archive
+FROM dotnet_build AS dotnet_archive
+RUN make archive_dotnet
 
-# Create archive
-FROM build AS archive
-RUN make archive_${BUILD_LANG}
+# Java
+## build
+FROM cpp_build AS java_build
+RUN make detect_java \
+&& make java JOBS=4
+## archive
+FROM java_build AS java_archive
+RUN make archive_java
+
+# Python
+## build
+FROM cpp_build AS python_build
+RUN make detect_python \
+&& make python JOBS=4
+## archive
+FROM python_build AS python_archive
+RUN make archive_python
