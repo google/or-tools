@@ -77,6 +77,7 @@ help:
 	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
+	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
 	@echo -e "\t\t${BOLD}centos-8${RESET} (Centos Stream 8)"
 	@echo -e "\t\t${BOLD}centos-7${RESET} (Centos 7 LTS)"
 	@echo -e "\t\t${BOLD}debian-11${RESET} (bullseye, latest)"
@@ -368,6 +369,7 @@ PLATFORMS := amd64 arm64 # riscv64
 # Currently supported distro
 DISTROS := \
  alpine-edge \
+ archlinux \
  centos-7 centos-8 \
  debian-10 debian-11 \
  fedora-33 fedora-34 fedora-35 fedora-36 \
