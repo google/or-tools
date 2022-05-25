@@ -21,10 +21,11 @@ RUN dotnet_sdk_version=3.1.413 \
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-# see: https://dotnet.microsoft.com/download/dotnet-core/5.0
-RUN dotnet_sdk_version=5.0.401 \
-&& wget -qO dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-musl-x64.tar.gz \
-&& dotnet_sha512='a2077f4d1c9da9c69453b771cd239bad27f62379402cc5e1c74a1f2a960fd55efc85cc15eafbac11f17ea975895ce107fab4bbfc49880a0a14791e8ac13ca2de' \
+# see: https://dotnet.microsoft.com/download/dotnet-core/6.0
+RUN dotnet_sdk_version=6.0.100 \
+&& wget -qO dotnet.tar.gz \
+"https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-${dotnet_sdk_version}-linux-musl-x64.tar.gz" \
+&& dotnet_sha512='428082c31fd588b12fd34aeae965a58bf1c26b0282184ae5267a85cdadc503f667c7c00e8641892c97fbd5ef26a38a605b683b45a0fef2da302ec7f921cf64fe' \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
 && rm dotnet.tar.gz
