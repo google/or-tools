@@ -73,7 +73,7 @@ help:
 	@echo -e "\t${BOLD}<platform>${RESET}:"
 	@echo -e "\t\t${BOLD}amd64${RESET}"
 	@echo -e "\t\t${BOLD}arm64${RESET}"
-	@echo -e "\t\t${BOLD}riscv64 (RISC-V 64bits, experimental)${RESET}"
+#	@echo -e "\t\t${BOLD}riscv64 (RISC-V 64bits, experimental)${RESET}"
 	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
@@ -363,7 +363,7 @@ export/archives: | export
 	-mkdir $@
 
 # Currently supported platform
-PLATFORMS := amd64 arm64 riscv64
+PLATFORMS := amd64 arm64 # riscv64
 
 # Currently supported distro
 DISTROS := \
