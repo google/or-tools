@@ -1,6 +1,6 @@
 # ---------- C++ support ----------
-.PHONY: help_cc # Generate list of C++ targets with descriptions.
-help_cc:
+.PHONY: help_cpp # Generate list of C++ targets with descriptions.
+help_cpp:
 	@echo Use one of the following C++ targets:
 ifeq ($(PLATFORM),WIN64)
 	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.cpp.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
@@ -82,9 +82,13 @@ $(TEMP_CPP_DIR):
 	$(MKDIR) $(TEMP_CPP_DIR)
 
 # Deprecated alias
+.PHONY: help_cc
+help_cc: help_cpp
+	$(warning $@ is deprecated please use $< instead.)
+
 .PHONY: detect_cc
 detect_cc: detect_cpp
-	$(warning $@ is deprecated please use detect_cpp instead.)
+	$(warning $@ is deprecated please use $< instead.)
 
 .PHONY: cc
 cc: cpp
