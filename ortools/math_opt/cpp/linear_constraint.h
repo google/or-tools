@@ -21,9 +21,9 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/id_map.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {

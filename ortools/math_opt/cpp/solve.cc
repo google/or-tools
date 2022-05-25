@@ -24,9 +24,9 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/cpp/model.h"
+#include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/util/status_macros.h"
 
 namespace operations_research {

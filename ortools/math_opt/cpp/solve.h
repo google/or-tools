@@ -25,7 +25,6 @@
 #include <utility>
 
 #include "absl/status/statusor.h"
-#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/cpp/parameters.h"             // IWYU pragma: export
@@ -33,6 +32,7 @@
 #include "ortools/math_opt/cpp/solve_result.h"           // IWYU pragma: export
 #include "ortools/math_opt/cpp/solver_init_arguments.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"              // IWYU pragma: export
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {

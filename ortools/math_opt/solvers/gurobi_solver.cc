@@ -1860,7 +1860,7 @@ GurobiSolver::RegisterCallback(const CallbackRegistrationProto& registration,
     // can not be performed safely.
     RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_LAZYCONSTRAINTS, 1));
   }
-  return absl::make_unique<GurobiCallbackData>(
+  return std::make_unique<GurobiCallbackData>(
       GurobiCallbackInput{
           .user_cb = cb,
           .message_cb = message_cb,

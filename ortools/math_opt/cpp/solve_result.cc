@@ -27,10 +27,10 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/solution.pb.h"
+#include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/status_macros.h"
 

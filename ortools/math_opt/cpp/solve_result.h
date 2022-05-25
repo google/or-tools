@@ -24,12 +24,12 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/gscip/gscip.pb.h"
-#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/solution.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/result.pb.h"  // IWYU pragma: export
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {

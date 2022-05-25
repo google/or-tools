@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/math_opt/core/model_storage.h"
+#include "ortools/math_opt/storage/model_storage.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -33,12 +33,14 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/math_opt/core/model_update_merge.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/math_opt/storage/model_storage_types.h"
+#include "ortools/math_opt/storage/model_update_merge.h"
+#include "ortools/math_opt/storage/sparse_matrix.h"
 #include "ortools/math_opt/validators/model_validator.h"
 
 namespace operations_research {
@@ -108,18 +110,6 @@ void AppendFromMap(const absl::flat_hash_set<IdType>& dirty_keys,
     sparse_vector.add_ids(id.value());
     sparse_vector.add_values(values.at(id).*field);
   }
-}
-
-template <typename T>
-absl::flat_hash_map<T, BasisStatusProto> SparseBasisVectorToMap(
-    const SparseBasisStatusVector& sparse_vector) {
-  absl::flat_hash_map<T, BasisStatusProto> result;
-  CHECK_EQ(sparse_vector.ids_size(), sparse_vector.values_size());
-  result.reserve(sparse_vector.ids_size());
-  for (const auto [id, value] : MakeView(sparse_vector)) {
-    gtl::InsertOrDie(&result, T(id), static_cast<BasisStatusProto>(value));
-  }
-  return result;
 }
 
 // If an element in keys is not found in coefficients, it is set to 0.0 in
@@ -256,9 +246,6 @@ void ModelStorage::AddVariableInternal(const VariableId id,
   if (!lazy_matrix_columns_.empty()) {
     gtl::InsertOrDie(&lazy_matrix_columns_, id, {});
   }
-  if (!lazy_quadratic_objective_by_variable_.empty()) {
-    gtl::InsertOrDie(&lazy_quadratic_objective_by_variable_, id, {});
-  }
 }
 
 void ModelStorage::AddVariables(const VariablesProto& variables) {
@@ -284,33 +271,16 @@ void ModelStorage::DeleteVariable(const VariableId id) {
     dirty_variable_upper_bounds_.erase(id);
     dirty_variable_is_integer_.erase(id);
     dirty_linear_objective_coefficients_.erase(id);
-  }
-  // If we do not have any quadratic updates to delete, we would like to avoid
-  // initializing the lazy data structures. The updates might tracked in:
-  //   1. dirty_quadratic_objective_coefficients_ (both variables old)
-  //   2. quadratic_objective_ (at least one new variable)
-  // If both maps are empty, we can skip the update and initializiation. Note
-  // that we could be a bit more clever here based on whether the deleted
-  // variable is new or old, but that makes the logic more complex.
-  if (!quadratic_objective_.empty() ||
-      !dirty_quadratic_objective_coefficients_.empty()) {
-    EnsureLazyQuadraticObjective();
-    const auto related_variables =
-        lazy_quadratic_objective_by_variable_.extract(id);
-    for (const VariableId other_id : related_variables.mapped()) {
-      // Due to the extract above, the at lookup will fail if other_id == id.
-      if (id != other_id) {
-        CHECK_GT(lazy_quadratic_objective_by_variable_.at(other_id).erase(id),
-                 0);
-      }
-      const auto ordered_pair = internal::MakeOrderedPair(id, other_id);
-      quadratic_objective_.erase(ordered_pair);
+    for (const VariableId related : quadratic_objective_.RelatedVariables(id)) {
       // We can only have a dirty update to wipe clean if both variables are old
-      if (id < variables_checkpoint_ && other_id < variables_checkpoint_) {
-        dirty_quadratic_objective_coefficients_.erase(ordered_pair);
+      if (related < variables_checkpoint_) {
+        dirty_quadratic_objective_coefficients_.erase(
+            internal::MakeOrderedPair(id, related));
       }
     }
   }
+
+  quadratic_objective_.Delete(id);
   for (const LinearConstraintId related_constraint :
        lazy_matrix_columns_.at(id)) {
     CHECK_GT(lazy_matrix_rows_.at(related_constraint).erase(id), 0);
@@ -440,7 +410,7 @@ ModelProto ModelStorage::ExportModel() const {
       SortedMapKeys(linear_objective_), linear_objective_,
       *result.mutable_objective()->mutable_linear_coefficients());
   *result.mutable_objective()->mutable_quadratic_coefficients() =
-      ExportMatrix(quadratic_objective_, SortedMapKeys(quadratic_objective_));
+      quadratic_objective_.Proto();
 
   // Pull out the linear constraints.
   for (const LinearConstraintId con : SortedMapKeys(linear_constraints_)) {
@@ -535,42 +505,11 @@ std::optional<ModelUpdateProto> ModelStorage::ExportSharedModelUpdate() {
       obj_updates->mutable_linear_coefficients()->add_values(*double_value);
     }
   }
-  // If we do not have any quadratic updates to push, we would like to avoid
-  // initializing the lazy data structures. The updates might tracked in:
-  //   1. dirty_quadratic_objective_coefficients_ (both variables old)
-  //   2. quadratic_objective_ (at least one new variable)
-  // If both maps are empty, we can skip the update and initializiation.
-  if (!quadratic_objective_.empty() ||
-      !dirty_quadratic_objective_coefficients_.empty()) {
-    EnsureLazyQuadraticObjective();
-    // NOTE: dirty_quadratic_objective_coefficients_ only tracks terms where
-    // both variables are "old".
-    std::vector<std::pair<VariableId, VariableId>> quadratic_objective_updates(
-        dirty_quadratic_objective_coefficients_.begin(),
-        dirty_quadratic_objective_coefficients_.end());
-    // Now, we loop through the "new" variables and track updates involving
-    // them. We need to look out for two things:
-    //   * The "other" variable in the term can either be new or old.
-    //   * We cannot doubly insert terms when both variables are new.
-    // Note that this traversal is doing at most twice as much work as
-    // necessary.
-    for (VariableId new_var = variables_checkpoint_;
-         new_var < next_variable_id_; ++new_var) {
-      if (variables_.contains(new_var)) {
-        for (const VariableId other_var :
-             lazy_quadratic_objective_by_variable_.at(new_var)) {
-          if (other_var <= new_var) {
-            quadratic_objective_updates.push_back(
-                internal::MakeOrderedPair(new_var, other_var));
-          }
-        }
-      }
-    }
-    std::sort(quadratic_objective_updates.begin(),
-              quadratic_objective_updates.end());
-    *result.mutable_objective_updates()->mutable_quadratic_coefficients() =
-        ExportMatrix(quadratic_objective_, quadratic_objective_updates);
-  }
+
+  *result.mutable_objective_updates()->mutable_quadratic_coefficients() =
+      quadratic_objective_.Update(variables_, variables_checkpoint_,
+                                  next_variable_id_,
+                                  dirty_quadratic_objective_coefficients_);
 
   // Update the linear constraints
   auto lin_con_updates = result.mutable_linear_constraint_updates();
@@ -642,22 +581,6 @@ void ModelStorage::EnsureLazyMatrixRows() {
     for (const auto& mat_entry : linear_constraint_matrix_) {
       lazy_matrix_rows_.at(mat_entry.first.first)
           .insert(mat_entry.first.second);
-    }
-  }
-}
-
-void ModelStorage::EnsureLazyQuadraticObjective() {
-  if (lazy_quadratic_objective_by_variable_.empty()) {
-    for (const auto& [var, data] : variables_) {
-      lazy_quadratic_objective_by_variable_.insert({var, {}});
-    }
-    for (const auto& [vars, coeff] : quadratic_objective_) {
-      lazy_quadratic_objective_by_variable_.at(vars.first).insert(vars.second);
-      lazy_quadratic_objective_by_variable_.at(vars.second).insert(vars.first);
-    }
-    for (const auto& vars : dirty_quadratic_objective_coefficients_) {
-      lazy_quadratic_objective_by_variable_.at(vars.first).insert(vars.second);
-      lazy_quadratic_objective_by_variable_.at(vars.second).insert(vars.first);
     }
   }
 }
@@ -803,6 +726,7 @@ void ModelStorage::CheckpointLocked(const UpdateTrackerId update_tracker) {
     }
   }
   SharedCheckpoint();
+
   data->updates.clear();
 }
 

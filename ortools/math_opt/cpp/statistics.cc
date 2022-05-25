@@ -20,8 +20,8 @@
 #include <ostream>
 #include <type_traits>
 
-#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/model.h"
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research::math_opt {
 namespace {

@@ -11,39 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_CORE_MODEL_UPDATE_MERGE_H_
-#define OR_TOOLS_MATH_OPT_CORE_MODEL_UPDATE_MERGE_H_
+#ifndef OR_TOOLS_MATH_OPT_STORAGE_PROTO_MERGING_UTILS_H_
+#define OR_TOOLS_MATH_OPT_STORAGE_PROTO_MERGING_UTILS_H_
 
-#include <algorithm>
 #include <cstdint>
 
 #include "ortools/base/logging.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
-#include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
-namespace operations_research {
-namespace math_opt {
-
-// Merges the `from_new` update into the `into_old` one.
-//
-// The `from_new` update must represent an update that happens after the
-// `into_old` one is applied. Thus when the two updates have overlaps, the
-// `from_new` one overrides the value of the `into_old` one (i.e. the `from_new`
-// update is expected to be more recent).
-//
-// This function also CHECKs that the ids of new variables and constraints in
-// `from_new` are greater than the ones in `into_old` (as expected if `from_new`
-// happens after `into_old`).
-//
-// Note that the complexity is O(size(from_new) + size(into_old)) thus if you
-// need to merge a long list of updates this may be not efficient enough. In
-// that case an n-way merge would be needed to be implemented here.
-void MergeIntoUpdate(const ModelUpdateProto& from_new,
-                     ModelUpdateProto& into_old);
-
-namespace internal {
+namespace operations_research::math_opt {
 
 // Removes from the sorted list `ids` all elements found in the sorted list
 // `deleted`. The elements should be unique in each sorted list.
@@ -107,13 +85,9 @@ void UpdateNewElementProperty(
     const google::protobuf::RepeatedField<int64_t>& deleted,
     const SparseVector& updates);
 
-}  // namespace internal
-
 ////////////////////////////////////////////////////////////////////////////////
 // Inline functions implementations.
 ////////////////////////////////////////////////////////////////////////////////
-
-namespace internal {
 
 template <typename SparseVector>
 void MergeIntoSparseVector(
@@ -207,8 +181,6 @@ void UpdateNewElementProperty(
   google::protobuf::util::Truncate(&values, next_insertion_point);
 }
 
-}  // namespace internal
-}  // namespace math_opt
-}  // namespace operations_research
+}  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CORE_MODEL_UPDATE_MERGE_H_
+#endif  // OR_TOOLS_MATH_OPT_STORAGE_PROTO_MERGING_UTILS_H_

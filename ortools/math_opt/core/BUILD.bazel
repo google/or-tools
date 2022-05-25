@@ -50,34 +50,6 @@ cc_library(
 )
 
 cc_library(
-    name = "model_storage",
-    srcs = ["model_storage.cc"],
-    hdrs = ["model_storage.h"],
-    deps = [
-        ":model_update_merge",
-        ":sparse_vector_view",
-        "//ortools/base",
-        "//ortools/base:intops",
-        "//ortools/base:map_util",
-        "//ortools/math_opt:model_cc_proto",
-        "//ortools/math_opt:model_update_cc_proto",
-        "//ortools/math_opt:result_cc_proto",
-        "//ortools/math_opt:solution_cc_proto",
-        "//ortools/math_opt:sparse_containers_cc_proto",
-        "//ortools/math_opt/validators:model_validator",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/meta:type_traits",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/types:span",
-    ],
-)
-
-cc_library(
     name = "solver_interface",
     srcs = ["solver_interface.cc"],
     hdrs = ["solver_interface.h"],
@@ -130,21 +102,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/types:span",
-    ],
-)
-
-cc_library(
-    name = "model_update_merge",
-    srcs = ["model_update_merge.cc"],
-    hdrs = ["model_update_merge.h"],
-    deps = [
-        ":sparse_vector_view",
-        "//ortools/base",
-        "//ortools/base:protobuf_util",
-        "//ortools/math_opt:model_cc_proto",
-        "//ortools/math_opt:model_update_cc_proto",
-        "//ortools/math_opt:sparse_containers_cc_proto",
-        "@com_google_absl//absl/container:flat_hash_set",
     ],
 )
 

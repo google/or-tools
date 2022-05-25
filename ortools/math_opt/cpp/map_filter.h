@@ -19,9 +19,9 @@
 #include <optional>
 
 #include "ortools/base/strong_int.h"
-#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/id_set.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {

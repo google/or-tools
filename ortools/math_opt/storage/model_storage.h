@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_CORE_MODEL_STORAGE_H_
-#define OR_TOOLS_MATH_OPT_CORE_MODEL_STORAGE_H_
+#ifndef OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
+#define OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
 
 #include <cstdint>
 #include <limits>
@@ -33,13 +33,11 @@
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
+#include "ortools/math_opt/storage/model_storage_types.h"
+#include "ortools/math_opt/storage/sparse_matrix.h"
 
 namespace operations_research {
 namespace math_opt {
-
-DEFINE_STRONG_INT_TYPE(VariableId, int64_t);
-DEFINE_STRONG_INT_TYPE(LinearConstraintId, int64_t);
-DEFINE_STRONG_INT_TYPE(UpdateTrackerId, int64_t);
 
 // An index based C++ API for building & storing optimization problems.
 //
@@ -376,10 +374,14 @@ class ModelStorage {
   inline const absl::flat_hash_map<VariableId, double>& linear_objective()
       const;
 
+  inline int64_t num_quadratic_objective_terms() const;
+
   // The variable pairs with nonzero quadratic objective coefficients. The keys
-  // are ordered such that .first <= .second.
-  inline const absl::flat_hash_map<std::pair<VariableId, VariableId>, double>&
-  quadratic_objective() const;
+  // are ordered such that .first <= .second. All values are nonempty.
+  //
+  // TODO(b/233630053) do no allocate the result, expose an iterator API.
+  inline std::vector<std::tuple<VariableId, VariableId, double>>
+  quadratic_objective_terms() const;
 
   // Returns a sorted vector of all variables in the model with nonzero linear
   // objective coefficients.
@@ -577,10 +579,6 @@ class ModelStorage {
   // the model.
   void EnsureLazyMatrixRows();
 
-  // Initializes lazy_quadratic_objective_by_variable_ if it is still empty and
-  // there is at least one variable in the model.
-  void EnsureLazyQuadraticObjective();
-
   // Export a single variable to proto.
   void AppendVariable(VariableId id, VariablesProto& variables_proto) const;
 
@@ -616,28 +614,20 @@ class ModelStorage {
   absl::flat_hash_map<VariableId, VariableData> variables_;
   absl::flat_hash_map<LinearConstraintId, LinearConstraintData>
       linear_constraints_;
+
   // The values of the map must never include zero.
   absl::flat_hash_map<VariableId, double> linear_objective_;
-  // The values of the map must never include zero. The keys must be upper
-  // triangular, i.e. .first <= .second.
-  absl::flat_hash_map<std::pair<VariableId, VariableId>, double>
-      quadratic_objective_;
+
+  SparseSymmetricMatrix quadratic_objective_;
+
   // The values of the map must never include zero.
   absl::flat_hash_map<std::pair<LinearConstraintId, VariableId>, double>
       linear_constraint_matrix_;
+
   absl::flat_hash_map<VariableId, absl::flat_hash_set<LinearConstraintId>>
       lazy_matrix_columns_;
   absl::flat_hash_map<LinearConstraintId, absl::flat_hash_set<VariableId>>
       lazy_matrix_rows_;
-  // To handle deletions we need to have an efficient way to look up which
-  // quadratic objective terms involve a given variable. This map stores this
-  // information where the key corresponds to a variable and the value is the
-  // set of all variables appearing in a quadratic objective term with the key.
-  // This data structure is only initialized after a call to
-  // EnsureLazyQuadraticObjective. As of 11/17/2021, this will have occurred if
-  // a nonzero quadratic objective term has ever been added to the model.
-  absl::flat_hash_map<VariableId, absl::flat_hash_set<VariableId>>
-      lazy_quadratic_objective_by_variable_;
 
   // Update information
   //
@@ -918,9 +908,7 @@ double ModelStorage::linear_objective_coefficient(VariableId variable) const {
 
 double ModelStorage::quadratic_objective_coefficient(
     const VariableId first_variable, const VariableId second_variable) const {
-  return gtl::FindWithDefault(
-      quadratic_objective_,
-      internal::MakeOrderedPair(first_variable, second_variable));
+  return quadratic_objective_.get(first_variable, second_variable);
 }
 
 bool ModelStorage::is_linear_objective_coefficient_nonzero(
@@ -930,8 +918,7 @@ bool ModelStorage::is_linear_objective_coefficient_nonzero(
 
 bool ModelStorage::is_quadratic_objective_coefficient_nonzero(
     const VariableId first_variable, const VariableId second_variable) const {
-  return quadratic_objective_.contains(
-      internal::MakeOrderedPair(first_variable, second_variable));
+  return quadratic_objective_.get(first_variable, second_variable) != 0.0;
 }
 
 void ModelStorage::set_is_maximize(bool is_maximize) {
@@ -977,33 +964,12 @@ void ModelStorage::set_linear_objective_coefficient(VariableId variable,
 void ModelStorage::set_quadratic_objective_coefficient(
     const VariableId first_variable, const VariableId second_variable,
     double value) {
+  const bool updated =
+      quadratic_objective_.set(first_variable, second_variable, value);
   const std::pair<VariableId, VariableId> key =
       internal::MakeOrderedPair(first_variable, second_variable);
-  bool was_updated = false;
-  if (value == 0.0) {
-    if (quadratic_objective_.erase(key) > 0) {
-      was_updated = true;
-    }
-  } else {
-    const auto [iterator, inserted] =
-        quadratic_objective_.try_emplace(key, value);
-    if (inserted) {
-      was_updated = true;
-    } else if (iterator->second != value) {
-      iterator->second = value;
-      was_updated = true;
-    }
-  }
-  if (was_updated) {
-    if (!lazy_quadratic_objective_by_variable_.empty()) {
-      lazy_quadratic_objective_by_variable_.at(first_variable)
-          .insert(second_variable);
-      lazy_quadratic_objective_by_variable_.at(second_variable)
-          .insert(first_variable);
-    }
-    if (key.second < variables_checkpoint_) {
-      dirty_quadratic_objective_coefficients_.insert(key);
-    }
+  if (updated && key.second < variables_checkpoint_) {
+    dirty_quadratic_objective_coefficients_.insert(key);
   }
 }
 
@@ -1012,11 +978,12 @@ void ModelStorage::clear_objective() {
   while (!linear_objective_.empty()) {
     set_linear_objective_coefficient(linear_objective_.begin()->first, 0.0);
   }
-  while (!quadratic_objective_.empty()) {
-    set_quadratic_objective_coefficient(
-        quadratic_objective_.begin()->first.first,
-        quadratic_objective_.begin()->first.second, 0.0);
+  for (const auto [var_pair, value] : quadratic_objective_.values()) {
+    if (var_pair.second < variables_checkpoint_ && value != 0.0) {
+      dirty_quadratic_objective_coefficients_.insert(var_pair);
+    }
   }
+  quadratic_objective_.Clear();
 }
 
 const absl::flat_hash_map<VariableId, double>& ModelStorage::linear_objective()
@@ -1024,12 +991,16 @@ const absl::flat_hash_map<VariableId, double>& ModelStorage::linear_objective()
   return linear_objective_;
 }
 
-const absl::flat_hash_map<std::pair<VariableId, VariableId>, double>&
-ModelStorage::quadratic_objective() const {
-  return quadratic_objective_;
+int64_t ModelStorage::num_quadratic_objective_terms() const {
+  return quadratic_objective_.nonzeros();
+}
+
+std::vector<std::tuple<VariableId, VariableId, double>>
+ModelStorage::quadratic_objective_terms() const {
+  return quadratic_objective_.Terms();
 }
 
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CORE_MODEL_STORAGE_H_
+#endif  // OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_

@@ -16,17 +16,21 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <limits>
 #include <list>
+#include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -131,6 +135,8 @@ struct ModelSummary {
 
   IdNameBiMap variables;
   IdNameBiMap linear_constraints;
+  IdNameBiMap sos1_constraints;
+  IdNameBiMap sos2_constraints;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -218,6 +224,40 @@ absl::Status IdNameBiMap::SetNextFreeId(const int64_t new_next_free_id) {
   next_free_id_ = new_next_free_id;
   return absl::OkStatus();
 }
+
+namespace internal {
+
+// TODO(b/232526223): this is an exact copy of
+// CheckIdsRangeAndStrictlyIncreasing from ids_validator.h, find a way to share
+// the code.
+// NOTE: This function is only exposed in the header because we need
+//       UpdateBiMapFromMappedConstraints here for testing purposes.
+absl::Status CheckIdsRangeAndStrictlyIncreasing2(absl::Span<const int64_t> ids);
+
+// NOTE: This is only exposed in the header for testing purposes.
+template <typename ConstraintDataProto>
+absl::Status UpdateBiMapFromMappedConstraints(
+    const absl::Span<const int64_t> deleted_ids,
+    const google::protobuf::Map<int64_t, ConstraintDataProto>& proto_map,
+    IdNameBiMap& bimap) {
+  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
+      << "invalid deleted ids";
+  for (const int64_t id : deleted_ids) {
+    RETURN_IF_ERROR(bimap.Erase(id));
+  }
+  std::vector<int64_t> new_ids;
+  new_ids.reserve(proto_map.size());
+  for (const auto& [id, value] : proto_map) {
+    new_ids.push_back(id);
+  }
+  absl::c_sort(new_ids);
+  for (const int64_t id : new_ids) {
+    RETURN_IF_ERROR(bimap.Insert(id, proto_map.at(id).name()));
+  }
+  return absl::OkStatus();
+}
+
+}  // namespace internal
 
 }  // namespace math_opt
 }  // namespace operations_research

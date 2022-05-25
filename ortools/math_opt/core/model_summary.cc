@@ -15,18 +15,27 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
+#include "ortools/base/linked_hash_map.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/status_macros.h"
+#include "ortools/math_opt/model.pb.h"
+#include "ortools/math_opt/model_update.pb.h"
 
 namespace operations_research {
 namespace math_opt {
-namespace {
 
-// TODO(b/232526223): this is an exact copy of
-// CheckIdsRangeAndStrictlyIncreasing from ids_validator.h, find a way to share
-// the code.
+namespace internal {
+
 absl::Status CheckIdsRangeAndStrictlyIncreasing2(
     absl::Span<const int64_t> ids) {
   int64_t previous{-1};
@@ -47,7 +56,7 @@ absl::Status CheckIdsRangeAndStrictlyIncreasing2(
   return absl::OkStatus();
 }
 
-}  // namespace
+}  // namespace internal
 
 IdNameBiMap::IdNameBiMap(
     std::initializer_list<std::pair<int64_t, absl::string_view>> ids)
@@ -85,9 +94,9 @@ IdNameBiMap& IdNameBiMap::operator=(const IdNameBiMap& other) {
 absl::Status IdNameBiMap::BulkUpdate(
     absl::Span<const int64_t> deleted_ids, absl::Span<const int64_t> new_ids,
     const absl::Span<const std::string* const> names) {
-  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
+  RETURN_IF_ERROR(internal::CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
       << "invalid deleted ids";
-  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(new_ids))
+  RETURN_IF_ERROR(internal::CheckIdsRangeAndStrictlyIncreasing2(new_ids))
       << "invalid new ids";
   if (!names.empty() && names.size() != new_ids.size()) {
     return util::InvalidArgumentErrorBuilder()
@@ -107,7 +116,10 @@ absl::Status IdNameBiMap::BulkUpdate(
 }
 
 ModelSummary::ModelSummary(const bool check_names)
-    : variables(check_names), linear_constraints(check_names) {}
+    : variables(check_names),
+      linear_constraints(check_names),
+      sos1_constraints(check_names),
+      sos2_constraints(check_names) {}
 
 absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
                                                   const bool check_names) {
@@ -118,6 +130,12 @@ absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
   RETURN_IF_ERROR(summary.linear_constraints.BulkUpdate(
       {}, model.linear_constraints().ids(), model.linear_constraints().names()))
       << "Model.linear_constraints are invalid";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+      {}, model.sos1_constraints(), summary.sos1_constraints))
+      << "Model.sos1_constraints are invalid";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+      {}, model.sos2_constraints(), summary.sos2_constraints))
+      << "Model.sos2_constraints are invalid";
   return summary;
 }
 
@@ -131,6 +149,16 @@ absl::Status ModelSummary::Update(const ModelUpdateProto& model_update) {
       model_update.new_linear_constraints().ids(),
       model_update.new_linear_constraints().names()))
       << "invalid linear constraints";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+      model_update.sos1_constraint_updates().deleted_constraint_ids(),
+      model_update.sos1_constraint_updates().new_constraints(),
+      sos1_constraints))
+      << "invalid sos1 constraints";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+      model_update.sos2_constraint_updates().deleted_constraint_ids(),
+      model_update.sos2_constraint_updates().new_constraints(),
+      sos2_constraints))
+      << "invalid sos2 constraints";
   return absl::OkStatus();
 }
 

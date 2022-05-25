@@ -28,12 +28,12 @@
 #include "ortools/base/protoutil.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/cpp/map_filter.h"
 #include "ortools/math_opt/cpp/sparse_containers.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {

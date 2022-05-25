@@ -1,0 +1,28 @@
+package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+
+exports_files(
+    [
+        "BUILD.bazel",
+    ] + glob([
+        "*.cc",
+        "*.h",
+        "*.proto",
+    ]),
+    visibility = [
+        "//ortools/open_source:__subpackages__",
+    ],
+)
+
+cc_library(
+    name = "validator",
+    srcs = ["validator.cc"],
+    hdrs = ["validator.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:model_summary",
+        "//ortools/math_opt/validators:linear_expression_validator",
+        "//ortools/math_opt/validators:scalar_validator",
+    ],
+)

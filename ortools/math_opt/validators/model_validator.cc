@@ -13,15 +13,13 @@
 
 #include "ortools/math_opt/validators/model_validator.h"
 
-#include <cmath>
 #include <cstdint>
-#include <limits>
-#include <string>
+#include <utility>
 
 #include "absl/status/status.h"
-#include "absl/strings/str_cat.h"
-#include "absl/types/span.h"
+#include "absl/status/statusor.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/constraints/sos/validator.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
@@ -168,6 +166,20 @@ absl::Status LinearConstraintMatrixIdsValidForUpdate(
   return absl::OkStatus();
 }
 
+// To use this helper, you must implement an overload for:
+//   ValidateConstraint(const MyConstraintProto& constraint,
+//                      const IdNameBiMap& variable_universe);
+template <typename ConstraintType>
+absl::Status ValidateConstraintMap(
+    const google::protobuf::Map<int64_t, ConstraintType>& constraints,
+    const IdNameBiMap& variable_universe) {
+  for (const auto& [id, constraint] : constraints) {
+    RETURN_IF_ERROR(ValidateConstraint(constraint, variable_universe))
+        << "invalid constraint with id: " << id;
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -190,6 +202,14 @@ absl::StatusOr<ModelSummary> ValidateModel(const ModelProto& model,
                                           model_summary.linear_constraints,
                                           model_summary.variables))
       << "Model.linear_constraint_matrix ids are inconsistent";
+
+  RETURN_IF_ERROR(
+      ValidateConstraintMap(model.sos1_constraints(), model_summary.variables))
+      << "Model.sos1_constraints invalid";
+  RETURN_IF_ERROR(
+      ValidateConstraintMap(model.sos2_constraints(), model_summary.variables))
+      << "Model.sos2_constraints invalid";
+
   return model_summary;
 }
 
@@ -229,6 +249,15 @@ absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
       model_update.linear_constraint_matrix_updates(),
       model_summary.linear_constraints, model_summary.variables))
       << "invalid linear constraint matrix update";
+
+  RETURN_IF_ERROR(ValidateConstraintMap(
+      model_update.sos1_constraint_updates().new_constraints(),
+      model_summary.variables))
+      << "ModelUpdateProto.sos1_constraint_updates.new_constraints invalid";
+  RETURN_IF_ERROR(ValidateConstraintMap(
+      model_update.sos2_constraint_updates().new_constraints(),
+      model_summary.variables))
+      << "ModelUpdateProto.sos2_constraint_updates.new_constraints invalid";
 
   return absl::OkStatus();
 }

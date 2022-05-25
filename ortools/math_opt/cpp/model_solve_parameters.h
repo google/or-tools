@@ -20,12 +20,12 @@
 #include <optional>
 #include <vector>
 
-#include "ortools/math_opt/core/model_storage.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/map_filter.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/solution.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/model_parameters.pb.h"
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {

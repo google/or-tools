@@ -107,6 +107,23 @@ message LinearConstraintUpdatesProto {
   SparseDoubleVectorProto upper_bounds = 2;
 }
 
+// Data for updates to SOS1 and SOS2 constraints; only addition and deletion, no
+// support for in-place constraint updates.
+message SosConstraintUpdatesProto {
+  // Removes SOS constraints from the model.
+  //
+  // Each value must be in [0, max(int64)). Values must be in strictly
+  // increasing order. Applies only to existing SOS constraint ids that have not
+  // yet been deleted.
+  repeated int64 deleted_constraint_ids = 1;
+
+  // Add new SOS constraints to the model. All keys must be in [0, max(int64)),
+  // and must be greater than any ids used in the initial model and previous
+  // updates. All nonempty names should be distinct from existing names and each
+  // other.
+  map<int64, SosConstraintProto> new_constraints = 2;
+}
+
 // Updates to a ModelProto.
 message ModelUpdateProto {
   // Removes variables from the model.
@@ -161,4 +178,11 @@ message ModelUpdateProto {
   //  * Zero values delete existing entries, and have no effect for new entries.
   //  * linear_constraint_matrix.values must all be finite.
   SparseDoubleMatrixProto linear_constraint_matrix_updates = 8;
+
+  // Reserved for quadratic constraint updates.
+  reserved 9;
+
+  // Updates the general constraints (addition or deletion only).
+  SosConstraintUpdatesProto sos1_constraint_updates = 10;
+  SosConstraintUpdatesProto sos2_constraint_updates = 11;
 }

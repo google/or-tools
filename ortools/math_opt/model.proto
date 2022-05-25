@@ -88,23 +88,35 @@ message LinearConstraintsProto {
   repeated string names = 4;
 }
 
-// An optimization problem of the form
+// Data for representing a single SOS1 or SOS2 constraint.
+message SosConstraintProto {
+  // The expressions over which to apply the SOS constraint:
+  //   * SOS1: At most one element takes a nonzero value.
+  //   * SOS2: At most two elements take nonzero values, and they must be
+  //           adjacent in the repeated ordering.
+  repeated LinearExpressionProto expressions = 1;
+
+  // Either empty or of equal length to expressions. If empty, default weights
+  // are 1, 2, ...
+  repeated double weights = 2;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // ModelProto.sos1_constraints and SosConstraintUpdatesProto.new_constraints.
+  string name = 3;
+}
+
+// An optimization problem. For full details, see go/mathopt-model.
 //
-// min(/max) c * x
-// s.t.
-// cons_lb <= A * x <= cons_ub
-// var_lb  <=     x <= var_ub
-// x_i integer for i in I
+// MathOpt supports:
+//   - Continuous and integer decision variables with optional finite bounds.
+//   - Linear and quadratic objectives, either minimized or maximized.
+//   - A number of constraints types, including:
+//     * Linear constraints
+//     * Logical constraints
+//       > SOS1 and SOS2 constraints
 //
-// where:
-//  * x is a vector of decision variables in R^n
-//  * c, var_lb, var_ub are vectors in R^n
-//  * cons_lb, cons_ub are vectors in R^m
-//  * A is a sparse matrix in R^{m by n}
-//  * potentially var_lb, cons_lb are -inf
-//  * potentially var_ub, cons_ub are +inf
-//
-// For more details see go/mathopt-model
+// By default, constraints are represented in "id-to-data" maps. However, we
+// represent linear constraints in a more efficient "struct-of-arrays" format.
 message ModelProto {
   string name = 1;
   VariablesProto variables = 2;
@@ -119,4 +131,30 @@ message ModelProto {
   //  * Matrix entries not specified are zero.
   //  * linear_constraint_matrix.values must all be finite.
   SparseDoubleMatrixProto linear_constraint_matrix = 5;
+
+  // Mapped constraints (i.e., stored in "constraint ID"-to-"constraint data"
+  // map). For each subsequent submessage, we require that:
+  //   * Each key is in [0, max(int64)).
+  //   * Each key is unique in its respective map (but not necessarily across
+  //     constraint types)
+  //   * Each value contains a name field, and each nonempty name must be
+  //   distinct across all map entries (but not necessarily across constraint
+  //     types).
+
+  // Reserved for quadratic constraints.
+  reserved 6;
+
+  // SOS1 constraints in the model, which constrain that at most one
+  // `expression` can be nonzero. The optional `weights` entries are an
+  // implementation detail used by the solver to (hopefully) converge more
+  // quickly. In more detail, solvers may (or may not) use these weights to
+  // select branching decisions that produce "balanced" children nodes.
+  map<int64, SosConstraintProto> sos1_constraints = 7;
+
+  // SOS2 constraints in the model, which constrain that at most two entries of
+  // `expression` can be nonzero, and they must be adjacent in their ordering.
+  // If no `weights` are provided, this ordering is their linear ordering in the
+  // `expressions` list; if `weights` are presented, the ordering is taken with
+  // respect to these values in increasing order.
+  map<int64, SosConstraintProto> sos2_constraints = 8;
 }

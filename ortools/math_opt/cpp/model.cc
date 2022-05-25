@@ -26,7 +26,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/math_opt/core/model_storage.h"
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -186,7 +186,7 @@ void Model::AddToObjective(const QuadraticExpression& objective_terms) {
 }
 
 LinearExpression Model::ObjectiveAsLinearExpression() const {
-  CHECK(storage()->quadratic_objective().empty())
+  CHECK_EQ(storage()->num_quadratic_objective_terms(), 0)
       << "The objective function contains quadratic terms and cannot be "
          "represented as a LinearExpression";
   LinearExpression result = storage()->objective_offset();
@@ -201,9 +201,9 @@ QuadraticExpression Model::ObjectiveAsQuadraticExpression() const {
   for (const auto& [v, coef] : storage()->linear_objective()) {
     result += Variable(storage(), v) * coef;
   }
-  for (const auto& [vars, coef] : storage()->quadratic_objective()) {
-    result += QuadraticTerm(Variable(storage(), vars.first),
-                            Variable(storage(), vars.second), coef);
+  for (const auto& [v1, v2, coef] : storage()->quadratic_objective_terms()) {
+    result +=
+        QuadraticTerm(Variable(storage(), v1), Variable(storage(), v2), coef);
   }
   return result;
 }
