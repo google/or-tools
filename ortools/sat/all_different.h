@@ -175,7 +175,7 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   // them.
   bool PropagateLowerBounds();
   bool PropagateLowerBoundsInternal(IntegerValue min_lb,
-                                    absl::Span<CachedBounds> vars);
+                                    absl::Span<CachedBounds> bounds);
 
   // Internally, we will maintain a set of non-consecutive integer intervals of
   // the form [start, end]. Each point (i.e. IntegerValue) of such interval will

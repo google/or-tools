@@ -120,6 +120,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
                               SatParameters const* parameters,
                               SharedResponseManager* shared_response,
                               SharedBoundsManager* shared_bounds = nullptr);
+
   // SubSolver interface.
   bool TaskIsAvailable() override { return false; }
   std::function<void()> GenerateTask(int64_t task_id) override { return {}; }
@@ -537,12 +538,21 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
                         double difficulty, absl::BitGenRef random) final;
 };
 
-// Helper method for the scheduling neighborhood generators. Returns the model
-// as neighborhood for the given set of intervals to relax. For each no_overlap
-// constraints, it adds strict relation order between the non-relaxed intervals.
-Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
+// Helper method for the scheduling neighborhood generators. Returns a
+// neighborhood defined from the given set of intervals to relax. For each
+// scheduling constraint, it adds strict relation order between the non-relaxed
+// intervals.
+Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
     const absl::Span<const int> intervals_to_relax,
     const CpSolverResponse& initial_solution, absl::BitGenRef random,
+    const NeighborhoodGeneratorHelper& helper);
+
+// Helper method for the scheduling neighborhood generators. Returns a
+// full neighborhood enriched with the set or precedences passed to the generate
+// method.
+Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
+    const absl::Span<const IntervalPrecedence> precedences,
+    const CpSolverResponse& initial_solution,
     const NeighborhoodGeneratorHelper& helper);
 
 // Only make sense for scheduling problem. This select a random set of interval

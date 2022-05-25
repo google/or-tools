@@ -158,6 +158,10 @@ class CpModelPresolver {
   bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);
   bool DetectAndProcessOneSidedLinearConstraint(int c, ConstraintProto* ct);
 
+  // It can be interesting to know for a given linear constraint that a subset
+  // of its variables are in at most one relation.
+  void DetectAndProcessAtMostOneInLinear(int ct_index, ConstraintProto* ct);
+
   // If a constraint is of the form "a * expr_X + expr_Y" and expr_Y can only
   // take small values compared to a, depending on the bounds, the constraint
   // can be equivalent to a constraint on expr_X only.
@@ -259,8 +263,14 @@ class CpModelPresolver {
   // Used by CanonicalizeLinearExpressionInternal().
   std::vector<std::pair<int, int64_t>> tmp_terms_;
 
-  // Used by ProcessSetPPCSubset() to propagate linear with an at_most_one or
-  // exactly_one included inside.
+  // Cache for each variable the list of amo/exo constraint.
+  std::vector<bool> amo_is_cached_;
+  std::vector<std::vector<int>> amo_cache_;
+
+  // Used by ProcessSetPPCSubset() and DetectAndProcessAtMostOneInLinear() to
+  // propagate linear with an at_most_one or exactly_one included inside.
+  absl::flat_hash_map<int, int> temp_map_;
+  absl::flat_hash_set<int> temp_set_;
   ConstraintProto temp_ct_;
 };
 

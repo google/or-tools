@@ -609,75 +609,6 @@ struct ConstraintScaler {
   std::vector<double> upper_bounds;
 };
 
-namespace {
-
-// TODO(user): unit test this.
-double FindFractionalScaling(const std::vector<double>& coefficients,
-                             double tolerance) {
-  double multiplier = 1.0;
-  for (const double coeff : coefficients) {
-    multiplier *= FindRationalFactor(multiplier * coeff, /*limit=*/1e8,
-                                     multiplier * tolerance);
-    if (multiplier == 0.0) break;
-  }
-  return multiplier;
-}
-
-// TODO(user): unit test this and move to fp_utils.
-double FindBestScalingAndComputeErrors(
-    const std::vector<double>& coefficients,
-    const std::vector<double>& lower_bounds,
-    const std::vector<double>& upper_bounds, int64_t max_absolute_activity,
-    double wanted_absolute_activity_precision, double* relative_coeff_error,
-    double* scaled_sum_error) {
-  // Starts by computing the highest possible factor.
-  double scaling_factor = GetBestScalingOfDoublesToInt64(
-      coefficients, lower_bounds, upper_bounds, max_absolute_activity);
-  if (scaling_factor == 0.0) return scaling_factor;
-
-  // Returns the smallest factor of the form 2^i that gives us a relative sum
-  // error of wanted_absolute_activity_precision and still make sure we will
-  // have no integer overflow.
-  //
-  // TODO(user): Make this faster.
-  double x = std::min(scaling_factor, 1.0);
-  for (; x <= scaling_factor; x *= 2) {
-    ComputeScalingErrors(coefficients, lower_bounds, upper_bounds, x,
-                         relative_coeff_error, scaled_sum_error);
-    if (*scaled_sum_error < wanted_absolute_activity_precision * x) break;
-  }
-  scaling_factor = x;
-
-  // Because we deal with an approximate input, scaling with a power of 2 might
-  // not be the best choice. It is also possible user used rational coeff and
-  // then converted them to double (1/2, 1/3, 4/5, etc...). This scaling will
-  // recover such rational input and might result in a smaller overall
-  // coefficient which is good.
-  //
-  // Note that if our current precisions is already above the requested one,
-  // we choose integer scaling if we get a better precision.
-  const double integer_factor = FindFractionalScaling(coefficients, 1e-8);
-  if (integer_factor != 0 && integer_factor < scaling_factor) {
-    double local_relative_coeff_error;
-    double local_scaled_sum_error;
-    ComputeScalingErrors(coefficients, lower_bounds, upper_bounds,
-                         integer_factor, &local_relative_coeff_error,
-                         &local_scaled_sum_error);
-    if (local_scaled_sum_error * scaling_factor <=
-            *scaled_sum_error * integer_factor ||
-        local_scaled_sum_error <
-            wanted_absolute_activity_precision * integer_factor) {
-      *relative_coeff_error = local_relative_coeff_error;
-      *scaled_sum_error = local_scaled_sum_error;
-      scaling_factor = integer_factor;
-    }
-  }
-
-  return scaling_factor;
-}
-
-}  // namespace
-
 ConstraintProto* ConstraintScaler::AddConstraint(
     const MPModelProto& mp_model, const MPConstraintProto& mp_constraint,
     CpModelProto* cp_model) {
@@ -785,7 +716,71 @@ ConstraintProto* ConstraintScaler::AddConstraint(
   return constraint;
 }
 
+// TODO(user): unit test this.
+double FindFractionalScaling(const std::vector<double>& coefficients,
+                             double tolerance) {
+  double multiplier = 1.0;
+  for (const double coeff : coefficients) {
+    multiplier *= FindRationalFactor(multiplier * coeff, /*limit=*/1e8,
+                                     multiplier * tolerance);
+    if (multiplier == 0.0) break;
+  }
+  return multiplier;
+}
+
 }  // namespace
+
+double FindBestScalingAndComputeErrors(
+    const std::vector<double>& coefficients,
+    const std::vector<double>& lower_bounds,
+    const std::vector<double>& upper_bounds, int64_t max_absolute_activity,
+    double wanted_absolute_activity_precision, double* relative_coeff_error,
+    double* scaled_sum_error) {
+  // Starts by computing the highest possible factor.
+  double scaling_factor = GetBestScalingOfDoublesToInt64(
+      coefficients, lower_bounds, upper_bounds, max_absolute_activity);
+  if (scaling_factor == 0.0) return scaling_factor;
+
+  // Returns the smallest factor of the form 2^i that gives us a relative sum
+  // error of wanted_absolute_activity_precision and still make sure we will
+  // have no integer overflow.
+  //
+  // TODO(user): Make this faster.
+  double x = std::min(scaling_factor, 1.0);
+  for (; x <= scaling_factor; x *= 2) {
+    ComputeScalingErrors(coefficients, lower_bounds, upper_bounds, x,
+                         relative_coeff_error, scaled_sum_error);
+    if (*scaled_sum_error < wanted_absolute_activity_precision * x) break;
+  }
+  scaling_factor = x;
+
+  // Because we deal with an approximate input, scaling with a power of 2 might
+  // not be the best choice. It is also possible user used rational coeff and
+  // then converted them to double (1/2, 1/3, 4/5, etc...). This scaling will
+  // recover such rational input and might result in a smaller overall
+  // coefficient which is good.
+  //
+  // Note that if our current precisions is already above the requested one,
+  // we choose integer scaling if we get a better precision.
+  const double integer_factor = FindFractionalScaling(coefficients, 1e-8);
+  if (integer_factor != 0 && integer_factor < scaling_factor) {
+    double local_relative_coeff_error;
+    double local_scaled_sum_error;
+    ComputeScalingErrors(coefficients, lower_bounds, upper_bounds,
+                         integer_factor, &local_relative_coeff_error,
+                         &local_scaled_sum_error);
+    if (local_scaled_sum_error * scaling_factor <=
+            *scaled_sum_error * integer_factor ||
+        local_scaled_sum_error <
+            wanted_absolute_activity_precision * integer_factor) {
+      *relative_coeff_error = local_relative_coeff_error;
+      *scaled_sum_error = local_scaled_sum_error;
+      scaling_factor = integer_factor;
+    }
+  }
+
+  return scaling_factor;
+}
 
 bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                        const MPModelProto& mp_model,
@@ -980,6 +975,25 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   return true;
 }
 
+namespace {
+
+int AppendSumOfLiteral(absl::Span<const int> literals, MPConstraintProto* out) {
+  int shift = 0;
+  for (const int ref : literals) {
+    if (ref > 0) {
+      out->add_coefficient(1);
+      out->add_var_index(ref);
+    } else {
+      out->add_coefficient(-1);
+      out->add_var_index(PositiveRef(ref));
+      ++shift;
+    }
+  }
+  return shift;
+}
+
+}  // namespace
+
 bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
                                        MPModelProto* output) {
   CHECK(output != nullptr);
@@ -1029,7 +1043,33 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
   const int num_constraints = input.constraints().size();
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = input.constraints(c);
+    if (!ct.enforcement_literal().empty()) {
+      // TODO(user): Support some constraints with enforcement.
+      VLOG(1) << "Cannot convert constraint: " << ct.DebugString();
+      return false;
+    }
     switch (ct.constraint_case()) {
+      case ConstraintProto::kExactlyOne: {
+        MPConstraintProto* out = output->add_constraint();
+        const int shift = AppendSumOfLiteral(ct.exactly_one().literals(), out);
+        out->set_lower_bound(1 - shift);
+        out->set_upper_bound(1 - shift);
+        break;
+      }
+      case ConstraintProto::kAtMostOne: {
+        MPConstraintProto* out = output->add_constraint();
+        const int shift = AppendSumOfLiteral(ct.at_most_one().literals(), out);
+        out->set_lower_bound(-std::numeric_limits<double>::infinity());
+        out->set_upper_bound(1 - shift);
+        break;
+      }
+      case ConstraintProto::kBoolOr: {
+        MPConstraintProto* out = output->add_constraint();
+        const int shift = AppendSumOfLiteral(ct.bool_or().literals(), out);
+        out->set_lower_bound(1 - shift);
+        out->set_upper_bound(std::numeric_limits<double>::infinity());
+        break;
+      }
       case ConstraintProto::kLinear: {
         if (ct.linear().domain().size() != 2) {
           VLOG(1) << "Cannot convert constraint: " << ct.DebugString();

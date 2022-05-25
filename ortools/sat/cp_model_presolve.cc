@@ -1565,6 +1565,16 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
         ct->mutable_linear());
   }
   changed |= DivideLinearByGcd(ct);
+
+  // For duplicate detection, we always make the first coeff positive.
+  if (!ct->linear().coeffs().empty() && ct->linear().coeffs(0) < 0) {
+    for (int64_t& ref_coeff : *ct->mutable_linear()->mutable_coeffs()) {
+      ref_coeff = -ref_coeff;
+    }
+    FillDomainInProto(ReadDomainFromProto(ct->linear()).Negation(),
+                      ct->mutable_linear());
+  }
+
   return changed;
 }
 
@@ -2545,6 +2555,149 @@ bool CpModelPresolver::DetectAndProcessOneSidedLinearConstraint(
 
   if (recanonicalize) return CanonicalizeLinear(ct);
   return false;
+}
+
+// TODO(user): generalize to disjoint amo for even better propagation!
+// TODO(user): merge code with the fully included case.
+// TODO(user): Similarly amo and bool_or intersection or amo and enforcement
+// literals can be presolved.
+//
+// TODO(user): while this reduce the problem size significantly on vpphard2,
+// for some reason, the core do not find lb anymore. It seems due to
+// ExpandObjective(). Investigate.
+void CpModelPresolver::DetectAndProcessAtMostOneInLinear(int ct_index,
+                                                         ConstraintProto* ct) {
+  if (ct->constraint_case() != ConstraintProto::kLinear) return;
+  if (ct->linear().vars().size() <= 2) return;
+
+  // TODO(user): Improve the algo, we are not super efficient nor exhaustive.
+  temp_map_.clear();
+  for (const int ref : ct->linear().vars()) {
+    const int var = PositiveRef(ref);
+    if (!context_->CanBeUsedAsLiteral(var)) continue;
+    if (!amo_is_cached_[var]) {
+      amo_is_cached_[var] = true;
+      auto& list_of_constraints = amo_cache_[var];
+      for (const int c : context_->VarToConstraints(var)) {
+        if (c < 0) continue;
+        const ConstraintProto& other = context_->working_model->constraints(c);
+        if (other.constraint_case() == ConstraintProto::kExactlyOne) {
+          list_of_constraints.push_back(c);
+        } else if (other.constraint_case() == ConstraintProto::kAtMostOne) {
+          list_of_constraints.push_back(c);
+        }
+      }
+
+      // Avoid large list. Note that if only one list is large, the constraint
+      // will still appear in the other.
+      //
+      // TODO(user): Better heuristic. Not that is is kind of randomized because
+      // of the map iteration order, but we could really randomize instead.
+      if (list_of_constraints.size() > 50) {
+        list_of_constraints.resize(50);
+      }
+    }
+    for (const int c : amo_cache_[var]) {
+      temp_map_[c]++;
+    }
+  }
+
+  // Heuristic: Only look at the largest intersection for now.
+  //
+  // Note that even thought the iteration is non-deterministic, the best
+  // candidate is.
+  int candidate_c = 0;
+  int intersection_size = 0;
+  for (const auto [c, num] : temp_map_) {
+    const auto type = context_->working_model->constraints(c).constraint_case();
+    if (type != ConstraintProto::kExactlyOne &&
+        type != ConstraintProto::kAtMostOne) {
+      continue;
+    }
+    if (num > intersection_size ||
+        (num == intersection_size && c < candidate_c)) {
+      candidate_c = c;
+      intersection_size = num;
+    }
+  }
+  if (intersection_size < 2) return;
+
+  // Cache the full amo into a set.
+  temp_set_.clear();
+  {
+    const ConstraintProto& candidate_ct =
+        context_->working_model->constraints(candidate_c);
+    if (candidate_ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      context_->UpdateRuleStats("linear: exactly_one and linear intersection");
+      temp_set_.insert(candidate_ct.exactly_one().literals().begin(),
+                       candidate_ct.exactly_one().literals().end());
+    } else {
+      context_->UpdateRuleStats("linear: at_most_one and linear intersection");
+      temp_set_.insert(candidate_ct.at_most_one().literals().begin(),
+                       candidate_ct.at_most_one().literals().end());
+    }
+  }
+
+  // We have an at most one in a linear constraint.
+  // We need to transform the constraint to match the literal direction.
+  const LinearConstraintProto& lin = ct->linear();
+
+  // The part in intersection will always take the value base_value + delta
+  // with a delta in [min_delta, max_delta].
+  int64_t base_value = 0;
+  int64_t min_delta = 0;
+  int64_t max_delta = 0;
+
+  // This will correspond to the non-matched part.
+  Domain reachable(0);
+  temp_ct_.Clear();
+
+  const int num_terms = lin.vars().size();
+  for (int i = 0; i < num_terms; ++i) {
+    const int ref = lin.vars(i);
+    const int64_t coeff = lin.coeffs(i);
+    if (temp_set_.contains(ref)) {
+      // Positive match.
+      min_delta = std::min(min_delta, coeff);
+      max_delta = std::max(max_delta, coeff);
+    } else if (temp_set_.contains(NegatedRef(ref))) {
+      // Negative match.
+      // the term is coeff - coeff * (1 - X);
+      base_value += coeff;
+      min_delta = std::min(min_delta, -coeff);
+      max_delta = std::max(max_delta, -coeff);
+    } else {
+      // This term is not in the amo.
+      reachable =
+          reachable
+              .AdditionWith(
+                  context_->DomainOf(ref).ContinuousMultiplicationBy(coeff))
+              .RelaxIfTooComplex();
+      temp_ct_.mutable_linear()->add_vars(ref);
+      temp_ct_.mutable_linear()->add_coeffs(coeff);
+    }
+  }
+
+  const Domain intersection_domain =
+      Domain(base_value + min_delta, base_value + max_delta);
+  const Domain rhs = ReadDomainFromProto(ct->linear());
+  if (reachable.AdditionWith(intersection_domain).IsIncludedIn(rhs)) {
+    context_->UpdateRuleStats("linear + amo: trivial linear constraint");
+    ct->Clear();
+    context_->UpdateConstraintVariableUsage(ct_index);
+    return;
+  }
+
+  // We reuse the normal linear constraint code to propagate domains of
+  // the other variable using the inclusion information.
+  //
+  // TODO(user): We can also extract enforcement literal !!
+  // TODO(user): Share code with other places doing similar stuff.
+  if (ct->enforcement_literal().empty()) {
+    FillDomainInProto(rhs.AdditionWith(intersection_domain.Negation()),
+                      temp_ct_.mutable_linear());
+    PropagateDomainsInLinear(/*ct_index=*/-1, &temp_ct_);
+  }
 }
 
 bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
@@ -6211,13 +6364,13 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
     }
 
     // If we have an exactly one in a linear, we can shift the coefficients of
-    // all these variables by any constant value. For now, we only shift by the
-    // min if it is strictly positive.
+    // all these variables by any constant value. For now, we always shift by
+    // the min in order to reduce the number of terms.
     //
     // TODO(user): It might be more interesting to maximize the number of terms
     // that are shifted to zero to reduce the constraint size.
     if (subset_ct->constraint_case() == ConstraintProto::kExactlyOne &&
-        min_sum > 0) {
+        min_sum != 0) {
       int new_size = 0;
       for (int i = 0; i < superset_ct->linear().vars().size(); ++i) {
         const int var = superset_ct->linear().vars(i);
@@ -6237,7 +6390,7 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
                             .AdditionWith(Domain(-min_sum)),
                         superset_ct->mutable_linear());
       context_->UpdateConstraintVariableUsage(superset_c);
-      context_->UpdateRuleStats("setppc: reduced linear coefficients.");
+      context_->UpdateRuleStats("setppc: reduced linear coefficients");
     }
 
     return true;
@@ -6265,9 +6418,15 @@ void CpModelPresolver::ProcessSetPPC() {
   InclusionDetector detector(storage);
   detector.SetWorkLimit(context_->params().presolve_inclusion_work_limit());
 
+  // Used by DetectAndProcessAtMostOneInLinear().
+  const int num_variables = context_->working_model->variables_size();
+  const int num_constraints = context_->working_model->constraints_size();
+  amo_cache_.clear();
+  amo_cache_.resize(num_variables);
+  amo_is_cached_.resize(num_variables, false);
+
   // We use an encoding of literal that allows to index arrays.
   std::vector<int> temp_literals;
-  const int num_constraints = context_->working_model->constraints_size();
   for (int c = 0; c < num_constraints; ++c) {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
     const auto type = ct->constraint_case();
@@ -6295,6 +6454,13 @@ void CpModelPresolver::ProcessSetPPC() {
       relevant_constraints.push_back(c);
       detector.AddPotentialSet(storage.Add(temp_literals));
     } else if (type == ConstraintProto::kLinear) {
+      // TODO(user): Not sure of the best place for this, but since the algo
+      // is really related to a full inclusion, I put that here. We could also
+      // do that in the main loop, but ideally we do not want to scan many times
+      // each constraint.
+      DetectAndProcessAtMostOneInLinear(c, ct);
+      if (ct->constraint_case() != ConstraintProto::kLinear) continue;
+
       // We also want to test inclusion with the pseudo-Boolean part of
       // linear constraints of size at least 3. Exactly one of size two are
       // equivalent literals, and we already deal with this case.
@@ -6325,6 +6491,7 @@ void CpModelPresolver::ProcessSetPPC() {
       }
     }
   }
+  amo_cache_.clear();
 
   int64_t num_inclusions = 0;
   absl::flat_hash_set<int> tmp_set;
@@ -6677,8 +6844,9 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     ++num_inclusions;
 
     // Store the coeff of the subset linear constraint in a map.
-    const LinearConstraintProto& subset_lin =
-        context_->working_model->constraints(subset_c).linear();
+    const ConstraintProto subset_ct =
+        context_->working_model->constraints(subset_c);
+    const LinearConstraintProto& subset_lin = subset_ct.linear();
     coeff_map.clear();
     detector.IncreaseWorkDone(subset_lin.vars().size());
     for (int i = 0; i < subset_lin.vars().size(); ++i) {

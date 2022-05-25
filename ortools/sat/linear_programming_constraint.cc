@@ -1788,22 +1788,32 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
   // First, make all coefficient positive.
   MakeAllCoefficientsPositive(constraint);
 
-  // Compute the min/max possible partial sum. Note that we need to use the
-  // level zero bounds here since we might use this cut after backtrack.
-  double sum_min = std::min(0.0, ToDouble(-constraint->ub));
-  double sum_max = std::max(0.0, ToDouble(-constraint->ub));
+  // Compute the max possible value that will appear when propagating this
+  // constraint. This relies on the propagator computing the implied lower
+  // bound, computing the slack (rhs_ub - implied_lb) and comparing the
+  // max_delta of each variable to the slack.
+  //
+  // Note(user): it is important to be as precise as possible here. It is why
+  // we try to be tight in our evaluation of possible overflow.
+  double sum_min_neg = 0.0;
+  double sum_min_pos = 0.0;
+  double max_delta = 0.0;
   const int size = constraint->vars.size();
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = constraint->vars[i];
     const double coeff = ToDouble(constraint->coeffs[i]);
-    sum_min +=
-        coeff *
-        std::min(0.0, ToDouble(integer_trail_->LevelZeroLowerBound(var)));
-    sum_max +=
-        coeff *
-        std::max(0.0, ToDouble(integer_trail_->LevelZeroUpperBound(var)));
+    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+    const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
+    if (lb > 0) {
+      sum_min_pos += coeff * ToDouble(lb);
+    } else {
+      sum_min_neg += coeff * ToDouble(lb);
+    }
+    max_delta = std::max(max_delta, ToDouble(ub - lb) * coeff);
   }
-  const double max_value = std::max({sum_max, -sum_min, sum_max - sum_min});
+  const double max_value =
+      std::max({-sum_min_neg, sum_min_pos, max_delta,
+                ToDouble(constraint->ub) - (sum_min_pos + sum_min_neg)});
 
   const IntegerValue divisor(std::ceil(std::ldexp(max_value, -max_pow)));
   if (divisor <= 1) return;

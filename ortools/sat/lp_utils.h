@@ -42,6 +42,33 @@ namespace sat {
 // denominator.
 int FindRationalFactor(double x, int limit = 1e4, double tolerance = 1e-6);
 
+// Given a linear expression Sum_i c_i * X_i with each X_i in [lb_i, ub_i],
+// this returns a scaling factor f such that
+// 1/ the rounded expression cannot overflow given the domains of the X_i:
+//    Sum |std::round(f * c_i) * X_i| <= max_absolute_activity
+// 2/ the error is bounded:
+//    | Sum_i (std::round(f * c_i) - f * c_i) |
+//         < f * wanted_absolute_activity_precision
+//
+// This also fills the exact errors made by using the returned scaling factor.
+// The heuristics try to minimize the magnitude of the scaled expression while
+// satisfying the requested precision.
+//
+// Returns 0.0 if no scaling factor can be found under the condition 1/. Note
+// that we try really hard to satisfy 2/ but we still return our best shot even
+// when 2/ is not satisfied. One can check this by comparing the returned
+// scaled_sum_error / f with wanted_absolute_activity_precision.
+//
+// TODO(user): unit test this and move to fp_utils.
+// TODO(user): Ideally the lower/upper should be int64_t so that we can have
+// an exact definition for the max_absolute_activity allowed.
+double FindBestScalingAndComputeErrors(
+    const std::vector<double>& coefficients,
+    const std::vector<double>& lower_bounds,
+    const std::vector<double>& upper_bounds, int64_t max_absolute_activity,
+    double wanted_absolute_activity_precision, double* relative_coeff_error,
+    double* scaled_sum_error);
+
 // Multiplies all continuous variable by the given scaling parameters and change
 // the rest of the model accordingly. The returned vector contains the scaling
 // of each variable (will always be 1.0 for integers) and can be used to recover
