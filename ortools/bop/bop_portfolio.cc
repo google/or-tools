@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -330,7 +331,7 @@ void PortfolioOptimizer::CreateOptimizers(
     AddOptimizer(problem, parameters, optimizer_method);
   }
 
-  selector_ = absl::make_unique<OptimizerSelector>(optimizers_);
+  selector_ = std::make_unique<OptimizerSelector>(optimizers_);
 }
 
 //------------------------------------------------------------------------------

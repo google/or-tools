@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -97,7 +98,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
 
   // Create the sat_solver if not already done.
   if (!sat_solver_) {
-    sat_solver_ = absl::make_unique<sat::SatSolver>();
+    sat_solver_ = std::make_unique<sat::SatSolver>();
 
     // Add in symmetries.
     if (problem_state.GetParameters()

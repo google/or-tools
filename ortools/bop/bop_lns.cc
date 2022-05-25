@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -35,8 +36,6 @@ namespace bop {
 
 using ::operations_research::glop::ColIndex;
 using ::operations_research::glop::DenseRow;
-using ::operations_research::glop::LinearProgram;
-using ::operations_research::glop::LPSolver;
 using ::operations_research::sat::LinearBooleanConstraint;
 using ::operations_research::sat::LinearBooleanProblem;
 
@@ -71,7 +70,7 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
   state_update_stamp_ = problem_state.update_stamp();
 
   // Load the current problem to the solver.
-  sat_solver_ = absl::make_unique<sat::SatSolver>();
+  sat_solver_ = std::make_unique<sat::SatSolver>();
   const BopOptimizerBase::Status status =
       LoadStateProblemToSatSolver(problem_state, sat_solver_.get());
   if (status != BopOptimizerBase::CONTINUE) return status;

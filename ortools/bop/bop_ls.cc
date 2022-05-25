@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
 
 #include "absl/memory/memory.h"
@@ -61,7 +62,7 @@ BopOptimizerBase::Status LocalSearchOptimizer::Optimize(
   learned_info->Clear();
 
   if (assignment_iterator_ == nullptr) {
-    assignment_iterator_ = absl::make_unique<LocalSearchAssignmentIterator>(
+    assignment_iterator_ = std::make_unique<LocalSearchAssignmentIterator>(
         problem_state, max_num_decisions_,
         parameters.max_num_broken_constraints_in_ls(), random_, &sat_wrapper_);
   }
