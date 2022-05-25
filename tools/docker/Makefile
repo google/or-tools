@@ -370,7 +370,7 @@ DISTROS := \
  alpine-edge \
  centos-7 centos-8 \
  debian-10 debian-11 \
- fedora-33 fedora-34 fedora-35 \
+ fedora-33 fedora-34 fedora-35 fedora-36 \
  opensuse-leap \
  ubuntu-18.04 ubuntu-20.04 ubuntu-22.04
 
