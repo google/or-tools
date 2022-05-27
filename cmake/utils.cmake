@@ -1,4 +1,4 @@
-function(get_patch_from_git VERSION_PATCH)
+function(get_patch_from_git VERSION_PATCH VERSION_MAJOR)
   find_package(Git QUIET)
   if(NOT GIT_FOUND)
     message(STATUS "Did not find git package.")
@@ -6,28 +6,18 @@ function(get_patch_from_git VERSION_PATCH)
   else()
     # If no tags can be found, it is a git shallow clone
     execute_process(COMMAND
-      ${GIT_EXECUTABLE} describe --tags --long
-      RESULT_VARIABLE _RESULT_VAR
-      OUTPUT_VARIABLE _FULL_VAR
+      ${GIT_EXECUTABLE} rev-list --count v${VERSION_MAJOR}.0..HEAD
+      RESULT_VARIABLE RESULT_VAR
+      OUTPUT_VARIABLE PATCH
       ERROR_QUIET
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    if(NOT _RESULT_VAR) # since 0 is success, need invert it
-      if(${_FULL_VAR} MATCHES "v[0-9]+\.[0-9]+-([0-9]+)-g.*")
-        set(PATCH ${CMAKE_MATCH_1})
-      else()
-        execute_process(COMMAND
-          ${GIT_EXECUTABLE} rev-list HEAD --count
-          OUTPUT_VARIABLE PATCH
-          ERROR_QUIET
-          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      endif()
-      STRING(STRIP PATCH ${PATCH})
-      STRING(REGEX REPLACE "\n$" "" PATCH ${PATCH})
-      STRING(REGEX REPLACE " " "" PATCH ${PATCH})
-    else()
-      message(STATUS "Did not find any tag.")
+    if(RESULT_VAR) # since 0 is success, need invert it
+      message(STATUS "Did not be able to compute patch from v${VERSION_MAJOR}.0.")
       set(PATCH 9999)
     endif()
+    STRING(STRIP PATCH ${PATCH})
+    STRING(REGEX REPLACE "\n$" "" PATCH ${PATCH})
+    STRING(REGEX REPLACE " " "" PATCH ${PATCH})
   endif()
   set(${VERSION_PATCH} ${PATCH} PARENT_SCOPE)
 endfunction()
@@ -47,7 +37,7 @@ function(set_version VERSION)
   # Compute Patch if .git is present otherwise set it to 9999
   get_filename_component(GIT_DIR ".git" ABSOLUTE)
   if(EXISTS ${GIT_DIR})
-    get_patch_from_git(PATCH)
+    get_patch_from_git(PATCH ${MAJOR})
   else()
     set(PATCH 9999)
   endif()
