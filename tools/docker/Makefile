@@ -484,6 +484,7 @@ define build_lang_distro =
 $$(foreach stage,${LANG_STAGES},$$(eval $$(call build_lang_stage,$1,$2,cpp,$${stage})))
 $$(foreach stage,${LANG_STAGES},$$(eval $$(call build_lang_stage,$1,$2,dotnet,$${stage})))
 $$(foreach stage,${LANG_STAGES},$$(eval $$(call build_lang_stage,$1,$2,java,$${stage})))
+$$(foreach stage,${LANG_STAGES},$$(eval $$(call build_lang_stage,$1,$2,python,$${stage})))
 endef
 
 define build_lang_platform =
@@ -554,18 +555,24 @@ $$(foreach stage,${STAGES} export,$$(eval $$(call merge_stage,$1,$${stage})))
 $$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,cpp_$${stage})))
 $$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,dotnet_$${stage})))
 $$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,java_$${stage})))
+$$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,python_$${stage})))
 
 build_targets := $(addprefix $1_, ${STAGES} export) \
  $(addprefix $1_cpp_, ${LANG_STAGES} export) \
  $(addprefix $1_dotnet_, ${LANG_STAGES} export) \
- $(addprefix $1_java_, ${LANG_STAGES} export)
+ $(addprefix $1_java_, ${LANG_STAGES} export) \
+ $(addprefix $1_python_, ${LANG_STAGES} export)
 .PHONY: $${build_targets}
 $${build_targets}: $1_%: $(addprefix $1_, $(addsuffix _%, ${DISTROS}))
+
+.PHONY: $1_export
+$1_export: $1_cpp_export $1_dotnet_export $1_java_export $1_python_export
 
 clean_targets := $(addprefix clean_$1_, ${STAGES} export) \
  $(addprefix clean_$1_cpp_, ${LANG_STAGES} export) \
  $(addprefix clean_$1_dotnet_, ${LANG_STAGES} export) \
- $(addprefix clean_$1_java_, ${LANG_STAGES} export)
+ $(addprefix clean_$1_java_, ${LANG_STAGES} export) \
+ $(addprefix clean_$1_python_, ${LANG_STAGES} export)
 .PHONY: $${clean_targets}
 $${clean_targets}: clean_$1_%: $(addprefix clean_$1_, $(addsuffix _%, ${DISTROS}))
 
