@@ -45,7 +45,7 @@ PLATFORM_FLAGS = select({
 PLATFORM_DEPS = select({
     "on_linux": ["@bliss//:libbliss"],
     "on_macos": ["@bliss//:libbliss"],
-    "on_windows": ["@zlib//:zlib"],
+    "on_windows": [],
     "//conditions:default": [],
 })
 
@@ -117,5 +117,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         #"@cppad:cppad_includes",
+        "@zlib//:zlib",
     ] + PLATFORM_DEPS,
 )
