@@ -1,5 +1,5 @@
 FROM ortools/make:opensuse_swig AS env
-RUN zypper update -y \
+RUN zypper refresh \
 && zypper install -y wget tar libicu-devel
 
 # .NET install

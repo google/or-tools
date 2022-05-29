@@ -4,7 +4,7 @@ FROM opensuse/leap
 
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
-RUN zypper update -y \
+RUN zypper refresh \
 && zypper install -y git gcc gcc-c++ \
  wget which lsb-release util-linux pkgconfig autoconf libtool zlib-devel \
 && zypper clean -a
@@ -13,8 +13,7 @@ ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 
 # Java install (openjdk-8)
-RUN zypper update -y \
-&& zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
+RUN zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
 && zypper clean -a
 
 WORKDIR /root

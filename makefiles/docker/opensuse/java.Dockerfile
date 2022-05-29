@@ -1,5 +1,5 @@
 FROM ortools/make:opensuse_swig AS env
-RUN zypper update -y \
+RUN zypper refresh \
 && zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
 && zypper clean -a
 

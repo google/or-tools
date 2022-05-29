@@ -4,7 +4,7 @@ FROM opensuse/leap
 
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
-RUN zypper update -y \
+RUN zypper refresh \
 && zypper install -y git gcc gcc-c++ \
  wget which lsb-release util-linux pkgconfig autoconf libtool zlib-devel \
 && zypper clean -a
@@ -12,9 +12,8 @@ ENV CC=gcc CXX=g++
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 
-# .Net Instal
-RUN zypper update -y \
-&& zypper install -y wget tar gzip libicu-devel
+# .Net Install
+RUN zypper install -y wget tar gzip libicu-devel
 
 RUN mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
