@@ -355,6 +355,66 @@ STRONG_INT_TYPE_COMPARISON_OP(>);   // NOLINT
 STRONG_INT_TYPE_COMPARISON_OP(>=);  // NOLINT
 #undef STRONG_INT_TYPE_COMPARISON_OP
 
+
+// Support for-range loops. Enables easier looping over ranges of StrongInts,
+// especially looping over sub-ranges of StrongVectors.
+template <typename IntType>
+class StrongIntRange {
+ public:
+  // Iterator over the indices.
+  class StrongIntRangeIterator {
+   public:
+    using value_type = IntType;
+    using difference_type = IntType;
+    using reference = const IntType &;
+    using pointer = const IntType *;
+    using iterator_category = std::input_iterator_tag;
+
+    explicit StrongIntRangeIterator(IntType initial) : current_(initial) {}
+    bool operator!=(const StrongIntRangeIterator &other) const {
+      return current_ != other.current_;
+    }
+    bool operator==(const StrongIntRangeIterator &other) const {
+      return current_ == other.current_;
+    }
+    value_type operator*() const { return current_; }
+    pointer operator->() const { return &current_; }
+    StrongIntRangeIterator &operator++() {
+      ++current_;
+      return *this;
+    }
+    StrongIntRangeIterator operator++(int) {
+      StrongIntRangeIterator old_iter = *this;
+      ++current_;
+      return old_iter;
+    }
+
+   private:
+    IntType current_;
+  };
+
+  // Loops from IntType(0) up to (but not including) end.
+  explicit StrongIntRange(IntType end) : begin_(IntType(0)), end_(end) {}
+  // Loops from begin up to (but not including) end.
+  StrongIntRange(IntType begin, IntType end) : begin_(begin), end_(end) {}
+  StrongIntRangeIterator begin() const { return begin_; }
+  StrongIntRangeIterator end() const { return end_; }
+
+ private:
+  const StrongIntRangeIterator begin_;
+  const StrongIntRangeIterator end_;
+};
+
+template <typename IntType>
+StrongIntRange<IntType> MakeStrongIntRange(IntType end) {
+  return StrongIntRange<IntType>(end);
+}
+
+template <typename IntType>
+StrongIntRange<IntType> MakeStrongIntRange(IntType begin, IntType end) {
+  return StrongIntRange<IntType>(begin, end);
+}
+
 }  // namespace util_intops
 
 // Allows it to be used as a key to hashable containers.
