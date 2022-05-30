@@ -4,7 +4,7 @@ FROM opensuse/tumbleweed AS base
 LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
-RUN zypper update -y \
+RUN zypper refresh \
 && zypper install -y git gcc gcc-c++ cmake \
  wget which lsb-release util-linux pkgconfig autoconf libtool zlib-devel \
 && zypper clean -a

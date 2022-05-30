@@ -4,7 +4,7 @@ FROM opensuse/leap AS env
 LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
-RUN zypper update -y \
+RUN zypper refresh \
 && zypper install -y git gcc11 gcc11-c++ cmake \
  wget which lsb-release util-linux pkgconfig autoconf libtool gzip zlib-devel \
 && zypper clean -a
@@ -19,24 +19,20 @@ RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
 && rm cmake-3.21.1-linux-x86_64.sh
 
 # Swig Install
-RUN zypper update -y \
-&& zypper install -y swig \
+RUN zypper install -y swig \
 && zypper clean -a
 
 # Java install (openjdk-8)
-RUN zypper update -y \
-&& zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
+RUN zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
 && zypper clean -a
 
 # Python Install
-RUN zypper update -y \
-&& zypper install -y python3-devel python3-pip python3-wheel \
+RUN zypper install -y python3-devel python3-pip python3-wheel \
 && zypper clean -a
 RUN python3 -m pip install absl-py mypy-protobuf
 
-# .Net Instal
-RUN zypper update -y \
-&& zypper install -y wget tar gzip libicu-devel
+# .Net Install
+RUN zypper install -y wget tar gzip libicu-devel
 
 RUN mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
