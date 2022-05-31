@@ -168,6 +168,15 @@ std::function<void(Model*)> Cumulative(
     // precedence graph, not just task in direct precedence. Make sure not to
     // create to many such constraints though.
     if (parameters.use_hard_precedences_in_cumulative_constraint()) {
+      // The CumulativeIsAfterSubsetConstraint() always reset the helper to the
+      // forward time direction, so it is important to also precompute the
+      // precedence relation using the same direction! This is needed in case
+      // the helper has already been used and set in the other direction.
+      if (!helper->SynchronizeAndSetTimeDirection(true)) {
+        model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+        return;
+      }
+
       std::vector<IntegerVariable> index_to_end_vars;
       std::vector<int> index_to_task;
       std::vector<PrecedencesPropagator::IntegerPrecedences> before;
