@@ -199,6 +199,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     // We split the linear constraints into 3 buckets has it gives more insight
     // on the type of problem we are facing.
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+      if (ct.linear().vars_size() == 0) name += "0";
       if (ct.linear().vars_size() == 1) name += "1";
       if (ct.linear().vars_size() == 2) name += "2";
       if (ct.linear().vars_size() == 3) name += "3";

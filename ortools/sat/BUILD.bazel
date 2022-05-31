@@ -944,6 +944,7 @@ cc_library(
     srcs = ["cumulative_energy.cc"],
     hdrs = ["cumulative_energy.h"],
     deps = [
+        ":implied_bounds",
         ":integer",
         ":intervals",
         ":model",

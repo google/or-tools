@@ -90,24 +90,6 @@ struct Neighborhood {
   std::vector<int> variables_that_can_be_fixed_to_local_optimum;
 };
 
-struct IntervalPrecedence {
-  int before;
-  int after;
-
-  bool operator==(const IntervalPrecedence& other) const {
-    return before == other.before && after == other.after;
-  }
-
-  bool operator<(const IntervalPrecedence& other) const {
-    return std::tie(before, after) < std::tie(other.before, other.after);
-  }
-};
-
-template <typename H>
-H AbslHashValue(H h, const IntervalPrecedence& p) {
-  return H::combine(std::move(h), p.before, p.after);
-}
-
 // Contains pre-computed information about a given CpModelProto that is meant
 // to be used to generate LNS neighborhood. This class can be shared between
 // more than one generator in order to reduce memory usage.
@@ -227,8 +209,10 @@ class NeighborhoodGeneratorHelper : public SubSolver {
       const CpSolverResponse& initial_solution) const;
 
   // Returns all precedences extracted from the scheduling constraint and the
-  // initial solution.
-  absl::flat_hash_set<IntervalPrecedence> GetSchedulingPrecedences(
+  // initial solution. The precedences will be sorted by the natural order
+  // the pairs of integers.
+  std::vector<std::pair<int, int>> GetSchedulingPrecedences(
+      const absl::flat_hash_set<int>& ignored_intervals,
       const CpSolverResponse& initial_solution, absl::BitGenRef random) const;
 
   // The initial problem.
@@ -551,7 +535,7 @@ Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
 // full neighborhood enriched with the set or precedences passed to the generate
 // method.
 Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
-    const absl::Span<const IntervalPrecedence> precedences,
+    const absl::Span<const std::pair<int, int>> precedences,
     const CpSolverResponse& initial_solution,
     const NeighborhoodGeneratorHelper& helper);
 
@@ -572,8 +556,8 @@ class RandomIntervalSchedulingNeighborhoodGenerator
 // Only make sense for scheduling problem. This select a random set of
 // precedences between intervals of the problem according to the difficulty.
 // These precedences are extracted from the scheduling constraints and their
-// configuration in the current solution. Then, for each scheduling constraints,
-// it adds strict relation order between the non-relaxed intervals.
+// configuration in the current solution. Then it adds the kept precedences to
+// the model.
 class RandomPrecedenceSchedulingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:

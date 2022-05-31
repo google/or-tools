@@ -27,16 +27,17 @@ namespace sat {
                         max, "]. Current value is ", params.name());        \
   }
 
+#define TEST_NON_NEGATIVE(name)                                         \
+  if (params.name() < 0) {                                              \
+    return absl::StrCat("Parameters ", #name, " must be non-negative"); \
+  }
+
 #define TEST_NOT_NAN(name)                                 \
   if (std::isnan(params.name())) {                         \
     return absl::StrCat("parameter '", #name, "' is NaN"); \
   }
 
 std::string ValidateParameters(const SatParameters& params) {
-  if (params.max_time_in_seconds() < 0) {
-    return "Parameters max_time_in_seconds should be non-negative";
-  }
-
   // Test that all floating point parameters are not NaN.
   TEST_NOT_NAN(random_polarity_ratio);
   TEST_NOT_NAN(random_branches_ratio);
@@ -85,17 +86,16 @@ std::string ValidateParameters(const SatParameters& params) {
     return "Enumerating all solutions does not work with interleaved search";
   }
 
-  if (params.num_workers() < 0) {
-    return "Parameters num_workers must be non-negative";
-  }
-  if (params.num_search_workers() < 0) {
-    return "Parameters num_search_workers must be non-negative";
-  }
+  TEST_NON_NEGATIVE(max_time_in_seconds);
+  TEST_NON_NEGATIVE(num_workers);
+  TEST_NON_NEGATIVE(num_search_workers);
+  TEST_NON_NEGATIVE(min_num_lns_workers);
 
   return "";
 }
 
 #undef TEST_IN_RANGE
+#undef TEST_NON_NEGATIVE
 #undef TEST_NOT_NAN
 
 }  // namespace sat

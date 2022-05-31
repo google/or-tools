@@ -593,7 +593,7 @@ bool LinMinPropagator::Propagate() {
   expr_lbs_.clear();
   IntegerValue min_of_linear_expression_lb = kMaxIntegerValue;
   for (int i = 0; i < exprs_.size(); ++i) {
-    const IntegerValue lb = LinExprLowerBound(exprs_[i], *integer_trail_);
+    const IntegerValue lb = exprs_[i].Min(*integer_trail_);
     expr_lbs_.push_back(lb);
     min_of_linear_expression_lb = std::min(min_of_linear_expression_lb, lb);
     if (lb <= current_min_ub) {
@@ -629,7 +629,7 @@ bool LinMinPropagator::Propagate() {
   // In this case, ub(min) >= ub(e).
   if (num_intervals_that_can_be_min == 1) {
     const IntegerValue ub_of_only_candidate =
-        LinExprUpperBound(exprs_[last_possible_min_interval], *integer_trail_);
+        exprs_[last_possible_min_interval].Max(*integer_trail_);
     if (current_min_ub < ub_of_only_candidate) {
       // For this propagation, we only need to fill the integer reason once at
       // the lowest level. At higher levels this reason still remains valid.

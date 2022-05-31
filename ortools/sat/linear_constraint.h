@@ -101,8 +101,16 @@ struct LinearExpression {
   // Return[s] the evaluation of the linear expression.
   double LpValue(
       const absl::StrongVector<IntegerVariable, double>& lp_values) const;
+
   IntegerValue LevelZeroMin(IntegerTrail* integer_trail) const;
-  IntegerValue Min(IntegerTrail* integer_trail) const;
+
+  // Returns lower bound of linear expression using variable bounds of the
+  // variables in expression.
+  IntegerValue Min(const IntegerTrail& integer_trail) const;
+
+  // Returns upper bound of linear expression using variable bounds of the
+  // variables in expression.
+  IntegerValue Max(const IntegerTrail& integer_trail) const;
 
   std::string DebugString() const;
 };
@@ -110,18 +118,6 @@ struct LinearExpression {
 // Returns the same expression in the canonical form (all positive
 // coefficients).
 LinearExpression CanonicalizeExpr(const LinearExpression& expr);
-
-// Returns lower bound of linear expression using variable bounds of the
-// variables in expression. Assumes Canonical expression (all positive
-// coefficients).
-IntegerValue LinExprLowerBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail);
-
-// Returns upper bound of linear expression using variable bounds of the
-// variables in expression. Assumes Canonical expression (all positive
-// coefficients).
-IntegerValue LinExprUpperBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail);
 
 // Makes sure that any of our future computation on this constraint will not
 // cause overflow. We use the level zero bounds and use the same definition as

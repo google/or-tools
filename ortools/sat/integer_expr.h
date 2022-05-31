@@ -773,8 +773,8 @@ inline std::function<void(Model*)> IsEqualToMinOf(
       }
     } else {
       // Create a new variable if the expression is not just a single variable.
-      IntegerValue min_lb = LinExprLowerBound(min_expr, *integer_trail);
-      IntegerValue min_ub = LinExprUpperBound(min_expr, *integer_trail);
+      IntegerValue min_lb = min_expr.Min(*integer_trail);
+      IntegerValue min_ub = min_expr.Max(*integer_trail);
       min_var = integer_trail->AddIntegerVariable(min_lb, min_ub);
 
       // min_var = min_expr

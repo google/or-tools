@@ -1458,7 +1458,7 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
               // TODO(user): Investigate and re-enable a correct version.
               if (/*DISABLES_CODE*/ (false) && energies[index].has_value()) {
                 const IntegerValue linearized_energy =
-                    LinExprLowerBound(energies[index].value(), *integer_trail);
+                    energies[index]->Min(*integer_trail);
                 if (linearized_energy > event.energy_min) {
                   event.energy_min = linearized_energy;
                   event.use_energy = true;

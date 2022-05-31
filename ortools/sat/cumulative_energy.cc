@@ -19,6 +19,7 @@
 
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
@@ -28,7 +29,7 @@
 namespace operations_research {
 namespace sat {
 
-void AddCumulativeEnergyConstraint(std::vector<AffineExpression> energies,
+void AddCumulativeEnergyConstraint(std::vector<LinearExpression> energies,
                                    AffineExpression capacity,
                                    SchedulingConstraintHelper* helper,
                                    Model* model) {
@@ -48,33 +49,28 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
   auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
 
-  std::vector<AffineExpression> energies;
+  std::vector<LinearExpression> energies;
   const int num_tasks = helper->NumTasks();
   CHECK_EQ(demands.size(), num_tasks);
   for (int t = 0; t < num_tasks; ++t) {
     const AffineExpression size = helper->Sizes()[t];
     const AffineExpression demand = demands[t];
-
-    if (demand.var == kNoIntegerVariable && size.var == kNoIntegerVariable) {
-      CHECK_GE(demand.constant, 0);
-      CHECK_GE(size.constant, 0);
-      energies.emplace_back(demand.constant * size.constant);
-    } else if (demand.var == kNoIntegerVariable) {
-      CHECK_GE(demand.constant, 0);
-      energies.push_back(size.MultipliedBy(demand.constant));
-    } else if (size.var == kNoIntegerVariable) {
-      CHECK_GE(size.constant, 0);
-      energies.push_back(demand.MultipliedBy(size.constant));
-    } else {
+    // This will cover the basic cases (constant * constant, constant * affine),
+    // as well as the case where both demand and size are controlled by the same
+    // set of literals. This is the case for the RCPSP problems.
+    const std::optional<LinearExpression> linearized_energy =
+        TryToLinearizeProduct(size, demand, model);
+    if (!linearized_energy.has_value()) {
       // The case where both demand and size are variable should be rare.
       //
       // TODO(user): Handle when needed by creating an intermediate product
       // variable equal to demand * size. Note that because of the affine
       // expression, we do need some custom code for this.
-      LOG(INFO) << "Overload checker with variable demand and variable size "
-                   "is currently not implemented. Skipping.";
+      VLOG(1) << "Overload checker with non-linearizable energy is currently "
+                 "not implemented. Skipping.";
       return;
     }
+    energies.emplace_back(linearized_energy.value());
   }
 
   CumulativeEnergyConstraint* constraint =
@@ -84,7 +80,7 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
 }
 
 CumulativeEnergyConstraint::CumulativeEnergyConstraint(
-    std::vector<AffineExpression> energies, AffineExpression capacity,
+    std::vector<LinearExpression> energies, AffineExpression capacity,
     IntegerTrail* integer_trail, SchedulingConstraintHelper* helper)
     : energies_(std::move(energies)),
       capacity_(capacity),
@@ -94,6 +90,14 @@ CumulativeEnergyConstraint::CumulativeEnergyConstraint(
   const int num_tasks = helper_->NumTasks();
   CHECK_EQ(energies_.size(), num_tasks);
   task_to_start_event_.resize(num_tasks);
+  if (DEBUG_MODE) {
+    for (const LinearExpression& energy : energies_) {
+      DCHECK_GE(energy.offset, 0);
+      for (const IntegerValue coeff : energy.coeffs) {
+        DCHECK_GE(coeff, 0);
+      }
+    }
+  }
 }
 
 void CumulativeEnergyConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
@@ -116,8 +120,7 @@ bool CumulativeEnergyConstraint::Propagate() {
   int num_events = 0;
   for (const auto task_time : helper_->TaskByIncreasingStartMin()) {
     const int task = task_time.task_index;
-    if (helper_->IsAbsent(task) ||
-        integer_trail_->UpperBound(energies_[task]) == 0) {
+    if (helper_->IsAbsent(task) || energies_[task].Max(*integer_trail_) == 0) {
       task_to_start_event_[task] = -1;
       continue;
     }
@@ -147,12 +150,12 @@ bool CumulativeEnergyConstraint::Propagate() {
         tree_has_mandatory_intervals = true;
         theta_tree_.AddOrUpdateEvent(
             current_event, start_min * capacity_max,
-            integer_trail_->LowerBound(energies_[current_task]),
-            integer_trail_->UpperBound(energies_[current_task]));
+            energies_[current_task].Min(*integer_trail_),
+            energies_[current_task].Max(*integer_trail_));
       } else {
         theta_tree_.AddOrUpdateOptionalEvent(
             current_event, start_min * capacity_max,
-            integer_trail_->UpperBound(energies_[current_task]));
+            energies_[current_task].Max(*integer_trail_));
       }
     }
 
@@ -181,9 +184,9 @@ bool CumulativeEnergyConstraint::Propagate() {
           if (start_event_is_present_[event]) {
             const int task = start_event_task_time_[event].task_index;
             helper_->AddPresenceReason(task);
-            if (energies_[task].var != kNoIntegerVariable) {
+            for (const IntegerVariable var : energies_[task].vars) {
               helper_->MutableIntegerReason()->push_back(
-                  integer_trail_->LowerBoundAsLiteral(energies_[task].var));
+                  integer_trail_->LowerBoundAsLiteral(var));
             }
             helper_->AddStartMinReason(task, window_start);
             helper_->AddEndMaxReason(task, window_end);
@@ -232,9 +235,9 @@ bool CumulativeEnergyConstraint::Propagate() {
           helper_->AddPresenceReason(task);
           helper_->AddStartMinReason(task, window_start);
           helper_->AddEndMaxReason(task, window_end);
-          if (energies_[task].var != kNoIntegerVariable) {
+          for (const IntegerVariable var : energies_[task].vars) {
             helper_->MutableIntegerReason()->push_back(
-                integer_trail_->LowerBoundAsLiteral(energies_[task].var));
+                integer_trail_->LowerBoundAsLiteral(var));
           }
         }
       }
@@ -249,19 +252,25 @@ bool CumulativeEnergyConstraint::Propagate() {
       helper_->AddEndMaxReason(task_with_new_energy_max, window_end);
 
       if (new_energy_max <
-          integer_trail_->LowerBound(energies_[task_with_new_energy_max])) {
+          energies_[task_with_new_energy_max].Min(*integer_trail_)) {
         if (helper_->IsOptional(task_with_new_energy_max)) {
           return helper_->PushTaskAbsence(task_with_new_energy_max);
         } else {
           return helper_->ReportConflict();
         }
-      } else {
+      } else if (energies_[task_with_new_energy_max].vars.size() == 1) {
+        const LinearExpression& e = energies_[task_with_new_energy_max];
+        const AffineExpression affine_energy(e.vars[0], e.coeffs[0], e.offset);
         const IntegerLiteral deduction =
-            energies_[task_with_new_energy_max].LowerOrEqual(new_energy_max);
+            affine_energy.LowerOrEqual(new_energy_max);
         if (!helper_->PushIntegerLiteralIfTaskPresent(task_with_new_energy_max,
                                                       deduction)) {
           return false;
         }
+      } else {
+        // TODO(user): Propagate if possible.
+        VLOG(3) << "Cumulative energy missed propagation "
+                << energies_[task_with_new_energy_max].vars.size();
       }
 
       if (helper_->IsPresent(task_with_new_energy_max)) {
@@ -269,7 +278,7 @@ bool CumulativeEnergyConstraint::Propagate() {
             task_to_start_event_[task_with_new_energy_max],
             start_event_task_time_[event_with_new_energy_max].time *
                 capacity_max,
-            integer_trail_->LowerBound(energies_[task_with_new_energy_max]),
+            energies_[task_with_new_energy_max].Min(*integer_trail_),
             new_energy_max);
       } else {
         theta_tree_.RemoveEvent(event_with_new_energy_max);

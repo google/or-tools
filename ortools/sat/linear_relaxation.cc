@@ -345,8 +345,7 @@ void AppendEnforcedLinearExpression(
   CHECK_EQ(expr.offset, IntegerValue(0));
   const LinearExpression canonical_expr = CanonicalizeExpr(expr);
   const IntegerTrail* integer_trail = model.Get<IntegerTrail>();
-  const IntegerValue min_expr_value =
-      LinExprLowerBound(canonical_expr, *integer_trail);
+  const IntegerValue min_expr_value = canonical_expr.Min(*integer_trail);
 
   if (rhs_domain_min > min_expr_value) {
     // And(ei) => terms >= rhs_domain_min
@@ -362,8 +361,7 @@ void AppendEnforcedLinearExpression(
     }
     relaxation->linear_constraints.push_back(lc.Build());
   }
-  const IntegerValue max_expr_value =
-      LinExprUpperBound(canonical_expr, *integer_trail);
+  const IntegerValue max_expr_value = canonical_expr.Max(*integer_trail);
   if (rhs_domain_max < max_expr_value) {
     // And(ei) => terms <= rhs_domain_max
     // <=> Sum_i (~ei * (rhs_domain_max - max_expr_value)) + terms <=
@@ -826,10 +824,9 @@ void AddCumulativeRelaxation(
     } else {
       const IntegerValue product_min =
           helper->SizeMin(i) * integer_trail->LowerBound(demands[i]);
-      const IntegerValue energy_min =
-          energies[i].has_value()
-              ? LinExprLowerBound(energies[i].value(), *integer_trail)
-              : IntegerValue(0);
+      const IntegerValue energy_min = energies[i].has_value()
+                                          ? energies[i]->Min(*integer_trail)
+                                          : IntegerValue(0);
       if (!lc.AddLiteralTerm(helper->PresenceLiteral(i),
                              std::max(energy_min, product_min))) {
         return;

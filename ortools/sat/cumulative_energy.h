@@ -36,7 +36,7 @@ namespace sat {
 // This is mathematically equivalent to making a model with energy(task)
 // different tasks with demand and size 1, but is much more efficient,
 // since it uses O(|tasks|) variables instead of O(sum_{task} |energy(task)|).
-void AddCumulativeEnergyConstraint(std::vector<AffineExpression> energies,
+void AddCumulativeEnergyConstraint(std::vector<LinearExpression> energies,
                                    AffineExpression capacity,
                                    SchedulingConstraintHelper* helper,
                                    Model* model);
@@ -53,7 +53,7 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
 // Implementation of AddCumulativeEnergyConstraint().
 class CumulativeEnergyConstraint : public PropagatorInterface {
  public:
-  CumulativeEnergyConstraint(std::vector<AffineExpression> energies,
+  CumulativeEnergyConstraint(std::vector<LinearExpression> energies,
                              AffineExpression capacity,
                              IntegerTrail* integer_trail,
                              SchedulingConstraintHelper* helper);
@@ -61,7 +61,7 @@ class CumulativeEnergyConstraint : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  const std::vector<AffineExpression> energies_;
+  const std::vector<LinearExpression> energies_;
   const AffineExpression capacity_;
   IntegerTrail* integer_trail_;
   SchedulingConstraintHelper* helper_;

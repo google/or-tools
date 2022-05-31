@@ -455,7 +455,7 @@ std::optional<LinearExpression> TryToLinearizeProduct(
   LinearConstraintBuilder builder(model);
   if (DetectLinearEncodingOfProducts(left, right, model, &builder)) {
     // The expression must only have positive coefficient because we will call
-    // LinExprLowerBound() on it and that function expect it this way.
+    // Min() on it and that function expect it this way.
     return CanonicalizeExpr(builder.BuildExpression());
   } else {
     return std::optional<LinearExpression>();

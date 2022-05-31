@@ -2572,9 +2572,17 @@ void CpModelPresolver::DetectAndProcessAtMostOneInLinear(int ct_index,
 
   // TODO(user): Improve the algo, we are not super efficient nor exhaustive.
   temp_map_.clear();
-  for (const int ref : ct->linear().vars()) {
+  const int num_ct_terms = ct->linear().vars().size();
+  for (int i = 0; i < num_ct_terms; ++i) {
+    const int ref = ct->linear().vars(i);
+    if (!RefIsPositive(ref)) {
+      // We do that so we don't worry for the rest of the code.
+      ct->mutable_linear()->set_vars(i, PositiveRef(ref));
+      ct->mutable_linear()->set_coeffs(i, -ct->linear().coeffs(i));
+    }
     const int var = PositiveRef(ref);
     if (!context_->CanBeUsedAsLiteral(var)) continue;
+
     if (!amo_is_cached_[var]) {
       amo_is_cached_[var] = true;
       auto& list_of_constraints = amo_cache_[var];
@@ -2602,101 +2610,212 @@ void CpModelPresolver::DetectAndProcessAtMostOneInLinear(int ct_index,
     }
   }
 
-  // Heuristic: Only look at the largest intersection for now.
-  //
-  // Note that even thought the iteration is non-deterministic, the best
-  // candidate is.
-  int candidate_c = 0;
-  int intersection_size = 0;
-  for (const auto [c, num] : temp_map_) {
-    const auto type = context_->working_model->constraints(c).constraint_case();
-    if (type != ConstraintProto::kExactlyOne &&
-        type != ConstraintProto::kAtMostOne) {
-      continue;
-    }
-    if (num > intersection_size ||
-        (num == intersection_size && c < candidate_c)) {
-      candidate_c = c;
-      intersection_size = num;
-    }
-  }
-  if (intersection_size < 2) return;
+  // We might extract new enforcement literal from the constraint.
+  std::vector<int> new_enforcement;
 
-  // Cache the full amo into a set.
-  temp_set_.clear();
-  {
-    const ConstraintProto& candidate_ct =
-        context_->working_model->constraints(candidate_c);
-    if (candidate_ct.constraint_case() == ConstraintProto::kExactlyOne) {
-      context_->UpdateRuleStats("linear: exactly_one and linear intersection");
-      temp_set_.insert(candidate_ct.exactly_one().literals().begin(),
-                       candidate_ct.exactly_one().literals().end());
-    } else {
-      context_->UpdateRuleStats("linear: at_most_one and linear intersection");
-      temp_set_.insert(candidate_ct.at_most_one().literals().begin(),
-                       candidate_ct.at_most_one().literals().end());
-    }
-  }
-
-  // We have an at most one in a linear constraint.
-  // We need to transform the constraint to match the literal direction.
-  const LinearConstraintProto& lin = ct->linear();
-
-  // The part in intersection will always take the value base_value + delta
-  // with a delta in [min_delta, max_delta].
-  int64_t base_value = 0;
-  int64_t min_delta = 0;
-  int64_t max_delta = 0;
-
-  // This will correspond to the non-matched part.
-  Domain reachable(0);
-  temp_ct_.Clear();
-
-  const int num_terms = lin.vars().size();
-  for (int i = 0; i < num_terms; ++i) {
-    const int ref = lin.vars(i);
-    const int64_t coeff = lin.coeffs(i);
-    if (temp_set_.contains(ref)) {
-      // Positive match.
-      min_delta = std::min(min_delta, coeff);
-      max_delta = std::max(max_delta, coeff);
-    } else if (temp_set_.contains(NegatedRef(ref))) {
-      // Negative match.
-      // the term is coeff - coeff * (1 - X);
-      base_value += coeff;
-      min_delta = std::min(min_delta, -coeff);
-      max_delta = std::max(max_delta, -coeff);
-    } else {
-      // This term is not in the amo.
-      reachable =
-          reachable
-              .AdditionWith(
-                  context_->DomainOf(ref).ContinuousMultiplicationBy(coeff))
-              .RelaxIfTooComplex();
-      temp_ct_.mutable_linear()->add_vars(ref);
-      temp_ct_.mutable_linear()->add_coeffs(coeff);
-    }
-  }
-
-  const Domain intersection_domain =
-      Domain(base_value + min_delta, base_value + max_delta);
+  Domain intersection_domain(0);
   const Domain rhs = ReadDomainFromProto(ct->linear());
-  if (reachable.AdditionWith(intersection_domain).IsIncludedIn(rhs)) {
-    context_->UpdateRuleStats("linear + amo: trivial linear constraint");
-    ct->Clear();
-    context_->UpdateConstraintVariableUsage(ct_index);
-    return;
+  LinearConstraintProto remainder_lin = ct->linear();
+  for (int num_passes = 0; num_passes < 3; ++num_passes) {
+    const int num_terms = remainder_lin.vars().size();
+    if (num_terms <= 1) break;
+
+    // Heuristic: Only look at the largest intersection for now.
+    //
+    // Note that even thought the iteration is non-deterministic, the best
+    // candidate is.
+    int candidate_c = 0;
+    int intersection_size = 0;
+    for (auto it = temp_map_.begin(); it != temp_map_.end();) {
+      const int c = it->first;
+      const int num = it->second;
+      const auto type =
+          context_->working_model->constraints(c).constraint_case();
+      if (type != ConstraintProto::kExactlyOne &&
+          type != ConstraintProto::kAtMostOne) {
+        temp_map_.erase(it++);
+        continue;
+      }
+      if (num < 2) {
+        temp_map_.erase(it++);
+        continue;
+      }
+      if (num > intersection_size ||
+          (num == intersection_size && c < candidate_c)) {
+        candidate_c = c;
+        intersection_size = num;
+      }
+      ++it;
+    }
+    if (intersection_size < 2) break;
+
+    // Cache the full amo into a set.
+    temp_set_.clear();
+    {
+      const ConstraintProto& candidate_ct =
+          context_->working_model->constraints(candidate_c);
+      context_->UpdateRuleStats(
+          absl::StrCat("linear: at most one and linear intersection. level ",
+                       num_passes + 1, "."));
+      if (candidate_ct.constraint_case() == ConstraintProto::kExactlyOne) {
+        temp_set_.insert(candidate_ct.exactly_one().literals().begin(),
+                         candidate_ct.exactly_one().literals().end());
+      } else {
+        temp_set_.insert(candidate_ct.at_most_one().literals().begin(),
+                         candidate_ct.at_most_one().literals().end());
+      }
+    }
+
+    // The part in intersection will always take the value base_value + delta
+    // with a delta in [min_delta, max_delta].
+    int64_t base_value = 0;
+    int64_t min_delta = 0;
+    int64_t max_delta = 0;
+
+    // This will correspond to the non-matched part.
+    Domain reachable(0);
+    temp_ct_.Clear();
+
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = remainder_lin.vars(i);
+      const int64_t coeff = remainder_lin.coeffs(i);
+      if (temp_set_.contains(var)) {
+        // Positive match.
+        min_delta = std::min(min_delta, coeff);
+        max_delta = std::max(max_delta, coeff);
+        for (const int c : amo_cache_[var]) {
+          temp_map_[c]--;
+        }
+      } else if (temp_set_.contains(NegatedRef(var))) {
+        // Negative match.
+        // the term is coeff - coeff * (1 - X);
+        base_value += coeff;
+        min_delta = std::min(min_delta, -coeff);
+        max_delta = std::max(max_delta, -coeff);
+        for (const int c : amo_cache_[var]) {
+          temp_map_[c]--;
+        }
+      } else {
+        // This term is not in the amo.
+        reachable =
+            reachable
+                .AdditionWith(
+                    context_->DomainOf(var).ContinuousMultiplicationBy(coeff))
+                .RelaxIfTooComplex();
+        temp_ct_.mutable_linear()->add_vars(var);
+        temp_ct_.mutable_linear()->add_coeffs(coeff);
+      }
+    }
+
+    intersection_domain = intersection_domain.AdditionWith(
+        Domain(base_value + min_delta, base_value + max_delta));
+    if (reachable.AdditionWith(intersection_domain).IsIncludedIn(rhs)) {
+      context_->UpdateRuleStats(
+          absl::StrCat("linear + amo: trivial linear constraint. level ",
+                       num_passes + 1, "."));
+      ct->Clear();
+      context_->UpdateConstraintVariableUsage(ct_index);
+      return;
+    }
+    if (temp_ct_.linear().vars().empty()) break;
+
+    // We will loop with smaller constraint.
+    // TODO(user): Algo is not super efficient. Improve!
+    remainder_lin = temp_ct_.linear();
+
+    // We reuse the normal linear constraint code to propagate domains of
+    // the other variable using the inclusion information.
+    //
+    // Tricky: The propagation might clear temp_ct_, so we use remainder_lin
+    // below.
+    if (ct->enforcement_literal().empty()) {
+      FillDomainInProto(rhs.AdditionWith(intersection_domain.Negation()),
+                        temp_ct_.mutable_linear());
+      PropagateDomainsInLinear(/*ct_index=*/-1, &temp_ct_);
+    }
+
+    // We might also be able to extract enforcement literals!
+    //
+    // Tricky: we skip fixed literal in the corner case they are some because
+    // our code assumes both 0 and 1 are in the domain.
+    if (!rhs.IsEmpty()) {
+      const int64_t min_value = reachable.Min() + intersection_domain.Min();
+      const int64_t max_value = reachable.Max() + intersection_domain.Max();
+      if (min_value >= rhs.Min()) {
+        const int64_t threshold = rhs.front().end;
+        const int64_t slack = max_value - threshold;
+        DCHECK_GT(slack, 0);
+        const int num_terms = remainder_lin.vars().size();
+        for (int i = 0; i < num_terms; ++i) {
+          const int var = remainder_lin.vars(i);
+          if (!context_->CanBeUsedAsLiteral(var)) continue;
+          if (context_->IsFixed(var)) continue;
+          const int64_t coeff = remainder_lin.coeffs(i);
+          if (std::abs(coeff) >= slack) {
+            // Setting this at its low value cause the constraint to be trivial.
+            if (coeff > 0) {
+              new_enforcement.push_back(var);
+            } else {
+              new_enforcement.push_back(NegatedRef(var));
+            }
+          }
+        }
+      } else if (max_value <= rhs.Max()) {
+        const int64_t threshold = rhs.back().start;
+        const int64_t slack = threshold - min_value;
+        DCHECK_GT(slack, 0);
+        const int num_terms = remainder_lin.vars().size();
+        for (int i = 0; i < num_terms; ++i) {
+          const int var = remainder_lin.vars(i);
+          if (!context_->CanBeUsedAsLiteral(var)) continue;
+          if (context_->IsFixed(var)) continue;
+          const int64_t coeff = remainder_lin.coeffs(i);
+          if (std::abs(coeff) >= slack) {
+            // Setting this at its high value cause the constraint to be
+            // trivial.
+            if (coeff > 0) {
+              new_enforcement.push_back(NegatedRef(var));
+            } else {
+              new_enforcement.push_back(var);
+            }
+          }
+        }
+      }
+    }
   }
 
-  // We reuse the normal linear constraint code to propagate domains of
-  // the other variable using the inclusion information.
-  //
-  // TODO(user): We can also extract enforcement literal !!
-  // TODO(user): Share code with other places doing similar stuff.
-  if (ct->enforcement_literal().empty()) {
-    FillDomainInProto(rhs.AdditionWith(intersection_domain.Negation()),
-                      temp_ct_.mutable_linear());
-    PropagateDomainsInLinear(/*ct_index=*/-1, &temp_ct_);
+  // Note(user): If we linearize the constraint back, we will have worse
+  // coefficients except if we take into account the at most one again in order
+  // to use tighter bounds on the linear expression.
+  if (!new_enforcement.empty()) {
+    context_->UpdateRuleStats("linear + amo: extracted enforcement literal.");
+    temp_set_.clear();
+    for (const int ref : new_enforcement) {
+      const auto [_, inserted] = temp_set_.insert(ref);
+      if (inserted) ct->add_enforcement_literal(ref);
+    }
+    int new_size = 0;
+    auto* arg = ct->mutable_linear();
+    const int num_terms = arg->vars().size();
+    int64_t shift = 0;
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = arg->vars(i);
+      const int64_t coeff = arg->coeffs(i);
+      if (temp_set_.contains(var)) {
+        // Var is at one.
+        shift += coeff;
+      } else if (!temp_set_.contains(NegatedRef(var))) {
+        arg->set_vars(new_size, var);
+        arg->set_coeffs(new_size, coeff);
+        ++new_size;
+      }  // Else the variable is at zero.
+    }
+    arg->mutable_vars()->Truncate(new_size);
+    arg->mutable_coeffs()->Truncate(new_size);
+    if (shift != 0) {
+      FillDomainInProto(ReadDomainFromProto(*arg).AdditionWith(Domain(-shift)),
+                        arg);
+    }
   }
 }
 
@@ -3278,6 +3397,7 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
              min_sum + 2 * min_coeff > rhs_domain.Max() &&
              rhs_domain.back().start <= min_sum) {
     // At most one Boolean is true.
+    // TODO(user): Support enforced at most one.
     context_->UpdateRuleStats("linear: positive at most one");
     const auto copy = arg;
     ct->mutable_at_most_one()->clear_literals();
@@ -3291,6 +3411,7 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
              max_sum - 2 * min_coeff < rhs_domain.Min() &&
              rhs_domain.front().end >= max_sum) {
     // At most one Boolean is false.
+    // TODO(user): Support enforced at most one.
     context_->UpdateRuleStats("linear: negative at most one");
     const auto copy = arg;
     ct->mutable_at_most_one()->clear_literals();
@@ -3304,6 +3425,7 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
              min_sum + min_coeff >= rhs_domain.Min() &&
              min_sum + 2 * min_coeff > rhs_domain.Max() &&
              min_sum + max_coeff <= rhs_domain.Max()) {
+    // TODO(user): Support enforced exactly one.
     context_->UpdateRuleStats("linear: positive equal one");
     ConstraintProto* exactly_one = context_->working_model->add_constraints();
     exactly_one->set_name(ct->name());
@@ -3318,6 +3440,7 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
              max_sum - min_coeff <= rhs_domain.Max() &&
              max_sum - 2 * min_coeff < rhs_domain.Min() &&
              max_sum - max_coeff >= rhs_domain.Min()) {
+    // TODO(user): Support enforced exactly one.
     context_->UpdateRuleStats("linear: negative equal one");
     ConstraintProto* exactly_one = context_->working_model->add_constraints();
     exactly_one->set_name(ct->name());
@@ -6863,8 +6986,9 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     // "superset - subset". Note that we actually do not need exact inclusion
     // for this algorithm to work, but it is an heuristic to not try it with
     // all pair of constraints.
-    const LinearConstraintProto& superset_lin =
-        context_->working_model->constraints(superset_c).linear();
+    const ConstraintProto& superset_ct =
+        context_->working_model->constraints(superset_c);
+    const LinearConstraintProto& superset_lin = superset_ct.linear();
     Domain diff_domain(0);
     detector.IncreaseWorkDone(superset_lin.vars().size());
     for (int i = 0; i < superset_lin.vars().size(); ++i) {

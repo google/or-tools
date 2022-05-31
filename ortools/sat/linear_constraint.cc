@@ -285,11 +285,26 @@ IntegerValue LinearExpression::LevelZeroMin(IntegerTrail* integer_trail) const {
   return result;
 }
 
-IntegerValue LinearExpression::Min(IntegerTrail* integer_trail) const {
+IntegerValue LinearExpression::Min(const IntegerTrail& integer_trail) const {
   IntegerValue result = offset;
   for (int i = 0; i < vars.size(); ++i) {
-    DCHECK_GE(coeffs[i], 0);
-    result += coeffs[i] * integer_trail->LowerBound(vars[i]);
+    if (coeffs[i] > 0) {
+      result += coeffs[i] * integer_trail.LowerBound(vars[i]);
+    } else {
+      result += coeffs[i] * integer_trail.UpperBound(vars[i]);
+    }
+  }
+  return result;
+}
+
+IntegerValue LinearExpression::Max(const IntegerTrail& integer_trail) const {
+  IntegerValue result = offset;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (coeffs[i] > 0) {
+      result += coeffs[i] * integer_trail.UpperBound(vars[i]);
+    } else {
+      result += coeffs[i] * integer_trail.LowerBound(vars[i]);
+    }
   }
   return result;
 }
@@ -360,26 +375,6 @@ LinearExpression CanonicalizeExpr(const LinearExpression& expr) {
     }
   }
   return canonical_expr;
-}
-
-IntegerValue LinExprLowerBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
-  IntegerValue lower_bound = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
-    lower_bound += expr.coeffs[i] * integer_trail.LowerBound(expr.vars[i]);
-  }
-  return lower_bound;
-}
-
-IntegerValue LinExprUpperBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
-  IntegerValue upper_bound = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
-    upper_bound += expr.coeffs[i] * integer_trail.UpperBound(expr.vars[i]);
-  }
-  return upper_bound;
 }
 
 // TODO(user): Avoid duplication with PossibleIntegerOverflow() in the checker?

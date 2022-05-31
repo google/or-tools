@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <deque>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -528,18 +529,23 @@ std::vector<int> SelectIntervalsInRandomTimeWindow(
 
 struct Demand {
   int interval_index;
-  int64_t start;  // inclusive
-  int64_t end;    // exclusive
+  int64_t start;
+  int64_t end;
   int64_t height;
 
+  // Because of the binary splitting of the capacity in the procedure used to
+  // extract precedences out of a cumulative constraint, processing bigger
+  // heigts first will decrease its probability of being split across the 2
+  // halves of the current split.
   bool operator<(const Demand& other) const {
-    return std::tie(start, end) < std::tie(other.start, other.end);
+    return std::tie(start, height, end) <
+           std::tie(other.start, other.height, other.end);
   }
 };
 
-void AddPrecedencesOnSortedListOfDemands(
-    std::vector<Demand> demands,
-    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+void InsertPrecedencesFromSortedListOfDemands(
+    const std::vector<Demand>& demands,
+    absl::flat_hash_set<std::pair<int, int>>* precedences) {
   for (int i = 0; i + 1 < demands.size(); ++i) {
     DCHECK_LE(demands[i].end, demands[i + 1].start);
     precedences->insert(
@@ -547,14 +553,16 @@ void AddPrecedencesOnSortedListOfDemands(
   }
 }
 
-void GetNoOverlapPrecedences(
+void InsertNoOverlapPrecedences(
+    const absl::flat_hash_set<int>& ignored_intervals,
     const CpSolverResponse& initial_solution, const CpModelProto& model_proto,
     int no_overlap_index,
-    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+    absl::flat_hash_set<std::pair<int, int>>* precedences) {
   std::vector<Demand> demands;
   const NoOverlapConstraintProto& no_overlap =
       model_proto.constraints(no_overlap_index).no_overlap();
   for (const int interval_index : no_overlap.intervals()) {
+    if (ignored_intervals.contains(interval_index)) continue;
     const ConstraintProto& interval_ct =
         model_proto.constraints(interval_index);
     // We only look at intervals that are performed in the solution. The
@@ -573,36 +581,39 @@ void GetNoOverlapPrecedences(
         interval_ct.interval().start(), initial_solution);
     const int64_t end_value = GetLinearExpressionValue(
         interval_ct.interval().size(), initial_solution);
-    if (start_value == end_value) continue;
     demands.push_back({interval_index, start_value, end_value, 1});
   }
 
   std::sort(demands.begin(), demands.end());
-  AddPrecedencesOnSortedListOfDemands(std::move(demands), precedences);
+  InsertPrecedencesFromSortedListOfDemands(demands, precedences);
 }
 
 void ProcessDemandListFromCumulativeConstraint(
-    std::vector<Demand> demands, int64_t capacity,
-    std::list<std::pair<std::vector<Demand>, int64_t>>* to_process,
+    const std::vector<Demand>& demands, int64_t capacity,
+    std::deque<std::pair<std::vector<Demand>, int64_t>>* to_process,
     absl::BitGenRef random,
-    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+    absl::flat_hash_set<std::pair<int, int>>* precedences) {
   if (demands.size() <= 1) return;
 
   // Checks if any pairs of tasks cannot overlap.
   int64_t sum_of_min_two_capacities = 2;
   if (capacity > 1) {
-    std::vector<int64_t> all_heights;
+    int64_t min1 = std::numeric_limits<int64_t>::max();
+    int64_t min2 = std::numeric_limits<int64_t>::max();
     for (const Demand& demand : demands) {
-      DCHECK_GT(demand.height, 0);
-      all_heights.push_back(demand.height);
+      if (demand.height <= min1) {
+        min2 = min1;
+        min1 = demand.height;
+      } else if (demand.height < min2) {
+        min2 = demand.height;
+      }
     }
-    std::sort(all_heights.begin(), all_heights.end());
-    sum_of_min_two_capacities = all_heights[0] + all_heights[1];
+    sum_of_min_two_capacities = min1 + min2;
   }
 
   DCHECK_GT(sum_of_min_two_capacities, 1);
   if (sum_of_min_two_capacities > capacity) {
-    AddPrecedencesOnSortedListOfDemands(std::move(demands), precedences);
+    InsertPrecedencesFromSortedListOfDemands(std::move(demands), precedences);
     return;
   }
 
@@ -667,16 +678,19 @@ void ProcessDemandListFromCumulativeConstraint(
   }
 }
 
-void GetCumulativePrecedences(
+void InsertCumulativePrecedences(
+    const absl::flat_hash_set<int>& ignored_intervals,
     const CpSolverResponse& initial_solution, const CpModelProto& model_proto,
     int cumulative_index, absl::BitGenRef random,
-    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+    absl::flat_hash_set<std::pair<int, int>>* precedences) {
   const CumulativeConstraintProto& cumulative =
       model_proto.constraints(cumulative_index).cumulative();
 
   std::vector<Demand> demands;
   for (int i = 0; i < cumulative.intervals().size(); ++i) {
     const int interval_index = cumulative.intervals(i);
+    if (ignored_intervals.contains(interval_index)) continue;
+
     const ConstraintProto& interval_ct =
         model_proto.constraints(interval_index);
     // We only look at intervals that are performed in the solution. The
@@ -708,33 +722,33 @@ void GetCumulativePrecedences(
   DCHECK_GT(capacity_value, 0);
 
   // Copying all these demands is memory intensive. Let's be careful here.
-  std::list<std::pair<std::vector<Demand>, int64_t>> to_process;
+  std::deque<std::pair<std::vector<Demand>, int64_t>> to_process;
   to_process.emplace_back(std::move(demands), capacity_value);
 
   while (!to_process.empty()) {
     auto& next_task = to_process.front();
-    ProcessDemandListFromCumulativeConstraint(std::move(next_task.first),
-                                              next_task.second, &to_process,
-                                              random, precedences);
+    ProcessDemandListFromCumulativeConstraint(next_task.first,
+                                              /*capacity=*/next_task.second,
+                                              &to_process, random, precedences);
     to_process.pop_front();
   }
 }
 
 struct Rectangle {
   int interval_index;
-  int64_t x_start;  // inclusive
-  int64_t x_end;    // exclusive
-  int64_t y_start;  // inclusive
-  int64_t y_end;    // exclusive
+  int64_t x_start;
+  int64_t x_end;
+  int64_t y_start;
+  int64_t y_end;
 
   bool operator<(const Rectangle& other) const {
     return std::tie(x_start, x_end) < std::tie(other.x_start, other.x_end);
   }
 };
 
-void GetRectanglePredecences(
+void InsertRectanglePredecences(
     const std::vector<Rectangle>& rectangles,
-    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+    absl::flat_hash_set<std::pair<int, int>>* precedences) {
   // TODO(user): Refine set of interesting points.
   absl::flat_hash_set<int64_t> interesting_points;
   for (const Rectangle& r : rectangles) {
@@ -748,14 +762,15 @@ void GetRectanglePredecences(
       demands.push_back({r.interval_index, r.x_start, r.x_end, 1});
     }
     std::sort(demands.begin(), demands.end());
-    AddPrecedencesOnSortedListOfDemands(std::move(demands), precedences);
+    InsertPrecedencesFromSortedListOfDemands(demands, precedences);
   }
 }
 
-void GetNoOverlap2dPrecedences(
+void InsertNoOverlap2dPrecedences(
+    const absl::flat_hash_set<int>& ignored_intervals,
     const CpSolverResponse& initial_solution, const CpModelProto& model_proto,
     int no_overlap_2d_index,
-    absl::flat_hash_set<IntervalPrecedence>* precedences) {
+    absl::flat_hash_set<std::pair<int, int>>* precedences) {
   std::vector<Demand> demands;
   const NoOverlap2DConstraintProto& no_overlap_2d =
       model_proto.constraints(no_overlap_2d_index).no_overlap_2d();
@@ -764,6 +779,7 @@ void GetNoOverlap2dPrecedences(
   for (int i = 0; i < no_overlap_2d.x_intervals_size(); ++i) {
     // Ignore unperformed rectangles.
     const int x_interval_index = no_overlap_2d.x_intervals(i);
+    if (ignored_intervals.contains(x_interval_index)) continue;
     const ConstraintProto& x_interval_ct =
         model_proto.constraints(x_interval_index);
     if (x_interval_ct.enforcement_literal().size() == 1) {
@@ -776,6 +792,7 @@ void GetNoOverlap2dPrecedences(
     }
 
     const int y_interval_index = no_overlap_2d.y_intervals(i);
+    if (ignored_intervals.contains(y_interval_index)) continue;
     const ConstraintProto& y_interval_ct =
         model_proto.constraints(y_interval_index);
     if (y_interval_ct.enforcement_literal().size() == 1) {
@@ -808,9 +825,9 @@ void GetNoOverlap2dPrecedences(
   if (x_main.empty() || y_main.empty()) return;
 
   std::sort(x_main.begin(), x_main.end());
-  GetRectanglePredecences(x_main, precedences);
+  InsertRectanglePredecences(x_main, precedences);
   std::sort(y_main.begin(), y_main.end());
-  GetRectanglePredecences(y_main, precedences);
+  InsertRectanglePredecences(y_main, precedences);
 }
 
 }  // namespace
@@ -818,23 +835,29 @@ void GetNoOverlap2dPrecedences(
 // TODO(user): We could scan for model precedences and add them to the list
 // of precedences. This could enable more simplifications in the transitive
 // reduction phase.
-absl::flat_hash_set<IntervalPrecedence>
+std::vector<std::pair<int, int>>
 NeighborhoodGeneratorHelper::GetSchedulingPrecedences(
+    const absl::flat_hash_set<int>& ignored_intervals,
     const CpSolverResponse& initial_solution, absl::BitGenRef random) const {
-  absl::flat_hash_set<IntervalPrecedence> precedences;
+  absl::flat_hash_set<std::pair<int, int>> precedences;
   for (const int c : TypeToConstraints(ConstraintProto::kNoOverlap)) {
-    GetNoOverlapPrecedences(initial_solution, ModelProto(), c, &precedences);
+    InsertNoOverlapPrecedences(ignored_intervals, initial_solution,
+                               ModelProto(), c, &precedences);
   }
   for (const int c : TypeToConstraints(ConstraintProto::kCumulative)) {
-    GetCumulativePrecedences(initial_solution, ModelProto(), c, random,
-                             &precedences);
+    InsertCumulativePrecedences(ignored_intervals, initial_solution,
+                                ModelProto(), c, random, &precedences);
   }
   for (const int c : TypeToConstraints(ConstraintProto::kNoOverlap2D)) {
-    GetNoOverlap2dPrecedences(initial_solution, ModelProto(), c, &precedences);
+    InsertNoOverlap2dPrecedences(ignored_intervals, initial_solution,
+                                 ModelProto(), c, &precedences);
   }
 
   // TODO(user): Reduce precedence graph
-  return precedences;
+  std::vector<std::pair<int, int>> result(precedences.begin(),
+                                          precedences.end());
+  std::sort(result.begin(), result.end());
+  return result;
 }
 
 std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
@@ -1384,7 +1407,7 @@ void AddPrecedence(const LinearExpressionProto& before,
 }  // namespace
 
 Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
-    const absl::Span<const IntervalPrecedence> precedences,
+    const absl::Span<const std::pair<int, int>> precedences,
     const CpSolverResponse& initial_solution,
     const NeighborhoodGeneratorHelper& helper) {
   Neighborhood neighborhood = helper.FullNeighborhood();
@@ -1396,11 +1419,45 @@ Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
     return neighborhood;
   }
 
-  for (const IntervalPrecedence& prec : precedences) {
+  // Collect seen intervals.
+  absl::flat_hash_set<int> seen_intervals;
+  for (const std::pair<int, int>& prec : precedences) {
+    seen_intervals.insert(prec.first);
+    seen_intervals.insert(prec.second);
+  }
+
+  // Fix the presence/absence of unseen intervals.
+  bool enforcement_literals_fixed = false;
+  for (const int i : helper.TypeToConstraints(ConstraintProto::kInterval)) {
+    if (seen_intervals.contains(i)) continue;
+
+    const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
+    if (interval_ct.enforcement_literal().empty()) continue;
+
+    DCHECK_EQ(interval_ct.enforcement_literal().size(), 1);
+    const int enforcement_ref = interval_ct.enforcement_literal(0);
+    const int enforcement_var = PositiveRef(enforcement_ref);
+    const int value = initial_solution.solution(enforcement_var);
+
+    // If the interval is not enforced, we just relax it. If it belongs to an
+    // exactly one constraint, and the enforced interval is not relaxed, then
+    // propagation will force this interval to stay not enforced. Otherwise,
+    // LNS will be able to change which interval will be enforced among all
+    // alternatives.
+    if (RefIsPositive(enforcement_ref) == (value == 0)) continue;
+
+    // Fix the value.
+    neighborhood.delta.mutable_variables(enforcement_var)->clear_domain();
+    neighborhood.delta.mutable_variables(enforcement_var)->add_domain(value);
+    neighborhood.delta.mutable_variables(enforcement_var)->add_domain(value);
+    enforcement_literals_fixed = true;
+  }
+
+  for (const std::pair<int, int>& prec : precedences) {
     const LinearExpressionProto& before_end =
-        helper.ModelProto().constraints(prec.before).interval().end();
+        helper.ModelProto().constraints(prec.first).interval().end();
     const LinearExpressionProto& after_start =
-        helper.ModelProto().constraints(prec.after).interval().start();
+        helper.ModelProto().constraints(prec.second).interval().start();
     DCHECK_LE(GetLinearExpressionValue(before_end, initial_solution),
               GetLinearExpressionValue(after_start, initial_solution));
     AddPrecedence(before_end, after_start, &neighborhood.delta);
@@ -1462,60 +1519,21 @@ Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
 
   neighborhood.is_reduced = true;
 
-  absl::flat_hash_set<IntervalPrecedence> precedences =
-      helper.GetSchedulingPrecedences(initial_solution, random);
-
-  absl::flat_hash_map<int, absl::flat_hash_set<int>> incoming;
-  absl::flat_hash_map<int, absl::flat_hash_set<int>> outgoing;
-  for (const IntervalPrecedence& prec : precedences) {
-    incoming[prec.after].insert(prec.before);
-    outgoing[prec.before].insert(prec.after);
-  }
-
-  for (const int to_remove : ignored_intervals) {
-    // First or last in a set of precedence. Nothing to do.
-    if (!incoming.contains(to_remove) || !outgoing.contains(to_remove)) {
-      continue;
-    }
-
-    // We tried connecting all predecessors of to_remove to all its successors.
-    // It is better to choose one successor randomly for each predecessor.
-    std::vector<int> outgoing_list(outgoing[to_remove].begin(),
-                                   outgoing[to_remove].end());
-
-    // We sort by interval index to be deterministic.
-    std::sort(outgoing_list.begin(), outgoing_list.end());
-
-    for (const int before : incoming[to_remove]) {
-      const int after_index =
-          absl::Uniform<int>(random, 0, outgoing_list.size());
-      const int after = outgoing_list[after_index];
-      outgoing[before].insert(after);
-      incoming[after].insert(before);
-    }
-
-    for (const int before : incoming[to_remove]) {
-      outgoing[before].erase(to_remove);
-    }
-    for (const int after : outgoing[to_remove]) {
-      incoming[after].erase(to_remove);
-    }
-    incoming.erase(to_remove);
-    outgoing.erase(to_remove);
-  }
-
-  // TODO(user): Reduce the precedences graph after the removal of intervals.
-
-  for (const auto& [before, afters] : outgoing) {
-    for (const int after : afters) {
-      const LinearExpressionProto& before_end =
-          helper.ModelProto().constraints(before).interval().end();
-      const LinearExpressionProto& after_start =
-          helper.ModelProto().constraints(after).interval().start();
-      DCHECK_LE(GetLinearExpressionValue(before_end, initial_solution),
-                GetLinearExpressionValue(after_start, initial_solution));
-      AddPrecedence(before_end, after_start, &neighborhood.delta);
-    }
+  // We differ from the ICAPS05 paper as we do not consider ignored intervals
+  // when generating the precedence graph, instead of building the full graph,
+  // then removing intervals, and reconstructing the precedence graph
+  // heuristically after that.
+  const std::vector<std::pair<int, int>> precedences =
+      helper.GetSchedulingPrecedences(ignored_intervals, initial_solution,
+                                      random);
+  for (const std::pair<int, int>& prec : precedences) {
+    const LinearExpressionProto& before_end =
+        helper.ModelProto().constraints(prec.first).interval().end();
+    const LinearExpressionProto& after_start =
+        helper.ModelProto().constraints(prec.second).interval().start();
+    DCHECK_LE(GetLinearExpressionValue(before_end, initial_solution),
+              GetLinearExpressionValue(after_start, initial_solution));
+    AddPrecedence(before_end, after_start, &neighborhood.delta);
   }
 
   // Set the current solution as a hint.
@@ -1539,15 +1557,11 @@ Neighborhood RandomIntervalSchedulingNeighborhoodGenerator::Generate(
 Neighborhood RandomPrecedenceSchedulingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  const absl::flat_hash_set<IntervalPrecedence> precedences =
-      helper_.GetSchedulingPrecedences(initial_solution, random);
-  std::vector<IntervalPrecedence> precedence_vector(precedences.begin(),
-                                                    precedences.end());
-  // We sort the vector to be deterministic.
-  std::sort(precedence_vector.begin(), precedence_vector.end());
-  GetRandomSubset(1.0 - difficulty, &precedence_vector, random);
+  std::vector<std::pair<int, int>> precedences =
+      helper_.GetSchedulingPrecedences({}, initial_solution, random);
+  GetRandomSubset(1.0 - difficulty, &precedences, random);
   return GenerateSchedulingNeighborhoodFromIntervalPrecedences(
-      precedence_vector, initial_solution, helper_);
+      precedences, initial_solution, helper_);
 }
 
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
