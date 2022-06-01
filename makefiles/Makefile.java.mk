@@ -515,9 +515,6 @@ $(TEMP_JAVA_DIR)/ortools_examples/examples: | $(TEMP_JAVA_DIR)/ortools_examples
 $(TEMP_JAVA_DIR)/ortools_examples/examples/java: | $(TEMP_JAVA_DIR)/ortools_examples/examples
 	$(MKDIR) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava
 
-$(TEMP_JAVA_DIR)/ortools_examples/examples/data: | $(TEMP_JAVA_DIR)/ortools_examples/examples
-	$(MKDIR) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sdata
-
 define java-sample-archive =
 $(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
  $(TEMP_JAVA_DIR)/$1/%/pom.xml \

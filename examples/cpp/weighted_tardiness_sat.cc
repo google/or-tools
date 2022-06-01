@@ -32,7 +32,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/util/filelineiter.h"
 
-ABSL_FLAG(std::string, input, "examples/data/weighted_tardiness/wt40.txt",
+ABSL_FLAG(std::string, input, "examples/cpp/wt40.txt",
           "wt data file name.");
 ABSL_FLAG(int, size, 40, "Size of the problem in the wt file.");
 ABSL_FLAG(int, n, 28, "1-based instance number in the wt file.");

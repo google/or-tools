@@ -125,7 +125,7 @@ ENDATA
 
     def test_import_from_mps_file(self):
         path = os.path.dirname(__file__)
-        mps_path = f'{path}/../data/tests/maximization.mps'
+        mps_path = f'{path}/maximization.mps'
         model = model_builder.ModelBuilder()
         self.assertTrue(model.import_from_mps_file(mps_path))
         self.assertEqual(model.name, 'SupportedMaximizationProblem')
@@ -149,7 +149,7 @@ ENDATA
 
     def test_import_from_lp_file(self):
         path = os.path.dirname(__file__)
-        lp_path = f'{path}/../data/tests/small_model.lp'
+        lp_path = f'{path}/small_model.lp'
         model = model_builder.ModelBuilder()
         self.assertTrue(model.import_from_lp_file(lp_path))
         self.assertEqual(6, model.num_variables)

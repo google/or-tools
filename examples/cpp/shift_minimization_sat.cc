@@ -16,7 +16,7 @@
 // https://publications.csiro.au/rpr/download?pid=csiro:EP104071&dsid=DS2)/
 //
 // Data files are in
-//    examples/data/shift_scheduling/minization
+//    data/shift_scheduling/minization
 //
 // The problem is the following:
 //   - There is a list of jobs. Each job has a start date and an end date. They

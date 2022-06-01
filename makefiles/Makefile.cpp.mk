@@ -487,8 +487,8 @@ test_cc_cpp: \
 # rcpp_cvrptw_with_resources \
 # rcpp_cvrptw_with_stop_times_and_resources
 #	$(MAKE) run \
-# SOURCE=examples/cpp/dimacs_assignment.cc \
-# ARGS=examples/data/dimacs/assignment/small.asn
+ SOURCE=examples/cpp/dimacs_assignment.cc \
+ ARGS=examples/cpp/dimacs.asn
 	$(MAKE) run \
  SOURCE=examples/cpp/dobble_ls.cc \
  ARGS="--time_limit_in_ms=10000"
@@ -497,10 +497,10 @@ test_cc_cpp: \
  ARGS="--size=5"
 	$(MAKE) run \
  SOURCE=examples/cpp/jobshop_sat.cc \
- ARGS="--input=examples/data/jobshop/ft06"
+ ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/jobshop.txt"
 	$(MAKE) run \
  SOURCE=examples/cpp/mps_driver.cc \
- ARGS="--input examples/data/tests/test.mps"
+ ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/test.mps"
 	$(MAKE) run \
  SOURCE=examples/cpp/network_routing_sat.cc \
  ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
@@ -508,13 +508,14 @@ test_cc_cpp: \
  SOURCE=examples/cpp/sports_scheduling_sat.cc \
  ARGS="--params max_time_in_seconds:10.0"
 #	$(MAKE) run SOURCE=examples/cpp/frequency_assignment_problem.cc  # Need data file
-#	$(MAKE) run SOURCE=examples/cpp/pdptw.cc ARGS="--pdp_file $(OR_ROOT_FULL)/examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
-	$(MAKE) run \
+#	$(MAKE) run SOURCE=examples/cpp/pdptw.cc \
+ ARGS="--pdp_file examples/cpp/pdptw.txt" # Fails on windows...
+#	$(MAKE) run \
  SOURCE=examples/cpp/shift_minimization_sat.cc \
- ARGS="--input $(OR_ROOT_FULL)/examples/data/shift_scheduling/minimization/data_1_23_40_66.dat"
+ ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/shift_minimization.dat"
 	$(MAKE) run \
  SOURCE=examples/cpp/solve.cc \
- ARGS="--input $(OR_ROOT_FULL)/examples/data/tests/test2.mps"
+ ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/test2.mps"
 
 rfz_%: cpp
 	$(INSTALL_DIR)$Sbin$Sfzn-ortools$E $(OR_ROOT_FULL)/examples/flatzinc/$*.fzn

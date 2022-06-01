@@ -57,13 +57,6 @@ build_cmake/
 build_cross/
 build_make/
 temp_*/
-examples/data/vector_packing
-examples/data/rcpsp
-examples/data/binpacking
-examples/data/spp
-examples/data/scp
-examples/data/roadef_challenge_2011
-examples/data/cvrptw
 
 # Editor directories and files
 *.user

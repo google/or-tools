@@ -612,9 +612,6 @@ $(TEMP_PYTHON_DIR)/ortools_examples/examples: | $(TEMP_PYTHON_DIR)/ortools_examp
 $(TEMP_PYTHON_DIR)/ortools_examples/examples/python: | $(TEMP_PYTHON_DIR)/ortools_examples/examples
 	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
 
-$(TEMP_PYTHON_DIR)/ortools_examples/examples/data: | $(TEMP_PYTHON_DIR)/ortools_examples/examples
-	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Sdata
-
 $(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook: | $(TEMP_PYTHON_DIR)/ortools_examples/examples
 	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
 
@@ -622,7 +619,6 @@ $(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook: | $(TEMP_PYTHON_DIR)/orto
 python_examples_archive: | \
  $(TEMP_PYTHON_DIR)/ortools_examples/examples/python \
  $(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook \
- $(TEMP_PYTHON_DIR)/ortools_examples/examples/data
 	$(COPY) $(PYTHON_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
 	$(COPY) $(CONTRIB_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
 	$(COPY) ortools$Salgorithms$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
@@ -641,19 +637,11 @@ python_examples_archive: | \
 	$(COPY) tools$SREADME.python.md $(TEMP_PYTHON_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE $(TEMP_PYTHON_DIR)$Sortools_examples
 ifeq ($(PLATFORM),WIN64)
-	cd $(TEMP_PYTHON_DIR)\ortools_examples \
- && ..\..\$(TAR) -C ..\.. -c -v \
- --exclude *svn* --exclude *roadef* --exclude *vector_packing* \
- examples\data | ..\..\$(TAR) xvm
 	cd $(TEMP_PYTHON_DIR) \
  && ..\$(ZIP) \
  -r ..\or-tools_python_examples_v$(OR_TOOLS_VERSION).zip \
  ortools_examples
 else
-	cd $(TEMP_PYTHON_DIR)/ortools_examples \
- && tar -C ../.. -c -v \
- --exclude *svn* --exclude *roadef* --exclude *vector_packing* \
- examples/data | tar xvm
 	cd $(TEMP_PYTHON_DIR) \
  && tar -c -v -z --no-same-owner \
  -f ../or-tools_python_examples$(PYPI_OS)_v$(OR_TOOLS_VERSION).tar.gz \
