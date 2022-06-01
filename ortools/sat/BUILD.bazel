@@ -1369,6 +1369,7 @@ cc_library(
         ":rins",
         ":subsolver",
         ":synchronization",
+        ":util",
         "//ortools/base",
         "//ortools/base:threadpool",
         "//ortools/util:adaptative_parameter_value",

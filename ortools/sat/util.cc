@@ -565,5 +565,82 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
   return output;
 }
 
+void IncrementalProfile::AddRectangle(int64_t start, int64_t end,
+                                      int64_t height) {
+  DCHECK_GE(height, 0);
+  DCHECK_LE(start, end);
+  if (height == 0) return;
+
+  const int num_events = sorted_events_.size();
+
+  // Easy case.
+  if (sorted_events_.empty() || start > sorted_events_.back().first) {
+    sorted_events_.emplace_back(start, height);
+    sorted_events_.emplace_back(end, 0);
+    return;
+  } else if (end < sorted_events_.front().first) {
+    sorted_events_.emplace_back(start, height);
+    sorted_events_.emplace_back(end, 0);
+    std::sort(sorted_events_.begin(), sorted_events_.end());
+    return;
+  }
+
+  // We can simplify the algorithm if we lookup the height at the end time
+  // before we modify the vector of events.
+  const int64_t height_at_end = GetValueAt(end);
+  for (int index = 0; index < num_events; ++index) {
+    if (sorted_events_[index].first < start) {
+      continue;
+    } else if (sorted_events_[index].first == start) {
+      sorted_events_[index].second += height;
+    } else {
+      if (index == 0 || sorted_events_[index - 1].first < start) {
+        sorted_events_.emplace_back(
+            start,
+            index == 0 ? height : sorted_events_[index - 1].second + height);
+      }
+      if (sorted_events_[index].first < end) {
+        sorted_events_[index].second += height;
+      }
+    }
+
+    if (sorted_events_[index].first == end) {
+      break;
+    } else if (sorted_events_[index].first > end) {
+      sorted_events_.emplace_back(end, height_at_end);
+      break;
+    }
+  }
+
+  if (sorted_events_.back().first < end) {
+    sorted_events_.emplace_back(end, 0);
+  }
+
+  // If new events have been added, re-sort the events.
+  if (sorted_events_.size() > num_events) {
+    std::sort(sorted_events_.begin(), sorted_events_.end());
+  }
+}
+
+int64_t IncrementalProfile::GetValueAt(int64_t position) const {
+  // Check cache and invalidate if wrong.
+  if (cached_read_index_ > 0 &&
+      sorted_events_[cached_read_index_ - 1].first >= position) {
+    cached_read_index_ = 0;
+  }
+
+  while (cached_read_index_ + 1 < sorted_events_.size() &&
+         sorted_events_[cached_read_index_ + 1].first <= position) {
+    cached_read_index_++;
+  }
+
+  if (cached_read_index_ < sorted_events_.size() &&
+      sorted_events_[cached_read_index_].first <= position) {
+    return sorted_events_[cached_read_index_].second;
+  }
+
+  return 0;
+}
+
 }  // namespace sat
 }  // namespace operations_research

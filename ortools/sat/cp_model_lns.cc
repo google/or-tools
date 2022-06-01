@@ -48,6 +48,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/adaptative_parameter_value.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -619,18 +620,18 @@ void ProcessDemandListFromCumulativeConstraint(
 
   // Split the capacity in 2 and dispatch all demands on the 2 parts.
   const int64_t capacity1 = capacity / 2;
-  absl::flat_hash_map<int64_t, int64_t> usage1;
+  IncrementalProfile usage1;
   std::vector<Demand> demands1;
 
   const int64_t capacity2 = capacity - capacity1;
-  absl::flat_hash_map<int64_t, int64_t> usage2;
+  IncrementalProfile usage2;
   std::vector<Demand> demands2;
 
   // Dispatch all demands.
   for (const Demand& d : demands) {
     DCHECK_GT(d.height, 0);
-    const int64_t slack1 = capacity1 - usage1[d.start];
-    const int64_t slack2 = capacity2 - usage2[d.start];
+    const int64_t slack1 = capacity1 - usage1.GetValueAt(d.start);
+    const int64_t slack2 = capacity2 - usage2.GetValueAt(d.start);
 
     const int64_t min_slack = std::min(slack1, slack2);
     const int64_t max_slack = std::max(slack1, slack2);
@@ -643,10 +644,8 @@ void ProcessDemandListFromCumulativeConstraint(
             ? absl::Bernoulli(random, 0.5)
             : (d.height <= min_slack ? slack2 < slack1 : slack2 > slack1);
 
-    absl::flat_hash_map<int64_t, int64_t>& usage_low =
-        prefer2 ? usage1 : usage2;
-    absl::flat_hash_map<int64_t, int64_t>& usage_high =
-        prefer2 ? usage2 : usage1;
+    auto& usage_low = prefer2 ? usage1 : usage2;
+    auto& usage_high = prefer2 ? usage2 : usage1;
     std::vector<Demand>& demands_low = prefer2 ? demands1 : demands2;
     std::vector<Demand>& demands_high = prefer2 ? demands2 : demands1;
 
@@ -654,18 +653,14 @@ void ProcessDemandListFromCumulativeConstraint(
     DCHECK_GT(assigned_to_high, 0)
         << "slack1 = " << slack1 << ", slack2 = " << slack2
         << ", demand height= " << d.height;
-    for (int64_t t = d.start; t < d.end; ++t) {
-      usage_high[t] += assigned_to_high;
-    }
+    usage_high.AddRectangle(d.start, d.end, assigned_to_high);
     demands_high.push_back(
         {d.interval_index, d.start, d.end, assigned_to_high});
 
     if (d.height > max_slack) {
       const int64_t residual = d.height - max_slack;
       DCHECK_GT(residual, 0);
-      for (int64_t t = d.start; t < d.end; ++t) {
-        usage_low[t] += residual;
-      }
+      usage_low.AddRectangle(d.start, d.end, residual);
       demands_low.push_back({d.interval_index, d.start, d.end, residual});
     }
   }
