@@ -5235,8 +5235,8 @@ RoutingModel::GetDimensionsWithGlobalCumulOptimizers() const {
   DCHECK(closed_);
   std::vector<const RoutingDimension*> global_optimizer_dimensions;
   for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
-    //DCHECK_NE(lp_optimizer, nullptr);
-    //DCHECK_NE(mp_optimizer, nullptr);
+    DCHECK_NE(lp_optimizer.get(), nullptr);
+    DCHECK_NE(mp_optimizer.get(), nullptr);
     global_optimizer_dimensions.push_back(lp_optimizer->dimension());
   }
   return global_optimizer_dimensions;
@@ -5247,8 +5247,8 @@ RoutingModel::GetDimensionsWithLocalCumulOptimizers() const {
   DCHECK(closed_);
   std::vector<const RoutingDimension*> local_optimizer_dimensions;
   for (auto& [lp_optimizer, mp_optimizer] : local_dimension_optimizers_) {
-    //DCHECK_NE(lp_optimizer, nullptr);
-    //DCHECK_NE(mp_optimizer, nullptr);
+    DCHECK_NE(lp_optimizer.get(), nullptr);
+    DCHECK_NE(mp_optimizer.get(), nullptr);
     local_optimizer_dimensions.push_back(lp_optimizer->dimension());
   }
   return local_optimizer_dimensions;
