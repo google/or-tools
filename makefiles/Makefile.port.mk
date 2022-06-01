@@ -271,7 +271,7 @@ ifneq ($(wildcard .git),)
   $(warning you are using a shallow copy)
   GIT_REVISION:= 9999
  else
-   GIT_REVISION:= $(shell git rev-list --count HEAD)
+   GIT_REVISION:= $(shell git rev-list --count v$(OR_TOOLS_MAJOR).0..HEAD)
  endif
  GIT_HASH:= $(shell git rev-parse --short HEAD)
 else
