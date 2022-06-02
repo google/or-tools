@@ -37,6 +37,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_presolve.h"
@@ -48,7 +49,6 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/adaptative_parameter_value.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -614,27 +614,40 @@ void ProcessDemandListFromCumulativeConstraint(
 
   DCHECK_GT(sum_of_min_two_capacities, 1);
   if (sum_of_min_two_capacities > capacity) {
-    InsertPrecedencesFromSortedListOfDemands(std::move(demands), precedences);
+    InsertPrecedencesFromSortedListOfDemands(demands, precedences);
     return;
   }
 
+  std::vector<int64_t> unique_starts;
+  for (const Demand& demand : demands) {
+    DCHECK(unique_starts.empty() || demand.start >= unique_starts.back());
+    if (unique_starts.empty() || unique_starts.back() < demand.start) {
+      unique_starts.push_back(demand.start);
+    }
+  }
+  CHECK(std::is_sorted(unique_starts.begin(), unique_starts.end()));
+  const int num_points = unique_starts.size();
+
   // Split the capacity in 2 and dispatch all demands on the 2 parts.
   const int64_t capacity1 = capacity / 2;
-  IncrementalProfile usage1;
+  std::vector<int64_t> usage1(num_points);
   std::vector<Demand> demands1;
 
   const int64_t capacity2 = capacity - capacity1;
-  IncrementalProfile usage2;
+  std::vector<int64_t> usage2(num_points);
   std::vector<Demand> demands2;
 
-  // Dispatch all demands.
+  int usage_index = 0;
   for (const Demand& d : demands) {
-    DCHECK_GT(d.height, 0);
-    const int64_t slack1 = capacity1 - usage1.GetValueAt(d.start);
-    const int64_t slack2 = capacity2 - usage2.GetValueAt(d.start);
-
-    const int64_t min_slack = std::min(slack1, slack2);
-    const int64_t max_slack = std::max(slack1, slack2);
+    // Since we process demand by increasing start, the usage_index only
+    // need to increase.
+    while (usage_index < num_points && unique_starts[usage_index] < d.start) {
+      usage_index++;
+    }
+    DCHECK_LT(usage_index, num_points);
+    DCHECK_EQ(unique_starts[usage_index], d.start);
+    const int64_t slack1 = capacity1 - usage1[usage_index];
+    const int64_t slack2 = capacity2 - usage2[usage_index];
 
     // We differ from the ICAPS article. If it fits in both sub-cumulatives, We
     // choose the smallest slack. If it fits into at most one, we choose the
@@ -642,26 +655,33 @@ void ProcessDemandListFromCumulativeConstraint(
     const bool prefer2 =
         slack1 == slack2
             ? absl::Bernoulli(random, 0.5)
-            : (d.height <= min_slack ? slack2 < slack1 : slack2 > slack1);
+            : (d.height <= std::min(slack1, slack2) ? slack2 < slack1
+                                                    : slack2 > slack1);
 
-    auto& usage_low = prefer2 ? usage1 : usage2;
-    auto& usage_high = prefer2 ? usage2 : usage1;
-    std::vector<Demand>& demands_low = prefer2 ? demands1 : demands2;
-    std::vector<Demand>& demands_high = prefer2 ? demands2 : demands1;
+    auto& selected_usage = prefer2 ? usage2 : usage1;
+    auto& residual_usage = prefer2 ? usage1 : usage2;
+    std::vector<Demand>& selected_demands = prefer2 ? demands2 : demands1;
+    std::vector<Demand>& residual_demands = prefer2 ? demands1 : demands2;
+    const int64_t selected_slack = prefer2 ? slack2 : slack1;
 
-    const int64_t assigned_to_high = std::min(max_slack, d.height);
-    DCHECK_GT(assigned_to_high, 0)
-        << "slack1 = " << slack1 << ", slack2 = " << slack2
-        << ", demand height= " << d.height;
-    usage_high.AddRectangle(d.start, d.end, assigned_to_high);
-    demands_high.push_back(
-        {d.interval_index, d.start, d.end, assigned_to_high});
+    const int64_t assigned_to_selected = std::min(selected_slack, d.height);
+    DCHECK_GT(assigned_to_selected, 0);
+    for (int i = usage_index; i < num_points; ++i) {
+      if (d.end <= unique_starts[i]) break;
+      selected_usage[i] += assigned_to_selected;
+    }
+    selected_demands.push_back(
+        {d.interval_index, d.start, d.end, assigned_to_selected});
 
-    if (d.height > max_slack) {
-      const int64_t residual = d.height - max_slack;
+    if (d.height > selected_slack) {
+      const int64_t residual = d.height - selected_slack;
       DCHECK_GT(residual, 0);
-      usage_low.AddRectangle(d.start, d.end, residual);
-      demands_low.push_back({d.interval_index, d.start, d.end, residual});
+      DCHECK_LE(residual, prefer2 ? slack1 : slack2);
+      for (int i = usage_index; i < num_points; ++i) {
+        if (d.end <= unique_starts[i]) break;
+        residual_usage[i] += residual;
+      }
+      residual_demands.push_back({d.interval_index, d.start, d.end, residual});
     }
   }
 

@@ -322,20 +322,6 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
     absl::Span<const int64_t> domain_sizes,
     std::vector<std::vector<int64_t>>* tuples);
 
-// This class implement a positive step function where you can add elementary
-// rectangles (start, end, height) incrementally. By default, GetValueAt()
-// returns 0 for all positions.
-class IncrementalProfile {
- public:
-  IncrementalProfile();
-  void AddRectangle(int64_t start, int64_t end, int64_t height);
-  int64_t GetValueAt(int64_t position) const;
-
- private:
-  std::vector<std::pair<int64_t, int64_t>> sorted_events_;
-  mutable int cached_read_index_ = 0;
-};
-
 // ============================================================================
 // Implementation.
 // ============================================================================
