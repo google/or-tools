@@ -565,6 +565,11 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
   return output;
 }
 
+IncrementalProfile::IncrementalProfile() {
+  sorted_events_.emplace_back(std::numeric_limits<int64_t>::min(), 0);
+  sorted_events_.emplace_back(std::numeric_limits<int64_t>::max(), 0);
+}
+
 void IncrementalProfile::AddRectangle(int64_t start, int64_t end,
                                       int64_t height) {
   DCHECK_GE(height, 0);
@@ -572,32 +577,22 @@ void IncrementalProfile::AddRectangle(int64_t start, int64_t end,
   if (height == 0) return;
 
   const int num_events = sorted_events_.size();
+  std::vector<std::pair<int, std::pair<int64_t, int64_t>>> to_insert;
 
-  // Easy case.
-  if (sorted_events_.empty() || start > sorted_events_.back().first) {
-    sorted_events_.emplace_back(start, height);
-    sorted_events_.emplace_back(end, 0);
-    return;
-  } else if (end < sorted_events_.front().first) {
-    sorted_events_.emplace_back(start, height);
-    sorted_events_.emplace_back(end, 0);
-    std::sort(sorted_events_.begin(), sorted_events_.end());
-    return;
-  }
-
-  // We can simplify the algorithm if we lookup the height at the end time
-  // before we modify the vector of events.
-  const int64_t height_at_end = GetValueAt(end);
+  int64_t previous_height = 0;  // Used to insert events before the current one.
   for (int index = 0; index < num_events; ++index) {
+    const int64_t current_height = sorted_events_[index].second;
     if (sorted_events_[index].first < start) {
+      previous_height = current_height;
       continue;
     } else if (sorted_events_[index].first == start) {
       sorted_events_[index].second += height;
-    } else {
-      if (index == 0 || sorted_events_[index - 1].first < start) {
-        sorted_events_.emplace_back(
-            start,
-            index == 0 ? height : sorted_events_[index - 1].second + height);
+    } else {                // sorted_events_[index].first > start.
+      DCHECK_GT(index, 0);  // Thanks to the initial sentinel.
+      if (sorted_events_[index - 1].first < start) {
+        // First event after start. We need to insert the start event before the
+        // current one.
+        to_insert.push_back({index, {start, previous_height + height}});
       }
       if (sorted_events_[index].first < end) {
         sorted_events_[index].second += height;
@@ -605,21 +600,24 @@ void IncrementalProfile::AddRectangle(int64_t start, int64_t end,
     }
 
     if (sorted_events_[index].first == end) {
+      // 'end' falls on an existing event, nothing to do.
       break;
     } else if (sorted_events_[index].first > end) {
-      sorted_events_.emplace_back(end, height_at_end);
+      // We need to insert the 'end' event before this one.
+      // int64_t end_height = sorted_events_[index].first >
+      to_insert.push_back({index, {end, previous_height}});
       break;
     }
+    previous_height = current_height;
   }
 
-  if (sorted_events_.back().first < end) {
-    sorted_events_.emplace_back(end, 0);
+  // Insert event in reverse order to keep the positions valid.
+  while (!to_insert.empty()) {
+    const auto& [position, event] = to_insert.back();
+    sorted_events_.insert(sorted_events_.begin() + position, event);
+    to_insert.pop_back();
   }
-
-  // If new events have been added, re-sort the events.
-  if (sorted_events_.size() > num_events) {
-    std::sort(sorted_events_.begin(), sorted_events_.end());
-  }
+  DCHECK(std::is_sorted(sorted_events_.begin(), sorted_events_.end()));
 }
 
 int64_t IncrementalProfile::GetValueAt(int64_t position) const {

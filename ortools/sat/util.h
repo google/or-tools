@@ -327,6 +327,7 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
 // returns 0 for all positions.
 class IncrementalProfile {
  public:
+  IncrementalProfile();
   void AddRectangle(int64_t start, int64_t end, int64_t height);
   int64_t GetValueAt(int64_t position) const;
 
