@@ -132,7 +132,7 @@ $(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
-	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
@@ -182,7 +182,7 @@ $(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
-	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
@@ -231,7 +231,7 @@ $(TEMP_JAVA_DIR)/tests/%/pom.xml: \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
-	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
 	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml

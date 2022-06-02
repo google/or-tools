@@ -104,7 +104,7 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
-	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
@@ -155,7 +155,7 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
-	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
@@ -207,7 +207,7 @@ $(TEMP_DOTNET_DIR)/tests/%/%.csproj: \
  $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
-	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_PROJECT)/' \
  $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
@@ -566,7 +566,7 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
-	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
@@ -597,7 +597,7 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
-	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(GIT_REVISION)/' \
+	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj

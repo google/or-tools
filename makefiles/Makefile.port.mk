@@ -266,24 +266,31 @@ BUILD_DIR := $(OR_ROOT)build_make
 INSTALL_DIR ?= $(OR_ROOT)install_make
 
 # Get github revision level
-ifneq ($(wildcard .git),)
- ifneq ($(wildcard .git/shallow),)
-  $(warning you are using a shallow copy)
-  GIT_REVISION:= 9999
- else
-   GIT_REVISION:= $(shell git rev-list --count v$(OR_TOOLS_MAJOR).0..HEAD)
- endif
- GIT_HASH:= $(shell git rev-parse --short HEAD)
-else
-  GIT_REVISION:= 9999
-  GIT_HASH:= "not_on_git"
+ifeq ($(OR_TOOLS_PATCH),)
+  ifneq ($(wildcard .git),)
+   ifneq ($(wildcard .git/shallow),)
+    $(warning you are using a shallow copy)
+    OR_TOOLS_PATCH:= 9999
+   else
+     OR_TOOLS_PATCH:= $(shell git rev-list --count v$(OR_TOOLS_MAJOR).0..HEAD)
+   endif
+  else
+    $(warning you are not using a .git archive)
+    OR_TOOLS_PATCH:= 9999
+  endif
 endif
 
-OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(GIT_REVISION)
+OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(OR_TOOLS_PATCH)
 OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
 ifdef PRE_RELEASE
   OR_TOOLS_VERSION := $(OR_TOOLS_VERSION)-beta
   OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_SHORT_VERSION)-beta
+endif
+
+ifneq ($(wildcard .git),)
+  GIT_HASH:= $(shell git rev-parse --short HEAD)
+else
+  GIT_HASH:= "not_on_git"
 endif
 
 #FZ_INSTALL_NAME := or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
@@ -304,9 +311,11 @@ detect_port:
 	@echo OS = $(OS)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PORT = $(PORT)
+	@echo OR_TOOLS_MAJOR = $(OR_TOOLS_MAJOR)
+	@echo OR_TOOLS_MINOR = $(OR_TOOLS_MINOR)
+	@echo OR_TOOLS_PATCH = $(OR_TOOLS_PATCH)
 	@echo OR_TOOLS_VERSION = $(OR_TOOLS_VERSION)
 	@echo OR_TOOLS_SHORT_VERSION = $(OR_TOOLS_SHORT_VERSION)
-	@echo GIT_REVISION = $(GIT_REVISION)
 	@echo GIT_HASH = $(GIT_HASH)
 	@echo CMAKE = $(CMAKE)
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)

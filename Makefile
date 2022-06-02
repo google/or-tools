@@ -47,7 +47,9 @@ SUFFIXES =
 .SECONDARY:
 
 # Read version.
-include $(OR_ROOT)Version.txt
+ifeq ($(OR_TOOLS_MAJOR)$(OR_TOOLS_MINOR),)
+  include $(OR_ROOT)Version.txt
+endif
 
 # We try to detect the platform, and load system specific macros.
 include $(OR_ROOT)makefiles/Makefile.port.mk
