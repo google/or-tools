@@ -43,7 +43,8 @@ ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
 RUN apk add --no-cache openjdk8 maven
 
 # Install Python
-RUN apk add --no-cache python3-dev py3-pip py3-wheel
+RUN apk add --no-cache python3-dev py3-pip py3-wheel \
+ py3-numpy py3-pandas py3-matplotlib
 RUN python3 -m pip install absl-py mypy-protobuf
 
 ################
@@ -60,10 +61,13 @@ ENV SRC_GIT_BRANCH ${SRC_GIT_BRANCH:-main}
 ARG SRC_GIT_SHA1
 ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 
+ARG OR_TOOLS_PATCH
+ENV OR_TOOLS_PATCH ${OR_TOOLS_PATCH:-9999}
+
 # Download sources
 # use SRC_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
-RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch https://github.com/google/or-tools \
+RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch --depth=1 https://github.com/google/or-tools \
 && echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
 && echo "expected sha1: ${SRC_GIT_SHA1}"
 WORKDIR /root/or-tools
