@@ -126,6 +126,7 @@ SUFFIXES =
 
 OR_TOOLS_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 OR_TOOLS_SHA1 := $(shell git rev-parse --verify HEAD)
+# OR_TOOLS_MAJOR & OR_TOOLS_MINOR
 include ../../Version.txt
 OR_TOOLS_PATCH := $(shell git rev-list --count v${OR_TOOLS_MAJOR}.0..HEAD)
 OR_TOOLS_VERSION := ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.${OR_TOOLS_PATCH}
@@ -198,6 +199,7 @@ python_$1_manylinux_cp$2_$3: python/$1/manylinux.Dockerfile export/python/manyli
  --tag ${IMAGE}:$$@ \
  --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \
+ --build-arg OR_TOOLS_PATCH=${OR_TOOLS_PATCH} \
  --build-arg PYTHON_VERSION=$2 \
  --target=$3 \
  -f $$< \
@@ -272,6 +274,7 @@ python_$1_alpine_$2: python/$1/alpine.Dockerfile | export/python/alpine
  --tag ${IMAGE}:$$@ \
  --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \
+ --build-arg OR_TOOLS_PATCH=${OR_TOOLS_PATCH} \
  --target=$2 \
  -f $$< \
  export/python/alpine
@@ -400,6 +403,7 @@ $1_$2_$3: images/$2.Dockerfile | export/$1/$2/or-tools.snk
  --tag ${IMAGE}:$$@ \
  --build-arg SRC_GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg SRC_GIT_SHA1=${OR_TOOLS_SHA1} \
+ --build-arg OR_TOOLS_PATCH=${OR_TOOLS_PATCH} \
  --target=$3 \
  -f $$< \
  export/$1/$2
@@ -453,6 +457,7 @@ $1_$2_$3_$4: images/$2.Dockerfile | export/$1/$2/or-tools.snk
  --tag ${IMAGE}:$$@ \
  --build-arg SRC_GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg SRC_GIT_SHA1=${OR_TOOLS_SHA1} \
+ --build-arg OR_TOOLS_PATCH=${OR_TOOLS_PATCH} \
  --target=$3_$4 \
  -f $$< \
  export/$1/$2
