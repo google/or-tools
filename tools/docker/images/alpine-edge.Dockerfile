@@ -105,7 +105,7 @@ RUN make archive_java
 ## build
 FROM cpp_build AS python_build
 RUN make detect_python \
-&& make python JOBS=8
+&& make python CMAKE_ARGS="-DVENV_USE_SYSTEM_SITE_PACKAGES=ON" JOBS=8
 ## archive
 FROM python_build AS python_archive
 RUN make archive_python
