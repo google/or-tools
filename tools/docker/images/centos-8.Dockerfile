@@ -53,7 +53,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java
 
 # Install Python
 RUN dnf -y update \
-&& dnf -y install python3 python3-devel python3-pip numpy \
+&& dnf -y install python3 python3-devel python3-pip python3-numpy \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 
