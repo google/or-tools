@@ -224,8 +224,9 @@ def main():
 
     # [START solver]
     # Instantiate a Glop solver and naming it.
-    solver = pywraplp.Solver('StiglerDietExample',
-                             pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('GLOP')
+    if not solver:
+        return
     # [END solver]
 
     # [START variables]

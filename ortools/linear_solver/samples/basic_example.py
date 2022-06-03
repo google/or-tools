@@ -23,6 +23,8 @@ def main():
     # [START solver]
     # Create the linear solver with the GLOP backend.
     solver = pywraplp.Solver.CreateSolver('GLOP')
+    if not solver:
+        return
     # [END solver]
 
     # [START variables]

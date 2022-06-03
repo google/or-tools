@@ -705,8 +705,9 @@ def steel_mill_slab_with_mip_column_generation(problem):
 
     # create model and decision variables.
     start_time = time.time()
-    solver = pywraplp.Solver('Steel',
-                             pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('SCIP')
+    if not solver:
+      return
     selected = [
         solver.IntVar(0.0, 1.0, 'selected_%i' % i) for i in all_valid_slabs
     ]

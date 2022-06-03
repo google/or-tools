@@ -116,8 +116,9 @@ def AggregateItemCollectionsOptimally(item_collections, max_num_collections,
       - and its associated "num_selections" is the number of times it was
         selected.
   """
-    solver = pywraplp.Solver('Select',
-                             pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('SCIP')
+    if not solver:
+      return []
     n = len(ideal_item_ratios)
     num_distinct_collections = len(item_collections)
     max_num_items_per_collection = 0
@@ -238,10 +239,12 @@ def solve_appointments(_):
     print()
     print('%d installations planned' % installed)
     for a in demand:
-        name = a[1]
-        per_type = installed_per_type[name]
-        print(('   %d (%.2f%%) installations of type %s planned' %
-               (per_type, per_type * 100.0 / installed, name)))
+      name = a[1]
+      per_type = installed_per_type[name]
+      if installed != 0:
+        print(f'   {per_type} ({per_type * 100.0 / installed}%) installations of type {name} planned')
+      else:
+        print(f'   {per_type} installations of type {name} planned')
     # [END print_solution]
 
 
