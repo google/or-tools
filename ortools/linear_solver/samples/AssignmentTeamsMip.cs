@@ -44,6 +44,10 @@ public class AssignmentTeamsMip
         // Solver.
         // [START solver]
         Solver solver = Solver.CreateSolver("SCIP");
+        if (solver is null)
+        {
+            return;
+        }
         // [END solver]
 
         // Variables.

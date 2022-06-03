@@ -23,6 +23,10 @@ public class BasicExample
         // [START solver]
         // Create the linear solver with the GLOP backend.
         Solver solver = Solver.CreateSolver("GLOP");
+        if (solver is null)
+        {
+            return;
+        }
         // [END solver]
 
         // [START variables]

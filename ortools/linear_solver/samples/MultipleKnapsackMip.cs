@@ -39,6 +39,10 @@ public class MultipleKnapsackMip
         // [START solver]
         // Create the linear solver with the SCIP backend.
         Solver solver = Solver.CreateSolver("SCIP");
+        if (solver is null)
+        {
+            return;
+        }
         // [END solver]
 
         // Variables.

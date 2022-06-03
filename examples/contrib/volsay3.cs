@@ -32,7 +32,11 @@ public class Volsay3
      */
     private static void Solve()
     {
-        Solver solver = new Solver("Volsay3", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+        Solver solver = Solver.CreateSolver("CLP");
+        if (solver is null)
+        {
+            return;
+        }
 
         int num_products = 2;
         IEnumerable<int> PRODUCTS = Enumerable.Range(0, num_products);

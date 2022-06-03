@@ -23,6 +23,10 @@ public class LinearProgrammingExample
     {
         // [START solver]
         Solver solver = Solver.CreateSolver("GLOP");
+        if (solver is null)
+        {
+            return;
+        }
         // [END solver]
         // x and y are continuous non-negative variables.
         // [START variables]

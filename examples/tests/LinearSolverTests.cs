@@ -23,6 +23,10 @@ public class LinearSolverTest
     public void VarOperator()
     {
         Solver solver = Solver.CreateSolver("CLP");
+        if (solver is null)
+        {
+            return;
+        }
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
         Assert.Equal(0.0, x.Lb());
         Assert.Equal(100.0, x.Ub());
@@ -62,6 +66,10 @@ public class LinearSolverTest
     public void VarAddition()
     {
         Solver solver = Solver.CreateSolver("CLP");
+        if (solver is null)
+        {
+            return;
+        }
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
         Assert.Equal(0.0, x.Lb());
         Assert.Equal(100.0, x.Ub());
@@ -92,6 +100,10 @@ public class LinearSolverTest
     public void VarMultiplication()
     {
         Solver solver = Solver.CreateSolver("CLP");
+        if (solver is null)
+        {
+            return;
+        }
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
         Assert.Equal(0.0, x.Lb());
         Assert.Equal(100.0, x.Ub());
@@ -127,6 +139,10 @@ public class LinearSolverTest
     public void BinaryOperator()
     {
         Solver solver = Solver.CreateSolver("CLP");
+        if (solver is null)
+        {
+            return;
+        }
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
         Assert.Equal(0.0, x.Lb());
         Assert.Equal(100.0, x.Ub());
@@ -161,6 +177,10 @@ public class LinearSolverTest
     public void Inequalities()
     {
         Solver solver = Solver.CreateSolver("CLP");
+        if (solver is null)
+        {
+            return;
+        }
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
         Assert.Equal(0.0, x.Lb());
         Assert.Equal(100.0, x.Ub());
@@ -198,6 +218,10 @@ public class LinearSolverTest
     public void SumArray()
     {
         Solver solver = Solver.CreateSolver("CLP");
+        if (solver is null)
+        {
+            return;
+        }
 
         Variable[] x = solver.MakeBoolVarArray(10, "x");
         Constraint ct1 = solver.Add(x.Sum() == 3);
@@ -217,6 +241,10 @@ public class LinearSolverTest
     public void Objective()
     {
         Solver solver = Solver.CreateSolver("CLP");
+        if (solver is null)
+        {
+            return;
+        }
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
         Assert.Equal(0.0, x.Lb());
         Assert.Equal(100.0, x.Ub());
@@ -279,7 +307,7 @@ public class LinearSolverTest
         Console.WriteLine($"------ Linear programming example with {problemType} ------");
 
         Solver solver = Solver.CreateSolver(problemType);
-        if (solver == null)
+        if (solver is null)
             return;
 
         // x and y are continuous non-negative variables.
