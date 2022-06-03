@@ -30,6 +30,8 @@ RUN python -m pip install absl-py mypy-protobuf
 ##  OR-TOOLS  ##
 ################
 FROM env AS devel
+ENV DISTRIBUTION=archlinux
+
 WORKDIR /root
 # Copy the snk key
 COPY or-tools.snk /root/or-tools.snk
