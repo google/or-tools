@@ -62,7 +62,7 @@ ifneq ($(PLATFORM),WIN64)
 
     DISTRIBUTION_ID = $(shell lsb_release -i -s)
     DISTRIBUTION_NUMBER = $(shell lsb_release -r -s)
-    DISTRIBUTION = $(DISTRIBUTION_ID)-$(DISTRIBUTION_NUMBER)
+    DISTRIBUTION ?= $(DISTRIBUTION_ID)-$(DISTRIBUTION_NUMBER)
     PORT = $(DISTRIBUTION)-64bit
     CANDIDATE_JDK_ROOTS = \
       /usr/lib64/jvm/default \
