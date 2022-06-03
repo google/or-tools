@@ -79,7 +79,7 @@ WORKDIR /root/or-tools
 ## build
 FROM devel AS cpp_build
 RUN make detect_cpp \
-&& make cpp JOBS=4
+&& make cpp JOBS=8
 ## archive
 FROM cpp_build AS cpp_archive
 RUN make archive_cpp
@@ -88,7 +88,7 @@ RUN make archive_cpp
 ## build
 FROM cpp_build AS dotnet_build
 RUN make detect_dotnet \
-&& make dotnet JOBS=4
+&& make dotnet JOBS=8
 ## archive
 FROM dotnet_build AS dotnet_archive
 RUN make archive_dotnet
@@ -97,7 +97,7 @@ RUN make archive_dotnet
 ## build
 FROM cpp_build AS java_build
 RUN make detect_java \
-&& make java JOBS=4
+&& make java JOBS=8
 ## archive
 FROM java_build AS java_archive
 RUN make archive_java
@@ -106,7 +106,7 @@ RUN make archive_java
 ## build
 FROM cpp_build AS python_build
 RUN make detect_python \
-&& make python JOBS=4
+&& make python JOBS=8
 ## archive
 FROM python_build AS python_archive
 RUN make archive_python
