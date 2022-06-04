@@ -240,12 +240,7 @@ inline uint64_t Hash1(int64_t value) {
 inline uint64_t Hash1(int value) { return Hash1(static_cast<uint32_t>(value)); }
 
 inline uint64_t Hash1(void* const ptr) {
-#if defined(__x86_64__) || defined(_M_X64) || defined(__powerpc64__) || \
-    defined(__aarch64__)
-  return Hash1(reinterpret_cast<uint64_t>(ptr));
-#else
-  return Hash1(reinterpret_cast<uint32_t>(ptr));
-#endif
+  return Hash1(reinterpret_cast<uintptr_t>(ptr));
 }
 
 template <class T>
