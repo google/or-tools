@@ -24,13 +24,16 @@
 #include "absl/base/attributes.h"
 #include "absl/strings/str_cat.h"
 
+#define LegacyUnredactedDebugString(x) x.DebugString()
+#define LegacyUnredactedShortDebugString(x) x.ShortDebugString()
+
 namespace operations_research {
 template <class P>
 std::string ProtobufDebugString(const P& message) {
 #if defined(__PORTABLE_PLATFORM__)
   return message.GetTypeName();
 #else   // defined(__PORTABLE_PLATFORM__)
-  return message.DebugString();
+  return LegacyUnredactedDebugString(message);
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
@@ -39,7 +42,7 @@ std::string ProtobufShortDebugString(const P& message) {
 #if defined(__PORTABLE_PLATFORM__)
   return message.GetTypeName();
 #else   // defined(__PORTABLE_PLATFORM__)
-  return message.ShortDebugString();
+  return LegacyUnredactedShortDebugString(message);
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 

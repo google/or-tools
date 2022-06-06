@@ -38,6 +38,7 @@ namespace {
 
 #if defined(PROTOBUF_INTERNAL_IMPL)
 using google::protobuf::Message;
+#define LegacyUnredactedShortDebugString(x) x.ShortDebugString()
 #else
 using google::protobuf::Message;
 #endif
@@ -387,7 +388,7 @@ std::string EncodeSatParametersAsString(const sat::SatParameters& parameters) {
     return bytes;
   }
 
-  return parameters.ShortDebugString();
+  return LegacyUnredactedShortDebugString(parameters);
 }
 
 }  // namespace operations_research
