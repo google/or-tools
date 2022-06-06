@@ -39,9 +39,6 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-#define LegacyUnredactedDebugString(x) x.DebugString()
-#define LegacyUnredactedShortDebugString(x) x.ShortDebugString()
-
 // =============================================================================
 // CpModelProto validation.
 // =============================================================================
@@ -640,18 +637,18 @@ std::string ValidateCumulativeConstraint(const CpModelProto& model,
   for (const LinearExpressionProto& demand_expr : ct.cumulative().demands()) {
     if (MinOfExpression(model, demand_expr) < 0) {
       return absl::StrCat(
-          "Demand ", LegacyUnredactedDebugString(demand_expr),
+          "Demand ", ProtobufDebugString(demand_expr),
           " must be positive in constraint: ", ProtobufDebugString(ct));
     }
     if (demand_expr.vars_size() > 1) {
-      return absl::StrCat("Demand ", LegacyUnredactedDebugString(demand_expr),
+      return absl::StrCat("Demand ", ProtobufDebugString(demand_expr),
                           " must be affine or constant in constraint: ",
                           ProtobufDebugString(ct));
     }
   }
   if (ct.cumulative().capacity().vars_size() > 1) {
     return absl::StrCat(
-        "capacity ", LegacyUnredactedDebugString(ct.cumulative().capacity()),
+        "capacity ", ProtobufDebugString(ct.cumulative().capacity()),
         " must be affine or constant in constraint: ", ProtobufDebugString(ct));
   }
 
