@@ -225,23 +225,25 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def(
           "solve_serialized_request",
           [](ModelSolverHelper* solver, const std::string& request_str) {
-            MPModelRequest request;
+            std::string result;
+            {
+              // The GIL is released during the solve to allow Python threads to
+              // do other things in parallel, e.g., log and interrupt.
+              pybind11::gil_scoped_release release;
+              MPModelRequest request;
 
-            if (!request.ParseFromString(request_str)) {
-              throw std::invalid_argument(
-                  "Unable to parse request as MPModelRequest.");
+              if (!request.ParseFromString(request_str)) {
+                throw std::invalid_argument(
+                    "Unable to parse request as MPModelRequest.");
+              }
+              std::optional<MPSolutionResponse> solution =
+                  solver->SolveRequest(request);
+              if (solution.has_value()) {
+                result = solution.value().SerializeAsString();
+              }
             }
-            std::optional<MPSolutionResponse> solution =
-                solver->SolveRequest(request);
-            if (solution.has_value()) {
-              return pybind11::bytes(solution.value().SerializeAsString());
-            } else {
-              return pybind11::bytes();
-            }
-          },
-          // The GIL is released during the solve to allow Python threads to
-          // do other things in parallel, e.g., log and interrupt.
-          pybind11::call_guard<pybind11::gil_scoped_release>())
+            return pybind11::bytes(result);
+          })
       .def("interrupt_solve", &ModelSolverHelper::InterruptSolve,
            "Returns true if the interrupt signal was correctly sent, that is, "
            "if the underlying solver supports it.")
