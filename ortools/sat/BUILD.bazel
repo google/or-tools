@@ -907,6 +907,7 @@ cc_library(
     srcs = ["timetable_edgefinding.cc"],
     hdrs = ["timetable_edgefinding.h"],
     deps = [
+        ":implied_bounds",
         ":integer",
         ":intervals",
         ":sat_base",

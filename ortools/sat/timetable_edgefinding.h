@@ -63,7 +63,7 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   TimeTableEdgeFinding(const std::vector<AffineExpression>& demands,
                        AffineExpression capacity,
                        SchedulingConstraintHelper* helper,
-                       IntegerTrail* integer_trail);
+                       IntegerTrail* integer_trail, Model* model);
 
   bool Propagate() final;
 
@@ -87,6 +87,9 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   bool IncreaseStartMin(IntegerValue begin, IntegerValue end, int task_index,
                         IntegerValue new_start);
 
+  // Add the minimum energy reason of a task.
+  void AddEnergyReason(int task_index);
+
   IntegerValue DemandMin(int task_index) const {
     return integer_trail_->LowerBound(demands_[task_index]);
   }
@@ -105,6 +108,8 @@ class TimeTableEdgeFinding : public PropagatorInterface {
 
   SchedulingConstraintHelper* helper_;
   IntegerTrail* integer_trail_;
+
+  std::vector<std::optional<LinearExpression>> energies_;
 
   // Start (resp. end) of the compulsory parts used to build the profile.
   std::vector<TaskTime> scp_;

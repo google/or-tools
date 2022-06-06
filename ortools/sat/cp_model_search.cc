@@ -504,6 +504,9 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       new_params.set_use_hard_precedences_in_cumulative_constraint(true);
     }
     strategies["probing"] = new_params;
+
+    new_params.set_linearization_level(2);
+    strategies["probing_max_lp"] = new_params;
   }
 
   // Search variation.
@@ -605,6 +608,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       names.push_back("quick_restart_no_lp");
       names.push_back("lb_tree_search");
       names.push_back("probing");
+      if (base_params.num_workers() > 16) names.push_back("probing_max_lp");
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
       if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
 #endif  // !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)

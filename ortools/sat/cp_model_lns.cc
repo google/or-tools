@@ -625,7 +625,7 @@ void ProcessDemandListFromCumulativeConstraint(
       unique_starts.push_back(demand.start);
     }
   }
-  CHECK(std::is_sorted(unique_starts.begin(), unique_starts.end()));
+  DCHECK(std::is_sorted(unique_starts.begin(), unique_starts.end()));
   const int num_points = unique_starts.size();
 
   // Split the capacity in 2 and dispatch all demands on the 2 parts.

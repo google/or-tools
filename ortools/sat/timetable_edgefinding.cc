@@ -19,6 +19,7 @@
 
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/util/strong_integers.h"
@@ -28,7 +29,8 @@ namespace sat {
 
 TimeTableEdgeFinding::TimeTableEdgeFinding(
     const std::vector<AffineExpression>& demands, AffineExpression capacity,
-    SchedulingConstraintHelper* helper, IntegerTrail* integer_trail)
+    SchedulingConstraintHelper* helper, IntegerTrail* integer_trail,
+    Model* model)
     : num_tasks_(helper->NumTasks()),
       demands_(demands),
       capacity_(capacity),
@@ -41,6 +43,12 @@ TimeTableEdgeFinding::TimeTableEdgeFinding(
   // Energy of free parts.
   size_free_.resize(num_tasks_);
   energy_free_.resize(num_tasks_);
+
+  // Try to linearize the energy.
+  energies_.resize(num_tasks_);
+  for (int t = 0; t < num_tasks_; t++) {
+    energies_[t] = TryToLinearizeProduct(helper->Sizes()[t], demands[t], model);
+  }
 }
 
 void TimeTableEdgeFinding::RegisterWith(GenericLiteralWatcher* watcher) {
@@ -156,12 +164,27 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
     // If the task has no mandatory part, then its free part is the task itself.
     const IntegerValue start_max = helper_->StartMax(t);
     const IntegerValue end_min = helper_->EndMin(t);
+    const IntegerValue demand_min = DemandMin(t);
+    IntegerValue mandatory_energy(0);
+
     if (start_max >= end_min) {
       size_free_[t] = helper_->SizeMin(t);
     } else {
       size_free_[t] = helper_->SizeMin(t) + start_max - end_min;
+      mandatory_energy = (end_min - start_max) * demand_min;
     }
-    energy_free_[t] = size_free_[t] * DemandMin(t);
+    const IntegerValue min_energy_of_product = helper_->SizeMin(t) * demand_min;
+    const IntegerValue min_linear_energy =
+        energies_[t].has_value() ? energies_[t].value().Min(*integer_trail_)
+                                 : IntegerValue(0);
+    CHECK_EQ(size_free_[t] * DemandMin(t) + mandatory_energy,
+             min_energy_of_product);
+    // if (min_linear_energy > min_energy_of_product) {
+    //   LOG(INFO) << "linear: " << min_linear_energy.value()
+    //             << " vs product: " << min_energy_of_product.value();
+    // }
+    energy_free_[t] =
+        std::max(min_linear_energy, min_energy_of_product) - mandatory_energy;
   }
 
   BuildTimeTable();
@@ -294,6 +317,23 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
   return true;
 }
 
+void TimeTableEdgeFinding::AddEnergyReason(int task_index) {
+  if (energies_[task_index].has_value()) {
+    for (const IntegerVariable var : energies_[task_index].value().vars) {
+      helper_->MutableIntegerReason()->push_back(
+          integer_trail_->LowerBoundAsLiteral(var));
+    }
+  } else {
+    // Variables of the task to be pushed. We do not need the end max for this
+    // task and we only need for it to begin in the time window.
+    if (demands_[task_index].var != kNoIntegerVariable) {
+      helper_->MutableIntegerReason()->push_back(
+          integer_trail_->LowerBoundAsLiteral(demands_[task_index].var));
+    }
+    helper_->AddSizeMinReason(task_index);
+  }
+}
+
 bool TimeTableEdgeFinding::IncreaseStartMin(IntegerValue begin,
                                             IntegerValue end, int task_index,
                                             IntegerValue new_start) {
@@ -306,14 +346,8 @@ bool TimeTableEdgeFinding::IncreaseStartMin(IntegerValue begin,
         integer_trail_->UpperBoundAsLiteral(capacity_.var));
   }
 
-  // Variables of the task to be pushed. We do not need the end max for this
-  // task and we only need for it to begin in the time window.
-  if (demands_[task_index].var != kNoIntegerVariable) {
-    mutable_reason->push_back(
-        integer_trail_->LowerBoundAsLiteral(demands_[task_index].var));
-  }
   helper_->AddStartMinReason(task_index, begin);
-  helper_->AddSizeMinReason(task_index);
+  AddEnergyReason(task_index);
 
   // Task contributing to the energy in the interval.
   for (int t = 0; t < num_tasks_; ++t) {
@@ -321,11 +355,6 @@ bool TimeTableEdgeFinding::IncreaseStartMin(IntegerValue begin,
     if (!helper_->IsPresent(t)) continue;
     if (helper_->EndMax(t) <= begin) continue;
     if (helper_->StartMin(t) >= end) continue;
-
-    if (demands_[t].var != kNoIntegerVariable) {
-      mutable_reason->push_back(
-          integer_trail_->LowerBoundAsLiteral(demands_[t].var));
-    }
 
     // We need the reason for the energy contribution of this interval into
     // [begin, end].
@@ -338,8 +367,8 @@ bool TimeTableEdgeFinding::IncreaseStartMin(IntegerValue begin,
     // that just using size min and these bounds. Fix.
     helper_->AddStartMinReason(t, std::min(begin, helper_->StartMin(t)));
     helper_->AddEndMaxReason(t, std::max(end, helper_->EndMax(t)));
-    helper_->AddSizeMinReason(t);
     helper_->AddPresenceReason(t);
+    AddEnergyReason(t);
   }
 
   return helper_->IncreaseStartMin(task_index, new_start);

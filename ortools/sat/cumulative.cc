@@ -244,8 +244,8 @@ std::function<void(Model*)> Cumulative(
     // rule. It increases the minimum of the start variables and decreases the
     // maximum of the end variables,
     if (parameters.use_timetable_edge_finding_in_cumulative_constraint()) {
-      TimeTableEdgeFinding* time_table_edge_finding =
-          new TimeTableEdgeFinding(demands, capacity, helper, integer_trail);
+      TimeTableEdgeFinding* time_table_edge_finding = new TimeTableEdgeFinding(
+          demands, capacity, helper, integer_trail, model);
       time_table_edge_finding->RegisterWith(watcher);
       model->TakeOwnership(time_table_edge_finding);
     }
@@ -316,8 +316,8 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
 
         model->Add(ReifiedBoolAnd(consume_condition, consume));
 
-        // TODO(user): this is needed because we currently can't create a
-        // boolean variable if the model is unsat.
+        // this is needed because we currently can't create a boolean variable
+        // if the model is unsat.
         if (sat_solver->IsModelUnsat()) return;
 
         literals_with_coeff.push_back(
