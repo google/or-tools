@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -359,9 +360,9 @@ void SparseMatrixScaler::Unscale() {
 Status SparseMatrixScaler::LPScale() {
   DCHECK(matrix_ != nullptr);
 
-  auto linear_program = absl::make_unique<LinearProgram>();
+  auto linear_program = std::make_unique<LinearProgram>();
   GlopParameters params;
-  auto simplex = absl::make_unique<RevisedSimplex>();
+  auto simplex = std::make_unique<RevisedSimplex>();
   simplex->SetParameters(params);
 
   // Begin linear program construction.

@@ -572,6 +572,8 @@ template <class DataWrapper>
 absl::Status MPSReaderImpl::ProcessLine(absl::string_view line,
                                         DataWrapper* data) {
   ++line_num_;
+  // Deal with windows end of line characters.
+  absl::ConsumeSuffix(&line, "\r");
   line_ = line;
   if (IsCommentOrBlank()) {
     return absl::OkStatus();  // Skip blank lines and comments.
