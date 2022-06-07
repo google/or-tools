@@ -497,7 +497,7 @@ test_cc_cpp: \
  ARGS="--size=5"
 	$(MAKE) run \
  SOURCE=examples/cpp/jobshop_sat.cc \
- ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/jobshop.txt"
+ ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/jobshop"
 	$(MAKE) run \
  SOURCE=examples/cpp/mps_driver.cc \
  ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/test.mps"
