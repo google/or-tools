@@ -618,7 +618,7 @@ $(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook: | $(TEMP_PYTHON_DIR)/orto
 .PHONY: python_examples_archive # Build stand-alone Python examples archive file for redistribution.
 python_examples_archive: | \
  $(TEMP_PYTHON_DIR)/ortools_examples/examples/python \
- $(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook \
+ $(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook
 	$(COPY) $(PYTHON_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
 	$(COPY) $(CONTRIB_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
 	$(COPY) ortools$Salgorithms$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
