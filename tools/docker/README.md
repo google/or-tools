@@ -62,5 +62,6 @@ docker run --platform linux/arm64 --rm --init -it ubuntu:latest bash -c "uname -
 ```
 
 ref:
+
 * https://github.com/docker-library/official-images#architectures-other-than-amd64
 * https://github.com/multiarch/qemu-user-static#getting-started
