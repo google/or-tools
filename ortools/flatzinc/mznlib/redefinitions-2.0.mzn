@@ -98,5 +98,3 @@ predicate int_lin_ne_imp(array [int] of int: as, array [int] of var int: bs,
                          int: c, var bool: r);
 
 annotation warm_start_array( array[int] of ann: w );
-
-

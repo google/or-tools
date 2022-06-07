@@ -102,7 +102,7 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
     }
     if (strcmp((*argv)[i], "-v") == 0) {
       (*argv)[i] = logging_param;
-    }    
+    }
   }
   const char kUsage[] =
       "Usage: see flags.\nThis program parses and solve a flatzinc problem.";
