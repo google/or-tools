@@ -163,7 +163,7 @@ add_executable(${PROJECT_NAME}::fzn-parser_test ALIAS fzn-parser_test)
 # MiniZinc solver configuration
 file(RELATIVE_PATH FZ_REL_INSTALL_BINARY
   ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/minizinc/solvers
-  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/fzn)
+  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/fzn-${PROJECT_NAME})
 configure_file(
   ortools/flatzinc/ortools.msc.in
   ${PROJECT_BINARY_DIR}/ortools.msc
