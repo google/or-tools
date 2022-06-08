@@ -11,7 +11,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party BUILD_DOTNET=OFF BUILD_JAVA=OFF BUILD_PYTHON=ON
 RUN make python
 
 FROM build AS test

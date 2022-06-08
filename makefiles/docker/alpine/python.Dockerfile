@@ -8,9 +8,7 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party BUILD_DOTNET=OFF BUILD_JAVA=OFF BUILD_PYTHON=ON \
-CMAKE_ARGS="-DVENV_USE_SYSTEM_SITE_PACKAGES=ON"
-RUN make python
+RUN make python CMAKE_ARGS="-DVENV_USE_SYSTEM_SITE_PACKAGES=ON"
 
 FROM build AS test
 RUN make test_python
