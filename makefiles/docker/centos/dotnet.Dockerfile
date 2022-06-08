@@ -13,7 +13,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party BUILD_DOTNET=ON BUILD_JAVA=OFF BUILD_PYTHON=OFF
 RUN make dotnet
 
 FROM build AS test
