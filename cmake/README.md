@@ -43,13 +43,13 @@ Python, Java, .Net]: [![Status][docker_svg]][docker_link]
 <nav for="cmake"> |
 <a href="#requirement">Requirement</a> |
 <a href="#dependencies">Dependencies</a> |
-<a href="#options">Options</a> |
+<a href="#cmake-options">Options</a> |
 <a href="docs/cpp.md">C++</a> |
 <a href="docs/swig.md">Swig</a> |
 <a href="docs/python.md">Python 3</a> |
 <a href="docs/dotnet.md">.Net Core</a> |
 <a href="docs/java.md">Java</a> |
-<a href="#integration">Integration</a> |
+<a href="#integrating-or-tools-in-your-cmake-project">Integration</a> |
 <a href="docs/ci.md">CI</a> |
 </nav>
 
@@ -124,8 +124,6 @@ To enable XPRESS support, configure with `-DUSE_XPRESS=ON` and
 `/absolute/path/to/XPRESS/root/dir` with the path to your XPRESS installation.
 `XPRESS_ROOT` can also be defined as an environment variable rather than an
 option at configure time.
-
-<a name="options"></a>
 
 ## CMake Options
 
@@ -202,8 +200,6 @@ cmake -S. -Bbuild -LH
 | | | |
 | `FETCH_PYTHON_DEPS`  | BUILD_DEPS | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON` |
 | | | |
-
-<a name="integration"></a>
 
 ## Integrating OR-Tools in your CMake Project
 
