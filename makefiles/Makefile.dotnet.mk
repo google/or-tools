@@ -67,10 +67,12 @@ build: $(SOURCE) $(SOURCE)proj dotnet
 .PHONY: run # Run a .Net C# program (using 'dotnet run').
 run: build
 	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" run --no-build -c Release $(ARGS)
+	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" clean -c Release -v minimal
 
 .PHONY: run_test # Run a .Net C# program (using 'dotnet test').
 run_test: build
 	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" test --no-build -c Release $(ARGS)
+	cd $(SOURCE_PROJECT_PATH) && "$(DOTNET_BIN)" clean -c Release -v minimal
 endif
 
 ###################################
@@ -122,6 +124,7 @@ rdotnet_%: \
  FORCE
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build -c Release
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
 
 DOTNET_SAMPLES := algorithms graph constraint_solver linear_solver model_builder sat
@@ -173,6 +176,7 @@ rdotnet_%: \
  FORCE
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build -c Release
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
 
 DOTNET_EXAMPLES := contrib dotnet
@@ -227,6 +231,7 @@ rdotnet_%: \
  FORCE
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build -c Release
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build -c Release $(ARGS)
+	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 
 ####################
 ##  Test targets  ##
