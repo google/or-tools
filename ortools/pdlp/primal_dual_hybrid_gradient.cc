@@ -906,6 +906,13 @@ SolverResult Solver::ConstructSolverResult(VectorXd primal_solution,
     LOG(INFO) << IterationStatsLabelString();
     LOG(INFO) << ToString(stats, params_.termination_criteria(),
                           original_bound_norms_, solve_log.solution_type());
+    const auto& convergence_info = GetConvergenceInformation(stats, solve_log.solution_type());
+    if (convergence_info.has_value()) {
+      if (std::isfinite(convergence_info->corrected_dual_objective())) {
+        LOG(INFO) << "Dual objective after infeasibility correction: " <<
+          convergence_info->corrected_dual_objective();
+      }
+    }
   }
   solve_log.set_iteration_count(stats.iteration_number());
   solve_log.set_termination_reason(termination_reason);
