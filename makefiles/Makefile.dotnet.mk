@@ -122,7 +122,7 @@ rdotnet_%: \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
-	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
@@ -174,7 +174,7 @@ rdotnet_%: \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
-	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
@@ -229,8 +229,8 @@ rdotnet_%: \
  $(TEMP_DOTNET_DIR)/tests/%/%.cs \
  $(TEMP_DOTNET_DIR)/tests/%/%.csproj \
  FORCE
-	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build -c Release
-	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build -c Release $(ARGS)
+	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
+	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build --framework net6.0 -c Release $(ARGS)
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 
 ####################
