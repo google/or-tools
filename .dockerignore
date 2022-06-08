@@ -56,6 +56,7 @@ build/
 build_cmake/
 build_cross/
 build_make/
+install_make/
 temp_*/
 
 # Editor directories and files
