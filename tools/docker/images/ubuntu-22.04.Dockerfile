@@ -25,7 +25,7 @@ RUN apt-get update -qq \
 # note: Ubuntu-22.04+ won't support dotnet-sdk-3.1
 # see: https://github.com/dotnet/core/pull/7423/files
 RUN apt-get update -qq \
-&& apt-get install -yq apt-transport-https \
+&& apt-get install -yq wget apt-transport-https \
 && wget -q https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \

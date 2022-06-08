@@ -22,11 +22,13 @@ RUN ARCH=$(uname -m) \
 && rm cmake-3.21.1-linux-${ARCH}.sh
 
 # Install SWIG
-RUN zypper install -y swig \
+RUN zypper refresh \
+&& zypper install -y swig \
 && zypper clean -a
 
 # Install .Net
-RUN zypper install -y wget tar gzip libicu-devel
+RUN zypper refresh \
+&& zypper install -y wget tar gzip libicu-devel
 RUN mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
 ## .Net 3.1
