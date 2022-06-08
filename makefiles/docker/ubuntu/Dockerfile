@@ -20,6 +20,6 @@ CMD [ "/usr/bin/bash" ]
 
 FROM base AS swig
 RUN apt-get update -qq \
-&& apt-get install -yq swig \
+&& DEBIAN_FRONTEND=noninteractive apt-get install -yq swig \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
