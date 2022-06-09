@@ -30,6 +30,7 @@ if(USE_COINOR)
 endif()
 if(USE_GLPK)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
+  set(GLPK_DIR glpk)
 endif()
 if(USE_PDLP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_PDLP")
@@ -227,6 +228,7 @@ foreach(SUBPROJECT IN ITEMS
  base
  bop
  constraint_solver
+ ${GLPK_DIR}
  ${PDLP_DIR}
  ${GSCIP_DIR}
  glop

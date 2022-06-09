@@ -39,6 +39,7 @@ set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_TESTING OFF)
+set(CMAKE_Fortran_COMPILER OFF)
 
 # ##############################################################################
 # ZLIB
@@ -132,7 +133,6 @@ if(BUILD_Eigen3)
   set(EIGEN_BUILD_PKGCONFIG OFF)
   set(EIGEN_BUILD_DOC OFF)
   set(EIGEN_BUILD_TESTING OFF)
-  set(EIGEN_BUILD_DOC OFF)
   FetchContent_Declare(
     eigen3
     GIT_REPOSITORY "https://gitlab.com/libeigen/eigen.git"
