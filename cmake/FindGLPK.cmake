@@ -17,12 +17,19 @@ This module defines the following variables:
 
 ::
 
-GLPK_FOUND          - True if GLPK found.
+``GLPK_FOUND``
+  True if ``GLPK`` found.
+
+``GLPK_INCLUDE_DIRS``
+  Where to find glpk.h, etc.
+
+``GLPK_LIBRARIES``
+  List of libraries for using ``glpk``.
 
 Hints
 ^^^^^
 
-A user may set ``GLPK_ROOT`` to a GLPK installation root to tell this
+A user may set ``GLPK_ROOT`` environment to a GLPK installation root to tell this
 module where to look.
 #]=======================================================================]
 # first specifically look for the CMake version of GLPK
@@ -43,43 +50,39 @@ else()
   message(FATAL_ERROR "FindGLPK only works if either C or CXX language is enabled")
 endif()
 
-if(NOT GLPK_ROOT)
-  if (DEFINED ENV{GLPK_ROOT})
-    set(GLPK_ROOT $ENV{GLPK_ROOT})
-  else()
-    find_path(GLPK_PATH libglpk.a libglpk.lib
-      DOC "Path in which libglpk is found"
-      PATHS
-      "/usr/local/lib"
-      "/usr/lib"
-      "${CMAKE_BINARY_DIR}/dependencies/GLPK/source/w32"
-      "${CMAKE_BINARY_DIR}/dependencies/GLPK/source/w64"
-      "${CMAKE_BINARY_DIR}/dependencies/GLPK/source/src/.lib"
-      )
-    if(GLPK_PATH)
-      set(GLPK_ROOT ${GLPK_PATH})
-    endif()
-  endif()
+if(DEFINED ENV{GLPK_ROOT})
+  message(STATUS "GLPK_ROOT: ${GLPK_ROOT}")
 endif()
 
-message(STATUS "GLPK_ROOT: ${GLPK_ROOT}")
-if(NOT GLPK_ROOT)
-  message(FATAL_ERROR "GLPK_ROOT: not found")
+if(APPLE)
+  find_path(GLPK_INCLUDE_DIRS glpk.h
+    HINTS
+      ENV GLPK_ROOT
+      /Library/Frameworks/Glpk.framework/Headers
+    )
+  find_library(GLPK_LIBRARIES glpk
+    HINTS
+      ENV GLPK_ROOT
+      /Library/Frameworks/Glpk.framework/Libraries
+    )
+  set(GLPK_LIBRARIES "-framework glpk" CACHE STRING "Glpk library for OSX")
 else()
-  set(GLPK_FOUND TRUE)
+  find_path(GLPK_INCLUDE_DIRS glpk.h
+    HINTS
+      ENV GLPK_ROOT
+    )
+  find_library(GLPK_LIBRARIES glpk
+    HINTS
+      ENV GLPK_ROOT
+    )
 endif()
 
-if(GLPK_FOUND AND NOT TARGET GLPK::GLPK)
-  add_library(GLPK::GLPK UNKNOWN IMPORTED)
-  if (UNIX)
-    set_property(TARGET GLPK::GLPK PROPERTY IMPORTED_LOCATION
-      ${GLPK_ROOT}/libglpk.a
-      )
-  elseif(MSVC)
-    set_property(TARGET GLPK::GLPK PROPERTY IMPORTED_LOCATION
-      ${GLPK_ROOT}/libglpk.lib
-      )
-  else()
-    message(FATAL_ERROR "OR-Tools with GLPK not supported for ${CMAKE_SYSTEM}")
+if(GLPK_INCLUDE_DIRS AND GLPK_LIBRARIES)
+  if(NOT TARGET GLPK::GLPK)
+    add_library(GLPK::GLPK UNKNOWN IMPORTED)
+    set_property(TARGET GLPK::GLPK PROPERTY IMPORTED_LOCATION ${GLPK_LIBRARIES})
+    target_include_directories(GLPK::GLPK INTERFACE ${GLPK_INCLUDE_DIRS})
   endif()
 endif()
+
+find_package_handle_standard_args(GLPK DEFAULT_MSG GLPK_LIBRARIES GLPK_INCLUDE_DIRS)
