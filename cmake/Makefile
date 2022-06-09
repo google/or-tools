@@ -44,31 +44,27 @@ help:
 	@echo -e "\t\t${BOLD}fedora${RESET} (latest)"
 	@echo -e "\t\t${BOLD}opensuse${RESET} (tumbleweed)"
 	@echo -e "\t\t${BOLD}ubuntu${RESET} (rolling)"
-	@echo -e "\te.g. 'make test_ubuntu'"
 	@echo
-	@echo -e "\tWith ${BOLD}<prestage>${RESET}:"
+	@echo -e "\tWith ${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}base${RESET} (need by cpp)"
 	@echo -e "\t\t${BOLD}swig${RESET} (need by .Net, Java and Python)"
-	@echo -e "\te.g. 'make base'"
+	@echo -e "\t\t${BOLD}<lang>_env${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_devel${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_build${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_test${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_install_env${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_install_devel${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_install_build${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_install_test${RESET}"
 	@echo
 	@echo -e "\tWith ${BOLD}<lang>${RESET}:"
 	@echo -e "\t\t${BOLD}cpp${RESET} (C++)"
 	@echo -e "\t\t${BOLD}python${RESET} (Python >= 3)"
 	@echo -e "\t\t${BOLD}java${RESET} (Java >= 8)"
 	@echo -e "\t\t${BOLD}dotnet${RESET} (.Net Core >= 2.1)"
-	@echo -e "\te.g. 'make devel_cpp'"
 	@echo
-	@echo -e "\tWith ${BOLD}<stage>${RESET}:"
-	@echo -e "\t\t${BOLD}env${RESET}"
-	@echo -e "\t\t${BOLD}devel${RESET}"
-	@echo -e "\t\t${BOLD}build${RESET}"
-	@echo -e "\t\t${BOLD}test${RESET}"
-	@echo -e "\t\t${BOLD}install_env${RESET}"
-	@echo -e "\t\t${BOLD}install_devel${RESET}"
-	@echo -e "\t\t${BOLD}install_build${RESET}"
-	@echo -e "\t\t${BOLD}install_test${RESET}"
-	@echo -e "\te.g. 'make build'"
-	@echo
+	@echo -e "\te.g. 'make ubuntu_base'"
+	@echo -e "\te.g. 'make archlinux_cpp_build'"
 	@echo
 	@echo -e "\t${BOLD}<vm>${RESET}: build <vm> vagrant machine for ALL LANGUAGES."
 	@echo -e "\t${BOLD}<vm>_<lang>${RESET}: build  a <vm> vagrant machine for the specified language."
@@ -133,7 +129,7 @@ endif
 DOCKER_RUN_CMD := docker run --rm --init --net=host
 
 # Currently supported distro
-DISTROS = alpine archlinux centos debian fedora opensuse ubuntu
+DISTROS = alpine archlinux centos debian fedora opensuse system_deps ubuntu
 LANGUAGES = cpp python java dotnet
 
 # $* stem
