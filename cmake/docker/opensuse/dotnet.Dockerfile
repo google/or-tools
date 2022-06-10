@@ -1,10 +1,11 @@
 FROM ortools/cmake:opensuse_swig AS env
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
-RUN zypper refresh \
-&& zypper install -y wget tar gzip libicu-devel
 
 # .NET install
-RUN mkdir -p /usr/share/dotnet \
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
+RUN zypper refresh \
+&& zypper install -y wget tar gzip libicu-devel \
+&& mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
 
 # see: https://dotnet.microsoft.com/download/dotnet-core/6.0

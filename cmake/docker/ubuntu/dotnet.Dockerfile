@@ -1,4 +1,6 @@
 FROM ortools/cmake:ubuntu_swig AS env
+
+# Install .NET SDK
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
 RUN apt-get update -qq \
 && apt-get install -yq wget apt-transport-https \
