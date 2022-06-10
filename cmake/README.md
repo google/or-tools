@@ -194,6 +194,9 @@ cmake -S. -Bbuild -LH
 | `BUILD_JAVA_EXAMPLES`  | ON\* | Build all Java examples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
 | `BUILD_DOTNET_EXAMPLES`  | ON\* | Build all .Net examples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF` |
 | | | |
+| `USE_DOTNET_CORE_31`  | ON | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` |
+| `USE_DOTNET_6`  | ON | Enable .Net 6 LTS support<br>Only available if `BUILD_DOTNET=ON` |
+| | | |
 | `SKIP_GPG`  | OFF | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |
 | `UNIVERSAL_JAVA_PACKAGE`  | OFF | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON` |
 | `BUILD_FAT_JAR`  | OFF | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |

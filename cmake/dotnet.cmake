@@ -62,11 +62,11 @@ else()
 endif()
 
 # see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
-if(USE_DOTNET_TFM_31 AND USE_DOTNET_TFM_60)
+if(USE_DOTNET_CORE_31 AND USE_DOTNET_6)
   set(DOTNET_TFM "<TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>")
-elseif(USE_DOTNET_TFM_60)
+elseif(USE_DOTNET_6)
   set(DOTNET_TFM "<TargetFramework>net6.0</TargetFramework>")
-elseif(USE_DOTNET_TFM_31)
+elseif(USE_DOTNET_CORE_31)
   set(DOTNET_TFM "<TargetFramework>netcoreapp3.1</TargetFramework>")
 else()
   message(FATAL_ERROR "No .Net SDK selected !")
@@ -396,13 +396,13 @@ function(add_dotnet_sample FILE_NAME)
     WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
 
   if(BUILD_TESTING)
-    if(USE_DOTNET_TFM_31)
+    if(USE_DOTNET_CORE_31)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_netcoreapp31
         COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework netcoreapp3.1 -c Release
         WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
     endif()
-    if(USE_DOTNET_TFM_60)
+    if(USE_DOTNET_6)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_net60
         COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
@@ -467,13 +467,13 @@ function(add_dotnet_example FILE_NAME)
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
 
   if(BUILD_TESTING)
-    if(USE_DOTNET_TFM_31)
+    if(USE_DOTNET_CORE_31)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_netcoreapp31
         COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework netcoreapp3.1 -c Release
         WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
     endif()
-    if(USE_DOTNET_TFM_60)
+    if(USE_DOTNET_6)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_net60
         COMMAND ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release

@@ -20,7 +20,7 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make dotnet CMAKE_ARGS="-DUSE_DOTNET_TFM_31=OFF"
+RUN make dotnet CMAKE_ARGS="-DUSE_DOTNET_CORE_31=OFF"
 
 FROM build AS test
 RUN make test_dotnet
