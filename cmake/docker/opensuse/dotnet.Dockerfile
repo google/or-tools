@@ -1,6 +1,6 @@
 FROM ortools/cmake:opensuse_swig AS env
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
-RUN zypper update -y \
+RUN zypper refresh \
 && zypper install -y wget tar gzip libicu-devel
 
 # .NET install
