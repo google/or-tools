@@ -94,8 +94,18 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$SSample.csproj.in \
  > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+else
+ ifeq ($(USE_DOTNET_6),ON)
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net6.0<\/TargetFramework>/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+ else
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>netcoreapp3.1<\/TargetFramework>/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+ endif
+endif
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
@@ -122,8 +132,14 @@ rdotnet_%: \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
+ifeq ($(USE_DOTNET_6),ON)
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
+endif
+ifeq ($(USE_DOTNET_CORE_31),ON)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework netcoreapp3.1 -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework netcoreapp3.1 -c Release $(ARGS)
+endif
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
 
@@ -146,8 +162,18 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$SSample.csproj.in \
  > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+else
+ ifeq ($(USE_DOTNET_6),ON)
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net6.0<\/TargetFramework>/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+ else
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>netcoreapp3.1<\/TargetFramework>/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+ endif
+endif
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
@@ -174,8 +200,14 @@ rdotnet_%: \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
+ifeq ($(USE_DOTNET_6),ON)
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
+endif
+ifeq ($(USE_DOTNET_CORE_31),ON)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework netcoreapp3.1 -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework netcoreapp3.1 -c Release $(ARGS)
+endif
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
 
@@ -199,8 +231,18 @@ $(TEMP_DOTNET_DIR)/tests/%/%.csproj: \
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$STest.csproj.in \
  > $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+else
+ ifeq ($(USE_DOTNET_6),ON)
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net6.0<\/TargetFramework>/' \
+ $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ else
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>netcoreapp3.1<\/TargetFramework>/' \
+ $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ endif
+endif
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
 	$(SED) -i -e 's/@TEST_NAME@/$*/' \
@@ -229,8 +271,14 @@ rdotnet_%: \
  $(TEMP_DOTNET_DIR)/tests/%/%.cs \
  $(TEMP_DOTNET_DIR)/tests/%/%.csproj \
  FORCE
+ifeq ($(USE_DOTNET_6),ON)
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build --framework net6.0 -c Release $(ARGS)
+endif
+ifeq ($(USE_DOTNET_CORE_31),ON)
+	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build --framework netcoreapp3.1 -c Release
+	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build --framework netcoreapp3.1 -c Release $(ARGS)
+endif
 	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 
 ####################
