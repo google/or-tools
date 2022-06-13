@@ -17,6 +17,14 @@ endif
 ################
 .PHONY: clean_archive # Clean Archive output from previous build.
 clean_archive:
+	-$(DELREC) $(INSTALL_CPP_NAME)
+	-$(DELREC) $(INSTALL_CPP_NAME)$(ARCHIVE_EXT)
+	-$(DELREC) $(INSTALL_DOTNET_NAME)
+	-$(DELREC) $(INSTALL_DOTNET_NAME)$(ARCHIVE_EXT)
+	-$(DELREC) $(INSTALL_JAVA_NAME)
+	-$(DELREC) $(INSTALL_JAVA_NAME)$(ARCHIVE_EXT)
+	-$(DELREC) $(INSTALL_PYTHON_NAME)
+	-$(DELREC) $(INSTALL_PYTHON_NAME)$(ARCHIVE_EXT)
 
 #############
 ##  DEBUG  ##

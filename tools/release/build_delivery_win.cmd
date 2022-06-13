@@ -218,14 +218,20 @@ echo Archive build seems up to date, skipping
 exit /B 0
 )
 
-make.exe archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make archive: DONE | tee.exe -a build.log
-make.exe test_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make test_archive: DONE | tee.exe -a build.log
-make.exe fz_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make fz_archive: DONE | tee.exe -a build.log
-make.exe test_fz_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make test_fz_archive: DONE | tee.exe -a build.log
+REM Clean archive
+make.exe clean_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+
+echo Make cpp archive... | tee.exe -a build.log
+make.exe archive_cpp WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+echo DONE | tee.exe -a build.log
+
+echo Make dotnet archive... | tee.exe -a build.log
+make.exe archive_dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+echo DONE | tee.exe -a build.log
+
+echo Make java archive... | tee.exe -a build.log
+make.exe archive_java WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+echo DONE | tee.exe -a build.log
 
 for %%i in (or-tools_*VisualStudio2019-64bit*.zip) do (
   echo Move %%i to export... | tee.exe -a build.log

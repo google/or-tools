@@ -199,18 +199,16 @@ function build_archive() {
   cd "${ROOT_DIR}" || exit 2
   make clean_archive
 
-  echo -n "Make archive..." | tee -a build.log
-  make archive UNIX_PYTHON_VER=3.9
-  echo "DONE" | tee -a build.log
-  echo -n "Test archive..." | tee -a build.log
-  make test_archive UNIX_PYTHON_VER=3.9
+  echo -n "Make cpp archive..." | tee -a build.log
+  make archive_cpp
   echo "DONE" | tee -a build.log
 
-  echo -n "Make flatzinc archive..." | tee -a build.log
-  make fz_archive UNIX_PYTHON_VER=3.9
+  echo -n "Make dotnet archive..." | tee -a build.log
+  make archive_dotnet
   echo "DONE" | tee -a build.log
-  echo -n "Test flatzinc archive..." | tee -a build.log
-  make test_fz_archive UNIX_PYTHON_VER=3.9
+
+  echo -n "Make java archive..." | tee -a build.log
+  make archive_java
   echo "DONE" | tee -a build.log
 
   mv or-tools_*.tar.gz export/
