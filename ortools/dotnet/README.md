@@ -1,6 +1,6 @@
 # Introduction
 
-This is the documentation page for the .NET Standard 2.0 wrapper of OR-Tools.
+This is the documentation page for the .NET wrapper of OR-Tools.
 
 This project aim to explain how you build a .Net native (for win-x64, linux-x64
 and osx-x64) nuget package using `dotnet` and few `.csproj`.
@@ -25,19 +25,22 @@ and osx-x64) nuget package using `dotnet` and few `.csproj`.
 
 ## Requirement
 
-The library is compiled against `netstandard2.0`, so you'll only need:
+The library is compiled against `netcoreapp3.1` and 'net6.0', so you'll only need:
 
-* .Net Core SDK >= 3.1 LTS
+* .Net Core 3.1 LTS SDK
+* .Net 6.0 LTS SDK
+
+note: We won't/can't rely on VS 2019 since we want a portable cross-platform [`dotnet/cli`](https://github.com/dotnet/cli) pipeline.
 
 ## Directory Layout
 
 * [`Google.OrTools.runtime.linux-x64`](Google.OrTools.runtime.linux-x64)
-  Contains the .Net Standard 2.0 native project for the rid linux-x64.
+  Contains the .Net Standard 2.1 native project for the rid linux-x64.
 * [`Google.OrTools.runtime.osx-x64`](Google.OrTools.runtime.osx-x64)
-  Contains the .Net Standard 2.0 native project for the rid osx-x64.
+  Contains the .Net Standard 2.1 native project for the rid osx-x64.
 * [`Google.OrTools.runtime.win-x64`](Google.OrTools.runtime.win-x64)
-  Contains the .Net Standard 2.0 native project for the rid win-x64.
-* [`Google.OrTools`](Google.OrTools) Is the .Net Standard 2.0 meta-package which
+  Contains the .Net Standard 2.1 native project for the rid win-x64.
+* [`Google.OrTools`](Google.OrTools) Is the .Net Standard 2.1 meta-package which
   should depends on all previous available packages and contains the Reference
   Assembly.
 
@@ -50,16 +53,22 @@ naming, it is very difficult to get ownership on it, so you should prefer to use
 
 Either use the CMake base build or the Makefile based build. The workflow is
 typically `make dotnet` which will build both C# and F# libraries package. The
-output will be placed in `<OR_ROOT>/temp_dotnet/packages` folder. All tests will
+output will be placed in `<buid_dir>/dotnet/packages` folder. All tests will
 be run based on this folder.
 
 ### Build Process
 
-To Create a native dependent package we will split it in two parts: - A bunch of
-`Google.OrTools.runtime.{rid}.nupkg` packages for each
+To Create a native dependent package we will split it in two parts:
+
+* A bunch of `Google.OrTools.runtime.{rid}.nupkg` packages for each
 [Runtime Identifier (RId)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)
-targeted. - A meta-package `Google.OrTools.nupkg` depending on each runtime
-packages.
+targeted.
+* A generic package `Google.OrTools.nupkg` depending on each runtime packages and
+containing the managed .Net code.
+
+Actually, You don't need a specific variant of .Net Standard wrapper, simply omit the library extension and .Net magic will pick
+the correct native library.  
+ref: https://www.mono-project.com/docs/advanced/pinvoke/#library-names
 
 note: [`Microsoft.NetCore.App` packages](https://www.nuget.org/packages?q=Microsoft.NETCore.App)
 follow this layout.
@@ -135,8 +144,8 @@ Here some dev-note concerning this `Google.OrTools.runtime.{rid}.csproj`.
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   </Content>
   ```
-* Generate the runtime package to a defined directory (i.e. so later in meta
-  Google.OrTools package we will be able to locate it)
+* Generate the runtime package to a defined directory (i.e. so later in
+  `Google.OrTools` package we will be able to locate it)
   ```xml
   <PackageOutputPath>{...}/packages</PackageOutputPath>
   ```
@@ -147,21 +156,20 @@ Here some dev-note concerning this `Google.OrTools.runtime.{rid}.csproj`.
   ```
 
 Then you can generate the package using:
+
 ```bash
-dotnet pack src/Google.OrTools.runtime.{rid}
+dotnet pack Google.OrTools.runtime.{rid}
 ```
 note: this will automatically trigger the `dotnet build`.
 
 If everything good the package (located where your `PackageOutputPath` was
 defined) should have this layout:
+
 ```
 {...}/packages/Google.OrTools.runtime.{rid}.nupkg:
 \- Google.OrTools.runtime.{rid}.nuspec
 \- runtimes
    \- {rid}
-      \- lib
-         \- {framework}
-            \- Google.OrTools.dll
       \- native
          \- *.so / *.dylib / *.dll
 ...
@@ -198,14 +206,23 @@ Here some dev-note concerning this `Google.OrTools.csproj`.
   </Content>`
 
 Then you can generate the package using:
+
 ```bash
-dotnet pack src/Google.OrTools
+dotnet pack Google.OrTools
 ```
 
 If everything good the package (located where your `PackageOutputPath` was
-defined) should have this layout: `{...}/packages/Google.OrTools.nupkg: \-
-Google.OrTools.nuspec \- ref \- {framework} \- Google.OrTools.dll ...` note:
-`{framework}` could be `netstandard2.0`
+defined) should have this layout:
+
+```
+{...}/packages/Google.OrTools.nupkg:
+\- Google.OrTools.nuspec
+\- lib
+   \- {framework}
+      \- Google.OrTools.dll
+...
+```
+note: `{framework}` could be `netcoreapp3.1` or/and `net6.0`
 
 ### Complete Google.OrTools Package
 
@@ -218,7 +235,8 @@ targeting multiple
 The pipeline should be as follow: \
 note: This pipeline should be run on any architecture, provided you have
 generated the three architecture dependent `Google.OrTools.runtime.{rid}.nupkg`
-nuget packages. ![Full Pipeline](docs/full_pipeline.svg)
+nuget packages.
+![Full Pipeline](docs/full_pipeline.svg)
 ![Legend](docs/legend.svg)
 
 #### Building All runtime Google.OrTools Package
@@ -226,9 +244,13 @@ nuget packages. ![Full Pipeline](docs/full_pipeline.svg)
 Like in the previous scenario, on each targeted OS Platform you can build the
 corresponding `Google.OrTools.runtime.{rid}.nupkg` package.
 
-Simply run on each platform `bash dotnet build src/Google.OrTools.runtime.{rid}
-dotnet pack src/Google.OrTools.runtime.{rid}` note: replace `{rid}` by the
-Runtime Identifier associated to the current OS platform.
+Simply run on each platform:
+
+```bash
+dotnet build <build_dir>/dotnet/Google.OrTools.runtime.{rid}
+dotnet pack <build_dir>/dotnet/Google.OrTools.runtime.{rid}
+```
+note: replace `{rid}` by the Runtime Identifier associated to the current OS platform.
 
 Then on one machine used, you copy all other packages in the `{...}/packages` so
 when building `Google.OrTools.csproj` we can have access to all package...
@@ -239,14 +261,15 @@ This is the same step than in the previous scenario, since we "see" all runtime
 packages in `{...}/packages`, the project will depends on each of them.
 
 Once copied all runtime package locally, simply run:
+
 ```bash
-dotnet build src/Google.OrTools
-dotnet pack src/Google.OrTools
+dotnet build <build_dir>/dotnet/Google.OrTools
+dotnet pack <build_dir>/dotnet/Google.OrTools
 ```
 
 ## Examples
 
-The Test projects show examples of building applications with `netcoreapp3.1`.
+The Test projects show examples of building applications with `net6.0`.
 
 The F# example folder shows how to compile against the typical .NET Framework
 installed on machine.
@@ -261,36 +284,39 @@ Instead, just use the library name itself, without any prefixes or suffixes,
 and rely on the runtime to find the appropriate library at runtime.\
 ref: [Mono `pinvoke#libraryname`](https://www.mono-project.com/docs/advanced/pinvoke/#library-names)
 
-## Resources
+### Resources
 
-Some issue related to this process
-* [`PackageReference` only support `TargetFramework` condition](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#adding-a-packagereference-condition)
-* [Nuget needs to support dependencies specific to target runtime #1660](https://github.com/NuGet/Home/issues/1660)
-* [Improve documentation on creating native packages #238](https://github.com/NuGet/docs.microsoft.com-nuget/issues/238)
-
-### Runtime IDentifier (RID)
-
-* [.NET Core RID Catalog](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)
-* [Creating native packages](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
-* [Blog on Nuget Rid Graph](https://natemcmaster.com/blog/2016/05/19/nuget3-rid-graph/)
-
-### Target Framework Moniker (TFM)
+#### Target Framework Moniker (TFM)
 
 * [.NET TFM list](https://docs.microsoft.com/en-us/dotnet/standard/frameworks)
 * [.NET Standard implementation support](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
 
+#### .Net:Runtime IDentifier (RID)
 
-### Reference on .csproj format
+* [.Net Support Policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core)
+* [.NET Core RID Catalog](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)
+* [Creating native packages](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
+* [Blog on Nuget Rid Graph](https://natemcmaster.com/blog/2016/05/19/nuget3-rid-graph/)
+
+#### Reference on .csproj format
 
 * [Common MSBuild project properties](https://docs.microsoft.com/en-us/visualstudio/msbuild/common-msbuild-project-properties?view=vs-2017)
 * [MSBuild well-known item metadata](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-well-known-item-metadata?view=vs-2017)
 * [Additions to the csproj format for .NET Core](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj)
 
-## Misc
+### Issues
+
+Some issue related to this process
+* [`PackageReference` only support `TargetFramework` condition](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#adding-a-packagereference-condition)
+* [Nuget needs to support dependencies specific to target runtime #1660](https://github.com/NuGet/Home/issues/1660)
+* [Improve documentation on creating native packages #238](https://github.com/NuGet/docs.microsoft.com-nuget/issues/238)
+* [Guide for packaging C# library using P/Invoke](https://github.com/NuGet/Home/issues/8623)
+
+### Misc
 
 Image has been generated using [plantuml](http://plantuml.com/):
-```bash
-plantuml -Tpng docs/{file}.dot
-```
 
+```bash
+plantuml -Tsvg docs/{file}.dot
+```
 So you can find the dot source files in [docs](docs).
