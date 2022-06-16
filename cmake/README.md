@@ -69,6 +69,22 @@ You'll need:
 * `CMake >= 3.18`.
 * A C++20 compiler (gcc 8 or above)
 
+## Solvers supported
+
+Here the list of supported solvers:
+
+* CBC
+* CLP
+* CP-SAT
+* CPLEX\*
+* GLOP
+* GLPK\*
+* PDLP
+* SCIP
+* XPRESS\*
+
+\*: these solvers are disable by default.
+
 ## Dependencies
 
 OR-Tools depends on several mandatory libraries. You can compile them all at
@@ -76,34 +92,35 @@ configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
 compile few of them using the options below (see [CMake Options](#cmake-options)
 below).
 
-*   ZLIB (`BUILD_ZLIB`),
-*   Google Abseil-cpp (`BUILD_absl`),
-*   Google Protobuf (`BUILD_Protobuf`),
-*   GLPK (`BUILD_GLPK`),<br>
-  note: You can disable the support of GLPK solver
-  by using `-DUSE_GLPK=OFF` (`ON` by default).
-*   SCIP (`BUILD_SCIP`),<br>
-  note: You can disable the support of SCIP solver
-  by using `-DUSE_SCIP=OFF` (`ON` by default).
-
-*   COIN-OR solvers,
-
-    *   COIN-OR CoinUtils (`BUILD_CoinUtils`),
-    *   COIN-OR Osi (`BUILD_Osi`),
-    *   COIN-OR Clp (`BUILD_Clp`),
-    *   COIN-OR Cgl (`BUILD_Cgl`),
-    *   COIN-OR Cbc (`BUILD_Cbc`),<br>
+* ZLIB (`BUILD_ZLIB`),
+* Google Abseil-cpp (`BUILD_absl`),
+* Google Protobuf (`BUILD_Protobuf`),
+* COIN-OR solvers,
+  * COIN-OR CoinUtils (`BUILD_CoinUtils`),
+  * COIN-OR Osi (`BUILD_Osi`),
+  * COIN-OR Clp (`BUILD_Clp`),
+  * COIN-OR Cgl (`BUILD_Cgl`),
+  * COIN-OR Cbc (`BUILD_Cbc`),<br>
   note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
   by using `-DUSE_COINOR=OFF` (`ON` by default).
+* SCIP (`BUILD_SCIP`),<br>
+  note: You can disable the support of SCIP solver
+  by using `-DUSE_SCIP=OFF` (`ON` by default).<br>
+  warning: While OR-Tools ships with SCIP, please consult the
+  [SCIP license](https://scipopt.org/index.php#license) to ensure that you are
+  complying with it.
 
-OR-Tools can also optionally (disabled by default) be compiled with support for
-the following third-party proprietary solvers:
+OR-Tools can also optionally (disabled by default i.e. `OFF`) be compiled with support for
+the following third-party solvers:
 
+* GLPK (`BUILD_GLPK`),<br>
+  note: You must enable the support of GLPK solver
+  by using `-DUSE_GLPK=ON` (`OFF` by default).
 * CPLEX (`USE_CPLEX`),
 * XPRESS (`USE_XPRESS`)
 
-**warning: Since these solvers require license and are proprietary, we can't
-test it on public CI and support can be broken.**
+**warning: Since CPLEX and XPRESS solvers require license and are proprietary,
+we can't test it on public CI and support can be broken.**
 
 ### Enabling CPLEX Support
 
@@ -162,25 +179,25 @@ cmake -S. -Bbuild -LH
 | `BUILD_FLATZINC` | ON\* | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
 | | | |
-| `BUILD_DEPS`  | OFF* | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
-| `BUILD_ZLIB`  | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_absl`  | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_Protobuf`  | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_DEPS` | OFF* | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
+| `BUILD_ZLIB` | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_absl` | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_Protobuf` | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | `BUILD_re2`  | OFF* | Static build the re2 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_Eigen3`  | OFF* | Static build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_Eigen3` | OFF* | Static build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | | | |
-| `USE_COINOR`  | ON\* | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `USE_COINOR` | ON\* | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_CoinUtils`  | OFF\* | Static build the CoinUtils library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Osi`  | OFF\* | Static build the Osi library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Clp`  | OFF\* | Static build the Clp library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Cgl`  | OFF\* | Static build the Cgl library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| `USE_GLPK`  | ON\* | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_GLPK`  | OFF\* | Static build the GLPK libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
-| `USE_SCIP`  | ON\* | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_SCIP`  | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
+| `USE_GLPK`   | OFF\* | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_GLPK` | OFF\* | Static build the GLPK libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
+| `USE_SCIP`   | ON\*  | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_SCIP` | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
 | `USE_CPLEX`  | OFF | Enable CPLEX support |
-| `USE_XPRESS`  | OFF | Enable XPRESS support |
+| `USE_XPRESS` | OFF | Enable XPRESS support |
 | | | |
 | `BUILD_SAMPLES`  | ON\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
 | `BUILD_CXX_SAMPLES`  | ON\* | Build all C++ samples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
@@ -201,7 +218,7 @@ cmake -S. -Bbuild -LH
 | `UNIVERSAL_JAVA_PACKAGE`  | OFF | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON` |
 | `BUILD_FAT_JAR`  | OFF | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |
 | | | |
-| `FETCH_PYTHON_DEPS`  | BUILD_DEPS | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON` |
+| `FETCH_PYTHON_DEPS`  | `BUILD_DEPS` | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON` |
 | | | |
 
 ## Integrating OR-Tools in your CMake Project

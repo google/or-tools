@@ -40,17 +40,27 @@ You'll need:
 
 * `Bazel >= 4.0`.
 
+## Solvers supported
+
+Here the list of supported solvers:
+
+* CP-SAT
+* GLOP
+* GLPK
+* PDLP
+* SCIP
+
 ## Dependencies
 
 OR-Tools depends on several mandatory libraries.
 
-*   Eigen
-*   Google Abseil-cpp,
-*   Google Protobuf,
-*   Google Gtest,
-*   Bliss,
-*   SCIP,
-*   GLPK (GNU Linear Programming Kit)
+* Eigen
+* Google Abseil-cpp,
+* Google Protobuf,
+* Google Gtest,
+* Bliss,
+* SCIP,
+* GLPK (GNU Linear Programming Kit)
 
 ## Compilation
 
