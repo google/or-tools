@@ -222,28 +222,27 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            // The GIL is released during the solve to allow Python threads to do
            // other things in parallel, e.g., log and interrupt.
            pybind11::call_guard<pybind11::gil_scoped_release>())
-      .def(
-          "solve_serialized_request",
-          [](ModelSolverHelper* solver, const std::string& request_str) {
-            std::string result;
-            {
-              // The GIL is released during the solve to allow Python threads to
-              // do other things in parallel, e.g., log and interrupt.
-              pybind11::gil_scoped_release release;
-              MPModelRequest request;
+      .def("solve_serialized_request",
+           [](ModelSolverHelper* solver, const std::string& request_str) {
+             std::string result;
+             {
+               // The GIL is released during the solve to allow Python threads
+               // to do other things in parallel, e.g., log and interrupt.
+               pybind11::gil_scoped_release release;
+               MPModelRequest request;
 
-              if (!request.ParseFromString(request_str)) {
-                throw std::invalid_argument(
-                    "Unable to parse request as MPModelRequest.");
-              }
-              std::optional<MPSolutionResponse> solution =
-                  solver->SolveRequest(request);
-              if (solution.has_value()) {
-                result = solution.value().SerializeAsString();
-              }
-            }
-            return pybind11::bytes(result);
-          })
+               if (!request.ParseFromString(request_str)) {
+                 throw std::invalid_argument(
+                     "Unable to parse request as MPModelRequest.");
+               }
+               std::optional<MPSolutionResponse> solution =
+                   solver->SolveRequest(request);
+               if (solution.has_value()) {
+                 result = solution.value().SerializeAsString();
+               }
+             }
+             return pybind11::bytes(result);
+           })
       .def("interrupt_solve", &ModelSolverHelper::InterruptSolve,
            "Returns true if the interrupt signal was correctly sent, that is, "
            "if the underlying solver supports it.")

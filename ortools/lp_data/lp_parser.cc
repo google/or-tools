@@ -10,7 +10,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#if defined(USE_LP_PARSER)
 
 #include "ortools/lp_data/lp_parser.h"
 
@@ -33,6 +32,8 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "re2/re2.h"
+
+#if defined(USE_LP_PARSER)
 
 namespace operations_research {
 namespace glop {
@@ -462,4 +463,5 @@ absl::StatusOr<MPModelProto> ModelProtoFromLpFormat(absl::string_view model) {
 }
 
 }  // namespace operations_research
-#endif  // #if defined(USE_LP_PARSER)
+
+#endif  // defined(USE_LP_PARSER)

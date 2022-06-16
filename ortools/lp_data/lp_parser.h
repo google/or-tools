@@ -123,6 +123,6 @@ absl::StatusOr<ParsedConstraint> ParseConstraint(absl::string_view constraint);
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // #if defined(USE_LP_PARSER)
+#endif  // defined(USE_LP_PARSER)
 
 #endif  // OR_TOOLS_LP_DATA_LP_PARSER_H_
