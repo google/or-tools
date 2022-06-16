@@ -853,9 +853,11 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
 
     // Notify if a continuous variable has a small domain as this is likely to
     // make an all integer solution far from a continuous one.
-    if (!mp_var.is_integer() && cp_var->domain(0) != cp_var->domain(1) &&
-        cp_var->domain(1) - cp_var->domain(0) < kSmallDomainSize) {
-      ++num_small_domains;
+    if (!mp_var.is_integer()) {
+      const double diff = mp_var.upper_bound() - mp_var.lower_bound();
+      if (diff > kWantedPrecision && diff < kSmallDomainSize) {
+        ++num_small_domains;
+      }
     }
   }
 

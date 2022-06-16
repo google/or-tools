@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_PROBING_H_
 #define OR_TOOLS_SAT_PROBING_H_
 
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -86,6 +87,13 @@ class Prober {
   int num_new_literals_fixed() const { return num_new_literals_fixed_; }
   int num_new_binary_clauses() const { return num_new_binary_; }
 
+  // Register a callback that will be called on each "propagation".
+  // One can inspect the VariablesAssignment to see what are the inferred
+  // literals.
+  void SetPropagationCallback(std::function<void(Literal decision)> f) {
+    callback_ = f;
+  }
+
  private:
   bool ProbeOneVariableInternal(BooleanVariable b);
 
@@ -113,6 +121,8 @@ class Prober {
   int num_new_binary_ = 0;
   int num_new_integer_bounds_ = 0;
   int num_new_literals_fixed_ = 0;
+
+  std::function<void(Literal decision)> callback_ = nullptr;
 
   // Logger.
   SolverLogger* logger_;

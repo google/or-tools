@@ -358,8 +358,10 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // conditionned on its presence. The functions will do the correct thing
   // depending on whether or not the start_min/end_max are optional variables
   // whose presence implies the interval presence.
-  ABSL_MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue new_start_min);
-  ABSL_MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue new_end_max);
+  ABSL_MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue value);
+  ABSL_MUST_USE_RESULT bool IncreaseEndMin(int t, IntegerValue value);
+  ABSL_MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue value);
+  ABSL_MUST_USE_RESULT bool PushLiteral(Literal l);
   ABSL_MUST_USE_RESULT bool PushTaskAbsence(int t);
   ABSL_MUST_USE_RESULT bool PushTaskPresence(int t);
   ABSL_MUST_USE_RESULT bool PushIntegerLiteral(IntegerLiteral lit);
@@ -492,6 +494,100 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   absl::Span<const int> map_to_other_helper_;
   IntegerValue event_for_other_helper_;
   std::vector<bool> already_added_to_other_reasons_;
+};
+
+// Helper class for cumulative constraint to wrap demands and expose concept
+// like energy.
+//
+// In a cumulative constraint, an interval always has a size and a demand, but
+// it can also have a set of "selector" literals each associated with a fixed
+// size / fixed demands. This allows more precise energy estimation.
+//
+// TODO(user): Cache energy min and reason for the non O(1) cases.
+class SchedulingDemandHelper {
+ public:
+  // Hack: this can be called with and empty demand vector as long as
+  // OverrideEnergies() is called to define the energies.
+  SchedulingDemandHelper(std::vector<AffineExpression> demands,
+                         SchedulingConstraintHelper* helper, Model* model);
+
+  // When defined, the interval will consume this much demand during its whole
+  // duration. Some propagator only relies on the "energy" and thus never uses
+  // this.
+  IntegerValue DemandMin(int t) const;
+  IntegerValue DemandMax(int t) const;
+  bool DemandIsFixed(int t) const;
+  void AddDemandMinReason(int t);
+  const std::vector<AffineExpression>& Demands() const { return demands_; }
+
+  // The "energy" is usually size * demand, but in some non-conventional usage
+  // it might have a more complex formula. In all case, the energy is assumed
+  // to be only consumed during the interval duration.
+  //
+  // IMPORTANT: One must call CacheAllEnergyValues() for the values to be
+  // updated. TODO(user): this is error prone, maybe we should revisit. But if
+  // there is many alternatives, we don't want to rescan the list more than a
+  // linear number of time per propagation.
+  //
+  // TODO(user): Add more complex EnergyMinBefore(time) once we also support
+  // expressing the interval as a set of alternatives.
+  void CacheAllEnergyValues();
+  IntegerValue EnergyMin(int t) const { return cached_energies_min_[t]; }
+  IntegerValue EnergyMax(int t) const { return cached_energies_max_[t]; }
+  bool EnergyIsQuadratic(int t) const { return energy_is_quadratic_[t]; }
+  void AddEnergyMinReason(int t);
+
+  // Returns the energy min in [start, end].
+  //
+  // Note(user): These functions are not in O(1) if the decomposition is used,
+  // so we have to be careful in not calling them too often.
+  IntegerValue EnergyMinInWindow(int t, IntegerValue window_start,
+                                 IntegerValue window_end);
+  void AddEnergyMinInWindowReason(int t, IntegerValue window_start,
+                                  IntegerValue window_end);
+
+  // Important: This might not do anything depending on the representation of
+  // the energy we have.
+  ABSL_MUST_USE_RESULT bool DecreaseEnergyMax(int t, IntegerValue value);
+
+  // Different optional representation of the energy of an interval.
+  // Important: first value is size, second value is demand.
+  const std::vector<std::vector<LiteralValueValue>>& DecomposedEnergies()
+      const {
+    return decomposed_energies_;
+  }
+
+  // Visible for testing.
+  void OverrideLinearizedEnergies(
+      const std::vector<LinearExpression>& energies);
+  void OverrideDecomposedEnergies(
+      const std::vector<std::vector<LiteralValueValue>>& energies);
+
+ private:
+  IntegerValue SimpleEnergyMin(int t) const;
+  IntegerValue LinearEnergyMin(int t) const;
+  IntegerValue SimpleEnergyMax(int t) const;
+  IntegerValue LinearEnergyMax(int t) const;
+  IntegerValue DecomposedEnergyMin(int t) const;
+  IntegerValue DecomposedEnergyMax(int t) const;
+
+  IntegerTrail* integer_trail_;
+  const VariablesAssignment& assignment_;
+  std::vector<AffineExpression> demands_;
+  SchedulingConstraintHelper* helper_;
+
+  // Cached value of the energies, as it can be a bit costly to compute.
+  std::vector<IntegerValue> cached_energies_min_;
+  std::vector<IntegerValue> cached_energies_max_;
+  std::vector<bool> energy_is_quadratic_;
+
+  // A representation of the energies as a set of alternative.
+  // If subvector is empty, we don't have this representation.
+  std::vector<std::vector<LiteralValueValue>> decomposed_energies_;
+
+  // A representation of the energies as a set of linear expression.
+  // If the optional is not set, we don't have this representation.
+  std::vector<std::optional<LinearExpression>> linearized_energies_;
 };
 
 // =============================================================================

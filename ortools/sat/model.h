@@ -149,8 +149,9 @@ class Model {
    * It will be destroyed when the model is.
    */
   template <typename T>
-  void TakeOwnership(T* t) {
+  T* TakeOwnership(T* t) {
     cleanup_list_.emplace_back(new Delete<T>(t));
+    return t;
   }
 
   /**

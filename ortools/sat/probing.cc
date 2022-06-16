@@ -76,6 +76,9 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
 
     if (sat_solver_->IsModelUnsat()) return false;
     if (sat_solver_->CurrentDecisionLevel() == 0) continue;
+    if (trail_.Index() > saved_index) {
+      if (callback_ != nullptr) callback_(decision);
+    }
 
     implied_bounds_->ProcessIntegerTrail(decision);
     integer_trail_->AppendNewBounds(&new_integer_bounds_);

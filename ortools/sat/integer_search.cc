@@ -1045,6 +1045,10 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       return sat_solver->UnsatStatus();
     }
 
+    // In multi-thread, we really only want to save the LP relaxation for thread
+    // with high linearization level to avoid to pollute the repository with
+    // sub-par lp solutions.
+    //
     // TODO(user): Experiment more around dynamically changing the
     // threshold for storing LP solutions in the pool. Alternatively expose
     // this as parameter so this can be tuned later.
@@ -1053,7 +1057,8 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     // change. Avoid adding solution that are too deep in the tree (most
     // variable fixed). Also use a callback rather than having this here, we
     // don't want this file to depend on cp_model.proto.
-    if (model->Get<SharedLPSolutionRepository>() != nullptr) {
+    if (model->Get<SharedLPSolutionRepository>() != nullptr &&
+        sat_parameters.linearization_level() >= 2) {
       num_decisions_since_last_lp_record_++;
       if (num_decisions_since_last_lp_record_ >= 100) {
         // NOTE: We can actually record LP solutions more frequently. However
@@ -1332,7 +1337,7 @@ void ContinuousProber::LogStatistics() {
                    num_bounds_tried_, " #new_integer_bounds:",
                    shared_bounds_manager_->NumBoundsExported("probing"),
                    ", #new_binary_clauses:", prober_->num_new_binary_clauses()),
-      &last_logging_time_);
+      parameters_.log_frequency_in_seconds(), &last_logging_time_);
 }
 
 }  // namespace sat

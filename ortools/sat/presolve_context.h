@@ -516,17 +516,6 @@ class PresolveContext {
   TimeLimit* time_limit() { return time_limit_; }
   ModelRandomGenerator* random() { return random_; }
 
-  // For each variables, list the constraints that just enforce a lower bound
-  // (resp. upper bound) on that variable. If all the constraints in which a
-  // variable appear are in the same direction, then we can usually fix a
-  // variable to one of its bound (modulo its cost).
-  //
-  // TODO(user): Keeping these extra vector of hash_set seems inefficient. Come
-  // up with a better way to detect if a variable is only constrainted in one
-  // direction.
-  std::vector<absl::flat_hash_set<int>> var_to_ub_only_constraints;
-  std::vector<absl::flat_hash_set<int>> var_to_lb_only_constraints;
-
   CpModelProto* working_model = nullptr;
   CpModelProto* mapping_model = nullptr;
 

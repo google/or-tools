@@ -19,15 +19,9 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/strong_vector.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
-#include "ortools/sat/linear_constraint.h"
-#include "ortools/sat/linear_constraint_manager.h"
-#include "ortools/sat/model.h"
-#include "ortools/util/strong_integers.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -46,9 +40,8 @@ namespace sat {
 //
 // The maximum energy is capacity * span of intervals at level 0.
 CutGenerator CreateCumulativeEnergyCutGenerator(
-    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
-    const std::vector<AffineExpression>& demands,
-    const std::vector<std::optional<LinearExpression>>& energies,
+    SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
+    const AffineExpression& capacity,
     const std::optional<AffineExpression>& makespan, Model* model);
 
 // For a given set of intervals and demands, we first compute the mandatory part
@@ -63,22 +56,21 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
 //   sum(demands of always present intervals)
 //   + sum(presence_literal * min_of_demand) <= capacity.
 CutGenerator CreateCumulativeTimeTableCutGenerator(
-    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
-    const std::vector<AffineExpression>& demands, Model* model);
+    SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
+    const AffineExpression& capacity, Model* model);
 
 // Completion time cuts for the cumulative constraint. It is a simple relaxation
 // where we replace a cumulative task with demand k and duration d by a
 // no_overlap task with duration d * k / capacity_max.
 CutGenerator CreateCumulativeCompletionTimeCutGenerator(
-    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
-    const std::vector<AffineExpression>& demands,
-    const std::vector<std::optional<LinearExpression>>& energies, Model* model);
+    SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
+    const AffineExpression& capacity, Model* model);
 
 // For a given set of intervals in a cumulative constraint, we detect violated
 // mandatory precedences and create a cut for these.
 CutGenerator CreateCumulativePrecedenceCutGenerator(
-    SchedulingConstraintHelper* helper, const AffineExpression& capacity,
-    const std::vector<AffineExpression>& demands, Model* model);
+    SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
+    const AffineExpression& capacity, Model* model);
 
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
 // the completion time cumulative cuts in both axis.

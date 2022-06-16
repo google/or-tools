@@ -180,6 +180,14 @@ class LinearConstraintBuilder {
   void AddLinearExpression(const LinearExpression& expr);
   void AddLinearExpression(const LinearExpression& expr, IntegerValue coeff);
 
+  // Add the corresponding decomposed products (obtained from
+  // TryToDecomposeProduct). The code assumes all literals to be in an
+  // exactly_one relation.
+  // It returns false if one literal does not have an integer view, as it
+  // actually calls AddLiteralTerm().
+  ABSL_MUST_USE_RESULT bool AddDecomposedProduct(
+      const std::vector<LiteralValueValue>& product);
+
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
   ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff);
@@ -197,7 +205,8 @@ class LinearConstraintBuilder {
   // expression instead. This would depend on the LP value of the left and
   // right.
   void AddQuadraticLowerBound(AffineExpression left, AffineExpression right,
-                              IntegerTrail* integer_trail);
+                              IntegerTrail* integer_trail,
+                              bool* is_quadratic = nullptr);
 
   // Clears all added terms and constants. Keeps the original bounds.
   void Clear() {

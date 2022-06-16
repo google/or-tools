@@ -1201,8 +1201,6 @@ void PresolveContext::InitializeNewDomains() {
   var_with_reduced_small_degree.Resize(domains.size());
   var_to_constraints_.resize(domains.size());
   var_to_num_linear1_.resize(domains.size());
-  var_to_ub_only_constraints.resize(domains.size());
-  var_to_lb_only_constraints.resize(domains.size());
 }
 
 void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {

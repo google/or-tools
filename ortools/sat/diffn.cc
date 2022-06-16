@@ -112,7 +112,6 @@ void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
       WeightedSumGreaterOrEqual({capacity.var, min_start_var, max_end_var},
                                 coeffs, capacity.constant.value()));
 
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
 
   const SatParameters* params = model->GetOrCreate<SatParameters>();
@@ -121,12 +120,19 @@ void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
   bool add_energetic_relaxation =
       params->use_energetic_reasoning_in_no_overlap_2d();
 
+  // Needed if we use one of the relaxation below.
+  SchedulingDemandHelper* demands;
+  if (add_timetabling_relaxation || add_energetic_relaxation) {
+    demands = model->TakeOwnership(new SchedulingDemandHelper(sizes, x, model));
+  }
+
   // Propagator responsible for applying Timetabling filtering rule. It
   // increases the minimum of the start variables, decrease the maximum of the
   // end variables, and increase the minimum of the capacity variable.
   if (add_timetabling_relaxation) {
+    DCHECK(demands != nullptr);
     TimeTablingPerTask* time_tabling =
-        new TimeTablingPerTask(sizes, capacity, integer_trail, x);
+        new TimeTablingPerTask(capacity, x, demands, model);
     time_tabling->RegisterWith(watcher);
     model->TakeOwnership(time_tabling);
   }
@@ -134,7 +140,8 @@ void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
   // Propagator responsible for applying the Overload Checking filtering rule.
   // It increases the minimum of the capacity variable.
   if (add_energetic_relaxation) {
-    AddCumulativeOverloadChecker(sizes, capacity, x, model);
+    DCHECK(demands != nullptr);
+    AddCumulativeOverloadChecker(capacity, x, demands, model);
   }
 }
 

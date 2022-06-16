@@ -508,6 +508,26 @@ LiteralIndex IntegerEncoder::SearchForLiteralAtOrBefore(
   return after_it->second.Index();
 }
 
+ABSL_MUST_USE_RESULT bool IntegerEncoder::LiteralOrNegationHasView(
+    Literal lit, IntegerVariable* view, bool* view_is_direct) const {
+  const IntegerVariable direct_var = GetLiteralView(lit);
+  const IntegerVariable opposite_var = GetLiteralView(lit.Negated());
+  // If a literal has both views, we want to always keep the same
+  // representative: the smallest IntegerVariable.
+  if (direct_var != kNoIntegerVariable &&
+      (opposite_var == kNoIntegerVariable || direct_var <= opposite_var)) {
+    if (view != nullptr) *view = direct_var;
+    if (view_is_direct != nullptr) *view_is_direct = true;
+    return true;
+  }
+  if (opposite_var != kNoIntegerVariable) {
+    if (view != nullptr) *view = opposite_var;
+    if (view_is_direct != nullptr) *view_is_direct = false;
+    return true;
+  }
+  return false;
+}
+
 IntegerTrail::~IntegerTrail() {
   if (parameters_.log_search_progress() && num_decisions_to_break_loop_ > 0) {
     VLOG(1) << "Num decisions to break propagation loop: "

@@ -2372,22 +2372,6 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
 
 namespace {
 
-// Return true if the given domain only restrict the values with an upper bound.
-bool IsLeConstraint(const Domain& domain, const Domain& all_values) {
-  return all_values
-      .IntersectionWith(
-          Domain(std::numeric_limits<int64_t>::min(), domain.Max()))
-      .IsIncludedIn(domain);
-}
-
-// Same as IsLeConstraint() but in the other direction.
-bool IsGeConstraint(const Domain& domain, const Domain& all_values) {
-  return all_values
-      .IntersectionWith(
-          Domain(domain.Min(), std::numeric_limits<int64_t>::max()))
-      .IsIncludedIn(domain);
-}
-
 // In the equation terms + coeff * var_domain \included rhs, returns true if can
 // we always fix rhs to its min value for any value in terms. It is okay to
 // not be as generic as possible here.
@@ -2425,137 +2409,7 @@ bool RhsCanBeFixedToMax(int64_t coeff, const Domain& var_domain,
   return false;
 }
 
-// Remove from to_clear any entry not in current.
-void TakeIntersectionWith(const absl::flat_hash_set<int>& current,
-                          absl::flat_hash_set<int>* to_clear) {
-  std::vector<int> new_set;
-  for (const int c : *to_clear) {
-    if (current.contains(c)) new_set.push_back(c);
-  }
-  to_clear->clear();
-  for (const int c : new_set) to_clear->insert(c);
-}
-
 }  // namespace
-
-bool CpModelPresolver::DetectAndProcessOneSidedLinearConstraint(
-    int c, ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
-  if (context_->ModelIsUnsat()) return false;
-  if (context_->keep_all_feasible_solutions) return false;
-
-  // TODO(user): There is a bit of code and effort duplication with
-  // PropagateDomainsInLinear(). Try to remove that.
-  Domain implied_rhs(0);
-  const int num_vars = ct->linear().vars().size();
-  for (int i = 0; i < num_vars; ++i) {
-    const int ref = ct->linear().vars(i);
-    const int64_t coeff = ct->linear().coeffs(i);
-    implied_rhs =
-        implied_rhs
-            .AdditionWith(context_->DomainOf(ref).MultiplicationBy(coeff))
-            .RelaxIfTooComplex();
-  }
-
-  // Abort if trivial.
-  const Domain old_rhs = ReadDomainFromProto(ct->linear());
-  if (implied_rhs.IsIncludedIn(old_rhs)) {
-    context_->UpdateRuleStats("linear: always true");
-    return RemoveConstraint(ct);
-  }
-
-  // Incorporate the implied rhs information.
-  const Domain rhs = old_rhs.SimplifyUsingImpliedDomain(implied_rhs);
-  if (rhs.IsEmpty()) {
-    context_->UpdateRuleStats("linear: infeasible");
-    return MarkConstraintAsFalse(ct);
-  }
-  if (rhs != old_rhs) {
-    context_->UpdateRuleStats("linear: simplified rhs");
-  }
-  FillDomainInProto(rhs, ct->mutable_linear());
-
-  // Detect if it is always good for a term of this constraint to move towards
-  // its lower (resp. upper) bound. This is the same as saying that this
-  // constraint only bound in one direction.
-  const bool is_le_constraint = IsLeConstraint(rhs, implied_rhs);
-  const bool is_ge_constraint = IsGeConstraint(rhs, implied_rhs);
-  if (!is_le_constraint && !is_ge_constraint) return false;
-  CHECK_NE(is_le_constraint, is_ge_constraint);
-
-  // Tricky: If a variable appears in the enforcement literal list, it is
-  // constraining in the "true" direction. We rely on the constraint to have
-  // been canonicalized and these literal removed for correctness here. In debug
-  // mode we still do some check since it is easy to add presolve rules and call
-  // this with a non-canonicalized constraint.
-  absl::flat_hash_set<int> enforcement_set;
-  if (DEBUG_MODE) {
-    for (const int ref : ct->enforcement_literal()) {
-      enforcement_set.insert(ref);
-    }
-  }
-
-  bool recanonicalize = false;
-  for (int i = 0; i < num_vars; ++i) {
-    const int var = ct->linear().vars(i);
-    const int64_t var_coeff = ct->linear().coeffs(i);
-    CHECK(RefIsPositive(var));
-
-    if ((var_coeff > 0) == is_ge_constraint) {
-      DCHECK(!enforcement_set.contains(var));
-      context_->var_to_lb_only_constraints[var].insert(c);
-    } else {
-      DCHECK(!enforcement_set.contains(NegatedRef(var)));
-      context_->var_to_ub_only_constraints[var].insert(c);
-    }
-
-    // Simple dual fixing: If for any feasible solution, any solution with var
-    // higher (resp. lower) is also valid, then we can fix that variable to
-    // its bound if it also moves the objective in the good direction.
-    const bool is_in_objective = context_->VarToConstraints(var).contains(-1);
-    const int size =
-        context_->VarToConstraints(var).size() - (is_in_objective ? 1 : 0);
-    const int64_t obj_coeff =
-        is_in_objective ? context_->ObjectiveMap().at(var) : 0;
-
-    // We cannot fix anything if the domain of the objective is excluding
-    // some objective values.
-    if (obj_coeff != 0 && context_->ObjectiveDomainIsConstraining()) {
-      continue;
-    }
-
-    if (obj_coeff <= 0 &&
-        context_->var_to_lb_only_constraints[var].size() >= size) {
-      TakeIntersectionWith(context_->VarToConstraints(var),
-                           &(context_->var_to_lb_only_constraints[var]));
-      if (context_->var_to_lb_only_constraints[var].size() >= size) {
-        if (!context_->IntersectDomainWith(var, Domain(context_->MaxOf(var)))) {
-          return false;
-        }
-        context_->UpdateRuleStats("linear: dual fixing");
-        recanonicalize = true;
-        continue;
-      }
-    }
-
-    if (obj_coeff >= 0 &&
-        context_->var_to_ub_only_constraints[var].size() >= size) {
-      TakeIntersectionWith(context_->VarToConstraints(var),
-                           &(context_->var_to_ub_only_constraints[var]));
-      if (context_->var_to_ub_only_constraints[var].size() >= size) {
-        if (!context_->IntersectDomainWith(var, Domain(context_->MinOf(var)))) {
-          return false;
-        }
-        context_->UpdateRuleStats("linear: dual fixing");
-        recanonicalize = true;
-        continue;
-      }
-    }
-  }
-
-  if (recanonicalize) return CanonicalizeLinear(ct);
-  return false;
-}
 
 // TODO(user): generalize to disjoint amo for even better propagation!
 // TODO(user): merge code with the fully included case.
@@ -2834,7 +2688,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
   for (int i = 0; i < num_vars; ++i) {
     const int var = ct->linear().vars(i);
     const int64_t coeff = ct->linear().coeffs(i);
-    CHECK(RefIsPositive(var));
+    DCHECK(RefIsPositive(var));
     term_domains[i] = context_->DomainOf(var).MultiplicationBy(coeff);
     left_domains[i + 1] =
         left_domains[i].AdditionWith(term_domains[i]).RelaxIfTooComplex();
@@ -2905,7 +2759,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
     // Given a variable that only appear in one constraint and in the
     // objective, for any feasible solution, it will be always better to move
     // this singleton variable as much as possible towards its good objective
-    // direction. Sometime_exprs, we can detect that we will always be able to
+    // direction. Sometime, we can detect that we will always be able to
     // do this until the only constraint of this singleton variable is tight.
     //
     // When this happens, we can make the constraint an equality. Note that it
@@ -5555,9 +5409,167 @@ void CpModelPresolver::Probe() {
   auto* sat_solver = model.GetOrCreate<SatSolver>();
   auto* mapping = model.GetOrCreate<CpModelMapping>();
   auto* prober = model.GetOrCreate<Prober>();
+
+  // Try to detect trivial clauses thanks to implications.
+  // This can be slow, so we bound the amount of work done.
+  //
+  // Idea: If we have l1, l2 in a bool_or and not(l1) => l2, the constraint is
+  // always true.
+  //
+  // Correctness: Note that we always replace a clause with another one that
+  // subsumes it. So we are correct even if new clauses are learned and used
+  // for propagation along the way.
+  //
+  // TODO(user): Improve the algo?
+  int64_t work_done = 0;
+  const int64_t work_limit = 1e8;
+  if (true) {
+    const auto& assignment = sat_solver->Assignment();
+    prober->SetPropagationCallback([&](Literal decision) {
+      if (work_done > work_limit) return;
+      const int decision_var =
+          mapping->GetProtoVariableFromBooleanVariable(decision.Variable());
+      if (decision_var < 0) return;
+      for (const int c : context_->VarToConstraints(decision_var)) {
+        ++work_done;
+        if (c < 0) continue;
+        const ConstraintProto& ct = context_->working_model->constraints(c);
+        if (ct.enforcement_literal().size() > 2) {
+          // Any l for which decision => l can be removed.
+          //
+          // If decision => not(l), constraint can never be satisfied. However
+          // because we don't know if this constraint was part of the
+          // propagation we replace it by an implication.
+          //
+          // TODO(user): remove duplication with code below.
+          // TODO(user): If decision appear positively, we could potentially
+          // remove a bunch of terms (all the ones involving variables implied
+          // by the decision) from the innner constraint, especially in the
+          // linear case.
+          int decision_ref;
+          int false_ref;
+          bool decision_is_positive = false;
+          bool has_false_literal = false;
+          bool simplification_possible = false;
+          for (const int ref : ct.enforcement_literal()) {
+            ++work_done;
+            const Literal lit = mapping->Literal(ref);
+            if (PositiveRef(ref) == decision_var) {
+              decision_ref = ref;
+              decision_is_positive = assignment.LiteralIsTrue(lit);
+              if (!decision_is_positive) break;
+              continue;
+            }
+            if (assignment.LiteralIsFalse(lit)) {
+              false_ref = ref;
+              has_false_literal = true;
+            } else if (assignment.LiteralIsTrue(lit)) {
+              // If decision => l, we can remove l from the list.
+              simplification_possible = true;
+            }
+          }
+          if (!decision_is_positive) continue;
+
+          if (has_false_literal) {
+            // Reduce to implication.
+            auto* mutable_ct = context_->working_model->mutable_constraints(c);
+            mutable_ct->Clear();
+            mutable_ct->add_enforcement_literal(decision_ref);
+            mutable_ct->mutable_bool_and()->add_literals(NegatedRef(false_ref));
+            context_->UpdateRuleStats(
+                "probing: reduced enforced constraint to implication.");
+            context_->UpdateConstraintVariableUsage(c);
+            continue;
+          }
+
+          if (simplification_possible) {
+            int new_size = 0;
+            auto* mutable_enforcements =
+                context_->working_model->mutable_constraints(c)
+                    ->mutable_enforcement_literal();
+            for (const int ref : ct.enforcement_literal()) {
+              if (PositiveRef(ref) != decision_var &&
+                  assignment.LiteralIsTrue(mapping->Literal(ref))) {
+                continue;
+              }
+              mutable_enforcements->Set(new_size++, ref);
+            }
+            mutable_enforcements->Truncate(new_size);
+            context_->UpdateRuleStats("probing: simplified enforcement list.");
+            context_->UpdateConstraintVariableUsage(c);
+          }
+          continue;
+        }
+
+        if (ct.constraint_case() != ConstraintProto::kBoolOr) continue;
+        if (ct.bool_or().literals().size() <= 2) continue;
+
+        int decision_ref;
+        int true_ref;
+        bool decision_is_negative = false;
+        bool has_true_literal = false;
+        bool simplification_possible = false;
+        for (const int ref : ct.bool_or().literals()) {
+          ++work_done;
+          const Literal lit = mapping->Literal(ref);
+          if (PositiveRef(ref) == decision_var) {
+            decision_ref = ref;
+            decision_is_negative = assignment.LiteralIsFalse(lit);
+            if (!decision_is_negative) break;
+            continue;
+          }
+          if (assignment.LiteralIsTrue(lit)) {
+            true_ref = ref;
+            has_true_literal = true;
+          } else if (assignment.LiteralIsFalse(lit)) {
+            // If not(l1) => not(l2), we can remove l2 from the clause.
+            simplification_possible = true;
+          }
+        }
+        if (!decision_is_negative) continue;
+
+        if (has_true_literal) {
+          // This will later be merged with the current implications and removed
+          // if it is a duplicate.
+          auto* mutable_bool_or =
+              context_->working_model->mutable_constraints(c)
+                  ->mutable_bool_or();
+          mutable_bool_or->mutable_literals()->Clear();
+          mutable_bool_or->add_literals(decision_ref);
+          mutable_bool_or->add_literals(true_ref);
+          context_->UpdateRuleStats("probing: bool_or reduced to implication");
+          context_->UpdateConstraintVariableUsage(c);
+          continue;
+        }
+
+        if (simplification_possible) {
+          int new_size = 0;
+          auto* mutable_bool_or =
+              context_->working_model->mutable_constraints(c)
+                  ->mutable_bool_or();
+          for (const int ref : ct.bool_or().literals()) {
+            if (PositiveRef(ref) != decision_var &&
+                assignment.LiteralIsFalse(mapping->Literal(ref))) {
+              continue;
+            }
+            mutable_bool_or->set_literals(new_size++, ref);
+          }
+          mutable_bool_or->mutable_literals()->Truncate(new_size);
+          context_->UpdateRuleStats("probing: simplified clauses.");
+          context_->UpdateConstraintVariableUsage(c);
+        }
+      }
+    });
+  }
+
   prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
   context_->time_limit()->AdvanceDeterministicTime(
       model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
+  if (work_done > 0) {
+    SOLVER_LOG(logger_,
+               "[Probing] implications and bool_or (work_done=", work_done,
+               ").", (work_done > work_limit ? " Aborted." : ""));
+  }
   if (sat_solver->IsModelUnsat() || !implication_graph->DetectEquivalences()) {
     return (void)context_->NotifyThatModelIsUnsat("during probing");
   }
@@ -6258,20 +6270,6 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       }
       return PresolveIntMod(ct);
     case ConstraintProto::kLinear: {
-      // In the presence of affine relation, it is possible that the sign of a
-      // variable change during canonicalization, and a variable that could
-      // freely move in one direction can no longer do so. So we make sure we
-      // always remove c from all the maps before re-inserting it in
-      // DetectAndProcessOneSidedLinearConstraint().
-      //
-      // TODO(user): The move in only one direction code is redundant with the
-      // dual bound strengthening code. So maybe we don't need both.
-      for (const int ref : ct->linear().vars()) {
-        const int var = PositiveRef(ref);
-        context_->var_to_lb_only_constraints[var].erase(c);
-        context_->var_to_ub_only_constraints[var].erase(c);
-      }
-
       if (CanonicalizeLinear(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
@@ -6301,7 +6299,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
         context_->UpdateConstraintVariableUsage(c);
       }
 
-      // If we extracted some enforcement, we redo some preoslve.
+      // If we extracted some enforcement, we redo some presolve.
       const int old_num_enforcement_literals = ct->enforcement_literal_size();
       ExtractEnforcementLiteralFromLinearConstraint(c, ct);
       if (ct->enforcement_literal_size() > old_num_enforcement_literals) {
@@ -6314,14 +6312,6 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       }
 
       TryToReduceCoefficientsOfLinearConstraint(c, ct);
-
-      // Note that it is important for this to be last, so that if a constraint
-      // is marked as being in one direction, no other presolve is applied until
-      // it is processed again and unmarked at the beginning of this case.
-      if (DetectAndProcessOneSidedLinearConstraint(c, ct)) {
-        context_->UpdateConstraintVariableUsage(c);
-      }
-
       return false;
     }
     case ConstraintProto::kInterval:
@@ -6843,16 +6833,6 @@ void CpModelPresolver::DetectDuplicateConstraints() {
       const Domain d = ReadDomainFromProto(
           context_->working_model->constraints(dup).linear());
       if (rep_domain != d) {
-        // Tricky: we modify the domain so we need to clear this information.
-        //
-        // TODO(user): Revisit this algorithm and integrate it with the dual
-        // reduction. We can either have incrementaly maintained info, or just
-        // do it with one pass of DualBoundStrengthening.
-        for (const int var : context_->ConstraintToVars(rep)) {
-          context_->var_to_lb_only_constraints[var].erase(rep);
-          context_->var_to_ub_only_constraints[var].erase(rep);
-        }
-
         context_->UpdateRuleStats("duplicate: merged rhs of linear constraint");
         const Domain rhs = rep_domain.IntersectionWith(d);
         if (rhs.IsEmpty()) {
@@ -6894,11 +6874,6 @@ void CpModelPresolver::DetectDuplicateConstraints() {
         // TODO(user): this write/read is a bit unclean, but needed.
         context_->ReadObjectiveFromProto();
       }
-    }
-
-    for (const int var : context_->ConstraintToVars(dup)) {
-      context_->var_to_lb_only_constraints[var].erase(dup);
-      context_->var_to_ub_only_constraints[var].erase(dup);
     }
     context_->working_model->mutable_constraints(dup)->Clear();
     context_->UpdateConstraintVariableUsage(dup);
@@ -7128,10 +7103,6 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
   });
 
   for (const int c : constraint_indices_to_clean) {
-    for (const int var : context_->ConstraintToVars(c)) {
-      context_->var_to_lb_only_constraints[var].erase(c);
-      context_->var_to_ub_only_constraints[var].erase(c);
-    }
     context_->UpdateConstraintVariableUsage(c);
   }
 
@@ -8562,10 +8533,12 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
 
   const Domain new_domain =
       ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-offset));
-  if (non_fixed_variables_.empty() && !new_domain.Contains(0)) {
-    if (ct.enforcement_literal().empty()) {
-      return false;
-    }
+  if (non_fixed_variables_.empty()) {
+    // Trivial constraint.
+    if (new_domain.Contains(0)) return true;
+
+    // Constraint is false.
+    if (ct.enforcement_literal().empty()) return false;
     temp_literals_.clear();
     for (const int literal : ct.enforcement_literal()) {
       if (context_->LiteralIsTrue(literal)) {

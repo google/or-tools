@@ -73,8 +73,11 @@ std::function<void(Model*)> Disjunctive(
     if (/*DISABLES_CODE*/ (false)) {
       const AffineExpression one(IntegerValue(1));
       std::vector<AffineExpression> demands(vars.size(), one);
-      TimeTablingPerTask* timetable = new TimeTablingPerTask(
-          demands, one, model->GetOrCreate<IntegerTrail>(), helper);
+      SchedulingDemandHelper* demands_helper = model->TakeOwnership(
+          new SchedulingDemandHelper(demands, helper, model));
+
+      TimeTablingPerTask* timetable =
+          new TimeTablingPerTask(one, helper, demands_helper, model);
       timetable->RegisterWith(watcher);
       model->TakeOwnership(timetable);
       return;

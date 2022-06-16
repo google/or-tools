@@ -17,13 +17,10 @@
 #include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/linear_constraint.h"
-#include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {
@@ -178,20 +175,16 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 // Adds linearization of cumulative constraints.The second part adds an
 // energetic equation linking the duration of all potential tasks to the actual
 // max span * capacity of the cumulative constraint.
-void AddCumulativeRelaxation(
-    SchedulingConstraintHelper* helper,
-    const std::vector<AffineExpression>& demands,
-    const AffineExpression& capacity,
-    const std::vector<std::optional<LinearExpression>>& energies, Model* model,
-    LinearRelaxation* relaxation);
+void AddCumulativeRelaxation(const AffineExpression& capacity,
+                             SchedulingConstraintHelper* helper,
+                             SchedulingDemandHelper* demands, Model* model,
+                             LinearRelaxation* relaxation);
 
-void AddCumulativeCutGenerator(
-    SchedulingConstraintHelper* helper,
-    const std::vector<AffineExpression>& demands,
-    const AffineExpression& capacity,
-    const std::vector<std::optional<LinearExpression>>& energies,
-    std::optional<AffineExpression>& makespan, Model* m,
-    LinearRelaxation* relaxation);
+void AddCumulativeCutGenerator(const AffineExpression& capacity,
+                               SchedulingConstraintHelper* helper,
+                               SchedulingDemandHelper* demands,
+                               std::optional<AffineExpression>& makespan,
+                               Model* m, LinearRelaxation* relaxation);
 
 void AddNoOverlapCutGenerator(SchedulingConstraintHelper* helper,
                               const std::optional<AffineExpression>& makespan,

@@ -165,11 +165,11 @@ void SharedResponseManager::LogMessage(const std::string& prefix,
 
 void SharedResponseManager::LogPeriodicMessage(const std::string& prefix,
                                                const std::string& message,
+                                               double frequency_seconds,
                                                absl::Time* last_logging_time) {
-  const double freq = parameters_.log_frequency_in_seconds();
-  if (freq <= 0.0 || last_logging_time == nullptr) return;
+  if (frequency_seconds < 0.0 || last_logging_time == nullptr) return;
   const absl::Time now = absl::Now();
-  if (now - *last_logging_time < absl::Seconds(freq)) {
+  if (now - *last_logging_time < absl::Seconds(frequency_seconds)) {
     return;
   }
 

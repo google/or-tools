@@ -104,11 +104,14 @@ class ReservoirTimeTabling : public PropagatorInterface {
 
 // A strongly quadratic version of Time Tabling filtering. This propagator
 // is similar to the CumulativeTimeTable propagator of the constraint solver.
+//
+// TODO(user): Use SchedulingDemandHelper. In particular, if we know the task
+// is from a set of fixed alternatives, we might be able to push it more.
 class TimeTablingPerTask : public PropagatorInterface {
  public:
-  TimeTablingPerTask(const std::vector<AffineExpression>& demands,
-                     AffineExpression capacity, IntegerTrail* integer_trail,
-                     SchedulingConstraintHelper* helper);
+  TimeTablingPerTask(AffineExpression capacity,
+                     SchedulingConstraintHelper* helper,
+                     SchedulingDemandHelper* demands, Model* model);
 
   bool Propagate() final;
 
@@ -171,14 +174,6 @@ class TimeTablingPerTask : public PropagatorInterface {
     return integer_trail_->UpperBound(capacity_);
   }
 
-  IntegerValue DemandMin(int task_id) const {
-    return integer_trail_->LowerBound(demands_[task_id]);
-  }
-
-  IntegerValue DemandMax(int task_id) const {
-    return integer_trail_->UpperBound(demands_[task_id]);
-  }
-
   // Returns true if the tasks is present and has a mantatory part.
   bool IsInProfile(int t) const {
     return positions_in_profile_tasks_[t] < num_profile_tasks_;
@@ -187,14 +182,12 @@ class TimeTablingPerTask : public PropagatorInterface {
   // Number of tasks.
   const int num_tasks_;
 
-  // The demand variables of the tasks.
-  std::vector<AffineExpression> demands_;
-
   // Capacity of the resource.
   const AffineExpression capacity_;
 
-  IntegerTrail* integer_trail_;
   SchedulingConstraintHelper* helper_;
+  SchedulingDemandHelper* demands_;
+  IntegerTrail* integer_trail_;
 
   // Optimistic profile of the resource consumption over time.
   std::vector<ProfileRectangle> profile_;

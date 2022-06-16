@@ -338,6 +338,23 @@ struct ValueLiteralPair {
 
 std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p);
 
+struct LiteralValueValue {
+  Literal literal;
+  IntegerValue left_value;
+  IntegerValue right_value;
+
+  // Used for testing.
+  bool operator==(const LiteralValueValue& rhs) const {
+    return literal.Index() == rhs.literal.Index() &&
+           left_value == rhs.left_value && right_value == rhs.right_value;
+  }
+
+  std::string DebugString() const {
+    return absl::StrCat("(lit(", literal.Index().value(), ") * ",
+                        left_value.value(), " * ", right_value.value(), ")");
+  }
+};
+
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between
 // the integer variables and such literals which can be created by a call to
@@ -500,10 +517,9 @@ class IntegerEncoder {
 
   // If this is true, then a literal can be linearized with an affine expression
   // involving an integer variable.
-  const bool LiteralOrNegationHasView(Literal lit) const {
-    return GetLiteralView(lit) != kNoIntegerVariable ||
-           GetLiteralView(lit.Negated()) != kNoIntegerVariable;
-  }
+  ABSL_MUST_USE_RESULT bool LiteralOrNegationHasView(
+      Literal lit, IntegerVariable* view = nullptr,
+      bool* view_is_direct = nullptr) const;
 
   // Returns a Boolean literal associated with a bound lower than or equal to
   // the one of the given IntegerLiteral. If the given IntegerLiteral is true,

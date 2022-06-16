@@ -87,7 +87,7 @@ std::function<void(Model*)> Cumulative(
 
     // Detect a subset of intervals that needs to be in disjunction and add a
     // Disjunctive() constraint over them.
-    if (parameters.use_disjunctive_constraint_in_cumulative_constraint()) {
+    if (parameters.use_disjunctive_constraint_in_cumulative()) {
       // TODO(user): We need to exclude intervals that can be of size zero
       // because the disjunctive do not "ignore" them like the cumulative
       // does. That is, the interval [2,2) will be assumed to be in
@@ -148,6 +148,9 @@ std::function<void(Model*)> Cumulative(
     if (helper == nullptr) {
       helper = intervals->GetOrCreateHelper(vars);
     }
+    SchedulingDemandHelper* demands_helper =
+        new SchedulingDemandHelper(demands, helper, model);
+    model->TakeOwnership(demands_helper);
 
     // For each variables that is after a subset of task ends (i.e. like a
     // makespan objective), we detect it and add a special constraint to
@@ -167,7 +170,7 @@ std::function<void(Model*)> Cumulative(
     // TODO(user): We compute this only once, so we should explore the full
     // precedence graph, not just task in direct precedence. Make sure not to
     // create to many such constraints though.
-    if (parameters.use_hard_precedences_in_cumulative_constraint()) {
+    if (parameters.use_hard_precedences_in_cumulative()) {
       // The CumulativeIsAfterSubsetConstraint() always reset the helper to the
       // forward time direction, so it is important to also precompute the
       // precedence relation using the same direction! This is needed in case
@@ -218,8 +221,8 @@ std::function<void(Model*)> Cumulative(
             sum_of_demand_max > integer_trail->LevelZeroLowerBound(capacity)) {
           CumulativeIsAfterSubsetConstraint* constraint =
               new CumulativeIsAfterSubsetConstraint(var, min_offset, capacity,
-                                                    demands, subtasks,
-                                                    integer_trail, helper);
+                                                    subtasks, helper,
+                                                    demands_helper, model);
           constraint->RegisterWith(watcher);
           model->TakeOwnership(constraint);
         }
@@ -230,22 +233,22 @@ std::function<void(Model*)> Cumulative(
     // increases the minimum of the start variables, decrease the maximum of the
     // end variables, and increase the minimum of the capacity variable.
     TimeTablingPerTask* time_tabling =
-        new TimeTablingPerTask(demands, capacity, integer_trail, helper);
+        new TimeTablingPerTask(capacity, helper, demands_helper, model);
     time_tabling->RegisterWith(watcher);
     model->TakeOwnership(time_tabling);
 
     // Propagator responsible for applying the Overload Checking filtering rule.
     // It increases the minimum of the capacity variable.
-    if (parameters.use_overload_checker_in_cumulative_constraint()) {
-      AddCumulativeOverloadChecker(demands, capacity, helper, model);
+    if (parameters.use_overload_checker_in_cumulative()) {
+      AddCumulativeOverloadChecker(capacity, helper, demands_helper, model);
     }
 
     // Propagator responsible for applying the Timetable Edge finding filtering
     // rule. It increases the minimum of the start variables and decreases the
     // maximum of the end variables,
-    if (parameters.use_timetable_edge_finding_in_cumulative_constraint()) {
-      TimeTableEdgeFinding* time_table_edge_finding = new TimeTableEdgeFinding(
-          demands, capacity, helper, integer_trail, model);
+    if (parameters.use_timetable_edge_finding_in_cumulative()) {
+      TimeTableEdgeFinding* time_table_edge_finding =
+          new TimeTableEdgeFinding(capacity, helper, demands_helper, model);
       time_table_edge_finding->RegisterWith(watcher);
       model->TakeOwnership(time_table_edge_finding);
     }

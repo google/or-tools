@@ -156,7 +156,6 @@ class CpModelPresolver {
   bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
                                                     ConstraintProto* ct);
   bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);
-  bool DetectAndProcessOneSidedLinearConstraint(int c, ConstraintProto* ct);
 
   // It can be interesting to know for a given linear constraint that a subset
   // of its variables are in at most one relation.

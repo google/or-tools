@@ -475,8 +475,9 @@ SatSolver::Status LbTreeSearch::Search(
         if (lb > current_objective_lb_) break;
       }
 
-      shared_response_->LogPeriodicMessage("TreeS", SmallProgressString(),
-                                           &last_logging_time_);
+      shared_response_->LogPeriodicMessage(
+          "TreeS", SmallProgressString(),
+          parameters_.log_frequency_in_seconds(), &last_logging_time_);
 
       if (n < nodes_.size()) {
         current_branch_.push_back(n);

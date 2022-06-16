@@ -335,6 +335,7 @@ class SharedResponseManager {
 
   void LogMessage(const std::string& prefix, const std::string& message);
   void LogPeriodicMessage(const std::string& prefix, const std::string& message,
+                          double frequency_seconds,
                           absl::Time* last_logging_time);
   bool LoggingIsEnabled() const { return logger_->LoggingIsEnabled(); }
 

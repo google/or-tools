@@ -753,6 +753,7 @@ cc_library(
     hdrs = ["intervals.h"],
     deps = [
         ":cp_constraints",
+        ":implied_bounds",
         ":integer",
         ":integer_expr",
         ":model",

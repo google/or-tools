@@ -669,15 +669,12 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
 
   SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
   if (!helper->SynchronizeAndSetTimeDirection(true)) return;
-  std::vector<std::optional<LinearExpression>> energies;
-  energies.reserve(helper->NumTasks());
-  for (int i = 0; i < helper->NumTasks(); ++i) {
-    LinearConstraintBuilder e(model);
-    e.AddTerm(helper->Sizes()[i], one);
-    energies.push_back(CanonicalizeExpr(e.BuildExpression()));
-  }
 
-  AddCumulativeRelaxation(helper, demands, /*capacity=*/one, energies, model,
+  SchedulingDemandHelper* demands_helper =
+      new SchedulingDemandHelper(demands, helper, model);
+  model->TakeOwnership(demands_helper);
+
+  AddCumulativeRelaxation(/*capacity=*/one, helper, demands_helper, model,
                           relaxation);
   if (model->GetOrCreate<SatParameters>()->linearization_level() > 1) {
     AddNoOverlapCutGenerator(helper, makespan, model, relaxation);
@@ -708,19 +705,15 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
   // We try to linearize the energy of each task (size * demand).
   SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
   if (!helper->SynchronizeAndSetTimeDirection(true)) return;
-  std::vector<std::optional<LinearExpression>> energies;
-  energies.reserve(helper->NumTasks());
-  for (int i = 0; i < helper->NumTasks(); ++i) {
-    energies.push_back(
-        TryToLinearizeProduct(demands[i], helper->Sizes()[i], model));
-  }
+  SchedulingDemandHelper* demands_helper =
+      new SchedulingDemandHelper(demands, helper, model);
+  model->TakeOwnership(demands_helper);
 
   // We can now add the relaxation and the cut generators.
-  AddCumulativeRelaxation(helper, demands, capacity, energies, model,
-                          relaxation);
+  AddCumulativeRelaxation(capacity, helper, demands_helper, model, relaxation);
   if (model->GetOrCreate<SatParameters>()->linearization_level() > 1) {
-    AddCumulativeCutGenerator(helper, demands, capacity, energies, makespan,
-                              model, relaxation);
+    AddCumulativeCutGenerator(capacity, helper, demands_helper, makespan, model,
+                              relaxation);
   }
 }
 
@@ -728,13 +721,12 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
 // and add the constraint that the sum of energies of each task must fit in the
 // capacity * span area.
 // TODO(user): Exploit the makespan if found.
-void AddCumulativeRelaxation(
-    SchedulingConstraintHelper* helper,
-    const std::vector<AffineExpression>& demands,
-    const AffineExpression& capacity,
-    const std::vector<std::optional<LinearExpression>>& energies, Model* model,
-    LinearRelaxation* relaxation) {
+void AddCumulativeRelaxation(const AffineExpression& capacity,
+                             SchedulingConstraintHelper* helper,
+                             SchedulingDemandHelper* demands_helper,
+                             Model* model, LinearRelaxation* relaxation) {
   const int num_intervals = helper->NumTasks();
+  demands_helper->CacheAllEnergyValues();
 
   std::vector<Literal> presence_literals;
   std::vector<AffineExpression> starts;
@@ -763,8 +755,7 @@ void AddCumulativeRelaxation(
           model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral());
     }
 
-    if (!helper->SizeIsFixed(index) ||
-        (!demands.empty() && !integer_trail->IsFixed(demands[index]))) {
+    if (!helper->SizeIsFixed(index) || !demands_helper->DemandIsFixed(index)) {
       num_variable_energies++;
     }
     starts.push_back(helper->Starts()[index]);
@@ -811,24 +802,21 @@ void AddCumulativeRelaxation(
     if (helper->IsAbsent(i)) continue;
 
     if (!helper->IsOptional(i)) {
-      if (energies[i].has_value()) {
-        // The energy is defined if built from a constant value, a linear
-        // expression, or a linearized product.
-        lc.AddLinearExpression(energies[i].value());
+      const std::vector<LiteralValueValue>& product =
+          demands_helper->DecomposedEnergies()[i];
+      if (!product.empty()) {
+        // The energy is defined if the vector is not empty.
+        if (!lc.AddDecomposedProduct(product)) return;
       } else {
-        // The demand and the size are variable, and their product could not be
-        // linearized.
-        lc.AddQuadraticLowerBound(helper->Sizes()[i], demands[i],
-                                  integer_trail);
+        // The energy is not a decomposed product, but it could still be
+        // constant or linear. If not, a McCormick relaxation will be
+        // introduced.  AddQuadraticLowerBound() supports all cases.
+        lc.AddQuadraticLowerBound(helper->Sizes()[i],
+                                  demands_helper->Demands()[i], integer_trail);
       }
     } else {
-      const IntegerValue product_min =
-          helper->SizeMin(i) * integer_trail->LowerBound(demands[i]);
-      const IntegerValue energy_min = energies[i].has_value()
-                                          ? energies[i]->Min(*integer_trail)
-                                          : IntegerValue(0);
-      if (!lc.AddLiteralTerm(helper->PresenceLiteral(i),
-                             std::max(energy_min, product_min))) {
+      const IntegerValue energy_min = demands_helper->EnergyMin(i);
+      if (!lc.AddLiteralTerm(helper->PresenceLiteral(i), energy_min)) {
         return;
       }
     }
@@ -879,10 +867,10 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
   for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
     if (intervals_repository->IsPresent(x_intervals[i]) &&
         intervals_repository->IsPresent(y_intervals[i])) {
-      LinearConstraintBuilder linear_energy(model);
-      if (DetectLinearEncodingOfProducts(x_sizes[i], y_sizes[i], model,
-                                         &linear_energy)) {
-        lc.AddLinearExpression(linear_energy.BuildExpression());
+      const std::vector<LiteralValueValue> energy =
+          TryToDecomposeProduct(x_sizes[i], y_sizes[i], model);
+      if (!energy.empty()) {
+        if (!lc.AddDecomposedProduct(energy)) return;
       } else {
         lc.AddQuadraticLowerBound(x_sizes[i], y_sizes[i], integer_trail);
       }
@@ -1197,6 +1185,10 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       break;
     }
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
+      // TODO(user): Use the same pattern as the other 2 scheduling methods:
+      //   - single function
+      //   - generate helpers once
+      //
       // Adds an energetic relaxation (sum of areas fits in bounding box).
       AppendNoOverlap2dRelaxation(ct, model, relaxation);
       if (linearization_level > 1) {
@@ -1340,20 +1332,18 @@ bool IntervalIsVariable(const IntervalVariable interval,
   return false;
 }
 
-void AddCumulativeCutGenerator(
-    SchedulingConstraintHelper* helper,
-    const std::vector<AffineExpression>& demands,
-    const AffineExpression& capacity,
-    const std::vector<std::optional<LinearExpression>>& energies,
-    std::optional<AffineExpression>& makespan, Model* m,
-    LinearRelaxation* relaxation) {
+void AddCumulativeCutGenerator(const AffineExpression& capacity,
+                               SchedulingConstraintHelper* helper,
+                               SchedulingDemandHelper* demands_helper,
+                               std::optional<AffineExpression>& makespan,
+                               Model* m, LinearRelaxation* relaxation) {
+  relaxation->cut_generators.push_back(CreateCumulativeTimeTableCutGenerator(
+      helper, demands_helper, capacity, m));
   relaxation->cut_generators.push_back(
-      CreateCumulativeTimeTableCutGenerator(helper, capacity, demands, m));
-  relaxation->cut_generators.push_back(
-      CreateCumulativeCompletionTimeCutGenerator(helper, capacity, demands,
-                                                 energies, m));
-  relaxation->cut_generators.push_back(
-      CreateCumulativePrecedenceCutGenerator(helper, capacity, demands, m));
+      CreateCumulativeCompletionTimeCutGenerator(helper, demands_helper,
+                                                 capacity, m));
+  relaxation->cut_generators.push_back(CreateCumulativePrecedenceCutGenerator(
+      helper, demands_helper, capacity, m));
 
   // Checks if at least one rectangle has a variable size, is optional, or if
   // the demand or the capacity are variable.
@@ -1365,14 +1355,14 @@ void AddCumulativeCutGenerator(
       break;
     }
     // Checks variable demand.
-    if (!integer_trail->IsFixed(demands[i])) {
+    if (!demands_helper->DemandIsFixed(i)) {
       has_variable_part = true;
       break;
     }
   }
   if (has_variable_part || !integer_trail->IsFixed(capacity)) {
     relaxation->cut_generators.push_back(CreateCumulativeEnergyCutGenerator(
-        helper, capacity, demands, energies, makespan, m));
+        helper, demands_helper, capacity, makespan, m));
   }
 }
 

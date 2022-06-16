@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -282,22 +281,26 @@ std::string EncodingStr(const std::vector<ValueLiteralPair>& enc) {
 // bounds repository. Because if we can reconcile an encoding, then any of the
 // literal in the at most one should imply a value on the boolean view use in
 // the size2 affine.
-bool TryToReconcileEncodings(
+std::vector<LiteralValueValue> TryToReconcileEncodings(
     const AffineExpression& size2_affine, const AffineExpression& affine,
-    const std::vector<ValueLiteralPair>& affine_var_encoding, Model* model,
-    LinearConstraintBuilder* builder) {
+    const std::vector<ValueLiteralPair>& affine_var_encoding,
+    bool put_affine_left_in_result, Model* model) {
   IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
   IntegerVariable binary = size2_affine.var;
-  if (!integer_encoder->VariableIsFullyEncoded(binary)) return false;
+  std::vector<LiteralValueValue> terms;
+  if (!integer_encoder->VariableIsFullyEncoded(binary)) return terms;
   const std::vector<ValueLiteralPair>& size2_enc =
       integer_encoder->FullDomainEncoding(binary);
-  CHECK_EQ(2, size2_enc.size());
+
+  // TODO(user): I am not sure how this can happen since size2_affine is
+  // supposed to be non-fixed. Maybe we miss some propag. Investigate.
+  if (size2_enc.size() != 2) return terms;
+
   Literal lit0 = size2_enc[0].literal;
-  IntegerValue value0 =
-      size2_enc[0].value * size2_affine.coeff + size2_affine.constant;
+  IntegerValue value0 = size2_affine.ValueAt(size2_enc[0].value);
   Literal lit1 = size2_enc[1].literal;
-  IntegerValue value1 =
-      size2_enc[1].value * size2_affine.coeff + size2_affine.constant;
+  IntegerValue value1 = size2_affine.ValueAt(size2_enc[1].value);
+
   for (const auto& [unused, candidate_literal] : affine_var_encoding) {
     if (candidate_literal == lit1) {
       std::swap(lit0, lit1);
@@ -305,32 +308,93 @@ bool TryToReconcileEncodings(
     }
     if (candidate_literal != lit0) continue;
 
-    // Compute the minimum energy.
-    IntegerValue min_energy = kMaxIntegerValue;
+    // Build the decomposition.
     for (const auto& [value, literal] : affine_var_encoding) {
-      const IntegerValue energy = literal == lit0
-                                      ? value0 * affine.ValueAt(value)
-                                      : value1 * affine.ValueAt(value);
-      min_energy = std::min(energy, min_energy);
+      const IntegerValue size_2_value = literal == lit0 ? value0 : value1;
+      const IntegerValue affine_value = affine.ValueAt(value);
+      if (put_affine_left_in_result) {
+        terms.push_back({literal, affine_value, size_2_value});
+      } else {
+        terms.push_back({literal, size_2_value, affine_value});
+      }
     }
+    break;
+  }
 
-    // Build the energy expression.
-    builder->Clear();
-    builder->AddConstant(min_energy);
-    for (const auto& [value, literal] : affine_var_encoding) {
-      const IntegerValue energy = literal == lit0
-                                      ? value0 * affine.ValueAt(value)
-                                      : value1 * affine.ValueAt(value);
-      if (energy > min_energy) {
-        if (!builder->AddLiteralTerm(literal, energy - min_energy)) {
-          return false;
+  return terms;
+}
+
+std::vector<LiteralValueValue> TryToDecomposeProduct(
+    const AffineExpression& left, const AffineExpression& right, Model* model) {
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  if (integer_trail->IsFixed(left) || integer_trail->IsFixed(right)) return {};
+
+  // Fill in the encodings for the left variable.
+  ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+      left_encodings = implied_bounds->GetElementEncodings(left.var);
+
+  // Fill in the encodings for the right variable.
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+      right_encodings = implied_bounds->GetElementEncodings(right.var);
+
+  std::vector<int> compatible_keys;
+  for (const auto& [index, encoding] : left_encodings) {
+    if (right_encodings.contains(index)) {
+      compatible_keys.push_back(index);
+    }
+  }
+
+  if (compatible_keys.empty()) {
+    if (integer_trail->InitialVariableDomain(left.var).Size() == 2) {
+      for (const auto& [index, right_encoding] : right_encodings) {
+        const std::vector<LiteralValueValue> result =
+            TryToReconcileEncodings(left, right, right_encoding,
+                                    /*put_affine_left_in_result=*/false, model);
+        if (!result.empty()) {
+          return result;
         }
       }
     }
-    return true;
+    if (integer_trail->InitialVariableDomain(right.var).Size() == 2) {
+      for (const auto& [index, left_encoding] : left_encodings) {
+        const std::vector<LiteralValueValue> result =
+            TryToReconcileEncodings(right, left, left_encoding,
+                                    /*put_affine_left_in_result=*/true, model);
+        if (!result.empty()) {
+          return result;
+        }
+      }
+    }
+    return {};
   }
 
-  return false;
+  if (compatible_keys.size() > 1) {
+    VLOG(1) << "More than one exactly_one involved in the encoding of the two "
+               "variables";
+  }
+
+  // Select the compatible encoding with the minimum index.
+  const int min_index =
+      *std::min_element(compatible_keys.begin(), compatible_keys.end());
+  // By construction, encodings follow the order of literals in the exactly_one
+  // constraint.
+  const std::vector<ValueLiteralPair>& left_encoding =
+      left_encodings.at(min_index);
+  const std::vector<ValueLiteralPair>& right_encoding =
+      right_encodings.at(min_index);
+  DCHECK_EQ(left_encoding.size(), right_encoding.size());
+
+  // Build decomposition of the product.
+  std::vector<LiteralValueValue> terms;
+  for (int i = 0; i < left_encoding.size(); ++i) {
+    const Literal literal = left_encoding[i].literal;
+    DCHECK_EQ(literal, right_encoding[i].literal);
+    terms.push_back({literal, left.ValueAt(left_encoding[i].value),
+                     right.ValueAt(right_encoding[i].value)});
+  }
+
+  return terms;
 }
 
 // TODO(user): Experiment with x * x where constants = 0, x is
@@ -373,93 +437,26 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
     return true;
   }
 
-  // Fill in the encodings for the left variable.
-  ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
-  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
-      left_encodings = implied_bounds->GetElementEncodings(left.var);
+  const std::vector<LiteralValueValue> product =
+      TryToDecomposeProduct(left, right, model);
+  if (product.empty()) return false;
 
-  // Fill in the encodings for the right variable.
-  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
-      right_encodings = implied_bounds->GetElementEncodings(right.var);
-
-  std::vector<int> compatible_keys;
-  for (const auto& [index, encoding] : left_encodings) {
-    if (right_encodings.contains(index)) {
-      compatible_keys.push_back(index);
-    }
+  IntegerValue min_coefficient = kMaxIntegerValue;
+  for (const LiteralValueValue& term : product) {
+    min_coefficient =
+        std::min(min_coefficient, term.left_value * term.right_value);
   }
 
-  if (compatible_keys.empty()) {
-    if (integer_trail->InitialVariableDomain(left.var).Size() == 2) {
-      for (const auto& [index, right_encoding] : right_encodings) {
-        if (TryToReconcileEncodings(left, right, right_encoding, model,
-                                    builder)) {
-          return true;
-        }
-      }
-    }
-    if (integer_trail->InitialVariableDomain(right.var).Size() == 2) {
-      for (const auto& [index, left_encoding] : left_encodings) {
-        if (TryToReconcileEncodings(right, left, left_encoding, model,
-                                    builder)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  if (compatible_keys.size() > 1) {
-    VLOG(1) << "More than one exactly_one involved in the encoding of the two "
-               "variables";
-  }
-
-  // Select the compatible encoding with the minimum index.
-  const int min_index =
-      *std::min_element(compatible_keys.begin(), compatible_keys.end());
-  // By construction, encodings follow the order of literals in the exactly_one
-  // constraint.
-  const std::vector<ValueLiteralPair>& left_encoding =
-      left_encodings.at(min_index);
-  const std::vector<ValueLiteralPair>& right_encoding =
-      right_encodings.at(min_index);
-  DCHECK_EQ(left_encoding.size(), right_encoding.size());
-
-  // Compute the min energy.
-  IntegerValue min_energy = kMaxIntegerValue;
-  for (int i = 0; i < left_encoding.size(); ++i) {
-    const IntegerValue energy = left.ValueAt(left_encoding[i].value) *
-                                right.ValueAt(right_encoding[i].value);
-    min_energy = std::min(min_energy, energy);
-  }
-
-  // Build the linear formulation of the energy.
-  for (int i = 0; i < left_encoding.size(); ++i) {
-    const IntegerValue energy = left.ValueAt(left_encoding[i].value) *
-                                right.ValueAt(right_encoding[i].value);
-    if (energy == min_energy) continue;
-    DCHECK_GT(energy, min_energy);
-    const Literal lit = left_encoding[i].literal;
-    DCHECK_EQ(lit, right_encoding[i].literal);
-
-    if (!builder->AddLiteralTerm(lit, energy - min_energy)) {
+  for (const LiteralValueValue& term : product) {
+    const IntegerValue coefficient =
+        term.left_value * term.right_value - min_coefficient;
+    if (coefficient == 0) continue;
+    if (!builder->AddLiteralTerm(term.literal, coefficient)) {
       return false;
     }
   }
-  builder->AddConstant(min_energy);
+  builder->AddConstant(min_coefficient);
   return true;
-}
-
-std::optional<LinearExpression> TryToLinearizeProduct(
-    const AffineExpression& left, const AffineExpression& right, Model* model) {
-  LinearConstraintBuilder builder(model);
-  if (DetectLinearEncodingOfProducts(left, right, model, &builder)) {
-    // The expression must only have positive coefficient because we will call
-    // Min() on it and that function expect it this way.
-    return CanonicalizeExpr(builder.BuildExpression());
-  } else {
-    return std::optional<LinearExpression>();
-  }
 }
 
 }  // namespace sat

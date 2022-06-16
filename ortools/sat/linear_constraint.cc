@@ -80,9 +80,30 @@ void LinearConstraintBuilder::AddLinearExpression(const LinearExpression& expr,
   offset_ += expr.offset * coeff;
 }
 
+ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddDecomposedProduct(
+    const std::vector<LiteralValueValue>& product) {
+  if (product.empty()) return true;
+
+  IntegerValue product_min = kMaxIntegerValue;
+  // TODO(user): Checks the value of literals.
+  for (const LiteralValueValue& term : product) {
+    product_min = std::min(product_min, term.left_value * term.right_value);
+  }
+
+  for (const LiteralValueValue& term : product) {
+    IntegerValue coeff = term.left_value * term.right_value - product_min;
+    if (coeff == 0) continue;
+    if (!AddLiteralTerm(term.literal, coeff)) {
+      return false;
+    }
+  }
+  AddConstant(product_min);
+  return true;
+}
+
 void LinearConstraintBuilder::AddQuadraticLowerBound(
-    AffineExpression left, AffineExpression right,
-    IntegerTrail* integer_trail) {
+    AffineExpression left, AffineExpression right, IntegerTrail* integer_trail,
+    bool* is_quadratic) {
   if (integer_trail->IsFixed(left)) {
     AddTerm(right, integer_trail->FixedValue(left));
   } else if (integer_trail->IsFixed(right)) {
@@ -94,6 +115,7 @@ void LinearConstraintBuilder::AddQuadraticLowerBound(
     AddTerm(right, left_min);
     // Substract the energy counted twice.
     AddConstant(-left_min * right_min);
+    if (is_quadratic != nullptr) *is_quadratic = true;
   }
 }
 
@@ -104,31 +126,19 @@ void LinearConstraintBuilder::AddConstant(IntegerValue value) {
 ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
     Literal lit, IntegerValue coeff) {
   DCHECK(encoder_ != nullptr);
-  bool has_direct_view = encoder_->GetLiteralView(lit) != kNoIntegerVariable;
-  bool has_opposite_view =
-      encoder_->GetLiteralView(lit.Negated()) != kNoIntegerVariable;
+  IntegerVariable var = kNoIntegerVariable;
+  bool view_is_direct = true;
+  if (!encoder_->LiteralOrNegationHasView(lit, &var, &view_is_direct)) {
+    return false;
+  }
 
-  // If a literal has both views, we want to always keep the same
-  // representative: the smallest IntegerVariable. Note that AddTerm() will
-  // also make sure to use the associated positive variable.
-  if (has_direct_view && has_opposite_view) {
-    if (encoder_->GetLiteralView(lit) <=
-        encoder_->GetLiteralView(lit.Negated())) {
-      has_opposite_view = false;
-    } else {
-      has_direct_view = false;
-    }
-  }
-  if (has_direct_view) {
-    AddTerm(encoder_->GetLiteralView(lit), coeff);
-    return true;
-  }
-  if (has_opposite_view) {
-    AddTerm(encoder_->GetLiteralView(lit.Negated()), -coeff);
+  if (view_is_direct) {
+    AddTerm(var, coeff);
+  } else {
+    AddTerm(var, -coeff);
     offset_ += coeff;
-    return true;
   }
-  return false;
+  return true;
 }
 
 LinearConstraint LinearConstraintBuilder::Build() {

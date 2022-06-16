@@ -59,6 +59,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NOT_NAN(absolute_gap_limit);
   TEST_NOT_NAN(relative_gap_limit);
   TEST_NOT_NAN(log_frequency_in_seconds);
+  TEST_NOT_NAN(model_reduction_log_frequency_in_seconds);
   TEST_NOT_NAN(presolve_probing_deterministic_time_limit);
   TEST_NOT_NAN(merge_no_overlap_work_limit);
   TEST_NOT_NAN(merge_at_most_one_work_limit);

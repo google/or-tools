@@ -205,6 +205,14 @@ class ImpliedBounds {
   int64_t num_enqueued_in_var_to_bounds_ = 0;
 };
 
+// Tries to decompose a product left * right in a list of constant alternative
+// left_value * right_value controlled by literals in an exactly one
+// relationship. We construct this by using literals from the full encoding or
+// element encodings of the variables of the two affine expressions.
+// If it fails, it returns an empty vector.
+std::vector<LiteralValueValue> TryToDecomposeProduct(
+    const AffineExpression& left, const AffineExpression& right, Model* model);
+
 // Looks at value encodings and detects if the product of two variables can be
 // linearized.
 //
@@ -216,11 +224,6 @@ class ImpliedBounds {
 bool DetectLinearEncodingOfProducts(const AffineExpression& left,
                                     const AffineExpression& right, Model* model,
                                     LinearConstraintBuilder* builder);
-
-// Try to linearize left * right and returns the result. If we cannot linearize
-// the result will have no value.
-std::optional<LinearExpression> TryToLinearizeProduct(
-    const AffineExpression& left, const AffineExpression& right, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

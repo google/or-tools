@@ -29,6 +29,9 @@ namespace sat {
 // Enforces the existence of a preemptive schedule where every task is executed
 // inside its interval, using energy units of the resource during execution.
 //
+// Important: This only uses the energies min/max and not the actual demand
+// of a task. It can thus be used in some non-conventional situation.
+//
 // All energy expression are assumed to take a non-negative value;
 // if the energy of a task is 0, the task can run anywhere.
 // The schedule never uses more than capacity units of energy at a given time.
@@ -36,35 +39,27 @@ namespace sat {
 // This is mathematically equivalent to making a model with energy(task)
 // different tasks with demand and size 1, but is much more efficient,
 // since it uses O(|tasks|) variables instead of O(sum_{task} |energy(task)|).
-void AddCumulativeEnergyConstraint(std::vector<LinearExpression> energies,
-                                   AffineExpression capacity,
-                                   SchedulingConstraintHelper* helper,
-                                   Model* model);
-
-// Creates a CumulativeEnergyConstraint where the energy of each interval is
-// the product of the demands times its size.
-//
-// TODO(user): This is not ideal if both size and demands are variable.
-void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
-                                  AffineExpression capacity,
+void AddCumulativeOverloadChecker(AffineExpression capacity,
                                   SchedulingConstraintHelper* helper,
+                                  SchedulingDemandHelper* demands,
                                   Model* model);
 
-// Implementation of AddCumulativeEnergyConstraint().
+// Implementation of AddCumulativeOverloadChecker().
 class CumulativeEnergyConstraint : public PropagatorInterface {
  public:
-  CumulativeEnergyConstraint(std::vector<LinearExpression> energies,
-                             AffineExpression capacity,
-                             IntegerTrail* integer_trail,
-                             SchedulingConstraintHelper* helper);
+  CumulativeEnergyConstraint(AffineExpression capacity,
+                             SchedulingConstraintHelper* helper,
+                             SchedulingDemandHelper* demands, Model* model);
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  const std::vector<LinearExpression> energies_;
   const AffineExpression capacity_;
   IntegerTrail* integer_trail_;
   SchedulingConstraintHelper* helper_;
+  SchedulingDemandHelper* demands_;
+
   ThetaLambdaTree<IntegerValue> theta_tree_;
 
   // Task characteristics.
@@ -85,10 +80,10 @@ class CumulativeIsAfterSubsetConstraint : public PropagatorInterface {
  public:
   CumulativeIsAfterSubsetConstraint(IntegerVariable var, IntegerValue offset,
                                     AffineExpression capacity,
-                                    const std::vector<AffineExpression> demands,
                                     const std::vector<int> subtasks,
-                                    IntegerTrail* integer_trail,
-                                    SchedulingConstraintHelper* helper);
+                                    SchedulingConstraintHelper* helper,
+                                    SchedulingDemandHelper* demands,
+                                    Model* model);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -97,7 +92,6 @@ class CumulativeIsAfterSubsetConstraint : public PropagatorInterface {
   const IntegerVariable var_to_push_;
   const IntegerValue offset_;
   const AffineExpression capacity_;
-  const std::vector<AffineExpression> demands_;
   const std::vector<int> subtasks_;
 
   // Computed at construction time, this is const.
@@ -109,6 +103,7 @@ class CumulativeIsAfterSubsetConstraint : public PropagatorInterface {
 
   IntegerTrail* integer_trail_;
   SchedulingConstraintHelper* helper_;
+  SchedulingDemandHelper* demands_;
 };
 
 }  // namespace sat
