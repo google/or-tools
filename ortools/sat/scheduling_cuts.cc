@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -73,6 +73,44 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
       vars->push_back(view);
     }
   }
+}
+
+template <typename E>
+IntegerValue EnergyMinInWindow(const E& e,
+                               const VariablesAssignment& assignment,
+                               IntegerValue window_start,
+                               IntegerValue window_end) {
+  if (window_end <= window_start) return IntegerValue(0);
+
+  // Returns zero if the interval do not necessarily overlap.
+  if (e.x_end_min <= window_start) return IntegerValue(0);
+  if (e.x_start_max >= window_end) return IntegerValue(0);
+  const IntegerValue window_size = window_end - window_start;
+  const IntegerValue simple_energy_min =
+      e.y_size_min *
+      std::min({e.x_end_min - window_start, window_end - e.x_start_max,
+                e.x_size_min, window_size});
+  if (e.decomposed_energy.empty()) return simple_energy_min;
+
+  IntegerValue result = kMaxIntegerValue;
+  for (const auto [lit, fixed_size, fixed_demand] : e.decomposed_energy) {
+    if (assignment.LiteralIsTrue(lit)) {
+      // Both should be identical, so we don't recompute it.
+      return simple_energy_min;
+    }
+    if (assignment.LiteralIsFalse(lit)) continue;
+    const IntegerValue alt_end_min =
+        std::max(e.x_end_min, e.x_start_min + fixed_size);
+    const IntegerValue alt_start_max =
+        std::min(e.x_start_max, e.x_end_max - fixed_size);
+    const IntegerValue energy_min =
+        fixed_demand *
+        std::min({alt_end_min - window_start, window_end - alt_start_max,
+                  fixed_size, window_size});
+    result = std::min(result, energy_min);
+  }
+  if (result == kMaxIntegerValue) return simple_energy_min;
+  return std::max(simple_energy_min, result);
 }
 
 }  // namespace
@@ -154,39 +192,6 @@ struct EnergyEvent {
     linearized_energy = tmp_energy.BuildExpression();
     linearized_energy_lp_value = linearized_energy.LpValue(lp_values);
     return true;
-  }
-
-  IntegerValue EnergyMinInWindow(const VariablesAssignment& assignment,
-                                 IntegerValue window_start,
-                                 IntegerValue window_end) const {
-    if (window_end <= window_start) return IntegerValue(0);
-
-    // Returns zero if the interval do not necessarily overlap.
-    if (x_end_min <= window_start) return IntegerValue(0);
-    if (x_start_max >= window_end) return IntegerValue(0);
-    const IntegerValue window_size = window_end - window_start;
-    const IntegerValue simple_energy_min =
-        y_size_min *
-        std::min({x_end_min - window_start, window_end - x_start_max,
-                  x_size_min, window_size});
-    if (decomposed_energy.empty()) return simple_energy_min;
-
-    IntegerValue result = kMaxIntegerValue;
-    for (const auto [lit, fixed_size, fixed_demand] : decomposed_energy) {
-      if (assignment.LiteralIsTrue(lit)) {
-        // Both should be identical, so we don't recompute it.
-        return simple_energy_min;
-      }
-      if (assignment.LiteralIsFalse(lit)) continue;
-      const IntegerValue alt_em = std::max(x_end_min, x_start_min + fixed_size);
-      const IntegerValue alt_sm = std::min(x_start_max, x_end_max - fixed_size);
-      const IntegerValue energy_min =
-          fixed_demand * std::min({alt_em - window_start, window_end - alt_sm,
-                                   fixed_size, window_size});
-      result = std::min(result, energy_min);
-    }
-    if (result == kMaxIntegerValue) return simple_energy_min;
-    return std::max(simple_energy_min, result);
   }
 
   std::string DebugString() const {
@@ -282,14 +287,14 @@ void GenerateCumulativeEnergeticCuts(
           const IntegerValue window_size = window_end - window_start;
           for (const auto [lit, fixed_size, fixed_demand] : energy) {
             if (assignment.LiteralIsFalse(lit)) continue;
-            const IntegerValue alt_em =
+            const IntegerValue alt_end_min =
                 std::max(event.x_end_min, event.x_start_min + fixed_size);
-            const IntegerValue alt_sm =
+            const IntegerValue alt_start_max =
                 std::min(event.x_start_max, event.x_end_max - fixed_size);
             const IntegerValue energy_min =
                 fixed_demand *
-                std::min({alt_em - window_start, window_end - alt_sm,
-                          fixed_size, window_size});
+                std::min({alt_end_min - window_start,
+                          window_end - alt_start_max, fixed_size, window_size});
             DCHECK_GT(energy_min, 0);
             if (!cut->AddLiteralTerm(lit, energy_min)) return false;
           }
@@ -298,7 +303,7 @@ void GenerateCumulativeEnergeticCuts(
       } else {
         if (add_opt_to_name != nullptr) *add_opt_to_name = true;
         const IntegerValue min_energy =
-            event.EnergyMinInWindow(assignment, window_start, window_end);
+            EnergyMinInWindow(event, assignment, window_start, window_end);
         if (min_energy > event.x_size_min * event.y_size_min &&
             add_energy_to_name != nullptr) {
           *add_energy_to_name = true;
@@ -1153,8 +1158,11 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
 //       capacity_max.
 //   For a no_overlap_2d constraint, y the other dimension of the rect.
 struct CtEvent {
-  // The start min of the x interval.
+  // The bounds of the x interval.
   IntegerValue x_start_min;
+  IntegerValue x_start_max;
+  IntegerValue x_end_min;
+  IntegerValue x_end_max;
 
   // The size min of the x interval.
   IntegerValue x_size_min;
@@ -1195,31 +1203,6 @@ struct CtEvent {
   // will not use this.
   IntegerValue fixed_y_size = -1;
 
-  IntegerValue EnergyMinAfter(const VariablesAssignment& assignment,
-                              IntegerValue window_start) const {
-    // Returns zero if the interval do not necessarily overlap.
-    if (x_start_min + x_size_min <= window_start) return IntegerValue(0);
-    const IntegerValue size_reduction = window_start - x_start_min;
-    const IntegerValue simple_energy_min =
-        y_size_min * (x_size_min - size_reduction);
-    DCHECK_GT(simple_energy_min, 0);
-    if (decomposed_energy.empty()) return simple_energy_min;
-
-    IntegerValue result = kMaxIntegerValue;
-    for (const auto [lit, fixed_size, fixed_demand] : decomposed_energy) {
-      if (assignment.LiteralIsTrue(lit)) {
-        // Both should be identical, so we don't recompute it.
-        return simple_energy_min;
-      }
-      if (assignment.LiteralIsFalse(lit)) continue;
-      const IntegerValue energy_min =
-          fixed_demand * (fixed_size - size_reduction);
-      DCHECK_GT(energy_min, 0);
-      result = std::min(result, energy_min);
-    }
-    if (result == kMaxIntegerValue) return simple_energy_min;
-    return std::max(simple_energy_min, result);
-  }
 
   std::string DebugString() const {
     return absl::StrCat("CtEvent(x_end = ", x_end.DebugString(),
@@ -1281,14 +1264,15 @@ void GenerateCompletionTimeCuts(
           // Build the vector of energies as the vector of sizes.
           CtEvent event = events[before];  // Copy.
           event.lifted = true;
+          event.energy_min = EnergyMinInWindow(
+              event, assignment, sequence_start_min, event.x_end_max);
           event.x_size_min =
               event.x_size_min + event.x_start_min - sequence_start_min;
           event.x_start_min = sequence_start_min;
-          event.energy_min =
-              event.EnergyMinAfter(assignment, sequence_start_min);
           if (event.energy_min > event.x_size_min * event.y_size_min) {
             event.use_energy = true;
           }
+          CHECK_GE(event.energy_min, event.x_size_min * event.y_size_min);
           if (event.energy_min <= 0) continue;
           residual_tasks.push_back(event);
         }
@@ -1414,6 +1398,9 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
               const AffineExpression end_expr = helper->Ends()[index];
               CtEvent event;
               event.x_start_min = helper->StartMin(index);
+              event.x_start_max = helper->StartMax(index);
+              event.x_end_min = helper->EndMin(index);
+              event.x_end_max = helper->EndMax(index);
               event.x_size_min = size_min;
               event.x_end = end_expr;
               event.x_lp_end = end_expr.LpValue(lp_values);
@@ -1470,6 +1457,9 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
 
               CtEvent event;
               event.x_start_min = helper->StartMin(index);
+              event.x_start_max = helper->StartMax(index);
+              event.x_end_min = helper->EndMin(index);
+              event.x_end_max = helper->EndMax(index);
               event.x_size_min = size_min;
               event.x_end = end_expr;
               event.x_lp_end = end_expr.LpValue(lp_values);
@@ -1566,7 +1556,10 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
             for (const int rect : rectangles) {
               const AffineExpression x_end_expr = x_helper->Ends()[rect];
               CtEvent event;
-              event.x_start_min = x_helper->ShiftedStartMin(rect);
+              event.x_start_min = x_helper->StartMin(rect);
+              event.x_start_max = x_helper->StartMax(rect);
+              event.x_end_min = x_helper->EndMin(rect);
+              event.x_end_max = x_helper->EndMax(rect);
               event.x_size_min = x_helper->SizeMin(rect);
               event.x_end = x_end_expr;
               event.x_lp_end = x_end_expr.LpValue(lp_values);

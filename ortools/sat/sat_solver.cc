@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -656,10 +656,8 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
   }
 
   DCHECK(assumptions_.empty());
-  int unused = 0;
   const int64_t old_num_branches = counters_.num_branches;
-  const SatSolver::Status status =
-      ReapplyDecisionsUpTo(assumption_level_ - 1, &unused);
+  const SatSolver::Status status = ReapplyDecisionsUpTo(assumption_level_ - 1);
   counters_.num_branches = old_num_branches;
   assumption_level_ = CurrentDecisionLevel();
   return (status == SatSolver::FEASIBLE);
@@ -951,7 +949,9 @@ SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
     // Not assigned, we try to take it.
     const int old_level = current_decision_level_;
     const int index = EnqueueDecisionAndBackjumpOnConflict(previous_decision);
-    *first_propagation_index = std::min(*first_propagation_index, index);
+    if (first_propagation_index != nullptr) {
+      *first_propagation_index = std::min(*first_propagation_index, index);
+    }
     if (index == kUnsatTrailIndex) return INFEASIBLE;
     if (current_decision_level_ <= old_level) {
       // A conflict occurred which backjumped to an earlier decision level.
@@ -971,17 +971,18 @@ SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
   return FEASIBLE;
 }
 
-int SatSolver::EnqueueDecisionAndBacktrackOnConflict(Literal true_literal) {
+SatSolver::Status SatSolver::EnqueueDecisionAndBacktrackOnConflict(
+    Literal true_literal, int* first_propagation_index) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(PropagationIsDone());
   CHECK(assumptions_.empty());
-
-  if (model_is_unsat_) return kUnsatTrailIndex;
+  if (model_is_unsat_) return SatSolver::INFEASIBLE;
   DCHECK_LT(CurrentDecisionLevel(), decisions_.size());
   decisions_[CurrentDecisionLevel()].literal = true_literal;
-  int first_propagation_index = trail_->Index();
-  ReapplyDecisionsUpTo(CurrentDecisionLevel(), &first_propagation_index);
-  return first_propagation_index;
+  if (first_propagation_index != nullptr) {
+    *first_propagation_index = trail_->Index();
+  }
+  return ReapplyDecisionsUpTo(CurrentDecisionLevel(), first_propagation_index);
 }
 
 bool SatSolver::EnqueueDecisionIfNotConflicting(Literal true_literal) {

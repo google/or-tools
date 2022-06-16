@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -266,8 +266,13 @@ class SatSolver {
   // of the old stack. Note that decisions that are now consequence of the ones
   // before them will no longer be decisions.
   //
+  // Returns INFEASIBLE if the model was proven infeasible, ASSUMPTION_UNSAT if
+  // the current decision and the one we are trying to take are not compatible
+  // together and FEASIBLE if all decisions are taken.
+  //
   // Note(user): This function can be called with an already assigned literal.
-  int EnqueueDecisionAndBacktrackOnConflict(Literal true_literal);
+  Status EnqueueDecisionAndBacktrackOnConflict(
+      Literal true_literal, int* first_propagation_index = nullptr);
 
   // Tries to enqueue the given decision and performs the propagation.
   // Returns true if no conflict occurred. Otherwise, returns false and restores
@@ -510,7 +515,8 @@ class SatSolver {
   //
   // first_propagation_index will be filled with the trail index of the first
   // newly propagated literal, or with -1 if INFEASIBLE is returned.
-  Status ReapplyDecisionsUpTo(int level, int* first_propagation_index);
+  Status ReapplyDecisionsUpTo(int level,
+                              int* first_propagation_index = nullptr);
 
   // Returns false if the thread memory is over the limit.
   bool IsMemoryLimitReached() const;

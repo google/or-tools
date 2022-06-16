@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -84,6 +84,12 @@ class IntegerSumLE : public PropagatorInterface {
   std::pair<IntegerValue, IntegerValue> ConditionalLb(
       IntegerLiteral integer_literal, IntegerVariable target_var) const;
 
+  // Experimental. Similar to ConditionalLb(), but returns all interesting
+  // conditional lower bounds instead of just analyzing one integer literal.
+  // All the IntegerLiteral will be of the form >= var_lb + 1.
+  std::vector<std::pair<IntegerLiteral, IntegerValue>> ConditionalLbs(
+      IntegerVariable target_var) const;
+
  private:
   // Fills integer_reason_ with all the current lower_bounds. The real
   // explanation may require removing one of them, but as an optimization, we
@@ -118,8 +124,6 @@ class IntegerSumLE : public PropagatorInterface {
   // Parallel vectors.
   std::vector<IntegerLiteral> integer_reason_;
   std::vector<IntegerValue> reason_coeffs_;
-
-  DISALLOW_COPY_AND_ASSIGN(IntegerSumLE);
 };
 
 // This assumes target = SUM_i coeffs[i] * vars[i], and detects that the target

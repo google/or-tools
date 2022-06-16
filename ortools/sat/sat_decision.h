@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -103,6 +103,12 @@ class SatDecisionPolicy {
 
   // Returns the vector of the current assignment preferences.
   std::vector<std::pair<Literal, double>> AllPreferences() const;
+
+  // Returns the current activity of a BooleanVariable.
+  double Activity(Literal l) const {
+    if (l.Variable() < activities_.size()) return activities_[l.Variable()];
+    return 0.0;
+  }
 
  private:
   // Computes an initial variable ordering.

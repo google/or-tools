@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -141,6 +141,40 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
     return {CeilRatio(implied_lb + var_coeff * diff, target_coeff),
             CeilRatio(implied_lb, target_coeff)};
   }
+}
+
+std::vector<std::pair<IntegerLiteral, IntegerValue>>
+IntegerSumLE::ConditionalLbs(IntegerVariable target_var) const {
+  bool target_var_present_negatively = false;
+  IntegerValue target_coeff;
+
+  // Compute the implied_lb excluding  "- target_coeff * target".
+  IntegerValue implied_lb(-upper_bound_);
+  for (int i = 0; i < vars_.size(); ++i) {
+    const IntegerVariable var = vars_[i];
+    const IntegerValue coeff = coeffs_[i];
+    if (var == NegationOf(target_var)) {
+      target_coeff = coeff;
+      target_var_present_negatively = true;
+      continue;
+    }
+    implied_lb += coeff * integer_trail_->LowerBound(var);
+  }
+
+  std::vector<std::pair<IntegerLiteral, IntegerValue>> result;
+  if (!target_var_present_negatively) return result;
+
+  for (int i = 0; i < vars_.size(); ++i) {
+    const IntegerVariable var = vars_[i];
+    const IntegerValue coeff = coeffs_[i];
+    if (var == NegationOf(target_var)) continue;
+
+    const IntegerValue lb = integer_trail_->LowerBound(var);
+    if (lb == integer_trail_->UpperBound(var)) continue;
+    result.push_back({IntegerLiteral::GreaterOrEqual(var, lb + 1),
+                      CeilRatio(implied_lb + coeff, target_coeff)});
+  }
+  return result;
 }
 
 bool IntegerSumLE::Propagate() {

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1337,6 +1337,15 @@ class GenericLiteralWatcher : public SatPropagator {
     level_zero_modified_variable_callback_.push_back(cb);
   }
 
+  // This will be called not too often during propagation (when we finish
+  // propagating one priority). If it returns true, we will stop propagation
+  // there. It is used by LbTreeSearch as we can stop as soon as the objective
+  // lower bound crossed a threshold and do not need to call expensive
+  // propagator when this is the case.
+  void SetStopPropagationCallback(std::function<bool()> callback) {
+    stop_propagation_callback_ = callback;
+  }
+
   // Returns the id of the propagator we are currently calling. This is meant
   // to be used from inside Propagate() in case a propagator was registered
   // more than once at different priority for instance.
@@ -1389,6 +1398,8 @@ class GenericLiteralWatcher : public SatPropagator {
 
   std::vector<std::function<void(const std::vector<IntegerVariable>&)>>
       level_zero_modified_variable_callback_;
+
+  std::function<bool()> stop_propagation_callback_;
 
   DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };

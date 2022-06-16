@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -119,6 +119,19 @@ class LbTreeSearch {
   // Mark the given node as deleted. Its literal is assumed to be set. We also
   // delete the subtree that is not longer relevant.
   void MarkAsDeletedNodeAndUnreachableSubtree(Node& node);
+  void MarkSubtreeAsDeleted(NodeIndex root);
+
+  // Create a new node at the end of the current branch.
+  // This assume the last decision in the branch is assigned.
+  void AppendNewNodeToCurrentBranch(Literal decision);
+
+  // Update the bounds on the given nodes by using reduced costs if possible.
+  void ExploitReducedCosts(NodeIndex n);
+
+  // Returns a small number of decision needed to reach the same conflict.
+  // We basically reduce the number of decision at each level to 1.
+  std::vector<Literal> ExtractDecisions(int base_level,
+                                        const std::vector<Literal>& conflict);
 
   // Used in the solve logs.
   std::string SmallProgressString() const;
@@ -128,7 +141,9 @@ class LbTreeSearch {
   ModelRandomGenerator* random_;
   SatSolver* sat_solver_;
   IntegerEncoder* integer_encoder_;
+  Trail* trail_;
   IntegerTrail* integer_trail_;
+  GenericLiteralWatcher* watcher_;
   SharedResponseManager* shared_response_;
   SatDecisionPolicy* sat_decision_;
   IntegerSearchHelper* search_helper_;
