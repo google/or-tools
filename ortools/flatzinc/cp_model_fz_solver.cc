@@ -115,7 +115,8 @@ struct CpModelProtoWithMapping {
   // Translates the flatzinc search annotations into the CpModelProto
   // search_order field.
   void TranslateSearchAnnotations(
-      const std::vector<fz::Annotation>& search_annotations);
+      const std::vector<fz::Annotation>& search_annotations,
+      SolverLogger* logger);
 
   // The output proto.
   CpModelProto proto;
@@ -983,7 +984,8 @@ void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
 }
 
 void CpModelProtoWithMapping::TranslateSearchAnnotations(
-    const std::vector<fz::Annotation>& search_annotations) {
+    const std::vector<fz::Annotation>& search_annotations, 
+    SolverLogger* logger) {
   std::vector<fz::Annotation> flat_annotations;
   for (const fz::Annotation& annotation : search_annotations) {
     fz::FlattenAnnotations(annotation, &flat_annotations);
@@ -1038,7 +1040,10 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
         strategy->set_variable_selection_strategy(
             DecisionStrategyProto::CHOOSE_HIGHEST_MAX);
       } else {
-        LOG(FATAL) << "Unsupported order: " << choose.id;
+        SOLVER_LOG(logger, "Unsupported variable selection strategy '",
+                   choose.id, "', falling back to 'smallest'");
+        strategy->set_variable_selection_strategy(
+            DecisionStrategyProto::CHOOSE_LOWEST_MIN);
       }
 
       const fz::Annotation& select = args[2];
@@ -1058,7 +1063,10 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
         strategy->set_domain_reduction_strategy(
             DecisionStrategyProto::SELECT_MEDIAN_VALUE);
       } else {
-        LOG(FATAL) << "Unsupported select: " << select.id;
+        SOLVER_LOG(logger, "Unsupported value selection strategy '", select.id,
+                   "', falling back to 'indomain_min'");
+        strategy->set_domain_reduction_strategy(
+            DecisionStrategyProto::SELECT_MIN_VALUE);
       }
     }
   }
@@ -1204,7 +1212,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   // Fill the search order.
-  m.TranslateSearchAnnotations(fz_model.search_annotations());
+  m.TranslateSearchAnnotations(fz_model.search_annotations(), logger);
 
   if (p.display_all_solutions && !m.proto.has_objective()) {
     // Enumerate all sat solutions.
