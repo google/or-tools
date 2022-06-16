@@ -22,12 +22,17 @@ from ortools.sat.python import cp_model
 from ortools.scheduling import pywraprcpsp
 
 FLAGS = flags.FLAGS
+
 flags.DEFINE_string('input', '', 'Input file to parse and solve.')
-flags.DEFINE_string('output_proto', '', 'Output file to write the cp_model proto to.')
+flags.DEFINE_string('output_proto', '',
+                    'Output file to write the cp_model proto to.')
 flags.DEFINE_string('params', '', 'Sat solver parameters.')
-flags.DEFINE_bool('use_interval_makespan', True, 'Whether we encode the makespan using an interval or not.')
+flags.DEFINE_bool('use_interval_makespan', True,
+                  'Whether we encode the makespan using an interval or not.')
 flags.DEFINE_integer('horizon', -1, 'Force horizon.')
-flags.DEFINE_bool('use_main_interval_for_tasks', True, 'Creates a main interval for each task, and use it in precedences')
+flags.DEFINE_bool(
+    'use_main_interval_for_tasks', True,
+    'Creates a main interval for each task, and use it in precedences')
 
 
 def PrintProblemStatistics(problem):
@@ -84,6 +89,7 @@ def SolveRcpsp(problem, proto_file, params):
 
     # Create the model.
     model = cp_model.CpModel()
+    model.SetName(problem.name)
 
     num_tasks = len(problem.tasks)
     num_resources = len(problem.resources)
@@ -219,7 +225,7 @@ def SolveRcpsp(problem, proto_file, params):
                                 m2]
                             s2 = task_starts[next_id]
                             p2 = task_to_presence_literals[next_id][m2]
-                            model.Add(s1 + delay <= s2).OnlyEnforceIf(p1, p2)
+                            model.Add(s1 + delay <= s2).OnlyEnforceIf([p1, p2])
     else:
         # Normal dependencies (task ends before the start of successors).
         for t in all_active_tasks:
@@ -300,7 +306,7 @@ def SolveRcpsp(problem, proto_file, params):
     solver.Solve(model)
 
 
-def main(_=None):
+def main(_):
     rcpsp_parser = pywraprcpsp.RcpspParser()
     rcpsp_parser.ParseFile(FLAGS.input)
     SolveRcpsp(rcpsp_parser.Problem(), FLAGS.output_proto, FLAGS.params)

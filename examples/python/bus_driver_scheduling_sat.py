@@ -35,7 +35,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('output_proto', '',
                     'Output file to write the cp_model proto to.')
-flags.DEFINE_string('params', 'num_search_workers:8,log_search_progress:true',
+flags.DEFINE_string('params', 'num_search_workers:16,log_search_progress:true',
                     'Sat solver parameters.')
 flags.DEFINE_integer('instance', 1, 'Instance to select (1, 2, 3).', 1, 3)
 

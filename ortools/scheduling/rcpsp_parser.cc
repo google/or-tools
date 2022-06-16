@@ -63,6 +63,25 @@ bool RcpspParser::ParseFile(const std::string& file_name) {
           << ", patterson = " << is_patterson << ", with "
           << rcpsp_.tasks_size() << " tasks, and " << rcpsp_.resources_size()
           << " resources.";
+
+  std::string problem_name = file_name;
+  const size_t found = problem_name.find_last_of("/\\");
+  if (found != std::string::npos) {
+    problem_name = problem_name.substr(found + 1);
+  }
+
+  if (absl::EndsWith(problem_name, ".sch") ||
+      absl::EndsWith(problem_name, ".SCH") ||
+      absl::EndsWith(problem_name, ".rcp")) {
+    problem_name.resize(problem_name.size() - 4);
+  }
+
+  if (absl::EndsWith(problem_name, ".sm") ||
+      absl::EndsWith(problem_name, ".mm")) {
+    problem_name.resize(problem_name.size() - 3);
+  }
+  rcpsp_.set_name(problem_name);
+
   // Count the extra start and end tasks.
   return num_declared_tasks_ + 2 == rcpsp_.tasks_size() &&
          load_status_ == PARSING_FINISHED;

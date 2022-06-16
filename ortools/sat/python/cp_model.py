@@ -968,6 +968,15 @@ class CpModel(object):
         self.__model = cp_model_pb2.CpModelProto()
         self.__constant_map = {}
 
+    # Naming.
+    def Name(self):
+        """Returns the name of the model."""
+        return self.__model.name
+
+    def SetName(self, name):
+        """Sets the name of the model."""
+        self.__model.name = name
+
     # Integer variable.
 
     def NewIntVar(self, lb, ub, name):

@@ -140,7 +140,7 @@ def flexible_jobshop():
                         'interval' + alt_suffix)
                     l_presences.append(l_presence)
 
-                    # Link the master variables with the local ones.
+                    # Link the primary/global variables with the local ones.
                     model.Add(start == l_start).OnlyEnforceIf(l_presence)
                     model.Add(duration == l_duration).OnlyEnforceIf(l_presence)
                     model.Add(end == l_end).OnlyEnforceIf(l_presence)

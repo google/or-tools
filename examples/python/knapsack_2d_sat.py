@@ -18,12 +18,14 @@ https://yetanothermathprogrammingconsultant.blogspot.com/2021/10/2d-knapsack-pro
 """
 
 import io
+
 from absl import app
 from absl import flags
 import numpy as np
 import pandas as pd
 
 from google.protobuf import text_format
+
 from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS
