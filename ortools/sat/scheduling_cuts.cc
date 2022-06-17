@@ -75,44 +75,6 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
   }
 }
 
-template <typename E>
-IntegerValue EnergyMinInWindow(const E& e,
-                               const VariablesAssignment& assignment,
-                               IntegerValue window_start,
-                               IntegerValue window_end) {
-  if (window_end <= window_start) return IntegerValue(0);
-
-  // Returns zero if the interval do not necessarily overlap.
-  if (e.x_end_min <= window_start) return IntegerValue(0);
-  if (e.x_start_max >= window_end) return IntegerValue(0);
-  const IntegerValue window_size = window_end - window_start;
-  const IntegerValue simple_energy_min =
-      e.y_size_min *
-      std::min({e.x_end_min - window_start, window_end - e.x_start_max,
-                e.x_size_min, window_size});
-  if (e.decomposed_energy.empty()) return simple_energy_min;
-
-  IntegerValue result = kMaxIntegerValue;
-  for (const auto [lit, fixed_size, fixed_demand] : e.decomposed_energy) {
-    if (assignment.LiteralIsTrue(lit)) {
-      // Both should be identical, so we don't recompute it.
-      return simple_energy_min;
-    }
-    if (assignment.LiteralIsFalse(lit)) continue;
-    const IntegerValue alt_end_min =
-        std::max(e.x_end_min, e.x_start_min + fixed_size);
-    const IntegerValue alt_start_max =
-        std::min(e.x_start_max, e.x_end_max - fixed_size);
-    const IntegerValue energy_min =
-        fixed_demand *
-        std::min({alt_end_min - window_start, window_end - alt_start_max,
-                  fixed_size, window_size});
-    result = std::min(result, energy_min);
-  }
-  if (result == kMaxIntegerValue) return simple_energy_min;
-  return std::max(simple_energy_min, result);
-}
-
 }  // namespace
 
 struct EnergyEvent {
@@ -302,8 +264,10 @@ void GenerateCumulativeEnergeticCuts(
         }
       } else {
         if (add_opt_to_name != nullptr) *add_opt_to_name = true;
-        const IntegerValue min_energy =
-            EnergyMinInWindow(event, assignment, window_start, window_end);
+        const IntegerValue min_energy = ComputeEnergyMinInWindow(
+            event.x_start_min, event.x_start_max, event.x_end_min,
+            event.x_end_max, event.x_size_min, event.y_size_min,
+            event.decomposed_energy, assignment, window_start, window_end);
         if (min_energy > event.x_size_min * event.y_size_min &&
             add_energy_to_name != nullptr) {
           *add_energy_to_name = true;
@@ -1203,7 +1167,6 @@ struct CtEvent {
   // will not use this.
   IntegerValue fixed_y_size = -1;
 
-
   std::string DebugString() const {
     return absl::StrCat("CtEvent(x_end = ", x_end.DebugString(),
                         ", x_start_min = ", x_start_min.value(),
@@ -1264,15 +1227,18 @@ void GenerateCompletionTimeCuts(
           // Build the vector of energies as the vector of sizes.
           CtEvent event = events[before];  // Copy.
           event.lifted = true;
-          event.energy_min = EnergyMinInWindow(
-              event, assignment, sequence_start_min, event.x_end_max);
+          event.energy_min = ComputeEnergyMinInWindow(
+              event.x_start_min, event.x_start_max, event.x_end_min,
+              event.x_end_max, event.x_size_min, event.y_size_min,
+              event.decomposed_energy, assignment, sequence_start_min,
+              event.x_end_max);
           event.x_size_min =
               event.x_size_min + event.x_start_min - sequence_start_min;
           event.x_start_min = sequence_start_min;
           if (event.energy_min > event.x_size_min * event.y_size_min) {
             event.use_energy = true;
           }
-          CHECK_GE(event.energy_min, event.x_size_min * event.y_size_min);
+          DCHECK_GE(event.energy_min, event.x_size_min * event.y_size_min);
           if (event.energy_min <= 0) continue;
           residual_tasks.push_back(event);
         }

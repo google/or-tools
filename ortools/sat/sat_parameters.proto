@@ -586,7 +586,7 @@ message SatParameters {
   // A convenient way to add more workers types.
   // Note that these will be added at the end of the list, so this is only
   // useful if you run with many workers.
-  repeated string add_subsolvers = 219;
+  repeated string append_subsolvers = 219;
 
   // Rather than fully specifying subsolvers, it is often convenient to just
   // remove the ones that are not useful on a given problem.
@@ -607,12 +607,7 @@ message SatParameters {
   optional bool interleave_search = 136 [default = false];
   optional int32 interleave_batch_size = 134 [default = 1];
 
-  // Temporary parameter until the memory usage is more optimized. Note that
-  // this completely ignore any of the subsolvers parameters above and does its
-  // own things.
-  optional bool reduce_memory_usage_in_interleave_mode = 141 [default = false];
-
-  // Allows objective sharing between workers.
+    // Allows objective sharing between workers.
   optional bool share_objective_bounds = 113 [default = true];
 
   // Allows sharing of the bounds of modified variables at level 0.

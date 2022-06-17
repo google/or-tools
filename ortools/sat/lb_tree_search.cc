@@ -407,28 +407,18 @@ SatSolver::Status LbTreeSearch::Search(
 
     // Dive: Follow the branch with lowest objective.
     // Note that we do not creates new nodes here.
+    //
+    // TODO(user): If we have new information and our current objective bound
+    // is higher than any bound in a whole subtree, we might want to just
+    // restart this subtree exploration?
     while (current_branch_.size() == sat_solver_->CurrentDecisionLevel() + 1) {
       const int level = current_branch_.size() - 1;
       CHECK_EQ(level, sat_solver_->CurrentDecisionLevel());
       Node& node = nodes_[current_branch_[level]];
       node.UpdateObjective(std::max(
           current_objective_lb_, integer_trail_->LowerBound(objective_var_)));
-      if (node.MinObjective() > current_objective_lb_) {
-        break;
-      }
+      if (node.MinObjective() > current_objective_lb_) break;
       CHECK_EQ(node.MinObjective(), current_objective_lb_) << level;
-
-      // If a node do not improve the current_objective_lb_, we basically
-      // have no information in this subtree, so we can just restart it.
-      //
-      // TODO(user): Experiment with this. We can also delete this node.
-      // Initial tests shows this is worse though.
-      if (false && node.false_objective == node.true_objective) {
-        MarkSubtreeAsDeleted(node.true_child);
-        MarkSubtreeAsDeleted(node.false_child);
-        node.true_child = NodeIndex(std::numeric_limits<int32_t>::max());
-        node.false_child = NodeIndex(std::numeric_limits<int32_t>::max());
-      }
 
       // This will be set to the next node index.
       NodeIndex n;
@@ -466,15 +456,12 @@ SatSolver::Status LbTreeSearch::Search(
         // See if we have better bounds using the current LP state.
         ExploitReducedCosts(current_branch_[level]);
 
-        // If both lower bound are the same, we pick a random sub-branch.
-        //
-        // TODO(user): Instead always follow the literal branch? The polarity
-        // was chosen by the heuritic for a reason.
+        // If both lower bound are the same, we pick the literal branch. We do
+        // that because this is the polarity that was chosen by the SAT
+        // heuristic in the first place. We tried random, it doesn't seems to
+        // work as well.
         num_decisions_taken_++;
-        const bool choose_true =
-            node.true_objective == node.false_objective
-                ? absl::Bernoulli(*random_, 0.5)
-                : node.true_objective < node.false_objective;
+        const bool choose_true = node.true_objective <= node.false_objective;
         if (choose_true) {
           n = node.true_child;
           search_helper_->TakeDecision(node.literal);
@@ -558,6 +545,7 @@ SatSolver::Status LbTreeSearch::Search(
         break;
       }
 
+      num_decisions_taken_++;
       if (!search_helper_->TakeDecision(Literal(decision))) {
         return sat_solver_->UnsatStatus();
       }
@@ -570,10 +558,16 @@ SatSolver::Status LbTreeSearch::Search(
 
     // Analyse the reason for objective increase. Deduce a set of new nodes to
     // append to the tree.
+    //
+    // TODO(user): Try to minimize the number of decisions?
     const std::vector<Literal> reason =
         integer_trail_->ReasonFor(IntegerLiteral::GreaterOrEqual(
             objective_var_, integer_trail_->LowerBound(objective_var_)));
-    const std::vector<Literal> decisions = ExtractDecisions(base_level, reason);
+    std::vector<Literal> decisions = ExtractDecisions(base_level, reason);
+
+    // Because we will re-enqueue these decision, we change the order so that
+    // if one is implied by others, it will be skipped.
+    std::reverse(decisions.begin(), decisions.end());
 
     // Bump activities.
     sat_decision_->BumpVariableActivities(reason);

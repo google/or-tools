@@ -644,6 +644,43 @@ IntegerValue SchedulingConstraintHelper::GetMinOverlap(int t,
                   std::min(EndMin(t) - start, end - StartMax(t)));
 }
 
+IntegerValue ComputeEnergyMinInWindow(
+    IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
+    IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
+    const std::vector<LiteralValueValue>& energy,
+    const VariablesAssignment& assignment, IntegerValue window_start,
+    IntegerValue window_end) {
+  if (window_end <= window_start) return IntegerValue(0);
+
+  // Returns zero if the interval do not necessarily overlap.
+  if (end_min <= window_start) return IntegerValue(0);
+  if (start_max >= window_end) return IntegerValue(0);
+  const IntegerValue window_size = window_end - window_start;
+  const IntegerValue simple_energy_min =
+      demand_min * std::min({end_min - window_start, window_end - start_max,
+                             size_min, window_size});
+  if (energy.empty()) return simple_energy_min;
+
+  IntegerValue result = kMaxIntegerValue;
+  for (const auto [lit, fixed_size, fixed_demand] : energy) {
+    if (assignment.LiteralIsTrue(lit)) {
+      // Both should be identical, so we don't recompute it.
+      return simple_energy_min;
+    }
+    if (assignment.LiteralIsFalse(lit)) continue;
+    const IntegerValue alt_end_min = std::max(end_min, start_min + fixed_size);
+    const IntegerValue alt_start_max =
+        std::min(start_max, end_max - fixed_size);
+    const IntegerValue energy_min =
+        fixed_demand *
+        std::min({alt_end_min - window_start, window_end - alt_start_max,
+                  fixed_size, window_size});
+    result = std::min(result, energy_min);
+  }
+  if (result == kMaxIntegerValue) return simple_energy_min;
+  return std::max(simple_energy_min, result);
+}
+
 SchedulingDemandHelper::SchedulingDemandHelper(
     std::vector<AffineExpression> demands, SchedulingConstraintHelper* helper,
     Model* model)
@@ -833,37 +870,10 @@ void SchedulingDemandHelper::OverrideDecomposedEnergies(
 
 IntegerValue SchedulingDemandHelper::EnergyMinInWindow(
     int t, IntegerValue window_start, IntegerValue window_end) {
-  if (window_end <= window_start) return IntegerValue(0);
-
-  // Returns zero if the interval do not necessarily overlap.
-  const IntegerValue start_max = helper_->StartMax(t);
-  const IntegerValue end_min = helper_->EndMin(t);
-  if (end_min <= window_start) return IntegerValue(0);
-  if (start_max >= window_end) return IntegerValue(0);
-  const IntegerValue window_size = window_end - window_start;
-  const IntegerValue simple_energy_min =
-      DemandMin(t) * std::min({end_min - window_start, window_end - start_max,
-                               helper_->SizeMin(t), window_size});
-  if (decomposed_energies_[t].empty()) return simple_energy_min;
-
-  IntegerValue result = kMaxIntegerValue;
-  const IntegerValue start_min = helper_->StartMin(t);
-  const IntegerValue end_max = helper_->EndMax(t);
-  for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
-    if (assignment_.LiteralIsTrue(lit)) {
-      // Both should be identical, so we don't recompute it.
-      return simple_energy_min;
-    }
-    if (assignment_.LiteralIsFalse(lit)) continue;
-    const IntegerValue alt_em = std::max(end_min, start_min + fixed_size);
-    const IntegerValue alt_sm = std::min(start_max, end_max - fixed_size);
-    const IntegerValue energy_min =
-        fixed_demand * std::min({alt_em - window_start, window_end - alt_sm,
-                                 fixed_size, window_size});
-    result = std::min(result, energy_min);
-  }
-  if (result == kMaxIntegerValue) return simple_energy_min;
-  return std::max(simple_energy_min, result);
+  return ComputeEnergyMinInWindow(
+      helper_->StartMin(t), helper_->StartMax(t), helper_->EndMin(t),
+      helper_->EndMax(t), helper_->SizeMin(t), DemandMin(t),
+      decomposed_energies_[t], assignment_, window_start, window_end);
 }
 
 // Since we usually ask way less often for the reason, we redo the computation

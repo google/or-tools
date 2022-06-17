@@ -578,65 +578,57 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   // like if there is no lp, or everything is already linearized at level 1.
   std::vector<std::string> names;
 
-  if (base_params.reduce_memory_usage_in_interleave_mode() &&
-      base_params.interleave_search()) {
-    // Low memory mode for interleaved search in single thread.
-    if (cp_model.has_objective()) {
-      names.push_back("default_lp");
-      names.push_back(use_fixed_strategy ? "fixed" : "pseudo_costs");
-      names.push_back(cp_model.objective().vars_size() > 1 ? "core" : "no_lp");
-      names.push_back("max_lp");
-    } else {
-      names.push_back("default_lp");
-      names.push_back(use_fixed_strategy ? "fixed" : "no_lp");
-      names.push_back("less_encoding");
-      names.push_back("max_lp");
-      names.push_back("quick_restart");
-    }
-  } else {
-    // We use the default if empty.
-    if (base_params.subsolvers().empty()) {
-      names.push_back("default_lp");
-      names.push_back("fixed");
-      names.push_back("less_encoding");
+  // We use the default if empty.
+  if (base_params.subsolvers().empty()) {
+    names.push_back("default_lp");
+    names.push_back("fixed");
+    names.push_back("less_encoding");
 
-      names.push_back("no_lp");
-      names.push_back("max_lp");
-      names.push_back("core");
+    names.push_back("no_lp");
+    names.push_back("max_lp");
+    names.push_back("core");
 
-      names.push_back("reduced_costs");
-      names.push_back("pseudo_costs");
+    names.push_back("reduced_costs");
+    names.push_back("pseudo_costs");
 
-      names.push_back("quick_restart");
-      names.push_back("quick_restart_no_lp");
-      names.push_back("lb_tree_search");
-      names.push_back("probing");
+    names.push_back("quick_restart");
+    names.push_back("quick_restart_no_lp");
+    names.push_back("lb_tree_search");
+    names.push_back("probing");
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
-      if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
+    if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
 #endif  // !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
-    } else {
-      for (const std::string& name : base_params.subsolvers()) {
+  } else {
+    for (const std::string& name : base_params.subsolvers()) {
+      if (name == "core_or_no_lp") {
+        if (!cp_model.has_objective() ||
+            cp_model.objective().vars_size() <= 1) {
+          names.push_back("no_lp");
+        } else {
+          names.push_back("core");
+        }
+      } else {
         names.push_back(name);
       }
     }
-
-    // Add subsolvers.
-    for (const std::string& name : base_params.add_subsolvers()) {
-      names.push_back(name);
-    }
-
-    // Remove the names that should be ignored.
-    absl::flat_hash_set<std::string> to_ignore;
-    for (const std::string& name : base_params.ignore_subsolvers()) {
-      to_ignore.insert(name);
-    }
-    int new_size = 0;
-    for (const std::string& name : names) {
-      if (to_ignore.contains(name)) continue;
-      names[new_size++] = name;
-    }
-    names.resize(new_size);
   }
+
+  // Add subsolvers.
+  for (const std::string& name : base_params.append_subsolvers()) {
+    names.push_back(name);
+  }
+
+  // Remove the names that should be ignored.
+  absl::flat_hash_set<std::string> to_ignore;
+  for (const std::string& name : base_params.ignore_subsolvers()) {
+    to_ignore.insert(name);
+  }
+  int new_size = 0;
+  for (const std::string& name : names) {
+    if (to_ignore.contains(name)) continue;
+    names[new_size++] = name;
+  }
+  names.resize(new_size);
 
   // Creates the diverse set of parameters with names and seed.
   std::vector<SatParameters> result;

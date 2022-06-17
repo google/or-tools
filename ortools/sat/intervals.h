@@ -591,6 +591,17 @@ class SchedulingDemandHelper {
 };
 
 // =============================================================================
+// Utilities
+// =============================================================================
+
+IntegerValue ComputeEnergyMinInWindow(
+    IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
+    IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
+    const std::vector<LiteralValueValue>& energy,
+    const VariablesAssignment& assignment, IntegerValue window_start,
+    IntegerValue window_end);
+
+// =============================================================================
 // SchedulingConstraintHelper inlined functions.
 // =============================================================================
 

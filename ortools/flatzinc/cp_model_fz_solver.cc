@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -984,7 +984,7 @@ void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
 }
 
 void CpModelProtoWithMapping::TranslateSearchAnnotations(
-    const std::vector<fz::Annotation>& search_annotations, 
+    const std::vector<fz::Annotation>& search_annotations,
     SolverLogger* logger) {
   std::vector<fz::Annotation> flat_annotations;
   for (const fz::Annotation& annotation : search_annotations) {
@@ -1247,19 +1247,35 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   } else {
     num_workers = p.number_of_threads;
   }
-  m.parameters.set_num_search_workers(num_workers);
 
   // Specifies single thread specific search modes.
   if (num_workers == 1) {
     if (p.use_free_search) {
       m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       m.parameters.set_interleave_search(true);
-      m.parameters.set_reduce_memory_usage_in_interleave_mode(true);
+      if (m.proto.has_objective()) {
+        m.parameters.add_subsolvers("default_lp");
+        m.parameters.add_subsolvers(
+            m.proto.search_strategy().empty() ? "quick_restart" : "fixed");
+        m.parameters.add_subsolvers("core_or_no_lp"),
+        m.parameters.add_subsolvers("max_lp");
+      } else {
+        m.parameters.add_subsolvers("default_lp");
+        m.parameters.add_subsolvers(
+            m.proto.search_strategy().empty() ? "no_lp" : "fixed");
+        m.parameters.add_subsolvers("less_encoding");
+        m.parameters.add_subsolvers("max_lp");
+        m.parameters.add_subsolvers("quick_restart");
+      }
     } else {
       m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
       m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
     }
+  } else if (num_workers > 1 && num_workers < 8) {
+    SOLVER_LOG(logger, "Bumping number of workers from ", num_workers, " to 8");
+    num_workers = 8;
   }
+  m.parameters.set_num_search_workers(num_workers);
 
   // Time limit.
   if (p.max_time_in_seconds > 0) {
