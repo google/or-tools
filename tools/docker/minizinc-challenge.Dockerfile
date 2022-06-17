@@ -1,4 +1,4 @@
-FROM minizinc/mznc2021:latest AS env
+FROM minizinc/mznc2022:latest AS env
 
 ENV SRC_GIT_BRANCH main
 
@@ -30,16 +30,10 @@ FROM env AS devel
 WORKDIR /root
 RUN git clone -b "$SRC_GIT_BRANCH" --single-branch https://github.com/google/or-tools
 
-FROM devel AS third_party
-# Build Third parties
+FROM devel AS build
 WORKDIR /root/or-tools
-RUN make detect \
-&& make third_party BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=OFF USE_SCIP=OFF USE_COINOR=OFF
+RUN make cpp BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=OFF USE_SCIP=OFF USE_COINOR=OFF JOBS=8
 
-# Build project
-FROM third_party AS build
-RUN make compile JOBS=8
-
-RUN ln -s /root/or-tools/bin/fzn-ortools /entry_data/fzn-exec
+RUN ln -s /root/or-tools/install_make/bin/fzn-ortools /entry_data/fzn-exec
 
 RUN cp /root/or-tools/ortools/flatzinc/mznlib/*mzn /entry_data/mzn-lib

@@ -683,7 +683,7 @@ distclean: clean
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
-MZN_TAG=or-tools-minizinc-challenge:2021v4
+MZN_TAG=or-tools-minizinc-challenge:2022v1
 
 .PHONY: minizinc-challenge
 minizinc-challenge: minizinc-challenge.Dockerfile
@@ -691,9 +691,9 @@ minizinc-challenge: minizinc-challenge.Dockerfile
 
 .PHONY: minizinc-challenge-test
 minizinc-challenge-test: minizinc-challenge
-	${DOCKER_RUN_CMD} ${MZN_TAG} "solver /minizinc/test.mzn /minizinc/2.dzn"
-	${DOCKER_RUN_CMD} ${MZN_TAG} "solver --free-search /minizinc/test.mzn /minizinc/2.dzn"
-	${DOCKER_RUN_CMD} ${MZN_TAG} "solver -p 2 /minizinc/test.mzn /minizinc/2.dzn"
+	${DOCKER_RUN_CMD} ${MZN_TAG} "solver -v /minizinc/test.mzn /minizinc/2.dzn"
+	${DOCKER_RUN_CMD} ${MZN_TAG} "solver -v --free-search /minizinc/test.mzn /minizinc/2.dzn"
+	${DOCKER_RUN_CMD} ${MZN_TAG} "solver -v -p 2 /minizinc/test.mzn /minizinc/2.dzn"
 
 .PHONY: minizinc-challenge-bash
 minizinc-challenge-bash:
