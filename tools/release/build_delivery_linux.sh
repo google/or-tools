@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -eo pipefail
 
 function help() {
@@ -152,7 +165,7 @@ function build_java() {
 }
 
 # Python 3
-# todo(mizux) Use `make --directory tools/docker python` instead
+# todo(user) Use `make --directory tools/docker python` instead
 function build_python() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python_build" -; then
     echo "build python up to date!" | tee -a build.log
@@ -204,7 +217,7 @@ function build_archive() {
   make archive_java
   echo "DONE" | tee -a build.log
 
-  # TODO(mizux) copy archives to export/
+  # TODO(user) copy archives to export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/archive_build"
 }
 
@@ -229,7 +242,7 @@ function build_examples() {
   make dotnet_examples_archive UNIX_PYTHON_VER=3
   echo "DONE" | tee -a build.log
 
-  # TODO(mizux) copy example to export/
+  # TODO(user) copy example to export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/examples_build"
 }
 

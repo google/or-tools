@@ -837,7 +837,7 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
         tmp_dynamic_permutation_.UndoLastMappings(&base_singletons);
       } else {
         ScopedTimeDistributionUpdater u(&stats_.map_reelection_time);
-        // TODO(user, viger): try to get the non-singleton part from
+        // TODO(user): try to get the non-singleton part from
         // DynamicPermutation in O(1). On some graphs like the symmetry of the
         // mip problem lectsched-4-obj.mps.gz, this take the majority of the
         // time!

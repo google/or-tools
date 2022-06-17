@@ -110,8 +110,8 @@ below).
   [SCIP license](https://scipopt.org/index.php#license) to ensure that you are
   complying with it.
 
-OR-Tools can also optionally (disabled by default i.e. `OFF`) be compiled with support for
-the following third-party solvers:
+OR-Tools can also optionally (disabled by default i.e. `OFF`) be compiled with
+support for the following third-party solvers:
 
 * GLPK (`BUILD_GLPK`),<br>
   note: You must enable the support of GLPK solver
@@ -284,7 +284,7 @@ added automatically to your target as needed.
 #### Using FetchContent
 
 If you have `CMake >= 3.14.7` you can use the built-in module
-[FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
+[`FetchContent`](https://cmake.org/cmake/help/latest/module/FetchContent.html)
 instead. Note: The **ortools::ortools** target is in this case an ALIAS library
 target for the **ortools** library target.
 

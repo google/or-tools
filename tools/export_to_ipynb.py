@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Transform any Python sample or example to Python NoteBook."""
 import ast
 import os
@@ -101,7 +114,7 @@ for idx, (c_block, s, e) in enumerate(
         filter(lambda l: not re.search(r'# \[START .*\]$', l), filtered_lines))
     filtered_lines = list(
         filter(lambda l: not re.search(r'# \[END .*\]$', l), filtered_lines))
-    # TODO(mizux): Remove only copyright not all line with '^#'
+    # TODO(user): Remove only copyright not all line with '^#'
     filtered_lines = list(
         filter(lambda l: not l.startswith(r'#'), filtered_lines))
     filtered_lines = [s.replace(r'"""', '') for s in filtered_lines]
