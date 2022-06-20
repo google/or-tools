@@ -1,7 +1,6 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/_/ubuntu
 FROM ubuntu:rolling AS env
-LABEL maintainer="corentinl@google.com"
 
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

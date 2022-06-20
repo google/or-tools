@@ -3,7 +3,6 @@
 # Fedora 36 do not provide bazel5
 # see: https://github.com/vbatts/copr-build-bazel/issues/18
 FROM fedora:latest AS env
-LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
