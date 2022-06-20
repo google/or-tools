@@ -14,7 +14,6 @@
 
 syntax = "proto3";
 
-
 package operations_research;
 
 message DemonRuns {
