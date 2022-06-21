@@ -26,6 +26,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/file.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"

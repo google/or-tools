@@ -24,6 +24,7 @@
 #include "google/protobuf/util/json_util.h"
 #include "ortools/base/file.h"
 #include "ortools/base/gzipstring.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 

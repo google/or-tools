@@ -22,7 +22,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 

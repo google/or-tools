@@ -18,7 +18,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/flags/flag.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/timer.h"
 #include "ortools/packing/arc_flow_builder.h"
 #include "ortools/packing/vector_bin_packing.pb.h"

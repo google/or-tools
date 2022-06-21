@@ -19,6 +19,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 
