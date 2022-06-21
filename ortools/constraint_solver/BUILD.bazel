@@ -252,6 +252,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:protoutil",
         "//ortools/util:optional_boolean_cc_proto",
+        "//ortools/util:testing_utils",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",

@@ -461,6 +461,12 @@ cc_library(
 )
 
 cc_library(
+    name = "testing_utils",
+    hdrs = ["testing_utils.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
     name = "strong_integers",
     hdrs = ["strong_integers.h"],
     deps = [
