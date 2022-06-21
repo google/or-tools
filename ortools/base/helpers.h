@@ -14,4 +14,6 @@
 #ifndef OR_TOOLS_BASE_HELPERS_H_
 #define OR_TOOLS_BASE_HELPERS_H_
 
+#include "ortools/base/file.h"
+
 #endif  // OR_TOOLS_BASE_HELPERS_H_
