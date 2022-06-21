@@ -571,8 +571,8 @@ void RelationGraphBasedNeighborhood::GenerateNeighborhood(
     const sat::Literal literal(
         var, problem_state.solution().Value(VariableIndex(var.value())));
     if (variable_is_relaxed[literal.Variable().value()]) continue;
-    const int index =
-        sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal);
+    int index;
+    sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal, &index);
     if (sat_propagator->CurrentDecisionLevel() > 0) {
       for (int i = index; i < sat_propagator->LiteralTrail().Index(); ++i) {
         if (variable_is_relaxed
