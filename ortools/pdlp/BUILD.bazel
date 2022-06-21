@@ -123,6 +123,7 @@ cc_library(
 cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
+    defines = ["_USE_MATH_DEFINES"],
     deps = [
         ":gtest_main",
         ":test_util",
@@ -130,7 +131,6 @@ cc_test(
         "@com_google_absl//absl/types:span",
         "@eigen//:eigen3",
     ],
-    defines = ["_USE_MATH_DEFINES"],
 )
 
 cc_library(
@@ -293,7 +293,6 @@ cc_library(
     ],
 )
 
-
 cc_library(
     name = "iteration_stats",
     srcs = ["iteration_stats.cc"],
@@ -377,10 +376,10 @@ cc_test(
         ":solvers_cc_proto",
         ":test_util",
         "//ortools/base",
+        "//ortools/glop:parameters_cc_proto",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
-        "//ortools/glop:parameters_cc_proto",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
