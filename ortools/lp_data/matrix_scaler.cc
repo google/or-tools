@@ -408,12 +408,14 @@ Status SparseMatrixScaler::LPScale() {
           row, linear_program.get(), &row_scale_var_indices);
 
       linear_program->SetVariableBounds(row_scale, -kInfinity, kInfinity);
+      // clang-format off
       // This is derived from the formulation in
       // min β
       // Subject to:
       // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c + β ≥ 0.0
       // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c     ≤ β
       // If a variable is integer, its scale factor is zero.
+      // clang-format on
 
       // Start with the constraint w_cv + s_c + s_v + beta >= 0.
       const RowIndex positive_constraint =

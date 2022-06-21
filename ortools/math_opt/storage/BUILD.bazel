@@ -16,7 +16,7 @@ package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 cc_library(
     name = "model_storage_types",
     hdrs = ["model_storage_types.h"],
-    deps = ["//ortools/base:intops",],
+    deps = ["//ortools/base:intops"],
 )
 
 cc_library(

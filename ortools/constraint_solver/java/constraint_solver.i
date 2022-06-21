@@ -1656,7 +1656,7 @@ PROTO2_RETURN(operations_research::RegularLimitParameters,
 namespace operations_research {
 
 // Globals
-// IMPORTANT(corentinl): Globals will be placed in main.java
+// IMPORTANT(user): Globals will be placed in main.java
 // i.e. use `import com.[...].constraintsolver.main`
 %ignore FillValues;
 %rename (areAllBooleans) AreAllBooleans;

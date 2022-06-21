@@ -25,7 +25,7 @@ namespace operations_research {
 
 // Solves the input request.
 //
-// By default this function creates a new master Gurobi environment, but an
+// By default this function creates a new primary Gurobi environment, but an
 // existing one can be passed as parameter. This can be useful with single-use
 // Gurobi licenses since it is not possible to create a second environment if
 // one already exists with those licenses.

@@ -14,12 +14,12 @@
 #include "ortools/math_opt/constraints/sos/validator.h"
 
 #include "absl/status/status.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/linear_expression_validator.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research::math_opt {
 

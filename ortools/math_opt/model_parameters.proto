@@ -82,7 +82,7 @@ message ModelSolveParametersProto {
 
   // Optional branching priorities. Variables with higher values will be
   // branched on first. Variables for which priorities are not set get the
-  // solver's default priority (usualy zero).
+  // solver's default priority (usually zero).
   //
   // Requirements:
   //  * branching_priorities.values must be finite.

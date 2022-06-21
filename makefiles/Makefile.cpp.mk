@@ -345,7 +345,7 @@ endif
 ##################################
 ##  Course scheduling example   ##
 ##################################
-# TODO(mizux) Port it to CMake
+# TODO(user) Port it to CMake
 # examples/cpp/course_scheduling.proto: ;
 #
 # $(SRC_DIR)/examples/cpp/course_scheduling.pb.cc: \
@@ -497,7 +497,7 @@ test_cc_cpp: \
  rcpp_strawberry_fields_with_column_generation \
  rcpp_uncapacitated_facility_location \
 # rcpp_weighted_tardiness_sat # need input file
-# TODO(mizux) how to build cvrptwlib and depends on it
+# TODO(user) how to build cvrptwlib and depends on it
 # rcpp_cvrp_disjoint_tw \
 # rcpp_cvrptw \
 # rcpp_cvrptw_with_breaks \

@@ -240,6 +240,7 @@ cc_library(
     srcs = ["lp_parser.cc"],
     hdrs = ["lp_parser.h"],
     copts = SAFE_FP_CODE,
+    defines = ["USE_LP_PARSER"],
     deps = [
         ":base",
         ":lp_data",
@@ -252,7 +253,6 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_re2//:re2",
     ],
-    defines = ["USE_LP_PARSER"],
 )
 
 #cc_library(

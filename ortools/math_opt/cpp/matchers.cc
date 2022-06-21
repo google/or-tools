@@ -583,8 +583,10 @@ std::string MatcherToString(const Matcher<T>& matcher, bool negate) {
   return MatcherToStringImpl(matcher, negate);
 }
 
-// Polymorphic matchers do not always define DescribeTo, see
+// clang-format off
+// Polymorphic matchers do not always define DescribeTo,
 // The <T> type may not be a matcher, but it will implement DescribeTo.
+// clang-format on
 template <typename T>
 std::string MatcherToString(const ::testing::PolymorphicMatcher<T>& matcher,
                             bool negate) {

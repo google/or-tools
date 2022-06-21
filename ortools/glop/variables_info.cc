@@ -396,7 +396,7 @@ void VariablesInfo::TransformToDualPhaseIProblem(
   const ColIndex num_cols = matrix_.num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     switch (variable_type_[col]) {
-      case VariableType::FIXED_VARIABLE:  // ABSL_FALLTHROUGH_INTENDED
+      case VariableType::FIXED_VARIABLE:  // FALLTHROUGH_INTENDED
       case VariableType::UPPER_AND_LOWER_BOUNDED:
         lower_bounds_[col] = 0.0;
         upper_bounds_[col] = 0.0;

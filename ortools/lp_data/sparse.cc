@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"

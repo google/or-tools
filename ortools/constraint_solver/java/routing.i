@@ -365,7 +365,7 @@ PROTO2_RETURN(operations_research::RoutingModelParameters,
 %unignore RoutingIndexPairs;
 
 namespace operations_research {
-// IMPORTANT(viger): These functions from routing_parameters.h are global, so in
+// IMPORTANT(user): These functions from routing_parameters.h are global, so in
 // java they are in the main.java (import com.[...].constraintsolver.main).
 %rename (defaultRoutingSearchParameters) DefaultRoutingSearchParameters;
 %rename (defaultRoutingModelParameters) DefaultRoutingModelParameters;

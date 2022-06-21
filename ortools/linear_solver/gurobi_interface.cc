@@ -42,6 +42,7 @@
 // poorly tested, proceed with caution.
 //
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
