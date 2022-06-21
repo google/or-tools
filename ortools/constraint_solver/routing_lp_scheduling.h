@@ -162,6 +162,7 @@ class RoutingLinearSolverWrapper {
   virtual ~RoutingLinearSolverWrapper() {}
   virtual void Clear() = 0;
   virtual int CreateNewPositiveVariable() = 0;
+  virtual void SetVariableName(int index, absl::string_view name) = 0;
   virtual bool SetVariableBounds(int index, int64_t lower_bound,
                                  int64_t upper_bound) = 0;
   virtual void SetVariableDisjointBounds(int index,
@@ -217,6 +218,9 @@ class RoutingLinearSolverWrapper {
     const int reification_ct = AddLinearConstraint(1, 1, {});
     if (std::numeric_limits<int64_t>::min() < lower_bound) {
       const int under_lower_bound = AddVariable(0, 1);
+#ifndef NDEBUG
+      SetVariableName(under_lower_bound, "under_lower_bound");
+#endif
       SetCoefficient(reification_ct, under_lower_bound, 1);
       const int under_lower_bound_ct =
           AddLinearConstraint(std::numeric_limits<int64_t>::min(),
@@ -225,6 +229,9 @@ class RoutingLinearSolverWrapper {
     }
     if (upper_bound < std::numeric_limits<int64_t>::max()) {
       const int above_upper_bound = AddVariable(0, 1);
+#ifndef NDEBUG
+      SetVariableName(above_upper_bound, "above_upper_bound");
+#endif
       SetCoefficient(reification_ct, above_upper_bound, 1);
       const int above_upper_bound_ct = AddLinearConstraint(
           upper_bound + 1, std::numeric_limits<int64_t>::max(),
@@ -232,6 +239,9 @@ class RoutingLinearSolverWrapper {
       SetEnforcementLiteral(above_upper_bound_ct, above_upper_bound);
     }
     const int within_bounds = AddVariable(0, 1);
+#ifndef NDEBUG
+    SetVariableName(within_bounds, "within_bounds");
+#endif
     SetCoefficient(reification_ct, within_bounds, 1);
     const int within_bounds_ct =
         AddLinearConstraint(lower_bound, upper_bound, weighted_variables);
@@ -254,6 +264,9 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
   }
   int CreateNewPositiveVariable() override {
     return linear_program_.CreateNewVariable().value();
+  }
+  void SetVariableName(int index, absl::string_view name) override {
+    linear_program_.SetVariableName(index, name);
   }
   bool SetVariableBounds(int index, int64_t lower_bound,
                          int64_t upper_bound) override {
@@ -435,6 +448,9 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     variable->add_domain(static_cast<int64_t>(parameters_.mip_max_bound()));
     return index;
   }
+  void SetVariableName(int index, absl::string_view name) override {
+    model_.mutable_variables(index)->set_name(name);
+  }
   bool SetVariableBounds(int index, int64_t lower_bound,
                          int64_t upper_bound) override {
     DCHECK_GE(lower_bound, 0);
@@ -452,6 +468,10 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     const int ct = CreateNewConstraint(1, 1);
     for (int i = 0; i < starts.size(); ++i) {
       const int variable = CreateNewPositiveVariable();
+#ifndef NDEBUG
+      SetVariableName(variable,
+                      absl::StrFormat("disjoint(%ld, %ld)", index, i));
+#endif
       SetVariableBounds(variable, 0, 1);
       SetCoefficient(ct, variable, 1);
       const int window_ct = CreateNewConstraint(starts[i], ends[i]);

@@ -3006,6 +3006,32 @@ LocalSearchFilter* MakePathStateFilter(Solver* solver,
   return solver->RevAlloc(filter);
 }
 
+namespace {
+using Interval = UnaryDimensionChecker::Interval;
+
+Interval Intersect(const Interval& i1, const Interval& i2) {
+  return {std::max(i1.min, i2.min), std::min(i1.max, i2.max)};
+}
+
+bool IsEmpty(const Interval& interval) { return interval.min > interval.max; }
+
+Interval operator+(const Interval& i1, const Interval& i2) {
+  return {CapAdd(i1.min, i2.min), CapAdd(i1.max, i2.max)};
+}
+
+Interval& operator+=(Interval& i1, const Interval& i2) {
+  i1.min = CapAdd(i1.min, i2.min);
+  i1.max = CapAdd(i1.max, i2.max);
+  return i1;
+}
+
+// Return the interval delta such that from + delta = to.
+// Note that it is different from "to - from".
+Interval Delta(const Interval& from, const Interval& to) {
+  return {CapSub(to.min, from.min), CapSub(to.max, from.max)};
+}
+}  // namespace
+
 UnaryDimensionChecker::UnaryDimensionChecker(
     const PathState* path_state, std::vector<Interval> path_capacity,
     std::vector<int> path_class,
@@ -3017,7 +3043,7 @@ UnaryDimensionChecker::UnaryDimensionChecker(
       min_max_demand_per_path_class_(std::move(min_max_demand_per_path_class)),
       node_capacity_(std::move(node_capacity)),
       index_(path_state_->NumNodes(), 0),
-      maximum_partial_demand_layer_size_(
+      maximum_riq_layer_size_(
           std::max(16, 4 * path_state_->NumNodes()))  // 16 and 4 are arbitrary.
 {
   const int num_nodes = path_state_->NumNodes();
@@ -3025,9 +3051,9 @@ UnaryDimensionChecker::UnaryDimensionChecker(
   const int num_paths = path_state_->NumPaths();
   DCHECK_EQ(num_paths, path_capacity_.size());
   DCHECK_EQ(num_paths, path_class_.size());
-  const int maximum_rmq_exponent = MostSignificantBitPosition32(num_nodes);
-  partial_demand_sums_rmq_.resize(maximum_rmq_exponent + 1);
-  previous_nontrivial_index_.reserve(maximum_partial_demand_layer_size_);
+  const int maximum_riq_exponent = MostSignificantBitPosition32(num_nodes);
+  backwards_demand_sums_riq_.resize(maximum_riq_exponent + 1);
+  previous_nontrivial_index_.reserve(maximum_riq_layer_size_);
   FullCommit();
 }
 
@@ -3035,16 +3061,11 @@ bool UnaryDimensionChecker::Check() const {
   if (path_state_->IsInvalid()) return true;
   for (const int path : path_state_->ChangedPaths()) {
     const Interval path_capacity = path_capacity_[path];
-    if (path_capacity.min == std::numeric_limits<int64_t>::min() &&
-        path_capacity.max == std::numeric_limits<int64_t>::max()) {
-      continue;
-    }
     const int path_class = path_class_[path];
-    // Loop invariant: capacity_used is nonempty and within path_capacity.
-    Interval capacity_used = node_capacity_[path_state_->Start(path)];
-    capacity_used = {std::max(capacity_used.min, path_capacity.min),
-                     std::min(capacity_used.max, path_capacity.max)};
-    if (capacity_used.min > capacity_used.max) return false;
+    // Loop invariant: cumul is nonempty and within path_capacity.
+    Interval cumul = node_capacity_[path_state_->Start(path)];
+    cumul = Intersect(cumul, path_capacity);
+    if (IsEmpty(cumul)) return false;
 
     for (const auto chain : path_state_->Chains(path)) {
       const int first_node = chain.First();
@@ -3056,66 +3077,54 @@ bool UnaryDimensionChecker::Check() const {
       const int chain_path = path_state_->Path(first_node);
       const int chain_path_class =
           chain_path == -1 ? -1 : path_class_[chain_path];
-      // Call the RMQ if the chain size is large enough;
+      // Call the RIQ if the chain size is large enough;
       // the optimal value was found with the associated benchmark in tests,
       // in particular BM_UnaryDimensionChecker<ChangeSparsity::kSparse, *>.
-      constexpr int kMinRangeSizeForRMQ = 4;
+      constexpr int kMinRangeSizeForRIQ = 4;
       const bool chain_is_cached = chain_path_class == path_class;
-      if (last_index - first_index > kMinRangeSizeForRMQ && chain_is_cached &&
+      if (last_index - first_index > kMinRangeSizeForRIQ && chain_is_cached &&
           SubpathOnlyHasTrivialNodes(first_index, last_index)) {
-        // Compute feasible values of capacity_used that will not violate
-        // path_capacity. This is done by considering the worst cases
-        // using a range min/max query.
-        const Interval min_max =
-            GetMinMaxPartialDemandSum(first_index, last_index);
-        const Interval prev_sum = partial_demand_sums_rmq_[0][first_index - 1];
-        const Interval min_max_delta = {CapSub(min_max.min, prev_sum.min),
-                                        CapSub(min_max.max, prev_sum.max)};
-        capacity_used = {
-            std::max(capacity_used.min,
-                     CapSub(path_capacity.min, min_max_delta.min)),
-            std::min(capacity_used.max,
-                     CapSub(path_capacity.max, min_max_delta.max))};
-        if (capacity_used.min > capacity_used.max) return false;
-        // Move to last node's state, which is valid since we did not return.
-        const Interval last_sum = partial_demand_sums_rmq_[0][last_index];
-        capacity_used = {
-            CapSub(CapAdd(capacity_used.min, last_sum.min), prev_sum.min),
-            CapSub(CapAdd(capacity_used.max, last_sum.max), prev_sum.max)};
+        // Feasible cumuls at chain end are constrained by:
+        // - feasible cumuls at chain start plus demands of the chain.
+        // - tightest demand backwards sum from the path capacity interval.
+        const Interval tightest_sum =
+            GetTightestBackwardsDemandSum(first_index, last_index);
+        const Interval prev_sum = backwards_demand_sums_riq_[0][first_index];
+        const Interval last_sum = backwards_demand_sums_riq_[0][last_index];
+        cumul += Delta(last_sum, prev_sum);
+        cumul = Intersect(cumul, path_capacity + Delta(last_sum, tightest_sum));
+        if (IsEmpty(cumul)) return false;
+        cumul += min_max_demand_per_path_class_[path_class](last_node);
+        cumul = Intersect(cumul, path_capacity);
       } else {
         for (const int node : chain) {
-          const Interval node_capacity = node_capacity_[node];
-          capacity_used = {std::max(capacity_used.min, node_capacity.min),
-                           std::min(capacity_used.max, node_capacity.max)};
-          if (capacity_used.min > capacity_used.max) return false;
+          cumul = Intersect(cumul, node_capacity_[node]);
+          if (IsEmpty(cumul)) return false;
           const Interval demand =
               chain_is_cached
                   ? cached_demand_[node]
                   : min_max_demand_per_path_class_[path_class](node);
-          capacity_used = {CapAdd(capacity_used.min, demand.min),
-                           CapAdd(capacity_used.max, demand.max)};
-          capacity_used = {std::max(capacity_used.min, path_capacity.min),
-                           std::min(capacity_used.max, path_capacity.max)};
+          cumul += demand;
+          cumul = Intersect(cumul, path_capacity);
         }
+        if (IsEmpty(cumul)) return false;
       }
     }
-    if (std::max(capacity_used.min, path_capacity.min) >
-        std::min(capacity_used.max, path_capacity.max)) {
-      return false;
-    }
+    cumul = Intersect(cumul, path_capacity);
+    if (IsEmpty(cumul)) return false;
   }
   return true;
 }
 
 void UnaryDimensionChecker::Commit() {
-  const int current_layer_size = partial_demand_sums_rmq_[0].size();
+  const int current_layer_size = backwards_demand_sums_riq_[0].size();
   int change_size = path_state_->ChangedPaths().size();
   for (const int path : path_state_->ChangedPaths()) {
     for (const auto chain : path_state_->Chains(path)) {
       change_size += chain.NumNodes();
     }
   }
-  if (current_layer_size + change_size <= maximum_partial_demand_layer_size_) {
+  if (current_layer_size + change_size <= maximum_riq_layer_size_) {
     IncrementalCommit();
   } else {
     FullCommit();
@@ -3124,43 +3133,44 @@ void UnaryDimensionChecker::Commit() {
 
 void UnaryDimensionChecker::IncrementalCommit() {
   for (const int path : path_state_->ChangedPaths()) {
-    const int begin_index = partial_demand_sums_rmq_[0].size();
+    const int begin_index = backwards_demand_sums_riq_[0].size();
     AppendPathDemandsToSums(path);
-    UpdateRMQStructure(begin_index, partial_demand_sums_rmq_[0].size());
+    UpdateRIQStructure(begin_index, backwards_demand_sums_riq_[0].size());
   }
 }
 
 void UnaryDimensionChecker::FullCommit() {
   // Clear all structures.
   previous_nontrivial_index_.clear();
-  for (auto& sums : partial_demand_sums_rmq_) sums.clear();
+  for (auto& sums : backwards_demand_sums_riq_) sums.clear();
   // Append all paths.
   const int num_paths = path_state_->NumPaths();
   for (int path = 0; path < num_paths; ++path) {
-    const int begin_index = partial_demand_sums_rmq_[0].size();
+    const int begin_index = backwards_demand_sums_riq_[0].size();
     AppendPathDemandsToSums(path);
-    UpdateRMQStructure(begin_index, partial_demand_sums_rmq_[0].size());
+    UpdateRIQStructure(begin_index, backwards_demand_sums_riq_[0].size());
   }
 }
 
 void UnaryDimensionChecker::AppendPathDemandsToSums(int path) {
   const int path_class = path_class_[path];
+  // Compute sum of all demands for this path.
+  // TODO(user): backwards Nodes() iterator, to compute sum directly.
   Interval demand_sum = {0, 0};
+  for (const int node : path_state_->Nodes(path)) {
+    const Interval demand = min_max_demand_per_path_class_[path_class](node);
+    demand_sum += demand;
+    cached_demand_[node] = demand;
+  }
   int previous_nontrivial_index = -1;
-  int index = partial_demand_sums_rmq_[0].size();
-  // Value of partial_demand_sums_rmq_ at node_index-1 must be the sum
-  // of all demands of nodes before node.
-  partial_demand_sums_rmq_[0].push_back(demand_sum);
-  previous_nontrivial_index_.push_back(-1);
-  ++index;
-
+  int index = backwards_demand_sums_riq_[0].size();
+  // Value of backwards_demand_sums_riq_ at node_index must be the sum
+  // of all demands of nodes from node to end of path.
   for (const int node : path_state_->Nodes(path)) {
     index_[node] = index;
-    const Interval demand = min_max_demand_per_path_class_[path_class](node);
-    cached_demand_[node] = demand;
-    demand_sum = {CapAdd(demand_sum.min, demand.min),
-                  CapAdd(demand_sum.max, demand.max)};
-    partial_demand_sums_rmq_[0].push_back(demand_sum);
+    backwards_demand_sums_riq_[0].push_back(demand_sum);
+    const Interval demand = cached_demand_[node];
+    demand_sum = Delta(demand, demand_sum);
 
     const Interval node_capacity = node_capacity_[node];
     if (demand.min != demand.max ||
@@ -3173,49 +3183,49 @@ void UnaryDimensionChecker::AppendPathDemandsToSums(int path) {
   }
 }
 
-void UnaryDimensionChecker::UpdateRMQStructure(int begin_index, int end_index) {
+void UnaryDimensionChecker::UpdateRIQStructure(int begin_index, int end_index) {
   // The max layer is the one used by
   // GetMinMaxPartialDemandSum(begin_index, end_index - 1).
-  const int maximum_rmq_exponent =
+  const int maximum_riq_exponent =
       MostSignificantBitPosition32(end_index - 1 - begin_index);
-  for (int layer = 1, window_size = 1; layer <= maximum_rmq_exponent;
+  for (int layer = 1, window_size = 1; layer <= maximum_riq_exponent;
        ++layer, window_size *= 2) {
-    partial_demand_sums_rmq_[layer].resize(end_index);
+    backwards_demand_sums_riq_[layer].resize(end_index);
     for (int i = begin_index; i < end_index - window_size; ++i) {
-      const Interval i1 = partial_demand_sums_rmq_[layer - 1][i];
-      const Interval i2 = partial_demand_sums_rmq_[layer - 1][i + window_size];
-      partial_demand_sums_rmq_[layer][i] = {std::min(i1.min, i2.min),
-                                            std::max(i1.max, i2.max)};
+      const Interval i1 = backwards_demand_sums_riq_[layer - 1][i];
+      const Interval i2 =
+          backwards_demand_sums_riq_[layer - 1][i + window_size];
+      backwards_demand_sums_riq_[layer][i] = Intersect(i1, i2);
     }
     std::copy(
-        partial_demand_sums_rmq_[layer - 1].begin() + end_index - window_size,
-        partial_demand_sums_rmq_[layer - 1].begin() + end_index,
-        partial_demand_sums_rmq_[layer].begin() + end_index - window_size);
+        backwards_demand_sums_riq_[layer - 1].begin() + end_index - window_size,
+        backwards_demand_sums_riq_[layer - 1].begin() + end_index,
+        backwards_demand_sums_riq_[layer].begin() + end_index - window_size);
   }
 }
 
 // TODO(user): since this is called only when
 // last_node_index - first_node_index is large enough,
-// the lower layers of partial_demand_sums_rmq_ are never used.
+// the lower layers of backwards_demand_sums_riq_ are never used.
 // For instance, if this is only called when the range size is > 4
 // and paths are <= 32 nodes long, then we only need layers 0, 2, 3, and 4.
 // To compare, on a 512 < #nodes <= 1024 problem, this uses layers in [0, 10].
 UnaryDimensionChecker::Interval
-UnaryDimensionChecker::GetMinMaxPartialDemandSum(int first_node_index,
-                                                 int last_node_index) const {
+UnaryDimensionChecker::GetTightestBackwardsDemandSum(
+    int first_node_index, int last_node_index) const {
   DCHECK_LE(0, first_node_index);
   DCHECK_LT(first_node_index, last_node_index);
-  DCHECK_LT(last_node_index, partial_demand_sums_rmq_[0].size());
+  DCHECK_LT(last_node_index, backwards_demand_sums_riq_[0].size());
   // Find largest window_size = 2^layer such that
   // first_node_index < last_node_index - window_size + 1.
   const int layer =
       MostSignificantBitPosition32(last_node_index - first_node_index);
   const int window_size = 1 << layer;
-  // Classical range min/max query in O(1).
-  const Interval i1 = partial_demand_sums_rmq_[layer][first_node_index];
+  // Adaptation of the conventional O(1) Range Max Query scheme.
+  Interval i1 = backwards_demand_sums_riq_[layer][first_node_index];
   const Interval i2 =
-      partial_demand_sums_rmq_[layer][last_node_index - window_size + 1];
-  return {std::min(i1.min, i2.min), std::max(i1.max, i2.max)};
+      backwards_demand_sums_riq_[layer][last_node_index - window_size + 1];
+  return Intersect(i1, i2);
 }
 
 bool UnaryDimensionChecker::SubpathOnlyHasTrivialNodes(

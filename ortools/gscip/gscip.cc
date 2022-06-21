@@ -327,8 +327,12 @@ absl::StatusOr<SCIP_VAR*> GScip::AddVariable(
     double lb, double ub, double obj_coef, GScipVarType var_type,
     const std::string& var_name, const GScipVariableOptions& options) {
   SCIP_VAR* var = nullptr;
-  OR_ASSIGN_OR_RETURN3(lb, ScipInfClamp(lb), _ << "invalid lower bound");
-  OR_ASSIGN_OR_RETURN3(ub, ScipInfClamp(ub), _ << "invalid upper bound");
+  OR_ASSIGN_OR_RETURN3(lb, ScipInfClamp(lb),
+                       _ << "invalid lower bound for variable: " << var_name);
+  OR_ASSIGN_OR_RETURN3(ub, ScipInfClamp(ub),
+                       _ << "invalid upper bound for variable: " << var_name);
+  RETURN_IF_ERROR(CheckScipFinite(obj_coef))
+      << "invalid objective coefficient for variable: " << var_name;
   RETURN_IF_SCIP_ERROR(SCIPcreateVarBasic(scip_, /*var=*/&var,
                                           /*name=*/var_name.c_str(),
                                           /*lb=*/lb, /*ub=*/ub,
@@ -362,9 +366,13 @@ absl::StatusOr<SCIP_CONS*> GScip::AddLinearConstraint(
   RETURN_ERROR_UNLESS(range.variables.size() == range.coefficients.size())
       << "Error adding constraint: " << name << ".";
   OR_ASSIGN_OR_RETURN3(const double lb, ScipInfClamp(range.lower_bound),
-                       _ << "invalid lower bound");
+                       _ << "invalid lower bound for constraint: " << name);
   OR_ASSIGN_OR_RETURN3(const double ub, ScipInfClamp(range.upper_bound),
-                       _ << "invalid upper bound");
+                       _ << "invalid upper bound for constraint: " << name);
+  for (int i = 0; i < range.coefficients.size(); ++i) {
+    RETURN_IF_ERROR(CheckScipFinite(range.coefficients[i]))
+        << "invalid coefficient at index " << i << " of constraint: " << name;
+  }
   RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
       scip_, &constraint, name.c_str(), range.variables.size(),
       const_cast<SCIP_VAR**>(range.variables.data()),
@@ -398,9 +406,19 @@ absl::StatusOr<SCIP_CONS*> GScip::AddQuadraticConstraint(
   RETURN_ERROR_UNLESS(num_quad_vars == range.quadratic_coefficients.size())
       << "Error adding quadratic constraint: " << name << " in quadratic term.";
   OR_ASSIGN_OR_RETURN3(const double lb, ScipInfClamp(range.lower_bound),
-                       _ << "invalid lower bound");
+                       _ << "invalid lower bound for constraint: " << name);
   OR_ASSIGN_OR_RETURN3(const double ub, ScipInfClamp(range.upper_bound),
-                       _ << "invalid upper bound");
+                       _ << "invalid upper bound for constraint: " << name);
+  for (int i = 0; i < range.linear_coefficients.size(); ++i) {
+    RETURN_IF_ERROR(CheckScipFinite(range.linear_coefficients[i]))
+        << "invalid linear coefficient at index " << i
+        << " of constraint: " << name;
+  }
+  for (int i = 0; i < range.quadratic_coefficients.size(); ++i) {
+    RETURN_IF_ERROR(CheckScipFinite(range.quadratic_coefficients[i]))
+        << "invalid quadratic coefficient at index " << i
+        << " of constraint: " << name;
+  }
   RETURN_IF_SCIP_ERROR(SCIPcreateConsQuadratic(
       scip_, &constraint, name.c_str(), num_lin_vars,
       const_cast<SCIP_Var**>(range.linear_variables.data()),
@@ -439,7 +457,11 @@ absl::StatusOr<SCIP_CONS*> GScip::AddIndicatorConstraint(
       << "Error adding indicator constraint: " << name << ".";
   OR_ASSIGN_OR_RETURN3(const double ub,
                        ScipInfClamp(indicator_constraint.upper_bound),
-                       _ << "invalid upper bound");
+                       _ << "invalid upper bound for constraint: " << name);
+  for (int i = 0; i < indicator_constraint.coefficients.size(); ++i) {
+    RETURN_IF_ERROR(CheckScipFinite(indicator_constraint.coefficients[i]))
+        << "invalid coefficient at index " << i << " of constraint: " << name;
+  }
   RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
       scip_, &constraint, name.c_str(), indicator,
       indicator_constraint.variables.size(),
@@ -592,6 +614,7 @@ absl::Status GScip::SetMaximize(bool is_maximize) {
 }
 
 absl::Status GScip::SetObjectiveOffset(double offset) {
+  RETURN_IF_ERROR(CheckScipFinite(offset)) << "invalid objective offset";
   double old_offset = SCIPgetOrigObjoffset(scip_);
   double delta_offset = offset - old_offset;
   RETURN_IF_SCIP_ERROR(SCIPaddOrigObjoffset(scip_, delta_offset));
@@ -622,6 +645,7 @@ absl::Status GScip::SetUb(SCIP_VAR* var, double ub) {
 }
 
 absl::Status GScip::SetObjCoef(SCIP_VAR* var, double obj_coef) {
+  RETURN_IF_ERROR(CheckScipFinite(obj_coef)) << "invalid objective coefficient";
   RETURN_IF_SCIP_ERROR(SCIPchgVarObj(scip_, var, obj_coef));
   return absl::OkStatus();
 }
@@ -746,6 +770,7 @@ absl::Status GScip::SetLinearConstraintCoef(SCIP_CONS* constraint,
   // TODO(user): this operation is slow (linear in the nnz in the constraint).
   // It would be better to just use a bulk operation, but there doesn't appear
   // to be any?
+  RETURN_IF_ERROR(CheckScipFinite(value)) << "invalid coefficient";
   RETURN_IF_SCIP_ERROR(SCIPchgCoefLinear(scip_, constraint, var, value));
   return absl::OkStatus();
 }
@@ -753,6 +778,7 @@ absl::Status GScip::SetLinearConstraintCoef(SCIP_CONS* constraint,
 absl::Status GScip::AddLinearConstraintCoef(SCIP_CONS* const constraint,
                                             SCIP_VAR* const var,
                                             const double value) {
+  RETURN_IF_ERROR(CheckScipFinite(value)) << "invalid coefficient";
   RETURN_IF_SCIP_ERROR(SCIPaddCoefLinear(scip_, constraint, var, value));
   return absl::OkStatus();
 }
@@ -1022,6 +1048,17 @@ double GScip::ScipInfUnclamp(double d) {
   if (d >= kScipInf) return std::numeric_limits<double>::infinity();
   if (d <= -kScipInf) return -std::numeric_limits<double>::infinity();
   return d;
+}
+
+absl::Status GScip::CheckScipFinite(double d) {
+  const double kScipInf = ScipInf();
+  // NaN is considered finite here.
+  if (d >= kScipInf || d <= -kScipInf) {
+    return util::InvalidArgumentErrorBuilder()
+           << d << " is not in SCIP's finite range: (" << -kScipInf << ", "
+           << kScipInf << ")";
+  }
+  return absl::OkStatus();
 }
 
 #undef RETURN_ERROR_UNLESS

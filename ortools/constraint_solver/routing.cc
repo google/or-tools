@@ -45,13 +45,13 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/thorough_hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -266,6 +266,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     DCHECK_LE(resource_groups.size(), optimize_and_pack ? 1 : 0);
     resource_group_index_ = resource_groups.empty() ? -1 : resource_groups[0];
   }
+
   Decision* Next(Solver* const solver) override {
     const RoutingDimension& dimension = *local_optimizer_->dimension();
     RoutingModel* const model = dimension.model();
@@ -327,6 +328,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     return nullptr;
   }
 
+ private:
+  using Resource = RoutingModel::ResourceGroup::Resource;
+
   DimensionSchedulingStatus ComputeCumulAndBreakValuesForVehicle(
       LocalDimensionCumulOptimizer* optimizer, int vehicle,
       std::vector<int64_t>* cumul_values,
@@ -347,13 +351,11 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       return optimizer->ComputePackedRouteCumuls(
           vehicle, next, resource, cumul_values, break_start_end_values);
     } else {
+      // TODO(user): Add the resource to the call in this case too!
       return optimizer->ComputeRouteCumuls(vehicle, next, cumul_values,
                                            break_start_end_values);
     }
   }
-
- private:
-  using Resource = RoutingModel::ResourceGroup::Resource;
 
   LocalDimensionCumulOptimizer* const local_optimizer_;
   LocalDimensionCumulOptimizer* const local_mp_optimizer_;
@@ -373,6 +375,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
         global_mp_optimizer_(global_mp_optimizer),
         monitor_(monitor),
         optimize_and_pack_(optimize_and_pack) {}
+
   Decision* Next(Solver* const solver) override {
     // The following boolean variable indicates if the solver should fail, in
     // order to postpone the Fail() call until after the scope, so there are
@@ -460,6 +463,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
     return nullptr;
   }
 
+ private:
   DimensionSchedulingStatus ComputeCumulBreakAndResourceValues(
       GlobalDimensionCumulOptimizer* optimizer,
       std::vector<int64_t>* cumul_values,
@@ -480,7 +484,6 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
                                           resource_indices_per_group);
   }
 
- private:
   GlobalDimensionCumulOptimizer* const global_optimizer_;
   GlobalDimensionCumulOptimizer* const global_mp_optimizer_;
   SearchMonitor* const monitor_;
@@ -646,10 +649,10 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
   DecisionBuilder* restore_pack_and_finalize =
       solver_->Compose(decision_builders);
   solver_->Solve(restore_pack_and_finalize,
-                 packed_dimensions_assignment_collector_, limit);
+                 optimized_dimensions_assignment_collector_, limit);
   const bool limit_was_reached = limit->Check();
   if (time_limit_was_reached) *time_limit_was_reached = limit_was_reached;
-  if (packed_dimensions_assignment_collector_->solution_count() != 1) {
+  if (optimized_dimensions_assignment_collector_->solution_count() != 1) {
     if (limit_was_reached) {
       VLOG(1) << "The packing reached the time limit.";
     } else {
@@ -663,7 +666,7 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
 
   packed_assignment->Copy(original_assignment);
   packed_assignment->CopyIntersection(
-      packed_dimensions_assignment_collector_->solution(0));
+      optimized_dimensions_assignment_collector_->solution(0));
 
   return packed_assignment;
 }
@@ -1419,6 +1422,7 @@ bool RoutingModel::InitializeDimensionInternal(
     const DimensionIndex dimension_index(dimensions_.size());
     dimension_name_to_index_[dimension->name()] = dimension_index;
     dimensions_.push_back(dimension);
+    dimension_cumuls_optimized_with_cumul_dependent_transits_.push_back(false);
     dimension->Initialize(evaluator_indices, state_dependent_evaluator_indices,
                           slack_max);
     solver_->AddConstraint(solver_->MakeDelayedPathCumul(
@@ -5103,12 +5107,14 @@ bool AllTransitsPositive(const RoutingDimension& dimension) {
 
 void RoutingModel::StoreDimensionCumulOptimizers(
     const RoutingSearchParameters& parameters) {
-  Assignment* packed_dimensions_collector_assignment =
+  Assignment* optimized_dimensions_collector_assignment =
       solver_->MakeAssignment();
-  packed_dimensions_collector_assignment->AddObjective(CostVar());
+  optimized_dimensions_collector_assignment->AddObjective(CostVar());
   const int num_dimensions = dimensions_.size();
   local_optimizer_index_.resize(num_dimensions, -1);
   global_optimizer_index_.resize(num_dimensions, -1);
+  dimension_local_optimizer_for_cumul_dependent_transits_.resize(
+      num_dimensions);
   if (parameters.disable_scheduling_beware_this_may_degrade_performance()) {
     return;
   }
@@ -5185,24 +5191,32 @@ void RoutingModel::StoreDimensionCumulOptimizers(
                dimension, parameters.continuous_scheduling_solver()),
            std::make_unique<LocalDimensionCumulOptimizer>(
                dimension, parameters.mixed_integer_scheduling_solver())});
+    } else if (dimension_cumuls_optimized_with_cumul_dependent_transits_[dim]) {
+      needs_optimizer = true;
+      dimension->SetVehicleOffsetsForLocalOptimizer(std::move(vehicle_offsets));
+      dimension_local_optimizer_for_cumul_dependent_transits_[dim] =
+          std::make_unique<LocalDimensionCumulOptimizer>(
+              dimension, parameters.mixed_integer_scheduling_solver());
     }
     if (needs_optimizer) {
-      packed_dimensions_collector_assignment->Add(dimension->cumuls());
+      optimized_dimensions_collector_assignment->Add(dimension->cumuls());
     }
   }
 
   // NOTE(b/129252839): We also add all other extra variables to the
-  // packed_dimensions_collector_assignment to make sure the necessary
-  // propagations on these variables after packing are correctly stored.
+  // optimized_dimensions_collector_assignment to make sure the necessary
+  // propagations on these variables after packing/optimizing are correctly
+  // stored.
   for (IntVar* const extra_var : extra_vars_) {
-    packed_dimensions_collector_assignment->Add(extra_var);
+    optimized_dimensions_collector_assignment->Add(extra_var);
   }
   for (IntervalVar* const extra_interval : extra_intervals_) {
-    packed_dimensions_collector_assignment->Add(extra_interval);
+    optimized_dimensions_collector_assignment->Add(extra_interval);
   }
 
-  packed_dimensions_assignment_collector_ = solver_->MakeFirstSolutionCollector(
-      packed_dimensions_collector_assignment);
+  optimized_dimensions_assignment_collector_ =
+      solver_->MakeFirstSolutionCollector(
+          optimized_dimensions_collector_assignment);
 }
 
 std::vector<RoutingDimension*> RoutingModel::GetDimensionsWithSoftOrSpanCosts()
@@ -5235,8 +5249,8 @@ RoutingModel::GetDimensionsWithGlobalCumulOptimizers() const {
   DCHECK(closed_);
   std::vector<const RoutingDimension*> global_optimizer_dimensions;
   for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
-    DCHECK_NE(lp_optimizer.get(), nullptr);
-    DCHECK_NE(mp_optimizer.get(), nullptr);
+    DCHECK_NE(lp_optimizer, nullptr);
+    DCHECK_NE(mp_optimizer, nullptr);
     global_optimizer_dimensions.push_back(lp_optimizer->dimension());
   }
   return global_optimizer_dimensions;
@@ -5247,8 +5261,8 @@ RoutingModel::GetDimensionsWithLocalCumulOptimizers() const {
   DCHECK(closed_);
   std::vector<const RoutingDimension*> local_optimizer_dimensions;
   for (auto& [lp_optimizer, mp_optimizer] : local_dimension_optimizers_) {
-    DCHECK_NE(lp_optimizer.get(), nullptr);
-    DCHECK_NE(mp_optimizer.get(), nullptr);
+    DCHECK_NE(lp_optimizer, nullptr);
+    DCHECK_NE(mp_optimizer, nullptr);
     local_optimizer_dimensions.push_back(lp_optimizer->dimension());
   }
   return local_optimizer_dimensions;
@@ -6649,6 +6663,7 @@ void RoutingDimension::InitializeTransits(
   InitializeTransitVariables(slack_max);
 }
 
+// TODO(user): Apply -pointer-following.
 void FillPathEvaluation(const std::vector<int64_t>& path,
                         const RoutingModel::TransitCallback2& evaluator,
                         std::vector<int64_t>* values) {

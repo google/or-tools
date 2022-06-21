@@ -43,7 +43,7 @@
 ///   * "next(i)" variables representing the immediate successor of the node
 ///     corresponding to i; use IndexToNode() to get the node corresponding to
 ///     a "next" variable value; note that node indices are strongly typed
-///     integers (cf. ortools/base/strong_int.h);
+///     integers (cf. ortools/base/int_type.h);
 ///   * "vehicle(i)" variables representing the vehicle route to which the
 ///     node corresponding to i belongs;
 ///   * "active(i)" boolean variables, true if the node corresponding to i is
@@ -172,11 +172,11 @@
 #include "absl/functional/bind_front.h"
 #include "absl/memory/memory.h"
 #include "absl/time/time.h"
+#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -655,6 +655,7 @@ class RoutingModel {
   }
   /// Returns dimensions with soft or vehicle span costs.
   std::vector<RoutingDimension*> GetDimensionsWithSoftOrSpanCosts() const;
+
   /// Returns the dimensions which have [global|local]_dimension_optimizers_.
   std::vector<const RoutingDimension*> GetDimensionsWithGlobalCumulOptimizers()
       const;
@@ -1967,8 +1968,8 @@ class RoutingModel {
   absl::StrongVector<DimensionIndex, int> global_optimizer_index_;
   std::vector<DimensionCumulOptimizers<LocalDimensionCumulOptimizer> >
       local_dimension_optimizers_;
-  // clang-format on
   absl::StrongVector<DimensionIndex, int> local_optimizer_index_;
+  // clang-format on
   std::string primary_constrained_dimension_;
   /// Costs
   IntVar* cost_ = nullptr;
@@ -2102,7 +2103,7 @@ class RoutingModel {
   std::vector<SearchMonitor*> monitors_;
   SolutionCollector* collect_assignments_ = nullptr;
   SolutionCollector* collect_one_assignment_ = nullptr;
-  SolutionCollector* packed_dimensions_assignment_collector_ = nullptr;
+  SolutionCollector* optimized_dimensions_assignment_collector_ = nullptr;
   DecisionBuilder* solve_db_ = nullptr;
   DecisionBuilder* improve_db_ = nullptr;
   DecisionBuilder* restore_assignment_ = nullptr;
@@ -2839,7 +2840,6 @@ class RoutingDimension {
   // clang-format off
   const std::vector<std::pair<int64_t, int64_t> >&
       GetBreakDistanceDurationOfVehicle(int vehicle) const;
-
   // clang-format on
   int GetPreTravelEvaluatorOfVehicle(int vehicle) const;
   int GetPostTravelEvaluatorOfVehicle(int vehicle) const;

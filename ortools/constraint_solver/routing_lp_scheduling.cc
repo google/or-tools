@@ -197,7 +197,7 @@ LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
 DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumulCost(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     int64_t* optimal_cost) {
-  return optimizer_core_.OptimizeSingleRoute(vehicle, next_accessor,
+  return optimizer_core_.OptimizeSingleRoute(vehicle, next_accessor, {},
                                              solver_[vehicle].get(), nullptr,
                                              nullptr, optimal_cost, nullptr);
 }
@@ -209,8 +209,8 @@ LocalDimensionCumulOptimizer::ComputeRouteCumulCostWithoutFixedTransits(
   int64_t cost = 0;
   int64_t transit_cost = 0;
   const DimensionSchedulingStatus status = optimizer_core_.OptimizeSingleRoute(
-      vehicle, next_accessor, solver_[vehicle].get(), nullptr, nullptr, &cost,
-      &transit_cost);
+      vehicle, next_accessor, {}, solver_[vehicle].get(), nullptr, nullptr,
+      &cost, &transit_cost);
   if (status != DimensionSchedulingStatus::INFEASIBLE &&
       optimal_cost_without_transits != nullptr) {
     *optimal_cost_without_transits = CapSub(cost, transit_cost);
@@ -228,7 +228,7 @@ std::vector<DimensionSchedulingStatus> LocalDimensionCumulOptimizer::
         std::vector<std::vector<int64_t>>* optimal_cumuls,
         std::vector<std::vector<int64_t>>* optimal_breaks) {
   return optimizer_core_.OptimizeSingleRouteWithResources(
-      vehicle, next_accessor, transit_accessor, resources, resource_indices,
+      vehicle, next_accessor, transit_accessor, {}, resources, resource_indices,
       optimize_vehicle_costs, solver_[vehicle].get(),
       optimal_costs_without_transits, optimal_cumuls, optimal_breaks);
 }
@@ -798,8 +798,8 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::OptimizeAndPack(
     solver->SetParameters(packing_parameters.SerializeAsString());
   }
   DimensionSchedulingStatus status = DimensionSchedulingStatus::OPTIMAL;
-  if (Optimize(next_accessor, solver,
-               /*cumul_values=*/nullptr, /*break_values=*/nullptr,
+  if (Optimize(next_accessor, solver, /*cumul_values=*/nullptr,
+               /*break_values=*/nullptr,
                /*resource_indices_per_group=*/nullptr, &cost,
                /*transit_cost=*/nullptr,
                /*clear_lp=*/false) == DimensionSchedulingStatus::INFEASIBLE) {
@@ -849,9 +849,9 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
     // the costs are optimized by the LP.
     int64_t cost = 0;
     if (OptimizeSingleRoute(vehicle, next_accessor, solver,
-                            /*cumul_values=*/nullptr, /*break_values=*/nullptr,
-                            &cost, /*transit_cost=*/nullptr,
-                            /*clear_lp=*/false) ==
+                            /*cumul_values=*/nullptr,
+                            /*break_values=*/nullptr, &cost,
+                            /*transit_cost=*/nullptr, /*clear_lp=*/false) ==
         DimensionSchedulingStatus::INFEASIBLE) {
       status = DimensionSchedulingStatus::INFEASIBLE;
     }
@@ -860,11 +860,9 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
     const std::vector<DimensionSchedulingStatus> statuses =
         OptimizeSingleRouteWithResources(
             vehicle, next_accessor, dimension_->transit_evaluator(vehicle),
-            {*resource}, {0},
-            /*optimize_vehicle_costs=*/true, solver, &costs_without_transits,
-            /*cumul_values=*/nullptr,
-            /*break_values=*/nullptr,
-            /*clear_lp=*/false);
+            {*resource}, {0}, /*optimize_vehicle_costs=*/true, solver,
+            &costs_without_transits, /*cumul_values=*/nullptr,
+            /*break_values=*/nullptr, /*clear_lp=*/false);
     DCHECK_EQ(statuses.size(), 1);
     if (statuses[0] == DimensionSchedulingStatus::INFEASIBLE) {
       status = DimensionSchedulingStatus::INFEASIBLE;
@@ -959,12 +957,25 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::PackRoutes(
   return status;
 }
 
+#ifndef NDEBUG
+#define SET_VARIABLE_NAME(solver, var, name) \
+  do {                                       \
+    solver->SetVariableName(var, name);      \
+  } while (false)
+#else
+#define SET_VARIABLE_NAME(solver, var, name) \
+  do {                                       \
+  } while (false)
+#endif
+
 void DimensionCumulOptimizerCore::InitOptimizer(
     RoutingLinearSolverWrapper* solver) {
   solver->Clear();
   index_to_cumul_variable_.assign(dimension_->cumuls().size(), -1);
   max_end_cumul_ = solver->CreateNewPositiveVariable();
+  SET_VARIABLE_NAME(solver, max_end_cumul_, "max_end_cumul");
   min_start_cumul_ = solver->CreateNewPositiveVariable();
+  SET_VARIABLE_NAME(solver, min_start_cumul_, "min_start_cumul");
 }
 
 bool DimensionCumulOptimizerCore::ComputeRouteCumulBounds(
@@ -1068,6 +1079,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   lp_cumuls.assign(path_size, -1);
   for (int pos = 0; pos < path_size; ++pos) {
     const int lp_cumul = solver->CreateNewPositiveVariable();
+    SET_VARIABLE_NAME(solver, lp_cumul, absl::StrFormat("lp_cumul(%ld)", pos));
     index_to_cumul_variable_[path[pos]] = lp_cumul;
     lp_cumuls[pos] = lp_cumul;
     if (!solver->SetVariableBounds(lp_cumul, current_route_min_cumuls_[pos],
@@ -1094,6 +1106,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   for (int pos = 0; pos < path_size - 1; ++pos) {
     const IntVar* cp_slack = dimension_->SlackVar(path[pos]);
     lp_slacks[pos] = solver->CreateNewPositiveVariable();
+    SET_VARIABLE_NAME(solver, lp_slacks[pos],
+                      absl::StrFormat("lp_slacks(%ld)", pos));
     if (!solver->SetVariableBounds(lp_slacks[pos], cp_slack->Min(),
                                    cp_slack->Max())) {
       return false;
@@ -1131,6 +1145,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         continue;
       }
       const int soft_ub_diff = solver->CreateNewPositiveVariable();
+      SET_VARIABLE_NAME(solver, soft_ub_diff,
+                        absl::StrFormat("soft_ub_diff(%ld)", pos));
       solver->SetObjectiveCoefficient(soft_ub_diff, coef);
       // cumul - soft_ub_diff <= bound.
       const int ct = solver->CreateNewConstraint(
@@ -1152,6 +1168,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         continue;
       }
       const int soft_lb_diff = solver->CreateNewPositiveVariable();
+      SET_VARIABLE_NAME(solver, soft_lb_diff,
+                        absl::StrFormat("soft_lb_diff(%ld)", pos));
       solver->SetObjectiveCoefficient(soft_lb_diff, coef);
       // bound - cumul <= soft_lb_diff
       const int ct = solver->CreateNewConstraint(
@@ -1213,6 +1231,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     if (bound_cost.bound < std::numeric_limits<int64_t>::max() &&
         bound_cost.cost > 0) {
       const int span_violation = solver->CreateNewPositiveVariable();
+      SET_VARIABLE_NAME(solver, span_violation, "span_violation");
       // end - start <= bound + span_violation
       const int violation = solver->CreateNewConstraint(
           std::numeric_limits<int64_t>::min(), bound_cost.bound);
@@ -1336,9 +1355,15 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       }
       lp_break_start[br] =
           solver->AddVariable(break_start_min, break_start_max);
+      SET_VARIABLE_NAME(solver, lp_break_start[br],
+                        absl::StrFormat("lp_break_start(%ld)", br));
       lp_break_end[br] = solver->AddVariable(break_end_min, break_end_max);
+      SET_VARIABLE_NAME(solver, lp_break_end[br],
+                        absl::StrFormat("lp_break_end(%ld)", br));
       lp_break_duration[br] =
           solver->AddVariable(break_duration_min, break_duration_max);
+      SET_VARIABLE_NAME(solver, lp_break_duration[br],
+                        absl::StrFormat("lp_break_duration(%ld)", br));
       // start + duration = end.
       solver->AddLinearConstraint(0, 0,
                                   {{lp_break_end[br], 1},
@@ -1374,6 +1399,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
             0, std::numeric_limits<int64_t>::max(),
             {{lp_cumuls.front(), 1}, {lp_break_end[br], -1}});
         const int break_is_before_route = solver->AddVariable(0, 1);
+        SET_VARIABLE_NAME(solver, break_is_before_route,
+                          absl::StrFormat("break_is_before_route(%ld)", br));
         solver->SetEnforcementLiteral(ct, break_is_before_route);
         solver->SetCoefficient(break_in_one_slack_ct, break_is_before_route, 1);
       }
@@ -1383,6 +1410,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
             0, std::numeric_limits<int64_t>::max(),
             {{lp_break_start[br], 1}, {lp_cumuls.back(), -1}});
         const int break_is_after_route = solver->AddVariable(0, 1);
+        SET_VARIABLE_NAME(solver, break_is_after_route,
+                          absl::StrFormat("break_is_after_route(%ld)", br));
         solver->SetEnforcementLiteral(ct, break_is_after_route);
         solver->SetCoefficient(break_in_one_slack_ct, break_is_after_route, 1);
       }
@@ -1411,6 +1440,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       // sum_br break_duration_min(br) * break_in_slack(br, pos) <=
       // lp_slacks(pos).
       const int break_in_slack = solver->AddVariable(0, 1);
+      SET_VARIABLE_NAME(solver, break_in_slack,
+                        absl::StrFormat("break_in_slack(%ld, %ld)", br, pos));
       solver->SetCoefficient(break_in_one_slack_ct, break_in_slack, 1);
       if (slack_linear_lower_bound_ct[pos] == -1) {
         slack_linear_lower_bound_ct[pos] = solver->AddLinearConstraint(
@@ -1425,6 +1456,9 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         // lp_slacks(pos).
         const int break_duration_in_slack =
             solver->AddVariable(0, slack_duration_max);
+        SET_VARIABLE_NAME(
+            solver, break_duration_in_slack,
+            absl::StrFormat("break_duration_in_slack(%ld, %ld)", br, pos));
         solver->AddProductConstraint(break_duration_in_slack,
                                      {break_in_slack, lp_break_duration[br]});
         if (slack_exact_lower_bound_ct[pos] == -1) {
@@ -1460,6 +1494,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     }
     // When this feature is used, breaks are in sorted order.
     for (int br = 1; br < num_breaks; ++br) {
+      if (lp_break_start[br] == -1 || lp_break_start[br - 1] == -1) continue;
       solver->AddLinearConstraint(
           0, std::numeric_limits<int64_t>::max(),
           {{lp_break_end[br - 1], -1}, {lp_break_start[br], 1}});
@@ -1498,6 +1533,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     // the whole timeline (-infinity, +infinity).
     int previous_cover = solver->AddVariable(CapAdd(vehicle_start_min, limit),
                                              CapAdd(vehicle_start_max, limit));
+    SET_VARIABLE_NAME(solver, previous_cover, "previous_cover");
     solver->AddLinearConstraint(limit, limit,
                                 {{previous_cover, 1}, {lp_cumuls.front(), -1}});
     for (int br = 0; br < num_breaks; ++br) {
@@ -1507,7 +1543,11 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       // break_is_eligible <=>
       // break_end - break_start >= break_minimum_duration.
       const int break_is_eligible = solver->AddVariable(0, 1);
+      SET_VARIABLE_NAME(solver, break_is_eligible,
+                        absl::StrFormat("break_is_eligible(%ld)", br));
       const int break_is_not_eligible = solver->AddVariable(0, 1);
+      SET_VARIABLE_NAME(solver, break_is_not_eligible,
+                        absl::StrFormat("break_is_not_eligible(%ld)", br));
       {
         solver->AddLinearConstraint(
             1, 1, {{break_is_eligible, 1}, {break_is_not_eligible, 1}});
@@ -1528,6 +1568,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       const int break_cover = solver->AddVariable(
           CapAdd(std::min(vehicle_start_min, break_end_min), limit),
           CapAdd(std::max(vehicle_start_min, break_end_max), limit));
+      SET_VARIABLE_NAME(solver, break_cover,
+                        absl::StrFormat("break_cover(%ld)", br));
       const int limit_cover_ct = solver->AddLinearConstraint(
           limit, limit, {{break_cover, 1}, {lp_break_end[br], -1}});
       solver->SetEnforcementLiteral(limit_cover_ct, break_is_eligible);
@@ -1539,6 +1581,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       const int cover =
           solver->AddVariable(CapAdd(vehicle_start_min, limit),
                               std::numeric_limits<int64_t>::max());
+      SET_VARIABLE_NAME(solver, cover, absl::StrFormat("cover(%ld)", br));
       solver->AddMaximumConstraint(cover, {previous_cover, break_cover});
       // Cover chaining. If route end is not covered, break start must be:
       // cover_{i-1} < route_end => s_i <= cover_{i-1}
@@ -1672,6 +1715,8 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraints(
         if (vehicle_constraints[v] == kNoConstraint) continue;
 
         const int assign_r_to_v = solver->AddVariable(0, 1);
+        SET_VARIABLE_NAME(solver, assign_r_to_v,
+                          absl::StrFormat("assign_r_to_v(%ld, %ld)", r, v));
         resource_to_vehicle_assignment_variables[r * num_vehicles + v] =
             assign_r_to_v;
         solver->SetCoefficient(vehicle_constraints[v], assign_r_to_v, 1);
@@ -1702,6 +1747,8 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraints(
   }
   return true;
 }
+
+#undef SET_VARIABLE_NAME
 
 void DimensionCumulOptimizerCore::SetValuesFromLP(
     const std::vector<int>& lp_variables, int64_t offset,
@@ -1792,8 +1839,8 @@ GlobalDimensionCumulOptimizer::ComputeCumulCostWithoutFixedTransits(
   int64_t cost = 0;
   int64_t transit_cost = 0;
   DimensionSchedulingStatus status =
-      optimizer_core_.Optimize(next_accessor, solver_.get(), nullptr, nullptr,
-                               nullptr, &cost, &transit_cost);
+      optimizer_core_.Optimize(next_accessor, {}, solver_.get(), nullptr,
+                               nullptr, nullptr, &cost, &transit_cost);
   if (status != DimensionSchedulingStatus::INFEASIBLE &&
       optimal_cost_without_transits != nullptr) {
     *optimal_cost_without_transits = CapSub(cost, transit_cost);

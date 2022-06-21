@@ -3396,13 +3396,13 @@ class UnaryDimensionChecker {
   void Commit();
 
  private:
-  // Range min/max query on partial_demand_sums_.
+  // Range intersection query on backwards_demand_sums_.
   // The first_node and last_node MUST form a subpath in the committed state.
   // Nodes first_node and last_node are passed by their index in precomputed
   // data, they must be committed in some path, and it has to be the same path.
-  // See partial_demand_sums_.
-  Interval GetMinMaxPartialDemandSum(int first_node_index,
-                                     int last_node_index) const;
+  // See backwards_demand_sums_riq_.
+  Interval GetTightestBackwardsDemandSum(int first_node_index,
+                                         int last_node_index) const;
 
   // Queries whether all nodes in the committed subpath [first_node, last_node]
   // have fixed demands and trivial node_capacity [kint64min, kint64max].
@@ -3416,15 +3416,15 @@ class UnaryDimensionChecker {
   // Commits to the current solution and only build structures for paths that
   // changed, using additional space to do so in a time-memory tradeoff.
   void IncrementalCommit();
-  // Adds sums of given path to the bottom layer of the RMQ structure,
-  // updates index_ and previous_nontrivial_index_.
+  // Adds sums of given path to the bottom layer of the Range Intersection Query
+  // structure, updates index_ and previous_nontrivial_index_.
   void AppendPathDemandsToSums(int path);
-  // Updates the RMQ structure from its bottom layer,
+  // Updates the Range Intersection Query structure from its bottom layer,
   // with [begin_index, end_index) the range of the change,
   // which must be at the end of the bottom layer.
   // Supposes that requests overlapping the range will be inside the range,
   // to avoid updating all layers.
-  void UpdateRMQStructure(int begin_index, int end_index);
+  void UpdateRIQStructure(int begin_index, int end_index);
 
   const PathState* const path_state_;
   const std::vector<Interval> path_capacity_;
@@ -3440,18 +3440,18 @@ class UnaryDimensionChecker {
   // Only valid for nodes that are in some path in the committed state.
   std::vector<int> index_;
   // Implementation of a <O(n log n), O(1)> range min/max query, n = #nodes.
-  // partial_demand_sums_rmq_[0][index_[node]] contains the sum of demands
+  // backwards_demand_sums_riq_[0][index_[node]] contains the sum of demands
   // from the start of the node's path to the node.
   // If node is the start of path, the sum is demand_[path_class_[path]][node],
-  // moreover partial_demand_sums_rmq_[0][index_[node]-1] is {0, 0}.
-  // partial_demand_sums_rmq_[layer][index] contains an interval
+  // moreover backwards_demand_sums_riq_[0][index_[node]-1] is {0, 0}.
+  // backwards_demand_sums_riq_[layer][index] contains an interval
   // [min_value, max_value] such that min_value is
-  // min(partial_demand_sums_rmq_[0][index+i].min | i in [0, 2^layer)),
+  // min(backwards_demand_sums_riq_[0][index+i].min | i in [0, 2^layer)),
   // similarly max_value is the maximum of .max on the same range.
-  std::vector<std::vector<Interval>> partial_demand_sums_rmq_;
+  std::vector<std::vector<Interval>> backwards_demand_sums_riq_;
   // The incremental branch of Commit() may waste space in the layers of the
-  // RMQ structure. This is the upper limit of a layer's size.
-  const int maximum_partial_demand_layer_size_;
+  // RIQ structure. This is the upper limit of a layer's size.
+  const int maximum_riq_layer_size_;
   // previous_nontrivial_index_[index_[node]] has the index of the previous
   // node on its committed path that has nonfixed demand or nontrivial node
   // capacity. This allows for O(1) queries that all nodes on a subpath

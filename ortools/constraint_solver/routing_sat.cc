@@ -297,17 +297,17 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
   // based on the first "unary" dimension in the model if it exists.
   // TODO(user): We might want to try to get demand lower bounds from
   // non-unary dimensions if no unary exist.
-  const RoutingDimension* master_dimension = nullptr;
+  const RoutingDimension* primary_dimension = nullptr;
   for (const RoutingDimension* dimension : model.GetDimensions()) {
     // Only a single vehicle class is supported.
     if (dimension->GetUnaryTransitEvaluator(0) != nullptr) {
-      master_dimension = dimension;
+      primary_dimension = dimension;
       break;
     }
   }
-  if (master_dimension != nullptr) {
+  if (primary_dimension != nullptr) {
     const RoutingModel::TransitCallback1& transit =
-        master_dimension->GetUnaryTransitEvaluator(0);
+        primary_dimension->GetUnaryTransitEvaluator(0);
     for (int node = 0; node < num_nodes; ++node) {
       // Tricky: demand is added for all nodes in the sat model; this means
       // start/end nodes other than the one used for the depot must be ignored.
@@ -316,7 +316,7 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
       }
     }
     DCHECK_EQ(routes_ct->demands_size(), num_nodes + 1 - model.vehicles());
-    routes_ct->set_capacity(master_dimension->vehicle_capacities()[0]);
+    routes_ct->set_capacity(primary_dimension->vehicle_capacities()[0]);
   }
   return arc_vars;
 }
@@ -900,7 +900,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
   //  are based on the first "unary" dimension in the model if it exists.
   //  TODO(user): We might want to try to get demand lower bounds from
   //  non-unary dimensions if no unary exist.
-  const RoutingDimension* master_dimension = nullptr;
+  const RoutingDimension* primary_dimension = nullptr;
   for (const RoutingDimension* dimension : model.GetDimensions()) {
     bool is_unary = true;
     for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
@@ -910,17 +910,17 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
       }
     }
     if (is_unary) {
-      master_dimension = dimension;
+      primary_dimension = dimension;
       break;
     }
   }
-  if (master_dimension != nullptr) {
+  if (primary_dimension != nullptr) {
     for (int cp_node = 0; cp_node < num_cp_nodes; ++cp_node) {
       int64_t min_transit = std::numeric_limits<int64_t>::max();
       if (cp_node != 0 && !model.IsEnd(cp_node - 1)) {
         for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
           const RoutingModel::TransitCallback1& transit =
-              master_dimension->GetUnaryTransitEvaluator(vehicle);
+              primary_dimension->GetUnaryTransitEvaluator(vehicle);
           min_transit = std::min(min_transit, transit(cp_node - 1));
         }
       } else {
@@ -932,7 +932,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
     int64_t max_capacity = std::numeric_limits<int64_t>::min();
     for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
       max_capacity = std::max(max_capacity,
-                              master_dimension->vehicle_capacities()[vehicle]);
+                              primary_dimension->vehicle_capacities()[vehicle]);
     }
     routes_ct->set_capacity(max_capacity);
   }

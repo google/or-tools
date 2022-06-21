@@ -39,11 +39,11 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/small_map.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -2648,10 +2648,11 @@ bool LPCumulFilter::Accept(const Assignment* delta,
     // No need to compute the cost of the LP, only verify its feasibility.
     delta_cost_without_transit_ = 0;
     const DimensionSchedulingStatus status =
-        optimizer_.ComputeCumuls(next_accessor, nullptr, nullptr, nullptr);
+        optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr, nullptr);
     if (status == DimensionSchedulingStatus::OPTIMAL) return true;
     if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
-        mp_optimizer_.ComputeCumuls(next_accessor, nullptr, nullptr, nullptr) ==
+        mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
+                                    nullptr) ==
             DimensionSchedulingStatus::OPTIMAL) {
       return true;
     }

@@ -1396,7 +1396,7 @@ enum SentinelMarker {
 }  // namespace
 
 extern PropagationMonitor* BuildTrace(Solver* const s);
-extern LocalSearchMonitor* BuildLocalSearchMonitorMaster(Solver* const s);
+extern LocalSearchMonitor* BuildLocalSearchMonitorPrimary(Solver* const s);
 extern ModelCache* BuildModelCache(Solver* const solver);
 
 std::string Solver::model_name() const { return name_; }
@@ -1454,7 +1454,7 @@ void Solver::Init() {
   additional_constraint_index_ = 0;
   num_int_vars_ = 0;
   propagation_monitor_.reset(BuildTrace(this));
-  local_search_monitor_.reset(BuildLocalSearchMonitorMaster(this));
+  local_search_monitor_.reset(BuildLocalSearchMonitorPrimary(this));
   print_trace_ = nullptr;
   anonymous_variable_index_ = 0;
   should_fail_ = false;
@@ -3148,11 +3148,11 @@ PropagationMonitor* Solver::GetPropagationMonitor() const {
   return propagation_monitor_.get();
 }
 
-// ---------- Local Search Monitor Master ----------
+// ---------- Local Search Monitor Primary ----------
 
-class LocalSearchMonitorMaster : public LocalSearchMonitor {
+class LocalSearchMonitorPrimary : public LocalSearchMonitor {
  public:
-  explicit LocalSearchMonitorMaster(Solver* solver)
+  explicit LocalSearchMonitorPrimary(Solver* solver)
       : LocalSearchMonitor(solver) {}
 
   void BeginOperatorStart() override {
@@ -3205,19 +3205,20 @@ class LocalSearchMonitorMaster : public LocalSearchMonitor {
   void Install() override { SearchMonitor::Install(); }
 
   std::string DebugString() const override {
-    return "LocalSearchMonitorMaster";
+    return "LocalSearchMonitorPrimary";
   }
 
  private:
   std::vector<LocalSearchMonitor*> monitors_;
 };
 
-LocalSearchMonitor* BuildLocalSearchMonitorMaster(Solver* const s) {
-  return new LocalSearchMonitorMaster(s);
+LocalSearchMonitor* BuildLocalSearchMonitorPrimary(Solver* const s) {
+  return new LocalSearchMonitorPrimary(s);
 }
 
 void Solver::AddLocalSearchMonitor(LocalSearchMonitor* const monitor) {
-  reinterpret_cast<class LocalSearchMonitorMaster*>(local_search_monitor_.get())
+  reinterpret_cast<class LocalSearchMonitorPrimary*>(
+      local_search_monitor_.get())
       ->Add(monitor);
 }
 

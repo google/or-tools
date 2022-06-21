@@ -38,11 +38,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
-#include "absl/memory/memory.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -52,7 +49,6 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/graph/christofides.h"
 #include "ortools/util/bitset.h"
@@ -3962,8 +3958,8 @@ class RouteConstructor {
 
     model_->solver()->TopPeriodicCheck();
     // Beyond this point not checking limits anymore as the rest of the code is
-    // linear and that given we managed to build a solution would be stupid to
-    // drop it now.
+    // linear and that given we managed to build a solution would be ludicrous
+    // to drop it now.
     for (int chain_index = 0; chain_index < chains_.size(); ++chain_index) {
       if (!deleted_chains_.contains(chain_index)) {
         final_chains_.push_back(chains_[chain_index]);
@@ -4099,7 +4095,7 @@ class RouteConstructor {
 
   bool CheckRouteConnection(const std::vector<int>& route1,
                             const std::vector<int>& route2, int dimension_index,
-                            int64_t start_depot, int64_t end_depot) {
+                            int64_t /*start_depot*/, int64_t end_depot) {
     const int tail1 = route1.back();
     const int head2 = route2.front();
     const int tail2 = route2.back();
@@ -4408,7 +4404,7 @@ class AllUnperformed : public DecisionBuilder {
   // Does not take ownership of model.
   explicit AllUnperformed(RoutingModel* const model) : model_(model) {}
   ~AllUnperformed() override {}
-  Decision* Next(Solver* const solver) override {
+  Decision* Next(Solver* const /*solver*/) override {
     // Solver::(Un)FreezeQueue is private, passing through the public API
     // on PropagationBaseObject.
     model_->CostVar()->FreezeQueue();

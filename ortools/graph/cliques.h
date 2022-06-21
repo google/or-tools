@@ -32,8 +32,8 @@
 #include <vector>
 
 #include "absl/strings/str_cat.h"
+#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/time_limit.h"
 
@@ -209,7 +209,7 @@ class BronKerboschAlgorithm {
   }
 
  private:
-  DEFINE_STRONG_INT_TYPE(CandidateIndex, ptrdiff_t);
+  DEFINE_INT_TYPE(CandidateIndex, ptrdiff_t);
 
   // A data structure that maintains the variables of one "iteration" of the
   // search algorithm. These are the variables that would normally be allocated

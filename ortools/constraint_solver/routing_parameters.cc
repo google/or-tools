@@ -30,6 +30,7 @@
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/optional_boolean.pb.h"
+#include "ortools/util/testing_utils.h"
 
 namespace operations_research {
 
@@ -45,90 +46,89 @@ RoutingModelParameters DefaultRoutingModelParameters() {
   return parameters;
 }
 
-// static
-RoutingSearchParameters DefaultRoutingSearchParameters() {
-  static const char* const kSearchParameters =
-      "first_solution_strategy: AUTOMATIC "
-      "use_unfiltered_first_solution_strategy: false "
-      "savings_neighbors_ratio: 1 "
-      "savings_max_memory_usage_bytes: 6e9 "
-      "savings_add_reverse_arcs: false "
-      "savings_arc_coefficient: 1 "
-      "savings_parallel_routes: false "
-      "cheapest_insertion_farthest_seeds_ratio: 0 "
-      "cheapest_insertion_first_solution_neighbors_ratio: 1 "
-      "cheapest_insertion_first_solution_min_neighbors: 1 "
-      "cheapest_insertion_ls_operator_neighbors_ratio: 1 "
-      "cheapest_insertion_ls_operator_min_neighbors: 1 "
-      "cheapest_insertion_first_solution_use_neighbors_ratio_for_"
-      "initialization: false "
-      "cheapest_insertion_add_unperformed_entries: false "
-      "local_cheapest_insertion_evaluate_pickup_delivery_costs_independently: "
-      "true "
-      "local_search_operators {"
-      "  use_relocate: BOOL_TRUE"
-      "  use_relocate_pair: BOOL_TRUE"
-      "  use_light_relocate_pair: BOOL_TRUE"
-      "  use_relocate_subtrip: BOOL_TRUE"
-      "  use_relocate_neighbors: BOOL_FALSE"
-      "  use_exchange: BOOL_TRUE"
-      "  use_exchange_pair: BOOL_TRUE"
-      "  use_exchange_subtrip: BOOL_TRUE"
-      "  use_cross: BOOL_TRUE"
-      "  use_cross_exchange: BOOL_FALSE"
-      "  use_relocate_expensive_chain: BOOL_TRUE"
-      "  use_two_opt: BOOL_TRUE"
-      "  use_or_opt: BOOL_TRUE"
-      "  use_lin_kernighan: BOOL_TRUE"
-      "  use_tsp_opt: BOOL_FALSE"
-      "  use_make_active: BOOL_TRUE"
-      "  use_relocate_and_make_active: BOOL_FALSE"  // costly if true by default
-      "  use_make_inactive: BOOL_TRUE"
-      "  use_make_chain_inactive: BOOL_TRUE"
-      "  use_swap_active: BOOL_TRUE"
-      "  use_extended_swap_active: BOOL_FALSE"
-      "  use_node_pair_swap_active: BOOL_TRUE"
-      "  use_path_lns: BOOL_FALSE"
-      "  use_full_path_lns: BOOL_FALSE"
-      "  use_tsp_lns: BOOL_FALSE"
-      "  use_inactive_lns: BOOL_FALSE"
-      "  use_global_cheapest_insertion_path_lns: BOOL_TRUE"
-      "  use_local_cheapest_insertion_path_lns: BOOL_TRUE"
-      "  use_relocate_path_global_cheapest_insertion_insert_unperformed: "
-      "BOOL_TRUE"
-      "  use_global_cheapest_insertion_expensive_chain_lns: BOOL_FALSE"
-      "  use_local_cheapest_insertion_expensive_chain_lns: BOOL_FALSE"
-      "  use_global_cheapest_insertion_close_nodes_lns: BOOL_FALSE"
-      "  use_local_cheapest_insertion_close_nodes_lns: BOOL_FALSE"
-      "}"
-      "use_multi_armed_bandit_concatenate_operators: false "
-      "multi_armed_bandit_compound_operator_memory_coefficient: 0.04 "
-      "multi_armed_bandit_compound_operator_exploration_coefficient: 1e12 "
-      "relocate_expensive_chain_num_arcs_to_consider: 4 "
-      "heuristic_expensive_chain_lns_num_arcs_to_consider: 4 "
-      "heuristic_close_nodes_lns_num_nodes: 5 "
-      "local_search_metaheuristic: AUTOMATIC "
-      "guided_local_search_lambda_coefficient: 0.1 "
-      "use_depth_first_search: false "
-      "use_cp: BOOL_TRUE "
-      "use_cp_sat: BOOL_FALSE "
-      "use_generalized_cp_sat: BOOL_FALSE "
-      "sat_parameters { linearization_level: 2 num_search_workers: 1 } "
-      "continuous_scheduling_solver: SCHEDULING_GLOP "
-      "mixed_integer_scheduling_solver: SCHEDULING_CP_SAT "
-      "disable_scheduling_beware_this_may_degrade_performance: false "
-      "optimization_step: 0.0 "
-      "number_of_solutions_to_collect: 1 "
-      // No "time_limit" by default.
-      "solution_limit: 0x7fffffffffffffff "             // kint64max
-      "lns_time_limit: { seconds:0 nanos:100000000 } "  // 0.1s
-      "use_full_propagation: false "
-      "log_search: false "
-      "log_cost_scaling_factor: 1.0 "
-      "log_cost_offset: 0.0";
+namespace {
+RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
+  static constexpr char kSearchParameters[] = R"pb(
+    first_solution_strategy: AUTOMATIC
+    use_unfiltered_first_solution_strategy: false
+    savings_neighbors_ratio: 1
+    savings_max_memory_usage_bytes: 6e9
+    savings_add_reverse_arcs: false
+    savings_arc_coefficient: 1
+    savings_parallel_routes: false
+    cheapest_insertion_farthest_seeds_ratio: 0
+    cheapest_insertion_first_solution_neighbors_ratio: 1
+    cheapest_insertion_first_solution_min_neighbors: 1
+    cheapest_insertion_ls_operator_neighbors_ratio: 1
+    cheapest_insertion_ls_operator_min_neighbors: 1
+    cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization:
+        false
+    cheapest_insertion_add_unperformed_entries: false
+    local_cheapest_insertion_evaluate_pickup_delivery_costs_independently: true
+    local_search_operators {
+      use_relocate: BOOL_TRUE
+      use_relocate_pair: BOOL_TRUE
+      use_light_relocate_pair: BOOL_TRUE
+      use_relocate_subtrip: BOOL_TRUE
+      use_relocate_neighbors: BOOL_FALSE
+      use_exchange: BOOL_TRUE
+      use_exchange_pair: BOOL_TRUE
+      use_exchange_subtrip: BOOL_TRUE
+      use_cross: BOOL_TRUE
+      use_cross_exchange: BOOL_FALSE
+      use_relocate_expensive_chain: BOOL_TRUE
+      use_two_opt: BOOL_TRUE
+      use_or_opt: BOOL_TRUE
+      use_lin_kernighan: BOOL_TRUE
+      use_tsp_opt: BOOL_FALSE
+      use_make_active: BOOL_TRUE
+      use_relocate_and_make_active: BOOL_FALSE  # costly if true by default
+      use_make_inactive: BOOL_TRUE
+      use_make_chain_inactive: BOOL_TRUE
+      use_swap_active: BOOL_TRUE
+      use_extended_swap_active: BOOL_FALSE
+      use_node_pair_swap_active: BOOL_TRUE
+      use_path_lns: BOOL_FALSE
+      use_full_path_lns: BOOL_FALSE
+      use_tsp_lns: BOOL_FALSE
+      use_inactive_lns: BOOL_FALSE
+      use_global_cheapest_insertion_path_lns: BOOL_TRUE
+      use_local_cheapest_insertion_path_lns: BOOL_TRUE
+      use_relocate_path_global_cheapest_insertion_insert_unperformed: BOOL_TRUE
+      use_global_cheapest_insertion_expensive_chain_lns: BOOL_FALSE
+      use_local_cheapest_insertion_expensive_chain_lns: BOOL_FALSE
+      use_global_cheapest_insertion_close_nodes_lns: BOOL_FALSE
+      use_local_cheapest_insertion_close_nodes_lns: BOOL_FALSE
+    }
+    use_multi_armed_bandit_concatenate_operators: false
+    multi_armed_bandit_compound_operator_memory_coefficient: 0.04
+    multi_armed_bandit_compound_operator_exploration_coefficient: 1e12
+    relocate_expensive_chain_num_arcs_to_consider: 4
+    heuristic_expensive_chain_lns_num_arcs_to_consider: 4
+    heuristic_close_nodes_lns_num_nodes: 5
+    local_search_metaheuristic: AUTOMATIC
+    guided_local_search_lambda_coefficient: 0.1
+    use_depth_first_search: false
+    use_cp: BOOL_TRUE
+    use_cp_sat: BOOL_FALSE
+    use_generalized_cp_sat: BOOL_FALSE
+    sat_parameters { linearization_level: 2 num_search_workers: 1 }
+    continuous_scheduling_solver: SCHEDULING_GLOP
+    mixed_integer_scheduling_solver: SCHEDULING_CP_SAT
+    disable_scheduling_beware_this_may_degrade_performance: false
+    optimization_step: 0.0
+    number_of_solutions_to_collect: 1
+    # No global time_limit by default.
+    solution_limit: 0x7fffffffffffffff               # kint64max
+    lns_time_limit: { seconds: 0 nanos: 100000000 }  # 0.1s
+    use_full_propagation: false
+    log_search: false
+    log_cost_scaling_factor: 1.0
+    log_cost_offset: 0.0
+  )pb";
   RoutingSearchParameters parameters;
-  if (!google::protobuf::TextFormat::ParseFromString(kSearchParameters,
-                                                     &parameters)) {
+  using TextFormat = google::protobuf::TextFormat;
+  if (!TextFormat::ParseFromString(kSearchParameters, &parameters)) {
     LOG(DFATAL) << "Unsupported default search parameters: "
                 << kSearchParameters;
   }
@@ -136,6 +136,14 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
   LOG_IF(DFATAL, !error.empty())
       << "The default search parameters aren't valid: " << error;
   return parameters;
+}
+}  // namespace
+
+// static
+RoutingSearchParameters DefaultRoutingSearchParameters() {
+  static const auto* default_parameters =
+      new RoutingSearchParameters(CreateDefaultRoutingSearchParameters());
+  return *default_parameters;
 }
 
 namespace {

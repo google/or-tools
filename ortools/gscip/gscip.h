@@ -360,10 +360,15 @@ class GScip {
   absl::Status SetParams(const GScipParameters& params,
                          const std::string& legacy_params);
   absl::Status FreeTransform();
+
   // Replaces +/- inf by +/- ScipInf(), fails when |d| is in [ScipInf(), inf).
   absl::StatusOr<double> ScipInfClamp(double d);
+
   // Returns +/- inf if |d| >= ScipInf(), otherwise returns d.
   double ScipInfUnclamp(double d);
+
+  // Returns an error if |d| >= ScipInf().
+  absl::Status CheckScipFinite(double d);
 
   absl::Status MaybeKeepConstraintAlive(SCIP_CONS* constraint,
                                         const GScipConstraintOptions& options);
