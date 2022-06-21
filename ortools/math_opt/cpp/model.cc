@@ -80,7 +80,8 @@ std::vector<Variable> Model::SortedVariables() const {
   return result;
 }
 
-std::vector<LinearConstraint> Model::ColumnNonzeros(const Variable variable) {
+std::vector<LinearConstraint> Model::ColumnNonzeros(
+    const Variable variable) const {
   CheckModel(variable.storage());
   std::vector<LinearConstraint> result;
   for (const LinearConstraintId constraint :
@@ -90,7 +91,8 @@ std::vector<LinearConstraint> Model::ColumnNonzeros(const Variable variable) {
   return result;
 }
 
-std::vector<Variable> Model::RowNonzeros(const LinearConstraint constraint) {
+std::vector<Variable> Model::RowNonzeros(
+    const LinearConstraint constraint) const {
   CheckModel(constraint.storage());
   std::vector<Variable> result;
   for (const VariableId variable :
@@ -101,7 +103,7 @@ std::vector<Variable> Model::RowNonzeros(const LinearConstraint constraint) {
 }
 
 BoundedLinearExpression Model::AsBoundedLinearExpression(
-    const LinearConstraint constraint) {
+    const LinearConstraint constraint) const {
   CheckModel(constraint.storage());
   LinearExpression terms;
   for (const VariableId var :

@@ -103,7 +103,9 @@ absl::StatusOr<SolveResult> Solve(const Model& model, SolverType solver_type,
 // while modifying the Model() (adding variables...). The user is expected to
 // use proper synchronization primitives to serialize changes to the model and
 // the use of this object. Note though that it is safe to call methods from
-// different IncrementalSolver instances on the same Model concurrently.
+// different IncrementalSolver instances on the same Model concurrently. Same
+// for calling IncrementalSolver::New(). The destructor is thread-safe and can
+// be called even during a modification of the Model.
 //
 // There is no problem calling SolveWithoutUpdate() concurrently on different
 // instances of IncrementalSolver or while the model is being modified (unless

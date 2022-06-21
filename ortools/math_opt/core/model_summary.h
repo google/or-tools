@@ -135,6 +135,7 @@ struct ModelSummary {
 
   IdNameBiMap variables;
   IdNameBiMap linear_constraints;
+  IdNameBiMap quadratic_constraints;
   IdNameBiMap sos1_constraints;
   IdNameBiMap sos2_constraints;
 };

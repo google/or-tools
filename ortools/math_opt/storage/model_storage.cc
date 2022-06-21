@@ -23,24 +23,22 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/memory/memory.h"
-#include "absl/meta/type_traits.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
-#include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
-#include "ortools/math_opt/storage/model_update_merge.h"
 #include "ortools/math_opt/storage/sparse_matrix.h"
+#include "ortools/math_opt/storage/update_trackers.h"
 #include "ortools/math_opt/validators/model_validator.h"
 
 namespace operations_research {
@@ -243,9 +241,7 @@ void ModelStorage::AddVariableInternal(const VariableId id,
   var_data.upper_bound = upper_bound;
   var_data.is_integer = is_integer;
   var_data.name = std::string(name);
-  if (!lazy_matrix_columns_.empty()) {
-    gtl::InsertOrDie(&lazy_matrix_columns_, id, {});
-  }
+  gtl::InsertOrDie(&matrix_columns_, id, {});
 }
 
 void ModelStorage::AddVariables(const VariablesProto& variables) {
@@ -262,35 +258,43 @@ void ModelStorage::AddVariables(const VariablesProto& variables) {
 
 void ModelStorage::DeleteVariable(const VariableId id) {
   CHECK(variables_.contains(id));
-  EnsureLazyMatrixColumns();
-  EnsureLazyMatrixRows();
   linear_objective_.erase(id);
-  if (id < variables_checkpoint_) {
-    dirty_variable_deletes_.insert(id);
-    dirty_variable_lower_bounds_.erase(id);
-    dirty_variable_upper_bounds_.erase(id);
-    dirty_variable_is_integer_.erase(id);
-    dirty_linear_objective_coefficients_.erase(id);
-    for (const VariableId related : quadratic_objective_.RelatedVariables(id)) {
-      // We can only have a dirty update to wipe clean if both variables are old
-      if (related < variables_checkpoint_) {
-        dirty_quadratic_objective_coefficients_.erase(
-            internal::MakeOrderedPair(id, related));
+  for (const auto& [_, update_tracker] :
+       update_trackers_.GetUpdatedTrackers()) {
+    if (id < update_tracker->variables_checkpoint) {
+      update_tracker->dirty_variable_deletes.insert(id);
+      update_tracker->dirty_variable_lower_bounds.erase(id);
+      update_tracker->dirty_variable_upper_bounds.erase(id);
+      update_tracker->dirty_variable_is_integer.erase(id);
+      update_tracker->dirty_linear_objective_coefficients.erase(id);
+      for (const VariableId related :
+           quadratic_objective_.RelatedVariables(id)) {
+        // We can only have a dirty update to wipe clean if both variables are
+        // old
+        if (related < update_tracker->variables_checkpoint) {
+          update_tracker->dirty_quadratic_objective_coefficients.erase(
+              internal::MakeOrderedPair(id, related));
+        }
       }
     }
   }
 
   quadratic_objective_.Delete(id);
-  for (const LinearConstraintId related_constraint :
-       lazy_matrix_columns_.at(id)) {
-    CHECK_GT(lazy_matrix_rows_.at(related_constraint).erase(id), 0);
+  for (const LinearConstraintId related_constraint : matrix_columns_.at(id)) {
+    CHECK_GT(matrix_rows_.at(related_constraint).erase(id), 0);
     CHECK_GT(linear_constraint_matrix_.erase({related_constraint, id}), 0);
-    if (id < variables_checkpoint_ &&
-        related_constraint < linear_constraints_checkpoint_) {
-      dirty_linear_constraint_matrix_keys_.erase({related_constraint, id});
+  }
+  for (const auto& [_, update_tracker] :
+       update_trackers_.GetUpdatedTrackers()) {
+    for (const LinearConstraintId related_constraint : matrix_columns_.at(id)) {
+      if (id < update_tracker->variables_checkpoint &&
+          related_constraint < update_tracker->linear_constraints_checkpoint) {
+        update_tracker->dirty_linear_constraint_matrix_keys.erase(
+            {related_constraint, id});
+      }
     }
   }
-  CHECK_GT(lazy_matrix_columns_.erase(id), 0);
+  CHECK_GT(matrix_columns_.erase(id), 0);
   variables_.erase(id);
 }
 
@@ -323,9 +327,7 @@ void ModelStorage::AddLinearConstraintInternal(const LinearConstraintId id,
   lin_con_data.lower_bound = lower_bound;
   lin_con_data.upper_bound = upper_bound;
   lin_con_data.name = std::string(name);
-  if (!lazy_matrix_rows_.empty()) {
-    gtl::InsertOrDie(&lazy_matrix_rows_, id, {});
-  }
+  gtl::InsertOrDie(&matrix_rows_, id, {});
 }
 
 void ModelStorage::AddLinearConstraints(
@@ -343,23 +345,30 @@ void ModelStorage::AddLinearConstraints(
 
 void ModelStorage::DeleteLinearConstraint(const LinearConstraintId id) {
   CHECK(linear_constraints_.contains(id));
-  EnsureLazyMatrixColumns();
-  EnsureLazyMatrixRows();
   linear_constraints_.erase(id);
-  if (id < linear_constraints_checkpoint_) {
-    dirty_linear_constraint_deletes_.insert(id);
-    dirty_linear_constraint_lower_bounds_.erase(id);
-    dirty_linear_constraint_upper_bounds_.erase(id);
-  }
-  for (const VariableId related_variable : lazy_matrix_rows_.at(id)) {
-    CHECK_GT(lazy_matrix_columns_.at(related_variable).erase(id), 0);
-    CHECK_GT(linear_constraint_matrix_.erase({id, related_variable}), 0);
-    if (id < linear_constraints_checkpoint_ &&
-        related_variable < variables_checkpoint_) {
-      dirty_linear_constraint_matrix_keys_.erase({id, related_variable});
+  for (const auto& [_, update_tracker] :
+       update_trackers_.GetUpdatedTrackers()) {
+    if (id < update_tracker->linear_constraints_checkpoint) {
+      update_tracker->dirty_linear_constraint_deletes.insert(id);
+      update_tracker->dirty_linear_constraint_lower_bounds.erase(id);
+      update_tracker->dirty_linear_constraint_upper_bounds.erase(id);
     }
   }
-  CHECK_GT(lazy_matrix_rows_.erase(id), 0);
+  for (const VariableId related_variable : matrix_rows_.at(id)) {
+    CHECK_GT(matrix_columns_.at(related_variable).erase(id), 0);
+    CHECK_GT(linear_constraint_matrix_.erase({id, related_variable}), 0);
+  }
+  for (const auto& [_, update_tracker] :
+       update_trackers_.GetUpdatedTrackers()) {
+    for (const VariableId related_variable : matrix_rows_.at(id)) {
+      if (id < update_tracker->linear_constraints_checkpoint &&
+          related_variable < update_tracker->variables_checkpoint) {
+        update_tracker->dirty_linear_constraint_matrix_keys.erase(
+            {id, related_variable});
+      }
+    }
+  }
+  CHECK_GT(matrix_rows_.erase(id), 0);
 }
 
 std::vector<LinearConstraintId> ModelStorage::linear_constraints() const {
@@ -424,82 +433,78 @@ ModelProto ModelStorage::ExportModel() const {
   return result;
 }
 
-std::optional<ModelUpdateProto> ModelStorage::ExportSharedModelUpdate() {
+std::optional<ModelUpdateProto>
+ModelStorage::UpdateTrackerData::ExportModelUpdate(
+    const ModelStorage& storage) const {
   // We must detect the empty case to prevent unneeded copies and merging in
   // ExportModelUpdate().
-  if (variables_checkpoint_ == next_variable_id_ &&
-      linear_constraints_checkpoint_ == next_linear_constraint_id_ &&
-      !dirty_objective_direction_ && !dirty_objective_offset_ &&
-      dirty_variable_deletes_.empty() && dirty_variable_lower_bounds_.empty() &&
-      dirty_variable_upper_bounds_.empty() &&
-      dirty_variable_is_integer_.empty() &&
-      dirty_linear_objective_coefficients_.empty() &&
-      dirty_quadratic_objective_coefficients_.empty() &&
-      dirty_linear_constraint_deletes_.empty() &&
-      dirty_linear_constraint_lower_bounds_.empty() &&
-      dirty_linear_constraint_upper_bounds_.empty() &&
-      dirty_linear_constraint_matrix_keys_.empty()) {
+  if (variables_checkpoint == storage.next_variable_id_ &&
+      linear_constraints_checkpoint == storage.next_linear_constraint_id_ &&
+      !dirty_objective_direction && !dirty_objective_offset &&
+      dirty_variable_deletes.empty() && dirty_variable_lower_bounds.empty() &&
+      dirty_variable_upper_bounds.empty() &&
+      dirty_variable_is_integer.empty() &&
+      dirty_linear_objective_coefficients.empty() &&
+      dirty_quadratic_objective_coefficients.empty() &&
+      dirty_linear_constraint_deletes.empty() &&
+      dirty_linear_constraint_lower_bounds.empty() &&
+      dirty_linear_constraint_upper_bounds.empty() &&
+      dirty_linear_constraint_matrix_keys.empty()) {
     return std::nullopt;
   }
-
-  // TODO(b/185608026): these are used to efficiently extract the constraint
-  // matrix update, but it would be good to avoid calling these because they
-  // result in a large allocation.
-  EnsureLazyMatrixRows();
-  EnsureLazyMatrixColumns();
 
   ModelUpdateProto result;
 
   // Variable/constraint deletions.
-  for (const VariableId del_var : SortedSetKeys(dirty_variable_deletes_)) {
+  for (const VariableId del_var : SortedSetKeys(dirty_variable_deletes)) {
     result.add_deleted_variable_ids(del_var.value());
   }
   for (const LinearConstraintId del_lin_con :
-       SortedSetKeys(dirty_linear_constraint_deletes_)) {
+       SortedSetKeys(dirty_linear_constraint_deletes)) {
     result.add_deleted_linear_constraint_ids(del_lin_con.value());
   }
 
   // Update the variables.
   auto var_updates = result.mutable_variable_updates();
-  AppendFromMap(dirty_variable_lower_bounds_, variables_,
+  AppendFromMap(dirty_variable_lower_bounds, storage.variables_,
                 &VariableData::lower_bound,
                 *var_updates->mutable_lower_bounds());
-  AppendFromMap(dirty_variable_upper_bounds_, variables_,
+  AppendFromMap(dirty_variable_upper_bounds, storage.variables_,
                 &VariableData::upper_bound,
                 *var_updates->mutable_upper_bounds());
 
   for (const VariableId integer_var :
-       SortedSetKeys(dirty_variable_is_integer_)) {
+       SortedSetKeys(dirty_variable_is_integer)) {
     var_updates->mutable_integers()->add_ids(integer_var.value());
     var_updates->mutable_integers()->add_values(
-        variables_.at(integer_var).is_integer);
+        storage.variables_.at(integer_var).is_integer);
   }
-  for (VariableId new_id = variables_checkpoint_; new_id < next_variable_id_;
-       ++new_id) {
-    if (variables_.contains(new_id)) {
-      AppendVariable(new_id, *result.mutable_new_variables());
+  for (VariableId new_id = variables_checkpoint;
+       new_id < storage.next_variable_id_; ++new_id) {
+    if (storage.variables_.contains(new_id)) {
+      storage.AppendVariable(new_id, *result.mutable_new_variables());
     }
   }
 
   // Update the objective
   auto obj_updates = result.mutable_objective_updates();
-  if (dirty_objective_direction_) {
-    obj_updates->set_direction_update(is_maximize_);
+  if (dirty_objective_direction) {
+    obj_updates->set_direction_update(storage.is_maximize_);
   }
-  if (dirty_objective_offset_) {
-    obj_updates->set_offset_update(objective_offset_);
+  if (dirty_objective_offset) {
+    obj_updates->set_offset_update(storage.objective_offset_);
   }
   AppendFromMapOrDefault<VariableId>(
-      SortedSetKeys(dirty_linear_objective_coefficients_), linear_objective_,
-      *obj_updates->mutable_linear_coefficients());
+      SortedSetKeys(dirty_linear_objective_coefficients),
+      storage.linear_objective_, *obj_updates->mutable_linear_coefficients());
   // TODO(b/182567749): Once StrongInt is in absl, use
   // AppendFromMapIfPresent<VariableId>(
-  //      MakeStrongIntRange(variables_checkpoint_, next_variable_id_),
+  //      MakeStrongIntRange(variables_checkpoint, next_variable_id_),
   //      linear_objective_, *obj_updates->mutable_linear_coefficients());
-  for (VariableId var_id = variables_checkpoint_; var_id < next_variable_id_;
-       ++var_id) {
+  for (VariableId var_id = variables_checkpoint;
+       var_id < storage.next_variable_id_; ++var_id) {
     const double* const double_value =
-        gtl::FindOrNull(linear_objective_, var_id);
+        gtl::FindOrNull(storage.linear_objective_, var_id);
     if (double_value != nullptr) {
       obj_updates->mutable_linear_coefficients()->add_ids(var_id.value());
       obj_updates->mutable_linear_coefficients()->add_values(*double_value);
@@ -507,53 +512,54 @@ std::optional<ModelUpdateProto> ModelStorage::ExportSharedModelUpdate() {
   }
 
   *result.mutable_objective_updates()->mutable_quadratic_coefficients() =
-      quadratic_objective_.Update(variables_, variables_checkpoint_,
-                                  next_variable_id_,
-                                  dirty_quadratic_objective_coefficients_);
+      storage.quadratic_objective_.Update(
+          storage.variables_, variables_checkpoint, storage.next_variable_id_,
+          dirty_quadratic_objective_coefficients);
 
   // Update the linear constraints
   auto lin_con_updates = result.mutable_linear_constraint_updates();
-  AppendFromMap(dirty_linear_constraint_lower_bounds_, linear_constraints_,
-                &LinearConstraintData::lower_bound,
+  AppendFromMap(dirty_linear_constraint_lower_bounds,
+                storage.linear_constraints_, &LinearConstraintData::lower_bound,
                 *lin_con_updates->mutable_lower_bounds());
-  AppendFromMap(dirty_linear_constraint_upper_bounds_, linear_constraints_,
-                &LinearConstraintData::upper_bound,
+  AppendFromMap(dirty_linear_constraint_upper_bounds,
+                storage.linear_constraints_, &LinearConstraintData::upper_bound,
                 *lin_con_updates->mutable_upper_bounds());
 
-  for (LinearConstraintId new_id = linear_constraints_checkpoint_;
-       new_id < next_linear_constraint_id_; ++new_id) {
-    if (linear_constraints_.contains(new_id)) {
-      AppendLinearConstraint(new_id, *result.mutable_new_linear_constraints());
+  for (LinearConstraintId new_id = linear_constraints_checkpoint;
+       new_id < storage.next_linear_constraint_id_; ++new_id) {
+    if (storage.linear_constraints_.contains(new_id)) {
+      storage.AppendLinearConstraint(new_id,
+                                     *result.mutable_new_linear_constraints());
     }
   }
 
   // Extract changes to the matrix of linear constraint coefficients
   std::vector<std::pair<LinearConstraintId, VariableId>>
-      constraint_matrix_updates(dirty_linear_constraint_matrix_keys_.begin(),
-                                dirty_linear_constraint_matrix_keys_.end());
-  for (VariableId new_var = variables_checkpoint_; new_var < next_variable_id_;
-       ++new_var) {
-    if (variables_.contains(new_var)) {
+      constraint_matrix_updates(dirty_linear_constraint_matrix_keys.begin(),
+                                dirty_linear_constraint_matrix_keys.end());
+  for (VariableId new_var = variables_checkpoint;
+       new_var < storage.next_variable_id_; ++new_var) {
+    if (storage.variables_.contains(new_var)) {
       for (const LinearConstraintId lin_con :
-           lazy_matrix_columns_.at(new_var)) {
+           storage.matrix_columns_.at(new_var)) {
         constraint_matrix_updates.emplace_back(lin_con, new_var);
       }
     }
   }
-  for (LinearConstraintId new_lin_con = linear_constraints_checkpoint_;
-       new_lin_con < next_linear_constraint_id_; ++new_lin_con) {
-    if (linear_constraints_.contains(new_lin_con)) {
-      for (const VariableId var : lazy_matrix_rows_.at(new_lin_con)) {
+  for (LinearConstraintId new_lin_con = linear_constraints_checkpoint;
+       new_lin_con < storage.next_linear_constraint_id_; ++new_lin_con) {
+    if (storage.linear_constraints_.contains(new_lin_con)) {
+      for (const VariableId var : storage.matrix_rows_.at(new_lin_con)) {
         // NOTE(user): we will do at most twice as much as needed here.
-        if (var < variables_checkpoint_) {
+        if (var < variables_checkpoint) {
           constraint_matrix_updates.emplace_back(new_lin_con, var);
         }
       }
     }
   }
   std::sort(constraint_matrix_updates.begin(), constraint_matrix_updates.end());
-  *result.mutable_linear_constraint_matrix_updates() =
-      ExportMatrix(linear_constraint_matrix_, constraint_matrix_updates);
+  *result.mutable_linear_constraint_matrix_updates() = ExportMatrix(
+      storage.linear_constraint_matrix_, constraint_matrix_updates);
 
   // Named returned value optimization (NRVO) does not apply here since the
   // return type if not the same type as `result`. To make things clear, we
@@ -561,173 +567,43 @@ std::optional<ModelUpdateProto> ModelStorage::ExportSharedModelUpdate() {
   return {std::move(result)};
 }
 
-void ModelStorage::EnsureLazyMatrixColumns() {
-  if (lazy_matrix_columns_.empty()) {
-    for (const auto& var_pair : variables_) {
-      lazy_matrix_columns_.insert({var_pair.first, {}});
-    }
-    for (const auto& mat_entry : linear_constraint_matrix_) {
-      lazy_matrix_columns_.at(mat_entry.first.second)
-          .insert(mat_entry.first.first);
-    }
-  }
-}
+void ModelStorage::UpdateTrackerData::Checkpoint(const ModelStorage& storage) {
+  variables_checkpoint = storage.next_variable_id_;
+  linear_constraints_checkpoint = storage.next_linear_constraint_id_;
+  dirty_objective_direction = false;
+  dirty_objective_offset = false;
 
-void ModelStorage::EnsureLazyMatrixRows() {
-  if (lazy_matrix_rows_.empty()) {
-    for (const auto& lin_con_pair : linear_constraints_) {
-      lazy_matrix_rows_.insert({lin_con_pair.first, {}});
-    }
-    for (const auto& mat_entry : linear_constraint_matrix_) {
-      lazy_matrix_rows_.at(mat_entry.first.first)
-          .insert(mat_entry.first.second);
-    }
-  }
-}
+  dirty_variable_deletes.clear();
+  dirty_variable_lower_bounds.clear();
+  dirty_variable_upper_bounds.clear();
+  dirty_variable_is_integer.clear();
 
-void ModelStorage::SharedCheckpoint() {
-  variables_checkpoint_ = next_variable_id_;
-  linear_constraints_checkpoint_ = next_linear_constraint_id_;
-  dirty_objective_direction_ = false;
-  dirty_objective_offset_ = false;
+  dirty_linear_objective_coefficients.clear();
+  dirty_quadratic_objective_coefficients.clear();
 
-  dirty_variable_deletes_.clear();
-  dirty_variable_lower_bounds_.clear();
-  dirty_variable_upper_bounds_.clear();
-  dirty_variable_is_integer_.clear();
-
-  dirty_linear_objective_coefficients_.clear();
-  dirty_quadratic_objective_coefficients_.clear();
-
-  dirty_linear_constraint_deletes_.clear();
-  dirty_linear_constraint_lower_bounds_.clear();
-  dirty_linear_constraint_upper_bounds_.clear();
-  dirty_linear_constraint_matrix_keys_.clear();
+  dirty_linear_constraint_deletes.clear();
+  dirty_linear_constraint_lower_bounds.clear();
+  dirty_linear_constraint_upper_bounds.clear();
+  dirty_linear_constraint_matrix_keys.clear();
 }
 
 UpdateTrackerId ModelStorage::NewUpdateTracker() {
-  const absl::MutexLock lock(&update_trackers_lock_);
-
-  const UpdateTrackerId update_tracker = next_update_tracker_;
-  ++next_update_tracker_;
-
-  CHECK(update_trackers_
-            .try_emplace(update_tracker, std::make_unique<UpdateTrackerData>())
-            .second);
-
-  CheckpointLocked(update_tracker);
-
-  return update_tracker;
+  return update_trackers_.NewUpdateTracker(
+      /*variables_checkpoint=*/next_variable_id_,
+      /*linear_constraints_checkpoint=*/next_linear_constraint_id_);
 }
 
 void ModelStorage::DeleteUpdateTracker(const UpdateTrackerId update_tracker) {
-  const absl::MutexLock lock(&update_trackers_lock_);
-  const auto found = update_trackers_.find(update_tracker);
-  CHECK(found != update_trackers_.end())
-      << "Update tracker " << update_tracker << " does not exist";
-  update_trackers_.erase(found);
+  update_trackers_.DeleteUpdateTracker(update_tracker);
 }
 
 std::optional<ModelUpdateProto> ModelStorage::ExportModelUpdate(
-    const UpdateTrackerId update_tracker) {
-  const absl::MutexLock lock(&update_trackers_lock_);
-
-  const auto found_data = update_trackers_.find(update_tracker);
-  CHECK(found_data != update_trackers_.end())
-      << "Update tracker " << update_tracker << " does not exist";
-  const std::unique_ptr<UpdateTrackerData>& data = found_data->second;
-
-  // No updates have been pushed, the checkpoint of this tracker is in sync with
-  // the shared checkpoint of ModelStorage. We can return the ModelStorage
-  // shared update without merging.
-  if (data->updates.empty()) {
-    return ExportSharedModelUpdate();
-  }
-
-  // Find all trackers with the same checkpoint. By construction, all trackers
-  // that have the same first update also share all next updates.
-  std::vector<UpdateTrackerData*> all_trackers_at_checkpoint;
-  for (const auto& [other_id, other_data] : update_trackers_) {
-    if (!other_data->updates.empty() &&
-        other_data->updates.front() == data->updates.front()) {
-      all_trackers_at_checkpoint.push_back(other_data.get());
-
-      // Validate that we have the same updates in debug mode only. In optimized
-      // mode, only test the size of the updates vectors.
-      CHECK_EQ(data->updates.size(), other_data->updates.size());
-      if (DEBUG_MODE) {
-        for (int i = 0; i < data->updates.size(); ++i) {
-          CHECK_EQ(data->updates[i], other_data->updates[i])
-              << "Two trackers have the same checkpoint but different updates.";
-        }
-      }
-    }
-  }
-
-  // Possible optimizations here:
-  //
-  // * Maybe optimize the case where the first update is singly used by `this`
-  //   and use it as starting point instead of making a copy. This may be more
-  //   complicated if it is shared with multiple trackers since in that case we
-  //   must make sure to only update the shared instance if and only if only
-  //   trackers have a pointer to it, not external code (i.e. its use count is
-  //   the same as the number of trackers).
-  //
-  // * Use n-way merge here if the performances justify it.
-  const auto merge = std::make_shared<ModelUpdateProto>();
-  for (const auto& update : data->updates) {
-    MergeIntoUpdate(/*from_new=*/*update, /*into_old=*/*merge);
-  }
-
-  // Push the merge to all trackers that have the same checkpoint (including
-  // this tracker).
-  for (UpdateTrackerData* const other_data : all_trackers_at_checkpoint) {
-    other_data->updates.clear();
-    other_data->updates.push_back(merge);
-  }
-
-  ModelUpdateProto update = *merge;
-  const std::optional<ModelUpdateProto> pending_update =
-      ExportSharedModelUpdate();
-  if (pending_update) {
-    MergeIntoUpdate(/*from_new=*/*pending_update, /*into_old=*/update);
-  }
-
-  // Named returned value optimization (NRVO) does not apply here since the
-  // return type if not the same type as `result`. To make things clear, we
-  // explicitly call the constructor here.
-  return {std::move(update)};
+    const UpdateTrackerId update_tracker) const {
+  return update_trackers_.GetData(update_tracker).ExportModelUpdate(*this);
 }
 
 void ModelStorage::Checkpoint(const UpdateTrackerId update_tracker) {
-  const absl::MutexLock lock(&update_trackers_lock_);
-
-  CheckpointLocked(update_tracker);
-}
-
-void ModelStorage::CheckpointLocked(const UpdateTrackerId update_tracker) {
-  const auto found_data = update_trackers_.find(update_tracker);
-  CHECK(found_data != update_trackers_.end())
-      << "Update tracker " << update_tracker << " does not exist";
-  const std::unique_ptr<UpdateTrackerData>& data = found_data->second;
-
-  // Optimize the case where we have a single tracker and we don't want to
-  // update it. In that case we don't need to update trackers since we would
-  // only update this one and clear it immediately.
-  if (update_trackers_.size() > 1) {
-    std::optional<ModelUpdateProto> update = ExportSharedModelUpdate();
-    if (update) {
-      const auto shared_update =
-          std::make_shared<ModelUpdateProto>(*std::move(update));
-
-      for (const auto& [other_id, other_data] : update_trackers_) {
-        other_data->updates.push_back(shared_update);
-      }
-    }
-  }
-  SharedCheckpoint();
-
-  data->updates.clear();
+  update_trackers_.GetData(update_tracker).Checkpoint(*this);
 }
 
 absl::Status ModelStorage::ApplyUpdateProto(
@@ -751,6 +627,12 @@ absl::Status ModelStorage::ApplyUpdateProto(
         next_linear_constraint_id_.value()));
     RETURN_IF_ERROR(ValidateModelUpdate(update_proto, summary))
         << "update not valid";
+    // TODO(b/227217735): Remove if block when ModelStorage supports quadratic
+    //                    constraints.
+    if (update_proto.has_quadratic_constraint_updates()) {
+      return absl::UnimplementedError(
+          "quadratic constraint updates are not currently supported");
+    }
   }
 
   // Remove deleted variables and constraints.

@@ -45,7 +45,7 @@ namespace operations_research::math_opt {
 // Usage with non-streamable arguments:
 //
 //   NonStreamableGurobiInitArguments gurobi_args;
-//   gurobi_args.master_env = master_env.get();
+//   gurobi_args.primary_env = primary_env.get();
 //
 //   Solve(model, SOLVER_TYPE_GUROBI, /*solver_args=*/{},
 //         SolverInitArguments(gurobi_args));

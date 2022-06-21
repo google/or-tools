@@ -63,7 +63,7 @@ struct GurobiISVKey {
 // Streamable Gurobi specific parameters for solver instantiation.
 struct StreamableGurobiInitArguments {
   // An optional ISV key to use to instantiate the solver. This is ignored if a
-  // `master_env` is provided in `NonStreamableGurobiInitArguments`.
+  // `primary_env` is provided in `NonStreamableGurobiInitArguments`.
   std::optional<GurobiISVKey> isv_key;
 
   // Returns the proto corresponding to these parameters.

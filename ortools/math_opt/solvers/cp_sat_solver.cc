@@ -335,6 +335,11 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> CpSatSolver::New(
         "MathOpt does not currently support CP-SAT models with quadratic "
         "objectives");
   }
+  if (!model.quadratic_constraints().empty()) {
+    return absl::InvalidArgumentError(
+        "MathOpt does not currently support CP-SAT models with quadratic "
+        "constraints");
+  }
   return absl::WrapUnique(new CpSatSolver(
       std::move(cp_sat_model),
       /*variable_ids=*/std::move(variable_ids),

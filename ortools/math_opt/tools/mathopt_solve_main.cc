@@ -37,7 +37,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
@@ -198,7 +198,7 @@ absl::StatusOr<ModelUpdateProto> ReadModelUpdate(
 }
 
 // Prints the model.
-void PrintModel(Model& model) {
+void PrintModel(const Model& model) {
   if (model.is_maximize()) {
     std::cout << "max";
   } else {

@@ -14,7 +14,6 @@
 #ifndef OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_INIT_ARGUMENTS_H_
 #define OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_INIT_ARGUMENTS_H_
 
-#include <memory>
 #include <optional>
 
 #include "absl/status/statusor.h"
@@ -26,22 +25,22 @@
 namespace operations_research {
 namespace math_opt {
 
-// Returns a new master environment.
+// Returns a new primary environment.
 //
 // The typical use of this function is to share the same environment between
 // multiple solver instances. This is necessary when a single-use license is
-// used since only one master environment can exists in that case.
+// used since only one primary environment can exists in that case.
 //
-// A single master environment is not thread-safe and thus it should only be
+// A single primary environment is not thread-safe and thus it should only be
 // used in a single thread. Even if the user has a license that authorizes
-// multiple master environments, Gurobi still recommends to use only one and to
+// multiple primary environments, Gurobi still recommends to use only one and to
 // share it as it is more efficient (see GRBloadenv() documentation).
 //
 // Of course, if the user wants to run multiple solves in parallel and has a
 // license that authorizes that, one environment should be used per thread.
 //
-// The master environment can be passed to MathOpt via the
-// NonStreamableGurobiInitArguments structure and its master_env field.
+// The primary environment can be passed to MathOpt via the
+// NonStreamableGurobiInitArguments structure and its primary_env field.
 //
 // The optional ISV key can be used to build the environment from an ISV key
 // instead of using the default license file. See
@@ -49,18 +48,18 @@ namespace math_opt {
 //
 // Example with default license file:
 //
-//   // Solving two models on the same thread, sharing the same master
+//   // Solving two models on the same thread, sharing the same primary
 //   // environment.
 //   Model model_1;
 //   Model model_2;
 //
 //   ...
 //
-//   ASSIGN_OR_RETURN(const GRBenvUniquePtr master_env,
-//                    NewMasterEnvironment());
+//   ASSIGN_OR_RETURN(const GRBenvUniquePtr primary_env,
+//                    NewPrimaryEnvironment());
 //
 //   NonStreamableGurobiInitArguments gurobi_args;
-//   gurobi_args.master_env = master_env.get();
+//   gurobi_args.primary_env = primary_env.get();
 //
 //   ASSIGN_OR_RETURN(
 //       const std::unique_ptr<IncrementalSolver> incremental_solve_1,
@@ -77,15 +76,15 @@ namespace math_opt {
 //
 // With ISV key:
 //
-//   ASSIGN_OR_RETURN(const GRBenvUniquePtr master_env,
-//                    NewMasterEnvironment(GurobiISVKey{
+//   ASSIGN_OR_RETURN(const GRBenvUniquePtr primary_env,
+//                    NewPrimaryEnvironment(GurobiISVKey{
 //                        .name = "the name",
 //                        .application_name = "the application",
 //                        .expiration = 0,
 //                        .key = "...",
 //                    }.Proto()));
 //
-absl::StatusOr<GRBenvUniquePtr> NewMasterEnvironment(
+absl::StatusOr<GRBenvUniquePtr> NewPrimaryEnvironment(
     std::optional<GurobiInitializerProto::ISVKey> proto_isv_key = {});
 
 // Non-streamable Gurobi specific parameters for solver instantiation.
@@ -94,16 +93,16 @@ absl::StatusOr<GRBenvUniquePtr> NewMasterEnvironment(
 struct NonStreamableGurobiInitArguments
     : public NonStreamableSolverInitArgumentsHelper<
           NonStreamableGurobiInitArguments, SOLVER_TYPE_GUROBI> {
-  // Master environment to use. This is only useful to pass when either the
-  // default master environment created by the solver implementation is not
+  // Primary environment to use. This is only useful to pass when either the
+  // default primary environment created by the solver implementation is not
   // enough or when multiple Gurobi solvers are used with a single-use
-  // license. In the latter case, only one master environment can be created so
+  // license. In the latter case, only one primary environment can be created so
   // it must be shared.
   //
   // The solver does not take ownership of the environment, it is the
   // responsibility of the caller to properly dispose of it after all solvers
   // that used it have been destroyed.
-  GRBenv* master_env = nullptr;
+  GRBenv* primary_env = nullptr;
 
   const NonStreamableGurobiInitArguments* ToNonStreamableGurobiInitArguments()
       const override {

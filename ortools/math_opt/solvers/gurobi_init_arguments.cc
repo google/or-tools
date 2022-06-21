@@ -14,14 +14,17 @@
 #include "ortools/math_opt/solvers/gurobi_init_arguments.h"
 
 #include <optional>
+#include <string>
+#include <type_traits>
 
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
+#include "ortools/math_opt/solvers/gurobi/g_gurobi.h"
 
 namespace operations_research {
 namespace math_opt {
 
-absl::StatusOr<GRBenvUniquePtr> NewMasterEnvironment(
+absl::StatusOr<GRBenvUniquePtr> NewPrimaryEnvironment(
     std::optional<GurobiInitializerProto::ISVKey> proto_isv_key) {
   std::optional<GurobiIsvKey> isv_key;
   if (proto_isv_key.has_value()) {
@@ -32,7 +35,7 @@ absl::StatusOr<GRBenvUniquePtr> NewMasterEnvironment(
     key.key = proto_isv_key->key();
     isv_key = key;
   }
-  return GurobiNewMasterEnv(isv_key);
+  return GurobiNewPrimaryEnv(isv_key);
 }
 
 }  // namespace math_opt

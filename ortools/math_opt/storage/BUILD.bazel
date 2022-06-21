@@ -35,13 +35,28 @@ cc_library(
 )
 
 cc_library(
+    name = "update_trackers",
+    hdrs = ["update_trackers.h"],
+    deps = [
+        ":model_storage_types",
+        "//ortools/base",
+        #"//ortools/base:logging",
+        "//ortools/base:intops",
+        "//ortools/base:stl_util",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
+cc_library(
     name = "model_storage",
     srcs = ["model_storage.cc"],
     hdrs = ["model_storage.h"],
     deps = [
         ":model_storage_types",
-        ":model_update_merge",
         ":sparse_matrix",
+        ":update_trackers",
         "//ortools/base",
         #"//ortools/base:logging",
         "//ortools/base:map_util",
@@ -61,37 +76,5 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/types:span",
-    ],
-)
-
-cc_library(
-    name = "model_update_merge",
-    srcs = ["model_update_merge.cc"],
-    hdrs = ["model_update_merge.h"],
-    deps = [
-        ":proto_merging_utils",
-        "//ortools/base",
-        #"//ortools/base:logging",
-        #"@com_google_absl//absl/log:check",
-        "//ortools/math_opt:model_cc_proto",
-        "//ortools/math_opt:model_update_cc_proto",
-        "//ortools/math_opt:sparse_containers_cc_proto",
-        "//ortools/math_opt/core:sparse_vector_view",
-    ],
-)
-
-cc_library(
-    name = "proto_merging_utils",
-    srcs = ["proto_merging_utils.cc"],
-    hdrs = ["proto_merging_utils.h"],
-    deps = [
-        "//ortools/math_opt:sparse_containers_cc_proto",
-        "//ortools/math_opt/core:sparse_vector_view",
-        "//ortools/base:protobuf_util",
-        "//ortools/base",
-        #"//ortools/base:logging",
-        #"@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_protobuf//:protobuf",
     ],
 )

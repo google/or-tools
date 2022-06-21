@@ -118,6 +118,7 @@ absl::Status IdNameBiMap::BulkUpdate(
 ModelSummary::ModelSummary(const bool check_names)
     : variables(check_names),
       linear_constraints(check_names),
+      quadratic_constraints(check_names),
       sos1_constraints(check_names),
       sos2_constraints(check_names) {}
 
@@ -130,6 +131,9 @@ absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
   RETURN_IF_ERROR(summary.linear_constraints.BulkUpdate(
       {}, model.linear_constraints().ids(), model.linear_constraints().names()))
       << "Model.linear_constraints are invalid";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+      {}, model.quadratic_constraints(), summary.quadratic_constraints))
+      << "Model.quadratic_constraints are invalid";
   RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
       {}, model.sos1_constraints(), summary.sos1_constraints))
       << "Model.sos1_constraints are invalid";
@@ -149,6 +153,11 @@ absl::Status ModelSummary::Update(const ModelUpdateProto& model_update) {
       model_update.new_linear_constraints().ids(),
       model_update.new_linear_constraints().names()))
       << "invalid linear constraints";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+      model_update.quadratic_constraint_updates().deleted_constraint_ids(),
+      model_update.quadratic_constraint_updates().new_constraints(),
+      quadratic_constraints))
+      << "invalid quadratic constraints";
   RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
       model_update.sos1_constraint_updates().deleted_constraint_ids(),
       model_update.sos1_constraint_updates().new_constraints(),

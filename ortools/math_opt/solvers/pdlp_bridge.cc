@@ -88,6 +88,10 @@ absl::StatusOr<PdlpBridge> PdlpBridge::FromProto(
           "PDLP cannot solve problems with integer variables");
     }
   }
+  if (!model_proto.quadratic_constraints().empty()) {
+    return absl::InvalidArgumentError(
+        "PDLP does not support quadratic constraints");
+  }
   for (int i = 0; i < linear_constraints.ids_size(); ++i) {
     result.lin_con_id_to_pdlp_index_[linear_constraints.ids(i)] = i;
     result.pdlp_index_to_lin_con_id_.push_back(linear_constraints.ids(i));

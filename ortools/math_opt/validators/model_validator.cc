@@ -19,6 +19,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/constraints/quadratic/validator.h"
 #include "ortools/math_opt/constraints/sos/validator.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -203,6 +204,9 @@ absl::StatusOr<ModelSummary> ValidateModel(const ModelProto& model,
                                           model_summary.variables))
       << "Model.linear_constraint_matrix ids are inconsistent";
 
+  RETURN_IF_ERROR(ValidateConstraintMap(model.quadratic_constraints(),
+                                        model_summary.variables))
+      << "Model.quadratic_constraints invalid";
   RETURN_IF_ERROR(
       ValidateConstraintMap(model.sos1_constraints(), model_summary.variables))
       << "Model.sos1_constraints invalid";
@@ -250,6 +254,11 @@ absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
       model_summary.linear_constraints, model_summary.variables))
       << "invalid linear constraint matrix update";
 
+  RETURN_IF_ERROR(ValidateConstraintMap(
+      model_update.quadratic_constraint_updates().new_constraints(),
+      model_summary.variables))
+      << "ModelUpdateProto.quadratic_constraint_updates.new_constraints "
+         "invalid";
   RETURN_IF_ERROR(ValidateConstraintMap(
       model_update.sos1_constraint_updates().new_constraints(),
       model_summary.variables))

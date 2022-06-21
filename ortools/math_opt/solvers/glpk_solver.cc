@@ -837,10 +837,14 @@ int OptStatus(glp_prob*) { return GLP_OPT; }
 }  // namespace
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GlpkSolver::New(
-    const ModelProto& model, const InitArgs& init_args) {
+    const ModelProto& model, const InitArgs& /*init_args*/) {
   if (!model.objective().quadratic_coefficients().row_ids().empty()) {
     return absl::InvalidArgumentError(
         "GLPK does not support quadratic objectives");
+  }
+  if (!model.quadratic_constraints().empty()) {
+    return absl::InvalidArgumentError(
+        "GLPK does not support quadratic constraints");
   }
   return absl::WrapUnique(new GlpkSolver(model));
 }
@@ -1003,8 +1007,8 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
     MessageCallback message_cb,
-    const CallbackRegistrationProto& callback_registration, const Callback cb,
-    SolveInterrupter* const interrupter) {
+    const CallbackRegistrationProto& callback_registration,
+    const Callback /*cb*/, SolveInterrupter* const interrupter) {
   // Make sure glp_free_env() is called at the exit of the current thread. The
   // environment gets created automatically for messages for example.
   SetupGlpkEnvAutomaticDeletion();
@@ -1642,9 +1646,10 @@ absl::Status GlpkSolver::Update(const ModelUpdateProto& model_update) {
 
 bool GlpkSolver::CanUpdate(const ModelUpdateProto& model_update) {
   return model_update.objective_updates()
-      .quadratic_coefficients()
-      .row_ids()
-      .empty();
+             .quadratic_coefficients()
+             .row_ids()
+             .empty() &&
+         !HasQuadraticConstraintUpdates(model_update);
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_GLPK, GlpkSolver::New)

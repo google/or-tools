@@ -447,6 +447,12 @@ struct SolveResult {
   const VariableMap<BasisStatus>& variable_status() const;
 };
 
+// Prints the solve result on a single line, omitting the values of the
+// solutions and rays, instead printing only the count of each available.
+//
+// Printing the whole solution could be problematic for huge models.
+std::ostream& operator<<(std::ostream& out, const SolveResult& result);
+
 }  // namespace math_opt
 }  // namespace operations_research
 

@@ -64,19 +64,19 @@ void GurobiFreeEnv::operator()(GRBenv* const env) const {
   }
 }
 
-absl::StatusOr<GRBenvUniquePtr> GurobiNewMasterEnv(
+absl::StatusOr<GRBenvUniquePtr> GurobiNewPrimaryEnv(
     const std::optional<GurobiIsvKey>& isv_key) {
-  GRBenv* naked_master_env = nullptr;
+  GRBenv* naked_primary_env = nullptr;
   int err;
   std::string_view init_env_method;
   if (isv_key.has_value()) {
-    err = GRBisqp(&naked_master_env, /*logfilename=*/
+    err = GRBisqp(&naked_primary_env, /*logfilename=*/
                   nullptr, isv_key->name.c_str(),
                   isv_key->application_name.c_str(), isv_key->expiration,
                   isv_key->key.c_str());
     init_env_method = "GRBisqp()";
   } else {
-    err = GRBloadenv(&naked_master_env, /*logfilename=*/nullptr);
+    err = GRBloadenv(&naked_primary_env, /*logfilename=*/nullptr);
     init_env_method = "GRBloadenv()";
   }
   if (err != kGrbOk) {
@@ -86,41 +86,41 @@ absl::StatusOr<GRBenvUniquePtr> GurobiNewMasterEnv(
     // We can also use it with GRBgeterrormsg() to get the associated error
     // message that goes with the error and the contains additional data like
     // the user, the host and the hostid.
-    const GRBenvUniquePtr master_env(naked_master_env);
+    const GRBenvUniquePtr primary_env(naked_primary_env);
     return util::InvalidArgumentErrorBuilder()
-           << "failed to create Gurobi master environment, " << init_env_method
+           << "failed to create Gurobi primary environment, " << init_env_method
            << " returned the error (" << err
-           << "): " << GRBgeterrormsg(master_env.get());
+           << "): " << GRBgeterrormsg(primary_env.get());
   }
-  return GRBenvUniquePtr(naked_master_env);
+  return GRBenvUniquePtr(naked_primary_env);
 }
 
-absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::NewWithSharedMasterEnv(
-    GRBenv* const master_env) {
-  CHECK(master_env != nullptr);
-  return New(nullptr, master_env);
+absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::NewWithSharedPrimaryEnv(
+    GRBenv* const primary_env) {
+  CHECK(primary_env != nullptr);
+  return New(nullptr, primary_env);
 }
 
 absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::New(
-    GRBenvUniquePtr master_env) {
-  if (master_env == nullptr) {
-    ASSIGN_OR_RETURN(master_env, GurobiNewMasterEnv());
+    GRBenvUniquePtr primary_env) {
+  if (primary_env == nullptr) {
+    ASSIGN_OR_RETURN(primary_env, GurobiNewPrimaryEnv());
   }
-  GRBenv* const raw_master_env = master_env.get();
-  return New(std::move(master_env), raw_master_env);
+  GRBenv* const raw_primary_env = primary_env.get();
+  return New(std::move(primary_env), raw_primary_env);
 }
 
-Gurobi::Gurobi(GRBenvUniquePtr optional_owned_master_env, GRBmodel* const model,
-               GRBenv* const model_env)
-    : owned_master_env_(std::move(optional_owned_master_env)),
+Gurobi::Gurobi(GRBenvUniquePtr optional_owned_primary_env,
+               GRBmodel* const model, GRBenv* const model_env)
+    : owned_primary_env_(std::move(optional_owned_primary_env)),
       gurobi_model_(ABSL_DIE_IF_NULL(model)),
       model_env_(ABSL_DIE_IF_NULL(model_env)) {}
 
 absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::New(
-    GRBenvUniquePtr optional_owned_master_env, GRBenv* const master_env) {
-  CHECK(master_env != nullptr);
+    GRBenvUniquePtr optional_owned_primary_env, GRBenv* const primary_env) {
+  CHECK(primary_env != nullptr);
   GRBmodel* model = nullptr;
-  const int err = GRBnewmodel(master_env, &model,
+  const int err = GRBnewmodel(primary_env, &model,
                               /*Pname=*/nullptr,
                               /*numvars=*/0,
                               /*obj=*/nullptr, /*lb=*/nullptr,
@@ -129,7 +129,7 @@ absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::New(
   if (err != kGrbOk) {
     return util::InvalidArgumentErrorBuilder()
            << "Error creating gurobi model on GRBnewmodel(), error code: "
-           << err << " message: " << GRBgeterrormsg(master_env);
+           << err << " message: " << GRBgeterrormsg(primary_env);
   }
   CHECK(model != nullptr);
   GRBenv* const model_env = GRBgetenv(model);
@@ -142,7 +142,7 @@ absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::New(
         gurobi_minor, gurobi_technical, GRBplatform());
   }
   return absl::WrapUnique(
-      new Gurobi(std::move(optional_owned_master_env), model, model_env));
+      new Gurobi(std::move(optional_owned_primary_env), model, model_env));
 }
 
 Gurobi::~Gurobi() {

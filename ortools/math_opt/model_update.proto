@@ -107,6 +107,23 @@ message LinearConstraintUpdatesProto {
   SparseDoubleVectorProto upper_bounds = 2;
 }
 
+// Updates to quadratic constraints; only addition and deletion, no support for
+// in-place constraint updates.
+message QuadraticConstraintUpdatesProto {
+  // Removes quadratic constraints from the model.
+  //
+  // Each value must be in [0, max(int64)). Values must be in strictly
+  // increasing order. Applies only to existing quadratic constraint ids that
+  // have not yet been deleted.
+  repeated int64 deleted_constraint_ids = 1;
+
+  // Add new quadratic constraints to the model. All keys must be in
+  // [0, max(int64)), and must be greater than any ids used in the initial model
+  // and previous updates. All nonempty names should be distinct from existing
+  // names and each other.
+  map<int64, QuadraticConstraintProto> new_constraints = 2;
+}
+
 // Data for updates to SOS1 and SOS2 constraints; only addition and deletion, no
 // support for in-place constraint updates.
 message SosConstraintUpdatesProto {
@@ -179,10 +196,10 @@ message ModelUpdateProto {
   //  * linear_constraint_matrix.values must all be finite.
   SparseDoubleMatrixProto linear_constraint_matrix_updates = 8;
 
-  // Reserved for quadratic constraint updates.
-  reserved 9;
+  // Updates the quadratic constraints (addition and deletion only).
+  QuadraticConstraintUpdatesProto quadratic_constraint_updates = 9;
 
-  // Updates the general constraints (addition or deletion only).
+  // Updates the general constraints (addition and deletion only).
   SosConstraintUpdatesProto sos1_constraint_updates = 10;
   SosConstraintUpdatesProto sos2_constraint_updates = 11;
 }

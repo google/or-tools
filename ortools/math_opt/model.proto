@@ -88,6 +88,48 @@ message LinearConstraintsProto {
   repeated string names = 4;
 }
 
+// A single quadratic constraint of the form:
+//    lb <= sum{linear_terms} + sum{quadratic_terms} <= ub.
+message QuadraticConstraintProto {
+  // Terms that are linear in the decision variables.
+  //
+  // In addition to requirements on SparseDoubleVectorProto messages we require
+  // that:
+  //  * linear_terms.ids are elements of VariablesProto.ids.
+  //  * linear_terms.values must all be finite and not-NaN.
+  //
+  // Notes:
+  //  * Variable ids omitted have a corresponding coefficient of zero.
+  //  * linear_terms.values can be zero, but this just wastes space.
+  SparseDoubleVectorProto linear_terms = 1;
+
+  // Terms that are quadratic in the decision variables.
+  //
+  // In addition to requirements on SparseDoubleMatrixProto messages we require
+  // that:
+  //  * Each element of quadratic_terms.row_ids and each element of
+  //    quadratic_terms.column_ids must be an element of VariablesProto.ids.
+  //  * The matrix must be upper triangular: for each i,
+  //    quadratic_terms.row_ids[i] <= quadratic_terms.column_ids[i].
+  //
+  // Notes:
+  //  * Terms not explicitly stored have zero coefficient.
+  //  * Elements of quadratic_terms.coefficients can be zero, but this just
+  //    wastes space.
+  SparseDoubleMatrixProto quadratic_terms = 2;
+
+  // Must have value in [-inf, inf).
+  double lower_bound = 3;
+
+  // Must have value in (-inf, inf].
+  double upper_bound = 4;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // ModelProto.quadratic_constraints and
+  // QuadraticConstraintUpdatesProto.new_constraints.
+  string name = 5;
+}
+
 // Data for representing a single SOS1 or SOS2 constraint.
 message SosConstraintProto {
   // The expressions over which to apply the SOS constraint:
@@ -112,6 +154,7 @@ message SosConstraintProto {
 //   - Linear and quadratic objectives, either minimized or maximized.
 //   - A number of constraints types, including:
 //     * Linear constraints
+//     * Quadratic constraints
 //     * Logical constraints
 //       > SOS1 and SOS2 constraints
 //
@@ -137,12 +180,12 @@ message ModelProto {
   //   * Each key is in [0, max(int64)).
   //   * Each key is unique in its respective map (but not necessarily across
   //     constraint types)
-  //   * Each value contains a name field, and each nonempty name must be
-  //   distinct across all map entries (but not necessarily across constraint
-  //     types).
+  //   * Each value contains a name field (called `name`), and each nonempty
+  //     name must be distinct across all map entries (but not necessarily
+  //     across constraint types).
 
-  // Reserved for quadratic constraints.
-  reserved 6;
+  // Quadratic constraints in the model.
+  map<int64, QuadraticConstraintProto> quadratic_constraints = 6;
 
   // SOS1 constraints in the model, which constrain that at most one
   // `expression` can be nonzero. The optional `weights` entries are an

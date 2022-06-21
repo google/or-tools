@@ -165,6 +165,13 @@ bool SparseVectorFilterPredicate::AcceptsAndUpdate(const int64_t id,
   return id == filter_.filtered_ids(next_filtered_id_index_);
 }
 
+inline bool HasQuadraticConstraintUpdates(const ModelUpdateProto& update) {
+  return !update.quadratic_constraint_updates()
+              .deleted_constraint_ids()
+              .empty() ||
+         !update.quadratic_constraint_updates().new_constraints().empty();
+}
+
 }  // namespace math_opt
 }  // namespace operations_research
 

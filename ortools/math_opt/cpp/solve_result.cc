@@ -438,5 +438,37 @@ const VariableMap<BasisStatus>& SolveResult::variable_status() const {
   return solutions[0].basis->variable_status;
 }
 
+namespace {
+// Prints only the vector size, not its content.
+template <typename T>
+void PrintVectorSize(std::ostream& out, const std::vector<T>& v) {
+  out << '[';
+  if (!v.empty()) {
+    out << v.size() << " available";
+  }
+  out << ']';
+}
+}  // namespace
+
+std::ostream& operator<<(std::ostream& out, const SolveResult& result) {
+  out << "{termination: " << result.termination
+      << ", solve_stats: " << result.solve_stats << ", solutions: ";
+  PrintVectorSize(out, result.solutions);
+  out << ", primal_rays: ";
+  PrintVectorSize(out, result.primal_rays);
+  out << ", dual_rays: ";
+  PrintVectorSize(out, result.dual_rays);
+  {
+    const std::string gscip_specific_output =
+        ProtobufShortDebugString(result.gscip_solver_specific_output);
+    if (!gscip_specific_output.empty()) {
+      out << ", gscip_solver_specific_output: " << gscip_specific_output;
+    }
+  }
+  out << '}';
+
+  return out;
+}
+
 }  // namespace math_opt
 }  // namespace operations_research

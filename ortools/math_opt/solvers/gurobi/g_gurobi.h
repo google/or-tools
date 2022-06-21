@@ -27,7 +27,7 @@
 //   * There is no distinction between a GRBmodel and the GRBenv created for a
 //     model, they are jointly captured by the newly defined Gurobi object.
 //   * Parameters are set on the Gurobi class rather than on a GRBenv. We do not
-//     provide an API fo setting parameters on the master environment, only on
+//     provide an API fo setting parameters on the primary environment, only on
 //     the child environment created by GRBnewmodel (for details see
 //     https://www.gurobi.com/documentation/9.1/refman/c_newmodel.html ).
 #ifndef OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_G_GUROBI_H_
@@ -57,7 +57,7 @@ struct GurobiIsvKey {
   std::string key;
 };
 
-// Functor to use as deleter for std::unique_ptr that stores a master GRBenv,
+// Functor to use as deleter for std::unique_ptr that stores a primary GRBenv,
 // used by GRBenvUniquePtr. Most users will not use this directly.
 struct GurobiFreeEnv {
   void operator()(GRBenv* const env) const;
@@ -67,21 +67,21 @@ struct GurobiFreeEnv {
 // calling GRBfreeenv. Most users will not use this directly.
 using GRBenvUniquePtr = std::unique_ptr<GRBenv, GurobiFreeEnv>;
 
-// Returns a new master Gurobi environment, using the ISV key if provided, or a
+// Returns a new primary Gurobi environment, using the ISV key if provided, or a
 // regular license otherwise. Gurobi::New() creates an environment automatically
 // if not provided, so most users will not use this directly.
-absl::StatusOr<GRBenvUniquePtr> GurobiNewMasterEnv(
+absl::StatusOr<GRBenvUniquePtr> GurobiNewPrimaryEnv(
     const std::optional<GurobiIsvKey>& isv_key = std::nullopt);
 
 // Models and solves optimization problems with Gurobi.
 //
 // This is a thin wrapper on the Gurobi C API, holding a GRBmodel,
-// associated GRBenv that GRBnewmodel creates, and optionally the master
+// associated GRBenv that GRBnewmodel creates, and optionally the primary
 // environment to clean up on deletion.
 //
 // Throughout, we refer to the child GRBenv created by GRBnewmodel as the
 // "model environment" while the GRBenv that was used to create the model as
-// the "master environment", for details see:
+// the "primary environment", for details see:
 // https://www.gurobi.com/documentation/9.1/refman/c_newmodel.html
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -225,25 +225,25 @@ class Gurobi {
   //  * The callback will not be invoked again.
   using Callback = std::function<absl::Status(const CallbackContext&)>;
 
-  // Creates a new Gurobi, taking ownership of master_env if provided (if no
+  // Creates a new Gurobi, taking ownership of primary_env if provided (if no
   // environment is given, a new one is created internally from the license
   // file).
   static absl::StatusOr<std::unique_ptr<Gurobi>> New(
-      GRBenvUniquePtr master_env = nullptr);
+      GRBenvUniquePtr primary_env = nullptr);
 
-  // Creates a new Gurobi using an existing GRBenv, where master_env cannot be
+  // Creates a new Gurobi using an existing GRBenv, where primary_env cannot be
   // nullptr. Unlike Gurobi::New(), the returned Gurobi will not clean up the
-  // master environment on destruction.
+  // primary environment on destruction.
   //
   // A GurobiEnv can be shared between models with the following restrictions:
   //   - Environments are not thread-safe (so use one thread or mutual exclusion
   //     for Gurobi::New()).
-  //   - The master environment must outlive each Gurobi instance.
-  //   - Every "master" environment counts as a "use" of a Gurobi License.
+  //   - The primary environment must outlive each Gurobi instance.
+  //   - Every "primary" environment counts as a "use" of a Gurobi License.
   //     Depending on your license type, you may need to share to run concurrent
   //     solves in the same process.
-  static absl::StatusOr<std::unique_ptr<Gurobi>> NewWithSharedMasterEnv(
-      GRBenv* master_env);
+  static absl::StatusOr<std::unique_ptr<Gurobi>> NewWithSharedPrimaryEnv(
+      GRBenv* primary_env);
 
   ~Gurobi();
 
@@ -474,22 +474,22 @@ class Gurobi {
   GRBmodel* model() const { return gurobi_model_; }
 
  private:
-  // optional_owned_master_env can be null, model and model_env cannot.
-  Gurobi(GRBenvUniquePtr optional_owned_master_env, GRBmodel* model,
+  // optional_owned_primary_env can be null, model and model_env cannot.
+  Gurobi(GRBenvUniquePtr optional_owned_primary_env, GRBmodel* model,
          GRBenv* model_env);
-  // optional_owned_master_env can be null, master_env cannot.
+  // optional_owned_primary_env can be null, primary_env cannot.
   static absl::StatusOr<std::unique_ptr<Gurobi>> New(
-      GRBenvUniquePtr optional_owned_master_env, GRBenv* master_env);
+      GRBenvUniquePtr optional_owned_primary_env, GRBenv* primary_env);
 
   absl::Status ToStatus(
       int grb_err, absl::StatusCode code = absl::StatusCode::kInvalidArgument,
       absl::SourceLocation loc = absl::SourceLocation::current()) const;
 
-  const GRBenvUniquePtr owned_master_env_;
+  const GRBenvUniquePtr owned_primary_env_;
   // Invariant: Not null.
   GRBmodel* const gurobi_model_;
   // Invariant: Not null. This is the environment created by GRBnewmodel(), not
-  // the master environment used to create a GRBmodel, see class documentation.
+  // the primary environment used to create a GRBmodel, see class documentation.
   GRBenv* const model_env_;
 };
 

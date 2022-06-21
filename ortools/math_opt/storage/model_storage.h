@@ -19,22 +19,24 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
-#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/meta/type_traits.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "absl/synchronization/mutex.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
+#include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
 #include "ortools/math_opt/storage/sparse_matrix.h"
+#include "ortools/math_opt/storage/update_trackers.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -115,10 +117,7 @@ namespace math_opt {
 // will take time O(#variables in the constraint). The constraint matrix is
 // stored as hash map where the key is a {LinearConstraintId, VariableId}
 // pair and the value is the coefficient. The nonzeros of the matrix are
-// additionally stored by row and by column, but these indices generated lazily
-// upon first use. Asking for the set of variables in a constraint, the
-// constraints in a variable, deleting a variable or constraint, or requesting a
-// ModelUpdate proto will all trigger these additional indices to be generated.
+// additionally stored by row and by column.
 //
 // Exporting the Model proto:
 //
@@ -318,18 +317,12 @@ class ModelStorage {
   linear_constraint_matrix() const;
 
   // Returns the variables with nonzero coefficients in a linear constraint.
-  //
-  // Runs in O(1), but triggers allocations that are O(nnz) on first use through
-  // a lazy initialization.
   inline const absl::flat_hash_set<VariableId>& variables_in_linear_constraint(
-      LinearConstraintId constraint);
+      LinearConstraintId constraint) const;
 
   // Returns the linear constraints with nonzero coefficients on a variable.
-  //
-  // Runs in O(1), but triggers allocations that are O(nnz) on first use through
-  // a lazy initialization.
   inline const absl::flat_hash_set<LinearConstraintId>&
-  linear_constraints_with_variable(VariableId variable);
+  linear_constraints_with_variable(VariableId variable) const;
 
   //////////////////////////////////////////////////////////////////////////////
   // Objective
@@ -404,8 +397,8 @@ class ModelStorage {
   //
   // Thread-safety: this method must not be used while modifying the
   // ModelStorage. The user is expected to use proper synchronization primitive
-  // to serialize changes to the model and the use of this method.  It can be
-  // called concurrently to create multiple trackers though.
+  // to serialize changes to the model and trackers creations. That said
+  // multiple trackers can be created concurrently.
   //
   // For each update tracker we define a checkpoint that is the starting point
   // used to compute the ModelUpdateProto.
@@ -454,11 +447,9 @@ class ModelStorage {
   // reasons, to ensure the ModelStorage does not keep data for update trackers
   // that are not needed anymore.
   //
-  // Thread-safety: this method must not be used while modifying the
-  // ModelStorage. The user is expected to use proper synchronization primitive
-  // to serialize changes to the model and the use of this method.
-  //
-  // It can be called concurrently to delete multiple trackers though.
+  // Thread-safety: this method can be called at any time, even during the
+  // creation of other trackers or during model modification. It must not be
+  // called concurrently with ExportModelUpdate() or Checkpoint() though.
   void DeleteUpdateTracker(UpdateTrackerId update_tracker);
 
   // Returns a proto representation of the changes to the model since the most
@@ -466,19 +457,21 @@ class ModelStorage {
   // update would have been empty.
   //
   // Thread-safety: this method must not be used while modifying the
-  // ModelStorage. The user is expected to use proper synchronization
-  // primitive to serialize changes to the model and the use of this method.
+  // ModelStorage or after calling DeleteUpdateTracker(). The user is expected
+  // to use proper synchronization primitive to serialize changes to the model
+  // and the use of this method.
   //
   // It can be called concurrently for different update trackers though.
   std::optional<ModelUpdateProto> ExportModelUpdate(
-      UpdateTrackerId update_tracker);
+      UpdateTrackerId update_tracker) const;
 
   // Uses the current model state as the starting point to calculate the
   // ModelUpdateProto next time ExportModelUpdate() is called.
   //
   // Thread-safety: this method must not be used while modifying the
-  // ModelStorage. The user is expected to use proper synchronization
-  // primitive to serialize changes to the model and the use of this method.
+  // ModelStorage or after calling DeleteUpdateTracker(). The user is expected
+  // to use proper synchronization primitive to serialize changes to the model
+  // and the use of this method.
   //
   // It can be called concurrently for different update trackers though.
   void Checkpoint(UpdateTrackerId update_tracker);
@@ -508,28 +501,72 @@ class ModelStorage {
   };
 
   struct UpdateTrackerData {
-    // All incremental updates that occurred since last checkpoint. It is
-    // filled-in each time Checkpoint() is called on any update tracker. When an
-    // ExportModelUpdate() is requested on a tracker, all these are merged along
-    // with the remaining updates.
+    UpdateTrackerData(VariableId variables_checkpoint,
+                      LinearConstraintId linear_constraints_checkpoint)
+        : variables_checkpoint(variables_checkpoint),
+          linear_constraints_checkpoint(linear_constraints_checkpoint) {}
+
+    // Returns a proto representation of the changes to the model since the most
+    // recent call to SharedCheckpoint() or nullopt if no changes happened.
     //
-    // Guarded by: ModelStorage::update_trackers_lock_. There does not seem to
-    // be a way to use ABSL_GUARDED_BY here.
-    std::vector<std::shared_ptr<const ModelUpdateProto>> updates;
+    // Thread-safety: this method is threadsafe.
+    std::optional<ModelUpdateProto> ExportModelUpdate(
+        const ModelStorage& storage) const;
+
+    // Use the current model state as the starting point to calculate the
+    // ModelUpdateProto next time ExportSharedModelUpdate() is called.
+    void Checkpoint(const ModelStorage& storage);
+
+    // Update information
+    //
+    // Implicitly, all data for variables and constraints added after the last
+    // checkpoint are considered "new" and will NOT be stored in the "dirty"
+    // data structures below.
+    VariableId variables_checkpoint;
+    LinearConstraintId linear_constraints_checkpoint;
+    bool dirty_objective_direction = false;
+    bool dirty_objective_offset = false;
+
+    absl::flat_hash_set<VariableId> dirty_variable_deletes;
+    absl::flat_hash_set<VariableId> dirty_variable_lower_bounds;
+    absl::flat_hash_set<VariableId> dirty_variable_upper_bounds;
+    absl::flat_hash_set<VariableId> dirty_variable_is_integer;
+
+    absl::flat_hash_set<VariableId> dirty_linear_objective_coefficients;
+    // NOTE: quadratic objective coefficients are considered dirty, and
+    // therefore tracked in this set, if and only if both variables in the term
+    // are "old", i.e. not added since the last checkpoint.
+    absl::flat_hash_set<std::pair<VariableId, VariableId>>
+        dirty_quadratic_objective_coefficients;
+
+    absl::flat_hash_set<LinearConstraintId> dirty_linear_constraint_deletes;
+    absl::flat_hash_set<LinearConstraintId>
+        dirty_linear_constraint_lower_bounds;
+    absl::flat_hash_set<LinearConstraintId>
+        dirty_linear_constraint_upper_bounds;
+
+    // Only for pairs where both the variable and constraint are before the
+    // checkpoint, i.e.
+    //   var_id < variables_checkpoint  &&
+    //   lin_con_id < linear_constraints_checkpoint
+    absl::flat_hash_set<std::pair<LinearConstraintId, VariableId>>
+        dirty_linear_constraint_matrix_keys;
   };
 
   template <typename T>
   void set_variable_property(VariableId id, T value, T VariableData::*field,
-                             absl::flat_hash_set<VariableId>& dirty_set);
+                             absl::flat_hash_set<VariableId>
+                                 UpdateTrackerData::*const dirty_set_field);
 
   inline void set_linear_constraint_property(
       const LinearConstraintId id, double value,
       double LinearConstraintData::*field,
-      absl::flat_hash_set<LinearConstraintId>& dirty_set);
+      absl::flat_hash_set<LinearConstraintId> UpdateTrackerData::*const
+          dirty_set_field);
 
-  // Adds a variable at the given id, updating next_variable_id_ and the lazy
-  // collections as side effect. It CHECKs that the provided id is not less than
-  // next_variable_id_.
+  // Adds a variable at the given id, updating next_variable_id_ and the
+  // row/column collections as side effect. It CHECKs that the provided id is
+  // not less than next_variable_id_.
   //
   // This is used internally by AddVariable() and AddVariables().
   void AddVariableInternal(VariableId id, double lower_bound,
@@ -540,9 +577,9 @@ class ModelStorage {
   // Ids must be greater or equal to next_variable_id_.
   void AddVariables(const VariablesProto& variables);
 
-  // Adds a linear constraint at the given id, updating next_variable_id_ and
-  // the lazy collections as side effect. It CHECKs that the provided id is not
-  // less than next_linear_constraint_id_.
+  // Adds a linear constraint at the given id, updating
+  // next_linear_constraint_id_ and the row/column collections as side effect.
+  // It CHECKs that the provided id is not less than next_linear_constraint_id_.
   //
   // This is used internally by AddLinearConstraint() and
   // AddLinearConstraints().
@@ -569,16 +606,6 @@ class ModelStorage {
   void UpdateLinearConstraintCoefficients(
       const SparseDoubleMatrixProto& coefficients);
 
-  // Initializes lazy_matrix_columns_ (column major storage of the linear
-  // constraint matrix) if it is still empty and there is at least one variable
-  // in the model.
-  void EnsureLazyMatrixColumns();
-
-  // Initializes lazy_matrix_rows_ (row major storage of the linear constraint
-  // matrix) if it is still empty and there is at least one linear constraint in
-  // the model.
-  void EnsureLazyMatrixRows();
-
   // Export a single variable to proto.
   void AppendVariable(VariableId id, VariablesProto& variables_proto) const;
 
@@ -586,23 +613,6 @@ class ModelStorage {
   void AppendLinearConstraint(
       LinearConstraintId id,
       LinearConstraintsProto& linear_constraints_proto) const;
-
-  // Returns a proto representation of the changes to the model since the most
-  // recent call to SharedCheckpoint() or nullopt if no changes happened.
-  //
-  // Thread-safety: this method must not be called concurrently (due to
-  // EnsureLazyMatrixXxx() functions).
-  std::optional<ModelUpdateProto> ExportSharedModelUpdate()
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(update_trackers_lock_);
-
-  // Use the current model state as the starting point to calculate the
-  // ModelUpdateProto next time ExportSharedModelUpdate() is called.
-  void SharedCheckpoint() ABSL_EXCLUSIVE_LOCKS_REQUIRED(update_trackers_lock_);
-
-  // Same as Checkpoint() but the caller must have acquired the
-  // update_trackers_lock_ mutex.
-  void CheckpointLocked(UpdateTrackerId update_tracker)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(update_trackers_lock_);
 
   std::string name_;
   VariableId next_variable_id_ = VariableId(0);
@@ -625,56 +635,11 @@ class ModelStorage {
       linear_constraint_matrix_;
 
   absl::flat_hash_map<VariableId, absl::flat_hash_set<LinearConstraintId>>
-      lazy_matrix_columns_;
+      matrix_columns_;
   absl::flat_hash_map<LinearConstraintId, absl::flat_hash_set<VariableId>>
-      lazy_matrix_rows_;
+      matrix_rows_;
 
-  // Update information
-  //
-  // Implicitly, all data for variables and constraints added after the last
-  // checkpoint are considered "new" and will NOT be stored in the "dirty" data
-  // structures below.
-  VariableId variables_checkpoint_ = VariableId(0);
-  LinearConstraintId linear_constraints_checkpoint_ = LinearConstraintId(0);
-  bool dirty_objective_direction_ = false;
-  bool dirty_objective_offset_ = false;
-
-  absl::flat_hash_set<VariableId> dirty_variable_deletes_;
-  absl::flat_hash_set<VariableId> dirty_variable_lower_bounds_;
-  absl::flat_hash_set<VariableId> dirty_variable_upper_bounds_;
-  absl::flat_hash_set<VariableId> dirty_variable_is_integer_;
-
-  absl::flat_hash_set<VariableId> dirty_linear_objective_coefficients_;
-  // NOTE: quadratic objective coefficients are considered dirty, and therefore
-  // tracked in this set, if and only if both variables in the term are "old",
-  // i.e. not added since the last checkpoint.
-  absl::flat_hash_set<std::pair<VariableId, VariableId>>
-      dirty_quadratic_objective_coefficients_;
-
-  absl::flat_hash_set<LinearConstraintId> dirty_linear_constraint_deletes_;
-  absl::flat_hash_set<LinearConstraintId> dirty_linear_constraint_lower_bounds_;
-  absl::flat_hash_set<LinearConstraintId> dirty_linear_constraint_upper_bounds_;
-
-  // Only for pairs where both the variable and constraint are before the
-  // checkpoint, i.e.
-  //   var_id < variables_checkpoint_  &&
-  //   lin_con_id < linear_constraints_checkpoint_
-  absl::flat_hash_set<std::pair<LinearConstraintId, VariableId>>
-      dirty_linear_constraint_matrix_keys_;
-
-  // Lock used to serialize access to update_trackers_ and to the all fields of
-  // UpdateTrackerData. We use only one lock since trackers are modified in
-  // group (they share a chain of ModelUpdateProto and the update of one tracker
-  // usually requires the update of some of the others).
-  absl::Mutex update_trackers_lock_;
-
-  // Next index to use in NewUpdateTracker().
-  UpdateTrackerId next_update_tracker_
-      ABSL_GUARDED_BY(update_trackers_lock_) = {};
-
-  // The UpdateTracker instances tracking the changes of to this model.
-  absl::flat_hash_map<UpdateTrackerId, std::unique_ptr<UpdateTrackerData>>
-      update_trackers_ ABSL_GUARDED_BY(update_trackers_lock_);
+  UpdateTrackers<UpdateTrackerData> update_trackers_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -711,12 +676,15 @@ const std::string& ModelStorage::variable_name(const VariableId id) const {
 template <typename T>
 void ModelStorage::set_variable_property(
     const VariableId id, const T value, T VariableData::*const field,
-    absl::flat_hash_set<VariableId>& dirty_set) {
+    absl::flat_hash_set<VariableId> UpdateTrackerData::*const dirty_set_field) {
   VariableData& var_data = variables_.at(id);
   if (var_data.*field != value) {
     var_data.*field = value;
-    if (id < variables_checkpoint_) {
-      dirty_set.insert(id);
+    for (const auto& [_, update_tracker] :
+         update_trackers_.GetUpdatedTrackers()) {
+      if (id < update_tracker->variables_checkpoint) {
+        (update_tracker.get()->*dirty_set_field).insert(id);
+      }
     }
   }
 }
@@ -724,19 +692,19 @@ void ModelStorage::set_variable_property(
 void ModelStorage::set_variable_lower_bound(const VariableId id,
                                             const double lower_bound) {
   set_variable_property(id, lower_bound, &VariableData::lower_bound,
-                        dirty_variable_lower_bounds_);
+                        &UpdateTrackerData::dirty_variable_lower_bounds);
 }
 
 void ModelStorage::set_variable_upper_bound(const VariableId id,
                                             const double upper_bound) {
   set_variable_property(id, upper_bound, &VariableData::upper_bound,
-                        dirty_variable_upper_bounds_);
+                        &UpdateTrackerData::dirty_variable_upper_bounds);
 }
 
 void ModelStorage::set_variable_is_integer(const VariableId id,
                                            const bool is_integer) {
   set_variable_property(id, is_integer, &VariableData::is_integer,
-                        dirty_variable_is_integer_);
+                        &UpdateTrackerData::dirty_variable_is_integer);
 }
 
 void ModelStorage::set_variable_as_integer(VariableId id) {
@@ -782,28 +750,32 @@ const std::string& ModelStorage::linear_constraint_name(
 void ModelStorage::set_linear_constraint_property(
     const LinearConstraintId id, const double value,
     double LinearConstraintData::*const field,
-    absl::flat_hash_set<LinearConstraintId>& dirty_set) {
+    absl::flat_hash_set<LinearConstraintId> UpdateTrackerData::*const
+        dirty_set_field) {
   LinearConstraintData& lin_con_data = linear_constraints_.at(id);
   if (lin_con_data.*field != value) {
     lin_con_data.*field = value;
-    if (id < linear_constraints_checkpoint_) {
-      dirty_set.insert(id);
+    for (const auto& [_, update_tracker] :
+         update_trackers_.GetUpdatedTrackers()) {
+      if (id < update_tracker->linear_constraints_checkpoint) {
+        (update_tracker.get()->*dirty_set_field).insert(id);
+      }
     }
   }
 }
 
 void ModelStorage::set_linear_constraint_lower_bound(
     const LinearConstraintId id, const double lower_bound) {
-  set_linear_constraint_property(id, lower_bound,
-                                 &LinearConstraintData::lower_bound,
-                                 dirty_linear_constraint_lower_bounds_);
+  set_linear_constraint_property(
+      id, lower_bound, &LinearConstraintData::lower_bound,
+      &UpdateTrackerData::dirty_linear_constraint_lower_bounds);
 }
 
 void ModelStorage::set_linear_constraint_upper_bound(
     const LinearConstraintId id, const double upper_bound) {
-  set_linear_constraint_property(id, upper_bound,
-                                 &LinearConstraintData::upper_bound,
-                                 dirty_linear_constraint_upper_bounds_);
+  set_linear_constraint_property(
+      id, upper_bound, &LinearConstraintData::upper_bound,
+      &UpdateTrackerData::dirty_linear_constraint_upper_bounds);
 }
 
 int ModelStorage::num_linear_constraints() const {
@@ -839,12 +811,8 @@ void ModelStorage::set_linear_constraint_coefficient(
   if (value == 0.0) {
     if (linear_constraint_matrix_.erase({constraint, variable}) > 0) {
       was_updated = true;
-      if (!lazy_matrix_columns_.empty()) {
-        lazy_matrix_columns_.at(variable).erase(constraint);
-      }
-      if (!lazy_matrix_rows_.empty()) {
-        lazy_matrix_rows_.at(constraint).erase(variable);
-      }
+      matrix_columns_.at(variable).erase(constraint);
+      matrix_rows_.at(constraint).erase(variable);
     }
   } else {
     const auto [iterator, inserted] =
@@ -855,16 +823,20 @@ void ModelStorage::set_linear_constraint_coefficient(
       iterator->second = value;
       was_updated = true;
     }
-    if (!lazy_matrix_columns_.empty()) {
-      lazy_matrix_columns_.at(variable).insert(constraint);
-    }
-    if (!lazy_matrix_rows_.empty()) {
-      lazy_matrix_rows_.at(constraint).insert(variable);
-    }
+
+    matrix_columns_.at(variable).insert(constraint);
+
+    matrix_rows_.at(constraint).insert(variable);
   }
-  if (was_updated && constraint < linear_constraints_checkpoint_ &&
-      variable < variables_checkpoint_) {
-    dirty_linear_constraint_matrix_keys_.emplace(constraint, variable);
+  if (was_updated) {
+    for (const auto& [_, update_tracker] :
+         update_trackers_.GetUpdatedTrackers()) {
+      if (constraint < update_tracker->linear_constraints_checkpoint &&
+          variable < update_tracker->variables_checkpoint) {
+        update_tracker->dirty_linear_constraint_matrix_keys.emplace(constraint,
+                                                                    variable);
+      }
+    }
   }
 }
 
@@ -874,15 +846,14 @@ ModelStorage::linear_constraint_matrix() const {
 }
 
 const absl::flat_hash_set<VariableId>&
-ModelStorage::variables_in_linear_constraint(LinearConstraintId constraint) {
-  EnsureLazyMatrixRows();
-  return lazy_matrix_rows_.at(constraint);
+ModelStorage::variables_in_linear_constraint(
+    LinearConstraintId constraint) const {
+  return matrix_rows_.at(constraint);
 }
 
 const absl::flat_hash_set<LinearConstraintId>&
-ModelStorage::linear_constraints_with_variable(VariableId variable) {
-  EnsureLazyMatrixColumns();
-  return lazy_matrix_columns_.at(variable);
+ModelStorage::linear_constraints_with_variable(VariableId variable) const {
+  return matrix_columns_.at(variable);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -923,7 +894,10 @@ bool ModelStorage::is_quadratic_objective_coefficient_nonzero(
 
 void ModelStorage::set_is_maximize(bool is_maximize) {
   if (is_maximize_ != is_maximize) {
-    dirty_objective_direction_ = true;
+    for (const auto& [_, update_tracker] :
+         update_trackers_.GetUpdatedTrackers()) {
+      update_tracker->dirty_objective_direction = true;
+    }
     is_maximize_ = is_maximize;
   }
 }
@@ -934,7 +908,10 @@ void ModelStorage::set_minimize() { set_is_maximize(false); }
 
 void ModelStorage::set_objective_offset(double value) {
   if (value != objective_offset_) {
-    dirty_objective_offset_ = true;
+    for (const auto& [_, update_tracker] :
+         update_trackers_.GetUpdatedTrackers()) {
+      update_tracker->dirty_objective_offset = true;
+    }
     objective_offset_ = value;
   }
 }
@@ -956,8 +933,13 @@ void ModelStorage::set_linear_objective_coefficient(VariableId variable,
       was_updated = true;
     }
   }
-  if (was_updated && variable < variables_checkpoint_) {
-    dirty_linear_objective_coefficients_.insert(variable);
+  if (was_updated) {
+    for (const auto& [_, update_tracker] :
+         update_trackers_.GetUpdatedTrackers()) {
+      if (variable < update_tracker->variables_checkpoint) {
+        update_tracker->dirty_linear_objective_coefficients.insert(variable);
+      }
+    }
   }
 }
 
@@ -968,8 +950,13 @@ void ModelStorage::set_quadratic_objective_coefficient(
       quadratic_objective_.set(first_variable, second_variable, value);
   const std::pair<VariableId, VariableId> key =
       internal::MakeOrderedPair(first_variable, second_variable);
-  if (updated && key.second < variables_checkpoint_) {
-    dirty_quadratic_objective_coefficients_.insert(key);
+  if (updated) {
+    for (const auto& [_, update_tracker] :
+         update_trackers_.GetUpdatedTrackers()) {
+      if (key.second < update_tracker->variables_checkpoint) {
+        update_tracker->dirty_quadratic_objective_coefficients.insert(key);
+      }
+    }
   }
 }
 
@@ -978,9 +965,13 @@ void ModelStorage::clear_objective() {
   while (!linear_objective_.empty()) {
     set_linear_objective_coefficient(linear_objective_.begin()->first, 0.0);
   }
-  for (const auto [var_pair, value] : quadratic_objective_.values()) {
-    if (var_pair.second < variables_checkpoint_ && value != 0.0) {
-      dirty_quadratic_objective_coefficients_.insert(var_pair);
+  for (const auto& [_, update_tracker] :
+       update_trackers_.GetUpdatedTrackers()) {
+    for (const auto [var_pair, value] : quadratic_objective_.values()) {
+      if (value == 0.0) continue;
+      if (var_pair.second < update_tracker->variables_checkpoint) {
+        update_tracker->dirty_quadratic_objective_coefficients.insert(var_pair);
+      }
     }
   }
   quadratic_objective_.Clear();

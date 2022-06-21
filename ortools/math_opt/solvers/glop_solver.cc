@@ -35,12 +35,12 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/cleanup.h"
+#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
@@ -397,9 +397,10 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
 
 bool GlopSolver::CanUpdate(const ModelUpdateProto& model_update) {
   return model_update.objective_updates()
-      .quadratic_coefficients()
-      .row_ids()
-      .empty();
+             .quadratic_coefficients()
+             .row_ids()
+             .empty() &&
+         !HasQuadraticConstraintUpdates(model_update);
 }
 
 template <typename IndexType>
@@ -846,6 +847,10 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GlopSolver::New(
   if (!model.objective().quadratic_coefficients().row_ids().empty()) {
     return absl::InvalidArgumentError(
         "Glop does not support quadratic objectives");
+  }
+  if (!model.quadratic_constraints().empty()) {
+    return absl::InvalidArgumentError(
+        "Glop does not support quadratic constraints");
   }
   auto solver = absl::WrapUnique(new GlopSolver);
   // By default Glop CHECKs that bounds are always consistent (lb < ub); thus it

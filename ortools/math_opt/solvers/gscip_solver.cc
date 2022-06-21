@@ -785,6 +785,11 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GScipSolver::New(
         "MathOpt does not currently support SCIP models with quadratic "
         "objectives");
   }
+  if (!model.quadratic_constraints().empty()) {
+    return absl::UnimplementedError(
+        "MathOpt does not currently support SCIP models with quadratic "
+        "constraints");
+  }
   // Can't be const because it had to be moved into the StatusOr and be
   // convereted to std::unique_ptr<SolverInterface>.
   auto solver = absl::WrapUnique(new GScipSolver(std::move(gscip)));
@@ -909,7 +914,8 @@ bool GScipSolver::CanUpdate(const ModelUpdateProto& model_update) {
          model_update.objective_updates()
              .quadratic_coefficients()
              .row_ids()
-             .empty();
+             .empty() &&
+         !HasQuadraticConstraintUpdates(model_update);
 }
 
 absl::Status GScipSolver::Update(const ModelUpdateProto& model_update) {

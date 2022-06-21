@@ -225,7 +225,7 @@ class Model {
   // sorted by id.
   std::vector<Variable> SortedVariables() const;
 
-  std::vector<LinearConstraint> ColumnNonzeros(Variable variable);
+  std::vector<LinearConstraint> ColumnNonzeros(Variable variable) const;
 
   // Adds a linear constraint to the model with bounds [-inf, +inf].
   inline LinearConstraint AddLinearConstraint(absl::string_view name = "");
@@ -310,14 +310,10 @@ class Model {
   inline bool is_coefficient_nonzero(LinearConstraint constraint,
                                      Variable variable) const;
 
-  // This method modifies some internal structures of the model and thus is not
-  // const.
-  std::vector<Variable> RowNonzeros(LinearConstraint constraint);
+  std::vector<Variable> RowNonzeros(LinearConstraint constraint) const;
 
-  // This method modifies some internal structures of the model and thus is not
-  // const.
   BoundedLinearExpression AsBoundedLinearExpression(
-      LinearConstraint constraint);
+      LinearConstraint constraint) const;
 
   // Returns all the existing (created and not deleted) linear constraints in
   // the model in an arbitrary order.

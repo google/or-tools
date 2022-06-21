@@ -18,17 +18,15 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -91,19 +89,23 @@ class GurobiSolver : public SolverInterface {
   // For easing reading the code, we declare these types:
   using VariableId = int64_t;
   using LinearConstraintId = int64_t;
+  using QuadraticConstraintId = int64_t;
   using GurobiVariableIndex = int;
   using GurobiLinearConstraintIndex = int;
+  using GurobiQuadraticConstraintIndex = int;
+  using GurobiAnyConstraintIndex = int;
 
   static constexpr GurobiVariableIndex kUnspecifiedIndex = -1;
-  static constexpr GurobiLinearConstraintIndex kUnspecifiedConstraint = -2;
+  static constexpr GurobiAnyConstraintIndex kUnspecifiedConstraint = -2;
   static constexpr double kInf = std::numeric_limits<double>::infinity();
-  // Data associated with each constraint. With it we know if the underlying
-  // representation is either:
+
+  // Data associated with each linear constraint. With it we know if the
+  // underlying representation is either:
   //   linear_terms <= upper_bound (if lower bound <= -GRB_INFINITY)
   //   linear_terms >= lower_bound (if upper bound >= GRB_INFINTY)
   //   linear_terms == xxxxx_bound (if upper_bound == lower_bound)
   //   linear_term - slack == 0 (with slack bounds equal to xxxxx_bound)
-  struct ConstraintData {
+  struct LinearConstraintData {
     GurobiLinearConstraintIndex constraint_index = kUnspecifiedConstraint;
     // only valid for true ranged constraints.
     GurobiVariableIndex slack_index = kUnspecifiedIndex;
@@ -113,9 +115,9 @@ class GurobiSolver : public SolverInterface {
 
   struct SlackInfo {
     LinearConstraintId id;
-    ConstraintData& constraint_data;
+    LinearConstraintData& constraint_data;
     SlackInfo(const LinearConstraintId input_id,
-              ConstraintData& input_constraint)
+              LinearConstraintData& input_constraint)
         : id(input_id), constraint_data(input_constraint) {}
   };
 
@@ -160,10 +162,20 @@ class GurobiSolver : public SolverInterface {
   static absl::StatusOr<TerminationProto> ConvertTerminationReason(
       int gurobi_status, SolutionClaims solution_claims);
 
-  absl::StatusOr<SolutionsAndClaims> GetQpSolution(
-      const ModelSolveParametersProto& model_parameters);
+  // Returns solution information appropriate and available for an LP (linear
+  // constraints + linear objective, only).
   absl::StatusOr<SolutionsAndClaims> GetLpSolution(
       const ModelSolveParametersProto& model_parameters);
+  // Returns solution information appropriate and available for a QP (linear
+  // constraints + quadratic objective, only).
+  absl::StatusOr<SolutionsAndClaims> GetQpSolution(
+      const ModelSolveParametersProto& model_parameters);
+  // Returns solution information appropriate and available for a QCP
+  // (linear/quadratic constraints + linear/quadratic objective, only).
+  absl::StatusOr<SolutionsAndClaims> GetQcpSolution(
+      const ModelSolveParametersProto& model_parameters);
+  // Returns solution information appropriate and available for a MIP
+  // (integrality on some/all decision variables).
   absl::StatusOr<SolutionsAndClaims> GetMipSolutions(
       const ModelSolveParametersProto& model_parameters);
 
@@ -177,7 +189,11 @@ class GurobiSolver : public SolverInterface {
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable();
 
   absl::Status SetParameters(const SolveParametersProto& parameters);
-  absl::Status AddNewConstraints(const LinearConstraintsProto& constraints);
+  absl::Status AddNewLinearConstraints(
+      const LinearConstraintsProto& constraints);
+  absl::Status AddNewQuadraticConstraints(
+      const google::protobuf::Map<QuadraticConstraintId,
+                                  QuadraticConstraintProto>& constraints);
   absl::Status AddNewVariables(const VariablesProto& new_variables);
   absl::Status AddNewSlacks(const std::vector<SlackInfo>& new_slacks);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);
@@ -201,9 +217,10 @@ class GurobiSolver : public SolverInterface {
       const LinearConstraintUpdatesProto& update,
       std::vector<GurobiVariableIndex>& deleted_variables_index);
 
-  int num_gurobi_constraints() const;
+  int num_linear_constraints() const;
+  int num_quadratic_constraints() const;
   int get_model_index(GurobiVariableIndex index) const { return index; }
-  int get_model_index(const ConstraintData& index) const {
+  int get_model_index(const LinearConstraintData& index) const {
     return index.constraint_index;
   }
 
@@ -221,8 +238,12 @@ class GurobiSolver : public SolverInterface {
   absl::StatusOr<DualRayProto> GetGurobiDualRay(
       const SparseVectorFilterProto& linear_constraints_filter,
       const SparseVectorFilterProto& variables_filter, bool is_maximize);
-  absl::StatusOr<bool> IsLP() const;
+  // Returns true if the problem has any integrality constraints.
+  absl::StatusOr<bool> IsMIP() const;
+  // Returns true if the problem has a quadratic objective.
   absl::StatusOr<bool> IsQP() const;
+  // Returns true if the problem has any quadratic constraints.
+  absl::StatusOr<bool> IsQCP() const;
 
   absl::StatusOr<std::unique_ptr<GurobiCallbackData>> RegisterCallback(
       const CallbackRegistrationProto& registration, Callback cb,
@@ -242,24 +263,27 @@ class GurobiSolver : public SolverInterface {
   gtl::linked_hash_map<VariableId, GurobiVariableIndex> variables_map_;
   // Internal correspondence from linear constraint proto IDs to
   // Gurobi-numbered linear constraint and extra information.
-  gtl::linked_hash_map<LinearConstraintId, ConstraintData>
+  gtl::linked_hash_map<LinearConstraintId, LinearConstraintData>
       linear_constraints_map_;
+  // Internal correspondence from quadratic constraint proto IDs to
+  // Gurobi-numbered quadratic constraint and extra information.
+  gtl::linked_hash_map<QuadraticConstraintId, GurobiQuadraticConstraintIndex>
+      quadratic_constraints_map_;
   // For those constraints that need a slack in the gurobi_model_
   // representation (i.e. those with
-  // ConstraintData.slack_index != kUnspecifiedIndex), we keep a hash_map of
-  // those LinearConstraintId's to a reference of the ConstraintData stored in
-  // the linear_constraints_map_. This means that we only have one location
-  // were we store information about constraints, but two places from where we
-  // can access it.
-  // Furthermore, the internal slack_index associated with each
-  // actual slack variable is increasing in the order of them in this
-  // slack_map_, and is the main reason why we choose to use
+  // LinearConstraintData.slack_index != kUnspecifiedIndex), we keep a hash_map
+  // of those LinearConstraintId's to a reference of the LinearConstraintData
+  // stored in the linear_constraints_map_. This means that we only have one
+  // location were we store information about constraints, but two places from
+  // where we can access it. Furthermore, the internal slack_index associated
+  // with each actual slack variable is increasing in the order of them in this
+  // linear_slack_map_, and is the main reason why we choose to use
   // gtl::linked_hash_map, as the order of insertion (of the remaining
   // elements) is preserved after removals.
   // Note that after deletions, the renumbering of variables must be done
   // simultaneously for variables and slacks following the merged-order of the
-  // variable_index and slack_map_.slack_index.
-  gtl::linked_hash_map<LinearConstraintId, ConstraintData&> slack_map_;
+  // variable_index and linear_slack_map_.slack_index.
+  gtl::linked_hash_map<LinearConstraintId, LinearConstraintData&> slack_map_;
   // Number of Gurobi variables, this internal quantity is updated when we
   // actually add or remove variables or constraints in the underlying Gurobi
   // model. Furthermore, since 'ModelUpdate' can trigger both creation and
