@@ -17,8 +17,6 @@ RUN apt update -qq \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV CC=gcc-11 CXX=g++-11
-ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["/bin/bash"]
 
 # Install CMake 3.21.1
 RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \

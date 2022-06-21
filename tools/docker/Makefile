@@ -704,9 +704,9 @@ minizinc-challenge: minizinc-challenge.Dockerfile
 
 .PHONY: minizinc-challenge-test
 minizinc-challenge-test: minizinc-challenge
-	${DOCKER_RUN_CMD} ${MZN_TAG} "solver -v /minizinc/test.mzn /minizinc/2.dzn"
-	${DOCKER_RUN_CMD} ${MZN_TAG} "solver -v --free-search /minizinc/test.mzn /minizinc/2.dzn"
-	${DOCKER_RUN_CMD} ${MZN_TAG} "solver -v -p 2 /minizinc/test.mzn /minizinc/2.dzn"
+	${DOCKER_RUN_CMD} ${MZN_TAG} solver -v /minizinc/test.mzn /minizinc/2.dzn
+	${DOCKER_RUN_CMD} ${MZN_TAG} solver -v --free-search /minizinc/test.mzn /minizinc/2.dzn
+	${DOCKER_RUN_CMD} ${MZN_TAG} solver -v -p 2 /minizinc/test.mzn /minizinc/2.dzn
 
 .PHONY: minizinc-challenge-bash
 minizinc-challenge-bash:
