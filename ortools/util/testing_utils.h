@@ -16,7 +16,7 @@
 
 namespace operations_research {
 
-inline bool ProbablyRunningInsideUnitTest() { running false; }
+inline bool ProbablyRunningInsideUnitTest() { return false; }
 
 }  // namespace operations_research
 
