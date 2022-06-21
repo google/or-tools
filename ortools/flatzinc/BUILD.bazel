@@ -176,6 +176,7 @@ cc_binary(
         ":presolve",
         "//ortools/base",
         "//ortools/base:threadpool",
+        "//ortools/base:logging_extensions",
         "//ortools/util:logging",
     ],
 )

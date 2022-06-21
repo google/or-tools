@@ -207,6 +207,12 @@ cc_library(
 )
 
 cc_library(
+    name = "logging_extensions",
+    hdrs = ["logging_extensions.h"],
+    deps = [":base"],
+)
+
+cc_library(
     name = "map_util",
     hdrs = ["map_util.h"],
     deps = [":base"],
