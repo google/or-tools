@@ -197,7 +197,7 @@ LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
 DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumulCost(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     int64_t* optimal_cost) {
-  return optimizer_core_.OptimizeSingleRoute(vehicle, next_accessor, {},
+  return optimizer_core_.OptimizeSingleRoute(vehicle, next_accessor,
                                              solver_[vehicle].get(), nullptr,
                                              nullptr, optimal_cost, nullptr);
 }
@@ -209,8 +209,8 @@ LocalDimensionCumulOptimizer::ComputeRouteCumulCostWithoutFixedTransits(
   int64_t cost = 0;
   int64_t transit_cost = 0;
   const DimensionSchedulingStatus status = optimizer_core_.OptimizeSingleRoute(
-      vehicle, next_accessor, {}, solver_[vehicle].get(), nullptr, nullptr,
-      &cost, &transit_cost);
+      vehicle, next_accessor, solver_[vehicle].get(), nullptr, nullptr, &cost,
+      &transit_cost);
   if (status != DimensionSchedulingStatus::INFEASIBLE &&
       optimal_cost_without_transits != nullptr) {
     *optimal_cost_without_transits = CapSub(cost, transit_cost);
@@ -228,7 +228,7 @@ std::vector<DimensionSchedulingStatus> LocalDimensionCumulOptimizer::
         std::vector<std::vector<int64_t>>* optimal_cumuls,
         std::vector<std::vector<int64_t>>* optimal_breaks) {
   return optimizer_core_.OptimizeSingleRouteWithResources(
-      vehicle, next_accessor, transit_accessor, {}, resources, resource_indices,
+      vehicle, next_accessor, transit_accessor, resources, resource_indices,
       optimize_vehicle_costs, solver_[vehicle].get(),
       optimal_costs_without_transits, optimal_cumuls, optimal_breaks);
 }
@@ -863,9 +863,11 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
             {*resource}, {0}, /*optimize_vehicle_costs=*/true, solver,
             &costs_without_transits, /*cumul_values=*/nullptr,
             /*break_values=*/nullptr, /*clear_lp=*/false);
-    DCHECK_EQ(statuses.size(), 1);
-    if (statuses[0] == DimensionSchedulingStatus::INFEASIBLE) {
+    if (dimension_->model()->CheckLimit()) {
       status = DimensionSchedulingStatus::INFEASIBLE;
+    } else {
+      DCHECK_EQ(statuses.size(), 1);
+      status = statuses[0];
     }
   }
 
@@ -1839,8 +1841,8 @@ GlobalDimensionCumulOptimizer::ComputeCumulCostWithoutFixedTransits(
   int64_t cost = 0;
   int64_t transit_cost = 0;
   DimensionSchedulingStatus status =
-      optimizer_core_.Optimize(next_accessor, {}, solver_.get(), nullptr,
-                               nullptr, nullptr, &cost, &transit_cost);
+      optimizer_core_.Optimize(next_accessor, solver_.get(), nullptr, nullptr,
+                               nullptr, &cost, &transit_cost);
   if (status != DimensionSchedulingStatus::INFEASIBLE &&
       optimal_cost_without_transits != nullptr) {
     *optimal_cost_without_transits = CapSub(cost, transit_cost);

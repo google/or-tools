@@ -3359,35 +3359,29 @@ class PathState::NodeRange {
   const CommittedNode* const first_node_;
 };
 
-// This checker enforces unary dimension requirements.
-// A unary dimension requires that there is some valuation of
-// node_capacity and demand such that for all paths,
-// if arc A -> B is on a path of path_class p,
-// then node_capacity[A] + demand[p][A] = node_capacity[B].
-// Moreover, all node_capacities of a path must be inside interval
-// path_capacity[path].
-// Note that Intervals have two meanings:
-// - for demand and node_capacity, those are values allowed for each associated
-//   decision variable.
-// - for path_capacity, those are set of values that node_capacities of the path
-//   must respect.
-// If the path capacity of a path is [kint64min, kint64max],
-// then the unary dimension requirements are not enforced on this path.
-class UnaryDimensionChecker {
+// This checker enforces dimension requirements.
+// A dimension requires that there is some valuation of
+// cumul and demand such that for all paths:
+// - cumul[A] is in interval node_capacity[A]
+// - if arc A -> B is on a path of path_class p,
+//   then cumul[A] + demand[p](A, B) = cumul[B].
+// - if A is on a path of class p, then
+//   cumul[A] must be inside interval path_capacity[path].
+class DimensionChecker {
  public:
   struct Interval {
     int64_t min;
     int64_t max;
   };
 
-  UnaryDimensionChecker(const PathState* path_state,
-                        std::vector<Interval> path_capacity,
-                        std::vector<int> path_class,
-                        std::vector<std::function<Interval(int64_t)>>
-                            min_max_demand_per_path_class,
-                        std::vector<Interval> node_capacity);
+  DimensionChecker(const PathState* path_state,
+                   std::vector<Interval> path_capacity,
+                   std::vector<int> path_class,
+                   std::vector<std::function<Interval(int64_t)>>
+                       min_max_demand_per_path_class,
+                   std::vector<Interval> node_capacity);
 
-  // Given the change made in PathState, checks that the unary dimension
+  // Given the change made in PathState, checks that the dimension
   // constraint is still feasible.
   bool Check() const;
 
@@ -3469,14 +3463,14 @@ LocalSearchFilter* MakePathStateFilter(Solver* solver,
                                        const std::vector<IntVar*>& nexts);
 
 // Make a filter that translates solver events to the input checker's interface.
-// Since UnaryDimensionChecker has a PathState, the filter returned by this
+// Since DimensionChecker has a PathState, the filter returned by this
 // must be synchronized to the corresponding PathStateFilter:
 // - Relax() must be called after the PathStateFilter's.
 // - Accept() must be called after.
 // - Synchronize() must be called before.
 // - Revert() must be called before.
-LocalSearchFilter* MakeUnaryDimensionFilter(
-    Solver* solver, std::unique_ptr<UnaryDimensionChecker> checker,
+LocalSearchFilter* MakeDimensionFilter(
+    Solver* solver, std::unique_ptr<DimensionChecker> checker,
     const std::string& dimension_name);
 
 #endif  // !defined(SWIG)

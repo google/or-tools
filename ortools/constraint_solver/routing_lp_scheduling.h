@@ -360,9 +360,11 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
     linear_program_.SetConstraintBounds(ct, -glop::kInfinity,
                                         normalized_objective_value);
   }
-  void AddMaximumConstraint(int max_var, std::vector<int> vars) override {}
-  void AddProductConstraint(int product_var, std::vector<int> vars) override {}
-  void SetEnforcementLiteral(int ct, int condition) override{};
+  void AddMaximumConstraint(int /*max_var*/,
+                            std::vector<int> /*vars*/) override {}
+  void AddProductConstraint(int /*product_var*/,
+                            std::vector<int> /*vars*/) override {}
+  void SetEnforcementLiteral(int /*ct*/, int /*condition*/) override{};
   DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
     lp_solver_.GetMutableParameters()->set_max_time_in_seconds(
         absl::ToDoubleSeconds(duration_limit));
@@ -449,7 +451,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     return index;
   }
   void SetVariableName(int index, absl::string_view name) override {
-    model_.mutable_variables(index)->set_name(name);
+    model_.mutable_variables(index)->set_name(name.data());
   }
   bool SetVariableBounds(int index, int64_t lower_bound,
                          int64_t upper_bound) override {
@@ -590,7 +592,9 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
   bool SolutionIsInteger() const override { return true; }
 
   // NOTE: This function is not implemented for the CP-SAT solver.
-  void SetParameters(const std::string& parameters) override { DCHECK(false); }
+  void SetParameters(const std::string& /*parameters*/) override {
+    DCHECK(false);
+  }
 
  private:
   sat::CpModelProto model_;
@@ -650,7 +654,7 @@ class DimensionCumulOptimizerCore {
 
  private:
   // Initializes the containers and given solver. Must be called prior to
-  // setting any contraints and solving.
+  // setting any constraints and solving.
   void InitOptimizer(RoutingLinearSolverWrapper* solver);
 
   // Computes the minimum/maximum of cumuls for nodes on "route", and sets them

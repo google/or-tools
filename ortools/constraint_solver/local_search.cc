@@ -2760,7 +2760,7 @@ class PathStateFilter : public LocalSearchFilter {
   // Selection-based algorithm in O(n^2), to use for small change sets.
   void MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm();
   // From changed_paths_ and changed_arcs_, fill chains_ and paths_.
-  // Generic algorithm in O(sort(n)+n), to use for larger change sets.
+  // Generic algorithm in O(std::sort(n)+n), to use for larger change sets.
   void MakeChainsFromChangedPathsAndArcsWithGenericAlgorithm();
 
   const std::unique_ptr<PathState> path_state_;
@@ -3007,7 +3007,7 @@ LocalSearchFilter* MakePathStateFilter(Solver* solver,
 }
 
 namespace {
-using Interval = UnaryDimensionChecker::Interval;
+using Interval = DimensionChecker::Interval;
 
 Interval Intersect(const Interval& i1, const Interval& i2) {
   return {std::max(i1.min, i2.min), std::min(i1.max, i2.max)};
@@ -3032,7 +3032,7 @@ Interval Delta(const Interval& from, const Interval& to) {
 }
 }  // namespace
 
-UnaryDimensionChecker::UnaryDimensionChecker(
+DimensionChecker::DimensionChecker(
     const PathState* path_state, std::vector<Interval> path_capacity,
     std::vector<int> path_class,
     std::vector<std::function<Interval(int64_t)>> min_max_demand_per_path_class,
@@ -3057,7 +3057,7 @@ UnaryDimensionChecker::UnaryDimensionChecker(
   FullCommit();
 }
 
-bool UnaryDimensionChecker::Check() const {
+bool DimensionChecker::Check() const {
   if (path_state_->IsInvalid()) return true;
   for (const int path : path_state_->ChangedPaths()) {
     const Interval path_capacity = path_capacity_[path];
@@ -3079,7 +3079,7 @@ bool UnaryDimensionChecker::Check() const {
           chain_path == -1 ? -1 : path_class_[chain_path];
       // Call the RIQ if the chain size is large enough;
       // the optimal value was found with the associated benchmark in tests,
-      // in particular BM_UnaryDimensionChecker<ChangeSparsity::kSparse, *>.
+      // in particular BM_DimensionChecker<ChangeSparsity::kSparse, *>.
       constexpr int kMinRangeSizeForRIQ = 4;
       const bool chain_is_cached = chain_path_class == path_class;
       if (last_index - first_index > kMinRangeSizeForRIQ && chain_is_cached &&
@@ -3116,7 +3116,7 @@ bool UnaryDimensionChecker::Check() const {
   return true;
 }
 
-void UnaryDimensionChecker::Commit() {
+void DimensionChecker::Commit() {
   const int current_layer_size = backwards_demand_sums_riq_[0].size();
   int change_size = path_state_->ChangedPaths().size();
   for (const int path : path_state_->ChangedPaths()) {
@@ -3131,7 +3131,7 @@ void UnaryDimensionChecker::Commit() {
   }
 }
 
-void UnaryDimensionChecker::IncrementalCommit() {
+void DimensionChecker::IncrementalCommit() {
   for (const int path : path_state_->ChangedPaths()) {
     const int begin_index = backwards_demand_sums_riq_[0].size();
     AppendPathDemandsToSums(path);
@@ -3139,7 +3139,7 @@ void UnaryDimensionChecker::IncrementalCommit() {
   }
 }
 
-void UnaryDimensionChecker::FullCommit() {
+void DimensionChecker::FullCommit() {
   // Clear all structures.
   previous_nontrivial_index_.clear();
   for (auto& sums : backwards_demand_sums_riq_) sums.clear();
@@ -3152,7 +3152,7 @@ void UnaryDimensionChecker::FullCommit() {
   }
 }
 
-void UnaryDimensionChecker::AppendPathDemandsToSums(int path) {
+void DimensionChecker::AppendPathDemandsToSums(int path) {
   const int path_class = path_class_[path];
   // Compute sum of all demands for this path.
   // TODO(user): backwards Nodes() iterator, to compute sum directly.
@@ -3183,7 +3183,7 @@ void UnaryDimensionChecker::AppendPathDemandsToSums(int path) {
   }
 }
 
-void UnaryDimensionChecker::UpdateRIQStructure(int begin_index, int end_index) {
+void DimensionChecker::UpdateRIQStructure(int begin_index, int end_index) {
   // The max layer is the one used by
   // GetMinMaxPartialDemandSum(begin_index, end_index - 1).
   const int maximum_riq_exponent =
@@ -3210,8 +3210,7 @@ void UnaryDimensionChecker::UpdateRIQStructure(int begin_index, int end_index) {
 // For instance, if this is only called when the range size is > 4
 // and paths are <= 32 nodes long, then we only need layers 0, 2, 3, and 4.
 // To compare, on a 512 < #nodes <= 1024 problem, this uses layers in [0, 10].
-UnaryDimensionChecker::Interval
-UnaryDimensionChecker::GetTightestBackwardsDemandSum(
+DimensionChecker::Interval DimensionChecker::GetTightestBackwardsDemandSum(
     int first_node_index, int last_node_index) const {
   DCHECK_LE(0, first_node_index);
   DCHECK_LT(first_node_index, last_node_index);
@@ -3228,8 +3227,8 @@ UnaryDimensionChecker::GetTightestBackwardsDemandSum(
   return Intersect(i1, i2);
 }
 
-bool UnaryDimensionChecker::SubpathOnlyHasTrivialNodes(
-    int first_node_index, int last_node_index) const {
+bool DimensionChecker::SubpathOnlyHasTrivialNodes(int first_node_index,
+                                                  int last_node_index) const {
   DCHECK_LE(0, first_node_index);
   DCHECK_LT(first_node_index, last_node_index);
   DCHECK_LT(last_node_index, previous_nontrivial_index_.size());
@@ -3238,13 +3237,13 @@ bool UnaryDimensionChecker::SubpathOnlyHasTrivialNodes(
 
 namespace {
 
-class UnaryDimensionFilter : public LocalSearchFilter {
+class DimensionFilter : public LocalSearchFilter {
  public:
   std::string DebugString() const override { return name_; }
-  UnaryDimensionFilter(std::unique_ptr<UnaryDimensionChecker> checker,
-                       const std::string& dimension_name)
+  DimensionFilter(std::unique_ptr<DimensionChecker> checker,
+                  const std::string& dimension_name)
       : checker_(std::move(checker)),
-        name_(absl::StrCat("UnaryDimensionFilter(", dimension_name, ")")) {}
+        name_(absl::StrCat("DimensionFilter(", dimension_name, ")")) {}
 
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
               int64_t objective_min, int64_t objective_max) override {
@@ -3257,17 +3256,17 @@ class UnaryDimensionFilter : public LocalSearchFilter {
   }
 
  private:
-  std::unique_ptr<UnaryDimensionChecker> checker_;
+  std::unique_ptr<DimensionChecker> checker_;
   const std::string name_;
 };
 
 }  // namespace
 
-LocalSearchFilter* MakeUnaryDimensionFilter(
-    Solver* solver, std::unique_ptr<UnaryDimensionChecker> checker,
+LocalSearchFilter* MakeDimensionFilter(
+    Solver* solver, std::unique_ptr<DimensionChecker> checker,
     const std::string& dimension_name) {
-  UnaryDimensionFilter* filter =
-      new UnaryDimensionFilter(std::move(checker), dimension_name);
+  DimensionFilter* filter =
+      new DimensionFilter(std::move(checker), dimension_name);
   return solver->RevAlloc(filter);
 }
 

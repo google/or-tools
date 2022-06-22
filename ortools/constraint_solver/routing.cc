@@ -976,7 +976,7 @@ class ResourceAssignmentConstraint : public Constraint {
     ResourceAssignmentOptimizer resource_assignment_optimizer(
         &resource_group_, optimizer, mp_optimizer);
 
-    const auto transit = [&dimension](int64_t node, int64_t next) {
+    const auto transit = [&dimension](int64_t node, int64_t /*next*/) {
       // TODO(user): Get rid of this max() by only allowing resources on
       // dimensions with positive transits (model.AreVehicleTransitsPositive()).
       // TODO(user): The transit lower bounds have not necessarily been
@@ -1103,7 +1103,7 @@ Constraint* MakeResourceConstraint(
 
 // Evaluators
 template <class A, class B>
-static int64_t ReturnZero(A a, B b) {
+static int64_t ReturnZero(A, B) {
   return 0;
 }
 
@@ -1271,7 +1271,7 @@ int RoutingModel::RegisterUnaryTransitVector(std::vector<int64_t> values) {
 int RoutingModel::RegisterUnaryTransitCallback(TransitCallback1 callback) {
   const int index = unary_transit_evaluators_.size();
   unary_transit_evaluators_.push_back(std::move(callback));
-  return RegisterTransitCallback([this, index](int i, int j) {
+  return RegisterTransitCallback([this, index](int i, int /*j*/) {
     return unary_transit_evaluators_[index](i);
   });
 }
@@ -1422,7 +1422,6 @@ bool RoutingModel::InitializeDimensionInternal(
     const DimensionIndex dimension_index(dimensions_.size());
     dimension_name_to_index_[dimension->name()] = dimension_index;
     dimensions_.push_back(dimension);
-    dimension_cumuls_optimized_with_cumul_dependent_transits_.push_back(false);
     dimension->Initialize(evaluator_indices, state_dependent_evaluator_indices,
                           slack_max);
     solver_->AddConstraint(solver_->MakeDelayedPathCumul(
@@ -1851,7 +1850,7 @@ const RoutingModel::CostClassIndex RoutingModel::kCostClassIndexOfZeroCost =
     CostClassIndex(0);
 
 void RoutingModel::ComputeCostClasses(
-    const RoutingSearchParameters& parameters) {
+    const RoutingSearchParameters& /*parameters*/) {
   // Create and reduce the cost classes.
   cost_classes_.reserve(vehicles_);
   cost_classes_.clear();
@@ -2525,7 +2524,7 @@ class RoutingModelInspector : public ModelVisitor {
     RegisterInspectors();
   }
   ~RoutingModelInspector() override {}
-  void EndVisitModel(const std::string& solver_name) override {
+  void EndVisitModel(const std::string& /*solver_name*/) override {
     const std::vector<int> node_to_same_vehicle_component_id =
         same_vehicle_components_.GetComponentIds();
     model_->InitSameVehicleGroups(
@@ -2538,18 +2537,18 @@ class RoutingModelInspector : public ModelVisitor {
     // TODO(user): Have a single annotated precedence graph.
   }
   void EndVisitConstraint(const std::string& type_name,
-                          const Constraint* const constraint) override {
+                          const Constraint* const /*constraint*/) override {
     gtl::FindWithDefault(constraint_inspectors_, type_name, []() {})();
   }
   void VisitIntegerExpressionArgument(const std::string& type_name,
                                       IntExpr* const expr) override {
     gtl::FindWithDefault(expr_inspectors_, type_name,
-                         [](const IntExpr* expr) {})(expr);
+                         [](const IntExpr*) {})(expr);
   }
   void VisitIntegerArrayArgument(const std::string& arg_name,
                                  const std::vector<int64_t>& values) override {
     gtl::FindWithDefault(array_inspectors_, arg_name,
-                         [](const std::vector<int64_t>& int_array) {})(values);
+                         [](const std::vector<int64_t>&) {})(values);
   }
 
  private:
@@ -5113,8 +5112,6 @@ void RoutingModel::StoreDimensionCumulOptimizers(
   const int num_dimensions = dimensions_.size();
   local_optimizer_index_.resize(num_dimensions, -1);
   global_optimizer_index_.resize(num_dimensions, -1);
-  dimension_local_optimizer_for_cumul_dependent_transits_.resize(
-      num_dimensions);
   if (parameters.disable_scheduling_beware_this_may_degrade_performance()) {
     return;
   }
@@ -5191,12 +5188,6 @@ void RoutingModel::StoreDimensionCumulOptimizers(
                dimension, parameters.continuous_scheduling_solver()),
            std::make_unique<LocalDimensionCumulOptimizer>(
                dimension, parameters.mixed_integer_scheduling_solver())});
-    } else if (dimension_cumuls_optimized_with_cumul_dependent_transits_[dim]) {
-      needs_optimizer = true;
-      dimension->SetVehicleOffsetsForLocalOptimizer(std::move(vehicle_offsets));
-      dimension_local_optimizer_for_cumul_dependent_transits_[dim] =
-          std::make_unique<LocalDimensionCumulOptimizer>(
-              dimension, parameters.mixed_integer_scheduling_solver());
     }
     if (needs_optimizer) {
       optimized_dimensions_collector_assignment->Add(dimension->cumuls());
@@ -6663,7 +6654,6 @@ void RoutingDimension::InitializeTransits(
   InitializeTransitVariables(slack_max);
 }
 
-// TODO(user): Apply -pointer-following.
 void FillPathEvaluation(const std::vector<int64_t>& path,
                         const RoutingModel::TransitCallback2& evaluator,
                         std::vector<int64_t>* values) {
@@ -7288,7 +7278,7 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
     std::vector<int64_t> node_visit_transits) {
   if (breaks.empty()) return;
   const int visit_evaluator = model()->RegisterTransitCallback(
-      [node_visit_transits](int64_t from, int64_t to) {
+      [node_visit_transits](int64_t from, int64_t /*to*/) {
         return node_visit_transits[from];
       });
   SetBreakIntervalsOfVehicle(std::move(breaks), vehicle, visit_evaluator, -1);
@@ -7300,7 +7290,7 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
     std::function<int64_t(int64_t, int64_t)> delays) {
   if (breaks.empty()) return;
   const int visit_evaluator = model()->RegisterTransitCallback(
-      [node_visit_transits](int64_t from, int64_t to) {
+      [node_visit_transits](int64_t from, int64_t /*to*/) {
         return node_visit_transits[from];
       });
   const int delay_evaluator =
