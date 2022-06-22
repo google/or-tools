@@ -165,7 +165,7 @@ function build_java() {
 }
 
 # Python 3
-# todo(user) Use `make --directory tools/docker python` instead
+# TODO(user) Use `make --directory tools/docker python` instead
 function build_python() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python_build" -; then
     echo "build python up to date!" | tee -a build.log

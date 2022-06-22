@@ -20,9 +20,9 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
-#include "examples/cpp/course_scheduling.pb.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/scheduling/course_scheduling.pb.h"
 
 namespace operations_research {
 class CourseSchedulingSolver {

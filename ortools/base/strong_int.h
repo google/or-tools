@@ -366,20 +366,20 @@ class StrongIntRange {
    public:
     using value_type = IntType;
     using difference_type = IntType;
-    using reference = const IntType &;
-    using pointer = const IntType *;
+    using reference = const IntType&;
+    using pointer = const IntType*;
     using iterator_category = std::input_iterator_tag;
 
     explicit StrongIntRangeIterator(IntType initial) : current_(initial) {}
-    bool operator!=(const StrongIntRangeIterator &other) const {
+    bool operator!=(const StrongIntRangeIterator& other) const {
       return current_ != other.current_;
     }
-    bool operator==(const StrongIntRangeIterator &other) const {
+    bool operator==(const StrongIntRangeIterator& other) const {
       return current_ == other.current_;
     }
     value_type operator*() const { return current_; }
     pointer operator->() const { return &current_; }
-    StrongIntRangeIterator &operator++() {
+    StrongIntRangeIterator& operator++() {
       ++current_;
       return *this;
     }

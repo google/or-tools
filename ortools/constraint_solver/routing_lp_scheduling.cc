@@ -23,8 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
-#include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"

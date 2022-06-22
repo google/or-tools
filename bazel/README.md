@@ -44,53 +44,55 @@ You'll need:
 
 Here the list of supported solvers:
 
-* CP-SAT
-* GLOP
-* GLPK
-* PDLP
-* SCIP
+*   CP-SAT
+*   GLOP
+*   GLPK
+*   PDLP
+*   SCIP
 
 ## Dependencies
 
 OR-Tools depends on several mandatory libraries.
 
-* Eigen
-* Google Abseil-cpp,
-* Google Protobuf,
-* Google Gtest,
-* Bliss,
-* SCIP,
-* GLPK (GNU Linear Programming Kit)
+*   Eigen
+*   Google Abseil-cpp,
+*   Google Protobuf,
+*   Google Gtest,
+*   Bliss,
+*   SCIP,
+*   GLPK (GNU Linear Programming Kit)
 
 ## Compilation
 
 You must compile OR-Tools using C++20:
 
-* on UNIX:
+*   on UNIX:
 
-  ```sh
-  bazel build --cxxopt=-std=c++17 ...
-  ```
-* on Windows when using MSVC:
+    ```sh
+    bazel build --cxxopt=-std=c++17 ...
+    ```
 
-  ```sh
-  bazel build --cxxopt="-std:c++20" ...
-  ```
+*   on Windows when using MSVC:
+
+    ```sh
+    bazel build --cxxopt="-std:c++20" ...
+    ```
 
 ## Testing
 
 You may run tests using:
 
-* on UNIX:
+*   on UNIX:
 
-  ```sh
-  bazel test --cxxopt=-std=c++17 ...
-  ```
-* on Windows when using MSVC:
+    ```sh
+    bazel test --cxxopt=-std=c++17 ...
+    ```
 
-  ```sh
-  bazel test --cxxopt="-std:c++20" ...
-  ```
+*   on Windows when using MSVC:
+
+    ```sh
+    bazel test --cxxopt="-std:c++20" ...
+    ```
 
 ## Integration
 

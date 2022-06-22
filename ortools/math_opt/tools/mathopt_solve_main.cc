@@ -284,7 +284,7 @@ absl::Status RunSolver() {
 
   // Optionally prints the problem.
   if (absl::GetFlag(FLAGS_print_model)) {
-    std::cout << model;
+    std::cout << *model;
     std::cout.flush();
   }
 

@@ -701,7 +701,7 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
   LazyMutableCopy<MPModelProto> model(request.model());
   if (request.has_model_delta()) {
     // NOTE(user): This library needs to be portable, so we can't include
-    // ortools/base/file.h; see ../port/file.h.
+    // ortools/base/helpers.h; see ../port/file.h.
     std::string contents;
     const absl::Status file_read_status = PortableFileGetContents(
         request.model_delta().baseline_model_file_path(), &contents);

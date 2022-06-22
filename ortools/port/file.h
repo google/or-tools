@@ -21,7 +21,7 @@
 
 namespace operations_research {
 
-// See ortools/base/file.h
+// See ortools/base/helpers.h
 ::absl::Status PortableFileSetContents(absl::string_view file_name,
                                        absl::string_view content);
 
