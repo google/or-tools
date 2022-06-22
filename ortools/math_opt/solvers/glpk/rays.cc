@@ -18,13 +18,13 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/glpk/glpk_computational_form.h"
 #include "ortools/glpk/glpk_formatters.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research::math_opt {
 namespace {

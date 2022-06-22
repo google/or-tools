@@ -22,6 +22,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/cpp/formatters.h"  // IWYU pragma: export
 
 namespace operations_research {
 namespace math_opt {
@@ -91,73 +92,6 @@ double LinearExpression::EvaluateWithDefaultZero(
   }
   return result;
 }
-
-namespace {
-
-// Streaming formatter for a coefficient of a linear/quadratic term, along with
-// any leading "+"/"-"'s to connect it with preceding terms in a sum, and
-// potentially a "*" postfix. The `is_first` parameter specifies if the term is
-// the first appearing in the sum, in which case the handling of the +/-
-// connectors is different.
-struct LeadingCoefficientFormatter {
-  LeadingCoefficientFormatter(const double coeff, const bool is_first)
-      : coeff(coeff), is_first(is_first) {}
-  const double coeff;
-  const bool is_first;
-};
-
-std::ostream& operator<<(std::ostream& out,
-                         const LeadingCoefficientFormatter formatter) {
-  const double coeff = formatter.coeff;
-  if (formatter.is_first) {
-    if (coeff == 1.0) {
-      // Do nothing.
-    } else if (coeff == -1.0) {
-      out << "-";
-    } else {
-      out << coeff << "*";
-    }
-  } else {
-    if (coeff == 1.0) {
-      out << " + ";
-    } else if (coeff == -1.0) {
-      out << " - ";
-    } else if (std::isnan(coeff)) {
-      out << " + nan*";
-    } else if (coeff >= 0) {
-      out << " + " << coeff << "*";
-    } else {
-      out << " - " << -coeff << "*";
-    }
-  }
-  return out;
-}
-
-// Streaming formatter for a constant in a linear/quadratic expression.
-struct ConstantFormatter {
-  ConstantFormatter(const double constant, const bool is_first)
-      : constant(constant), is_first(is_first) {}
-  const double constant;
-  const bool is_first;
-};
-
-std::ostream& operator<<(std::ostream& out, const ConstantFormatter formatter) {
-  const double constant = formatter.constant;
-  if (formatter.is_first) {
-    out << constant;
-  } else if (constant == 0) {
-    // Do nothing.
-  } else if (std::isnan(constant)) {
-    out << " + nan";
-  } else if (constant > 0) {
-    out << " + " << constant;
-  } else {
-    out << " - " << -constant;
-  }
-  return out;
-}
-
-}  // namespace
 
 std::ostream& operator<<(std::ostream& ostr,
                          const LinearExpression& expression) {

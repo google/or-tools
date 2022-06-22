@@ -197,28 +197,6 @@ absl::StatusOr<ModelUpdateProto> ReadModelUpdate(
       absl::StrCat("invalid format in ReadModelUpdate(): ", format));
 }
 
-// Prints the model.
-void PrintModel(const Model& model) {
-  if (model.is_maximize()) {
-    std::cout << "max";
-  } else {
-    std::cout << "min";
-  }
-  std::cout << ' ' << model.ObjectiveAsQuadraticExpression() << std::endl;
-
-  std::cout << "variables:" << std::endl;
-  for (const Variable v : model.SortedVariables()) {
-    std::cout << ' ' << v.lower_bound() << " ≤ " << v << " ≤ "
-              << v.upper_bound() << std::endl;
-  }
-
-  std::cout << "constraints:" << std::endl;
-  for (const LinearConstraint c : model.SortedLinearConstraints()) {
-    std::cout << ' ' << c << ": " << model.AsBoundedLinearExpression(c)
-              << std::endl;
-  }
-}
-
 // Prints the summary of the solve result.
 absl::Status PrintSummary(const SolveResult& result) {
   std::cout << "Solve finished:\n"
@@ -306,7 +284,8 @@ absl::Status RunSolver() {
 
   // Optionally prints the problem.
   if (absl::GetFlag(FLAGS_print_model)) {
-    PrintModel(*model);
+    std::cout << model;
+    std::cout.flush();
   }
 
   // Solve the problem.

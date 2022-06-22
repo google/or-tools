@@ -455,6 +455,11 @@ class Model {
   // it.
   ModelStorage* storage() { return storage_.get(); }
 
+  // Prints the objective, the constraints and the variables of the model over
+  // several lines in a human-readable way. Includes a new line at the end of
+  // the model.
+  friend std::ostream& operator<<(std::ostream& ostr, const Model& model);
+
  private:
   // Asserts (with CHECK) that the input pointer is either nullptr or that it
   // points to the same model as storage_.

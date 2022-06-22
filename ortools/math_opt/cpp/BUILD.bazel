@@ -66,6 +66,7 @@ cc_library(
     srcs = ["model.cc"],
     hdrs = ["model.h"],
     deps = [
+        ":formatters",
         ":key_types",
         ":linear_constraint",
         ":update_tracker",
@@ -104,6 +105,7 @@ cc_library(
     srcs = ["variable_and_expressions.cc"],
     hdrs = ["variable_and_expressions.h"],
     deps = [
+        ":formatters",
         ":id_map",
         ":key_types",
         "//ortools/base",
@@ -389,4 +391,9 @@ cc_library(
         ":model",
         "//ortools/math_opt/storage:model_storage",
     ],
+)
+
+cc_library(
+    name = "formatters",
+    hdrs = ["formatters.h"],
 )

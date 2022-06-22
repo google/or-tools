@@ -14,22 +14,27 @@
 #include "ortools/math_opt/cpp/model.h"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {
+
+constexpr double kInf = std::numeric_limits<double>::infinity();
 
 absl::StatusOr<std::unique_ptr<Model>> Model::FromModelProto(
     const ModelProto& model_proto) {
@@ -218,6 +223,48 @@ std::unique_ptr<UpdateTracker> Model::NewUpdateTracker() {
 
 absl::Status Model::ApplyUpdateProto(const ModelUpdateProto& update_proto) {
   return storage()->ApplyUpdateProto(update_proto);
+}
+
+std::ostream& operator<<(std::ostream& ostr, const Model& model) {
+  ostr << "Model";
+  if (!model.name().empty()) ostr << " " << model.name();
+  ostr << ":\n";
+
+  ostr << " Objective:\n"
+       << (model.is_maximize() ? "  maximize " : "  minimize ")
+       << model.ObjectiveAsQuadraticExpression() << "\n";
+
+  ostr << " Linear constraints:\n";
+  for (const LinearConstraint constraint : model.SortedLinearConstraints()) {
+    ostr << "  " << constraint << ": "
+         << model.AsBoundedLinearExpression(constraint) << "\n";
+  }
+
+  ostr << " Variables:\n";
+  for (const Variable v : model.SortedVariables()) {
+    ostr << "  " << v;
+    if (v.is_integer()) {
+      if (v.lower_bound() == 0 && v.upper_bound() == 1) {
+        ostr << " (binary)\n";
+        continue;
+      }
+      ostr << " (integer)";
+    }
+    ostr << " in ";
+    if (v.lower_bound() == -kInf) {
+      ostr << "(-∞";
+    } else {
+      ostr << "[" << v.lower_bound();
+    }
+    ostr << ", ";
+    if (v.upper_bound() == kInf) {
+      ostr << "+∞)";
+    } else {
+      ostr << v.upper_bound() << "]";
+    }
+    ostr << "\n";
+  }
+  return ostr;
 }
 
 }  // namespace math_opt
