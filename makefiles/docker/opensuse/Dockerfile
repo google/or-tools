@@ -4,7 +4,8 @@ FROM opensuse/tumbleweed AS base
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper refresh \
-&& zypper install -y git gcc gcc-c++ cmake lsb-release \
+&& zypper install -y git gcc gcc-c++ cmake \
+ lsb-release util-linux gzip tar \
 && zypper clean -a
 ENV CC=gcc CXX=g++
 ENTRYPOINT ["/usr/bin/bash", "-c"]
