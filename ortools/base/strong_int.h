@@ -355,7 +355,6 @@ STRONG_INT_TYPE_COMPARISON_OP(>);   // NOLINT
 STRONG_INT_TYPE_COMPARISON_OP(>=);  // NOLINT
 #undef STRONG_INT_TYPE_COMPARISON_OP
 
-
 // Support for-range loops. Enables easier looping over ranges of StrongInts,
 // especially looping over sub-ranges of StrongVectors.
 template <typename IntType>
@@ -414,7 +413,6 @@ template <typename IntType>
 StrongIntRange<IntType> MakeStrongIntRange(IntType begin, IntType end) {
   return StrongIntRange<IntType>(begin, end);
 }
-
 }  // namespace util_intops
 
 // Allows it to be used as a key to hashable containers.
