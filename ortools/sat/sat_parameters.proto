@@ -24,7 +24,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 220
+// NEXT TAG: 221
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -586,7 +586,7 @@ message SatParameters {
   // A convenient way to add more workers types.
   // Note that these will be added at the end of the list, so this is only
   // useful if you run with many workers.
-  repeated string append_subsolvers = 219;
+  repeated string extra_subsolvers = 219;
 
   // Rather than fully specifying subsolvers, it is often convenient to just
   // remove the ones that are not useful on a given problem.
@@ -607,7 +607,7 @@ message SatParameters {
   optional bool interleave_search = 136 [default = false];
   optional int32 interleave_batch_size = 134 [default = 1];
 
-    // Allows objective sharing between workers.
+  // Allows objective sharing between workers.
   optional bool share_objective_bounds = 113 [default = true];
 
   // Allows sharing of the bounds of modified variables at level 0.
@@ -720,7 +720,12 @@ message SatParameters {
 
   // If true, detect and create constraint for integer variable that are "after"
   // a set of intervals in the same cumulative constraint.
+  //
+  // Experimental: by default we just use "direct" precedences. If
+  // exploit_all_precedences is true, we explore the full precedence graph. This
+  // assumes we have a DAG otherwise it fails.
   optional bool use_hard_precedences_in_cumulative = 215 [default = false];
+  optional bool exploit_all_precedences = 220 [default = false];
 
   // When this is true, the cumulative constraint is reinforced with propagators
   // from the disjunctive constraint to improve the inference on a set of tasks

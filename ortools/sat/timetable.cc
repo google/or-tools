@@ -299,12 +299,21 @@ TimeTablingPerTask::TimeTablingPerTask(AffineExpression capacity,
   profile_tasks_.resize(num_tasks_);
   positions_in_profile_tasks_.resize(num_tasks_);
 
-  // Reversible bounds and starting height of the profile.
-  starting_profile_height_ = IntegerValue(0);
-
+  initial_max_demand_ = IntegerValue(0);
+  const bool capa_is_fixed = integer_trail_->IsFixed(capacity_);
+  const IntegerValue capa_min = integer_trail_->LowerBound(capacity_);
   for (int t = 0; t < num_tasks_; ++t) {
     profile_tasks_[t] = t;
     positions_in_profile_tasks_[t] = t;
+
+    if (capa_is_fixed && demands_->DemandMin(t) >= capa_min) {
+      // TODO(user): This usually correspond to a makespan interval.
+      // We should just detect and propagate it separately as it would result
+      // in a faster propagation.
+      has_demand_equal_to_capacity_ = true;
+      continue;
+    }
+    initial_max_demand_ = std::max(initial_max_demand_, demands_->DemandMax(t));
   }
 }
 
@@ -325,10 +334,6 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
 // Note that we relly on being called again to reach a fixed point.
 bool TimeTablingPerTask::Propagate() {
   // This can fail if the profile exceeds the resource capacity.
-  //
-  // TODO(user): If we forget the "makespan" task, we don't really care about
-  // any profile rectangle that is low enough to not propagate anything. We
-  // could exploit that for a faster algo maybe.
   if (!BuildProfile()) return false;
 
   // Update the minimum start times.
@@ -374,20 +379,23 @@ bool TimeTablingPerTask::BuildProfile() {
   profile_max_height_ = 0;
   IntegerValue max_height_start = kMinIntegerValue;
 
-  // Add a sentinel to simplify the algorithm.
-  profile_.emplace_back(kMinIntegerValue, IntegerValue(0));
-
   // Start and height of the currently built profile rectangle.
   IntegerValue current_start = kMinIntegerValue;
-  IntegerValue current_height = starting_profile_height_;
+  IntegerValue height_at_start = IntegerValue(0);
+  IntegerValue current_height = IntegerValue(0);
+
+  // Any profile height <= relevant_height is not really relevant since nothing
+  // can be pushed. So we artificially put zero or one (if there is a makespan
+  // interval) in the profile instead. This allow to have a lot less
+  // "rectangles" in a profile for exactly the same propagation!
+  const IntegerValue relevant_height =
+      integer_trail_->UpperBound(capacity_) - initial_max_demand_;
 
   // Next start/end of the compulsory parts to be processed. Note that only the
   // task for which IsInProfile() is true must be considered.
   int next_start = num_tasks_ - 1;
   int next_end = 0;
   while (next_end < num_tasks_) {
-    const IntegerValue old_height = current_height;
-
     IntegerValue time = by_end_min[next_end].time;
     if (next_start >= 0) {
       time = std::min(time, by_decreasing_start_max[next_start].time);
@@ -408,14 +416,21 @@ bool TimeTablingPerTask::BuildProfile() {
       ++next_end;
     }
 
+    if (current_height > profile_max_height_) {
+      profile_max_height_ = current_height;
+      max_height_start = time;
+    }
+
+    IntegerValue effective_height = current_height;
+    if (effective_height > 0 && effective_height <= relevant_height) {
+      effective_height = IntegerValue(has_demand_equal_to_capacity_ ? 1 : 0);
+    }
+
     // Insert a new profile rectangle if any.
-    if (current_height != old_height) {
-      profile_.emplace_back(current_start, old_height);
-      if (current_height > profile_max_height_) {
-        profile_max_height_ = current_height;
-        max_height_start = time;
-      }
+    if (effective_height != height_at_start) {
+      profile_.emplace_back(current_start, height_at_start);
       current_start = time;
+      height_at_start = effective_height;
     }
   }
 
@@ -432,32 +447,41 @@ bool TimeTablingPerTask::BuildProfile() {
 
 void TimeTablingPerTask::ReverseProfile() {
   // We keep the sentinels inchanged.
-  for (int i = 1; i + 1 < profile_.size(); ++i) {
-    profile_[i].start = -profile_[i + 1].start;
-  }
   std::reverse(profile_.begin() + 1, profile_.end() - 1);
+  for (int i = 1; i + 1 < profile_.size(); ++i) {
+    profile_[i].start = -profile_[i].start;
+    profile_[i].height = profile_[i + 1].height;
+  }
 }
 
 bool TimeTablingPerTask::SweepAllTasks() {
-  // Tasks with a lower or equal demand will not be pushed.
-  const IntegerValue demand_threshold = CapacityMax() - profile_max_height_;
-
-  // TODO(user): On some problem, a big chunk of the time is spend just checking
-  // these conditions below because it requires indirect memory access to fetch
-  // the demand/size/presence/start ...
-  int profile_index = 0;
+  // We can start at one since the first sentinel can always be skipped.
+  int profile_index = 1;
+  const IntegerValue capa_max = CapacityMax();
   for (const auto& [t, time] : helper_->TaskByIncreasingStartMin()) {
+    // TODO(user): On some problem, a big chunk of the time is spend just
+    // checking these conditions below because it requires indirect memory
+    // access to fetch the demand/size/presence/start ...
     if (helper_->IsAbsent(t)) continue;
     if (helper_->SizeMin(t) == 0) continue;
-    if (demands_->DemandMin(t) <= demand_threshold) continue;
 
-    if (!SweepTask(t, time, &profile_index)) return false;
+    // A profile rectangle is in conflict with the task if its height exceeds
+    // conflict_height.
+    const IntegerValue conflict_height = capa_max - demands_->DemandMin(t);
+
+    // TODO(user): This is never true when we have a makespan interval with
+    // demand equal to the capacity. Find a simple way to detect when there is
+    // no need to scan a task.
+    if (conflict_height >= profile_max_height_) continue;
+
+    if (!SweepTask(t, time, conflict_height, &profile_index)) return false;
   }
 
   return true;
 }
 
 bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
+                                   IntegerValue conflict_height,
                                    int* profile_index) {
   const IntegerValue start_max = helper_->StartMax(task_id);
   const IntegerValue initial_end_min = helper_->EndMin(task_id);
@@ -469,11 +493,6 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
     ++*profile_index;
   }
   int rec_id = *profile_index - 1;
-
-  // A profile rectangle is in conflict with the task if its height exceeds
-  // conflict_height.
-  const IntegerValue conflict_height =
-      CapacityMax() - demands_->DemandMin(task_id);
 
   // Last time point during which task_id was in conflict with a profile
   // rectangle before being pushed.

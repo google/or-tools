@@ -1253,12 +1253,13 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     if (p.use_free_search) {
       m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       m.parameters.set_interleave_search(true);
-      if (m.proto.has_objective()) {
+      if (fz_model.objective() != nullptr) {
         m.parameters.add_subsolvers("default_lp");
         m.parameters.add_subsolvers(
             m.proto.search_strategy().empty() ? "quick_restart" : "fixed");
         m.parameters.add_subsolvers("core_or_no_lp"),
-        m.parameters.add_subsolvers("max_lp");
+            m.parameters.add_subsolvers("max_lp");
+
       } else {
         m.parameters.add_subsolvers("default_lp");
         m.parameters.add_subsolvers(

@@ -123,6 +123,36 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
                            std::vector<Literal>* literal_reason,
                            std::vector<IntegerLiteral>* integer_reason) const;
 
+  // Similar to ComputePrecedences() but this uses a "slow algorithm". It is not
+  // meant to be called often and explore the full precedences graph.
+  //
+  // If call_compute_precedence is true, this just wrap ComputePrecedences() and
+  // convert its output to this function format, which is less efficient but
+  // more convenient to use.
+  //
+  // Important: This currently assumes the full precedence graph form a DAG.
+  // Otherwise it will just fail and returns no precedence. By contrast
+  // ComputePrecedences() still work.
+  //
+  // TODO(user): Put some work limit in place, as this can be slow. Complexity
+  // is in O(vars.size()) * num_arcs.
+  //
+  // TODO(user): Since we don't need ALL precedences, we could just work on a
+  // sub-DAG of the full precedence graph instead of aborting.
+  //
+  // TODO(user): Many relations can be redundant. Filter them.
+  //
+  // Returns a bunch of precedences relations:
+  // An IntegerVariable >= to vars[indices[i]] + offset[i], for i in indices.
+  struct FullIntegerPrecedence {
+    IntegerVariable var;
+    std::vector<int> indices;
+    std::vector<IntegerValue> offsets;
+  };
+  void ComputeFullPrecedences(bool call_compute_precedences,
+                              const std::vector<IntegerVariable>& vars,
+                              std::vector<FullIntegerPrecedence>* output);
+
   // Advanced usage. To be called once all the constraints have been added to
   // the model. This will loop over all "node" in this class, and if one of its
   // optional incoming arcs must be chosen, it will add a corresponding

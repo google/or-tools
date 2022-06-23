@@ -17,6 +17,7 @@
 #include <functional>
 #include <vector>
 
+#include "absl/strings/str_join.h",
 #include "ortools/base/logging.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/disjunctive.h"
@@ -166,10 +167,6 @@ std::function<void(Model*)> Cumulative(
     //
     // TODO(user): There is a bit of code duplication with the disjunctive
     // precedence propagator. Abstract more?
-    //
-    // TODO(user): We compute this only once, so we should explore the full
-    // precedence graph, not just task in direct precedence. Make sure not to
-    // create to many such constraints though.
     if (parameters.use_hard_precedences_in_cumulative()) {
       // The CumulativeIsAfterSubsetConstraint() always reset the helper to the
       // forward time direction, so it is important to also precompute the
@@ -182,7 +179,6 @@ std::function<void(Model*)> Cumulative(
 
       std::vector<IntegerVariable> index_to_end_vars;
       std::vector<int> index_to_task;
-      std::vector<PrecedencesPropagator::IntegerPrecedences> before;
       index_to_end_vars.clear();
       for (int t = 0; t < helper->NumTasks(); ++t) {
         const AffineExpression& end_exp = helper->Ends()[t];
@@ -192,18 +188,32 @@ std::function<void(Model*)> Cumulative(
         index_to_end_vars.push_back(end_exp.var);
         index_to_task.push_back(t);
       }
-      model->GetOrCreate<PrecedencesPropagator>()->ComputePrecedences(
-          index_to_end_vars, &before);
-      const int size = before.size();
-      for (int i = 0; i < size;) {
-        const IntegerVariable var = before[i].var;
-        DCHECK_NE(var, kNoIntegerVariable);
 
-        IntegerValue min_offset = kMaxIntegerValue;
+      // TODO(user): This can lead to many constraints. By analyzing a bit more
+      // the precedences, we could restrict that. In particular for cases were
+      // the cumulative is always (bunch of tasks B), T, (bunch of tasks A) and
+      // task T always in the middle, we never need to explicit list the
+      // precedence of a task in B with a task in A.
+      //
+      // TODO(user): If more than one variable are after the same set of
+      // intervals, we should regroup them in a single constraint rather than
+      // having two independent constraint doing the same propagation.
+      std::vector<PrecedencesPropagator::FullIntegerPrecedence>
+          full_precedences;
+      model->GetOrCreate<PrecedencesPropagator>()->ComputeFullPrecedences(
+          !parameters.exploit_all_precedences(), index_to_end_vars,
+          &full_precedences);
+      for (const PrecedencesPropagator::FullIntegerPrecedence& data :
+           full_precedences) {
+        const int size = data.indices.size();
+        if (size <= 1) continue;
+
+        const IntegerVariable var = data.var;
         std::vector<int> subtasks;
+        std::vector<IntegerValue> offsets;
         IntegerValue sum_of_demand_max(0);
-        for (; i < size && before[i].var == var; ++i) {
-          const int t = index_to_task[before[i].index];
+        for (int i = 0; i < size; ++i) {
+          const int t = index_to_task[data.indices[i]];
           subtasks.push_back(t);
           sum_of_demand_max += integer_trail->LevelZeroUpperBound(demands[t]);
 
@@ -211,17 +221,14 @@ std::function<void(Model*)> Cumulative(
           // var >= (end_exp.var + end_exp.cte) + (offset - end_exp.cte)
           // var >= task end + new_offset.
           const AffineExpression& end_exp = helper->Ends()[t];
-          min_offset =
-              std::min(min_offset, before[i].offset - end_exp.constant);
+          offsets.push_back(data.offsets[i] - end_exp.constant);
         }
-
-        // There is no point adding this if all tasks can fit at the same time
-        // in the minimum capacity.
-        if (subtasks.size() > 1 &&
-            sum_of_demand_max > integer_trail->LevelZeroLowerBound(capacity)) {
+        if (sum_of_demand_max > integer_trail->LevelZeroLowerBound(capacity)) {
+          VLOG(2) << "Cumulative precedence constraint! var= " << var
+                  << " #task: " << absl::StrJoin(subtasks, ",");
           CumulativeIsAfterSubsetConstraint* constraint =
-              new CumulativeIsAfterSubsetConstraint(var, min_offset, capacity,
-                                                    subtasks, helper,
+              new CumulativeIsAfterSubsetConstraint(var, capacity, subtasks,
+                                                    offsets, helper,
                                                     demands_helper, model);
           constraint->RegisterWith(watcher);
           model->TakeOwnership(constraint);

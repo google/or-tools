@@ -78,9 +78,10 @@ class CumulativeEnergyConstraint : public PropagatorInterface {
 // the level zero bound on the large cumulative instances.
 class CumulativeIsAfterSubsetConstraint : public PropagatorInterface {
  public:
-  CumulativeIsAfterSubsetConstraint(IntegerVariable var, IntegerValue offset,
+  CumulativeIsAfterSubsetConstraint(IntegerVariable var,
                                     AffineExpression capacity,
-                                    const std::vector<int> subtasks,
+                                    const std::vector<int>& subtasks,
+                                    const std::vector<IntegerValue>& offsets,
                                     SchedulingConstraintHelper* helper,
                                     SchedulingDemandHelper* demands,
                                     Model* model);
@@ -90,12 +91,12 @@ class CumulativeIsAfterSubsetConstraint : public PropagatorInterface {
 
  private:
   const IntegerVariable var_to_push_;
-  const IntegerValue offset_;
   const AffineExpression capacity_;
   const std::vector<int> subtasks_;
 
   // Computed at construction time, this is const.
   std::vector<bool> is_in_subtasks_;
+  std::vector<IntegerValue> task_offsets_;
 
   // Temporary data used by the algorithm.
   MaxBoundedSubsetSum dp_;

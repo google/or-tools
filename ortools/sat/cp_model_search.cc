@@ -505,8 +505,8 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     }
     strategies["probing"] = new_params;
 
-    new_params.set_linearization_level(1);
-    strategies["probing_default_lp"] = new_params;
+    new_params.set_linearization_level(0);
+    strategies["probing_no_lp"] = new_params;
 
     new_params.set_linearization_level(2);
     strategies["probing_max_lp"] = new_params;
@@ -600,6 +600,8 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 #endif  // !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
   } else {
     for (const std::string& name : base_params.subsolvers()) {
+      // Hack for flatzinc. At the time of parameter setting, the objective is
+      // not expanded. So we do not know if core is applicable or not.
       if (name == "core_or_no_lp") {
         if (!cp_model.has_objective() ||
             cp_model.objective().vars_size() <= 1) {
@@ -614,7 +616,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   }
 
   // Add subsolvers.
-  for (const std::string& name : base_params.append_subsolvers()) {
+  for (const std::string& name : base_params.extra_subsolvers()) {
     names.push_back(name);
   }
 

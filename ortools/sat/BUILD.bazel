@@ -796,6 +796,7 @@ cc_library(
         "//ortools/base:cleanup",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
+        "//ortools/graph:topologicalsorter",
         "//ortools/util:bitset",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:btree",

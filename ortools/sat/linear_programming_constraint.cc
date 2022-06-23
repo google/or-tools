@@ -1520,6 +1520,7 @@ bool LinearProgrammingConstraint::Propagate() {
       // data from the current LP.
       //
       // TODO(user): Refactor so that they are just normal cut generators?
+      const int level = trail_->CurrentDecisionLevel();
       if (trail_->CurrentDecisionLevel() == 0) {
         if (parameters_.add_objective_cut()) AddObjectiveCut();
         if (parameters_.add_mir_cuts()) AddMirCuts();
@@ -1528,10 +1529,9 @@ bool LinearProgrammingConstraint::Propagate() {
       }
 
       // Try to add cuts.
-      if (!cut_generators_.empty() &&
-          (trail_->CurrentDecisionLevel() == 0 ||
-           !parameters_.only_add_cuts_at_level_zero())) {
+      if (level == 0 || !parameters_.only_add_cuts_at_level_zero()) {
         for (const CutGenerator& generator : cut_generators_) {
+          if (level > 0 && generator.only_run_at_level_zero) continue;
           if (!generator.generate_cuts(expanded_lp_solution_,
                                        &constraint_manager_)) {
             return false;

@@ -28,7 +28,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"

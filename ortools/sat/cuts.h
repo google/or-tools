@@ -45,6 +45,7 @@ namespace sat {
 //   their negation.
 // - Only add cuts in term of the same variables or their negation.
 struct CutGenerator {
+  bool only_run_at_level_zero = false;
   std::vector<IntegerVariable> vars;
   std::function<bool(
       const absl::StrongVector<IntegerVariable, double>& lp_values,

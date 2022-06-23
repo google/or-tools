@@ -54,6 +54,7 @@ CumulativeEnergyConstraint::CumulativeEnergyConstraint(
 void CumulativeEnergyConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_->WatchAllTasks(id, watcher);
+  watcher->SetPropagatorPriority(id, 2);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
@@ -215,25 +216,29 @@ bool CumulativeEnergyConstraint::Propagate() {
 }
 
 CumulativeIsAfterSubsetConstraint::CumulativeIsAfterSubsetConstraint(
-    IntegerVariable var, IntegerValue offset, AffineExpression capacity,
-    const std::vector<int> subtasks, SchedulingConstraintHelper* helper,
-    SchedulingDemandHelper* demands, Model* model)
+    IntegerVariable var, AffineExpression capacity,
+    const std::vector<int>& subtasks, const std::vector<IntegerValue>& offsets,
+    SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands,
+    Model* model)
     : var_to_push_(var),
-      offset_(offset),
       capacity_(capacity),
       subtasks_(subtasks),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       helper_(helper),
       demands_(demands) {
   is_in_subtasks_.assign(helper->NumTasks(), false);
-  for (const int t : subtasks) is_in_subtasks_[t] = true;
+  task_offsets_.assign(helper->NumTasks(), 0);
+  for (int i = 0; i < subtasks.size(); ++i) {
+    is_in_subtasks_[subtasks[i]] = true;
+    task_offsets_[subtasks[i]] = offsets[i];
+  }
 }
 
 bool CumulativeIsAfterSubsetConstraint::Propagate() {
   if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
 
   IntegerValue best_time = kMaxIntegerValue;
-  IntegerValue best_end_min = kMinIntegerValue;
+  IntegerValue best_bound = kMinIntegerValue;
 
   IntegerValue previous_time = kMaxIntegerValue;
   IntegerValue energy_after_time(0);
@@ -248,6 +253,7 @@ bool CumulativeIsAfterSubsetConstraint::Propagate() {
   // We consider the energy after a given time.
   // From that we derive a bound on the end_min of the subtasks.
   const auto& profile = helper_->GetEnergyProfile();
+  IntegerValue min_offset = kMaxIntegerValue;
   for (int i = profile.size() - 1; i >= 0;) {
     // Skip tasks not relevant for this propagator.
     {
@@ -263,19 +269,25 @@ bool CumulativeIsAfterSubsetConstraint::Propagate() {
       energy_after_time += profile_height * (previous_time - time);
     }
     previous_time = time;
+
+    // Any newly introduced tasks will only change the reachable capa max or
+    // the min_offset on the next time point.
     const IntegerValue saved_capa_max = dp_.CurrentMax();
+    const IntegerValue saved_min_offset = min_offset;
 
     for (; i >= 0 && profile[i].time == time; --i) {
       // Skip tasks not relevant for this propagator.
       const int t = profile[i].task;
       if (!helper_->IsPresent(t) || !is_in_subtasks_[t]) continue;
 
+      min_offset = std::min(min_offset, task_offsets_[t]);
       const IntegerValue demand_min = demands_->DemandMin(t);
-      const IntegerValue delta = profile[i].is_first ? -demand_min : demand_min;
-      profile_height += delta;
-      if (delta > 0) {
+      if (profile[i].is_first) {
+        profile_height -= demand_min;
+      } else {
+        profile_height += demand_min;
         if (demands_->Demands()[t].IsConstant()) {
-          dp_.Add(delta.value());
+          dp_.Add(demand_min.value());
         } else {
           dp_.Add(capacity_max.value());  // Abort DP.
         }
@@ -291,17 +303,18 @@ bool CumulativeIsAfterSubsetConstraint::Propagate() {
     // last task, and the reason will be non-optimal, fix.
     if (energy_after_time == 0) continue;
     DCHECK_GT(saved_capa_max, 0);
-    const IntegerValue end_min =
-        time + CeilRatio(energy_after_time, saved_capa_max);
-    if (end_min > best_end_min) {
+    DCHECK_LT(saved_min_offset, kMaxIntegerValue);
+    const IntegerValue end_min_with_offset =
+        time + CeilRatio(energy_after_time, saved_capa_max) + saved_min_offset;
+    if (end_min_with_offset > best_bound) {
       best_time = time;
-      best_end_min = end_min;
+      best_bound = end_min_with_offset;
     }
   }
   DCHECK_EQ(profile_height, 0);
 
-  if (best_end_min == kMinIntegerValue) return true;
-  if (best_end_min + offset_ > integer_trail_->LowerBound(var_to_push_)) {
+  if (best_bound == kMinIntegerValue) return true;
+  if (best_bound > integer_trail_->LowerBound(var_to_push_)) {
     // Compute the reason.
     // It is just the reason for the energy after time.
     helper_->ClearReason();
@@ -329,8 +342,8 @@ bool CumulativeIsAfterSubsetConstraint::Propagate() {
     }
 
     // Propagate.
-    if (!helper_->PushIntegerLiteral(IntegerLiteral::GreaterOrEqual(
-            var_to_push_, best_end_min + offset_))) {
+    if (!helper_->PushIntegerLiteral(
+            IntegerLiteral::GreaterOrEqual(var_to_push_, best_bound))) {
       return false;
     }
   }
@@ -342,6 +355,7 @@ void CumulativeIsAfterSubsetConstraint::RegisterWith(
     GenericLiteralWatcher* watcher) {
   helper_->SetTimeDirection(true);
   const int id = watcher->Register(this);
+  watcher->SetPropagatorPriority(id, 2);
   watcher->WatchUpperBound(capacity_, id);
   for (const int t : subtasks_) {
     watcher->WatchLowerBound(helper_->Starts()[t], id);

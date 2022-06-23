@@ -150,7 +150,7 @@ class TimeTablingPerTask : public PropagatorInterface {
   // processed by increasing start_min so that the starting profile_index only
   // increase.
   bool SweepTask(int task_id, IntegerValue initial_start_min,
-                 int* profile_index);
+                 IntegerValue conflict_height, int* profile_index);
 
   // Updates the starting time of task_id to right and explain it. The reason is
   // all the mandatory parts contained in [left, right).
@@ -193,10 +193,6 @@ class TimeTablingPerTask : public PropagatorInterface {
   std::vector<ProfileRectangle> profile_;
   IntegerValue profile_max_height_;
 
-  // Reversible starting height of the reduced profile. This corresponds to the
-  // height of the leftmost profile rectangle that can be used for propagation.
-  IntegerValue starting_profile_height_;
-
   // Reversible set (with random access) of tasks to consider for building the
   // profile. The set contains the tasks in the [0, num_profile_tasks_) prefix
   // of profile_tasks_. The positions of a task in profile_tasks_ is contained
@@ -204,6 +200,11 @@ class TimeTablingPerTask : public PropagatorInterface {
   std::vector<int> profile_tasks_;
   std::vector<int> positions_in_profile_tasks_;
   int num_profile_tasks_;
+
+  // Statically computed.
+  // This allow to simplify the profile for common usage.
+  bool has_demand_equal_to_capacity_ = false;
+  IntegerValue initial_max_demand_;
 
   DISALLOW_COPY_AND_ASSIGN(TimeTablingPerTask);
 };

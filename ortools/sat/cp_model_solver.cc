@@ -32,6 +32,7 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/text_format.h"
 #include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
