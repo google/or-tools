@@ -36,6 +36,7 @@ help:
 	@echo -e "\t${BOLD}save_<prestage>${RESET}: Save <prestage> docker images for ALL DISTROS."
 	@echo -e "\t${BOLD}save_<distro>_<prestage>${RESET}: Save the <prestage> docker image for a specific distro."
 	@echo -e "\t${BOLD}sh_<distro>_<prestage>${RESET}: run a container using the <prestage> docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_<distro>_<prestage>${RESET}: Remove the <prestage> docker image (and the save archive if any) for a specific distro."
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}: build <stage> docker images for ALL DISTROS and ALL LANGUAGES."
 	@echo -e "\t${BOLD}<distro>_<stage>${RESET}: build <stage> docker images for a specific distro for ALL LANGUAGES."
@@ -46,8 +47,9 @@ help:
 	@echo -e "\t${BOLD}save_<lang>_<stage>${RESET}: Save <stage> docker images for ALL DISTRO for a specific language."
 	@echo -e "\t${BOLD}save_<distro>_<lang>_<stage>${RESET}: Save the <stage> docker image for a specific distro for a specific language."
 	@echo -e "\t${BOLD}sh_<distro>_<lang>_<stage>${RESET}: run a container using the <stage> docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_<distro>_<lang>_<prestage>${RESET}: Remove the <stage> docker image (and the save archive if any) for a specific distro."
 	@echo
-	@echo -e "\t${BOLD}<distro>${RESET}:"
+	@echo -e "\tWith ${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine${RESET} (edge)"
 	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
 	@echo -e "\t\t${BOLD}centos${RESET} (latest)"
@@ -56,26 +58,24 @@ help:
 	@echo -e "\t\t${BOLD}opensuse${RESET} (tumbleweed)"
 	@echo -e "\t\t${BOLD}ubuntu${RESET} (rolling)"
 	@echo
-	@echo -e "\t${BOLD}<prestage>${RESET}:"
+	@echo -e "\tWith ${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}base${RESET} (need by cpp)"
 	@echo -e "\t\t${BOLD}swig${RESET} (need by .Net, Java and Python)"
-	@echo -e "\te.g. 'make alpine_base'"
+	@echo -e "\t\t${BOLD}<lang>_env${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_devel${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_build${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_test${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_package${RESET}"
 	@echo
-	@echo -e "\t${BOLD}<lang>${RESET}:"
+	@echo -e "\tWith ${BOLD}<lang>${RESET}:"
 	@echo -e "\t\t${BOLD}cpp${RESET} (C++)"
 	@echo -e "\t\t${BOLD}python${RESET} (Python >= 3)"
 	@echo -e "\t\t${BOLD}java${RESET} (Java >= 8)"
 	@echo -e "\t\t${BOLD}dotnet${RESET} (.Net Core >= 2.1)"
-	@echo -e "\te.g. 'make alpine_cpp_devel'"
 	@echo
-	@echo -e "\t${BOLD}<stage>${RESET}:"
-	@echo -e "\t\t${BOLD}env${RESET}"
-	@echo -e "\t\t${BOLD}devel${RESET}"
-	@echo -e "\t\t${BOLD}build${RESET}"
-	@echo -e "\t\t${BOLD}test${RESET}"
-	@echo -e "\t\t${BOLD}package${RESET}"
+	@echo -e "\te.g. 'make ubuntu_base'"
 	@echo -e "\te.g. 'make alpine_cpp_build'"
-	@echo
+	@echo -e "\te.g. 'make archlinux_cpp_build'"
 	@echo
 	@echo -e "\t${BOLD}clean${RESET}: Remove cache and docker image."
 	@echo -e "\t${BOLD}clean_<distro>${RESET}: Remove cache and docker image for the specified distro."
@@ -88,7 +88,7 @@ help:
 # Need to add cmd_distro to PHONY otherwise target are ignored since they do not
 # contain recipe (using FORCE do not work here)
 .PHONY: all
-all: devel
+all: build
 
 # Delete all implicit rules to speed up makefile
 MAKEFLAGS += --no-builtin-rules

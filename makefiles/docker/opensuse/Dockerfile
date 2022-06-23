@@ -1,13 +1,12 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/r/opensuse/leap
-FROM opensuse/leap AS base
+FROM opensuse/tumbleweed AS base
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper refresh \
-&& zypper install -y git gcc11 gcc11-c++ cmake \
- wget which lsb-release util-linux pkgconfig autoconf libtool gzip zlib-devel \
+&& zypper install -y git gcc gcc-c++ cmake lsb-release \
 && zypper clean -a
-ENV CC=gcc-11 CXX=g++-11
+ENV CC=gcc CXX=g++
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD [ "/usr/bin/bash" ]
 
