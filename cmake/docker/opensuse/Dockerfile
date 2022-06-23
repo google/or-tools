@@ -7,6 +7,7 @@ RUN zypper refresh \
 && zypper install -y git gcc gcc-c++ cmake \
 && zypper clean -a
 ENV CC=gcc CXX=g++
+ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD [ "/usr/bin/bash" ]
 
 FROM base AS swig

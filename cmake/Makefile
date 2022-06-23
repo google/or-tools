@@ -77,6 +77,7 @@ help:
 	@echo -e "\t\t${BOLD}dotnet${RESET} (.Net Core >= 2.1)"
 	@echo
 	@echo -e "\te.g. 'make ubuntu_base'"
+	@echo -e "\te.g. 'make alpine_cpp_build'"
 	@echo -e "\te.g. 'make archlinux_cpp_build'"
 	@echo
 	@echo -e "\t${BOLD}<vm>${RESET}: build <vm> vagrant machine for ALL LANGUAGES."
