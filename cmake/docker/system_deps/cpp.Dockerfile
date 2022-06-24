@@ -1,6 +1,4 @@
 FROM ortools/cmake:system_deps_base AS env
-RUN pacman -Syu --noconfirm abseil-cpp protobuf re2 eigen \
- coin-or-cbc coin-or-clp glpk
 RUN cmake -version
 
 FROM env AS devel
