@@ -31,7 +31,6 @@ This module defines the following variables:
 ::
 
 re2_FOUND          - True if re2 found.
-
 #]=======================================================================]
 include(FindPackageHandleStandardArgs)
 

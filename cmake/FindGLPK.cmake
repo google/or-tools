@@ -45,10 +45,13 @@ Hints
 A user may set ``GLPK_ROOT`` environment to a GLPK installation root to tell this
 module where to look.
 #]=======================================================================]
+include(FindPackageHandleStandardArgs)
+
 # first specifically look for the CMake version of GLPK
 find_package(GLPK QUIET NO_MODULE)
 # if we found the GLPK cmake package then we are done.
 if(GLPK_FOUND)
+  find_package_handle_standard_args(GLPK CONFIG_MODE)
   return()
 endif()
 

@@ -313,11 +313,39 @@ install(
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
   COMPONENT Devel)
+if(BUILD_LP_PARSER)
+  install(
+    FILES
+    "${PROJECT_SOURCE_DIR}/cmake/Findre2.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/modules"
+    COMPONENT Devel)
+endif()
 if(USE_COINOR)
   install(
     FILES
     "${PROJECT_SOURCE_DIR}/cmake/FindCbc.cmake"
     "${PROJECT_SOURCE_DIR}/cmake/FindClp.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/modules"
+    COMPONENT Devel)
+endif()
+if(USE_GLPK)
+  install(
+    FILES
+    "${PROJECT_SOURCE_DIR}/cmake/FindGLPK.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/modules"
+    COMPONENT Devel)
+endif()
+if(USE_PDLP)
+  install(
+    FILES
+    "${PROJECT_SOURCE_DIR}/cmake/FindEigen3.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/modules"
+    COMPONENT Devel)
+endif()
+if(USE_SCIP)
+  install(
+    FILES
+    "${PROJECT_SOURCE_DIR}/cmake/FindSCIP.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/modules"
     COMPONENT Devel)
 endif()

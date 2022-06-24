@@ -3,6 +3,7 @@
 set(@PACKAGE_PREFIX@_VERSION @PROJECT_VERSION@)
 
 @PACKAGE_INIT@
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
 
 include(CMakeFindDependencyMacro)
 # Kitware CMake provide a FindZLIB.cmake module
@@ -26,14 +27,14 @@ if(NOT Protobuf_FOUND AND NOT PROTOBUF_FOUND AND NOT TARGET protobuf::libprotobu
 endif()
 
 if(@BUILD_LP_PARSER@)
+  # re2 may not provide a CMake config files
   if(NOT re2_FOUND AND NOT TARGET re2::re2)
-    find_dependency(re2 REQUIRED ${CONFIG_FLAG})
+    find_dependency(re2 REQUIRED)
   endif()
 endif()
 
 if(@USE_COINOR@)
   # COIN-OR packages don't provide CMake config files
-  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
   if(NOT Clp_FOUND AND NOT TARGET Coin::ClpSolver)
     find_dependency(Clp REQUIRED)
   endif()
@@ -44,19 +45,19 @@ endif()
 
 if(@USE_GLPK@)
   if(NOT GLPK_FOUND AND NOT TARGET GLPK::GLPK)
-    find_dependency(GLPK REQUIRED ${CONFIG_FLAG})
+    find_dependency(GLPK REQUIRED)
   endif()
 endif()
 
 if(@USE_PDLP@)
   if(NOT Eigen3_FOUND AND NOT TARGET Eigen3::Eigen)
-    find_dependency(Eigen3 REQUIRED ${CONFIG_FLAG})
+    find_dependency(Eigen3 REQUIRED)
   endif()
 endif()
 
 if(@USE_SCIP@)
   if(NOT scip_FOUND AND NOT TARGET libscip)
-    find_dependency(scip REQUIRED ${CONFIG_FLAG})
+    find_dependency(scip REQUIRED)
   endif()
 endif()
 
