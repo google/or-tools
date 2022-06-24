@@ -376,6 +376,3 @@ install(
   "${PROJECT_BINARY_DIR}/glopConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/glop"
   COMPONENT Devel)
-
-# Build glop samples
-add_subdirectory(ortools/glop/samples)
