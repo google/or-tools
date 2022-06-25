@@ -1119,7 +1119,6 @@ void KnapsackDivideAndConquerSolver::SolveSubProblem(bool first_storage,
 int64_t KnapsackDivideAndConquerSolver::DivideAndConquer(int64_t capacity,
                                                          int start_item,
                                                          int end_item) {
-  const int64_t capacity_plus_1 = capacity_ + 1;
   int item_boundary = start_item + ((end_item - start_item) / 2);
 
   SolveSubProblem(true, capacity, start_item, item_boundary);
