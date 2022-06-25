@@ -1098,20 +1098,19 @@ void KnapsackDivideAndConquerSolver::SolveSubProblem(bool first_storage,
                                                      int64_t capacity,
                                                      int start_item,
                                                      int end_item) {
-  std::vector<int64_t>& computed_profits_storage_ =
+  std::vector<int64_t>& computed_profits_storage =
       (first_storage) ? computed_profits_storage1_ : computed_profits_storage2_;
   const int64_t capacity_plus_1 = capacity + 1;
-  std::fill_n(computed_profits_storage_.begin(), capacity_plus_1, 0LL);
+  std::fill_n(computed_profits_storage.begin(), capacity_plus_1, 0LL);
   for (int item_id = start_item; item_id < end_item; ++item_id) {
     const int64_t item_weight = weights_[item_id];
     const int64_t item_profit = profits_[item_id];
     for (int64_t used_capacity = capacity; used_capacity >= item_weight;
          --used_capacity) {
-      if (computed_profits_storage_[used_capacity - item_weight] + item_profit >
-          computed_profits_storage_[used_capacity]) {
-        computed_profits_storage_[used_capacity] =
-            computed_profits_storage_[used_capacity - item_weight] +
-            item_profit;
+      if (computed_profits_storage[used_capacity - item_weight] + item_profit >
+          computed_profits_storage[used_capacity]) {
+        computed_profits_storage[used_capacity] =
+            computed_profits_storage[used_capacity - item_weight] + item_profit;
       }
     }
   }
@@ -1121,36 +1120,35 @@ int64_t KnapsackDivideAndConquerSolver::DivideAndConquer(int64_t capacity,
                                                          int start_item,
                                                          int end_item) {
   const int64_t capacity_plus_1 = capacity_ + 1;
-  int item_boundary_ = start_item + ((end_item - start_item) / 2);
+  int item_boundary = start_item + ((end_item - start_item) / 2);
 
-  SolveSubProblem(true, capacity, start_item, item_boundary_);
-  SolveSubProblem(false, capacity, item_boundary_, end_item);
+  SolveSubProblem(true, capacity, start_item, item_boundary);
+  SolveSubProblem(false, capacity, item_boundary, end_item);
 
-  int64_t max_solution_ = 0, capacity1_ = 0, capacity2_ = 0;
+  int64_t max_solution = 0, capacity1 = 0, capacity2 = 0;
 
   for (int64_t capacity_id = 0; capacity_id <= capacity; capacity_id++) {
     if ((computed_profits_storage1_[capacity_id] +
-         computed_profits_storage2_[(capacity - capacity_id)]) >
-        max_solution_) {
-      capacity1_ = capacity_id;
-      capacity2_ = capacity - capacity_id;
-      max_solution_ = (computed_profits_storage1_[capacity_id] +
-                       computed_profits_storage2_[(capacity - capacity_id)]);
+         computed_profits_storage2_[(capacity - capacity_id)]) > max_solution) {
+      capacity1 = capacity_id;
+      capacity2 = capacity - capacity_id;
+      max_solution = (computed_profits_storage1_[capacity_id] +
+                      computed_profits_storage2_[(capacity - capacity_id)]);
     }
   }
 
-  if ((item_boundary_ - start_item) == 1) {
-    if (weights_[start_item] <= capacity1_) best_solution_[start_item] = true;
-  } else if ((item_boundary_ - start_item) > 1)
-    DivideAndConquer(capacity1_, start_item, item_boundary_);
+  if ((item_boundary - start_item) == 1) {
+    if (weights_[start_item] <= capacity1) best_solution_[start_item] = true;
+  } else if ((item_boundary - start_item) > 1)
+    DivideAndConquer(capacity1, start_item, item_boundary);
 
-  if ((end_item - item_boundary_) == 1) {
-    if (weights_[item_boundary_] <= capacity2_)
-      best_solution_[item_boundary_] = true;
-  } else if ((end_item - item_boundary_) > 1)
-    DivideAndConquer(capacity2_, item_boundary_, end_item);
+  if ((end_item - item_boundary) == 1) {
+    if (weights_[item_boundary] <= capacity2)
+      best_solution_[item_boundary] = true;
+  } else if ((end_item - item_boundary) > 1)
+    DivideAndConquer(capacity2, item_boundary, end_item);
 
-  return max_solution_;
+  return max_solution;
 }
 
 int64_t KnapsackDivideAndConquerSolver::Solve(TimeLimit* time_limit,
