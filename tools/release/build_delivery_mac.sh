@@ -22,11 +22,11 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using the ${BOLD}local host system${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help] [examples|dotnet|java|python|all|reset]
+\t$NAME [-h|--help|help] [examples|dotnet|java|python|all|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
-\t* ORTOOLS_TOKEN: secret use to decrypt key to sign .Net and Java package.
+\t* ORTOOLS_TOKEN: secret use to decrypt keys to sign .Net and Java packages.
 
 ${BOLD}OPTIONS${RESET}
 \t-h --help: display this help text
@@ -85,9 +85,10 @@ function build_dotnet() {
   cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON
   cmake --build temp_dotnet -j8 -v
   echo "DONE" | tee -a build.log
-  #cmake --build build --target test
+  #cmake --build temp_dotnet --target test
   #echo "cmake test: DONE" | tee -a build.log
 
+  # copy nupkg to export
   cp temp_dotnet/dotnet/packages/*nupkg export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/dotnet_build"
 }
@@ -107,13 +108,9 @@ function build_java() {
     exit 1
   else
     echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
-    command -v java
     command -v java | xargs echo "java: " | tee -a build.log
-    command -v javac
     command -v javac | xargs echo "javac: " | tee -a build.log
-    command -v jar
     command -v jar | xargs echo "jar: " | tee -a build.log
-    command -v mvn
     command -v mvn | xargs echo "mvn: " | tee -a build.log
     java -version 2>&1 | head -n 1 | grep 1.8
   fi
@@ -146,12 +143,14 @@ function build_java() {
   echo "DONE" | tee -a build.log
 
   echo -n "Build Java..." | tee -a build.log
-  cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF
+  cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
+ -DBUILD_JAVA=ON -DSKIP_GPG=OFF
   cmake --build temp_java -j8 -v
   echo "DONE" | tee -a build.log
   #cmake --build temp_java --target test
   #echo "cmake test: DONE" | tee -a build.log
 
+  # copy jar to export
   cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
   cp temp_java/java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
@@ -224,6 +223,7 @@ function build_archive() {
   make archive_java
   echo "DONE" | tee -a build.log
 
+  # move archive to export
   mv or-tools_*.tar.gz export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/archive_build"
 }
@@ -240,15 +240,16 @@ function build_examples() {
   rm -rf temp ./*.tar.gz
   echo -n "Build examples archives..." | tee -a build.log
   echo -n "  C++ examples archive..." | tee -a build.log
-  make cc_examples_archive UNIX_PYTHON_VER=3.9
+  make cc_examples_archive UNIX_PYTHON_VER=3
   echo -n "  Python examples archive..." | tee -a build.log
-  make python_examples_archive UNIX_PYTHON_VER=3.9
+  make python_examples_archive UNIX_PYTHON_VER=3
   echo -n "  Java examples archive..." | tee -a build.log
-  make java_examples_archive UNIX_PYTHON_VER=3.9
+  make java_examples_archive UNIX_PYTHON_VER=3
   echo -n "  .Net examples archive..." | tee -a build.log
-  make dotnet_examples_archive UNIX_PYTHON_VER=3.9
+  make dotnet_examples_archive UNIX_PYTHON_VER=3
   echo "DONE" | tee -a build.log
 
+  # move example to export/
   mv or-tools_*_examples_*.tar.gz export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/examples_build"
 }
@@ -256,13 +257,12 @@ function build_examples() {
 # Main
 function main() {
   case ${1} in
-    -h | --help)
+    -h | --help | help)
       help; exit ;;
   esac
 
   assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee build.log
-  make print-OR_TOOLS_VERSION | tee -a build.log
+  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
@@ -270,10 +270,13 @@ function main() {
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
   echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
 
+  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
+
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
 
   mkdir -p export
+
   case ${1} in
     dotnet|java|python|archive|examples)
       "build_$1"
@@ -286,7 +289,7 @@ function main() {
       build_examples
       exit ;;
     *)
-      >&2 echo "Target '${1}' unknown" | tee -a build.log
+      >&2 echo "Target '${1}' unknown"
       exit 1
   esac
   exit 0

@@ -233,7 +233,7 @@ echo Make java archive... | tee.exe -a build.log
 make.exe archive_java WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 echo DONE | tee.exe -a build.log
 
-for %%i in (or-tools_*VisualStudio2019-64bit*.zip) do (
+for %%i in (or-tools_*VisualStudio*-64bit*.zip) do (
   echo Move %%i to export... | tee.exe -a build.log
   move %%i export\.
   echo Move %%i to export...DONE | tee.exe -a build.log
