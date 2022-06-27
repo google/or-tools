@@ -1138,19 +1138,20 @@ int64_t KnapsackDivideAndConquerSolver::DivideAndConquer(int64_t capacity,
 
   if ((item_boundary - start_item) == 1) {
     if (weights_[start_item] <= capacity1) best_solution_[start_item] = true;
-  } else if ((item_boundary - start_item) > 1)
+  } else if ((item_boundary - start_item) > 1) {
     DivideAndConquer(capacity1, start_item, item_boundary);
+  }
 
   if ((end_item - item_boundary) == 1) {
     if (weights_[item_boundary] <= capacity2)
       best_solution_[item_boundary] = true;
-  } else if ((end_item - item_boundary) > 1)
+  } else if ((end_item - item_boundary) > 1) {
     DivideAndConquer(capacity2, item_boundary, end_item);
-
+  }
   return max_solution;
 }
 
-int64_t KnapsackDivideAndConquerSolver::Solve(TimeLimit* time_limit,
+int64_t KnapsackDivideAndConquerSolver::Solve(TimeLimit* /*time_limit*/,
                                               bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
