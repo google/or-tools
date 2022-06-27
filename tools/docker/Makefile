@@ -23,7 +23,7 @@ help:
 	@echo -e "${BOLD}DESCRIPTION${RESET}"
 	@echo -e "\tTools to generate various deliveries for linux distros"
 	@echo
-	@echo -e "${BOLD}MAKE TARGETS${RESET}"
+	@echo -e "${BOLD}MAIN TARGETS${RESET}"
 	@echo -e "\t${BOLD}help${RESET}: display this help and exit."
 	@echo
 	@echo -e "\t${BOLD}delivery${RESET}: Build ${BOLD}archives${RESET} and ${BOLD}python${RESET} targets."
@@ -32,7 +32,7 @@ help:
 	@echo -e "\t${BOLD}archives${RESET}: Build all OR-Tools archives in export."
 	@echo -e "\t${BOLD}test_archives${RESET}: Test each OR-Tools archives for all ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
-	@echo -e "${BOLD}PYTHON${RESET}"
+	@echo -e "${BOLD}PYTHON TARGETS${RESET}"
 	@echo -e "\t${BOLD}python${RESET}: Build alpine and manylinux2014 python 'ortools' wheel packages (3.6+)."
 	@echo -e "\t${BOLD}python_<platform>${RESET}: Build all python 'ortools' wheel packages (3.6+) for a specific platform."
 	@echo -e "\t${BOLD}python_<platform>_<step>${RESET}: Build all python 'ortools' wheel packages (3.6+) for a specific platform."
@@ -70,7 +70,7 @@ help:
 	@echo -e "\te.g. 'make python_arm64v8_alpine_export'"
 	@echo
 	@echo
-	@echo -e "${BOLD}ARCHIVE${RESET}"
+	@echo -e "${BOLD}ARCHIVE TARGETS${RESET}"
 	@echo -e "\t${BOLD}<platform>_<stage>${RESET}: Build <stage> docker images for ALL DISTROS and ALL LANGUAGES."
 	@echo -e "\t${BOLD}<target>${RESET}: Build the docker image for a specific platform,distro,lang,stage."
 	@echo -e "\t${BOLD}save_<target>${RESET}: Save <stage> docker images for ALL DISTROS."
@@ -122,6 +122,10 @@ help:
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_archive'"
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_export'"
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_test'"
+	@echo
+	@echo -e "\tnote: Few custom merge targets (e.g. ${BOLD}export${RESET}) are also provided."
+	@echo -e "\te.g. 'make amd64_centos-7_export'"
+	@echo -e "\te.g. 'make arm64_centos-7_export'"
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo
