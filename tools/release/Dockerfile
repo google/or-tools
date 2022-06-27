@@ -23,11 +23,12 @@ ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
 CMD ["/usr/bin/bash", "--login"]
 # RUN g++ --version
 
-# Install CMake 3.22.2
-RUN wget -q "https://cmake.org/files/v3.22/cmake-3.22.2-linux-x86_64.sh" \
-&& chmod a+x cmake-3.22.2-linux-x86_64.sh \
-&& ./cmake-3.22.2-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.22.2-linux-x86_64.sh
+# Install CMake 3.23.2
+RUN ARCH=$(uname -m) \
+&& wget -q "https://cmake.org/files/v3.23/cmake-3.23.2-linux-${ARCH}.sh" \
+&& chmod a+x cmake-3.23.2-linux-${ARCH}.sh \
+&& ./cmake-3.23.2-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.23.2-linux-${ARCH}.sh
 
 # Install Swig 4.0.2
 RUN curl --location-trusted \
@@ -42,14 +43,7 @@ RUN curl --location-trusted \
 && cd .. \
 && rm -rf swig-4.0.2
 
-# Install Java 8 SDK
-RUN yum -y update \
-&& yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
-&& yum clean all \
-&& rm -rf /var/cache/yum
-ENV JAVA_HOME=/usr/lib/jvm/java
-
-# Install dotnet
+# Install .Net
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-
 RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm \
 && yum -y update \
@@ -59,11 +53,24 @@ RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-p
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
+# Install Java 8 SDK
+RUN yum -y update \
+&& yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
+&& yum clean all \
+&& rm -rf /var/cache/yum
+ENV JAVA_HOME=/usr/lib/jvm/java
+
 # Openssl 1.1
 RUN yum -y update \
 && yum -y install epel-release \
 && yum repolist \
 && yum -y install openssl11
+
+# Install Python
+RUN yum -y update \
+&& yum -y install python3 python3-devel python3-pip numpy \
+&& yum clean all \
+&& rm -rf /var/cache/yum
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

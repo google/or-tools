@@ -16,7 +16,7 @@ RUN yum -y update \
 && yum -y install devtoolset-11 \
 && yum clean all \
 && echo "source /opt/rh/devtoolset-11/enable" >> /etc/bashrc
-SHELL ["/bin/bash", "--login", "-c"]
+SHELL ["/usr/bin/bash", "--login", "-c"]
 ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
 CMD ["/usr/bin/bash", "--login"]
 # RUN g++ --version
