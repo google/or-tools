@@ -62,13 +62,11 @@ endif()
 
 if(XPRESS_FOUND AND NOT TARGET XPRESS::XPRESS)
   add_library(XPRESS::XPRESS UNKNOWN IMPORTED)
-
   if(UNIX)
-    set_target_properties(XPRESS::XPRESS PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${XPRESS_ROOT}/include")
+    target_include_directories(XPRESS::XPRESS SYSTEM INTERFACE "${XPRESS_ROOT}/include")
   endif()
 
-  if(APPLE)
+  if(APPLE) # be aware that `UNIX` is `TRUE` on OS X, so this check must be first
     set_target_properties(XPRESS::XPRESS PROPERTIES
       #INSTALL_RPATH_USE_LINK_PATH TRUE
       #BUILD_WITH_INSTALL_RPATH TRUE
@@ -83,5 +81,7 @@ if(XPRESS_FOUND AND NOT TARGET XPRESS::XPRESS)
     set_target_properties(XPRESS::XPRESS PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${XPRESS_ROOT}\\include"
       IMPORTED_LOCATION "${XPRESS_ROOT}\\lib\\xprs.lib")
+  else()
+    message(FATAL_ERROR "XPRESS not supported for ${CMAKE_SYSTEM}")
   endif()
 endif()
