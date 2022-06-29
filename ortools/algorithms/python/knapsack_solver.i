@@ -47,6 +47,8 @@
           KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER;
 %unignore operations_research::KnapsackSolver::
           KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER;
+%unignore operations_research::KnapsackSolver::
+          KNAPSACK_DIVIDE_AND_CONQUER_SOLVER;
 
 %include "ortools/algorithms/knapsack_solver.h"
 
