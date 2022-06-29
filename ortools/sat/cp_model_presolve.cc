@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <deque>
 #include <limits>
+#include <numeric>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -4974,7 +4975,7 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
     ++new_in_degree[proto.heads(i)];
     proto.set_tails(new_size, proto.tails(i));
     proto.set_heads(new_size, proto.heads(i));
-    proto.set_literals(new_size, proto.literals(i));
+    proto.set_literals(new_size, ref);
     ++new_size;
   }
 
@@ -5206,7 +5207,7 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
   }
 
   if (proto.active_literals().empty()) {
-    const int true_literal = context_->GetOrCreateConstantVar(1);
+    const int true_literal = context_->GetTrueLiteral();
     for (int i = 0; i < proto.time_exprs_size(); ++i) {
       proto.add_active_literals(true_literal);
     }
@@ -7607,8 +7608,8 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
   CHECK(RefIsPositive(var));
   CHECK(context_->ConstraintVariableGraphIsUpToDate());
   if (context_->ModelIsUnsat()) return;
+  if (context_->keep_all_feasible_solutions) return;
   if (context_->IsFixed(var)) return;
-  if (!context_->VariableIsRemovable(var)) return;
   if (context_->VarToConstraints(var).size() != 2) return;
   if (!context_->ModelIsExpanded()) return;
   if (!context_->CanBeUsedAsLiteral(var)) return;
@@ -7671,8 +7672,8 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
 // the presolve.
 void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
   if (context_->ModelIsUnsat()) return;
+  if (context_->keep_all_feasible_solutions) return;
   if (context_->IsFixed(var)) return;
-  if (!context_->VariableIsRemovable(var)) return;
   if (context_->CanBeUsedAsLiteral(var)) return;
   if (!context_->VariableIsOnlyUsedInEncodingAndMaybeInObjective(var)) return;
   if (context_->params().search_branching() == SatParameters::FIXED_SEARCH) {
@@ -8152,7 +8153,6 @@ void CpModelPresolver::PresolveToFixPoint() {
         context_->UpdateNewConstraintsVariableUsage();
 
         if (!context_->CanonicalizeOneObjectiveVariable(v)) return;
-        if (context_->IsFixed(v)) context_->ExploitFixedDomain(v);
 
         in_queue.resize(context_->working_model->constraints_size(), false);
         for (const int c : context_->VarToConstraints(v)) {
@@ -8946,6 +8946,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // Exit the loop if the reduction is not so large.
     // Hack: to facilitate experiments, if the requested number of iterations
     // is large, we always execute all of them.
+    //
+    // TODO(user): Revisit the abort heuristic, it is not great.
     if (context_->params().max_presolve_iterations() >= 5) continue;
     if (context_->num_presolve_operations - old_num_presolve_op <
         0.8 * (context_->working_model->variables_size() +
@@ -9034,7 +9036,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // Remove all the unused variables from the presolved model.
   postsolve_mapping_->clear();
   std::vector<int> mapping(context_->working_model->variables_size(), -1);
-  int num_free_variables = 0;
+  absl::flat_hash_map<int64_t, int> constant_to_index;
+  int num_unused_variables = 0;
   for (int i = 0; i < context_->working_model->variables_size(); ++i) {
     if (mapping[i] != -1) continue;  // Already mapped.
 
@@ -9051,31 +9054,53 @@ CpSolverStatus CpModelPresolver::Presolve() {
       continue;
     }
 
-    if (context_->VariableIsNotUsedAnymore(i) &&
-        !context_->keep_all_feasible_solutions) {
-      // Tricky. Variables that where not removed by a presolve rule should be
-      // fixed first during postsolve, so that more complex postsolve rules
-      // can use their values. One way to do that is to fix them here.
-      //
-      // We prefer to fix them to zero if possible.
-      ++num_free_variables;
-      FillDomainInProto(Domain(context_->DomainOf(i).SmallestValue()),
-                        context_->mapping_model->mutable_variables(i));
-      continue;
+    // TODO(user): we could still remove unused constant even if
+    // keep_all_feasible_solutions is true.
+    if (!context_->keep_all_feasible_solutions) {
+      if (context_->VariableIsNotUsedAnymore(i)) {
+        // Tricky. Variables that where not removed by a presolve rule should be
+        // fixed first during postsolve, so that more complex postsolve rules
+        // can use their values. One way to do that is to fix them here.
+        //
+        // We prefer to fix them to zero if possible.
+        ++num_unused_variables;
+        FillDomainInProto(Domain(context_->DomainOf(i).SmallestValue()),
+                          context_->mapping_model->mutable_variables(i));
+        continue;
+      }
+
+      // Merge identical constant. Note that the only place were constant are
+      // still left are in the circuit and route constraint for fixed arcs.
+      if (context_->IsFixed(i)) {
+        auto [it, inserted] = constant_to_index.insert(
+            {context_->FixedValue(i), postsolve_mapping_->size()});
+        if (!inserted) {
+          mapping[i] = it->second;
+          continue;
+        }
+      }
     }
 
     mapping[i] = postsolve_mapping_->size();
     postsolve_mapping_->push_back(i);
   }
-  context_->UpdateRuleStats(absl::StrCat("presolve: ", num_free_variables,
+  context_->UpdateRuleStats(absl::StrCat("presolve: ", num_unused_variables,
                                          " unused variables removed."));
 
   if (context_->params().permute_variable_randomly()) {
-    std::shuffle(postsolve_mapping_->begin(), postsolve_mapping_->end(),
-                 *context_->random());
-    for (int i = 0; i < postsolve_mapping_->size(); ++i) {
-      mapping[(*postsolve_mapping_)[i]] = i;
+    // The mapping might merge variable, so we have to be careful here.
+    const int n = postsolve_mapping_->size();
+    std::vector<int> perm(n);
+    std::iota(perm.begin(), perm.end(), 0);
+    std::shuffle(perm.begin(), perm.end(), *context_->random());
+    for (int i = 0; i < context_->working_model->variables_size(); ++i) {
+      if (mapping[i] != -1) mapping[i] = perm[mapping[i]];
     }
+    std::vector<int> new_postsolve_mapping(n);
+    for (int i = 0; i < n; ++i) {
+      new_postsolve_mapping[perm[i]] = (*postsolve_mapping_)[i];
+    }
+    *postsolve_mapping_ = std::move(new_postsolve_mapping);
   }
 
   DCHECK(context_->ConstraintVariableUsageIsConsistent());

@@ -1498,12 +1498,9 @@ bool LinearProgrammingConstraint::Propagate() {
   if (!SolveLp()) return true;
 
   // Add new constraints to the LP and resolve?
-  const int max_cuts_rounds =
-      parameters_.cut_level() <= 0
-          ? 0
-          : (trail_->CurrentDecisionLevel() == 0
-                 ? parameters_.max_cut_rounds_at_level_zero()
-                 : 1);
+  const int max_cuts_rounds = trail_->CurrentDecisionLevel() == 0
+                                  ? parameters_.max_cut_rounds_at_level_zero()
+                                  : 1;
   int cuts_round = 0;
   while (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL &&
          cuts_round < max_cuts_rounds) {
@@ -1511,7 +1508,7 @@ bool LinearProgrammingConstraint::Propagate() {
     // begin to generate cuts. Note that we rely on num_solves_ since on some
     // problems there is no other constraints than the cuts.
     cuts_round++;
-    if (num_solves_ > 1) {
+    if (parameters_.cut_level() > 0 && num_solves_ > 1) {
       // This must be called first.
       implied_bounds_processor_.RecomputeCacheAndSeparateSomeImpliedBoundCuts(
           expanded_lp_solution_);

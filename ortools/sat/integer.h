@@ -979,6 +979,7 @@ class IntegerTrail : public SatPropagator {
   // Basic heuristic to detect when we are in a propagation loop, and suggest
   // a good variable to branch on (taking the middle value) to get out of it.
   bool InPropagationLoop() const;
+  void NotifyThatPropagationWasAborted();
   IntegerVariable NextVariableToBranchOnInPropagationLoop() const;
 
   // If we had an incomplete propagation, it is important to fix all the
@@ -997,6 +998,10 @@ class IntegerTrail : public SatPropagator {
   // Tests that all Literal are false. Tests that all IntegerLiteral are true.
   bool ReasonIsValid(absl::Span<const Literal> literal_reason,
                      absl::Span<const IntegerLiteral> integer_reason);
+
+  // If the variable has holes in its domain, make sure the literal is
+  // canonicalized.
+  void CanonicalizeLiteralIfNeeded(IntegerLiteral* i_lit);
 
   // Called by the Enqueue() functions that detected a conflict. This does some
   // common conflict initialization that must terminate by a call to

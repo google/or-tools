@@ -17,7 +17,7 @@
 #include <functional>
 #include <vector>
 
-#include "absl/strings/str_join.h",
+#include "absl/strings/str_join.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/disjunctive.h"

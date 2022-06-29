@@ -324,6 +324,54 @@ std::vector<LiteralValueValue> TryToReconcileEncodings(
   return terms;
 }
 
+// Specialized case of encoding reconciliation when both variables have a domain
+// of size of 2.
+std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
+    const AffineExpression& left, const AffineExpression& right, Model* model) {
+  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  std::vector<LiteralValueValue> terms;
+  if (!integer_encoder->VariableIsFullyEncoded(left.var) ||
+      !integer_encoder->VariableIsFullyEncoded(right.var)) {
+    return terms;
+  }
+  const std::vector<ValueLiteralPair>& left_enc =
+      integer_encoder->FullDomainEncoding(left.var);
+  const std::vector<ValueLiteralPair>& right_enc =
+      integer_encoder->FullDomainEncoding(right.var);
+  if (left_enc.size() != 2 || right_enc.size() != 2) {
+    VLOG(3) << "encodings are not fully propagated";
+    return terms;
+  }
+
+  const Literal left_lit0 = left_enc[0].literal;
+  const IntegerValue left_value0 = left.ValueAt(left_enc[0].value);
+  const Literal left_lit1 = left_enc[1].literal;
+  const IntegerValue left_value1 = left.ValueAt(left_enc[1].value);
+
+  const Literal right_lit0 = right_enc[0].literal;
+  const IntegerValue right_value0 = right.ValueAt(right_enc[0].value);
+  const Literal right_lit1 = right_enc[1].literal;
+  const IntegerValue right_value1 = right.ValueAt(right_enc[1].value);
+
+  if (left_lit0 == right_lit0 || left_lit0 == right_lit1.Negated()) {
+    terms.push_back({left_lit0, left_value0, right_value0});
+    terms.push_back({left_lit0.Negated(), left_value1, right_value1});
+  } else if (left_lit0 == right_lit1 || left_lit0 == right_lit0.Negated()) {
+    terms.push_back({left_lit0, left_value0, right_value1});
+    terms.push_back({left_lit0.Negated(), left_value1, right_value0});
+  } else if (left_lit1 == right_lit1 || left_lit1 == right_lit0.Negated()) {
+    terms.push_back({left_lit1.Negated(), left_value0, right_value0});
+    terms.push_back({left_lit1, left_value1, right_value1});
+  } else if (left_lit1 == right_lit0 || left_lit1 == right_lit1.Negated()) {
+    terms.push_back({left_lit1.Negated(), left_value0, right_value1});
+    terms.push_back({left_lit1, left_value1, right_value0});
+  } else {
+    VLOG(3) << "Complex size 2 encoding case, need to scan exactly_ones";
+  }
+
+  return terms;
+}
+
 std::vector<LiteralValueValue> TryToDecomposeProduct(
     const AffineExpression& left, const AffineExpression& right, Model* model) {
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -364,6 +412,14 @@ std::vector<LiteralValueValue> TryToDecomposeProduct(
         if (!result.empty()) {
           return result;
         }
+      }
+    }
+    if (integer_trail->InitialVariableDomain(left.var).Size() == 2 &&
+        integer_trail->InitialVariableDomain(right.var).Size() == 2) {
+      const std::vector<LiteralValueValue> result =
+          TryToReconcileSize2Encodings(left, right, model);
+      if (!result.empty()) {
+        return result;
       }
     }
     return {};

@@ -982,7 +982,7 @@ namespace {
 int AppendSumOfLiteral(absl::Span<const int> literals, MPConstraintProto* out) {
   int shift = 0;
   for (const int ref : literals) {
-    if (ref > 0) {
+    if (ref >= 0) {
       out->add_coefficient(1);
       out->add_var_index(ref);
     } else {
@@ -1023,6 +1023,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
     for (int i = 0; i < num_terms; ++i) {
       const int var = input.objective().vars(i);
       if (var < 0) return false;
+      CHECK_EQ(output->variable(var).objective_coefficient(), 0.0);
       output->mutable_variable(var)->set_objective_coefficient(
           factor * input.objective().coeffs(i));
     }
@@ -1032,6 +1033,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
     for (int i = 0; i < num_terms; ++i) {
       const int var = input.floating_point_objective().vars(i);
       if (var < 0) return false;
+      CHECK_EQ(output->variable(var).objective_coefficient(), 0.0);
       output->mutable_variable(var)->set_objective_coefficient(
           input.floating_point_objective().coeffs(i));
     }
@@ -1043,10 +1045,12 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
 
   // Copy constraint.
   const int num_constraints = input.constraints().size();
+  std::vector<int> tmp_literals;
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = input.constraints(c);
-    if (!ct.enforcement_literal().empty()) {
-      // TODO(user): Support some constraints with enforcement.
+    if (!ct.enforcement_literal().empty() &&
+        ct.constraint_case() != ConstraintProto::kBoolAnd) {
+      // TODO(user): Support more constraints with enforcement.
       VLOG(1) << "Cannot convert constraint: " << ct.DebugString();
       return false;
     }
@@ -1070,6 +1074,21 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
         const int shift = AppendSumOfLiteral(ct.bool_or().literals(), out);
         out->set_lower_bound(1 - shift);
         out->set_upper_bound(std::numeric_limits<double>::infinity());
+        break;
+      }
+      case ConstraintProto::kBoolAnd: {
+        tmp_literals.clear();
+        for (const int ref : ct.enforcement_literal()) {
+          tmp_literals.push_back(NegatedRef(ref));
+        }
+        for (const int ref : ct.bool_and().literals()) {
+          MPConstraintProto* out = output->add_constraint();
+          tmp_literals.push_back(ref);
+          const int shift = AppendSumOfLiteral(tmp_literals, out);
+          out->set_lower_bound(1 - shift);
+          out->set_upper_bound(std::numeric_limits<double>::infinity());
+          tmp_literals.pop_back();
+        }
         break;
       }
       case ConstraintProto::kLinear: {

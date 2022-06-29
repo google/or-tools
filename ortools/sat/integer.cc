@@ -221,8 +221,8 @@ std::pair<IntegerLiteral, IntegerLiteral> IntegerEncoder::Canonicalize(
   const IntegerVariable var(i_lit.var);
   IntegerValue after(i_lit.bound);
   IntegerValue before(i_lit.bound - 1);
-  CHECK_GE(before, (*domains_)[var].Min());
-  CHECK_LE(after, (*domains_)[var].Max());
+  DCHECK_GE(before, (*domains_)[var].Min());
+  DCHECK_LE(after, (*domains_)[var].Max());
   int64_t previous = std::numeric_limits<int64_t>::min();
   for (const ClosedInterval& interval : (*domains_)[var]) {
     if (before > previous && before < interval.start) before = previous;
@@ -1239,11 +1239,19 @@ void IntegerTrail::EnqueueLiteralInternal(
 // if it seems really large. Note that we disable this if we are in fixed
 // search.
 bool IntegerTrail::InPropagationLoop() const {
-  const int num_vars = vars_.size();
-  return (!integer_search_levels_.empty() &&
-          integer_trail_.size() - integer_search_levels_.back() >
-              std::max(10000, 10 * num_vars) &&
-          parameters_.search_branching() != SatParameters::FIXED_SEARCH);
+  if (parameters_.propagation_loop_detection_factor() == 0.0) return false;
+  return (
+      !integer_search_levels_.empty() &&
+      integer_trail_.size() - integer_search_levels_.back() >
+          std::max(10000.0, parameters_.propagation_loop_detection_factor() *
+                                static_cast<double>(vars_.size())) &&
+      parameters_.search_branching() != SatParameters::FIXED_SEARCH);
+}
+
+void IntegerTrail::NotifyThatPropagationWasAborted() {
+  if (first_level_without_full_propagation_ == -1) {
+    first_level_without_full_propagation_ = trail_->CurrentDecisionLevel();
+  }
 }
 
 // We try to select a variable with a large domain that was propagated a lot
@@ -1289,6 +1297,24 @@ IntegerVariable IntegerTrail::FirstUnassignedVariable() const {
   return kNoIntegerVariable;
 }
 
+void IntegerTrail::CanonicalizeLiteralIfNeeded(IntegerLiteral* i_lit) {
+  const auto& domain = (*domains_)[i_lit->var];
+  if (domain.NumIntervals() <= 1) return;
+
+  int index = var_to_current_lb_interval_index_.at(i_lit->var);
+  const int size = domain.NumIntervals();
+  while (index < size && i_lit->bound > domain[index].end) {
+    ++index;
+  }
+  if (index == size) {
+    // We will be out of bound and deal with that below.
+    DCHECK_GT(i_lit->bound, UpperBound(i_lit->var));
+  } else {
+    var_to_current_lb_interval_index_.Set(i_lit->var, index);
+    i_lit->bound = std::max(i_lit->bound, IntegerValue(domain[index].start));
+  }
+}
+
 bool IntegerTrail::EnqueueInternal(
     IntegerLiteral i_lit, LazyReasonFunction lazy_reason,
     absl::Span<const Literal> literal_reason,
@@ -1314,21 +1340,7 @@ bool IntegerTrail::EnqueueInternal(
   //
   // Note: The literals in the reason are not necessarily canonical, but then
   // we always map these to enqueued literals during conflict resolution.
-  if ((*domains_)[var].NumIntervals() > 1) {
-    const auto& domain = (*domains_)[var];
-    int index = var_to_current_lb_interval_index_.at(var);
-    const int size = domain.NumIntervals();
-    while (index < size && i_lit.bound > domain[index].end) {
-      ++index;
-    }
-    if (index == size) {
-      // We will be out of bound and deal with that below.
-      DCHECK_GT(i_lit.bound, UpperBound(var));
-    } else {
-      var_to_current_lb_interval_index_.Set(var, index);
-      i_lit.bound = std::max(i_lit.bound, IntegerValue(domain[index].start));
-    }
-  }
+  CanonicalizeLiteralIfNeeded(&i_lit);
 
   // Check if the integer variable has an empty domain.
   if (i_lit.bound > UpperBound(var)) {
@@ -1531,6 +1543,9 @@ bool IntegerTrail::EnqueueAssociatedIntegerLiteral(IntegerLiteral i_lit,
   // Nothing to do if the bound is not better than the current one.
   if (i_lit.bound <= vars_[i_lit.var].current_bound) return true;
   ++num_enqueues_;
+
+  // Make sure we do not fall into a hole.
+  CanonicalizeLiteralIfNeeded(&i_lit);
 
   // Check if the integer variable has an empty domain. Note that this should
   // happen really rarely since in most situation, pushing the upper bound would
@@ -1742,8 +1757,15 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
                               ? literals_reason_starts_[reason_index + 1]
                               : literals_reason_buffer_.size();
           CHECK_EQ(start + 1, end);
-          CHECK_EQ(literals_reason_buffer_[start],
-                   Literal(associated_lit).Negated());
+
+          // Because we can update initial domains, an associated literal might
+          // fall in a domain hole and can be different when canonicalized.
+          //
+          // TODO(user): Make the contract clearer, it is messy right now.
+          if (/*DISABLES_CODE*/ (false)) {
+            CHECK_EQ(literals_reason_buffer_[start],
+                     Literal(associated_lit).Negated());
+          }
         }
         {
           const int start = bounds_reason_starts_[reason_index];
@@ -1924,6 +1946,7 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
       if (time_limit_->LimitReached()) break;
     }
     if (stop_propagation_callback_ != nullptr && stop_propagation_callback_()) {
+      integer_trail_->NotifyThatPropagationWasAborted();
       break;
     }
 

@@ -64,11 +64,15 @@ class SavedLiteral {
 };
 
 // Same as SavedLiteral for variable.
+//
+// TODO(user): get rid of this, we don't have the notion of equivalent variable
+// anymore, but the more general affine relation one. We just need to support
+// general affine for the linear1 involving an absolute value.
 class SavedVariable {
  public:
   SavedVariable() {}
   explicit SavedVariable(int ref) : ref_(ref) {}
-  int Get(PresolveContext* context) const;
+  int Get() const;
 
  private:
   int ref_ = 0;
@@ -92,7 +96,11 @@ class PresolveContext {
   // a solution hint accordingly.
   int NewIntVar(const Domain& domain);
   int NewBoolVar();
-  int GetOrCreateConstantVar(int64_t cst);
+
+  // Some expansion code use constant literal to be simpler to write. This will
+  // create a NewBoolVar() the first time, but later call will just returns it.
+  int GetTrueLiteral();
+  int GetFalseLiteral();
 
   // a => b.
   void AddImplication(int a, int b);
@@ -152,10 +160,6 @@ class PresolveContext {
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
     return domains[var].IsIncludedIn(domain);
   }
-
-  // Returns true if a presolve transformation is allowed to remove this
-  // variable.
-  bool VariableIsRemovable(int ref) const;
 
   // Returns true if this ref only appear in one constraint.
   bool VariableIsUniqueAndRemovable(int ref) const;
@@ -228,10 +232,6 @@ class PresolveContext {
   // This is meant to be used in DEBUG mode only.
   bool ConstraintVariableUsageIsConsistent();
 
-  // Regroups fixed variables with the same value.
-  // TODO(user): Also regroup cte and -cte?
-  void ExploitFixedDomain(int var);
-
   // A "canonical domain" always have a MinOf() equal to zero.
   // If needed we introduce a new variable with such canonical domain and
   // add the relation X = Y + offset.
@@ -289,10 +289,8 @@ class PresolveContext {
 
   // Used for statistics.
   int NumAffineRelations() const { return affine_relations_.NumRelations(); }
-  int NumEquivRelations() const { return var_equiv_relations_.NumRelations(); }
 
-  // This makes sure that the affine relation only uses one of the
-  // representative from the var_equiv_relations.
+  // Returns the representative of ref under the affine relations.
   AffineRelation::Relation GetAffineRelation(int ref) const;
 
   // To facilitate debugging.
@@ -558,10 +556,6 @@ class PresolveContext {
   void AddVariableUsage(int c);
   void UpdateLinear1Usage(const ConstraintProto& ct, int c);
 
-  // Returns true iff the variable is not the representative of an equivalence
-  // class of size at least 2.
-  bool VariableIsNotRepresentativeOfEquivalenceClass(int var) const;
-
   // Makes sure we only insert encoding about the current representative.
   //
   // Returns false if ref cannot take the given value (it might not have been
@@ -623,11 +617,9 @@ class PresolveContext {
   // Contains abs relation (key = abs(saved_variable)).
   absl::flat_hash_map<int, SavedVariable> abs_relations_;
 
-  // For each constant variable appearing in the model, we maintain a reference
-  // variable with the same constant value. If two variables end up having the
-  // same fixed value, then we can detect it using this and add a new
-  // equivalence relation. See ExploitFixedDomain().
-  absl::flat_hash_map<int64_t, SavedVariable> constant_to_ref_;
+  // Used by GetTrueLiteral()/GetFalseLiteral().
+  bool true_literal_is_defined_ = false;
+  int true_literal_;
 
   // Contains variables with some encoded value: encoding_[i][v] points
   // to the literal attached to the value v of the variable i.
@@ -646,12 +638,10 @@ class PresolveContext {
       neq_half_encoding_;
 
   // This regroups all the affine relations between variables. Note that the
-  // constraints used to detect such relations will not be removed from the
-  // model at detection time (thus allowing proper domain propagation). However,
-  // if the arity of a variable becomes one, then such constraint will be
-  // removed.
+  // constraints used to detect such relations will be removed from the model at
+  // detection time. But we mark all the variables in affine relations as part
+  // of the kAffineRelationConstraint.
   AffineRelation affine_relations_;
-  AffineRelation var_equiv_relations_;
 
   std::vector<int> tmp_new_usage_;
 

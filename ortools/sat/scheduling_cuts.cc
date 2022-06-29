@@ -253,7 +253,7 @@ void GenerateCumulativeEnergeticCuts(
                 fixed_demand *
                 std::min({alt_end_min - window_start,
                           window_end - alt_start_max, fixed_size, window_size});
-            DCHECK_GT(energy_min, 0);
+            if (energy_min == 0) continue;
             if (!cut->AddLiteralTerm(lit, energy_min)) return false;
           }
           if (add_energy_to_name != nullptr) *add_energy_to_name = true;

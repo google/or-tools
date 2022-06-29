@@ -43,7 +43,8 @@ namespace sat {
 void VarDomination::Reset(int num_variables) {
   phase_ = 0;
   num_vars_with_negation_ = 2 * num_variables;
-  partition_ = std::make_unique<DynamicPartition>(num_vars_with_negation_);
+  partition_ =
+      std::make_unique<SimpleDynamicPartition>(num_vars_with_negation_);
 
   can_freely_decrease_.assign(num_vars_with_negation_, true);
 
@@ -224,6 +225,8 @@ bool VarDomination::EndFirstPhase() {
                                                        false);
 
   // Fill the initial domination candidates.
+  std::vector<int> buffer;
+  const auto elements_by_part = partition_->GetParts(&buffer);
   for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
     if (can_freely_decrease_[var]) continue;
     const int part = partition_->PartOf(var.value());
@@ -239,7 +242,7 @@ bool VarDomination::EndFirstPhase() {
       // We start with the partition part.
       // Note that all constraint will be filtered again in the second pass.
       int num_tested = 0;
-      for (const int value : partition_->ElementsInPart(part)) {
+      for (const int value : elements_by_part[part]) {
         const IntegerVariable c = IntegerVariable(value);
 
         // This is to limit the complexity to 1k * num_vars. We fill the list
@@ -1242,6 +1245,11 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   //
   // EX: It is possible that X dominate Y and Y dominate X if they are both
   // appearing in exactly the same constraint with the same coefficient.
+  //
+  // TODO(user): if both variable are in a bool_or, this will allow us to remove
+  // the dominated variable. Maybe we should exploit that to decide which
+  // implication we add. Or just remove such variable and not add the
+  // implications?
   //
   // TODO(user): generalize to non Booleans?
   // TODO(user): We always keep adding the same relations. Do that only once!

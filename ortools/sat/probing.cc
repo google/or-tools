@@ -52,8 +52,10 @@ Prober::Prober(Model* model)
 
 bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
   const int num_variables = sat_solver_->NumVariables();
+  const VariablesAssignment& assignment = sat_solver_->Assignment();
   std::vector<BooleanVariable> bool_vars;
   for (BooleanVariable b(0); b < num_variables; ++b) {
+    if (assignment.VariableIsAssigned(b)) continue;
     const Literal literal(b, true);
     if (implication_graph_->RepresentativeOf(literal) != literal) {
       continue;

@@ -51,9 +51,7 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
 
   const ReservoirConstraintProto& reservoir = ct->reservoir();
   const int num_events = reservoir.time_exprs_size();
-
-  const int true_literal = context->GetOrCreateConstantVar(1);
-
+  const int true_literal = context->GetTrueLiteral();
   const auto is_active_literal = [&reservoir, true_literal](int index) {
     if (reservoir.active_literals_size() == 0) return true_literal;
     return reservoir.active_literals(index);
@@ -1130,8 +1128,7 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
     const int var = (*vars)[var_index];
     // We do not use VariableWithCostIsUniqueAndRemovable() since this one
     // return false if the objective is constraining but we don't care here.
-    if (context->VariableWithCostIsUnique(var) &&
-        context->VariableIsRemovable(var)) {
+    if (context->VariableWithCostIsUniqueAndRemovable(var)) {
       context->UpdateRuleStats("table: removed unused column with cost");
       only_here_and_in_objective[var_index] = true;
       objective_coeffs[var_index] =

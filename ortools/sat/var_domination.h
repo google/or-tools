@@ -181,7 +181,7 @@ class VarDomination {
   // any variable in S can only dominate or be dominated by another variable in
   // S.
   std::vector<int> tmp_vars_;
-  std::unique_ptr<DynamicPartition> partition_;
+  std::unique_ptr<SimpleDynamicPartition> partition_;
   absl::StrongVector<IntegerVariable, bool> can_freely_decrease_;
 
   // For all one sided constraints, we keep the bitmap of constraint indices
