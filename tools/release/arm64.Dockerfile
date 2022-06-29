@@ -1,7 +1,7 @@
 # To build it on x86_64 please read
 # https://github.com/multiarch/qemu-user-static#getting-started
-#FROM quay.io/pypa/manylinux2014_aarch64:latest AS env
-FROM --platform=linux/arm64 centos:7 AS env
+FROM quay.io/pypa/manylinux2014_aarch64:latest AS env
+#FROM --platform=linux/arm64 centos:7 AS env
 
 #############
 ##  SETUP  ##
@@ -42,7 +42,7 @@ RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && ./dotnet-install.sh -c 6.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 RUN objdump -p /lib64/libstdc++.so.6
-RUN  g++ --version
+RUN g++ --version
 RUN dotnet --info
 
 # Install Java 8 SDK
