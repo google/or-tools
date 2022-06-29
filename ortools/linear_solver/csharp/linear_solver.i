@@ -108,6 +108,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::INFEASIBLE;
 %unignore operations_research::MPSolver::UNBOUNDED;
 %unignore operations_research::MPSolver::ABNORMAL;
+%unignore operations_research::MPSolver::MODEL_INVALID;
 %unignore operations_research::MPSolver::NOT_SOLVED;
 
 // Expose the MPSolver's basic API, with some non-trivial renames.

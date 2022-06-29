@@ -288,6 +288,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::INFEASIBLE;
 %unignore operations_research::MPSolver::UNBOUNDED;  // No unit test
 %unignore operations_research::MPSolver::ABNORMAL;
+%unignore operations_research::MPSolver::MODEL_INVALID;  // No unit test
 %unignore operations_research::MPSolver::NOT_SOLVED;  // No unit test
 
 // Expose the MPSolver's basic API, with some renames.

@@ -323,6 +323,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::INFEASIBLE;  // no test
 %unignore operations_research::MPSolver::UNBOUNDED;  // no test
 %unignore operations_research::MPSolver::ABNORMAL;  // no test
+%unignore operations_research::MPSolver::MODEL_INVALID;  // no test
 %unignore operations_research::MPSolver::NOT_SOLVED;  // no test
 
 // Expose the MPSolver's basic API, with some non-trivial renames.
