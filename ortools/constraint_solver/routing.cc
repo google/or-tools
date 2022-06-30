@@ -1255,13 +1255,13 @@ int RegisterUnaryCallback(RoutingTransitCallback1 callback, bool is_positive,
 }  // namespace
 
 int RoutingModel::RegisterUnaryTransitVector(std::vector<int64_t> values) {
+  bool is_positive=std::all_of(std::cbegin(values), std::cend(values),
+    [](int64_t transit) { return transit >= 0; });
   return RegisterUnaryCallback(
       [this, values = std::move(values)](int64_t i) {
         return values[manager_.IndexToNode(i).value()];
       },
-      /*is_positive=*/
-      std::all_of(std::cbegin(values), std::cend(values),
-                  [](int64_t transit) { return transit >= 0; }),
+      is_positive,
       this);
 }
 
