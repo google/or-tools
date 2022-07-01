@@ -63,7 +63,7 @@ if "%1"=="all" (
 call :BUILD_DOTNET
 call :BUILD_JAVA
 call :BUILD_ARCHIVE
-call :BUILD_EXAMPLES
+:: call :BUILD_EXAMPLES
 call :BUILD_PYTHON
 exit /B %ERRORLEVEL%
 )
@@ -254,8 +254,6 @@ exit /B 0
 
 rm.exe -rf temp *.zip || exit 1
 echo Build examples archives... | tee.exe -a build.log
-echo   C++ examples archive... | tee.exe -a build.log
-make.exe cc_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 echo   Python examples archive... | tee.exe -a build.log
 make.exe python_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 echo   Java examples archive... | tee.exe -a build.log

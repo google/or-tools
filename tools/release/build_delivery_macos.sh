@@ -239,8 +239,6 @@ function build_examples() {
 
   rm -rf temp ./*.tar.gz
   echo -n "Build examples archives..." | tee -a build.log
-  echo -n "  C++ examples archive..." | tee -a build.log
-  make cc_examples_archive UNIX_PYTHON_VER=3
   echo -n "  Python examples archive..." | tee -a build.log
   make python_examples_archive UNIX_PYTHON_VER=3
   echo -n "  Java examples archive..." | tee -a build.log
@@ -286,7 +284,7 @@ function main() {
       build_java
       #build_python
       build_archive
-      build_examples
+      #build_examples
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"

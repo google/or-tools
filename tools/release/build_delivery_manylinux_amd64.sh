@@ -230,7 +230,7 @@ function main() {
       build_java
       #build_python
       #build_archive
-      build_examples
+      #build_examples
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"
