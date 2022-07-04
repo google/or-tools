@@ -475,9 +475,12 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
     }
   }
 
+  // We can always remove all singleton variables (with or without cost) in an
+  // at_most_one or exactly one. We collect them and deal with this at the end.
+  std::vector<std::pair<int, int64_t>> singleton_literal_with_cost;
+
   // Remove fixed variables.
   bool changed = false;
-  bool transform_to_at_most_one = false;
   context_->tmp_literals.clear();
   for (const int literal : *literals) {
     if (context_->LiteralIsTrue(literal)) {
@@ -495,39 +498,78 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
       continue;
     }
 
-    // A singleton variable in an at most one can just be set to zero.
-    //
-    // In an exactly one, it can be left to the postsolve to decide, and the
-    // rest of the constraint can be transformed to an at most one.
-    bool is_removable = context_->VariableIsUniqueAndRemovable(literal);
-    if (is_at_most_one && !is_removable &&
-        context_->VariableWithCostIsUniqueAndRemovable(literal)) {
-      const auto it = context_->ObjectiveMap().find(PositiveRef(literal));
-      CHECK(it != context_->ObjectiveMap().end());
-      const int64_t coeff = it->second;
-
-      // Fixing it to zero need to go in the correct direction.
-      is_removable = (coeff > 0) == RefIsPositive(literal);
+    // A singleton variable with or without cost can be removed. See below.
+    if (context_->VariableIsUniqueAndRemovable(literal)) {
+      singleton_literal_with_cost.push_back({literal, 0});
+      continue;
     }
-
-    if (is_removable) {
-      if (is_at_most_one) {
-        context_->UpdateRuleStats("at_most_one: singleton");
-        if (!context_->SetLiteralToFalse(literal)) return false;
-        changed = true;
-        continue;
+    if (context_->VariableWithCostIsUniqueAndRemovable(literal)) {
+      const auto it = context_->ObjectiveMap().find(PositiveRef(literal));
+      DCHECK(it != context_->ObjectiveMap().end());
+      if (RefIsPositive(literal)) {
+        singleton_literal_with_cost.push_back({literal, it->second});
       } else {
-        changed = true;
-        is_at_most_one = true;
-        transform_to_at_most_one = true;
-        *(context_->mapping_model->add_constraints()) = *ct;
-        context_->UpdateRuleStats("exactly_one: singleton");
-        context_->MarkVariableAsRemoved(PositiveRef(literal));
-        continue;
+        // Note that we actually just store the objective change if this literal
+        // is true compared to it being false.
+        singleton_literal_with_cost.push_back({literal, -it->second});
       }
+      continue;
     }
 
     context_->tmp_literals.push_back(literal);
+  }
+
+  bool transform_to_at_most_one = false;
+  if (!singleton_literal_with_cost.empty()) {
+    changed = true;
+
+    // By domination argument, we can fix to false everything but the minimum.
+    if (singleton_literal_with_cost.size() > 1) {
+      std::sort(
+          singleton_literal_with_cost.begin(),
+          singleton_literal_with_cost.end(),
+          [](const std::pair<int, int64_t>& a,
+             const std::pair<int, int64_t>& b) { return a.second < b.second; });
+      for (int i = 1; i < singleton_literal_with_cost.size(); ++i) {
+        context_->UpdateRuleStats("at_most_one: dominated singleton");
+        if (!context_->SetLiteralToFalse(
+                singleton_literal_with_cost[i].first)) {
+          return false;
+        }
+      }
+      singleton_literal_with_cost.resize(1);
+    }
+
+    const int literal = singleton_literal_with_cost[0].first;
+    const int64_t min_obj = singleton_literal_with_cost[0].second;
+    if (is_at_most_one && min_obj >= 0) {
+      // We can just always set it to false in this case.
+      context_->UpdateRuleStats("at_most_one: singleton");
+      if (!context_->SetLiteralToFalse(literal)) return false;
+    } else {
+      // We can make the constraint an exactly one if needed since it is always
+      // beneficial to set this literal to true if everything else is zero. Now
+      // that we have an exactly one, we can transfer the cost to the other
+      // terms. The objective of literal should become zero, and we can then
+      // decide its value at postsolve and just have an at most one on the other
+      // literals.
+      context_->ShiftCostInExactlyOne(*literals, min_obj);
+      DCHECK(!context_->ObjectiveMap().contains(PositiveRef(literal)));
+
+      if (!is_at_most_one) transform_to_at_most_one = true;
+      is_at_most_one = true;
+
+      context_->UpdateRuleStats("exactly_one: singleton");
+      context_->MarkVariableAsRemoved(PositiveRef(literal));
+
+      // Put a constraint in the mapping proto for postsolve.
+      auto* mapping_exo =
+          context_->mapping_model->add_constraints()->mutable_exactly_one();
+      for (const int lit : context_->tmp_literals) {
+        mapping_exo->add_literals(lit);
+      }
+      mapping_exo->add_literals(literal);
+    }
   }
 
   if (!is_at_most_one && !transform_to_at_most_one &&

@@ -404,6 +404,7 @@ class PresolveContext {
   //
   // Returns true if a simplification was done.
   bool ExploitExactlyOneInObjective(absl::Span<const int> exactly_one);
+  void ShiftCostInExactlyOne(absl::Span<const int> exactly_one, int64_t shift);
 
   // Allows to manipulate the objective coefficients.
   void RemoveVariableFromObjective(int ref);

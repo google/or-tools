@@ -1796,36 +1796,41 @@ bool PresolveContext::ExploitExactlyOneInObjective(
     }
   }
 
-  int64_t offset = min_coeff;
+  if (min_coeff != 0) ShiftCostInExactlyOne(exactly_one, min_coeff);
+  return true;
+}
+
+void PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
+                                            int64_t shift) {
+  int64_t offset = shift;
   for (const int ref : exactly_one) {
     const int var = PositiveRef(ref);
-    int64_t& map_ref = objective_map_.at(var);
+
+    // The value will be zero if it wasn't present.
+    int64_t& map_ref = objective_map_[var];
+    if (map_ref == 0) {
+      var_to_constraints_[var].insert(kObjectiveConstraint);
+    }
     if (RefIsPositive(ref)) {
-      map_ref -= min_coeff;
+      map_ref -= shift;
       if (map_ref == 0) {
         RemoveVariableFromObjective(var);
       }
     } else {
       // Term = coeff * (1 - X) = coeff  - coeff * X;
-      // So -coeff -> -coeff  -min_coeff
-      // And Term = coeff + min_coeff - min_coeff - (coeff + min_coeff) * X
-      //          = (coeff + min_coeff) * (1 - X) - min_coeff;
-      map_ref += min_coeff;
+      // So -coeff -> -coeff  -shift
+      // And Term = coeff + shift - shift - (coeff + shift) * X
+      //          = (coeff + shift) * (1 - X) - shift;
+      map_ref += shift;
       if (map_ref == 0) {
         RemoveVariableFromObjective(var);
       }
-      offset -= min_coeff;
+      offset -= shift;
     }
   }
 
   // Note that the domain never include the offset, so we need to update it.
-  if (offset != 0) {
-    objective_offset_ += offset;
-    objective_integer_offset_ += offset * objective_integer_scaling_factor_;
-    objective_domain_ = objective_domain_.AdditionWith(Domain(-offset));
-  }
-
-  return true;
+  if (offset != 0) AddToObjectiveOffset(offset);
 }
 
 void PresolveContext::WriteObjectiveToProto() const {
