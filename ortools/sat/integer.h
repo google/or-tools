@@ -1738,10 +1738,9 @@ inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int64_t ub) {
             IntegerLiteral::LowerOrEqual(v, IntegerValue(ub)),
             std::vector<Literal>(), std::vector<IntegerLiteral>())) {
       model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-      LOG(WARNING) << "Model trivially infeasible, variable " << v
-                   << " has lower bound " << model->Get(LowerBound(v))
-                   << " and LowerOrEqual() was called with an upper bound of "
-                   << ub;
+      VLOG(1) << "Model trivially infeasible, variable " << v
+              << " has lower bound " << model->Get(LowerBound(v))
+              << " and LowerOrEqual() was called with an upper bound of " << ub;
     }
   };
 }
