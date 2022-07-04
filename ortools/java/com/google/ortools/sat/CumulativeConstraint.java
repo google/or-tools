@@ -28,6 +28,7 @@ public class CumulativeConstraint extends Constraint {
   }
 
   /// Adds a pair (interval, demand) to the constraint.
+  @CanIgnoreReturnValue
   public CumulativeConstraint addDemand(IntervalVar interval, LinearArgument demand) {
     CumulativeConstraintProto.Builder cumul = getBuilder().getCumulativeBuilder();
     cumul.addIntervals(interval.getIndex());
@@ -36,6 +37,7 @@ public class CumulativeConstraint extends Constraint {
   }
 
   /// Adds a pair (interval, demand) to the constraint.
+  @CanIgnoreReturnValue
   public CumulativeConstraint addDemand(IntervalVar interval, long demand) {
     CumulativeConstraintProto.Builder cumul = getBuilder().getCumulativeBuilder();
     cumul.addIntervals(interval.getIndex());
@@ -51,6 +53,7 @@ public class CumulativeConstraint extends Constraint {
    * @return itself
    * @throws CpModel.MismatchedArrayLengths if intervals and demands have different length
    */
+  @CanIgnoreReturnValue
   public CumulativeConstraint addDemands(IntervalVar[] intervals, LinearArgument[] demands) {
     if (intervals.length != demands.length) {
       throw new CpModel.MismatchedArrayLengths(
@@ -70,6 +73,7 @@ public class CumulativeConstraint extends Constraint {
    * @return itself
    * @throws CpModel.MismatchedArrayLengths if intervals and demands have different length
    */
+  @CanIgnoreReturnValue
   public CumulativeConstraint addDemands(IntervalVar[] intervals, long[] demands) {
     if (intervals.length != demands.length) {
       throw new CpModel.MismatchedArrayLengths(
@@ -89,6 +93,7 @@ public class CumulativeConstraint extends Constraint {
    * @return itself
    * @throws CpModel.MismatchedArrayLengths if intervals and demands have different length
    */
+  @CanIgnoreReturnValue
   public CumulativeConstraint addDemands(IntervalVar[] intervals, int[] demands) {
     if (intervals.length != demands.length) {
       throw new CpModel.MismatchedArrayLengths(

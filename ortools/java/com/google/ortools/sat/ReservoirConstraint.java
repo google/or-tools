@@ -33,6 +33,7 @@ public class ReservoirConstraint extends Constraint {
    * <p>It will increase the used capacity by `levelChange` at time `time`. `time` must be an affine
    * expression.
    */
+  @CanIgnoreReturnValue
   public ReservoirConstraint addEvent(LinearArgument time, long levelChange) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
@@ -47,6 +48,7 @@ public class ReservoirConstraint extends Constraint {
    *
    * <p>It will increase the used capacity by `levelChange` at time `time`.
    */
+  @CanIgnoreReturnValue
   public ReservoirConstraint addEvent(long time, long levelChange) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(model.getLinearExpressionProtoBuilderFromLong(time));
@@ -61,6 +63,7 @@ public class ReservoirConstraint extends Constraint {
    * <p>If `isActive` is true, It will increase the used capacity by `levelChange` at time `time`.
    * `time` must be an affine expression.
    */
+  @CanIgnoreReturnValue
   public ReservoirConstraint addOptionalEvent(LinearExpr time, long levelChange, Literal isActive) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
@@ -75,6 +78,7 @@ public class ReservoirConstraint extends Constraint {
    *
    * <p>If `isActive` is true, It will increase the used capacity by `levelChange` at time `time`.
    */
+  @CanIgnoreReturnValue
   public ReservoirConstraint addOptionalEvent(long time, long levelChange, Literal isActive) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(model.getLinearExpressionProtoBuilderFromLong(time));

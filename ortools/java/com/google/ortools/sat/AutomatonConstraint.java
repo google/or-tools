@@ -26,6 +26,7 @@ public class AutomatonConstraint extends Constraint {
   }
 
   /// Adds a transitions to the automaton.
+  @CanIgnoreReturnValue
   AutomatonConstraint addTransition(int tail, int head, long label) {
     getBuilder()
         .getAutomatonBuilder()
