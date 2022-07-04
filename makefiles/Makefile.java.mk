@@ -563,7 +563,7 @@ EXAMPLE_JAVA_FILES = \
   $(addsuffix /pom.xml,$(addprefix $(TEMP_JAVA_DIR)/ortools_examples/examples/java/,$(basename $(notdir $(wildcard examples/contrib/*.java))))) \
   $(addsuffix /pom.xml,$(addprefix $(TEMP_JAVA_DIR)/ortools_examples/examples/java/,$(basename $(notdir $(wildcard examples/java/*.java)))))
 
-.PHONY: java_examples_archive # Build stand-alone C++ examples archive file for redistribution.
+.PHONY: java_examples_archive # Build stand-alone Java examples archive file for redistribution.
 java_examples_archive: \
  $(SAMPLE_JAVA_FILES) \
  $(EXAMPLE_JAVA_FILES) \

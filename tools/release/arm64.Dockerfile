@@ -1,7 +1,7 @@
-# Need a Centos 7 to avoid this:
-# https://github.com/google/or-tools/issues/2520#issuecomment-825119882
-# note: PEP 599 manylinux2014 is also based on Centos 7 which will reach End of Life (EOL) on June 30th, 2024
-FROM centos:7 AS env
+# To build it on x86_64 please read
+# https://github.com/multiarch/qemu-user-static#getting-started
+FROM quay.io/pypa/manylinux2014_aarch64:latest AS env
+#FROM --platform=linux/arm64 centos:7 AS env
 
 #############
 ##  SETUP  ##
@@ -12,23 +12,14 @@ RUN yum -y update \
 && yum clean all \
 && rm -rf /var/cache/yum
 
-# Bump to gcc-11
-RUN yum -y update \
-&& yum -y install centos-release-scl \
-&& yum -y install devtoolset-11 \
-&& yum clean all \
-&& echo "source /opt/rh/devtoolset-11/enable" >> /etc/bashrc
-SHELL ["/usr/bin/bash", "--login", "-c"]
-ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
-CMD ["/usr/bin/bash", "--login"]
-# RUN g++ --version
+ENTRYPOINT ["/usr/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
 
 # Install CMake 3.23.2
-RUN ARCH=$(uname -m) \
-&& wget -q "https://cmake.org/files/v3.23/cmake-3.23.2-linux-${ARCH}.sh" \
-&& chmod a+x cmake-3.23.2-linux-${ARCH}.sh \
-&& ./cmake-3.23.2-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.23.2-linux-${ARCH}.sh
+RUN wget -q --no-check-certificate "https://cmake.org/files/v3.23/cmake-3.23.2-linux-aarch64.sh" \
+&& chmod a+x cmake-3.23.2-linux-aarch64.sh \
+&& ./cmake-3.23.2-linux-aarch64.sh --prefix=/usr --skip-license \
+&& rm cmake-3.23.2-linux-aarch64.sh
 
 # Install Swig 4.0.2
 RUN curl --location-trusted \
@@ -45,12 +36,13 @@ RUN curl --location-trusted \
 
 # Install .Net
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-
-RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm \
-&& yum -y update \
-&& yum -y install dotnet-sdk-3.1 dotnet-sdk-6.0 \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
+&& chmod a+x dotnet-install.sh \
+&& ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
+&& ./dotnet-install.sh -c 6.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
+RUN objdump -p /lib64/libstdc++.so.6
+RUN g++ --version
 RUN dotnet --info
 
 # Install Java 8 SDK
@@ -65,12 +57,6 @@ RUN yum -y update \
 && yum -y install epel-release \
 && yum repolist \
 && yum -y install openssl11
-
-# Install Python
-RUN yum -y update \
-&& yum -y install python3 python3-devel python3-pip numpy \
-&& yum clean all \
-&& rm -rf /var/cache/yum
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

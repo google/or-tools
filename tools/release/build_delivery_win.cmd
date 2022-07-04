@@ -63,24 +63,13 @@ if "%1"=="all" (
 call :BUILD_DOTNET
 call :BUILD_JAVA
 call :BUILD_ARCHIVE
-call :BUILD_EXAMPLES
+:: call :BUILD_EXAMPLES
 call :BUILD_PYTHON
 exit /B %ERRORLEVEL%
 )
 
 if "%1"=="reset" (
-echo clean everything... | tee.exe -a build.log
-make.exe clean || exit 1
-rm.exe -rf temp_dotnet
-rm.exe -rf temp_java
-for %%v in (6 7 8 9 10) do (
-  rm.exe -rf temp_python3%%v
-)
-rm.exe -rf export
-del or-tools.snk
-for %%i in (*.zip) DO del %%i
-for %%i in (*.whl) DO del %%i
-for %%i in (*.log) DO del %%i
+call :RESET
 exit /B %ERRORLEVEL%
 )
 
@@ -233,7 +222,7 @@ echo Make java archive... | tee.exe -a build.log
 make.exe archive_java WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 echo DONE | tee.exe -a build.log
 
-for %%i in (or-tools_*VisualStudio2019-64bit*.zip) do (
+for %%i in (or-tools_*VisualStudio*-64bit*.zip) do (
   echo Move %%i to export... | tee.exe -a build.log
   move %%i export\.
   echo Move %%i to export...DONE | tee.exe -a build.log
@@ -254,8 +243,6 @@ exit /B 0
 
 rm.exe -rf temp *.zip || exit 1
 echo Build examples archives... | tee.exe -a build.log
-echo   C++ examples archive... | tee.exe -a build.log
-make.exe cc_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 echo   Python examples archive... | tee.exe -a build.log
 make.exe python_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 echo   Java examples archive... | tee.exe -a build.log
@@ -312,4 +299,24 @@ for %%v in (6 7 8 9 10) do (
   )
 )
 echo %BRANCH% %SHA1%>build_python.log
+exit /B 0
+
+REM Reset
+:RESET
+title Reset
+echo clean everything... | tee.exe -a build.log
+make.exe clean || exit 1
+del /s /f /q temp_dotnet
+rmdir /s /q temp_dotnet
+del /s /f /q temp_java
+rmdir /s /q temp_java
+for %%v in (6 7 8 9 10) do (
+  del /s /f /q temp_python3%%v
+  rmdir /s /q temp_python3%%v
+)
+rm.exe -rf export
+del or-tools.snk
+for %%i in (*.zip) DO del %%i
+for %%i in (*.whl) DO del %%i
+for %%i in (*.log) DO del %%i
 exit /B 0

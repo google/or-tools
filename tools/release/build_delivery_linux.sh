@@ -22,17 +22,18 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using the ${BOLD}local host system${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help] [examples|dotnet|java|all]
+\t$NAME [-h|--help|help] [examples|dotnet|java|python|all|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
-\t* ORTOOLS_TOKEN: secret use to decrypt key to sign .Net and Java package.
+\t* ORTOOLS_TOKEN: secret use to decrypt keys to sign .Net and Java packages.
 
 ${BOLD}OPTIONS${RESET}
-\t-h --help: show this help text
-\tdotnet: Build dotnet packages
-\tjava: Build java packages
-\texamples: Build examples archives
+\t-h --help: display this help text
+\tdotnet: build all .Net packages
+\tjava: build all Java packages
+\tpython: build all Pyhon packages
+\texamples: build examples archives
 \tall: build everything (default)
 
 ${BOLD}EXAMPLES${RESET}
@@ -40,11 +41,11 @@ Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only building th
 export ORTOOLS_TOKEN=SECRET
 $0 java
 
-note: the 'export ...' should be placed in your bashrc to avoid leak of the secret
-in your bash history
+note: the 'export ...' should be placed in your bashrc to avoid any leak
+of the secret in your bash history
 EOF
 )
-echo -e "$help"
+  echo -e "$help"
 }
 
 function assert_defined(){
@@ -57,7 +58,7 @@ function assert_defined(){
 # .Net build
 function build_dotnet() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/dotnet_build" -; then
-    echo "build .Net up to date!"
+    echo "build .Net up to date!" | tee -a build.log
     return 0
   fi
 
@@ -92,6 +93,7 @@ function build_dotnet() {
   #cmake --build temp_dotnet --target test
   #echo "cmake test: DONE" | tee -a build.log
 
+  # copy nupkg to export
   cp temp_dotnet/dotnet/packages/*nupkg export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/dotnet_build"
 }
@@ -127,14 +129,18 @@ function build_java() {
 
   # Install Java GPG
   echo -n "Install Java GPG..." | tee -a build.log
-  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" -in tools/release/private-key.gpg.enc -out private-key.gpg -d
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  -in tools/release/private-key.gpg.enc \
+  -out private-key.gpg -d
   gpg --batch --import private-key.gpg
   # Don't need to trust the key
   #expect -c "spawn gpg --edit-key "corentinl@google.com" trust quit; send \"5\ry\r\"; expect eof"
 
   # Install the maven settings.xml having the GPG passphrase
   mkdir -p ~/.m2
-  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  -in tools/release/settings.xml.enc \
+  -out ~/.m2/settings.xml -d
   echo "DONE" | tee -a build.log
 
   # Clean java
@@ -159,6 +165,7 @@ function build_java() {
   #cmake --build temp_java --target test
   #echo "cmake test: DONE" | tee -a build.log
 
+  # copy jar to export
   cp temp_java/java/ortools-linux-x86-64/target/*.jar* export/
   cp temp_java/java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
@@ -217,7 +224,8 @@ function build_archive() {
   make archive_java
   echo "DONE" | tee -a build.log
 
-  # TODO(user) copy archives to export/
+  # move archive to export
+  mv or-tools_*.tar.gz export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/archive_build"
 }
 
@@ -232,8 +240,6 @@ function build_examples() {
 
   rm -rf temp ./*.tar.gz
   echo -n "Build examples archives..." | tee -a build.log
-  echo -n "  C++ examples archive..." | tee -a build.log
-  make cc_examples_archive UNIX_PYTHON_VER=3
   echo -n "  Python examples archive..." | tee -a build.log
   make python_examples_archive UNIX_PYTHON_VER=3
   echo -n "  Java examples archive..." | tee -a build.log
@@ -242,20 +248,20 @@ function build_examples() {
   make dotnet_examples_archive UNIX_PYTHON_VER=3
   echo "DONE" | tee -a build.log
 
-  # TODO(user) copy example to export/
+  # move example to export/
+  mv or-tools_*_examples_*.tar.gz export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/examples_build"
 }
 
 # Main
 function main() {
   case ${1} in
-    -h | --help)
+    -h | --help | help)
       help; exit ;;
   esac
 
   assert_defined ORTOOLS_TOKEN
   echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
-  make print-OR_TOOLS_VERSION | tee -a build.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
@@ -263,8 +269,11 @@ function main() {
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
   echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
 
+  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
+
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+
   mkdir -p export
 
   case ${1} in
@@ -276,10 +285,10 @@ function main() {
       build_java
       #build_python
       build_archive
-      build_examples
+      #build_examples
       exit ;;
     *)
-      >&2 echo "Target '${1}' unknown" | tee -a build.log
+      >&2 echo "Target '${1}' unknown"
       exit 1
   esac
   exit 0
