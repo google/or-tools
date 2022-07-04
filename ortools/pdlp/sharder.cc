@@ -324,20 +324,4 @@ VectorXd ScaledColL2Norm(
   return answer;
 }
 
-bool IsDiagonal(
-    const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
-    const Sharder& sharder) {
-  return sharder.ParallelTrueForAllShards([&](const Sharder::Shard& shard) {
-    auto matrix_shard = shard(matrix);
-    const int64_t col_offset = sharder.ShardStart(shard.Index());
-    for (int64_t col_idx = 0; col_idx < matrix_shard.outerSize(); ++col_idx) {
-      for (decltype(matrix_shard)::InnerIterator it(matrix_shard, col_idx); it;
-           ++it) {
-        if (it.row() != (col_offset + it.col())) return false;
-      }
-    }
-    return true;
-  });
-}
-
 }  // namespace operations_research::pdlp

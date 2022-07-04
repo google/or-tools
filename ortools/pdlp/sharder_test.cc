@@ -458,33 +458,6 @@ TEST(ScaledColL2Norm, SmallExample) {
   EXPECT_THAT(answer, ElementsAre(std::sqrt(54), 1.0, 6.0, std::sqrt(41)));
 }
 
-TEST(IsDiagonal, DiagonalSquareMatrix) {
-  Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t> mat(4, 4);
-  std::vector<Eigen::Triplet<double, int64_t>> matrix_triplets = {
-      {0, 0, 1.0}, {1, 1, 2.5}, {3, 3, -3}};
-  mat.setFromTriplets(matrix_triplets.begin(), matrix_triplets.end());
-  Sharder sharder(mat, /*num_shards=*/3, nullptr);
-  EXPECT_TRUE(IsDiagonal(mat, sharder));
-}
-
-TEST(IsDiagonal, DiagonalRectangularMatrix) {
-  Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t> mat(3, 5);
-  std::vector<Eigen::Triplet<double, int64_t>> matrix_triplets = {
-      {0, 0, 2}, {1, 1, -1}, {2, 2, 3}};
-  mat.setFromTriplets(matrix_triplets.begin(), matrix_triplets.end());
-  Sharder sharder(mat, /*num_shards=*/3, nullptr);
-  EXPECT_TRUE(IsDiagonal(mat, sharder));
-}
-
-TEST(IsDiagonal, NonDiagonalSquareMatrix) {
-  Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t> mat(3, 3);
-  std::vector<Eigen::Triplet<double, int64_t>> matrix_triplets = {
-      {0, 0, 2}, {0, 1, -1}, {1, 0, -1}, {2, 2, 1}};
-  mat.setFromTriplets(matrix_triplets.begin(), matrix_triplets.end());
-  Sharder sharder(mat, /*num_shards=*/3, nullptr);
-  EXPECT_FALSE(IsDiagonal(mat, sharder));
-}
-
 class VariousSizesTest : public testing::TestWithParam<int64_t> {};
 
 TEST_P(VariousSizesTest, LargeMatVec) {

@@ -560,20 +560,6 @@ SingularValueAndIterations EstimateMaximumSingularValue(
     const Sharder& primal_vector_sharder, const Sharder& dual_vector_sharder,
     const double desired_relative_error, const double failure_probability,
     std::mt19937& mt_generator) {
-  // Easy case: matrix is diagonal.
-  if (IsDiagonal(matrix, matrix_sharder)) {
-    VectorXd local_max(matrix_sharder.NumShards());
-    matrix_sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
-      const auto matrix_shard = shard(matrix);
-      local_max[shard.Index()] =
-          (matrix_shard *
-           VectorXd::Ones(matrix_sharder.ShardSize(shard.Index())))
-              .lpNorm<Eigen::Infinity>();
-    });
-    return {.singular_value = local_max.lpNorm<Eigen::Infinity>(),
-            .num_iterations = 0,
-            .estimated_relative_error = 0.0};
-  }
   const int64_t dimension = matrix.cols();
   VectorXd eigenvector(dimension);
   // Even though it will be slower, we initialize eigenvector sequentially so

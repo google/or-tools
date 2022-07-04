@@ -237,7 +237,7 @@ class Sharder {
 // constructor.
 Eigen::VectorXd TransposedMatrixVectorProduct(
     const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
-    const Eigen::VectorXd& vector, const Sharder& Sharder);
+    const Eigen::VectorXd& vector, const Sharder& sharder);
 
 ////////////////////////////////////////////////////////////////////////////////
 // The following functions use a Sharder to compute a vector operation in
@@ -329,11 +329,6 @@ Eigen::VectorXd ScaledColL2Norm(
     const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
     const Eigen::VectorXd& row_scaling_vec,
     const Eigen::VectorXd& col_scaling_vec, const Sharder& sharder);
-
-// Checks if a matrix is diagonal.
-bool IsDiagonal(
-    const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
-    const Sharder& sharder);
 
 }  // namespace operations_research::pdlp
 

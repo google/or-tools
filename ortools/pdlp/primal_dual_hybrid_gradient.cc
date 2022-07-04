@@ -906,13 +906,6 @@ SolverResult Solver::ConstructSolverResult(VectorXd primal_solution,
     LOG(INFO) << IterationStatsLabelString();
     LOG(INFO) << ToString(stats, params_.termination_criteria(),
                           original_bound_norms_, solve_log.solution_type());
-    const auto& convergence_info = GetConvergenceInformation(stats, solve_log.solution_type());
-    if (convergence_info.has_value()) {
-      if (std::isfinite(convergence_info->corrected_dual_objective())) {
-        LOG(INFO) << "Dual objective after infeasibility correction: " <<
-          convergence_info->corrected_dual_objective();
-      }
-    }
   }
   solve_log.set_iteration_count(stats.iteration_number());
   solve_log.set_termination_reason(termination_reason);
@@ -1969,6 +1962,8 @@ SolverResult Solver::Solve(
       CloneVector(current_dual_solution_, sharded_working_qp_.DualSharder());
   // Note: Any cached values computed here also need to be recomputed after a
   // restart.
+  solve_log.set_preprocessing_time_sec(timer_.Get());
+
   ratio_last_two_step_sizes_ = 1;
   current_dual_product_ = TransposedMatrixVectorProduct(
       WorkingQp().constraint_matrix, current_dual_solution_,
@@ -1979,8 +1974,6 @@ SolverResult Solver::Solve(
   bool force_numerical_termination = false;
 
   num_rejected_steps_ = 0;
-
-  solve_log.set_preprocessing_time_sec(timer_.Get());
 
   for (iterations_completed_ = 0;; ++iterations_completed_) {
     // This code performs the logic of the major iterations and termination

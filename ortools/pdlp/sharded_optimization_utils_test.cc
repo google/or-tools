@@ -626,6 +626,24 @@ TEST(EstimateSingularValuesTest, CorrectForTestLpWithBothActiveSubspaces) {
   EXPECT_LT(result.num_iterations, 300);
 }
 
+TEST(EstimateSingularValuesTest, CorrectForDiagonalLp) {
+  QuadraticProgram diagonal_lp = TestLp();
+  std::vector<Eigen::Triplet<double, int64_t>> triplets = {
+      {0, 0, 2}, {1, 1, 1}, {2, 2, -3}, {3, 3, -1}};
+  diagonal_lp.constraint_matrix.setFromTriplets(triplets.begin(),
+                                                triplets.end());
+  ShardedQuadraticProgram lp(diagonal_lp, /*num_threads=*/2, /*num_shards=*/2);
+
+  // The diagonal_lp matrix is [ 2 0 0 0; 0 1 0 0; 0 0 -3 0; 0 0 0 -1].
+  std::mt19937 random(1);
+  auto result = EstimateMaximumSingularValueOfConstraintMatrix(
+      lp, absl::nullopt, absl::nullopt,
+      /*desired_relative_error=*/0.01,
+      /*failure_probability=*/0.001, random);
+  EXPECT_NEAR(result.singular_value, 3, 0.0001);
+  EXPECT_LT(result.num_iterations, 300);
+}
+
 TEST(ProjectToPrimalVariableBoundsTest, TestLp) {
   ShardedQuadraticProgram qp(TestLp(), /*num_threads=*/2,
                              /*num_shards=*/2);
