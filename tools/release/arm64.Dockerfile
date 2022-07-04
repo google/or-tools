@@ -1,16 +1,20 @@
 # To build it on x86_64 please read
 # https://github.com/multiarch/qemu-user-static#getting-started
-FROM quay.io/pypa/manylinux2014_aarch64:latest AS env
+
+# Use yum
 #FROM --platform=linux/arm64 centos:7 AS env
+#FROM quay.io/pypa/manylinux2014_aarch64:latest AS env
+# Use dnf
+FROM quay.io/pypa/manylinux_2_28_aarch64:latest AS env
 
 #############
 ##  SETUP  ##
 #############
-RUN yum -y update \
-&& yum -y groupinstall 'Development Tools' \
-&& yum -y install wget curl pcre-devel openssl redhat-lsb-core pkgconfig autoconf libtool zlib-devel which \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y install wget curl pcre-devel openssl redhat-lsb-core pkgconfig autoconf libtool zlib-devel which \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
@@ -41,22 +45,20 @@ RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
 && ./dotnet-install.sh -c 6.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
-RUN objdump -p /lib64/libstdc++.so.6
-RUN g++ --version
+#RUN objdump -p /lib64/libstdc++.so.6
+#RUN g++ --version
 RUN dotnet --info
 
 # Install Java 8 SDK
-RUN yum -y update \
-&& yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 ENV JAVA_HOME=/usr/lib/jvm/java
 
 # Openssl 1.1
-RUN yum -y update \
-&& yum -y install epel-release \
-&& yum repolist \
-&& yum -y install openssl11
+RUN dnf -y update \
+&& dnf -y install openssl
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

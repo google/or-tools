@@ -20,7 +20,7 @@ function help() {
   local -r RESET="\e[0m"
   local -r help=$(cat << EOF
 ${BOLD}NAME${RESET}
-\t$NAME - Build delivery using an ${BOLD}Centos 7 docker image${RESET}.
+\t$NAME - Build delivery using a ${BOLD}Manylinux 2.28 aarch64 docker image${RESET}.
 ${BOLD}SYNOPSIS${RESET}
 \t$NAME [-h|--help|help] [examples|dotnet|java|python|all|reset]
 ${BOLD}DESCRIPTION${RESET}
@@ -199,6 +199,25 @@ function build_examples() {
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/arm64_examples_build"
 }
 
+# Cleaning everything
+function reset() {
+  assert_defined ORTOOLS_IMG
+
+  echo "Cleaning everything..."
+  rm -rf export/
+  docker image rm -f "${ORTOOLS_IMG}":archive 2>/dev/null
+  docker image rm -f "${ORTOOLS_IMG}":examples 2>/dev/null
+  docker image rm -f "${ORTOOLS_IMG}":dotnet 2>/dev/null
+  docker image rm -f "${ORTOOLS_IMG}":java 2>/dev/null
+  docker image rm -f "${ORTOOLS_IMG}":python 2>/dev/null
+
+  docker image rm -f "${ORTOOLS_IMG}":devel 2>/dev/null
+  docker image rm -f "${ORTOOLS_IMG}":env 2>/dev/null
+  rm -f "${ROOT_DIR}/*.log"
+
+  echo "DONE"
+}
+
 # Main
 function main() {
   case ${1} in
@@ -227,6 +246,9 @@ function main() {
   case ${1} in
     dotnet|java|python|archive|examples)
       "build_$1"
+      exit ;;
+    reset)
+      reset
       exit ;;
     all)
       build_dotnet
