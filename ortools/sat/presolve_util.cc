@@ -58,6 +58,14 @@ void DomainDeductions::AddDeduction(int literal_ref, int var, Domain domain) {
   }
 }
 
+Domain DomainDeductions::ImpliedDomain(int literal_ref, int var) const {
+  CHECK_GE(var, 0);
+  const Index index = IndexFromLiteral(literal_ref);
+  const auto it = deductions_.find({index, var});
+  if (it == deductions_.end()) return Domain::AllValues();
+  return it->second;
+}
+
 std::vector<std::pair<int, Domain>> DomainDeductions::ProcessClause(
     absl::Span<const int> clause) {
   std::vector<std::pair<int, Domain>> result;

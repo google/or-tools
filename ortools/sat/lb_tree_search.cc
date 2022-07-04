@@ -565,17 +565,12 @@ SatSolver::Status LbTreeSearch::Search(
             objective_var_, integer_trail_->LowerBound(objective_var_)));
     std::vector<Literal> decisions = ExtractDecisions(base_level, reason);
 
-    // Because we will re-enqueue these decision, we change the order so that
-    // if one is implied by others, it will be skipped.
-    std::reverse(decisions.begin(), decisions.end());
-
     // Bump activities.
     sat_decision_->BumpVariableActivities(reason);
     sat_decision_->BumpVariableActivities(decisions);
     sat_decision_->UpdateVariableActivityIncrement();
 
     // Create one node per new decisions.
-    const int old_size = current_branch_.size();
     CHECK_EQ(current_branch_.size(), base_level);
     for (const Literal d : decisions) {
       AppendNewNodeToCurrentBranch(d);
@@ -593,10 +588,18 @@ SatSolver::Status LbTreeSearch::Search(
     }
 
     // Reset the solver to a correct state since we have a subset of the
-    // current propagation.
+    // current propagation. We backtrack as little as possible.
     //
-    // TODO(user): no need to backtrack if the prefix is correct?
-    sat_solver_->Backtrack(base_level);
+    // The decision level is the number of decision taken.
+    // Decision()[level] is the decision at that level.
+    int backtrack_level = base_level;
+    CHECK_LE(current_branch_.size(), sat_solver_->CurrentDecisionLevel());
+    while (backtrack_level < current_branch_.size() &&
+           sat_solver_->Decisions()[backtrack_level].literal ==
+               nodes_[current_branch_[backtrack_level]].literal) {
+      ++backtrack_level;
+    }
+    sat_solver_->Backtrack(backtrack_level);
 
     // Update bounds with reduced costs info.
     //
@@ -604,7 +607,7 @@ SatSolver::Status LbTreeSearch::Search(
     // backtracked over?
     //
     // TODO(user): We could do all at once rather than in O(#decision * #size).
-    for (int i = old_size; i < current_branch_.size(); ++i) {
+    for (int i = backtrack_level; i < current_branch_.size(); ++i) {
       ExploitReducedCosts(current_branch_[i]);
     }
   }

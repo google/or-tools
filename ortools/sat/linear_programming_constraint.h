@@ -347,18 +347,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // current variable bound. Return kMinIntegerValue in case of overflow.
   IntegerValue GetImpliedLowerBound(const LinearConstraint& terms) const;
 
-  // Tests for possible overflow in the propagation of the given linear
-  // constraint.
-  bool PossibleOverflow(const LinearConstraint& constraint);
-
-  // Reduce the coefficient of the constraint so that we cannot have overflow
-  // in the propagation of the given linear constraint. Note that we may loose
-  // some strength by doing so.
-  //
-  // We make sure that any partial sum involving any variable value in their
-  // domain do not exceed 2 ^ max_pow.
-  void PreventOverflow(LinearConstraint* constraint, int max_pow = 62);
-
   // Fills integer_reason_ with the reason for the implied lower bound of the
   // given linear expression. We relax the reason if we have some slack.
   void SetImpliedLowerBoundReason(const LinearConstraint& terms,
@@ -569,6 +557,17 @@ class LinearProgrammingDispatcher
 // A class that stores the collection of all LP constraints in a model.
 class LinearProgrammingConstraintCollection
     : public std::vector<LinearProgrammingConstraint*> {};
+
+// Tests for possible overflow in the propagation of the given linear
+// constraint.
+bool PossibleOverflow(const IntegerTrail& integer_trail,
+                      const LinearConstraint& constraint);
+
+// Reduce the coefficient of the constraint so that we cannot have overflow
+// in the propagation of the given linear constraint. Note that we may loose
+// some strength by doing so.
+void PreventOverflow(const IntegerTrail& integer_trail,
+                     LinearConstraint* constraint);
 
 // TODO(user): Move the cut "graph" based cut generator out of this class, there
 // is no reason to keep them here.

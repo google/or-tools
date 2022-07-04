@@ -1746,8 +1746,8 @@ IntegerValue LinearProgrammingConstraint::GetImpliedLowerBound(
   return lower_bound;
 }
 
-bool LinearProgrammingConstraint::PossibleOverflow(
-    const LinearConstraint& constraint) {
+bool PossibleOverflow(const IntegerTrail& integer_trail,
+                      const LinearConstraint& constraint) {
   IntegerValue lower_bound(0);
   const int size = constraint.vars.size();
   for (int i = 0; i < size; ++i) {
@@ -1755,18 +1755,15 @@ bool LinearProgrammingConstraint::PossibleOverflow(
     const IntegerValue coeff = constraint.coeffs[i];
     CHECK_NE(coeff, 0);
     const IntegerValue bound = coeff > 0
-                                   ? integer_trail_->LevelZeroLowerBound(var)
-                                   : integer_trail_->LevelZeroUpperBound(var);
+                                   ? integer_trail.LevelZeroLowerBound(var)
+                                   : integer_trail.LevelZeroUpperBound(var);
     if (!AddProductTo(bound, coeff, &lower_bound)) {
       return true;
     }
   }
-  const int64_t slack = CapAdd(lower_bound.value(), -constraint.ub.value());
-  if (slack == std::numeric_limits<int64_t>::min() ||
-      slack == std::numeric_limits<int64_t>::max()) {
-    return true;
-  }
-  return false;
+  const int64_t slack = CapSub(constraint.ub.value(), lower_bound.value());
+  return slack == std::numeric_limits<int64_t>::min() ||
+         slack == std::numeric_limits<int64_t>::max();
 }
 
 namespace {
@@ -1778,43 +1775,17 @@ absl::int128 FloorRatio128(absl::int128 x, IntegerValue positive_div) {
   return result;
 }
 
-}  // namespace
+absl::int128 CeilRatio128(absl::int128 x, absl::int128 div128) {
+  absl::int128 result = x / div128;
+  if (result * div128 < x) return result + 1;
+  return result;
+}
 
-void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
-                                                  int max_pow) {
-  // First, make all coefficient positive.
-  MakeAllCoefficientsPositive(constraint);
-
-  // Compute the max possible value that will appear when propagating this
-  // constraint. This relies on the propagator computing the implied lower
-  // bound, computing the slack (rhs_ub - implied_lb) and comparing the
-  // max_delta of each variable to the slack.
-  //
-  // Note(user): it is important to be as precise as possible here. It is why
-  // we try to be tight in our evaluation of possible overflow.
-  double sum_min_neg = 0.0;
-  double sum_min_pos = 0.0;
-  double max_delta = 0.0;
-  const int size = constraint->vars.size();
-  for (int i = 0; i < size; ++i) {
-    const IntegerVariable var = constraint->vars[i];
-    const double coeff = ToDouble(constraint->coeffs[i]);
-    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
-    const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
-    if (lb > 0) {
-      sum_min_pos += coeff * ToDouble(lb);
-    } else {
-      sum_min_neg += coeff * ToDouble(lb);
-    }
-    max_delta = std::max(max_delta, ToDouble(ub - lb) * coeff);
-  }
-  const double max_value =
-      std::max({-sum_min_neg, sum_min_pos, max_delta,
-                ToDouble(constraint->ub) - (sum_min_pos + sum_min_neg)});
-
-  const IntegerValue divisor(std::ceil(std::ldexp(max_value, -max_pow)));
-  if (divisor <= 1) return;
-
+// TODO(user): This code is tricky and similar to the one to generate cuts.
+// Maybe reduce the duplication? note however that here we use int128 to deal
+// with potential overflow.
+void DivideConstraint(const IntegerTrail& integer_trail, IntegerValue divisor,
+                      LinearConstraint* constraint) {
   // To be correct, we need to shift all variable so that they are positive.
   //
   // Important: One might be tempted to think that using the current variable
@@ -1823,12 +1794,9 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
   // one term become zero), we might loose the fact that we used one of the
   // variable bound to derive the new constraint, so we will miss it in the
   // explanation !!
-  //
-  // TODO(user): This code is tricky and similar to the one to generate cuts.
-  // Test and may reduce the duplication? note however that here we use int128
-  // to deal with potential overflow.
   int new_size = 0;
   absl::int128 adjust = 0;
+  const int size = constraint->vars.size();
   for (int i = 0; i < size; ++i) {
     const IntegerValue old_coeff = constraint->coeffs[i];
     const IntegerValue new_coeff = FloorRatio(old_coeff, divisor);
@@ -1840,7 +1808,7 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
     adjust +=
         remainder *
         absl::int128(
-            integer_trail_->LevelZeroLowerBound(constraint->vars[i]).value());
+            integer_trail.LevelZeroLowerBound(constraint->vars[i]).value());
 
     if (new_coeff == 0) continue;
     constraint->vars[new_size] = constraint->vars[i];
@@ -1850,8 +1818,98 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
   constraint->vars.resize(new_size);
   constraint->coeffs.resize(new_size);
 
+  // TODO(user): I am not 100% sure this cannot overflow. If it does it means
+  // our reduced constraint is trivial though, and we can cap it.
   constraint->ub = IntegerValue(static_cast<int64_t>(
       FloorRatio128(absl::int128(constraint->ub.value()) - adjust, divisor)));
+}
+
+}  // namespace
+
+// The goal here is to prevent overflow in the IntegerSumLE propagation code.
+// We want to be as tight as possible. We do it in two steps, which is not ideal
+// but easier.
+void PreventOverflow(const IntegerTrail& integer_trail,
+                     LinearConstraint* constraint) {
+  // We use kint64max - 1 so that PossibleOverflow() can distinguish overflow
+  // for a sum exactly equal to kint64max.
+  const absl::int128 threshold(std::numeric_limits<int64_t>::max() - 1);
+
+  // First, make all coefficient positive.
+  MakeAllCoefficientsPositive(constraint);
+
+  // First step is to make sure coeff * (ub - lb) and coeff * lb will not
+  // overflow. Note that we already know (ub - lb) cannot overflow.
+  {
+    absl::int128 max_delta = 0;
+    const int size = constraint->vars.size();
+    for (int i = 0; i < size; ++i) {
+      const IntegerVariable var = constraint->vars[i];
+      const IntegerValue lb = integer_trail.LevelZeroLowerBound(var);
+      const IntegerValue ub = integer_trail.LevelZeroUpperBound(var);
+      const absl::int128 coeff(constraint->coeffs[i].value());
+      const absl::int128 diff(
+          std::max({IntTypeAbs(lb), IntTypeAbs(ub), ub - lb}).value());
+      max_delta = std::max(max_delta, coeff * diff);
+    }
+    if (max_delta > threshold) {
+      const IntegerValue divisor(
+          static_cast<int64_t>(CeilRatio128(max_delta, threshold)));
+      DivideConstraint(integer_trail, divisor, constraint);
+    }
+  }
+
+  // Second step is to make sure computing the lower bound will not overflow
+  // whatever the order and at whatever level. And also that computing the slack
+  // will not overflow.
+  //
+  // Note that because each term fit on an int64_t per first step, we will not
+  // have int128 overflow.
+  //
+  // TODO(user): We could change the propag to detect a conflict without
+  // computing the full activity, and thus avoid some overflow. Like precompute
+  // a base lb and then compute the activity from there? Or we could have
+  // a custom code here, actually we only propagate this with the current lb
+  // instead of the LevelZeroUpperBound(). Or we could just propagate using
+  // int128 arithmetic.
+  {
+    absl::int128 sum_min_neg = 0;
+    absl::int128 sum_min_pos = 0;
+    absl::int128 sum_max_neg = 0;
+    absl::int128 sum_max_pos = 0;
+    const int size = constraint->vars.size();
+    for (int i = 0; i < size; ++i) {
+      const IntegerVariable var = constraint->vars[i];
+      const absl::int128 coeff(constraint->coeffs[i].value());
+      const absl::int128 lb(integer_trail.LevelZeroLowerBound(var).value());
+      if (lb > 0) {
+        sum_min_pos += coeff * lb;
+      } else {
+        sum_min_neg += coeff * lb;
+      }
+      const absl::int128 ub(integer_trail.LevelZeroUpperBound(var).value());
+      if (ub > 0) {
+        sum_max_pos += coeff * ub;
+      } else {
+        sum_max_neg += coeff * ub;
+      }
+    }
+    const absl::int128 min_slack =
+        static_cast<absl::int128>(constraint->ub.value()) -
+        (sum_min_pos + sum_min_neg);
+    const absl::int128 max_slack =
+        static_cast<absl::int128>(constraint->ub.value()) -
+        (sum_max_pos + sum_max_neg);
+    const absl::int128 max_value =
+        std::max({-sum_min_neg, sum_min_pos, sum_min_pos + sum_min_neg,
+                  -sum_max_neg, sum_max_pos, sum_max_pos + sum_max_neg,
+                  min_slack, -min_slack, max_slack, -max_slack});
+    if (max_value > threshold) {
+      const IntegerValue divisor(
+          static_cast<int64_t>(CeilRatio128(max_value, threshold)));
+      DivideConstraint(integer_trail, divisor, constraint);
+    }
+  }
 }
 
 // TODO(user): combine this with RelaxLinearReason() to avoid the extra
@@ -2183,8 +2241,8 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   tmp_constraint_.vars.push_back(objective_cp_);
   tmp_constraint_.coeffs.push_back(-obj_scale);
   DivideByGCD(&tmp_constraint_);
-  PreventOverflow(&tmp_constraint_);
-  DCHECK(!PossibleOverflow(tmp_constraint_));
+  PreventOverflow(*integer_trail_, &tmp_constraint_);
+  DCHECK(!PossibleOverflow(*integer_trail_, tmp_constraint_));
   DCHECK(constraint_manager_.DebugCheckConstraint(tmp_constraint_));
 
   // Corner case where prevent overflow removed all terms.
@@ -2232,8 +2290,8 @@ bool LinearProgrammingConstraint::FillExactDualRayReason() {
   tmp_scattered_vector_.ConvertToLinearConstraint(
       integer_variables_, new_constraint_ub, &tmp_constraint_);
   DivideByGCD(&tmp_constraint_);
-  PreventOverflow(&tmp_constraint_);
-  DCHECK(!PossibleOverflow(tmp_constraint_));
+  PreventOverflow(*integer_trail_, &tmp_constraint_);
+  DCHECK(!PossibleOverflow(*integer_trail_, tmp_constraint_));
   DCHECK(constraint_manager_.DebugCheckConstraint(tmp_constraint_));
 
   const IntegerValue implied_lb = GetImpliedLowerBound(tmp_constraint_);

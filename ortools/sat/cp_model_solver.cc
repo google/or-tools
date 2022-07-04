@@ -3420,7 +3420,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   if (!model_proto.assumptions().empty() &&
       (params.num_workers() > 1 || model_proto.has_objective() ||
-       model_proto.has_floating_point_objective())) {
+       model_proto.has_floating_point_objective() ||
+       params.enumerate_all_solutions())) {
     SOLVER_LOG(
         logger,
         "Warning: solving with assumptions was requested in a non-fully "

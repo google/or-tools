@@ -55,6 +55,10 @@ class DomainDeductions {
   // of the current variable domain.
   void AddDeduction(int literal_ref, int var, Domain domain);
 
+  // Returns the domain of var when literal_ref is true.
+  // If there is no information, returns Domain::AllValues().
+  Domain ImpliedDomain(int literal_ref, int var) const;
+
   // Returns list of (var, domain) that were deduced because:
   //   1/ We have a domain deduction for var and all literal from the clause
   //   2/ So we can take the union of all the deduced domains.
@@ -76,7 +80,7 @@ class DomainDeductions {
 
  private:
   DEFINE_STRONG_INDEX_TYPE(Index);
-  Index IndexFromLiteral(int ref) {
+  Index IndexFromLiteral(int ref) const {
     return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
   }
 

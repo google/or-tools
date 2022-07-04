@@ -563,20 +563,24 @@ void DualBoundStrengthening::CannotIncrease(absl::Span<const int> refs,
   }
 }
 
-void DualBoundStrengthening::CannotMove(absl::Span<const int> refs) {
+void DualBoundStrengthening::CannotMove(absl::Span<const int> refs,
+                                        int ct_index) {
   for (const int ref : refs) {
     const IntegerVariable var = RefToIntegerVariable(ref);
     can_freely_decrease_until_[var] = kMaxIntegerValue;
     can_freely_decrease_until_[NegationOf(var)] = kMaxIntegerValue;
     num_locks_[var]++;
     num_locks_[NegationOf(var)]++;
+    locking_ct_index_[var] = ct_index;
+    locking_ct_index_[NegationOf(var)] = ct_index;
   }
 }
 
 template <typename LinearProto>
 void DualBoundStrengthening::ProcessLinearConstraint(
     bool is_objective, const PresolveContext& context,
-    const LinearProto& linear, int64_t min_activity, int64_t max_activity) {
+    const LinearProto& linear, int64_t min_activity, int64_t max_activity,
+    int ct_index) {
   const int64_t lb_limit = linear.domain(linear.domain_size() - 2);
   const int64_t ub_limit = linear.domain(1);
   const int num_terms = linear.vars_size();
@@ -596,6 +600,7 @@ void DualBoundStrengthening::ProcessLinearConstraint(
     // lb side.
     if (min_activity < lb_limit) {
       num_locks_[var]++;
+      locking_ct_index_[var] = ct_index;
       if (min_activity + term_diff < lb_limit) {
         can_freely_decrease_until_[var] = kMaxIntegerValue;
       } else {
@@ -619,6 +624,7 @@ void DualBoundStrengthening::ProcessLinearConstraint(
     // ub side.
     if (max_activity > ub_limit) {
       num_locks_[NegationOf(var)]++;
+      locking_ct_index_[NegationOf(var)] = ct_index;
       if (max_activity - term_diff > ub_limit) {
         can_freely_decrease_until_[NegationOf(var)] = kMaxIntegerValue;
       } else {
@@ -698,34 +704,104 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     }
   }
 
-  // If (a => b) is the only constraint blocking a literal a in the up
-  // direction, then we can set a == b !
+  // If there is only one blocking constraint, we can simplify the problem in
+  // a few situation.
   //
-  // TODO(user): We can deal with more general situation. For instance an at
-  // most one that is the only blocking constraint can become an exactly one.
+  // TODO(user): Cover all the cases.
   std::vector<bool> processed(num_vars, false);
-  for (int positive_ref = 0; positive_ref < num_vars; ++positive_ref) {
+  for (IntegerVariable var(0); var < num_locks_.size(); ++var) {
+    const int ref = VarDomination::IntegerVariableToRef(var);
+    const int positive_ref = PositiveRef(ref);
     if (processed[positive_ref]) continue;
     if (context->IsFixed(positive_ref)) continue;
-    const IntegerVariable var = RefToIntegerVariable(positive_ref);
-    int ct_index = -1;
-    if (num_locks_[var] == 1 && locking_ct_index_[var] != -1) {
-      ct_index = locking_ct_index_[var];
-    } else if (num_locks_[NegationOf(var)] == 1 &&
-               locking_ct_index_[NegationOf(var)] != -1) {
-      ct_index = locking_ct_index_[NegationOf(var)];
-    } else {
+    if (num_locks_[var] != 1) continue;
+    if (locking_ct_index_[var] == -1) {
+      context->UpdateRuleStats(
+          "TODO dual: only one unspecified blocking constraint?");
       continue;
     }
+
+    const int ct_index = locking_ct_index_[var];
     const ConstraintProto& ct = context->working_model->constraints(ct_index);
     if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
       context->UpdateRuleStats("TODO dual: tighten at most one");
       continue;
     }
 
-    if (ct.constraint_case() != ConstraintProto::kBoolAnd) continue;
+    if (ct.constraint_case() != ConstraintProto::kBoolAnd) {
+      // If we have an enforcement literal then we can always add the
+      // implication "not enforced => var at its lower bound.
+      //
+      // TODO(user): We can also deal with more than one enforcement.
+      if (ct.enforcement_literal().size() == 1 &&
+          PositiveRef(ct.enforcement_literal(0)) != positive_ref) {
+        const int enf = ct.enforcement_literal(0);
+        const int64_t bound = RefIsPositive(ref) ? context->MinOf(positive_ref)
+                                                 : context->MaxOf(positive_ref);
+        const Domain implied =
+            context->DomainOf(positive_ref)
+                .IntersectionWith(
+                    context->deductions.ImpliedDomain(enf, positive_ref));
+        if (implied.IsFixed()) {
+          // Corner case.
+          if (implied.FixedValue() == bound) {
+            context->UpdateRuleStats("dual: fix variable");
+            if (!context->IntersectDomainWith(positive_ref, implied)) {
+              return false;
+            }
+            continue;
+          }
+
+          // Note(user): If we have enforced => var fixed, we could actually
+          // just have removed var from the constraint it it was implied by
+          // another constraint. If not, because of the new affine relation we
+          // could remove it right away.
+          processed[PositiveRef(enf)] = true;
+          processed[positive_ref] = true;
+          context->UpdateRuleStats("dual: affine relation");
+          if (RefIsPositive(enf)) {
+            // positive_ref = enf * implied + (1 - enf) * bound.
+            if (!context->StoreAffineRelation(
+                    positive_ref, enf, implied.FixedValue() - bound, bound)) {
+              return false;
+            }
+          } else {
+            // positive_ref = (1 - enf) * implied + enf * bound.
+            if (!context->StoreAffineRelation(positive_ref, PositiveRef(enf),
+                                              bound - implied.FixedValue(),
+                                              implied.FixedValue())) {
+              return false;
+            }
+          }
+          continue;
+        }
+
+        if (context->CanBeUsedAsLiteral(positive_ref)) {
+          // If we have a literal, we always add the implication.
+          // This seems like a good thing to do.
+          processed[PositiveRef(enf)] = true;
+          processed[positive_ref] = true;
+          context->UpdateRuleStats("dual: add implication");
+          context->AddImplication(NegatedRef(enf), NegatedRef(ref));
+          context->UpdateNewConstraintsVariableUsage();
+          continue;
+        }
+
+        // We can add an implication not_enforced => var to its bound ?
+        context->UpdateRuleStats("TODO dual: add implied bound");
+      } else if (!ct.enforcement_literal().empty()) {
+        context->UpdateRuleStats(
+            "TODO dual: only one blocking enforced constraint?");
+      } else {
+        context->UpdateRuleStats("TODO dual: only one blocking constraint?");
+      }
+      continue;
+    }
     if (ct.enforcement_literal().size() != 1) continue;
 
+    // If (a => b) is the only constraint blocking a literal a in the up
+    // direction, then we can set a == b !
+    //
     // Recover a => b where a is having an unique up_lock (i.e this constraint).
     // Note that if many implications are encoded in the same bool_and, we have
     // to be careful that a is appearing in just one of them.
@@ -833,7 +909,8 @@ void DetectDominanceRelations(
       switch (ct.constraint_case()) {
         case ConstraintProto::kBoolOr:
           if (phase == 0) {
-            dual_bound_strengthening->CannotDecrease(ct.bool_or().literals());
+            dual_bound_strengthening->CannotDecrease(ct.bool_or().literals(),
+                                                     c);
           }
           var_domination->ActivityShouldNotDecrease(ct.enforcement_literal(),
                                                     ct.bool_or().literals(),
@@ -875,7 +952,8 @@ void DetectDominanceRelations(
           break;
         case ConstraintProto::kExactlyOne:
           if (phase == 0) {
-            dual_bound_strengthening->CannotMove(ct.exactly_one().literals());
+            dual_bound_strengthening->CannotMove(ct.exactly_one().literals(),
+                                                 c);
           }
           var_domination->ActivityShouldNotChange(ct.exactly_one().literals(),
                                                   /*coeffs=*/{});
@@ -885,7 +963,7 @@ void DetectDominanceRelations(
                              &max_activity);
           if (phase == 0) {
             dual_bound_strengthening->ProcessLinearConstraint(
-                false, context, ct.linear(), min_activity, max_activity);
+                false, context, ct.linear(), min_activity, max_activity, c);
           }
           const bool domain_is_simple = ct.linear().domain().size() == 2;
           const bool free_to_increase =
@@ -916,7 +994,8 @@ void DetectDominanceRelations(
           // We cannot infer anything if we don't know the constraint.
           // TODO(user): Handle enforcement better here.
           if (phase == 0) {
-            dual_bound_strengthening->CannotMove(context.ConstraintToVars(c));
+            dual_bound_strengthening->CannotMove(context.ConstraintToVars(c),
+                                                 c);
           }
           for (const int var : context.ConstraintToVars(c)) {
             var_domination->CanOnlyDominateEachOther({var});

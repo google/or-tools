@@ -229,14 +229,14 @@ class DualBoundStrengthening {
   // All constraints should be mapped to one of more call to these functions.
   void CannotDecrease(absl::Span<const int> refs, int ct_index = -1);
   void CannotIncrease(absl::Span<const int> refs, int ct_index = -1);
-  void CannotMove(absl::Span<const int> refs);
+  void CannotMove(absl::Span<const int> refs, int ct_index = -1);
 
   // Most of the logic here deals with linear constraints.
   template <typename LinearProto>
   void ProcessLinearConstraint(bool is_objective,
                                const PresolveContext& context,
                                const LinearProto& linear, int64_t min_activity,
-                               int64_t max_activity);
+                               int64_t max_activity, int ct_index = -1);
 
   // Once ALL constraints have been processed, call this to fix variables or
   // reduce their domain if possible.
