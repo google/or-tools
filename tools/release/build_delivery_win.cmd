@@ -304,7 +304,7 @@ exit /B 0
 REM Reset
 :RESET
 title Reset
-echo clean everything... | tee.exe -a build.log
+echo clean everything...
 make.exe clean || exit 1
 del /s /f /q temp_dotnet
 rmdir /s /q temp_dotnet
@@ -319,4 +319,5 @@ del or-tools.snk
 for %%i in (*.zip) DO del %%i
 for %%i in (*.whl) DO del %%i
 for %%i in (*.log) DO del %%i
+echo DONE
 exit /B 0

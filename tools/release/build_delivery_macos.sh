@@ -252,6 +252,21 @@ function build_examples() {
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/examples_build"
 }
 
+# Cleaning everything
+function reset() {
+  echo "Cleaning everything..."
+  make clean
+  rm -rf temp_dotnet
+  rm -rf temp_java
+  rm -rf temp_python*
+  rm -rf export/
+  rm -f ./*.log
+  rm -f ./*.whl
+  rm -f ./*.tar.gz
+  rm ortools.snk
+  echo "DONE"
+}
+
 # Main
 function main() {
   case ${1} in
@@ -278,6 +293,9 @@ function main() {
   case ${1} in
     dotnet|java|python|archive|examples)
       "build_$1"
+      exit ;;
+    reset)
+      reset
       exit ;;
     all)
       build_dotnet
