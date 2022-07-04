@@ -730,7 +730,9 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
     if (ct.constraint_case() != ConstraintProto::kBoolAnd) {
       // If we have an enforcement literal then we can always add the
-      // implication "not enforced => var at its lower bound.
+      // implication "not enforced" => var at its lower bound.
+      // If we also had enforced => fixed var, then var is in affine relation
+      // with the enforced literal and we can remove one variable.
       //
       // TODO(user): We can also deal with more than one enforcement.
       if (ct.enforcement_literal().size() == 1 &&
@@ -742,6 +744,14 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             context->DomainOf(positive_ref)
                 .IntersectionWith(
                     context->deductions.ImpliedDomain(enf, positive_ref));
+        if (implied.IsEmpty()) {
+          context->UpdateRuleStats("dual: fix variable");
+          if (!context->SetLiteralToFalse(enf)) return false;
+          if (!context->IntersectDomainWith(positive_ref, Domain(bound))) {
+            return false;
+          }
+          continue;
+        }
         if (implied.IsFixed()) {
           // Corner case.
           if (implied.FixedValue() == bound) {
@@ -790,8 +800,16 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         // We can add an implication not_enforced => var to its bound ?
         context->UpdateRuleStats("TODO dual: add implied bound");
       } else if (!ct.enforcement_literal().empty()) {
-        context->UpdateRuleStats(
-            "TODO dual: only one blocking enforced constraint?");
+        // We can make enf equivalent to the constraint instead of just =>.
+        // This might also be useful for encoding if vars(0) is not a literal.
+        if (ct.constraint_case() == ConstraintProto::kLinear &&
+            ct.linear().vars().size() == 1 &&
+            ct.enforcement_literal().size() == 1) {
+          context->UpdateRuleStats("TODO dual: make encoding equiv?");
+        } else {
+          context->UpdateRuleStats(
+              "TODO dual: only one blocking enforced constraint?");
+        }
       } else {
         context->UpdateRuleStats("TODO dual: only one blocking constraint?");
       }
