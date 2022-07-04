@@ -69,18 +69,7 @@ exit /B %ERRORLEVEL%
 )
 
 if "%1"=="reset" (
-echo clean everything... | tee.exe -a build.log
-make.exe clean || exit 1
-rm.exe -rf temp_dotnet
-rm.exe -rf temp_java
-for %%v in (6 7 8 9 10) do (
-  rm.exe -rf temp_python3%%v
-)
-rm.exe -rf export
-del or-tools.snk
-for %%i in (*.zip) DO del %%i
-for %%i in (*.whl) DO del %%i
-for %%i in (*.log) DO del %%i
+call :RESET
 exit /B %ERRORLEVEL%
 )
 
@@ -310,4 +299,24 @@ for %%v in (6 7 8 9 10) do (
   )
 )
 echo %BRANCH% %SHA1%>build_python.log
+exit /B 0
+
+REM Reset
+:RESET
+title Reset
+echo clean everything... | tee.exe -a build.log
+make.exe clean || exit 1
+del /s /f /q temp_dotnet
+rmdir /s /q temp_dotnet
+del /s /f /q temp_java
+rmdir /s /q temp_java
+for %%v in (6 7 8 9 10) do (
+  del /s /f /q temp_python3%%v
+  rmdir /s /q temp_python3%%v
+)
+rm.exe -rf export
+del or-tools.snk
+for %%i in (*.zip) DO del %%i
+for %%i in (*.whl) DO del %%i
+for %%i in (*.log) DO del %%i
 exit /B 0
