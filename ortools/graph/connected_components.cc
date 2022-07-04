@@ -29,6 +29,7 @@
 
 #include "ortools/graph/connected_components.h"
 
+#include <algorithm>
 #include <numeric>
 
 #include "ortools/base/stl_util.h"

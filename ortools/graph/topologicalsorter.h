@@ -60,8 +60,10 @@
 #ifndef UTIL_GRAPH_TOPOLOGICALSORTER_H__
 #define UTIL_GRAPH_TOPOLOGICALSORTER_H__
 
+#include <functional>
 #include <queue>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
@@ -253,7 +255,6 @@ typedef ::util::internal::DenseIntTopologicalSorterTpl<
 // TopologicalSorter requires that all nodes and edges be added before
 // traversing the nodes, otherwise it will die with a fatal error.
 //
-// TopologicalSorter is -compatible
 //
 // Note(user): since all the real work is done by
 // DenseIntTopologicalSorterTpl, and this class is a template, we inline
