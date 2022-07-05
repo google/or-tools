@@ -18,7 +18,7 @@ jobs:
     name: ${{ matrix.os }} shrd=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }} extras=${{ matrix.extras }} java=${{ matrix.java }} dotnet=${{ matrix.dotnet }} python=${{ matrix.python }}-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     env:
-      SIRIUS_RELEASE_TAG: antares-integration-v1.0
+      SIRIUS_RELEASE_TAG: antares-integration-v1.1
       XPRESSDIR: ${{ github.workspace }}/xpressmp813
       XPRESS: ${{ github.workspace }}/xpressmp813/bin
       XPRS_LIB_PATH: ${{ github.workspace }}/xpressmp813/lib
@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, ubuntu-20.04]
+        os: [windows-latest, ubuntu-20.04]
         python-version: ['3.7', '3.8', '3.9', '3.10']
         python: [ON, OFF]
         xprs: [ON]
@@ -40,7 +40,7 @@ jobs:
         # Under Linux we can only build ortools Python/Java/C# libraries using a SHARED build
         # we need python support for multiple python versions
         # So we have the following jobs:
-        # 20 jobs
+        # 22 jobs
         # ( xpress=ON sirius=OFF, xpress=ON sirius=ON ) X (Windows static, linux shared) X
         # [ publish-or=ON  java=ON  dotnet=ON  python=OFF x (python-version=3.10),
         #   publish-or=OFF java=OFF dotnet=OFF python=ON  x (python-version=(3.7, 3.8, 3.9, 3.10)) ]
@@ -48,11 +48,9 @@ jobs:
         # ( xpress=ON sirius=OFF, xpress=ON sirius=ON ) X (linux shared) X
         # [ publish-or=ON  java=OFF  dotnet=OFF  python=OFF x (python-version=3.10)
         exclude:
-          - xprs: OFF
-            sirius: OFF
-          - os: windows-2019
+          - os: windows-latest
             shared: ON
-          - os: windows-2019
+          - os: windows-latest
             shared: OFF
             extras: OFF
           - os: ubuntu-20.04
@@ -85,6 +83,26 @@ jobs:
             publish-or: ON
             java: OFF
             dotnet: OFF
+          - os: windows-latest
+            python-version: '3.10'
+            python: OFF
+            java: OFF
+            dotnet: OFF
+            xprs: OFF
+            sirius: ON
+            shared: OFF
+            extras: OFF
+            publish-or: ON
+          - os: ubuntu-20.04
+            python-version: '3.10'
+            python: OFF
+            java: OFF
+            dotnet: OFF
+            xprs: OFF
+            sirius: ON
+            shared: OFF
+            extras: OFF
+            publish-or: ON
 
     steps:
       - name: set name variables

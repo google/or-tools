@@ -30,11 +30,16 @@ jobs:
         sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [OFF]
-        exclude:
-          - xprs: OFF
-            sirius: OFF
         include:
           - extras: OFF
+            python: OFF
+            publish-or: ON
+            java: OFF
+            dotnet: OFF
+          - xprs: OFF
+            sirius: ON
+            shared: OFF
+            extras: OFF
             python: OFF
             publish-or: ON
             java: OFF
@@ -86,6 +91,7 @@ jobs:
           git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/rte-france/xpress-mp.git ${{ env.XPRESS_INSTALL_DIR }}
 
       - name: set Xpress variables
+        if: ${{ matrix.xprs == 'ON' }}
         run: |
           cd ${{ env.XPRESS_INSTALL_DIR }}
           echo "XPRESSDIR=$PWD" >> $GITHUB_ENV
