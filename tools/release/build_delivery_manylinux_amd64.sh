@@ -210,7 +210,7 @@ function reset() {
 
   docker image rm -f "${ORTOOLS_IMG}":devel 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":env 2>/dev/null
-  rm -f "${ROOT_DIR}/*.log"
+  rm -f "${ROOT_DIR}"/*.log
 
   echo "DONE"
 }
