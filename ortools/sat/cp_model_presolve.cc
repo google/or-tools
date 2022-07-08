@@ -1828,6 +1828,10 @@ bool CpModelPresolver::AddVarAffineRepresentativeFromLinearEquality(
 // As an heuristic, we only test the smallest term or small primes 2, 3, and 5.
 //
 // We also handle the special case of having two non-zero literals modulo 2.
+//
+// TODO(user): Use more complex algo to detect all the cases? By spliting the
+// constraint in two, and computing the gcd of each halves, we can reduce the
+// problem to two problem of half size. So at least we can do it in O(n log n).
 bool CpModelPresolver::PresolveLinearEqualityWithModulo(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (ct->constraint_case() != ConstraintProto::kLinear) return false;
@@ -3126,9 +3130,9 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   mutable_arg->mutable_vars()->Truncate(new_size);
   mutable_arg->mutable_coeffs()->Truncate(new_size);
   FillDomainInProto(rhs_domain.AdditionWith(Domain(rhs_offset)), mutable_arg);
-  if (some_integer_encoding_were_extracted) {
-    context_->UpdateNewConstraintsVariableUsage();
+  if (some_integer_encoding_were_extracted || new_size == 1) {
     context_->UpdateConstraintVariableUsage(ct_index);
+    context_->UpdateNewConstraintsVariableUsage();
   }
 }
 
@@ -6051,13 +6055,6 @@ void CpModelPresolver::ExpandObjective() {
     context_->MarkVariableAsRemoved(last_expanded_objective_var);
     context_->UpdateConstraintVariableUsage(unique_expanded_constraint);
   }
-
-  // We re-do a canonicalization with the final linear expression.
-  if (!context_->CanonicalizeObjective()) {
-    (void)context_->NotifyThatModelIsUnsat();
-    return;
-  }
-  context_->WriteObjectiveToProto();
 }
 
 void CpModelPresolver::MergeNoOverlapConstraints() {
@@ -6952,8 +6949,10 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
   const int num_constraints = context_->working_model->constraints().size();
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = context_->working_model->constraints(c);
-    if (!ct.enforcement_literal().empty()) continue;
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+
+    // TODO(user): We can deal with enforced constraints in some situation.
+    if (!ct.enforcement_literal().empty()) continue;
 
     Domain implied(0);
     const LinearConstraintProto& lin = ct.linear();
@@ -7652,9 +7651,15 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
   if (context_->ModelIsUnsat()) return;
   if (context_->keep_all_feasible_solutions) return;
   if (context_->IsFixed(var)) return;
-  if (context_->VarToConstraints(var).size() != 2) return;
   if (!context_->ModelIsExpanded()) return;
   if (!context_->CanBeUsedAsLiteral(var)) return;
+
+  // TODO(user): If var is in objective, we might be able to tighten domains.
+  // ex: enf => x \in [0, 1]
+  //     not(enf) => x \in [1, 2]
+  // The x can be removed from one place. Maybe just do <=> not in [0,1] with
+  // dual code?
+  if (context_->VarToConstraints(var).size() != 2) return;
 
   bool abort = false;
   int ct_var = -1;
@@ -7704,6 +7709,151 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
   context_->MarkVariableAsRemoved(var);
 }
 
+namespace {
+
+absl::Span<const int> AtMostOneOrExactlyOneLiterals(const ConstraintProto& ct) {
+  if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+    return {ct.at_most_one().literals()};
+  } else {
+    return {ct.exactly_one().literals()};
+  }
+}
+
+}  // namespace
+
+void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
+  DCHECK(RefIsPositive(var));
+  DCHECK(context_->ConstraintVariableGraphIsUpToDate());
+  if (context_->ModelIsUnsat()) return;
+  if (context_->keep_all_feasible_solutions) return;
+  if (context_->IsFixed(var)) return;
+  if (context_->VariableWasRemoved(var)) return;
+  if (!context_->ModelIsExpanded()) return;
+  if (!context_->CanBeUsedAsLiteral(var)) return;
+
+  int64_t cost = 0;
+  if (context_->VarToConstraints(var).contains(kObjectiveConstraint)) {
+    if (context_->VarToConstraints(var).size() != 3) return;
+    cost = context_->ObjectiveMap().at(var);
+  } else {
+    if (context_->VarToConstraints(var).size() != 2) return;
+  }
+
+  // We have a variable with a cost (or without) that appear in two constraints.
+  // We want two at_most_one or exactly_one.
+  // TODO(user): Also deal with bool_and.
+  int c1 = -1;
+  int c2 = -1;
+  for (const int c : context_->VarToConstraints(var)) {
+    if (c < 0) continue;
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (ct.constraint_case() != ConstraintProto::kAtMostOne &&
+        ct.constraint_case() != ConstraintProto::kExactlyOne) {
+      return;
+    }
+    if (c1 == -1) {
+      c1 = c;
+    } else {
+      c2 = c;
+    }
+  }
+
+  // This can happen for variable in a kAffineRelationConstraint.
+  if (c1 == -1 || c2 == -1) return;
+
+  // Tricky: We iterate on a map above, so the order is non-deterministic, we
+  // do not want that, so we re-order the constraints.
+  if (c1 > c2) std::swap(c1, c2);
+
+  // We can always sum the two constraints.
+  // If var appear in one and not(var) in the other, the two term cancel out to
+  // one, so we still have an <= 1 (or eventually a ==1 (see below).
+  context_->tmp_literals.clear();
+  int c1_ref = std::numeric_limits<int>::min();
+  const ConstraintProto& ct1 = context_->working_model->constraints(c1);
+  for (const int lit : AtMostOneOrExactlyOneLiterals(ct1)) {
+    if (PositiveRef(lit) == var) {
+      c1_ref = lit;
+    } else {
+      context_->tmp_literals.push_back(lit);
+    }
+  }
+  int c2_ref = std::numeric_limits<int>::min();
+  const ConstraintProto& ct2 = context_->working_model->constraints(c2);
+  for (const int lit : AtMostOneOrExactlyOneLiterals(ct2)) {
+    if (PositiveRef(lit) == var) {
+      c2_ref = lit;
+    } else {
+      context_->tmp_literals.push_back(lit);
+    }
+  }
+  DCHECK_NE(c1_ref, std::numeric_limits<int>::min());
+  DCHECK_NE(c2_ref, std::numeric_limits<int>::min());
+  if (c1_ref != NegatedRef(c2_ref)) return;
+
+  // If the cost is non-zero, we can use an exactly one to make it zero.
+  // Use that exactly one in the postsolve to recover the value of var.
+  auto* postsolve_literals = context_->mapping_model->add_constraints()
+                                 ->mutable_exactly_one()
+                                 ->mutable_literals();
+  if (ct1.constraint_case() == ConstraintProto::kExactlyOne) {
+    context_->ShiftCostInExactlyOne(ct1.exactly_one().literals(),
+                                    RefIsPositive(c1_ref) ? cost : -cost);
+    *postsolve_literals = ct1.exactly_one().literals();
+  } else if (ct2.constraint_case() == ConstraintProto::kExactlyOne) {
+    context_->ShiftCostInExactlyOne(ct2.exactly_one().literals(),
+                                    RefIsPositive(c2_ref) ? cost : -cost);
+    *postsolve_literals = ct2.exactly_one().literals();
+  } else {
+    // Dual argument. The one with a negative cost can be transformed to
+    // an exactly one.
+    if (context_->keep_all_feasible_solutions) return;
+    if (RefIsPositive(c1_ref) == (cost < 0)) {
+      context_->ShiftCostInExactlyOne(ct1.at_most_one().literals(),
+                                      RefIsPositive(c1_ref) ? cost : -cost);
+      *postsolve_literals = ct1.at_most_one().literals();
+    } else {
+      context_->ShiftCostInExactlyOne(ct2.at_most_one().literals(),
+                                      RefIsPositive(c2_ref) ? cost : -cost);
+      *postsolve_literals = ct2.at_most_one().literals();
+    }
+  }
+  DCHECK(!context_->ObjectiveMap().contains(var));
+
+  // We can now replace the two constraint by a single one, and delete var!
+  const int new_ct_index = context_->working_model->constraints().size();
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  if (ct1.constraint_case() == ConstraintProto::kExactlyOne &&
+      ct2.constraint_case() == ConstraintProto::kExactlyOne) {
+    for (const int lit : context_->tmp_literals) {
+      new_ct->mutable_exactly_one()->add_literals(lit);
+    }
+  } else {
+    // At most one here is enough: if all zero, we can satisfy one of the
+    // two exactly one at postsolve.
+    for (const int lit : context_->tmp_literals) {
+      new_ct->mutable_at_most_one()->add_literals(lit);
+    }
+  }
+
+  context_->UpdateNewConstraintsVariableUsage();
+  context_->working_model->mutable_constraints(c1)->Clear();
+  context_->UpdateConstraintVariableUsage(c1);
+  context_->working_model->mutable_constraints(c2)->Clear();
+  context_->UpdateConstraintVariableUsage(c2);
+
+  context_->UpdateRuleStats(
+      "at_most_one: resolved two constraints with opposite literal");
+  context_->MarkVariableAsRemoved(var);
+
+  // TODO(user): If the merged list contains duplicates or literal that are
+  // negation of other, we need to deal with that right away. For some reason
+  // something is not robust to that it seems. Investigate & fix!
+  if (PresolveAtMostOrExactlyOne(new_ct)) {
+    context_->UpdateConstraintVariableUsage(new_ct_index);
+  }
+}
+
 // TODO(user): We can still remove the variable even if we want to keep
 // all feasible solutions for the cases when we have a full encoding.
 //
@@ -7716,6 +7866,7 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
   if (context_->ModelIsUnsat()) return;
   if (context_->keep_all_feasible_solutions) return;
   if (context_->IsFixed(var)) return;
+  if (context_->VariableWasRemoved(var)) return;
   if (context_->CanBeUsedAsLiteral(var)) return;
   if (!context_->VariableIsOnlyUsedInEncodingAndMaybeInObjective(var)) return;
   if (context_->params().search_branching() == SatParameters::FIXED_SEARCH) {
@@ -8150,6 +8301,12 @@ void CpModelPresolver::PresolveToFixPoint() {
       const int degree = context_->VarToConstraints(v).size();
       if (degree == 0) continue;
       if (degree == 2) LookAtVariableWithDegreeTwo(v);
+      if (degree == 2 || degree == 3) {
+        // Tricky: this function can add new constraint.
+        ProcessVariableInTwoAtMostOrExactlyOne(v);
+        in_queue.resize(context_->working_model->constraints_size(), false);
+        continue;
+      }
 
       // Re-add to the queue constraints that have unique variables. Note that
       // to not enter an infinite loop, we call each (var, constraint) pair at
@@ -8913,7 +9070,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
       // run after expansion.
       const int num_vars = context_->working_model->variables().size();
       for (int var = 0; var < num_vars; ++var) {
-        if (context_->VarToConstraints(var).size() <= 2) {
+        if (context_->VarToConstraints(var).size() <= 3) {
           context_->var_with_reduced_small_degree.Set(var);
         }
       }
@@ -9004,9 +9161,16 @@ CpSolverStatus CpModelPresolver::Presolve() {
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
   // Tries to spread the objective amongst many variables.
+  // We re-do a canonicalization with the final linear expression.
   if (context_->working_model->has_objective()) {
     ExpandObjective();
+
+    // We re-do a canonicalization with the final linear expression.
+    if (!context_->CanonicalizeObjective()) {
+      (void)context_->NotifyThatModelIsUnsat();
+    }
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
+    context_->WriteObjectiveToProto();
   }
 
   // Adds all needed affine relation to context_->working_model.

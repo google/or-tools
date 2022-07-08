@@ -803,8 +803,9 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         // We can make enf equivalent to the constraint instead of just =>.
         // This might also be useful for encoding if vars(0) is not a literal.
         if (ct.constraint_case() == ConstraintProto::kLinear &&
-            ct.linear().vars().size() == 1 &&
-            ct.enforcement_literal().size() == 1) {
+            ct.linear().vars().size() == 1 && ct.linear().coeffs(0) == 1 &&
+            ct.enforcement_literal().size() == 1 &&
+            ct.enforcement_literal(0) == NegatedRef(ref)) {
           context->UpdateRuleStats("TODO dual: make encoding equiv?");
         } else {
           context->UpdateRuleStats(
@@ -823,6 +824,13 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     // Recover a => b where a is having an unique up_lock (i.e this constraint).
     // Note that if many implications are encoded in the same bool_and, we have
     // to be careful that a is appearing in just one of them.
+    //
+    // TODO(user): Make sure implication graph is transitively reduced to not
+    // miss such reduction. More generally, this might only use the graph rather
+    // than the encoding into bool_and / at_most_one ? Basically if a =>
+    // all_direct_deduction, we can transform it into a <=> all_direct_deduction
+    // if that is interesting. This could always be done on a max-2sat problem
+    // in one of the two direction. Also think about max-2sat specific presolve.
     int a = ct.enforcement_literal(0);
     int b = 1;
     if (PositiveRef(a) == positive_ref &&

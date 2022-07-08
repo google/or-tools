@@ -120,6 +120,89 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
 CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
     SchedulingConstraintHelper* helper, Model* model);
 
+// Internal methods and data structures, useful for testing.
+
+// Base event type for scheduling cuts.
+struct BaseEvent {
+  BaseEvent(int t, SchedulingConstraintHelper* x_helper);
+
+  // Cache of the intervals bound on the x direction.
+  IntegerValue x_start_min;
+  IntegerValue x_start_max;
+  IntegerValue x_end_min;
+  IntegerValue x_end_max;
+  IntegerValue x_size_min;
+  // Useful for no_overlap_2d or cumulative.
+  IntegerValue y_min = IntegerValue(0);
+  IntegerValue y_max = IntegerValue(0);
+  IntegerValue y_size_min;
+
+  // The energy min of this event.
+  IntegerValue energy_min;
+
+  // If non empty, a decomposed view of the energy of this event.
+  // First value in each pair is x_size, second is y_size.
+  std::vector<LiteralValueValue> decomposed_energy;
+};
+
+// Stores the event for a rectangle along the two axis x and y.
+//   For a no_overlap constraint, y is always of size 1 between 0 and 1.
+//   For a cumulative constraint, y is the demand that must be between 0 and
+//       capacity_max.
+//   For a no_overlap_2d constraint, y the other dimension of the rect.
+struct CtEvent : BaseEvent {
+  CtEvent(int t, SchedulingConstraintHelper* x_helper);
+
+  // The lp value of the end of the x interval.
+  AffineExpression x_end;
+  double x_lp_end;
+
+  // Indicates if the events used the optional energy information from the
+  // model.
+  bool use_energy = false;
+
+  // Indicates if the cut is lifted, that is if it includes tasks that are not
+  // strictly contained in the current time window.
+  bool lifted = false;
+
+  // If we know that the size on y is fixed, we can use some heuristic to
+  // compute the maximum subset sums under the capacity and use that instead
+  // of the full capacity.
+  bool y_size_is_fixed = false;
+
+  std::string DebugString() const;
+};
+
+// Computes the minimum sum of the end min and the minimum sum of the end min
+// weighted by y_size_min of all events. It returns false if no permatutation is
+// valid w.r.t. the range of x_start.
+//
+// Note that this is an exhaustive algorithm, so the number of events should be
+// small, like <= 10. They should also starts in index order.
+//
+// Optim: If both sums are proven <= to the corresponding threshold, we abort.
+struct PermutableEvent {
+  PermutableEvent(int i, CtEvent e)
+      : index(i),
+        x_start_min(e.x_start_min),
+        x_start_max(e.x_start_max),
+        x_size_min(e.x_size_min),
+        y_size_min(e.y_size_min) {}
+  bool operator<(const PermutableEvent& o) const { return index < o.index; }
+
+  int index;  // for < to be used by std::next_permutation().
+  IntegerValue x_start_min;
+  IntegerValue x_start_max;
+  IntegerValue x_size_min;
+  IntegerValue y_size_min;
+};
+bool ComputeMinSumOfWeightedEndMins(std::vector<PermutableEvent>& events,
+                                    IntegerValue capacity_max,
+                                    IntegerValue& min_sum_of_end_mins,
+                                    IntegerValue& min_sum_of_weighted_end_mins,
+                                    IntegerValue unweighted_threshold,
+                                    IntegerValue weighted_threshold);
+
 }  // namespace sat
 }  // namespace operations_research
 

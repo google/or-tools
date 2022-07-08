@@ -515,12 +515,15 @@ void PresolveContext::UpdateLinear1Usage(const ConstraintProto& ct, int c) {
   const int old_var = constraint_to_linear1_var_[c];
   if (old_var >= 0) {
     var_to_num_linear1_[old_var]--;
+    DCHECK_GE(var_to_num_linear1_[old_var], 0);
   }
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear &&
       ct.linear().vars().size() == 1) {
     const int var = PositiveRef(ct.linear().vars(0));
     constraint_to_linear1_var_[c] = var;
     var_to_num_linear1_[var]++;
+  } else {
+    constraint_to_linear1_var_[c] = -1;
   }
 }
 
@@ -538,7 +541,7 @@ void PresolveContext::AddVariableUsage(int c) {
 
 void PresolveContext::EraseFromVarToConstraint(int var, int c) {
   var_to_constraints_[var].erase(c);
-  if (var_to_constraints_[var].size() <= 2) {
+  if (var_to_constraints_[var].size() <= 3) {
     var_with_reduced_small_degree.Set(var);
   }
 }
@@ -604,17 +607,34 @@ bool PresolveContext::ConstraintVariableUsageIsConsistent() {
     LOG(INFO) << "Wrong constraint_to_vars size!";
     return false;
   }
+  std::vector<int> linear1_count(var_to_constraints_.size(), 0);
   for (int c = 0; c < constraint_to_vars_.size(); ++c) {
-    if (constraint_to_vars_[c] !=
-        UsedVariables(working_model->constraints(c))) {
+    const ConstraintProto& ct = working_model->constraints(c);
+    if (constraint_to_vars_[c] != UsedVariables(ct)) {
       LOG(INFO) << "Wrong variables usage for constraint: \n"
-                << ProtobufDebugString(working_model->constraints(c))
-                << "old_size: " << constraint_to_vars_[c].size();
+                << ProtobufDebugString(ct)
+                << " old_size: " << constraint_to_vars_[c].size();
       return false;
+    }
+    if (ct.constraint_case() == ConstraintProto::kLinear &&
+        ct.linear().vars().size() == 1) {
+      linear1_count[PositiveRef(ct.linear().vars(0))]++;
+      if (constraint_to_linear1_var_[c] != ct.linear().vars(0)) {
+        LOG(INFO) << "Wrong variables for linear1: \n"
+                  << ProtobufDebugString(ct)
+                  << " saved_var: " << constraint_to_linear1_var_[c];
+        return false;
+      }
     }
   }
   int num_in_objective = 0;
   for (int v = 0; v < var_to_constraints_.size(); ++v) {
+    if (linear1_count[v] != var_to_num_linear1_[v]) {
+      LOG(INFO) << "Variable " << v << " has wrong linear1 count!"
+                << " stored: " << var_to_num_linear1_[v]
+                << " actual: " << linear1_count[v];
+      return false;
+    }
     if (var_to_constraints_[v].contains(kObjectiveConstraint)) {
       ++num_in_objective;
       if (!objective_map_.contains(v)) {
@@ -1796,12 +1816,13 @@ bool PresolveContext::ExploitExactlyOneInObjective(
     }
   }
 
-  if (min_coeff != 0) ShiftCostInExactlyOne(exactly_one, min_coeff);
+  ShiftCostInExactlyOne(exactly_one, min_coeff);
   return true;
 }
 
 void PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
                                             int64_t shift) {
+  if (shift == 0) return;
   int64_t offset = shift;
   for (const int ref : exactly_one) {
     const int var = PositiveRef(ref);

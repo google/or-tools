@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <functional>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -77,33 +78,12 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
 
 }  // namespace
 
-struct BaseEvent {
-  BaseEvent(int t, SchedulingConstraintHelper* x_helper)
-      : x_start_min(x_helper->StartMin(t)),
-        x_start_max(x_helper->StartMax(t)),
-        x_end_min(x_helper->EndMin(t)),
-        x_end_max(x_helper->EndMax(t)),
-        x_size_min(x_helper->SizeMin(t)) {}
-
-  // Cache of the intervals bound on the x direction.
-  IntegerValue x_start_min;
-  IntegerValue x_start_max;
-  IntegerValue x_end_min;
-  IntegerValue x_end_max;
-  IntegerValue x_size_min;
-
-  // Useful for no_overlap_2d or cumulative.
-  IntegerValue y_min = IntegerValue(0);
-  IntegerValue y_max = IntegerValue(0);
-  IntegerValue y_size_min;
-
-  // The energy min of this event.
-  IntegerValue energy_min;
-
-  // If non empty, a decomposed view of the energy of this event.
-  // First value in each pair is x_size, second is y_size.
-  std::vector<LiteralValueValue> decomposed_energy;
-};
+BaseEvent::BaseEvent(int t, SchedulingConstraintHelper* x_helper)
+    : x_start_min(x_helper->StartMin(t)),
+      x_start_max(x_helper->StartMax(t)),
+      x_end_min(x_helper->EndMin(t)),
+      x_end_max(x_helper->EndMax(t)),
+      x_size_min(x_helper->SizeMin(t)) {}
 
 struct EnergyEvent : BaseEvent {
   EnergyEvent(int t, SchedulingConstraintHelper* x_helper)
@@ -1061,42 +1041,256 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
   return result;
 }
 
-// Stores the event for a rectangle along the two axis x and y.
-//   For a no_overlap constraint, y is always of size 1 between 0 and 1.
-//   For a cumulative constraint, y is the demand that must be between 0 and
-//       capacity_max.
-//   For a no_overlap_2d constraint, y the other dimension of the rect.
-struct CtEvent : BaseEvent {
-  CtEvent(int t, SchedulingConstraintHelper* x_helper)
-      : BaseEvent(t, x_helper) {}
+CtEvent::CtEvent(int t, SchedulingConstraintHelper* x_helper)
+    : BaseEvent(t, x_helper) {}
 
-  // The lp value of the end of the x interval.
-  AffineExpression x_end;
-  double x_lp_end;
+std::string CtEvent::DebugString() const {
+  return absl::StrCat("CtEvent(x_end = ", x_end.DebugString(),
+                      ", x_start_min = ", x_start_min.value(),
+                      ", x_start_max = ", x_start_max.value(),
+                      ", x_size_min = ", x_size_min.value(),
+                      ", x_lp_end = ", x_lp_end, ", y_min = ", y_min.value(),
+                      ", y_max = ", y_max.value(),
+                      ", y_size_min = ", y_size_min.value(),
+                      ", energy_min = ", energy_min.value(),
+                      ", use_energy = ", use_energy, ", lifted = ", lifted);
+}
 
-  // Indicates if the events used the optional energy information from the
-  // model.
-  bool use_energy = false;
+namespace {
 
-  // Indicates if the cut is lifted, that is if it includes tasks that are not
-  // strictly contained in the current time window.
-  bool lifted = false;
+// This functions packs all events in a cumulative of capacity 'capacity_max'
+// following the given permutation. It returns the sum of end mins and the sum
+// of end mins weighted by event.y_size_min.
+//
+// It ensures that if event_j is after event_i in the permutation, then event_j
+// starts exactly at the same time or after event_i.
+//
+// It returns false if one event cannot start before event.x_start_max.
+bool ComputeWeightedSumOfEndMinsForOnePermutation(
+    const std::vector<PermutableEvent>& events, IntegerValue capacity_max,
+    IntegerValue& sum_of_ends, IntegerValue& sum_of_weighted_ends,
+    std::vector<std::pair<IntegerValue, IntegerValue>>& profile,
+    std::vector<std::pair<IntegerValue, IntegerValue>>& new_profile) {
+  sum_of_ends = 0;
+  sum_of_weighted_ends = 0;
+  // The profile (and new profile) represent a set functions as a vector of
+  // <start, height>.
+  profile.clear();
+  profile.emplace_back(kMinIntegerValue, capacity_max);
+  profile.emplace_back(kMaxIntegerValue, capacity_max);
+  IntegerValue start_of_previous_task = kMinIntegerValue;
+  for (const PermutableEvent& event : events) {
+    const IntegerValue start_min =
+        std::max(event.x_start_min, start_of_previous_task);
+    new_profile.clear();
+    // Iterate on the profile to find the step that contains start_min.
+    // Then push until we find a step with enough capacity.
+    int current = 0;
+    while (profile[current + 1].first <= start_min ||
+           profile[current].second < event.y_size_min) {
+      ++current;
+    }
 
-  // If we know that the size on y is fixed, we can use some heuristic to
-  // compute the maximum subset sums under the capacity and use that instead
-  // of the full capacity.
-  bool y_size_is_fixed = false;
+    const IntegerValue actual_start =
+        std::max(start_min, profile[current].first);
+    start_of_previous_task = actual_start;
 
-  std::string DebugString() const {
-    return absl::StrCat("CtEvent(x_end = ", x_end.DebugString(),
-                        ", x_start_min = ", x_start_min.value(),
-                        ", x_size_min = ", x_size_min.value(),
-                        ", x_lp_end = ", x_lp_end, ", y_min = ", y_min.value(),
-                        ", y_max = ", y_max.value(),
-                        ", energy_min = ", energy_min.value(),
-                        ", use_energy = ", use_energy, ", lifted = ", lifted);
+    // Compatible with the event._start_max ?
+    if (actual_start > event.x_start_max) return false;
+
+    const IntegerValue actual_end = actual_start + event.x_size_min;
+    sum_of_ends += actual_end;
+    sum_of_weighted_ends += event.y_size_min * actual_end;
+
+    // Update the profile.
+    new_profile.push_back(
+        {actual_start, profile[current].second - event.y_size_min});
+    ++current;
+
+    while (profile[current].first < actual_end) {
+      new_profile.push_back(
+          {profile[current].first, profile[current].second - event.y_size_min});
+      ++current;
+    }
+
+    if (profile[current].first > actual_end) {
+      new_profile.push_back(
+          {actual_end, new_profile.back().second + event.y_size_min});
+    }
+    while (current < profile.size()) {
+      new_profile.push_back(profile[current]);
+      ++current;
+    }
+    profile.swap(new_profile);
   }
-};
+  return true;
+}
+
+}  // namespace
+
+bool ComputeMinSumOfWeightedEndMins(std::vector<PermutableEvent>& events,
+                                    IntegerValue capacity_max,
+                                    IntegerValue& min_sum_of_end_mins,
+                                    IntegerValue& min_sum_of_weighted_end_mins,
+                                    IntegerValue unweighted_threshold,
+                                    IntegerValue weighted_threshold) {
+  int num_explored = 0;
+  int num_pruned = 0;
+  min_sum_of_end_mins = kMaxIntegerValue;
+  min_sum_of_weighted_end_mins = kMaxIntegerValue;
+
+  // Reusable storage for ComputeWeightedSumOfEndMinsForOnePermutation().
+  std::vector<std::pair<IntegerValue, IntegerValue>> profile;
+  std::vector<std::pair<IntegerValue, IntegerValue>> new_profile;
+  do {
+    IntegerValue sum_of_ends(0);
+    IntegerValue sum_of_weighted_ends(0);
+    if (ComputeWeightedSumOfEndMinsForOnePermutation(
+            events, capacity_max, sum_of_ends, sum_of_weighted_ends, profile,
+            new_profile)) {
+      min_sum_of_end_mins = std::min(sum_of_ends, min_sum_of_end_mins);
+      min_sum_of_weighted_end_mins =
+          std::min(sum_of_weighted_ends, min_sum_of_weighted_end_mins);
+      num_explored++;
+      if (min_sum_of_end_mins <= unweighted_threshold &&
+          min_sum_of_weighted_end_mins <= weighted_threshold) {
+        break;
+      }
+    } else {
+      num_pruned++;
+    }
+  } while (std::next_permutation(events.begin(), events.end()));
+  VLOG(1) << "DP: size=" << events.size() << ", explored = " << num_explored
+          << ", pruned = " << num_pruned
+          << ", min_sum_of_end_mins = " << min_sum_of_end_mins
+          << ", min_sum_of_weighted_end_mins = "
+          << min_sum_of_weighted_end_mins;
+  return num_explored > 0;
+}
+
+// TODO(user): Improve performance
+//   - detect disjoint tasks (no need to crossover to the second part)
+//   - better caching of explored states
+void GenerateShortCompletionTimeCutsWithExactBound(
+    const std::string& cut_name,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    std::vector<CtEvent> events, IntegerValue capacity_max, Model* model,
+    LinearConstraintManager* manager) {
+  TopNCuts top_n_cuts(5);
+  // Sort by start min to bucketize by start_min.
+  std::sort(events.begin(), events.end(),
+            [](const CtEvent& e1, const CtEvent& e2) {
+              return std::tie(e1.x_start_min, e1.y_size_min, e1.x_lp_end) <
+                     std::tie(e2.x_start_min, e2.y_size_min, e2.x_lp_end);
+            });
+  std::vector<PermutableEvent> permutable_events;
+  for (int start = 0; start + 1 < events.size(); ++start) {
+    // Skip to the next start_min value.
+    if (start > 0 &&
+        events[start].x_start_min == events[start - 1].x_start_min) {
+      continue;
+    }
+
+    const IntegerValue sequence_start_min = events[start].x_start_min;
+    std::vector<CtEvent> residual_tasks(events.begin() + start, events.end());
+
+    // We look at event that start before sequence_start_min, but are forced
+    // to cross this time point. In that case, we replace this event by a
+    // truncated event starting at sequence_start_min. To do this, we reduce
+    // the size_min, and align the start_min with the sequence_start_min.
+    for (int before = 0; before < start; ++before) {
+      if (events[before].x_start_min + events[before].x_size_min >
+          sequence_start_min) {
+        residual_tasks.push_back(events[before]);  // Copy.
+        residual_tasks.back().lifted = true;
+      }
+    }
+
+    std::sort(residual_tasks.begin(), residual_tasks.end(),
+              [](const CtEvent& e1, const CtEvent& e2) {
+                return e1.x_lp_end < e2.x_lp_end;
+              });
+
+    IntegerValue sum_of_durations(0);
+    IntegerValue sum_of_energies(0);
+    double sum_of_ends_lp = 0.0;
+    double sum_of_weighted_ends_lp = 0.0;
+    IntegerValue sum_of_demands(0);
+
+    permutable_events.clear();
+    for (int i = 0; i < std::min<int>(residual_tasks.size(), 7); ++i) {
+      const CtEvent& event = residual_tasks[i];
+      permutable_events.emplace_back(i, event);
+      sum_of_ends_lp += event.x_lp_end;
+      sum_of_weighted_ends_lp += event.x_lp_end * ToDouble(event.y_size_min);
+      sum_of_demands += event.y_size_min;
+      sum_of_durations += event.x_size_min;
+      sum_of_energies += event.x_size_min * event.y_size_min;
+
+      // Both cases with 1 or 2 tasks are trivial and independent of the order.
+      // Also, if capacity is not exceeded, pushing all ends left is a valid LP
+      // assignment.
+      if (i <= 1 || sum_of_demands <= capacity_max) continue;
+
+      IntegerValue min_sum_of_end_mins = kMaxIntegerValue;
+      IntegerValue min_sum_of_weighted_end_mins = kMaxIntegerValue;
+      for (int j = 0; j <= i; ++j) {
+        // We re-index the elements, so we will start enumerating the
+        // permutation from there. Note that if the previous i caused an abort
+        // because of the threshold, we might abort right away again!
+        permutable_events[j].index = j;
+      }
+      if (!ComputeMinSumOfWeightedEndMins(
+              permutable_events, capacity_max, min_sum_of_end_mins,
+              min_sum_of_weighted_end_mins,
+              /*unweighted_threshold=*/
+              std::floor(sum_of_ends_lp + kMinCutViolation),
+              /*weighted_threshold=*/
+              std::floor(sum_of_weighted_ends_lp + kMinCutViolation))) {
+        break;
+      }
+
+      const double unweigthed_violation =
+          (ToDouble(min_sum_of_end_mins) - sum_of_ends_lp) /
+          ToDouble(sum_of_durations);
+      const double weighted_violation =
+          (ToDouble(min_sum_of_weighted_end_mins) - sum_of_weighted_ends_lp) /
+          ToDouble(sum_of_energies);
+
+      // Unweighted cuts.
+      if (unweigthed_violation > weighted_violation &&
+          unweigthed_violation > kMinCutViolation) {
+        LinearConstraintBuilder cut(model, min_sum_of_end_mins,
+                                    kMaxIntegerValue);
+        bool is_lifted = false;
+        for (int j = 0; j <= i; ++j) {
+          const CtEvent& event = residual_tasks[j];
+          is_lifted |= event.lifted;
+          cut.AddTerm(event.x_end, IntegerValue(1));
+        }
+        std::string full_name = cut_name;
+        top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
+      }
+
+      // Weighted cuts.
+      if (weighted_violation >= unweigthed_violation &&
+          weighted_violation > kMinCutViolation) {
+        LinearConstraintBuilder cut(model, min_sum_of_weighted_end_mins,
+                                    kMaxIntegerValue);
+        bool is_lifted = false;
+        for (int j = 0; j <= i; ++j) {
+          const CtEvent& event = residual_tasks[j];
+          is_lifted |= event.lifted;
+          cut.AddTerm(event.x_end, event.y_size_min);
+        }
+        std::string full_name = cut_name + "_weighted";
+        if (is_lifted) full_name.append("_lifted");
+        top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
+      }
+    }
+  }
+  top_n_cuts.TransferToManager(lp_values, manager);
+}
 
 // We generate the cut from the Smith's rule from:
 // M. Queyranne, Structure of a simple scheduling polyhedron,
@@ -1110,7 +1304,9 @@ struct CtEvent : BaseEvent {
 //
 // A second difference is that we look at a set of intervals starting
 // after a given start_min, sorted by relative (end_lp - start_min).
-void GenerateCompletionTimeCuts(
+//
+// TODO(user): merge with Packing cuts.
+void GenerateCompletionTimeCutsWithEnergy(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<CtEvent> events, bool use_lifting, Model* model,
@@ -1288,8 +1484,9 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
               events.push_back(event);
             }
           }
-          GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
-                                     /*use_lifting=*/true, model, manager);
+          GenerateCompletionTimeCutsWithEnergy(
+              cut_name, lp_values, std::move(events),
+              /*use_lifting=*/true, model, manager);
         };
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         generate_cuts("NoOverlapCompletionTime");
@@ -1318,8 +1515,7 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
 
         const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
         auto generate_cuts = [&lp_values, model, manager, helper,
-                              demands_helper,
-                              capacity_max](const std::string& cut_name) {
+                              demands_helper, capacity_max](bool mirror) {
           std::vector<CtEvent> events;
           for (int index = 0; index < helper->NumTasks(); ++index) {
             if (!helper->IsPresent(index)) continue;
@@ -1338,13 +1534,20 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
               events.push_back(event);
             }
           }
-          GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
-                                     /*use_lifting=*/true, model, manager);
+
+          GenerateShortCompletionTimeCutsWithExactBound(
+              absl::StrCat("CumulativePacking", mirror ? "Mirror" : ""),
+              lp_values, events, capacity_max, model, manager);
+
+          GenerateCompletionTimeCutsWithEnergy(
+              absl::StrCat("CumulativeCompletionTime", mirror ? "Mirror" : ""),
+              lp_values, std::move(events),
+              /*use_lifting=*/true, model, manager);
         };
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
-        generate_cuts("CumulativeCompletionTime");
+        generate_cuts(false);
         if (!helper->SynchronizeAndSetTimeDirection(false)) return false;
-        generate_cuts("CumulativeCompletionTimeMirror");
+        generate_cuts(true);
         return true;
       };
   return result;
@@ -1427,8 +1630,9 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
               events.push_back(event);
             }
 
-            GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
-                                       /*use_lifting=*/false, model, manager);
+            GenerateCompletionTimeCutsWithEnergy(
+                cut_name, lp_values, std::move(events),
+                /*use_lifting=*/false, model, manager);
           };
 
           if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;

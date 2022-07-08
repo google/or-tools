@@ -1123,7 +1123,11 @@ class ConstraintChecker {
     for (int i = 0; i < num_variables; ++i) {
       sum += Value(ct.linear().vars(i)) * ct.linear().coeffs(i);
     }
-    return DomainInProtoContains(ct.linear(), sum);
+    const bool result = DomainInProtoContains(ct.linear(), sum);
+    if (!result) {
+      VLOG(1) << "Activity: " << sum;
+    }
+    return result;
   }
 
   int64_t LinearExpressionValue(const LinearExpressionProto& expr) const {

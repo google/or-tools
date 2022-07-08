@@ -434,6 +434,11 @@ class PresolveContext {
   const absl::flat_hash_map<int, int64_t>& ObjectiveMap() const {
     return objective_map_;
   }
+  int64_t ObjectiveCoeff(int var) const {
+    DCHECK_GE(var, 0);
+    const auto it = objective_map_.find(var);
+    return it == objective_map_.end() ? 0 : it->second;
+  }
   bool ObjectiveDomainIsConstraining() const {
     return objective_domain_is_constraining_;
   }

@@ -239,9 +239,11 @@ class CpModelPresolver {
 
   void ExpandObjective();
 
-  void LookAtVariableWithDegreeTwo(int var);
   void ProcessVariableOnlyUsedInEncoding(int var);
   void TryToSimplifyDomain(int var);
+
+  void LookAtVariableWithDegreeTwo(int var);
+  void ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
   void MergeNoOverlapConstraints();
 
