@@ -307,6 +307,25 @@ class PyWrapLpTest(unittest.TestCase):
             linear_solver_pb2.MPSolverResponseStatus.MPSOLVER_OPTIMAL,
             response.status)
 
+    def testExportToMps(self):
+        """Test MPS export."""
+        solver = pywraplp.Solver('ExportMps',
+                                 pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+        infinity = solver.infinity()
+        # x1, x2 and x3 are continuous non-negative variables.
+        x1 = solver.NumVar(0.0, infinity, 'x1')
+        x2 = solver.NumVar(0.0, infinity, 'x2')
+        x3 = solver.NumVar(0.0, infinity, 'x3')
+
+        solver.Maximize(10 * x1 + 6 * x2 + 4 * x3)
+        c0 = solver.Add(10 * x1 + 4 * x2 + 5 * x3 <= 600, 'ConstraintName0')
+        c1 = solver.Add(2 * x1 + 2 * x2 + 6 * x3 <= 300)
+        sum_of_vars = sum([x1, x2, x3])
+        c2 = solver.Add(sum_of_vars <= 100.0, 'OtherConstraintName')
+
+        mps_str = solver.ExportModelAsMpsFormat(fixed_format=False, obfuscated=False)
+        self.assertIn('ExportMps', mps_str)
+
 
 if __name__ == '__main__':
     unittest.main()
