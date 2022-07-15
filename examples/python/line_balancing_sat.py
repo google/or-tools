@@ -72,7 +72,7 @@ def read_model(filename):
     current_info = SectionInfo()
 
     model = {}
-    with gfile.Open(filename, 'r') as input_file:
+    with open(filename, 'r') as input_file:
         print(f'Reading model from \'{filename}\'')
         section_name = ''
 
