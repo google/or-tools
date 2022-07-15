@@ -333,6 +333,7 @@ def solve_scheduling_model(model, hint):
     if FLAGS.params:
         text_format.Parse(FLAGS.params, solver.parameters)
     solver.parameters.log_search_progress = True
+    solver.parameters.exploit_all_precedences = True  # Helps with the lower bound.
     solver.Solve(model)
 
 
