@@ -41,7 +41,7 @@ flags.DEFINE_string('input', '', 'Input file to parse and solve.')
 flags.DEFINE_string('params', '', 'Sat solver parameters.')
 flags.DEFINE_string('output_proto', '',
                     'Output file to write the cp_model proto to.')
-flags.DEFINE_string('model', 'boolean',
+flags.DEFINE_string('model', 'scheduling',
                     'Model used: boolean, scheduling, greedy')
 
 # pytype: disable=wrong-arg-types
