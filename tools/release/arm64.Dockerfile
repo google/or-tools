@@ -56,10 +56,6 @@ RUN dnf -y update \
 && rm -rf /var/cache/dnf
 ENV JAVA_HOME=/usr/lib/jvm/java
 
-# Openssl 1.1
-RUN dnf -y update \
-&& dnf -y install openssl
-
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -83,8 +79,6 @@ RUN git clone -b "${ORTOOLS_GIT_BRANCH}" --single-branch https://github.com/goog
 # Build delivery
 FROM devel AS delivery
 WORKDIR /root/or-tools
-
-ENV GPG_ARGS ""
 
 ARG ORTOOLS_TOKEN
 ENV ORTOOLS_TOKEN ${ORTOOLS_TOKEN}
