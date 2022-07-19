@@ -6920,9 +6920,80 @@ void CpModelPresolver::DetectDuplicateConstraints() {
     context_->UpdateRuleStats("duplicate: removed constraint");
   }
 
+  const std::vector<std::pair<int, int>> duplicates_without_enforcement =
+      FindDuplicateConstraints(*context_->working_model, true);
+  for (const auto& [dup, rep] : duplicates_without_enforcement) {
+    auto* dup_ct = context_->working_model->mutable_constraints(dup);
+    auto* rep_ct = context_->working_model->mutable_constraints(rep);
+    if (rep_ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
+      continue;
+    }
+
+    // If one of them has no enforcement, then the other can be ignored.
+    // We always keep rep, but clear its enforcement if any.
+    if (dup_ct->enforcement_literal().empty() ||
+        rep_ct->enforcement_literal().empty()) {
+      context_->UpdateRuleStats("duplicate: removed enforced constraint");
+      rep_ct->mutable_enforcement_literal()->Clear();
+      context_->UpdateConstraintVariableUsage(rep);
+      dup_ct->Clear();
+      context_->UpdateConstraintVariableUsage(dup);
+      continue;
+    }
+
+    // Special case. This looks specific but users might reify with a cost
+    // a duplicate constraint. In this case, no need to have two variables,
+    // we can make them equal by duality argument.
+    const int a = rep_ct->enforcement_literal(0);
+    const int b = dup_ct->enforcement_literal(0);
+    if (context_->IsFixed(a) || context_->IsFixed(b)) continue;
+
+    // TODO(user): Deal with more general situation? Note that we already
+    // do something similar in dual_bound_strengthening.Strengthen() were we
+    // are more general as we just require an unique blocking constraint rather
+    // than a singleton variable.
+    //
+    // But we could detect that "a <=> constraint" and "b <=> constraint", then
+    // we can also add the equality. Alternatively, we can just introduce a new
+    // variable and merge all duplicate constraint into 1 + bunch of boolean
+    // constraints liking enforcements.
+    if (context_->VariableWithCostIsUniqueAndRemovable(a) &&
+        context_->VariableWithCostIsUniqueAndRemovable(b)) {
+      // Both these case should be presolved before, but it is easy to deal with
+      // if we encounter them here in some corner cases.
+      if (RefIsPositive(a) == context_->ObjectiveCoeff(PositiveRef(a)) > 0) {
+        context_->UpdateRuleStats("duplicate: dual fixing enforcement.");
+        if (!context_->SetLiteralToFalse(a)) return;
+        continue;
+      }
+      if (RefIsPositive(b) == context_->ObjectiveCoeff(PositiveRef(b)) > 0) {
+        context_->UpdateRuleStats("duplicate: dual fixing enforcement.");
+        if (!context_->SetLiteralToFalse(b)) return;
+      }
+
+      // Sign is correct, i.e. ignoring the constraint is expensive.
+      // The two enforcement can be made equivalent.
+      // Note that this work even if there are more than one enforcement.
+      context_->UpdateRuleStats("duplicate: dual equivalence of enforcement");
+      context_->StoreBooleanEqualityRelation(a, b);
+
+      // We can also remove duplicate constraint now. It will be done later but
+      // it seems more efficient to just do it now.
+      if (dup_ct->enforcement_literal().size() == 1 &&
+          rep_ct->enforcement_literal().size() == 1) {
+        dup_ct->Clear();
+        context_->UpdateConstraintVariableUsage(dup);
+      }
+    } else {
+      context_->UpdateRuleStats(
+          "TODO duplicate: identical constraint with different enforcements");
+    }
+  }
+
   SOLVER_LOG(logger_, "[DetectDuplicateConstraints]",
-             " #duplicates=", duplicates.size(), " time=", wall_timer.Get(),
-             "s");
+             " #duplicates=", duplicates.size(),
+             " #without_enforcements=", duplicates_without_enforcement.size(),
+             " time=", wall_timer.Get(), "s");
 }
 
 void CpModelPresolver::DetectDominatedLinearConstraints() {
@@ -9465,10 +9536,13 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
 
 namespace {
 
-ConstraintProto CopyConstraintForDuplicateDetection(const ConstraintProto& ct) {
+ConstraintProto CopyConstraintForDuplicateDetection(const ConstraintProto& ct,
+                                                    bool ignore_enforcement) {
   ConstraintProto copy = ct;
   copy.clear_name();
-  if (ct.constraint_case() == ConstraintProto::kLinear) {
+  if (ignore_enforcement) {
+    copy.mutable_enforcement_literal()->Clear();
+  } else if (ct.constraint_case() == ConstraintProto::kLinear) {
     copy.mutable_linear()->clear_domain();
   }
   return copy;
@@ -9486,7 +9560,7 @@ ConstraintProto CopyObjectiveForDuplicateDetection(
 }  // namespace
 
 std::vector<std::pair<int, int>> FindDuplicateConstraints(
-    const CpModelProto& model_proto) {
+    const CpModelProto& model_proto, bool ignore_enforcement) {
   std::vector<std::pair<int, int>> result;
 
   // We use a map hash: serialized_constraint_proto hash -> constraint index.
@@ -9495,7 +9569,7 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
   absl::flat_hash_map<uint64_t, int> equiv_constraints;
 
   // Create a special representative for the linear objective.
-  if (model_proto.has_objective()) {
+  if (model_proto.has_objective() && !ignore_enforcement) {
     copy = CopyObjectiveForDuplicateDetection(model_proto.objective());
     s = copy.SerializeAsString();
     equiv_constraints[absl::Hash<std::string>()(s)] = kObjectiveConstraint;
@@ -9510,10 +9584,14 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
     // to make sure reference to them are updated.
     if (type == ConstraintProto::kInterval) continue;
 
+    // Nothing we will presolve in this case.
+    if (ignore_enforcement && type == ConstraintProto::kBoolAnd) continue;
+
     // We ignore names when comparing constraints.
     //
     // TODO(user): This is not particularly efficient.
-    copy = CopyConstraintForDuplicateDetection(model_proto.constraints(c));
+    copy = CopyConstraintForDuplicateDetection(model_proto.constraints(c),
+                                               ignore_enforcement);
     s = copy.SerializeAsString();
 
     const uint64_t hash = absl::Hash<std::string>()(s);
@@ -9524,7 +9602,8 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
       copy = other_c_with_same_hash == kObjectiveConstraint
                  ? CopyObjectiveForDuplicateDetection(model_proto.objective())
                  : CopyConstraintForDuplicateDetection(
-                       model_proto.constraints(other_c_with_same_hash));
+                       model_proto.constraints(other_c_with_same_hash),
+                       ignore_enforcement);
       if (s == copy.SerializeAsString()) {
         result.push_back({c, other_c_with_same_hash});
       }

@@ -639,6 +639,17 @@ void DualBoundStrengthening::ProcessLinearConstraint(
   }
 }
 
+namespace {
+
+ConstraintProto CopyConstraintForDuplicateDetection(const ConstraintProto& ct) {
+  ConstraintProto copy = ct;
+  copy.clear_name();
+  copy.mutable_enforcement_literal()->Clear();
+  return copy;
+}
+
+}  // namespace
+
 bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   const CpModelProto& cp_model = *context->working_model;
   const int num_vars = cp_model.variables_size();
@@ -703,6 +714,11 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       CHECK(context->IntersectDomainWith(var, Domain(new_lb, new_ub)));
     }
   }
+
+  // For detecting duplicate enforced constraint that can be made equivalent.
+  ConstraintProto copy;
+  std::string s;
+  absl::flat_hash_map<uint64_t, int> equiv_constraints;
 
   // If there is only one blocking constraint, we can simplify the problem in
   // a few situation.
@@ -800,6 +816,38 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         // We can add an implication not_enforced => var to its bound ?
         context->UpdateRuleStats("TODO dual: add implied bound");
       } else if (!ct.enforcement_literal().empty()) {
+        // If this is a duplicate of another enforced constraint with an unique
+        // blocking enforcement literal, we can make the two Booleans
+        // equivalent!
+        //
+        // TODO(user): deal with other enforcement literals if any.
+        if (ct.enforcement_literal(0) == NegatedRef(ref)) {
+          copy = CopyConstraintForDuplicateDetection(ct);
+          s = copy.SerializeAsString();
+          const uint64_t hash = absl::Hash<std::string>()(s);
+          const auto [it, inserted] =
+              equiv_constraints.insert({hash, ct_index});
+          if (!inserted) {
+            // Already present!
+            const int other_c_with_same_hash = it->second;
+            const auto& other_ct =
+                context->working_model->constraints(other_c_with_same_hash);
+            copy = CopyConstraintForDuplicateDetection(other_ct);
+            if (s == copy.SerializeAsString()) {
+              const int a = ct.enforcement_literal(0);
+              const int b = other_ct.enforcement_literal(0);
+              if (!processed[PositiveRef(b)]) {
+                context->UpdateRuleStats(
+                    "dual: equivalent enforcement for duplicate constraints");
+                processed[PositiveRef(a)] = true;
+                processed[PositiveRef(b)] = true;
+                context->StoreBooleanEqualityRelation(a, b);
+                continue;
+              }
+            }
+          }
+        }
+
         // We can make enf equivalent to the constraint instead of just =>.
         // This might also be useful for encoding if vars(0) is not a literal.
         if (ct.constraint_case() == ConstraintProto::kLinear &&

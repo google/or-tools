@@ -629,7 +629,7 @@ int DetectMakespan(const std::vector<IntervalVariable>& intervals,
   IntegerValue horizon = kMinIntegerValue;
   for (int i = 0; i < intervals.size(); ++i) {
     if (repository->IsAbsent(intervals[i])) continue;
-    horizon = std::max(horizon, integer_trail->UpperBound(repository->End(i)));
+    horizon = std::max(horizon, integer_trail->UpperBound(repository->End(intervals[i])));
   }
 
   const IntegerValue capacity_value = integer_trail->FixedValue(capacity);

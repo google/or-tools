@@ -18,13 +18,13 @@
 #include <deque>
 #include <functional>
 #include <limits>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -743,9 +743,9 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
     }
   }
   if (num_fixed > 0) {
-    VLOG(1)
-        << "Domain intersection fixed " << num_fixed
-        << " equality literal corresponding to values outside the new domain.";
+    VLOG(1) << "Domain intersection fixed " << num_fixed
+            << " equality literal corresponding to values outside the new "
+               "domain.";
   }
 
   return true;
@@ -1995,9 +1995,9 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
       // Update the propagation queue. At this point, the propagator has been
       // removed from the queue but in_queue_ is still true.
       if (id_to_idempotence_[id]) {
-        // If the propagator is assumed to be idempotent, then we set in_queue_
-        // to false after UpdateCallingNeeds() so this later function will never
-        // add it back.
+        // If the propagator is assumed to be idempotent, then we set
+        // in_queue_ to false after UpdateCallingNeeds() so this later
+        // function will never add it back.
         UpdateCallingNeeds(trail);
         watch_indices_ref.clear();
         in_queue_[id] = false;

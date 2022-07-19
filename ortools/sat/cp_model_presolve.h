@@ -377,10 +377,16 @@ CpSolverStatus PresolveCpModel(PresolveContext* context,
 //   constraint is parallel to the objective and has no enforcement literals.
 //   The domain of such constraint can just be merged with the objective domain.
 //
+// If ignore_enforcement is true, we ignore enforcement literal, but do not
+// do the linear domain or objective special cases. This allow to cover some
+// other cases like:
+// - enforced constraint duplicate of non-enforced one.
+// - Two enforced constraints with singleton enforcement (vpphard).
+//
 // Visible here for testing. This is meant to be called at the end of the
 // presolve where constraints have been canonicalized.
 std::vector<std::pair<int, int>> FindDuplicateConstraints(
-    const CpModelProto& model_proto);
+    const CpModelProto& model_proto, bool ignore_enforcement = false);
 
 }  // namespace sat
 }  // namespace operations_research
