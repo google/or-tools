@@ -74,7 +74,7 @@ function build_delivery() {
 
   # Build env
   echo -n "Build ${ORTOOLS_IMG}:env..." | tee -a "${ROOT_DIR}/build.log"
-  docker build \
+  docker buildx build \
     --tag "${ORTOOLS_IMG}":env \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
@@ -84,7 +84,7 @@ function build_delivery() {
 
   # Build devel
   echo -n "Build ${ORTOOLS_IMG}:devel..." | tee -a "${ROOT_DIR}/build.log"
-  docker build \
+  docker buildx build \
     --tag "${ORTOOLS_IMG}":devel \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
@@ -94,7 +94,7 @@ function build_delivery() {
 
   # Build delivery
   echo -n "Build ${ORTOOLS_IMG}:${ORTOOLS_DELIVERY}..." | tee -a "${ROOT_DIR}/build.log"
-  docker build \
+  docker buildx build \
     --tag "${ORTOOLS_IMG}":"${ORTOOLS_DELIVERY}" \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
