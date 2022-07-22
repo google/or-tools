@@ -123,9 +123,12 @@
 
 #include <math.h>
 
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <set>
+#include <utility>
+#include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/graph/christofides.h"

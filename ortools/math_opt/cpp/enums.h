@@ -77,6 +77,7 @@
 #define OR_TOOLS_MATH_OPT_CPP_ENUMS_H_
 
 #include <optional>
+#include <ostream>
 #include <type_traits>
 
 #include "absl/strings/string_view.h"

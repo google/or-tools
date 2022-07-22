@@ -15,6 +15,7 @@
 #define OR_TOOLS_BOP_BOP_FS_H_
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 #include "ortools/base/basictypes.h"

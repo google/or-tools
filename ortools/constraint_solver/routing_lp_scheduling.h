@@ -263,7 +263,7 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
     return linear_program_.CreateNewVariable().value();
   }
   void SetVariableName(int index, absl::string_view name) override {
-    linear_program_.SetVariableName(index, name);
+    linear_program_.SetVariableName(glop::ColIndex(index), name);
   }
   bool SetVariableBounds(int index, int64_t lower_bound,
                          int64_t upper_bound) override {

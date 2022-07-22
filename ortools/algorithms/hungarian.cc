@@ -14,8 +14,10 @@
 #include "ortools/algorithms/hungarian.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <limits>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"

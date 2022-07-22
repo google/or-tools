@@ -15,6 +15,7 @@
 #define OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
 
 #include <string>
+#include <vector>
 
 #include "ortools/base/logging.h"
 #include "ortools/glop/lu_factorization.h"

@@ -15,6 +15,8 @@
 // Local Search. It solves the same trivial problem with a Large
 // Neighborhood Search approach, a Local Search approach, and a Local
 // Search with Filter approach.
+#include <vector>
+
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/logging_flags.h"

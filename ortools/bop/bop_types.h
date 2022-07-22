@@ -15,6 +15,7 @@
 #define OR_TOOLS_BOP_BOP_TYPES_H_
 
 #include <cstdint>
+#include <ostream>
 #include <string>
 
 #include "ortools/base/basictypes.h"

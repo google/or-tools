@@ -17,6 +17,7 @@
 #include <cmath>
 #include <limits>
 #include <map>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>

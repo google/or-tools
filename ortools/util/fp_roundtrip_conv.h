@@ -18,6 +18,7 @@
 #define OR_TOOLS_UTIL_FP_ROUNDTRIP_CONV_H_
 
 #include <iostream>
+#include <ostream>
 #include <string>
 
 #include "absl/base/attributes.h"

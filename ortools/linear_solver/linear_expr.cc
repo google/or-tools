@@ -15,7 +15,9 @@
 
 #include <algorithm>
 #include <limits>
+#include <ostream>
 #include <string>
+#include <vector>
 
 #include "absl/strings/str_join.h"
 #include "ortools/base/logging.h"

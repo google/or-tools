@@ -15,6 +15,7 @@
 
 #include <functional>
 #include <iostream>
+#include <ostream>
 #include <string>
 
 #include "absl/strings/str_cat.h"

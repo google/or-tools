@@ -21,6 +21,7 @@
 #include <limits>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/match.h"

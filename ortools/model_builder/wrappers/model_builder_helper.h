@@ -19,6 +19,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"

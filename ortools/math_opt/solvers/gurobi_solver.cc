@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <list>
 #include <memory>
 #include <optional>
 #include <string>

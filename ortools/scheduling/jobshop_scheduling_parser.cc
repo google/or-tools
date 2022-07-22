@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -24,6 +25,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/path.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
 #include "ortools/util/filelineiter.h"
 
@@ -57,6 +59,7 @@ bool JsspParser::ParseFile(const std::string& filename) {
   // Try to detect the type of the data file.
   //  - fjs suffix -> Flexible Jobshop
   //  - txt suffix -> Taillard or time dependent scheduling.
+
   if (absl::EndsWith(filename, "fjs")) {
     problem_type_ = FLEXIBLE;
   } else if (absl::EndsWith(filename, ".txt")) {

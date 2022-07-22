@@ -15,6 +15,7 @@
 #define OR_TOOLS_GLOP_VARIABLE_VALUES_H_
 
 #include <string>
+#include <vector>
 
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"

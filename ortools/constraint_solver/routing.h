@@ -1934,7 +1934,10 @@ class RoutingModel {
   std::vector<IntVar*> vehicle_vars_;
   std::vector<IntVar*> active_;
   /// Resource variables, indexed first by resource group index and then by
-  /// vehicle index.
+  /// vehicle index. A resource variable can have a negative value of -1, iff
+  /// the corresponding vehicle doesn't require a resource from this resource
+  /// group, OR if the vehicle is unused (i.e. no visits on its route and
+  /// vehicle_used_when_empty_[v] is false).
   // clang-format off
   std::vector<std::vector<IntVar*> > resource_vars_;
   // clang-format on

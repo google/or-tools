@@ -14,6 +14,8 @@
 #include "ortools/math_opt/cpp/solve_result.h"
 
 #include <optional>
+#include <ostream>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>

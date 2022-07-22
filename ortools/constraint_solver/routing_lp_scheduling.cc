@@ -14,15 +14,23 @@
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <deque>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -31,6 +39,8 @@
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/graph/min_cost_flow.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/lp_utils.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 

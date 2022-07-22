@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/lp_data/lp_types.h"

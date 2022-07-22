@@ -17,12 +17,15 @@
 
 #include <limits>
 
+#include "ortools/base/path.h"
+
 #if defined(__GNUC__)  // Linux or Mac OS X.
 #include <signal.h>
 #endif  // __GNUC__
 
 #include <csignal>
 #include <iostream>
+#include <ostream>
 #include <string>
 #include <vector>
 

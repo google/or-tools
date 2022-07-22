@@ -19,7 +19,9 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <ostream>
 #include <string>
+#include <vector>
 
 #include "ortools/base/basictypes.h"
 #include "ortools/base/logging.h"
@@ -79,13 +81,13 @@ static inline double ToDouble(long double f) { return static_cast<double>(f); }
 typedef double Fractional;
 
 // Range max for type Fractional. DBL_MAX for double for example.
-const double kRangeMax = std::numeric_limits<double>::max();
+constexpr double kRangeMax = std::numeric_limits<double>::max();
 
 // Infinity for type Fractional.
-const double kInfinity = std::numeric_limits<double>::infinity();
+constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
 // Epsilon for type Fractional, i.e. the smallest e such that 1.0 + e != 1.0 .
-const double kEpsilon = std::numeric_limits<double>::epsilon();
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // Returns true if the given value is finite, that means for a double:
 // not a NaN and not +/- infinity.
@@ -96,8 +98,8 @@ inline bool IsFinite(Fractional value) {
 // Constants to represent invalid row or column index.
 // It is important that their values be the same because during transposition,
 // one needs to be converted into the other.
-const RowIndex kInvalidRow(-1);
-const ColIndex kInvalidCol(-1);
+constexpr RowIndex kInvalidRow(-1);
+constexpr ColIndex kInvalidCol(-1);
 
 // Different statuses for a given problem.
 enum class ProblemStatus : int8_t {

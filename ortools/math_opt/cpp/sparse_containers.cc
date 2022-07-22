@@ -13,6 +13,8 @@
 
 #include "ortools/math_opt/cpp/sparse_containers.h"
 
+#include <optional>
+
 namespace operations_research::math_opt {
 namespace {
 

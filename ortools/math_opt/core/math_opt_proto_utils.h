@@ -14,11 +14,13 @@
 #ifndef OR_TOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_
 #define OR_TOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_
 
-#include <algorithm>
 #include <cstdint>
+#include <optional>
+#include <type_traits>
 
 #include "absl/container/flat_hash_set.h"
-#include "ortools/base/integral_types.h"
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/model.pb.h"
@@ -120,6 +122,33 @@ TerminationProto NoSolutionFoundTermination(const LimitProto limit,
 
 TerminationProto TerminateForReason(TerminationReasonProto reason,
                                     absl::string_view detail = {});
+
+enum class SupportType {
+  kNotSupported = 1,
+  kSupported = 2,
+  kNotImplemented = 3,
+};
+
+struct SupportedProblemStructures {
+  SupportType integer_variables = SupportType::kNotSupported;
+  SupportType quadratic_objectives = SupportType::kNotSupported;
+  SupportType quadratic_constraints = SupportType::kNotSupported;
+  SupportType sos1_constraints = SupportType::kNotSupported;
+  SupportType sos2_constraints = SupportType::kNotSupported;
+  SupportType indicator_constraints = SupportType::kNotSupported;
+};
+
+// Returns an InvalidArgumentError (respectively, UnimplementedError) if a
+// problem structure is present in `model` and not supported (resp., not yet
+// implemented) according to `support_menu`.
+absl::Status ModelIsSupported(const ModelProto& model,
+                              const SupportedProblemStructures& support_menu,
+                              absl::string_view solver_name);
+
+// Returns false if a problem structure is present in `update` and not
+// not implemented or supported according to `support_menu`.
+bool UpdateIsSupported(const ModelUpdateProto& update,
+                       const SupportedProblemStructures& support_menu);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Inline functions implementations.

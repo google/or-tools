@@ -14,6 +14,7 @@
 #include "ortools/linear_solver/linear_solver_callback.h"
 
 #include <string>
+#include <vector>
 
 #include "ortools/base/logging.h"
 

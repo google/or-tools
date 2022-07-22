@@ -15,7 +15,9 @@
 
 #include "ortools/algorithms/hungarian.h"
 
+#include <cmath>
 #include <cstdint>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "gtest/gtest.h"

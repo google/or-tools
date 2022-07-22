@@ -14,6 +14,8 @@
 #include "ortools/util/time_limit.h"
 
 #include <algorithm>
+#include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 

@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"

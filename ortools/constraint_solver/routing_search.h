@@ -19,7 +19,9 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <tuple>

@@ -111,7 +111,7 @@ namespace operations_research {
     ++value_;                             \
     return *this;                         \
   }                                       \
-  const ThisType operator++(int v) {      \
+  const ThisType operator++(int) {        \
     ThisType temp(*this);                 \
     ++value_;                             \
     return temp;                          \
@@ -120,7 +120,7 @@ namespace operations_research {
     --value_;                             \
     return *this;                         \
   }                                       \
-  const ThisType operator--(int v) {      \
+  const ThisType operator--(int) {        \
     ThisType temp(*this);                 \
     --value_;                             \
     return temp;                          \
@@ -152,9 +152,7 @@ class StrongIndex {
 
   constexpr StrongIndex() : value_(0) {}
 
-  // NOLINTBEGIN(google-explicit-constructor)
-  constexpr StrongIndex(int value) : value_(value) {}
-  // NOLINTEND(google-explicit-constructor)
+  explicit constexpr StrongIndex(int value) : value_(value) {}
 
   StrongIndex& operator=(int arg_value) {
     value_ = arg_value;

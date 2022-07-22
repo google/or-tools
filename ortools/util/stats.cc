@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/stl_util.h"

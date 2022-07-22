@@ -90,6 +90,9 @@ message LinearConstraintsProto {
 
 // A single quadratic constraint of the form:
 //    lb <= sum{linear_terms} + sum{quadratic_terms} <= ub.
+//
+// If a variable involved in this constraint is deleted, it is treated as if it
+// were set to zero.
 message QuadraticConstraintProto {
   // Terms that are linear in the decision variables.
   //
@@ -131,6 +134,9 @@ message QuadraticConstraintProto {
 }
 
 // Data for representing a single SOS1 or SOS2 constraint.
+//
+// If a variable involved in this constraint is deleted, it is treated as if it
+// were set to zero.
 message SosConstraintProto {
   // The expressions over which to apply the SOS constraint:
   //   * SOS1: At most one element takes a nonzero value.
@@ -147,6 +153,50 @@ message SosConstraintProto {
   string name = 3;
 }
 
+// Specifies if a constraint is of the form...
+enum ConstraintSense {
+  CONSTRAINT_SENSE_UNSPECIFIED = 0;
+  // ... lhs <= rhs
+  CONSTRAINT_SENSE_LESS_THAN = 1;
+  // ... lhs >= rhs
+  CONSTRAINT_SENSE_GREATER_THAN = 2;
+  // ... lhs == rhs
+  CONSTRAINT_SENSE_EQUAL_TO = 3;
+}
+
+// Data for representing a single indicator constraint of the form:
+//   Variable(indicator_id) = 1 --> expression sense rhs.
+//
+// If a variable involved in this constraint is deleted, it is treated as if it
+// were set to zero. In particular, deleting the indicator variable means that
+// the indicator constraint is vacuous.
+message IndicatorConstraintProto {
+  // An ID corresponding to a binary variable, or unset. If unset, the indicator
+  // constraint is ignored. If set, we require that:
+  //   * VariablesProto.integers[indicator_id] = true,
+  //   * VariablesProto.lower_bounds[indicator_id] >= 0,
+  //   * VariablesProto.upper_bounds[indicator_id] <= 1.
+  // These conditions are not validated by MathOpt. If not satisfied, the solver
+  // may elect to implicitly add them, or to reject the model.
+  optional int64 indicator_id = 1;
+
+  // Must be a valid linear expression with respect to the containing model:
+  //   * All stated conditions on `SparseDoubleVectorProto`,
+  //   * All elements of `expression.values` must be finite,
+  //   * `expression.ids` are a subset of `VariablesProto.ids`.
+  SparseDoubleVectorProto expression = 2;
+
+  ConstraintSense sense = 3;
+
+  // Cannot be NaN or infinite.
+  double rhs = 4;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // `ModelProto.indicator_constraints` and
+  // `IndicatorConstraintUpdatesProto.new_constraints`.
+  string name = 5;
+}
+
 // An optimization problem. For full details, see go/mathopt-model.
 //
 // MathOpt supports:
@@ -157,6 +207,7 @@ message SosConstraintProto {
 //     * Quadratic constraints
 //     * Logical constraints
 //       > SOS1 and SOS2 constraints
+//       > Indicator constraints
 //
 // By default, constraints are represented in "id-to-data" maps. However, we
 // represent linear constraints in a more efficient "struct-of-arrays" format.
@@ -167,6 +218,9 @@ message ModelProto {
   LinearConstraintsProto linear_constraints = 4;
 
   // The variable coefficients for the linear constraints.
+  //
+  // If a variable involved in this constraint is deleted, it is treated as if
+  // it were set to zero.
   //
   // Requirements:
   //  * linear_constraint_matrix.row_ids are elements of linear_constraints.ids.
@@ -200,4 +254,9 @@ message ModelProto {
   // `expressions` list; if `weights` are presented, the ordering is taken with
   // respect to these values in increasing order.
   map<int64, SosConstraintProto> sos2_constraints = 8;
+
+  // Indicator constraints in the model, which enforce that, if a binary
+  // "indicator variable" is set to one, then an "implicated constraint" must
+  // hold.
+  map<int64, IndicatorConstraintProto> indicator_constraints = 9;
 }

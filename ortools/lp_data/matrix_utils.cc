@@ -15,6 +15,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
+#include <vector>
 
 #include "ortools/base/hash.h"
 

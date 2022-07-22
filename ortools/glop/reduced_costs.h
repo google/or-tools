@@ -15,6 +15,7 @@
 #define OR_TOOLS_GLOP_REDUCED_COSTS_H_
 
 #include <string>
+#include <vector>
 
 #include "absl/random/bit_gen_ref.h"
 #include "ortools/glop/basis_representation.h"

@@ -160,6 +160,10 @@ VectorXd TransposedMatrixVectorProduct(
   CHECK_EQ(vector.size(), matrix.rows());
   VectorXd answer(matrix.cols());
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
+    // NOTE: For very sparse columns, assignment to shard(answer) incurs a
+    // measurable overhead compared to using a constructor
+    // (i.e. VectorXd temp = ...). It is not clear why this is the case, nor
+    // how to avoid it.
     shard(answer) = shard(matrix).transpose() * vector;
   });
   return answer;

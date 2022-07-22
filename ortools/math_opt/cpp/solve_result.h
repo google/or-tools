@@ -15,6 +15,7 @@
 #define OR_TOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
 
 #include <optional>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>

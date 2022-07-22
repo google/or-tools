@@ -14,7 +14,9 @@
 // [START program]
 // [START import]
 #include <cstdint>
+#include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"

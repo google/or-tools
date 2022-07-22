@@ -14,6 +14,7 @@
 #include "ortools/glop/variable_values.h"
 
 #include <algorithm>
+#include <vector>
 
 #include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_utils.h"

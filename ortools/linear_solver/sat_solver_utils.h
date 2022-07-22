@@ -15,6 +15,7 @@
 #define OR_TOOLS_LINEAR_SOLVER_SAT_SOLVER_UTILS_H_
 
 #include <memory>
+#include <vector>
 
 #include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

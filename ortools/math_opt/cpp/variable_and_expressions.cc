@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <limits>
+#include <ostream>
 #include <utility>
 #include <vector>
 

@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_GLOP_INITIAL_BASIS_H_
 #define OR_TOOLS_GLOP_INITIAL_BASIS_H_
 
+#include <vector>
+
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"

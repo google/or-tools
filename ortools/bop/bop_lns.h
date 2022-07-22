@@ -15,6 +15,7 @@
 #define OR_TOOLS_BOP_BOP_LNS_H_
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 

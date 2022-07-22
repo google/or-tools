@@ -70,6 +70,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #ifdef HAS_PERF_SUBSYSTEM
 #include "absl/strings/str_replace.h"

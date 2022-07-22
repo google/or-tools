@@ -162,6 +162,7 @@
 #include <iterator>
 #include <limits>
 #include <new>
+#include <type_traits>
 #include <vector>
 
 #include "absl/base/port.h"

@@ -13,9 +13,12 @@
 
 #include "ortools/linear_solver/sat_proto_solver.h"
 
+#include <cmath>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 

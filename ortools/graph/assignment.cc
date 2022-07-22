@@ -14,6 +14,7 @@
 #include "ortools/graph/assignment.h"
 
 #include <algorithm>
+#include <limits>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/graph/ebert_graph.h"

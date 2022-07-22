@@ -14,10 +14,17 @@
 #include "ortools/glop/preprocessor.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <deque>
+#include <iomanip>
+#include <ios>
 #include <limits>
+#include <memory>
+#include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/iterator_adaptors.h"

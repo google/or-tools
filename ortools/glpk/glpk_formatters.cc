@@ -13,6 +13,7 @@
 
 #include "ortools/glpk/glpk_formatters.h"
 
+#include <sstream>
 #include <string>
 #include <string_view>
 

@@ -16,9 +16,11 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <ios>
 #include <optional>
 #include <ostream>
 #include <type_traits>
+#include <utility>
 
 #include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/storage/model_storage.h"

@@ -17,6 +17,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"

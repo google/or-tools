@@ -12,6 +12,7 @@ Java and .Net. Each language have different requirements for the code samples.
 ### C++ code samples
 
 ```cpp
+#include <ostream>
 #include <string>
 
 #include "ortools/constraint_solver/constraint_solver.h"

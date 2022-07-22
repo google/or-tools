@@ -14,8 +14,6 @@
 #ifndef OR_TOOLS_MATH_OPT_SOLVERS_CP_SAT_SOLVER_H_
 #define OR_TOOLS_MATH_OPT_SOLVERS_CP_SAT_SOLVER_H_
 
-#include <stdint.h>
-
 #include <cstdint>
 #include <memory>
 #include <vector>

@@ -13,7 +13,10 @@
 
 #include "ortools/gscip/gscip_ext.h"
 
+#include <cmath>
+#include <limits>
 #include <string>
+#include <vector>
 
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"

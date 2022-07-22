@@ -18,6 +18,7 @@
 #include <iterator>
 #include <numeric>
 #include <sstream>
+#include <vector>
 
 #include "ortools/algorithms/knapsack_solver.h"
 // [END import]

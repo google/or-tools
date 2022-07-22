@@ -13,6 +13,7 @@
 
 // A pybind11 wrapper for model_builder_helper.
 
+#include <optional>
 #include <stdexcept>
 #include <string>
 

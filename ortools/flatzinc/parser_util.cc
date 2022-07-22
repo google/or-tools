@@ -15,7 +15,9 @@
 // Included in parser.tab.cc.
 #include "ortools/flatzinc/parser_util.h"
 
+#include <cmath>
 #include <string>
+#include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"

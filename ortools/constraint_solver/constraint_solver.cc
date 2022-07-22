@@ -24,8 +24,10 @@
 #include <iosfwd>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/memory/memory.h"
 #include "absl/time/clock.h"

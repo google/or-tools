@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <memory>
 #include <vector>
 
 #include "ortools/base/logging.h"

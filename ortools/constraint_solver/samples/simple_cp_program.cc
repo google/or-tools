@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <ostream>
 #include <string>
 
 #include "ortools/constraint_solver/constraint_solver.h"

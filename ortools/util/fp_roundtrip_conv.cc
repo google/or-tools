@@ -15,6 +15,8 @@
 
 #include <array>
 #include <charconv>
+#include <limits>
+#include <ostream>
 #include <string>
 #include <system_error>  // NOLINT(build/c++11)
 

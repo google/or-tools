@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 
+#include <ostream>
 #include <string>
 
 #include "ortools/base/logging.h"

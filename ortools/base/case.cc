@@ -16,6 +16,7 @@
 #include "ortools/base/case.h"
 
 #include <functional>
+#include <ostream>
 #include <string>
 
 #include "absl/hash/hash.h"

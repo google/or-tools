@@ -13,6 +13,7 @@
 
 #include "ortools/math_opt/validators/enum_sets.h"
 
+#include <ostream>
 #include <string>
 #include <tuple>
 #include <vector>

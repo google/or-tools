@@ -13,7 +13,6 @@
 
 #include "ortools/math_opt/storage/model_storage.h"
 
-#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>

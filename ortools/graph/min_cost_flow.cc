@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"

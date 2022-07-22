@@ -25,6 +25,7 @@
 #define OR_TOOLS_LP_DATA_LP_DATA_H_
 
 #include <algorithm>  // for max
+#include <cmath>
 #include <cstdint>
 #include <map>
 #include <string>  // for string

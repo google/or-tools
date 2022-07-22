@@ -175,6 +175,7 @@ cc_binary(
         ":parser_lib",
         ":presolve",
         "//ortools/base",
+        "//ortools/base:path",
         "//ortools/base:threadpool",
         "//ortools/util:logging",
     ],

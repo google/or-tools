@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"

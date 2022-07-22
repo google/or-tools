@@ -16,6 +16,7 @@
 
 #include <cstdint>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_int.h"
 
 namespace operations_research::math_opt {

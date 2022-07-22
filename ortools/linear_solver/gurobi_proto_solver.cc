@@ -14,6 +14,7 @@
 #include "ortools/linear_solver/gurobi_proto_solver.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <numeric>

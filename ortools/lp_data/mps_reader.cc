@@ -13,8 +13,11 @@
 
 #include "ortools/lp_data/mps_reader.h"
 
+#include <cmath>
 #include <cstdint>
+#include <limits>
 #include <string>
+#include <vector>
 
 #include "absl/container/btree_set.h"
 #include "absl/status/status.h"

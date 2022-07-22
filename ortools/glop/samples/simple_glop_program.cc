@@ -15,6 +15,7 @@
 // [START program]
 // [START import]
 #include <iostream>
+#include <ostream>
 
 #include "ortools/glop/lp_solver.h"
 #include "ortools/lp_data/lp_data.h"

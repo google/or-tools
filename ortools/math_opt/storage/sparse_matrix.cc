@@ -13,7 +13,19 @@
 
 #include "ortools/math_opt/storage/sparse_matrix.h"
 
-#include "ortools/base/map_util.h"
+#include <cstdint>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/meta/type_traits.h"
+#include "absl/types/span.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/math_opt/storage/model_storage_types.h"
 
 namespace operations_research::math_opt {
 namespace {

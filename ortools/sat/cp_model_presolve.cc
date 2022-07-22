@@ -6920,6 +6920,10 @@ void CpModelPresolver::DetectDuplicateConstraints() {
     context_->UpdateRuleStats("duplicate: removed constraint");
   }
 
+  // TODO(user): We can also do similar stuff to linear constraint that just
+  // differ at a singleton variable. Or that are equalities. Like if expr + X =
+  // cte and expr + Y = other_cte, we can see that X is in affine relation with
+  // Y.
   const std::vector<std::pair<int, int>> duplicates_without_enforcement =
       FindDuplicateConstraints(*context_->working_model, true);
   for (const auto& [dup, rep] : duplicates_without_enforcement) {

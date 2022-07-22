@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <iterator>
 #include <limits>
+#include <optional>
 #include <string>
 
 #include "absl/container/flat_hash_set.h"

@@ -14,6 +14,7 @@
 #include "ortools/math_opt/cpp/streamable_solver_init_arguments.h"
 
 #include <optional>
+#include <string>
 #include <type_traits>
 
 #include "absl/status/statusor.h"

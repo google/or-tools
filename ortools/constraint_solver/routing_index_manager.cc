@@ -15,6 +15,8 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/logging.h"

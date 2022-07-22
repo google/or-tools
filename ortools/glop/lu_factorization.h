@@ -15,6 +15,7 @@
 #define OR_TOOLS_GLOP_LU_FACTORIZATION_H_
 
 #include <string>
+#include <vector>
 
 #include "ortools/glop/markowitz.h"
 #include "ortools/glop/parameters.pb.h"

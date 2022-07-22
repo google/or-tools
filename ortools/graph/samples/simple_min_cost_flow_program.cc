@@ -15,6 +15,7 @@
 // From Bradley, Hax and Maganti, 'Applied Mathematical Programming', figure 8.1
 // [START import]
 #include <cstdint>
+#include <vector>
 
 #include "ortools/graph/min_cost_flow.h"
 // [END import]

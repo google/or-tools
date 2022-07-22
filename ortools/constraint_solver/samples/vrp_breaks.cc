@@ -21,6 +21,7 @@
 // [START program]
 // [START import]
 #include <cstdint>
+#include <sstream>
 #include <vector>
 
 #include "ortools/constraint_solver/constraint_solver.h"

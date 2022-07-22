@@ -14,6 +14,7 @@
 #include "ortools/glop/basis_representation.h"
 
 #include <algorithm>
+#include <vector>
 
 #include "ortools/base/stl_util.h"
 #include "ortools/glop/status.h"

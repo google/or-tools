@@ -13,7 +13,9 @@
 
 #include "ortools/packing/arc_flow_solver.h"
 
+#include <cmath>
 #include <string>
+#include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/flags/flag.h"

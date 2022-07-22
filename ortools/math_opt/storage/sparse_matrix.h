@@ -16,11 +16,16 @@
 #define OR_TOOLS_MATH_OPT_STORAGE_SPARSE_MATRIX_H_
 
 #include <algorithm>
+#include <cstdint>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/meta/type_traits.h"
+#include "absl/types/span.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"

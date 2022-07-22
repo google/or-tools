@@ -11,9 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <array>
 #include <iomanip>
+#include <iterator>
 #include <numeric>  // std::iota
+#include <ostream>
+#include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "ortools/base/init_google.h"

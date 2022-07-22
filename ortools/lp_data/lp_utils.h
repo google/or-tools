@@ -16,6 +16,8 @@
 #ifndef OR_TOOLS_LP_DATA_LP_UTILS_H_
 #define OR_TOOLS_LP_DATA_LP_UTILS_H_
 
+#include <cmath>
+
 #include "ortools/base/accurate_sum.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"

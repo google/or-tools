@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 #include <cstdint>
+#include <vector>
 
 #include "ortools/graph/min_cost_flow.h"
 // [END import]

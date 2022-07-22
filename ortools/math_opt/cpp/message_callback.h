@@ -16,7 +16,9 @@
 
 #include <functional>
 #include <iostream>
+#include <ostream>
 #include <string>
+#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/source_location.h"

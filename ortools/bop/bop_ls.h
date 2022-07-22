@@ -29,7 +29,9 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"

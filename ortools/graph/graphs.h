@@ -17,6 +17,8 @@
 #ifndef OR_TOOLS_GRAPH_GRAPHS_H_
 #define OR_TOOLS_GRAPH_GRAPHS_H_
 
+#include <vector>
+
 #include "ortools/graph/ebert_graph.h"
 
 namespace operations_research {

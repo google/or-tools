@@ -14,7 +14,9 @@
 // [START program]
 // [START import]
 #include <iostream>
+#include <memory>
 #include <numeric>
+#include <ostream>
 #include <vector>
 
 #include "ortools/linear_solver/linear_expr.h"

@@ -14,8 +14,10 @@
 #include "ortools/graph/max_flow.h"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"

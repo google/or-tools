@@ -15,6 +15,7 @@
 // [START import]
 #include <algorithm>
 #include <cstdint>
+#include <sstream>
 #include <vector>
 
 #include "google/protobuf/duration.pb.h"

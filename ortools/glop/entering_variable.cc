@@ -14,7 +14,9 @@
 #include "ortools/glop/entering_variable.h"
 
 #include <algorithm>
+#include <limits>
 #include <queue>
+#include <vector>
 
 #include "ortools/base/timer.h"
 #include "ortools/lp_data/lp_utils.h"

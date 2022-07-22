@@ -15,6 +15,7 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_
 
 #include <string>
+#include <vector>
 
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 

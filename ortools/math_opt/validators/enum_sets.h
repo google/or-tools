@@ -16,6 +16,7 @@
 #ifndef OR_TOOLS_MATH_OPT_VALIDATORS_ENUM_SETS_H_
 #define OR_TOOLS_MATH_OPT_VALIDATORS_ENUM_SETS_H_
 
+#include <ostream>
 #include <string>
 #include <tuple>
 #include <vector>

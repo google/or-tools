@@ -16,7 +16,8 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
-#include <sstream>
+#include <optional>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -30,6 +31,7 @@
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/model_storage_types.h"
 
 namespace operations_research {
 namespace math_opt {

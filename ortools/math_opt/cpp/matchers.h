@@ -92,6 +92,7 @@
 #define OR_TOOLS_MATH_OPT_CPP_MATCHERS_H_
 
 #include <optional>
+#include <ostream>
 #include <sstream>
 #include <vector>
 

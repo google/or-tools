@@ -15,6 +15,7 @@
 // [START import]
 #include <algorithm>
 #include <cstdint>
+#include <sstream>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"

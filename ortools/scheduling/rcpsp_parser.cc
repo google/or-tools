@@ -15,10 +15,12 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "ortools/base/path.h"
 #include "ortools/scheduling/rcpsp.pb.h"
 #include "ortools/util/filelineiter.h"
 

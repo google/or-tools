@@ -13,6 +13,7 @@
 
 #include "ortools/bop/bop_solver.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 

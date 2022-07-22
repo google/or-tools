@@ -15,10 +15,12 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <queue>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "ortools/base/logging.h"
 

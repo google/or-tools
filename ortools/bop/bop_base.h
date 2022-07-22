@@ -16,7 +16,9 @@
 
 #include <cstdint>
 #include <limits>
+#include <ostream>
 #include <string>
+#include <vector>
 
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/basictypes.h"

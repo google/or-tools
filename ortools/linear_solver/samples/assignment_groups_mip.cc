@@ -15,6 +15,7 @@
 // Solve a simple assignment problem.
 // [START import]
 #include <cstdint>
+#include <memory>
 #include <numeric>
 #include <utility>
 #include <vector>

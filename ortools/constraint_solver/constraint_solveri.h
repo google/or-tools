@@ -1009,6 +1009,7 @@ class IntVarLocalSearchHandler {
                                  IntVarLocalSearchHandler>::OnStart;
 // clang-format on
 #endif  // SWIGPYTHON
+
 // clang-format off
 %rename(IntVarLocalSearchOperatorTemplate)
         VarLocalSearchOperator<IntVar, int64_t, IntVarLocalSearchHandler>;
@@ -3255,6 +3256,8 @@ class PathState::Chain {
   int Last() const { return (end_ - 1)->node; }
   Iterator begin() const { return Iterator(begin_); }
   Iterator end() const { return Iterator(end_); }
+
+  Chain WithoutFirstNode() const { return Chain(begin_ + 1, end_); }
 
  private:
   const CommittedNode* const begin_;

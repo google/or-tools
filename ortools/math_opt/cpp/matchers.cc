@@ -17,6 +17,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <optional>
+#include <ostream>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <utility>

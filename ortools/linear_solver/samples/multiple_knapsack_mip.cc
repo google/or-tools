@@ -15,6 +15,7 @@
 // Solve a multiple knapsack problem using a MIP solver.
 // [START import]
 #include <iostream>
+#include <memory>
 #include <numeric>
 #include <vector>
 

@@ -14,7 +14,9 @@
 #include "ortools/glop/initial_basis.h"
 
 #include <algorithm>
+#include <limits>
 #include <queue>
+#include <vector>
 
 #include "ortools/glop/markowitz.h"
 #include "ortools/lp_data/lp_utils.h"

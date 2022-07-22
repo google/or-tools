@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <ostream>
 
 namespace operations_research::math_opt {
 

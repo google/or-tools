@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <optional>
+#include <ostream>
 #include <utility>
 
 #include "ortools/math_opt/cpp/model.h"

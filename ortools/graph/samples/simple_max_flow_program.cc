@@ -15,6 +15,7 @@
 // From Taha 'Introduction to Operations Research', example 6.4-2."""
 // [START import]
 #include <cstdint>
+#include <vector>
 
 #include "ortools/graph/max_flow.h"
 // [END import]

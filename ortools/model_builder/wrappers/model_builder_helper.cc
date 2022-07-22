@@ -14,8 +14,10 @@
 #include "ortools/model_builder/wrappers/model_builder_helper.h"
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
