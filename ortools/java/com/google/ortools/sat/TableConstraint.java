@@ -34,7 +34,6 @@ public class TableConstraint extends Constraint {
    * @throws CpModel.WrongLength if the tuple does not have the same length as the array of
    *     variables of the constraint.
    */
-  @CanIgnoreReturnValue
   public TableConstraint addTuple(int[] tuple) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
     if (tuple.length != table.getVarsCount()) {
@@ -54,7 +53,6 @@ public class TableConstraint extends Constraint {
    * @throws CpModel.WrongLength if the tuple does not have the same length as the array of
    *     variables of the constraint.
    */
-  @CanIgnoreReturnValue
   public TableConstraint addTuple(long[] tuple) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
     if (tuple.length != table.getVarsCount()) {
@@ -74,7 +72,6 @@ public class TableConstraint extends Constraint {
    * @throws CpModel.WrongLength if one tuple does not have the same length as the array of
    *     variables of the constraint.
    */
-  @CanIgnoreReturnValue
   public TableConstraint addTuples(int[][] tuples) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
     for (int[] tuple : tuples) {
@@ -96,7 +93,6 @@ public class TableConstraint extends Constraint {
    * @throws CpModel.WrongLength if one tuple does not have the same length as the array of
    *     variables of the constraint.
    */
-  @CanIgnoreReturnValue
   public TableConstraint addTuples(long[][] tuples) {
     TableConstraintProto.Builder table = getBuilder().getTableBuilder();
     for (long[] tuple : tuples) {

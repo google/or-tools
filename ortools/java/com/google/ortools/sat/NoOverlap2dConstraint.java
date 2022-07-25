@@ -27,7 +27,6 @@ public class NoOverlap2dConstraint extends Constraint {
   }
 
   /// Adds a rectangle (xInterval, yInterval) to the constraint.
-  @CanIgnoreReturnValue
   public NoOverlap2dConstraint addRectangle(IntervalVar xInterval, IntervalVar yInterval) {
     NoOverlap2DConstraintProto.Builder noOverlap2d = getBuilder().getNoOverlap2DBuilder();
     noOverlap2d.addXIntervals(xInterval.getIndex());

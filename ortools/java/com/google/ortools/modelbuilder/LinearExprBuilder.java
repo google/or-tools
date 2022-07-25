@@ -26,19 +26,16 @@ public final class LinearExprBuilder implements LinearArgument {
     this.offset = 0;
   }
 
-  @CanIgnoreReturnValue
   public LinearExprBuilder add(LinearArgument expr) {
     addTerm(expr, 1);
     return this;
   }
 
-  @CanIgnoreReturnValue
   public LinearExprBuilder add(double constant) {
     offset = offset + constant;
     return this;
   }
 
-  @CanIgnoreReturnValue
   public LinearExprBuilder addTerm(LinearArgument expr, double coeff) {
     final LinearExpr e = expr.build();
     final int numElements = e.numElements();
@@ -49,7 +46,6 @@ public final class LinearExprBuilder implements LinearArgument {
     return this;
   }
 
-  @CanIgnoreReturnValue
   public LinearExprBuilder addSum(LinearArgument[] exprs) {
     for (final LinearArgument expr : exprs) {
       addTerm(expr, 1);
@@ -57,7 +53,6 @@ public final class LinearExprBuilder implements LinearArgument {
     return this;
   }
 
-  @CanIgnoreReturnValue
   public LinearExprBuilder addWeightedSum(LinearArgument[] exprs, double[] coeffs) {
     for (int i = 0; i < exprs.length; ++i) {
       addTerm(exprs[i], coeffs[i]);
@@ -65,7 +60,6 @@ public final class LinearExprBuilder implements LinearArgument {
     return this;
   }
 
-  @CanIgnoreReturnValue
   public LinearExprBuilder addWeightedSum(LinearArgument[] exprs, int[] coeffs) {
     for (int i = 0; i < exprs.length; ++i) {
       addTerm(exprs[i], coeffs[i]);
@@ -73,7 +67,6 @@ public final class LinearExprBuilder implements LinearArgument {
     return this;
   }
 
-  @CanIgnoreReturnValue
   public LinearExprBuilder addWeightedSum(LinearArgument[] exprs, long[] coeffs) {
     for (int i = 0; i < exprs.length; ++i) {
       addTerm(exprs[i], (double) coeffs[i]);

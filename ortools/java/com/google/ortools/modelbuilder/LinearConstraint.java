@@ -66,7 +66,6 @@ public class LinearConstraint {
   }
 
   /** Inline setter */
-  @CanIgnoreReturnValue
   public LinearConstraint withName(String name) {
     setName(name);
     return this;
