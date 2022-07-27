@@ -18,17 +18,14 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_join.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/model.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
 #include "ortools/scheduling/jobshop_scheduling_parser.h"
 
@@ -618,6 +615,9 @@ void Solve(const JsspInputProblem& problem) {
   }
 
   CpModelBuilder cp_model;
+  if (!problem.name().empty()) {
+    cp_model.SetName(problem.name());
+  }
 
   // Compute an over estimate of the horizon.
   const int64_t horizon = absl::GetFlag(FLAGS_horizon) != -1
