@@ -125,18 +125,16 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
                          SolverLogger* logger) {
   WallTimer timer;
   timer.Start();
-  // Read model.
-  std::string problem_name =
-      input_is_filename ? input : absl::GetFlag(FLAGS_fz_model_name);
-  if (input_is_filename || absl::EndsWith(problem_name, ".fzn")) {
-    CHECK(absl::EndsWith(problem_name, ".fzn"))
-        << "Unrecognized flatzinc file: `" << problem_name << "'";
-    problem_name.resize(problem_name.size() - 4);
-    const size_t found = problem_name.find_last_of("/\\");
-    if (found != std::string::npos) {
-      problem_name = problem_name.substr(found + 1);
-    }
+
+  // Check the extension.
+  if (input_is_filename && !absl::EndsWith(input, ".fzn")) {
+    LOG(FATAL) << "Unrecognized flatzinc file: `" << input << "'";
   }
+
+  // Read model.
+  const std::string problem_name = input_is_filename
+                                       ? std::string(file::Stem(input))
+                                       : absl::GetFlag(FLAGS_fz_model_name);
   Model model(problem_name);
   if (input_is_filename) {
     CHECK(ParseFlatzincFile(input, &model));

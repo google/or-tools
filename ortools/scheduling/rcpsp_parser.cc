@@ -66,22 +66,9 @@ bool RcpspParser::ParseFile(const std::string& file_name) {
           << rcpsp_.tasks_size() << " tasks, and " << rcpsp_.resources_size()
           << " resources.";
 
-  std::string problem_name = file_name;
-  const size_t found = problem_name.find_last_of("/\\");
-  if (found != std::string::npos) {
-    problem_name = problem_name.substr(found + 1);
-  }
-
-  if (absl::EndsWith(problem_name, ".sch") ||
-      absl::EndsWith(problem_name, ".SCH") ||
-      absl::EndsWith(problem_name, ".rcp")) {
-    problem_name.resize(problem_name.size() - 4);
-  }
-
-  if (absl::EndsWith(problem_name, ".sm") ||
-      absl::EndsWith(problem_name, ".mm")) {
-    problem_name.resize(problem_name.size() - 3);
-  }
+  // We use a temporary string as open source protobufs do not accept
+  // set_name(string_view).
+  std::string problem_name(file::Stem(file_name));
   rcpsp_.set_name(problem_name);
 
   // Count the extra start and end tasks.

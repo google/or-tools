@@ -67,6 +67,12 @@ bool JsspParser::ParseFile(const std::string& filename) {
   } else {
     problem_type_ = JSSP;
   }
+
+  // We use a temporary string as open source protobufs do not accept
+  // set(string_view).
+  const std::string problem_name(file::Stem(filename));
+  problem_.set_name(problem_name);
+
   for (const std::string& line : FileLines(filename)) {
     if (line.empty()) {
       continue;
