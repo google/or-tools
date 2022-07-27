@@ -87,6 +87,7 @@ bool ReadFileToProto(absl::string_view filename,
     VLOG(1) << "ReadFileToProto(): input is a text proto";
     return true;
   }
+  // We use `auto` here since protobuf does not use absl::Status.
   const auto status = JsonStringToMessage(data, proto, JsonParseOptions());
   if (!status.ok()) {
     VLOG(1) << status;
