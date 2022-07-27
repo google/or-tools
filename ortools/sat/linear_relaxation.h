@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_LINEAR_RELAXATION_H_
 #define OR_TOOLS_SAT_LINEAR_RELAXATION_H_
 
+#include <optional>
 #include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
@@ -146,7 +147,7 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
 
 // Adds linearization of cumulative constraints.The second part adds an
 // energetic equation linking the duration of all potential tasks to the actual
-// max span * capacity of the cumulative constraint.
+// span * capacity of the cumulative constraint.
 void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
                                                Model* model,
                                                LinearRelaxation* relaxation);
@@ -174,11 +175,13 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 
 // Adds linearization of cumulative constraints.The second part adds an
 // energetic equation linking the duration of all potential tasks to the actual
-// max span * capacity of the cumulative constraint.
+// span * capacity of the cumulative constraint. It uses the makespan to compute
+// the span of the constraint if defined.
 void AddCumulativeRelaxation(const AffineExpression& capacity,
                              SchedulingConstraintHelper* helper,
-                             SchedulingDemandHelper* demands, Model* model,
-                             LinearRelaxation* relaxation);
+                             SchedulingDemandHelper* demands,
+                             std::optional<AffineExpression> makespan,
+                             Model* model, LinearRelaxation* relaxation);
 
 void AddCumulativeCutGenerator(const AffineExpression& capacity,
                                SchedulingConstraintHelper* helper,

@@ -21,6 +21,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
@@ -641,16 +642,60 @@ void DualBoundStrengthening::ProcessLinearConstraint(
 
 namespace {
 
-ConstraintProto CopyConstraintForDuplicateDetection(const ConstraintProto& ct) {
-  ConstraintProto copy = ct;
-  copy.clear_name();
-  copy.mutable_enforcement_literal()->Clear();
+// This is used to detect if two linear constraint are equivalent if the literal
+// ref is mapped to another value.
+ConstraintProto CopyLinearWithSpecialBoolean(const ConstraintProto& ct,
+                                             int ref) {
+  DCHECK_EQ(ct.constraint_case(), ConstraintProto::kLinear);
+
+  ConstraintProto copy;
+
+  // Deal with enforcement.
+  bool in_enforcement = false;
+  for (const int literal : ct.enforcement_literal()) {
+    if (literal == NegatedRef(ref)) {
+      in_enforcement = true;
+      continue;
+    }
+    copy.add_enforcement_literal(literal);
+  }
+  if (in_enforcement) {
+    // We add a sentinel at the end
+    copy.add_enforcement_literal(std::numeric_limits<int32_t>::max());
+  }
+
+  // Deal with linear part.
+  int64_t coeff = 0;
+  int64_t offset = 0;
+  for (int i = 0; i < ct.linear().vars().size(); ++i) {
+    const int v = ct.linear().vars(i);
+    const int64_t c = ct.linear().coeffs(i);
+    if (v == ref) {
+      coeff += c;
+    } else if (v == NegatedRef(ref)) {
+      // c * v = -c * (1 - v) + c
+      offset += c;
+      coeff -= c;
+    } else {
+      copy.mutable_linear()->add_vars(v);
+      copy.mutable_linear()->add_coeffs(c);
+    }
+  }
+  if (coeff != 0) {
+    copy.mutable_linear()->add_vars(std::numeric_limits<int32_t>::max());
+    copy.mutable_linear()->add_coeffs(coeff);
+  }
+  FillDomainInProto(
+      ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-offset)),
+      copy.mutable_linear());
+  CHECK(in_enforcement || coeff != 0);
   return copy;
 }
 
 }  // namespace
 
 bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
+  num_deleted_constraints_ = 0;
   const CpModelProto& cp_model = *context->working_model;
   const int num_vars = cp_model.variables_size();
   for (int var = 0; var < num_vars; ++var) {
@@ -715,10 +760,11 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     }
   }
 
-  // For detecting duplicate enforced constraint that can be made equivalent.
+  // For detecting near-duplicate constraint that can be made equivalent.
+  // hash -> (ct_index, modified ref).
+  absl::flat_hash_map<uint64_t, std::pair<int, int>> equiv_modified_constraints;
   ConstraintProto copy;
   std::string s;
-  absl::flat_hash_map<uint64_t, int> equiv_constraints;
 
   // If there is only one blocking constraint, we can simplify the problem in
   // a few situation.
@@ -739,6 +785,10 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
     const int ct_index = locking_ct_index_[var];
     const ConstraintProto& ct = context->working_model->constraints(ct_index);
+    if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
+      // TODO(user): Fix variable right away rather than waiting for next call.
+      continue;
+    }
     if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
       context->UpdateRuleStats("TODO dual: tighten at most one");
       continue;
@@ -815,39 +865,54 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
         // We can add an implication not_enforced => var to its bound ?
         context->UpdateRuleStats("TODO dual: add implied bound");
-      } else if (!ct.enforcement_literal().empty()) {
-        // If this is a duplicate of another enforced constraint with an unique
-        // blocking enforcement literal, we can make the two Booleans
-        // equivalent!
-        //
-        // TODO(user): deal with other enforcement literals if any.
-        if (ct.enforcement_literal(0) == NegatedRef(ref)) {
-          copy = CopyConstraintForDuplicateDetection(ct);
-          s = copy.SerializeAsString();
-          const uint64_t hash = absl::Hash<std::string>()(s);
-          const auto [it, inserted] =
-              equiv_constraints.insert({hash, ct_index});
-          if (!inserted) {
-            // Already present!
-            const int other_c_with_same_hash = it->second;
-            const auto& other_ct =
-                context->working_model->constraints(other_c_with_same_hash);
-            copy = CopyConstraintForDuplicateDetection(other_ct);
-            if (s == copy.SerializeAsString()) {
-              const int a = ct.enforcement_literal(0);
-              const int b = other_ct.enforcement_literal(0);
-              if (!processed[PositiveRef(b)]) {
-                context->UpdateRuleStats(
-                    "dual: equivalent enforcement for duplicate constraints");
-                processed[PositiveRef(a)] = true;
-                processed[PositiveRef(b)] = true;
-                context->StoreBooleanEqualityRelation(a, b);
-                continue;
-              }
+      }
+
+      // If We have two Booleans with a blocking constraint that differ just
+      // on them, we can make the Boolean equivalent. This is because they
+      // will be forced to their bad value only if it is needed for that
+      // constraint.
+      //
+      // TODO(user): Generalize to non-Boolean. Also for Boolean, we might
+      // miss some possible reduction if replacing X by 1 - X make a constraint
+      // near-duplicate of another.
+      //
+      // TODO(user): We can generalize to non-linear constraint.
+      if (ct.constraint_case() == ConstraintProto::kLinear &&
+          context->CanBeUsedAsLiteral(ref)) {
+        copy = CopyLinearWithSpecialBoolean(ct, ref);
+        s = copy.SerializeAsString();
+        const uint64_t hash = absl::Hash<std::string>()(s);
+        const auto [it, inserted] =
+            equiv_modified_constraints.insert({hash, {ct_index, ref}});
+        if (!inserted) {
+          // Already present!
+          const auto [other_c_with_same_hash, other_ref] = it->second;
+          CHECK_NE(other_c_with_same_hash, ct_index);
+          const auto& other_ct =
+              context->working_model->constraints(other_c_with_same_hash);
+          copy = CopyLinearWithSpecialBoolean(other_ct, other_ref);
+          if (s == copy.SerializeAsString()) {
+            // We have a true equality. The two ref can be made equivalent.
+            if (!processed[PositiveRef(other_ref)]) {
+              context->UpdateRuleStats(
+                  "dual: equivalent Boolean in near-duplicate constraints");
+              processed[PositiveRef(ref)] = true;
+              processed[PositiveRef(other_ref)] = true;
+              context->StoreBooleanEqualityRelation(ref, other_ref);
+
+              // We can delete one of the constraint since they are duplicate
+              // now.
+              ++num_deleted_constraints_;
+              context->working_model->mutable_constraints(ct_index)->Clear();
+              context->UpdateConstraintVariableUsage(ct_index);
+              continue;
             }
           }
         }
+      }
 
+      // Other potential cases?
+      if (!ct.enforcement_literal().empty()) {
         // We can make enf equivalent to the constraint instead of just =>.
         // This might also be useful for encoding if vars(0) is not a literal.
         if (ct.constraint_case() == ConstraintProto::kLinear &&
@@ -908,6 +973,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     context->UpdateRuleStats("dual: enforced equivalence");
   }
 
+  VLOG(2) << "Num deleted constraints: " << num_deleted_constraints_;
   return true;
 }
 

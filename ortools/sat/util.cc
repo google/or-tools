@@ -454,6 +454,142 @@ void MaxBoundedSubsetSum::Add(int64_t value) {
   current_max_ = bound_;
 }
 
+BasicKnapsackSolver::Result BasicKnapsackSolver::Solve(
+    const std::vector<Domain>& domains, const std::vector<int64_t>& coeffs,
+    const std::vector<int64_t>& costs, const Domain& rhs) {
+  const int num_vars = domains.size();
+  if (num_vars == 0) return {};
+
+  int64_t min_activity = 0;
+  int64_t max_domain_size = 0;
+  for (int i = 0; i < num_vars; ++i) {
+    max_domain_size = std::max(max_domain_size, domains[i].Size());
+    if (coeffs[i] > 0) {
+      min_activity += coeffs[i] * domains[i].Min();
+    } else {
+      min_activity += coeffs[i] * domains[i].Max();
+    }
+  }
+
+  // The complexity of our DP will depends on the number of "activity" values
+  // that need to be considered.
+  //
+  // TODO(user): We can also solve efficiently if max_activity - rhs.Min() is
+  // small. Implement.
+  const int64_t num_values = rhs.Max() - min_activity + 1;
+  if (num_values < 0) {
+    // Problem is clearly infeasible, we can report the result right away.
+    Result result;
+    result.solved = true;
+    result.infeasible = true;
+    return result;
+  }
+
+  // Abort if complexity too large.
+  const int64_t max_work_per_variable = std::min(num_values, max_domain_size);
+  if (rhs.Max() - min_activity > 1e6) return {};
+  if (num_vars * num_values * max_work_per_variable > 1e8) return {};
+
+  // Canonicalize to positive coeffs and non-negative variables.
+  domains_.clear();
+  coeffs_.clear();
+  costs_.clear();
+  for (int i = 0; i < num_vars; ++i) {
+    if (coeffs[i] > 0) {
+      domains_.push_back(domains[i].AdditionWith(Domain(-domains[i].Min())));
+      coeffs_.push_back(coeffs[i]);
+      costs_.push_back(costs[i]);
+    } else {
+      domains_.push_back(
+          domains[i].Negation().AdditionWith(Domain(domains[i].Max())));
+      coeffs_.push_back(-coeffs[i]);
+      costs_.push_back(-costs[i]);
+    }
+  }
+
+  Result result =
+      InternalSolve(num_values, rhs.AdditionWith(Domain(-min_activity)));
+  if (result.solved && !result.infeasible) {
+    // Transform solution back.
+    for (int i = 0; i < num_vars; ++i) {
+      if (coeffs[i] > 0) {
+        result.solution[i] += domains[i].Min();
+      } else {
+        result.solution[i] = domains[i].Max() - result.solution[i];
+      }
+    }
+  }
+  return result;
+}
+
+BasicKnapsackSolver::Result BasicKnapsackSolver::InternalSolve(
+    int64_t num_values, const Domain& rhs) {
+  const int num_vars = domains_.size();
+
+  // The set of DP states that we will fill.
+  var_activity_states_.assign(num_vars, std::vector<State>(num_values));
+
+  // Initialize with first variable.
+  for (const int64_t v : domains_[0].Values()) {
+    const int64_t value = v * coeffs_[0];
+    CHECK_GE(value, 0);
+    if (value >= num_values) break;
+    var_activity_states_[0][value].cost = v * costs_[0];
+    var_activity_states_[0][value].value = v;
+  }
+
+  // Fill rest of the DP states.
+  for (int i = 1; i < num_vars; ++i) {
+    const std::vector<State>& prev = var_activity_states_[i - 1];
+    std::vector<State>& current = var_activity_states_[i];
+    for (int prev_value = 0; prev_value < num_values; ++prev_value) {
+      if (prev[prev_value].cost == std::numeric_limits<int64_t>::max()) {
+        continue;
+      }
+      for (const int64_t v : domains_[i].Values()) {
+        const int64_t value = prev_value + v * coeffs_[i];
+        CHECK_GE(value, 0);
+        if (value >= num_values) break;
+        const int64_t new_cost = prev[prev_value].cost + v * costs_[i];
+        if (new_cost < current[value].cost) {
+          current[value].cost = new_cost;
+          current[value].value = v;
+        }
+      }
+    }
+  }
+
+  Result result;
+  result.solved = true;
+
+  int64_t best_cost = std::numeric_limits<int64_t>::max();
+  int64_t best_activity;
+  for (int v = 0; v < num_values; ++v) {
+    // TODO(user): optimize this?
+    if (!rhs.Contains(v)) continue;
+    if (var_activity_states_.back()[v].cost < best_cost) {
+      best_cost = var_activity_states_.back()[v].cost;
+      best_activity = v;
+    }
+  }
+
+  if (best_cost == std::numeric_limits<int64_t>::max()) {
+    result.infeasible = true;
+    return result;
+  }
+
+  // Recover the values.
+  result.solution.resize(num_vars);
+  int64_t current_activity = best_activity;
+  for (int i = num_vars - 1; i >= 0; --i) {
+    const int64_t var_value = var_activity_states_[i][current_activity].value;
+    result.solution[i] = var_value;
+    current_activity -= coeffs_[i] * var_value;
+  }
+
+  return result;
+}
+
 namespace {
 
 // We will call FullyCompressTuplesRecursive() for a set of prefixes of the

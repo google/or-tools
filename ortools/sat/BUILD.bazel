@@ -1240,6 +1240,7 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/util:random_engine",
         "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",

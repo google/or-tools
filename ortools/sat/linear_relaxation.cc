@@ -629,7 +629,8 @@ int DetectMakespan(const std::vector<IntervalVariable>& intervals,
   IntegerValue horizon = kMinIntegerValue;
   for (int i = 0; i < intervals.size(); ++i) {
     if (repository->IsAbsent(intervals[i])) continue;
-    horizon = std::max(horizon, integer_trail->UpperBound(repository->End(intervals[i])));
+    horizon = std::max(
+        horizon, integer_trail->UpperBound(repository->End(intervals[i])));
   }
 
   const IntegerValue capacity_value = integer_trail->FixedValue(capacity);
@@ -674,8 +675,8 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
       new SchedulingDemandHelper(demands, helper, model);
   model->TakeOwnership(demands_helper);
 
-  AddCumulativeRelaxation(/*capacity=*/one, helper, demands_helper, model,
-                          relaxation);
+  AddCumulativeRelaxation(/*capacity=*/one, helper, demands_helper, makespan,
+                          model, relaxation);
   if (model->GetOrCreate<SatParameters>()->linearization_level() > 1) {
     AddNoOverlapCutGenerator(helper, makespan, model, relaxation);
   }
@@ -710,7 +711,8 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
   model->TakeOwnership(demands_helper);
 
   // We can now add the relaxation and the cut generators.
-  AddCumulativeRelaxation(capacity, helper, demands_helper, model, relaxation);
+  AddCumulativeRelaxation(capacity, helper, demands_helper, makespan, model,
+                          relaxation);
   if (model->GetOrCreate<SatParameters>()->linearization_level() > 1) {
     AddCumulativeCutGenerator(capacity, helper, demands_helper, makespan, model,
                               relaxation);
@@ -720,10 +722,10 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
 // This relaxation will compute the bounding box of all tasks in the cumulative,
 // and add the constraint that the sum of energies of each task must fit in the
 // capacity * span area.
-// TODO(user): Exploit the makespan if found.
 void AddCumulativeRelaxation(const AffineExpression& capacity,
                              SchedulingConstraintHelper* helper,
                              SchedulingDemandHelper* demands_helper,
+                             std::optional<AffineExpression> makespan,
                              Model* model, LinearRelaxation* relaxation) {
   const int num_intervals = helper->NumTasks();
   demands_helper->CacheAllEnergyValues();
@@ -773,8 +775,10 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
 
   const IntegerVariable span_start =
       integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
-  const IntegerVariable span_end =
-      integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
+  const AffineExpression span_end =
+      makespan.has_value()
+          ? makespan.value()
+          : integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
 
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   const Literal cumulative_is_not_empty =
@@ -792,8 +796,10 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   // Link span_start and span_end to the starts and ends of the tasks.
   model->Add(EqualMinOfSelectedVariables(cumulative_is_not_empty, span_start,
                                          starts, presence_literals));
-  model->Add(EqualMaxOfSelectedVariables(cumulative_is_not_empty, span_end,
-                                         ends, presence_literals));
+  if (!makespan.has_value()) {
+    model->Add(EqualMaxOfSelectedVariables(cumulative_is_not_empty, span_end,
+                                           ends, presence_literals));
+  }
 
   LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
   lc.AddTerm(span_end, -integer_trail->UpperBound(capacity));

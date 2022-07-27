@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <limits>
 #include <vector>
 
 #include "ortools/base/logging.h"
@@ -31,6 +32,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/random_engine.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -216,6 +218,47 @@ class MaxBoundedSubsetSum {
   int64_t current_max_;
   std::vector<int64_t> sums_;
   std::vector<bool> expanded_sums_;
+};
+
+// Use Dynamic programming to solve a single knapsack. This is used by the
+// presolver to simplify variables appearing in a single linear constraint.
+//
+// Complexity is the best of
+// - O(num_variables * num_relevant_values ^ 2) or
+// - O(num_variables * num_relevant_values * max_domain_size).
+class BasicKnapsackSolver {
+ public:
+  // Solves the problem:
+  //   - minimize sum costs * X[i]
+  //   - subject to sum coeffs[i] * X[i] \in rhs, with X[i] \in Domain(i).
+  //
+  // Returns:
+  //   - (solved = false) if complexity is too high.
+  //   - (solved = true, infeasible = true) if proven infeasible.
+  //   - (solved = true, infeasible = false, solution) otherwise.
+  struct Result {
+    bool solved = false;
+    bool infeasible = false;
+    std::vector<int64_t> solution;
+  };
+  Result Solve(const std::vector<Domain>& domains,
+               const std::vector<int64_t>& coeffs,
+               const std::vector<int64_t>& costs, const Domain& rhs);
+
+ private:
+  Result InternalSolve(int64_t num_values, const Domain& rhs);
+
+  // Canonicalized version.
+  std::vector<Domain> domains_;
+  std::vector<int64_t> coeffs_;
+  std::vector<int64_t> costs_;
+
+  // We only need to keep one state with the same activity.
+  struct State {
+    int64_t cost = std::numeric_limits<int64_t>::max();
+    int64_t value = 0;
+  };
+  std::vector<std::vector<State>> var_activity_states_;
 };
 
 // Manages incremental averages.

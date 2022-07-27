@@ -1049,7 +1049,8 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = input.constraints(c);
     if (!ct.enforcement_literal().empty() &&
-        ct.constraint_case() != ConstraintProto::kBoolAnd) {
+        (ct.constraint_case() != ConstraintProto::kBoolAnd &&
+         ct.constraint_case() != ConstraintProto::kLinear)) {
       // TODO(user): Support more constraints with enforcement.
       VLOG(1) << "Cannot convert constraint: " << ct.DebugString();
       return false;
@@ -1093,20 +1094,92 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
       }
       case ConstraintProto::kLinear: {
         if (ct.linear().domain().size() != 2) {
-          VLOG(1) << "Cannot convert constraint: " << ct.DebugString();
+          VLOG(1) << "Cannot convert constraint: " << ct.ShortDebugString();
+          return false;
+        }
+        if (ct.enforcement_literal_size() > 1) {
+          VLOG(1) << "Cannot convert constraint: " << ct.ShortDebugString();
           return false;
         }
 
-        MPConstraintProto* out_ct = output->add_constraint();
-        out_ct->set_lower_bound(ct.linear().domain(0));
-        out_ct->set_upper_bound(ct.linear().domain(1));
-
+        // Compute min/max activity.
+        int64_t min_activity = 0;
+        int64_t max_activity = 0;
         const int num_terms = ct.linear().vars().size();
         for (int i = 0; i < num_terms; ++i) {
           const int var = ct.linear().vars(i);
           if (var < 0) return false;
-          out_ct->add_var_index(var);
-          out_ct->add_coefficient(ct.linear().coeffs(i));
+          DCHECK_EQ(input.variables(var).domain().size(), 2);
+          const int64_t coeff = ct.linear().coeffs(i);
+          if (coeff > 0) {
+            min_activity += coeff * input.variables(var).domain(0);
+            max_activity += coeff * input.variables(var).domain(1);
+          } else {
+            min_activity += coeff * input.variables(var).domain(1);
+            max_activity += coeff * input.variables(var).domain(0);
+          }
+        }
+
+        if (ct.enforcement_literal().empty()) {
+          MPConstraintProto* out_ct = output->add_constraint();
+          if (min_activity < ct.linear().domain(0)) {
+            out_ct->set_lower_bound(ct.linear().domain(0));
+          } else {
+            out_ct->set_lower_bound(-std::numeric_limits<double>::infinity());
+          }
+          if (max_activity > ct.linear().domain(1)) {
+            out_ct->set_upper_bound(ct.linear().domain(1));
+          } else {
+            out_ct->set_lower_bound(std::numeric_limits<double>::infinity());
+          }
+          for (int i = 0; i < num_terms; ++i) {
+            const int var = ct.linear().vars(i);
+            if (var < 0) return false;
+            out_ct->add_var_index(var);
+            out_ct->add_coefficient(ct.linear().coeffs(i));
+          }
+          break;
+        }
+
+        std::vector<MPConstraintProto*> out_cts;
+        if (ct.linear().domain(1) < max_activity) {
+          MPConstraintProto* high_out_ct = output->add_constraint();
+          high_out_ct->set_lower_bound(
+              -std::numeric_limits<double>::infinity());
+          if (RefIsPositive(ct.enforcement_literal(0))) {
+            high_out_ct->add_var_index(ct.enforcement_literal(0));
+            high_out_ct->add_coefficient(max_activity - ct.linear().domain(1));
+            high_out_ct->set_upper_bound(max_activity);
+          } else {
+            // 1 - enf.
+            high_out_ct->add_var_index(PositiveRef(ct.enforcement_literal(0)));
+            high_out_ct->add_coefficient(ct.linear().domain(1) - max_activity);
+            high_out_ct->set_upper_bound(ct.linear().domain(1));
+          }
+          out_cts.push_back(high_out_ct);
+        }
+        if (ct.linear().domain(0) > min_activity) {
+          MPConstraintProto* low_out_ct = output->add_constraint();
+          low_out_ct->set_upper_bound(std::numeric_limits<double>::infinity());
+          if (RefIsPositive(ct.enforcement_literal(0))) {
+            low_out_ct->add_var_index(ct.enforcement_literal(0));
+            low_out_ct->add_coefficient(min_activity - ct.linear().domain(0));
+            low_out_ct->set_lower_bound(min_activity);
+          } else {
+            // 1 - enf.
+            low_out_ct->add_var_index(PositiveRef(ct.enforcement_literal(0)));
+            low_out_ct->add_coefficient(ct.linear().domain(0) - min_activity);
+            low_out_ct->set_lower_bound(ct.linear().domain(0));
+          }
+          out_cts.push_back(low_out_ct);
+        }
+        for (MPConstraintProto* out_ct : out_cts) {
+          for (int i = 0; i < num_terms; ++i) {
+            const int var = ct.linear().vars(i);
+            if (var < 0) return false;
+            out_ct->add_var_index(var);
+            out_ct->add_coefficient(ct.linear().coeffs(i));
+          }
         }
         break;
       }

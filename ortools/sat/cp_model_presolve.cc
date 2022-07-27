@@ -1659,6 +1659,101 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
     }
   }
 
+  // If the whole linear is independent from the rest of the problem, we
+  // can solve it now. If it is enforced, then each variable will have two
+  // values: Its minimum one and one minimizing the objective under the
+  // constraint. The switch can be controlled by a single Boolean.
+  //
+  // TODO(user): Cover more case like dedicated algorithm to solve for a small
+  // number of variable that are faster than the DP we use here.
+  if (index_to_erase.empty()) {
+    int num_singletons = 0;
+    for (const int var : ct->linear().vars()) {
+      if (!RefIsPositive(var)) break;
+      if (!context_->VariableWithCostIsUniqueAndRemovable(var) &&
+          !context_->VariableIsUniqueAndRemovable(var)) {
+        break;
+      }
+      ++num_singletons;
+    }
+    if (num_singletons == num_vars) {
+      // Try to solve the equation.
+      std::vector<Domain> domains;
+      std::vector<int64_t> coeffs;
+      std::vector<int64_t> costs;
+      for (int i = 0; i < num_vars; ++i) {
+        const int var = ct->linear().vars(i);
+        CHECK(RefIsPositive(var));
+        domains.push_back(context_->DomainOf(var));
+        coeffs.push_back(ct->linear().coeffs(i));
+        costs.push_back(context_->ObjectiveCoeff(var));
+      }
+      BasicKnapsackSolver solver;
+      const auto& result = solver.Solve(domains, coeffs, costs,
+                                        ReadDomainFromProto(ct->linear()));
+      if (!result.solved) {
+        context_->UpdateRuleStats(
+            "TODO independent linear: minimize single linear constraint");
+      } else if (result.infeasible) {
+        context_->UpdateRuleStats(
+            "independent linear: no DP solution to simple constraint");
+        return MarkConstraintAsFalse(ct);
+      } else {
+        if (ct->enforcement_literal().empty()) {
+          // Just fix everything.
+          context_->UpdateRuleStats("independent linear: solved by DP");
+          for (int i = 0; i < num_vars; ++i) {
+            if (!context_->IntersectDomainWith(ct->linear().vars(i),
+                                               Domain(result.solution[i]))) {
+              return false;
+            }
+          }
+          return RemoveConstraint(ct);
+        }
+
+        // Each variable will take two values according to a single Boolean.
+        int indicator;
+        if (ct->enforcement_literal().size() == 1) {
+          indicator = ct->enforcement_literal(0);
+        } else {
+          indicator = context_->NewBoolVar();
+          auto* new_ct = context_->working_model->add_constraints();
+          *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+          new_ct->mutable_bool_or()->add_literals(indicator);
+          context_->UpdateNewConstraintsVariableUsage();
+        }
+        for (int i = 0; i < num_vars; ++i) {
+          const int64_t best_value =
+              costs[i] > 0 ? domains[i].Min() : domains[i].Max();
+          const int64_t other_value = result.solution[i];
+          if (best_value == other_value) {
+            if (!context_->IntersectDomainWith(ct->linear().vars(i),
+                                               Domain(best_value))) {
+              return false;
+            }
+            continue;
+          }
+          if (RefIsPositive(indicator)) {
+            if (!context_->StoreAffineRelation(ct->linear().vars(i), indicator,
+                                               other_value - best_value,
+                                               best_value)) {
+              return false;
+            }
+          } else {
+            if (!context_->StoreAffineRelation(
+                    ct->linear().vars(i), PositiveRef(indicator),
+                    best_value - other_value, other_value)) {
+              return false;
+            }
+          }
+        }
+        context_->UpdateRuleStats(
+            "independent linear: with enforcement, but solved by DP");
+        return RemoveConstraint(ct);
+      }
+    }
+  }
+
   // If we didn't find any, look for the one appearing in the objective.
   if (index_to_erase.empty()) {
     // Note that we only do that if we have a non-reified equality.
@@ -1693,6 +1788,13 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       const int64_t objective_coeff = context_->ObjectiveMap().at(var);
       CHECK_NE(coeff, 0);
       if (objective_coeff % coeff != 0) continue;
+
+      // TODO(user): We have an issue if objective coeff is not one, because
+      // the RecomputeSingletonObjectiveDomain() do not properly put holes
+      // in the objective domain, which might cause an issue. Note that this
+      // presolve rule is actually almost never applied on the miplib. It is
+      // also a bit redundant with ExpandObjective().
+      if (std::abs(objective_coeff) != 1) continue;
 
       // We do not do that if the domain of rhs becomes too complex.
       bool exact;
@@ -2462,10 +2564,6 @@ bool RhsCanBeFixedToMax(int64_t coeff, const Domain& var_domain,
 // TODO(user): merge code with the fully included case.
 // TODO(user): Similarly amo and bool_or intersection or amo and enforcement
 // literals can be presolved.
-//
-// TODO(user): while this reduce the problem size significantly on vpphard2,
-// for some reason, the core do not find lb anymore. It seems due to
-// ExpandObjective(). Investigate.
 void CpModelPresolver::DetectAndProcessAtMostOneInLinear(int ct_index,
                                                          ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return;
@@ -5954,6 +6052,7 @@ void CpModelPresolver::ExpandObjective() {
       // However, it might be more robust to just handle this case properly.
       bool is_present = false;
       int64_t objective_coeff;
+      Domain implied = ReadDomainFromProto(ct.linear());
       for (int i = 0; i < num_terms; ++i) {
         const int ref = ct.linear().vars(i);
         const int64_t coeff = ct.linear().coeffs(i);
@@ -5964,9 +6063,24 @@ void CpModelPresolver::ExpandObjective() {
         } else {
           // This is not possible since we only consider relevant constraints.
           CHECK(!processed_vars.contains(PositiveRef(ref)));
+          implied = implied
+                        .AdditionWith(
+                            context_->DomainOf(ref).ContinuousMultiplicationBy(
+                                -coeff))
+                        .RelaxIfTooComplex();
         }
       }
       CHECK(is_present);
+
+      // Important: We will only use equation where the implied lb on the
+      // objective var is tight. This is important for core based search, see
+      // for instance vpphard where without this the core do not solve it.
+      implied = implied.InverseMultiplicationBy(objective_coeff);
+      if (context_->ObjectiveCoeff(objective_var) > 0) {
+        if (implied.Min() < context_->MinOf(objective_var)) continue;
+      } else {
+        if (implied.Max() > context_->MaxOf(objective_var)) continue;
+      }
 
       // We use the longest equality we can find.
       //
@@ -7948,6 +8062,55 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     return;
   }
 
+  // If a variable var only appear in enf => var \in domain and in the
+  // objective, we can remove its costs and the variable/constraint by
+  // transferring part of the cost to the enforcement.
+  //
+  // More generally, we can reduce the domain to just two values. Later this
+  // will be replaced by a Boolean, and the equivalence to the enforcement
+  // literal will be added if it is unique.
+  //
+  // TODO(user): maybe we should do more here rather than delaying some
+  // reduction. But then it is more code.
+  if (context_->VariableWithCostIsUniqueAndRemovable(var)) {
+    int unique_c = -1;
+    for (const int c : context_->VarToConstraints(var)) {
+      if (c < 0) continue;
+      CHECK_EQ(unique_c, -1);
+      unique_c = c;
+    }
+    CHECK_NE(unique_c, -1);
+    const ConstraintProto& ct = context_->working_model->constraints(unique_c);
+    const int64_t cost = context_->ObjectiveCoeff(var);
+    if (ct.linear().vars(0) == var) {
+      const Domain implied = ReadDomainFromProto(ct.linear())
+                                 .InverseMultiplicationBy(ct.linear().coeffs(0))
+                                 .IntersectionWith(context_->DomainOf(var));
+      if (implied.IsEmpty()) {
+        return (void)MarkConstraintAsFalse(
+            context_->working_model->mutable_constraints(unique_c));
+      }
+
+      int64_t value1, value2;
+      if (cost == 0) {
+        context_->UpdateRuleStats("variables: fix singleton var in linear1");
+        return (void)context_->IntersectDomainWith(var, Domain(implied.Min()));
+      } else if (cost > 0) {
+        value1 = context_->MinOf(var);
+        value2 = implied.Min();
+      } else {
+        value1 = context_->MaxOf(var);
+        value2 = implied.Max();
+      }
+
+      // Nothing else to do in this case, the constraint will be reduced to
+      // a pure Boolean constraint later.
+      context_->UpdateRuleStats("variables: reduced domain to two values");
+      return (void)context_->IntersectDomainWith(
+          var, Domain::FromValues({value1, value2}));
+    }
+  }
+
   // We can currently only deal with the case where all encoding constraint
   // are of the form literal => var ==/!= value.
   // If they are more complex linear1 involved, we just abort.
@@ -8411,6 +8574,7 @@ void CpModelPresolver::PresolveToFixPoint() {
       //
       // TODO(user): Avoid reprocessing the constraints that changed the domain?
       if (context_->ModelIsUnsat()) return;
+      if (time_limit->LimitReached()) break;
       in_queue.resize(context_->working_model->constraints_size(), false);
       const auto& vector_that_can_grow_during_iter =
           context_->modified_domains.PositionsSetAtLeastOnce();
@@ -8459,6 +8623,12 @@ void CpModelPresolver::PresolveToFixPoint() {
         DetectDominanceRelations(*context_, &var_dom,
                                  &dual_bound_strengthening);
         if (!dual_bound_strengthening.Strengthen(context_)) return;
+        if (dual_bound_strengthening.NumDeletedConstraints() > 0) {
+          // Loop again.
+          // TODO(user): Optimize the code to reach a fix point faster?
+          i = -1;
+          continue;
+        }
 
         // TODO(user): The Strengthen() function above might make some
         // inequality tight. Currently, because we only do that for implication,

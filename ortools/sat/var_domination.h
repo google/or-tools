@@ -253,6 +253,9 @@ class DualBoundStrengthening {
     return can_freely_decrease_until_[RefToIntegerVariable(ref)].value();
   }
 
+  // Reset on each Strengthen() call.
+  int NumDeletedConstraints() const { return num_deleted_constraints_; }
+
  private:
   // We encode proto ref as IntegerVariable for indexing vectors.
   static IntegerVariable RefToIntegerVariable(int ref) {
@@ -270,6 +273,8 @@ class DualBoundStrengthening {
   // If num_locks_[var] == 1, this will be the unique constraint that block var
   // in this direction. Note that it can be set to -1 if this wasn't recorded.
   absl::StrongVector<IntegerVariable, int64_t> locking_ct_index_;
+
+  int num_deleted_constraints_ = 0;
 };
 
 // Detect the variable dominance relations within the given model. Note that

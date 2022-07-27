@@ -346,7 +346,7 @@ void GenerateCumulativeEnergeticCuts(
     if (makespan.has_value()) {
       const double energy_up_to_makespan_lp =
           capacity_lp * (makespan_lp - ToDouble(window_start));
-      if (energy_up_to_makespan_lp < max_energy_lp) {
+      if (energy_up_to_makespan_lp <= max_energy_lp) {
         max_energy_lp = energy_up_to_makespan_lp;
         use_makespan_in_cut = true;
       }
