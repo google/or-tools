@@ -14,11 +14,10 @@
 """Helper macro to compile and test code samples."""
 
 load("@ortools_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary")
 
 def code_sample_cc(name):
     native.cc_binary(
-        name = name,
+        name = name + "_cc",
         srcs = [name + ".cc"],
         deps = [
             "//ortools/base",
@@ -28,11 +27,11 @@ def code_sample_cc(name):
     )
 
     native.cc_test(
-        name = name + "_test",
+        name = name + "_cc_test",
         size = "small",
         srcs = [name + ".cc"],
         deps = [
-            ":" + name,
+            ":" + name + "_cc",
             "//ortools/base",
             "//ortools/linear_solver",
             "//ortools/linear_solver:linear_solver_cc_proto",
@@ -40,7 +39,7 @@ def code_sample_cc(name):
     )
 
 def code_sample_py(name):
-    py_binary(
+    native.py_binary(
         name = name + "_py3",
         srcs = [name + ".py"],
         main = name + ".py",
@@ -52,12 +51,21 @@ def code_sample_py(name):
         srcs_version = "PY3",
     )
 
-    native.sh_test(
+    native.py_test(
         name = name + "_py_test",
         size = "small",
-        srcs = ["code_samples_py_test.sh"],
-        args = [name],
+        srcs = [name + ".py"],
+        main = name + ".py",
         data = [
-            ":" + name + "_py3",
+            "//ortools/model_builder/python:model_builder",
         ],
+        deps = [
+            requirement("absl-py"),
+        ],
+        python_version = "PY3",
+        srcs_version = "PY3",
     )
+
+def code_sample_cc_py(name):
+    code_sample_cc(name = name)
+    code_sample_py(name = name)

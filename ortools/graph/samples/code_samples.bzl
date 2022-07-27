@@ -13,7 +13,6 @@
 
 """Helper macro to compile and test code samples."""
 
-load("@rules_python//python:defs.bzl", "py_binary")
 load("@ortools_deps//:requirements.bzl", "requirement")
 
 def code_sample_cc(name):
@@ -31,18 +30,24 @@ def code_sample_cc(name):
         ],
     )
 
-    native.sh_test(
+    native.cc_test(
         name = name + "_cc_test",
         size = "small",
-        srcs = ["code_samples_cc_test.sh"],
-        args = [name],
-        data = [
+        srcs = [name + ".cc"],
+        deps = [
             ":" + name + "_cc",
+            "//ortools/base",
+            "//ortools/graph:assignment",
+            "//ortools/graph:ebert_graph",
+            "//ortools/graph:linear_assignment",
+            "//ortools/graph:max_flow",
+            "//ortools/graph:min_cost_flow",
+            "//ortools/graph:shortestpaths",
         ],
     )
 
 def code_sample_py(name):
-    py_binary(
+    native.py_binary(
         name = name + "_py3",
         srcs = [name + ".py"],
         main = name + ".py",
@@ -59,14 +64,22 @@ def code_sample_py(name):
         srcs_version = "PY3",
     )
 
-    native.sh_test(
+    native.py_test(
         name = name + "_py_test",
         size = "small",
-        srcs = ["code_samples_py_test.sh"],
-        args = [name],
+        srcs = [name + ".py"],
+        main = name + ".py",
         data = [
-            ":" + name + "_py3",
+            "//ortools/graph/python:linear_sum_assignment.so",
+            "//ortools/graph/python:min_cost_flow.so",
+            "//ortools/graph/python:max_flow.so",
         ],
+        deps = [
+            requirement("absl-py"),
+            requirement("numpy"),
+        ],
+        python_version = "PY3",
+        srcs_version = "PY3",
     )
 
 def code_sample_cc_py(name):
