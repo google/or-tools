@@ -187,6 +187,17 @@ cc_library(
 )
 
 cc_library(
+    name = "string_util",
+    srcs = ["string_util.cc"],
+    hdrs = ["string_util.h"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "tuple_set",
     hdrs = ["tuple_set.h"],
     deps = [
