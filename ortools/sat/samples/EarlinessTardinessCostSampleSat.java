@@ -76,7 +76,6 @@ public class EarlinessTardinessCostSampleSat {
 
     // Solve the problem with the printer callback.
     solver.solve(model, new CpSolverSolutionCallback() {
-      @CanIgnoreReturnValue
       public CpSolverSolutionCallback init(IntVar[] variables) {
         variableArray = variables;
         return this;
