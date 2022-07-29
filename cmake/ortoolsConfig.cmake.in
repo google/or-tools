@@ -57,7 +57,7 @@ endif()
 
 if(@USE_SCIP@)
   if(NOT scip_FOUND AND NOT TARGET libscip)
-    find_dependency(scip REQUIRED)
+    find_dependency(SCIP REQUIRED)
   endif()
 endif()
 
