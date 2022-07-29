@@ -515,10 +515,10 @@ test_cc_cpp: \
  ARGS="--size=5"
 	$(MAKE) run \
  SOURCE=examples/cpp/jobshop_sat.cc \
- ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/jobshop"
+ ARGS="--input=$(subst $S,/,$(OR_ROOT_FULL))/examples/cpp/jobshop"
 	$(MAKE) run \
  SOURCE=examples/cpp/mps_driver.cc \
- ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/test.mps"
+ ARGS="--input=$(subst $S,/,$(OR_ROOT_FULL))/examples/cpp/test.mps"
 	$(MAKE) run \
  SOURCE=examples/cpp/network_routing_sat.cc \
  ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
@@ -530,10 +530,10 @@ test_cc_cpp: \
  ARGS="--pdp_file examples/cpp/pdptw.txt" # Fails on windows...
 #	$(MAKE) run \
  SOURCE=examples/cpp/shift_minimization_sat.cc \
- ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/shift_minimization.dat"
+ ARGS="--input=$(subst $S,/,$(OR_ROOT_FULL))/examples/cpp/shift_minimization.dat"
 	$(MAKE) run \
  SOURCE=examples/cpp/solve.cc \
- ARGS="--input=$(OR_ROOT_FULL)/examples/cpp/test2.mps"
+ ARGS="--input=$(subst $S,/,$(OR_ROOT_FULL))/examples/cpp/test2.mps"
 
 rfz_%: cpp
 	$(INSTALL_DIR)$Sbin$Sfzn-ortools$E $(OR_ROOT_FULL)/examples/flatzinc/$*.fzn
