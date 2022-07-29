@@ -64,7 +64,7 @@ function build_delivery() {
   assert_defined ORTOOLS_IMG
 
   # Enable docker over QEMU support
-  docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+  #docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
   # Clean
   echo -n "Remove previous docker images..." | tee -a "${ROOT_DIR}/build.log"
