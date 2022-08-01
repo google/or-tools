@@ -18,7 +18,6 @@ ENV PATH=$JAVA_HOME/bin:$PATH
 
 # Install Python
 RUN apk add --no-cache python3-dev py3-pip
-RUN ln -s $(command -v python3) /usr/bin/python
 
 FROM env AS devel
 WORKDIR /home/project
