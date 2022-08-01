@@ -23,7 +23,11 @@ if(NOT Protobuf_FOUND AND NOT PROTOBUF_FOUND AND NOT TARGET protobuf::libprotobu
   # CMake provide a FindProtobuf module so we don't want to use the CONFIG_FLAG
   # also most distro still use the autotools based build for Protobuf.
   # ref: https://cmake.org/cmake/help/latest/module/FindProtobuf.html
-  find_dependency(Protobuf REQUIRED)
+  if(@BUILD_Protobuf@)
+    find_dependency(Protobuf CONFIG REQUIRED)
+  else()
+    find_dependency(Protobuf REQUIRED)
+  endif()
 endif()
 
 if(@BUILD_LP_PARSER@)
