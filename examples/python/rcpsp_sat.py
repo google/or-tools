@@ -11,7 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Sat based solver for the RCPSP problems (see rcpsp.proto)."""
+"""Sat based solver for the RCPSP problems (see rcpsp.proto).
+
+Introduction to the problem:
+   https://www.projectmanagement.ugent.be/research/project_scheduling/rcpsp
+
+Data use in flags:
+  http://www.om-db.wi.tum.de/psplib/data.html
+
+"""
 
 import collections
 
