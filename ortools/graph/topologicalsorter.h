@@ -77,12 +77,12 @@ namespace util {
 // Returns true if the graph was a DAG, and outputs the topological order in
 // "topological_order". Returns false if the graph is cyclic.
 // Works in O(num_nodes + arcs.size()), and is pretty fast.
-inline ABSL_MUST_USE_RESULT bool DenseIntTopologicalSort(
+ABSL_MUST_USE_RESULT inline bool DenseIntTopologicalSort(
     int num_nodes, const std::vector<std::pair<int, int>>& arcs,
     std::vector<int>* topological_order);
 
 // Like DenseIntTopologicalSort, but stable.
-inline ABSL_MUST_USE_RESULT bool DenseIntStableTopologicalSort(
+ABSL_MUST_USE_RESULT inline bool DenseIntStableTopologicalSort(
     int num_nodes, const std::vector<std::pair<int, int>>& arcs,
     std::vector<int>* topological_order);
 
