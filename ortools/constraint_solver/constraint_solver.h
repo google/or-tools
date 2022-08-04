@@ -761,6 +761,10 @@ class Solver {
 
   /// Stored Parameters.
   ConstraintSolverParameters parameters() const { return parameters_; }
+  // Read-only.
+  const ConstraintSolverParameters& const_parameters() const {
+    return parameters_;
+  }
   /// Create a ConstraintSolverParameters proto with all the default values.
   // TODO(user): Move to constraint_solver_parameters.h.
   static ConstraintSolverParameters DefaultSolverParameters();

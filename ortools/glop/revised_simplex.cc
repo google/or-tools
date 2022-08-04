@@ -3453,7 +3453,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
     ++num_iterations_;
   }
 
-  if (!super_basic_cols.empty() > 0) {
+  if (!super_basic_cols.empty()) {
     SOLVER_LOG(logger_, "Push terminated early with ", super_basic_cols.size(),
                " super-basic variables remaining.");
   }
