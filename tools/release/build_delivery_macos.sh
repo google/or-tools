@@ -151,7 +151,11 @@ function build_java() {
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy jar to export
-  cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
+  if [ ${PLATFORM} == "x86_64" ]; then
+    cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
+  else
+    cp temp_java/java/ortools-darwin-arm64/target/*.jar* export/
+  fi
   cp temp_java/java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
 }
@@ -166,7 +170,12 @@ function build_python() {
 
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
-  PY=(3.6 3.7 3.8 3.9 3.10)
+
+  if [ ${PLATFORM} == "x86_64" ]; then
+    local -r PY=(3.6 3.7 3.8 3.9 3.10)
+  else
+    local -r PY=(3.8 3.9 3.10)
+  fi
   for i in "${PY[@]}"; do
     command -v "python$i"
     command -v "python$i" | xargs echo "python$i: " | tee -a build.log
@@ -255,11 +264,14 @@ function build_examples() {
 # Cleaning everything
 function reset() {
   echo "Cleaning everything..."
+
+  cd "${ROOT_DIR}" || exit 2
+
   make clean
-  rm -rf temp_dotnet
-  rm -rf temp_java
-  rm -rf temp_python*
-  rm -rf export/
+  rm -rf "${ROOT_DIR}/temp_dotnet"
+  rm -rf "${ROOT_DIR}/temp_java"
+  rm -rf "${ROOT_DIR}/temp_python*"
+  rm -rf "${ROOT_DIR}/export"
   rm -f ./*.log
   rm -f ./*.whl
   rm -f ./*.tar.gz
@@ -288,7 +300,9 @@ function main() {
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
 
-  mkdir -p export
+  mkdir -p "${ROOT_DIR}/export"
+
+  local -r PLATFORM=$(uname -m)
 
   case ${1} in
     dotnet|java|python|archive|examples)
