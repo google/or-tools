@@ -112,7 +112,12 @@ function build_java() {
     command -v javac | xargs echo "javac: " | tee -a build.log
     command -v jar | xargs echo "jar: " | tee -a build.log
     command -v mvn | xargs echo "mvn: " | tee -a build.log
-    java -version 2>&1 | head -n 1 | grep 1.8
+    echo "Check java version..."
+    if [ ${PLATFORM} == "arm64" ]; then
+      java -version 2>&1 | head -n 1 | grep "11\.0"
+    else
+      java -version 2>&1 | head -n 1 | grep "1\.8"
+    fi
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
   command -v openssl
@@ -151,10 +156,10 @@ function build_java() {
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy jar to export
-  if [ ${PLATFORM} == "x86_64" ]; then
-    cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
+  if [ ${PLATFORM} == "arm64" ]; then
+    cp temp_java/java/ortools-darwin-aarch64/target/*.jar* export/
   else
-    cp temp_java/java/ortools-darwin-arm64/target/*.jar* export/
+    cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
   fi
   cp temp_java/java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
