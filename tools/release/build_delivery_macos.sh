@@ -243,7 +243,9 @@ function build_archive() {
   # Clean archive
   cd "${ROOT_DIR}" || exit 2
   echo "Check Make version..."
-  make -version 2>&1 | head -n 1 | grep "\b4\.3"
+  make --version 2>&1 | head -n 1 | grep "\b4\.3"
+  echo "Check Sed version..."
+  sed --version 2>&1 | head -n 1 | grep "GNU sed.*\b4"
 
   echo -n "Clean previous archive..." | tee -a build.log
   make clean_archive
@@ -273,6 +275,10 @@ function build_examples() {
   fi
 
   cd "${ROOT_DIR}" || exit 2
+  echo "Check Make version..."
+  make --version 2>&1 | head -n 1 | grep "\b4\.3"
+  echo "Check Sed version..."
+  sed --version 2>&1 | head -n 1 | grep "GNU sed.*\b4"
 
   rm -rf temp ./*.tar.gz
   echo -n "Build examples archives..." | tee -a build.log
