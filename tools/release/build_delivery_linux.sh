@@ -62,6 +62,7 @@ function build_dotnet() {
     return 0
   fi
 
+  cd "${ROOT_DIR}" || exit 2
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
   command -v dotnet
@@ -105,6 +106,7 @@ function build_java() {
     return 0
   fi
 
+  cd "${ROOT_DIR}" || exit 2
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
   # maven require JAVA_HOME
@@ -179,6 +181,7 @@ function build_python() {
     return 0
   fi
 
+  cd "${ROOT_DIR}" || exit 2
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
   command -v python3 | xargs echo "python3: " | tee -a build.log
@@ -256,6 +259,9 @@ function build_examples() {
 # Cleaning everything
 function reset() {
   echo "Cleaning everything..."
+
+  cd "${ROOT_DIR}" || exit 2
+
   make clean
   rm -rf temp_dotnet
   rm -rf temp_java

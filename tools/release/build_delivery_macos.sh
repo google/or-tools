@@ -62,6 +62,7 @@ function build_dotnet() {
     return 0
   fi
 
+  cd "${ROOT_DIR}" || exit 2
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
   command -v dotnet
@@ -100,6 +101,7 @@ function build_java() {
     return 0
   fi
 
+  cd "${ROOT_DIR}" || exit 2
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
   # maven require JAVA_HOME
@@ -173,6 +175,7 @@ function build_python() {
     return 0
   fi
 
+  cd "${ROOT_DIR}" || exit 2
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
 
@@ -293,10 +296,12 @@ function reset() {
   rm -rf "${ROOT_DIR}/temp_java"
   rm -rf "${ROOT_DIR}/temp_python*"
   rm -rf "${ROOT_DIR}/export"
-  rm -f ./*.log
-  rm -f ./*.whl
+  rm -f "${ROOT_DIR}/*.log"
+  rm -f "${ROOT_DIR}/*.whl"
+  rm -f "${ROOT_DIR}/*.gpg"
   rm -f ./*.tar.gz
-  rm ortools.snk
+  rm -f ortools.snk
+  rm -f *.gpg
   echo "DONE"
 }
 
@@ -320,10 +325,10 @@ function main() {
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  local -r PLATFORM=$(uname -m)
 
   mkdir -p "${ROOT_DIR}/export"
 
-  local -r PLATFORM=$(uname -m)
 
   case ${1} in
     dotnet|java|python|archive|examples)

@@ -56,6 +56,7 @@ function assert_defined(){
 }
 
 function build_delivery() {
+  assert_defined PLATFORM
   assert_defined ORTOOLS_BRANCH
   assert_defined ORTOOLS_SHA1
   assert_defined ORTOOLS_TOKEN
@@ -64,7 +65,9 @@ function build_delivery() {
   assert_defined ORTOOLS_IMG
 
   # Enable docker over QEMU support
-  #docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+  if [ ${PLATFORM} != "arm64" ]; then
+    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+  fi
 
   # Clean
   echo -n "Remove previous docker images..." | tee -a "${ROOT_DIR}/build.log"
@@ -203,6 +206,8 @@ function build_examples() {
 function reset() {
   assert_defined ORTOOLS_IMG
 
+  cd "${ROOT_DIR}" || exit 2
+
   echo "Cleaning everything..."
   rm -rf export/
   docker image rm -f "${ORTOOLS_IMG}":archive 2>/dev/null
@@ -213,7 +218,8 @@ function reset() {
 
   docker image rm -f "${ORTOOLS_IMG}":devel 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":env 2>/dev/null
-  rm -f "${ROOT_DIR}"/*.log
+  rm -f "${ROOT_DIR}/*.log"
+  rm -rf "${ROOT_DIR}/export"
 
   echo "DONE"
 }
@@ -240,8 +246,9 @@ function main() {
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
   local -r DOCKERFILE="arm64.Dockerfile"
   local -r ORTOOLS_IMG="ortools/manylinux_delivery_arm64"
+  local -r PLATFORM=$(uname -m)
 
-  mkdir -p export
+  mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
     dotnet|java|python|archive|examples)
