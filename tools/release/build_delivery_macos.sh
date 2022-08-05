@@ -176,20 +176,32 @@ function build_python() {
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
 
-  if [ ${PLATFORM} == "x86_64" ]; then
-    local -r PY=(3.6 3.7 3.8 3.9 3.10)
-  else
+  if [ ${PLATFORM} == "arm64" ]; then
     local -r PY=(3.8 3.9 3.10)
+  else
+    local -r PY=(3.6 3.7 3.8 3.9 3.10)
   fi
+
+  # Save PATH
+  PATH_BCKP=${PATH}
+
   for i in "${PY[@]}"; do
-    command -v "python$i"
+    PY_PATH="/Library/Frameworks/Python.framework/Versions/$i"
+    if [[ ! -d "$PY_PATH" ]]; then
+      echo "Error: Python $i is not found (${PY_PATH})." | tee -a build.log
+      exit 1
+    fi
+    export PATH="${HOME}/Library/Python/$i/bin:${PY_PATH}/bin:${PATH_BCKP}"
+
+    command -v "python3" | xargs echo "python3: " | tee -a build.log
     command -v "python$i" | xargs echo "python$i: " | tee -a build.log
     "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
+    "python$i" -m pip install --upgrade --user pip
     "python$i" -m pip install --upgrade --user wheel absl-py mypy-protobuf virtualenv
+    command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
+    protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
+    protoc-gen-mypy --version | grep "3\.2\.0"
   done
-  command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
-  protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
-  protoc-gen-mypy --version | grep "3\.2\.0"
 
   for i in "${PY[@]}"; do
     echo -n "Cleaning Python $i..." | tee -a build.log
@@ -201,6 +213,7 @@ function build_python() {
       echo "Error: Python $i is not found (${PY_PATH})." | tee -a build.log
       exit 1
     fi
+    export PATH="${HOME}/Library/Python/$i/bin:${PY_PATH}/bin:${PATH_BCKP}"
 
     echo -n "Build Python $i..." | tee -a build.log
     cmake -S. -B"temp_python$i" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
@@ -211,6 +224,9 @@ function build_python() {
 
     cp "temp_python$i"/python/dist/*.whl export/
   done
+
+  # Reset PATH
+  export PATH=${PATH_BCKP}
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/python_build"
 }
 
