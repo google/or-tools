@@ -242,6 +242,10 @@ function build_archive() {
 
   # Clean archive
   cd "${ROOT_DIR}" || exit 2
+  echo "Check Make version..."
+  make -version 2>&1 | head -n 1 | grep "\b4\.3"
+
+  echo -n "Clean previous archive..." | tee -a build.log
   make clean_archive
 
   echo -n "Make cpp archive..." | tee -a build.log
