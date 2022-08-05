@@ -10,7 +10,7 @@ These modules have been tested under:
   - Debian 11 (64 bit).
   - Fedora 33 and up (64 bit).
   - Ubuntu 18.04 LTS and up (64 bit).
-  - MacOS 12.2 Monterey (64 bit).
+  - MacOS 12.5 Monterey (64 bit).
   - Microsoft Windows with Visual Studio 2022 (64-bit)
 
 Upon decompressing the archive, you will get the following structure:
@@ -51,7 +51,7 @@ make run SOURCE=examples/basic_example/basic_example.cc
   ```shell
   cd examples/basic_example
   cmake -S . -B build
-  cmake --build build 
+  cmake --build build
   ```
 
 - on Windows:
@@ -59,7 +59,7 @@ make run SOURCE=examples/basic_example/basic_example.cc
   ```shell
   cd examples/basic_example
   cmake -S . -B build
-  cmake --build build 
+  cmake --build build
   ```
 
 # Java

@@ -13,7 +13,7 @@ These modules have been tested under:
   - Fedora 33 and up (64 bit).
   - Opensuse Leap (64 bit).
   - Ubuntu 18.04 LTS and up (64 bit).
-  - MacOS 12.2 Monterey (64 bit).
+  - MacOS 12.5 Monterey (64 bit).
   - Microsoft Windows with Visual Studio 2019 and 2022 (64-bit)
 
 ## Codemap
