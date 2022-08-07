@@ -393,6 +393,22 @@ cc_binary(
 )
 
 cc_binary(
+    name = "pdlp_solve",
+    srcs = ["pdlp_solve.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:solvers_cc_proto",
+        "//ortools/pdlp:solve_log_cc_proto",
+        "//ortools/pdlp:quadratic_program_io",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/port:proto_utils",
+        "//ortools/util:sigint",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_binary(
     name = "pdptw",
     srcs = ["pdptw.cc"],
     deps = [
