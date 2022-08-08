@@ -28,6 +28,7 @@ endif
 ifneq ($(PLATFORM),WIN64)
   OR_TOOLS_TOP ?= $(shell pwd)
   OS = $(shell uname -s)
+  CPU = $(shell uname -m)
   PYTHON_VERSION ?= $(shell python3 -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
   CMAKE_PLATFORM = "Unix Makefiles"
 
@@ -322,6 +323,7 @@ detect_port:
 	@echo OR_TOOLS_TOP = $(OR_TOOLS_TOP)
 	@echo SHELL = $(SHELL)
 	@echo OS = $(OS)
+	@echo CPU = $(CPU)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PORT = $(PORT)
 	@echo OR_TOOLS_MAJOR = $(OR_TOOLS_MAJOR)
