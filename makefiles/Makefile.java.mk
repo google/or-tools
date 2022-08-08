@@ -604,7 +604,6 @@ detect_java:
 	@echo HAS_JAVA = $(HAS_JAVA)
 	@echo JAVA_HOME = $(JAVA_HOME)
 	@echo JAVAC_BIN = $(JAVAC_BIN)
-	@echo CLASS_DIR = $(CLASS_DIR)
 	@echo JAR_BIN = $(JAR_BIN)
 	@echo JAVA_BIN = $(JAVA_BIN)
 	@echo MVN_BIN = $(MVN_BIN)
