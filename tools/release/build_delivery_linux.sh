@@ -168,7 +168,11 @@ function build_java() {
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy jar to export
-  cp temp_java/java/ortools-linux-x86-64/target/*.jar* export/
+  if [ ${PLATFORM} == "aarch64" ]; then
+    cp temp_java/java/ortools-linux-aarch64/target/*.jar* export/
+  else
+    cp temp_java/java/ortools-linux-x86-64/target/*.jar* export/
+  fi
   cp temp_java/java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
 }
@@ -294,8 +298,9 @@ function main() {
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  local -r PLATFORM=$(uname -m)
 
-  mkdir -p export
+  mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
     dotnet|java|python|archive|examples)
