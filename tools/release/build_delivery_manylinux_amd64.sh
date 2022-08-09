@@ -237,8 +237,9 @@ function main() {
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
   local -r DOCKERFILE="amd64.Dockerfile"
   local -r ORTOOLS_IMG="ortools/manylinux_delivery_amd64"
+  local -r PLATFORM=$(uname -m)
 
-  mkdir -p export
+  mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
     dotnet|java|python|archive|examples)
@@ -251,7 +252,7 @@ function main() {
       build_dotnet
       build_java
       #build_python
-      #build_archive
+      build_archive
       #build_examples
       exit ;;
     *)

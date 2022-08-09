@@ -261,7 +261,7 @@ function main() {
       build_dotnet
       build_java
       #build_python
-      #build_archive
+      build_archive
       #build_examples
       exit ;;
     *)
