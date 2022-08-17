@@ -19,16 +19,6 @@ from ortools.linear_solver import linear_solver_pb2
 from ortools.model_builder.python import pywrap_model_builder_helper
 
 
-# Used by CVXPY.
-class ModelSolverHelper(pywrap_model_builder_helper.ModelSolverHelper):
-
-    def Solve(
-        self, request: linear_solver_pb2.MPModelRequest
-    ) -> linear_solver_pb2.MPSolutionResponse:
-        return linear_solver_pb2.MPSolutionResponse.FromString(
-            super().solve_serialized_request(request.SerializeToString()))
-
-
 def is_integral(x):
     """Checks if x has either a number.Integral or a np.integer type."""
     return isinstance(x, numbers.Integral) or isinstance(x, np.integer)
