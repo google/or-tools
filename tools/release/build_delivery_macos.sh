@@ -70,7 +70,12 @@ function build_dotnet() {
 
   # Install .Net SNK
   echo -n "Install .Net SNK..." | tee -a build.log
-  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  local OPENSSL_PRG=openssl
+  if [[ -x $(command -v openssl11) ]]; then
+    OPENSSL_PRG=openssl11
+  fi
+
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
     -in "${RELEASE_DIR}/or-tools.snk.enc" \
     -out "${ROOT_DIR}/export/or-tools.snk" -d
   DOTNET_SNK=export/or-tools.snk
@@ -115,6 +120,7 @@ function build_java() {
     command -v jar | xargs echo "jar: " | tee -a build.log
     command -v mvn | xargs echo "mvn: " | tee -a build.log
     echo "Check java version..."
+    java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
     if [ ${PLATFORM} == "arm64" ]; then
       java -version 2>&1 | head -n 1 | grep "11\.0"
     else
@@ -122,14 +128,17 @@ function build_java() {
     fi
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
-  command -v openssl
-  command -v openssl | xargs echo "openssl: " | tee -a build.log
+  local OPENSSL_PRG=openssl
+  if [[ -x $(command -v openssl11) ]]; then
+    OPENSSL_PRG=openssl11
+  fi
+  command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a build.log
   command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a build.log
 
   # Install Java GPG
   echo -n "Install Java GPG..." | tee -a build.log
-  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
   -in tools/release/private-key.gpg.enc \
   -out private-key.gpg -d
   gpg --batch --import private-key.gpg
@@ -138,7 +147,7 @@ function build_java() {
 
   # Install the maven settings.xml having the GPG passphrase
   mkdir -p ~/.m2
-  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
   -in tools/release/settings.xml.enc \
   -out ~/.m2/settings.xml -d
   echo "DONE" | tee -a build.log
@@ -150,8 +159,16 @@ function build_java() {
   echo "DONE" | tee -a build.log
 
   echo -n "Build Java..." | tee -a build.log
+
+  if [[ ! -v GPG_ARGS ]]; then
+    GPG_EXTRA=""
+  else
+    GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
+  fi
+
+  # shellcheck disable=SC2086: cmake fail to parse empty string ""
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
- -DBUILD_JAVA=ON -DSKIP_GPG=OFF
+ -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java -j8 -v
   echo "DONE" | tee -a build.log
   #cmake --build temp_java --target test
@@ -175,6 +192,9 @@ function build_python() {
     return 0
   fi
 
+  # Save PATH
+  PATH_BCKP=${PATH}
+
   cd "${ROOT_DIR}" || exit 2
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
@@ -185,9 +205,6 @@ function build_python() {
     local -r PY=(3.6 3.7 3.8 3.9 3.10)
   fi
 
-  # Save PATH
-  PATH_BCKP=${PATH}
-
   for i in "${PY[@]}"; do
     PY_PATH="/Library/Frameworks/Python.framework/Versions/$i"
     if [[ ! -d "$PY_PATH" ]]; then
@@ -196,7 +213,8 @@ function build_python() {
     fi
     export PATH="${HOME}/Library/Python/$i/bin:${PY_PATH}/bin:${PATH_BCKP}"
 
-    command -v "python3" | xargs echo "python3: " | tee -a build.log
+  # Check Python env
+    command -v python3 | xargs echo "python3: " | tee -a build.log
     command -v "python$i" | xargs echo "python$i: " | tee -a build.log
     "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
     "python$i" -m pip install --upgrade --user pip
@@ -207,10 +225,6 @@ function build_python() {
   done
 
   for i in "${PY[@]}"; do
-    echo -n "Cleaning Python $i..." | tee -a build.log
-    rm -rf "temp_python$i"
-    echo "DONE" | tee -a build.log
-
     PY_PATH="/Library/Frameworks/Python.framework/Versions/$i"
     if [[ ! -d "$PY_PATH" ]]; then
       echo "Error: Python $i is not found (${PY_PATH})." | tee -a build.log
@@ -218,6 +232,10 @@ function build_python() {
     fi
     export PATH="${HOME}/Library/Python/$i/bin:${PY_PATH}/bin:${PATH_BCKP}"
 
+  # Clean and build
+    echo -n "Cleaning Python $i..." | tee -a build.log
+    rm -rf "temp_python$i"
+    echo "DONE" | tee -a build.log
     echo -n "Build Python $i..." | tee -a build.log
     cmake -S. -B"temp_python$i" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
     cmake --build "temp_python$i" -j8 -v
@@ -230,6 +248,7 @@ function build_python() {
 
   # Reset PATH
   export PATH=${PATH_BCKP}
+
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/python_build"
 }
 
@@ -302,16 +321,15 @@ function reset() {
   cd "${ROOT_DIR}" || exit 2
 
   make clean
-  rm -rf "${ROOT_DIR}/temp_dotnet"
-  rm -rf "${ROOT_DIR}/temp_java"
-  rm -rf "${ROOT_DIR}/temp_python*"
-  rm -rf "${ROOT_DIR}/export"
-  rm -f "${ROOT_DIR}/*.log"
-  rm -f "${ROOT_DIR}/*.whl"
-  rm -f "${ROOT_DIR}/*.gpg"
+  rm -rf temp_dotnet
+  rm -rf temp_java
+  rm -rf temp_python*
+  rm -rf export
+  rm -f ./*.gpg
+  rm -f ./*.log
+  rm -f ./*.whl
   rm -f ./*.tar.gz
   rm -f ortools.snk
-  rm -f *.gpg
   echo "DONE"
 }
 
@@ -338,7 +356,6 @@ function main() {
   local -r PLATFORM=$(uname -m)
 
   mkdir -p "${ROOT_DIR}/export"
-
 
   case ${1} in
     dotnet|java|python|archive|examples)

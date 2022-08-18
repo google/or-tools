@@ -76,8 +76,8 @@ function build_dotnet() {
   fi
 
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
-    -in "${RELEASE_DIR}"/or-tools.snk.enc \
-    -out "${ROOT_DIR}"/export/or-tools.snk -d
+    -in "${RELEASE_DIR}/or-tools.snk.enc" \
+    -out "${ROOT_DIR}/export/or-tools.snk" -d
   DOTNET_SNK=export/or-tools.snk
   echo "DONE" | tee -a build.log
 
@@ -119,6 +119,8 @@ function build_java() {
     command -v javac | xargs echo "javac: " | tee -a build.log
     command -v jar | xargs echo "jar: " | tee -a build.log
     command -v mvn | xargs echo "mvn: " | tee -a build.log
+    echo "Check java version..."
+    java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
   local OPENSSL_PRG=openssl
@@ -188,23 +190,29 @@ function build_python() {
   cd "${ROOT_DIR}" || exit 2
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
+
+  # Check Python env
   command -v python3 | xargs echo "python3: " | tee -a build.log
+  python3 -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
+  python3 -m pip install --upgrade --user pip
+  python3 -m pip install --upgrade --user wheel absl-py mypy-protobuf virtualenv
   command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
   protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
   protoc-gen-mypy --version | grep "3\.2\.0"
 
+  # Clean and build
   echo -n "Cleaning Python 3..." | tee -a build.log
-  rm -rf temp_python
+  rm -rf "temp_python"
   echo "DONE" | tee -a build.log
-
   echo -n "Build Python 3..." | tee -a build.log
-  cmake -S . -B temp_python -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
+  cmake -S. -Btemp_python -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
   cmake --build temp_python -j8 -v
   echo "DONE" | tee -a build.log
   #cmake --build test_python --target test
   #echo "cmake test_python: DONE" | tee -a build.log
 
   cp temp_python/python/dist/*.whl export/
+
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/python_build"
 }
 
@@ -270,11 +278,12 @@ function reset() {
   rm -rf temp_dotnet
   rm -rf temp_java
   rm -rf temp_python*
-  rm -rf export/
+  rm -rf export
+  rm -f ./*.gpg
   rm -f ./*.log
   rm -f ./*.whl
   rm -f ./*.tar.gz
-  rm ortools.snk
+  rm -f ortools.snk
   echo "DONE"
 }
 
