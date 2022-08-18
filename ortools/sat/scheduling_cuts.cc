@@ -305,7 +305,10 @@ void GenerateCumulativeEnergeticCuts(
               ? capacity_lp * (makespan_lp - ToDouble(window_start))
               : std::numeric_limits<double>::infinity();
 
-      if (max_energy_lp >= sum_of_energies_lp) break;
+      if (std::min(max_energy_lp, energy_up_to_makespan_lp) >=
+          sum_of_energies_lp) {
+        break;
+      }
 
       // Scan all events and sum their energetic contributions.
       double energy_lp = 0.0;
@@ -342,22 +345,31 @@ void GenerateCumulativeEnergeticCuts(
     bool add_energy_to_name = false;
     bool use_makespan_in_cut = false;
     LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
-    double max_energy_lp = ToDouble(window_end - window_start) * capacity_lp;
-    if (makespan.has_value()) {
-      const double energy_up_to_makespan_lp =
-          capacity_lp * (makespan_lp - ToDouble(window_start));
-      if (energy_up_to_makespan_lp <= max_energy_lp) {
-        max_energy_lp = energy_up_to_makespan_lp;
-        use_makespan_in_cut = true;
-      }
-    }
-    if (use_makespan_in_cut) {
+
+    // Compute the max energy available for the tasks with and without the
+    // makespan (if present).
+    const double time_window_energy_lp =
+        ToDouble(window_end - window_start) * capacity_lp;
+    const double energy_up_to_makespan_lp =
+        makespan.has_value()
+            ? capacity_lp * (makespan_lp - ToDouble(window_start))
+            : std::numeric_limits<double>::max();
+
+    // We prefer using the makespan as the cut will tighten itself when the
+    // objective value is improved.
+    //
+    // We reuse the min cut violation to allow some slack in the comparison
+    // between the two computed energy values.
+    if (energy_up_to_makespan_lp <= time_window_energy_lp + kMinCutViolation) {
       IntegerValue capacity_value = integer_trail->FixedValue(capacity);
       cut.AddConstant(capacity_value * window_start);
       cut.AddTerm(makespan.value(), -capacity_value);
+      use_makespan_in_cut = true;
     } else {
       cut.AddTerm(capacity, window_start - window_end);
     }
+
+    // Add all contributions.
     for (const EnergyEvent& event : events) {
       if (!add_one_event(event, window_start, window_end, &cut,
                          &add_energy_to_name, &add_quadratic_to_name,
@@ -762,7 +774,9 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
     int interval_index;
     IntegerValue time;
     bool positive;
-    AffineExpression demand;
+    LinearExpression demand;
+    double demand_lp = 0.0;
+    bool use_energy = false;
   };
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -772,7 +786,10 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
           LinearConstraintManager* manager) {
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
 
+        TopNCuts top_n_cuts(5);
         std::vector<TimeTableEvent> events;
+        const double capacity_lp = capacity.LpValue(lp_values);
+
         // Iterate through the intervals. If start_max < end_min, the demand
         // is mandatory.
         for (int i = 0; i < helper->NumTasks(); ++i) {
@@ -786,8 +803,13 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
           TimeTableEvent e1;
           e1.interval_index = i;
           e1.time = start_max;
-          e1.demand = demands_helper->Demands()[i];
+          LinearConstraintBuilder builder(model);
+          // Ignore events if the linearized demand fails.
+          if (!demands_helper->AddLinearizedDemand(i, &builder)) continue;
+          e1.demand = builder.BuildExpression();
+          e1.demand_lp = e1.demand.LpValue(lp_values);
           e1.positive = true;
+          e1.use_energy = !demands_helper->DecomposedEnergies()[i].empty();
 
           TimeTableEvent e2 = e1;
           e2.time = end_min;
@@ -819,26 +841,26 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
             continue;
           }
           if (added_positive_event && cut_events.size() > 1) {
+            double sum_of_demand_lp = 0.0;
+            for (const TimeTableEvent& cut_event : cut_events) {
+              sum_of_demand_lp += cut_event.demand_lp;
+            }
+            if (sum_of_demand_lp <= capacity_lp + kMinCutViolation) continue;
+
             // Create cut.
-            bool cut_generated = true;
+            bool use_energy = false;
             LinearConstraintBuilder cut(model, kMinIntegerValue,
                                         IntegerValue(0));
             cut.AddTerm(capacity, IntegerValue(-1));
             for (const TimeTableEvent& cut_event : cut_events) {
-              if (helper->IsPresent(cut_event.interval_index)) {
-                cut.AddTerm(cut_event.demand, IntegerValue(1));
-              } else {
-                cut_generated &= cut.AddLiteralTerm(
-                    helper->PresenceLiteral(cut_event.interval_index),
-                    integer_trail->LowerBound(cut_event.demand));
-                if (!cut_generated) break;
-              }
+              cut.AddLinearExpression(cut_event.demand, IntegerValue(1));
+              use_energy |= cut_event.use_energy;
             }
-            if (cut_generated) {
-              // Violation of the cut is checked by AddCut so we don't check
-              // it here.
-              manager->AddCut(cut.Build(), "CumulativeTimeTable", lp_values);
+            std::string cut_name = "CumulativeTimeTable";
+            if (use_energy) {
+              cut_name += "_energy";
             }
+            top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
           }
           // Remove the event.
           int new_size = 0;
@@ -852,6 +874,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
           cut_events.resize(new_size);
           added_positive_event = false;
         }
+        top_n_cuts.TransferToManager(lp_values, manager);
         return true;
       };
   return result;

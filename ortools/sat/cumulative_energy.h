@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_CUMULATIVE_ENERGY_H_
 
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include "ortools/sat/integer.h"

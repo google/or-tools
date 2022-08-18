@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <deque>
+#include <iostream>
 #include <limits>
 #include <numeric>
 #include <string>
@@ -31,7 +32,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
-#include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -49,6 +49,7 @@
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/diophantine.h"
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -2238,8 +2239,7 @@ bool CpModelPresolver::PresolveLinearOfSizeTwo(ConstraintProto* ct) {
       // In this case, we can solve the diophantine equation, and write
       // both x and y in term of a new affine representative z.
       //
-      // Note that PresolveLinearEqualityWithModularInverse() will have the
-      // same effect.
+      // Note that PresolveLinearEqualityWithModulo() will have the same effect.
       //
       // We can also decide to fully expand the equality if the variables
       // are fully encoded.
@@ -2323,6 +2323,147 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
   }
 
   return false;
+}
+
+bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
+  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
+  if (ct->linear().vars().size() <= 1) return false;
+
+  if (context_->ModelIsUnsat()) return false;
+
+  const LinearConstraintProto& linear_constraint = ct->linear();
+  if (linear_constraint.domain_size() != 2) return false;
+  if (linear_constraint.domain(0) != linear_constraint.domain(1)) return false;
+
+  std::vector<int64_t> lbs(linear_constraint.vars_size());
+  std::vector<int64_t> ubs(linear_constraint.vars_size());
+  for (int i = 0; i < linear_constraint.vars_size(); ++i) {
+    lbs[i] = context_->MinOf(linear_constraint.vars(i));
+    ubs[i] = context_->MaxOf(linear_constraint.vars(i));
+  }
+  DiophantineSolution diophantine_solution = SolveDiophantine(
+      linear_constraint.coeffs(), linear_constraint.domain(0), lbs, ubs);
+
+  if (!diophantine_solution.has_solutions) {
+    context_->UpdateRuleStats("diophantine: equality has no solutions");
+    return MarkConstraintAsFalse(ct);
+  }
+  if (diophantine_solution.no_reformulation_needed) return false;
+  // Only first coefficients of kernel_basis elements and special_solution could
+  // overflow int64_t due to the reduction applied in SolveDiophantineEquation,
+  for (const std::vector<absl::int128>& b : diophantine_solution.kernel_basis) {
+    if (!IsNegatableInt64(b[0])) {
+      context_->UpdateRuleStats(
+          "diophantine: couldn't apply due to int64_t overflow");
+      return false;
+    }
+  }
+  if (!IsNegatableInt64(diophantine_solution.special_solution[0])) {
+    context_->UpdateRuleStats(
+        "diophantine: couldn't apply due to int64_t overflow");
+    return false;
+  }
+
+  const int num_replaced_variables =
+      static_cast<int>(diophantine_solution.special_solution.size());
+  const int num_new_variables =
+      static_cast<int>(diophantine_solution.kernel_vars_lbs.size());
+  DCHECK_EQ(num_new_variables + 1, num_replaced_variables);
+  for (int i = 0; i < num_new_variables; ++i) {
+    if (!IsNegatableInt64(diophantine_solution.kernel_vars_lbs[i]) ||
+        !IsNegatableInt64(diophantine_solution.kernel_vars_ubs[i])) {
+      context_->UpdateRuleStats(
+          "diophantine: couldn't apply due to int64_t overflow");
+      return false;
+    }
+  }
+  // TODO(user, demonet): Make sure the newly generated linear constraint
+  // satisfy our no-overflow precondition on the min/max activity.
+  // We should check that the model still satisfy conditions in
+
+  // Create new variables.
+  std::vector<int> new_variables(num_new_variables);
+  for (int i = 0; i < num_new_variables; ++i) {
+    new_variables[i] = context_->working_model->variables_size();
+    IntegerVariableProto* var = context_->working_model->add_variables();
+    var->add_domain(
+        static_cast<int64_t>(diophantine_solution.kernel_vars_lbs[i]));
+    var->add_domain(
+        static_cast<int64_t>(diophantine_solution.kernel_vars_ubs[i]));
+    if (!ct->name().empty()) {
+      var->set_name(absl::StrCat("u_diophantine_", ct->name(), "_", i));
+    }
+  }
+
+  // For i = 0, ..., num_replaced_variables - 1, creates
+  //  x[i] = special_solution[i]
+  //        + sum(kernel_basis[k][i]*y[k], max(1, i) <= k < vars.size - 1)
+  // where:
+  //  y[k] is the newly created variable if 0 <= k < num_new_variables
+  //  y[k] = x[index_permutation[k + 1]] otherwise.
+  for (int i = 0; i < num_replaced_variables; ++i) {
+    ConstraintProto* identity = context_->working_model->add_constraints();
+    LinearConstraintProto* lin = identity->mutable_linear();
+    if (!ct->name().empty()) {
+      identity->set_name(absl::StrCat("c_diophantine_", ct->name(), "_", i));
+    }
+    *identity->mutable_enforcement_literal() = ct->enforcement_literal();
+    lin->add_vars(
+        linear_constraint.vars(diophantine_solution.index_permutation[i]));
+    lin->add_coeffs(1);
+    lin->add_domain(
+        static_cast<int64_t>(diophantine_solution.special_solution[i]));
+    lin->add_domain(
+        static_cast<int64_t>(diophantine_solution.special_solution[i]));
+    for (int j = std::max(1, i); j < num_replaced_variables; ++j) {
+      lin->add_vars(new_variables[j - 1]);
+      lin->add_coeffs(
+          -static_cast<int64_t>(diophantine_solution.kernel_basis[j - 1][i]));
+    }
+    for (int j = num_replaced_variables; j < linear_constraint.vars_size();
+         ++j) {
+      lin->add_vars(
+          linear_constraint.vars(diophantine_solution.index_permutation[j]));
+      lin->add_coeffs(
+          -static_cast<int64_t>(diophantine_solution.kernel_basis[j - 1][i]));
+    }
+    if (PossibleIntegerOverflow(*(context_->working_model), lin->vars(),
+                                lin->coeffs())) {
+      context_->UpdateRuleStats(
+          "diophantine: couldn't apply due to overflowing activity of new "
+          "constraints");
+      // Cancel working_model changes.
+      context_->working_model->mutable_constraints()->DeleteSubrange(
+          context_->working_model->constraints_size() - i, i);
+      context_->working_model->mutable_variables()->DeleteSubrange(
+          context_->working_model->variables_size() - num_new_variables,
+          num_new_variables);
+      return false;
+    }
+  }
+  context_->InitializeNewDomains();
+
+  if (VLOG_IS_ON(2)) {
+    std::string log_eq = absl::StrCat(linear_constraint.domain(0), " = ");
+    const int terms_to_show = std::min<int>(15, linear_constraint.vars_size());
+    for (int i = 0; i < terms_to_show; ++i) {
+      if (i > 0) absl::StrAppend(&log_eq, " + ");
+      absl::StrAppend(
+          &log_eq,
+          linear_constraint.coeffs(diophantine_solution.index_permutation[i]),
+          " x",
+          linear_constraint.vars(diophantine_solution.index_permutation[i]));
+    }
+    if (terms_to_show < linear_constraint.vars_size()) {
+      absl::StrAppend(&log_eq, "+ ... (", linear_constraint.vars_size(),
+                      " terms)");
+    }
+    VLOG(2) << "[Diophantine] " << log_eq;
+  }
+
+  context_->UpdateRuleStats("diophantine: reformulated equality");
+  context_->UpdateNewConstraintsVariableUsage();
+  return RemoveConstraint(ct);
 }
 
 // This tries to decompose the constraint into coeff * part1 + part2 and show
@@ -6463,6 +6604,10 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
         if (PresolveSmallLinear(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
+      }
+
+      if (PresolveDiophantine(ct)) {
+        context_->UpdateConstraintVariableUsage(c);
       }
 
       TryToReduceCoefficientsOfLinearConstraint(c, ct);

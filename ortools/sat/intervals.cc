@@ -847,6 +847,24 @@ void SchedulingDemandHelper::AddEnergyMinReason(int t) {
   }
 }
 
+bool SchedulingDemandHelper::AddLinearizedDemand(
+    int t, LinearConstraintBuilder* builder) const {
+  if (helper_->IsPresent(t)) {
+    if (!decomposed_energies_[t].empty()) {
+      for (const LiteralValueValue& entry : decomposed_energies_[t]) {
+        if (!builder->AddLiteralTerm(entry.literal, entry.right_value)) {
+          return false;
+        }
+      }
+    } else {
+      builder->AddTerm(demands_[t], IntegerValue(1));
+    }
+  } else if (!helper_->IsAbsent(t)) {
+    return builder->AddLiteralTerm(helper_->PresenceLiteral(t), DemandMin(t));
+  }
+  return true;
+}
+
 void SchedulingDemandHelper::OverrideLinearizedEnergies(
     const std::vector<LinearExpression>& energies) {
   const int num_tasks = energies.size();

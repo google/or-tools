@@ -180,13 +180,13 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 void AddCumulativeRelaxation(const AffineExpression& capacity,
                              SchedulingConstraintHelper* helper,
                              SchedulingDemandHelper* demands,
-                             std::optional<AffineExpression> makespan,
+                             const std::optional<AffineExpression>& makespan,
                              Model* model, LinearRelaxation* relaxation);
 
 void AddCumulativeCutGenerator(const AffineExpression& capacity,
                                SchedulingConstraintHelper* helper,
                                SchedulingDemandHelper* demands,
-                               std::optional<AffineExpression>& makespan,
+                               const std::optional<AffineExpression>& makespan,
                                Model* m, LinearRelaxation* relaxation);
 
 void AddNoOverlapCutGenerator(SchedulingConstraintHelper* helper,

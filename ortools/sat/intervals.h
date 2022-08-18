@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -519,6 +520,11 @@ class SchedulingDemandHelper {
   bool DemandIsFixed(int t) const;
   void AddDemandMinReason(int t);
   const std::vector<AffineExpression>& Demands() const { return demands_; }
+
+  // Adds the linearized demand (either the affine demand expression, or the
+  // demand part of the decomposed energy if present) to the builder.
+  // It returns false if any literal involved has no integer view.
+  bool AddLinearizedDemand(int t, LinearConstraintBuilder* builder) const;
 
   // The "energy" is usually size * demand, but in some non-conventional usage
   // it might have a more complex formula. In all case, the energy is assumed

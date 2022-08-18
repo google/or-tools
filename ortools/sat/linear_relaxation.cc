@@ -662,6 +662,7 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
       DetectMakespan(intervals, demands, /*capacity=*/one, model);
   std::optional<AffineExpression> makespan;
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
+
   if (makespan_index != -1) {
     makespan = repository->Start(intervals[makespan_index]);
     demands.pop_back();  // the vector is filled with ones.
@@ -725,7 +726,7 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
 void AddCumulativeRelaxation(const AffineExpression& capacity,
                              SchedulingConstraintHelper* helper,
                              SchedulingDemandHelper* demands_helper,
-                             std::optional<AffineExpression> makespan,
+                             const std::optional<AffineExpression>& makespan,
                              Model* model, LinearRelaxation* relaxation) {
   const int num_intervals = helper->NumTasks();
   demands_helper->CacheAllEnergyValues();
@@ -1341,7 +1342,7 @@ bool IntervalIsVariable(const IntervalVariable interval,
 void AddCumulativeCutGenerator(const AffineExpression& capacity,
                                SchedulingConstraintHelper* helper,
                                SchedulingDemandHelper* demands_helper,
-                               std::optional<AffineExpression>& makespan,
+                               const std::optional<AffineExpression>& makespan,
                                Model* m, LinearRelaxation* relaxation) {
   relaxation->cut_generators.push_back(CreateCumulativeTimeTableCutGenerator(
       helper, demands_helper, capacity, m));

@@ -174,49 +174,6 @@ std::string ValidateIntervalsUsedInConstraint(bool after_presolve,
   return "";
 }
 
-template <class LinearExpressionProto>
-bool PossibleIntegerOverflow(const CpModelProto& model,
-                             const LinearExpressionProto& proto,
-                             int64_t offset = 0) {
-  if (offset == std::numeric_limits<int64_t>::min()) return true;
-  int64_t sum_min = -std::abs(offset);
-  int64_t sum_max = +std::abs(offset);
-  for (int i = 0; i < proto.vars_size(); ++i) {
-    const int ref = proto.vars(i);
-    const auto& var_proto = model.variables(PositiveRef(ref));
-    const int64_t min_domain = var_proto.domain(0);
-    const int64_t max_domain = var_proto.domain(var_proto.domain_size() - 1);
-    if (proto.coeffs(i) == std::numeric_limits<int64_t>::min()) return true;
-    const int64_t coeff =
-        RefIsPositive(ref) ? proto.coeffs(i) : -proto.coeffs(i);
-    const int64_t prod1 = CapProd(min_domain, coeff);
-    const int64_t prod2 = CapProd(max_domain, coeff);
-
-    // Note that we use min/max with zero to disallow "alternative" terms and
-    // be sure that we cannot have an overflow if we do the computation in a
-    // different order.
-    sum_min = CapAdd(sum_min, std::min(int64_t{0}, std::min(prod1, prod2)));
-    sum_max = CapAdd(sum_max, std::max(int64_t{0}, std::max(prod1, prod2)));
-    for (const int64_t v : {prod1, prod2, sum_min, sum_max}) {
-      if (v == std::numeric_limits<int64_t>::max() ||
-          v == std::numeric_limits<int64_t>::min())
-        return true;
-    }
-  }
-
-  // In addition to computing the min/max possible sum, we also often compare
-  // it with the constraint bounds, so we do not want max - min to overflow.
-  // We might also create an intermediate variable to represent the sum. It
-  if (sum_min < std::numeric_limits<int64_t>::min() / 2) return true;
-  if (sum_max > std::numeric_limits<int64_t>::max() / 2) return true;
-  return false;
-  //  if (sum_min < 0 && sum_min + std::numeric_limits<int64_t>::max() <
-  //  sum_max) {
-  //    return true;
-  //  }
-  //  return false;
-}
-
 int64_t MinOfRef(const CpModelProto& model, int ref) {
   const IntegerVariableProto& var_proto = model.variables(PositiveRef(ref));
   if (RefIsPositive(ref)) {
@@ -292,7 +249,8 @@ std::string ValidateLinearExpression(const CpModelProto& model,
     return absl::StrCat("coeffs_size() != vars_size() in linear expression: ",
                         ProtobufShortDebugString(expr));
   }
-  if (PossibleIntegerOverflow(model, expr, expr.offset())) {
+  if (PossibleIntegerOverflow(model, expr.vars(), expr.coeffs(),
+                              expr.offset())) {
     return absl::StrCat("Possible overflow in linear expression: ",
                         ProtobufShortDebugString(expr));
   }
@@ -319,7 +277,7 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct));
   }
   const LinearConstraintProto& arg = ct.linear();
-  if (PossibleIntegerOverflow(model, arg)) {
+  if (PossibleIntegerOverflow(model, arg.vars(), arg.coeffs())) {
     return "Possible integer overflow in constraint: " +
            ProtobufDebugString(ct);
   }
@@ -421,7 +379,8 @@ std::string ValidateElementConstraint(const CpModelProto& model,
   overflow_detection.add_coeffs(-1);
   for (const int ref : element.vars()) {
     overflow_detection.set_vars(1, ref);
-    if (PossibleIntegerOverflow(model, overflow_detection)) {
+    if (PossibleIntegerOverflow(model, overflow_detection.vars(),
+                                overflow_detection.coeffs())) {
       return absl::StrCat(
           "Domain of the variables involved in element constraint may cause "
           "overflow",
@@ -612,7 +571,8 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
   RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end()));
   AppendToOverflowValidator(arg.end(), &for_overflow_validation);
 
-  if (PossibleIntegerOverflow(model, for_overflow_validation,
+  if (PossibleIntegerOverflow(model, for_overflow_validation.vars(),
+                              for_overflow_validation.coeffs(),
                               for_overflow_validation.offset())) {
     return absl::StrCat("Possible overflow in interval: ",
                         ProtobufShortDebugString(ct.interval()));
@@ -760,7 +720,7 @@ std::string ValidateObjective(const CpModelProto& model,
                           " in objective: ", ProtobufShortDebugString(obj));
     }
   }
-  if (PossibleIntegerOverflow(model, obj)) {
+  if (PossibleIntegerOverflow(model, obj.vars(), obj.coeffs())) {
     return "Possible integer overflow in objective: " +
            ProtobufDebugString(obj);
   }
@@ -886,6 +846,42 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
 }
 
 }  // namespace
+
+bool PossibleIntegerOverflow(const CpModelProto& model,
+                             absl::Span<const int> vars,
+                             absl::Span<const int64_t> coeffs, int64_t offset) {
+  if (offset == std::numeric_limits<int64_t>::min()) return true;
+  int64_t sum_min = -std::abs(offset);
+  int64_t sum_max = +std::abs(offset);
+  for (int i = 0; i < vars.size(); ++i) {
+    const int ref = vars[i];
+    const auto& var_proto = model.variables(PositiveRef(ref));
+    const int64_t min_domain = var_proto.domain(0);
+    const int64_t max_domain = var_proto.domain(var_proto.domain_size() - 1);
+    if (coeffs[i] == std::numeric_limits<int64_t>::min()) return true;
+    const int64_t coeff = RefIsPositive(ref) ? coeffs[i] : -coeffs[i];
+    const int64_t prod1 = CapProd(min_domain, coeff);
+    const int64_t prod2 = CapProd(max_domain, coeff);
+
+    // Note that we use min/max with zero to disallow "alternative" terms and
+    // be sure that we cannot have an overflow if we do the computation in a
+    // different order.
+    sum_min = CapAdd(sum_min, std::min(int64_t{0}, std::min(prod1, prod2)));
+    sum_max = CapAdd(sum_max, std::max(int64_t{0}, std::max(prod1, prod2)));
+    for (const int64_t v : {prod1, prod2, sum_min, sum_max}) {
+      if (v == std::numeric_limits<int64_t>::max() ||
+          v == std::numeric_limits<int64_t>::min())
+        return true;
+    }
+  }
+
+  // In addition to computing the min/max possible sum, we also often compare
+  // it with the constraint bounds, so we do not want max - min to overflow.
+  // We might also create an intermediate variable to represent the sum. It
+  if (sum_min < std::numeric_limits<int64_t>::min() / 2) return true;
+  if (sum_max > std::numeric_limits<int64_t>::max() / 2) return true;
+  return false;
+}
 
 std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
   for (int v = 0; v < model.variables_size(); ++v) {

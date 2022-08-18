@@ -335,7 +335,7 @@ std::function<void(Model*)> SpanOfIntervals(
       return;
     }
 
-    // The target is present iif at least one interval is present. This is a
+    // The target is present iff at least one interval is present. This is a
     // strict equivalence.
     std::vector<Literal> presence_literals;
     std::vector<AffineExpression> starts;

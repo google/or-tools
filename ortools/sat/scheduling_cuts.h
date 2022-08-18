@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_SCHEDULING_CUTS_H_
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>

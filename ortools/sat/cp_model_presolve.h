@@ -153,6 +153,7 @@ class CpModelPresolver {
   bool PresolveLinearOfSizeOne(ConstraintProto* ct);
   bool PresolveLinearOfSizeTwo(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
+  bool PresolveDiophantine(ConstraintProto* ct);
   bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
                                                     ConstraintProto* ct);
   bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);

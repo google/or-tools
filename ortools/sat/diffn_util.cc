@@ -16,6 +16,7 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <ostream>
 #include <utility>
 #include <vector>
 

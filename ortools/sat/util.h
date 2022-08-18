@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_UTIL_H_
 #define OR_TOOLS_SAT_UTIL_H_
 
+#include <cmath>
 #include <cstdint>
 #include <deque>
 #include <limits>
@@ -378,6 +379,45 @@ inline int64_t SafeDoubleToInt64(double value) {
     return std::numeric_limits<int64_t>::min();
   }
   return static_cast<int64_t>(value);
+}
+
+// Tells whether a int128 can be casted to a int64_t that can be negated.
+inline bool IsNegatableInt64(absl::int128 x) {
+  return x <= absl::int128(std::numeric_limits<int64_t>::max()) &&
+         x > absl::int128(std::numeric_limits<int64_t>::min());
+}
+
+// These functions are copied from MathUtils. However, the original ones are
+// incompatible with absl::int128 as MathLimits<absl::int128>::kIsInteger ==
+// false.
+template <typename IntType, bool ceil>
+IntType CeilOrFloorOfRatio(IntType numerator, IntType denominator) {
+  static_assert(std::numeric_limits<IntType>::is_integer,
+                "CeilOfRatio is only defined for integral types");
+  DCHECK_NE(0, denominator) << "Division by zero is not supported.";
+  DCHECK(numerator != std::numeric_limits<IntType>::min() || denominator != -1)
+      << "Dividing " << numerator << "by -1 is not supported: it would SIGFPE";
+
+  const IntType rounded_toward_zero = numerator / denominator;
+  const bool needs_round = (numerator % denominator) != 0;
+  const bool same_sign = (numerator >= 0) == (denominator >= 0);
+
+  if (ceil) {  // Compile-time condition: not an actual branching
+    return rounded_toward_zero + static_cast<IntType>(same_sign && needs_round);
+  } else {
+    return rounded_toward_zero -
+           static_cast<IntType>(!same_sign && needs_round);
+  }
+}
+
+template <typename IntType>
+IntType CeilOfRatio(IntType numerator, IntType denominator) {
+  return CeilOrFloorOfRatio<IntType, true>(numerator, denominator);
+}
+
+template <typename IntType>
+IntType FloorOfRatio(IntType numerator, IntType denominator) {
+  return CeilOrFloorOfRatio<IntType, false>(numerator, denominator);
 }
 
 }  // namespace sat

@@ -383,6 +383,7 @@ cc_library(
         ":cp_model_symmetries",
         ":cp_model_utils",
         ":diffn_util",
+        ":diophantine",
         ":inclusion",
         ":presolve_context",
         ":presolve_util",
@@ -1545,5 +1546,16 @@ cc_library(
         ":sat_parameters_cc_proto",
         "//ortools/base",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "diophantine",
+    srcs = ["diophantine.cc"],
+    hdrs = ["diophantine.h"],
+    deps = [
+        ":util",
+        "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/types:span",
     ],
 )

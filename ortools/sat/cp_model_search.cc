@@ -529,6 +529,11 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
         SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
     new_params.set_linearization_level(0);
     strategies["quick_restart_no_lp"] = new_params;
+
+    new_params.set_search_branching(
+        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+    new_params.set_linearization_level(2);
+    strategies["quick_restart_max_lp"] = new_params;
   }
 
   {
@@ -539,6 +544,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       new_params.set_use_overload_checker_in_cumulative(true);
       new_params.set_use_timetable_edge_finding_in_cumulative(true);
       new_params.set_use_hard_precedences_in_cumulative(true);
+      new_params.set_exploit_all_precedences(true);
     }
     strategies["reduced_costs"] = new_params;
   }

@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <iosfwd>
+#include <ostream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -56,7 +57,7 @@ struct Rectangle {
   }
 };
 
-// Creates a graph when two nodes are connected iif their rectangles overlap.
+// Creates a graph when two nodes are connected iff their rectangles overlap.
 // Then partition into connected components.
 //
 // This method removes all singleton components. It will modify the
