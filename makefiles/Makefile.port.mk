@@ -77,7 +77,7 @@ ifneq ($(PLATFORM),WIN64)
     DISTRIBUTION_ID = $(shell lsb_release -i -s)
     DISTRIBUTION_NUMBER = $(shell lsb_release -r -s)
     DISTRIBUTION ?= $(DISTRIBUTION_ID)-$(DISTRIBUTION_NUMBER)
-    PORT = $(DISTRIBUTION)-64bit
+    PORT = $(DISTRIBUTION)
     CANDIDATE_JDK_ROOTS = \
       /usr/lib64/jvm/default \
       /usr/lib/jvm/default \
@@ -119,7 +119,7 @@ ifneq ($(PLATFORM),WIN64)
   ifeq ($(OS),Darwin) # Assume Mac OS X
     PLATFORM = MACOSX
     OS_VERSION = $(shell sw_vers -productVersion)
-    PORT = MacOsX-$(OS_VERSION)
+    PORT = macOS-$(OS_VERSION)
     ifeq ($(wildcard /usr/libexec/java_home),)
       JAVA_HOME = \\\# /usr/libexec/java_home could not be found on your system. Set this variable to the path to jdk to build the java files.
     else
@@ -165,6 +165,8 @@ else # Windows specific part.
   # Check 64 bit.
   ifneq ("$(Platform)","x64")  # Visual Studio 2019/2022 64 bit
     $(warning "Only 64 bit compilation is supported")
+  else
+    CPU = x64
   endif
 
   # Detect visual studio version
@@ -196,7 +198,7 @@ else # Windows specific part.
   OR_TOOLS_TOP := $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\win\\sed.exe -e "s/\\/\\\\/g" | tools\\win\\sed.exe -e "s/ //g")
 
   # Compiler specific
-  PORT = VisualStudio$(VISUAL_STUDIO_YEAR)-64bit
+  PORT = VisualStudio$(VISUAL_STUDIO_YEAR)
   VS_COMTOOLS = $(VISUAL_STUDIO_MAJOR)0
 
   # Detect Python
@@ -307,11 +309,11 @@ else
   GIT_HASH:= "not_on_git"
 endif
 
-#FZ_INSTALL_NAME := or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
-INSTALL_CPP_NAME := or-tools_cpp_$(PORT)_v$(OR_TOOLS_VERSION)
-INSTALL_DOTNET_NAME := or-tools_dotnet_$(PORT)_v$(OR_TOOLS_VERSION)
-INSTALL_JAVA_NAME := or-tools_java_$(PORT)_v$(OR_TOOLS_VERSION)
-INSTALL_PYTHON_NAME := or-tools_python$(PYTHON_VERSION)_$(PORT)_v$(OR_TOOLS_VERSION)
+#FZ_INSTALL_NAME := or-tools_$(CPU)_$(PORT)_flatzinc_v$(OR_TOOLS_VERSION)
+INSTALL_CPP_NAME := or-tools_$(CPU)_$(PORT)_cpp_v$(OR_TOOLS_VERSION)
+INSTALL_DOTNET_NAME := or-tools_$(CPU)_$(PORT)_dotnet_v$(OR_TOOLS_VERSION)
+INSTALL_JAVA_NAME := or-tools_$(CPU)_$(PORT)_java_v$(OR_TOOLS_VERSION)
+INSTALL_PYTHON_NAME := or-tools_$(CPU)_$(PORT)_python$(PYTHON_VERSION)_v$(OR_TOOLS_VERSION)
 
 BUILD_DOTNET ?= OFF
 BUILD_JAVA ?= OFF
