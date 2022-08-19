@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <vector>
 
 #include "ortools/base/stl_util.h"
 
