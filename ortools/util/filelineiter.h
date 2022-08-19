@@ -26,11 +26,14 @@
 #define OR_TOOLS_UTIL_FILELINEITER_H_
 
 #include <algorithm>
+#include <memory>
 #include <string>
 
+#include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/status_macros.h"
 
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {
@@ -117,15 +120,46 @@ class FileLineIterator {
 
 class FileLines {
  public:
-  FileLines(const std::string& filename, int options) : options_(options) {
-    if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) {
-      LOG(WARNING) << "Could not open: " << filename;
+  // Initializes with a provided file, taking ownership of it.
+  //
+  // If file is nullptr, this class behaves as if the file was empty.
+  //
+  // Usage:
+  //
+  //   File* file = nullptr;
+  //   RETURN_IF_ERROR(file::Open(filename, "r", &file, file::Defaults()));
+  //   for (const absl::string_view line : FileLines(filename, file)) {
+  //     ...
+  //   }
+  //
+  FileLines(const std::string& filename, File* const file,
+            const int options = FileLineIterator::DEFAULT)
+      : file_(file), options_(options) {
+    if (!file_) {
       return;
     }
   }
 
-  explicit FileLines(const std::string& filename)
-      : FileLines(filename, FileLineIterator::DEFAULT) {}
+  // Initializes the FileLines ignoring errors.
+  //
+  // Please prefer the other constructor combined with file::Open() in new code
+  // so that missing files are properly detected. This version would only print
+  // a warning and act as if the file was empty.
+  explicit FileLines(const std::string& filename,
+                     int options = FileLineIterator::DEFAULT)
+      : FileLines(
+            filename,
+            [&]() {
+              File* file = nullptr;
+              if (!file::Open(filename, "r", &file, file::Defaults()).ok()) {
+                LOG(WARNING) << "Could not open: " << filename;
+              }
+              return file;
+            }(),
+            options) {}
+
+  FileLines(const FileLines&) = delete;
+  FileLines& operator=(const FileLines&) = delete;
 
   ~FileLines() {
     if (file_ != nullptr) file_->Close(file::Defaults()).IgnoreError();
@@ -136,6 +170,8 @@ class FileLines {
   FileLineIterator end() const { return FileLineIterator(nullptr, options_); }
 
  private:
+  // Can be nullptr when the FileLines() constructor is used instead of
+  // FileLines::New().
   File* file_;
   const int options_;
 };
