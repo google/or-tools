@@ -1382,14 +1382,15 @@ void AddNoOverlapCutGenerator(SchedulingConstraintHelper* helper,
       CreateNoOverlapCompletionTimeCutGenerator(helper, m));
 
   // Checks if at least one rectangle has a variable size or is optional.
-  bool has_variable_part = false;
+  bool has_variable_or_optional_part = false;
   for (int i = 0; i < helper->NumTasks(); ++i) {
-    if (!helper->SizeIsFixed(i)) {
-      has_variable_part = true;
+    if (helper->IsAbsent(i)) continue;
+    if (!helper->SizeIsFixed(i) || !helper->IsPresent(i)) {
+      has_variable_or_optional_part = true;
       break;
     }
   }
-  if (has_variable_part) {
+  if (has_variable_or_optional_part) {
     relaxation->cut_generators.push_back(
         CreateNoOverlapEnergyCutGenerator(helper, makespan, m));
   }

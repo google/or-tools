@@ -381,7 +381,7 @@ void GenerateCumulativeEnergeticCuts(
 
     if (cut_generated) {
       std::string full_name = cut_name;
-      if (add_opt_to_name) full_name.append("_opt");
+      if (add_opt_to_name) full_name.append("_optional");
       if (add_quadratic_to_name) full_name.append("_quadratic");
       if (add_lifted_to_name) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
@@ -666,7 +666,7 @@ void GenerateNoOverlap2dEnergyCut(
       }
     }
     std::string full_name = cut_name;
-    if (add_opt_to_name) full_name.append("_opt");
+    if (add_opt_to_name) full_name.append("_optional");
     if (add_quadratic_to_name) full_name.append("_quadratic");
     if (add_energy_to_name) full_name.append("_energy");
     if (max_violation_use_precise_area) full_name.append("_precise");
@@ -773,10 +773,11 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
   struct TimeTableEvent {
     int interval_index;
     IntegerValue time;
-    bool positive;
     LinearExpression demand;
     double demand_lp = 0.0;
+    bool positive = false;
     bool use_energy = false;
+    bool optional = false;
   };
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -785,6 +786,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
+        demands_helper->CacheAllEnergyValues();
 
         TopNCuts top_n_cuts(5);
         std::vector<TimeTableEvent> events;
@@ -803,17 +805,21 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
           TimeTableEvent e1;
           e1.interval_index = i;
           e1.time = start_max;
-          LinearConstraintBuilder builder(model);
-          // Ignore events if the linearized demand fails.
-          if (!demands_helper->AddLinearizedDemand(i, &builder)) continue;
-          e1.demand = builder.BuildExpression();
+          {
+            LinearConstraintBuilder builder(model);
+            // Ignore the interval if the linearized demand fails.
+            if (!demands_helper->AddLinearizedDemand(i, &builder)) continue;
+            e1.demand = builder.BuildExpression();
+          }
           e1.demand_lp = e1.demand.LpValue(lp_values);
           e1.positive = true;
           e1.use_energy = !demands_helper->DecomposedEnergies()[i].empty();
+          e1.optional = !helper->IsPresent(i);
 
           TimeTableEvent e2 = e1;
           e2.time = end_min;
           e2.positive = false;
+
           events.push_back(e1);
           events.push_back(e2);
         }
@@ -832,47 +838,56 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
                     return i.time < j.time;
                   });
 
-        std::vector<TimeTableEvent> cut_events;
-        bool added_positive_event = false;
-        for (const TimeTableEvent& e : events) {
+        double sum_of_demand_lp = 0.0;
+        bool positive_event_added_since_last_check = false;
+        for (int i = 0; i < events.size(); ++i) {
+          const TimeTableEvent& e = events[i];
           if (e.positive) {
-            added_positive_event = true;
-            cut_events.push_back(e);
+            positive_event_added_since_last_check = true;
+            sum_of_demand_lp += e.demand_lp;
             continue;
           }
-          if (added_positive_event && cut_events.size() > 1) {
-            double sum_of_demand_lp = 0.0;
-            for (const TimeTableEvent& cut_event : cut_events) {
-              sum_of_demand_lp += cut_event.demand_lp;
-            }
-            if (sum_of_demand_lp <= capacity_lp + kMinCutViolation) continue;
 
-            // Create cut.
-            bool use_energy = false;
-            LinearConstraintBuilder cut(model, kMinIntegerValue,
-                                        IntegerValue(0));
-            cut.AddTerm(capacity, IntegerValue(-1));
-            for (const TimeTableEvent& cut_event : cut_events) {
-              cut.AddLinearExpression(cut_event.demand, IntegerValue(1));
-              use_energy |= cut_event.use_energy;
+          if (positive_event_added_since_last_check) {
+            // Reset positive event added. We do not want to create cuts for
+            // each negative event in sequence.
+            positive_event_added_since_last_check = false;
+
+            if (sum_of_demand_lp >= capacity_lp + kMinCutViolation) {
+              // Create cut.
+              bool use_energy = false;
+              bool use_optional = false;
+              LinearConstraintBuilder cut(model, kMinIntegerValue,
+                                          IntegerValue(0));
+              cut.AddTerm(capacity, IntegerValue(-1));
+              // The i-th event, which is a negative event, follows a positive
+              // event. We must ignore it in our cut generation.
+              DCHECK(!events[i].positive);
+              const IntegerValue time_point = events[i - 1].time;
+
+              for (int j = 0; j < i; ++j) {
+                const TimeTableEvent& cut_event = events[j];
+                const int t = cut_event.interval_index;
+                DCHECK_LE(helper->StartMax(t), time_point);
+                if (!cut_event.positive || helper->EndMin(t) <= time_point) {
+                  continue;
+                }
+
+                cut.AddLinearExpression(cut_event.demand, IntegerValue(1));
+                use_energy |= cut_event.use_energy;
+                use_optional |= cut_event.optional;
+              }
+
+              std::string cut_name = "CumulativeTimeTable";
+              if (use_optional) cut_name += "_optional";
+              if (use_energy) cut_name += "_energy";
+              top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
             }
-            std::string cut_name = "CumulativeTimeTable";
-            if (use_energy) {
-              cut_name += "_energy";
-            }
-            top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
           }
-          // Remove the event.
-          int new_size = 0;
-          for (int i = 0; i < cut_events.size(); ++i) {
-            if (cut_events[i].interval_index == e.interval_index) {
-              continue;
-            }
-            cut_events[new_size] = cut_events[i];
-            new_size++;
-          }
-          cut_events.resize(new_size);
-          added_positive_event = false;
+
+          // The demand_lp was added in case of a positive event. We need to
+          // remove it for a negative event.
+          sum_of_demand_lp -= e.demand_lp;
         }
         top_n_cuts.TransferToManager(lp_values, manager);
         return true;
