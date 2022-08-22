@@ -1132,7 +1132,10 @@ message SatParameters {
   // If true, we automatically detect variables whose constraint are always
   // enforced by the same literal and we mark them as optional. This allows
   // to propagate them as if they were present in some situation.
-  optional bool use_optional_variables = 108 [default = true];
+  //
+  // TODO(user): This is experimental and seems to lead to wrong optimal in
+  // some situation. It should however gives correct solutions. Fix.
+  optional bool use_optional_variables = 108 [default = false];
 
   // The solver usually exploit the LP relaxation of a model. If this option is
   // true, then whatever is infered by the LP will be used like an heuristic to
