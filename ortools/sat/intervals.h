@@ -523,7 +523,8 @@ class SchedulingDemandHelper {
 
   // Adds the linearized demand (either the affine demand expression, or the
   // demand part of the decomposed energy if present) to the builder.
-  // It returns false if any literal involved has no integer view.
+  // It returns false and do not add any term to the builder.if any literal
+  // involved has no integer view.
   ABSL_MUST_USE_RESULT bool AddLinearizedDemand(
       int t, LinearConstraintBuilder* builder) const;
 

@@ -775,9 +775,9 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
     IntegerValue time;
     LinearExpression demand;
     double demand_lp = 0.0;
-    bool positive = false;
+    bool is_positive = false;
     bool use_energy = false;
-    bool optional = false;
+    bool is_optional = false;
   };
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -812,13 +812,13 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
             e1.demand = builder.BuildExpression();
           }
           e1.demand_lp = e1.demand.LpValue(lp_values);
-          e1.positive = true;
+          e1.is_positive = true;
           e1.use_energy = !demands_helper->DecomposedEnergies()[i].empty();
-          e1.optional = !helper->IsPresent(i);
+          e1.is_optional = !helper->IsPresent(i);
 
           TimeTableEvent e2 = e1;
           e2.time = end_min;
-          e2.positive = false;
+          e2.is_positive = false;
 
           events.push_back(e1);
           events.push_back(e2);
@@ -830,10 +830,10 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
         std::sort(events.begin(), events.end(),
                   [](const TimeTableEvent& i, const TimeTableEvent& j) {
                     if (i.time == j.time) {
-                      if (i.positive == j.positive) {
+                      if (i.is_positive == j.is_positive) {
                         return i.interval_index < j.interval_index;
                       }
-                      return !i.positive;
+                      return !i.is_positive;
                     }
                     return i.time < j.time;
                   });
@@ -842,7 +842,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
         bool positive_event_added_since_last_check = false;
         for (int i = 0; i < events.size(); ++i) {
           const TimeTableEvent& e = events[i];
-          if (e.positive) {
+          if (e.is_positive) {
             positive_event_added_since_last_check = true;
             sum_of_demand_lp += e.demand_lp;
             continue;
@@ -862,20 +862,20 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
               cut.AddTerm(capacity, IntegerValue(-1));
               // The i-th event, which is a negative event, follows a positive
               // event. We must ignore it in our cut generation.
-              DCHECK(!events[i].positive);
+              DCHECK(!events[i].is_positive);
               const IntegerValue time_point = events[i - 1].time;
 
               for (int j = 0; j < i; ++j) {
                 const TimeTableEvent& cut_event = events[j];
                 const int t = cut_event.interval_index;
                 DCHECK_LE(helper->StartMax(t), time_point);
-                if (!cut_event.positive || helper->EndMin(t) <= time_point) {
+                if (!cut_event.is_positive || helper->EndMin(t) <= time_point) {
                   continue;
                 }
 
                 cut.AddLinearExpression(cut_event.demand, IntegerValue(1));
                 use_energy |= cut_event.use_energy;
-                use_optional |= cut_event.optional;
+                use_optional |= cut_event.is_optional;
               }
 
               std::string cut_name = "CumulativeTimeTable";
