@@ -13,8 +13,10 @@
 
 // Minimal example to call the GLOP solver.
 // [START program]
+// [START import]
 using System;
 using Google.OrTools.LinearSolver;
+// [END import]
 
 public class BasicExample
 {
