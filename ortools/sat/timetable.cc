@@ -637,7 +637,7 @@ void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
 
     // Note that we exclude the demand min for the task we push.
     // If we push the demand_max, we don't need it. And otherwise the task_id
-    // shouldn't be part of the profice anyway.
+    // shouldn't be part of the profile anyway.
     if (t != task_id) demands_->AddDemandMinReason(t);
 
     if (mode == 0) {
@@ -665,8 +665,12 @@ bool TimeTablingPerTask::IncreaseCapacity(IntegerValue time,
                                           IntegerValue new_min) {
   if (new_min <= CapacityMin()) return true;
 
+  // No need to push further than this. It will result in a conflict anyway,
+  // and we can optimize the reason a bit.
+  new_min = std::min(CapacityMax() + 1, new_min);
+
   helper_->ClearReason();
-  AddProfileReason(-1, time, time + 1, std::min(CapacityMax(), new_min));
+  AddProfileReason(-1, time, time + 1, new_min);
   if (capacity_.var == kNoIntegerVariable) {
     return helper_->ReportConflict();
   }
