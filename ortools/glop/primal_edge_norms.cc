@@ -38,6 +38,7 @@ PrimalEdgeNorms::PrimalEdgeNorms(const CompactSparseMatrix& compact_matrix,
 
 void PrimalEdgeNorms::Clear() {
   SCOPED_TIME_STAT(&stats_);
+  matrix_column_norms_.clear();
   recompute_edge_squared_norms_ = true;
   reset_devex_weights_ = true;
   for (bool* watcher : watchers_) *watcher = true;

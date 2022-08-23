@@ -285,7 +285,7 @@ class LPSolver {
   // Quantities computed from the solution and the linear program.
   DenseRow reduced_costs_;
   DenseColumn constraint_activities_;
-  Fractional problem_objective_value_;
+  Fractional problem_objective_value_ = 0.0;
   bool may_have_multiple_solutions_;
   Fractional max_absolute_primal_infeasibility_;
   Fractional max_absolute_dual_infeasibility_;
