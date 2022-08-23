@@ -539,8 +539,10 @@ absl::Status MPSReaderImpl::ParseFile(const std::string& file_name, Data* data,
   Reset();
   DataWrapper<Data> data_wrapper(data);
   data_wrapper.SetUp();
-  for (absl::string_view line :
-       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+  File* file = nullptr;
+  RETURN_IF_ERROR(file::Open(file_name, "r", &file, file::Defaults()));
+  for (const absl::string_view line :
+       FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
     RETURN_IF_ERROR(ProcessLine(line, &data_wrapper));
   }
   data_wrapper.CleanUp();
