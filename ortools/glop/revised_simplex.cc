@@ -945,6 +945,17 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
   // because they were checked by lp.IsInEquationForm() when Solve() was called.
   if (old_part_of_matrix_is_unchanged && lp.num_constraints() == num_rows_ &&
       lp_first_slack == first_slack_col_) {
+    // Tricky: if the parameters "use_transposed_matrix" changed since last call
+    // we want to reflect the current state. We use the empty transposed matrix
+    // to detect that. Recomputing the transpose when the matrix is empty is not
+    // really a big overhead.
+    if (parameters_.use_transposed_matrix()) {
+      if (transposed_matrix_.IsEmpty()) {
+        transposed_matrix_.PopulateFromTranspose(compact_matrix_);
+      }
+    } else {
+      transposed_matrix_.Reset(RowIndex(0));
+    }
     return true;
   }
 
@@ -969,9 +980,7 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
   num_rows_ = lp.num_constraints();
   num_cols_ = lp_first_slack + RowToColIndex(lp.num_constraints());
 
-  // Populate compact_matrix_ and transposed_matrix_ if needed. Note that we
-  // already added all the slack variables at this point, so matrix_ will not
-  // change anymore.
+  // Populate compact_matrix_ and transposed_matrix_ if needed.
   if (lp_is_in_equation_form) {
     // TODO(user): This can be sped up by removing the MatrixView, but then
     // this path will likely go away.
@@ -981,6 +990,8 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
   }
   if (parameters_.use_transposed_matrix()) {
     transposed_matrix_.PopulateFromTranspose(compact_matrix_);
+  } else {
+    transposed_matrix_.Reset(RowIndex(0));
   }
   return false;
 }
