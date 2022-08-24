@@ -105,7 +105,8 @@ MPSolutionResponse InfeasibleResponse(SolverLogger& logger,
 
 MPSolutionResponse ModelInvalidResponse(SolverLogger& logger,
                                         std::string message) {
-  SOLVER_LOG(&logger, "Invalid input detected in sat_solve_proto.\n", message);
+  SOLVER_LOG(&logger, "Invalid model/parameters in sat_solve_proto.\n",
+             message);
 
   // This is needed for our benchmark scripts.
   if (logger.LoggingIsEnabled()) {
@@ -265,18 +266,30 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     }
   }
 
+  // Abort if one only want to solve pure-IP model and we don't have one.
+  if (params.only_solve_ip()) {
+    bool all_integer = true;
+    for (const MPVariableProto& var : mp_model->variable()) {
+      if (!var.is_integer()) {
+        all_integer = false;
+        break;
+      }
+    }
+    if (!all_integer) {
+      return ModelInvalidResponse(
+          logger,
+          "The model contains non-integer variables but the parameter "
+          "'only_solve_ip' was set. Change this parameter if you "
+          "still want to solve a more constrained version of the original MIP "
+          "where non-integer variables can only take a finite set of values.");
+    }
+  }
+
   sat::CpModelProto cp_model;
   if (!ConvertMPModelProtoToCpModelProto(params, *mp_model, &cp_model,
                                          &logger)) {
-    if (params.log_search_progress()) {
-      // This is needed for our benchmark scripts.
-      sat::CpSolverResponse cp_response;
-      cp_response.set_status(sat::CpSolverStatus::MODEL_INVALID);
-      LOG(INFO) << CpSolverResponseStats(cp_response);
-    }
-    response.set_status(MPSOLVER_MODEL_INVALID);
-    response.set_status_str("Failed to convert model into CP-SAT model");
-    return response;
+    return ModelInvalidResponse(logger,
+                                "Failed to convert model into CP-SAT model");
   }
   DCHECK_EQ(cp_model.variables().size(), var_scaling.size());
   DCHECK_EQ(cp_model.variables().size(), mp_model->variable().size());
