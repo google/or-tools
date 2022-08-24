@@ -13,6 +13,8 @@
 
 #include "ortools/graph/util.h"
 
+#include <vector>
+
 namespace util {
 
 bool IsSubsetOf0N(const std::vector<int>& v, int n) {

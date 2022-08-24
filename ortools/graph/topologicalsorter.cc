@@ -19,6 +19,7 @@
 #include <map>
 #include <queue>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ortools/base/map_util.h"
