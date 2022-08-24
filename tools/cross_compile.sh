@@ -156,34 +156,37 @@ QEMU_ARGS+=( -E LD_LIBRARY_PATH=/lib )
 function expand_codescape_config() {
   # ref: https://codescape.mips.com/components/toolchain/2020.06-01/downloads.html
   # ref: https://codescape.mips.com/components/toolchain/2019.02-04/downloads.html
-  #local -r DATE=2020.06-01
-  local -r DATE=2019.02-04
-  #local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.MTI.Linux.CentOS-6.x86_64.tar.gz
-  local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.IMG.Linux.CentOS-6.x86_64.tar.gz
+  local -r DATE=2020.06-01
+  #local -r DATE=2019.02-04
+  local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.MTI.Linux.CentOS-6.x86_64.tar.gz
+  #local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.IMG.Linux.CentOS-6.x86_64.tar.gz
   local -r GCC_URL=${CODESCAPE_URL}
-  #local -r GCC_RELATIVE_DIR="mips-mti-linux-gnu/${DATE}"
-  local -r GCC_RELATIVE_DIR="mips-img-linux-gnu/${DATE}"
+  local -r GCC_RELATIVE_DIR="mips-mti-linux-gnu/${DATE}"
+  #local -r GCC_RELATIVE_DIR="mips-img-linux-gnu/${DATE}"
   unpack "${GCC_URL}" "${GCC_RELATIVE_DIR}"
 
   local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
   local MIPS_FLAGS=""
+  local LIBC_DIR_SUFFIX=""
   local FLAVOUR=""
   case "${TARGET}" in
     "mips64")
-      MIPS_FLAGS="-EB -mabi=64"
-      #FLAVOUR="mips-r2-hard"
+      MIPS_FLAGS="-EB -mips64r6 -mabi=64"
       FLAVOUR="mips-r6-hard"
+      #FLAVOUR="mips-r2-hard"
+      LIBC_DIR_SUFFIX="lib64"
       ;;
     "mips64el")
-      MIPS_FLAGS="-EL -mabi=64"
-      #FLAVOUR="mipsel-r2-hard"
+      MIPS_FLAGS="-EL -mips64r6 -mabi=64"
       FLAVOUR="mipsel-r6-hard"
+      #FLAVOUR="mipsel-r2-hard"
+      LIBC_DIR_SUFFIX="lib64"
       ;;
     *)
       >&2 echo 'unknown mips platform'
       exit 1 ;;
   esac
-  local -r SYSROOT_DIR=${GCC_DIR}/sysroot/${FLAVOUR}
+  local -r SYSROOT_DIR=${GCC_DIR}/sysroot
   local -r STAGING_DIR=${SYSROOT_DIR}-stage
 
   # Write a Toolchain file
@@ -199,13 +202,13 @@ set(CMAKE_STAGING_PREFIX ${STAGING_DIR})
 
 set(tools ${GCC_DIR})
 
-#set(CMAKE_C_COMPILER \${tools}/bin/mips-mti-linux-gnu-gcc)
-set(CMAKE_C_COMPILER \${tools}/bin/mips-img-linux-gnu-gcc)
-set(CMAKE_C_COMPILER_ARG "${MIPS_FLAGS}")
+set(CMAKE_C_COMPILER \${tools}/bin/mips-mti-linux-gnu-gcc)
+#set(CMAKE_C_COMPILER \${tools}/bin/mips-img-linux-gnu-gcc)
+set(CMAKE_C_FLAGS "${MIPS_FLAGS}")
 
-#set(CMAKE_CXX_COMPILER \${tools}/bin/mips-mti-linux-gnu-g++)
-set(CMAKE_CXX_COMPILER \${tools}/bin/mips-img-linux-gnu-g++)
-set(CMAKE_CXX_FLAGS "${MIPS_FLAGS}")
+set(CMAKE_CXX_COMPILER \${tools}/bin/mips-mti-linux-gnu-g++)
+#set(CMAKE_CXX_COMPILER \${tools}/bin/mips-img-linux-gnu-g++)
+#set(CMAKE_CXX_FLAGS "${MIPS_FLAGS}")
 set(CMAKE_CXX_FLAGS "${MIPS_FLAGS} -L${SYSROOT_DIR}/usr/lib64")
 
 set(CMAKE_FIND_ROOT_PATH ${GCC_DIR})
@@ -217,8 +220,8 @@ EOL
 
 CMAKE_ADDITIONAL_ARGS+=( -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" )
 QEMU_ARGS+=( -L "${SYSROOT_DIR}/${FLAVOUR}" )
-#local -r LIBC_DIR=${GCC_DIR}/mips-mti-linux-gnu/lib/${FLAVOUR}/lib64
-local -r LIBC_DIR=${GCC_DIR}/mips-img-linux-gnu/lib/${FLAVOUR}/lib64
+local -r LIBC_DIR=${GCC_DIR}/mips-mti-linux-gnu/lib/${FLAVOUR}/${LIBC_DIR_SUFFIX}
+#local -r LIBC_DIR=${GCC_DIR}/mips-img-linux-gnu/lib/${FLAVOUR}/${LIBC_DIR_SUFFIX}
 QEMU_ARGS+=( -E LD_PRELOAD="${LIBC_DIR}/libstdc++.so.6:${LIBC_DIR}/libgcc_s.so.1" )
 }
 

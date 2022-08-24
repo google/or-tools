@@ -241,7 +241,7 @@ inline uint64_t Hash1(int value) { return Hash1(static_cast<uint32_t>(value)); }
 
 inline uint64_t Hash1(void* const ptr) {
 #if defined(__x86_64__) || defined(_M_X64) || defined(__powerpc64__) || \
-    defined(__aarch64__)
+    defined(__aarch64__) || (defined(_MIPS_SZPTR) && (_MIPS_SZPTR == 64))
   return Hash1(reinterpret_cast<uint64_t>(ptr));
 #else
   return Hash1(reinterpret_cast<uint32_t>(ptr));
