@@ -532,6 +532,7 @@ void PresolveContext::AddVariableUsage(int c) {
   constraint_to_vars_[c] = UsedVariables(ct);
   constraint_to_intervals_[c] = UsedIntervals(ct);
   for (const int v : constraint_to_vars_[c]) {
+    DCHECK_LT(v, var_to_constraints_.size());
     DCHECK(!VariableWasRemoved(v));
     var_to_constraints_[v].insert(c);
   }
@@ -603,6 +604,10 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
 // TODO(user): Also test var_to_constraints_ !!
 bool PresolveContext::ConstraintVariableUsageIsConsistent() {
   if (is_unsat_) return true;  // We do not care in this case.
+  if (var_to_constraints_.size() != working_model->variables_size()) {
+    LOG(INFO) << "Wrong var_to_constraints_ size!";
+    return false;
+  }
   if (constraint_to_vars_.size() != working_model->constraints_size()) {
     LOG(INFO) << "Wrong constraint_to_vars size!";
     return false;
@@ -708,18 +713,31 @@ bool PresolveContext::PropagateAffineRelation(int ref) {
   const int var = PositiveRef(ref);
   const AffineRelation::Relation r = GetAffineRelation(var);
   if (r.representative == var) return true;
+  return PropagateAffineRelation(var, r.representative, r.coeff, r.offset);
+}
+
+bool PresolveContext::PropagateAffineRelation(int ref, int rep, int64_t coeff,
+                                              int64_t offset) {
+  if (!RefIsPositive(rep)) {
+    rep = NegatedRef(rep);
+    coeff = -coeff;
+  }
+  if (!RefIsPositive(ref)) {
+    ref = NegatedRef(ref);
+    offset = -offset;
+    coeff = -coeff;
+  }
 
   // Propagate domains both ways.
   // var = coeff * rep + offset
-  if (!IntersectDomainWith(r.representative,
-                           DomainOf(var)
-                               .AdditionWith(Domain(-r.offset))
-                               .InverseMultiplicationBy(r.coeff))) {
+  if (!IntersectDomainWith(rep, DomainOf(ref)
+                                    .AdditionWith(Domain(-offset))
+                                    .InverseMultiplicationBy(coeff))) {
     return false;
   }
-  if (!IntersectDomainWith(var, DomainOf(r.representative)
-                                    .MultiplicationBy(r.coeff)
-                                    .AdditionWith(Domain(r.offset)))) {
+  if (!IntersectDomainWith(
+          ref,
+          DomainOf(rep).MultiplicationBy(coeff).AdditionWith(Domain(offset)))) {
     return false;
   }
 
@@ -867,6 +885,7 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   // fixed but that is not propagated to ref_x or ref_y and this causes issues.
   if (!PropagateAffineRelation(ref_x)) return false;
   if (!PropagateAffineRelation(ref_y)) return false;
+  if (!PropagateAffineRelation(ref_x, ref_y, coeff, offset)) return false;
 
   if (IsFixed(ref_x)) {
     const int64_t lhs = DomainOf(ref_x).FixedValue() - offset;

@@ -347,9 +347,8 @@ bool CpModelPresolver::PresolveBoolOr(ConstraintProto* ct) {
   return changed;
 }
 
-// Note this constraint does not update the constraint graph. Therefore, it
-// assumes that the constraint being marked as false is the constraint being
-// presolved.
+// Note this function does not update the constraint graph. It assumes this is
+// done elsewhere.
 ABSL_MUST_USE_RESULT bool CpModelPresolver::MarkConstraintAsFalse(
     ConstraintProto* ct) {
   if (HasEnforcementLiteral(*ct)) {
@@ -2427,6 +2426,10 @@ bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
       lin->add_coeffs(
           -static_cast<int64_t>(diophantine_solution.kernel_basis[j - 1][i]));
     }
+
+    // TODO(user): The domain in the proto are not necessarily up to date so
+    // this might be stricter than necessary. Fix? It shouldn't matter too much
+    // though.
     if (PossibleIntegerOverflow(*(context_->working_model), lin->vars(),
                                 lin->coeffs())) {
       context_->UpdateRuleStats(
@@ -2434,7 +2437,7 @@ bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
           "constraints");
       // Cancel working_model changes.
       context_->working_model->mutable_constraints()->DeleteSubrange(
-          context_->working_model->constraints_size() - i, i);
+          context_->working_model->constraints_size() - i - 1, i + 1);
       context_->working_model->mutable_variables()->DeleteSubrange(
           context_->working_model->variables_size() - num_new_variables,
           num_new_variables);
@@ -3770,14 +3773,12 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   if (HasEnforcementLiteral(*ct)) return false;
 
   bool all_constants = true;
-  absl::flat_hash_set<int64_t> constant_set;
+  std::vector<int64_t> constants;
   bool all_included_in_target_domain = true;
 
   {
-    bool reduced_index_domain = false;
-    if (!context_->IntersectDomainWith(index_ref,
-                                       Domain(0, ct->element().vars_size() - 1),
-                                       &reduced_index_domain)) {
+    if (!context_->IntersectDomainWith(
+            index_ref, Domain(0, ct->element().vars_size() - 1))) {
       return false;
     }
 
@@ -3815,11 +3816,21 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
       CHECK_GE(value, 0);
       CHECK_LT(value, ct->element().vars_size());
       const int ref = ct->element().vars(value);
-      const Domain& domain = context_->DomainOf(ref);
+
+      // We cover the corner cases where the possible domain is actually fixed.
+      Domain domain = context_->DomainOf(ref);
+      if (ref == index_ref) {
+        domain = Domain(value);
+      } else if (ref == NegatedRef(index_ref)) {
+        domain = Domain(-value);
+      } else if (ref == NegatedRef(target_ref)) {
+        domain = Domain(0);
+      }
+
       if (domain.IntersectionWith(target_domain).IsEmpty()) continue;
       possible_indices.push_back(value);
       if (domain.IsFixed()) {
-        constant_set.insert(domain.Min());
+        constants.push_back(domain.Min());
       } else {
         all_constants = false;
       }
@@ -3866,8 +3877,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   // If the accessible part of the array is made of a single constant value,
   // then we do not care about the index. And, because of the previous target
   // domain reduction, the target is also fixed.
-  if (all_constants && constant_set.size() == 1) {
-    CHECK(context_->IsFixed(target_ref));
+  if (all_constants && context_->IsFixed(target_ref)) {
     context_->UpdateRuleStats("element: one value array");
     return RemoveConstraint(ct);
   }
@@ -3876,8 +3886,8 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   // variables.
   if (context_->MinOf(index_ref) == 0 && context_->MaxOf(index_ref) == 1 &&
       all_constants) {
-    const int64_t v0 = context_->MinOf(ct->element().vars(0));
-    const int64_t v1 = context_->MinOf(ct->element().vars(1));
+    const int64_t v0 = constants[0];
+    const int64_t v1 = constants[1];
 
     LinearConstraintProto* const lin =
         context_->working_model->add_constraints()->mutable_linear();
@@ -3938,8 +3948,11 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
 
   // If a variable (target or index) appears only in this constraint, it does
   // not necessarily mean that we can remove the constraint, as the variable
-  // can be used multiple time_exprs in the element. So let's count the local
+  // can be used multiple times in the element. So let's count the local
   // uses of each variable.
+  //
+  // TODO(user): now that we used fixed values for these case, this is no longer
+  // needed I think.
   absl::flat_hash_map<int, int> local_var_occurrence_counter;
   local_var_occurrence_counter[PositiveRef(index_ref)]++;
   local_var_occurrence_counter[PositiveRef(target_ref)]++;
@@ -8232,8 +8245,12 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
                                  .InverseMultiplicationBy(ct.linear().coeffs(0))
                                  .IntersectionWith(context_->DomainOf(var));
       if (implied.IsEmpty()) {
-        return (void)MarkConstraintAsFalse(
-            context_->working_model->mutable_constraints(unique_c));
+        if (!MarkConstraintAsFalse(
+                context_->working_model->mutable_constraints(unique_c))) {
+          return;
+        }
+        context_->UpdateConstraintVariableUsage(unique_c);
+        return;
       }
 
       int64_t value1, value2;

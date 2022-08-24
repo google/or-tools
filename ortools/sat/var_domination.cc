@@ -1377,6 +1377,12 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         // other bound.
         int64_t delta = 0;
         for (const IntegerVariable ivar : dominated_by) {
+          // Tricky: For now we skip complex domain as we are not sure they
+          // can be moved correctly.
+          if (context->DomainOf(VarDomination::IntegerVariableToRef(ivar))
+                  .NumIntervals() != 1) {
+            continue;
+          }
           if (ub_side) {
             delta += std::max(int64_t{0}, var_lb_to_ub_diff[ivar]);
           } else {

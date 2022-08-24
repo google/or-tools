@@ -297,9 +297,10 @@ class PresolveContext {
   std::string RefDebugString(int ref) const;
   std::string AffineRelationDebugString(int ref) const;
 
-  // Makes sure the domain of ref and of its representative are in sync.
-  // Returns false on unsat.
+  // Makes sure the domain of ref and of its representative (ref = coeff * rep +
+  // offset) are in sync. Returns false on unsat.
   bool PropagateAffineRelation(int ref);
+  bool PropagateAffineRelation(int ref, int rep, int64_t coeff, int64_t offset);
 
   // Creates the internal structure for any new variables in working_model.
   void InitializeNewDomains();
