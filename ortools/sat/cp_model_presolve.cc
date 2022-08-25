@@ -2657,7 +2657,12 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
       mutable_linear->add_vars(vars[i]);
       mutable_linear->add_coeffs(new_coeff);
     }
-    FillDomainInProto(Domain(-minus_new_lb, new_ub), mutable_linear);
+    const Domain new_rhs = Domain(-minus_new_lb, new_ub);
+    if (new_rhs.IsEmpty()) {
+      (void)MarkConstraintAsFalse(ct);
+    } else {
+      FillDomainInProto(new_rhs, mutable_linear);
+    }
     context_->UpdateConstraintVariableUsage(c);
     return;
   }
