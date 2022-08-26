@@ -16,6 +16,7 @@
 #if defined(USE_XPRESS)
 
 #include <algorithm>
+#include <clocale>
 #include <limits>
 #include <memory>
 #include <string>
@@ -1852,16 +1853,31 @@ void splitMyString(const std::string& str, Container& cont, char delim = ' ')
 
 const char * stringToCharPtr(std::string& var) { return var.c_str(); }
 
-#define setParamIfPossible_MACRO(targetMap, setter, converter) \
-{\
-	auto matchingParamIter = targetMap.find(paramAndValuePair.first);\
-	if (matchingParamIter != targetMap.end())\
-	{\
-		LOG(INFO) << "Setting parameter " << paramAndValuePair.first << " to value " << paramAndValuePair.second << std::endl;\
-		setter(mLp, matchingParamIter->second, converter(paramAndValuePair.second));\
-		continue;\
-	}\
-}
+// Save the existing locale, use the "C" locale to ensure that
+// string -> double conversion is done ignoring the locale.
+struct ScopedLocale {
+  ScopedLocale() {
+    oldLocale = std::setlocale(LC_NUMERIC, nullptr);
+    auto newLocale = std::setlocale(LC_NUMERIC, "C");
+    CHECK_EQ(std::string(newLocale), "C");
+  }
+  ~ScopedLocale() { std::setlocale(LC_NUMERIC, oldLocale); }
+
+ private:
+  const char* oldLocale;
+};
+
+#define setParamIfPossible_MACRO(targetMap, setter, converter)         \
+  {                                                                    \
+    auto matchingParamIter = targetMap.find(paramAndValuePair.first);  \
+    if (matchingParamIter != targetMap.end()) {                        \
+      const auto convertedValue = converter(paramAndValuePair.second); \
+      LOG(INFO) << "Setting parameter " << paramAndValuePair.first     \
+                << " to value " << convertedValue << std::endl;        \
+      setter(mLp, matchingParamIter->second, convertedValue);          \
+      continue;                                                        \
+    }                                                                  \
+  }
 
 bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& parameters)
 {
@@ -1884,7 +1900,7 @@ bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& par
 		}
 	}
 
-
+    ScopedLocale locale;
 	for (auto& paramAndValuePair : paramAndValuePairList)
 	{
 		setParamIfPossible_MACRO(mapIntegerControls_, XPRSsetintcontrol, std::stoi);
@@ -1894,7 +1910,6 @@ bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& par
 		LOG(ERROR) << "Unknown parameter " << paramName << " : function " << __FUNCTION__ << std::endl;
 		return false;
 	}
-
 	return true;
 }
 
