@@ -39,6 +39,7 @@ list(FILTER CXX_SRCS EXCLUDE REGEX ".*/knapsack_2d_sat.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/mps_driver.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/multi_knapsack_sat.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/network_routing_sat.cc")
+list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdlp_solve.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdptw.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/sat_runner.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/shift_minimization_sat.cc")
