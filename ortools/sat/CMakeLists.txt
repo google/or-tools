@@ -10,6 +10,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+if (MSVC)
+  set(CMAKE_CXX_STANDARD 20)
+else()
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 file(GLOB _SRCS "*.h" "*.cc")
 set(NAME ${PROJECT_NAME}_sat)
@@ -18,9 +25,6 @@ set(NAME ${PROJECT_NAME}_sat)
 #add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
 set_target_properties(${NAME} PROPERTIES
-  CXX_STANDARD 17
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS OFF
   POSITION_INDEPENDENT_CODE ON
   )
 target_include_directories(${NAME} PRIVATE
