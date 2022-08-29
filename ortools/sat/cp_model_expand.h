@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_EXPAND_H_
 #define OR_TOOLS_SAT_CP_MODEL_EXPAND_H_
 
+#include <vector>
+
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/presolve_context.h"
 
@@ -25,6 +27,12 @@ namespace sat {
 // This is different from PresolveCpModel() as there are no reduction or
 // simplification of the model. Furthermore, this expansion is mandatory.
 void ExpandCpModel(PresolveContext* context);
+
+// Fills and propagates the set of reachable states/labels.
+void PropagateAutomaton(const AutomatonConstraintProto& proto,
+                        const PresolveContext& context,
+                        std::vector<absl::flat_hash_set<int64_t>>* states,
+                        std::vector<absl::flat_hash_set<int64_t>>* labels);
 
 }  // namespace sat
 }  // namespace operations_research

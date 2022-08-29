@@ -467,15 +467,20 @@ message CpObjectiveProto {
   // TODO(user): Put the error bounds we computed instead?
   bool scaling_was_exact = 6;
 
-  // Internal field. This is only useful for inner_objective_lower_bound, It
-  // should never be set in most cases, so we have the simple:
-  //   sum(coefficients[i] * objective_vars[i]) >= inner_objective_lower_bound.
+  // Internal fields to recover a bound on the original integer objective from
+  // the presolved one. Basically, initially the integer objective fit on an
+  // int64 and is in [Initial_lb, Initial_ub]. During presolve, we might change
+  // the linear expression to have a new domain [Presolved_lb, Presolved_ub]
+  // that will also always fit on an int64.
   //
-  // This is similar to offset/scaling_factor but allows to stay in the integer
-  // domain. Note that the formula is not the same than for the floating point
-  // objective. If this is set, we have
-  //    linear_expression * scaling + offset >= inner_objective_lower_bound
-  int64 integer_offset = 7;
+  // The two domain will always be linked with an affine transformation between
+  // the two of the form:
+  //   old = (new + before_offset) * integer_scaling_factor + after_offset.
+  // Note that we use both offsets to always be able to do the computation while
+  // staying in the int64 domain. In particular, the after_offset will always
+  // be in (-integer_scaling_factor, integer_scaling_factor).
+  int64 integer_before_offset = 7;
+  int64 integer_after_offset = 9;
   int64 integer_scaling_factor = 8;
 }
 

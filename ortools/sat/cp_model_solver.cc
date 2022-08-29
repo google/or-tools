@@ -1358,9 +1358,6 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     // the other side: objective <= sum terms.
     //
     // TODO(user): Use a better condition to detect when this is not useful.
-    // Note also that for the core algorithm, we might need the other side too,
-    // otherwise we could return feasible solution with an objective above the
-    // user specified upper bound.
     if (!automatic_domain.IsIncludedIn(user_domain)) {
       std::vector<IntegerVariable> vars;
       std::vector<int64_t> coeffs;

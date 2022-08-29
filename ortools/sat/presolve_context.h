@@ -385,7 +385,7 @@ class PresolveContext {
   // the case, we also have an affine linear constraint, so we can't really do
   // anything with that variable since it appear in at least two constraints.
   void ReadObjectiveFromProto();
-  void AddToObjectiveOffset(int64_t delta);
+  bool AddToObjectiveOffset(int64_t delta);
   ABSL_MUST_USE_RESULT bool CanonicalizeOneObjectiveVariable(int var);
   ABSL_MUST_USE_RESULT bool CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;
@@ -606,7 +606,8 @@ class PresolveContext {
   Domain objective_domain_;
   double objective_offset_;
   double objective_scaling_factor_;
-  int64_t objective_integer_offset_;
+  int64_t objective_integer_before_offset_;
+  int64_t objective_integer_after_offset_;
   int64_t objective_integer_scaling_factor_;
 
   // Constraints <-> Variables graph.

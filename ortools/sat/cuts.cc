@@ -27,7 +27,6 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -1936,10 +1935,10 @@ IntegerValue EvaluateMaxAffine(
 
 }  // namespace
 
-LinearConstraint BuildMaxAffineUpConstraint(
+bool BuildMaxAffineUpConstraint(
     const LinearExpression& target, IntegerVariable var,
     const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
-    Model* model) {
+    Model* model, LinearConstraintBuilder* builder) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   const IntegerValue x_min = integer_trail->LevelZeroLowerBound(var);
   const IntegerValue x_max = integer_trail->LevelZeroUpperBound(var);
@@ -1947,29 +1946,31 @@ LinearConstraint BuildMaxAffineUpConstraint(
   const IntegerValue y_at_min = EvaluateMaxAffine(affines, x_min);
   const IntegerValue y_at_max = EvaluateMaxAffine(affines, x_max);
 
-  // TODO(user): Be careful to not have any integer overflow in any of
-  // the formula used here.
   const IntegerValue delta_x = x_max - x_min;
   const IntegerValue delta_y = y_at_max - y_at_min;
 
   // target <= y_at_min + (delta_y / delta_x) * (var - x_min)
   // delta_x * target <= delta_x * y_at_min + delta_y * (var - x_min)
   // -delta_y * var + delta_x * target <= delta_x * y_at_min - delta_y * x_min
-  const IntegerValue rhs = delta_x * y_at_min - delta_y * x_min;
-  LinearConstraintBuilder lc(model, kMinIntegerValue, rhs);
-  lc.AddLinearExpression(target, delta_x);
-  lc.AddTerm(var, -delta_y);
-  LinearConstraint ct = lc.Build();
-
-  // Prevent to create constraints that can overflow.
-  if (!ValidateLinearConstraintForOverflow(ct, *integer_trail)) {
-    VLOG(2) << "Linear constraint can cause overflow: " << ct;
-
-    // TODO(user): Change API instead of returning trivial constraint?
-    ct.Clear();
+  //
+  // Checks the rhs for overflows.
+  if (AtMinOrMaxInt64(CapProd(delta_x.value(), y_at_min.value())) ||
+      AtMinOrMaxInt64(CapProd(delta_y.value(), x_min.value()))) {
+    return false;
   }
 
-  return ct;
+  builder->ResetBounds(kMinIntegerValue, delta_x * y_at_min - delta_y * x_min);
+  builder->AddLinearExpression(target, delta_x);
+  builder->AddTerm(var, -delta_y);
+
+  // Prevent to create constraints that can overflow.
+  if (!ValidateLinearConstraintForOverflow(builder->Build(), *integer_trail)) {
+    VLOG(2) << "Linear constraint can cause overflow: " << builder->Build();
+
+    return false;
+  }
+
+  return true;
 }
 
 CutGenerator CreateMaxAffineCutGenerator(
@@ -1987,8 +1988,10 @@ CutGenerator CreateMaxAffineCutGenerator(
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (integer_trail->IsFixed(var)) return true;
-        manager->AddCut(BuildMaxAffineUpConstraint(target, var, affines, model),
-                        cut_name, lp_values);
+        LinearConstraintBuilder builder(model);
+        if (BuildMaxAffineUpConstraint(target, var, affines, model, &builder)) {
+          manager->AddCut(builder.Build(), cut_name, lp_values);
+        }
         return true;
       };
   return result;

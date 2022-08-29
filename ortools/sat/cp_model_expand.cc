@@ -41,6 +41,58 @@
 
 namespace operations_research {
 namespace sat {
+
+// TODO(user): Note that if we have duplicate variables controlling different
+// time point, this might not reach the fixed point. Fix? it is not that
+// important as the expansion take care of this case anyway.
+void PropagateAutomaton(const AutomatonConstraintProto& proto,
+                        const PresolveContext& context,
+                        std::vector<absl::flat_hash_set<int64_t>>* states,
+                        std::vector<absl::flat_hash_set<int64_t>>* labels) {
+  const int n = proto.vars_size();
+  const absl::flat_hash_set<int64_t> final_states(
+      {proto.final_states().begin(), proto.final_states().end()});
+
+  labels->clear();
+  labels->resize(n);
+  states->clear();
+  states->resize(n + 1);
+  (*states)[0].insert(proto.starting_state());
+
+  // Forward pass.
+  for (int time = 0; time < n; ++time) {
+    for (int t = 0; t < proto.transition_tail_size(); ++t) {
+      const int64_t tail = proto.transition_tail(t);
+      const int64_t label = proto.transition_label(t);
+      const int64_t head = proto.transition_head(t);
+      if (!(*states)[time].contains(tail)) continue;
+      if (!context.DomainContains(proto.vars(time), label)) continue;
+      if (time == n - 1 && !final_states.contains(head)) continue;
+      (*labels)[time].insert(label);
+      (*states)[time + 1].insert(head);
+    }
+  }
+
+  // Backward pass.
+  for (int time = n - 1; time >= 0; --time) {
+    absl::flat_hash_set<int64_t> new_states;
+    absl::flat_hash_set<int64_t> new_labels;
+    for (int t = 0; t < proto.transition_tail_size(); ++t) {
+      const int64_t tail = proto.transition_tail(t);
+      const int64_t label = proto.transition_label(t);
+      const int64_t head = proto.transition_head(t);
+
+      if (!(*states)[time].contains(tail)) continue;
+      if (!(*labels)[time].contains(label)) continue;
+      if (!(*states)[time + 1].contains(head)) continue;
+      new_labels.insert(label);
+      new_states.insert(tail);
+    }
+    (*labels)[time].swap(new_labels);
+    (*states)[time].swap(new_states);
+  }
+}
+
 namespace {
 
 void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
@@ -650,43 +702,9 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
         "automaton: non-empty with no transition.");
   }
 
-  const int n = proto.vars_size();
-  const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
-
-  // Compute the set of reachable state at each time point.
-  const absl::flat_hash_set<int64_t> final_states(
-      {proto.final_states().begin(), proto.final_states().end()});
-  std::vector<absl::flat_hash_set<int64_t>> reachable_states(n + 1);
-  reachable_states[0].insert(proto.starting_state());
-
-  // Forward pass.
-  for (int time = 0; time < n; ++time) {
-    for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64_t tail = proto.transition_tail(t);
-      const int64_t label = proto.transition_label(t);
-      const int64_t head = proto.transition_head(t);
-      if (!reachable_states[time].contains(tail)) continue;
-      if (!context->DomainContains(vars[time], label)) continue;
-      if (time == n - 1 && !final_states.contains(head)) continue;
-      reachable_states[time + 1].insert(head);
-    }
-  }
-
-  // Backward pass.
-  for (int time = n - 1; time >= 0; --time) {
-    absl::flat_hash_set<int64_t> new_set;
-    for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64_t tail = proto.transition_tail(t);
-      const int64_t label = proto.transition_label(t);
-      const int64_t head = proto.transition_head(t);
-
-      if (!reachable_states[time].contains(tail)) continue;
-      if (!context->DomainContains(vars[time], label)) continue;
-      if (!reachable_states[time + 1].contains(head)) continue;
-      new_set.insert(tail);
-    }
-    reachable_states[time].swap(new_set);
-  }
+  std::vector<absl::flat_hash_set<int64_t>> reachable_states;
+  std::vector<absl::flat_hash_set<int64_t>> reachable_labels;
+  PropagateAutomaton(proto, *context, &reachable_states, &reachable_labels);
 
   // We will model at each time step the current automaton state using Boolean
   // variables. We will have n+1 time step. At time zero, we start in the
@@ -698,6 +716,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   absl::flat_hash_map<int64_t, int> out_encoding;
   bool removed_values = false;
 
+  const int n = proto.vars_size();
+  const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
   for (int time = 0; time < n; ++time) {
     // All these vector have the same size. We will use them to enforce a
     // local table constraint representing one step of the automaton at the
@@ -732,6 +752,18 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
         VLOG(1) << "Infeasible automaton.";
         return;
       }
+
+      // Tricky: when the same variable is used more than once, the propagation
+      // above might not reach the fixed point, so we do need to fix literal
+      // at false.
+      std::vector<int> at_false;
+      for (const auto [value, literal] : in_encoding) {
+        if (value != in_states[0]) at_false.push_back(literal);
+      }
+      for (const int literal : at_false) {
+        if (!context->SetLiteralToFalse(literal)) return;
+      }
+
       in_encoding.clear();
       continue;
     }

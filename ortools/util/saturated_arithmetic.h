@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 #define OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 
+#include <limits>
+
 #include "absl/base/casts.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/util/bitset.h"
@@ -239,6 +241,13 @@ inline int64_t CapProd(int64_t x, int64_t y) {
   return CapProdGeneric(x, y);
 #endif
 }
+
+// Checks is x is equal to the min or the max value of an int64_t.
+inline bool AtMinOrMaxInt64(int64_t x) {
+  return x == std::numeric_limits<int64_t>::min() ||
+         x == -std::numeric_limits<int64_t>::max();
+}
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_

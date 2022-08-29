@@ -214,6 +214,12 @@ class LinearConstraintBuilder {
     terms_.clear();
   }
 
+  // Reset the bounds passed at construction time.
+  void ResetBounds(IntegerValue lb, IntegerValue ub) {
+    lb_ = lb;
+    ub_ = ub;
+  }
+
   // Builds and returns the corresponding constraint in a canonical form.
   // All the IntegerVariable will be positive and appear in increasing index
   // order.
@@ -232,8 +238,8 @@ class LinearConstraintBuilder {
 
  private:
   const IntegerEncoder* encoder_;
-  const IntegerValue lb_;
-  const IntegerValue ub_;
+  IntegerValue lb_;
+  IntegerValue ub_;
 
   IntegerValue offset_ = IntegerValue(0);
 

@@ -938,8 +938,10 @@ void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
   CHECK(VariableIsPositive(var));
   const LinearExpression target_expr =
       PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().target()));
-  relaxation->linear_constraints.push_back(
-      BuildMaxAffineUpConstraint(target_expr, var, affines, model));
+  LinearConstraintBuilder builder(model);
+  if (BuildMaxAffineUpConstraint(target_expr, var, affines, model, &builder)) {
+    relaxation->linear_constraints.push_back(builder.Build());
+  }
 }
 
 void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,

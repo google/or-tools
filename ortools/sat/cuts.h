@@ -31,7 +31,6 @@
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/strong_integers.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -477,10 +476,12 @@ CutGenerator CreateLinMaxCutGenerator(
     const std::vector<IntegerVariable>& z_vars, Model* model);
 
 // Helper for the affine max constraint.
-LinearConstraint BuildMaxAffineUpConstraint(
+//
+// This function will reset the bounds of the builder.
+bool BuildMaxAffineUpConstraint(
     const LinearExpression& target, IntegerVariable var,
     const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
-    Model* model);
+    Model* model, LinearConstraintBuilder* builder);
 
 // By definition, the Max of affine functions is convex. The linear polytope is
 // bounded by all affine functions on the bottom, and by a single hyperplane

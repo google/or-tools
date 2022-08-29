@@ -1020,6 +1020,18 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
   }
   if (model.has_objective()) {
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
+    if (!after_presolve) {
+      // TODO(user): Instead we could check that under these factors the
+      // objective domain still fit on an int64_t.
+      if (model.objective().integer_scaling_factor() != 0 ||
+          model.objective().integer_before_offset() != 0 ||
+          model.objective().integer_after_offset() != 0) {
+        return absl::StrCat(
+            "Internal fields related to the postsolve of the integer objective "
+            "are set in the input objective proto: ",
+            ProtobufShortDebugString(model.objective()));
+      }
+    }
   }
   RETURN_IF_NOT_EMPTY(ValidateSearchStrategies(model));
   RETURN_IF_NOT_EMPTY(ValidateSolutionHint(model));
@@ -1662,7 +1674,8 @@ bool SolutionIsFeasible(const CpModelProto& model,
     }
     if (!model.objective().domain().empty()) {
       if (!DomainInProtoContains(model.objective(), inner_objective)) {
-        VLOG(1) << "Objective value not in domain!";
+        VLOG(1) << "Objective value " << inner_objective << " not in domain! "
+                << ReadDomainFromProto(model.objective());
         return false;
       }
     }

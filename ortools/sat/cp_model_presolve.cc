@@ -5418,11 +5418,28 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
     return true;
   }
 
-  Domain hull = context_->DomainOf(proto.vars(0));
-  for (int v = 1; v < proto.vars_size(); ++v) {
-    hull = hull.UnionWith(context_->DomainOf(proto.vars(v)));
+  std::vector<absl::flat_hash_set<int64_t>> reachable_states;
+  std::vector<absl::flat_hash_set<int64_t>> reachable_labels;
+  PropagateAutomaton(proto, *context_, &reachable_states, &reachable_labels);
+
+  // Filter domains and compute the union of all relevant labels.
+  bool removed_values = false;
+  Domain hull;
+  for (int time = 0; time < reachable_labels.size(); ++time) {
+    if (!context_->IntersectDomainWith(
+            proto.vars(time),
+            Domain::FromValues(
+                {reachable_labels[time].begin(), reachable_labels[time].end()}),
+            &removed_values)) {
+      return false;
+    }
+    hull = hull.UnionWith(context_->DomainOf(proto.vars(time)));
+  }
+  if (removed_values) {
+    context_->UpdateRuleStats("automaton: reduced variable domains");
   }
 
+  // Only keep relevant transitions.
   int new_size = 0;
   for (int t = 0; t < proto.transition_tail_size(); ++t) {
     const int64_t label = proto.transition_label(t);
@@ -5443,59 +5460,6 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
     return false;
   }
 
-  const int n = proto.vars_size();
-  const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
-
-  // Compute the set of reachable state at each time point.
-  std::vector<absl::btree_set<int64_t>> reachable_states(n + 1);
-  reachable_states[0].insert(proto.starting_state());
-  reachable_states[n] = {proto.final_states().begin(),
-                         proto.final_states().end()};
-
-  // Forward.
-  for (int time = 0; time + 1 < n; ++time) {
-    for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64_t tail = proto.transition_tail(t);
-      const int64_t label = proto.transition_label(t);
-      const int64_t head = proto.transition_head(t);
-      if (!reachable_states[time].contains(tail)) continue;
-      if (!context_->DomainContains(vars[time], label)) continue;
-      reachable_states[time + 1].insert(head);
-    }
-  }
-
-  std::vector<absl::btree_set<int64_t>> reached_values(n);
-
-  // Backward.
-  for (int time = n - 1; time >= 0; --time) {
-    absl::btree_set<int64_t> new_set;
-    for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64_t tail = proto.transition_tail(t);
-      const int64_t label = proto.transition_label(t);
-      const int64_t head = proto.transition_head(t);
-
-      if (!reachable_states[time].contains(tail)) continue;
-      if (!context_->DomainContains(vars[time], label)) continue;
-      if (!reachable_states[time + 1].contains(head)) continue;
-      new_set.insert(tail);
-      reached_values[time].insert(label);
-    }
-    reachable_states[time].swap(new_set);
-  }
-
-  bool removed_values = false;
-  for (int time = 0; time < n; ++time) {
-    if (!context_->IntersectDomainWith(
-            vars[time],
-            Domain::FromValues(
-                {reached_values[time].begin(), reached_values[time].end()}),
-            &removed_values)) {
-      return false;
-    }
-  }
-  if (removed_values) {
-    context_->UpdateRuleStats("automaton: reduced variable domains");
-  }
   return false;
 }
 

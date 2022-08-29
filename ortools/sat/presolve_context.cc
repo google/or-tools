@@ -1498,7 +1498,8 @@ void PresolveContext::ReadObjectiveFromProto() {
     objective_scaling_factor_ = 1.0;
   }
 
-  objective_integer_offset_ = obj.integer_offset();
+  objective_integer_before_offset_ = obj.integer_before_offset();
+  objective_integer_after_offset_ = obj.integer_after_offset();
   objective_integer_scaling_factor_ = obj.integer_scaling_factor();
   if (objective_integer_scaling_factor_ == 0) {
     objective_integer_scaling_factor_ = 1;
@@ -1648,7 +1649,16 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
     objective_domain_ = objective_domain_.InverseMultiplicationBy(gcd);
     objective_offset_ /= static_cast<double>(gcd);
     objective_scaling_factor_ *= static_cast<double>(gcd);
+
+    // We update the offset accordingly.
+    absl::int128 offset = absl::int128(objective_integer_before_offset_) *
+                              absl::int128(objective_integer_scaling_factor_) +
+                          absl::int128(objective_integer_after_offset_);
     objective_integer_scaling_factor_ *= gcd;
+    objective_integer_before_offset_ = static_cast<int64_t>(
+        offset / absl::int128(objective_integer_scaling_factor_));
+    objective_integer_after_offset_ = static_cast<int64_t>(
+        offset % absl::int128(objective_integer_scaling_factor_));
   }
 
   if (objective_domain_.IsEmpty()) return false;
@@ -1714,13 +1724,16 @@ void PresolveContext::AddLiteralToObjective(int ref, int64_t value) {
   }
 }
 
-void PresolveContext::AddToObjectiveOffset(int64_t delta) {
+bool PresolveContext::AddToObjectiveOffset(int64_t delta) {
+  const int64_t temp = CapAdd(objective_integer_before_offset_, delta);
+  if (temp == std::numeric_limits<int64_t>::min()) return false;
+  if (temp == std::numeric_limits<int64_t>::max()) return false;
+  objective_integer_before_offset_ = temp;
+
   // Tricky: The objective domain is without the offset, so we need to shift it.
   objective_offset_ += static_cast<double>(delta);
-  objective_integer_offset_ =
-      CapAdd(objective_integer_offset_,
-             CapProd(delta, objective_integer_scaling_factor_));
   objective_domain_ = objective_domain_.AdditionWith(Domain(-delta));
+  return true;
 }
 
 bool PresolveContext::SubstituteVariableInObjective(
@@ -1766,14 +1779,7 @@ bool PresolveContext::SubstituteVariableInObjective(
   CHECK(!offset.IsEmpty());
 
   // We also need to make sure the integer_offset will not overflow.
-  {
-    int64_t temp = CapProd(offset.Min(), objective_integer_scaling_factor_);
-    if (temp == std::numeric_limits<int64_t>::max()) return false;
-    if (temp == std::numeric_limits<int64_t>::min()) return false;
-    temp = CapAdd(temp, objective_integer_offset_);
-    if (temp == std::numeric_limits<int64_t>::max()) return false;
-    if (temp == std::numeric_limits<int64_t>::min()) return false;
-  }
+  if (!AddToObjectiveOffset(offset.Min())) return false;
 
   // Perform the substitution.
   for (int i = 0; i < equality.linear().vars().size(); ++i) {
@@ -1799,11 +1805,6 @@ bool PresolveContext::SubstituteVariableInObjective(
   }
 
   RemoveVariableFromObjective(var_in_equality);
-
-  // Tricky: The objective domain is without the offset, so we need to shift it.
-  objective_offset_ += static_cast<double>(offset.Min());
-  objective_integer_offset_ += offset.Min() * objective_integer_scaling_factor_;
-  objective_domain_ = objective_domain_.AdditionWith(Domain(-offset.Min()));
 
   // Because we can assume that the constraint we used was constraining
   // (otherwise it would have been removed), the objective domain should be now
@@ -1884,7 +1885,8 @@ void PresolveContext::WriteObjectiveToProto() const {
   CpObjectiveProto* mutable_obj = working_model->mutable_objective();
   mutable_obj->set_offset(objective_offset_);
   mutable_obj->set_scaling_factor(objective_scaling_factor_);
-  mutable_obj->set_integer_offset(objective_integer_offset_);
+  mutable_obj->set_integer_before_offset(objective_integer_before_offset_);
+  mutable_obj->set_integer_after_offset(objective_integer_after_offset_);
   if (objective_integer_scaling_factor_ == 1) {
     mutable_obj->set_integer_scaling_factor(0);  // Default.
   } else {

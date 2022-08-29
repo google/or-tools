@@ -833,7 +833,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
     // Note that we must process the lower bound first.
     for (const bool lower : {true, false}) {
       const double bound = lower ? mp_var.lower_bound() : mp_var.upper_bound();
-      if (std::abs(bound) >= static_cast<double>(kMaxVariableBound)) {
+      if (std::abs(bound) + kWantedPrecision >=
+          static_cast<double>(kMaxVariableBound)) {
         ++num_truncated_bounds;
         cp_var->add_domain(bound < 0 ? -kMaxVariableBound : kMaxVariableBound);
         continue;
@@ -1565,10 +1566,11 @@ double ComputeTrueObjectiveLowerBound(
 
   lp.CleanUp();
 
-  // This should be fast.
+  // This should be fast. However, in case of numerical difficulties, we bound
+  // the number of iterations.
   glop::LPSolver solver;
   glop::GlopParameters glop_parameters;
-  glop_parameters.set_max_deterministic_time(10);
+  glop_parameters.set_max_number_of_iterations(100 * proto.variables().size());
   glop_parameters.set_change_status_to_imprecise(false);
   solver.SetParameters(glop_parameters);
   const glop::ProblemStatus& status = solver.Solve(lp);

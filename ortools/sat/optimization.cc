@@ -1338,11 +1338,10 @@ bool CoreBasedOptimizer::ProcessSolution() {
     term.cover_ub = std::min(term.cover_ub, value);
   }
 
-  // We use the level zero upper bound of the objective to indicate an upper
-  // limit for the solution objective we are looking for. Again, because the
-  // objective_var is not assumed to be linked, it could take any value in the
-  // current solution.
-  if (objective > integer_trail_->LevelZeroUpperBound(objective_var_)) {
+  // Test that the current objective value fall in the requested objective
+  // domain, which could potentially have holes.
+  if (!integer_trail_->InitialVariableDomain(objective_var_)
+           .Contains(objective.value())) {
     return true;
   }
 
