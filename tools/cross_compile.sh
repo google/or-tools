@@ -153,15 +153,21 @@ QEMU_ARGS+=( -E LD_LIBRARY_PATH=/lib )
 }
 
 function expand_codescape_config() {
+  # https://www.mips.com/develop/tools/codescape-mips-sdk/mips-toolchain-configurations/
+  # mips-mti: MIPS32R6 and MIPS64R6
+  # mips-img: MIPS32R2 and MIPS64R2
+
   # ref: https://codescape.mips.com/components/toolchain/2020.06-01/downloads.html
-  # ref: https://codescape.mips.com/components/toolchain/2019.02-04/downloads.html
   local -r DATE=2020.06-01
-  #local -r DATE=2019.02-04
   local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.MTI.Linux.CentOS-6.x86_64.tar.gz
-  #local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.IMG.Linux.CentOS-6.x86_64.tar.gz
-  local -r GCC_URL=${CODESCAPE_URL}
   local -r GCC_RELATIVE_DIR="mips-mti-linux-gnu/${DATE}"
+
+  # ref: https://codescape.mips.com/components/toolchain/2019.02-04/downloads.html
+  #local -r DATE=2019.02-04
+  #local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.IMG.Linux.CentOS-6.x86_64.tar.gz
   #local -r GCC_RELATIVE_DIR="mips-img-linux-gnu/${DATE}"
+
+  local -r GCC_URL=${CODESCAPE_URL}
   unpack "${GCC_URL}" "${GCC_RELATIVE_DIR}"
 
   local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
@@ -171,12 +177,14 @@ function expand_codescape_config() {
   case "${TARGET}" in
     "mips64")
       MIPS_FLAGS="-EB -mips64r6 -mabi=64"
+      #MIPS_FLAGS="-EB -mips64r2 -mabi=64"
       FLAVOUR="mips-r6-hard"
       #FLAVOUR="mips-r2-hard"
       LIBC_DIR_SUFFIX="lib64"
       ;;
     "mips64el")
       MIPS_FLAGS="-EL -mips64r6 -mabi=64"
+      #MIPS_FLAGS="-EL -mips64r2 -mabi=64"
       FLAVOUR="mipsel-r6-hard"
       #FLAVOUR="mipsel-r2-hard"
       LIBC_DIR_SUFFIX="lib64"
@@ -201,14 +209,17 @@ set(CMAKE_STAGING_PREFIX ${STAGING_DIR})
 
 set(tools ${GCC_DIR})
 
+# R6
 set(CMAKE_C_COMPILER \${tools}/bin/mips-mti-linux-gnu-gcc)
-#set(CMAKE_C_COMPILER \${tools}/bin/mips-img-linux-gnu-gcc)
 set(CMAKE_C_FLAGS "${MIPS_FLAGS}")
-
 set(CMAKE_CXX_COMPILER \${tools}/bin/mips-mti-linux-gnu-g++)
+set(CMAKE_CXX_FLAGS "${MIPS_FLAGS} -L${SYSROOT_DIR}/usr/lib64")
+
+# R2
+#set(CMAKE_C_COMPILER \${tools}/bin/mips-img-linux-gnu-gcc)
+#set(CMAKE_C_FLAGS "${MIPS_FLAGS}")
 #set(CMAKE_CXX_COMPILER \${tools}/bin/mips-img-linux-gnu-g++)
 #set(CMAKE_CXX_FLAGS "${MIPS_FLAGS}")
-set(CMAKE_CXX_FLAGS "${MIPS_FLAGS} -L${SYSROOT_DIR}/usr/lib64")
 
 set(CMAKE_FIND_ROOT_PATH ${GCC_DIR})
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)

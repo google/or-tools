@@ -43,6 +43,7 @@ list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdlp_solve.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdptw.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/sat_runner.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/shift_minimization_sat.cc")
+list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdlp_solve.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/solve.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/sports_scheduling_sat.cc") # Too long
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/strawberry_fields_with_column_generation.cc") # Too long
