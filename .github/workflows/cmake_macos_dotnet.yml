@@ -4,8 +4,21 @@ on: [push, pull_request]
 
 jobs:
   # Building using the github runner environement directly.
-  cmake_make:
+  macos:
     runs-on: macos-latest
+    strategy:
+       matrix:
+         build: [
+           ["Xcode", "Release", "ALL_BUILD", "RUN_TESTS", "install"],
+           ["Unix Makefiles", "Release", "all", "test", "install"]
+         ]
+       fail-fast: false
+    env:
+      GENERATOR: ${{ matrix.build[0] }}
+      BUILD_TYPE: ${{ matrix.build[1] }}
+      BUILD_TARGET: ${{ matrix.build[2] }}
+      TEST_TARGET: ${{ matrix.build[3] }}
+      INSTALL_TARGET: ${{ matrix.build[4] }}
     steps:
     - uses: actions/checkout@v2
     - name: Swig install
@@ -26,10 +39,13 @@ jobs:
     - name: Check cmake
       run: cmake --version
     - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+      run: >
+        cmake -S. -Bbuild -G "$GENERATOR" -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DCMAKE_INSTALL_PREFIX=install
+        -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+        -DBUILD_DOTNET=ON
     - name: Build
-      run: cmake --build build --target all -v
+      run: cmake --build build --config "$BUILD_TYPE" --target "$BUILD_TARGET" -v
     - name: Test
-      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test -v
+      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --config "$BUILD_TYPE" --target "$TEST_TARGET" -v
     - name: Install
-      run: cmake --build build --target install -v -- DESTDIR=install
+      run: cmake --build build --config "$BUILD_TYPE" --target "$INSTALL_TARGET" -v
