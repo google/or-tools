@@ -10,6 +10,7 @@ ignorePaths:
   - tools/win/regex2.dll
   - tools/win/rm.exe
   - tools/win/sed.exe
+  - tools/win/tar.exe
   - tools/win/tee.exe
   - tools/win/touch.exe
   - tools/win/unzip.exe
