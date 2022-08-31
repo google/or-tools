@@ -137,10 +137,11 @@ IMAGE := ${PROJECT}/${BUILD_SYSTEM}
 
 ifdef NOCACHE
 DOCKER_BUILD_CMD := docker build --no-cache
+DOCKER_BUILDX_CMD := docker buildx build --no-cache
 else
 DOCKER_BUILD_CMD := docker build
+DOCKER_BUILDX_CMD := docker buildx build
 endif
-
 DOCKER_RUN_CMD := docker run --rm --init --net=host
 
 # Currently supported distro
@@ -181,7 +182,7 @@ sh_targets_$1 = $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
 $$(sh_targets_$1): sh_%_$1: %_$1
 	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$*_$1 ${IMAGE}:$$*_$1
 
-#$$(info Create targets: $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
+#$$(info Create targets: clean_$1 $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: clean_$1 $$(clean_targets_$1)
 clean_$1: $$(clean_targets_$1)
@@ -333,6 +334,42 @@ endef
 
 $(foreach stage,$(STAGES),$(eval $(call make-stage-target,$(stage))))
 
+############
+## ARM 64 ##
+############
+TARGETS = glop or-tools
+STEPS = env devel build test
+define make-arm-target =
+#$$(info TARGET: $1)
+#$$(info Create targets: $(addprefix arm_$1_, $(STEPS)))
+arm_targets = $(addprefix arm_$1_, $(STEPS))
+.PHONY: $$(arm_targets)
+$$(arm_targets): arm_$1_%: docker/arm/$1.Dockerfile
+	#@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
+	${DOCKER_BUILD_CMD} --target=$$* --tag ${IMAGE}:$$@ -f $$< ..
+
+save_arm_targets = $(addprefix save_arm_$1_, $(STEPS))
+.PHONY: $$(save_arm_targets)
+$$(save_arm_targets): save_arm_$1_%: cache/arm/docker_$1_%.tar
+cache/arm/docker_$1_%.tar: arm_$1_%
+	@rm -f $$@
+	mkdir -p cache/arm
+	docker save ${IMAGE}:$$< -o $$@
+
+sh_arm_targets = $(addprefix sh_arm_$1_, $(STEPS))
+.PHONY: $$(sh_arm_targets)
+$$(sh_arm_targets): sh_arm_$1_%: arm_$1_%
+	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$< ${IMAGE}:$$<
+
+clean_arm_targets = $(addprefix clean_arm_$1_, $(STEPS))
+.PHONY: $$(clean_arm_targets)
+$$(clean_arm_targets): clean_arm_$1_%
+	docker image rm -f ${IMAGE}:arm_$1_$$* 2>/dev/null
+	rm -f cache/arm/docker_$1_$$*.tar
+endef
+
+$(foreach target,$(TARGETS),$(eval $(call make-arm-target,$(target))))
+
 #############
 ## VAGRANT ##
 #############
@@ -389,43 +426,9 @@ $(clean_glop_targets): clean_glop_%
 	docker image rm -f ${IMAGE}:glop_$* 2>/dev/null
 	rm -f cache/glop/docker_$*.tar
 
-############
-## ARM 64 ##
-############
-TARGETS = glop or-tools
-STEPS = env devel build test
-define make-arm-target =
-#$$(info TARGET: $1)
-#$$(info Create targets: $(addprefix arm_$1_, $(STEPS)))
-arm_targets = $(addprefix arm_$1_, $(STEPS))
-.PHONY: $$(arm_targets)
-$$(arm_targets): arm_$1_%: docker/arm/$1.Dockerfile
-	#@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$$* --tag ${IMAGE}:$$@ -f $$< ..
-
-save_arm_targets = $(addprefix save_arm_$1_, $(STEPS))
-.PHONY: $$(save_arm_targets)
-$$(save_arm_targets): save_arm_$1_%: cache/arm/docker_$1_%.tar
-cache/arm/docker_$1_%.tar: arm_$1_%
-	@rm -f $$@
-	mkdir -p cache/arm
-	docker save ${IMAGE}:$$< -o $$@
-
-sh_arm_targets = $(addprefix sh_arm_$1_, $(STEPS))
-.PHONY: $$(sh_arm_targets)
-$$(sh_arm_targets): sh_arm_$1_%: arm_$1_%
-	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$< ${IMAGE}:$$<
-
-clean_arm_targets = $(addprefix clean_arm_$1_, $(STEPS))
-.PHONY: $$(clean_arm_targets)
-$$(clean_arm_targets): clean_arm_$1_%
-	docker image rm -f ${IMAGE}:arm_$1_$$* 2>/dev/null
-	rm -f cache/arm/docker_$1_$$*.tar
-endef
-
-$(foreach target,$(TARGETS),$(eval $(call make-arm-target,$(target))))
-
-# CLEAN
+###########
+## CLEAN ##
+###########
 targets = $(addprefix clean_, $(DISTROS))
 vms = $(addprefix clean_, $(VMS))
 glops = $(addprefix clean_glop_, $(STAGES))
