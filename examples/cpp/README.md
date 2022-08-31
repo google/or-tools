@@ -16,13 +16,11 @@ libraries.
     a feasibility version with hard constraints, the other version is
     an optimization version with soft constraints and violation costs.
   - jobshop.cc Demonstrates scheduling of jobs on different machines.
-  - jobshop_ls.cc Demonstrates scheduling of jobs on different machines with
-    a search using Local Search and Large Neighorhood Search.
   - nqueens.cc Solves the n-queen problem. It also demonstrates how to break
     symmetries during search.
-  - network_routing.cc Solves a multicommodity mono-routing
+  - network_routing_sat.cc Solves a multicommodity mono-routing
     problem with capacity constraints and a max usage cost structure.
-  - sports_scheduling.cc Finds a soccer championship schedule. Its uses an
+  - sports_scheduling_sat.cc Finds a soccer championship schedule. Its uses an
     original approach where all constraints attached to either one team,
     or one week are regrouped into one global 'AllowedAssignment' constraints.
   - dobble_ls.cc Shows how to write Local Search operators and Local Search
@@ -30,7 +28,6 @@ libraries.
     shows how to write a simple constraint.
 
 - Routing examples:
-  - tsp.cc    Travelling Salesman Problem.
   - cvrptw.cc Capacitated Vehicle Routing Problem with Time Windows.
   - pdptw.cc  Pickup and Delivery Problem with Time Windows.
 
@@ -51,10 +48,6 @@ libraries.
   - strawberry_fields_with_column_generation.cc Complex example that
     demonstrates how to use dynamic column generation to solve a 2D
     covering problem.
-
-- Utilities
-  - model_util.cc A utility to manipulate model files (.cp) dumped by the
-    solver.
 
 ## Execution
 Running the examples will involve building them, then running them.<br>
