@@ -31,23 +31,14 @@ help:
 	@echo -e "${BOLD}MAKE TARGETS${RESET}"
 	@echo -e "\t${BOLD}help${RESET}: display this help and exit."
 	@echo
-	@echo -e "\t${BOLD}<prestage>${RESET}: build <prestage> docker images for ALL DISTROS."
-	@echo -e "\t${BOLD}<distro>_<prestage>${RESET}: build the <prestage> docker image for a specific distro."
-	@echo -e "\t${BOLD}save_<prestage>${RESET}: Save <prestage> docker images for ALL DISTROS."
-	@echo -e "\t${BOLD}save_<distro>_<prestage>${RESET}: Save the <prestage> docker image for a specific distro."
-	@echo -e "\t${BOLD}sh_<distro>_<prestage>${RESET}: run a container using the <prestage> docker image specified (debug purpose)."
-	@echo -e "\t${BOLD}clean_<distro>_<prestage>${RESET}: Remove the <prestage> docker image (and the save archive if any) for a specific distro."
-	@echo
-	@echo -e "\t${BOLD}<stage>${RESET}: build <stage> docker images for ALL DISTROS and ALL LANGUAGES."
-	@echo -e "\t${BOLD}<distro>_<stage>${RESET}: build <stage> docker images for a specific distro for ALL LANGUAGES."
-	@echo -e "\t${BOLD}<lang>_<stage>${RESET}: build <stage> docker images for ALL DISTROS for a specific language."
-	@echo -e "\t${BOLD}<distro>_<lang>_<stage>${RESET}: build the <stage> docker image for a specific distro for a specific language."
-	@echo -e "\t${BOLD}save_<stage>${RESET}: Save <stage> docker images for ALL DISTROS for ALL LANGUAGES."
-	@echo -e "\t${BOLD}save_<distro>_<stage>${RESET}: Save <stage> docker images for a specific distro for ALL LANGUAGES."
-	@echo -e "\t${BOLD}save_<lang>_<stage>${RESET}: Save <stage> docker images for ALL DISTRO for a specific language."
-	@echo -e "\t${BOLD}save_<distro>_<lang>_<stage>${RESET}: Save the <stage> docker image for a specific distro for a specific language."
-	@echo -e "\t${BOLD}sh_<distro>_<lang>_<stage>${RESET}: run a container using the <stage> docker image specified (debug purpose)."
-	@echo -e "\t${BOLD}clean_<distro>_<lang>_<prestage>${RESET}: Remove the <stage> docker image (and the save archive if any) for a specific distro."
+	@echo -e "\tBuild using docker and the host platform."
+	@echo -e "\t${BOLD}<distro>_<stage>${RESET}: build a <stage> docker image for a specific distro."
+	@echo -e "\t${BOLD}save_<distro>_<stage>${RESET}: Save a <stage> docker image for a specific distro."
+	@echo -e "\t${BOLD}sh_<distro>_<stage>${RESET}: run a container using the <stage> docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_<distro>_<stage>${RESET}: Remove a <stage> docker image for a specific distro."
+	@echo -e "\t${BOLD}<stage>${RESET}: build <stage> docker images for ALL DISTROS."
+	@echo -e "\t${BOLD}save_<stage>${RESET}: Save <stage> docker images for ALL DISTROS."
+	@echo -e "\t${BOLD}clean_<stage>${RESET}: Remove caches and docker images."
 	@echo
 	@echo -e "\tWith ${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine${RESET} (edge)"
@@ -81,13 +72,17 @@ help:
 	@echo -e "\te.g. 'make alpine_cpp_build'"
 	@echo -e "\te.g. 'make archlinux_cpp_build'"
 	@echo
-	@echo -e "\t${BOLD}<vm>${RESET}: build <vm> vagrant machine for ALL LANGUAGES."
-	@echo -e "\t${BOLD}<vm>_<lang>${RESET}: build  a <vm> vagrant machine for the specified language."
+	@echo -e "\tBuild using a vagrant machine."
+	@echo -e "\t${BOLD}<vm>_<vms_stage>${RESET}: build the vagrant <vm> virtual machine."
 	@echo -e "\t${BOLD}sh_<vm>_<lang>${RESET}: ssh to the vagrant machine specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_<vm>${RESET}: Remove virtual machine for the specified vm."
+	@echo -e "\t${BOLD}clean_vms${RESET}: Remove ALL vagrant box."
 	@echo
 	@echo -e "\tWith ${BOLD}<vm>${RESET}:"
 	@echo -e "\t\t${BOLD}freebsd${RESET} (FreeBSD)"
 	@echo
+	@echo -e "\tWith ${BOLD}<vms_stage>${RESET}:"
+	@echo -e "\t\t${BOLD}build${RESET}"
 	@echo
 	@echo -e "\t${BOLD}glop_<stage>${RESET}: Build Glop <stage> using an Ubuntu:rolling docker image."
 	@echo -e "\t${BOLD}save_glop_<stage>${RESET}: Save Glop <stage> using an Ubuntu:rolling docker image."
@@ -109,9 +104,10 @@ help:
 	@echo -e "\t\t${BOLD}build${RESET}"
 	@echo -e "\t\t${BOLD}test${RESET}"
 	@echo
-	@echo -e "\t${BOLD}clean${RESET}: Remove cache and docker image."
+	@echo -e "\tGlobal targets."
+	@echo -e "\t${BOLD}clean${RESET}: Remove ALL caches and docker images."
 	@echo -e "\t${BOLD}clean_<distro>${RESET}: Remove cache and docker image for the specified distro."
-	@echo -e "\t${BOLD}clean_<vm>${RESET}: Remove virtual machine for the specified vm."
+	@echo -e "\t${BOLD}distclean${RESET}: Remove everything."
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo
