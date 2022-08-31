@@ -66,6 +66,10 @@ function install_qemu() {
   cd ${QEMU_DIR} || exit 2
 
   # Qemu (meson based build) depends on: pkgconf, libglib2.0, python3, ninja
+  if [[ $(lsb_release -is) == "Arch" ]]; then
+    patch -p1 --forward <"${PROJECT_DIR}"/tools/qemu-7.0.0-glibc-2.36.patch || true
+  fi
+
   ./configure \
     --prefix="${QEMU_INSTALL}" \
     --target-list="${QEMU_TARGET}" \
@@ -84,9 +88,6 @@ function install_qemu() {
     --disable-sdl \
     --disable-virglrenderer \
     --disable-vte
-
-  # --static Not supported on Archlinux
-  # so we use --enable-modules
 
   # wrapper on ninja
   make -j8
