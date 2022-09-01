@@ -244,7 +244,6 @@ function expand_bootlin_config() {
     "ppc64le")
       local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64le-power8/tarballs/powerpc64le-power8--glibc--stable-2021.11-1.tar.bz2"
       local -r GCC_PREFIX="powerpc64le"
-
       ;;
     "ppc64")
       local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64-power8/tarballs/powerpc64-power8--glibc--stable-2021.11-1.tar.bz2"
@@ -252,8 +251,7 @@ function expand_bootlin_config() {
       ;;
     "ppc")
       #local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-e500mc/tarballs/powerpc-e500mc--glibc--stable-2021.11-1.tar.bz2"
-      local -r
-      POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-440fp/tarballs/powerpc-440fp--glibc--stable-2021.11-1.tar.bz2"
+      local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-440fp/tarballs/powerpc-440fp--glibc--stable-2021.11-1.tar.bz2"
       local -r GCC_PREFIX="powerpc"
       ;;
     *)
@@ -425,7 +423,7 @@ function main() {
       declare -r QEMU_ARCH=aarch64 ;;
     aarch64_be-linux-gnu)
       expand_linaro_config
-      declare -r QEMU_ARCH=DISABLED ;;
+      declare -r QEMU_ARCH=aarch64_be ;;
     mips64)
       expand_codescape_config
       declare -r QEMU_ARCH=mips64 ;;
