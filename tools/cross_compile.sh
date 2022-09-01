@@ -241,6 +241,14 @@ function expand_bootlin_config() {
   local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
 
   case "${TARGET}" in
+    "aarch64")
+      local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--stable-2021.11-1.tar.bz2"
+      local -r GCC_PREFIX="aarch64"
+      ;;
+    "aarch64be")
+      local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64be/tarballs/aarch64be--glibc--stable-2021.11-1.tar.bz2"
+      local -r GCC_PREFIX="aarch64_be"
+      ;;
     "ppc64le")
       local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64le-power8/tarballs/powerpc64le-power8--glibc--stable-2021.11-1.tar.bz2"
       local -r GCC_PREFIX="powerpc64le"
@@ -355,10 +363,11 @@ DESCRIPTION
 \t* PROJECT: glop or-tools
 \t* TARGET:
 \t\tx86_64
-\t\taarch64-linux-gnu aarch64_be-linux-gnu
-\t\tmips64 mips64el
-\t\tppc
-\t\tppc64 ppc64le
+\t\taarch64 aarch64be (bootlin)
+\t\taarch64-linux-gnu aarch64_be-linux-gnu (linaro)
+\t\tmips64 mips64el (codespace)
+\t\tppc (bootlin)
+\t\tppc64 ppc64le (bootlin)
 
 OPTIONS
 \t-h --help: show this help text
@@ -423,6 +432,12 @@ function main() {
       declare -r QEMU_ARCH=aarch64 ;;
     aarch64_be-linux-gnu)
       expand_linaro_config
+      declare -r QEMU_ARCH=aarch64_be ;;
+    aarch64)
+      expand_bootlin_config
+      declare -r QEMU_ARCH=aarch64 ;;
+    aarch64be)
+      expand_bootlin_config
       declare -r QEMU_ARCH=aarch64_be ;;
     mips64)
       expand_codescape_config
