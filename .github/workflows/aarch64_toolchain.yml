@@ -9,8 +9,10 @@ jobs:
     strategy:
       matrix:
         targets: [
-          [aarch64-linux-gnu],
-          [aarch64_be-linux-gnu]
+          [aarch64-linux-gnu], # linaro
+          [aarch64_be-linux-gnu], # linaro
+          [aarch64], # bootlin
+          [aarch64be] # bootlin
         ]
       fail-fast: false
     env:

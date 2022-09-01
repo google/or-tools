@@ -82,6 +82,8 @@ help:
 	@echo -e "\tWith ${BOLD}<toolchain>${RESET}:"
 	@echo -e "\t\t${BOLD}aarch64-linux-gnu${RESET} (linaro toolchain)"
 	@echo -e "\t\t${BOLD}aarch64_be-linux-gnu${RESET} (linaro toolchain)"
+	@echo -e "\t\t${BOLD}aarch64${RESET} (bootlin toolchain)"
+	@echo -e "\t\t${BOLD}aarch64be${RESET} (bootlin toolchain)"
 	@echo -e "\t\t${BOLD}mips64${RESET} (codespace toolchain)"
 	@echo -e "\t\t${BOLD}mips64el${RESET} (codespace toolchain)"
 	@echo -e "\t\t${BOLD}ppc64${RESET} (bootlin toolchain)"
@@ -358,6 +360,7 @@ $(foreach stage,$(STAGES),$(eval $(call make-stage-target,$(stage))))
 ###############
 TOOLCHAIN_TARGETS = \
  aarch64-linux-gnu aarch64_be-linux-gnu \
+ aarch64 aarch64be \
  mips64 mips64el \
  ppc64 ppc64le
 TOOLCHAIN_STAGES = env devel build test
