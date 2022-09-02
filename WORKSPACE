@@ -29,7 +29,7 @@ git_repository(
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    tag = "v3.19.4",
+    tag = "v21.5",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
