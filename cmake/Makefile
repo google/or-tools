@@ -112,21 +112,6 @@ help:
 	@echo -e "\t${BOLD}sh_glop_<stage>${RESET}: Run a Glop <stage> container using an Ubuntu:rolling docker image (debug purpose)."
 	@echo -e "\t${BOLD}clean_glop_<stage>${RESET}: Remove the Glop <stage> docker image (and the save archive if any) for a specific distro."
 	@echo
-	@echo
-	@echo -e "\t${BOLD}arm_<target>_<step>${RESET}: cross build for aarch64 the <target> <stage> docker image."
-	@echo -e "\t${BOLD}save_arm_<target>_<step>${RESET}: Save for aarch64 the <target> <step> docker images."
-	@echo -e "\t${BOLD}clean_arm_<target>_<step>${RESET}: Remove for aarch64 the <target> <step> docker image (and the save archive if any)."
-	@echo
-	@echo -e "\tWith ${BOLD}<target>${RESET}:"
-	@echo -e "\t\t${BOLD}glop${RESET} Build libglop"
-	@echo -e "\t\t${BOLD}or-tools${RESET} Build libortools"
-	@echo
-	@echo -e "\tWith ${BOLD}<step>${RESET}:"
-	@echo -e "\t\t${BOLD}env${RESET}"
-	@echo -e "\t\t${BOLD}devel${RESET}"
-	@echo -e "\t\t${BOLD}build${RESET}"
-	@echo -e "\t\t${BOLD}test${RESET}"
-	@echo
 	@echo -e "\tGlobal targets."
 	@echo -e "\t${BOLD}clean${RESET}: Remove ALL caches and docker images."
 	@echo -e "\t${BOLD}clean_<distro>${RESET}: Remove cache and docker image for the specified distro."
@@ -408,42 +393,6 @@ $(foreach stage,$(TOOLCHAIN_STAGES),$(eval $(call toolchain-stage-target,$(stage
 .PHONY: clean_toolchains
 clean_toolchains: $(addprefix clean_toolchain_, $(TOOLCHAIN_STAGES))
 	-rmdir $(addprefix cache/, $(TOOLCHAIN_TARGETS))
-
-############
-## ARM 64 ##
-############
-TARGETS = glop or-tools
-STEPS = env devel build test
-define make-arm-target =
-#$$(info TARGET: $1)
-#$$(info Create targets: $(addprefix arm_$1_, $(STEPS)))
-arm_targets = $(addprefix arm_$1_, $(STEPS))
-.PHONY: $$(arm_targets)
-$$(arm_targets): arm_$1_%: docker/arm/$1.Dockerfile
-	#@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$$* --tag ${IMAGE}:$$@ -f $$< ..
-
-save_arm_targets = $(addprefix save_arm_$1_, $(STEPS))
-.PHONY: $$(save_arm_targets)
-$$(save_arm_targets): save_arm_$1_%: cache/arm/docker_$1_%.tar
-cache/arm/docker_$1_%.tar: arm_$1_%
-	@rm -f $$@
-	mkdir -p cache/arm
-	docker save ${IMAGE}:$$< -o $$@
-
-sh_arm_targets = $(addprefix sh_arm_$1_, $(STEPS))
-.PHONY: $$(sh_arm_targets)
-$$(sh_arm_targets): sh_arm_$1_%: arm_$1_%
-	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$< ${IMAGE}:$$<
-
-clean_arm_targets = $(addprefix clean_arm_$1_, $(STEPS))
-.PHONY: $$(clean_arm_targets)
-$$(clean_arm_targets): clean_arm_$1_%
-	docker image rm -f ${IMAGE}:arm_$1_$$* 2>/dev/null
-	rm -f cache/arm/docker_$1_$$*.tar
-endef
-
-$(foreach target,$(TARGETS),$(eval $(call make-arm-target,$(target))))
 
 #############
 ## VAGRANT ##

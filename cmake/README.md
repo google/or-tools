@@ -38,6 +38,16 @@ Python, Java, .Net]: [![Status][docker_svg]][docker_link]
 [docker_svg]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml/badge.svg?branch=main
 [docker_link]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml
 
+[![Build Status][aarch64_toolchain_status]][aarch64_toolchain_link]
+[![Build Status][mips_toolchain_status]][mips_toolchain_link]
+[![Build Status][powerpc_toolchain_status]][powerpc_toolchain_link]
+
+[aarch64_toolchain_status]: https://github.com/google/or-tools/actions/workflows/aarch64_toolchain.yml/badge.svg
+[aarch64_toolchain_link]: https://github.com/google/or-tools/actions/workflows/aarch64_toolchain.yml
+[mips_toolchain_status]: https://github.com/google/or-tools/actions/workflows/mips_toolchain.yml/badge.svg
+[mips_toolchain_link]: https://github.com/google/or-tools/actions/workflows/mips_toolchain.yml
+[powerpc_toolchain_status]: https://github.com/google/or-tools/actions/workflows/powerpc_toolchain.yml/badge.svg
+[powerpc_toolchain_link]: https://github.com/google/or-tools/actions/workflows/powerpc_toolchain.yml
 
 ## Introduction
 <nav for="cmake"> |
