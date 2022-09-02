@@ -80,8 +80,6 @@ help:
 	@echo -e "\t${BOLD}clean_toolchains${RESET}: Remove ALL cache and docker image."
 	@echo
 	@echo -e "\tWith ${BOLD}<toolchain>${RESET}:"
-	@echo -e "\t\t${BOLD}aarch64-linux-gnu${RESET} (linaro toolchain)"
-	@echo -e "\t\t${BOLD}aarch64_be-linux-gnu${RESET} (linaro toolchain)"
 	@echo -e "\t\t${BOLD}aarch64${RESET} (bootlin toolchain)"
 	@echo -e "\t\t${BOLD}aarch64be${RESET} (bootlin toolchain)"
 	@echo -e "\t\t${BOLD}mips64${RESET} (codespace toolchain)"
@@ -95,7 +93,7 @@ help:
 	@echo -e "\t\t${BOLD}build${RESET}"
 	@echo -e "\t\t${BOLD}test${RESET}"
 	@echo -e "\te.g. 'make mips64_build'"
-	@echo -e "\te.g. 'make aarch64-linux-gnu_test'"
+	@echo -e "\te.g. 'make aarch64_test'"
 	@echo
 	@echo -e "\tBuild using a vagrant machine."
 	@echo -e "\t${BOLD}<vm>_<vms_stage>${RESET}: build the vagrant <vm> virtual machine."
@@ -359,7 +357,6 @@ $(foreach stage,$(STAGES),$(eval $(call make-stage-target,$(stage))))
 ## TOOLCHAIN ##
 ###############
 TOOLCHAIN_TARGETS = \
- aarch64-linux-gnu aarch64_be-linux-gnu \
  aarch64 aarch64be \
  mips64 mips64el \
  ppc64 ppc64le

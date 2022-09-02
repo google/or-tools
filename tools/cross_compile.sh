@@ -109,50 +109,6 @@ function clean_build() {
   mkdir -p "${BUILD_DIR}"
 }
 
-function expand_linaro_config() {
-  #ref: https://releases.linaro.org/components/toolchain/binaries/
-  local -r LINARO_VERSION=7.5-2019.12
-  local -r LINARO_ROOT_URL=https://releases.linaro.org/components/toolchain/binaries/${LINARO_VERSION}
-
-  local -r GCC_VERSION=7.5.0-2019.12
-  local -r GCC_URL=${LINARO_ROOT_URL}/${TARGET}/gcc-linaro-${GCC_VERSION}-x86_64_${TARGET}.tar.xz
-  local -r GCC_RELATIVE_DIR="gcc-linaro-${GCC_VERSION}-x86_64_${TARGET}"
-  unpack "${GCC_URL}" "${GCC_RELATIVE_DIR}"
-
-  local -r SYSROOT_VERSION=2.25-2019.12
-  local -r SYSROOT_URL=${LINARO_ROOT_URL}/${TARGET}/sysroot-glibc-linaro-${SYSROOT_VERSION}-${TARGET}.tar.xz
-  local -r SYSROOT_RELATIVE_DIR=sysroot-glibc-linaro-${SYSROOT_VERSION}-${TARGET}
-  unpack "${SYSROOT_URL}" "${SYSROOT_RELATIVE_DIR}"
-
-  local -r SYSROOT_DIR=${ARCHIVE_DIR}/${SYSROOT_RELATIVE_DIR}
-  local -r STAGING_DIR=${ARCHIVE_DIR}/${SYSROOT_RELATIVE_DIR}-stage
-  local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
-
-  # Write a Toolchain file
-  # note: This is manadatory to use a file in order to have the CMake variable
-  # 'CMAKE_CROSSCOMPILING' set to TRUE.
-  # ref: https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling-for-linux
-  cat >"$TOOLCHAIN_FILE" <<EOL
-set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_PROCESSOR ${TARGET})
-
-set(CMAKE_SYSROOT ${SYSROOT_DIR})
-set(CMAKE_STAGING_PREFIX ${STAGING_DIR})
-
-set(tools ${GCC_DIR})
-set(CMAKE_C_COMPILER \${tools}/bin/${TARGET}-gcc)
-set(CMAKE_CXX_COMPILER \${tools}/bin/${TARGET}-g++)
-
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-EOL
-CMAKE_ADDITIONAL_ARGS+=( -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" )
-QEMU_ARGS+=( -L "${SYSROOT_DIR}" )
-QEMU_ARGS+=( -E LD_LIBRARY_PATH=/lib )
-}
-
 function expand_codescape_config() {
   # https://www.mips.com/develop/tools/codescape-mips-sdk/mips-toolchain-configurations/
   # mips-mti: MIPS32R6 and MIPS64R6
@@ -364,7 +320,6 @@ DESCRIPTION
 \t* TARGET:
 \t\tx86_64
 \t\taarch64 aarch64be (bootlin)
-\t\taarch64-linux-gnu aarch64_be-linux-gnu (linaro)
 \t\tmips64 mips64el (codespace)
 \t\tppc (bootlin)
 \t\tppc64 ppc64le (bootlin)
@@ -427,12 +382,6 @@ function main() {
   case ${TARGET} in
     x86_64)
       declare -r QEMU_ARCH=x86_64 ;;
-    aarch64-linux-gnu)
-      expand_linaro_config
-      declare -r QEMU_ARCH=aarch64 ;;
-    aarch64_be-linux-gnu)
-      expand_linaro_config
-      declare -r QEMU_ARCH=aarch64_be ;;
     aarch64)
       expand_bootlin_config
       declare -r QEMU_ARCH=aarch64 ;;
