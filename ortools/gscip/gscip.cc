@@ -669,6 +669,9 @@ absl::Status GScip::DeleteVariable(SCIP_VAR* var) {
 
 absl::Status GScip::CanSafeBulkDelete(
     const absl::flat_hash_set<SCIP_VAR*>& vars) {
+  if (vars.empty()) {
+    return absl::OkStatus();
+  }
   for (SCIP_CONS* constraint : constraints_) {
     if (!IsConstraintLinear(constraint)) {
       return absl::InvalidArgumentError(absl::StrCat(
@@ -680,6 +683,9 @@ absl::Status GScip::CanSafeBulkDelete(
 
 absl::Status GScip::SafeBulkDelete(const absl::flat_hash_set<SCIP_VAR*>& vars) {
   RETURN_IF_ERROR(CanSafeBulkDelete(vars));
+  if (vars.empty()) {
+    return absl::OkStatus();
+  }
   // Now, we can assume that all constraints are linear.
   for (SCIP_CONS* constraint : constraints_) {
     const absl::Span<SCIP_VAR* const> nonzeros =
