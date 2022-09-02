@@ -36,9 +36,6 @@ help:
 	@echo -e "\t${BOLD}save_<distro>_<stage>${RESET}: Save a <stage> docker image for a specific distro."
 	@echo -e "\t${BOLD}sh_<distro>_<stage>${RESET}: run a container using the <stage> docker image specified (debug purpose)."
 	@echo -e "\t${BOLD}clean_<distro>_<stage>${RESET}: Remove a <stage> docker image for a specific distro."
-	@echo -e "\t${BOLD}<stage>${RESET}: build <stage> docker images for ALL DISTROS."
-	@echo -e "\t${BOLD}save_<stage>${RESET}: Save <stage> docker images for ALL DISTROS."
-	@echo -e "\t${BOLD}clean_<stage>${RESET}: Remove caches and docker images."
 	@echo
 	@echo -e "\tWith ${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine${RESET} (edge)"
@@ -49,6 +46,7 @@ help:
 	@echo -e "\t\t${BOLD}opensuse${RESET} (tumbleweed)"
 	@echo -e "\t\t${BOLD}ubuntu${RESET} (rolling)"
 	@echo -e "\t\t${BOLD}system_deps${RESET} (archlinux with all deps from pacman)"
+	@echo -e "\t\t${BOLD}all${RESET}: ALL DISTROS"
 	@echo
 	@echo -e "\tWith ${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}base${RESET} (need by cpp)"
@@ -162,18 +160,18 @@ LANGUAGES = cpp python java dotnet
 PRESTAGES = base swig
 define make-prestage-target =
 #$$(info STAGE: $1)
-#$$(info Create targets: $1 $(addsuffix _$1, $(DISTROS)).)
+#$$(info Create targets: all_$1 $(addsuffix _$1, $(DISTROS)).)
 targets_$1 = $(addsuffix _$1, $(DISTROS))
-.PHONY: $1 $$(targets_$1)
-$1: $$(targets_$1)
+.PHONY: all_$1 $$(targets_$1)
+all_$1: $$(targets_$1)
 $$(targets_$1): %_$1: docker/%/Dockerfile
 	#@docker image rm -f ${IMAGE}:$$*_$1 2>/dev/null
 	${DOCKER_BUILD_CMD} --target=$1 --tag ${IMAGE}:$$*_$1 -f $$< ..
 
-#$$(info Create targets: save_$1 $(addprefix save_, $(addsuffix _$1, $(DISTROS))) (debug).)
+#$$(info Create targets: save_all_$1 $(addprefix save_, $(addsuffix _$1, $(DISTROS))) (debug).)
 save_targets_$1 = $(addprefix save_, $(addsuffix _$1, $(DISTROS)))
-.PHONY: save_$1 $$(save_targets_$1)
-save_$1: $$(save_targets_$1)
+.PHONY: save_all_$1 $$(save_targets_$1)
+save_all_$1: $$(save_targets_$1)
 $$(save_targets_$1): save_%_$1: cache/%/docker_$1.tar
 cache/%/docker_$1.tar: %_$1
 	@rm -f $$@
@@ -186,10 +184,10 @@ sh_targets_$1 = $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
 $$(sh_targets_$1): sh_%_$1: %_$1
 	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$*_$1 ${IMAGE}:$$*_$1
 
-#$$(info Create targets: clean_$1 $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
+#$$(info Create targets: clean_all_$1 $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
-.PHONY: clean_$1 $$(clean_targets_$1)
-clean_$1: $$(clean_targets_$1)
+.PHONY: clean_all_$1 $$(clean_targets_$1)
+clean_all_$1: $$(clean_targets_$1)
 $$(clean_targets_$1): clean_%_$1:
 	docker image rm -f ${IMAGE}:$$*_$1 2>/dev/null
 	rm -f cache/$$*/docker_$1.tar
@@ -203,10 +201,10 @@ $(foreach stage,$(PRESTAGES),$(eval $(call make-prestage-target,$(stage))))
 STAGES = env devel build test install_env install_devel install_build install_test
 define make-stage-target =
 #$$(info STAGE: $1)
-#$$(info Create targets: $1 $(addsuffix _$1, $(DISTROS)).)
+#$$(info Create targets: all_$1 $(addsuffix _$1, $(DISTROS)).)
 targets_$1 = $(addsuffix _$1, $(DISTROS))
-.PHONY: $1 $$(targets_$1)
-$1: $$(targets_$1)
+.PHONY: all_$1 $$(targets_$1)
+all_$1: $$(targets_$1)
 $$(targets_$1): %_$1: $(addprefix %_, $(addsuffix _$1, $(LANGUAGES)))
 
 #$$(info Create targets: $(addsuffix _$1, $(LANGUAGES)).)
@@ -238,10 +236,10 @@ $$(python_targets_$1): %_python_$1: docker/%/python.Dockerfile %_swig
 	${DOCKER_BUILD_CMD} --target=$1 --tag ${IMAGE}:$$*_python_$1 -f $$< ..
 
 # Save $1 docker images (debug).
-#$$(info Create targets: save_$1 $(addprefix save_, $(addsuffix _$1, $(DISTROS))).)
+#$$(info Create targets: save_all_$1 $(addprefix save_, $(addsuffix _$1, $(DISTROS))).)
 targets_$1 = $(addprefix save_, $(addsuffix _$1, $(DISTROS)))
-.PHONY: save_$1 $$(targets_$1)
-save_$1: $$(targets_$1)
+.PHONY: save_all_$1 $$(targets_$1)
+save_all_$1: $$(targets_$1)
 $$(targets_$1): save_%_$1: $(addprefix save_%_, $(addsuffix _$1, $(LANGUAGES)))
 
 #$$(info Create targets: $(addprefix save_, $(addsuffix _$1, $(LANGUAGES))).)
@@ -301,10 +299,10 @@ $$(python_targets_$1): sh_%_python_$1: %_python_$1
 	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$*_python_$1 ${IMAGE}:$$*_python_$1
 
 # Clean $1 docker images.
-#$$(info Create targets: clean_$1 $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
+#$$(info Create targets: clean_all_$1 $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
 targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
-.PHONY: clean_$1 $(targets_$1)
-clean_$1: $$(targets_$1)
+.PHONY: clean_all_$1 $(targets_$1)
+clean_all_$1: $$(targets_$1)
 $$(targets_$1): clean_%_$1: $(addprefix clean_%_, $(addsuffix _$1, $(LANGUAGES)))
 
 #$$(info Create targets: $(addprefix clean_, $(addsuffix _$1, $(LANGUAGES))).)
