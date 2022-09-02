@@ -27,6 +27,7 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
+  ZLIB::ZLIB
   absl::base
   absl::memory
   absl::strings
