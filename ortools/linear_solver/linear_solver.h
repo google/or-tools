@@ -669,6 +669,8 @@ class MPSolver {
    * solver. There is also no guarantee that the solver will use this hint or
    * try to return a solution "close" to this assignment in case of multiple
    * optimal solutions.
+   *
+   * Calling SetHint clears all previous hints.
    */
   void SetHint(std::vector<std::pair<const MPVariable*, double> > hint);
 
