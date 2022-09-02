@@ -97,25 +97,13 @@ if(BUILD_Protobuf)
   set(protobuf_BUILD_SHARED_LIBS OFF)
   set(protobuf_BUILD_EXPORT OFF)
   set(protobuf_MSVC_STATIC_RUNTIME OFF)
-  # FetchContent_Declare(SOURCE_SUBDIR) was introduced in 3.18
-  if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18")
-    FetchContent_Declare(
-      protobuf
-      GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-      GIT_TAG "v21.5"
-      GIT_SUBMODULES ""
-      PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v21.5.patch"
-      SOURCE_SUBDIR cmake)
-    FetchContent_MakeAvailable(protobuf)
-  else()
-    fetch_git_dependency(
-      NAME Protobuf
-      REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-      TAG "v21.5"
-      PATCH_COMMAND "git apply --ignore-whitespace \"${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v21.5.patch\""
-      SOURCE_SUBDIR cmake
-      )
-  endif()
+  FetchContent_Declare(
+    protobuf
+    GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
+    GIT_TAG "v21.5"
+    GIT_SUBMODULES ""
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v21.5.patch")
+  FetchContent_MakeAvailable(protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
