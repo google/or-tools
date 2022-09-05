@@ -511,7 +511,7 @@ std::optional<ConvergenceInformation> GetConvergenceInformation(
       return convergence_information;
     }
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 std::optional<InfeasibilityInformation> GetInfeasibilityInformation(
@@ -522,7 +522,7 @@ std::optional<InfeasibilityInformation> GetInfeasibilityInformation(
       return infeasibility_information;
     }
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 std::optional<PointMetadata> GetPointMetadata(const IterationStats& stats,
@@ -532,7 +532,7 @@ std::optional<PointMetadata> GetPointMetadata(const IterationStats& stats,
       return metadata;
     }
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 void SetRandomProjections(const ShardedQuadraticProgram& sharded_qp,
