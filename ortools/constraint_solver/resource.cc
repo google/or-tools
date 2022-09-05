@@ -2194,7 +2194,7 @@ class CumulativeConstraint : public Constraint {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
-    const ConstraintSolverParameters& params = solver()->parameters();
+    const ConstraintSolverParameters& params = solver()->const_parameters();
     if (params.use_cumulative_time_table()) {
       if (params.use_cumulative_time_table_sync()) {
         PostOneSidedConstraint(false, false, true);
@@ -2329,7 +2329,7 @@ class CumulativeConstraint : public Constraint {
     } else {
       Solver* const s = solver();
       if (edge_finder) {
-        const ConstraintSolverParameters& params = solver()->parameters();
+        const ConstraintSolverParameters& params = solver()->const_parameters();
         return useful_tasks.size() < params.max_edge_finder_size()
                    ? s->RevAlloc(new EdgeFinder<CumulativeTask>(s, useful_tasks,
                                                                 capacity_))
@@ -2388,7 +2388,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
-    const ConstraintSolverParameters& params = solver()->parameters();
+    const ConstraintSolverParameters& params = solver()->const_parameters();
     if (params.use_cumulative_time_table()) {
       PostOneSidedConstraint(false, false, false);
       PostOneSidedConstraint(true, false, false);

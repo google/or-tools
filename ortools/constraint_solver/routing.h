@@ -158,6 +158,7 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <memory>
@@ -169,6 +170,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/functional/bind_front.h"
 #include "absl/memory/memory.h"
 #include "absl/time/time.h"
@@ -206,6 +208,44 @@ class RoutingDimension;
 using util::ReverseArcListGraph;
 class SweepArranger;
 #endif
+
+class PathsMetadata {
+ public:
+  explicit PathsMetadata(const RoutingIndexManager& manager) {
+    const int num_indices = manager.num_indices();
+    const int num_paths = manager.num_vehicles();
+    path_of_node_.resize(num_indices, -1);
+    is_start_.resize(num_indices, false);
+    is_end_.resize(num_indices, false);
+    start_of_path_.resize(num_paths);
+    end_of_path_.resize(num_paths);
+    for (int v = 0; v < num_paths; ++v) {
+      const int64_t start = manager.GetStartIndex(v);
+      start_of_path_[v] = start;
+      path_of_node_[start] = v;
+      is_start_[start] = true;
+      const int64_t end = manager.GetEndIndex(v);
+      end_of_path_[v] = end;
+      path_of_node_[end] = v;
+      is_end_[end] = true;
+    }
+  }
+
+  bool IsStart(int64_t node) const { return is_start_[node]; }
+  bool IsEnd(int64_t node) const { return is_end_[node]; }
+  int GetPath(int64_t start_or_end_node) const {
+    return path_of_node_[start_or_end_node];
+  }
+  const std::vector<int64_t>& Starts() const { return start_of_path_; }
+  const std::vector<int64_t>& Ends() const { return end_of_path_; }
+
+ private:
+  std::vector<bool> is_start_;
+  std::vector<bool> is_end_;
+  std::vector<int64_t> start_of_path_;
+  std::vector<int64_t> end_of_path_;
+  std::vector<int64_t> path_of_node_;
+};
 
 class RoutingModel {
  public:
@@ -1300,6 +1340,65 @@ class RoutingModel {
   const Assignment* PackCumulsOfOptimizerDimensionsFromAssignment(
       const Assignment* original_assignment, absl::Duration duration_limit,
       bool* time_limit_was_reached = nullptr);
+  /// Contains the information needed by the solver to optimize a dimension's
+  /// cumuls with travel-start dependent transit values.
+  struct RouteDimensionTravelInfo {
+    /// Contains the information for a single transition on the route.
+    struct TransitionInfo {
+      /// The following struct defines a piecewise linear formulation, with
+      /// int64_t values for the "anchor" x and y values, and potential double
+      /// values for the slope of each linear function.
+      // TODO(user): Adjust the inlined vector sizes based on experiments.
+      struct PiecewiseLinearFormulation {
+        /// The set of *increasing* anchor cumul values for the interpolation.
+        absl::InlinedVector<int64_t, 8> x_anchors;
+        /// The y values used for the interpolation:
+        /// For any x anchor value, let i be an index such that
+        /// x_anchors[i] ≤ x < x_anchors[i+1], then the y value for x is
+        /// y_anchors[i] * (1-λ) + y_anchors[i+1] * λ, with
+        /// λ = (x - x_anchors[i]) / (x_anchors[i+1] - x_anchors[i]).
+        absl::InlinedVector<int64_t, 8> y_anchors;
+
+        std::string DebugString(std::string line_prefix = "") const;
+      };
+
+      /// Models the (real) travel value Tᵣ, for this transition based on the
+      /// departure value of the travel.
+      PiecewiseLinearFormulation travel_start_dependent_travel;
+
+      /// travel_compression_cost models the cost of the difference between the
+      /// (real) travel value Tᵣ given by travel_start_dependent_travel and the
+      /// compressed travel value considered in the scheduling.
+      PiecewiseLinearFormulation travel_compression_cost;
+
+      /// The parts of the transit which occur pre/post travel between the
+      /// nodes. The total transit between the two nodes i and j is
+      /// = pre_travel_transit_value + travel(i, j) + post_travel_transit_value.
+      int64_t pre_travel_transit_value;
+      int64_t post_travel_transit_value;
+
+      /// The hard lower bound of the compressed travel value that will be
+      /// enforced by the scheduling module.
+      int64_t compressed_travel_value_lower_bound;
+
+      /// The hard upper bound of the (real) travel value Tᵣ (see
+      /// above). This value should be chosen so as to prevent
+      /// the overall cost of the model
+      /// (dimension costs + travel_compression_cost) to overflow.
+      int64_t travel_value_upper_bound;
+
+      std::string DebugString(std::string line_prefix = "") const;
+    };
+
+    /// For each node #i on the route, transition_info[i] contains the relevant
+    /// information for the travel between nodes #i and #(i + 1) on the route.
+    std::vector<TransitionInfo> transition_info;
+    /// The cost per unit of travel for this vehicle.
+    int64_t travel_cost_coefficient;
+
+    std::string DebugString(std::string line_prefix = "") const;
+  };
+
 #ifndef SWIG
   // TODO(user): Revisit if coordinates are added to the RoutingModel class.
   void SetSweepArranger(SweepArranger* sweep_arranger);
@@ -1322,16 +1421,18 @@ class RoutingModel {
 
   /// Model inspection.
   /// Returns the variable index of the starting node of a vehicle route.
-  int64_t Start(int vehicle) const { return starts_[vehicle]; }
+  int64_t Start(int vehicle) const { return paths_metadata_.Starts()[vehicle]; }
   /// Returns the variable index of the ending node of a vehicle route.
-  int64_t End(int vehicle) const { return ends_[vehicle]; }
+  int64_t End(int vehicle) const { return paths_metadata_.Ends()[vehicle]; }
   /// Returns true if 'index' represents the first node of a route.
-  bool IsStart(int64_t index) const;
+  bool IsStart(int64_t index) const { return paths_metadata_.IsStart(index); }
   /// Returns true if 'index' represents the last node of a route.
-  bool IsEnd(int64_t index) const { return index >= Size(); }
+  bool IsEnd(int64_t index) const { return paths_metadata_.IsEnd(index); }
   /// Returns the vehicle of the given start/end index, and -1 if the given
   /// index is not a vehicle start/end.
-  int VehicleIndex(int64_t index) const { return index_to_vehicle_[index]; }
+  int VehicleIndex(int64_t index) const {
+    return paths_metadata_.GetPath(index);
+  }
   /// Assignment inspection
   /// Returns the variable index of the node directly after the node
   /// corresponding to 'index' in 'assignment'.
@@ -2083,9 +2184,7 @@ class RoutingModel {
   // Two indices are equivalent if they correspond to the same node (as given
   // to the constructors taking a RoutingIndexManager).
   std::vector<int> index_to_equivalence_class_;
-  std::vector<int> index_to_vehicle_;
-  std::vector<int64_t> starts_;
-  std::vector<int64_t> ends_;
+  const PathsMetadata paths_metadata_;
   // TODO(user): b/62478706 Once the port is done, this shouldn't be needed
   //                  anymore.
   RoutingIndexManager manager_;
@@ -2302,7 +2401,6 @@ class GlobalVehicleBreaksConstraint : public Constraint {
  private:
   void PropagateNode(int node);
   void PropagateVehicle(int vehicle);
-  void PropagateMaxBreakDistance(int vehicle);
 
   const RoutingModel* model_;
   const RoutingDimension* const dimension_;
@@ -2833,7 +2931,6 @@ class RoutingDimension {
       std::vector<IntervalVar*> breaks, int vehicle,
       std::vector<int64_t> node_visit_transits,
       std::function<int64_t(int64_t, int64_t)> delays);
-#endif  /// !defined(SWIGPYTHON)
 
   /// Returns the break intervals set by SetBreakIntervalsOfVehicle().
   const std::vector<IntervalVar*>& GetBreakIntervalsOfVehicle(
@@ -2844,6 +2941,7 @@ class RoutingDimension {
   const std::vector<std::pair<int64_t, int64_t> >&
       GetBreakDistanceDurationOfVehicle(int vehicle) const;
   // clang-format on
+#endif  /// !defined(SWIGPYTHON)
   int GetPreTravelEvaluatorOfVehicle(int vehicle) const;
   int GetPostTravelEvaluatorOfVehicle(int vehicle) const;
 

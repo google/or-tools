@@ -42,6 +42,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -96,6 +97,46 @@ class TwoOpt;
 // proto.
 
 namespace operations_research {
+
+std::string RoutingModel::RouteDimensionTravelInfo::DebugString(
+    std::string line_prefix) const {
+  std::string s = absl::StrFormat("%stravel_cost_coefficient: %ld", line_prefix,
+                                  travel_cost_coefficient);
+  for (int i = 0; i < transition_info.size(); ++i) {
+    absl::StrAppendFormat(&s, "\ntransition[%d] {\n%s\n}\n", i,
+                          transition_info[i].DebugString(line_prefix + "\t"));
+  }
+  return s;
+}
+
+std::string RoutingModel::RouteDimensionTravelInfo::TransitionInfo::DebugString(
+    std::string line_prefix) const {
+  return absl::StrFormat(
+      R"({
+%spre: %ld
+%spost: %ld
+%slower_bound: %ld
+%supper_bound: %ld
+%stravel_value: %s
+%scost: %s
+})",
+      line_prefix, pre_travel_transit_value, line_prefix,
+      post_travel_transit_value, line_prefix,
+      compressed_travel_value_lower_bound, line_prefix,
+      travel_value_upper_bound, line_prefix,
+      travel_start_dependent_travel.DebugString(line_prefix + "\t"),
+      line_prefix, travel_compression_cost.DebugString(line_prefix + "\t"));
+}
+
+std::string RoutingModel::RouteDimensionTravelInfo::TransitionInfo::
+    PiecewiseLinearFormulation::DebugString(std::string line_prefix) const {
+  if (x_anchors.size() <= 10) {
+    return "{ " + DUMP_VARS(x_anchors, y_anchors).str() + "}";
+  }
+  return absl::StrFormat("{\n%s%s\n%s%s\n}", line_prefix,
+                         DUMP_VARS(x_anchors).str(), line_prefix,
+                         DUMP_VARS(y_anchors).str());
+}
 
 namespace {
 using ResourceGroup = RoutingModel::ResourceGroup;
@@ -252,11 +293,18 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   SetCumulsFromLocalDimensionCosts(
       LocalDimensionCumulOptimizer* local_optimizer,
       LocalDimensionCumulOptimizer* local_mp_optimizer, SearchMonitor* monitor,
-      bool optimize_and_pack = false)
+      bool optimize_and_pack = false,
+      std::vector<RoutingModel::RouteDimensionTravelInfo>
+          dimension_travel_info_per_route = {})
       : local_optimizer_(local_optimizer),
         local_mp_optimizer_(local_mp_optimizer),
         monitor_(monitor),
-        optimize_and_pack_(optimize_and_pack) {
+        optimize_and_pack_(optimize_and_pack),
+        dimension_travel_info_per_route_(
+            std::move(dimension_travel_info_per_route)) {
+    DCHECK(dimension_travel_info_per_route_.empty() ||
+           dimension_travel_info_per_route_.size() ==
+               local_optimizer_->dimension()->model()->vehicles());
     const RoutingDimension* const dimension = local_optimizer->dimension();
     const std::vector<int>& resource_groups =
         dimension->model()->GetDimensionResourceGroupIndices(dimension);
@@ -327,6 +375,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 
  private:
   using Resource = RoutingModel::ResourceGroup::Resource;
+  using RouteDimensionTravelInfo = RoutingModel::RouteDimensionTravelInfo;
 
   DimensionSchedulingStatus ComputeCumulAndBreakValuesForVehicle(
       LocalDimensionCumulOptimizer* optimizer, int vehicle,
@@ -336,6 +385,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     break_start_end_values->clear();
     RoutingModel* const model = optimizer->dimension()->model();
     const auto next = [model](int64_t n) { return model->NextVar(n)->Value(); };
+    const RouteDimensionTravelInfo& dimension_travel_info =
+        dimension_travel_info_per_route_.empty()
+            ? RouteDimensionTravelInfo()
+            : dimension_travel_info_per_route_[vehicle];
     if (optimize_and_pack_) {
       const int resource_index =
           resource_group_index_ < 0
@@ -346,10 +399,12 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
                              : &model->GetResourceGroup(resource_group_index_)
                                     ->GetResource(resource_index);
       return optimizer->ComputePackedRouteCumuls(
-          vehicle, next, resource, cumul_values, break_start_end_values);
+          vehicle, next, dimension_travel_info, resource, cumul_values,
+          break_start_end_values);
     } else {
       // TODO(user): Add the resource to the call in this case too!
-      return optimizer->ComputeRouteCumuls(vehicle, next, cumul_values,
+      return optimizer->ComputeRouteCumuls(vehicle, next, dimension_travel_info,
+                                           cumul_values,
                                            break_start_end_values);
     }
   }
@@ -360,6 +415,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   int resource_group_index_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
+  const std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route_;
 };
 
 class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
@@ -367,11 +423,19 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   SetCumulsFromGlobalDimensionCosts(
       GlobalDimensionCumulOptimizer* global_optimizer,
       GlobalDimensionCumulOptimizer* global_mp_optimizer,
-      SearchMonitor* monitor, bool optimize_and_pack = false)
+      SearchMonitor* monitor, bool optimize_and_pack = false,
+      std::vector<RoutingModel::RouteDimensionTravelInfo>
+          dimension_travel_info_per_route = {})
       : global_optimizer_(global_optimizer),
         global_mp_optimizer_(global_mp_optimizer),
         monitor_(monitor),
-        optimize_and_pack_(optimize_and_pack) {}
+        optimize_and_pack_(optimize_and_pack),
+        dimension_travel_info_per_route_(
+            std::move(dimension_travel_info_per_route)) {
+    DCHECK(dimension_travel_info_per_route_.empty() ||
+           dimension_travel_info_per_route_.size() ==
+               global_optimizer_->dimension()->model()->vehicles());
+  }
 
   Decision* Next(Solver* const solver) override {
     // The following boolean variable indicates if the solver should fail, in
@@ -473,31 +537,33 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
     RoutingModel* const model = optimizer->dimension()->model();
     const auto next = [model](int64_t n) { return model->NextVar(n)->Value(); };
     return optimize_and_pack_
-               ? optimizer->ComputePackedCumuls(next, cumul_values,
-                                                break_start_end_values,
-                                                resource_indices_per_group)
-               : optimizer->ComputeCumuls(next, cumul_values,
-                                          break_start_end_values,
-                                          resource_indices_per_group);
+               ? optimizer->ComputePackedCumuls(
+                     next, dimension_travel_info_per_route_, cumul_values,
+                     break_start_end_values, resource_indices_per_group)
+               : optimizer->ComputeCumuls(
+                     next, dimension_travel_info_per_route_, cumul_values,
+                     break_start_end_values, resource_indices_per_group);
   }
 
   GlobalDimensionCumulOptimizer* const global_optimizer_;
   GlobalDimensionCumulOptimizer* const global_mp_optimizer_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
+  const std::vector<RoutingModel::RouteDimensionTravelInfo>
+      dimension_travel_info_per_route_;
 };
 
 class SetCumulsFromResourceAssignmentCosts : public DecisionBuilder {
  public:
   SetCumulsFromResourceAssignmentCosts(
-      LocalDimensionCumulOptimizer* optimizer,
+      LocalDimensionCumulOptimizer* lp_optimizer,
       LocalDimensionCumulOptimizer* mp_optimizer, SearchMonitor* monitor)
-      : model_(*optimizer->dimension()->model()),
-        dimension_(*optimizer->dimension()),
+      : model_(*lp_optimizer->dimension()->model()),
+        dimension_(*lp_optimizer->dimension()),
+        lp_optimizer_(lp_optimizer),
+        mp_optimizer_(mp_optimizer),
         rg_index_(model_.GetDimensionResourceGroupIndex(&dimension_)),
         resource_group_(*model_.GetResourceGroup(rg_index_)),
-        resource_assignment_optimizer_(&resource_group_, optimizer,
-                                       mp_optimizer),
         monitor_(monitor) {}
 
   Decision* Next(Solver* const solver) override {
@@ -514,20 +580,23 @@ class SetCumulsFromResourceAssignmentCosts : public DecisionBuilder {
       DCHECK(DimensionFixedTransitsEqualTransitEvaluators(dimension_));
 
       for (int v : resource_group_.GetVehiclesRequiringAResource()) {
-        if (!resource_assignment_optimizer_.ComputeAssignmentCostsForVehicle(
-                v, next, dimension_.transit_evaluator(v),
-                /*optimize_vehicle_costs*/ true, &assignment_costs[v],
-                &cumul_values[v], &break_values[v])) {
+        if (!ComputeVehicleToResourcesAssignmentCosts(
+                v, resource_group_, next, dimension_.transit_evaluator(v),
+                /*optimize_vehicle_costs*/ true, lp_optimizer_, mp_optimizer_,
+                &assignment_costs[v], &cumul_values[v], &break_values[v])) {
           should_fail = true;
           break;
         }
       }
 
-      std::vector<int> resource_indices;
-      should_fail = should_fail ||
-                    resource_assignment_optimizer_.ComputeBestAssignmentCost(
-                        assignment_costs, assignment_costs,
-                        [](int) { return true; }, &resource_indices) < 0;
+      std::vector<int> resource_indices(num_vehicles);
+      should_fail =
+          should_fail ||
+          ComputeBestVehicleToResourceAssignment(
+              resource_group_.GetVehiclesRequiringAResource(),
+              resource_group_.Size(),
+              [&assignment_costs](int v) { return &assignment_costs[v]; },
+              &resource_indices) < 0;
 
       if (!should_fail) {
         DCHECK_EQ(resource_indices.size(), num_vehicles);
@@ -577,9 +646,10 @@ class SetCumulsFromResourceAssignmentCosts : public DecisionBuilder {
  private:
   const RoutingModel& model_;
   const RoutingDimension& dimension_;
+  LocalDimensionCumulOptimizer* lp_optimizer_;
+  LocalDimensionCumulOptimizer* mp_optimizer_;
   const int rg_index_;
   const ResourceGroup& resource_group_;
-  ResourceAssignmentOptimizer resource_assignment_optimizer_;
   SearchMonitor* const monitor_;
 };
 
@@ -697,156 +767,6 @@ class DifferentFromValues : public Constraint {
   IntVar* const var_;
   const std::vector<int64_t> values_;
 };
-
-// Set of "light" constraints, well-suited for use within Local Search.
-// These constraints are "checking" constraints, only triggered on WhenBound
-// events. The provide very little (or no) domain filtering.
-// TODO(user): Move to core constraintsolver library.
-
-// Light one-dimension function-based element constraint ensuring:
-// var == values(index).
-// Doesn't perform bound reduction of the resulting variable until the index
-// variable is bound.
-// If deep_serialize returns false, the model visitor will not extract all
-// possible values from the values function.
-template <typename F>
-class LightFunctionElementConstraint : public Constraint {
- public:
-  LightFunctionElementConstraint(Solver* const solver, IntVar* const var,
-                                 IntVar* const index, F values,
-                                 std::function<bool()> deep_serialize)
-      : Constraint(solver),
-        var_(var),
-        index_(index),
-        values_(std::move(values)),
-        deep_serialize_(std::move(deep_serialize)) {}
-  ~LightFunctionElementConstraint() override {}
-
-  void Post() override {
-    Demon* demon = MakeConstraintDemon0(
-        solver(), this, &LightFunctionElementConstraint::IndexBound,
-        "IndexBound");
-    index_->WhenBound(demon);
-  }
-
-  void InitialPropagate() override {
-    if (index_->Bound()) {
-      IndexBound();
-    }
-  }
-
-  std::string DebugString() const override {
-    return "LightFunctionElementConstraint";
-  }
-
-  void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitConstraint(RoutingModelVisitor::kLightElement, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            var_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
-                                            index_);
-    // Warning: This will expand all values into a vector.
-    if (deep_serialize_()) {
-      visitor->VisitInt64ToInt64Extension(values_, index_->Min(),
-                                          index_->Max());
-    }
-    visitor->EndVisitConstraint(RoutingModelVisitor::kLightElement, this);
-  }
-
- private:
-  void IndexBound() { var_->SetValue(values_(index_->Min())); }
-
-  IntVar* const var_;
-  IntVar* const index_;
-  F values_;
-  std::function<bool()> deep_serialize_;
-};
-
-template <typename F>
-Constraint* MakeLightElement(Solver* const solver, IntVar* const var,
-                             IntVar* const index, F values,
-                             std::function<bool()> deep_serialize) {
-  return solver->RevAlloc(new LightFunctionElementConstraint<F>(
-      solver, var, index, std::move(values), std::move(deep_serialize)));
-}
-
-// Light two-dimension function-based element constraint ensuring:
-// var == values(index1, index2).
-// Doesn't perform bound reduction of the resulting variable until the index
-// variables are bound.
-// Ownership of the 'values' callback is taken by the constraint.
-template <typename F>
-class LightFunctionElement2Constraint : public Constraint {
- public:
-  LightFunctionElement2Constraint(Solver* const solver, IntVar* const var,
-                                  IntVar* const index1, IntVar* const index2,
-                                  F values,
-                                  std::function<bool()> deep_serialize)
-      : Constraint(solver),
-        var_(var),
-        index1_(index1),
-        index2_(index2),
-        values_(std::move(values)),
-        deep_serialize_(std::move(deep_serialize)) {}
-  ~LightFunctionElement2Constraint() override {}
-  void Post() override {
-    Demon* demon = MakeConstraintDemon0(
-        solver(), this, &LightFunctionElement2Constraint::IndexBound,
-        "IndexBound");
-    index1_->WhenBound(demon);
-    index2_->WhenBound(demon);
-  }
-  void InitialPropagate() override { IndexBound(); }
-
-  std::string DebugString() const override {
-    return "LightFunctionElement2Constraint";
-  }
-
-  void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitConstraint(RoutingModelVisitor::kLightElement2, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            var_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
-                                            index1_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex2Argument,
-                                            index2_);
-    // Warning: This will expand all values into a vector.
-    const int64_t index1_min = index1_->Min();
-    const int64_t index1_max = index1_->Max();
-    visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, index1_min);
-    visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, index1_max);
-    if (deep_serialize_()) {
-      for (int i = index1_min; i <= index1_max; ++i) {
-        visitor->VisitInt64ToInt64Extension(
-            [this, i](int64_t j) { return values_(i, j); }, index2_->Min(),
-            index2_->Max());
-      }
-    }
-    visitor->EndVisitConstraint(RoutingModelVisitor::kLightElement2, this);
-  }
-
- private:
-  void IndexBound() {
-    if (index1_->Bound() && index2_->Bound()) {
-      var_->SetValue(values_(index1_->Min(), index2_->Min()));
-    }
-  }
-
-  IntVar* const var_;
-  IntVar* const index1_;
-  IntVar* const index2_;
-  Solver::IndexEvaluator2 values_;
-  std::function<bool()> deep_serialize_;
-};
-
-template <typename F>
-Constraint* MakeLightElement2(Solver* const solver, IntVar* const var,
-                              IntVar* const index1, IntVar* const index2,
-                              F values, std::function<bool()> deep_serialize) {
-  return solver->RevAlloc(new LightFunctionElement2Constraint<F>(
-      solver, var, index1, index2, std::move(values),
-      std::move(deep_serialize)));
-}
 
 // For each vehicle, computes information on the partially fixed start/end
 // chains (based on bound NextVar values):
@@ -970,9 +890,6 @@ class ResourceAssignmentConstraint : public Constraint {
     LocalDimensionCumulOptimizer* const mp_optimizer =
         model_.GetMutableLocalCumulMPOptimizer(dimension);
     DCHECK_NE(mp_optimizer, nullptr);
-    ResourceAssignmentOptimizer resource_assignment_optimizer(
-        &resource_group_, optimizer, mp_optimizer);
-
     const auto transit = [&dimension](int64_t node, int64_t /*next*/) {
       // TODO(user): Get rid of this max() by only allowing resources on
       // dimensions with positive transits (model.AreVehicleTransitsPositive()).
@@ -983,17 +900,22 @@ class ResourceAssignmentConstraint : public Constraint {
     };
 
     std::vector<std::vector<int64_t>> assignment_costs(model_.vehicles());
-
     for (int v : resource_group_.GetVehiclesRequiringAResource()) {
-      if (!resource_assignment_optimizer.ComputeAssignmentCostsForVehicle(
-              v, next, transit, /*optimize_vehicle_costs*/ false,
+      if (!ComputeVehicleToResourcesAssignmentCosts(
+              v, resource_group_, next, transit,
+              /*optimize_vehicle_costs*/ false,
+              model_.GetMutableLocalCumulLPOptimizer(dimension),
+              model_.GetMutableLocalCumulMPOptimizer(dimension),
               &assignment_costs[v], nullptr, nullptr)) {
         return false;
       }
     }
-
-    return resource_assignment_optimizer.ComputeBestAssignmentCost(
-               assignment_costs, assignment_costs, [](int) { return true; },
+    // TODO(user): Replace this call with a more efficient max-flow, instead
+    // of running the full min-cost flow.
+    return ComputeBestVehicleToResourceAssignment(
+               resource_group_.GetVehiclesRequiringAResource(),
+               resource_group_.Size(),
+               [&assignment_costs](int v) { return &assignment_costs[v]; },
                nullptr) >= 0;
   }
 
@@ -1030,8 +952,7 @@ class ResourceAssignmentConstraint : public Constraint {
               start_cumul
                   ? vehicle_to_start_bound_vars_per_dimension_[v][d].lower_bound
                   : vehicle_to_end_bound_vars_per_dimension_[v][d].lower_bound;
-          s->AddConstraint(MakeLightElement(
-              s, resource_lb_var, resource_var,
+          s->AddConstraint(s->MakeLightElement(
               [dim, start_cumul, &resource_group = resource_group_](int r) {
                 if (r < 0) return std::numeric_limits<int64_t>::min();
                 return start_cumul ? resource_group.GetResources()[r]
@@ -1043,6 +964,7 @@ class ResourceAssignmentConstraint : public Constraint {
                                          .end_domain()
                                          .Min();
               },
+              resource_lb_var, resource_var,
               [&model = model_]() {
                 return model.enable_deep_serialization();
               }));
@@ -1052,8 +974,7 @@ class ResourceAssignmentConstraint : public Constraint {
               start_cumul
                   ? vehicle_to_start_bound_vars_per_dimension_[v][d].upper_bound
                   : vehicle_to_end_bound_vars_per_dimension_[v][d].upper_bound;
-          s->AddConstraint(MakeLightElement(
-              s, resource_ub_var, resource_var,
+          s->AddConstraint(s->MakeLightElement(
               [dim, start_cumul, &resource_group = resource_group_](int r) {
                 if (r < 0) return std::numeric_limits<int64_t>::max();
                 return start_cumul ? resource_group.GetResources()[r]
@@ -1065,6 +986,7 @@ class ResourceAssignmentConstraint : public Constraint {
                                          .end_domain()
                                          .Max();
               },
+              resource_ub_var, resource_var,
               [&model = model_]() {
                 return model.enable_deep_serialization();
               }));
@@ -1152,8 +1074,7 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
       has_same_vehicle_type_requirements_(false),
       has_temporal_type_requirements_(false),
       num_visit_types_(0),
-      starts_(vehicles_),
-      ends_(vehicles_),
+      paths_metadata_(index_manager),
       manager_(index_manager) {
   // Initialize vehicle costs to the zero evaluator.
   vehicle_to_transit_cost_.assign(
@@ -1176,14 +1097,6 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
   index_to_delivery_index_pairs_.resize(size);
   index_to_visit_type_.resize(index_manager.num_indices(), kUnassigned);
   index_to_type_policy_.resize(index_manager.num_indices());
-
-  index_to_vehicle_.resize(index_manager.num_indices(), kUnassigned);
-  for (int v = 0; v < index_manager.num_vehicles(); ++v) {
-    starts_[v] = index_manager.GetStartIndex(v);
-    index_to_vehicle_[starts_[v]] = v;
-    ends_[v] = index_manager.GetEndIndex(v);
-    index_to_vehicle_[ends_[v]] = v;
-  }
 
   const std::vector<RoutingIndexManager::NodeIndex>& index_to_node =
       index_manager.GetIndexToNodeMap();
@@ -1255,14 +1168,13 @@ int RegisterUnaryCallback(RoutingTransitCallback1 callback, bool is_positive,
 }  // namespace
 
 int RoutingModel::RegisterUnaryTransitVector(std::vector<int64_t> values) {
+  bool is_positive = std::all_of(std::cbegin(values), std::cend(values),
+                                 [](int64_t transit) { return transit >= 0; });
   return RegisterUnaryCallback(
       [this, values = std::move(values)](int64_t i) {
         return values[manager_.IndexToNode(i).value()];
       },
-      /*is_positive=*/
-      std::all_of(std::cbegin(values), std::cend(values),
-                  [](int64_t transit) { return transit >= 0; }),
-      this);
+      is_positive, this);
 }
 
 int RoutingModel::RegisterUnaryTransitCallback(TransitCallback1 callback) {
@@ -1737,8 +1649,17 @@ const ResourceGroup::Attributes& ResourceGroup::Resource::GetDefaultAttributes()
 }
 
 int RoutingModel::AddResourceGroup() {
+  DCHECK_EQ(resource_groups_.size(), resource_vars_.size());
+  // Create and add the resource group.
   resource_groups_.push_back(std::make_unique<ResourceGroup>(this));
-  return resource_groups_.size() - 1;
+  // Create and add the resource vars (the proper variable bounds and
+  // constraints are set up when closing the model).
+  const int rg_index = resource_groups_.size() - 1;
+  resource_vars_.push_back({});
+  solver_->MakeIntVarArray(vehicles(), -1, std::numeric_limits<int64_t>::max(),
+                           absl::StrCat("Resources[", rg_index, "]"),
+                           &resource_vars_.back());
+  return rg_index;
 }
 
 int RoutingModel::ResourceGroup::AddResource(
@@ -2415,8 +2336,8 @@ void RoutingModel::AppendHomogeneousArcCosts(
     // the search in GLS in some cases (Solomon instances for instance).
     IntVar* const base_cost_var =
         solver_->MakeIntVar(0, std::numeric_limits<int64_t>::max());
-    solver_->AddConstraint(MakeLightElement(
-        solver_.get(), base_cost_var, nexts_[node_index], arc_cost_evaluator,
+    solver_->AddConstraint(solver_->MakeLightElement(
+        arc_cost_evaluator, base_cost_var, nexts_[node_index],
         [this]() { return enable_deep_serialization_; }));
     IntVar* const var =
         solver_->MakeProd(base_cost_var, active_[node_index])->Var();
@@ -2440,12 +2361,11 @@ void RoutingModel::AppendArcCosts(const RoutingSearchParameters& parameters,
     // the search in GLS in some cases (Solomon instances for instance).
     IntVar* const base_cost_var =
         solver_->MakeIntVar(0, std::numeric_limits<int64_t>::max());
-    solver_->AddConstraint(MakeLightElement2(
-        solver_.get(), base_cost_var, nexts_[node_index],
-        vehicle_vars_[node_index],
+    solver_->AddConstraint(solver_->MakeLightElement(
         [this, node_index](int64_t to, int64_t vehicle) {
           return GetArcCostForVehicle(node_index, to, vehicle);
         },
+        base_cost_var, nexts_[node_index], vehicle_vars_[node_index],
         [this]() { return enable_deep_serialization_; }));
     IntVar* const var =
         solver_->MakeProd(base_cost_var, active_[node_index])->Var();
@@ -2470,7 +2390,7 @@ void RoutingModel::AppendArcCosts(const RoutingSearchParameters& parameters,
 }
 
 int RoutingModel::GetVehicleStartClass(int64_t start_index) const {
-  const int vehicle = index_to_vehicle_[start_index];
+  const int vehicle = VehicleIndex(start_index);
   if (vehicle != kUnassigned) {
     return GetVehicleClassIndexOfVehicle(vehicle).value();
   }
@@ -2719,8 +2639,8 @@ void RoutingModel::CloseModelWithParameters(
 
   // Vehicle variable constraints
   for (int i = 0; i < vehicles_; ++i) {
-    const int64_t start = starts_[i];
-    const int64_t end = ends_[i];
+    const int64_t start = Start(i);
+    const int64_t end = End(i);
     solver_->AddConstraint(
         solver_->MakeEquality(vehicle_vars_[start], solver_->MakeIntConst(i)));
     solver_->AddConstraint(
@@ -2787,8 +2707,8 @@ void RoutingModel::CloseModelWithParameters(
   // Reduce domain of next variables.
   for (int i = 0; i < size; ++i) {
     // No variable can point back to a start.
-    solver_->AddConstraint(solver_->RevAlloc(
-        new DifferentFromValues(solver_.get(), nexts_[i], starts_)));
+    solver_->AddConstraint(solver_->RevAlloc(new DifferentFromValues(
+        solver_.get(), nexts_[i], paths_metadata_.Starts())));
     // Extra constraint to state an active node can't point to itself.
     solver_->AddConstraint(
         solver_->MakeIsDifferentCstCt(nexts_[i], i, active_[i]));
@@ -2812,15 +2732,15 @@ void RoutingModel::CloseModelWithParameters(
     forbidden_ends.reserve(vehicles_ - 1);
     for (int j = 0; j < vehicles_; ++j) {
       if (i != j) {
-        forbidden_ends.push_back(ends_[j]);
+        forbidden_ends.push_back(End(j));
       }
     }
     solver_->AddConstraint(solver_->RevAlloc(new DifferentFromValues(
-        solver_.get(), nexts_[starts_[i]], std::move(forbidden_ends))));
+        solver_.get(), nexts_[Start(i)], std::move(forbidden_ends))));
   }
 
   // Constraining is_bound_to_end_ variables.
-  for (const int64_t end : ends_) {
+  for (const int64_t end : paths_metadata_.Ends()) {
     is_bound_to_end_[end]->SetValue(1);
   }
 
@@ -3077,13 +2997,14 @@ void RoutingModel::CloseModelWithParameters(
   }
 
   if (!resource_groups_.empty()) {
-    resource_vars_.resize(resource_groups_.size());
+    DCHECK_EQ(resource_vars_.size(), resource_groups_.size());
     for (int rg = 0; rg < resource_groups_.size(); ++rg) {
       const auto& resource_group = resource_groups_[rg];
+      const int max_resource_index = resource_group->Size() - 1;
       std::vector<IntVar*>& vehicle_res_vars = resource_vars_[rg];
-      solver_->MakeIntVarArray(vehicles(), -1, resource_group->Size() - 1,
-                               absl::StrCat("Resources[", rg, "]"),
-                               &vehicle_res_vars);
+      for (IntVar* res_var : vehicle_res_vars) {
+        res_var->SetMax(max_resource_index);
+      }
       solver_->AddConstraint(MakeResourceConstraint(resource_group.get(),
                                                     &vehicle_res_vars, this));
     }
@@ -3284,6 +3205,7 @@ class AtSolutionCallbackMonitor : public SearchMonitor {
     callback_();
     return false;
   }
+  void Install() override { ListenToEvent(Solver::MonitorEvent::kAtSolution); }
 
  private:
   std::function<void()> callback_;
@@ -3601,7 +3523,7 @@ int64_t RoutingModel::ComputeLowerBound() {
   // Therefore we are creating fake assignments for end nodes, forced to point
   // to the equivalent start node with a cost of 0.
   for (int tail = Size(); tail < num_nodes; ++tail) {
-    const ArcIndex arc = graph.AddArc(tail, num_nodes + starts_[tail - Size()]);
+    const ArcIndex arc = graph.AddArc(tail, num_nodes + Start(tail - Size()));
     linear_sum_assignment.SetArcCost(arc, 0);
   }
   if (linear_sum_assignment.ComputeAssignment()) {
@@ -4083,11 +4005,11 @@ int64_t RoutingModel::GetArcCostForClassInternal(
     cost = CapAdd(
         evaluator(from_index, to_index),
         CapAdd(GetDimensionTransitCostSum(from_index, to_index, cost_class),
-               fixed_cost_of_vehicle_[index_to_vehicle_[from_index]]));
+               fixed_cost_of_vehicle_[VehicleIndex(from_index)]));
   } else {
     // If there's only the first and last nodes on the route, it is considered
     // as an empty route.
-    if (vehicle_used_when_empty_[index_to_vehicle_[from_index]]) {
+    if (vehicle_used_when_empty_[VehicleIndex(from_index)]) {
       cost =
           CapAdd(evaluator(from_index, to_index),
                  GetDimensionTransitCostSum(from_index, to_index, cost_class));
@@ -4097,10 +4019,6 @@ int64_t RoutingModel::GetArcCostForClassInternal(
   }
   *cache = {static_cast<int>(to_index), cost_class_index, cost};
   return cost;
-}
-
-bool RoutingModel::IsStart(int64_t index) const {
-  return !IsEnd(index) && index_to_vehicle_[index] != kUnassigned;
 }
 
 bool RoutingModel::IsVehicleUsed(const Assignment& assignment,
@@ -4719,7 +4637,7 @@ void RoutingModel::CreateNeighborhoodOperators(
 
   const auto arc_cost_for_path_start =
       [this](int64_t before_node, int64_t after_node, int64_t start_index) {
-        const int vehicle = index_to_vehicle_[start_index];
+        const int vehicle = VehicleIndex(start_index);
         const int64_t arc_cost =
             GetArcCostForVehicle(before_node, after_node, vehicle);
         return (before_node != start_index || IsEnd(after_node))
@@ -5034,8 +4952,8 @@ RoutingModel::CreateLocalSearchFilters(
   if (HasUnaryDimension(GetDimensions())) {
     std::vector<int> path_starts;
     std::vector<int> path_ends;
-    ConvertVectorInt64ToVectorInt(starts_, &path_starts);
-    ConvertVectorInt64ToVectorInt(ends_, &path_ends);
+    ConvertVectorInt64ToVectorInt(paths_metadata_.Starts(), &path_starts);
+    ConvertVectorInt64ToVectorInt(paths_metadata_.Ends(), &path_ends);
 
     auto path_state = std::make_unique<PathState>(
         Size() + vehicles(), std::move(path_starts), std::move(path_ends));
@@ -5806,7 +5724,7 @@ void RoutingModel::SetupDecisionBuilders(
 
 void RoutingModel::SetupMetaheuristics(
     const RoutingSearchParameters& search_parameters) {
-  SearchMonitor* optimize;
+  SearchMonitor* optimize = nullptr;
   const LocalSearchMetaheuristic::Value metaheuristic =
       search_parameters.local_search_metaheuristic();
   // Some metaheuristics will effectively never terminate; warn
@@ -6508,11 +6426,6 @@ void RoutingDimension::InitializeCumuls() {
 }
 
 namespace {
-template <int64_t value>
-int64_t IthElementOrValue(const std::vector<int64_t>& v, int64_t index) {
-  return index >= 0 ? v[index] : value;
-}
-
 void ComputeTransitClasses(const std::vector<int>& evaluator_indices,
                            std::vector<int>* class_evaluators,
                            std::vector<int64_t>* vehicle_to_class) {
@@ -6917,8 +6830,8 @@ void RoutingDimension::CloseModel(bool use_light_propagation) {
     IntVar* const vehicle_var = model_->VehicleVar(i);
     IntVar* const capacity_var = capacity_vars_[i];
     if (use_light_propagation) {
-      solver->AddConstraint(MakeLightElement(
-          solver, capacity_var, vehicle_var, capacity_lambda,
+      solver->AddConstraint(solver->MakeLightElement(
+          capacity_lambda, capacity_var, vehicle_var,
           [this]() { return model_->enable_deep_serialization_; }));
     } else {
       solver->AddConstraint(solver->MakeEquality(
@@ -6939,19 +6852,19 @@ void RoutingDimension::CloseModel(bool use_light_propagation) {
         const auto& unary_callback =
             model_->UnaryTransitCallbackOrNull(class_evaluator_index);
         if (unary_callback == nullptr) {
-          solver->AddConstraint(MakeLightElement(
-              solver, fixed_transit, next_var,
+          solver->AddConstraint(solver->MakeLightElement(
               [this, i](int64_t to) {
                 return model_->TransitCallback(class_evaluators_[0])(i, to);
               },
+              fixed_transit, next_var,
               [this]() { return model_->enable_deep_serialization_; }));
         } else {
           fixed_transit->SetValue(unary_callback(i));
         }
       } else {
-        solver->AddConstraint(MakeLightElement2(
-            solver, fixed_transit, next_var, model_->VehicleVar(i),
-            transit_vehicle_evaluator,
+        solver->AddConstraint(solver->MakeLightElement(
+            transit_vehicle_evaluator, fixed_transit, next_var,
+            model_->VehicleVar(i),
             [this]() { return model_->enable_deep_serialization_; }));
       }
     } else {
@@ -7459,4 +7372,5 @@ void RoutingDimension::SetupSlackAndDependentTransitCosts() const {
     }
   }
 }
+
 }  // namespace operations_research

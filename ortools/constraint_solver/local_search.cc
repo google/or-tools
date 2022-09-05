@@ -666,7 +666,7 @@ void PathOperator::InitializePathStarts() {
       if (!has_prevs[i]) {
         int current = i;
         while (!IsPathEnd(current)) {
-          if ((OldNext(current) != prev_values_[current])) {
+          if ((OldNext(current) != PrevNext(current))) {
             for (int j = 0; j < num_paths_; ++j) {
               optimal_paths_[num_paths_ * start_to_path_[i] + j] = false;
               optimal_paths_[num_paths_ * j + start_to_path_[i]] = false;
@@ -753,6 +753,15 @@ void PathOperator::InitializePathStarts() {
     }
   }
   path_starts_.swap(new_path_starts);
+  // For every base path, store the end corresponding to the path start.
+  // TODO(user): make this faster, maybe by pairing starts with ends.
+  path_ends_.clear();
+  path_ends_.reserve(path_starts_.size());
+  for (const int start_node : path_starts_) {
+    int64_t node = start_node;
+    while (!IsPathEnd(node)) node = OldNext(node);
+    path_ends_.push_back(node);
+  }
 }
 
 void PathOperator::InitializeInactives() {
@@ -1062,17 +1071,39 @@ bool Cross::MakeNeighbor() {
   if (node0 == start0) return false;
   const int64_t node1 = BaseNode(1);
   if (node1 == start1) return false;
-  if (!IsPathEnd(node0) && !IsPathEnd(node1)) {
-    // If two paths are equivalent don't exchange them.
-    if (PathClass(0) == PathClass(1) && IsPathEnd(Next(node0)) &&
-        IsPathEnd(Next(node1))) {
+
+  bool moved = false;
+  if (start0 < start1) {
+    // Cross path starts.
+    // If two paths are equivalent don't exchange the full paths.
+    if (PathClass(0) == PathClass(1) && !IsPathEnd(node0) &&
+        IsPathEnd(Next(node0)) && !IsPathEnd(node1) && IsPathEnd(Next(node1))) {
       return false;
     }
-    return MoveChain(start0, node0, start1) && MoveChain(node0, node1, start0);
+
+    const int first1 = Next(start1);
+    if (!IsPathEnd(node0)) moved |= MoveChain(start0, node0, start1);
+    if (!IsPathEnd(node1)) moved |= MoveChain(Prev(first1), node1, start0);
+  } else {  // start1 > start0.
+    // Cross path ends.
+    // If paths are equivalent, every end crossing has a corresponding start
+    // crossing, we don't generate those symmetric neighbors.
+    if (PathClass(0) == PathClass(1)) return false;
+    // Never exchange full paths, equivalent or not.
+    // Full path exchange is only performed when start0 < start1.
+    if (IsPathStart(Prev(node0)) && IsPathStart(Prev(node1))) {
+      return false;
+    }
+
+    const int prev_end_node1 = Prev(EndNode(1));
+    if (!IsPathEnd(node0)) {
+      moved |= MoveChain(Prev(node0), Prev(EndNode(0)), prev_end_node1);
+    }
+    if (!IsPathEnd(node1)) {
+      moved |= MoveChain(Prev(node1), prev_end_node1, Prev(EndNode(0)));
+    }
   }
-  if (!IsPathEnd(node0)) return MoveChain(start0, node0, start1);
-  if (!IsPathEnd(node1)) return MoveChain(start1, node1, start0);
-  return false;
+  return moved;
 }
 
 // ----- BaseInactiveNodeToPathOperator -----
@@ -2472,66 +2503,6 @@ LocalSearchOperator* Solver::MakeOperator(
 }
 
 namespace {
-// Classes for Local Search Operation used in Local Search filters.
-
-class SumOperation {
- public:
-  SumOperation() : value_(0) {}
-  void Init() { value_ = 0; }
-  void Update(int64_t update) { value_ = CapAdd(value_, update); }
-  void Remove(int64_t remove) { value_ = CapSub(value_, remove); }
-  int64_t value() const { return value_; }
-  void set_value(int64_t new_value) { value_ = new_value; }
-
- private:
-  int64_t value_;
-};
-
-class ProductOperation {
- public:
-  ProductOperation() : value_(1) {}
-  void Init() { value_ = 1; }
-  void Update(int64_t update) { value_ *= update; }
-  void Remove(int64_t remove) {
-    if (remove != 0) {
-      value_ /= remove;
-    }
-  }
-  int64_t value() const { return value_; }
-  void set_value(int64_t new_value) { value_ = new_value; }
-
- private:
-  int64_t value_;
-};
-
-class MinOperation {
- public:
-  void Init() { values_set_.clear(); }
-  void Update(int64_t update) { values_set_.insert(update); }
-  void Remove(int64_t remove) { values_set_.erase(remove); }
-  int64_t value() const {
-    return (!values_set_.empty()) ? *values_set_.begin() : 0;
-  }
-  void set_value(int64_t new_value) {}
-
- private:
-  std::set<int64_t> values_set_;
-};
-
-class MaxOperation {
- public:
-  void Init() { values_set_.clear(); }
-  void Update(int64_t update) { values_set_.insert(update); }
-  void Remove(int64_t remove) { values_set_.erase(remove); }
-  int64_t value() const {
-    return (!values_set_.empty()) ? *values_set_.rbegin() : 0;
-  }
-  void set_value(int64_t new_value) {}
-
- private:
-  std::set<int64_t> values_set_;
-};
-
 // Always accepts deltas, cost 0.
 class AcceptFilter : public LocalSearchFilter {
  public:
@@ -3035,17 +3006,18 @@ Interval Delta(const Interval& from, const Interval& to) {
 DimensionChecker::DimensionChecker(
     const PathState* path_state, std::vector<Interval> path_capacity,
     std::vector<int> path_class,
-    std::vector<std::function<Interval(int64_t)>> min_max_demand_per_path_class,
-    std::vector<Interval> node_capacity)
+    std::vector<std::function<Interval(int64_t, int64_t)>>
+        demand_per_path_class,
+    std::vector<Interval> node_capacity, int min_range_size_for_riq)
     : path_state_(path_state),
       path_capacity_(std::move(path_capacity)),
       path_class_(std::move(path_class)),
-      min_max_demand_per_path_class_(std::move(min_max_demand_per_path_class)),
+      demand_per_path_class_(std::move(demand_per_path_class)),
       node_capacity_(std::move(node_capacity)),
       index_(path_state_->NumNodes(), 0),
-      maximum_riq_layer_size_(
-          std::max(16, 4 * path_state_->NumNodes()))  // 16 and 4 are arbitrary.
-{
+      maximum_riq_layer_size_(std::max(
+          16, 4 * path_state_->NumNodes())),  // 16 and 4 are arbitrary.
+      min_range_size_for_riq_(min_range_size_for_riq) {
   const int num_nodes = path_state_->NumNodes();
   cached_demand_.resize(num_nodes);
   const int num_paths = path_state_->NumPaths();
@@ -3062,8 +3034,10 @@ bool DimensionChecker::Check() const {
   for (const int path : path_state_->ChangedPaths()) {
     const Interval path_capacity = path_capacity_[path];
     const int path_class = path_class_[path];
-    // Loop invariant: cumul is nonempty and within path_capacity.
-    Interval cumul = node_capacity_[path_state_->Start(path)];
+    // Loop invariant: except for the first chain, cumul represents the cumul
+    // state of the last node of the previous chain, and it is nonempty.
+    int prev_node = path_state_->Start(path);
+    Interval cumul = node_capacity_[prev_node];
     cumul = Intersect(cumul, path_capacity);
     if (IsEmpty(cumul)) return false;
 
@@ -3071,21 +3045,33 @@ bool DimensionChecker::Check() const {
       const int first_node = chain.First();
       const int last_node = chain.Last();
 
+      if (prev_node != first_node) {
+        // Bring cumul state from last node of previous chain to first node of
+        // current chain.
+        const Interval demand =
+            demand_per_path_class_[path_class](prev_node, first_node);
+        cumul += demand;
+        cumul = Intersect(cumul, path_capacity);
+        cumul = Intersect(cumul, node_capacity_[first_node]);
+        if (IsEmpty(cumul)) return false;
+        prev_node = first_node;
+      }
+
+      // Bring cumul state from first node to last node of the current chain.
       const int first_index = index_[first_node];
       const int last_index = index_[last_node];
-
       const int chain_path = path_state_->Path(first_node);
       const int chain_path_class =
           chain_path == -1 ? -1 : path_class_[chain_path];
-      // Call the RIQ if the chain size is large enough;
-      // the optimal value was found with the associated benchmark in tests,
+      // Use a RIQ if the chain size is large enough;
+      // the optimal size was found with the associated benchmark in tests,
       // in particular BM_DimensionChecker<ChangeSparsity::kSparse, *>.
-      constexpr int kMinRangeSizeForRIQ = 4;
       const bool chain_is_cached = chain_path_class == path_class;
-      if (last_index - first_index > kMinRangeSizeForRIQ && chain_is_cached &&
+      if (last_index - first_index > min_range_size_for_riq_ &&
+          chain_is_cached &&
           SubpathOnlyHasTrivialNodes(first_index, last_index)) {
-        // Feasible cumuls at chain end are constrained by:
-        // - feasible cumuls at chain start plus demands of the chain.
+        // Feasible cumuls at chain's last node are constrained by:
+        // - feasible cumuls at chain's first node plus demands of the chain.
         // - tightest demand backwards sum from the path capacity interval.
         const Interval tightest_sum =
             GetTightestBackwardsDemandSum(first_index, last_index);
@@ -3094,24 +3080,22 @@ bool DimensionChecker::Check() const {
         cumul += Delta(last_sum, prev_sum);
         cumul = Intersect(cumul, path_capacity + Delta(last_sum, tightest_sum));
         if (IsEmpty(cumul)) return false;
-        cumul += min_max_demand_per_path_class_[path_class](last_node);
         cumul = Intersect(cumul, path_capacity);
+        prev_node = chain.Last();
       } else {
-        for (const int node : chain) {
-          cumul = Intersect(cumul, node_capacity_[node]);
-          if (IsEmpty(cumul)) return false;
+        for (const int node : chain.WithoutFirstNode()) {
           const Interval demand =
               chain_is_cached
-                  ? cached_demand_[node]
-                  : min_max_demand_per_path_class_[path_class](node);
+                  ? cached_demand_[prev_node]
+                  : demand_per_path_class_[path_class](prev_node, node);
           cumul += demand;
+          cumul = Intersect(cumul, node_capacity_[node]);
           cumul = Intersect(cumul, path_capacity);
+          if (IsEmpty(cumul)) return false;
+          prev_node = node;
         }
-        if (IsEmpty(cumul)) return false;
       }
     }
-    cumul = Intersect(cumul, path_capacity);
-    if (IsEmpty(cumul)) return false;
   }
   return true;
 }
@@ -3157,11 +3141,16 @@ void DimensionChecker::AppendPathDemandsToSums(int path) {
   // Compute sum of all demands for this path.
   // TODO(user): backwards Nodes() iterator, to compute sum directly.
   Interval demand_sum = {0, 0};
-  for (const int node : path_state_->Nodes(path)) {
-    const Interval demand = min_max_demand_per_path_class_[path_class](node);
+  int prev = path_state_->Start(path);
+  const auto node_range = path_state_->Nodes(path);
+  for (auto it = ++node_range.begin(); it != node_range.end(); ++it) {
+    const int node = *it;
+    const Interval demand = demand_per_path_class_[path_class](prev, node);
     demand_sum += demand;
-    cached_demand_[node] = demand;
+    cached_demand_[prev] = demand;
+    prev = node;
   }
+  cached_demand_[path_state_->End(path)] = {0, 0};
   int previous_nontrivial_index = -1;
   int index = backwards_demand_sums_riq_[0].size();
   // Value of backwards_demand_sums_riq_ at node_index must be the sum
@@ -3186,21 +3175,19 @@ void DimensionChecker::AppendPathDemandsToSums(int path) {
 void DimensionChecker::UpdateRIQStructure(int begin_index, int end_index) {
   // The max layer is the one used by
   // GetMinMaxPartialDemandSum(begin_index, end_index - 1).
-  const int maximum_riq_exponent =
-      MostSignificantBitPosition32(end_index - 1 - begin_index);
-  for (int layer = 1, window_size = 1; layer <= maximum_riq_exponent;
-       ++layer, window_size *= 2) {
+  const int max_layer =
+      MostSignificantBitPosition32(end_index - begin_index - 1);
+  for (int layer = 1, window = 1; layer <= max_layer; ++layer, window *= 2) {
     backwards_demand_sums_riq_[layer].resize(end_index);
-    for (int i = begin_index; i < end_index - window_size; ++i) {
-      const Interval i1 = backwards_demand_sums_riq_[layer - 1][i];
-      const Interval i2 =
-          backwards_demand_sums_riq_[layer - 1][i + window_size];
-      backwards_demand_sums_riq_[layer][i] = Intersect(i1, i2);
+    for (int i = begin_index; i < end_index - window; ++i) {
+      backwards_demand_sums_riq_[layer][i] =
+          Intersect(backwards_demand_sums_riq_[layer - 1][i],
+                    backwards_demand_sums_riq_[layer - 1][i + window]);
     }
     std::copy(
-        backwards_demand_sums_riq_[layer - 1].begin() + end_index - window_size,
+        backwards_demand_sums_riq_[layer - 1].begin() + end_index - window,
         backwards_demand_sums_riq_[layer - 1].begin() + end_index,
-        backwards_demand_sums_riq_[layer].begin() + end_index - window_size);
+        backwards_demand_sums_riq_[layer].begin() + end_index - window);
   }
 }
 
@@ -3215,16 +3202,14 @@ DimensionChecker::Interval DimensionChecker::GetTightestBackwardsDemandSum(
   DCHECK_LE(0, first_node_index);
   DCHECK_LT(first_node_index, last_node_index);
   DCHECK_LT(last_node_index, backwards_demand_sums_riq_[0].size());
-  // Find largest window_size = 2^layer such that
-  // first_node_index < last_node_index - window_size + 1.
+  // Find largest window = 2^layer such that
+  // first_node_index < last_node_index - window + 1.
   const int layer =
       MostSignificantBitPosition32(last_node_index - first_node_index);
-  const int window_size = 1 << layer;
-  // Adaptation of the conventional O(1) Range Max Query scheme.
-  Interval i1 = backwards_demand_sums_riq_[layer][first_node_index];
-  const Interval i2 =
-      backwards_demand_sums_riq_[layer][last_node_index - window_size + 1];
-  return Intersect(i1, i2);
+  const int window = 1 << layer;
+  return Intersect(
+      backwards_demand_sums_riq_[layer][first_node_index],
+      backwards_demand_sums_riq_[layer][last_node_index - window + 1]);
 }
 
 bool DimensionChecker::SubpathOnlyHasTrivialNodes(int first_node_index,

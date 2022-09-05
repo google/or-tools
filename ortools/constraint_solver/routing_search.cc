@@ -665,20 +665,6 @@ int64_t CheapestInsertionFilteredHeuristic::GetUnperformedValue(
   return std::numeric_limits<int64_t>::max();
 }
 
-namespace {
-template <class T>
-void SortAndExtractPairSeconds(std::vector<std::pair<int64_t, T>>* pairs,
-                               std::vector<T>* sorted_seconds) {
-  CHECK(pairs != nullptr);
-  CHECK(sorted_seconds != nullptr);
-  std::sort(pairs->begin(), pairs->end());
-  sorted_seconds->reserve(pairs->size());
-  for (const std::pair<int64_t, T>& p : *pairs) {
-    sorted_seconds->push_back(p.second);
-  }
-}
-}  // namespace
-
 // Priority queue entries used by global cheapest insertion heuristic.
 
 // Entry in priority queue containing the insertion positions of a node pair.
@@ -4680,7 +4666,7 @@ DecisionBuilder* RoutingModel::MakeSelfDependentDimensionFinalizer(
       solver_->MakeSolveOnce(guided_finalizer);
   std::vector<IntVar*> start_cumuls(vehicles_, nullptr);
   for (int64_t vehicle_idx = 0; vehicle_idx < vehicles_; ++vehicle_idx) {
-    start_cumuls[vehicle_idx] = dimension->CumulVar(starts_[vehicle_idx]);
+    start_cumuls[vehicle_idx] = dimension->CumulVar(Start(vehicle_idx));
   }
   LocalSearchOperator* const hill_climber =
       solver_->RevAlloc(new GreedyDescentLSOperator(start_cumuls));

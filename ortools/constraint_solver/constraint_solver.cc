@@ -26,6 +26,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -118,6 +119,13 @@ void ForAll(const std::vector<T*>& objects, MethodPointer method,
     (object->*method)(args...);
   }
 }
+
+// Converts a scoped enum to its underlying type.
+template <typename E>
+constexpr typename std::underlying_type<E>::type to_underlying(E e) {
+  return static_cast<typename std::underlying_type<E>::type>(e);
+}
+
 }  // namespace
 
 // ----- ConstraintSolverParameters -----
@@ -707,7 +715,7 @@ class CompressedTrail {
     }
   }
 
-  std::unique_ptr<TrailPacker<T> > packer_;
+  std::unique_ptr<TrailPacker<T>> packer_;
   const int block_size_;
   Block* blocks_;
   Block* free_blocks_;
@@ -962,6 +970,7 @@ class Search {
   explicit Search(Solver* const s)
       : solver_(s),
         marker_stack_(),
+        monitor_event_listeners_(to_underlying(Solver::MonitorEvent::kLast)),
         fail_buffer_(),
         solution_counter_(0),
         unchecked_solution_counter_(0),
@@ -981,6 +990,7 @@ class Search {
   Search(Solver* const s, int /* dummy_argument */)
       : solver_(s),
         marker_stack_(),
+        monitor_event_listeners_(to_underlying(Solver::MonitorEvent::kLast)),
         fail_buffer_(),
         solution_counter_(0),
         unchecked_solution_counter_(0),
@@ -1019,7 +1029,15 @@ class Search {
   void PeriodicCheck();
   int ProgressPercent();
   void Accept(ModelVisitor* const visitor) const;
-  void push_monitor(SearchMonitor* const m);
+  void AddEventListener(Solver::MonitorEvent event, SearchMonitor* monitor) {
+    if (monitor != nullptr) {
+      monitor_event_listeners_[to_underlying(event)].push_back(monitor);
+    }
+  }
+  const std::vector<SearchMonitor*>& GetEventListeners(
+      Solver::MonitorEvent event) const {
+    return monitor_event_listeners_[to_underlying(event)];
+  }
   void Clear();
   void IncrementSolutionCounter() { ++solution_counter_; }
   int64_t solution_counter() const { return solution_counter_; }
@@ -1075,7 +1093,7 @@ class Search {
 
   Solver* const solver_;
   std::vector<StateMarker*> marker_stack_;
-  std::vector<SearchMonitor*> monitors_;
+  std::vector<std::vector<SearchMonitor*>> monitor_event_listeners_;
   jmp_buf fail_buffer_;
   int64_t solution_counter_;
   int64_t unchecked_solution_counter_;
@@ -1192,19 +1210,19 @@ Solver::DecisionModification Search::ModifyDecision() {
   return Solver::NO_CHANGE;
 }
 
-void Search::push_monitor(SearchMonitor* const m) {
-  if (m) {
-    monitors_.push_back(m);
-  }
-}
-
 void Search::Clear() {
-  monitors_.clear();
+  for (auto& listeners : monitor_event_listeners_) listeners.clear();
   search_depth_ = 0;
   left_search_depth_ = 0;
   selector_ = nullptr;
   backtrack_at_the_end_of_the_search_ = true;
 }
+
+#define CALL_EVENT_LISTENERS(Event)                           \
+  do {                                                        \
+    ForAll(GetEventListeners(Solver::MonitorEvent::k##Event), \
+           &SearchMonitor::Event);                            \
+  } while (false)
 
 void Search::EnterSearch() {
   // The solution counter is reset when entering search and not when
@@ -1213,58 +1231,62 @@ void Search::EnterSearch() {
   solution_counter_ = 0;
   unchecked_solution_counter_ = 0;
 
-  ForAll(monitors_, &SearchMonitor::EnterSearch);
+  CALL_EVENT_LISTENERS(EnterSearch);
 }
 
 void Search::ExitSearch() {
   // Backtrack to the correct state.
-  ForAll(monitors_, &SearchMonitor::ExitSearch);
+  CALL_EVENT_LISTENERS(ExitSearch);
 }
 
-void Search::RestartSearch() {
-  ForAll(monitors_, &SearchMonitor::RestartSearch);
-}
+void Search::RestartSearch() { CALL_EVENT_LISTENERS(RestartSearch); }
 
 void Search::BeginNextDecision(DecisionBuilder* const db) {
-  ForAll(monitors_, &SearchMonitor::BeginNextDecision, db);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kBeginNextDecision),
+         &SearchMonitor::BeginNextDecision, db);
   CheckFail();
 }
 
 void Search::EndNextDecision(DecisionBuilder* const db, Decision* const d) {
-  ForAll(monitors_, &SearchMonitor::EndNextDecision, db, d);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kEndNextDecision),
+         &SearchMonitor::EndNextDecision, db, d);
   CheckFail();
 }
 
 void Search::ApplyDecision(Decision* const d) {
-  ForAll(monitors_, &SearchMonitor::ApplyDecision, d);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kApplyDecision),
+         &SearchMonitor::ApplyDecision, d);
   CheckFail();
 }
 
 void Search::AfterDecision(Decision* const d, bool apply) {
-  ForAll(monitors_, &SearchMonitor::AfterDecision, d, apply);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kAfterDecision),
+         &SearchMonitor::AfterDecision, d, apply);
   CheckFail();
 }
 
 void Search::RefuteDecision(Decision* const d) {
-  ForAll(monitors_, &SearchMonitor::RefuteDecision, d);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kRefuteDecision),
+         &SearchMonitor::RefuteDecision, d);
   CheckFail();
 }
 
-void Search::BeginFail() { ForAll(monitors_, &SearchMonitor::BeginFail); }
+void Search::BeginFail() { CALL_EVENT_LISTENERS(BeginFail); }
 
-void Search::EndFail() { ForAll(monitors_, &SearchMonitor::EndFail); }
+void Search::EndFail() { CALL_EVENT_LISTENERS(EndFail); }
 
 void Search::BeginInitialPropagation() {
-  ForAll(monitors_, &SearchMonitor::BeginInitialPropagation);
+  CALL_EVENT_LISTENERS(BeginInitialPropagation);
 }
 
 void Search::EndInitialPropagation() {
-  ForAll(monitors_, &SearchMonitor::EndInitialPropagation);
+  CALL_EVENT_LISTENERS(EndInitialPropagation);
 }
 
 bool Search::AcceptSolution() {
   bool valid = true;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kAcceptSolution)) {
     if (!monitor->AcceptSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
@@ -1277,7 +1299,8 @@ bool Search::AcceptSolution() {
 
 bool Search::AtSolution() {
   bool should_continue = false;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kAtSolution)) {
     if (monitor->AtSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
@@ -1288,23 +1311,23 @@ bool Search::AtSolution() {
   return should_continue;
 }
 
-void Search::NoMoreSolutions() {
-  ForAll(monitors_, &SearchMonitor::NoMoreSolutions);
-}
+void Search::NoMoreSolutions() { CALL_EVENT_LISTENERS(NoMoreSolutions); }
 
 bool Search::LocalOptimum() {
-  bool res = false;
-  for (SearchMonitor* const monitor : monitors_) {
+  bool at_local_optimum = false;
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kLocalOptimum)) {
     if (monitor->LocalOptimum()) {
-      res = true;
+      at_local_optimum = true;
     }
   }
-  return res;
+  return at_local_optimum;
 }
 
 bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   bool accept = true;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kAcceptDelta)) {
     if (!monitor->AcceptDelta(delta, deltadelta)) {
       accept = false;
     }
@@ -1312,16 +1335,15 @@ bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   return accept;
 }
 
-void Search::AcceptNeighbor() {
-  ForAll(monitors_, &SearchMonitor::AcceptNeighbor);
-}
+void Search::AcceptNeighbor() { CALL_EVENT_LISTENERS(AcceptNeighbor); }
 
 void Search::AcceptUncheckedNeighbor() {
-  ForAll(monitors_, &SearchMonitor::AcceptUncheckedNeighbor);
+  CALL_EVENT_LISTENERS(AcceptUncheckedNeighbor);
 }
 
 bool Search::IsUncheckedSolutionLimitReached() {
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor : GetEventListeners(
+           Solver::MonitorEvent::kIsUncheckedSolutionLimitReached)) {
     if (monitor->IsUncheckedSolutionLimitReached()) {
       return true;
     }
@@ -1329,24 +1351,26 @@ bool Search::IsUncheckedSolutionLimitReached() {
   return false;
 }
 
-void Search::PeriodicCheck() {
-  ForAll(monitors_, &SearchMonitor::PeriodicCheck);
-}
+void Search::PeriodicCheck() { CALL_EVENT_LISTENERS(PeriodicCheck); }
 
 int Search::ProgressPercent() {
   int progress = SearchMonitor::kNoProgress;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kProgressPercent)) {
     progress = std::max(progress, monitor->ProgressPercent());
   }
   return progress;
 }
 
 void Search::Accept(ModelVisitor* const visitor) const {
-  ForAll(monitors_, &SearchMonitor::Accept, visitor);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kAccept),
+         &SearchMonitor::Accept, visitor);
   if (decision_builder_ != nullptr) {
     decision_builder_->Accept(visitor);
   }
 }
+
+#undef CALL_EVENT_LISTENERS
 
 bool LocalOptimumReached(Search* const search) {
   return search->LocalOptimum();
@@ -2587,6 +2611,7 @@ const char ModelVisitor::kDistribute[] = "Distribute";
 const char ModelVisitor::kDivide[] = "Divide";
 const char ModelVisitor::kDurationExpr[] = "DurationExpression";
 const char ModelVisitor::kElement[] = "Element";
+const char ModelVisitor::kLightElementEqual[] = "LightElementEqual";
 const char ModelVisitor::kElementEqual[] = "ElementEqual";
 const char ModelVisitor::kEndExpr[] = "EndExpression";
 const char ModelVisitor::kEquality[] = "Equal";
@@ -2903,7 +2928,14 @@ void SearchMonitor::PeriodicCheck() {}
 void SearchMonitor::Accept(ModelVisitor* const visitor) const {}
 // A search monitors adds itself on the active search.
 void SearchMonitor::Install() {
-  solver()->searches_.back()->push_monitor(this);
+  for (std::underlying_type<Solver::MonitorEvent>::type event = 0;
+       event != to_underlying(Solver::MonitorEvent::kLast); ++event) {
+    ListenToEvent(static_cast<Solver::MonitorEvent>(event));
+  }
+}
+
+void SearchMonitor::ListenToEvent(Solver::MonitorEvent event) {
+  solver()->searches_.back()->AddEventListener(event, this);
 }
 
 // ---------- Propagation Monitor -----------

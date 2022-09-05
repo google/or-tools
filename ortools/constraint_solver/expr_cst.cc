@@ -360,9 +360,9 @@ void DiffCst::BoundPropagate() {
   if (var_min > value_ || var_max < value_) {
     demon_->inhibit(solver());
   } else if (var_min == value_) {
-    var_->SetMin(value_ + 1);
+    var_->SetMin(CapAdd(value_, 1));
   } else if (var_max == value_) {
-    var_->SetMax(value_ - 1);
+    var_->SetMax(CapSub(value_, 1));
   } else if (!HasLargeDomain(var_)) {
     demon_->inhibit(solver());
     var_->RemoveValue(value_);

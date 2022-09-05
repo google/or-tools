@@ -1918,8 +1918,6 @@ namespace operations_research {
 // Ignored top-level classes, enums and methods:
 // - BaseIntExpr
 // - VarTypes (enum)
-// - IntVarLocalSearchHandler
-// - SequenceVarLocalSearchHandler
 // - ChangeValue
 // - PathOperator
 // - MakeLocalSearchOperator()
@@ -1967,29 +1965,6 @@ namespace operations_research {
 %rename (NextNeighbor) LocalSearchOperator::MakeNextNeighbor;
 %unignore LocalSearchOperator::Start;
 
-// VarLocalSearchOperator<>
-// Ignored:
-// - VarLocalSearchOperator()
-// - ~VarLocalSearchOperator()
-// - Start()
-// - Var()
-// - SkipUnchanged()
-// - Activated()
-// - Activate()
-// - Deactivate()
-// - ApplyChanges()
-// - RevertChanges()
-// - AddVars()
-%unignore VarLocalSearchOperator;
-%unignore VarLocalSearchOperator::Size;
-%unignore VarLocalSearchOperator::Value;
-%unignore VarLocalSearchOperator::IsIncremental;
-%unignore VarLocalSearchOperator::IsIncremental;
-%unignore VarLocalSearchOperator::OnStart;
-%unignore VarLocalSearchOperator::OnStart;
-%unignore VarLocalSearchOperator::OldValue;
-%unignore VarLocalSearchOperator::SetValue;
-
 
 // IntVarLocalSearchOperator
 // Ignored:
@@ -2023,17 +1998,6 @@ namespace operations_research {
 %unignore ChangeValue::ChangeValue;
 %unignore ChangeValue::~ChangeValue;
 %unignore ChangeValue::ModifyValue;
-
-// SequenceVarLocalSearchOperator
-// Ignored:
-// - SequenceVarLocalSearchOperator()
-// - ~SequenceVarLocalSearchOperator()
-// - Sequence()
-// - OldSequence()
-// - SetForwardSequence()
-// - SetBackwardSequence()
-%unignore SequenceVarLocalSearchOperator;
-%unignore SequenceVarLocalSearchOperator::Start;
 
 // PathOperator
 // Ignored:

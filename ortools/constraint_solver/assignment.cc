@@ -875,14 +875,6 @@ void Assignment::SetUnperformed(const SequenceVar* const var,
 
 // ----- Objective -----
 
-void Assignment::AddObjective(IntVar* const v) {
-  // Check if adding twice an objective to the solution.
-  CHECK(!HasObjective());
-  objective_element_.Reset(v);
-}
-
-IntVar* Assignment::Objective() const { return objective_element_.Var(); }
-
 int64_t Assignment::ObjectiveMin() const {
   if (HasObjective()) {
     return objective_element_.Min();

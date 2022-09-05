@@ -1400,44 +1400,12 @@ import java.util.function.Supplier;
 %rename (setStartRange) PropagationMonitor::SetStartRange;
 %rename (startProcessingIntegerVariable) PropagationMonitor::StartProcessingIntegerVariable;
 
-// IntVarLocalSearchHandler
-%unignore IntVarLocalSearchHandler;
-%rename (addToAssignment) IntVarLocalSearchHandler::AddToAssignment;
-%rename (onAddVars) IntVarLocalSearchHandler::OnAddVars;
-%rename (onRevertChanges) IntVarLocalSearchHandler::OnRevertChanges;
-%rename (valueFromAssignent) IntVarLocalSearchHandler::ValueFromAssignent;
-
-// SequenceVarLocalSearchHandler
-%unignore SequenceVarLocalSearchHandler;
-%rename (addToAssignment) SequenceVarLocalSearchHandler::AddToAssignment;
-%rename (onAddVars) SequenceVarLocalSearchHandler::OnAddVars;
-%rename (onRevertChanges) SequenceVarLocalSearchHandler::OnRevertChanges;
-%rename (valueFromAssignent) SequenceVarLocalSearchHandler::ValueFromAssignent;
-
 // LocalSearchOperator
 %feature("director") LocalSearchOperator;
 %unignore LocalSearchOperator;
 %rename (nextNeighbor) LocalSearchOperator::MakeNextNeighbor;
 %rename (reset) LocalSearchOperator::Reset;
 %rename (start) LocalSearchOperator::Start;
-
-// VarLocalSearchOperator<>
-%unignore VarLocalSearchOperator;
-%ignore VarLocalSearchOperator::Start;
-%ignore VarLocalSearchOperator::ApplyChanges;
-%ignore VarLocalSearchOperator::RevertChanges;
-%ignore VarLocalSearchOperator::SkipUnchanged;
-%rename (size) VarLocalSearchOperator::Size;
-%rename (value) VarLocalSearchOperator::Value;
-%rename (isIncremental) VarLocalSearchOperator::IsIncremental;
-%rename (onStart) VarLocalSearchOperator::OnStart;
-%rename (oldValue) VarLocalSearchOperator::OldValue;
-%rename (setValue) VarLocalSearchOperator::SetValue;
-%rename (var) VarLocalSearchOperator::Var;
-%rename (activated) VarLocalSearchOperator::Activated;
-%rename (activate) VarLocalSearchOperator::Activate;
-%rename (deactivate) VarLocalSearchOperator::Deactivate;
-%rename (addVars) VarLocalSearchOperator::AddVars;
 
 // IntVarLocalSearchOperator
 %feature("director") IntVarLocalSearchOperator;
@@ -1472,15 +1440,6 @@ import java.util.function.Supplier;
 %feature("director") ChangeValue;
 %unignore ChangeValue;
 %rename (modifyValue) ChangeValue::ModifyValue;
-
-// SequenceVarLocalSearchOperator
-%feature("director") SequenceVarLocalSearchOperator;
-%unignore SequenceVarLocalSearchOperator;
-%ignore SequenceVarLocalSearchOperator::OldSequence;
-%ignore SequenceVarLocalSearchOperator::Sequence;
-%ignore SequenceVarLocalSearchOperator::SetBackwardSequence;
-%ignore SequenceVarLocalSearchOperator::SetForwardSequence;
-%rename (start) SequenceVarLocalSearchOperator::Start;
 
 // PathOperator
 %feature("director") PathOperator;

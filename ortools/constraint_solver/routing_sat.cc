@@ -527,7 +527,7 @@ std::vector<int> CreateGeneralizedRanks(const RoutingModel& model,
   }
   for (const auto [arc, arc_var] : arc_vars) {
     const auto [cp_tail, cp_head] = arc;
-    if (model.IsEnd(cp_head - 1)) continue;
+    if (cp_head == 0 || model.IsEnd(cp_head - 1)) continue;
     if (cp_tail == cp_head || cp_head == depot) continue;
     // arc[tail][head] -> ranks[head] == ranks[tail] + 1.
     AddLinearConstraint(cp_model, 1, 1,

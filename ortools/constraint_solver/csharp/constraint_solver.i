@@ -710,12 +710,6 @@ namespace operations_research {
 %unignore SearchLog::Maintain;
 %unignore SearchLog::OutputDecision;
 
-// IntVarLocalSearchHandler
-%ignore IntVarLocalSearchHandler;
-
-// SequenceVarLocalSearchHandler
-%ignore SequenceVarLocalSearchHandler;
-
 // LocalSearchOperator
 %feature("director") LocalSearchOperator;
 %unignore LocalSearchOperator;
@@ -723,26 +717,6 @@ namespace operations_research {
 %unignore LocalSearchOperator::MakeNextNeighbor;
 %unignore LocalSearchOperator::Reset;
 %unignore LocalSearchOperator::Start;
-
-// VarLocalSearchOperator<>
-%unignore VarLocalSearchOperator;
-// Ignored:
-%ignore VarLocalSearchOperator::Start;
-%ignore VarLocalSearchOperator::ApplyChanges;
-%ignore VarLocalSearchOperator::RevertChanges;
-%ignore VarLocalSearchOperator::SkipUnchanged;
-// Methods:
-%unignore VarLocalSearchOperator::Size;
-%unignore VarLocalSearchOperator::Value;
-%unignore VarLocalSearchOperator::IsIncremental;
-%unignore VarLocalSearchOperator::OnStart;
-%unignore VarLocalSearchOperator::OldValue;
-%unignore VarLocalSearchOperator::SetValue;
-%unignore VarLocalSearchOperator::Var;
-%unignore VarLocalSearchOperator::Activated;
-%unignore VarLocalSearchOperator::Activate;
-%unignore VarLocalSearchOperator::Deactivate;
-%unignore VarLocalSearchOperator::AddVars;
 
 // IntVarLocalSearchOperator
 %feature("director") IntVarLocalSearchOperator;
@@ -781,17 +755,6 @@ namespace operations_research {
 %unignore ChangeValue;
 // Methods:
 %unignore ChangeValue::ModifyValue;
-
-// SequenceVarLocalSearchOperator
-%feature("director") SequenceVarLocalSearchOperator;
-%unignore SequenceVarLocalSearchOperator;
-// Ignored:
-%ignore SequenceVarLocalSearchOperator::SetBackwardSequence;
-%ignore SequenceVarLocalSearchOperator::SetForwardSequence;
-// Methods:
-%unignore SequenceVarLocalSearchOperator::OldSequence;
-%unignore SequenceVarLocalSearchOperator::Sequence;
-%unignore SequenceVarLocalSearchOperator::Start;
 
 // PathOperator
 %feature("director") PathOperator;
