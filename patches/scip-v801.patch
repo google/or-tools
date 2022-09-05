@@ -1,0 +1,30 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0820c7df3b..2ae8fc584d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -104,7 +104,7 @@ set_property(CACHE SYM PROPERTY STRINGS bliss none )  #define list of values GUI
+ 
+ #search the selected symmetry computation program
+ message(STATUS "Finding symmetry computation program \"${SYM}\"")
+-set(BLISS_TARGET "")
++unset(BLISS_TARGET)
+ if(SYM STREQUAL "bliss")
+     set(sym symmetry/compute_symmetry_bliss.cpp)
+ 
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 6b3454a5f3..604badcdb1 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1085,9 +1085,9 @@ set_target_properties(libscip PROPERTIES
+     VERSION ${SCIP_VERSION_MAJOR}.${SCIP_VERSION_MINOR}.${SCIP_VERSION_PATCH}.${SCIP_VERSION_SUB}
+     SOVERSION ${SCIP_VERSION_MAJOR}.${SCIP_VERSION_MINOR}
+     INSTALL_RPATH_USE_LINK_PATH TRUE
+-    CMAKE_CXX_VISIBILITY_PRESET hidden
+-    CMAKE_C_VISIBILITY_PRESET hidden
+-    CMAKE_VISIBILITY_INLINES_HIDDEN 1)
++    CXX_VISIBILITY_PRESET hidden
++    C_VISIBILITY_PRESET hidden
++    VISIBILITY_INLINES_HIDDEN 1)
+ 
+ target_include_directories(scip PUBLIC
+     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
