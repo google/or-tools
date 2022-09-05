@@ -174,9 +174,9 @@ public class DivisibleBy9Through1
     public static void Main(String[] args)
     {
         int bbase = 10;
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            bbase = Convert.ToInt32(args[0]);
+            bbase = Convert.ToInt32(args[1]);
             if (bbase > 12)
             {
                 // Though base = 12 has no solution...

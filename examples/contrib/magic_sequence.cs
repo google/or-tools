@@ -88,9 +88,9 @@ public class MagicSequence
 
     public static void Main(String[] args)
     {
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            int size = Convert.ToInt32(args[0]);
+            int size = Convert.ToInt32(args[1]);
             Solve(size);
         }
         else

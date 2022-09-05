@@ -102,18 +102,18 @@ public class NQueens
         int num = 0;
         int print = 1;
 
-        if (args.Length > 0)
-        {
-            n = Convert.ToInt32(args[0]);
-        }
-
         if (args.Length > 1)
         {
-            num = Convert.ToInt32(args[1]);
+            n = Convert.ToInt32(args[1]);
         }
+
         if (args.Length > 2)
         {
-            print = Convert.ToInt32(args[2]);
+            num = Convert.ToInt32(args[2]);
+        }
+        if (args.Length > 3)
+        {
+            print = Convert.ToInt32(args[3]);
         }
 
         Console.WriteLine("n: {0} num: {1} print: {2}", n, num, print);
