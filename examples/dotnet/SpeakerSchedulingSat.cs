@@ -184,9 +184,9 @@ class SpeakerScheduling
     public static void Main(String[] args)
     {
         int start = 1;
-        if (args.Length == 1)
+        if (args.Length >= 2)
         {
-            start = int.Parse(args[0]);
+            start = int.Parse(args[1]);
         }
         Stopwatch s = new Stopwatch();
         s.Start();

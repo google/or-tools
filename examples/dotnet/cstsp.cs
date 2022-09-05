@@ -103,19 +103,19 @@ class Tsp
     public static void Main(String[] args)
     {
         int size = 10;
-        if (args.Length > 0)
-        {
-            size = Convert.ToInt32(args[0]);
-        }
-        int forbidden = 0;
         if (args.Length > 1)
         {
-            forbidden = Convert.ToInt32(args[1]);
+            size = Convert.ToInt32(args[1]);
         }
-        int seed = 0;
+        int forbidden = 0;
         if (args.Length > 2)
         {
-            seed = Convert.ToInt32(args[2]);
+            forbidden = Convert.ToInt32(args[2]);
+        }
+        int seed = 0;
+        if (args.Length > 3)
+        {
+            seed = Convert.ToInt32(args[3]);
         }
 
         Solve(size, forbidden, seed);
