@@ -125,6 +125,12 @@ class Solver {
   //
   // A status error will be returned if the model_update is invalid or the
   // underlying solver has an internal error.
+  //
+  // When this function returns false, the Solver object is in a failed
+  // state. In that case the underlying SolverInterface implementation has been
+  // destroyed (this enables the caller to instantiate a new Solver without
+  // destroying the previous one first even if they use Gurobi with a single-use
+  // license).
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update);
 
  private:
@@ -134,12 +140,14 @@ class Solver {
   // Mutex used to ensure that Solve() and Update() are not called concurrently.
   absl::Mutex mutex_;
 
-  const std::unique_ptr<SolverInterface> underlying_solver_;
+  // Can be nullptr only if fatal_failure_occurred_ is true (but the contrary is
+  // not true). This happens when Update() returns false.
+  std::unique_ptr<SolverInterface> underlying_solver_;
 
   ModelSummary model_summary_;
 
   // Set to true if a previous call to Solve() or Update() returned a failing
-  // status.
+  // status (or if Update() returned false).
   bool fatal_failure_occurred_ = false;
 };
 

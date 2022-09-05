@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 #ifndef OR_TOOLS_MATH_OPT_CPP_UPDATE_TRACKER_H_
 #define OR_TOOLS_MATH_OPT_CPP_UPDATE_TRACKER_H_
 
@@ -45,8 +48,8 @@ namespace math_opt {
 // synchronization primitives to serialize changes to the model and the use of
 // the update trackers. The methods of different instances of UpdateTracker are
 // safe to be called concurrently (i.e. multiple trackers can be called
-// concurrently on ExportModelUpdate() or Checkpoint()). The destructor of
-// UpdateTracker is thread-safe.
+// concurrently on ExportModelUpdate() or AdvanceCheckpoint()). The destructor
+// of UpdateTracker is thread-safe.
 //
 // Example:
 //   Model model;
@@ -59,7 +62,7 @@ namespace math_opt {
 //
 //   ASSIGN_OR_RETURN(const std::optional<ModelUpdateProto> update_proto,
 //                    update_tracker.ExportModelUpdate());
-//   RETURN_IF_ERROR(update_tracker.Checkpoint());
+//   RETURN_IF_ERROR(update_tracker.AdvanceCheckpoint());
 //
 //   if (update_proto) {
 //     ... use *update_proto here ...
@@ -73,8 +76,8 @@ class UpdateTracker {
   ~UpdateTracker();
 
   // Returns a proto representation of the changes to the model since the most
-  // recent checkpoint (i.e. last time Checkpoint() was called); nullopt if
-  // the update would have been empty.
+  // recent checkpoint (i.e. last time AdvanceCheckpoint() was called); nullopt
+  // if the update would have been empty.
   //
   // If fails if the Model has been destroyed.
   absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdate();
@@ -83,7 +86,7 @@ class UpdateTracker {
   // ModelUpdateProto next time ExportModelUpdate() is called.
   //
   // If fails if the Model has been destroyed.
-  absl::Status Checkpoint();
+  absl::Status AdvanceCheckpoint();
 
   // Returns a proto representation of the whole model.
   //

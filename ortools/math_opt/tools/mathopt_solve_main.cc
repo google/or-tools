@@ -14,13 +14,16 @@
 // Tool to run MathOpt on the given problems.
 //
 // Examples:
-//
-//   mathopt_solve --input_file model.pb
-//
-//   mathopt_solve --input_file model.mps.gz --solver_type=glop
-//
-//   mathopt_solve --input_file model --solver_logs --format=mathopt
-//
+//  * Solve a model stored as a proto (infer the file/proto type):
+//      mathopt_solve --input_file model.pb
+//  * Solve a gzipped mps file, pick your solver:
+//      mathopt_solve --input_file model.mps.gz --solver_type=glop
+//  * Set a time limit:
+//      mathopt_solve --input_file model.pb --time_limit 10s
+//  * Set solve parameters in proto text format (see parameters.proto):
+//      mathopt_solve --input_file model.pb --solve_parameters 'threads: 4'
+//  * Specify the file format:
+//      mathopt_solve --input_file model --format=mathopt
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -111,6 +114,7 @@ ABSL_FLAG(
         "the file containing ModelUpdateProto to apply to the --input_file; "
         "when this flag is used, the --format must be either ",
         kMathOptBinaryFormat, " or  ", kMathOptTextFormat));
+
 ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
           operations_research::math_opt::SolverType::kGscip,
           absl::StrCat(
@@ -119,13 +123,14 @@ ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
                   operations_research::math_opt::AllSolversRegistry::Instance()
                       ->RegisteredSolvers(),
                   ", ", SolverTypeProtoFormatter())));
-ABSL_FLAG(std::string, solve_parameters, "",
+ABSL_FLAG(operations_research::math_opt::SolveParameters, solve_parameters, {},
           "SolveParameters in text-proto format. Note that the time limit is "
           "overridden by the --time_limit flag.");
 ABSL_FLAG(bool, solver_logs, false,
           "use a message callback to print the solver convergence logs");
 ABSL_FLAG(absl::Duration, time_limit, absl::InfiniteDuration(),
           "the time limit to use for the solve");
+
 ABSL_FLAG(bool, names, true,
           "use the names in the input models; ignoring names is useful when "
           "the input contains duplicates");
@@ -290,16 +295,9 @@ absl::Status RunSolver() {
   }
 
   // Solve the problem.
-  SolveParametersProto solve_parameters_proto;
-  QCHECK(google::protobuf::TextFormat::ParseFromString(
-      absl::GetFlag(FLAGS_solve_parameters), &solve_parameters_proto))
-      << "Unable to parse --solve_parameters";
-  ASSIGN_OR_RETURN(const SolveParameters solve_parameters,
-                   SolveParameters::FromProto(solve_parameters_proto));
-  SolveArguments solve_args = {
-      .parameters = solve_parameters,
-  };
-  solve_args.parameters.time_limit = absl::GetFlag(FLAGS_time_limit);
+  SolveParameters solve_parameters = absl::GetFlag(FLAGS_solve_parameters);
+  solve_parameters.time_limit = absl::GetFlag(FLAGS_time_limit);
+  SolveArguments solve_args = {.parameters = solve_parameters};
   if (absl::GetFlag(FLAGS_solver_logs)) {
     solve_args.message_callback = PrinterMessageCallback(std::cout, "logs| ");
   }

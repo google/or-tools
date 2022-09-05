@@ -22,16 +22,24 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
+#include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
+#include "ortools/math_opt/constraints/sos/sos1_constraint.h"
+#include "ortools/math_opt/constraints/sos/sos2_constraint.h"
+#include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
+#include "ortools/math_opt/cpp/update_tracker.h"
+#include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
+#include "ortools/math_opt/storage/sparse_coefficient_map.h"
+#include "ortools/math_opt/storage/sparse_matrix.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -127,7 +135,7 @@ BoundedLinearExpression Model::AsBoundedLinearExpression(
 std::vector<LinearConstraint> Model::LinearConstraints() const {
   std::vector<LinearConstraint> result;
   result.reserve(storage()->num_linear_constraints());
-  for (const LinearConstraintId lin_con_id : storage()->linear_constraints()) {
+  for (const LinearConstraintId lin_con_id : storage()->LinearConstraints()) {
     result.push_back(LinearConstraint(storage(), lin_con_id));
   }
   return result;
@@ -242,6 +250,37 @@ std::ostream& operator<<(std::ostream& ostr, const Model& model) {
          << model.AsBoundedLinearExpression(constraint) << "\n";
   }
 
+  if (model.num_quadratic_constraints() > 0) {
+    ostr << " Quadratic constraints:\n";
+    for (const QuadraticConstraint constraint :
+         model.SortedQuadraticConstraints()) {
+      ostr << "  " << constraint << ": "
+           << constraint.AsBoundedQuadraticExpression() << "\n";
+    }
+  }
+
+  if (model.num_sos1_constraints() > 0) {
+    ostr << " SOS1 constraints:\n";
+    for (const Sos1Constraint constraint : model.SortedSos1Constraints()) {
+      ostr << "  " << constraint << ": " << constraint.ToString() << "\n";
+    }
+  }
+
+  if (model.num_sos2_constraints() > 0) {
+    ostr << " SOS2 constraints:\n";
+    for (const Sos2Constraint constraint : model.SortedSos2Constraints()) {
+      ostr << "  " << constraint << ": " << constraint.ToString() << "\n";
+    }
+  }
+
+  if (model.num_indicator_constraints() > 0) {
+    ostr << " Indicator constraints:\n";
+    for (const IndicatorConstraint constraint :
+         model.SortedIndicatorConstraints()) {
+      ostr << "  " << constraint << ": " << constraint.ToString() << "\n";
+    }
+  }
+
   ostr << " Variables:\n";
   for (const Variable v : model.SortedVariables()) {
     ostr << "  " << v;
@@ -267,6 +306,101 @@ std::ostream& operator<<(std::ostream& ostr, const Model& model) {
     ostr << "\n";
   }
   return ostr;
+}
+
+// ------------------------- Quadratic constraints -----------------------------
+
+QuadraticConstraint Model::AddQuadraticConstraint(
+    const BoundedQuadraticExpression& bounded_expr,
+    const absl::string_view name) {
+  CheckOptionalModel(bounded_expr.expression.storage());
+  SparseCoefficientMap linear_terms;
+  for (const auto [var, coeff] : bounded_expr.expression.linear_terms()) {
+    linear_terms.set(var.typed_id(), coeff);
+  }
+  SparseSymmetricMatrix quadratic_terms;
+  for (const auto& [var_ids, coeff] :
+       bounded_expr.expression.raw_quadratic_terms()) {
+    quadratic_terms.set(var_ids.first, var_ids.second, coeff);
+  }
+  const QuadraticConstraintId id =
+      storage()->AddAtomicConstraint(QuadraticConstraintData{
+          .lower_bound = bounded_expr.lower_bound_minus_offset(),
+          .upper_bound = bounded_expr.upper_bound_minus_offset(),
+          .linear_terms = std::move(linear_terms),
+          .quadratic_terms = std::move(quadratic_terms),
+          .name = std::string(name),
+      });
+  return QuadraticConstraint(storage(), id);
+}
+
+// --------------------------- SOS1 constraints --------------------------------
+
+namespace {
+
+template <typename SosData>
+SosData MakeSosData(const std::vector<LinearExpression>& expressions,
+                    std::vector<double> weights, const absl::string_view name) {
+  std::vector<typename SosData::LinearExpression> storage_expressions;
+  storage_expressions.reserve(expressions.size());
+  for (const LinearExpression& expr : expressions) {
+    typename SosData::LinearExpression& storage_expr =
+        storage_expressions.emplace_back();
+    storage_expr.offset = expr.offset();
+    for (const auto [var, coeff] : expr.raw_terms()) {
+      storage_expr.terms[var] = coeff;
+    }
+  }
+  return SosData(std::move(storage_expressions), std::move(weights),
+                 std::string(name));
+}
+
+}  // namespace
+
+Sos1Constraint Model::AddSos1Constraint(
+    const std::vector<LinearExpression>& expressions,
+    std::vector<double> weights, const absl::string_view name) {
+  for (const LinearExpression& expr : expressions) {
+    CheckOptionalModel(expr.storage());
+  }
+  const Sos1ConstraintId id = storage()->AddAtomicConstraint(
+      MakeSosData<Sos1ConstraintData>(expressions, std::move(weights), name));
+  return Sos1Constraint(storage(), id);
+}
+
+// --------------------------- SOS2 constraints --------------------------------
+
+Sos2Constraint Model::AddSos2Constraint(
+    const std::vector<LinearExpression>& expressions,
+    std::vector<double> weights, const absl::string_view name) {
+  for (const LinearExpression& expr : expressions) {
+    CheckOptionalModel(expr.storage());
+  }
+  const Sos2ConstraintId id = storage()->AddAtomicConstraint(
+      MakeSosData<Sos2ConstraintData>(expressions, std::move(weights), name));
+  return Sos2Constraint(storage(), id);
+}
+
+// --------------------------- Indicator constraints ---------------------------
+
+IndicatorConstraint Model::AddIndicatorConstraint(
+    const Variable indicator_variable,
+    const BoundedLinearExpression& implicated_constraint,
+    const absl::string_view name) {
+  CheckModel(indicator_variable.storage());
+  CheckOptionalModel(implicated_constraint.expression.storage());
+  // We ignore the offset while unpacking here; instead, we account for it below
+  // by using the `{lower,upper}_bound_minus_offset` member functions.
+  auto [expr, _] = FromLinearExpression(implicated_constraint.expression);
+  const IndicatorConstraintId id =
+      storage()->AddAtomicConstraint(IndicatorConstraintData{
+          .lower_bound = implicated_constraint.lower_bound_minus_offset(),
+          .upper_bound = implicated_constraint.upper_bound_minus_offset(),
+          .linear_terms = std::move(expr),
+          .indicator = indicator_variable.typed_id(),
+          .name = std::string(name),
+      });
+  return IndicatorConstraint(storage(), id);
 }
 
 }  // namespace math_opt

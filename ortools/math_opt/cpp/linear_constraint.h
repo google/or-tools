@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 // An object oriented wrapper for linear constraints in ModelStorage.
 #ifndef OR_TOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
 #define OR_TOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
@@ -71,6 +74,8 @@ class LinearConstraint {
 template <typename V>
 using LinearConstraintMap = IdMap<LinearConstraint, V>;
 
+// Streams the name of the constraint, as registered upon constraint creation,
+// or a short default if none was provided.
 inline std::ostream& operator<<(std::ostream& ostr,
                                 const LinearConstraint& linear_constraint);
 

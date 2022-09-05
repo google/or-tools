@@ -24,7 +24,7 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
@@ -110,7 +110,7 @@ class UpdateTrackers {
   static typename std::vector<IdDataPair>::const_iterator FindTracker(
       const std::vector<IdDataPair>& v, UpdateTrackerId update_tracker);
 
-  // Updates has_pending_actions_ to be true iif pending_new_trackers_ or
+  // Updates has_pending_actions_ to be true iff pending_new_trackers_ or
   // pending_removed_trackers_ are not empty.
   void UpdateHasPendingActions() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
@@ -136,7 +136,7 @@ class UpdateTrackers {
   absl::flat_hash_set<UpdateTrackerId> pending_removed_trackers_
       ABSL_GUARDED_BY(mutex_);
 
-  // Set to true iif pending_new_trackers_ or pending_removed_trackers_ are not
+  // Set to true iff pending_new_trackers_ or pending_removed_trackers_ are not
   // empty. This must be set only while holding mutex_ but will be loaded
   // without it. This atomic enables not having the performance penalty of
   // acquiring a mutex in each call to GetUpdatedTrackers().

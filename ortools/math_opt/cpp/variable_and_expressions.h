@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 // An object oriented wrapper for variables in ModelStorage (used internally by
 // Model) with support for arithmetic operations to build linear expressions and
 // express linear constraints.
@@ -642,6 +645,12 @@ class QuadraticTermKey {
 
   inline QuadraticProductId typed_id() const;
   inline const ModelStorage* storage() const;
+
+  // Returns the Variable with the smallest id.
+  Variable first() const { return Variable(storage_, variable_ids_.first); }
+
+  // Returns the Variable the largest id.
+  Variable second() const { return Variable(storage_, variable_ids_.second); }
 
   template <typename H>
   friend H AbslHashValue(H h, const QuadraticTermKey& key);

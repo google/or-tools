@@ -36,6 +36,9 @@ namespace operations_research {
 namespace math_opt {
 namespace {
 
+constexpr SupportedProblemStructures kPdlpSupportedStructures = {
+    .quadratic_objectives = SupportType::kSupported};
+
 absl::StatusOr<SparseDoubleVectorProto> ExtractSolution(
     const Eigen::VectorXd& values, const std::vector<int64_t>& pdlp_index_to_id,
     const SparseVectorFilterProto& filter, const double scale) {
@@ -61,6 +64,8 @@ absl::StatusOr<SparseDoubleVectorProto> ExtractSolution(
 
 absl::StatusOr<PdlpBridge> PdlpBridge::FromProto(
     const ModelProto& model_proto) {
+  RETURN_IF_ERROR(
+      ModelIsSupported(model_proto, kPdlpSupportedStructures, "PDLP"));
   PdlpBridge result;
   pdlp::QuadraticProgram& pdlp_lp = result.pdlp_lp_;
   const VariablesProto& variables = model_proto.variables();
@@ -84,14 +89,6 @@ absl::StatusOr<PdlpBridge> PdlpBridge::FromProto(
     result.pdlp_index_to_var_id_.push_back(variables.ids(i));
     pdlp_lp.variable_lower_bounds[i] = variables.lower_bounds(i);
     pdlp_lp.variable_upper_bounds[i] = variables.upper_bounds(i);
-    if (variables.integers(i)) {
-      return absl::InvalidArgumentError(
-          "PDLP cannot solve problems with integer variables");
-    }
-  }
-  if (!model_proto.quadratic_constraints().empty()) {
-    return absl::InvalidArgumentError(
-        "PDLP does not support quadratic constraints");
   }
   for (int i = 0; i < linear_constraints.ids_size(); ++i) {
     result.lin_con_id_to_pdlp_index_[linear_constraints.ids(i)] = i;

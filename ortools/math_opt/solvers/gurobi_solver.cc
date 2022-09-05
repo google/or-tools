@@ -37,8 +37,9 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/check.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
@@ -66,6 +67,14 @@
 namespace operations_research {
 namespace math_opt {
 namespace {
+
+constexpr SupportedProblemStructures kGurobiSupportedStructures = {
+    .integer_variables = SupportType::kSupported,
+    .quadratic_objectives = SupportType::kSupported,
+    .quadratic_constraints = SupportType::kSupported,
+    .sos1_constraints = SupportType::kSupported,
+    .sos2_constraints = SupportType::kSupported,
+    .indicator_constraints = SupportType::kSupported};
 
 absl::StatusOr<std::unique_ptr<Gurobi>> GurobiFromInitArgs(
     const SolverInterface::InitArgs& init_args) {
@@ -422,18 +431,35 @@ std::string EscapedNameForLogging(const absl::string_view name) {
   return absl::StrCat("\"", absl::Utf8SafeCEscape(name), "\"");
 }
 
+constexpr int kDeletedIndex = -1;
+constexpr int kUnsetIndex = -2;
+// Returns a vector of length `size_before_delete` that logically provides a
+// mapping from the starting contiguous range [0, ..., size_before_delete) to
+// a potentially smaller range [0, ..., num_remaining_elems) after deleting
+// each element in `deletes` and shifting the remaining elements such that they
+// are contiguous starting at 0. The elements in the output point to the new
+// shifted index, or `kDeletedIndex` if the starting index was deleted.
+std::vector<int> IndexUpdateMap(const int size_before_delete,
+                                const std::vector<int>& deletes) {
+  std::vector<int> result(size_before_delete, kUnsetIndex);
+  for (const int del : deletes) {
+    result[del] = kDeletedIndex;
+  }
+  int next_free = 0;
+  for (int& r : result) {
+    if (r != kDeletedIndex) {
+      r = next_free;
+      ++next_free;
+    }
+    CHECK_GT(r, kUnsetIndex);
+  }
+  return result;
+}
+
 }  // namespace
 
 GurobiSolver::GurobiSolver(std::unique_ptr<Gurobi> g_gurobi)
     : gurobi_(std::move(g_gurobi)) {}
-
-int GurobiSolver::num_linear_constraints() const {
-  return static_cast<int>(linear_constraints_map_.size());
-}
-
-int GurobiSolver::num_quadratic_constraints() const {
-  return static_cast<int>(quadratic_constraints_map_.size());
-}
 
 absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
     const int gurobi_status, const SolutionClaims solution_claims) {
@@ -547,7 +573,7 @@ absl::Status GurobiSolver::SetGurobiBasis(const BasisProto& basis) {
   }
 
   std::vector<int> gurobi_constraint_basis_status;
-  gurobi_constraint_basis_status.reserve(num_linear_constraints());
+  gurobi_constraint_basis_status.reserve(num_gurobi_lin_cons_);
   for (const auto [id, value] : MakeView(basis.constraint_status())) {
     const LinearConstraintData& constraint_data =
         linear_constraints_map_.at(id);
@@ -598,7 +624,7 @@ absl::StatusOr<BasisProto> GurobiSolver::GetGurobiBasis() {
 
   ASSIGN_OR_RETURN(
       const std::vector<int> gurobi_constraint_basis_status,
-      gurobi_->GetIntAttrArray(GRB_INT_ATTR_CBASIS, num_linear_constraints()));
+      gurobi_->GetIntAttrArray(GRB_INT_ATTR_CBASIS, num_gurobi_lin_cons_));
   for (auto [constraint_id, gurobi_data] : linear_constraints_map_) {
     basis.mutable_constraint_status()->add_ids(constraint_id);
     const int gurobi_constraint_status =
@@ -663,7 +689,7 @@ absl::StatusOr<DualRayProto> GurobiSolver::GetGurobiDualRay(
   // farkas_dual = lambda
   ASSIGN_OR_RETURN(const std::vector<double> farkas_dual,
                    gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_FARKASDUAL,
-                                               num_linear_constraints()));
+                                               num_gurobi_lin_cons_));
 
   DualRayProto dual_ray;
 
@@ -1100,7 +1126,7 @@ GurobiSolver::GetLpDualSolutionIfAvailable(
   bool dual_feasible_solution_exists = false;
   ASSIGN_OR_RETURN(
       const std::vector<double> grb_constraint_duals,
-      gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_PI, num_linear_constraints()));
+      gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_PI, num_gurobi_lin_cons_));
   GurobiVectorToSparseDoubleVector(grb_constraint_duals,
                                    linear_constraints_map_,
                                    *dual_solution.mutable_dual_values(),
@@ -1185,7 +1211,7 @@ absl::Status GurobiSolver::FillRays(
   // without constraints. We also give priority to the conclusions obtained from
   // primal solutions.
   if (!solution_claims.primal_feasible_solution_exists &&
-      num_linear_constraints() > 0 &&
+      num_gurobi_lin_cons_ > 0 &&
       gurobi_->IsAttrAvailable(GRB_DBL_ATTR_FARKASDUAL)) {
     ASSIGN_OR_RETURN(
         DualRayProto dual_ray,
@@ -1303,7 +1329,7 @@ absl::Status GurobiSolver::AddNewVariables(
 // slack variable for each of the constraints in the underlying `gurobi_` using
 // the referenced bounds.
 absl::Status GurobiSolver::AddNewSlacks(
-    const std::vector<SlackInfo>& new_slacks) {
+    const std::vector<LinearConstraintData*>& new_slacks) {
   // Note that we are really adding the sub-matrix
   //    D * slack
   // to the set of linear constraints, and the D matrix is stored in compressed
@@ -1326,12 +1352,12 @@ absl::Status GurobiSolver::AddNewSlacks(
   lower_bounds.reserve(num_slacks);
   upper_bounds.reserve(num_slacks);
   for (int k = 0; k < num_slacks; ++k) {
-    auto& [id, constraint_data] = new_slacks[k];
-    gtl::InsertOrDie(&slack_map_, id, constraint_data);
-    row_indices.emplace_back(constraint_data.constraint_index);
-    lower_bounds.emplace_back(constraint_data.lower_bound);
-    upper_bounds.emplace_back(constraint_data.upper_bound);
-    column_non_zero_begin.emplace_back(k);
+    CHECK_NE(new_slacks[k], nullptr);
+    const LinearConstraintData& constraint_data = *new_slacks[k];
+    row_indices.push_back(constraint_data.constraint_index);
+    lower_bounds.push_back(constraint_data.lower_bound);
+    upper_bounds.push_back(constraint_data.upper_bound);
+    column_non_zero_begin.push_back(k);
   }
   // Add variables to the underlying model.
   RETURN_IF_ERROR(gurobi_->AddVars(/*vbegin=*/column_non_zero_begin,
@@ -1345,7 +1371,6 @@ absl::Status GurobiSolver::AddNewSlacks(
 
 absl::Status GurobiSolver::AddNewLinearConstraints(
     const LinearConstraintsProto& constraints) {
-  const int num_model_constraints = num_linear_constraints();
   const int num_new_constraints = constraints.lower_bounds().size();
 
   // We need to copy the names, RepeatedPtrField cannot be converted to
@@ -1363,7 +1388,7 @@ absl::Status GurobiSolver::AddNewLinearConstraints(
   //                        slack bounds == [lower_bound, upper_bound])
   std::vector<double> constraint_rhs;
   std::vector<char> constraint_sense;
-  std::vector<SlackInfo> new_slacks;
+  std::vector<LinearConstraintData*> new_slacks;
   constraint_rhs.reserve(num_new_constraints);
   constraint_sense.reserve(num_new_constraints);
   new_slacks.reserve(num_new_constraints);
@@ -1383,7 +1408,7 @@ absl::Status GurobiSolver::AddNewLinearConstraints(
                constraints.names().empty() ? "" : constraints.names(i));
     constraint_data.lower_bound = lb;
     constraint_data.upper_bound = ub;
-    constraint_data.constraint_index = i + num_model_constraints;
+    constraint_data.constraint_index = i + num_gurobi_lin_cons_;
     char sense = GRB_EQUAL;
     double rhs = 0.0;
     const bool lb_is_grb_neg_inf = lb <= -GRB_INFINITY;
@@ -1401,7 +1426,7 @@ absl::Status GurobiSolver::AddNewLinearConstraints(
       // Note that constraints where the lower bound and the upper bound are
       // -+infinity translate into a range constraint with an unbounded slack.
       constraint_data.slack_index = new_slacks.size() + num_gurobi_variables_;
-      new_slacks.emplace_back(id, constraint_data);
+      new_slacks.push_back(&constraint_data);
     }
     constraint_rhs.emplace_back(rhs);
     constraint_sense.emplace_back(sense);
@@ -1409,6 +1434,7 @@ absl::Status GurobiSolver::AddNewLinearConstraints(
   // Add all constraints in one call.
   RETURN_IF_ERROR(
       gurobi_->AddConstrs(constraint_sense, constraint_rhs, constraint_names));
+  num_gurobi_lin_cons_ += num_new_constraints;
   // Add slacks for true ranged constraints (if needed)
   if (!new_slacks.empty()) {
     RETURN_IF_ERROR(AddNewSlacks(new_slacks));
@@ -1419,8 +1445,6 @@ absl::Status GurobiSolver::AddNewLinearConstraints(
 absl::Status GurobiSolver::AddNewQuadraticConstraints(
     const google::protobuf::Map<QuadraticConstraintId,
                                 QuadraticConstraintProto>& constraints) {
-  const int num_gurobi_constraints = num_quadratic_constraints();
-
   // Constraints are translated into:
   // 1.  ax <= upper_bound (if lower bound <= -GRB_INFINITY, and upper_bound
   //                        is finite and less than GRB_INFINITY)
@@ -1430,7 +1454,6 @@ absl::Status GurobiSolver::AddNewQuadraticConstraints(
   //                        absolute values less than GRB_INFINITY)
   // 4.  Return an error otherwise, we do not currently support ranged quadratic
   //     constraints.
-  GurobiQuadraticConstraintIndex grb_index = num_gurobi_constraints;
   for (const auto& [id, constraint] : constraints) {
     char sense = GRB_EQUAL;
     double rhs = 0.0;
@@ -1482,8 +1505,120 @@ absl::Status GurobiSolver::AddNewQuadraticConstraints(
         linear_col_index, linear_coeffs.values(), quad_row_index,
         quad_col_index, quad_coeffs.coefficients(), sense, rhs,
         TruncateName(constraint.name())));
-    gtl::InsertOrDie(&quadratic_constraints_map_, id, grb_index);
-    ++grb_index;
+    gtl::InsertOrDie(&quadratic_constraints_map_, id, num_gurobi_quad_cons_);
+    ++num_gurobi_quad_cons_;
+  }
+  return absl::OkStatus();
+}
+
+absl::Status GurobiSolver::AddNewSosConstraints(
+    const google::protobuf::Map<AnyConstraintId, SosConstraintProto>&
+        constraints,
+    const int sos_type,
+    absl::flat_hash_map<int64_t, SosConstraintData>& constraints_map) {
+  for (const auto& [id, constraint] : constraints) {
+    SosConstraintData& constraint_data =
+        gtl::InsertKeyOrDie(&constraints_map, id);
+    constraint_data.constraint_index = num_gurobi_sos_cons_;
+    std::vector<GurobiVariableIndex> sos_var_indices;
+    std::vector<double> weights;
+    for (int i = 0; i < constraint.expressions_size(); ++i) {
+      const LinearExpressionProto& expression = constraint.expressions(i);
+      weights.push_back(constraint.weights().empty() ? i + 1
+                                                     : constraint.weights(i));
+      if (expression.offset() == 0 && expression.ids_size() == 1 &&
+          expression.coefficients(0) == 1) {
+        const VariableId var_id = expression.ids(0);
+        // In this case, the expression is equivalent to just a single variable.
+        // Therefore, we can safely pass this variable to the SOS constraint,
+        // and avoid adding a slack variable.
+        sos_var_indices.push_back(variables_map_.at(var_id));
+        // If this variable is deleted, Gurobi will drop the corresponding term
+        // from the SOS constraint, potentially changing the meaning of an SOS2.
+        if (sos_type == 2) {
+          undeletable_variables_.insert(var_id);
+        }
+        continue;
+      }
+      // This term in the SOS constraint is a nontrivial expression `expr`, but
+      // Gurobi only accepts a single variable. Therefore we introduce a new
+      // `slack` variable and add the linear constraint: `expr` == `slack`.
+      sos_var_indices.push_back(num_gurobi_variables_);
+      constraint_data.slack_variables.push_back(num_gurobi_variables_);
+      constraint_data.slack_constraints.push_back(num_gurobi_lin_cons_);
+      std::vector<GurobiVariableIndex> slack_col_indices = {
+          num_gurobi_variables_};
+      std::vector<double> slack_coeffs = {-1.0};
+      for (int j = 0; j < expression.ids_size(); ++j) {
+        slack_col_indices.push_back(variables_map_.at(expression.ids(j)));
+        slack_coeffs.push_back(expression.coefficients(j));
+      }
+      RETURN_IF_ERROR(gurobi_->AddVar(0, -kInf, kInf, GRB_CONTINUOUS, ""));
+      ++num_gurobi_variables_;
+      RETURN_IF_ERROR(gurobi_->AddConstr(slack_col_indices, slack_coeffs,
+                                         GRB_EQUAL, -expression.offset(), ""));
+      ++num_gurobi_lin_cons_;
+    }
+    RETURN_IF_ERROR(gurobi_->AddSos({sos_type}, {0}, sos_var_indices, weights));
+    ++num_gurobi_sos_cons_;
+  }
+  return absl::OkStatus();
+}
+
+absl::Status GurobiSolver::AddNewIndicatorConstraints(
+    const google::protobuf::Map<IndicatorConstraintId,
+                                IndicatorConstraintProto>& constraints) {
+  for (const auto& [id, constraint] : constraints) {
+    if (!constraint.has_indicator_id()) {
+      gtl::InsertOrDie(&indicator_constraints_map_, id, kUnspecifiedConstraint);
+      continue;
+    }
+    const int num_terms = constraint.expression().ids_size();
+    std::vector<GurobiVariableIndex> grb_ids(num_terms);
+    for (int k = 0; k < num_terms; ++k) {
+      grb_ids[k] = variables_map_.at(constraint.expression().ids(k));
+    }
+    char sense = GRB_EQUAL;
+    double rhs = 0.0;
+    const double lb = constraint.lower_bound();
+    const double ub = constraint.upper_bound();
+    RETURN_IF_ERROR(SafeGurobiDouble(lb))
+        << "lower bound for indicator constraint " << id << ": "
+        << EscapedNameForLogging(constraint.name());
+    RETURN_IF_ERROR(SafeGurobiDouble(ub))
+        << "upper bound for indicator constraint " << id << ": "
+        << EscapedNameForLogging(constraint.name());
+    const bool lb_is_grb_neg_inf = lb <= -GRB_INFINITY;
+    const bool ub_is_grb_pos_inf = ub >= GRB_INFINITY;
+    if (lb_is_grb_neg_inf && ub_is_grb_pos_inf) {
+      // The constraint is vacuous, so we just skip it.
+      continue;
+    } else if (lb_is_grb_neg_inf && !ub_is_grb_pos_inf) {
+      sense = GRB_LESS_EQUAL;
+      rhs = ub;
+    } else if (!lb_is_grb_neg_inf && ub_is_grb_pos_inf) {
+      sense = GRB_GREATER_EQUAL;
+      rhs = lb;
+    } else if (lb == ub) {
+      sense = GRB_EQUAL;
+      rhs = lb;
+    } else {
+      // We do not currently support ranged indicator constraints, though it is
+      // possible to support this if there is a need.
+      return absl::UnimplementedError(
+          "ranged indicator constraints are not currently supported in Gurobi "
+          "interface");
+    }
+    RETURN_IF_ERROR(gurobi_->AddIndicator(
+        /*name=*/constraint.name(),
+        /*binvar=*/variables_map_.at(constraint.indicator_id()), /*binval=*/1,
+        /*ind=*/grb_ids, /*val=*/constraint.expression().values(),
+        /*sense=*/sense, /*rhs=*/rhs));
+    gtl::InsertOrDie(&indicator_constraints_map_, id, num_gurobi_gen_cons_);
+    ++num_gurobi_gen_cons_;
+    // Deleting the indicator variable, but not the associated indicator
+    // constraint, will lead to a Gurobi error.
+    undeletable_variables_.insert(constraint.indicator_id());
   }
   return absl::OkStatus();
 }
@@ -1538,6 +1673,13 @@ absl::Status GurobiSolver::LoadModel(const ModelProto& input_model) {
   RETURN_IF_ERROR(AddNewLinearConstraints(input_model.linear_constraints()));
   RETURN_IF_ERROR(
       AddNewQuadraticConstraints(input_model.quadratic_constraints()));
+
+  RETURN_IF_ERROR(AddNewSosConstraints(input_model.sos1_constraints(),
+                                       GRB_SOS_TYPE1, sos1_constraints_map_));
+  RETURN_IF_ERROR(AddNewSosConstraints(input_model.sos2_constraints(),
+                                       GRB_SOS_TYPE2, sos2_constraints_map_));
+  RETURN_IF_ERROR(
+      AddNewIndicatorConstraints(input_model.indicator_constraints()));
 
   RETURN_IF_ERROR(ChangeCoefficients(input_model.linear_constraint_matrix()));
 
@@ -1681,7 +1823,7 @@ absl::Status GurobiSolver::UpdateLinearConstraints(
   std::vector<double> upper_bound_data;
   std::vector<GurobiVariableIndex> bound_index;
   // This vector keep newly introduced slacks.
-  std::vector<SlackInfo> new_slacks;
+  std::vector<LinearConstraintData*> new_slacks;
   // Iterate on the changes, and populate the three possible changes.
   for (UpdateConstraintData& update_data : update_vector) {
     const bool same_lower_bound =
@@ -1734,7 +1876,7 @@ absl::Status GurobiSolver::UpdateLinearConstraints(
         update_data.source.slack_index =
             new_slacks.size() + num_gurobi_variables_;
         // Save the data needed to add the new slack.
-        new_slacks.emplace_back(update_data.constraint_id, update_data.source);
+        new_slacks.push_back(&update_data.source);
       }
     }
     // If the constraint had a slack, and now is marked for deletion, we reset
@@ -1744,7 +1886,6 @@ absl::Status GurobiSolver::UpdateLinearConstraints(
     if (delete_slack && update_data.source.slack_index != kUnspecifiedIndex) {
       deleted_variables_index.emplace_back(update_data.source.slack_index);
       update_data.source.slack_index = kUnspecifiedIndex;
-      slack_map_.erase(update_data.constraint_id);
     }
   }
 
@@ -1772,64 +1913,110 @@ absl::Status GurobiSolver::UpdateLinearConstraints(
 // deletion. The updated indices are computed from the previous indices, sorted
 // in incremental form, but re-assigned so that all indices are contiguous
 // between [0, num_variables-1], [0, num_linear_constraints-1], and [0,
-// num_quad_constraints-1]. This implementation exploits the fact that
-// gtl::linked_hash_map preserves the insertion order of whatever elements
-// remain in the hash tables.
-absl::Status GurobiSolver::UpdateGurobiIndices() {
-  {  // Recover index of variables.
-    GurobiVariableIndex next_index = 0;
-    GurobiVariableIndex prev_index = kUnspecifiedIndex;
-    auto variable_it = variables_map_.begin();
-    auto slack_it = slack_map_.begin();
-    while (variable_it != variables_map_.end() ||
-           slack_it != slack_map_.end()) {
-      GurobiVariableIndex variable_index = std::numeric_limits<int32_t>::max();
-      if (variable_it != variables_map_.end()) {
-        variable_index = variable_it->second;
-      }
-      GurobiVariableIndex slack_index = std::numeric_limits<int32_t>::max();
-      if (slack_it != slack_map_.end()) {
-        slack_index = slack_it->second.slack_index;
-      }
-      DCHECK_LT(prev_index, variable_index);
-      DCHECK_LT(prev_index, slack_index);
-      DCHECK(variable_index != slack_index);
-      if (slack_index < variable_index) {
-        prev_index = slack_index;
-        slack_it->second.slack_index = next_index++;
-        ++slack_it;
-      } else {
-        prev_index = variable_index;
-        variable_it->second = next_index++;
-        ++variable_it;
+// num_quad_constraints-1].
+void GurobiSolver::UpdateGurobiIndices(const DeletedIndices& deleted_indices) {
+  // Recover the updated indices of variables.
+  if (!deleted_indices.variables.empty()) {
+    const std::vector<GurobiVariableIndex> old_to_new =
+        IndexUpdateMap(num_gurobi_variables_, deleted_indices.variables);
+    for (auto& [_, grb_index] : variables_map_) {
+      grb_index = old_to_new[grb_index];
+      CHECK_NE(grb_index, kDeletedIndex);
+    }
+    for (auto& [_, lin_con_data] : linear_constraints_map_) {
+      if (lin_con_data.slack_index != kUnspecifiedIndex) {
+        lin_con_data.slack_index = old_to_new[lin_con_data.slack_index];
+        CHECK_NE(lin_con_data.slack_index, kDeletedIndex);
       }
     }
-    DCHECK_EQ(next_index, num_gurobi_variables_);
-  }
-  {  // Recover index of linear constraints.
-    GurobiLinearConstraintIndex next_constraint = 0;
-    GurobiLinearConstraintIndex prev_constraint = kUnspecifiedConstraint;
-    for (auto& constraint_iterator : linear_constraints_map_) {
-      DCHECK_LT(prev_constraint, constraint_iterator.second.constraint_index);
-      prev_constraint = constraint_iterator.second.constraint_index;
-      constraint_iterator.second.constraint_index = next_constraint++;
+    for (auto& [_, sos1_con_data] : sos1_constraints_map_) {
+      for (GurobiVariableIndex& index : sos1_con_data.slack_variables) {
+        index = old_to_new[index];
+        CHECK_NE(index, kDeletedIndex);
+      }
     }
-    DCHECK_EQ(next_constraint, num_linear_constraints());
+    for (auto& [_, sos2_con_data] : sos2_constraints_map_) {
+      for (GurobiVariableIndex& index : sos2_con_data.slack_variables) {
+        index = old_to_new[index];
+        CHECK_NE(index, kDeletedIndex);
+      }
+    }
   }
-  {  // Recover index of quadratic constraints.
-    GurobiQuadraticConstraintIndex next_constraint = 0;
-    GurobiQuadraticConstraintIndex prev_constraint = kUnspecifiedConstraint;
+  // Recover the updated indices of linear constraints.
+  if (!deleted_indices.linear_constraints.empty()) {
+    const std::vector<GurobiLinearConstraintIndex> old_to_new = IndexUpdateMap(
+        num_gurobi_lin_cons_, deleted_indices.linear_constraints);
+    for (auto& [_, lin_con_data] : linear_constraints_map_) {
+      lin_con_data.constraint_index = old_to_new[lin_con_data.constraint_index];
+      CHECK_NE(lin_con_data.constraint_index, kDeletedIndex);
+    }
+    for (auto& [_, sos1_con_data] : sos1_constraints_map_) {
+      for (GurobiLinearConstraintIndex& index :
+           sos1_con_data.slack_constraints) {
+        index = old_to_new[index];
+        CHECK_NE(index, kDeletedIndex);
+      }
+    }
+    for (auto& [_, sos2_con_data] : sos2_constraints_map_) {
+      for (GurobiLinearConstraintIndex& index :
+           sos2_con_data.slack_constraints) {
+        index = old_to_new[index];
+        CHECK_NE(index, kDeletedIndex);
+      }
+    }
+  }
+  // Recover the updated indices of quadratic constraints.
+  if (!deleted_indices.quadratic_constraints.empty()) {
+    const std::vector<GurobiQuadraticConstraintIndex> old_to_new =
+        IndexUpdateMap(num_gurobi_quad_cons_,
+                       deleted_indices.quadratic_constraints);
     for (auto& [_, grb_index] : quadratic_constraints_map_) {
-      DCHECK_LT(prev_constraint, grb_index);
-      prev_constraint = grb_index;
-      grb_index = next_constraint++;
+      grb_index = old_to_new[grb_index];
+      CHECK_NE(grb_index, kDeletedIndex);
     }
-    DCHECK_EQ(next_constraint, num_quadratic_constraints());
   }
-  return absl::OkStatus();
+  // Recover the updated indices of SOS constraints.
+  if (!deleted_indices.sos_constraints.empty()) {
+    const std::vector<GurobiSosConstraintIndex> old_to_new =
+        IndexUpdateMap(num_gurobi_sos_cons_, deleted_indices.sos_constraints);
+    for (auto& [_, sos1_data] : sos1_constraints_map_) {
+      GurobiSosConstraintIndex& grb_index = sos1_data.constraint_index;
+      grb_index = old_to_new[grb_index];
+      CHECK_NE(grb_index, kDeletedIndex);
+    }
+    for (auto& [_, sos2_data] : sos2_constraints_map_) {
+      GurobiSosConstraintIndex& grb_index = sos2_data.constraint_index;
+      grb_index = old_to_new[grb_index];
+      CHECK_NE(grb_index, kDeletedIndex);
+    }
+  }
+  // Recover the updated indices of general constraints.
+  if (!deleted_indices.general_constraints.empty()) {
+    const std::vector<GurobiGeneralConstraintIndex> old_to_new = IndexUpdateMap(
+        num_gurobi_gen_cons_, deleted_indices.general_constraints);
+    for (auto& [_, grb_index] : indicator_constraints_map_) {
+      if (grb_index == kUnspecifiedConstraint) {
+        continue;
+      }
+      grb_index = old_to_new[grb_index];
+      CHECK_NE(grb_index, kDeletedIndex);
+    }
+  }
 }
 
-absl::Status GurobiSolver::Update(const ModelUpdateProto& model_update) {
+absl::StatusOr<bool> GurobiSolver::Update(
+    const ModelUpdateProto& model_update) {
+  if (!undeletable_variables_.empty()) {
+    for (const VariableId id : model_update.deleted_variable_ids()) {
+      if (undeletable_variables_.contains(id)) {
+        return false;
+      }
+    }
+  }
+  if (!UpdateIsSupported(model_update, kGurobiSupportedStructures)) {
+    return false;
+  }
+
   RETURN_IF_ERROR(AddNewVariables(model_update.new_variables()));
 
   RETURN_IF_ERROR(
@@ -1837,6 +2024,15 @@ absl::Status GurobiSolver::Update(const ModelUpdateProto& model_update) {
 
   RETURN_IF_ERROR(AddNewQuadraticConstraints(
       model_update.quadratic_constraint_updates().new_constraints()));
+
+  RETURN_IF_ERROR(AddNewSosConstraints(
+      model_update.sos1_constraint_updates().new_constraints(), GRB_SOS_TYPE1,
+      sos1_constraints_map_));
+  RETURN_IF_ERROR(AddNewSosConstraints(
+      model_update.sos2_constraint_updates().new_constraints(), GRB_SOS_TYPE2,
+      sos2_constraints_map_));
+  RETURN_IF_ERROR(AddNewIndicatorConstraints(
+      model_update.indicator_constraint_updates().new_constraints()));
 
   RETURN_IF_ERROR(
       ChangeCoefficients(model_update.linear_constraint_matrix_updates()));
@@ -1904,28 +2100,24 @@ absl::Status GurobiSolver::Update(const ModelUpdateProto& model_update) {
   }
   // We cache all Gurobi variables and constraint indices that must be deleted,
   // and perform deletions at the end of the update call.
-  std::vector<GurobiVariableIndex> deleted_variables_index;
-  std::vector<GurobiLinearConstraintIndex> deleted_linear_constraints_index;
-  std::vector<GurobiQuadraticConstraintIndex>
-      deleted_quadratic_constraints_index;
+  DeletedIndices deleted_indices;
 
   RETURN_IF_ERROR(UpdateLinearConstraints(
-      model_update.linear_constraint_updates(), deleted_variables_index));
+      model_update.linear_constraint_updates(), deleted_indices.variables));
 
   for (const VariableId id : model_update.deleted_variable_ids()) {
-    deleted_variables_index.emplace_back(variables_map_.at(id));
+    deleted_indices.variables.emplace_back(variables_map_.at(id));
     variables_map_.erase(id);
   }
 
   for (const LinearConstraintId id :
        model_update.deleted_linear_constraint_ids()) {
     LinearConstraintData& constraint_data = linear_constraints_map_.at(id);
-    deleted_linear_constraints_index.push_back(
+    deleted_indices.linear_constraints.push_back(
         constraint_data.constraint_index);
     if (constraint_data.slack_index != kUnspecifiedIndex) {
-      deleted_variables_index.push_back(constraint_data.slack_index);
+      deleted_indices.variables.push_back(constraint_data.slack_index);
       constraint_data.slack_index = kUnspecifiedIndex;
-      slack_map_.erase(id);
     }
     linear_constraints_map_.erase(id);
   }
@@ -1934,42 +2126,79 @@ absl::Status GurobiSolver::Update(const ModelUpdateProto& model_update) {
        model_update.quadratic_constraint_updates().deleted_constraint_ids()) {
     const GurobiQuadraticConstraintIndex grb_index =
         quadratic_constraints_map_.at(id);
-    deleted_quadratic_constraints_index.push_back(grb_index);
+    deleted_indices.quadratic_constraints.push_back(grb_index);
     quadratic_constraints_map_.erase(id);
   }
 
-  // If no cached deletions, we are done.
-  if (deleted_variables_index.empty() &&
-      deleted_linear_constraints_index.empty() &&
-      deleted_quadratic_constraints_index.empty()) {
-    return absl::OkStatus();
+  const auto sos_updater = [&](const SosConstraintData& sos_constraint) {
+    deleted_indices.sos_constraints.push_back(sos_constraint.constraint_index);
+    for (const GurobiVariableIndex index : sos_constraint.slack_variables) {
+      deleted_indices.variables.push_back(index);
+    }
+    for (const GurobiLinearConstraintIndex index :
+         sos_constraint.slack_constraints) {
+      deleted_indices.linear_constraints.push_back(index);
+    }
+  };
+  for (const Sos1ConstraintId id :
+       model_update.sos1_constraint_updates().deleted_constraint_ids()) {
+    sos_updater(sos1_constraints_map_.at(id));
+    sos1_constraints_map_.erase(id);
   }
+
+  for (const Sos2ConstraintId id :
+       model_update.sos2_constraint_updates().deleted_constraint_ids()) {
+    sos_updater(sos2_constraints_map_.at(id));
+    sos2_constraints_map_.erase(id);
+  }
+
+  for (const IndicatorConstraintId id :
+       model_update.indicator_constraint_updates().deleted_constraint_ids()) {
+    // Otherwise the constraint is not actually registered with Gurobi.
+    const auto it = indicator_constraints_map_.find(id);
+    CHECK(it != indicator_constraints_map_.end()) << "id: " << id;
+    if (it->second != kUnspecifiedConstraint) {
+      deleted_indices.general_constraints.push_back(it->second);
+    }
+    indicator_constraints_map_.erase(it);
+  }
+
+  UpdateGurobiIndices(deleted_indices);
+
   // If we are removing variables or constraints we remove them after adding
   // any variable or constraint. This is to avoid problems with
   // the numbering of possibly new variables and constraints.
   // After that we must update the model so that sequence of updates don't
   // interfere with one-another.
-  if (!deleted_linear_constraints_index.empty()) {
-    RETURN_IF_ERROR(gurobi_->DelConstrs(deleted_linear_constraints_index));
+  if (!deleted_indices.linear_constraints.empty()) {
+    RETURN_IF_ERROR(gurobi_->DelConstrs(deleted_indices.linear_constraints));
+    num_gurobi_lin_cons_ -= deleted_indices.linear_constraints.size();
   }
 
-  if (!deleted_quadratic_constraints_index.empty()) {
-    RETURN_IF_ERROR(gurobi_->DelQConstrs(deleted_quadratic_constraints_index));
+  if (!deleted_indices.quadratic_constraints.empty()) {
+    RETURN_IF_ERROR(
+        gurobi_->DelQConstrs(deleted_indices.quadratic_constraints));
+    num_gurobi_quad_cons_ -= deleted_indices.quadratic_constraints.size();
   }
 
-  if (!deleted_variables_index.empty()) {
-    RETURN_IF_ERROR(gurobi_->DelVars(deleted_variables_index));
-    num_gurobi_variables_ -= deleted_variables_index.size();
+  if (!deleted_indices.sos_constraints.empty()) {
+    RETURN_IF_ERROR(gurobi_->DelSos(deleted_indices.sos_constraints));
   }
 
-  // If we removed variables or constraints we must flush all pending changes
-  // to synchronize the number of variables and constraints with the Gurobi
-  // model.
+  if (!deleted_indices.general_constraints.empty()) {
+    RETURN_IF_ERROR(
+        gurobi_->DelGenConstrs(deleted_indices.general_constraints));
+  }
+
+  if (!deleted_indices.variables.empty()) {
+    RETURN_IF_ERROR(gurobi_->DelVars(deleted_indices.variables));
+    num_gurobi_variables_ -= deleted_indices.variables.size();
+  }
+
+  // Synchronize all pending changes.
   RETURN_IF_ERROR(gurobi_->UpdateModel());
-  // Regenerate indices.
-  RETURN_IF_ERROR(UpdateGurobiIndices());
 
-  return absl::OkStatus();
+  return true;
 }
 
 absl::StatusOr<std::unique_ptr<GurobiSolver>> GurobiSolver::New(
@@ -1977,6 +2206,8 @@ absl::StatusOr<std::unique_ptr<GurobiSolver>> GurobiSolver::New(
   if (!GurobiIsCorrectlyInstalled()) {
     return absl::InvalidArgumentError("Gurobi is not correctly installed.");
   }
+  RETURN_IF_ERROR(
+      ModelIsSupported(input_model, kGurobiSupportedStructures, "Gurobi"));
   ASSIGN_OR_RETURN(std::unique_ptr<Gurobi> gurobi,
                    GurobiFromInitArgs(init_args));
   auto gurobi_solver = absl::WrapUnique(new GurobiSolver(std::move(gurobi)));
@@ -2160,10 +2391,6 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   RETURN_IF_ERROR(gurobi_->ResetParameters());
 
   return solve_result;
-}
-
-bool GurobiSolver::CanUpdate(const ModelUpdateProto& model_update) {
-  return true;
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_GUROBI, GurobiSolver::New)

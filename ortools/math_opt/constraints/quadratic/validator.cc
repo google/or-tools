@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -48,12 +49,20 @@ absl::Status ValidateConstraint(const QuadraticConstraintProto& constraint,
       << "bad quadratic term ID in quadratic constraint";
 
   // Step 3: Validate bounds.
-  RETURN_IF_ERROR(
-      CheckScalar(constraint.lower_bound(), {.allow_positive_infinity = false}))
-      << "bad quadratic constraint lower bound";
-  RETURN_IF_ERROR(
-      CheckScalar(constraint.upper_bound(), {.allow_negative_infinity = false}))
-      << "bad quadratic constraint upper bound";
+  {
+    const double lb = constraint.lower_bound();
+    const double ub = constraint.upper_bound();
+    RETURN_IF_ERROR(CheckScalar(lb, {.allow_positive_infinity = false}))
+        << "bad quadratic constraint lower bound";
+    RETURN_IF_ERROR(CheckScalar(ub, {.allow_negative_infinity = false}))
+        << "bad quadratic constraint upper bound";
+    if (lb > ub) {
+      return util::InvalidArgumentErrorBuilder()
+             << "Quadratic constraint bounds are inverted, rendering model "
+                "trivially infeasible: lb = "
+             << lb << " > " << ub << " = ub";
+    }
+  }
 
   return absl::OkStatus();
 }

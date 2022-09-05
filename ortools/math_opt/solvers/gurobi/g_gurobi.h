@@ -71,6 +71,7 @@ using GRBenvUniquePtr = std::unique_ptr<GRBenv, GurobiFreeEnv>;
 // Returns a new primary Gurobi environment, using the ISV key if provided, or a
 // regular license otherwise. Gurobi::New() creates an environment automatically
 // if not provided, so most users will not use this directly.
+//
 absl::StatusOr<GRBenvUniquePtr> GurobiNewPrimaryEnv(
     const std::optional<GurobiIsvKey>& isv_key = std::nullopt);
 
@@ -252,6 +253,20 @@ class Gurobi {
   // Model Building
   //////////////////////////////////////////////////////////////////////////////
 
+  // Calls GRBaddvar() to add a variable to the model.
+  absl::Status AddVar(double obj, double lb, double ub, char vtype,
+                      const std::string& name);
+
+  // Calls GRBaddvar() to add a variable and linear constraint column to the
+  // model.
+  //
+  // The inputs `vind` and `vval` must have the same size. Both can be empty if
+  // you do not want to modify the constraint matrix, though this is equivalent
+  // to the simpler overload above.
+  absl::Status AddVar(absl::Span<const int> vind, absl::Span<const double> vval,
+                      double obj, double lb, double ub, char vtype,
+                      const std::string& name);
+
   // Calls GRBaddvars() to add variables to the model.
   //
   // Requirements:
@@ -295,6 +310,18 @@ class Gurobi {
 
   // Calls GRBdelvars().
   absl::Status DelVars(absl::Span<const int> ind);
+
+  // Calls GRBaddconstr() to add a constraint to the model.
+  //
+  // This overload does not add any variable coefficients to the constraint.
+  absl::Status AddConstr(char sense, double rhs, const std::string& name);
+
+  // Calls GRBaddconstr() to add a constraint to the model.
+  //
+  // The inputs `cind` and `cval` must have the same size.
+  absl::Status AddConstr(absl::Span<const int> cind,
+                         absl::Span<const double> cval, char sense, double rhs,
+                         const std::string& name);
 
   // Calls GRBaddconstrs().
   //
@@ -348,6 +375,40 @@ class Gurobi {
   //
   // Deletes the specified quadratic constraints.
   absl::Status DelQConstrs(const absl::Span<const int> ind);
+
+  // Calls GRBaddsos().
+  //
+  // This adds SOS constraints to the model. You may specify multiple SOS
+  // constraints at once, and may mix the types (SOS1 and SOS2) in a single
+  // call. The data is specified in CSR format, meaning that the entries of beg
+  // indicate the contiguous subranges of ind and weight associated with a
+  // particular SOS constraint. Please see the Gurobi documentation for more
+  // detail (https://www.gurobi.com/documentation/9.5/refman/c_addsos.html).
+  //
+  // Requirements:
+  //  * types and beg must be of equal length.
+  //  * ind and weight must be of equal length.
+  absl::Status AddSos(absl::Span<const int> types, absl::Span<const int> beg,
+                      absl::Span<const int> ind,
+                      absl::Span<const double> weight);
+
+  // Calls GRBdelsos().
+  //
+  // Deletes the specified SOS constraints.
+  absl::Status DelSos(absl::Span<const int> ind);
+
+  // Calls GRBaddgenconstrIndicator().
+  //
+  // `ind` and `val` must be of equal length.
+  absl::Status AddIndicator(const std::string& name, int binvar, int binval,
+                            absl::Span<const int> ind,
+                            absl::Span<const double> val, char sense,
+                            double rhs);
+
+  // Calls GRBdelgenconstrs().
+  //
+  // Deletes the specified general constraints.
+  absl::Status DelGenConstrs(absl::Span<const int> ind);
 
   //////////////////////////////////////////////////////////////////////////////
   // Linear constraint matrix queries.

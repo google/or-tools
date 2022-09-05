@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 // A faster version of flat_hash_map for Variable and LinearConstraint keys.
 #ifndef OR_TOOLS_MATH_OPT_CPP_ID_MAP_H_
 #define OR_TOOLS_MATH_OPT_CPP_ID_MAP_H_

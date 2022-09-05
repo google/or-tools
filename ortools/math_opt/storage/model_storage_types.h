@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 #ifndef OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_TYPES_H_
 #define OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_TYPES_H_
 
@@ -23,6 +26,10 @@ namespace operations_research::math_opt {
 
 DEFINE_STRONG_INT_TYPE(VariableId, int64_t);
 DEFINE_STRONG_INT_TYPE(LinearConstraintId, int64_t);
+DEFINE_STRONG_INT_TYPE(QuadraticConstraintId, int64_t);
+DEFINE_STRONG_INT_TYPE(Sos1ConstraintId, int64_t);
+DEFINE_STRONG_INT_TYPE(Sos2ConstraintId, int64_t);
+DEFINE_STRONG_INT_TYPE(IndicatorConstraintId, int64_t);
 DEFINE_STRONG_INT_TYPE(UpdateTrackerId, int64_t);
 
 }  // namespace operations_research::math_opt

@@ -18,7 +18,6 @@ cc_library(
     srcs = ["ids_validator.cc"],
     hdrs = ["ids_validator.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/math_opt/core:model_summary",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -47,6 +46,7 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:model_summary",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
@@ -75,18 +75,17 @@ cc_library(
         ":scalar_validator",
         ":sparse_matrix_validator",
         ":sparse_vector_validator",
-        "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/constraints/indicator:validator",
         "//ortools/math_opt/constraints/quadratic:validator",
         "//ortools/math_opt/constraints/sos:validator",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 
@@ -96,7 +95,6 @@ cc_library(
     hdrs = ["solve_stats_validator.h"],
     deps = [
         ":scalar_validator",
-        "//ortools/base",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/math_opt:result_cc_proto",
@@ -115,6 +113,7 @@ cc_library(
     deps = [
         ":solution_validator",
         ":solve_stats_validator",
+        "//ortools/base:status_macros",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
@@ -133,11 +132,8 @@ cc_library(
         ":ids_validator",
         ":scalar_validator",
         ":sparse_vector_validator",
-        "//ortools/base",
         "//ortools/base:status_macros",
-        "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_parameters_cc_proto",
-        "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:math_opt_proto_utils",
@@ -145,7 +141,6 @@ cc_library(
         "//ortools/math_opt/core:sparse_vector_view",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -158,10 +153,10 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/util:status_macros",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
     ],
 )
 
@@ -170,6 +165,7 @@ cc_library(
     srcs = ["callback_validator.cc"],
     hdrs = ["callback_validator.h"],
     deps = [
+        ":ids_validator",
         ":model_parameters_validator",
         ":scalar_validator",
         ":solution_validator",
@@ -179,9 +175,11 @@ cc_library(
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/port:proto_utils",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
@@ -194,14 +192,15 @@ cc_library(
     hdrs = ["model_parameters_validator.h"],
     deps = [
         ":ids_validator",
+        ":solution_validator",
+        ":sparse_vector_validator",
         "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
-        "//ortools/math_opt/validators:solution_validator",
+        "//ortools/math_opt/core:sparse_vector_view",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -212,6 +211,7 @@ cc_library(
     deps = [
         ":scalar_validator",
         ":sparse_vector_validator",
+        "//ortools/base:status_macros",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",

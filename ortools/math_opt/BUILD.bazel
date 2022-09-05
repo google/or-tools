@@ -19,7 +19,6 @@ proto_library(
     name = "callback_proto",
     srcs = ["callback.proto"],
     deps = [
-        ":solution_proto",
         ":sparse_containers_proto",
         "@com_google_protobuf//:duration_proto",
     ],

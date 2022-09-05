@@ -11,12 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 // Functions and classes used to solve a Model.
 //
 // The main entry point is the Solve() function.
 //
 // For users that need incremental solving, there is the IncrementalSolver
 // class.
+
 #ifndef OR_TOOLS_MATH_OPT_CPP_SOLVE_H_
 #define OR_TOOLS_MATH_OPT_CPP_SOLVE_H_
 

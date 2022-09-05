@@ -121,10 +121,11 @@ message QuadraticConstraintProto {
   //    wastes space.
   SparseDoubleMatrixProto quadratic_terms = 2;
 
-  // Must have value in [-inf, inf).
+  // Must have value in [-inf, inf), and be less than or equal to `upper_bound`.
   double lower_bound = 3;
 
-  // Must have value in (-inf, inf].
+  // Must have value in (-inf, inf], and be greater than or equal to
+  // `lower_bound`.
   double upper_bound = 4;
 
   // Parent messages may have uniqueness requirements on this field; e.g., see
@@ -146,22 +147,12 @@ message SosConstraintProto {
 
   // Either empty or of equal length to expressions. If empty, default weights
   // are 1, 2, ...
+  // If present, the entries must be unique.
   repeated double weights = 2;
 
   // Parent messages may have uniqueness requirements on this field; e.g., see
   // ModelProto.sos1_constraints and SosConstraintUpdatesProto.new_constraints.
   string name = 3;
-}
-
-// Specifies if a constraint is of the form...
-enum ConstraintSense {
-  CONSTRAINT_SENSE_UNSPECIFIED = 0;
-  // ... lhs <= rhs
-  CONSTRAINT_SENSE_LESS_THAN = 1;
-  // ... lhs >= rhs
-  CONSTRAINT_SENSE_GREATER_THAN = 2;
-  // ... lhs == rhs
-  CONSTRAINT_SENSE_EQUAL_TO = 3;
 }
 
 // Data for representing a single indicator constraint of the form:
@@ -186,10 +177,11 @@ message IndicatorConstraintProto {
   //   * `expression.ids` are a subset of `VariablesProto.ids`.
   SparseDoubleVectorProto expression = 2;
 
-  ConstraintSense sense = 3;
+  // Must have value in [-inf, inf); cannot be NaN.
+  double lower_bound = 3;
 
-  // Cannot be NaN or infinite.
-  double rhs = 4;
+  // Must have value in (-inf, inf]; cannot be NaN.
+  double upper_bound = 4;
 
   // Parent messages may have uniqueness requirements on this field; e.g., see
   // `ModelProto.indicator_constraints` and

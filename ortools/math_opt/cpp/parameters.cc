@@ -18,21 +18,46 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
+#include "ortools/port/proto_utils.h"
+#include "ortools/util/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
+namespace {
+
+template <typename EnumType>
+bool ParseEnumFlag(const absl::string_view text, EnumType* const value,
+                   std::string* const error) {
+  const std::optional<EnumType> enum_value = EnumFromString<EnumType>(text);
+  if (!enum_value.has_value()) {
+    *error = "unknown value for enumeration";
+    return false;
+  }
+
+  *value = *enum_value;
+  return true;
+}
+
+template <typename EnumType>
+std::string UnparseEnumFlag(const EnumType value) {
+  std::ostringstream oss;
+  oss << value;
+  return oss.str();
+}
+
+}  // namespace
 
 std::optional<absl::string_view> Enum<SolverType>::ToOptString(
     SolverType value) {
@@ -61,20 +86,11 @@ absl::Span<const SolverType> Enum<SolverType>::AllValues() {
 
 bool AbslParseFlag(const absl::string_view text, SolverType* const value,
                    std::string* const error) {
-  const std::optional enum_value = EnumFromString<SolverType>(text);
-  if (!enum_value.has_value()) {
-    *error = "unknown value for enumeration";
-    return false;
-  }
-
-  *value = *enum_value;
-  return true;
+  return ParseEnumFlag(text, value, error);
 }
 
 std::string AbslUnparseFlag(const SolverType value) {
-  std::ostringstream oss;
-  oss << value;
-  return oss.str();
+  return UnparseEnumFlag(value);
 }
 
 std::optional<absl::string_view> Enum<LPAlgorithm>::ToOptString(
@@ -99,6 +115,15 @@ absl::Span<const LPAlgorithm> Enum<LPAlgorithm>::AllValues() {
   return absl::MakeConstSpan(kLPAlgorithmValues);
 }
 
+bool AbslParseFlag(absl::string_view text, LPAlgorithm* const value,
+                   std::string* const error) {
+  return ParseEnumFlag(text, value, error);
+}
+
+std::string AbslUnparseFlag(const LPAlgorithm value) {
+  return UnparseEnumFlag(value);
+}
+
 std::optional<absl::string_view> Enum<Emphasis>::ToOptString(Emphasis value) {
   switch (value) {
     case Emphasis::kOff:
@@ -121,6 +146,15 @@ absl::Span<const Emphasis> Enum<Emphasis>::AllValues() {
       Emphasis::kHigh, Emphasis::kVeryHigh,
   };
   return absl::MakeConstSpan(kEmphasisValues);
+}
+
+bool AbslParseFlag(absl::string_view text, Emphasis* const value,
+                   std::string* const error) {
+  return ParseEnumFlag(text, value, error);
+}
+
+std::string AbslUnparseFlag(const Emphasis value) {
+  return UnparseEnumFlag(value);
 }
 
 GurobiParametersProto GurobiParameters::Proto() const {
@@ -196,8 +230,9 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   SolveParameters result;
   result.enable_output = proto.enable_output();
   if (proto.has_time_limit()) {
-    ASSIGN_OR_RETURN(result.time_limit,
-                     util_time::DecodeGoogleApiProto(proto.time_limit()));
+    OR_ASSIGN_OR_RETURN3(result.time_limit,
+                         util_time::DecodeGoogleApiProto(proto.time_limit()),
+                         _ << "invalid time_limit");
   } else {
     result.time_limit = absl::InfiniteDuration();
   }
@@ -241,6 +276,28 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   result.glop = proto.glop();
   result.cp_sat = proto.cp_sat();
   return result;
+}
+
+bool AbslParseFlag(absl::string_view text, SolveParameters* solve_parameters,
+                   std::string* error) {
+  SolveParametersProto proto;
+  if (!ProtobufParseTextProtoForFlag(text, &proto, error)) {
+    return false;
+  }
+  absl::StatusOr<SolveParameters> params = SolveParameters::FromProto(proto);
+  if (!params.ok()) {
+    *error = absl::StrCat(
+        "SolveParametersProto was invalid and could not convert to "
+        "SolveParameters: ",
+        params.status().ToString());
+    return false;
+  }
+  *solve_parameters = *std::move(params);
+  return true;
+}
+
+std::string AbslUnparseFlag(SolveParameters solve_parameters) {
+  return ProtobufTextFormatPrintToString(solve_parameters.Proto());
 }
 
 }  // namespace math_opt

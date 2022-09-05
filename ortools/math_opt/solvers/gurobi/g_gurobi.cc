@@ -28,6 +28,8 @@
 #include "ortools/base/source_location.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/gurobi/environment.h"
+#include "ortools/math_opt/solvers/gurobi.pb.h"
 
 namespace operations_research::math_opt {
 
@@ -167,6 +169,27 @@ absl::Status Gurobi::ToStatus(const int grb_err, const absl::StatusCode code,
          << ", message: " << GRBgeterrormsg(model_env_);
 }
 
+absl::Status Gurobi::AddVar(const double obj, const double lb, const double ub,
+                            const char vtype, const std::string& name) {
+  return AddVar({}, {}, obj, lb, ub, vtype, name);
+}
+
+absl::Status Gurobi::AddVar(const absl::Span<const int> vind,
+                            const absl::Span<const double> vval,
+                            const double obj, const double lb, const double ub,
+                            const char vtype, const std::string& name) {
+  CHECK_EQ(vind.size(), vval.size());
+  const int numnz = static_cast<int>(vind.size());
+  return ToStatus(GRBaddvar(/*model=*/gurobi_model_, /*numnz=*/numnz,
+                            /*vind=*/const_cast<int*>(vind.data()),
+                            /*vval=*/const_cast<double*>(vval.data()),
+                            /*obj=*/obj,
+                            /*lb=*/lb,
+                            /*ub=*/ub,
+                            /*vtype=*/vtype,
+                            /*varname=*/name.empty() ? nullptr : name.data()));
+}
+
 absl::Status Gurobi::AddVars(const absl::Span<const double> obj,
                              const absl::Span<const double> lb,
                              const absl::Span<const double> ub,
@@ -219,6 +242,26 @@ absl::Status Gurobi::AddVars(const absl::Span<const int> vbegin,
 absl::Status Gurobi::DelVars(const absl::Span<const int> ind) {
   return ToStatus(
       GRBdelvars(gurobi_model_, ind.size(), const_cast<int*>(ind.data())));
+}
+
+absl::Status Gurobi::AddConstr(const char sense, const double rhs,
+                               const std::string& name) {
+  return AddConstr({}, {}, sense, rhs, name);
+}
+
+absl::Status Gurobi::AddConstr(const absl::Span<const int> cind,
+                               const absl::Span<const double> cval,
+                               const char sense, const double rhs,
+                               const std::string& name) {
+  CHECK_EQ(cind.size(), cval.size());
+  const int numnz = static_cast<int>(cind.size());
+  return ToStatus(
+      GRBaddconstr(/*model=*/gurobi_model_, /*numnz=*/numnz,
+                   /*cind=*/const_cast<int*>(cind.data()),
+                   /*cval=*/const_cast<double*>(cval.data()),
+                   /*sense=*/sense,
+                   /*rhs=*/rhs,
+                   /*constrname=*/name.empty() ? nullptr : name.data()));
 }
 
 absl::Status Gurobi::AddConstrs(const absl::Span<const char> sense,
@@ -292,6 +335,48 @@ absl::Status Gurobi::AddQConstr(const absl::Span<const int> lind,
 absl::Status Gurobi::DelQConstrs(const absl::Span<const int> ind) {
   return ToStatus(GRBdelqconstrs(gurobi_model_, static_cast<int>(ind.size()),
                                  const_cast<int*>(ind.data())));
+}
+
+absl::Status Gurobi::AddSos(const absl::Span<const int> types,
+                            const absl::Span<const int> beg,
+                            const absl::Span<const int> ind,
+                            const absl::Span<const double> weight) {
+  const int num_sos = static_cast<int>(types.size());
+  CHECK_EQ(beg.size(), num_sos);
+
+  const int num_members = static_cast<int>(ind.size());
+  CHECK_EQ(weight.size(), num_members);
+
+  return ToStatus(GRBaddsos(/*model=*/gurobi_model_, /*numsos=*/num_sos,
+                            /*nummembers=*/num_members,
+                            /*types=*/const_cast<int*>(types.data()),
+                            /*beg=*/const_cast<int*>(beg.data()),
+                            /*ind=*/const_cast<int*>(ind.data()),
+                            /*weight=*/const_cast<double*>(weight.data())));
+}
+
+absl::Status Gurobi::DelSos(const absl::Span<const int> ind) {
+  return ToStatus(GRBdelsos(gurobi_model_, static_cast<int>(ind.size()),
+                            const_cast<int*>(ind.data())));
+}
+
+absl::Status Gurobi::AddIndicator(const std::string& name, const int binvar,
+                                  const int binval,
+                                  const absl::Span<const int> ind,
+                                  const absl::Span<const double> val,
+                                  const char sense, const double rhs) {
+  const int nvars = static_cast<int>(ind.size());
+  CHECK_EQ(val.size(), nvars);
+  return ToStatus(GRBaddgenconstrIndicator(
+      /*model=*/gurobi_model_, /*name=*/const_cast<char*>(name.c_str()),
+      /*binvar=*/binvar, /*binval=*/binval, /*nvars=*/nvars,
+      /*ind=*/const_cast<int*>(ind.data()),
+      /*val=*/const_cast<double*>(val.data()), /*sense=*/sense, /*rhs=*/rhs));
+}
+
+absl::Status Gurobi::DelGenConstrs(const absl::Span<const int> ind) {
+  return ToStatus(GRBdelgenconstrs(gurobi_model_, static_cast<int>(ind.size()),
+                                   const_cast<int*>(ind.data())));
 }
 
 absl::Status Gurobi::ChgCoeffs(const absl::Span<const int> cind,

@@ -29,15 +29,22 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/constraints/indicator/storage.h"  // IWYU pragma: export
+#include "ortools/math_opt/constraints/quadratic/storage.h"  // IWYU pragma: export
+#include "ortools/math_opt/constraints/sos/storage.h"  // IWYU pragma: export
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/storage/model_storage_types.h"
+#include "ortools/math_opt/storage/atomic_constraint_storage.h"  // IWYU pragma: export
+#include "ortools/math_opt/storage/iterators.h"
+#include "ortools/math_opt/storage/linear_constraint_storage.h"
+#include "ortools/math_opt/storage/objective_storage.h"
 #include "ortools/math_opt/storage/sparse_matrix.h"
 #include "ortools/math_opt/storage/update_trackers.h"
+#include "ortools/math_opt/storage/variable_storage.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -108,7 +115,7 @@ namespace math_opt {
 //   c.set_upper_bound(2.0);
 //   const std::optional<ModelUpdateProto> update_proto =
 //     model.ExportModelUpdate(update_tracker);
-//   model.Checkpoint(update_tracker);
+//   model.AdvanceCheckpoint(update_tracker);
 //
 // Reading and writing model properties:
 //
@@ -135,9 +142,10 @@ namespace math_opt {
 // or a change in a variable bound). ModelStorage::NewUpdateTracker() tracks the
 // changes made and produces a ModelUpdate proto describing these changes with
 // the method ModelStorage::ExportModelUpdate(). The changes returned will be
-// the modifications since the previous call to ModelStorage::Checkpoint(). Note
-// that, for newly initialized models, before the first checkpoint, there is no
-// additional memory overhead from tracking changes. See
+// the modifications since the previous call to
+// ModelStorage::AdvanceCheckpoint(). Note that, for newly initialized models,
+// before the first checkpoint, there is no additional memory overhead from
+// tracking changes. See
 // docs/ortools/math_opt/docs/model_building_complexity.md
 // for details.
 //
@@ -225,6 +233,9 @@ class ModelStorage {
   // Equal to the number of variables created.
   inline VariableId next_variable_id() const;
 
+  // Sets the next variable id to be the maximum of next_variable_id() and id.
+  inline void ensure_next_variable_id_at_least(VariableId id);
+
   // Returns true if this id has been created and not yet deleted.
   inline bool has_variable(VariableId id) const;
 
@@ -282,11 +293,15 @@ class ModelStorage {
   // Equal to the number of linear constraints created.
   inline LinearConstraintId next_linear_constraint_id() const;
 
+  // Sets the next linear constraint id to be the maximum of
+  // next_linear_constraint_id() and id.
+  inline void ensure_next_linear_constraint_id_at_least(LinearConstraintId id);
+
   // Returns true if this id has been created and not yet deleted.
   inline bool has_linear_constraint(LinearConstraintId id) const;
 
   // The LinearConstraintsIds in use (not deleted), order not defined.
-  std::vector<LinearConstraintId> linear_constraints() const;
+  std::vector<LinearConstraintId> LinearConstraints() const;
 
   // Returns a sorted vector of all existing (not deleted) linear constraints in
   // the model.
@@ -311,19 +326,18 @@ class ModelStorage {
                                                 VariableId variable,
                                                 double value);
 
-  // The {linear constraint, variable} pairs with nonzero linear constraint
-  // matrix coefficients.
-  inline const absl::flat_hash_map<std::pair<LinearConstraintId, VariableId>,
-                                   double>&
+  // The {linear constraint, variable, coefficient} tuples with nonzero linear
+  // constraint matrix coefficients.
+  inline std::vector<std::tuple<LinearConstraintId, VariableId, double>>
   linear_constraint_matrix() const;
 
   // Returns the variables with nonzero coefficients in a linear constraint.
-  inline const absl::flat_hash_set<VariableId>& variables_in_linear_constraint(
+  inline std::vector<VariableId> variables_in_linear_constraint(
       LinearConstraintId constraint) const;
 
   // Returns the linear constraints with nonzero coefficients on a variable.
-  inline const absl::flat_hash_set<LinearConstraintId>&
-  linear_constraints_with_variable(VariableId variable) const;
+  inline std::vector<LinearConstraintId> linear_constraints_with_variable(
+      VariableId variable) const;
 
   //////////////////////////////////////////////////////////////////////////////
   // Objective
@@ -377,11 +391,80 @@ class ModelStorage {
   inline std::vector<std::tuple<VariableId, VariableId, double>>
   quadratic_objective_terms() const;
 
-  // Returns a sorted vector of all variables in the model with nonzero linear
-  // objective coefficients.
+  //////////////////////////////////////////////////////////////////////////////
+  // Atomic Constraints
   //
-  // Runs in O(n log(n)), where n is the number of variables returned.
-  std::vector<VariableId> SortedLinearObjectiveNonzeroVariables() const;
+  // These methods do not directly require template specializations to add
+  // support for new constraint families; this should be handled automatically
+  // upon adding a specialization for `AtomicConstraintTraits`.
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Adds an atomic constraint to the model and returns its id.
+  //
+  // The returned ids begin at zero and increase by one with each call to
+  // `AddAtomicConstraint<ConstraintData>`. Deleted ids are NOT reused. Callers
+  // may use `ensure_next_constraint_id_at_least<ConstraintData>` to configure
+  // custom indices.
+  template <typename ConstraintData>
+  inline typename ConstraintData::IdType AddAtomicConstraint(
+      ConstraintData data);
+
+  // Removes an atomic constraint from the model.
+  //
+  // It is an error to use a deleted constraint id as input to any subsequent
+  // function calls on the model. Runs in O(#variables in the constraint).
+  template <typename IdType>
+  inline void DeleteAtomicConstraint(IdType id);
+
+  // Accesses the data object that fully represents a single atomic constraint.
+  template <typename IdType>
+  inline const typename AtomicConstraintTraits<IdType>::ConstraintData&
+  constraint_data(IdType id) const;
+
+  // Returns the number of atomic constraints in the model of the family
+  // corresponding to `ConstraintData`.
+  //
+  // Equal to the number of such constraints created minus the number of such
+  // constraints deleted.
+  template <typename IdType>
+  inline int64_t num_constraints() const;
+
+  // Returns the smallest valid ID for a new atomic constraint of the family
+  // corresponding to `ConstraintData`.
+  template <typename IdType>
+  inline IdType next_constraint_id() const;
+
+  // Sets the next atomic constraint id of the family corresponding to
+  // `ConstraintData` to be the maximum of
+  // `next_constraint_id<ConstraintData>()` and `id`.
+  template <typename IdType>
+  inline void ensure_next_constraint_id_at_least(IdType id);
+
+  // Returns true if this id has been created and not yet deleted.
+  template <typename IdType>
+  inline bool has_constraint(IdType id) const;
+
+  // Returns the constraint IDs in use (not deleted); order is not defined.
+  template <typename IdType>
+  std::vector<IdType> Constraints() const;
+
+  // Returns a sorted vector of all existing (not deleted) atomic constraints
+  // in the model of the family corresponding to `ConstraintData`.
+  //
+  // Runs in O(n log(n)), where n is the number of constraints returned.
+  template <typename IdType>
+  std::vector<IdType> SortedConstraints() const;
+
+  // Returns the constraint in the given family in which the variable appears
+  // structurally (i.e., has a coefficient, possibly zero). Order is not
+  // defined.
+  template <typename IdType>
+  inline std::vector<IdType> ConstraintsWithVariable(
+      VariableId variable_id) const;
+
+  // Returns the variables appearing in the constraint. Order is not defined.
+  template <typename IdType>
+  inline std::vector<VariableId> VariablesInConstraint(IdType id) const;
 
   //////////////////////////////////////////////////////////////////////////////
   // Export
@@ -420,7 +503,7 @@ class ModelStorage {
   //
   //   const std::optional<ModelUpdateProto> update_proto =
   //     model.ExportModelUpdate(update_tracker);
-  //   model.Checkpoint(update_tracker);
+  //   model.AdvanceCheckpoint(update_tracker);
   //
   //   if (update_proto) {
   //     ASSIGN_OR_RETURN(const bool updated, solver->Update(*update_proto));
@@ -450,12 +533,12 @@ class ModelStorage {
   //
   // Thread-safety: this method can be called at any time, even during the
   // creation of other trackers or during model modification. It must not be
-  // called concurrently with ExportModelUpdate() or Checkpoint() though.
+  // called concurrently with ExportModelUpdate() or AdvanceCheckpoint() though.
   void DeleteUpdateTracker(UpdateTrackerId update_tracker);
 
   // Returns a proto representation of the changes to the model since the most
-  // recent checkpoint (i.e. last time Checkpoint() was called); nullopt if the
-  // update would have been empty.
+  // recent checkpoint (i.e. last time AdvanceCheckpoint() was called); nullopt
+  // if the update would have been empty.
   //
   // Thread-safety: this method must not be used while modifying the
   // ModelStorage or after calling DeleteUpdateTracker(). The user is expected
@@ -475,7 +558,7 @@ class ModelStorage {
   // and the use of this method.
   //
   // It can be called concurrently for different update trackers though.
-  void Checkpoint(UpdateTrackerId update_tracker);
+  void AdvanceCheckpoint(UpdateTrackerId update_tracker);
 
   // Apply the provided update to this model. Returns a failure if the update is
   // not valid.
@@ -488,24 +571,24 @@ class ModelStorage {
   absl::Status ApplyUpdateProto(const ModelUpdateProto& update_proto);
 
  private:
-  struct VariableData {
-    double lower_bound = -std::numeric_limits<double>::infinity();
-    double upper_bound = std::numeric_limits<double>::infinity();
-    bool is_integer = false;
-    std::string name = "";
-  };
-
-  struct LinearConstraintData {
-    double lower_bound = -std::numeric_limits<double>::infinity();
-    double upper_bound = std::numeric_limits<double>::infinity();
-    std::string name = "";
-  };
-
   struct UpdateTrackerData {
-    UpdateTrackerData(VariableId variables_checkpoint,
-                      LinearConstraintId linear_constraints_checkpoint)
-        : variables_checkpoint(variables_checkpoint),
-          linear_constraints_checkpoint(linear_constraints_checkpoint) {}
+    UpdateTrackerData(
+        const VariableStorage& variables,
+        const LinearConstraintStorage& linear_constraints,
+        const AtomicConstraintStorage<QuadraticConstraintData>&
+            quadratic_constraints,
+        const AtomicConstraintStorage<Sos1ConstraintData>& sos1_constraints,
+        const AtomicConstraintStorage<Sos2ConstraintData>& sos2_constraints,
+        const AtomicConstraintStorage<IndicatorConstraintData>&
+            indicator_constraints)
+        : dirty_variables(variables),
+          dirty_objective(variables.next_id()),
+          dirty_linear_constraints(linear_constraints,
+                                   dirty_variables.checkpoint),
+          dirty_quadratic_constraints(quadratic_constraints),
+          dirty_sos1_constraints(sos1_constraints),
+          dirty_sos2_constraints(sos2_constraints),
+          dirty_indicator_constraints(indicator_constraints) {}
 
     // Returns a proto representation of the changes to the model since the most
     // recent call to SharedCheckpoint() or nullopt if no changes happened.
@@ -516,80 +599,52 @@ class ModelStorage {
 
     // Use the current model state as the starting point to calculate the
     // ModelUpdateProto next time ExportSharedModelUpdate() is called.
-    void Checkpoint(const ModelStorage& storage);
+    void AdvanceCheckpoint(const ModelStorage& storage);
+
+    // Implementers of new constraint types should provide a specialization that
+    // returns the address of the appropriate `UpdateTrackerData` field.
+    template <typename ConstraintData>
+    static constexpr typename AtomicConstraintStorage<ConstraintData>::Diff
+        UpdateTrackerData::*
+        AtomicConstraintDirtyFieldPtr();
 
     // Update information
     //
     // Implicitly, all data for variables and constraints added after the last
     // checkpoint are considered "new" and will NOT be stored in the "dirty"
     // data structures below.
-    VariableId variables_checkpoint;
-    LinearConstraintId linear_constraints_checkpoint;
-    bool dirty_objective_direction = false;
-    bool dirty_objective_offset = false;
 
-    absl::flat_hash_set<VariableId> dirty_variable_deletes;
-    absl::flat_hash_set<VariableId> dirty_variable_lower_bounds;
-    absl::flat_hash_set<VariableId> dirty_variable_upper_bounds;
-    absl::flat_hash_set<VariableId> dirty_variable_is_integer;
-
-    absl::flat_hash_set<VariableId> dirty_linear_objective_coefficients;
-    // NOTE: quadratic objective coefficients are considered dirty, and
-    // therefore tracked in this set, if and only if both variables in the term
-    // are "old", i.e. not added since the last checkpoint.
-    absl::flat_hash_set<std::pair<VariableId, VariableId>>
-        dirty_quadratic_objective_coefficients;
-
-    absl::flat_hash_set<LinearConstraintId> dirty_linear_constraint_deletes;
-    absl::flat_hash_set<LinearConstraintId>
-        dirty_linear_constraint_lower_bounds;
-    absl::flat_hash_set<LinearConstraintId>
-        dirty_linear_constraint_upper_bounds;
-
-    // Only for pairs where both the variable and constraint are before the
-    // checkpoint, i.e.
-    //   var_id < variables_checkpoint  &&
-    //   lin_con_id < linear_constraints_checkpoint
-    absl::flat_hash_set<std::pair<LinearConstraintId, VariableId>>
-        dirty_linear_constraint_matrix_keys;
+    VariableStorage::Diff dirty_variables;
+    ObjectiveStorage::Diff dirty_objective;
+    LinearConstraintStorage::Diff dirty_linear_constraints;
+    AtomicConstraintStorage<QuadraticConstraintData>::Diff
+        dirty_quadratic_constraints;
+    AtomicConstraintStorage<Sos1ConstraintData>::Diff dirty_sos1_constraints;
+    AtomicConstraintStorage<Sos2ConstraintData>::Diff dirty_sos2_constraints;
+    AtomicConstraintStorage<IndicatorConstraintData>::Diff
+        dirty_indicator_constraints;
   };
 
-  template <typename T>
-  void set_variable_property(VariableId id, T value, T VariableData::*field,
-                             absl::flat_hash_set<VariableId>
-                                 UpdateTrackerData::*const dirty_set_field);
+  auto UpdateAndGetVariableDiffs() {
+    return MakeUpdateDataFieldRange<&UpdateTrackerData::dirty_variables>(
+        update_trackers_.GetUpdatedTrackers());
+  }
 
-  inline void set_linear_constraint_property(
-      const LinearConstraintId id, double value,
-      double LinearConstraintData::*field,
-      absl::flat_hash_set<LinearConstraintId> UpdateTrackerData::*const
-          dirty_set_field);
+  auto UpdateAndGetObjectiveDiffs() {
+    return MakeUpdateDataFieldRange<&UpdateTrackerData::dirty_objective>(
+        update_trackers_.GetUpdatedTrackers());
+  }
 
-  // Adds a variable at the given id, updating next_variable_id_ and the
-  // row/column collections as side effect. It CHECKs that the provided id is
-  // not less than next_variable_id_.
-  //
-  // This is used internally by AddVariable() and AddVariables().
-  void AddVariableInternal(VariableId id, double lower_bound,
-                           double upper_bound, bool is_integer,
-                           absl::string_view name);
+  auto UpdateAndGetLinearConstraintDiffs() {
+    return MakeUpdateDataFieldRange<
+        &UpdateTrackerData::dirty_linear_constraints>(
+        update_trackers_.GetUpdatedTrackers());
+  }
 
-  // Adds all variables from the given proto using AddVariableInternal(). Thus
   // Ids must be greater or equal to next_variable_id_.
   void AddVariables(const VariablesProto& variables);
 
-  // Adds a linear constraint at the given id, updating
-  // next_linear_constraint_id_ and the row/column collections as side effect.
-  // It CHECKs that the provided id is not less than next_linear_constraint_id_.
-  //
-  // This is used internally by AddLinearConstraint() and
-  // AddLinearConstraints().
-  void AddLinearConstraintInternal(LinearConstraintId id, double lower_bound,
-                                   double upper_bound, absl::string_view name);
-
-  // Adds all constraints from the given proto using
-  // AddLinearConstraintInternal(). Thus Ids must be greater or equal to
-  // next_linear_constraint_id_.
+  // Ids must be greater or equal to next_linear_constraint_id_.
   void AddLinearConstraints(const LinearConstraintsProto& linear_constraints);
 
   // Updates the objective linear coefficients. The coefficients of variables
@@ -607,38 +662,26 @@ class ModelStorage {
   void UpdateLinearConstraintCoefficients(
       const SparseDoubleMatrixProto& coefficients);
 
-  // Export a single variable to proto.
-  void AppendVariable(VariableId id, VariablesProto& variables_proto) const;
+  // Implementers of new constraint types should provide a specialization that
+  // returns a non-const reference to the appropriate `ModelStorage` field.
+  template <typename ConstraintData>
+  AtomicConstraintStorage<ConstraintData>& constraint_storage();
 
-  // Export a single linear constraint to proto.
-  void AppendLinearConstraint(
-      LinearConstraintId id,
-      LinearConstraintsProto& linear_constraints_proto) const;
+  // Implementers of new constraint types should provide a specialization that
+  // returns a const reference to the appropriate `ModelStorage` field.
+  template <typename ConstraintData>
+  const AtomicConstraintStorage<ConstraintData>& constraint_storage() const;
 
   std::string name_;
-  VariableId next_variable_id_ = VariableId(0);
-  LinearConstraintId next_linear_constraint_id_ = LinearConstraintId(0);
 
-  bool is_maximize_ = false;
-  double objective_offset_ = 0.0;
+  VariableStorage variables_;
+  ObjectiveStorage objective_;
+  LinearConstraintStorage linear_constraints_;
 
-  absl::flat_hash_map<VariableId, VariableData> variables_;
-  absl::flat_hash_map<LinearConstraintId, LinearConstraintData>
-      linear_constraints_;
-
-  // The values of the map must never include zero.
-  absl::flat_hash_map<VariableId, double> linear_objective_;
-
-  SparseSymmetricMatrix quadratic_objective_;
-
-  // The values of the map must never include zero.
-  absl::flat_hash_map<std::pair<LinearConstraintId, VariableId>, double>
-      linear_constraint_matrix_;
-
-  absl::flat_hash_map<VariableId, absl::flat_hash_set<LinearConstraintId>>
-      matrix_columns_;
-  absl::flat_hash_map<LinearConstraintId, absl::flat_hash_set<VariableId>>
-      matrix_rows_;
+  AtomicConstraintStorage<QuadraticConstraintData> quadratic_constraints_;
+  AtomicConstraintStorage<Sos1ConstraintData> sos1_constraints_;
+  AtomicConstraintStorage<Sos2ConstraintData> sos2_constraints_;
+  AtomicConstraintStorage<IndicatorConstraintData> indicator_constraints_;
 
   UpdateTrackers<UpdateTrackerData> update_trackers_;
 };
@@ -659,53 +702,34 @@ VariableId ModelStorage::AddVariable(absl::string_view name) {
 }
 
 double ModelStorage::variable_lower_bound(const VariableId id) const {
-  return variables_.at(id).lower_bound;
+  return variables_.lower_bound(id);
 }
 
 double ModelStorage::variable_upper_bound(const VariableId id) const {
-  return variables_.at(id).upper_bound;
+  return variables_.upper_bound(id);
 }
 
 bool ModelStorage::is_variable_integer(VariableId id) const {
-  return variables_.at(id).is_integer;
+  return variables_.is_integer(id);
 }
 
 const std::string& ModelStorage::variable_name(const VariableId id) const {
-  return variables_.at(id).name;
-}
-
-template <typename T>
-void ModelStorage::set_variable_property(
-    const VariableId id, const T value, T VariableData::*const field,
-    absl::flat_hash_set<VariableId> UpdateTrackerData::*const dirty_set_field) {
-  VariableData& var_data = variables_.at(id);
-  if (var_data.*field != value) {
-    var_data.*field = value;
-    for (const auto& [_, update_tracker] :
-         update_trackers_.GetUpdatedTrackers()) {
-      if (id < update_tracker->variables_checkpoint) {
-        (update_tracker.get()->*dirty_set_field).insert(id);
-      }
-    }
-  }
+  return variables_.name(id);
 }
 
 void ModelStorage::set_variable_lower_bound(const VariableId id,
                                             const double lower_bound) {
-  set_variable_property(id, lower_bound, &VariableData::lower_bound,
-                        &UpdateTrackerData::dirty_variable_lower_bounds);
+  variables_.set_lower_bound(id, lower_bound, UpdateAndGetVariableDiffs());
 }
 
 void ModelStorage::set_variable_upper_bound(const VariableId id,
                                             const double upper_bound) {
-  set_variable_property(id, upper_bound, &VariableData::upper_bound,
-                        &UpdateTrackerData::dirty_variable_upper_bounds);
+  variables_.set_upper_bound(id, upper_bound, UpdateAndGetVariableDiffs());
 }
 
 void ModelStorage::set_variable_is_integer(const VariableId id,
                                            const bool is_integer) {
-  set_variable_property(id, is_integer, &VariableData::is_integer,
-                        &UpdateTrackerData::dirty_variable_is_integer);
+  variables_.set_integer(id, is_integer, UpdateAndGetVariableDiffs());
 }
 
 void ModelStorage::set_variable_as_integer(VariableId id) {
@@ -718,7 +742,13 @@ void ModelStorage::set_variable_as_continuous(VariableId id) {
 
 int ModelStorage::num_variables() const { return variables_.size(); }
 
-VariableId ModelStorage::next_variable_id() const { return next_variable_id_; }
+VariableId ModelStorage::next_variable_id() const {
+  return variables_.next_id();
+}
+
+void ModelStorage::ensure_next_variable_id_at_least(const VariableId id) {
+  variables_.ensure_next_id_at_least(id);
+}
 
 bool ModelStorage::has_variable(const VariableId id) const {
   return variables_.contains(id);
@@ -735,48 +765,29 @@ LinearConstraintId ModelStorage::AddLinearConstraint(absl::string_view name) {
 
 double ModelStorage::linear_constraint_lower_bound(
     const LinearConstraintId id) const {
-  return linear_constraints_.at(id).lower_bound;
+  return linear_constraints_.lower_bound(id);
 }
 
 double ModelStorage::linear_constraint_upper_bound(
     const LinearConstraintId id) const {
-  return linear_constraints_.at(id).upper_bound;
+  return linear_constraints_.upper_bound(id);
 }
 
 const std::string& ModelStorage::linear_constraint_name(
     const LinearConstraintId id) const {
-  return linear_constraints_.at(id).name;
-}
-
-void ModelStorage::set_linear_constraint_property(
-    const LinearConstraintId id, const double value,
-    double LinearConstraintData::*const field,
-    absl::flat_hash_set<LinearConstraintId> UpdateTrackerData::*const
-        dirty_set_field) {
-  LinearConstraintData& lin_con_data = linear_constraints_.at(id);
-  if (lin_con_data.*field != value) {
-    lin_con_data.*field = value;
-    for (const auto& [_, update_tracker] :
-         update_trackers_.GetUpdatedTrackers()) {
-      if (id < update_tracker->linear_constraints_checkpoint) {
-        (update_tracker.get()->*dirty_set_field).insert(id);
-      }
-    }
-  }
+  return linear_constraints_.name(id);
 }
 
 void ModelStorage::set_linear_constraint_lower_bound(
     const LinearConstraintId id, const double lower_bound) {
-  set_linear_constraint_property(
-      id, lower_bound, &LinearConstraintData::lower_bound,
-      &UpdateTrackerData::dirty_linear_constraint_lower_bounds);
+  linear_constraints_.set_lower_bound(id, lower_bound,
+                                      UpdateAndGetLinearConstraintDiffs());
 }
 
 void ModelStorage::set_linear_constraint_upper_bound(
     const LinearConstraintId id, const double upper_bound) {
-  set_linear_constraint_property(
-      id, upper_bound, &LinearConstraintData::upper_bound,
-      &UpdateTrackerData::dirty_linear_constraint_upper_bounds);
+  linear_constraints_.set_upper_bound(id, upper_bound,
+                                      UpdateAndGetLinearConstraintDiffs());
 }
 
 int ModelStorage::num_linear_constraints() const {
@@ -784,7 +795,12 @@ int ModelStorage::num_linear_constraints() const {
 }
 
 LinearConstraintId ModelStorage::next_linear_constraint_id() const {
-  return next_linear_constraint_id_;
+  return linear_constraints_.next_id();
+}
+
+void ModelStorage::ensure_next_linear_constraint_id_at_least(
+    LinearConstraintId id) {
+  linear_constraints_.ensure_next_id_at_least(id);
 }
 
 bool ModelStorage::has_linear_constraint(const LinearConstraintId id) const {
@@ -797,199 +813,286 @@ bool ModelStorage::has_linear_constraint(const LinearConstraintId id) const {
 
 double ModelStorage::linear_constraint_coefficient(
     LinearConstraintId constraint, VariableId variable) const {
-  return gtl::FindWithDefault(linear_constraint_matrix_,
-                              {constraint, variable});
+  return linear_constraints_.matrix().get(constraint, variable);
 }
 
 bool ModelStorage::is_linear_constraint_coefficient_nonzero(
     LinearConstraintId constraint, VariableId variable) const {
-  return linear_constraint_matrix_.contains({constraint, variable});
+  return linear_constraints_.matrix().contains(constraint, variable);
 }
 
 void ModelStorage::set_linear_constraint_coefficient(
-    LinearConstraintId constraint, VariableId variable, double value) {
-  bool was_updated = false;
-  if (value == 0.0) {
-    if (linear_constraint_matrix_.erase({constraint, variable}) > 0) {
-      was_updated = true;
-      matrix_columns_.at(variable).erase(constraint);
-      matrix_rows_.at(constraint).erase(variable);
-    }
-  } else {
-    const auto [iterator, inserted] =
-        linear_constraint_matrix_.try_emplace({constraint, variable}, value);
-    if (inserted) {
-      was_updated = true;
-    } else if (iterator->second != value) {
-      iterator->second = value;
-      was_updated = true;
-    }
-
-    matrix_columns_.at(variable).insert(constraint);
-
-    matrix_rows_.at(constraint).insert(variable);
-  }
-  if (was_updated) {
-    for (const auto& [_, update_tracker] :
-         update_trackers_.GetUpdatedTrackers()) {
-      if (constraint < update_tracker->linear_constraints_checkpoint &&
-          variable < update_tracker->variables_checkpoint) {
-        update_tracker->dirty_linear_constraint_matrix_keys.emplace(constraint,
-                                                                    variable);
-      }
-    }
-  }
+    const LinearConstraintId constraint, const VariableId variable,
+    const double value) {
+  linear_constraints_.set_term(constraint, variable, value,
+                               UpdateAndGetLinearConstraintDiffs());
 }
 
-const absl::flat_hash_map<std::pair<LinearConstraintId, VariableId>, double>&
+std::vector<std::tuple<LinearConstraintId, VariableId, double>>
 ModelStorage::linear_constraint_matrix() const {
-  return linear_constraint_matrix_;
+  return linear_constraints_.matrix().Terms();
 }
 
-const absl::flat_hash_set<VariableId>&
-ModelStorage::variables_in_linear_constraint(
+std::vector<VariableId> ModelStorage::variables_in_linear_constraint(
     LinearConstraintId constraint) const {
-  return matrix_rows_.at(constraint);
+  return linear_constraints_.matrix().row(constraint);
 }
 
-const absl::flat_hash_set<LinearConstraintId>&
-ModelStorage::linear_constraints_with_variable(VariableId variable) const {
-  return matrix_columns_.at(variable);
+std::vector<LinearConstraintId> ModelStorage::linear_constraints_with_variable(
+    VariableId variable) const {
+  return linear_constraints_.matrix().column(variable);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Objective
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace internal {
+bool ModelStorage::is_maximize() const { return objective_.maximize(); }
 
-inline std::pair<VariableId, VariableId> MakeOrderedPair(const VariableId a,
-                                                         const VariableId b) {
-  return a < b ? std::make_pair(a, b) : std::make_pair(b, a);
-}
+double ModelStorage::objective_offset() const { return objective_.offset(); }
 
-}  // namespace internal
-
-bool ModelStorage::is_maximize() const { return is_maximize_; }
-
-double ModelStorage::objective_offset() const { return objective_offset_; }
-
-double ModelStorage::linear_objective_coefficient(VariableId variable) const {
-  return gtl::FindWithDefault(linear_objective_, variable);
+double ModelStorage::linear_objective_coefficient(
+    const VariableId variable) const {
+  return objective_.linear_term(variable);
 }
 
 double ModelStorage::quadratic_objective_coefficient(
     const VariableId first_variable, const VariableId second_variable) const {
-  return quadratic_objective_.get(first_variable, second_variable);
+  return objective_.quadratic_term(first_variable, second_variable);
 }
 
 bool ModelStorage::is_linear_objective_coefficient_nonzero(
-    VariableId variable) const {
-  return linear_objective_.contains(variable);
+    const VariableId variable) const {
+  return objective_.linear_terms().contains(variable);
 }
 
 bool ModelStorage::is_quadratic_objective_coefficient_nonzero(
     const VariableId first_variable, const VariableId second_variable) const {
-  return quadratic_objective_.get(first_variable, second_variable) != 0.0;
+  return objective_.quadratic_terms().get(first_variable, second_variable) !=
+         0.0;
 }
 
-void ModelStorage::set_is_maximize(bool is_maximize) {
-  if (is_maximize_ != is_maximize) {
-    for (const auto& [_, update_tracker] :
-         update_trackers_.GetUpdatedTrackers()) {
-      update_tracker->dirty_objective_direction = true;
-    }
-    is_maximize_ = is_maximize;
-  }
+void ModelStorage::set_is_maximize(const bool is_maximize) {
+  objective_.set_maximize(is_maximize, UpdateAndGetObjectiveDiffs());
 }
 
 void ModelStorage::set_maximize() { set_is_maximize(true); }
 
 void ModelStorage::set_minimize() { set_is_maximize(false); }
 
-void ModelStorage::set_objective_offset(double value) {
-  if (value != objective_offset_) {
-    for (const auto& [_, update_tracker] :
-         update_trackers_.GetUpdatedTrackers()) {
-      update_tracker->dirty_objective_offset = true;
-    }
-    objective_offset_ = value;
-  }
+void ModelStorage::set_objective_offset(const double value) {
+  objective_.set_offset(value, UpdateAndGetObjectiveDiffs());
 }
 
-void ModelStorage::set_linear_objective_coefficient(VariableId variable,
-                                                    double value) {
-  bool was_updated = false;
-  if (value == 0.0) {
-    if (linear_objective_.erase(variable) > 0) {
-      was_updated = true;
-    }
-  } else {
-    const auto [iterator, inserted] =
-        linear_objective_.try_emplace(variable, value);
-    if (inserted) {
-      was_updated = true;
-    } else if (iterator->second != value) {
-      iterator->second = value;
-      was_updated = true;
-    }
-  }
-  if (was_updated) {
-    for (const auto& [_, update_tracker] :
-         update_trackers_.GetUpdatedTrackers()) {
-      if (variable < update_tracker->variables_checkpoint) {
-        update_tracker->dirty_linear_objective_coefficients.insert(variable);
-      }
-    }
-  }
+void ModelStorage::set_linear_objective_coefficient(const VariableId variable,
+                                                    const double value) {
+  objective_.set_linear_term(variable, value, UpdateAndGetObjectiveDiffs());
 }
 
 void ModelStorage::set_quadratic_objective_coefficient(
     const VariableId first_variable, const VariableId second_variable,
-    double value) {
-  const bool updated =
-      quadratic_objective_.set(first_variable, second_variable, value);
-  const std::pair<VariableId, VariableId> key =
-      internal::MakeOrderedPair(first_variable, second_variable);
-  if (updated) {
-    for (const auto& [_, update_tracker] :
-         update_trackers_.GetUpdatedTrackers()) {
-      if (key.second < update_tracker->variables_checkpoint) {
-        update_tracker->dirty_quadratic_objective_coefficients.insert(key);
-      }
-    }
-  }
+    const double value) {
+  objective_.set_quadratic_term(first_variable, second_variable, value,
+                                UpdateAndGetObjectiveDiffs());
 }
 
 void ModelStorage::clear_objective() {
-  set_objective_offset(0.0);
-  while (!linear_objective_.empty()) {
-    set_linear_objective_coefficient(linear_objective_.begin()->first, 0.0);
-  }
-  for (const auto& [_, update_tracker] :
-       update_trackers_.GetUpdatedTrackers()) {
-    for (const auto [var_pair, value] : quadratic_objective_.values()) {
-      if (value == 0.0) continue;
-      if (var_pair.second < update_tracker->variables_checkpoint) {
-        update_tracker->dirty_quadratic_objective_coefficients.insert(var_pair);
-      }
-    }
-  }
-  quadratic_objective_.Clear();
+  objective_.Clear(UpdateAndGetObjectiveDiffs());
 }
 
 const absl::flat_hash_map<VariableId, double>& ModelStorage::linear_objective()
     const {
-  return linear_objective_;
+  return objective_.linear_terms();
 }
 
 int64_t ModelStorage::num_quadratic_objective_terms() const {
-  return quadratic_objective_.nonzeros();
+  return objective_.quadratic_terms().nonzeros();
 }
 
 std::vector<std::tuple<VariableId, VariableId, double>>
 ModelStorage::quadratic_objective_terms() const {
-  return quadratic_objective_.Terms();
+  return objective_.quadratic_terms().Terms();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Atomic constraint template inline implementations.
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename ConstraintData>
+typename ConstraintData::IdType ModelStorage::AddAtomicConstraint(
+    ConstraintData data) {
+  return constraint_storage<ConstraintData>().AddConstraint(data);
+}
+
+template <typename IdType>
+void ModelStorage::DeleteAtomicConstraint(const IdType id) {
+  using ConstraintData =
+      typename AtomicConstraintTraits<IdType>::ConstraintData;
+  auto& storage = constraint_storage<ConstraintData>();
+  CHECK(storage.contains(id));
+  storage.Delete(
+      id,
+      MakeUpdateDataFieldRange<
+          UpdateTrackerData::AtomicConstraintDirtyFieldPtr<ConstraintData>()>(
+          update_trackers_.GetUpdatedTrackers()));
+}
+
+template <typename IdType>
+const typename AtomicConstraintTraits<IdType>::ConstraintData&
+ModelStorage::constraint_data(const IdType id) const {
+  using ConstraintData =
+      typename AtomicConstraintTraits<IdType>::ConstraintData;
+  return constraint_storage<ConstraintData>().data(id);
+}
+
+template <typename IdType>
+int64_t ModelStorage::num_constraints() const {
+  using ConstraintData =
+      typename AtomicConstraintTraits<IdType>::ConstraintData;
+  return constraint_storage<ConstraintData>().size();
+}
+
+template <typename IdType>
+IdType ModelStorage::next_constraint_id() const {
+  using ConstraintData =
+      typename AtomicConstraintTraits<IdType>::ConstraintData;
+  return constraint_storage<ConstraintData>().next_id();
+}
+
+template <typename IdType>
+void ModelStorage::ensure_next_constraint_id_at_least(const IdType id) {
+  using ConstraintData =
+      typename AtomicConstraintTraits<IdType>::ConstraintData;
+  return constraint_storage<ConstraintData>().ensure_next_id_at_least(id);
+}
+
+template <typename IdType>
+bool ModelStorage::has_constraint(const IdType id) const {
+  using ConstraintData =
+      typename AtomicConstraintTraits<IdType>::ConstraintData;
+  return constraint_storage<ConstraintData>().contains(id);
+}
+
+template <typename IdType>
+std::vector<IdType> ModelStorage::Constraints() const {
+  using ConstraintData =
+      typename AtomicConstraintTraits<IdType>::ConstraintData;
+  return constraint_storage<ConstraintData>().Constraints();
+}
+
+template <typename IdType>
+std::vector<IdType> ModelStorage::SortedConstraints() const {
+  using ConstraintData =
+      typename AtomicConstraintTraits<IdType>::ConstraintData;
+  return constraint_storage<ConstraintData>().SortedConstraints();
+}
+
+template <typename IdType>
+std::vector<IdType> ModelStorage::ConstraintsWithVariable(
+    const VariableId variable_id) const {
+  using ConstraintData =
+      typename AtomicConstraintTraits<IdType>::ConstraintData;
+  const absl::flat_hash_set<IdType> constraints =
+      constraint_storage<ConstraintData>().RelatedConstraints(variable_id);
+  return {constraints.begin(), constraints.end()};
+}
+
+template <typename IdType>
+std::vector<VariableId> ModelStorage::VariablesInConstraint(
+    const IdType id) const {
+  return constraint_data(id).RelatedVariables();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Atomic constraint template specializations.
+////////////////////////////////////////////////////////////////////////////////
+
+// --------------------------- Quadratic constraints ---------------------------
+
+template <>
+inline AtomicConstraintStorage<QuadraticConstraintData>&
+ModelStorage::constraint_storage() {
+  return quadratic_constraints_;
+}
+
+template <>
+inline const AtomicConstraintStorage<QuadraticConstraintData>&
+ModelStorage::constraint_storage() const {
+  return quadratic_constraints_;
+}
+
+template <>
+constexpr typename AtomicConstraintStorage<QuadraticConstraintData>::Diff
+    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
+        QuadraticConstraintData>() {
+  return &UpdateTrackerData::dirty_quadratic_constraints;
+}
+
+// ----------------------------- SOS1 constraints ------------------------------
+
+template <>
+inline AtomicConstraintStorage<Sos1ConstraintData>&
+ModelStorage::constraint_storage() {
+  return sos1_constraints_;
+}
+
+template <>
+inline const AtomicConstraintStorage<Sos1ConstraintData>&
+ModelStorage::constraint_storage() const {
+  return sos1_constraints_;
+}
+
+template <>
+constexpr typename AtomicConstraintStorage<Sos1ConstraintData>::Diff
+    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
+        Sos1ConstraintData>() {
+  return &UpdateTrackerData::dirty_sos1_constraints;
+}
+
+// ----------------------------- SOS2 constraints ------------------------------
+
+template <>
+inline AtomicConstraintStorage<Sos2ConstraintData>&
+ModelStorage::constraint_storage() {
+  return sos2_constraints_;
+}
+
+template <>
+inline const AtomicConstraintStorage<Sos2ConstraintData>&
+ModelStorage::constraint_storage() const {
+  return sos2_constraints_;
+}
+
+template <>
+constexpr typename AtomicConstraintStorage<Sos2ConstraintData>::Diff
+    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
+        Sos2ConstraintData>() {
+  return &UpdateTrackerData::dirty_sos2_constraints;
+}
+
+// --------------------------- Indicator constraints ---------------------------
+
+template <>
+inline AtomicConstraintStorage<IndicatorConstraintData>&
+ModelStorage::constraint_storage() {
+  return indicator_constraints_;
+}
+
+template <>
+inline const AtomicConstraintStorage<IndicatorConstraintData>&
+ModelStorage::constraint_storage() const {
+  return indicator_constraints_;
+}
+
+template <>
+constexpr typename AtomicConstraintStorage<IndicatorConstraintData>::Diff
+    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
+        IndicatorConstraintData>() {
+  return &UpdateTrackerData::dirty_indicator_constraints;
 }
 
 }  // namespace math_opt

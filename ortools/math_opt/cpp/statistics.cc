@@ -110,7 +110,8 @@ ModelRanges ComputeModelRanges(const Model& model) {
     UpdateOptionalRange(ranges.linear_constraint_bounds, c.lower_bound());
     UpdateOptionalRange(ranges.linear_constraint_bounds, c.upper_bound());
   }
-  for (const auto& [_, coeff] : model.storage()->linear_constraint_matrix()) {
+  for (const auto& [_row, _col, coeff] :
+       model.storage()->linear_constraint_matrix()) {
     UpdateOptionalRange(ranges.linear_constraint_coefficients, coeff);
   }
   return ranges;

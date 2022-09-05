@@ -29,8 +29,8 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/check.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -138,6 +138,7 @@ struct ModelSummary {
   IdNameBiMap quadratic_constraints;
   IdNameBiMap sos1_constraints;
   IdNameBiMap sos2_constraints;
+  IdNameBiMap indicator_constraints;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

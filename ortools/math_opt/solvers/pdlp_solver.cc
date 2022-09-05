@@ -362,12 +362,8 @@ absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
       PrimalDualHybridGradient(pdlp_bridge_.pdlp_lp(), pdlp_params, &interrupt);
   return MakeSolveResult(pdlp_result, model_parameters);
 }
-absl::Status PdlpSolver::Update(const ModelUpdateProto& model_update) {
-  // This function should never be called since CanUpdate() always returns
-  // false.
-  return absl::InternalError("PDLP solver does not support incrementalism");
-}
-bool PdlpSolver::CanUpdate(const ModelUpdateProto& model_update) {
+
+absl::StatusOr<bool> PdlpSolver::Update(const ModelUpdateProto& model_update) {
   return false;
 }
 

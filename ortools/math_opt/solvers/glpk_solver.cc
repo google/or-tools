@@ -73,6 +73,9 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+constexpr SupportedProblemStructures kGlpkSupportedStructures = {
+    .integer_variables = SupportType::kSupported};
+
 // Bounds of rows or columns.
 struct Bounds {
   double lower = -kInf;
@@ -840,18 +843,12 @@ int OptStatus(glp_prob*) { return GLP_OPT; }
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GlpkSolver::New(
     const ModelProto& model, const InitArgs& /*init_args*/) {
-  if (!model.objective().quadratic_coefficients().row_ids().empty()) {
-    return absl::InvalidArgumentError(
-        "GLPK does not support quadratic objectives");
-  }
-  if (!model.quadratic_constraints().empty()) {
-    return absl::InvalidArgumentError(
-        "GLPK does not support quadratic constraints");
-  }
+  RETURN_IF_ERROR(ModelIsSupported(model, kGlpkSupportedStructures, "GLPK"));
   return absl::WrapUnique(new GlpkSolver(model));
 }
 
-GlpkSolver::GlpkSolver(const ModelProto& model) : problem_(glp_create_prob()) {
+GlpkSolver::GlpkSolver(const ModelProto& model)
+    : thread_id_(std::this_thread::get_id()), problem_(glp_create_prob()) {
   // Make sure glp_free_env() is called at the exit of the current thread.
   SetupGlpkEnvAutomaticDeletion();
 
@@ -880,7 +877,14 @@ GlpkSolver::GlpkSolver(const ModelProto& model) : problem_(glp_create_prob()) {
       MatrixCoefficients(proto_matrix.coefficients()).data());
 }
 
-GlpkSolver::~GlpkSolver() { glp_delete_prob(problem_); }
+GlpkSolver::~GlpkSolver() {
+  // Here we simply log an error but glp_delete_prob() should crash with an
+  // error like: `glp_free: memory allocation error`.
+  if (const absl::Status status = CheckCurrentThread(); !status.ok()) {
+    LOG(ERROR) << status;
+  }
+  glp_delete_prob(problem_);
+}
 
 namespace {
 
@@ -1011,9 +1015,7 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration,
     const Callback /*cb*/, SolveInterrupter* const interrupter) {
-  // Make sure glp_free_env() is called at the exit of the current thread. The
-  // environment gets created automatically for messages for example.
-  SetupGlpkEnvAutomaticDeletion();
+  RETURN_IF_ERROR(CheckCurrentThread());
 
   const absl::Time start = absl::Now();
 
@@ -1567,7 +1569,17 @@ absl::Status GlpkSolver::AddPrimalOrDualRay(
   }
 }
 
-absl::Status GlpkSolver::Update(const ModelUpdateProto& model_update) {
+absl::StatusOr<bool> GlpkSolver::Update(const ModelUpdateProto& model_update) {
+  RETURN_IF_ERROR(CheckCurrentThread());
+
+  // We must do that *after* testing current thread since the Solver class won't
+  // destroy this instance from another thread when the update is not supported
+  // (the Solver class destroy the SolverInterface only when an Update() returns
+  // false).
+  if (!UpdateIsSupported(model_update, kGlpkSupportedStructures)) {
+    return false;
+  }
+
   // TODO(b/187027049): GLPK should not support modifying the model from another
   // thread (the allocation depends on the per-thread environment). We should
   // unit test that and see what is the actual behavior. If GLPK itself does not
@@ -1643,15 +1655,16 @@ absl::Status GlpkSolver::Update(const ModelUpdateProto& model_update) {
       /*first_new_cstr_id=*/
       FirstLinearConstraintId(model_update.new_linear_constraints()));
 
-  return absl::OkStatus();
+  return true;
 }
 
-bool GlpkSolver::CanUpdate(const ModelUpdateProto& model_update) {
-  return model_update.objective_updates()
-             .quadratic_coefficients()
-             .row_ids()
-             .empty() &&
-         !HasQuadraticConstraintUpdates(model_update);
+absl::Status GlpkSolver::CheckCurrentThread() {
+  if (std::this_thread::get_id() != thread_id_) {
+    return absl::InvalidArgumentError(
+        "GLPK is not thread-safe and thus the solver should only be used on "
+        "the same thread as it was created");
+  }
+  return absl::OkStatus();
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_GLPK, GlpkSolver::New)

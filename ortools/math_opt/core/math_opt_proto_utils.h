@@ -21,7 +21,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -192,13 +192,6 @@ bool SparseVectorFilterPredicate::AcceptsAndUpdate(const int64_t id,
   // The previous loop ensured that the element at next_filtered_id_index_ is
   // the first element greater or equal to id.
   return id == filter_.filtered_ids(next_filtered_id_index_);
-}
-
-inline bool HasQuadraticConstraintUpdates(const ModelUpdateProto& update) {
-  return !update.quadratic_constraint_updates()
-              .deleted_constraint_ids()
-              .empty() ||
-         !update.quadratic_constraint_updates().new_constraints().empty();
 }
 
 }  // namespace math_opt

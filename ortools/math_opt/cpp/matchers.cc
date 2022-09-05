@@ -605,12 +605,19 @@ MATCHER_P(FirstElementIs, first_element_matcher,
                             absl::MakeSpan(arg).subspan(0, 1), result_listener);
 }
 
+Matcher<Termination> ReasonIs(TerminationReason reason) {
+  return Field("reason", &Termination::reason, reason);
+}
+
+Matcher<Termination> ReasonIsOptimal() {
+  return ReasonIs(TerminationReason::kOptimal);
+}
+
 Matcher<SolveResult> IsOptimal(const std::optional<double> expected_objective,
                                const double tolerance) {
   std::vector<Matcher<SolveResult>> matchers;
-  matchers.push_back(Field(
-      "termination", &SolveResult::termination,
-      Field("reason", &Termination::reason, TerminationReason::kOptimal)));
+  matchers.push_back(
+      Field("termination", &SolveResult::termination, ReasonIsOptimal()));
   if (expected_objective.has_value()) {
     matchers.push_back(Field(
         "solutions", &SolveResult::solutions,

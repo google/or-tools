@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 #ifndef OR_TOOLS_MATH_OPT_CPP_ID_SET_H_
 #define OR_TOOLS_MATH_OPT_CPP_ID_SET_H_
 

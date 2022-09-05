@@ -25,8 +25,8 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/check.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -120,26 +120,30 @@ ModelSummary::ModelSummary(const bool check_names)
       linear_constraints(check_names),
       quadratic_constraints(check_names),
       sos1_constraints(check_names),
-      sos2_constraints(check_names) {}
+      sos2_constraints(check_names),
+      indicator_constraints(check_names) {}
 
 absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
                                                   const bool check_names) {
   ModelSummary summary(check_names);
   RETURN_IF_ERROR(summary.variables.BulkUpdate({}, model.variables().ids(),
                                                model.variables().names()))
-      << "Model.variables are invalid";
+      << "ModelProto.variables are invalid";
   RETURN_IF_ERROR(summary.linear_constraints.BulkUpdate(
       {}, model.linear_constraints().ids(), model.linear_constraints().names()))
-      << "Model.linear_constraints are invalid";
+      << "ModelProto.linear_constraints are invalid";
   RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
       {}, model.quadratic_constraints(), summary.quadratic_constraints))
-      << "Model.quadratic_constraints are invalid";
+      << "ModelProto.quadratic_constraints are invalid";
   RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
       {}, model.sos1_constraints(), summary.sos1_constraints))
-      << "Model.sos1_constraints are invalid";
+      << "ModelProto.sos1_constraints are invalid";
   RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
       {}, model.sos2_constraints(), summary.sos2_constraints))
-      << "Model.sos2_constraints are invalid";
+      << "ModelProto.sos2_constraints are invalid";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+      {}, model.indicator_constraints(), summary.indicator_constraints))
+      << "ModelProto.indicator_constraints are invalid";
   return summary;
 }
 
@@ -168,6 +172,11 @@ absl::Status ModelSummary::Update(const ModelUpdateProto& model_update) {
       model_update.sos2_constraint_updates().new_constraints(),
       sos2_constraints))
       << "invalid sos2 constraints";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+      model_update.indicator_constraint_updates().deleted_constraint_ids(),
+      model_update.indicator_constraint_updates().new_constraints(),
+      indicator_constraints))
+      << "invalid indicator constraints";
   return absl::OkStatus();
 }
 

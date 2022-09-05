@@ -16,13 +16,17 @@
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
+#include "google/protobuf/repeated_field.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -36,13 +40,20 @@ namespace operations_research {
 namespace math_opt {
 namespace {
 
+constexpr double kInf = std::numeric_limits<double>::infinity();
+
 absl::Status IsSupported(const MPModelProto& model) {
   std::string validity_string = FindErrorInMPModelProto(model);
   if (validity_string.length() > 0) {
     return absl::InvalidArgumentError(validity_string);
   }
-  if (model.general_constraint_size() > 0) {
-    return absl::InvalidArgumentError("General constraints are not supported");
+  for (const MPGeneralConstraintProto& general_constraint :
+       model.general_constraint()) {
+    if (!(general_constraint.has_quadratic_constraint() ||
+          general_constraint.has_sos_constraint() ||
+          general_constraint.has_indicator_constraint())) {
+      return absl::InvalidArgumentError("Unsupported general constraint");
+    }
   }
   if (model.solution_hint().var_index_size() > 0) {
     return absl::InvalidArgumentError("Solution Hint not supported");
@@ -66,6 +77,143 @@ bool AnyConstraintNamed(const MPModelProto& model) {
     }
   }
   return false;
+}
+
+void LinearTermsFromMPModelToMathOpt(
+    const absl::Span<const int32_t> in_ids,
+    const absl::Span<const double> in_coeffs,
+    google::protobuf::RepeatedField<int64_t>& out_ids,
+    google::protobuf::RepeatedField<double>& out_coeffs) {
+  CHECK_EQ(in_ids.size(), in_coeffs.size());
+  const int num_terms = static_cast<int>(in_ids.size());
+  std::vector<std::pair<int, double>> linear_terms_in_order;
+  for (int i = 0; i < num_terms; ++i) {
+    linear_terms_in_order.push_back({in_ids[i], in_coeffs[i]});
+  }
+  absl::c_sort(linear_terms_in_order);
+  out_ids.Resize(num_terms, -1);
+  out_coeffs.Resize(num_terms, std::numeric_limits<double>::quiet_NaN());
+  for (int i = 0; i < num_terms; ++i) {
+    out_ids.Set(i, linear_terms_in_order[i].first);
+    out_coeffs.Set(i, linear_terms_in_order[i].second);
+  }
+}
+
+// Copies quadratic terms from MPModelProto format to MathOpt format. In
+// particular, MathOpt requires three things not enforced by MPModelProto:
+//    1. No duplicate entries,
+//    2. No lower triangular entries, and
+//    3. Lexicographic sortedness of (row_id, column_id) keys.
+SparseDoubleMatrixProto QuadraticTermsFromMPModelToMathOpt(
+    const absl::Span<const int32_t> in_row_var_indices,
+    const absl::Span<const int32_t> in_col_var_indices,
+    const absl::Span<const double> in_coefficients) {
+  CHECK_EQ(in_row_var_indices.size(), in_col_var_indices.size());
+  CHECK_EQ(in_row_var_indices.size(), in_coefficients.size());
+
+  SparseDoubleMatrixProto out_expression;
+  std::vector<std::pair<std::pair<int32_t, int32_t>, double>> qp_terms_in_order;
+  for (int k = 0; k < in_row_var_indices.size(); ++k) {
+    int32_t first_index = in_row_var_indices[k];
+    int32_t second_index = in_col_var_indices[k];
+    if (first_index > second_index) {
+      std::swap(first_index, second_index);
+    }
+    qp_terms_in_order.push_back(
+        {{first_index, second_index}, in_coefficients[k]});
+  }
+  absl::c_sort(qp_terms_in_order);
+  std::pair<int32_t, int32_t> previous = {-1, -1};
+  for (const auto& [indices, coeff] : qp_terms_in_order) {
+    if (indices == previous) {
+      *out_expression.mutable_coefficients()->rbegin() += coeff;
+    } else {
+      out_expression.add_row_ids(indices.first);
+      out_expression.add_column_ids(indices.second);
+      out_expression.add_coefficients(coeff);
+      previous = indices;
+    }
+  }
+  return out_expression;
+}
+
+QuadraticConstraintProto QuadraticConstraintFromMPModelToMathOpt(
+    const MPQuadraticConstraint& in_constraint, const absl::string_view name) {
+  QuadraticConstraintProto out_constraint;
+  out_constraint.set_lower_bound(in_constraint.lower_bound());
+  out_constraint.set_upper_bound(in_constraint.upper_bound());
+  out_constraint.set_name(std::string(name));
+  LinearTermsFromMPModelToMathOpt(
+      in_constraint.var_index(), in_constraint.coefficient(),
+      *out_constraint.mutable_linear_terms()->mutable_ids(),
+      *out_constraint.mutable_linear_terms()->mutable_values());
+  *out_constraint.mutable_quadratic_terms() =
+      QuadraticTermsFromMPModelToMathOpt(in_constraint.qvar1_index(),
+                                         in_constraint.qvar2_index(),
+                                         in_constraint.qcoefficient());
+  return out_constraint;
+}
+
+SosConstraintProto SosConstraintFromMPModelToMathOpt(
+    const MPSosConstraint& in_constraint, const absl::string_view name) {
+  SosConstraintProto out_constraint;
+  out_constraint.set_name(std::string(name));
+  for (const int j : in_constraint.var_index()) {
+    LinearExpressionProto& expr = *out_constraint.add_expressions();
+    expr.add_ids(j);
+    expr.add_coefficients(1.0);
+  }
+  for (const double weight : in_constraint.weight()) {
+    out_constraint.add_weights(weight);
+  }
+  return out_constraint;
+}
+
+// NOTE: We ignore the `is_lazy` field in the MPIndicatorConstraint.
+absl::StatusOr<IndicatorConstraintProto>
+IndicatorConstraintFromMPModelToMathOpt(
+    const MPIndicatorConstraint& in_constraint, const absl::string_view name) {
+  if (in_constraint.has_var_value() && in_constraint.var_value() == 0) {
+    return absl::InvalidArgumentError(
+        "MathOpt does not support indicator constraints where the "
+        "indicated value is 0");
+  }
+  IndicatorConstraintProto out_constraint;
+  out_constraint.set_name(std::string(name));
+  out_constraint.set_indicator_id(in_constraint.var_index());
+  out_constraint.set_lower_bound(in_constraint.constraint().lower_bound());
+  out_constraint.set_upper_bound(in_constraint.constraint().upper_bound());
+  LinearTermsFromMPModelToMathOpt(
+      in_constraint.constraint().var_index(),
+      in_constraint.constraint().coefficient(),
+      *out_constraint.mutable_expression()->mutable_ids(),
+      *out_constraint.mutable_expression()->mutable_values());
+  return out_constraint;
+}
+
+absl::StatusOr<MPGeneralConstraintProto> SosConstraintFromMathOptToMPModel(
+    const SosConstraintProto& in_constraint,
+    const MPSosConstraint::Type sos_type,
+    const absl::flat_hash_map<int64_t, int>& variable_id_to_mp_position) {
+  MPGeneralConstraintProto out_general_constraint;
+  out_general_constraint.set_name(in_constraint.name());
+  MPSosConstraint& out_constraint =
+      *out_general_constraint.mutable_sos_constraint();
+  out_constraint.set_type(sos_type);
+  for (const double weight : in_constraint.weights()) {
+    out_constraint.add_weight(weight);
+  }
+  for (const LinearExpressionProto& expression : in_constraint.expressions()) {
+    if (expression.ids_size() != 1 || expression.coefficients(0) != 1.0 ||
+        expression.offset() != 0.0) {
+      return absl::InvalidArgumentError(
+          "MPModelProto does not support SOS constraints with "
+          "expressions that are not equivalent to a single variable");
+    }
+    out_constraint.add_var_index(
+        variable_id_to_mp_position.at(expression.ids(0)));
+  }
+  return out_general_constraint;
 }
 
 }  // namespace
@@ -117,35 +265,10 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
   const MPQuadraticObjective& origin_qp_terms = model.quadratic_objective();
   const int num_qp_terms = origin_qp_terms.coefficient().size();
   if (num_qp_terms > 0) {
-    // ObjectiveProto requires three things that may not be satisfied by
-    // MPQuadraticObjective:
-    //   1. No duplicate entries
-    //   2. No lower triangular entries
-    //   3. Lexicographic sortedness of (row_id, column_id) keys
-    std::vector<std::pair<std::pair<int, int>, double>> qp_terms_in_order;
-    for (int k = 0; k < num_qp_terms; ++k) {
-      int first_index = origin_qp_terms.qvar1_index(k);
-      int second_index = origin_qp_terms.qvar2_index(k);
-      if (first_index > second_index) {
-        std::swap(first_index, second_index);
-      }
-      qp_terms_in_order.emplace_back(std::make_pair(first_index, second_index),
-                                     origin_qp_terms.coefficient(k));
-    }
-    std::sort(qp_terms_in_order.begin(), qp_terms_in_order.end());
-    SparseDoubleMatrixProto& destination_qp_terms =
-        *objective->mutable_quadratic_coefficients();
-    std::pair<int, int> previous = {-1, -1};
-    for (const auto& [indices, coeff] : qp_terms_in_order) {
-      if (indices == previous) {
-        *destination_qp_terms.mutable_coefficients()->rbegin() += coeff;
-      } else {
-        destination_qp_terms.add_row_ids(indices.first);
-        destination_qp_terms.add_column_ids(indices.second);
-        destination_qp_terms.add_coefficients(coeff);
-        previous = indices;
-      }
-    }
+    *objective->mutable_quadratic_coefficients() =
+        QuadraticTermsFromMPModelToMathOpt(origin_qp_terms.qvar1_index(),
+                                           origin_qp_terms.qvar2_index(),
+                                           origin_qp_terms.coefficient());
   }
   objective->set_maximize(model.maximize());
   objective->set_offset(model.objective_offset());
@@ -195,6 +318,55 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
       matrix->add_coefficients(term.second);
     }
     terms_in_order.clear();
+  }
+
+  for (const MPGeneralConstraintProto& general_constraint :
+       model.general_constraint()) {
+    const std::string& in_name = general_constraint.name();
+    switch (general_constraint.general_constraint_case()) {
+      case MPGeneralConstraintProto::kQuadraticConstraint: {
+        (*output.mutable_quadratic_constraints())
+            [output.quadratic_constraints_size()] =
+                QuadraticConstraintFromMPModelToMathOpt(
+                    general_constraint.quadratic_constraint(), in_name);
+        break;
+      }
+      case MPGeneralConstraintProto::kSosConstraint: {
+        const MPSosConstraint& in_constraint =
+            general_constraint.sos_constraint();
+        switch (in_constraint.type()) {
+          case operations_research::MPSosConstraint::SOS1_DEFAULT: {
+            (*output
+                  .mutable_sos1_constraints())[output.sos1_constraints_size()] =
+                SosConstraintFromMPModelToMathOpt(in_constraint, in_name);
+            break;
+          }
+          case operations_research::MPSosConstraint::SOS2: {
+            (*output
+                  .mutable_sos2_constraints())[output.sos2_constraints_size()] =
+                SosConstraintFromMPModelToMathOpt(in_constraint, in_name);
+            break;
+          }
+        }
+        break;
+      }
+      case MPGeneralConstraintProto::kIndicatorConstraint: {
+        // Note that the open-source version of ASSIGN_OR_RETURN does not
+        // support inlining the new_indicator_constraint expression.
+        auto& new_indicator_constraint =
+            (*output.mutable_indicator_constraints())
+                [output.indicator_constraints_size()];
+        ASSIGN_OR_RETURN(
+            new_indicator_constraint,
+            IndicatorConstraintFromMPModelToMathOpt(
+                general_constraint.indicator_constraint(), in_name));
+        break;
+      }
+      default: {
+        return absl::InternalError(
+            "Reached unrecognized general constraint in MPModelProto");
+      }
+    }
   }
   return output;
 }
@@ -273,6 +445,66 @@ absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
     constraint->add_var_index(variable_position);
     const double value = model.linear_constraint_matrix().coefficients(k);
     constraint->add_coefficient(value);
+  }
+
+  for (const auto& [id, in_constraint] : model.quadratic_constraints()) {
+    MPGeneralConstraintProto& out_general_constraint =
+        *output.add_general_constraint();
+    out_general_constraint.set_name(in_constraint.name());
+    MPQuadraticConstraint& out_constraint =
+        *out_general_constraint.mutable_quadratic_constraint();
+    out_constraint.set_lower_bound(in_constraint.lower_bound());
+    out_constraint.set_upper_bound(in_constraint.upper_bound());
+    for (const auto [index, coeff] : MakeView(in_constraint.linear_terms())) {
+      out_constraint.add_var_index(variable_id_to_mp_position[index]);
+      out_constraint.add_coefficient(coeff);
+    }
+    for (int k = 0; k < in_constraint.quadratic_terms().row_ids_size(); ++k) {
+      out_constraint.add_qvar1_index(
+          variable_id_to_mp_position[in_constraint.quadratic_terms().row_ids(
+              k)]);
+      out_constraint.add_qvar2_index(
+          variable_id_to_mp_position[in_constraint.quadratic_terms().column_ids(
+              k)]);
+      out_constraint.add_qcoefficient(
+          in_constraint.quadratic_terms().coefficients(k));
+    }
+  }
+  for (const auto& [id, in_constraint] : model.sos1_constraints()) {
+    ASSIGN_OR_RETURN(*output.add_general_constraint(),
+                     SosConstraintFromMathOptToMPModel(
+                         in_constraint, MPSosConstraint::SOS1_DEFAULT,
+                         variable_id_to_mp_position));
+  }
+
+  for (const auto& [id, in_constraint] : model.sos2_constraints()) {
+    ASSIGN_OR_RETURN(
+        *output.add_general_constraint(),
+        SosConstraintFromMathOptToMPModel(in_constraint, MPSosConstraint::SOS2,
+                                          variable_id_to_mp_position));
+  }
+
+  for (const auto& [id, in_constraint] : model.indicator_constraints()) {
+    if (!in_constraint.has_indicator_id()) {
+      continue;
+    }
+    MPGeneralConstraintProto& out_general_constraint =
+        *output.add_general_constraint();
+    out_general_constraint.set_name(in_constraint.name());
+    MPIndicatorConstraint& out_constraint =
+        *out_general_constraint.mutable_indicator_constraint();
+    out_constraint.set_var_index(
+        variable_id_to_mp_position[in_constraint.indicator_id()]);
+    out_constraint.set_var_value(1);
+    out_constraint.mutable_constraint()->set_lower_bound(
+        in_constraint.lower_bound());
+    out_constraint.mutable_constraint()->set_upper_bound(
+        in_constraint.upper_bound());
+    for (const auto [index, coeff] : MakeView(in_constraint.expression())) {
+      out_constraint.mutable_constraint()->add_var_index(
+          variable_id_to_mp_position[index]);
+      out_constraint.mutable_constraint()->add_coefficient(coeff);
+    }
   }
 
   return output;

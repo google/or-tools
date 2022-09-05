@@ -170,6 +170,7 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
   if (fatal_failure_occurred_) {
     return PreviousFatalFailureOccurred();
   }
+  CHECK(underlying_solver_ != nullptr);
 
   // We will reset it in code paths where no error occur.
   fatal_failure_occurred_ = true;
@@ -223,24 +224,25 @@ absl::StatusOr<bool> Solver::Update(const ModelUpdateProto& model_update) {
   if (fatal_failure_occurred_) {
     return PreviousFatalFailureOccurred();
   }
+  CHECK(underlying_solver_ != nullptr);
 
   // We will reset it in code paths where no error occur.
   fatal_failure_occurred_ = true;
-  // TODO(b/232264333): we are modifying model_summary_ but when CanUpdate
-  // returns false we are not in a good state. With a different design we can
-  // avoid this copy, which can be non-negligible.
-  ModelSummary backup = model_summary_;
-  RETURN_IF_ERROR(ValidateModelUpdate(model_update, model_summary_));
 
-  if (!underlying_solver_->CanUpdate(model_update)) {
-    model_summary_ = std::move(backup);
-    fatal_failure_occurred_ = false;
+  RETURN_IF_ERROR(ValidateModelUpdate(model_update, model_summary_));
+  ASSIGN_OR_RETURN(const bool updated,
+                   underlying_solver_->Update(model_update));
+  if (!updated) {
+    // We only destroy underlying_solver_ in this specific case as it would be
+    // incorrect to destroy if the solver is GLPK and the error is that we are
+    // trying to use it in a different thread. Here we know this is not the case
+    // as Update() would have returned an error.
+    underlying_solver_ = nullptr;
     return false;
   }
 
-  RETURN_IF_ERROR(underlying_solver_->Update(model_update));
-
   fatal_failure_occurred_ = false;
+
   return true;
 }
 

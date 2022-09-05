@@ -56,8 +56,7 @@ class GlopSolver : public SolverInterface {
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
       SolveInterrupter* interrupter) override;
-  absl::Status Update(const ModelUpdateProto& model_update) override;
-  bool CanUpdate(const ModelUpdateProto& model_update) override;
+  absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
 
   // Returns the merged parameters and a list of warnings from any parameter
   // settings that are invalid for this solver.

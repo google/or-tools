@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -32,12 +33,15 @@
 #include "absl/strings/str_split.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/logging.h"
+#include "absl/types/span.h"
+#include "ortools/base/check.h"
+#include "ortools/base/log.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -60,6 +64,14 @@ namespace math_opt {
 namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
+
+constexpr SupportedProblemStructures kCpSatSupportedStructures = {
+    .integer_variables = SupportType::kSupported,
+    .quadratic_objectives = SupportType::kNotImplemented,
+    .quadratic_constraints = SupportType::kNotImplemented,
+    .sos1_constraints = SupportType::kNotImplemented,
+    .sos2_constraints = SupportType::kNotImplemented,
+    .indicator_constraints = SupportType::kNotImplemented};
 
 // Returns true on success.
 bool ApplyCutoff(const double cutoff, MPModelProto* model) {
@@ -323,23 +335,13 @@ GetTerminationAndStats(const bool is_interrupted, const bool maximize,
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> CpSatSolver::New(
     const ModelProto& model, const InitArgs& init_args) {
+  RETURN_IF_ERROR(ModelIsSupported(model, kCpSatSupportedStructures, "CP-SAT"));
   ASSIGN_OR_RETURN(MPModelProto cp_sat_model,
                    MathOptModelToMPModelProto(model));
   std::vector variable_ids(model.variables().ids().begin(),
                            model.variables().ids().end());
   std::vector linear_constraint_ids(model.linear_constraints().ids().begin(),
                                     model.linear_constraints().ids().end());
-  // TODO(b/204083726): Remove this check if QP support is added
-  if (!model.objective().quadratic_coefficients().row_ids().empty()) {
-    return absl::InvalidArgumentError(
-        "MathOpt does not currently support CP-SAT models with quadratic "
-        "objectives");
-  }
-  if (!model.quadratic_constraints().empty()) {
-    return absl::InvalidArgumentError(
-        "MathOpt does not currently support CP-SAT models with quadratic "
-        "constraints");
-  }
   return absl::WrapUnique(new CpSatSolver(
       std::move(cp_sat_model),
       /*variable_ids=*/std::move(variable_ids),
@@ -479,14 +481,8 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
   return result;
 }
 
-bool CpSatSolver::CanUpdate(const ModelUpdateProto& model_update) {
+absl::StatusOr<bool> CpSatSolver::Update(const ModelUpdateProto& model_update) {
   return false;
-}
-
-absl::Status CpSatSolver::Update(const ModelUpdateProto& model_update) {
-  // This function should never be called since CanUpdate() always returns
-  // false.
-  return absl::InternalError("CP-SAT solver does not support incrementalism");
 }
 
 CpSatSolver::CpSatSolver(MPModelProto cp_sat_model,

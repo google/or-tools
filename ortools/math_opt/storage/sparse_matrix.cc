@@ -28,13 +28,6 @@
 #include "ortools/math_opt/storage/model_storage_types.h"
 
 namespace operations_research::math_opt {
-namespace {
-
-// When the fraction of entries in values_ with value 0.0 is larger than
-// kZerosCleanup, we compact the data structure and remove all zero entries.
-constexpr double kZerosCleanup = 1.0 / 3.0;
-
-}  // namespace
 
 void SparseSymmetricMatrix::Delete(const VariableId variable) {
   auto related_vars = related_variables_.find(variable);
@@ -60,6 +53,21 @@ std::vector<VariableId> SparseSymmetricMatrix::RelatedVariables(
   for (const VariableId second : related_variables_.at(variable)) {
     if (get(variable, second) != 0) {
       result.push_back(second);
+    }
+  }
+  return result;
+}
+
+std::vector<VariableId> SparseSymmetricMatrix::Variables() const {
+  std::vector<VariableId> result;
+  // Note: we could make this more efficient in the presence of deletions by
+  // storing the actual number of neighbors in the value of related_variables_.
+  for (const auto& [var, related] : related_variables_) {
+    for (const VariableId other : related) {
+      if (get(var, other) != 0.0) {
+        result.push_back(var);
+        break;
+      }
     }
   }
   return result;
@@ -94,16 +102,16 @@ SparseSymmetricMatrix::Terms() const {
 
 void SparseSymmetricMatrix::CompactIfNeeded() {
   const int64_t zeros = values_.size() - nonzeros_;
-  if (static_cast<double>(zeros) / values_.size() <= kZerosCleanup) {
+  if (values_.empty() ||
+      static_cast<double>(zeros) / values_.size() <= internal::kZerosCleanup) {
     return;
   }
-  ++compactions_;
   for (auto related_var_it = related_variables_.begin();
        related_var_it != related_variables_.end();) {
     const VariableId v = related_var_it->first;
     std::vector<VariableId>& related = related_var_it->second;
     int64_t write = 0;
-    for (int read = 0; read < related.size(); ++read) {
+    for (int64_t read = 0; read < related.size(); ++read) {
       auto val = values_.find(make_key(v, related[read]));
       if (val != values_.end()) {
         if (val->second != 0) {
@@ -152,6 +160,35 @@ SparseDoubleMatrixProto SparseSymmetricMatrix::Proto() const {
     }
   }
   return result;
+}
+
+SparseDoubleMatrixProto SparseSymmetricMatrix::Update(
+    const absl::flat_hash_set<VariableId>& deleted_variables,
+    const absl::Span<const VariableId> new_variables,
+    const absl::flat_hash_set<std::pair<VariableId, VariableId>>& dirty) const {
+  std::vector<std::tuple<VariableId, VariableId, double>> updates;
+  for (const std::pair<VariableId, VariableId> pair : dirty) {
+    // If either variable has been deleted, don't add it.
+    if (deleted_variables.contains(pair.first) ||
+        deleted_variables.contains(pair.second)) {
+      continue;
+    }
+    updates.push_back({pair.first, pair.second, get(pair.first, pair.second)});
+  }
+
+  for (const VariableId v : new_variables) {
+    if (related_variables_.contains(v)) {
+      // TODO(b/233630053): do not allocate here.
+      for (const auto [other, coef] : Terms(v)) {
+        if (v <= other) {
+          updates.push_back({v, other, coef});
+        } else if (new_variables.empty() || other < new_variables[0]) {
+          updates.push_back({other, v, coef});
+        }
+      }
+    }
+  }
+  return internal::EntriesToMatrixProto(std::move(updates));
 }
 
 }  // namespace operations_research::math_opt

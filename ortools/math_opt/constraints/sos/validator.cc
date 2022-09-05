@@ -13,7 +13,9 @@
 
 #include "ortools/math_opt/constraints/sos/validator.h"
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model.pb.h"
@@ -36,8 +38,15 @@ absl::Status ValidateConstraint(const SosConstraintProto& constraint,
     RETURN_IF_ERROR(ValidateLinearExpression(expression, variable_universe))
         << "Invalid SOS expression";
   }
+  // Check weights for uniqueness.
+  absl::flat_hash_set<double> weights;
   for (const double weight : constraint.weights()) {
     RETURN_IF_ERROR(CheckScalarNoNanNoInf(weight)) << "Invalid SOS weight";
+    if (!weights.insert(weight).second) {
+      return util::InvalidArgumentErrorBuilder()
+             << "SOS weights must be unique, but encountered duplicate weight: "
+             << weight;
+    }
   }
   return absl::OkStatus();
 }

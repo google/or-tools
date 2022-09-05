@@ -129,17 +129,12 @@ class SolverInterface {
       const CallbackRegistrationProto& callback_registration, Callback cb,
       SolveInterrupter* interrupter) = 0;
 
-  // Updates the model to solve.
+  // Updates the model to solve and returns true, or returns false if this
+  // update is not supported.
   //
   // The implementation should assume the input ModelUpdate is valid and is free
   // to assert if this is not the case.
-  virtual absl::Status Update(const ModelUpdateProto& model_update) = 0;
-
-  // Return true if this solver can handle the given update.
-  //
-  // The implementation should assume the input ModelUpdate is valid and is free
-  // to assert if this is not the case.
-  virtual bool CanUpdate(const ModelUpdateProto& model_update) = 0;
+  virtual absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) = 0;
 };
 
 class AllSolversRegistry {

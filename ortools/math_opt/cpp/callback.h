@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 // Data types for using callbacks with Solve() and IncrementalSolver.
 //
 // Callbacks allow to user to observe the progress of a solver and modify its

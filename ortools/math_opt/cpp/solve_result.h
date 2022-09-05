@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 #ifndef OR_TOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
 #define OR_TOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
 
@@ -448,8 +451,10 @@ struct SolveResult {
   const VariableMap<BasisStatus>& variable_status() const;
 };
 
-// Prints the solve result on a single line, omitting the values of the
-// solutions and rays, instead printing only the count of each available.
+// Prints a summary of the solve result on a single line.
+//
+// This prints the number of available solutions and rays instead of their
+// values.
 //
 // Printing the whole solution could be problematic for huge models.
 std::ostream& operator<<(std::ostream& out, const SolveResult& result);

@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 #ifndef OR_TOOLS_MATH_OPT_CPP_PARAMETERS_H_
 #define OR_TOOLS_MATH_OPT_CPP_PARAMETERS_H_
 
@@ -109,6 +112,17 @@ enum class LPAlgorithm {
 
 MATH_OPT_DEFINE_ENUM(LPAlgorithm, LP_ALGORITHM_UNSPECIFIED);
 
+// Parses a flag of type LPAlgorithm.
+//
+// The expected values are the one returned by EnumToString().
+bool AbslParseFlag(absl::string_view text, LPAlgorithm* value,
+                   std::string* error);
+
+// Unparses a flag of type LPAlgorithm.
+//
+// The returned values are the same as EnumToString().
+std::string AbslUnparseFlag(LPAlgorithm value);
+
 // Effort level applied to an optional task while solving (see SolveParameters
 // for use).
 //
@@ -133,6 +147,16 @@ enum class Emphasis {
 };
 
 MATH_OPT_DEFINE_ENUM(Emphasis, EMPHASIS_UNSPECIFIED);
+
+// Parses a flag of type Emphasis.
+//
+// The expected values are the one returned by EnumToString().
+bool AbslParseFlag(absl::string_view text, Emphasis* value, std::string* error);
+
+// Unparses a flag of type Emphasis.
+//
+// The returned values are the same as EnumToString().
+std::string AbslUnparseFlag(Emphasis value);
 
 // Gurobi specific parameters for solving. See
 //   https://www.gurobi.com/documentation/9.1/refman/parameters.html
@@ -322,6 +346,11 @@ struct SolveParameters {
   static absl::StatusOr<SolveParameters> FromProto(
       const SolveParametersProto& proto);
 };
+
+bool AbslParseFlag(absl::string_view text, SolveParameters* solve_parameters,
+                   std::string* error);
+
+std::string AbslUnparseFlag(SolveParameters solve_parameters);
 
 }  // namespace math_opt
 }  // namespace operations_research

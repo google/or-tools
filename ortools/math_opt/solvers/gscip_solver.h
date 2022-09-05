@@ -17,12 +17,16 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
+#include "google/protobuf/map.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/gscip/gscip_event_handler.h"
@@ -53,8 +57,7 @@ class GScipSolver : public SolverInterface {
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
       SolveInterrupter* interrupter) override;
-  absl::Status Update(const ModelUpdateProto& model_update) override;
-  bool CanUpdate(const ModelUpdateProto& model_update) override;
+  absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
 
   // Returns the merged parameters and a list of warnings for unsupported
   // parameters.
@@ -62,6 +65,22 @@ class GScipSolver : public SolverInterface {
       const SolveParametersProto& solve_parameters);
 
  private:
+  // A simple class for managing extra variables and constraints introduced to
+  // model higher-level constructs.
+  //
+  // This is useful when auxiliary variables and constraints are introduced
+  // transparently to the user, and must be deleted when the corresponding
+  // higher-level construct is deleted.
+  struct AuxiliaryStructureHandler {
+    // Removes all registered slack variables and constraints from the model.
+    // Those deleted variables and constraints are then dropped from this
+    // handler (i.e., this function is idempotent).
+    absl::Status DeleteStructure(GScip& gscip);
+
+    std::vector<SCIP_VAR*> variables;
+    std::vector<SCIP_CONS*> constraints;
+  };
+
   // Event handler that it used to call SCIPinterruptSolve() is a safe manner.
   //
   // At the start of SCIPsolve(), SCIP resets `userinterrupt` to false. It does
@@ -109,6 +128,9 @@ class GScipSolver : public SolverInterface {
   // Update existing variables' parameters.
   absl::Status UpdateVariables(const VariableUpdatesProto& variable_updates);
 
+  absl::Status AddQuadraticObjectiveTerms(
+      const SparseDoubleMatrixProto& new_qp_terms, bool maximize);
+
   // Adds the new linear constraints.
   absl::Status AddLinearConstraints(
       const LinearConstraintsProto& linear_constraints,
@@ -121,6 +143,34 @@ class GScipSolver : public SolverInterface {
       const SparseDoubleMatrixProto& linear_constraint_matrix,
       std::optional<int64_t> first_new_var_id,
       std::optional<int64_t> first_new_cstr_id);
+
+  absl::Status AddQuadraticConstraints(
+      const google::protobuf::Map<int64_t, QuadraticConstraintProto>&
+          quadratic_constraints);
+
+  absl::Status AddIndicatorConstraints(
+      const google::protobuf::Map<int64_t, IndicatorConstraintProto>&
+          indicator_constraints);
+
+  // Given a linear `expression`, add a new `variable` and constraint such that
+  // `variable == expression`. Returns the associated SCIP pointers to the new
+  // slack variable and constraint.
+  absl::StatusOr<std::pair<SCIP_VAR*, SCIP_CONS*>>
+  AddSlackVariableEqualToExpression(const LinearExpressionProto& expression);
+
+  // Unpacks a `SosConstraintProto` into the associated data for GScip. As the
+  // MathOpt protos allow SOS terms to be arbitrary linear expressions, slack
+  // variables and constraints to represent nontrivial expressions are added to
+  // the model and tracked by the returned `AuxiliaryStructureHandler`.
+  absl::StatusOr<std::pair<GScipSOSData, AuxiliaryStructureHandler>>
+  ProcessSosProto(const SosConstraintProto& sos_constraint);
+
+  absl::Status AddSos1Constraints(
+      const google::protobuf::Map<int64_t, SosConstraintProto>&
+          sos1_constraints);
+  absl::Status AddSos2Constraints(
+      const google::protobuf::Map<int64_t, SosConstraintProto>&
+          sos2_constraints);
 
   absl::flat_hash_set<SCIP_VAR*> LookupAllVariables(
       absl::Span<const int64_t> variable_ids);
@@ -135,7 +185,15 @@ class GScipSolver : public SolverInterface {
   const std::unique_ptr<GScip> gscip_;
   InterruptEventHandler interrupt_event_handler_;
   absl::flat_hash_map<int64_t, SCIP_VAR*> variables_;
+  bool has_quadratic_objective_ = false;
   absl::flat_hash_map<int64_t, SCIP_CONS*> linear_constraints_;
+  absl::flat_hash_map<int64_t, SCIP_CONS*> quadratic_constraints_;
+  // NOTE: Values may be null, occurs when indicator variables are unset.
+  absl::flat_hash_map<int64_t, SCIP_CONS*> indicator_constraints_;
+  absl::flat_hash_map<int64_t, std::pair<SCIP_CONS*, AuxiliaryStructureHandler>>
+      sos1_constraints_;
+  absl::flat_hash_map<int64_t, std::pair<SCIP_CONS*, AuxiliaryStructureHandler>>
+      sos2_constraints_;
 };
 
 }  // namespace math_opt

@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 #ifndef OR_TOOLS_MATH_OPT_CPP_MODEL_H_
 #define OR_TOOLS_MATH_OPT_CPP_MODEL_H_
 
@@ -24,8 +27,14 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
 #include "ortools/base/status_builder.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/math_opt/constraints/indicator/indicator_constraint.h"  // IWYU pragma: export
+#include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"  // IWYU pragma: export
+#include "ortools/math_opt/constraints/sos/sos1_constraint.h"  // IWYU pragma: export
+#include "ortools/math_opt/constraints/sos/sos2_constraint.h"  // IWYU pragma: export
+#include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/update_tracker.h"     // IWYU pragma: export
@@ -33,15 +42,15 @@
 #include "ortools/math_opt/model.pb.h"         // IWYU pragma: export
 #include "ortools/math_opt/model_update.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/storage/model_storage.h"
-#include "ortools/math_opt/storage/model_storage_types.h"
+#include "ortools/math_opt/storage/model_storage_types.h"  // IWYU pragma: export
 
 namespace operations_research {
 namespace math_opt {
 
 // A C++ API for building optimization problems.
 //
-// Warning: Variable and LinearConstraint are value types, see "Memory Model"
-// below.
+// Warning: Variable and LinearConstraint (along with all other constraint
+// objects) are value types, see "Memory Model" below.
 //
 // A simple example:
 //
@@ -77,18 +86,23 @@ namespace math_opt {
 //
 // Memory model:
 //
-// Variable and LinearConstraint are value types that represent references to
-// the underlying Model object. They don't hold any of the actual model data,
-// they can be copied, and they should be passed by value. They can be
-// regenerated arbitrarily from Model. Model holds all the data.
+// Variable, LinearConstraint, QuadraticConstraint, etc. are value types that
+// represent references to the underlying Model object. They don't hold any of
+// the actual model data, they can be copied, and they should be passed by
+// value. They can be regenerated arbitrarily from Model. Model holds all the
+// data.
+//
+// As a consequence of Variable and LinearConstraint holding back pointers,
+// Model is not copyable or movable. Users needing to copy a Model can call
+// Model::Clone() (this will create a new Model with no update trackers), and
+// users needing to move a Model should wrap it in a std::unique_ptr.
 //
 // Performance:
 //
 // This class is a thin wrapper around ModelStorage (for incrementally building
-// the model and reading it back, and producing the Model proto) and Solver (for
-// consuming the Model proto to solve the optimization problem). Operations for
+// the model and reading it back, and producing the Model proto). Operations for
 // building/reading/modifying the problem typically run in O(read/write size)
-// and rely on hashing, see the indexed model documentation for details. At
+// and rely on hashing, see the ModelStorage documentation for details. At
 // solve time (if you are solving locally) beware that there will be (at least)
 // three copies of the model in memory, ModelStorage, the Model proto, and the
 // underlying solver's copy(/ies). Note that the Model proto is reclaimed before
@@ -146,6 +160,10 @@ class Model {
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline const std::string& name() const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Variable methods
+  //////////////////////////////////////////////////////////////////////////////
 
   // Adds a variable to the model and returns a reference to it.
   inline Variable AddVariable(double lower_bound, double upper_bound,
@@ -230,7 +248,16 @@ class Model {
   // sorted by id.
   std::vector<Variable> SortedVariables() const;
 
+  // Returns an error if `variable` is from another model or the id is not in
+  // this model (typically, if it was deleted).
+  inline absl::Status ValidateExistingVariableOfThisModel(
+      Variable variable) const;
+
   std::vector<LinearConstraint> ColumnNonzeros(Variable variable) const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // LinearConstraint methods
+  //////////////////////////////////////////////////////////////////////////////
 
   // Adds a linear constraint to the model with bounds [-inf, +inf].
   inline LinearConstraint AddLinearConstraint(absl::string_view name = "");
@@ -327,6 +354,244 @@ class Model {
   // Returns all the existing (created and not deleted) linear constraints in
   // the model sorted by id.
   std::vector<LinearConstraint> SortedLinearConstraints() const;
+
+  // Returns an error if `linear_constraint` is from another model or the id is
+  // not in this model (typically, if it was deleted).
+  inline absl::Status ValidateExistingLinearConstraintOfThisModel(
+      LinearConstraint linear_constraint) const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // QuadraticConstraint methods
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Adds a quadratic constraint from the given bounded quadratic expression.
+  //
+  // Usage:
+  //   Model model = ...;
+  //   const Variable x = ...;
+  //   const Variable y = ...;
+  //   model.AddQuadraticConstraint(2 * x * x + y + 1 <= 5, "q");
+  //   model.AddQuadraticConstraint(2 * x * x + y * y == x + 5 * z + 3);
+  //   model.AddQuadraticConstraint(x * y >= 5);
+  QuadraticConstraint AddQuadraticConstraint(
+      const BoundedQuadraticExpression& bounded_expr,
+      absl::string_view name = "");
+
+  // Removes a quadratic constraint from the model.
+  //
+  // It is an error to use any reference to this quadratic constraint after this
+  // operation. Runs in O(#linear or quadratic terms appearing in constraint).
+  inline void DeleteQuadraticConstraint(QuadraticConstraint constraint);
+
+  // The number of quadratic constraints in the model.
+  //
+  // Equal to the number of quadratic constraints created minus the number of
+  // quadratic constraints deleted.
+  inline int64_t num_quadratic_constraints() const;
+
+  // The returned id of the next call to AddQuadraticConstraint.
+  inline int64_t next_quadratic_constraint_id() const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_quadratic_constraint(int64_t id) const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_quadratic_constraint(QuadraticConstraintId id) const;
+
+  // Will CHECK if has_quadratic_constraint(id) is false.
+  inline QuadraticConstraint quadratic_constraint(int64_t id) const;
+
+  // Will CHECK if has_quadratic_constraint(id) is false.
+  inline QuadraticConstraint quadratic_constraint(
+      QuadraticConstraintId id) const;
+
+  // Returns all the existing (created and not deleted) quadratic constraints in
+  // the model in an arbitrary order.
+  inline std::vector<QuadraticConstraint> QuadraticConstraints() const;
+
+  // Returns all the existing (created and not deleted) quadratic constraints in
+  // the model sorted by id.
+  inline std::vector<QuadraticConstraint> SortedQuadraticConstraints() const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Sos1Constraint methods
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Adds an SOS1 constraint to the model: at most one of the `expressions` may
+  // take a nonzero value.
+  //
+  // The `weights` are an implementation detail in the solver used to order the
+  // `expressions`; see the Gurobi documentation for more detail:
+  // https://www.gurobi.com/documentation/9.5/refman/constraints.html#subsubsection:SOSConstraints
+  //
+  // These `weights` must either be empty or the same length as `expressions`.
+  // If it is empty, default weights of 1, 2, ... will be used.
+  //
+  // Usage:
+  //   Model model = ...;
+  //   const Variable x = ...;
+  //   const Variable y = ...;
+  //   model.AddSos1Constraint({x, y}, {}, "c");
+  //   model.AddSos1Constraint({1 - 2 * x, y}, {3, 2});
+  Sos1Constraint AddSos1Constraint(
+      const std::vector<LinearExpression>& expressions,
+      std::vector<double> weights = {}, absl::string_view name = "");
+
+  // Removes an SOS1 constraint from the model.
+  //
+  // It is an error to use any reference to this SOS1 constraint after this
+  // operation. Runs in O(#terms in all expressions).
+  inline void DeleteSos1Constraint(Sos1Constraint constraint);
+
+  // The number of SOS1 constraints in the model.
+  //
+  // Equal to the number of SOS1 constraints created minus the number of SOS1
+  // constraints deleted.
+  inline int64_t num_sos1_constraints() const;
+
+  // The returned id of the next call to AddSos1Constraint.
+  inline int64_t next_sos1_constraint_id() const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_sos1_constraint(int64_t id) const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_sos1_constraint(Sos1ConstraintId id) const;
+
+  // Will CHECK if has_sos1_constraint(id) is false.
+  inline Sos1Constraint sos1_constraint(int64_t id) const;
+
+  // Will CHECK if has_sos1_constraint(id) is false.
+  inline Sos1Constraint sos1_constraint(Sos1ConstraintId id) const;
+
+  // Returns all the existing (created and not deleted) SOS1 constraints in the
+  // model in an arbitrary order.
+  inline std::vector<Sos1Constraint> Sos1Constraints() const;
+
+  // Returns all the existing (created and not deleted) SOS1 constraints in the
+  // model sorted by id.
+  inline std::vector<Sos1Constraint> SortedSos1Constraints() const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Sos2Constraint methods
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Adds an SOS2 constraint to the model: at most two of the `expressions` may
+  // take a nonzero value, and they must be adjacent in their ordering.
+  //
+  // The `weights` are an implementation detail in the solver used to order the
+  // `expressions`; see the Gurobi documentation for more detail:
+  // https://www.gurobi.com/documentation/9.5/refman/constraints.html#subsubsection:SOSConstraints
+  //
+  // These `weights` must either be empty or the same length as `expressions`.
+  // If it is empty, default weights of 1, 2, ... will be used.
+  //
+  // Usage:
+  //   Model model = ...;
+  //   const Variable x = ...;
+  //   const Variable y = ...;
+  //   model.AddSos2Constraint({x, y}, {}, "c");
+  //   model.AddSos2Constraint({1 - 2 * x, y}, {3, 2});
+  Sos2Constraint AddSos2Constraint(
+      const std::vector<LinearExpression>& expressions,
+      std::vector<double> weights = {}, absl::string_view name = "");
+
+  // Removes an SOS2 constraint from the model.
+  //
+  // It is an error to use any reference to this SOS2 constraint after this
+  // operation. Runs in O(#terms in all expressions).
+  inline void DeleteSos2Constraint(Sos2Constraint constraint);
+
+  // The number of SOS2 constraints in the model.
+  //
+  // Equal to the number of SOS2 constraints created minus the number of SOS2
+  // constraints deleted.
+  inline int64_t num_sos2_constraints() const;
+
+  // The returned id of the next call to AddSos2Constraint.
+  inline int64_t next_sos2_constraint_id() const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_sos2_constraint(int64_t id) const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_sos2_constraint(Sos2ConstraintId id) const;
+
+  // Will CHECK if has_sos2_constraint(id) is false.
+  inline Sos2Constraint sos2_constraint(int64_t id) const;
+
+  // Will CHECK if has_sos2_constraint(id) is false.
+  inline Sos2Constraint sos2_constraint(Sos2ConstraintId id) const;
+
+  // Returns all the existing (created and not deleted) SOS2 constraints in the
+  // model in an arbitrary order.
+  inline std::vector<Sos2Constraint> Sos2Constraints() const;
+
+  // Returns all the existing (created and not deleted) SOS2 constraints in the
+  // model sorted by id.
+  inline std::vector<Sos2Constraint> SortedSos2Constraints() const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // IndicatorConstraint methods
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Adds an indicator constraint to the model: If `indicator_variable == 1`,
+  // then `implicated_constraint` must hold. Otherwise it need not be satisfied.
+  //
+  // The `indicator_variable` is expected to be a binary variable in the model.
+  // If this is not the case, the solver may elect to either implicitly add the
+  // binary constraint, or reject the model.
+  //
+  // Usage:
+  //   Model model = ...;
+  //   const Variable x = model.AddBinaryVariable("x");
+  //   const Variable y = model.AddBinaryVariable("y");
+  //   model.AddIndicatorConstraint(x, y <= 0, "c");
+  //   model.AddIndicatorConstraint(y, x >= 2);
+  IndicatorConstraint AddIndicatorConstraint(
+      Variable indicator_variable,
+      const BoundedLinearExpression& implicated_constraint,
+      absl::string_view name = {});
+
+  // Removes an indicator constraint from the model.
+  //
+  // It is an error to use any reference to this indicator constraint after this
+  // operation. Runs in O(#terms in implicated constraint).
+  inline void DeleteIndicatorConstraint(IndicatorConstraint constraint);
+
+  // The number of indicator constraints in the model.
+  //
+  // Equal to the number of indicator constraints created minus the number of
+  // indicator constraints deleted.
+  inline int64_t num_indicator_constraints() const;
+
+  // The returned id of the next call to AddIndicatorConstraint.
+  inline int64_t next_indicator_constraint_id() const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_indicator_constraint(int64_t id) const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_indicator_constraint(IndicatorConstraintId id) const;
+
+  // Will CHECK if has_indicator_constraint(id) is false.
+  inline IndicatorConstraint indicator_constraint(int64_t id) const;
+
+  // Will CHECK if has_indicator_constraint(id) is false.
+  inline IndicatorConstraint indicator_constraint(
+      IndicatorConstraintId id) const;
+
+  // Returns all the existing (created and not deleted) indicator constraints in
+  // the model in an arbitrary order.
+  inline std::vector<IndicatorConstraint> IndicatorConstraints() const;
+
+  // Returns all the existing (created and not deleted) indicator constraints in
+  // the model sorted by id.
+  inline std::vector<IndicatorConstraint> SortedIndicatorConstraints() const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Objective methods
+  //////////////////////////////////////////////////////////////////////////////
 
   // Sets the objective to maximize the provided expression.
   inline void Maximize(double objective);
@@ -490,6 +755,8 @@ class Model {
 // Inline function implementations
 ////////////////////////////////////////////////////////////////////////////////
 
+// ------------------------------- Variables -----------------------------------
+
 const std::string& Model::name() const { return storage()->name(); }
 
 Variable Model::AddVariable(const absl::string_view name) {
@@ -589,6 +856,24 @@ bool Model::is_integer(const Variable variable) const {
   return storage()->is_variable_integer(variable.typed_id());
 }
 
+// -------------------------- Linear constraints -------------------------------
+
+absl::Status Model::ValidateExistingVariableOfThisModel(
+    Variable variable) const {
+  // TODO(b/239810718): use << for Variable once it does not CHECK.
+  if (storage_.get() != variable.storage()) {
+    return util::InvalidArgumentErrorBuilder()
+           << "variable with id " << variable.id()
+           << " is from a different model";
+  }
+  if (!has_variable(variable.typed_id())) {
+    return util::InvalidArgumentErrorBuilder()
+           << "variable with id " << variable.id()
+           << " is not found in this model (it was probably deleted)";
+  }
+  return absl::OkStatus();
+}
+
 LinearConstraint Model::AddLinearConstraint(const absl::string_view name) {
   return LinearConstraint(storage(), storage()->AddLinearConstraint(name));
 }
@@ -659,6 +944,22 @@ double Model::upper_bound(const LinearConstraint constraint) const {
   return storage()->linear_constraint_upper_bound(constraint.typed_id());
 }
 
+absl::Status Model::ValidateExistingLinearConstraintOfThisModel(
+    LinearConstraint linear_constraint) const {
+  // TODO(b/239810718): use << for LinearConstraint once it does not CHECK.
+  if (storage_.get() != linear_constraint.storage()) {
+    return util::InvalidArgumentErrorBuilder()
+           << "linear constraint with id " << linear_constraint.id()
+           << " is from a different model";
+  }
+  if (!has_linear_constraint(linear_constraint.typed_id())) {
+    return util::InvalidArgumentErrorBuilder()
+           << "linear constraint with id " << linear_constraint.id()
+           << " is not found in this model (it was probably deleted)";
+  }
+  return absl::OkStatus();
+}
+
 void Model::set_coefficient(const LinearConstraint constraint,
                             const Variable variable, const double value) {
   CheckModel(constraint.storage());
@@ -682,6 +983,174 @@ bool Model::is_coefficient_nonzero(const LinearConstraint constraint,
   return storage()->is_linear_constraint_coefficient_nonzero(
       constraint.typed_id(), variable.typed_id());
 }
+
+// ------------------------- Quadratic constraints -----------------------------
+
+void Model::DeleteQuadraticConstraint(const QuadraticConstraint constraint) {
+  CheckModel(constraint.storage());
+  storage()->DeleteAtomicConstraint(constraint.typed_id());
+}
+
+int64_t Model::num_quadratic_constraints() const {
+  return storage()->num_constraints<QuadraticConstraintId>();
+}
+
+int64_t Model::next_quadratic_constraint_id() const {
+  return storage()->next_constraint_id<QuadraticConstraintId>().value();
+}
+
+bool Model::has_quadratic_constraint(const int64_t id) const {
+  return has_quadratic_constraint(QuadraticConstraintId(id));
+}
+
+bool Model::has_quadratic_constraint(const QuadraticConstraintId id) const {
+  return storage()->has_constraint(id);
+}
+
+QuadraticConstraint Model::quadratic_constraint(const int64_t id) const {
+  return quadratic_constraint(QuadraticConstraintId(id));
+}
+
+QuadraticConstraint Model::quadratic_constraint(
+    const QuadraticConstraintId id) const {
+  CHECK(has_quadratic_constraint(id))
+      << "No quadratic constraint with id: " << id.value();
+  return QuadraticConstraint(storage(), id);
+}
+
+std::vector<QuadraticConstraint> Model::QuadraticConstraints() const {
+  return AtomicConstraints<QuadraticConstraint>(*storage());
+}
+
+std::vector<QuadraticConstraint> Model::SortedQuadraticConstraints() const {
+  return SortedAtomicConstraints<QuadraticConstraint>(*storage());
+}
+
+// --------------------------- SOS1 constraints --------------------------------
+
+void Model::DeleteSos1Constraint(const Sos1Constraint constraint) {
+  CheckModel(constraint.storage());
+  storage()->DeleteAtomicConstraint(constraint.typed_id());
+}
+
+int64_t Model::num_sos1_constraints() const {
+  return storage()->num_constraints<Sos1ConstraintId>();
+}
+
+int64_t Model::next_sos1_constraint_id() const {
+  return storage()->next_constraint_id<Sos1ConstraintId>().value();
+}
+
+bool Model::has_sos1_constraint(const int64_t id) const {
+  return has_sos1_constraint(Sos1ConstraintId(id));
+}
+
+bool Model::has_sos1_constraint(const Sos1ConstraintId id) const {
+  return storage()->has_constraint(id);
+}
+
+Sos1Constraint Model::sos1_constraint(const int64_t id) const {
+  return sos1_constraint(Sos1ConstraintId(id));
+}
+
+Sos1Constraint Model::sos1_constraint(const Sos1ConstraintId id) const {
+  CHECK(has_sos1_constraint(id))
+      << "No SOS1 constraint with id: " << id.value();
+  return Sos1Constraint(storage(), id);
+}
+
+std::vector<Sos1Constraint> Model::Sos1Constraints() const {
+  return AtomicConstraints<Sos1Constraint>(*storage());
+}
+
+std::vector<Sos1Constraint> Model::SortedSos1Constraints() const {
+  return SortedAtomicConstraints<Sos1Constraint>(*storage());
+}
+
+// --------------------------- SOS2 constraints --------------------------------
+
+void Model::DeleteSos2Constraint(const Sos2Constraint constraint) {
+  CheckModel(constraint.storage());
+  storage()->DeleteAtomicConstraint(constraint.typed_id());
+}
+
+int64_t Model::num_sos2_constraints() const {
+  return storage()->num_constraints<Sos2ConstraintId>();
+}
+
+int64_t Model::next_sos2_constraint_id() const {
+  return storage()->next_constraint_id<Sos2ConstraintId>().value();
+}
+
+bool Model::has_sos2_constraint(const int64_t id) const {
+  return has_sos2_constraint(Sos2ConstraintId(id));
+}
+
+bool Model::has_sos2_constraint(const Sos2ConstraintId id) const {
+  return storage()->has_constraint(id);
+}
+
+Sos2Constraint Model::sos2_constraint(const int64_t id) const {
+  return sos2_constraint(Sos2ConstraintId(id));
+}
+
+Sos2Constraint Model::sos2_constraint(const Sos2ConstraintId id) const {
+  CHECK(has_sos2_constraint(id))
+      << "No SOS2 constraint with id: " << id.value();
+  return Sos2Constraint(storage(), id);
+}
+
+std::vector<Sos2Constraint> Model::Sos2Constraints() const {
+  return AtomicConstraints<Sos2Constraint>(*storage());
+}
+
+std::vector<Sos2Constraint> Model::SortedSos2Constraints() const {
+  return SortedAtomicConstraints<Sos2Constraint>(*storage());
+}
+
+// --------------------------- Indicator constraints ---------------------------
+
+void Model::DeleteIndicatorConstraint(const IndicatorConstraint constraint) {
+  CheckModel(constraint.storage());
+  storage()->DeleteAtomicConstraint(constraint.typed_id());
+}
+
+int64_t Model::num_indicator_constraints() const {
+  return storage()->num_constraints<IndicatorConstraintId>();
+}
+
+int64_t Model::next_indicator_constraint_id() const {
+  return storage()->next_constraint_id<IndicatorConstraintId>().value();
+}
+
+bool Model::has_indicator_constraint(const int64_t id) const {
+  return has_indicator_constraint(IndicatorConstraintId(id));
+}
+
+bool Model::has_indicator_constraint(const IndicatorConstraintId id) const {
+  return storage()->has_constraint(id);
+}
+
+IndicatorConstraint Model::indicator_constraint(const int64_t id) const {
+  return indicator_constraint(IndicatorConstraintId(id));
+}
+
+IndicatorConstraint Model::indicator_constraint(
+    const IndicatorConstraintId id) const {
+  CHECK(has_indicator_constraint(id))
+      << "No indicator constraint with id: " << id.value();
+  return IndicatorConstraint(storage(), id);
+}
+
+std::vector<IndicatorConstraint> Model::IndicatorConstraints() const {
+  return AtomicConstraints<IndicatorConstraint>(*storage());
+}
+
+std::vector<IndicatorConstraint> Model::SortedIndicatorConstraints() const {
+  return SortedAtomicConstraints<IndicatorConstraint>(*storage());
+}
+
+// ------------------------------- Objective -----------------------------------
 
 void Model::Maximize(const double objective) {
   SetObjective(LinearExpression(objective), /*is_maximize=*/true);

@@ -53,8 +53,7 @@ class GlpkSolver : public SolverInterface {
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
       SolveInterrupter* interrupter) override;
-  absl::Status Update(const ModelUpdateProto& model_update) override;
-  bool CanUpdate(const ModelUpdateProto& model_update) override;
+  absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
 
  private:
   // The columns of the GPLK problem.
@@ -190,6 +189,12 @@ class GlpkSolver : public SolverInterface {
   absl::Status AddPrimalOrDualRay(
       const ModelSolveParametersProto& model_parameters,
       SolveResultProto& result);
+
+  // Returns an error if the current thread is no thread_id_.
+  absl::Status CheckCurrentThread();
+
+  // Id of the thread where GlpkSolver was called.
+  const std::thread::id thread_id_;
 
   glp_prob* const problem_;
 

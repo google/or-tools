@@ -144,7 +144,7 @@ absl::StatusOr<IncrementalSolver::UpdateResult> IncrementalSolver::Update() {
 
   OR_ASSIGN_OR_RETURN3(const bool did_update, solver_->Update(*model_update),
                        _ << "update failed");
-  RETURN_IF_ERROR(update_tracker_->Checkpoint());
+  RETURN_IF_ERROR(update_tracker_->AdvanceCheckpoint());
 
   if (did_update) {
     return UpdateResult(true, std::move(model_update));

@@ -19,6 +19,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/constraints/indicator/validator.h"
 #include "ortools/math_opt/constraints/quadratic/validator.h"
 #include "ortools/math_opt/constraints/sos/validator.h"
 #include "ortools/math_opt/core/model_summary.h"
@@ -192,27 +193,30 @@ absl::StatusOr<ModelSummary> ValidateModel(const ModelProto& model,
   ASSIGN_OR_RETURN(const auto model_summary,
                    ModelSummary::Create(model, check_names));
   RETURN_IF_ERROR(VariablesValid(model.variables()))
-      << "Model.variables are invalid.";
+      << "ModelProto.variables are invalid.";
   RETURN_IF_ERROR(ObjectiveValid(model.objective(), model_summary.variables))
-      << "Model.objective is invalid";
+      << "ModelProto.objective is invalid";
   RETURN_IF_ERROR(LinearConstraintsValid(model.linear_constraints()))
-      << "Model.linear_constraints are invalid";
+      << "ModelProto.linear_constraints are invalid";
   RETURN_IF_ERROR(SparseMatrixValid(model.linear_constraint_matrix()))
-      << "Model.linear_constraint_matrix invalid";
+      << "ModelProto.linear_constraint_matrix invalid";
   RETURN_IF_ERROR(SparseMatrixIdsAreKnown(model.linear_constraint_matrix(),
                                           model_summary.linear_constraints,
                                           model_summary.variables))
-      << "Model.linear_constraint_matrix ids are inconsistent";
+      << "ModelProto.linear_constraint_matrix ids are inconsistent";
 
   RETURN_IF_ERROR(ValidateConstraintMap(model.quadratic_constraints(),
                                         model_summary.variables))
-      << "Model.quadratic_constraints invalid";
+      << "ModelProto.quadratic_constraints invalid";
   RETURN_IF_ERROR(
       ValidateConstraintMap(model.sos1_constraints(), model_summary.variables))
-      << "Model.sos1_constraints invalid";
+      << "ModelProto.sos1_constraints invalid";
   RETURN_IF_ERROR(
       ValidateConstraintMap(model.sos2_constraints(), model_summary.variables))
-      << "Model.sos2_constraints invalid";
+      << "ModelProto.sos2_constraints invalid";
+  RETURN_IF_ERROR(ValidateConstraintMap(model.indicator_constraints(),
+                                        model_summary.variables))
+      << "ModelProto.indicator_constraints invalid";
 
   return model_summary;
 }
@@ -247,7 +251,7 @@ absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
       << "ModelUpdateProto.objective_update invalid";
   RETURN_IF_ERROR(
       SparseMatrixValid(model_update.linear_constraint_matrix_updates()))
-      << "Model.linear_constraint_matrix_updates invalid";
+      << "ModelUpdateProto.linear_constraint_matrix_updates invalid";
 
   RETURN_IF_ERROR(LinearConstraintMatrixIdsValidForUpdate(
       model_update.linear_constraint_matrix_updates(),
@@ -267,6 +271,11 @@ absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
       model_update.sos2_constraint_updates().new_constraints(),
       model_summary.variables))
       << "ModelUpdateProto.sos2_constraint_updates.new_constraints invalid";
+  RETURN_IF_ERROR(ValidateConstraintMap(
+      model_update.indicator_constraint_updates().new_constraints(),
+      model_summary.variables))
+      << "ModelUpdateProto.indicator_constraint_updates.new_constraints "
+         "invalid";
 
   return absl::OkStatus();
 }

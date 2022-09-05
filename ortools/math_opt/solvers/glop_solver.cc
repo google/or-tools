@@ -69,6 +69,9 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+constexpr SupportedProblemStructures kGlopSupportedStructures = {
+    .integer_variables = SupportType::kSupported};
+
 absl::string_view SafeName(const VariablesProto& variables, int index) {
   if (variables.names().empty()) {
     return {};
@@ -393,14 +396,6 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
     return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
   }
   return result;
-}
-
-bool GlopSolver::CanUpdate(const ModelUpdateProto& model_update) {
-  return model_update.objective_updates()
-             .quadratic_coefficients()
-             .row_ids()
-             .empty() &&
-         !HasQuadraticConstraintUpdates(model_update);
 }
 
 template <typename IndexType>
@@ -844,14 +839,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GlopSolver::New(
     const ModelProto& model, const InitArgs& init_args) {
-  if (!model.objective().quadratic_coefficients().row_ids().empty()) {
-    return absl::InvalidArgumentError(
-        "Glop does not support quadratic objectives");
-  }
-  if (!model.quadratic_constraints().empty()) {
-    return absl::InvalidArgumentError(
-        "Glop does not support quadratic constraints");
-  }
+  RETURN_IF_ERROR(ModelIsSupported(model, kGlopSupportedStructures, "Glop"));
   auto solver = absl::WrapUnique(new GlopSolver);
   // By default Glop CHECKs that bounds are always consistent (lb < ub); thus it
   // would fail if the initial model or later updates temporarily set inverted
@@ -872,7 +860,11 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GlopSolver::New(
   return solver;
 }
 
-absl::Status GlopSolver::Update(const ModelUpdateProto& model_update) {
+absl::StatusOr<bool> GlopSolver::Update(const ModelUpdateProto& model_update) {
+  if (!UpdateIsSupported(model_update, kGlopSupportedStructures)) {
+    return false;
+  }
+
   if (model_update.objective_updates().has_direction_update()) {
     linear_program_.SetMaximizationProblem(
         model_update.objective_updates().direction_update());
@@ -897,7 +889,7 @@ absl::Status GlopSolver::Update(const ModelUpdateProto& model_update) {
 
   linear_program_.CleanUp();
 
-  return absl::OkStatus();
+  return true;
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_GLOP, GlopSolver::New)

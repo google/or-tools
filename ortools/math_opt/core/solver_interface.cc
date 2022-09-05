@@ -27,6 +27,7 @@
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/port/proto_utils.h"
@@ -60,9 +61,12 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> AllSolversRegistry::Create(
     factory = gtl::FindOrNull(registered_solvers_, solver_type);
   }
   if (factory == nullptr) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Solver type: ", ProtoEnumToString(solver_type),
-                     " is not registered."));
+    std::string name = SolverTypeProto_Name(solver_type);
+    if (name.empty()) {
+      name = absl::StrCat("unknown(", static_cast<int>(solver_type), ")");
+    }
+    return util::InvalidArgumentErrorBuilder()
+           << "solver type " << name << " is not registered";
   }
   return (*factory)(model, init_args);
 }

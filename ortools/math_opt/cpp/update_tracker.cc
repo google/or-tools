@@ -48,12 +48,12 @@ UpdateTracker::ExportModelUpdate() {
   return storage->ExportModelUpdate(update_tracker_);
 }
 
-absl::Status UpdateTracker::Checkpoint() {
+absl::Status UpdateTracker::AdvanceCheckpoint() {
   const std::shared_ptr<ModelStorage> storage = storage_.lock();
   if (storage == nullptr) {
     return absl::InvalidArgumentError(internal::kModelIsDestroyed);
   }
-  storage->Checkpoint(update_tracker_);
+  storage->AdvanceCheckpoint(update_tracker_);
   return absl::OkStatus();
 }
 

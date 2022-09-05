@@ -31,7 +31,7 @@
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
-#include "ortools/math_opt/solution.pb.h"
+#include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -47,8 +47,7 @@ class CpSatSolver : public SolverInterface {
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
       SolveInterrupter* interrupter) override;
-  absl::Status Update(const ModelUpdateProto& model_update) override;
-  bool CanUpdate(const ModelUpdateProto& model_update) override;
+  absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
 
  private:
   CpSatSolver(MPModelProto cp_sat_model, std::vector<int64_t> variable_ids,
