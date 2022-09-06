@@ -32,6 +32,8 @@ PYBIND11_MODULE(min_cost_flow, m) {
       pybind11::vectorize(&SimpleMinCostFlow::AddArcWithCapacityAndUnitCost));
   smcf.def("set_node_supply", &SimpleMinCostFlow::SetNodeSupply, arg("node"),
            arg("supply"));
+  smcf.def("set_nodes_supply",
+           pybind11::vectorize(&SimpleMinCostFlow::SetNodeSupply));
   smcf.def("num_nodes", &SimpleMinCostFlow::NumNodes);
   smcf.def("num_arcs", &SimpleMinCostFlow::NumArcs);
   smcf.def("tail", &SimpleMinCostFlow::Tail, arg("arc"));
@@ -45,7 +47,8 @@ PYBIND11_MODULE(min_cost_flow, m) {
   smcf.def("optimal_cost", &SimpleMinCostFlow::OptimalCost);
   smcf.def("maximum_flow", &SimpleMinCostFlow::MaximumFlow);
   smcf.def("flow", &SimpleMinCostFlow::Flow, arg("arc"));
-
+  smcf.def("flows",
+           pybind11::vectorize(&SimpleMinCostFlow::Flow));
   pybind11::enum_<SimpleMinCostFlow::Status>(smcf, "Status")
       .value("BAD_COST_RANGE", MinCostFlowBase::Status::BAD_COST_RANGE)
       .value("BAD_RESULT", MinCostFlowBase::Status::BAD_RESULT)

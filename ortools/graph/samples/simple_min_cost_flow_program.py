@@ -43,11 +43,11 @@ def main():
 
     # [START constraints]
     # Add arcs, capacities and costs in bulk using numpy.
-    smcf.add_arcs_with_capacity_and_unit_cost(start_nodes, end_nodes, capacities, unit_costs)
+    all_arcs = smcf.add_arcs_with_capacity_and_unit_cost(
+        start_nodes, end_nodes, capacities, unit_costs)
 
-    # Add node supply.
-    for count, supply in enumerate(supplies):
-        smcf.set_node_supply(count, supply)
+    # Add supply for each nodes.
+    smcf.set_nodes_supply(np.arange(0, len(supplies)), supplies)
     # [END constraints]
 
     # [START solve]
@@ -60,14 +60,15 @@ def main():
         print('There was an issue with the min cost flow input.')
         print(f'Status: {status}')
         exit(1)
-    print('Minimum cost: ', smcf.optimal_cost())
+    print(f'Minimum cost: {smcf.optimal_cost()}')
     print('')
-    print(' Arc   Flow / Capacity  Cost')
-    for i in range(smcf.num_arcs()):
-        cost = smcf.flow(i) * smcf.unit_cost(i)
+    print(' Arc    Flow / Capacity Cost')
+    solution_flows = smcf.flows(all_arcs)
+    costs = solution_flows * unit_costs
+    for arc, flow, cost in zip(all_arcs, solution_flows, costs):
         print(
-            '%1s -> %1s    %3s   / %3s   %3s' %
-            (smcf.tail(i), smcf.head(i), smcf.flow(i), smcf.capacity(i), cost))
+            f'{smcf.tail(arc):1} -> {smcf.head(arc)}  {flow:3}  / {smcf.capacity(arc):3}       {cost}'
+        )
     # [END print_solution]
 
 
