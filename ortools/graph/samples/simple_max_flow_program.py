@@ -40,7 +40,7 @@ def main():
     # [START constraints]
     # Add arcs in bulk. 
     #   note: we could have used add_arc_with_capacity(start, end, capacity)
-    smf.add_arcs_with_capacity(start_nodes, end_nodes, capacities)
+    all_arcs = smf.add_arcs_with_capacity(start_nodes, end_nodes, capacities)
     # [END constraints]
 
     # [START solve]
@@ -55,10 +55,10 @@ def main():
         exit(1)
     print('Max flow:', smf.optimal_flow())
     print('')
-    print('  Arc    Flow / Capacity')
-    for i in range(smf.num_arcs()):
-        print('%1s -> %1s   %3s  / %3s' %
-              (smf.tail(i), smf.head(i), smf.flow(i), smf.capacity(i)))
+    print(' Arc    Flow / Capacity')
+    solution_flows = smf.flows(all_arcs)
+    for arc, flow, capacity in zip(all_arcs, solution_flows, capacities):
+        print(f'{smf.tail(arc)} / {smf.head(arc)}   {flow:3}  / {capacity:3}')
     print('Source side min-cut:', smf.get_source_side_min_cut())
     print('Sink side min-cut:', smf.get_sink_side_min_cut())
     # [END print_solution]

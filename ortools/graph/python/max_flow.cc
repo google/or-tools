@@ -32,6 +32,8 @@ PYBIND11_MODULE(max_flow, m) {
           pybind11::vectorize(&SimpleMaxFlow::AddArcWithCapacity));
   smf.def("set_arc_capacity", &SimpleMaxFlow::SetArcCapacity, arg("arc"),
           arg("capacity"));
+  smf.def("set_arcs_capacity",
+          pybind11::vectorize(&SimpleMaxFlow::SetArcCapacity));
   smf.def("num_nodes", &SimpleMaxFlow::NumNodes);
   smf.def("num_arcs", &SimpleMaxFlow::NumArcs);
   smf.def("tail", &SimpleMaxFlow::Tail, arg("arc"));
@@ -40,6 +42,7 @@ PYBIND11_MODULE(max_flow, m) {
   smf.def("solve", &SimpleMaxFlow::Solve, arg("source"), arg("sink"));
   smf.def("optimal_flow", &SimpleMaxFlow::OptimalFlow);
   smf.def("flow", &SimpleMaxFlow::Flow, arg("arc"));
+  smf.def("flows", pybind11::vectorize(&SimpleMaxFlow::Flow));
   smf.def("get_source_side_min_cut", [](SimpleMaxFlow* smf) {
     std::vector<NodeIndex> result;
     smf->GetSourceSideMinCut(&result);
