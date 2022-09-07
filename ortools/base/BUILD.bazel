@@ -140,6 +140,27 @@ cc_library(
 )
 
 cc_library(
+    name = "dump_vars",
+    hdrs = ["dump_vars.h"],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "dump_vars_test",
+    size = "small",
+    srcs = ["dump_vars_test.cc"],
+    deps = [
+        ":dump_vars",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "dynamic_library",
     hdrs = ["dynamic_library.h"],
     linkopts = select({
