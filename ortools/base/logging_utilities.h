@@ -19,7 +19,6 @@
 #include "absl/base/internal/sysinfo.h"  // for GetTID().
 #include "absl/base/macros.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/logging.h"
 
 namespace google {
 namespace logging_internal {

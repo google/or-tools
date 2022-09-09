@@ -21,9 +21,8 @@
 #include <string>
 
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/commandlineflags.h"
+#include "ortools/base/log.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/logging_utilities.h"
 #include "ortools/base/raw_logging.h"
 

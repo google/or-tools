@@ -31,52 +31,36 @@ config_setting(
 cc_library(
     name = "base",
     srcs = [
-        "commandlineflags.cc",
-        "logging.cc",
-        "logging_utilities.cc",
-        "raw_logging.cc",
         "version.cc",
-        "vlog_is_on.cc",
     ],
     hdrs = [
-        "basictypes.h",
-        "commandlineflags.h",
         "init_google.h",
-        "integral_types.h",
-        "log_severity.h",
-        "logging.h",
-        "logging_export.h",
         "logging_flags.h",
-        "logging_utilities.h",
-        "macros.h",
-        "raw_logging.h",
         "stl_logging.h",
         "version.h",
-        "vlog_is_on.h",
     ],
     copts = [
         "-DOR_TOOLS_MAJOR=9999",
         "-DOR_TOOLS_MINOR=0",
         "-DOR_TOOLS_PATCH=0",
     ],
-    defines = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["OR_TOOLS_EXPORTS"],  # For logging_export.h
-        "//conditions:default": [],
-    }),
     deps = [
+        ":basictypes",
+        ":check",
+        ":commandlineflags",
+        ":integral_types",
+        ":log",
+        ":logging",
+        ":logging_extensions",
+        ":macros",
+        ":sysinfo",
+        ":vlog",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
-        "@com_google_absl//absl/debugging:failure_signal_handler",
-        "@com_google_absl//absl/debugging:stacktrace",
-        "@com_google_absl//absl/debugging:symbolize",
-        "@com_google_absl//absl/flags:commandlineflag",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
     ],
 )
@@ -84,7 +68,6 @@ cc_library(
 cc_library(
     name = "accurate_sum",
     hdrs = ["accurate_sum.h"],
-    deps = [":base"],
 )
 
 cc_library(
@@ -94,6 +77,15 @@ cc_library(
         "adjustable_priority_queue-inl.h",
     ],
     deps = [":base"],
+)
+
+cc_library(
+    name = "basictypes",
+    hdrs = ["basictypes.h"],
+    deps = [
+        ":integral_types",
+        ":logging",
+    ],
 )
 
 cc_library(
@@ -111,9 +103,34 @@ cc_library(
 )
 
 cc_library(
+    name = "check",
+    hdrs = ["check.h"],
+    deps = [
+        ":log",
+        ":log_severity",
+        ":logging_export",
+    ],
+)
+
+cc_library(
     name = "cleanup",
     hdrs = ["cleanup.h"],
     deps = [":base"],
+)
+
+cc_library(
+    name = "commandlineflags",
+    srcs = [
+        "commandlineflags.cc",
+    ],
+    hdrs = ["commandlineflags.h"],
+    deps = [
+        ":logging",
+        ":logging_extensions",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+    ],
 )
 
 cc_library(
@@ -138,6 +155,14 @@ cc_library(
     name = "encodingutils",
     hdrs = ["encodingutils.h"],
     deps = [":base"],
+)
+
+cc_library(
+    name = "flags",
+    hdrs = ["flags.h"],
+    deps = [
+        "@com_google_absl//absl/flags:flag",
+    ],
 )
 
 cc_library(
@@ -185,6 +210,11 @@ cc_library(
 )
 
 cc_library(
+    name = "integral_types",
+    hdrs = ["integral_types.h"],
+)
+
+cc_library(
     name = "intops",
     hdrs = ["strong_int.h"],
     deps = [":int_type"],
@@ -207,9 +237,78 @@ cc_library(
 )
 
 cc_library(
+    name = "log",
+    srcs = [
+        "log.cc",
+        "logging_utilities.cc",
+        "logging_utilities.h",
+        "raw_logging.cc",
+        "raw_logging.h",
+        "vlog_is_on.cc",
+    ],
+    hdrs = [
+        "check.h",
+        "die_if_null.h",
+        "log.h",
+    ],
+    deps = [
+        ":flags",
+        ":integral_types",
+        ":log_severity",
+        ":logging_export",
+        ":logging_extensions",
+        ":macros",
+        ":vlog",
+        "@com_google_absl//absl/debugging:failure_signal_handler",
+        "@com_google_absl//absl/debugging:stacktrace",
+        "@com_google_absl//absl/debugging:symbolize",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_library(
+    name = "log_severity",
+    hdrs = ["log_severity.h"],
+    deps = [
+        ":logging_export",
+    ],
+)
+
+cc_library(
+    name = "logging",
+    hdrs = ["logging.h"],
+    deps = [
+        ":check",
+        ":log",
+        ":log_severity",
+        ":logging_extensions",
+        ":vlog",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "logging_export",
+    hdrs = ["logging_export.h"],
+    defines = select({
+        "on_linux": [],
+        "on_macos": [],
+        "on_windows": ["OR_TOOLS_EXPORTS"],  # For logging_export.h
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
     name = "logging_extensions",
     hdrs = ["logging_extensions.h"],
-    deps = [":base"],
+)
+
+cc_library(
+    name = "macros",
+    hdrs = ["macros.h"],
 )
 
 cc_library(
@@ -342,7 +441,7 @@ cc_library(
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
     deps = [
-        ":base",
+        ":basictypes",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -362,7 +461,9 @@ cc_library(
     srcs = ["timer.cc"],
     hdrs = ["timer.h"],
     deps = [
-        ":base",
+        ":basictypes",
+        ":check",
+        ":macros",
         "@com_google_absl//absl/time",
     ],
 )
@@ -370,4 +471,13 @@ cc_library(
 cc_library(
     name = "typeid",
     hdrs = ["typeid.h"],
+)
+
+cc_library(
+    name = "vlog",
+    hdrs = ["vlog_is_on.h"],
+    deps = [
+        ":integral_types",
+        ":log_severity",
+    ],
 )

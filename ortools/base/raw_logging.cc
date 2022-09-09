@@ -21,8 +21,9 @@
 
 #include "absl/base/macros.h"
 #include "absl/debugging/stacktrace.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/flags.h"
+#include "ortools/base/log.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/logging_utilities.h"
 
 #if !defined(_MSC_VER)

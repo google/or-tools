@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/base/logging.h"
+#include "ortools/base/log.h"
 
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
 
@@ -47,7 +47,6 @@
 
 #include "absl/debugging/stacktrace.h"
 #include "absl/time/time.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging_utilities.h"
 #include "ortools/base/raw_logging.h"
 

@@ -11,15 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_LOGGING_H_
-#define OR_TOOLS_BASE_LOGGING_H_
+#ifndef OR_TOOLS_BASE_DIE_IF_NULL_H_
+#define OR_TOOLS_BASE_DIE_IF_NULL_H_
 
-#include "absl/memory/memory.h"
-#include "absl/status/status.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
-#include "ortools/base/check.h"
 #include "ortools/base/log.h"
-#include "ortools/base/log_severity.h"
 
-#endif  // OR_TOOLS_BASE_LOGGING_H_
+#endif  // OR_TOOLS_BASE_DIE_IF_NULL_H_

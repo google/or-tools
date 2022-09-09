@@ -14,7 +14,8 @@
 #ifndef OR_TOOLS_BASE_BITMAP_H_
 #define OR_TOOLS_BASE_BITMAP_H_
 
-#include <string.h>
+#include <cassert>
+#include <cstring>
 
 #include "ortools/base/basictypes.h"
 

@@ -15,6 +15,7 @@
 #define OR_TOOLS_BASE_RAW_LOGGING_H_
 
 #include "ortools/base/log_severity.h"
+#include "ortools/base/logging_export.h"
 #include "ortools/base/vlog_is_on.h"
 
 namespace google {
