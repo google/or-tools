@@ -26,6 +26,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"

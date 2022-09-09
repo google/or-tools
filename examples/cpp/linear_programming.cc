@@ -14,6 +14,8 @@
 // Linear programming example that shows how to use the API.
 
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/strings/match.h"

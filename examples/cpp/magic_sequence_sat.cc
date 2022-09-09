@@ -18,6 +18,9 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <numeric>
+#include <string>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"

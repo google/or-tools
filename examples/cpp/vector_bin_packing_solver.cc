@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <numeric>
+#include <string>
 
 #include "absl/flags/flag.h"
 #include "absl/status/status.h"
@@ -21,6 +22,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"

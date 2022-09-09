@@ -27,6 +27,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"

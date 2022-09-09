@@ -13,7 +13,6 @@
 # limitations under the License.
 """Simple unit tests for python/linear_solver.swig. Not exhaustive."""
 
-
 import unittest
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver import pywraplp

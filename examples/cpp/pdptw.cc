@@ -36,8 +36,11 @@
 // Reads data in the format defined by Li & Lim
 // (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -48,6 +51,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"

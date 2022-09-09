@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "absl/flags/parse.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {

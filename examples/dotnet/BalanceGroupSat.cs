@@ -75,7 +75,7 @@ public class BalanceGroupSat
             model.AddLinearConstraint(LinearExpr.Sum(itemsInGroup), numItemsPerGroup, numItemsPerGroup);
         }
 
-        //# One item must belong to exactly one group.
+        // # One item must belong to exactly one group.
         foreach (var item in allItems)
         {
             var groupsForItem = allGroups.Select(x => itemInGroup[item, x]).ToArray();

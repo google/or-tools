@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for python/constraint_solver.swig. Not exhaustive."""
 
-
 import sys
 import unittest
 from ortools.constraint_solver import pywrapcp

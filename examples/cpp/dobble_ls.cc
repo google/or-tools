@@ -32,6 +32,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <random>
+#include <utility>
 #include <vector>
 
 #include "absl/random/random.h"

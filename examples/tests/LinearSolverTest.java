@@ -334,8 +334,8 @@ public final class LinearSolverTest {
     final MPSolver solver = new MPSolver("Solver", problemType);
     assertNotNull(solver);
 
-    final MPVariable x1 = solver.makeNumVar(1.0, 10.0, "x1");
-    final MPVariable x2 = solver.makeNumVar(1.0, 10.0, "x2");
+    final MPVariable x1 = solver.makeIntVar(1.0, 10.0, "x1");
+    final MPVariable x2 = solver.makeIntVar(1.0, 10.0, "x2");
 
     final MPConstraint ct = solver.makeConstraint(0, 4.0);
     ct.setCoefficient(x1, 1);

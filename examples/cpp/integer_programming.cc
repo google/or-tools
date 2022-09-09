@@ -13,6 +13,9 @@
 
 // Integer programming example that shows how to use the API.
 
+#include <string>
+#include <vector>
+
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"

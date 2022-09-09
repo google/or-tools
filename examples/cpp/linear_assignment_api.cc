@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <cstdlib>
+#include <vector>
 
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"

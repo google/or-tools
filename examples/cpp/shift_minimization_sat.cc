@@ -26,6 +26,7 @@
 //   - The objective it to minimize the number of active workers, while
 //     performing all the jobs.
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>

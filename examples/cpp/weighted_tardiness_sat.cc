@@ -13,6 +13,7 @@
 
 #include <math.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <numeric>
 #include <string>

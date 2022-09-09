@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/memory/memory.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -31,10 +30,10 @@
 #include "examples/cpp/sat_cnf_reader.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/file.h"
+#include "ortools/base/flags.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/logging_flags.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -335,7 +334,7 @@ int Run() {
     }
     if (result == SatSolver::LIMIT_REACHED) {
       if (absl::GetFlag(FLAGS_qmaxsat)) {
-        solver = absl::make_unique<SatSolver>();
+        solver = std::make_unique<SatSolver>();
         solver->SetParameters(parameters);
         CHECK(LoadBooleanProblem(problem, solver.get()));
         result = SolveWithCardinalityEncoding(STDOUT_LOG, problem, solver.get(),

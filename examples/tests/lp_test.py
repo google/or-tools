@@ -169,13 +169,19 @@ class PyWrapLpTest(unittest.TestCase):
                  (i, constraint.dual_value(), activities[constraint.index()])))
 
     def testApi(self):
+        print('testApi', flush=True)
         all_names_and_problem_types = (list(
             linear_solver_pb2.MPModelRequest.SolverType.items()))
         for name, problem_type in all_names_and_problem_types:
             with self.subTest(f'{name}: {problem_type}'):
+                print(f'######## {name}:{problem_type} #######', flush=True)
                 if not pywraplp.Solver.SupportsProblemType(problem_type):
                     continue
                 if name.startswith('GUROBI'):
+                    continue
+                if name.startswith('KNAPSACK'):
+                    continue
+                if not name.startswith('SCIP'):
                     continue
                 if name.endswith('LINEAR_PROGRAMMING'):
                     print(('\n------ Linear programming example with %s ------' %
@@ -199,7 +205,7 @@ class PyWrapLpTest(unittest.TestCase):
                     print('ERROR: %s unsupported' % name)
 
     def testSetHint(self):
-        print('testSetHint')
+        print('testSetHint', flush=True)
         solver = pywraplp.Solver('RunBooleanExampleCppStyle',
                                  pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
         infinity = solver.infinity()
@@ -223,7 +229,7 @@ class PyWrapLpTest(unittest.TestCase):
         self.assertEqual(1, len(solver.constraints()))
 
     def testBopInfeasible(self):
-        print('testBopInfeasible')
+        print('testBopInfeasible', flush=True)
         solver = pywraplp.Solver('test', pywraplp.Solver.BOP_INTEGER_PROGRAMMING)
         solver.EnableOutput()
 
@@ -234,12 +240,12 @@ class PyWrapLpTest(unittest.TestCase):
         print(result_status) # outputs: 0
 
     def testLoadSolutionFromProto(self):
-        print('testLoadSolutionFromProto')
+        print('testLoadSolutionFromProto', flush=True)
         solver = pywraplp.Solver('', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
         solver.LoadSolutionFromProto(linear_solver_pb2.MPSolutionResponse())
 
     def testSolveFromProto(self):
-        print('testSolveFromProto')
+        print('testSolveFromProto', flush=True)
         request_str = '''
             model {
                 maximize: false
@@ -309,6 +315,7 @@ class PyWrapLpTest(unittest.TestCase):
 
     def testExportToMps(self):
         """Test MPS export."""
+        print('testExportToMps', flush=True)
         solver = pywraplp.Solver('ExportMps',
                                  pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
         infinity = solver.infinity()

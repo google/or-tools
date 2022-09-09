@@ -15,6 +15,7 @@
 #define OR_TOOLS_EXAMPLES_COURSE_SCHEDULING_H_
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"

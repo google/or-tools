@@ -43,6 +43,9 @@
 // We also introduces a variable at_home[d][i] which is true if team i
 // plays any opponent at home on day d.
 
+#include <string>
+#include <vector>
+
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
