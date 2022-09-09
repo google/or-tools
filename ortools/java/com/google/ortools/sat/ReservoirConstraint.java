@@ -37,7 +37,7 @@ public class ReservoirConstraint extends Constraint {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
         model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
-    reservoir.addLevelChanges(levelChange);
+    reservoir.addLevelChanges(model.getLinearExpressionProtoBuilderFromLong(levelChange));
     reservoir.addActiveLiterals(model.trueLiteral().getIndex());
     return this;
   }
@@ -50,7 +50,7 @@ public class ReservoirConstraint extends Constraint {
   public ReservoirConstraint addEvent(long time, long levelChange) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(model.getLinearExpressionProtoBuilderFromLong(time));
-    reservoir.addLevelChanges(levelChange);
+    reservoir.addLevelChanges(model.getLinearExpressionProtoBuilderFromLong(levelChange));
     reservoir.addActiveLiterals(model.trueLiteral().getIndex());
     return this;
   }
@@ -65,7 +65,7 @@ public class ReservoirConstraint extends Constraint {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
         model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
-    reservoir.addLevelChanges(levelChange);
+    reservoir.addLevelChanges(model.getLinearExpressionProtoBuilderFromLong(levelChange));
     reservoir.addActiveLiterals(isActive.getIndex());
     return this;
   }
@@ -78,7 +78,7 @@ public class ReservoirConstraint extends Constraint {
   public ReservoirConstraint addOptionalEvent(long time, long levelChange, Literal isActive) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(model.getLinearExpressionProtoBuilderFromLong(time));
-    reservoir.addLevelChanges(levelChange);
+    reservoir.addLevelChanges(model.getLinearExpressionProtoBuilderFromLong(levelChange));
     reservoir.addActiveLiterals(isActive.getIndex());
     return this;
   }
