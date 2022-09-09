@@ -266,6 +266,15 @@ std::string ValidateAffineExpression(const CpModelProto& model,
   return ValidateLinearExpression(model, expr);
 }
 
+std::string ValidateConstantAffineExpression(
+    const CpModelProto& model, const LinearExpressionProto& expr) {
+  if (!expr.vars().empty()) {
+    return absl::StrCat("expression must be constant: ",
+                        ProtobufShortDebugString(expr));
+  }
+  return ValidateLinearExpression(model, expr);
+}
+
 std::string ValidateLinearConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
   if (!DomainInProtoIsValid(ct.linear())) {
@@ -666,6 +675,9 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   for (const LinearExpressionProto& expr : ct.reservoir().time_exprs()) {
     RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
   }
+  for (const LinearExpressionProto& expr : ct.reservoir().level_changes()) {
+    RETURN_IF_NOT_EMPTY(ValidateConstantAffineExpression(model, expr));
+  }
   if (ct.reservoir().min_level() > 0) {
     return absl::StrCat(
         "The min level of a reservoir must be <= 0. Please use fixed events to "
@@ -680,13 +692,11 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   }
 
   int64_t sum_abs = 0;
-  for (const int64_t demand : ct.reservoir().level_changes()) {
+  for (const LinearExpressionProto& demand : ct.reservoir().level_changes()) {
     // We test for min int64_t before the abs().
-    if (demand == std::numeric_limits<int64_t>::min()) {
-      return "Possible integer overflow in constraint: " +
-             ProtobufDebugString(ct);
-    }
-    sum_abs = CapAdd(sum_abs, std::abs(demand));
+    const int64_t demand_min = MinOfExpression(model, demand);
+    const int64_t demand_max = MaxOfExpression(model, demand);
+    sum_abs = CapAdd(sum_abs, std::max(CapAbs(demand_min), CapAbs(demand_max)));
     if (sum_abs == std::numeric_limits<int64_t>::max()) {
       return "Possible integer overflow in constraint: " +
              ProtobufDebugString(ct);
@@ -1496,7 +1506,9 @@ class ConstraintChecker {
       const int64_t time = LinearExpressionValue(ct.reservoir().time_exprs(i));
       if (!has_active_variables ||
           Value(ct.reservoir().active_literals(i)) == 1) {
-        deltas[time] += ct.reservoir().level_changes(i);
+        const int64_t level =
+            LinearExpressionValue(ct.reservoir().level_changes(i));
+        deltas[time] += level;
       }
     }
     int64_t current_level = 0;

@@ -425,6 +425,7 @@ void MaxBoundedSubsetSum::Add(int64_t value) {
       if (s <= bound_) {
         sums_.push_back(s);
         current_max_ = std::max(current_max_, s);
+        if (current_max_ == bound_) return;  // Abort
       }
     }
     return;
@@ -445,6 +446,73 @@ void MaxBoundedSubsetSum::Add(int64_t value) {
       if (expanded_sums_[i]) {
         expanded_sums_[i + value] = true;
         current_max_ = std::max(current_max_, i + value);
+      }
+    }
+    return;
+  }
+
+  // Abort.
+  current_max_ = bound_;
+}
+
+void MaxBoundedSubsetSum::AddChoices(absl::Span<const int64_t> choices) {
+  if (DEBUG_MODE) {
+    for (const int64_t c : choices) {
+      DCHECK_GE(c, 0);
+    }
+  }
+
+  // The max is already reachable or we aborted.
+  if (current_max_ == bound_) return;
+
+  // Filter out zero and values greater than bound_.
+  filtered_values_.clear();
+  for (const int64_t c : choices) {
+    if (c == 0 || c > bound_) continue;
+    filtered_values_.push_back(c);
+  }
+  if (filtered_values_.empty()) return;
+  if (filtered_values_.size() == 1) {
+    Add(filtered_values_[0]);
+    return;
+  }
+
+  // Mode 1: vector of all possible sums (with duplicates).
+  if (!sums_.empty() && sums_.size() <= kMaxComplexityPerAdd) {
+    const int old_size = sums_.size();
+    for (int i = 0; i < old_size; ++i) {
+      for (const int64_t value : filtered_values_) {
+        const int64_t s = sums_[i] + value;
+        if (s <= bound_) {
+          sums_.push_back(s);
+          current_max_ = std::max(current_max_, s);
+          if (current_max_ == bound_) return;  // Abort
+        }
+      }
+    }
+    return;
+  }
+
+  // Mode 2: bitset of all possible sums.
+  if (bound_ <= kMaxComplexityPerAdd) {
+    if (!sums_.empty()) {
+      expanded_sums_.assign(bound_ + 1, false);
+      for (const int64_t s : sums_) {
+        expanded_sums_[s] = true;
+      }
+      sums_.clear();
+    }
+
+    // The reverse order is important to not add the current value twice.
+    for (int64_t i = bound_ - 1; i >= 0; --i) {
+      if (expanded_sums_[i]) {
+        for (const int64_t value : filtered_values_) {
+          if (i + value <= bound_) {
+            expanded_sums_[i + value] = true;
+            current_max_ = std::max(current_max_, i + value);
+            if (current_max_ == bound_) return;  // Abort
+          }
+        }
       }
     }
     return;

@@ -111,7 +111,8 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
 
   int num_positives = 0;
   int num_negatives = 0;
-  for (const int64_t demand : reservoir.level_changes()) {
+  for (const LinearExpressionProto& demand_expr : reservoir.level_changes()) {
+    const int64_t demand = context->FixedValue(demand_expr);
     if (demand > 0) {
       num_positives++;
     } else if (demand < 0) {
@@ -168,7 +169,7 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
         const auto prec_it = precedence_cache.find({j, i});
         CHECK(prec_it != precedence_cache.end());
         const int prec_lit = prec_it->second;
-        const int64_t demand = reservoir.level_changes(j);
+        const int64_t demand = context->FixedValue(reservoir.level_changes(j));
         if (RefIsPositive(prec_lit)) {
           level->mutable_linear()->add_vars(prec_lit);
           level->mutable_linear()->add_coeffs(demand);
@@ -180,7 +181,7 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
       }
 
       // Accounts for own demand in the domain of the sum.
-      const int64_t demand_i = reservoir.level_changes(i);
+      const int64_t demand_i = context->FixedValue(reservoir.level_changes(i));
       level->mutable_linear()->add_domain(
           CapAdd(CapSub(reservoir.min_level(), demand_i), offset));
       level->mutable_linear()->add_domain(
@@ -193,7 +194,7 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
         context->working_model->add_constraints()->mutable_linear();
     for (int i = 0; i < num_events; ++i) {
       sum->add_vars(is_active_literal(i));
-      sum->add_coeffs(reservoir.level_changes(i));
+      sum->add_coeffs(context->FixedValue(reservoir.level_changes(i)));
     }
     sum->add_domain(reservoir.min_level());
     sum->add_domain(reservoir.max_level());
@@ -1663,11 +1664,13 @@ void ExpandSomeLinearOfSizeTwo(ConstraintProto* ct, PresolveContext* context) {
 
   const int64_t coeff1 = arg.coeffs(0);
   const int64_t coeff2 = arg.coeffs(1);
-
   const Domain reachable_rhs_superset =
-      context->DomainOf(var1).MultiplicationBy(coeff1).AdditionWith(
-          context->DomainOf(var2).MultiplicationBy(coeff2));
-
+      context->DomainOf(var1)
+          .MultiplicationBy(coeff1)
+          .RelaxIfTooComplex()
+          .AdditionWith(context->DomainOf(var2)
+                            .MultiplicationBy(coeff2)
+                            .RelaxIfTooComplex());
   const Domain infeasible_reachable_values =
       reachable_rhs_superset.IntersectionWith(
           ReadDomainFromProto(arg).Complement());
@@ -1739,6 +1742,79 @@ void ExpandSomeLinearOfSizeTwo(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
+// Note that we used to do that at loading time, but we prefer to do that as
+// part of the presolve so that all variables are available for sharing between
+// subworkers and also are accessible by the linear relaxation.
+//
+// TODO(user): Note that currently both encoding introduce extra solutions
+// if the constraint has some enforcement literal(). We can either fix this by
+// supporting enumeration on a subset of variable. Or add extra constraint to
+// fix all new Boolean to false if the initial constraint is not enforced.
+void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
+                                   PresolveContext* context) {
+  // TODO(user): We treat the linear of size 1 differently because we need them
+  // as is to recognize value encoding. Try to still creates needed Boolean now
+  // so that we can share more between the different workers. Or revisit how
+  // linear1 are propagated.
+  if (ct->linear().domain().size() <= 2) return;
+  if (ct->linear().vars().size() == 1) return;
+
+  const SatParameters& params = context->params();
+  if (params.encode_complex_linear_constraint_with_integer()) {
+    // Integer encoding.
+    //
+    // Here we add a slack with domain equal to rhs and transform
+    // expr \in rhs to expr - slack = 0
+    const Domain rhs = ReadDomainFromProto(ct->linear());
+    const int slack = context->NewIntVar(rhs);
+    ct->mutable_linear()->add_vars(slack);
+    ct->mutable_linear()->add_coeffs(-1);
+    ct->mutable_linear()->clear_domain();
+    ct->mutable_linear()->add_domain(0);
+    ct->mutable_linear()->add_domain(0);
+  } else {
+    // Boolean encoding.
+    int single_bool;
+    BoolArgumentProto* clause = nullptr;
+    if (ct->enforcement_literal().empty() && ct->linear().domain_size() == 4) {
+      // We cover the special case of no enforcement and two choices by creating
+      // a single Boolean.
+      single_bool = context->NewBoolVar();
+    } else {
+      clause = context->working_model->add_constraints()->mutable_bool_or();
+      for (const int ref : ct->enforcement_literal()) {
+        clause->add_literals(NegatedRef(ref));
+      }
+    }
+    ct->mutable_enforcement_literal()->Clear();
+    for (int i = 0; i < ct->linear().domain_size(); i += 2) {
+      const int64_t lb = ct->linear().domain(i);
+      const int64_t ub = ct->linear().domain(i + 1);
+
+      int subdomain_literal;
+      if (clause != nullptr) {
+        subdomain_literal = context->NewBoolVar();
+        clause->add_literals(subdomain_literal);
+      } else {
+        subdomain_literal = i == 0 ? single_bool : NegatedRef(single_bool);
+      }
+
+      // Create a new constraint which is a copy of the original, but with a
+      // simple sub-domain and enforcement literal.
+      ConstraintProto* new_ct = context->working_model->add_constraints();
+      *new_ct = *ct;
+      new_ct->add_enforcement_literal(subdomain_literal);
+      FillDomainInProto(Domain(lb, ub), new_ct->mutable_linear());
+    }
+    ct->Clear();
+  }
+
+  context->UpdateRuleStats("linear: expanded complex rhs");
+  context->InitializeNewDomains();
+  context->UpdateNewConstraintsVariableUsage();
+  context->UpdateConstraintVariableUsage(c);
+}
+
 }  // namespace
 
 void ExpandCpModel(PresolveContext* context) {
@@ -1756,29 +1832,52 @@ void ExpandCpModel(PresolveContext* context) {
   context->ClearPrecedenceCache();
 
   // First pass: we look at constraints that may fully encode variables.
-  for (int i = 0; i < context->working_model->constraints_size(); ++i) {
-    ConstraintProto* const ct = context->working_model->mutable_constraints(i);
+  for (int c = 0; c < context->working_model->constraints_size(); ++c) {
+    ConstraintProto* const ct = context->working_model->mutable_constraints(c);
     bool skip = false;
     switch (ct->constraint_case()) {
-      case ConstraintProto::ConstraintCase::kReservoir:
-        ExpandReservoir(ct, context);
+      case ConstraintProto::kLinear:
+        // If we only do expansion, we do that as part of the main loop.
+        // This way we don't need to call FinalExpansionForLinearConstraint().
+        if (ct->linear().domain().size() > 2 &&
+            !context->params().cp_model_presolve()) {
+          ExpandComplexLinearConstraint(c, ct, context);
+        }
         break;
-      case ConstraintProto::ConstraintCase::kIntMod:
+      case ConstraintProto::kReservoir:
+        if (context->params().expand_reservoir_constraints()) {
+          for (const LinearExpressionProto& demand_expr :
+               ct->reservoir().level_changes()) {
+            if (!context->IsFixed(demand_expr)) {
+              skip = true;
+              break;
+            }
+          }
+          if (skip) {
+            context->UpdateRuleStats(
+                "reservoir: expansion is not supported with  variable level "
+                "changes");
+          } else {
+            ExpandReservoir(ct, context);
+          }
+        }
+        break;
+      case ConstraintProto::kIntMod:
         ExpandIntMod(ct, context);
         break;
-      case ConstraintProto::ConstraintCase::kIntProd:
+      case ConstraintProto::kIntProd:
         ExpandIntProd(ct, context);
         break;
-      case ConstraintProto::ConstraintCase::kElement:
+      case ConstraintProto::kElement:
         ExpandElement(ct, context);
         break;
-      case ConstraintProto::ConstraintCase::kInverse:
+      case ConstraintProto::kInverse:
         ExpandInverse(ct, context);
         break;
-      case ConstraintProto::ConstraintCase::kAutomaton:
+      case ConstraintProto::kAutomaton:
         ExpandAutomaton(ct, context);
         break;
-      case ConstraintProto::ConstraintCase::kTable:
+      case ConstraintProto::kTable:
         if (ct->table().negated()) {
           ExpandNegativeTable(ct, context);
         } else {
@@ -1794,7 +1893,7 @@ void ExpandCpModel(PresolveContext* context) {
     // Update variable-constraint graph.
     context->UpdateNewConstraintsVariableUsage();
     if (ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
-      context->UpdateConstraintVariableUsage(i);
+      context->UpdateConstraintVariableUsage(c);
     }
 
     // Early exit if the model is unsat.
@@ -1811,11 +1910,11 @@ void ExpandCpModel(PresolveContext* context) {
     ConstraintProto* const ct = context->working_model->mutable_constraints(i);
     bool skip = false;
     switch (ct->constraint_case()) {
-      case ConstraintProto::ConstraintCase::kAllDiff:
+      case ConstraintProto::kAllDiff:
         ExpandAllDiff(context->params().expand_alldiff_constraints(), ct,
                       context);
         break;
-      case ConstraintProto::ConstraintCase::kLinear:
+      case ConstraintProto::kLinear:
         ExpandSomeLinearOfSizeTwo(ct, context);
         break;
       default:
@@ -1854,6 +1953,23 @@ void ExpandCpModel(PresolveContext* context) {
   }
 
   context->NotifyThatModelIsExpanded();
+}
+
+void FinalExpansionForLinearConstraint(PresolveContext* context) {
+  if (context->params().disable_constraint_expansion()) return;
+  if (context->ModelIsUnsat()) return;
+  for (int c = 0; c < context->working_model->constraints_size(); ++c) {
+    ConstraintProto* const ct = context->working_model->mutable_constraints(c);
+    switch (ct->constraint_case()) {
+      case ConstraintProto::kLinear:
+        if (ct->linear().domain().size() > 2) {
+          ExpandComplexLinearConstraint(c, ct, context);
+        }
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 }  // namespace sat

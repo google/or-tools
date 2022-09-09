@@ -206,6 +206,9 @@ class MaxBoundedSubsetSum {
   // Add a value to the base set for which subset sums will be taken.
   void Add(int64_t value);
 
+  // Add a choice of values to the base set for which subset sums will be taken.
+  void AddChoices(absl::Span<const int64_t> choices);
+
   // Returns an upper bound (inclusive) on the maximum sum <= bound_.
   // This might return bound_ if we aborted the computation.
   int64_t CurrentMax() const { return current_max_; }
@@ -219,6 +222,7 @@ class MaxBoundedSubsetSum {
   int64_t current_max_;
   std::vector<int64_t> sums_;
   std::vector<bool> expanded_sums_;
+  std::vector<int64_t> filtered_values_;
 };
 
 // Use Dynamic programming to solve a single knapsack. This is used by the

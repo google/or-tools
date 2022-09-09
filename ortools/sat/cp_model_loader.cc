@@ -51,6 +51,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
+#include "ortools/sat/timetable.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -1230,6 +1231,27 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   m->Add(Cumulative(intervals, demands, capacity));
 }
 
+void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  const std::vector<AffineExpression> times =
+      mapping->Affines(ct.reservoir().time_exprs());
+  const std::vector<AffineExpression> level_changes =
+      mapping->Affines(ct.reservoir().level_changes());
+  std::vector<Literal> presences;
+  const int size = ct.reservoir().time_exprs().size();
+  for (int i = 0; i < size; ++i) {
+    if (!ct.reservoir().active_literals().empty()) {
+      presences.push_back(mapping->Literal(ct.reservoir().active_literals(i)));
+    } else {
+      presences.push_back(encoder->GetTrueLiteral());
+    }
+  }
+  AddReservoirConstraint(times, level_changes, presences,
+                         ct.reservoir().min_level(), ct.reservoir().max_level(),
+                         m);
+}
+
 void LoadCircuitConstraint(const ConstraintProto& ct, Model* m) {
   const auto& circuit = ct.circuit();
   if (circuit.tails().empty()) return;
@@ -1303,6 +1325,9 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kCumulative:
       LoadCumulativeConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintProto::kReservoir:
+      LoadReservoirConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kCircuit:
       LoadCircuitConstraint(ct, m);

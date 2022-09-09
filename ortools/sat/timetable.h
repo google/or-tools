@@ -35,7 +35,7 @@ namespace sat {
 // This instantiate one or more ReservoirTimeTabling class to perform the
 // propagation.
 void AddReservoirConstraint(std::vector<AffineExpression> times,
-                            std::vector<IntegerValue> deltas,
+                            std::vector<AffineExpression> deltas,
                             std::vector<Literal> presences, int64_t min_level,
                             int64_t max_level, Model* model);
 
@@ -49,7 +49,7 @@ void AddReservoirConstraint(std::vector<AffineExpression> times,
 class ReservoirTimeTabling : public PropagatorInterface {
  public:
   ReservoirTimeTabling(const std::vector<AffineExpression>& times,
-                       const std::vector<IntegerValue>& deltas,
+                       const std::vector<AffineExpression>& deltas,
                        const std::vector<Literal>& presences,
                        IntegerValue capacity, Model* model);
 
@@ -88,7 +88,7 @@ class ReservoirTimeTabling : public PropagatorInterface {
 
   // Input.
   std::vector<AffineExpression> times_;
-  std::vector<IntegerValue> deltas_;
+  std::vector<AffineExpression> deltas_;
   std::vector<Literal> presences_;
   IntegerValue capacity_;
 

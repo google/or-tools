@@ -324,7 +324,7 @@ public class ReservoirConstraint : Constraint
     {
         ReservoirConstraintProto res = Proto.Reservoir;
         res.TimeExprs.Add(cp_model_.GetLinearExpressionProto(cp_model_.GetLinearExpr(time)));
-        res.LevelChanges.Add(Convert.ToInt64(level_change));
+        res.LevelChanges.Add(cp_model_.GetLinearExpressionProto(cp_model_.GetLinearExpr(level_change)));
         res.ActiveLiterals.Add(cp_model_.TrueLiteral().GetIndex());
         return this;
     }
@@ -343,7 +343,7 @@ public class ReservoirConstraint : Constraint
     {
         ReservoirConstraintProto res = Proto.Reservoir;
         res.TimeExprs.Add(cp_model_.GetLinearExpressionProto(cp_model_.GetLinearExpr(time)));
-        res.LevelChanges.Add(Convert.ToInt64(level_change));
+        res.LevelChanges.Add(cp_model_.GetLinearExpressionProto(cp_model_.GetLinearExpr(level_change)));
         res.ActiveLiterals.Add(literal.GetIndex());
         return this;
     }

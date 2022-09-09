@@ -540,7 +540,7 @@ ReservoirConstraint::ReservoirConstraint(ConstraintProto* proto,
 void ReservoirConstraint::AddEvent(LinearExpr time, int64_t level_change) {
   *proto_->mutable_reservoir()->add_time_exprs() =
       builder_->LinearExprToProto(time);
-  proto_->mutable_reservoir()->add_level_changes(level_change);
+  proto_->mutable_reservoir()->add_level_changes()->set_offset(level_change);
   proto_->mutable_reservoir()->add_active_literals(
       builder_->IndexFromConstant(1));
 }
@@ -550,7 +550,7 @@ void ReservoirConstraint::AddOptionalEvent(LinearExpr time,
                                            BoolVar is_active) {
   *proto_->mutable_reservoir()->add_time_exprs() =
       builder_->LinearExprToProto(time);
-  proto_->mutable_reservoir()->add_level_changes(level_change);
+  proto_->mutable_reservoir()->add_level_changes()->set_offset(level_change);
   proto_->mutable_reservoir()->add_active_literals(is_active.index_);
 }
 

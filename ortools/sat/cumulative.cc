@@ -359,16 +359,16 @@ std::function<void(Model*)> CumulativeUsingReservoir(
         integer_trail->UpperBound(capacity).value());
 
     std::vector<AffineExpression> times;
-    std::vector<IntegerValue> deltas;
+    std::vector<AffineExpression> deltas;
     std::vector<Literal> presences;
 
     const int num_tasks = vars.size();
     for (int t = 0; t < num_tasks; ++t) {
       CHECK(integer_trail->IsFixed(demands[t]));
       times.push_back(intervals->StartVar(vars[t]));
-      deltas.push_back(integer_trail->LowerBound(demands[t]));
+      deltas.push_back(demands[t]);
       times.push_back(intervals->EndVar(vars[t]));
-      deltas.push_back(-integer_trail->LowerBound(demands[t]));
+      deltas.push_back(demands[t].Negated());
       if (intervals->IsOptional(vars[t])) {
         presences.push_back(intervals->PresenceLiteral(vars[t]));
         presences.push_back(intervals->PresenceLiteral(vars[t]));

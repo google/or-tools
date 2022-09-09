@@ -205,11 +205,6 @@ void TaskSet::NotifyEntryIsNowLastIfPresent(const Entry& e) {
   DCHECK(std::is_sorted(sorted_tasks_.begin(), sorted_tasks_.end()));
 }
 
-void TaskSet::RemoveEntryWithIndex(int index) {
-  sorted_tasks_.erase(sorted_tasks_.begin() + index);
-  optimized_restart_ = 0;
-}
-
 IntegerValue TaskSet::ComputeEndMin() const {
   DCHECK(std::is_sorted(sorted_tasks_.begin(), sorted_tasks_.end()));
   const int size = sorted_tasks_.size();
@@ -456,6 +451,9 @@ bool CombinedDisjunctive<time_direction>::Propagate() {
       const IntegerValue shifted_smin = helper_->ShiftedStartMin(t);
       const IntegerValue size_min = helper_->SizeMin(t);
       for (const int d_index : task_to_disjunctives_[t]) {
+        // TODO(user): Refactor the code to use the same algo as in
+        // DisjunctiveDetectablePrecedences, it is superior and do not need
+        // this function.
         task_sets_[d_index].NotifyEntryIsNowLastIfPresent(
             {t, shifted_smin, size_min});
         end_mins_[d_index] = task_sets_[d_index].ComputeEndMin();

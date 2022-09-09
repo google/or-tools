@@ -47,6 +47,7 @@ rather than for solving specific optimization problems.
 import collections
 import threading
 import time
+from typing import Optional
 import warnings
 
 from ortools.sat import cp_model_pb2
@@ -1411,7 +1412,8 @@ class CpModel(object):
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.reservoir.time_exprs.extend(
             [self.ParseLinearExpression(x) for x in times])
-        model_ct.reservoir.level_changes.extend(level_changes)
+        model_ct.reservoir.level_changes.extend(
+            [self.ParseLinearExpression(x) for x in level_changes])
         model_ct.reservoir.min_level = min_level
         model_ct.reservoir.max_level = max_level
         return ct
@@ -1476,7 +1478,8 @@ class CpModel(object):
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.reservoir.time_exprs.extend(
             [self.ParseLinearExpression(x) for x in times])
-        model_ct.reservoir.level_changes.extend(level_changes)
+        model_ct.reservoir.level_changes.extend(
+            [self.ParseLinearExpression(x) for x in level_changes])
         model_ct.reservoir.active_literals.extend(
             [self.GetOrMakeIndex(x) for x in actives])
         model_ct.reservoir.min_level = min_level
@@ -2176,7 +2179,7 @@ class CpSolver(object):
   """
 
     def __init__(self):
-        self.__solution: cp_model_pb2.CpSolverResponse = None
+        self.__solution: Optional[cp_model_pb2.CpSolverResponse] = None
         self.parameters = sat_parameters_pb2.SatParameters()
         self.log_callback = None
         self.__solve_wrapper: swig_helper.SolveWrapper = None

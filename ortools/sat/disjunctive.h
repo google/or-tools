@@ -72,7 +72,6 @@ class TaskSet {
     optimized_restart_ = 0;
   }
   void AddEntry(const Entry& e);
-  void RemoveEntryWithIndex(int index);
 
   // Same as AddEntry({t, helper->ShiftedStartMin(t), helper->SizeMin(t)}).
   // This is a minor optimization to not call SizeMin(t) twice.

@@ -120,6 +120,10 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
       for (const LinearExpressionProto& time : ct.reservoir().time_exprs()) {
         AddIndices(time.vars(), &output.variables);
       }
+      for (const LinearExpressionProto& level :
+           ct.reservoir().level_changes()) {
+        AddIndices(level.vars(), &output.variables);
+      }
       AddIndices(ct.reservoir().active_literals(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kTable:
@@ -288,6 +292,9 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kReservoir:
       for (int i = 0; i < ct->reservoir().time_exprs_size(); ++i) {
         APPLY_TO_REPEATED_FIELD(reservoir, time_exprs(i)->mutable_vars);
+      }
+      for (int i = 0; i < ct->reservoir().level_changes_size(); ++i) {
+        APPLY_TO_REPEATED_FIELD(reservoir, level_changes(i)->mutable_vars);
       }
       break;
     case ConstraintProto::ConstraintCase::kTable:

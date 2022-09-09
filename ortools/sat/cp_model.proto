@@ -163,11 +163,12 @@ message CumulativeConstraintProto {
 // Maintain a reservoir level within bounds. The water level starts at 0, and at
 // any time, it must be within [min_level, max_level].
 //
-// If the variable actives[i] is true, and if the expression times[i] is
-// assigned a value t, then the current level changes by level_changes[i] (which
-// is constant) at the time t. Therefore, at any time t:
+// If the variable active_literals[i] is true, and if the expression
+// time_exprs[i] is assigned a value t, then the current level changes by
+// level_changes[i] at the time t. Therefore, at any time t:
 //
-// sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+// sum(level_changes[i] * active_literals[i] if time_exprs[i] <= t)
+//   in [min_level, max_level]
 //
 // Note that min level must be <= 0, and the max level must be >= 0. Please use
 // fixed level_changes to simulate initial state.
@@ -179,8 +180,10 @@ message ReservoirConstraintProto {
   int64 min_level = 1;
   int64 max_level = 2;
   repeated LinearExpressionProto time_exprs = 3;  // affine expressions.
-  repeated int64 level_changes = 4;               // constants, can be negative.
+  // Currently, we only support constant level changes.
+  repeated LinearExpressionProto level_changes = 6;  // affine expressions.
   repeated int32 active_literals = 5;
+  reserved 4;
 }
 
 // The circuit constraint is defined on a graph where the arc presence are

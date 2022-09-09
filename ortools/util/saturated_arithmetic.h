@@ -168,6 +168,11 @@ inline int64_t CapSub(int64_t x, int64_t y) {
 // Note(user): -kint64min != kint64max, but kint64max == ~kint64min.
 inline int64_t CapOpp(int64_t v) { return v == kint64min ? ~v : -v; }
 
+inline int64_t CapAbs(int64_t v) {
+  return v == kint64min ? std::numeric_limits<int64_t>::max()
+                        : (v < 0 ? -v : v);
+}
+
 namespace cap_prod_util {
 // Returns an unsigned int equal to the absolute value of n, in a way that
 // will not produce overflows.

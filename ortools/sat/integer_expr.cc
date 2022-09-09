@@ -98,15 +98,16 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
   bool target_var_present_negatively = false;
   IntegerValue target_coeff;
 
-  // Compute the implied_lb excluding  "- target_coeff * target".
-  IntegerValue implied_lb(-upper_bound_);
+  // Warning: It is important to do the computation like the propagation is
+  // doing it to be sure we don't have overflow, since this is what we check
+  // when creating constraints.
+  IntegerValue implied_lb(0);
   for (int i = 0; i < vars_.size(); ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     if (var == NegationOf(target_var)) {
       target_coeff = coeff;
       target_var_present_negatively = true;
-      continue;
     }
 
     const IntegerValue lb = integer_trail_->LowerBound(var);
@@ -117,9 +118,24 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
       literal_var_present_positively = (var == integer_literal.var);
     }
   }
+
   if (!literal_var_present || !target_var_present_negatively) {
     return {kMinIntegerValue, kMinIntegerValue};
   }
+
+  // The upper bound on NegationOf(target_var) are lb(-target) + slack / coeff.
+  // So the lower bound on target_var is ub - slack / coeff.
+  const IntegerValue slack = upper_bound_ - implied_lb;
+  const IntegerValue target_lb = integer_trail_->LowerBound(target_var);
+  const IntegerValue target_ub = integer_trail_->UpperBound(target_var);
+  if (slack <= 0) {
+    // TODO(user): If there is a conflict (negative slack) we can be more
+    // precise.
+    return {target_ub, target_ub};
+  }
+
+  const IntegerValue target_diff = target_ub - target_lb;
+  const IntegerValue delta = std::min(slack / target_coeff, target_diff);
 
   // A literal means var >= bound.
   if (literal_var_present_positively) {
@@ -129,8 +145,11 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
     const IntegerValue diff = std::max(
         IntegerValue(0), integer_literal.bound -
                              integer_trail_->LowerBound(integer_literal.var));
-    return {CeilRatio(implied_lb, target_coeff),
-            CeilRatio(implied_lb + var_coeff * diff, target_coeff)};
+    const IntegerValue tighter_slack =
+        std::max(IntegerValue(0), slack - var_coeff * diff);
+    const IntegerValue tighter_delta =
+        std::min(tighter_slack / target_coeff, target_diff);
+    return {target_ub - delta, target_ub - tighter_delta};
   } else {
     // We have var_coeff * -var in the expression, the literal is var >= bound.
     // When it is true, it is not relevant as implied_lb used -var >= -ub.
@@ -138,43 +157,12 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
     const IntegerValue diff = std::max(
         IntegerValue(0), integer_trail_->UpperBound(integer_literal.var) -
                              integer_literal.bound + 1);
-    return {CeilRatio(implied_lb + var_coeff * diff, target_coeff),
-            CeilRatio(implied_lb, target_coeff)};
+    const IntegerValue tighter_slack =
+        std::max(IntegerValue(0), slack - var_coeff * diff);
+    const IntegerValue tighter_delta =
+        std::min(tighter_slack / target_coeff, target_diff);
+    return {target_ub - tighter_delta, target_ub - delta};
   }
-}
-
-std::vector<std::pair<IntegerLiteral, IntegerValue>>
-IntegerSumLE::ConditionalLbs(IntegerVariable target_var) const {
-  bool target_var_present_negatively = false;
-  IntegerValue target_coeff;
-
-  // Compute the implied_lb excluding  "- target_coeff * target".
-  IntegerValue implied_lb(-upper_bound_);
-  for (int i = 0; i < vars_.size(); ++i) {
-    const IntegerVariable var = vars_[i];
-    const IntegerValue coeff = coeffs_[i];
-    if (var == NegationOf(target_var)) {
-      target_coeff = coeff;
-      target_var_present_negatively = true;
-      continue;
-    }
-    implied_lb += coeff * integer_trail_->LowerBound(var);
-  }
-
-  std::vector<std::pair<IntegerLiteral, IntegerValue>> result;
-  if (!target_var_present_negatively) return result;
-
-  for (int i = 0; i < vars_.size(); ++i) {
-    const IntegerVariable var = vars_[i];
-    const IntegerValue coeff = coeffs_[i];
-    if (var == NegationOf(target_var)) continue;
-
-    const IntegerValue lb = integer_trail_->LowerBound(var);
-    if (lb == integer_trail_->UpperBound(var)) continue;
-    result.push_back({IntegerLiteral::GreaterOrEqual(var, lb + 1),
-                      CeilRatio(implied_lb + coeff, target_coeff)});
-  }
-  return result;
 }
 
 bool IntegerSumLE::Propagate() {
@@ -252,6 +240,8 @@ bool IntegerSumLE::Propagate() {
   for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
     if (max_variations_[i] <= slack) continue;
 
+    // TODO(user): If the new ub fall into an hole of the variable, we can
+    // actually relax the reason more by computing a better slack.
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     const IntegerValue div = slack / coeff;

@@ -30,25 +30,23 @@ namespace operations_research {
 namespace sat {
 
 void AddReservoirConstraint(std::vector<AffineExpression> times,
-                            std::vector<IntegerValue> deltas,
+                            std::vector<AffineExpression> deltas,
                             std::vector<Literal> presences, int64_t min_level,
                             int64_t max_level, Model* model) {
   // We only create a side if it can fail.
   IntegerValue min_possible(0);
   IntegerValue max_possible(0);
-  for (const IntegerValue d : deltas) {
-    if (d > 0) {
-      max_possible += d;
-    } else {
-      min_possible += d;
-    }
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  for (const AffineExpression d : deltas) {
+    min_possible += std::min(IntegerValue(0), integer_trail->LowerBound(d));
+    max_possible += std::max(IntegerValue(0), integer_trail->UpperBound(d));
   }
   if (max_possible > max_level) {
     model->TakeOwnership(new ReservoirTimeTabling(
         times, deltas, presences, IntegerValue(max_level), model));
   }
   if (min_possible < min_level) {
-    for (IntegerValue& ref : deltas) ref = -ref;
+    for (AffineExpression& ref : deltas) ref = ref.Negated();
     model->TakeOwnership(new ReservoirTimeTabling(
         times, deltas, presences, IntegerValue(-min_level), model));
   }
@@ -56,7 +54,7 @@ void AddReservoirConstraint(std::vector<AffineExpression> times,
 
 ReservoirTimeTabling::ReservoirTimeTabling(
     const std::vector<AffineExpression>& times,
-    const std::vector<IntegerValue>& deltas,
+    const std::vector<AffineExpression>& deltas,
     const std::vector<Literal>& presences, IntegerValue capacity, Model* model)
     : times_(times),
       deltas_(deltas),
@@ -68,11 +66,12 @@ ReservoirTimeTabling::ReservoirTimeTabling(
   const int id = watcher->Register(this);
   const int num_events = times.size();
   for (int e = 0; e < num_events; e++) {
-    if (deltas_[e] > 0) {
+    watcher->WatchLowerBound(deltas_[e], id);
+    if (integer_trail_->UpperBound(deltas_[e]) > 0) {
       watcher->WatchUpperBound(times_[e].var, id);
       watcher->WatchLiteral(presences_[e], id);
     }
-    if (deltas_[e] < 0) {
+    if (integer_trail_->LowerBound(deltas_[e]) < 0) {
       watcher->WatchLowerBound(times_[e].var, id);
       watcher->WatchLiteral(presences_[e].Negated(), id);
     }
@@ -86,11 +85,12 @@ bool ReservoirTimeTabling::Propagate() {
   for (int e = 0; e < num_events; e++) {
     if (assignment_.LiteralIsFalse(presences_[e])) continue;
 
-    // For positive delta, we can maybe increase the min.
-    if (deltas_[e] > 0 && !TryToIncreaseMin(e)) return false;
+    // For positive delta_min, we can maybe increase the min.
+    const IntegerValue min_d = integer_trail_->LowerBound(deltas_[e]);
+    if (min_d > 0 && !TryToIncreaseMin(e)) return false;
 
-    // For negative delta, we can maybe decrease the max.
-    if (deltas_[e] < 0 && !TryToDecreaseMax(e)) return false;
+    // For negative delta_min, we can maybe decrease the max.
+    if (min_d < 0 && !TryToDecreaseMax(e)) return false;
   }
   return true;
 }
@@ -105,15 +105,16 @@ bool ReservoirTimeTabling::BuildProfile() {
   const int num_events = times_.size();
   profile_.emplace_back(kMinIntegerValue, IntegerValue(0));  // Sentinel.
   for (int e = 0; e < num_events; e++) {
-    if (deltas_[e] > 0) {
+    const IntegerValue min_d = integer_trail_->LowerBound(deltas_[e]);
+    if (min_d > 0) {
       // Only consider present event for positive delta.
       if (!assignment_.LiteralIsTrue(presences_[e])) continue;
       const IntegerValue ub = integer_trail_->UpperBound(times_[e]);
-      profile_.push_back({ub, deltas_[e]});
-    } else if (deltas_[e] < 0) {
+      profile_.push_back({ub, min_d});
+    } else if (min_d < 0) {
       // Only consider non-absent event for negative delta.
       if (assignment_.LiteralIsFalse(presences_[e])) continue;
-      profile_.push_back({integer_trail_->LowerBound(times_[e]), deltas_[e]});
+      profile_.push_back({integer_trail_->LowerBound(times_[e]), min_d});
     }
   }
   profile_.emplace_back(kMaxIntegerValue, IntegerValue(0));  // Sentinel.
@@ -135,12 +136,29 @@ bool ReservoirTimeTabling::BuildProfile() {
   // Conflict?
   for (const ProfileRectangle& rect : profile_) {
     if (rect.height <= capacity_) continue;
+
     FillReasonForProfileAtGivenTime(rect.start);
     return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
   }
 
   return true;
 }
+
+namespace {
+
+void AddLowerOrEqual(const AffineExpression& expr, IntegerValue bound,
+                     std::vector<IntegerLiteral>* reason) {
+  if (expr.IsConstant()) return;
+  reason->push_back(expr.LowerOrEqual(bound));
+}
+
+void AddGreaterOrEqual(const AffineExpression& expr, IntegerValue bound,
+                       std::vector<IntegerLiteral>* reason) {
+  if (expr.IsConstant()) return;
+  reason->push_back(expr.GreaterOrEqual(bound));
+}
+
+}  // namespace
 
 // TODO(user): Minimize with how high the profile needs to be. We can also
 // remove from the reason the absence of a negative event provided that the
@@ -155,16 +173,21 @@ void ReservoirTimeTabling::FillReasonForProfileAtGivenTime(
   const int num_events = times_.size();
   for (int e = 0; e < num_events; e++) {
     if (e == event_to_ignore) continue;
-    if (deltas_[e] > 0) {
+    const IntegerValue min_d = integer_trail_->LowerBound(deltas_[e]);
+    if (min_d > 0) {
       if (!assignment_.LiteralIsTrue(presences_[e])) continue;
       if (integer_trail_->UpperBound(times_[e]) > t) continue;
-      integer_reason_.push_back(times_[e].LowerOrEqual(t));
+      AddGreaterOrEqual(deltas_[e], min_d, &integer_reason_);
+      AddLowerOrEqual(times_[e], t, &integer_reason_);
       literal_reason_.push_back(presences_[e].Negated());
-    } else if (deltas_[e] < 0) {
+    } else if (min_d <= 0) {
       if (assignment_.LiteralIsFalse(presences_[e])) {
         literal_reason_.push_back(presences_[e]);
-      } else if (integer_trail_->LowerBound(times_[e]) > t) {
-        integer_reason_.push_back(times_[e].GreaterOrEqual(t + 1));
+        continue;
+      }
+      AddGreaterOrEqual(deltas_[e], min_d, &integer_reason_);
+      if (min_d < 0 && integer_trail_->LowerBound(times_[e]) > t) {
+        AddGreaterOrEqual(times_[e], t + 1, &integer_reason_);
       }
     }
   }
@@ -173,7 +196,8 @@ void ReservoirTimeTabling::FillReasonForProfileAtGivenTime(
 // Note that a negative event will always be in the profile, even if its
 // presence is still not settled.
 bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
-  CHECK_LT(deltas_[event], 0);
+  const IntegerValue min_d = integer_trail_->LowerBound(deltas_[event]);
+  CHECK_LT(min_d, 0);
   const IntegerValue start = integer_trail_->LowerBound(times_[event]);
   const IntegerValue end = integer_trail_->UpperBound(times_[event]);
 
@@ -194,7 +218,7 @@ bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
   bool push = false;
   IntegerValue new_end = end;
   for (; profile_[rec_id].start < end; ++rec_id) {
-    if (profile_[rec_id].height - deltas_[event] > capacity_) {
+    if (profile_[rec_id].height - min_d > capacity_) {
       new_end = profile_[rec_id].start;
       push = true;
       break;
@@ -210,7 +234,7 @@ bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
   // detected at profile construction, but then, since the bound might have been
   // updated, better be defensive.
   if (new_end < start) {
-    integer_reason_.push_back(times_[event].GreaterOrEqual(new_end + 1));
+    AddGreaterOrEqual(times_[event], new_end + 1, &integer_reason_);
     return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
   }
 
@@ -229,7 +253,8 @@ bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
 }
 
 bool ReservoirTimeTabling::TryToIncreaseMin(int event) {
-  CHECK_GT(deltas_[event], 0);
+  const IntegerValue min_d = integer_trail_->LowerBound(deltas_[event]);
+  CHECK_GT(min_d, 0);
   const IntegerValue start = integer_trail_->LowerBound(times_[event]);
   const IntegerValue end = integer_trail_->UpperBound(times_[event]);
 
@@ -252,7 +277,7 @@ bool ReservoirTimeTabling::TryToIncreaseMin(int event) {
 
   bool push = false;
   IntegerValue new_start = start;
-  if (profile_[rec_id].height + deltas_[event] > capacity_) {
+  if (profile_[rec_id].height + min_d > capacity_) {
     if (!assignment_.LiteralIsTrue(presences_[event])) {
       // Push to false since it wasn't part of the profile and cannot fit.
       push = true;
@@ -265,7 +290,7 @@ bool ReservoirTimeTabling::TryToIncreaseMin(int event) {
   }
   if (!push) {
     for (; profile_[rec_id].start > start; --rec_id) {
-      if (profile_[rec_id - 1].height + deltas_[event] > capacity_) {
+      if (profile_[rec_id - 1].height + min_d > capacity_) {
         push = true;
         new_start = profile_[rec_id].start;
         break;
@@ -276,6 +301,7 @@ bool ReservoirTimeTabling::TryToIncreaseMin(int event) {
 
   // The reason is simply the capacity at new_start - 1;
   FillReasonForProfileAtGivenTime(new_start - 1, event);
+  AddGreaterOrEqual(deltas_[event], min_d, &integer_reason_);
   return integer_trail_->ConditionalEnqueue(
       presences_[event], times_[event].GreaterOrEqual(new_start),
       &literal_reason_, &integer_reason_);

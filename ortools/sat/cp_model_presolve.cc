@@ -5472,6 +5472,9 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
   for (LinearExpressionProto& exp : *(proto.mutable_time_exprs())) {
     changed |= CanonicalizeLinearExpression(*ct, &exp);
   }
+  for (LinearExpressionProto& exp : *(proto.mutable_level_changes())) {
+    changed |= CanonicalizeLinearExpression(*ct, &exp);
+  }
 
   if (proto.active_literals().empty()) {
     const int true_literal = context_->GetTrueLiteral();
@@ -5482,7 +5485,8 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
   }
 
   const auto& demand_is_null = [&](int i) {
-    return proto.level_changes(i) == 0 ||
+    return (context_->IsFixed(proto.level_changes(i)) &&
+            context_->FixedValue(proto.level_changes(i)) == 0) ||
            context_->LiteralIsFalse(proto.active_literals(i));
   };
 
@@ -5497,13 +5501,15 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
     int new_size = 0;
     for (int i = 0; i < proto.level_changes_size(); ++i) {
       if (demand_is_null(i)) continue;
-      proto.set_level_changes(new_size, proto.level_changes(i));
+      *proto.mutable_level_changes(new_size) = proto.level_changes(i);
       *proto.mutable_time_exprs(new_size) = proto.time_exprs(i);
       proto.set_active_literals(new_size, proto.active_literals(i));
       new_size++;
     }
 
-    proto.mutable_level_changes()->Truncate(new_size);
+    proto.mutable_level_changes()->erase(
+        proto.mutable_level_changes()->begin() + new_size,
+        proto.mutable_level_changes()->end());
     proto.mutable_time_exprs()->erase(
         proto.mutable_time_exprs()->begin() + new_size,
         proto.mutable_time_exprs()->end());
@@ -5513,15 +5519,21 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
         "reservoir: remove zero level_changes or inactive events.");
   }
 
+  // The rest of the presolve only applies if all demands are fixed.
+  for (const LinearExpressionProto& level_change : proto.level_changes()) {
+    if (!context_->IsFixed(level_change)) return changed;
+  }
+
   const int num_events = proto.level_changes_size();
-  int64_t gcd =
-      proto.level_changes().empty() ? 0 : std::abs(proto.level_changes(0));
+  int64_t gcd = proto.level_changes().empty()
+                    ? 0
+                    : std::abs(context_->FixedValue(proto.level_changes(0)));
   int num_positives = 0;
   int num_negatives = 0;
   int64_t max_sum_of_positive_level_changes = 0;
   int64_t min_sum_of_negative_level_changes = 0;
   for (int i = 0; i < num_events; ++i) {
-    const int64_t demand = proto.level_changes(i);
+    const int64_t demand = context_->FixedValue(proto.level_changes(i));
     gcd = MathUtil::GCD64(gcd, std::abs(demand));
     if (demand > 0) {
       num_positives++;
@@ -5564,7 +5576,7 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
         context_->working_model->add_constraints()->mutable_linear();
     int64_t fixed_contrib = 0;
     for (int i = 0; i < proto.level_changes_size(); ++i) {
-      const int64_t demand = proto.level_changes(i);
+      const int64_t demand = context_->FixedValue(proto.level_changes(i));
       DCHECK_NE(demand, 0);
 
       const int active = proto.active_literals(i);
@@ -5585,7 +5597,10 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
 
   if (gcd > 1) {
     for (int i = 0; i < proto.level_changes_size(); ++i) {
-      proto.set_level_changes(i, proto.level_changes(i) / gcd);
+      proto.mutable_level_changes(i)->set_offset(
+          context_->FixedValue(proto.level_changes(i)) / gcd);
+      proto.mutable_level_changes(i)->clear_vars();
+      proto.mutable_level_changes(i)->clear_coeffs();
     }
 
     // Adjust min and max levels.
@@ -9392,6 +9407,12 @@ CpSolverStatus CpModelPresolver::Presolve() {
     ExpandCpModel(context_);
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
+    // We still write back the canonical objective has we don't deal well
+    // with uninitialized domain or duplicate variables.
+    if (context_->working_model->has_objective()) {
+      context_->WriteObjectiveToProto();
+    }
+
     // We need to append all the variable equivalence that are still used!
     EncodeAllAffineRelations();
     if (logger_->LoggingIsEnabled()) context_->LogInfo();
@@ -9548,6 +9569,9 @@ CpSolverStatus CpModelPresolver::Presolve() {
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
     context_->WriteObjectiveToProto();
   }
+
+  // Take care of linear constraint with a complex rhs.
+  FinalExpansionForLinearConstraint(context_);
 
   // Adds all needed affine relation to context_->working_model.
   EncodeAllAffineRelations();

@@ -84,12 +84,6 @@ class IntegerSumLE : public PropagatorInterface {
   std::pair<IntegerValue, IntegerValue> ConditionalLb(
       IntegerLiteral integer_literal, IntegerVariable target_var) const;
 
-  // Experimental. Similar to ConditionalLb(), but returns all interesting
-  // conditional lower bounds instead of just analyzing one integer literal.
-  // All the IntegerLiteral will be of the form >= var_lb + 1.
-  std::vector<std::pair<IntegerLiteral, IntegerValue>> ConditionalLbs(
-      IntegerVariable target_var) const;
-
  private:
   // Fills integer_reason_ with all the current lower_bounds. The real
   // explanation may require removing one of them, but as an optimization, we
