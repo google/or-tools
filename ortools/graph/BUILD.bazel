@@ -22,6 +22,7 @@ cc_library(
         ":iterators",
         "//ortools/base",
         "@com_google_absl//absl/debugging:leak_check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -295,6 +296,7 @@ cc_library(
         ":max_flow",
         "//ortools/base",
         "//ortools/base:mathutil",
+        "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
         "//ortools/util:zvector",
     ],
@@ -361,9 +363,12 @@ cc_library(
         "//ortools/base",
         "//ortools/base:container_logging",
         "//ortools/base:map_util",
+        "//ortools/base:status_builder",
         "//ortools/base:stl_util",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 

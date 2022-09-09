@@ -168,6 +168,7 @@
 
 #include "absl/base/port.h"
 #include "absl/debugging/leak_check.h"
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -203,8 +204,10 @@ class BaseGraph {
         const_capacities_(false) {}
   virtual ~BaseGraph() {}
 
-  // Returns the number of valid nodes in the graph.
+  // Returns the number of valid nodes in the graph. Prefer using num_nodes():
+  // the size() API is here to make Graph and vector<vector<int>> more alike.
   NodeIndexType num_nodes() const { return num_nodes_; }
+  NodeIndexType size() const { return num_nodes_; }  // Prefer num_nodes().
 
   // Returns the number of valid arcs in the graph.
   ArcIndexType num_arcs() const { return num_arcs_; }
@@ -417,6 +420,11 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
     this->AddNode(num_nodes - 1);
   }
 
+  // Shortcut to directly create a finalized graph, i.e. Build() is called.
+  template <class ArcContainer>  // e.g. vector<pair<int, int>>.
+  static StaticGraph FromArcs(NodeIndexType num_nodes,
+                              const ArcContainer& arcs);
+
   // Do not use directly. See instead the arc iteration functions below.
   class OutgoingArcIterator;
 
@@ -430,7 +438,7 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   // This loops over the heads of the OutgoingArcs(node). It is just a more
   // convenient way to achieve this. Moreover this interface is used by some
   // graph algorithms.
-  BeginEndWrapper<NodeIndexType const*> operator[](NodeIndexType node) const;
+  absl::Span<const NodeIndexType> operator[](NodeIndexType node) const;
 
   void ReserveNodes(NodeIndexType bound) override;
   void ReserveArcs(ArcIndexType bound) override;
@@ -598,7 +606,7 @@ class ReverseArcStaticGraph
   // This loops over the heads of the OutgoingArcs(node). It is just a more
   // convenient way to achieve this. Moreover this interface is used by some
   // graph algorithms.
-  BeginEndWrapper<NodeIndexType const*> operator[](NodeIndexType node) const;
+  absl::Span<const NodeIndexType> operator[](NodeIndexType node) const;
 
   ArcIndexType OppositeArc(ArcIndexType arc) const;
   // TODO(user): support Head() and Tail() before Build(), like StaticGraph<>.
@@ -685,7 +693,7 @@ class ReverseArcMixedGraph
   // This loops over the heads of the OutgoingArcs(node). It is just a more
   // convenient way to achieve this. Moreover this interface is used by some
   // graph algorithms.
-  BeginEndWrapper<NodeIndexType const*> operator[](NodeIndexType node) const;
+  absl::Span<const NodeIndexType> operator[](NodeIndexType node) const;
 
   ArcIndexType OppositeArc(ArcIndexType arc) const;
   // TODO(user): support Head() and Tail() before Build(), like StaticGraph<>.
@@ -1261,13 +1269,24 @@ class ListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
 
 // StaticGraph implementation --------------------------------------------------
 
+template <typename NodeIndexType, typename ArcIndexType>
+template <class ArcContainer>
+StaticGraph<NodeIndexType, ArcIndexType>
+StaticGraph<NodeIndexType, ArcIndexType>::FromArcs(NodeIndexType num_nodes,
+                                                   const ArcContainer& arcs) {
+  StaticGraph g(num_nodes, arcs.size());
+  for (const auto& [from, to] : arcs) g.AddArc(from, to);
+  g.Build();
+  return g;
+}
+
 DEFINE_RANGE_BASED_ARC_ITERATION(StaticGraph, Outgoing, DirectArcLimit(node));
 
 template <typename NodeIndexType, typename ArcIndexType>
-BeginEndWrapper<NodeIndexType const*>
+absl::Span<const NodeIndexType>
 StaticGraph<NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
-  return BeginEndWrapper<NodeIndexType const*>(
-      head_.data() + start_[node], head_.data() + DirectArcLimit(node));
+  return absl::Span<const NodeIndexType>(head_.data() + start_[node],
+                                         DirectArcLimit(node) - start_[node]);
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1716,11 +1735,11 @@ ArcIndexType ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::InDegree(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-BeginEndWrapper<NodeIndexType const*>
+absl::Span<const NodeIndexType>
 ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::operator[](
     NodeIndexType node) const {
-  return BeginEndWrapper<NodeIndexType const*>(
-      head_.data() + start_[node], head_.data() + DirectArcLimit(node));
+  return absl::Span<const NodeIndexType>(head_.data() + start_[node],
+                                         DirectArcLimit(node) - start_[node]);
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1975,11 +1994,11 @@ ArcIndexType ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::InDegree(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-BeginEndWrapper<NodeIndexType const*>
+absl::Span<const NodeIndexType>
 ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::operator[](
     NodeIndexType node) const {
-  return BeginEndWrapper<NodeIndexType const*>(
-      head_.data() + start_[node], head_.data() + DirectArcLimit(node));
+  return absl::Span<const NodeIndexType>(head_.data() + start_[node],
+                                         DirectArcLimit(node) - start_[node]);
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
