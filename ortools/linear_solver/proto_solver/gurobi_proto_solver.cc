@@ -32,7 +32,6 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
 #include "ortools/gurobi/environment.h"
-#include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/lazy_mutable_copy.h"
@@ -339,7 +338,9 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       obj_coeffs[v] = variable.objective_coefficient();
       lb[v] = variable.lower_bound();
       ub[v] = variable.upper_bound();
-      ctype[v] = variable.is_integer() && SolverTypeIsMip(request.solver_type())
+      ctype[v] = variable.is_integer() &&
+                         request.solver_type() ==
+                             MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING
                      ? GRB_INTEGER
                      : GRB_CONTINUOUS;
       if (variable.is_integer()) has_integer_variables = true;

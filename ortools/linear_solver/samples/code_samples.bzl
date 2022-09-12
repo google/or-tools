@@ -13,6 +13,8 @@
 
 """Helper macro to compile and test code samples."""
 
+load("@ortools_deps//:requirements.bzl", "requirement")
+
 def code_sample_cc(name):
     native.cc_binary(
         name = name + "_cc",

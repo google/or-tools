@@ -79,8 +79,7 @@ cc_library(
         "linear_solver_callback.cc",
         "linear_solver.cc",
         "lpi_glop.cpp",
-        "model_validator.cc",
-        "pdlp_proto_solver.cc",
+        "pdlp_interface.cc",
         "sat_interface.cc",
         "scip_callback.cc",
         "scip_interface.cc",
@@ -103,17 +102,11 @@ cc_library(
     hdrs = [
         "glop_interface.cc",
         "glop_utils.h",
-        "gurobi_proto_solver.h",
         "linear_expr.h",
         "linear_solver.h",
         "linear_solver_callback.h",
-        "model_validator.h",
-        "pdlp_proto_solver.h",
-        "sat_proto_solver.h",
-        "sat_solver_utils.h",
         "scip_callback.h",
         "scip_helper_macros.h",
-        "scip_proto_solver.h",
     ],
     copts = [
         "-DUSE_PDLP",
@@ -123,6 +116,7 @@ cc_library(
         ":linear_solver_cc_proto",
         ":scip_with_glop",
         ":model_exporter",
+        ":model_validator",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
@@ -157,6 +151,30 @@ cc_library(
         ":with_glpk": ["@glpk//:glpk"],
         "//conditions:default": [],
     }),
+)
+
+cc_library(
+    name = "model_validator",
+    srcs = ["model_validator.cc"],
+    hdrs = ["model_validator.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":linear_solver_cc_proto",
+        "//ortools/base",
+        "//ortools/base:accurate_sum",
+        "//ortools/base:map_util",
+        "//ortools/port:file",
+        "//ortools/port:proto_utils",
+        "//ortools/util:fp_utils",
+        "//ortools/util:lazy_mutable_copy",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:optional",
+    ],
 )
 
 copy_file(
