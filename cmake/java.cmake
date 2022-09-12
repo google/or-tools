@@ -174,6 +174,7 @@ foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solve
   add_subdirectory(ortools/${SUBPROJECT}/java)
   target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni${SUBPROJECT})
 endforeach()
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnimodelbuilder)
 
 #################################
 ##  Java Native Maven Package  ##

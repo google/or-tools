@@ -15,6 +15,7 @@
 
 %include "ortools/base/base.i"
 %include "enums.swg"
+%include "ortools/util/java/vector.i"
 
 %{
 #include "ortools/linear_solver/wrappers/model_builder_helper.h"
