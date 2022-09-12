@@ -160,8 +160,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":linear_solver_cc_proto",
-        "//ortools/base",
         "//ortools/base:accurate_sum",
+        "//ortools/base:commandlineflags",
         "//ortools/base:map_util",
         "//ortools/port:file",
         "//ortools/port:proto_utils",
