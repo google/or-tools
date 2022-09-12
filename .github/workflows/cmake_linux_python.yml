@@ -7,7 +7,7 @@ jobs:
   ninja:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install python3 venv
       run: sudo apt-get install python3-venv
     - name: Install Ninja
@@ -33,7 +33,7 @@ jobs:
   ninja-multi:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install python3 venv
       run: sudo apt-get install python3-venv
     - name: Install Ninja
@@ -59,7 +59,7 @@ jobs:
   make:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install python3 venv
       run: sudo apt-get install python3-venv
     - name: Swig install

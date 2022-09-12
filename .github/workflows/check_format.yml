@@ -7,7 +7,7 @@ jobs:
   clang-format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Fetch origin/main
       run: git fetch origin main
     - name: List of changed file(s)
