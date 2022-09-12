@@ -129,7 +129,6 @@ void SolveWrapper::AddLogCallbackFromClass(LogCallback* log_callback) {
 operations_research::sat::CpSolverResponse SolveWrapper::Solve(
     const operations_research::sat::CpModelProto& model_proto) {
   FixFlagsAndEnvironmentForSwig();
-  stopped_ = false;
   model_.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped_);
   return operations_research::sat::SolveCpModel(model_proto, &model_);
 }

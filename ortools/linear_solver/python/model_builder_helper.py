@@ -15,9 +15,6 @@
 import numbers
 import numpy as np
 
-from ortools.linear_solver import linear_solver_pb2
-from ortools.model_builder.python import pywrap_model_builder_helper
-
 
 def is_integral(x):
     """Checks if x has either a number.Integral or a np.integer type."""

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/model_builder/wrappers/model_builder_helper.h"
+#include "ortools/linear_solver/wrappers/model_builder_helper.h"
 
 #include <functional>
 #include <optional>
@@ -21,9 +21,9 @@
 
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/linear_solver/sat_proto_solver.h"
+#include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #if defined(USE_SCIP)
-#include "ortools/linear_solver/scip_proto_solver.h"
+#include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
 #endif  // defined(USE_SCIP)
 #if defined(USE_LP_PARSER)
 #include "ortools/lp_data/lp_parser.h"

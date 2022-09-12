@@ -508,3 +508,13 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
     ],
 )
+
+cc_library(
+    name = "parse_proto",
+    srcs = ["parse_proto.cc"],
+    hdrs = ["parse_proto.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)

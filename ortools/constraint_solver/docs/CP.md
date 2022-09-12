@@ -197,10 +197,8 @@ public class SimpleCpProgram {
     Console.WriteLine($"Number of constraints: {solver.Constraints()}");
 
     // Solve the problem.
-    DecisionBuilder db = solver.MakePhase(
-        new IntVar[] { x, y, z },
-        Solver.CHOOSE_FIRST_UNBOUND,
-        Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(new IntVar[] { x, y, z }, Solver.CHOOSE_FIRST_UNBOUND,
+                                          Solver.ASSIGN_MIN_VALUE);
 
     // Print solution on console.
     int count = 0;

@@ -22,9 +22,9 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "ortools/base/flags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/logging_flags.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 // Solve a job shop problem:

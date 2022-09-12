@@ -65,9 +65,9 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/gurobi/environment.h"
-#include "ortools/linear_solver/gurobi_proto_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
+#include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(int, num_gurobi_threads, 4,

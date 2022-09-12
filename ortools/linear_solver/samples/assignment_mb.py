@@ -14,7 +14,7 @@
 """MIP example that solves an assignment problem."""
 # [START program]
 # [START import]
-from ortools.model_builder.python import model_builder
+from ortools.linear_solver.python import model_builder
 # [END import]
 
 

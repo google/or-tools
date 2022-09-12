@@ -14,9 +14,9 @@
 // Knowing that we see 20 heads and 56 legs,
 // how many pheasants and rabbits are we looking at ?
 #include "absl/flags/flag.h"
+#include "ortools/base/flags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/logging_flags.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {

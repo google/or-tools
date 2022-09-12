@@ -33,8 +33,8 @@ rather than for solving specific optimization problems.
 
 import math
 
-from ortools.model_builder.python import model_builder_helper as mbh
-from ortools.model_builder.python import pywrap_model_builder_helper as pwmb
+from ortools.linear_solver.python import model_builder_helper as mbh
+from ortools.linear_solver.python import pywrap_model_builder_helper as pwmb
 
 # Forward solve statuses.
 SolveStatus = pwmb.SolveStatus
@@ -691,7 +691,6 @@ class ModelBuilder(object):
 
     def __init__(self):
         self.__helper = pwmb.ModelBuilderHelper()
-        self.__constant_map = {}
 
     # Integer variable.
 

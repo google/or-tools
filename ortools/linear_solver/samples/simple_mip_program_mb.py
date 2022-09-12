@@ -13,11 +13,11 @@
 # limitations under the License.
 
 # [START program]
-"""Minimal example to call the GLOP solver using model_builder."""
+"""Integer programming examples that show how to use the APIs."""
 # [START import]
 import math
 
-from ortools.model_builder.python import model_builder
+from ortools.linear_solver.python import model_builder
 # [END import]
 
 
@@ -28,16 +28,16 @@ def main():
     # [END model]
 
     # [START variables]
-    # Create the variables x and y.
-    x = model.new_num_var(0.0, math.inf, 'x')
-    y = model.new_num_var(0.0, math.inf, 'y')
+    # x and y are integer non-negative variables.
+    x = model.new_int_var(0.0, math.inf, 'x')
+    y = model.new_int_var(0.0, math.inf, 'y')
 
     print('Number of variables =', model.num_variables)
     # [END variables]
 
     # [START constraints]
     # x + 7 * y <= 17.5.
-    ct = model.add(x + 7 * y <= 17.5)
+    model.add(x + 7 * y <= 17.5)
 
     # x <= 3.5.
     model.add(x <= 3.5)
@@ -51,8 +51,8 @@ def main():
     # [END objective]
 
     # [START solve]
-    # Create the solver with the GLOP backend, and solve the model.
-    solver = model_builder.ModelSolver('glop')
+    # Create the solver with the SCIP backend, and solve the model.
+    solver = model_builder.ModelSolver('scip')
     status = solver.solve(model)
     # [END solve]
 
@@ -62,9 +62,6 @@ def main():
         print('Objective value =', solver.objective_value)
         print('x =', solver.value(x))
         print('y =', solver.value(y))
-
-        print('dual_value(ct) =', solver.dual_value(ct))
-        print('reduced_cost(x) =', solver.reduced_cost(x))
     else:
         print('The problem does not have an optimal solution.')
     # [END print_solution]

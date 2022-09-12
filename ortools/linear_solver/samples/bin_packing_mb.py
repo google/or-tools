@@ -14,7 +14,7 @@
 """Solve a simple bin packing problem using a MIP solver."""
 # [START program]
 # [START import]
-from ortools.model_builder.python import model_builder
+from ortools.linear_solver.python import model_builder
 # [END import]
 
 

@@ -122,7 +122,7 @@ class SolveWrapper {
 
  private:
   Model model_;
-  std::atomic<bool> stopped_;
+  std::atomic<bool> stopped_ = false;
 };
 
 // Static methods are stored in a module which name can vary.

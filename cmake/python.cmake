@@ -193,7 +193,7 @@ set(PYTHON_PROJECT_DIR ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PROJECT_DIR}")
 
 # Swig wrap all libraries
-foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver model_builder constraint_solver sat scheduling util)
+foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver sat scheduling util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
 
@@ -210,8 +210,7 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/model_builder/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/model_builder/python/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/packing/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
@@ -224,9 +223,9 @@ file(COPY
   ortools/linear_solver/linear_solver_natural_api.py
   DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver)
 file(COPY
-  ortools/model_builder/python/model_builder.py
-  ortools/model_builder/python/model_builder_helper.py
-  DESTINATION ${PYTHON_PROJECT_DIR}/model_builder/python)
+  ortools/linear_solver/python/model_builder.py
+  ortools/linear_solver/python/model_builder_helper.py
+  DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver/python)
 file(COPY
   ortools/sat/python/cp_model.py
   ortools/sat/python/cp_model_helper.py
@@ -277,7 +276,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:min_cost_flow_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_model_builder_helper> ${PYTHON_PROJECT}/model_builder/python
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_model_builder_helper> ${PYTHON_PROJECT}/linear_solver/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:swig_helper> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PYTHON_PROJECT}/scheduling
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PYTHON_PROJECT}/util/python

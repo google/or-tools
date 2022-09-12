@@ -12,7 +12,7 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
-set(NAME ${PROJECT_NAME}_model_builder_wrappers)
+set(NAME ${PROJECT_NAME}_linear_solver_wrappers)
 
 # Will be merge in libortools.so
 #add_library(${NAME} STATIC ${_SRCS})
@@ -31,4 +31,4 @@ target_link_libraries(${NAME} PRIVATE
   protobuf::libprotobuf
   $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAME}::proto)
-#add_library(${PROJECT_NAME}::_model_builder_wrappers ALIAS ${NAME})
+#add_library(${PROJECT_NAME}::_linear_solver_wrappers ALIAS ${NAME})

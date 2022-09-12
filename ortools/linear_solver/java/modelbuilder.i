@@ -17,7 +17,7 @@
 %include "enums.swg"
 
 %{
-#include "ortools/model_builder/wrappers/model_builder_helper.h"
+#include "ortools/linear_solver/wrappers/model_builder_helper.h"
 %}
 
 %module operations_research_modelbuilder
@@ -194,7 +194,7 @@ class GlobalRefGuard {
 // For enums
 %javaconst(1);
 
-%include "ortools/model_builder/wrappers/model_builder_helper.h"
+%include "ortools/linear_solver/wrappers/model_builder_helper.h"
 
 %unignoreall
 

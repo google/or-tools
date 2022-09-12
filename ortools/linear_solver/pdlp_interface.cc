@@ -27,7 +27,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/linear_solver/pdlp_proto_solver.h"
+#include "ortools/linear_solver/proto_solver/pdlp_proto_solver.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
 #include "ortools/port/proto_utils.h"

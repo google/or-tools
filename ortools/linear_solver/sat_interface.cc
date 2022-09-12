@@ -26,7 +26,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/linear_solver/sat_proto_solver.h"
+#include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"

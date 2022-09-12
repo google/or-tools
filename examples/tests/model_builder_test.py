@@ -14,8 +14,7 @@
 """Tests for model_builder."""
 
 import math
-
-from ortools.model_builder.python import model_builder
+from ortools.linear_solver.python import model_builder
 import unittest
 import os
 

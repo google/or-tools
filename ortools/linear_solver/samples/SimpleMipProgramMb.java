@@ -11,10 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Minimal example to call the GLOP solver.
+// Minimal example to call the MIP solver.
 // [START program]
-package com.google.ortools.modelbuilder.samples;
-
+package com.google.ortools.linearsolver.samples;
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.modelbuilder.LinearExpr;
@@ -24,8 +23,8 @@ import com.google.ortools.modelbuilder.SolveStatus;
 import com.google.ortools.modelbuilder.Variable;
 // [END import]
 
-/** Minimal Linear Programming example to showcase calling the solver. */
-public final class SimpleLpProgramMb {
+/** Minimal Mixed Integer Programming example to showcase calling the solver. */
+public final class SimpleMipProgramMb {
   public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START model]
@@ -35,9 +34,9 @@ public final class SimpleLpProgramMb {
 
     // [START variables]
     double infinity = java.lang.Double.POSITIVE_INFINITY;
-    // Create the variables x and y.
-    Variable x = model.newNumVar(0.0, infinity, "x");
-    Variable y = model.newNumVar(0.0, infinity, "y");
+    // x and y are integer non-negative variables.
+    Variable x = model.newIntVar(0.0, infinity, "x");
+    Variable y = model.newIntVar(0.0, infinity, "y");
 
     System.out.println("Number of variables = " + model.numVariables());
     // [END variables]
@@ -58,8 +57,8 @@ public final class SimpleLpProgramMb {
     // [END objective]
 
     // [START solve]
-    // Solve with the GLOP LP solver.
-    ModelSolver solver = new ModelSolver("glop");
+    // Solve with the SCIP MIP solver.
+    ModelSolver solver = new ModelSolver("scip");
     final SolveStatus status = solver.solve(model);
     // [END solve]
 
@@ -80,6 +79,6 @@ public final class SimpleLpProgramMb {
     // [END advanced]
   }
 
-  private SimpleLpProgramMb() {}
+  private SimpleMipProgramMb() {}
 }
 // [END program]

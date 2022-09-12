@@ -60,7 +60,7 @@ setup(
         ],
         '@PROJECT_NAME@.constraint_solver':['$<TARGET_FILE_NAME:pywrapcp>', '*.pyi'],
         '@PROJECT_NAME@.linear_solver':['$<TARGET_FILE_NAME:pywraplp>', '*.pyi'],
-        '@PROJECT_NAME@.model_builder.python':['$<TARGET_FILE_NAME:pywrap_model_builder_helper>', '*.pyi'],
+        '@PROJECT_NAME@.linear_solver.python':['$<TARGET_FILE_NAME:pywrap_model_builder_helper>', '*.pyi'],
         '@PROJECT_NAME@.packing':['*.pyi'],
         '@PROJECT_NAME@.pdlp':['*.pyi'],
         '@PROJECT_NAME@.sat':['*.pyi'],

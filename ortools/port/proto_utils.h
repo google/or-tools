@@ -19,10 +19,12 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/util/parse_proto.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
 
 #include "absl/base/attributes.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 
 namespace operations_research {
 
@@ -68,6 +70,47 @@ bool ProtobufTextFormatMergeFromString(const std::string& proto_text_string,
 #else   // defined(__PORTABLE_PLATFORM__)
   return google::protobuf::TextFormat::MergeFromString(proto_text_string,
                                                        proto);
+#endif  // !defined(__PORTABLE_PLATFORM__)
+}
+
+// Tries to parse `text` as a text format proto. On a success, stores the result
+// in `message_out` and returns true, otherwise, returns `false` with an
+// explanation in `error_out`.
+//
+// When compiled with lite protos, any nonempty `text` will result in an error,
+// as lite protos do not support parsing from text format.
+//
+// NOTE: this API is optimized for implementing AbslParseFlag(). The error
+// message will be multiline and is designed to be easily read when printed.
+template <typename ProtoType>
+bool ProtobufParseTextProtoForFlag(absl::string_view text,
+                                   ProtoType* message_out,
+                                   std::string* error_out) {
+#if defined(__PORTABLE_PLATFORM__)
+  if (text.empty()) {
+    *message_out = ProtoType();
+    return true;
+  }
+  *error_out =
+      "cannot parse text protos on this platform (platform uses lite protos do "
+      "not support parsing text protos)";
+  return false;
+#else   // defined(__PORTABLE_PLATFORM__)
+  return ParseTextProtoForFlag(text, message_out, error_out);
+#endif  // !defined(__PORTABLE_PLATFORM__)
+}
+
+template <typename ProtoType>
+std::string ProtobufTextFormatPrintToString(const ProtoType proto) {
+#if defined(__PORTABLE_PLATFORM__)
+  return absl::StrCat(
+      "<text protos not supported with lite protobuf, cannot print proto "
+      "message of type ",
+      proto.GetTypeName(), ">");
+#else   // defined(__PORTABLE_PLATFORM__)
+  std::string result;
+  google::protobuf::TextFormat::PrintToString(proto, &result);
+  return result;
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
