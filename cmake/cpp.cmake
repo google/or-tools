@@ -265,6 +265,10 @@ add_subdirectory(ortools/linear_solver/wrappers)
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_wrappers>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_wrappers)
 
+add_subdirectory(ortools/linear_solver/proto_solver)
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_proto_solver>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
+
 ###################
 ## Install rules ##
 ###################
