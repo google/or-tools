@@ -86,7 +86,7 @@ def main():
 
     # [START print_solution]
     if status == pywraplp.Solver.OPTIMAL:
-        num_bins = 0.
+        num_bins = 0
         for j in data['bins']:
             if y[j].solution_value() == 1:
                 bin_items = []
@@ -95,7 +95,7 @@ def main():
                     if x[i, j].solution_value() > 0:
                         bin_items.append(i)
                         bin_weight += data['weights'][i]
-                if bin_weight > 0:
+                if bin_items:
                     num_bins += 1
                     print('Bin number', j)
                     print('  Items packed:', bin_items)
