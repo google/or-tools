@@ -59,6 +59,14 @@ cc_library(
 )
 
 cc_library(
+    name = "flat_matrix",
+    hdrs = ["flat_matrix.h"],
+    deps = [
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "vector_map",
     hdrs = ["vector_map.h"],
     deps = [
