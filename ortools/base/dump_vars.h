@@ -45,6 +45,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include "absl/container/inlined_vector.h"
 
 /* need extra level to force extra eval */
 #define DUMP_FOR_EACH_N0(F)
@@ -100,6 +101,16 @@
 
 namespace operations_research::base {
 namespace internal_dump_vars {
+
+// needed by routing
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const ::absl::InlinedVector<T, 8>& vec)
+{
+  for (T it: vec) {
+    os << ::std::to_string(it) << ',';
+  }
+  return os;
+}
 
 using DumpNames = ::std::vector<::std::string>;
 
