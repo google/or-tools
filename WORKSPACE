@@ -22,7 +22,7 @@ git_repository(
 # Abseil-cpp
 git_repository(
     name = "com_google_absl",
-    tag = "20211102.0",
+    tag = "20220623.1",
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
