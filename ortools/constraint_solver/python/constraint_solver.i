@@ -1974,7 +1974,18 @@ namespace operations_research {
 %unignore IntVarLocalSearchOperator::IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::~IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::Size;
+%unignore IntVarLocalSearchOperator::Var;
+%unignore IntVarLocalSearchOperator::AddVars;
+%unignore IntVarLocalSearchOperator::IsIncremental;
+%unignore IntVarLocalSearchOperator::Activate;
+%unignore IntVarLocalSearchOperator::Deactivate;
+%unignore IntVarLocalSearchOperator::Activated;
+%unignore IntVarLocalSearchOperator::OldValue;
+%unignore IntVarLocalSearchOperator::PrevValue;
+%unignore IntVarLocalSearchOperator::Value;
+%unignore IntVarLocalSearchOperator::SetValue;
 %feature("nodirector") IntVarLocalSearchOperator::Start;
+%unignore IntVarLocalSearchOperator::OnStart;
 %rename (OneNeighbor) IntVarLocalSearchOperator::MakeOneNeighbor;
 
 
