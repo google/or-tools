@@ -289,6 +289,17 @@ add_custom_command(
     python/setup.py
     Py${PROJECT_NAME}_proto
     ${PROJECT_NAMESPACE}::ortools
+    pywrapinit
+    pywrapknapsack_solver
+    linear_sum_assignment_pybind11
+    max_flow_pybind11
+    min_cost_flow_pybind11
+    pywrapcp
+    pywraplp
+    pywrap_model_builder_helper
+    swig_helper
+    pywraprcpsp
+    sorted_interval_list
   BYPRODUCTS
     python/${PYTHON_PROJECT}
     python/${PYTHON_PROJECT}.egg-info
