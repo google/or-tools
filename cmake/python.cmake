@@ -349,7 +349,7 @@ if(BUILD_TESTING)
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
     COMMAND ${VENV_Python3_EXECUTABLE} -m pip install --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PYTHON_PROJECT}
     # install modules only required to run examples
-    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install pandas matplotlib
+    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install pandas matplotlib pytest
     BYPRODUCTS ${VENV_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Create venv and install ${PYTHON_PROJECT}"
@@ -383,7 +383,7 @@ function(add_python_test FILE_NAME)
   if(BUILD_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
   message(STATUS "Configuring test ${FILE_NAME} done")
