@@ -880,7 +880,7 @@ void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
   auto* sat_solver = m->GetOrCreate<SatSolver>();
   for (const Literal literal : mapping->Literals(ct.bool_and().literals())) {
     literals.push_back(literal);
-    sat_solver->AddProblemClause(literals);
+    sat_solver->AddProblemClause(literals, /*is_safe=*/false);
     literals.pop_back();
   }
 }

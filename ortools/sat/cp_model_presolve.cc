@@ -378,6 +378,8 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
 
   bool changed = false;
   context_->tmp_literals.clear();
+  const absl::flat_hash_set<int> enforcement_literals_set(
+      ct->enforcement_literal().begin(), ct->enforcement_literal().end());
   for (const int literal : ct->bool_and().literals()) {
     if (context_->LiteralIsFalse(literal)) {
       context_->UpdateRuleStats("bool_and: always false");
@@ -386,6 +388,15 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
     if (context_->LiteralIsTrue(literal)) {
       changed = true;
       continue;
+    }
+    if (enforcement_literals_set.contains(literal)) {
+      context_->UpdateRuleStats("bool_and: x => x");
+      changed = true;
+      continue;
+    }
+    if (enforcement_literals_set.contains(NegatedRef(literal))) {
+      context_->UpdateRuleStats("bool_and: x => not x");
+      return MarkConstraintAsFalse(ct);
     }
     if (context_->VariableIsUniqueAndRemovable(literal)) {
       changed = true;
