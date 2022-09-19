@@ -1095,7 +1095,16 @@ class CpModel(object):
         return ct
 
     def AddElement(self, index, variables, target):
-        """Adds the element constraint: `variables[index] == target`."""
+        """Adds the element constraint: `variables[index] == target`.
+
+    Args:
+      index: The index of the variable that's being constrained.
+      variables: A list of variables.
+      target: The value that the variable must be equal to.
+
+    Returns:
+      An instance of the `Constraint` class.
+    """
 
         if not variables:
             raise ValueError('AddElement expects a non-empty variables array')
