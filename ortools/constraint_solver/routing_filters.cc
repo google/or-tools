@@ -2118,7 +2118,8 @@ void AppendLightWeightDimensionFilters(
       if (transits[vehicle_class] != nullptr) continue;
       const auto& evaluator = dimension->GetUnaryTransitEvaluator(vehicle);
       transits[vehicle_class] = [&evaluator, dimension, num_slacks](
-                                    int64_t node, int64_t next) -> Interval {
+                                    int64_t node,
+                                    int64_t /*next*/) -> Interval {
         if (node >= num_slacks) return {0, 0};
         const int64_t min_transit = evaluator(node);
         const int64_t max_transit =
