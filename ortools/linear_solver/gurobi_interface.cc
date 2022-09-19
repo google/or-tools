@@ -1080,12 +1080,12 @@ void GurobiInterface::SetPresolveMode(int value) {
   switch (value) {
     case MPSolverParameters::PRESOLVE_OFF: {
       CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE,
-                                       GRB_INT_PAR_PRESOLVE));
+                                       GRB_PRESOLVE_OFF));
       break;
     }
     case MPSolverParameters::PRESOLVE_ON: {
       CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE,
-                                       GRB_INT_PAR_PRESOLVE));
+                                       GRB_PRESOLVE_AUTO));
       break;
     }
     default: {
