@@ -62,6 +62,7 @@ endif()
 
 if(XPRESS_FOUND AND NOT TARGET XPRESS::XPRESS)
   add_library(XPRESS::XPRESS UNKNOWN IMPORTED)
+
   if(UNIX)
     target_include_directories(XPRESS::XPRESS SYSTEM INTERFACE "${XPRESS_ROOT}/include")
   endif()
