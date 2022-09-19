@@ -70,7 +70,7 @@
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
 #include "ortools/util/time_limit.h"
 
-ABSL_FLAG(int, num_gurobi_threads, 4,
+ABSL_FLAG(int, num_gurobi_threads, /*auto=*/0,
           "Number of threads available for Gurobi.");
 
 namespace operations_research {
@@ -1079,13 +1079,13 @@ void GurobiInterface::SetDualTolerance(double value) {
 void GurobiInterface::SetPresolveMode(int value) {
   switch (value) {
     case MPSolverParameters::PRESOLVE_OFF: {
-      CheckedGurobiCall(
-          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, false));
+      CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE,
+                                       GRB_INT_PAR_PRESOLVE));
       break;
     }
     case MPSolverParameters::PRESOLVE_ON: {
-      CheckedGurobiCall(
-          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, true));
+      CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE,
+                                       GRB_INT_PAR_PRESOLVE));
       break;
     }
     default: {
