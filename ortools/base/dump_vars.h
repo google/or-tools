@@ -58,14 +58,16 @@
 #define DUMP_FOR_EACH_N7(F, a, ...) F(a) DUMP_FOR_EACH_N6(F, __VA_ARGS__)
 #define DUMP_FOR_EACH_N8(F, a, ...) F(a) DUMP_FOR_EACH_N7(F, __VA_ARGS__)
 
-#define DUMP_CONCATENATE(x,y) x##y
-#define DUMP_FOR_EACH_(N, F, ...) DUMP_CONCATENATE(DUMP_FOR_EACH_N, N)(F __VA_OPT__(, __VA_ARGS__))
+#define DUMP_CONCATENATE(x, y) x##y
+#define DUMP_FOR_EACH_(N, F, ...) \
+  DUMP_CONCATENATE(DUMP_FOR_EACH_N, N)(F __VA_OPT__(, __VA_ARGS__))
 
-#define DUMP_NARG(...) DUMP_NARG_(__VA_OPT__(__VA_ARGS__ ,) DUMP_RSEQ_N())
+#define DUMP_NARG(...) DUMP_NARG_(__VA_OPT__(__VA_ARGS__, ) DUMP_RSEQ_N())
 #define DUMP_NARG_(...) DUMP_ARG_N(__VA_ARGS__)
 #define DUMP_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, N, ...) N
 #define DUMP_RSEQ_N() 8, 7, 6, 5, 4, 3, 2, 1, 0
-#define DUMP_FOR_EACH(F, ...) DUMP_FOR_EACH_(DUMP_NARG(__VA_ARGS__), F __VA_OPT__(,  __VA_ARGS__))
+#define DUMP_FOR_EACH(F, ...) \
+  DUMP_FOR_EACH_(DUMP_NARG(__VA_ARGS__), F __VA_OPT__(, __VA_ARGS__))
 
 #define DUMP_VARS(...) DUMP_VARS_WITH_BINDINGS((), __VA_ARGS__)
 
@@ -104,9 +106,9 @@ namespace internal_dump_vars {
 
 // needed by routing
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const ::absl::InlinedVector<T, 8>& vec)
-{
-  for (T it: vec) {
+std::ostream& operator<<(std::ostream& os,
+                         const ::absl::InlinedVector<T, 8>& vec) {
+  for (T it : vec) {
     os << ::std::to_string(it) << ',';
   }
   return os;

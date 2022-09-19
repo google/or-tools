@@ -44,7 +44,7 @@
 
 #if defined(SWIGJAVA)
 // swig/java/typenames.i and swig/java/java.swg typemap C++ 'long int' as Java 'int'
-// but in C++ 'int64_t' aka 'int64_t' is defined as "long int" and we have
+// but in C++ 'int64_t' is defined as "long int" and we have
 // overload functions int/int64_t in routing...
 // So we need to force C++ 'long int' to map to Java 'long' instead of 'int' reusing the
 // typemap for C++ `long long`
