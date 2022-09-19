@@ -165,15 +165,17 @@ def main():
 
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
-    # To benefit from the linearization of the circuit constraint.
-    solver.parameters.linearization_level = 2
+    solver.parameters.num_search_workers = 8
     solver.parameters.max_time_in_seconds = 15.0
     #solver.parameters.log_search_progress = True
 
-    solver.Solve(model)
-    #print(solver.ResponseStats())
-    print_solution(solver, visited_nodes, used_arcs, num_nodes, num_vehicles)
-
+    status = solver.Solve(model)
+    if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
+        print(f'search returned with the status {solver.StatusName(status)}')
+        print_solution(solver, visited_nodes, used_arcs,
+                       num_nodes, num_vehicles)
+    else:
+        print(solver.ResponseStats())
 
 
 if __name__ == '__main__':
