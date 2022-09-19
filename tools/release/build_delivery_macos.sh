@@ -121,7 +121,7 @@ function build_java() {
     command -v mvn | xargs echo "mvn: " | tee -a build.log
     echo "Check java version..."
     java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
-    if [ ${PLATFORM} == "arm64" ]; then
+    if [[ ${PLATFORM} == "arm64" ]]; then
       java -version 2>&1 | head -n 1 | grep "11\.0"
     else
       java -version 2>&1 | head -n 1 | grep "1\.8"
@@ -175,7 +175,7 @@ function build_java() {
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy jar to export
-  if [ ${PLATFORM} == "arm64" ]; then
+  if [[ ${PLATFORM} == "arm64" ]]; then
     cp temp_java/java/ortools-darwin-aarch64/target/*.jar* export/
   else
     cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
@@ -199,7 +199,7 @@ function build_python() {
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
 
-  if [ ${PLATFORM} == "arm64" ]; then
+  if [[ ${PLATFORM} == "arm64" ]]; then
     local -r PY=(3.8 3.9 3.10)
   else
     local -r PY=(3.6 3.7 3.8 3.9 3.10)

@@ -170,7 +170,7 @@ function build_java() {
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy jar to export
-  if [ ${PLATFORM} == "aarch64" ]; then
+  if [[ ${PLATFORM} == "aarch64" ]]; then
     cp temp_java/java/ortools-linux-aarch64/target/*.jar* export/
   else
     cp temp_java/java/ortools-linux-x86-64/target/*.jar* export/

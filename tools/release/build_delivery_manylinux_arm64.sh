@@ -65,7 +65,7 @@ function build_delivery() {
   assert_defined ORTOOLS_IMG
 
   # Enable docker over QEMU support
-  if [ ${PLATFORM} != "arm64" ]; then
+  if [[ ${PLATFORM} != "arm64" ]]; then
     docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
   fi
 
