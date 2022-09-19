@@ -174,9 +174,9 @@ std::string ToString(const IterationStats& iter_stats,
   }
   if (convergence_information.has_value()) {
     const RelativeConvergenceInformation relative_information =
-        ComputeRelativeResiduals(termination_criteria.eps_optimal_absolute(),
-                                 termination_criteria.eps_optimal_relative(),
-                                 bound_norms, *convergence_information);
+        ComputeRelativeResiduals(
+            EffectiveOptimalityCriteria(termination_criteria), bound_norms,
+            *convergence_information);
     return absl::StrCat(iteration_string, " | ",
                         ToString(*convergence_information, relative_information,
                                  termination_criteria.optimality_norm()));
@@ -199,9 +199,9 @@ std::string ToShortString(const IterationStats& iter_stats,
   }
   if (convergence_information.has_value()) {
     const RelativeConvergenceInformation relative_information =
-        ComputeRelativeResiduals(termination_criteria.eps_optimal_absolute(),
-                                 termination_criteria.eps_optimal_relative(),
-                                 bound_norms, *convergence_information);
+        ComputeRelativeResiduals(
+            EffectiveOptimalityCriteria(termination_criteria), bound_norms,
+            *convergence_information);
     return absl::StrCat(
         iteration_string, " | ",
         ToShortString(*convergence_information, relative_information,
@@ -1273,7 +1273,7 @@ std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
     *solve_log.add_iteration_stats() = stats;
   }
   ApplyRestartChoice(restart);
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 void Solver::ResetAverageToCurrent() {
@@ -1589,19 +1589,19 @@ std::optional<TerminationReason> Solver::ApplyPresolveIfEnabled(
     std::optional<PrimalAndDualSolution>* const initial_solution) {
   const bool presolve_enabled = params_.presolve_options().use_glop();
   if (!presolve_enabled) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   if (!IsLinearProgram(WorkingQp())) {
     LOG(WARNING)
         << "Skipping presolve, which is only supported for linear programs";
-    return absl::nullopt;
+    return std::nullopt;
   }
   absl::StatusOr<MPModelProto> model = QpToMpModelProto(WorkingQp());
   if (!model.ok()) {
     LOG(WARNING)
         << "Skipping presolve because of error converting to MPModelProto: "
         << model.status();
-    return absl::nullopt;
+    return std::nullopt;
   }
   if (initial_solution->has_value()) {
     LOG(WARNING) << "Ignoring initial solution. Initial solutions "
@@ -1643,7 +1643,7 @@ std::optional<TerminationReason> Solver::ApplyPresolveIfEnabled(
     row_scaling_vec_ = OnesVector(sharded_working_qp_.DualSharder());
     return GlopStatusToTerminationReason(presolve_info_->preprocessor.status());
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 PrimalAndDualSolution Solver::RecoverOriginalSolution(
@@ -1933,7 +1933,7 @@ SolverResult Solver::Solve(
     double inverse_step_size;
     const auto lipschitz_result =
         EstimateMaximumSingularValueOfConstraintMatrix(
-            sharded_working_qp_, absl::nullopt, absl::nullopt,
+            sharded_working_qp_, std::nullopt, std::nullopt,
             /*desired_relative_error=*/0.2, /*failure_probability=*/0.0005,
             random);
     // With high probability, the estimate of the lipschitz term is within
@@ -2032,7 +2032,7 @@ SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
     const std::atomic<bool>* interrupt_solve,
     IterationStatsCallback iteration_stats_callback) {
-  return PrimalDualHybridGradient(std::move(qp), params, absl::nullopt,
+  return PrimalDualHybridGradient(std::move(qp), params, std::nullopt,
                                   interrupt_solve,
                                   std::move(iteration_stats_callback));
 }

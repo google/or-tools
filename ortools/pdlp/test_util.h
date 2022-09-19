@@ -17,14 +17,14 @@
 #include <cstdint>
 #include <sstream>
 #include <string>
-#include <type_traits>
+#include <tuple>
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/types/span.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
 #include "ortools/pdlp/quadratic_program.h"
 
 namespace operations_research::pdlp {

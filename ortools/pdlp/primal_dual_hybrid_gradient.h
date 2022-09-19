@@ -19,8 +19,6 @@
 #include <optional>
 
 #include "Eigen/Core"
-#include "absl/status/statusor.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/solve_log.pb.h"

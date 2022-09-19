@@ -21,7 +21,7 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
 #include "ortools/base/threadpool.h"
 
 namespace operations_research::pdlp {

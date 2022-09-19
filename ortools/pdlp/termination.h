@@ -14,6 +14,7 @@
 #ifndef PDLP_TERMINATION_H_
 #define PDLP_TERMINATION_H_
 
+#include <atomic>
 #include <optional>
 
 #include "ortools/pdlp/solve_log.pb.h"
@@ -35,6 +36,14 @@ struct QuadraticProgramBoundNorms {
   double l_inf_norm_constraint_bounds;
 };
 
+// Computes the effective optimality criteria for a TerminationCriteria.
+TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
+    const TerminationCriteria& termination_criteria);
+
+// Like previous overload but takes a SimpleOptimalityCriteria. Useful in
+// unit tests where no TerminationCriteria is naturally available.
+TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
+    const TerminationCriteria::SimpleOptimalityCriteria& simple_criteria);
 // Checks if any of the simple termination criteria are satisfied by `stats`,
 // and returns a termination reason if so, and nullopt otherwise. The "simple"
 // termination criteria are `time_sec_limit`, `iteration_limit`,
@@ -98,7 +107,7 @@ struct RelativeConvergenceInformation {
 };
 
 RelativeConvergenceInformation ComputeRelativeResiduals(
-    double eps_optimal_absolute, double eps_optimal_relative,
+    const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
     const QuadraticProgramBoundNorms& norms,
     const ConvergenceInformation& stats);
 

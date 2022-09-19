@@ -54,24 +54,70 @@ message TerminationCriteria {
   // If the algorithm terminates with termination_reason =
   // TERMINATION_REASON_OPTIMAL then
   //
-  // | primal_objective - dual_objective | <= eps_optimal_absolute +
-  //  eps_optimal_relative * ( | primal_objective | + | dual_objective | )
-  // norm(primal_residual, p) <= eps_optimal_absolute + eps_optimal_relative *
-  //  norm(b, p)
-  // norm(dual_residual, p) <= eps_optimal_absolute + eps_optimal_relative *
-  //  norm(c, p)
+  // When using DetailedOptimalityCriteria the conditions to declare a solution
+  // optimal are:
+  // | primal_objective - dual_objective | <=
+  //     eps_optimal_objective_gap_absolute +
+  //     eps_optimal_objective_gap_relative *
+  //         ( | primal_objective | + | dual_objective | )
+  // norm(primal_residual, p) <=
+  //     eps_optimal_primal_residual_absolute +
+  //     eps_optimal_primal_residual_relative * norm(b, p)
+  // norm(dual_residual, p) <=
+  //     eps_optimal_dual_residual_absolute +
+  //     eps_optimal_dual_residual_relative * norm(c, p)
   // It is possible to prove that a solution satisfying the above conditions
-  // also satisfies SCS's optimality conditions (see link above) with ϵ_pri =
-  // ϵ_dual = ϵ_gap = eps_optimal_absolute = eps_optimal_relative. (ϵ_pri,
-  // ϵ_dual, and ϵ_gap are SCS's parameters).
+  // also satisfies SCS's optimality conditions (see link above) with
+  // ϵ_pri = ϵ_dual = ϵ_gap = eps_optimal_*_absolute = eps_optimal_*_relative.
+  // (ϵ_pri, ϵ_dual, and ϵ_gap are SCS's parameters).
+  // When using SimpleOptimalityCriteria all the eps_optimal_*_absolute have the
+  // same value eps_optimal_absolute and all the eps_optimal_*_relative have the
+  // same value eps_optimal_relative.
 
-  // Absolute tolerance on the duality gap, primal feasibility, and dual
-  // feasibility.
-  optional double eps_optimal_absolute = 2 [default = 1.0e-6];
+  message SimpleOptimalityCriteria {
+    // Absolute tolerance on the primal residual, dual residual, and objective
+    // gap.
+    optional double eps_optimal_absolute = 1 [default = 1.0e-6];
+    // Relative tolerance on the primal residual, dual residual, and objective
+    // gap.
+    optional double eps_optimal_relative = 2 [default = 1.0e-6];
+  }
 
-  // Relative tolerance on the duality gap, primal feasibility, and dual
-  // feasibility.
-  optional double eps_optimal_relative = 3 [default = 1.0e-6];
+  message DetailedOptimalityCriteria {
+    // Absolute tolerance on the primal residual.
+    optional double eps_optimal_primal_residual_absolute = 1 [default = 1.0e-6];
+    // Relative tolerance on the primal residual.
+    optional double eps_optimal_primal_residual_relative = 2 [default = 1.0e-6];
+    // Absolute tolerance on the dual residual.
+    optional double eps_optimal_dual_residual_absolute = 3 [default = 1.0e-6];
+    // Relative tolerance on the dual residual.
+    optional double eps_optimal_dual_residual_relative = 4 [default = 1.0e-6];
+    // Absolute tolerance on the objective gap.
+    optional double eps_optimal_objective_gap_absolute = 5 [default = 1.0e-6];
+    // Relative tolerance on the objective gap.
+    optional double eps_optimal_objective_gap_relative = 6 [default = 1.0e-6];
+  }
+
+  // If none are set explicitly the deprecated eps_optimal_absolute and
+  // eps_optimal_relative are used to construct a SimpleOptimalityCriteria.
+  oneof optimality_criteria {
+    SimpleOptimalityCriteria simple_optimality_criteria = 9;
+    DetailedOptimalityCriteria detailed_optimality_criteria = 10;
+  }
+
+  // Absolute tolerance on primal residual, dual residual, and the objective
+  // gap.
+  // Deprecated, use simple_optimality_criteria instead.
+  // TODO(b/241462829) delete this deprecated field.
+  optional double eps_optimal_absolute = 2
+      [deprecated = true, default = 1.0e-6];
+
+  // Relative tolerance on primal residual, dual residual, and the objective
+  // gap.
+  // Deprecated, use simple_optimality_criteria instead.
+  // TODO(b/241462829) delete this deprecated field.
+  optional double eps_optimal_relative = 3
+      [deprecated = true, default = 1.0e-6];
 
   // If the following two conditions hold we say that we have obtained an
   // approximate dual ray, which is an approximate certificate of primal

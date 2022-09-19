@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <random>
 #include <utility>
 #include <vector>
@@ -567,7 +568,7 @@ TEST(EstimateSingularValuesTest, CorrectForTestLp) {
   // The test_lp matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1].
   std::mt19937 random(1);
   auto result = EstimateMaximumSingularValueOfConstraintMatrix(
-      lp, absl::nullopt, absl::nullopt,
+      lp, std::nullopt, std::nullopt,
       /*desired_relative_error=*/0.01,
       /*failure_probability=*/0.001, random);
   EXPECT_NEAR(result.singular_value, 4.76945, 0.01);
@@ -584,7 +585,7 @@ TEST(EstimateSingularValuesTest, CorrectForTestLpWithActivePrimalSubspace) {
   // so the projected matrix is [ 2 1 2; 1 1 0; 4 0 0; 0 1.5 -1].
   std::mt19937 random(1);
   auto result = EstimateMaximumSingularValueOfConstraintMatrix(
-      lp, primal_solution, absl::nullopt, /*desired_relative_error=*/0.01,
+      lp, primal_solution, std::nullopt, /*desired_relative_error=*/0.01,
       /*failure_probability=*/0.001, random);
   EXPECT_NEAR(result.singular_value, 4.73818, 0.01);
   EXPECT_LT(result.num_iterations, 300);
@@ -601,7 +602,7 @@ TEST(EstimateSingularValuesTest, CorrectForTestLpWithActiveDualSubspace) {
   // so the projected matrix is [ 2 1 1 2; 4 0 0 0; 0 0 1.5 -1].
   std::mt19937 random(1);
   auto result = EstimateMaximumSingularValueOfConstraintMatrix(
-      lp, absl::nullopt, dual_solution, /*desired_relative_error=*/0.01,
+      lp, std::nullopt, dual_solution, /*desired_relative_error=*/0.01,
       /*failure_probability=*/0.001, random);
   EXPECT_NEAR(result.singular_value, 4.64203, 0.01);
   EXPECT_LT(result.num_iterations, 300);
@@ -637,7 +638,7 @@ TEST(EstimateSingularValuesTest, CorrectForDiagonalLp) {
   // The diagonal_lp matrix is [ 2 0 0 0; 0 1 0 0; 0 0 -3 0; 0 0 0 -1].
   std::mt19937 random(1);
   auto result = EstimateMaximumSingularValueOfConstraintMatrix(
-      lp, absl::nullopt, absl::nullopt,
+      lp, std::nullopt, std::nullopt,
       /*desired_relative_error=*/0.01,
       /*failure_probability=*/0.001, random);
   EXPECT_NEAR(result.singular_value, 3, 0.0001);

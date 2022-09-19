@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <limits>
 #include <optional>
 #include <random>
@@ -26,6 +25,7 @@
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/random/distributions.h"
+#include "ortools/base/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/quadratic_program.h"

@@ -14,7 +14,7 @@
 #include "ortools/pdlp/iteration_stats.h"
 
 #include <cmath>
-#include <limits>
+#include <optional>
 #include <utility>
 
 #include "Eigen/Core"
@@ -218,7 +218,7 @@ TEST(GetConvergenceInformation, GetsCorrectEntry) {
 
   EXPECT_THAT(
       GetConvergenceInformation(test_stats, POINT_TYPE_ITERATE_DIFFERENCE),
-      Eq(absl::nullopt));
+      Eq(std::nullopt));
 }
 
 TEST(GetInfeasibilityInformation, GetsCorrectEntry) {
@@ -246,7 +246,7 @@ TEST(GetInfeasibilityInformation, GetsCorrectEntry) {
 
   EXPECT_THAT(
       GetInfeasibilityInformation(test_stats, POINT_TYPE_ITERATE_DIFFERENCE),
-      Eq(absl::nullopt));
+      Eq(std::nullopt));
 }
 
 TEST(GetPointMetadata, GetsCorrectEntry) {
@@ -273,7 +273,7 @@ TEST(GetPointMetadata, GetsCorrectEntry) {
   EXPECT_EQ(current_info->active_primal_variable_count(), 1);
 
   EXPECT_THAT(GetPointMetadata(test_stats, POINT_TYPE_ITERATE_DIFFERENCE),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 }  // namespace

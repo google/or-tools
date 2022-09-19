@@ -25,7 +25,6 @@
 #include "Eigen/SparseCore"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research::pdlp {
