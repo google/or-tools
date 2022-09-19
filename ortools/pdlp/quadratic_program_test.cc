@@ -389,9 +389,9 @@ TEST(QpFromMpModelProtoTest, DoesNotIncludeNames) {
       QpFromMpModelProto(TinyModelWithNames(), /*relax_integer_variables=*/true,
                          /*include_names=*/false);
   ASSERT_TRUE(lp.ok()) << lp.status();
-  EXPECT_EQ(lp->problem_name, absl::nullopt);
-  EXPECT_EQ(lp->variable_names, absl::nullopt);
-  EXPECT_EQ(lp->constraint_names, absl::nullopt);
+  EXPECT_EQ(lp->problem_name, std::nullopt);
+  EXPECT_EQ(lp->variable_names, std::nullopt);
+  EXPECT_EQ(lp->constraint_names, std::nullopt);
 }
 
 TEST(QpFromMpModelProtoTest, IncludesNames) {

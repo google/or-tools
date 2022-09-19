@@ -267,6 +267,7 @@ cc_test(
         ":gtest_main",
         ":solvers_cc_proto",
         ":solvers_proto_validation",
+        "//ortools/base:protobuf_util",
         "@com_google_absl//absl/status",
     ],
 )

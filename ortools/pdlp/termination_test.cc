@@ -13,6 +13,7 @@
 
 #include "ortools/pdlp/termination.h"
 
+#include <atomic>
 #include <cmath>
 #include <optional>
 
@@ -26,6 +27,7 @@ namespace operations_research::pdlp {
 namespace {
 
 using ::google::protobuf::util::ParseTextOrDie;
+using ::testing::EqualsProto;
 using ::testing::FieldsAre;
 using ::testing::Optional;
 
@@ -52,8 +54,10 @@ class TerminationTest : public testing::TestWithParam<OptimalityNorm> {
  protected:
   void SetUp() override {
     test_criteria_ = ParseTextOrDie<TerminationCriteria>(R"pb(
-      eps_optimal_absolute: 1.0e-4
-      eps_optimal_relative: 1.0e-4
+      simple_optimality_criteria {
+        eps_optimal_absolute: 1.0e-4
+        eps_optimal_relative: 1.0e-4
+      }
       eps_primal_infeasible: 1.0e-6
       eps_dual_infeasible: 1.0e-6
       time_sec_limit: 1.0
@@ -64,6 +68,230 @@ class TerminationTest : public testing::TestWithParam<OptimalityNorm> {
 
   TerminationCriteria test_criteria_;
 };
+class DetailedRelativeTerminationTest
+    : public testing::TestWithParam<OptimalityNorm> {
+ protected:
+  void SetUp() override {
+    test_criteria_ = ParseTextOrDie<TerminationCriteria>(R"pb(
+      detailed_optimality_criteria {
+        eps_optimal_primal_residual_absolute: 0.0
+        eps_optimal_primal_residual_relative: 1.0e-4
+        eps_optimal_dual_residual_absolute: 0.0
+        eps_optimal_dual_residual_relative: 1.0e-4
+        eps_optimal_objective_gap_absolute: 0.0
+        eps_optimal_objective_gap_relative: 1.0e-4
+      }
+    )pb");
+    test_criteria_.set_optimality_norm(GetParam());
+  }
+
+  TerminationCriteria test_criteria_;
+};
+
+class DetailedAbsoluteTerminationTest
+    : public testing::TestWithParam<OptimalityNorm> {
+ protected:
+  void SetUp() override {
+    test_criteria_ = ParseTextOrDie<TerminationCriteria>(R"pb(
+      detailed_optimality_criteria {
+        eps_optimal_primal_residual_absolute: 1.0e-4
+        eps_optimal_primal_residual_relative: 0.0
+        eps_optimal_dual_residual_absolute: 1.0e-4
+        eps_optimal_dual_residual_relative: 0.0
+        eps_optimal_objective_gap_absolute: 1.0e-4
+        eps_optimal_objective_gap_relative: 0.0
+      }
+    )pb");
+    test_criteria_.set_optimality_norm(GetParam());
+  }
+
+  TerminationCriteria test_criteria_;
+};
+
+TEST(EffectiveOptimalityCriteriaTest, SimpleOptimalityCriteriaOverload) {
+  const auto criteria =
+      ParseTextOrDie<TerminationCriteria::SimpleOptimalityCriteria>(
+          R"pb(eps_optimal_absolute: 1.0e-4 eps_optimal_relative: 2.0e-4)pb");
+  EXPECT_THAT(EffectiveOptimalityCriteria(criteria), EqualsProto(R"pb(
+                eps_optimal_primal_residual_absolute: 1.0e-4
+                eps_optimal_primal_residual_relative: 2.0e-4
+                eps_optimal_dual_residual_absolute: 1.0e-4
+                eps_optimal_dual_residual_relative: 2.0e-4
+                eps_optimal_objective_gap_absolute: 1.0e-4
+                eps_optimal_objective_gap_relative: 2.0e-4
+              )pb"));
+}
+
+TEST(EffectiveOptimalityCriteriaTest, SimpleOptimalityCriteriaInput) {
+  const auto criteria =
+      ParseTextOrDie<TerminationCriteria>(R"pb(simple_optimality_criteria {
+                                                 eps_optimal_absolute: 1.0e-4
+                                                 eps_optimal_relative: 2.0e-4
+                                               })pb");
+  EXPECT_THAT(EffectiveOptimalityCriteria(criteria), EqualsProto(R"pb(
+                eps_optimal_primal_residual_absolute: 1.0e-4
+                eps_optimal_primal_residual_relative: 2.0e-4
+                eps_optimal_dual_residual_absolute: 1.0e-4
+                eps_optimal_dual_residual_relative: 2.0e-4
+                eps_optimal_objective_gap_absolute: 1.0e-4
+                eps_optimal_objective_gap_relative: 2.0e-4
+              )pb"));
+}
+
+TEST(EffectiveOptimalityCriteriaTest, DetailedOptimalityCriteriaInput) {
+  const auto criteria = ParseTextOrDie<TerminationCriteria>(
+      R"pb(detailed_optimality_criteria {
+             eps_optimal_primal_residual_absolute: 1.0e-4
+             eps_optimal_primal_residual_relative: 2.0e-4
+             eps_optimal_dual_residual_absolute: 3.0e-4
+             eps_optimal_dual_residual_relative: 4.0e-4
+             eps_optimal_objective_gap_absolute: 5.0e-4
+             eps_optimal_objective_gap_relative: 6.0e-4
+           })pb");
+  EXPECT_THAT(EffectiveOptimalityCriteria(criteria),
+              EqualsProto(criteria.detailed_optimality_criteria()));
+}
+
+TEST(EffectiveOptimalityCriteriaTest, DeprecatedInput) {
+  const auto criteria = ParseTextOrDie<TerminationCriteria>(
+      R"pb(eps_optimal_absolute: 1.0e-4 eps_optimal_relative: 2.0e-4)pb");
+  EXPECT_THAT(EffectiveOptimalityCriteria(criteria), EqualsProto(R"pb(
+                eps_optimal_primal_residual_absolute: 1.0e-4
+                eps_optimal_primal_residual_relative: 2.0e-4
+                eps_optimal_dual_residual_absolute: 1.0e-4
+                eps_optimal_dual_residual_relative: 2.0e-4
+                eps_optimal_objective_gap_absolute: 1.0e-4
+                eps_optimal_objective_gap_relative: 2.0e-4
+              )pb"));
+}
+
+TEST_P(DetailedRelativeTerminationTest, TerminationWithNearOptimal) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.00019
+      dual_objective: 1.0
+      l_inf_primal_residual: 11e-4
+      l_inf_dual_residual: 5.4e-4
+      l2_primal_residual: 14e-4
+      l2_dual_residual: 6e-4
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+  EXPECT_THAT(
+      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+      Optional(
+          FieldsAre(TERMINATION_REASON_OPTIMAL, POINT_TYPE_CURRENT_ITERATE)));
+}
+
+TEST_P(DetailedRelativeTerminationTest, NoTerminationWithExcessiveGap) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.00021
+      dual_objective: 1.0
+      l_inf_primal_residual: 11e-4
+      l_inf_dual_residual: 5.4e-4
+      l2_primal_residual: 14e-4
+      l2_dual_residual: 6e-4
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+            absl::nullopt);
+}
+
+TEST_P(DetailedRelativeTerminationTest,
+       NoTerminationWithExcessivePrimalResidual) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.00019
+      dual_objective: 1.0
+      l_inf_primal_residual: 13e-4
+      l_inf_dual_residual: 5.4e-4
+      l2_primal_residual: 15e-4
+      l2_dual_residual: 6e-4
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+            absl::nullopt);
+}
+
+TEST_P(DetailedRelativeTerminationTest,
+       NoTerminationWithExcessiveDualResidual) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.00019
+      dual_objective: 1.0
+      l_inf_primal_residual: 11e-4
+      l_inf_dual_residual: 5.6e-4
+      l2_primal_residual: 14e-4
+      l2_dual_residual: 7e-4
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+            absl::nullopt);
+}
+
+TEST_P(DetailedAbsoluteTerminationTest, TerminationWithNearOptimal) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.00009
+      dual_objective: 1.0
+      l_inf_primal_residual: 9e-5
+      l_inf_dual_residual: 9e-5
+      l2_primal_residual: 9e-5
+      l2_dual_residual: 9e-5
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+  EXPECT_THAT(
+      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+      Optional(
+          FieldsAre(TERMINATION_REASON_OPTIMAL, POINT_TYPE_CURRENT_ITERATE)));
+}
+
+TEST_P(DetailedAbsoluteTerminationTest, NoTerminationWithExcessiveGap) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.00011
+      dual_objective: 1.0
+      l_inf_primal_residual: 9e-5
+      l_inf_dual_residual: 9e-5
+      l2_primal_residual: 9e-5
+      l2_dual_residual: 9e-5
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+            absl::nullopt);
+}
+
+TEST_P(DetailedAbsoluteTerminationTest,
+       NoTerminationWithExcessivePrimalResidual) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.00009
+      dual_objective: 1.0
+      l_inf_primal_residual: 11e-5
+      l_inf_dual_residual: 9e-5
+      l2_primal_residual: 11e-5
+      l2_dual_residual: 9e-5
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+            absl::nullopt);
+}
+
+TEST_P(DetailedAbsoluteTerminationTest,
+       NoTerminationWithExcessiveDualResidual) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.00009
+      dual_objective: 1.0
+      l_inf_primal_residual: 9e-5
+      l_inf_dual_residual: 11e-5
+      l2_primal_residual: 9e-5
+      l2_dual_residual: 11e-5
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+            absl::nullopt);
+}
 
 TEST_P(TerminationTest, NoTerminationWithLargeGap) {
   IterationStats stats = ParseTextOrDie<IterationStats>(R"pb(
@@ -73,19 +301,19 @@ TEST_P(TerminationTest, NoTerminationWithLargeGap) {
       dual_objective: -50.0
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_F(SimpleTerminationTest, NoTerminationWithEmptyIterationStats) {
   IterationStats stats;
   EXPECT_EQ(CheckSimpleTerminationCriteria(test_criteria_, stats),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(TerminationTest, NoTerminationWithEmptyIterationStats) {
   IterationStats stats;
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_F(SimpleTerminationTest, TerminationWithInterruptSolve) {
@@ -170,7 +398,7 @@ TEST_P(TerminationTest, NoTerminationWithInfeasibleDualRay) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_infeasible_ray,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(TerminationTest, NoTerminationWithNegativeDualRayObjective) {
@@ -181,7 +409,7 @@ TEST_P(TerminationTest, NoTerminationWithNegativeDualRayObjective) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_wrong_sign,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(TerminationTest, NoTerminationWithZeroDualRayObjective) {
@@ -192,7 +420,7 @@ TEST_P(TerminationTest, NoTerminationWithZeroDualRayObjective) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_objective_zero,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(TerminationTest, DualInfeasibleFromAverageIterate) {
@@ -217,7 +445,7 @@ TEST_P(TerminationTest, NoTerminationWithInfeasiblePrimalRay) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_infeasible_ray,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(TerminationTest, NoTerminationWithPositivePrimalRayObjective) {
@@ -228,7 +456,7 @@ TEST_P(TerminationTest, NoTerminationWithPositivePrimalRayObjective) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_wrong_sign,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(TerminationTest, NoTerminationWithZeroPrimalRayObjective) {
@@ -239,10 +467,10 @@ TEST_P(TerminationTest, NoTerminationWithZeroPrimalRayObjective) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_objective_zero,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
-TEST_P(TerminationTest, Optimal) {
+TEST_P(TerminationTest, TerminationWithOptimal) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 1.0
@@ -251,6 +479,24 @@ TEST_P(TerminationTest, Optimal) {
       l_inf_dual_residual: 0.0
       l2_primal_residual: 0.0
       l2_dual_residual: 0.0
+      candidate_type: POINT_TYPE_CURRENT_ITERATE
+    })pb");
+
+  std::optional<TerminationReasonAndPointType> maybe_result =
+      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
+  EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
+                                               POINT_TYPE_CURRENT_ITERATE)));
+}
+
+TEST_P(TerminationTest, TerminationWithNearOptimal) {
+  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
+    convergence_information {
+      primal_objective: 1.00019
+      dual_objective: 1.0
+      l_inf_primal_residual: 11e-4
+      l_inf_dual_residual: 5.4e-4
+      l2_primal_residual: 14e-4
+      l2_dual_residual: 6e-4
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
 
@@ -313,7 +559,7 @@ TEST_P(TerminationTest, NoTerminationWithBadGap) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_bad_gap,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(TerminationTest, NoTerminationWithInfiniteGap) {
@@ -328,7 +574,7 @@ TEST_P(TerminationTest, NoTerminationWithInfiniteGap) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_infinite_gap,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(TerminationTest, NoTerminationWithBadPrimalResidual) {
@@ -343,7 +589,7 @@ TEST_P(TerminationTest, NoTerminationWithBadPrimalResidual) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_bad_primal,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(TerminationTest, NoTerminationWithBadDualResidual) {
@@ -358,7 +604,7 @@ TEST_P(TerminationTest, NoTerminationWithBadDualResidual) {
     })pb");
   EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_bad_dual,
                                      TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 // Tests that optimality is checked with non-strict inequalities, as per the
@@ -375,8 +621,10 @@ TEST_P(TerminationTest, ZeroToleranceZeroError) {
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
 
-  test_criteria_.set_eps_optimal_absolute(0.0);
-  test_criteria_.set_eps_optimal_relative(0.0);
+  test_criteria_.mutable_simple_optimality_criteria()->set_eps_optimal_absolute(
+      0.0);
+  test_criteria_.mutable_simple_optimality_criteria()->set_eps_optimal_relative(
+      0.0);
 
   std::optional<TerminationReasonAndPointType> maybe_result =
       CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
@@ -388,9 +636,18 @@ INSTANTIATE_TEST_SUITE_P(OptNorm, TerminationTest,
                          testing::Values(OPTIMALITY_NORM_L2,
                                          OPTIMALITY_NORM_L_INF));
 
+INSTANTIATE_TEST_SUITE_P(DetailedRelativeOptNorm,
+                         DetailedRelativeTerminationTest,
+                         testing::Values(OPTIMALITY_NORM_L2,
+                                         OPTIMALITY_NORM_L_INF));
+INSTANTIATE_TEST_SUITE_P(DetailedAbsoluteOptNorm,
+                         DetailedAbsoluteTerminationTest,
+                         testing::Values(OPTIMALITY_NORM_L2,
+                                         OPTIMALITY_NORM_L_INF));
+
 TEST(TerminationTest, L2AndLInfDiffer) {
   auto test_criteria = ParseTextOrDie<TerminationCriteria>(R"pb(
-    eps_optimal_relative: 1.0)pb");
+    simple_optimality_criteria { eps_optimal_relative: 1.0 })pb");
 
   // For L2, optimality requires norm(primal_residual, 2) <= 14.49
   // For LInf, optimality requires norm(primal_residual, Inf) <= 12.0
@@ -408,8 +665,8 @@ TEST(TerminationTest, L2AndLInfDiffer) {
       {13.0,
        TerminationReasonAndPointType{.reason = TERMINATION_REASON_OPTIMAL,
                                      .type = POINT_TYPE_CURRENT_ITERATE},
-       absl::nullopt},
-      {15.0, absl::nullopt, absl::nullopt}};
+       std::nullopt},
+      {15.0, std::nullopt, std::nullopt}};
 
   for (const auto& config : test_configs) {
     IterationStats stats;
@@ -469,9 +726,14 @@ TEST(ComputeRelativeResiduals,
   stats.set_l2_primal_residual(1.0);
   stats.set_l_inf_dual_residual(1.0);
   stats.set_l2_dual_residual(1.0);
+  TerminationCriteria termination_criteria;
+  termination_criteria.mutable_simple_optimality_criteria()
+      ->set_eps_optimal_absolute(0.0);
+  termination_criteria.mutable_simple_optimality_criteria()
+      ->set_eps_optimal_relative(1.0e-6);
   const RelativeConvergenceInformation relative_info = ComputeRelativeResiduals(
-      /*eps_optimal_absolute=*/0.0, /*eps_optimal_relative=*/1.0e-6,
-      TestLpBoundNorms(), stats);
+      EffectiveOptimalityCriteria(termination_criteria), TestLpBoundNorms(),
+      stats);
 
   EXPECT_EQ(relative_info.relative_l_inf_primal_residual, 1.0 / 12.0);
   EXPECT_EQ(relative_info.relative_l2_primal_residual, 1.0 / std::sqrt(210.0));
@@ -497,9 +759,11 @@ TEST(ComputeRelativeResiduals,
   stats.set_l2_primal_residual(1.0);
   stats.set_l_inf_dual_residual(1.0);
   stats.set_l2_dual_residual(1.0);
+  TerminationCriteria::SimpleOptimalityCriteria opt_criteria;
+  opt_criteria.set_eps_optimal_absolute(0.0);
+  opt_criteria.set_eps_optimal_relative(0.0);
   const RelativeConvergenceInformation relative_info = ComputeRelativeResiduals(
-      /*eps_optimal_absolute=*/0.0, /*eps_optimal_relative=*/0.0,
-      TestLpBoundNorms(), stats);
+      EffectiveOptimalityCriteria(opt_criteria), TestLpBoundNorms(), stats);
 
   EXPECT_EQ(relative_info.relative_l_inf_primal_residual, 0.0);
   EXPECT_EQ(relative_info.relative_l2_primal_residual, 0.0);
@@ -520,9 +784,11 @@ TEST(ComputeRelativeResiduals,
   stats.set_l2_primal_residual(1.0);
   stats.set_l_inf_dual_residual(1.0);
   stats.set_l2_dual_residual(1.0);
+  TerminationCriteria::SimpleOptimalityCriteria opt_criteria;
+  opt_criteria.set_eps_optimal_absolute(1.0e-6);
+  opt_criteria.set_eps_optimal_relative(1.0e-6);
   const RelativeConvergenceInformation relative_info = ComputeRelativeResiduals(
-      /*eps_optimal_absolute=*/1.0e-6, /*eps_optimal_relative=*/1.0e-6,
-      TestLpBoundNorms(), stats);
+      EffectiveOptimalityCriteria(opt_criteria), TestLpBoundNorms(), stats);
 
   EXPECT_EQ(relative_info.relative_l_inf_primal_residual, 1.0 / (1.0 + 12.0));
   EXPECT_EQ(relative_info.relative_l2_primal_residual,
@@ -534,6 +800,41 @@ TEST(ComputeRelativeResiduals,
   // The relative optimality gap should just be the objective difference divided
   // by 1.0 + the sum of absolute values.
   EXPECT_EQ(relative_info.relative_optimality_gap, 5.0 / (1.0 + 15.0));
+}
+
+TEST(ComputeRelativeResiduals,
+     ComputesCorrectRelativeResidualsForDetailedTerminationCriteria) {
+  ConvergenceInformation stats;
+  // If the absolute error tolerance and relative error tolerance are equal (and
+  // nonzero), the relative residuals are the absolute residuals divided by 1.0
+  // plus the corresponding norms.
+  stats.set_primal_objective(10.0);
+  stats.set_dual_objective(5.0);
+  stats.set_l_inf_primal_residual(1.0);
+  stats.set_l2_primal_residual(1.0);
+  stats.set_l_inf_dual_residual(1.0);
+  stats.set_l2_dual_residual(1.0);
+  TerminationCriteria::DetailedOptimalityCriteria opt_criteria;
+  opt_criteria.set_eps_optimal_primal_residual_absolute(2.0e-6);
+  opt_criteria.set_eps_optimal_primal_residual_relative(2.0e-4);
+  opt_criteria.set_eps_optimal_dual_residual_absolute(1.0e-3);
+  opt_criteria.set_eps_optimal_dual_residual_relative(1.0e-4);
+  opt_criteria.set_eps_optimal_objective_gap_absolute(3.0e-8);
+  opt_criteria.set_eps_optimal_objective_gap_relative(3.0e-7);
+  const RelativeConvergenceInformation relative_info =
+      ComputeRelativeResiduals(opt_criteria, TestLpBoundNorms(), stats);
+
+  EXPECT_EQ(relative_info.relative_l_inf_primal_residual, 1.0 / (0.01 + 12.0));
+  EXPECT_EQ(relative_info.relative_l2_primal_residual,
+            1.0 / (0.01 + std::sqrt(210.0)));
+
+  EXPECT_EQ(relative_info.relative_l_inf_dual_residual, 1.0 / (10.0 + 5.5));
+  EXPECT_EQ(relative_info.relative_l2_dual_residual,
+            1.0 / (10.0 + sqrt(36.25)));
+
+  // The relative optimality gap should just be the objective difference divided
+  // by 0.1 + the sum of absolute values.
+  EXPECT_EQ(relative_info.relative_optimality_gap, 5.0 / (0.1 + 15.0));
 }
 
 }  // namespace

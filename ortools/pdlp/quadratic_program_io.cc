@@ -29,6 +29,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "ortools/base/basictypes.h"
+#include "ortools/base/check.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"

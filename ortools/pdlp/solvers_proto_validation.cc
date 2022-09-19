@@ -16,6 +16,8 @@
 #include <cmath>
 
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/pdlp/solvers.pb.h"
 
@@ -24,50 +26,85 @@ namespace operations_research::pdlp {
 using ::absl::InvalidArgumentError;
 using ::absl::OkStatus;
 
+absl::Status CheckNonNegative(const double value,
+                              const absl::string_view name) {
+  if (std::isnan(value)) {
+    return InvalidArgumentError(absl::StrCat(name, " is NAN"));
+  }
+  if (value < 0) {
+    return InvalidArgumentError(absl::StrCat(name, " must be non-negative"));
+  }
+  return absl::OkStatus();
+}
 absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
   if (criteria.optimality_norm() != OPTIMALITY_NORM_L_INF &&
       criteria.optimality_norm() != OPTIMALITY_NORM_L2) {
     return InvalidArgumentError("invalid value for optimality_norm");
   }
-  if (std::isnan(criteria.eps_optimal_absolute())) {
-    return InvalidArgumentError("eps_optimal_absolute is NAN");
+  if (criteria.has_detailed_optimality_criteria() ||
+      criteria.has_simple_optimality_criteria()) {
+    if (criteria.has_eps_optimal_absolute()) {
+      return InvalidArgumentError(
+          "eps_optimal_absolute should not be set if "
+          "detailed_optimality_criteria or simple_optimality_criteria is used");
+    }
+    if (criteria.has_eps_optimal_relative()) {
+      return InvalidArgumentError(
+          "eps_optimal_relative should not be set if "
+          "detailed_optimality_criteria or simple_optimality_criteria is used");
+    }
   }
-  if (criteria.eps_optimal_absolute() < 0) {
-    return InvalidArgumentError("eps_optimal_absolute must be non-negative");
+  if (criteria.has_detailed_optimality_criteria()) {
+    RETURN_IF_ERROR(CheckNonNegative(
+        criteria.detailed_optimality_criteria()
+            .eps_optimal_primal_residual_absolute(),
+        "detailed_optimality_criteria.eps_optimal_primal_residual_absolute"));
+    RETURN_IF_ERROR(CheckNonNegative(
+        criteria.detailed_optimality_criteria()
+            .eps_optimal_primal_residual_relative(),
+        "detailed_optimality_criteria.eps_optimal_primal_residual_relative"));
+    RETURN_IF_ERROR(CheckNonNegative(
+        criteria.detailed_optimality_criteria()
+            .eps_optimal_dual_residual_absolute(),
+        "detailed_optimality_criteria.eps_optimal_dual_residual_absolute"));
+    RETURN_IF_ERROR(CheckNonNegative(
+        criteria.detailed_optimality_criteria()
+            .eps_optimal_dual_residual_relative(),
+        "detailed_optimality_criteria.eps_optimal_dual_residual_relative"));
+    RETURN_IF_ERROR(CheckNonNegative(
+        criteria.detailed_optimality_criteria()
+            .eps_optimal_objective_gap_absolute(),
+        "detailed_optimality_criteria.eps_optimal_objective_gap_absolute"));
+    RETURN_IF_ERROR(CheckNonNegative(
+        criteria.detailed_optimality_criteria()
+            .eps_optimal_objective_gap_relative(),
+        "detailed_optimality_criteria.eps_optimal_objective_gap_relative"));
+  } else if (criteria.has_simple_optimality_criteria()) {
+    RETURN_IF_ERROR(CheckNonNegative(
+        criteria.simple_optimality_criteria().eps_optimal_absolute(),
+        "simple_optimality_criteria.eps_optimal_absolute"));
+    RETURN_IF_ERROR(CheckNonNegative(
+        criteria.simple_optimality_criteria().eps_optimal_relative(),
+        "simple_optimality_criteria.eps_optimal_relative"));
+  } else {
+    RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_absolute(),
+                                     "eps_optimal_absolute"));
+    RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_relative(),
+                                     "eps_optimal_relative"));
   }
-  if (std::isnan(criteria.eps_optimal_relative())) {
-    return InvalidArgumentError("eps_optimal_relative is NAN");
-  }
-  if (criteria.eps_optimal_relative() < 0) {
-    return InvalidArgumentError("eps_optimal_relative must be non-negative");
-  }
-  if (std::isnan(criteria.eps_primal_infeasible())) {
-    return InvalidArgumentError("eps_primal_infeasible is NAN");
-  }
-  if (criteria.eps_primal_infeasible() < 0) {
-    return InvalidArgumentError("eps_primal_infeasible must be non-negative");
-  }
-  if (std::isnan(criteria.eps_dual_infeasible())) {
-    return InvalidArgumentError("eps_dual_infeasible is NAN");
-  }
-  if (criteria.eps_dual_infeasible() < 0) {
-    return InvalidArgumentError("eps_dual_infeasible must be non-negative");
-  }
-  if (std::isnan(criteria.time_sec_limit())) {
-    return InvalidArgumentError("time_sec_limit is NAN");
-  }
-  if (criteria.time_sec_limit() < 0) {
-    return InvalidArgumentError("time_sec_limit must be non-negative");
-  }
+  RETURN_IF_ERROR(CheckNonNegative(criteria.eps_primal_infeasible(),
+                                   "eps_primal_infeasible"));
+  RETURN_IF_ERROR(
+      CheckNonNegative(criteria.eps_dual_infeasible(), "eps_dual_infeasible"));
+  RETURN_IF_ERROR(
+      CheckNonNegative(criteria.eps_dual_infeasible(), "eps_dual_infeasible"));
+  RETURN_IF_ERROR(
+      CheckNonNegative(criteria.time_sec_limit(), "time_sec_limit"));
   if (criteria.iteration_limit() < 0) {
     return InvalidArgumentError("iteration_limit must be non-negative");
   }
-  if (std::isnan(criteria.kkt_matrix_pass_limit())) {
-    return InvalidArgumentError("kkt_matrix_pass_limit is NAN");
-  }
-  if (criteria.kkt_matrix_pass_limit() < 0) {
-    return InvalidArgumentError("kkt_matrix_pass_limit must be non-negative");
-  }
+  RETURN_IF_ERROR(CheckNonNegative(criteria.kkt_matrix_pass_limit(),
+                                   "kkt_matrix_pass_limit"));
   return OkStatus();
 }
 

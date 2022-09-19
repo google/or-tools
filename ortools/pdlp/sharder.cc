@@ -23,6 +23,7 @@
 #include "Eigen/SparseCore"
 #include "absl/synchronization/blocking_counter.h"
 #include "absl/time/time.h"
+#include "ortools/base/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/threadpool.h"

@@ -17,13 +17,17 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
+//#include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/protobuf_util.h"
 #include "ortools/pdlp/solvers.pb.h"
 
 namespace operations_research::pdlp {
 namespace {
 
+using ::google::protobuf::util::ParseTextOrDie;
 using ::testing::HasSubstr;
 
 TEST(ValidateTerminationCriteria, DefaultIsValid) {
@@ -40,36 +44,128 @@ TEST(ValidateTerminationCriteria, BadOptimalityNorm) {
   EXPECT_THAT(status.message(), HasSubstr("optimality_norm"));
 }
 
-TEST(ValidateTerminationCriteria, BadEpsOptimalAbsolute) {
-  TerminationCriteria criteria_negative;
-  criteria_negative.set_eps_optimal_absolute(-1.0);
-  const absl::Status status_negative =
-      ValidateTerminationCriteria(criteria_negative);
-  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status_negative.message(), HasSubstr("eps_optimal_absolute"));
+void TestTerminationCriteriaValidation(
+    std::string_view termination_criteria_string,
+    std::string_view error_substring) {
+  TerminationCriteria termination_criteria =
+      ParseTextOrDie<TerminationCriteria>(std::string(termination_criteria_string));
+  const absl::Status status = ValidateTerminationCriteria(termination_criteria);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument)
+      << "With termination criteria \"" << termination_criteria_string << "\"";
+  EXPECT_THAT(status.message(), HasSubstr(error_substring))
+      << "With termination criteria \"" << termination_criteria_string << "\"";
+}
 
-  TerminationCriteria criteria_nan;
-  criteria_nan.set_eps_optimal_absolute(
-      std::numeric_limits<double>::quiet_NaN());
-  const absl::Status status_nan = ValidateTerminationCriteria(criteria_nan);
-  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status_nan.message(), HasSubstr("eps_optimal_absolute"));
+// Tests that the given DetailedOptimalityCriteria field can't be negative or
+// NAN.
+void TestDetailedOptimalityCriteriaFieldValidation(
+    std::string_view field_name) {
+  const std::string full_field_name =
+      absl::StrCat("detailed_optimality_criteria.", field_name);
+  TestTerminationCriteriaValidation(
+      absl::StrCat("detailed_optimality_criteria { ", field_name, ": -1.0 }"),
+      full_field_name);
+  TestTerminationCriteriaValidation(
+      absl::StrCat("detailed_optimality_criteria { ", field_name, ": nan }"),
+      full_field_name);
+}
+
+TEST(ValidateTerminationCriteria, BadEpsOptimalAbsolute) {
+  TestTerminationCriteriaValidation("eps_optimal_absolute: -1.0",
+                                    "eps_optimal_absolute");
+  TestTerminationCriteriaValidation("eps_optimal_absolute: nan",
+                                    "eps_optimal_absolute");
 }
 
 TEST(ValidateTerminationCriteria, BadEpsOptimalRelative) {
-  TerminationCriteria criteria_negative;
-  criteria_negative.set_eps_optimal_relative(-1.0);
-  const absl::Status status_negative =
-      ValidateTerminationCriteria(criteria_negative);
-  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status_negative.message(), HasSubstr("eps_optimal_relative"));
+  TestTerminationCriteriaValidation("eps_optimal_relative: -1.0",
+                                    "eps_optimal_relative");
+  TestTerminationCriteriaValidation("eps_optimal_relative: nan",
+                                    "eps_optimal_relative");
+}
 
-  TerminationCriteria criteria_nan;
-  criteria_nan.set_eps_optimal_relative(
-      std::numeric_limits<double>::quiet_NaN());
-  const absl::Status status_nan = ValidateTerminationCriteria(criteria_nan);
-  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status_nan.message(), HasSubstr("eps_optimal_relative"));
+TEST(ValidateTerminationCriteria, BadSimpleEpsOptimalAbsolute) {
+  TestTerminationCriteriaValidation(
+      "simple_optimality_criteria { eps_optimal_absolute: -1.0}",
+      "simple_optimality_criteria.eps_optimal_absolute");
+  TestTerminationCriteriaValidation(
+      "simple_optimality_criteria { eps_optimal_absolute: nan}",
+      "simple_optimality_criteria.eps_optimal_absolute");
+}
+
+TEST(ValidateTerminationCriteria, BadSimpleEpsOptimalRelative) {
+  TestTerminationCriteriaValidation(
+      "simple_optimality_criteria { eps_optimal_relative: -1.0}",
+      "simple_optimality_criteria.eps_optimal_relative");
+  TestTerminationCriteriaValidation(
+      "simple_optimality_criteria { eps_optimal_relative: nan}",
+      "simple_optimality_criteria.eps_optimal_relative");
+}
+
+TEST(ValidateTerminationCriteria, BadDetailedEpsOptimalPrimalResidualAbsolute) {
+  TestDetailedOptimalityCriteriaFieldValidation(
+      "eps_optimal_primal_residual_absolute");
+}
+
+TEST(ValidateTerminationCriteria, BadDetailedEpsOptimalPrimalResidualRelative) {
+  TestDetailedOptimalityCriteriaFieldValidation(
+      "eps_optimal_primal_residual_relative");
+}
+
+TEST(ValidateTerminationCriteria, BadDetailedEpsOptimalDualResidualAbsolute) {
+  TestDetailedOptimalityCriteriaFieldValidation(
+      "eps_optimal_dual_residual_absolute");
+}
+
+TEST(ValidateTerminationCriteria, BadDetailedEpsOptimalDualResidualRelative) {
+  TestDetailedOptimalityCriteriaFieldValidation(
+      "eps_optimal_dual_residual_relative");
+}
+
+TEST(ValidateTerminationCriteria, BadDetailedEpsOptimalDualityGapAbsolute) {
+  TestDetailedOptimalityCriteriaFieldValidation(
+      "eps_optimal_objective_gap_absolute");
+}
+
+TEST(ValidateTerminationCriteria, BadDetailedEpsOptimalDualityGapRelative) {
+  TestDetailedOptimalityCriteriaFieldValidation(
+      "eps_optimal_objective_gap_relative");
+}
+
+TEST(ValidateTerminationCriteria, AbsoluteAndSimpleOptimalityCriteria) {
+  TerminationCriteria termination_criteria =
+      ParseTextOrDie<TerminationCriteria>(
+          "eps_optimal_absolute: 1.0 simple_optimality_criteria { }");
+  const absl::Status status = ValidateTerminationCriteria(termination_criteria);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("simple_optimality_criteria"));
+}
+
+TEST(ValidateTerminationCriteria, RelativeAndSimpleOptimalityCriteria) {
+  TerminationCriteria termination_criteria =
+      ParseTextOrDie<TerminationCriteria>(
+          "eps_optimal_relative: 1.0 simple_optimality_criteria { }");
+  const absl::Status status = ValidateTerminationCriteria(termination_criteria);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("simple_optimality_criteria"));
+}
+
+TEST(ValidateTerminationCriteria, AbsoluteAndDetailedOptimalityCriteria) {
+  TerminationCriteria termination_criteria =
+      ParseTextOrDie<TerminationCriteria>(
+          "eps_optimal_absolute: 1.0 detailed_optimality_criteria { }");
+  const absl::Status status = ValidateTerminationCriteria(termination_criteria);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("detailed_optimality_criteria"));
+}
+
+TEST(ValidateTerminationCriteria, RelativeAndDetailedOptimalityCriteria) {
+  TerminationCriteria termination_criteria =
+      ParseTextOrDie<TerminationCriteria>(
+          "eps_optimal_relative: 1.0 detailed_optimality_criteria { }");
+  const absl::Status status = ValidateTerminationCriteria(termination_criteria);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("detailed_optimality_criteria"));
 }
 
 TEST(ValidateTerminationCriteria, BadEpsPriamlInfeasible) {

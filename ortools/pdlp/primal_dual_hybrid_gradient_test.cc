@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -30,6 +31,7 @@
 #include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -75,14 +77,19 @@ PrimalDualHybridGradientParams CreateSolverParams(
         PrimalDualHybridGradientParams::MALITSKY_POCK_LINESEARCH_RULE);
   }
 
-  params.mutable_termination_criteria()->set_eps_optimal_relative(0.0);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_relative(0.0);
   if (use_iteration_limit) {
     // This effectively forces convergence on the iteration limit only.
     params.mutable_termination_criteria()->set_iteration_limit(iteration_limit);
-    params.mutable_termination_criteria()->set_eps_optimal_absolute(0.0);
+    params.mutable_termination_criteria()
+        ->mutable_simple_optimality_criteria()
+        ->set_eps_optimal_absolute(0.0);
   } else {
-    params.mutable_termination_criteria()->set_eps_optimal_absolute(
-        eps_optimal_absolute);
+    params.mutable_termination_criteria()
+        ->mutable_simple_optimality_criteria()
+        ->set_eps_optimal_absolute(eps_optimal_absolute);
   }
   if (use_diagonal_qp_trust_region_solver) {
     params.set_use_diagonal_qp_trust_region_solver(true);
@@ -613,8 +620,12 @@ PrimalDualHybridGradientParams ParamsWithNoLimits() {
   PrimalDualHybridGradientParams params;
   // This disables the termination limits. A termination criteria must be set
   // for the solver to terminate.
-  params.mutable_termination_criteria()->set_eps_optimal_relative(0.0);
-  params.mutable_termination_criteria()->set_eps_optimal_absolute(0.0);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_relative(0.0);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_absolute(0.0);
   params.set_record_iteration_stats(true);
   return params;
 }
@@ -882,24 +893,24 @@ TEST(PrimalDualHybridGradientTest,
   EXPECT_EQ(output.solve_log.iteration_stats().size(), iteration_limit + 1);
   for (const auto& stats : output.solve_log.iteration_stats()) {
     EXPECT_NE(GetConvergenceInformation(stats, POINT_TYPE_CURRENT_ITERATE),
-              absl::nullopt);
+              std::nullopt);
     EXPECT_NE(GetInfeasibilityInformation(stats, POINT_TYPE_CURRENT_ITERATE),
-              absl::nullopt);
+              std::nullopt);
     EXPECT_NE(GetPointMetadata(stats, POINT_TYPE_CURRENT_ITERATE),
-              absl::nullopt);
+              std::nullopt);
     if (stats.iteration_number() > 0) {
       EXPECT_NE(GetConvergenceInformation(stats, POINT_TYPE_AVERAGE_ITERATE),
-                absl::nullopt);
+                std::nullopt);
       EXPECT_NE(GetInfeasibilityInformation(stats, POINT_TYPE_AVERAGE_ITERATE),
-                absl::nullopt);
+                std::nullopt);
       EXPECT_NE(GetPointMetadata(stats, POINT_TYPE_AVERAGE_ITERATE),
-                absl::nullopt);
+                std::nullopt);
 
       EXPECT_NE(
           GetInfeasibilityInformation(stats, POINT_TYPE_ITERATE_DIFFERENCE),
-          absl::nullopt);
+          std::nullopt);
       EXPECT_NE(GetPointMetadata(stats, POINT_TYPE_ITERATE_DIFFERENCE),
-                absl::nullopt);
+                std::nullopt);
     }
   }
 }
@@ -1214,7 +1225,9 @@ PrimalAndDualSolution TinyLpSolution() {
 
 TEST(PrimalDualHybridGradientTest, WarmStartedAtOptimum) {
   PrimalDualHybridGradientParams params = ParamsWithNoLimits();
-  params.mutable_termination_criteria()->set_eps_optimal_absolute(1.0e-10);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_absolute(1.0e-10);
 
   SolverResult output =
       PrimalDualHybridGradient(TinyLp(), params, TinyLpSolution());
@@ -1260,8 +1273,12 @@ TEST(PrimalDualHybridGradientTest, EmptyQp) {
 TEST(PrimalDualHybridGradientTest, RespectsInterrupt) {
   std::atomic<bool> interrupt_solve;
   PrimalDualHybridGradientParams params;
-  params.mutable_termination_criteria()->set_eps_optimal_absolute(0.0);
-  params.mutable_termination_criteria()->set_eps_optimal_relative(0.0);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_absolute(0.0);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_relative(0.0);
 
   interrupt_solve.store(true);
   const SolverResult output =
@@ -1273,8 +1290,12 @@ TEST(PrimalDualHybridGradientTest, RespectsInterrupt) {
 TEST(PrimalDualHybridGradientTest, RespectsInterruptFromCallback) {
   std::atomic<bool> interrupt_solve;
   PrimalDualHybridGradientParams params;
-  params.mutable_termination_criteria()->set_eps_optimal_absolute(0.0);
-  params.mutable_termination_criteria()->set_eps_optimal_relative(0.0);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_absolute(0.0);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_relative(0.0);
 
   interrupt_solve.store(false);
   auto callback = [&](const IterationCallbackInfo& info) {
@@ -1293,8 +1314,12 @@ TEST(PrimalDualHybridGradientTest, RespectsInterruptFromCallback) {
 TEST(PrimalDualHybridGradientTest, IgnoresFalseInterrupt) {
   std::atomic<bool> interrupt_solve;
   PrimalDualHybridGradientParams params;
-  params.mutable_termination_criteria()->set_eps_optimal_absolute(0.0);
-  params.mutable_termination_criteria()->set_eps_optimal_relative(0.0);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_absolute(0.0);
+  params.mutable_termination_criteria()
+      ->mutable_simple_optimality_criteria()
+      ->set_eps_optimal_relative(0.0);
   params.mutable_termination_criteria()->set_kkt_matrix_pass_limit(1);
 
   interrupt_solve.store(false);
@@ -1326,6 +1351,37 @@ TEST(PrimalDualHybridGradientTest, HugeNumShards) {
   SolverResult output = PrimalDualHybridGradient(TestLp(), params);
   EXPECT_EQ(output.solve_log.termination_reason(),
             TERMINATION_REASON_ITERATION_LIMIT);
+}
+
+TEST(PrimalDualHybridGradientTest, DetailedTerminationCriteria) {
+  const int iteration_upperbound = 300;
+  PrimalDualHybridGradientParams params = CreateSolverParams(
+      iteration_upperbound,
+      /*eps_optimal_absolute=*/1.0e-5, /*enable_scaling=*/true,
+      /*num_threads=*/4, /*use_iteration_limit=*/false,
+      /*use_malitsky_pock_linesearch=*/false,
+      /*use_diagonal_qp_trust_region_solver=*/false);
+  params.set_major_iteration_frequency(60);
+  params.mutable_termination_criteria()->clear_simple_optimality_criteria();
+  auto* opt_criteria = params.mutable_termination_criteria()
+                           ->mutable_detailed_optimality_criteria();
+  opt_criteria->set_eps_optimal_primal_residual_absolute(1e-5);
+  opt_criteria->set_eps_optimal_primal_residual_relative(0.0);
+  opt_criteria->set_eps_optimal_dual_residual_absolute(1e-5);
+  opt_criteria->set_eps_optimal_dual_residual_relative(0.0);
+  opt_criteria->set_eps_optimal_objective_gap_absolute(1e-5);
+  opt_criteria->set_eps_optimal_objective_gap_relative(0.0);
+
+  SolverResult output = PrimalDualHybridGradient(TinyLp(), params);
+  VerifyTerminationReasonAndIterationCount(params, output,
+                                           /*use_iteration_limit=*/false);
+  VerifyObjectiveValues(output, -1.0, 1.0e-4);
+  EXPECT_THAT(output.primal_solution,
+              EigenArrayNear<double>({1, 0, 6, 2}, 1.0e-4));
+  EXPECT_THAT(output.dual_solution,
+              EigenArrayNear<double>({0.5, 4.0, 0.0}, 1.0e-4));
+  EXPECT_THAT(output.reduced_costs,
+              EigenArrayNear<double>({0.0, 1.5, -3.5, 0.0}, 1.0e-4));
 }
 
 // Verifies that the primal and dual solution satisfy the bounds constraints.

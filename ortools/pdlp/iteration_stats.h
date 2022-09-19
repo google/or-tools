@@ -14,9 +14,7 @@
 #ifndef PDLP_ITERATION_STATS_H_
 #define PDLP_ITERATION_STATS_H_
 
-#include <limits>
 #include <optional>
-#include <string>
 #include <vector>
 
 #include "Eigen/Core"
@@ -79,17 +77,17 @@ Eigen::VectorXd ReducedCosts(const ShardedQuadraticProgram& scaled_sharded_qp,
                              bool use_zero_primal_objective = false);
 
 // Finds and returns the ConvergenceInformation with the specified
-// candidate_type, or absl::nullopt if no such candidate exists.
+// candidate_type, or std::nullopt if no such candidate exists.
 std::optional<ConvergenceInformation> GetConvergenceInformation(
     const IterationStats& stats, PointType candidate_type);
 
 // Finds and returns the InfeasibilityInformation with the specified
-// candidate_type, or absl::nullopt if no such candidate exists.
+// candidate_type, or std::nullopt if no such candidate exists.
 std::optional<InfeasibilityInformation> GetInfeasibilityInformation(
     const IterationStats& stats, PointType candidate_type);
 
 // Finds and returns the PointMetadata with the specified
-// point_type, or absl::nullopt if no such point exists.
+// point_type, or std::nullopt if no such point exists.
 std::optional<PointMetadata> GetPointMetadata(const IterationStats& stats,
                                               PointType point_type);
 

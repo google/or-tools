@@ -13,6 +13,7 @@
 
 #include "ortools/pdlp/termination.h"
 
+#include <atomic>
 #include <cmath>
 #include <limits>
 #include <optional>
@@ -25,10 +26,11 @@ namespace operations_research::pdlp {
 
 namespace {
 
-bool OptimalityCriteriaMet(const OptimalityNorm optimality_norm,
-                           const double abs_tol, const double rel_tol,
-                           const ConvergenceInformation& stats,
-                           const QuadraticProgramBoundNorms& bound_norms) {
+bool OptimalityCriteriaMet(
+    const OptimalityNorm optimality_norm,
+    const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
+    const ConvergenceInformation& stats,
+    const QuadraticProgramBoundNorms& bound_norms) {
   const double abs_obj =
       std::abs(stats.primal_objective()) + std::abs(stats.dual_objective());
   const double gap =
@@ -57,9 +59,18 @@ bool OptimalityCriteriaMet(const OptimalityNorm optimality_norm,
                  << OptimalityNorm_Name(optimality_norm);
   }
 
-  return dual_err <= abs_tol + rel_tol * dual_err_baseline &&
-         primal_err <= abs_tol + rel_tol * primal_err_baseline &&
-         std::isfinite(abs_obj) && gap <= abs_tol + rel_tol * abs_obj;
+  return dual_err <=
+             optimality_criteria.eps_optimal_dual_residual_absolute() +
+                 optimality_criteria.eps_optimal_dual_residual_relative() *
+                     dual_err_baseline &&
+         primal_err <=
+             optimality_criteria.eps_optimal_primal_residual_absolute() +
+                 optimality_criteria.eps_optimal_primal_residual_relative() *
+                     primal_err_baseline &&
+         std::isfinite(abs_obj) &&
+         gap <= optimality_criteria.eps_optimal_objective_gap_absolute() +
+                    optimality_criteria.eps_optimal_objective_gap_relative() *
+                        abs_obj;
 }
 
 // Checks if the criteria for primal infeasibility are approximately
@@ -86,6 +97,40 @@ bool DualInfeasibilityCriteriaMet(double eps_dual_infeasible,
 }
 
 }  // namespace
+TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
+    const TerminationCriteria& termination_criteria) {
+  if (termination_criteria.has_detailed_optimality_criteria()) {
+    return termination_criteria.detailed_optimality_criteria();
+  }
+  TerminationCriteria::SimpleOptimalityCriteria simple_criteria;
+  if (termination_criteria.has_simple_optimality_criteria()) {
+    simple_criteria = termination_criteria.simple_optimality_criteria();
+  } else {
+    simple_criteria.set_eps_optimal_absolute(
+        termination_criteria.eps_optimal_absolute());
+    simple_criteria.set_eps_optimal_relative(
+        termination_criteria.eps_optimal_relative());
+  }
+  return EffectiveOptimalityCriteria(simple_criteria);
+}
+
+TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
+    const TerminationCriteria::SimpleOptimalityCriteria& simple_criteria) {
+  TerminationCriteria::DetailedOptimalityCriteria result;
+  result.set_eps_optimal_primal_residual_absolute(
+      simple_criteria.eps_optimal_absolute());
+  result.set_eps_optimal_primal_residual_relative(
+      simple_criteria.eps_optimal_relative());
+  result.set_eps_optimal_dual_residual_absolute(
+      simple_criteria.eps_optimal_absolute());
+  result.set_eps_optimal_dual_residual_relative(
+      simple_criteria.eps_optimal_relative());
+  result.set_eps_optimal_objective_gap_absolute(
+      simple_criteria.eps_optimal_absolute());
+  result.set_eps_optimal_objective_gap_relative(
+      simple_criteria.eps_optimal_relative());
+  return result;
+}
 
 std::optional<TerminationReasonAndPointType> CheckSimpleTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
@@ -117,10 +162,11 @@ std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
     const QuadraticProgramBoundNorms& bound_norms,
     const std::atomic<bool>* interrupt_solve,
     const bool force_numerical_termination) {
+  TerminationCriteria::DetailedOptimalityCriteria optimality_criteria =
+      EffectiveOptimalityCriteria(criteria);
   for (const auto& convergence_stats : stats.convergence_information()) {
-    if (OptimalityCriteriaMet(
-            criteria.optimality_norm(), criteria.eps_optimal_absolute(),
-            criteria.eps_optimal_relative(), convergence_stats, bound_norms)) {
+    if (OptimalityCriteriaMet(criteria.optimality_norm(), optimality_criteria,
+                              convergence_stats, bound_norms)) {
       return TerminationReasonAndPointType{
           .reason = TERMINATION_REASON_OPTIMAL,
           .type = convergence_stats.candidate_type()};
@@ -149,7 +195,7 @@ std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
     return TerminationReasonAndPointType{
         .reason = TERMINATION_REASON_NUMERICAL_ERROR, .type = POINT_TYPE_NONE};
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 QuadraticProgramBoundNorms BoundNormsFromProblemStats(
@@ -162,29 +208,39 @@ QuadraticProgramBoundNorms BoundNormsFromProblemStats(
 }
 
 RelativeConvergenceInformation ComputeRelativeResiduals(
-    const double eps_optimal_absolute, const double eps_optimal_relative,
+    const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
     const QuadraticProgramBoundNorms& norms,
     const ConvergenceInformation& stats) {
-  const double eps_ratio = eps_optimal_relative == 0.0
-                               ? std::numeric_limits<double>::infinity()
-                               : eps_optimal_absolute / eps_optimal_relative;
+  auto eps_ratio = [](const double absolute, const double relative) {
+    return relative == 0.0 ? std::numeric_limits<double>::infinity()
+                           : absolute / relative;
+  };
+  const double eps_ratio_primal =
+      eps_ratio(optimality_criteria.eps_optimal_primal_residual_absolute(),
+                optimality_criteria.eps_optimal_primal_residual_relative());
+  const double eps_ratio_dual =
+      eps_ratio(optimality_criteria.eps_optimal_dual_residual_absolute(),
+                optimality_criteria.eps_optimal_dual_residual_relative());
+  const double eps_ratio_gap =
+      eps_ratio(optimality_criteria.eps_optimal_objective_gap_absolute(),
+                optimality_criteria.eps_optimal_objective_gap_relative());
   RelativeConvergenceInformation info;
   info.relative_l_inf_primal_residual =
       stats.l_inf_primal_residual() /
-      (eps_ratio + norms.l_inf_norm_constraint_bounds);
+      (eps_ratio_primal + norms.l_inf_norm_constraint_bounds);
   info.relative_l2_primal_residual =
       stats.l2_primal_residual() /
-      (eps_ratio + norms.l2_norm_constraint_bounds);
+      (eps_ratio_primal + norms.l2_norm_constraint_bounds);
   info.relative_l_inf_dual_residual =
       stats.l_inf_dual_residual() /
-      (eps_ratio + norms.l_inf_norm_primal_linear_objective);
+      (eps_ratio_dual + norms.l_inf_norm_primal_linear_objective);
   info.relative_l2_dual_residual =
       stats.l2_dual_residual() /
-      (eps_ratio + norms.l2_norm_primal_linear_objective);
+      (eps_ratio_dual + norms.l2_norm_primal_linear_objective);
   const double abs_obj =
       std::abs(stats.primal_objective()) + std::abs(stats.dual_objective());
   const double gap = stats.primal_objective() - stats.dual_objective();
-  info.relative_optimality_gap = gap / (eps_ratio + abs_obj);
+  info.relative_optimality_gap = gap / (eps_ratio_gap + abs_obj);
 
   return info;
 }
