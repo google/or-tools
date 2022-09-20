@@ -24,10 +24,41 @@
 #include "ortools/pdlp/solvers.pb.h"
 
 namespace operations_research::pdlp {
+
+bool operator==(
+    const TerminationCriteria::DetailedOptimalityCriteria& lhs,
+    const TerminationCriteria::DetailedOptimalityCriteria& rhs) {
+  if (lhs.eps_optimal_primal_residual_absolute() !=
+      rhs.eps_optimal_primal_residual_absolute()) {
+    return false;
+  }
+  if (lhs.eps_optimal_primal_residual_relative() !=
+      rhs.eps_optimal_primal_residual_relative()) {
+    return false;
+  }
+  if (lhs.eps_optimal_dual_residual_absolute() !=
+      rhs.eps_optimal_dual_residual_absolute()) {
+    return false;
+  }
+  if (lhs.eps_optimal_dual_residual_relative() !=
+      rhs.eps_optimal_dual_residual_relative()) {
+    return false;
+  }
+  if (lhs.eps_optimal_objective_gap_absolute() !=
+      rhs.eps_optimal_objective_gap_absolute()) {
+    return false;
+  }
+  if (lhs.eps_optimal_objective_gap_relative() !=
+      rhs.eps_optimal_objective_gap_relative()) {
+    return false;
+  }
+  return true;
+}
+
 namespace {
 
 using ::google::protobuf::util::ParseTextOrDie;
-using ::testing::EqualsProto;
+using ::testing::Eq;
 using ::testing::FieldsAre;
 using ::testing::Optional;
 
@@ -112,14 +143,15 @@ TEST(EffectiveOptimalityCriteriaTest, SimpleOptimalityCriteriaOverload) {
   const auto criteria =
       ParseTextOrDie<TerminationCriteria::SimpleOptimalityCriteria>(
           R"pb(eps_optimal_absolute: 1.0e-4 eps_optimal_relative: 2.0e-4)pb");
-  EXPECT_THAT(EffectiveOptimalityCriteria(criteria), EqualsProto(R"pb(
+  EXPECT_THAT(EffectiveOptimalityCriteria(criteria),
+      Eq(ParseTextOrDie<TerminationCriteria::DetailedOptimalityCriteria>(R"pb(
                 eps_optimal_primal_residual_absolute: 1.0e-4
                 eps_optimal_primal_residual_relative: 2.0e-4
                 eps_optimal_dual_residual_absolute: 1.0e-4
                 eps_optimal_dual_residual_relative: 2.0e-4
                 eps_optimal_objective_gap_absolute: 1.0e-4
                 eps_optimal_objective_gap_relative: 2.0e-4
-              )pb"));
+              )pb")));
 }
 
 TEST(EffectiveOptimalityCriteriaTest, SimpleOptimalityCriteriaInput) {
@@ -128,14 +160,15 @@ TEST(EffectiveOptimalityCriteriaTest, SimpleOptimalityCriteriaInput) {
                                                  eps_optimal_absolute: 1.0e-4
                                                  eps_optimal_relative: 2.0e-4
                                                })pb");
-  EXPECT_THAT(EffectiveOptimalityCriteria(criteria), EqualsProto(R"pb(
+  EXPECT_THAT(EffectiveOptimalityCriteria(criteria),
+      Eq(ParseTextOrDie<TerminationCriteria::DetailedOptimalityCriteria>(R"pb(
                 eps_optimal_primal_residual_absolute: 1.0e-4
                 eps_optimal_primal_residual_relative: 2.0e-4
                 eps_optimal_dual_residual_absolute: 1.0e-4
                 eps_optimal_dual_residual_relative: 2.0e-4
                 eps_optimal_objective_gap_absolute: 1.0e-4
                 eps_optimal_objective_gap_relative: 2.0e-4
-              )pb"));
+              )pb")));
 }
 
 TEST(EffectiveOptimalityCriteriaTest, DetailedOptimalityCriteriaInput) {
@@ -149,20 +182,21 @@ TEST(EffectiveOptimalityCriteriaTest, DetailedOptimalityCriteriaInput) {
              eps_optimal_objective_gap_relative: 6.0e-4
            })pb");
   EXPECT_THAT(EffectiveOptimalityCriteria(criteria),
-              EqualsProto(criteria.detailed_optimality_criteria()));
+      Eq(criteria.detailed_optimality_criteria()));
 }
 
 TEST(EffectiveOptimalityCriteriaTest, DeprecatedInput) {
   const auto criteria = ParseTextOrDie<TerminationCriteria>(
       R"pb(eps_optimal_absolute: 1.0e-4 eps_optimal_relative: 2.0e-4)pb");
-  EXPECT_THAT(EffectiveOptimalityCriteria(criteria), EqualsProto(R"pb(
+  EXPECT_THAT(EffectiveOptimalityCriteria(criteria),
+      Eq(ParseTextOrDie<TerminationCriteria::DetailedOptimalityCriteria>(R"pb(
                 eps_optimal_primal_residual_absolute: 1.0e-4
                 eps_optimal_primal_residual_relative: 2.0e-4
                 eps_optimal_dual_residual_absolute: 1.0e-4
                 eps_optimal_dual_residual_relative: 2.0e-4
                 eps_optimal_objective_gap_absolute: 1.0e-4
                 eps_optimal_objective_gap_relative: 2.0e-4
-              )pb"));
+              )pb")));
 }
 
 TEST_P(DetailedRelativeTerminationTest, TerminationWithNearOptimal) {
