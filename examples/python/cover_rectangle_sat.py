@@ -42,7 +42,7 @@ def cover_rectangle(num_squares):
         interval_y = model.NewIntervalVar(start_y, size, end_y, 'iy_%i' % i)
 
         area = model.NewIntVar(1, size_y * size_y, 'area_%i' % i)
-        model.AddProdEquality(area, [size, size])
+        model.AddMultiplicationEquality(area, [size, size])
 
         areas.append(area)
         x_intervals.append(interval_x)
