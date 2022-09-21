@@ -647,9 +647,8 @@ IntegerValue SchedulingConstraintHelper::GetMinOverlap(int t,
 IntegerValue ComputeEnergyMinInWindow(
     IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
     IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
-    const std::vector<LiteralValueValue>& energy,
-    const VariablesAssignment& assignment, IntegerValue window_start,
-    IntegerValue window_end) {
+    const std::vector<LiteralValueValue>& filtered_energy,
+    IntegerValue window_start, IntegerValue window_end) {
   if (window_end <= window_start) return IntegerValue(0);
 
   // Returns zero if the interval do not necessarily overlap.
@@ -659,15 +658,10 @@ IntegerValue ComputeEnergyMinInWindow(
   const IntegerValue simple_energy_min =
       demand_min * std::min({end_min - window_start, window_end - start_max,
                              size_min, window_size});
-  if (energy.empty()) return simple_energy_min;
+  if (filtered_energy.empty()) return simple_energy_min;
 
   IntegerValue result = kMaxIntegerValue;
-  for (const auto [lit, fixed_size, fixed_demand] : energy) {
-    if (assignment.LiteralIsTrue(lit)) {
-      // Both should be identical, so we don't recompute it.
-      return simple_energy_min;
-    }
-    if (assignment.LiteralIsFalse(lit)) continue;
+  for (const auto [lit, fixed_size, fixed_demand] : filtered_energy) {
     const IntegerValue alt_end_min = std::max(end_min, start_min + fixed_size);
     const IntegerValue alt_start_max =
         std::min(start_max, end_max - fixed_size);
@@ -880,6 +874,21 @@ void SchedulingDemandHelper::OverrideLinearizedEnergies(
   }
 }
 
+// TODO(user): At level 0, we could filter in place.
+std::vector<LiteralValueValue> SchedulingDemandHelper::FilteredDecomposedEnergy(
+    int index) {
+  if (decomposed_energies_.empty() || decomposed_energies_[index].empty()) {
+    return {};
+  }
+  std::vector<LiteralValueValue> energy;
+  for (const auto [lit, fixed_size, fixed_demand] :
+       decomposed_energies_[index]) {
+    if (assignment_.LiteralIsFalse(lit)) continue;
+    energy.push_back({lit, fixed_size * fixed_demand});
+  }
+  return energy;
+}
+
 void SchedulingDemandHelper::OverrideDecomposedEnergies(
     const std::vector<std::vector<LiteralValueValue>>& energies) {
   DCHECK_EQ(energies.size(), helper_->NumTasks());
@@ -891,7 +900,7 @@ IntegerValue SchedulingDemandHelper::EnergyMinInWindow(
   return ComputeEnergyMinInWindow(
       helper_->StartMin(t), helper_->StartMax(t), helper_->EndMin(t),
       helper_->EndMax(t), helper_->SizeMin(t), DemandMin(t),
-      decomposed_energies_[t], assignment_, window_start, window_end);
+      FilteredDecomposedEnergy(t), window_start, window_end);
 }
 
 // Since we usually ask way less often for the reason, we redo the computation

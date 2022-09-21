@@ -565,6 +565,11 @@ class SchedulingDemandHelper {
     return decomposed_energies_;
   }
 
+  // Returns the decomposed energy terms compatible with the current literal
+  // assignment.
+  // It returns en empty vector if the decomposed energy is not available.
+  std::vector<LiteralValueValue> FilteredDecomposedEnergy(int index);
+
   // Visible for testing.
   void OverrideLinearizedEnergies(
       const std::vector<LinearExpression>& energies);
@@ -605,9 +610,8 @@ class SchedulingDemandHelper {
 IntegerValue ComputeEnergyMinInWindow(
     IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
     IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
-    const std::vector<LiteralValueValue>& energy,
-    const VariablesAssignment& assignment, IntegerValue window_start,
-    IntegerValue window_end);
+    const std::vector<LiteralValueValue>& filtered_energy,
+    IntegerValue window_start, IntegerValue window_end);
 
 // =============================================================================
 // SchedulingConstraintHelper inlined functions.
