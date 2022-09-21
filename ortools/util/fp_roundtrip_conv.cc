@@ -84,9 +84,9 @@ absl::string_view RoundTripDoubleToBuffer(const double value,
 }  // namespace
 
 #ifdef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
-const bool kStdToCharsDoubleIsSupported = true;
+ABSL_CONST_INIT const bool kStdToCharsDoubleIsSupported = true;
 #else
-const bool kStdToCharsDoubleIsSupported = false;
+ABSL_CONST_INIT const bool kStdToCharsDoubleIsSupported = false;
 #endif
 
 #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED

@@ -31,6 +31,7 @@ namespace operations_research {
 //
 // std::to_chars() for double is not yet supported on Emscripten, Android and
 // iOS; they only implement std::to_chars() for integers.
+
 ABSL_CONST_INIT extern const bool kStdToCharsDoubleIsSupported;
 
 // Formatter using std::to_chars() to print a `double` so that a round trip
