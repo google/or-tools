@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,17 +13,34 @@
 
 #include "ortools/sat/clause.h"
 
+#include <stddef.h>
+
 #include <algorithm>
-#include <functional>
-#include <memory>
+#include <cstdint>
+#include <deque>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/distributions.h"
+#include "absl/types/span.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
+#include "ortools/sat/drat_proof_handler.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/stats.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -507,7 +524,11 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
 
 bool BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b) {
   SCOPED_TIME_STAT(&stats_);
-  if (num_implications_ == 0) propagation_trail_index_ = trail_->Index();
+
+  // Tricky: If this is the first clause, the propagator will be added and
+  // assumed to be in a "propagated" state. This makes sure this is the case.
+  if (IsEmpty()) propagation_trail_index_ = trail_->Index();
+
   AddBinaryClause(a, b);
 
   const auto& assignment = trail_->Assignment();
@@ -585,6 +606,56 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
       at_most_one_buffer_[local_end++] = RepresentativeOf(l);
     }
 
+    // Deal with duplicates.
+    // Any duplicate in an "at most one" must be false.
+    bool some_duplicates = false;
+    if (!set_all_left_to_false) {
+      int new_local_end = local_start;
+      std::sort(&at_most_one_buffer_[local_start],
+                &at_most_one_buffer_[local_end]);
+      LiteralIndex previous = kNoLiteralIndex;
+      bool remove_previous = false;
+      for (int j = local_start; j < local_end; ++j) {
+        const Literal l = at_most_one_buffer_[j];
+        if (l.Index() == previous) {
+          if (assignment.LiteralIsTrue(l)) return false;
+          if (!assignment.LiteralIsFalse(l)) {
+            if (!FixLiteral(l.Negated())) return false;
+          }
+          remove_previous = true;
+          some_duplicates = true;
+          continue;
+        }
+
+        // We need to pay attention to triplet or more of equal elements, so
+        // it is why we need this boolean and can't just remove it right away.
+        if (remove_previous) {
+          --new_local_end;
+          remove_previous = false;
+        }
+        previous = l.Index();
+        at_most_one_buffer_[new_local_end++] = l;
+      }
+      if (remove_previous) --new_local_end;
+      local_end = new_local_end;
+    }
+
+    // If there was some duplicates, we need to rescan to see if a literal
+    // didn't become true because its negation was appearing twice!
+    if (some_duplicates) {
+      int new_local_end = local_start;
+      for (int j = local_start; j < local_end; ++j) {
+        const Literal l = at_most_one_buffer_[j];
+        if (assignment.LiteralIsFalse(l)) continue;
+        if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
+          set_all_left_to_false = true;
+          continue;
+        }
+        at_most_one_buffer_[new_local_end++] = l;
+      }
+      local_end = new_local_end;
+    }
+
     // Deal with all false.
     if (set_all_left_to_false) {
       for (int j = local_start; j < local_end; ++j) {
@@ -595,28 +666,6 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
       }
       local_end = local_start;
       continue;
-    }
-
-    // Deal with duplicates.
-    // Any duplicate in an "at most one" must be false.
-    {
-      int new_local_end = local_start;
-      std::sort(&at_most_one_buffer_[local_start],
-                &at_most_one_buffer_[local_end]);
-      for (int j = local_start; j < local_end; ++j) {
-        const Literal l = at_most_one_buffer_[j];
-        if (new_local_end > local_start &&
-            l == at_most_one_buffer_[new_local_end - 1]) {
-          if (assignment.LiteralIsTrue(l)) return false;
-          if (!assignment.LiteralIsFalse(l)) {
-            if (!FixLiteral(l.Negated())) return false;
-          }
-          --new_local_end;
-          continue;
-        }
-        at_most_one_buffer_[new_local_end++] = l;
-      }
-      local_end = new_local_end;
     }
 
     // Create a Span<> to simplify the code below.
@@ -848,7 +897,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
 // first UIP conflict.
 void BinaryImplicationGraph::MinimizeConflictFirstWithTransitiveReduction(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<BooleanVariable>* marked, absl::BitGenRef random) {
+    absl::BitGenRef random) {
   SCOPED_TIME_STAT(&stats_);
   const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
@@ -962,9 +1011,11 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
 void BinaryImplicationGraph::RemoveFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  if (IsEmpty()) return;
 
   // Nothing to do if nothing changed since last call.
   const int new_num_fixed = trail_->Index();
+  DCHECK_EQ(propagation_trail_index_, new_num_fixed);
   if (num_processed_fixed_variables_ == new_num_fixed) return;
 
   const VariablesAssignment& assignment = trail_->Assignment();
@@ -1018,10 +1069,10 @@ class SccGraph {
   using Implication =
       absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
   using AtMostOne =
-      absl::StrongVector<LiteralIndex, absl::InlinedVector<int32, 6>>;
+      absl::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>;
   using SccFinder =
-      StronglyConnectedComponentsFinder<int32, SccGraph,
-                                        std::vector<std::vector<int32>>>;
+      StronglyConnectedComponentsFinder<int32_t, SccGraph,
+                                        std::vector<std::vector<int32_t>>>;
 
   explicit SccGraph(SccFinder* finder, Implication* graph,
                     AtMostOne* at_most_ones,
@@ -1031,7 +1082,7 @@ class SccGraph {
         at_most_ones_(*at_most_ones),
         at_most_one_buffer_(*at_most_one_buffer) {}
 
-  const std::vector<int32>& operator[](int32 node) const {
+  const std::vector<int32_t>& operator[](int32_t node) const {
     tmp_.clear();
     for (const Literal l : implications_[LiteralIndex(node)]) {
       tmp_.push_back(l.Index().value());
@@ -1046,8 +1097,8 @@ class SccGraph {
           previous_node_to_explore_at_most_one_.resize(start + 1);
         }
 
-        // In the presence of at_most_ones_ contraints, expanding them
-        // implicitely to implications in the SCC computation can result in a
+        // In the presence of at_most_ones_ constraints, expanding them
+        // implicitly to implications in the SCC computation can result in a
         // quadratic complexity rather than a linear one in term of the input
         // data structure size. So this test here is critical on problem with
         // large at_most ones like the "ivu06-big.mps.gz" where without it, the
@@ -1106,7 +1157,7 @@ class SccGraph {
   mutable std::vector<Literal> to_fix_;
 
   // For the deterministic time.
-  mutable int64 work_done_ = 0;
+  mutable int64_t work_done_ = 0;
 
  private:
   const SccFinder& finder_;
@@ -1114,7 +1165,7 @@ class SccGraph {
   const AtMostOne& at_most_ones_;
   const std::vector<Literal>& at_most_one_buffer_;
 
-  mutable std::vector<int32> tmp_;
+  mutable std::vector<int32_t> tmp_;
 
   // Used to get a non-quadratic complexity in the presence of at most ones.
   mutable std::vector<bool> at_most_one_already_explored_;
@@ -1136,8 +1187,8 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   // TODO(user): We could just do it directly though.
   int num_fixed_during_scc = 0;
-  const int32 size(implications_.size());
-  std::vector<std::vector<int32>> scc;
+  const int32_t size(implications_.size());
+  std::vector<std::vector<int32_t>> scc;
   double dtime = 0.0;
   {
     SccGraph::SccFinder finder;
@@ -1160,7 +1211,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   int num_equivalences = 0;
   reverse_topological_order_.clear();
-  for (std::vector<int32>& component : scc) {
+  for (std::vector<int32_t>& component : scc) {
     // If one is fixed then all must be fixed. Note that the reason why the
     // propagation didn't already do that and we don't always get fixed
     // component of size 1 is because of the potential newly fixed literals
@@ -1170,7 +1221,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     {
       bool all_fixed = false;
       bool all_true = false;
-      for (const int32 i : component) {
+      for (const int32_t i : component) {
         const Literal l = Literal(LiteralIndex(i));
         if (trail_->Assignment().LiteralIsAssigned(l)) {
           all_fixed = true;
@@ -1179,7 +1230,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
         }
       }
       if (all_fixed) {
-        for (const int32 i : component) {
+        for (const int32_t i : component) {
           const Literal l = Literal(LiteralIndex(i));
           if (!is_redundant_[l.Index()]) {
             ++num_redundant_literals_;
@@ -1322,8 +1373,8 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  int64 num_fixed = 0;
-  int64 num_new_redundant_implications = 0;
+  int64_t num_fixed = 0;
+  int64_t num_new_redundant_implications = 0;
   bool aborted = false;
   work_done_in_mark_descendants_ = 0;
   int marked_index = 0;
@@ -1499,7 +1550,7 @@ struct VectorHash {
 
 bool BinaryImplicationGraph::TransformIntoMaxCliques(
     std::vector<std::vector<Literal>>* at_most_ones,
-    int64 max_num_explored_nodes) {
+    int64_t max_num_explored_nodes) {
   // The code below assumes a DAG.
   if (!DetectEquivalences()) return false;
   work_done_in_mark_descendants_ = 0;
@@ -1513,12 +1564,20 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
       implications_.size());
 
   // We starts by processing larger constraints first.
-  std::sort(at_most_ones->begin(), at_most_ones->end(),
-            [](const std::vector<Literal> a, const std::vector<Literal> b) {
-              return a.size() > b.size();
-            });
-  for (std::vector<Literal>& clique : *at_most_ones) {
-    const int old_size = clique.size();
+  // But we want the output order to be stable.
+  std::vector<std::pair<int, int>> index_size_vector;
+  index_size_vector.reserve(at_most_ones->size());
+  for (int i = 0; i < at_most_ones->size(); ++i) {
+    index_size_vector.push_back({i, (*at_most_ones)[i].size()});
+  }
+  std::stable_sort(
+      index_size_vector.begin(), index_size_vector.end(),
+      [](const std::pair<int, int> a, const std::pair<int, int>& b) {
+        return a.second > b.second;
+      });
+  for (const auto& [index, old_size] : index_size_vector) {
+    std::vector<Literal>& clique = (*at_most_ones)[index];
+    if (time_limit_->LimitReached()) break;
 
     // Remap the clique to only use representative.
     //
@@ -1548,10 +1607,10 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
 
     // We only expand the clique as long as we didn't spend too much time.
     if (work_done_in_mark_descendants_ < max_num_explored_nodes) {
-      clique = ExpandAtMostOne(clique);
+      clique = ExpandAtMostOne(clique, max_num_explored_nodes);
     }
     std::sort(clique.begin(), clique.end());
-    if (!gtl::InsertIfNotPresent(&max_cliques, clique)) {
+    if (!max_cliques.emplace(clique).second) {
       ++num_removed;
       clique.clear();
       continue;
@@ -1575,6 +1634,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   return true;
 }
 
+template <bool use_weight>
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
     const absl::Span<const Literal> at_most_one,
     const absl::StrongVector<LiteralIndex, bool>& can_be_included,
@@ -1582,8 +1642,12 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
   std::vector<LiteralIndex> intersection;
   double clique_weight = 0.0;
-  const int64 old_work = work_done_in_mark_descendants_;
-  for (const Literal l : clique) clique_weight += expanded_lp_values[l.Index()];
+  const int64_t old_work = work_done_in_mark_descendants_;
+  if (use_weight) {
+    for (const Literal l : clique) {
+      clique_weight += expanded_lp_values[l.Index()];
+    }
+  }
   for (int i = 0; i < clique.size(); ++i) {
     // Do not spend too much time here.
     if (work_done_in_mark_descendants_ - old_work > 1e8) break;
@@ -1592,7 +1656,9 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
     MarkDescendants(clique[i]);
     if (i == 0) {
       for (const LiteralIndex index : is_marked_.PositionsSetAtLeastOnce()) {
-        if (can_be_included[index]) intersection.push_back(index);
+        if (can_be_included[Literal(index).NegatedIndex()]) {
+          intersection.push_back(index);
+        }
       }
       for (const Literal l : clique) is_marked_.Clear(l.NegatedIndex());
     }
@@ -1604,14 +1670,16 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
     for (const LiteralIndex index : intersection) {
       if (!is_marked_[index]) continue;
       intersection[new_size++] = index;
-      intersection_weight += expanded_lp_values[index];
+      if (use_weight) {
+        intersection_weight += expanded_lp_values[index];
+      }
     }
     intersection.resize(new_size);
     if (intersection.empty()) break;
 
     // We can't generate a violated cut this way. This is because intersection
     // contains all the possible ways to extend the current clique.
-    if (clique_weight + intersection_weight <= 1.0) {
+    if (use_weight && clique_weight + intersection_weight <= 1.0) {
       clique.clear();
       return clique;
     }
@@ -1623,8 +1691,11 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
       int index = -1;
       double max_lp = 0.0;
       for (int j = 0; j < intersection.size(); ++j) {
-        const double lp = 1.0 - expanded_lp_values[intersection[j]] +
-                          absl::Uniform<double>(*random_, 0.0, 1e-4);
+        // If we don't use weight, we prefer variable that comes first.
+        const double lp =
+            use_weight ? 1.0 - expanded_lp_values[intersection[j]] +
+                             absl::Uniform<double>(*random_, 0.0, 1e-4)
+                       : can_be_included.size() - intersection[j].value();
         if (index == -1 || lp > max_lp) {
           index = j;
           max_lp = lp;
@@ -1634,12 +1705,24 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
         clique.push_back(Literal(intersection[index]).Negated());
         std::swap(intersection.back(), intersection[index]);
         intersection.pop_back();
-        clique_weight += expanded_lp_values[clique.back().Index()];
+        if (use_weight) {
+          clique_weight += expanded_lp_values[clique.back().Index()];
+        }
       }
     }
   }
   return clique;
 }
+
+// Make sure both version are compiled.
+template std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight<
+    true>(const absl::Span<const Literal> at_most_one,
+          const absl::StrongVector<LiteralIndex, bool>& can_be_included,
+          const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
+template std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight<
+    false>(const absl::Span<const Literal> at_most_one,
+           const absl::StrongVector<LiteralIndex, bool>& can_be_included,
+           const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
 
 const std::vector<std::vector<Literal>>&
 BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
@@ -1757,7 +1840,8 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
 }
 
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
-    const absl::Span<const Literal> at_most_one) {
+    const absl::Span<const Literal> at_most_one,
+    int64_t max_num_explored_nodes) {
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
 
   // Optim.
@@ -1770,8 +1854,10 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
 
   std::vector<LiteralIndex> intersection;
   for (int i = 0; i < clique.size(); ++i) {
+    if (work_done_in_mark_descendants_ > max_num_explored_nodes) break;
     is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
     MarkDescendants(clique[i]);
+
     if (i == 0) {
       intersection = is_marked_.PositionsSetAtLeastOnce();
       for (const Literal l : clique) is_marked_.Clear(l.NegatedIndex());
@@ -1864,13 +1950,13 @@ bool BinaryImplicationGraph::FindFailedLiteralAroundVar(BooleanVariable var,
   return propagation_trail_index_ > saved_index;
 }
 
-int64 BinaryImplicationGraph::NumImplicationOnVariableRemoval(
+int64_t BinaryImplicationGraph::NumImplicationOnVariableRemoval(
     BooleanVariable var) {
   const Literal literal(var, true);
-  int64 result = 0;
+  int64_t result = 0;
   direct_implications_of_negated_literal_ =
       DirectImplications(literal.Negated());
-  const int64 s1 = DirectImplications(literal).size();
+  const int64_t s1 = DirectImplications(literal).size();
   for (const Literal l : direct_implications_of_negated_literal_) {
     result += s1;
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,6 +32,15 @@ using System.Collections;
 
 %module(directors="1") operations_research_sat
 
+%typemap(csimports) operations_research::sat::CpSatHelper %{
+using Google.OrTools.Util;
+%}
+
+%typemap(csimports) operations_research::sat::SolveWrapper %{
+// Used to wrap log callbacks (std::function<void(const std::string&>)
+public delegate void StringToVoidDelegate(string message);
+%}
+
 PROTO_INPUT(operations_research::sat::CpModelProto,
             Google.OrTools.Sat.CpModelProto,
             model_proto);
@@ -58,19 +67,29 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 
 %unignore operations_research;
 %unignore operations_research::sat;
-%unignore operations_research::sat::SatHelper;
-%unignore operations_research::sat::SatHelper::Solve;
-%unignore operations_research::sat::SatHelper::SolveWithStringParameters;
-%unignore operations_research::sat::SatHelper::SolveWithStringParametersAndSolutionCallback;
-%unignore operations_research::sat::SatHelper::ModelStats;
-%unignore operations_research::sat::SatHelper::SolverResponseStats;
-%unignore operations_research::sat::SatHelper::ValidateModel;
-%unignore operations_research::sat::SatHelper::VariableDomain;
-%unignore operations_research::sat::SatHelper::WriteModelToFile;
 
-%typemap(csimports) operations_research::sat::SatHelper %{
-using Google.OrTools.Util;
-%}
+// Temporary wrapper class for the StringToVoidDelegate.
+%feature("director") operations_research::sat::LogCallback;
+%unignore operations_research::sat::LogCallback;
+%unignore operations_research::sat::LogCallback::~LogCallback;
+%unignore operations_research::sat::LogCallback::NewMessage;
+
+// Wrap the SolveWrapper class.
+%unignore operations_research::sat::SolveWrapper;
+%unignore operations_research::sat::SolveWrapper::AddLogCallbackFromClass;
+%unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::ClearSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::SetStringParameters;
+%unignore operations_research::sat::SolveWrapper::Solve;
+%unignore operations_research::sat::SolveWrapper::StopSearch;
+
+// Wrap the CpSatHelper class.
+%unignore operations_research::sat::CpSatHelper;
+%unignore operations_research::sat::CpSatHelper::ModelStats;
+%unignore operations_research::sat::CpSatHelper::SolverResponseStats;
+%unignore operations_research::sat::CpSatHelper::ValidateModel;
+%unignore operations_research::sat::CpSatHelper::VariableDomain;
+%unignore operations_research::sat::CpSatHelper::WriteModelToFile;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,11 +17,14 @@
 //  unique solutions: http://www.research.att.com/~njas/sequences/A000170
 //  distinct solutions: http://www.research.att.com/~njas/sequences/A002562
 
+#include <cstdint>
 #include <cstdio>
 #include <map>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -74,7 +77,7 @@ class NQueenSymmetry : public SymmetryBreaker {
  private:
   Solver* const solver_;
   const std::vector<IntVar*> vars_;
-  std::map<const IntVar*, int> indices_;
+  absl::flat_hash_map<const IntVar*, int> indices_;
   const int size_;
 };
 
@@ -85,7 +88,7 @@ class SX : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~SX() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(index));
     AddIntegerVariableEqualValueClause(other_var, value);
@@ -99,7 +102,7 @@ class SY : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~SY() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     AddIntegerVariableEqualValueClause(var, symmetric(value));
   }
 };
@@ -111,7 +114,7 @@ class SD1 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~SD1() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(value);
     AddIntegerVariableEqualValueClause(other_var, index);
@@ -125,7 +128,7 @@ class SD2 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~SD2() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(value));
     AddIntegerVariableEqualValueClause(other_var, symmetric(index));
@@ -139,7 +142,7 @@ class R90 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~R90() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(value);
     AddIntegerVariableEqualValueClause(other_var, symmetric(index));
@@ -153,7 +156,7 @@ class R180 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~R180() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(index));
     AddIntegerVariableEqualValueClause(other_var, symmetric(value));
@@ -167,7 +170,7 @@ class R270 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~R270() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(value));
     AddIntegerVariableEqualValueClause(other_var, index);
@@ -252,23 +255,23 @@ void NQueens(int size) {
                     : absl::GetFlag(FLAGS_print)   ? 1
                                                    : 0;
     for (int n = 0; n < print_max; ++n) {
-      printf("--- solution #%d\n", n);
+      absl::PrintF("--- solution #%d\n", n);
       for (int i = 0; i < size; ++i) {
         const int pos = static_cast<int>(collector->Value(n, queens[i]));
-        for (int k = 0; k < pos; ++k) printf(" . ");
-        printf("%2d ", i);
-        for (int k = pos + 1; k < size; ++k) printf(" . ");
-        printf("\n");
+        for (int k = 0; k < pos; ++k) absl::PrintF(" . ");
+        absl::PrintF("%2d ", i);
+        for (int k = pos + 1; k < size; ++k) absl::PrintF(" . ");
+        absl::PrintF("\n");
       }
     }
   }
-  printf("========= number of solutions:%d\n", num_solutions);
+  absl::PrintF("========= number of solutions:%d\n", num_solutions);
   absl::PrintF("          number of failures: %d\n", s.failures());
 }
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_size) != 0) {
     operations_research::NQueens(absl::GetFlag(FLAGS_size));
   } else {
@@ -276,5 +279,5 @@ int main(int argc, char** argv) {
       operations_research::NQueens(n);
     }
   }
-  return EXIT_SUCCESS;
+  return 0;
 }

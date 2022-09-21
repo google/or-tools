@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,8 +14,13 @@
 #include "ortools/lp_data/sparse.h"
 
 #include <algorithm>
+#include <initializer_list>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
@@ -451,6 +456,33 @@ void CompactSparseMatrix::PopulateFromMatrixView(const MatrixView& input) {
     }
   }
   starts_[input.num_cols()] = index;
+}
+
+void CompactSparseMatrix::PopulateFromSparseMatrixAndAddSlacks(
+    const SparseMatrix& input) {
+  num_cols_ = input.num_cols() + RowToColIndex(input.num_rows());
+  num_rows_ = input.num_rows();
+  const EntryIndex num_entries =
+      input.num_entries() + EntryIndex(num_rows_.value());
+  starts_.assign(num_cols_ + 1, EntryIndex(0));
+  coefficients_.assign(num_entries, 0.0);
+  rows_.assign(num_entries, RowIndex(0));
+  EntryIndex index(0);
+  for (ColIndex col(0); col < input.num_cols(); ++col) {
+    starts_[col] = index;
+    for (const SparseColumn::Entry e : input.column(col)) {
+      coefficients_[index] = e.coefficient();
+      rows_[index] = e.row();
+      ++index;
+    }
+  }
+  for (RowIndex row(0); row < num_rows_; ++row) {
+    starts_[input.num_cols() + RowToColIndex(row)] = index;
+    coefficients_[index] = 1.0;
+    rows_[index] = row;
+    ++index;
+  }
+  starts_[num_cols_] = index;
 }
 
 void CompactSparseMatrix::PopulateFromTranspose(
@@ -978,7 +1010,7 @@ void TriangularMatrix::TransposeHyperSparseSolveWithReversedNonZerosInternal(
     const ColIndex row_as_col = RowToColIndex(row);
 
     // We do the loops this way so that the floating point operations are
-    // exactly the same as the ones perfomed by TransposeLowerSolveInternal().
+    // exactly the same as the ones performed by TransposeLowerSolveInternal().
     EntryIndex i = starts_[row_as_col + 1] - 1;
     const EntryIndex i_end = starts_[row_as_col];
     for (; i >= i_end; --i) {
@@ -1056,6 +1088,7 @@ void TriangularMatrix::PermutedLowerSparseSolve(const ColumnView& rhs,
 
   // We clear lower_column first in case upper_column and lower_column point to
   // the same underlying SparseColumn.
+  num_fp_operations_ = 0;
   lower_column->Clear();
 
   // rows_to_consider_ contains the row to process in reverse order. Note in
@@ -1074,6 +1107,7 @@ void TriangularMatrix::PermutedLowerSparseSolve(const ColumnView& rhs,
     DCHECK_GE(row_as_col, 0);
     upper_column->SetCoefficient(permuted_row, pivot);
     DCHECK_EQ(diagonal_coefficients_[row_as_col], 1.0);
+    num_fp_operations_ += 1 + ColumnNumEntries(row_as_col).value();
     for (const auto e : column(row_as_col)) {
       initially_all_zero_scratchpad_[e.row()] -= e.coefficient() * pivot;
     }

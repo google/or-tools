@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 #ifndef OR_TOOLS_GLOP_LU_FACTORIZATION_H_
 #define OR_TOOLS_GLOP_LU_FACTORIZATION_H_
+
+#include <string>
+#include <vector>
 
 #include "ortools/glop/markowitz.h"
 #include "ortools/glop/parameters.pb.h"
@@ -54,6 +57,13 @@ class LuFactorization {
   // class will never cause a crash of the program.
   ABSL_MUST_USE_RESULT Status
   ComputeFactorization(const CompactSparseMatrixView& compact_matrix);
+
+  // Given a set of columns, find a maximum linearly independent subset that can
+  // be factorized in a stable way, and complete it into a square matrix using
+  // slack columns. The initial set can have less, more or the same number of
+  // columns as the number of rows.
+  RowToColMapping ComputeInitialBasis(const CompactSparseMatrix& matrix,
+                                      const std::vector<ColIndex>& candidates);
 
   // Returns the column permutation used by the LU factorization.
   const ColumnPermutation& GetColumnPermutation() const { return col_perm_; }
@@ -113,8 +123,8 @@ class LuFactorization {
   void RightSolveLForScatteredColumn(const ScatteredColumn& b,
                                      ScatteredColumn* x) const;
 
-  // Specialized version of RightSolveLWithNonZeros() where x is originaly equal
-  // to 'a' permuted by row_perm_. Note that 'a' is only used for DCHECK.
+  // Specialized version of RightSolveLWithNonZeros() where x is originally
+  // equal to 'a' permuted by row_perm_. Note that 'a' is only used for DCHECK.
   void RightSolveLWithPermutedInput(const DenseColumn& a,
                                     ScatteredColumn* x) const;
 
@@ -205,6 +215,9 @@ class LuFactorization {
     upper_.CopyToSparseMatrix(&temp_upper);
     product->PopulateFromProduct(temp_lower, temp_upper);
   }
+
+  // Returns the deterministic time of the last factorization.
+  double DeterministicTimeOfLastFactorization() const;
 
   // Visible for testing.
   const RowPermutation& row_perm() const { return row_perm_; }

@@ -25,10 +25,11 @@ important for performance.
 
 ### Solution
 
-* [assignment.proto](../constraint_solver/assignment.proto):
-Holds the solution of a CP problem.
-* [demon_profiler.proto](../constraint_solver/demon_profiler.proto):
-Holds the timeline and execution profile of constraints and demons (daemons).
+*   [assignment.proto](../constraint_solver/assignment.proto):
+    Holds the solution of a CP problem.
+*   [demon_profiler.proto](../constraint_solver/demon_profiler.proto):
+    Holds the timeline and execution profile of constraints and demons
+    (daemons).
 
 ## Routing solver
 
@@ -58,4 +59,4 @@ Holds the solution of a Routing problem.
 ## Recipes
 
 You can find a set of code recipes in
-[the documentation directory](doc/README.md).
+[the documentation directory](docs/README.md).

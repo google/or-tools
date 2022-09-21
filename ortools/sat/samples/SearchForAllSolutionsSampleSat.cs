@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,7 +29,7 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
             Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s", solution_count_, WallTime()));
             foreach (IntVar v in variables_)
             {
-                Console.WriteLine(String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+                Console.WriteLine(String.Format("  {0} = {1}", v.ToString(), Value(v)));
             }
             solution_count_++;
         }
@@ -72,10 +72,13 @@ public class SearchForAllSolutionsSampleSat
         // [START solve]
         CpSolver solver = new CpSolver();
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
-        solver.SearchAllSolutions(model, cb);
+        // Search for all solutions.
+        solver.StringParameters = "enumerate_all_solutions:true";
+        // And solve.
+        solver.Solve(model, cb);
         // [END solve]
 
-        Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));
+        Console.WriteLine($"Number of solutions found: {cb.SolutionCount()}");
     }
 }
 // [END program]

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,10 +32,14 @@
 #include <xmmintrin.h>
 #endif
 
+#include <stdlib.h>
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <vector>
 
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 
 #if defined(_MSC_VER)
@@ -203,7 +207,7 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 // TODO(user): incorporate the gcd computation here? The issue is that I am
 // not sure if I just do factor /= gcd that round(x * factor) will be the same.
 void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
-                                    int64 max_absolute_sum,
+                                    int64_t max_absolute_sum,
                                     double* scaling_factor,
                                     double* max_relative_coeff_error);
 
@@ -214,7 +218,7 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
 double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
                                       const std::vector<double>& lb,
                                       const std::vector<double>& ub,
-                                      int64 max_absolute_sum);
+                                      int64_t max_absolute_sum);
 // This computes:
 //
 // The max_relative_coeff_error, which is the maximum over all coeff of
@@ -234,14 +238,27 @@ void ComputeScalingErrors(const std::vector<double>& input,
 // round(fabs(x[i] * scaling_factor)). The numbers 0 are ignored and if they are
 // all zero then the result is 1. Note that round(fabs()) is the same as
 // fabs(round()) since the numbers are rounded away from zero.
-int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
-                                 double scaling_factor);
+int64_t ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
+                                   double scaling_factor);
 
 // Returns alpha * x + (1 - alpha) * y.
 template <typename FloatType>
 inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
   return alpha * x + (1 - alpha) * y;
 }
+
+// This is a fast implementation of the C99 function ilogb for normalized
+// doubles with the caveat that it returns -1023 for zero, and 1024 for infinity
+// an NaNs.
+int fast_ilogb(const double value);
+
+// This is a fast implementation of the C99 function scalbn, with the caveat
+// that it works on normalized numbers and if the result underflows, overflows,
+// or is applied to a NaN or an +-infinity, the result is undefined behavior.
+// Note that the version of the function that takes a reference, modifies the
+// given value.
+double fast_scalbn(const double value, const int exponent);
+void fast_scalbn_inplace(double& mutable_value, const int exponent);
 
 }  // namespace operations_research
 

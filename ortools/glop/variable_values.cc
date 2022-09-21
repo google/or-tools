@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 #include "ortools/glop/variable_values.h"
 
+#include <algorithm>
+#include <vector>
+
 #include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_utils.h"
 
@@ -23,12 +26,16 @@ VariableValues::VariableValues(const GlopParameters& parameters,
                                const CompactSparseMatrix& matrix,
                                const RowToColMapping& basis,
                                const VariablesInfo& variables_info,
-                               const BasisFactorization& basis_factorization)
+                               const BasisFactorization& basis_factorization,
+                               DualEdgeNorms* dual_edge_norms,
+                               DynamicMaximum<RowIndex>* dual_prices)
     : parameters_(parameters),
       matrix_(matrix),
       basis_(basis),
       variables_info_(variables_info),
       basis_factorization_(basis_factorization),
+      dual_edge_norms_(dual_edge_norms),
+      dual_prices_(dual_prices),
       stats_("VariableValues") {}
 
 void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
@@ -51,9 +58,8 @@ void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
       variable_values_[col] = upper_bounds[col];
       break;
     case VariableStatus::FREE:
-      DCHECK_EQ(-kInfinity, lower_bounds[col]);
-      DCHECK_EQ(kInfinity, upper_bounds[col]);
-      variable_values_[col] = 0.0;
+      LOG(DFATAL) << "SetNonBasicVariableValueFromStatus() shouldn't "
+                  << "be called on a FREE variable.";
       break;
     case VariableStatus::BASIC:
       LOG(DFATAL) << "SetNonBasicVariableValueFromStatus() shouldn't "
@@ -64,7 +70,8 @@ void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
   // get a compile-time error if a value is missing.
 }
 
-void VariableValues::ResetAllNonBasicVariableValues() {
+void VariableValues::ResetAllNonBasicVariableValues(
+    const DenseRow& free_initial_value) {
   const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
   const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
   const VariableStatusRow& statuses = variables_info_.GetStatusRow();
@@ -81,7 +88,8 @@ void VariableValues::ResetAllNonBasicVariableValues() {
         variable_values_[col] = upper_bounds[col];
         break;
       case VariableStatus::FREE:
-        variable_values_[col] = 0.0;
+        variable_values_[col] =
+            col < free_initial_value.size() ? free_initial_value[col] : 0.0;
         break;
       case VariableStatus::BASIC:
         break;
@@ -103,6 +111,9 @@ void VariableValues::RecomputeBasicVariableValues() {
   for (RowIndex row(0); row < num_rows; ++row) {
     variable_values_[basis_[row]] = scratchpad_[row];
   }
+
+  // This makes sure that they will be recomputed if needed.
+  dual_prices_->Clear();
 }
 
 Fractional VariableValues::ComputeMaximumPrimalResidual() const {
@@ -202,7 +213,7 @@ void VariableValues::UpdateGivenNonBasicVariables(
       variable_values_[basis_[row]] -= initially_all_zero_scratchpad_[row];
     }
     initially_all_zero_scratchpad_.values.AssignToZero(num_rows);
-    ResetPrimalInfeasibilityInformation();
+    RecomputeDualPrices();
     return;
   }
 
@@ -210,57 +221,49 @@ void VariableValues::UpdateGivenNonBasicVariables(
     variable_values_[basis_[e.row()]] -= e.coefficient();
     initially_all_zero_scratchpad_[e.row()] = 0.0;
   }
-  UpdatePrimalInfeasibilityInformation(
-      initially_all_zero_scratchpad_.non_zeros);
+  UpdateDualPrices(initially_all_zero_scratchpad_.non_zeros);
   initially_all_zero_scratchpad_.non_zeros.clear();
 }
 
-const DenseColumn& VariableValues::GetPrimalSquaredInfeasibilities() const {
-  return primal_squared_infeasibilities_;
-}
-
-const DenseBitColumn& VariableValues::GetPrimalInfeasiblePositions() const {
-  return primal_infeasible_positions_;
-}
-
-void VariableValues::ResetPrimalInfeasibilityInformation() {
+void VariableValues::RecomputeDualPrices() {
   SCOPED_TIME_STAT(&stats_);
   const RowIndex num_rows = matrix_.num_rows();
-  primal_squared_infeasibilities_.resize(num_rows, 0.0);
-  primal_infeasible_positions_.ClearAndResize(num_rows);
+  dual_prices_->ClearAndResize(num_rows);
+  dual_prices_->StartDenseUpdates();
 
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
+  const DenseColumn& squared_norms = dual_edge_norms_->GetEdgeSquaredNorms();
   for (RowIndex row(0); row < num_rows; ++row) {
     const ColIndex col = basis_[row];
     const Fractional infeasibility = std::max(GetUpperBoundInfeasibility(col),
                                               GetLowerBoundInfeasibility(col));
     if (infeasibility > tolerance) {
-      primal_squared_infeasibilities_[row] = Square(infeasibility);
-      primal_infeasible_positions_.Set(row);
+      dual_prices_->DenseAddOrUpdate(
+          row, Square(infeasibility) / squared_norms[row]);
     }
   }
 }
 
-void VariableValues::UpdatePrimalInfeasibilityInformation(
-    const std::vector<RowIndex>& rows) {
-  if (primal_squared_infeasibilities_.size() != matrix_.num_rows()) {
-    ResetPrimalInfeasibilityInformation();
+void VariableValues::UpdateDualPrices(const std::vector<RowIndex>& rows) {
+  if (dual_prices_->Size() != matrix_.num_rows()) {
+    RecomputeDualPrices();
     return;
   }
 
   // Note(user): this is the same as the code in
-  // ResetPrimalInfeasibilityInformation(), but we do need the clear part.
+  // RecomputePrimalInfeasibilityInformation(), but we do need the clear part.
   SCOPED_TIME_STAT(&stats_);
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
+  const DenseColumn& squared_norms = dual_edge_norms_->GetEdgeSquaredNorms();
   for (const RowIndex row : rows) {
     const ColIndex col = basis_[row];
     const Fractional infeasibility = std::max(GetUpperBoundInfeasibility(col),
                                               GetLowerBoundInfeasibility(col));
     if (infeasibility > tolerance) {
-      primal_squared_infeasibilities_[row] = Square(infeasibility);
-      primal_infeasible_positions_.Set(row);
+      dual_prices_->AddOrUpdate(row,
+                                Square(infeasibility) / squared_norms[row]);
     } else {
-      primal_infeasible_positions_.Clear(row);
+      dual_prices_->Remove(row);
     }
   }
 }

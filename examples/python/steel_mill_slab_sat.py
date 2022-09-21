@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,7 +27,7 @@ from ortools.sat.python import cp_model
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('problem', 2, 'Problem id to solve.')
-flags.DEFINE_boolean('break_symmetries', True,
+flags.DEFINE_bool('break_symmetries', True,
                      'Break symmetries between equivalent orders.')
 flags.DEFINE_string(
     'solver', 'mip_column', 'Method used to solve: sat, sat_table, sat_column, '
@@ -339,7 +340,7 @@ def steel_mill_slab(problem, break_symmetries):
 
     # Orders are assigned to one slab.
     for o in all_orders:
-        model.Add(sum(assign[o]) == 1)
+        model.AddExactlyOne(assign[o])
 
     # Redundant constraint (sum of loads == sum of widths).
     model.Add(sum(loads) == sum(widths))
@@ -423,7 +424,7 @@ def steel_mill_slab(problem, break_symmetries):
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 8
     objective_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, objective_printer)
+    status = solver.Solve(model, objective_printer)
 
     ### Output the solution.
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
@@ -522,7 +523,7 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
 
     # Orders are assigned to one slab.
     for o in all_orders:
-        model.Add(sum(assign[o]) == 1)
+        model.AddExactlyOne(assign[o])
 
     # Redundant constraint (sum of loads == sum of widths).
     model.Add(sum(loads) == sum(widths))
@@ -593,7 +594,7 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
     solver.num_search_workers = 8
     solution_printer = SteelMillSlabSolutionPrinter(orders, assign, loads,
                                                     losses)
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     ### Output the solution.
     if status == cp_model.OPTIMAL:
@@ -661,7 +662,7 @@ def steel_mill_slab_with_column_generation(problem):
     solver.parameters.num_search_workers = 8
     solver.parameters.log_search_progress = True
     solution_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     ### Output the solution.
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
@@ -704,8 +705,9 @@ def steel_mill_slab_with_mip_column_generation(problem):
 
     # create model and decision variables.
     start_time = time.time()
-    solver = pywraplp.Solver('Steel',
-                             pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('SCIP')
+    if not solver:
+      return
     selected = [
         solver.IntVar(0.0, 1.0, 'selected_%i' % i) for i in all_valid_slabs
     ]
@@ -735,7 +737,7 @@ def steel_mill_slab_with_mip_column_generation(problem):
         print('No solution')
 
 
-def main(_):
+def main(_=None):
     if FLAGS.solver == 'sat':
         steel_mill_slab(FLAGS.problem, FLAGS.break_symmetries)
     elif FLAGS.solver == 'sat_table':

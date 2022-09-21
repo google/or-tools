@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,9 @@ namespace gtl {
 // Perform a lookup in a std::map or std::unordered_map.
 // If the key is present in the map then the value associated with that
 // key is returned, otherwise the value passed as a default is returned.
+//
+// Prefer the two-argument form unless you need to specify a custom default
+// value (i.e., one that is not equal to a value-initialized instance).
 template <class Collection>
 const typename Collection::value_type::second_type& FindWithDefault(
     const Collection& collection,
@@ -30,6 +33,22 @@ const typename Collection::value_type::second_type& FindWithDefault(
   typename Collection::const_iterator it = collection.find(key);
   if (it == collection.end()) {
     return value;
+  }
+  return it->second;
+}
+
+// Returns a const reference to the value associated with the given key if it
+// exists, otherwise returns a const reference to a value-initialized object
+// that is never destroyed.
+template <class Collection>
+const typename Collection::value_type::second_type& FindWithDefault(
+    const Collection& collection,
+    const typename Collection::value_type::first_type& key) {
+  static const typename Collection::value_type::second_type* const
+      default_value = new typename Collection::value_type::second_type{};
+  typename Collection::const_iterator it = collection.find(key);
+  if (it == collection.end()) {
+    return *default_value;
   }
   return it->second;
 }
@@ -146,6 +165,17 @@ void InsertOrDie(Collection* const collection,
   typedef typename Collection::value_type value_type;
   CHECK(collection->insert(value_type(key, data)).second)
       << "duplicate key: " << key;
+}
+
+// Inserts a key into a map with the default value or dies. Returns a reference
+// to the inserted element.
+template <typename Collection>
+auto& InsertKeyOrDie(Collection* const collection,
+                     const typename Collection::value_type::first_type& key) {
+  auto [it, did_insert] = collection->insert(typename Collection::value_type(
+      key, typename Collection::value_type::second_type()));
+  CHECK(did_insert) << "duplicate key " << key;
+  return it->second;
 }
 
 // Perform a lookup in std::map or std::unordered_map.

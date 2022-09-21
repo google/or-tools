@@ -166,9 +166,9 @@ public class PhotoProblem
     public static void Main(String[] args)
     {
         int show_all_max = 0;
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            show_all_max = Convert.ToInt32(args[0]);
+            show_all_max = Convert.ToInt32(args[1]);
         }
 
         Solve(show_all_max);

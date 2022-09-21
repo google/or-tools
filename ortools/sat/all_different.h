@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,16 +14,20 @@
 #ifndef OR_TOOLS_SAT_ALL_DIFFERENT_H_
 #define OR_TOOLS_SAT_ALL_DIFFERENT_H_
 
+#include <cstdint>
 #include <functional>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -44,6 +48,8 @@ std::function<void(Model*)> AllDifferentBinary(
 // propagates more the domain bounds.
 std::function<void(Model*)> AllDifferentOnBounds(
     const std::vector<IntegerVariable>& vars);
+std::function<void(Model*)> AllDifferentOnBounds(
+    const std::vector<AffineExpression>& expressions);
 
 // This constraint forces all variables to take different values. This is meant
 // to be used as a complement to an alldifferent decomposition like
@@ -80,8 +86,8 @@ class AllDifferentConstraint : PropagatorInterface {
   bool MakeAugmentingPath(int start);
 
   // Accessors to the cache of literals.
-  inline LiteralIndex VariableLiteralIndexOf(int x, int64 value);
-  inline bool VariableHasPossibleValue(int x, int64 value);
+  inline LiteralIndex VariableLiteralIndexOf(int x, int64_t value);
+  inline bool VariableHasPossibleValue(int x, int64_t value);
 
   // This caches all literals of the fully encoded variables.
   // Values of a given variable are 0-indexed using offsets variable_min_value_,
@@ -89,10 +95,10 @@ class AllDifferentConstraint : PropagatorInterface {
   // TODO(user): compare this encoding to a sparser hash_map encoding.
   const int num_variables_;
   const std::vector<IntegerVariable> variables_;
-  int64 min_all_values_;
-  int64 num_all_values_;
-  std::vector<int64> variable_min_value_;
-  std::vector<int64> variable_max_value_;
+  int64_t min_all_values_;
+  int64_t num_all_values_;
+  std::vector<int64_t> variable_min_value_;
+  std::vector<int64_t> variable_max_value_;
   std::vector<std::vector<LiteralIndex>> variable_literal_index_;
 
   // Internal state of MakeAugmentingPath().
@@ -131,13 +137,13 @@ class AllDifferentConstraint : PropagatorInterface {
   IntegerTrail* integer_trail_;
 };
 
-// Implement the all different bound consistent propagator with explanation.
-// That is, given n variables that must be all different, this propagates the
-// bounds of each variables as much as possible. The key is to detect the so
-// called Hall interval which are interval of size k that contains the domain
-// of k variables. Because all the variables must take different values, we can
-// deduce that the domain of the other variables cannot contains such Hall
-// interval.
+// Implements the all different bound consistent propagator with explanation.
+// That is, given n affine expressions that must take different values, this
+// propagates the bounds of each expression as much as possible. The key is to
+// detect the so called Hall interval which are interval of size k that contains
+// the domain of k expressinos. Because all the variables must take different
+// values, we can deduce that the domain of the other variables cannot contains
+// such Hall interval.
 //
 // We use a "fast" O(n log n) algorithm.
 //
@@ -146,7 +152,7 @@ class AllDifferentConstraint : PropagatorInterface {
 // https://cs.uwaterloo.ca/~vanbeek/Publications/ijcai03_TR.pdf
 class AllDifferentBoundsPropagator : public PropagatorInterface {
  public:
-  AllDifferentBoundsPropagator(const std::vector<IntegerVariable>& vars,
+  AllDifferentBoundsPropagator(const std::vector<AffineExpression>& expressions,
                                IntegerTrail* integer_trail);
 
   bool Propagate() final;
@@ -155,8 +161,8 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
  private:
   // We locally cache the lb/ub for faster sorting and to guarantee some
   // invariant when we push bounds.
-  struct VarValue {
-    IntegerVariable var;
+  struct CachedBounds {
+    AffineExpression expr;
     IntegerValue lb;
     IntegerValue ub;
   };
@@ -169,12 +175,12 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   // them.
   bool PropagateLowerBounds();
   bool PropagateLowerBoundsInternal(IntegerValue min_lb,
-                                    absl::Span<VarValue> vars);
+                                    absl::Span<CachedBounds> bounds);
 
   // Internally, we will maintain a set of non-consecutive integer intervals of
   // the form [start, end]. Each point (i.e. IntegerValue) of such interval will
-  // be associated to an unique variable and via an union-find algorithm point
-  // to its start. The end only make sense for representative.
+  // be associated to an unique input expression and via an union-find algorithm
+  // point to its start. The end only make sense for representative.
   //
   // TODO(user): Because we don't use rank, we have a worst case complexity of
   // O(n log n). We could try a normal Union-find data structure, but then we
@@ -196,15 +202,11 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
 
   IntegerValue GetValue(int index) const { return base_ + IntegerValue(index); }
 
-  bool PointIsPresent(int index) const {
-    return index_to_var_[index] != kNoIntegerVariable;
-  }
-
   IntegerTrail* integer_trail_;
 
-  // These vector will be either sorted by lb or by ub.
-  std::vector<VarValue> vars_;
-  std::vector<VarValue> negated_vars_;
+  // These vector will be either sorted by lb or by -ub.
+  std::vector<CachedBounds> bounds_;
+  std::vector<CachedBounds> negated_bounds_;
 
   // The list of Hall intervalls detected so far, sorted.
   std::vector<IntegerValue> hall_starts_;
@@ -215,7 +217,8 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   std::vector<int> indices_to_clear_;
   std::vector<int> index_to_start_index_;
   std::vector<int> index_to_end_index_;
-  std::vector<IntegerVariable> index_to_var_;
+  std::vector<bool> index_is_present_;
+  std::vector<AffineExpression> index_to_expr_;
 
   // Temporary integer reason.
   std::vector<IntegerLiteral> integer_reason_;

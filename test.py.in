@@ -1,10 +1,15 @@
+import ortools
 from ortools.linear_solver import pywraplp
 from ortools.linear_solver import linear_solver_pb2
 from ortools.constraint_solver import pywrapcp
-from ortools.sat import pywrapsat
-from ortools.graph import pywrapgraph
+from ortools.sat.python import swig_helper
+from ortools.sat.python import cp_model
+from ortools.graph.python import linear_sum_assignment
+from ortools.graph.python import max_flow
+from ortools.graph.python import min_cost_flow
 from ortools.algorithms import pywrapknapsack_solver
-from ortools.data import pywraprcpsp
+from ortools.scheduling import pywraprcpsp
+from ortools.util.python import sorted_interval_list
 
 def lpsolver():
     print('Test lpsolver...')
@@ -27,6 +32,7 @@ def cpsolver():
     print('Test cpsolver...DONE')
 
 def main():
+    print(ortools.__version__)
     lpsolver()
     cpsolver()
 

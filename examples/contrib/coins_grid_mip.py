@@ -47,12 +47,9 @@ def main(unused_argv):
   # Create the solver.
 
   # using CBC
-  solver = pywraplp.Solver('CoinsGridCBC',
-                           pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-
-  # Using CLP
-  # solver = pywraplp.Solver('CoinsGridCLP',
-  #                          pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+  solver = pywraplp.Solver.CreateSolver('CBC')
+  if not solver:
+    return
 
   # data
   n = 31  # the grid size

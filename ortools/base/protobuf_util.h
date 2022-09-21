@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,7 +14,10 @@
 #ifndef OR_TOOLS_BASE_PROTOBUF_UTIL_H_
 #define OR_TOOLS_BASE_PROTOBUF_UTIL_H_
 
+#include <string>
+
 #include "google/protobuf/repeated_field.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 
 namespace google {
@@ -26,6 +29,13 @@ inline void Truncate(RepeatedPtrField<T>* array, int new_size) {
   const int size = array->size();
   DCHECK_GE(size, new_size);
   array->DeleteSubrange(new_size, size - new_size);
+}
+
+// RepeatedField version.
+template <typename T>
+inline void Truncate(RepeatedField<T>* array, int new_size) {
+  // RepeatedField::Truncate performs size validity checks.
+  array->Truncate(new_size);
 }
 
 // Removes the elements at the indices specified by 'indices' from 'array' in
@@ -62,6 +72,14 @@ int RemoveAt(RepeatedType* array, const IndexContainer& indices) {
   Truncate(array, write_index);
   return num_indices;
 }
+
+template <typename T>
+T ParseTextOrDie(const std::string& input) {
+  T result;
+  CHECK(TextFormat::MergeFromString(input, &result));
+  return result;
+}
+
 }  // namespace util
 }  // namespace protobuf
 }  // namespace google

@@ -32,19 +32,11 @@ from ortools.linear_solver import pywraplp
 
 
 def main(sol='CBC'):
-
   # Create the solver.
-
   print('Solver: ', sol)
-
-  # using GLPK
-  if sol == 'GLPK':
-    solver = pywraplp.Solver('CoinsGridGLPK',
-                             pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
-  else:
-    # Using CBC
-    solver = pywraplp.Solver('CoinsGridCBC',
-                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+  solver = pywraplp.Solver.CreateSolver(sol)
+  if not solver:
+    return
 
   #
   # data

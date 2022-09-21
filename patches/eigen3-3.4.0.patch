@@ -1,0 +1,16 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f3e69b845..1aa7a944e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,6 +1,11 @@
+ # cmake_minimum_require must be the first command of the file
+ cmake_minimum_required(VERSION 3.5.0)
+ 
++# option() honors normal variables.
++if (POLICY CMP0077)
++  cmake_policy(SET CMP0077 NEW)
++endif()
++
+ project(Eigen3)
+ 
+ # guard against in-source builds

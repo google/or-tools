@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,22 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Minimal jobshop example."""
 
 # [START program]
+"""Minimal jobshop example."""
+# [START import]
 import collections
-
-# [START model]
-# Import Python wrapper for or-tools CP-SAT solver.
 from ortools.sat.python import cp_model
+# [END import]
 
 
-def MinimalJobshopSat():
+def main():
     """Minimal jobshop problem."""
-    # Create the model.
-    model = cp_model.CpModel()
-    # [END model]
-
+    # Data.
     # [START data]
     jobs_data = [  # task = (machine_id, processing_time).
         [(0, 3), (1, 2), (2, 2)],  # Job0
@@ -35,10 +32,14 @@ def MinimalJobshopSat():
 
     machines_count = 1 + max(task[0] for job in jobs_data for task in job)
     all_machines = range(machines_count)
-    # [END data]
-
     # Computes horizon dynamically as the sum of all durations.
     horizon = sum(task[1] for job in jobs_data for task in job)
+    # [END data]
+
+    # Create the model.
+    # [START model]
+    model = cp_model.CpModel()
+    # [END model]
 
     # [START variables]
     # Named tuple to store information about created variables.
@@ -88,14 +89,15 @@ def MinimalJobshopSat():
     model.Minimize(obj_var)
     # [END objective]
 
-    # [START solver]
-    # Solve model.
+    # Creates the solver and solve.
+    # [START solve]
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
-    # [END solver]
+    # [END solve]
 
-    if status == cp_model.OPTIMAL:
-        # [START solution_printing]
+    # [START print_solution]
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        print('Solution:')
         # Create one list of assigned tasks per machine.
         assigned_jobs = collections.defaultdict(list)
         for job_id, job in enumerate(jobs_data):
@@ -117,15 +119,16 @@ def MinimalJobshopSat():
             sol_line = '           '
 
             for assigned_task in assigned_jobs[machine]:
-                name = 'job_%i_%i' % (assigned_task.job, assigned_task.index)
+                name = 'job_%i_task_%i' % (assigned_task.job,
+                                           assigned_task.index)
                 # Add spaces to output to align columns.
-                sol_line_tasks += '%-10s' % name
+                sol_line_tasks += '%-15s' % name
 
                 start = assigned_task.start
                 duration = assigned_task.duration
                 sol_tmp = '[%i,%i]' % (start, start + duration)
                 # Add spaces to output to align columns.
-                sol_line += '%-10s' % sol_tmp
+                sol_line += '%-15s' % sol_tmp
 
             sol_line += '\n'
             sol_line_tasks += '\n'
@@ -133,10 +136,21 @@ def MinimalJobshopSat():
             output += sol_line
 
         # Finally print the solution found.
-        print('Optimal Schedule Length: %i' % solver.ObjectiveValue())
+        print(f'Optimal Schedule Length: {solver.ObjectiveValue()}')
         print(output)
-        # [END solution_printing]
+    else:
+        print('No solution found.')
+    # [END print_solution]
+
+    # Statistics.
+    # [START statistics]
+    print('\nStatistics')
+    print('  - conflicts: %i' % solver.NumConflicts())
+    print('  - branches : %i' % solver.NumBranches())
+    print('  - wall time: %f s' % solver.WallTime())
+    # [END statistics]
 
 
-MinimalJobshopSat()
+if __name__ == '__main__':
+    main()
 # [END program]

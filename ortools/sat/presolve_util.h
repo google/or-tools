@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,10 +15,13 @@
 #define OR_TOOLS_SAT_PRESOLVE_UTIL_H_
 
 #include <algorithm>
+#include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/int_type.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -26,6 +29,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -51,6 +55,10 @@ class DomainDeductions {
   // of the current variable domain.
   void AddDeduction(int literal_ref, int var, Domain domain);
 
+  // Returns the domain of var when literal_ref is true.
+  // If there is no information, returns Domain::AllValues().
+  Domain ImpliedDomain(int literal_ref, int var) const;
+
   // Returns list of (var, domain) that were deduced because:
   //   1/ We have a domain deduction for var and all literal from the clause
   //   2/ So we can take the union of all the deduced domains.
@@ -71,8 +79,8 @@ class DomainDeductions {
   int NumDeductions() const { return deductions_.size(); }
 
  private:
-  DEFINE_INT_TYPE(Index, int);
-  Index IndexFromLiteral(int ref) {
+  DEFINE_STRONG_INDEX_TYPE(Index);
+  Index IndexFromLiteral(int ref) const {
     return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
   }
 
@@ -85,7 +93,7 @@ class DomainDeductions {
 
 // Replaces the variable var in ct using the definition constraint.
 // Currently the coefficient in the definition must be 1 or -1.
-void SubstituteVariable(int var, int64 var_coeff_in_definition,
+bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition, ConstraintProto* ct);
 
 }  // namespace sat

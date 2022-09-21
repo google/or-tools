@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,28 +14,39 @@
 #include "ortools/sat/boolean_problem.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <numeric>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
+#include "ortools/graph/graph.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/graph/io.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "ortools/algorithms/find_graph_symmetries.h"
-#include "ortools/base/hash.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/map_util.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/util.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/sat/simplification.h"
+#include "ortools/util/strong_integers.h"
 
 ABSL_FLAG(std::string, debug_dump_symmetry_graph_to_file, "",
           "If this flag is non-empty, an undirected graph whose"
@@ -163,11 +174,11 @@ CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem& problem) {
     ConstraintProto* ct = result.add_constraints();
     ct->set_name(constraint.name());
     LinearConstraintProto* linear = ct->mutable_linear();
-    int64 offset = 0;
+    int64_t offset = 0;
     for (int i = 0; i < constraint.literals_size(); ++i) {
       // Note that the new format is slightly different.
       const int lit = constraint.literals(i);
-      const int64 coeff = constraint.coefficients(i);
+      const int64_t coeff = constraint.coefficients(i);
       if (lit > 0) {
         linear->add_vars(lit - 1);
         linear->add_coeffs(coeff);
@@ -180,17 +191,17 @@ CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem& problem) {
     }
     linear->add_domain(constraint.has_lower_bound()
                            ? constraint.lower_bound() + offset
-                           : kint32min + offset);
+                           : std::numeric_limits<int32_t>::min() + offset);
     linear->add_domain(constraint.has_upper_bound()
                            ? constraint.upper_bound() + offset
-                           : kint32max + offset);
+                           : std::numeric_limits<int32_t>::max() + offset);
   }
   if (problem.has_objective()) {
     CpObjectiveProto* objective = result.mutable_objective();
-    int64 offset = 0;
+    int64_t offset = 0;
     for (int i = 0; i < problem.objective().literals_size(); ++i) {
       const int lit = problem.objective().literals(i);
-      const int64 coeff = problem.objective().coefficients(i);
+      const int64_t coeff = problem.objective().coefficients(i);
       if (lit > 0) {
         objective->add_vars(lit - 1);
         objective->add_coeffs(coeff);
@@ -235,7 +246,7 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
   }
   solver->SetNumVariables(problem.num_variables());
   std::vector<LiteralWithCoeff> cst;
-  int64 num_terms = 0;
+  int64_t num_terms = 0;
   int num_constraints = 0;
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     num_terms += constraint.literals_size();
@@ -273,7 +284,7 @@ bool LoadAndConsumeBooleanProblem(LinearBooleanProblem* problem,
   }
   solver->SetNumVariables(problem->num_variables());
   std::vector<LiteralWithCoeff> cst;
-  int64 num_terms = 0;
+  int64_t num_terms = 0;
   int num_constraints = 0;
 
   // We will process the constraints backward so we can free the memory used by
@@ -309,14 +320,14 @@ void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
                                             SatSolver* solver) {
   const LinearObjective& objective = problem.objective();
   CHECK_EQ(objective.literals_size(), objective.coefficients_size());
-  int64 max_abs_weight = 0;
-  for (const int64 coefficient : objective.coefficients()) {
+  int64_t max_abs_weight = 0;
+  for (const int64_t coefficient : objective.coefficients()) {
     max_abs_weight = std::max(max_abs_weight, std::abs(coefficient));
   }
   const double max_abs_weight_double = max_abs_weight;
   for (int i = 0; i < objective.literals_size(); ++i) {
     const Literal literal(objective.literals(i));
-    const int64 coefficient = objective.coefficients(i);
+    const int64_t coefficient = objective.coefficients(i);
     const double abs_weight = std::abs(coefficient) / max_abs_weight_double;
     // Because this is a minimization problem, we prefer to assign a Boolean
     // variable to its "low" objective value. So if a literal has a positive
@@ -401,16 +412,16 @@ std::string LinearBooleanProblemToCnfString(
   const int first_slack_variable = problem.original_num_variables();
 
   // This will contains the objective.
-  absl::flat_hash_map<int, int64> literal_to_weight;
-  std::vector<std::pair<int, int64>> non_slack_objective;
+  absl::flat_hash_map<int, int64_t> literal_to_weight;
+  std::vector<std::pair<int, int64_t>> non_slack_objective;
 
   // This will be the weight of the "hard" clauses in the wcnf format. It must
   // be greater than the sum of the weight of all the soft clauses, so we will
   // just set it to this sum + 1.
-  int64 hard_weight = 1;
+  int64_t hard_weight = 1;
   if (is_wcnf) {
     int i = 0;
-    for (int64 weight : objective.coefficients()) {
+    for (int64_t weight : objective.coefficients()) {
       CHECK_NE(weight, 0);
       int signed_literal = objective.literals(i);
 
@@ -444,7 +455,7 @@ std::string LinearBooleanProblemToCnfString(
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     if (constraint.literals_size() == 0) return "";  // Assumption.
     constraint_output.clear();
-    int64 weight = hard_weight;
+    int64_t weight = hard_weight;
     for (int i = 0; i < constraint.literals_size(); ++i) {
       if (constraint.coefficients(i) != 1) return "";  // Assumption.
       if (is_wcnf && abs(constraint.literals(i)) - 1 >= first_slack_variable) {
@@ -462,7 +473,7 @@ std::string LinearBooleanProblemToCnfString(
 
   // Output the rest of the objective as singleton constraints.
   if (is_wcnf) {
-    for (std::pair<int, int64> p : non_slack_objective) {
+    for (std::pair<int, int64_t> p : non_slack_objective) {
       // Since it is falsifying this clause that cost "weigtht", we need to take
       // its negation.
       const Literal literal(-p.first);
@@ -506,12 +517,12 @@ class IdGenerator {
   // If the pair (type, coefficient) was never seen before, then generate
   // a new id, otherwise return the previously generated id.
   int GetId(int type, Coefficient coefficient) {
-    const std::pair<int, int64> key(type, coefficient.value());
-    return gtl::LookupOrInsert(&id_map_, key, id_map_.size());
+    const std::pair<int, int64_t> key(type, coefficient.value());
+    return id_map_.emplace(key, id_map_.size()).first->second;
   }
 
  private:
-  absl::flat_hash_map<std::pair<int, int64>, int> id_map_;
+  absl::flat_hash_map<std::pair<int, int64_t>, int> id_map_;
 };
 }  // namespace.
 
@@ -636,11 +647,11 @@ Graph* GenerateGraphForSymmetryDetection(
 void MakeAllLiteralsPositive(LinearBooleanProblem* problem) {
   // Objective.
   LinearObjective* mutable_objective = problem->mutable_objective();
-  int64 objective_offset = 0;
+  int64_t objective_offset = 0;
   for (int i = 0; i < mutable_objective->literals_size(); ++i) {
     const int signed_literal = mutable_objective->literals(i);
     if (signed_literal < 0) {
-      const int64 coefficient = mutable_objective->coefficients(i);
+      const int64_t coefficient = mutable_objective->coefficients(i);
       mutable_objective->set_literals(i, -signed_literal);
       mutable_objective->set_coefficients(i, -coefficient);
       objective_offset += coefficient;
@@ -651,7 +662,7 @@ void MakeAllLiteralsPositive(LinearBooleanProblem* problem) {
   // Constraints.
   for (LinearBooleanConstraint& constraint :
        *(problem->mutable_constraints())) {
-    int64 sum = 0;
+    int64_t sum = 0;
     for (int i = 0; i < constraint.literals_size(); ++i) {
       if (constraint.literals(i) < 0) {
         sum += constraint.coefficients(i);
@@ -705,8 +716,10 @@ void FindLinearBooleanProblemSymmetries(
                                       /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   // TODO(user): inject the appropriate time limit here.
-  CHECK_OK(symmetry_finder.FindSymmetries(&equivalence_classes, generators,
-                                          &factorized_automorphism_group_size));
+  CHECK(symmetry_finder
+            .FindSymmetries(&equivalence_classes, generators,
+                            &factorized_automorphism_group_size)
+            .ok());
 
   // Remove from the permutations the part not concerning the literals.
   // Note that some permutation may becomes empty, which means that we had

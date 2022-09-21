@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 #include "ortools/util/file_util.h"
 
+#include <string>
+
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/descriptor.h"
@@ -22,12 +24,14 @@
 #include "google/protobuf/util/json_util.h"
 #include "ortools/base/file.h"
 #include "ortools/base/gzipstring.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {
 
-using ::google::protobuf::TextFormat;
+using google::protobuf::util::JsonParseOptions;
+using google::protobuf::util::JsonStringToMessage;
 
 absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
   std::string contents;
@@ -66,7 +70,7 @@ bool ReadFileToProto(absl::string_view filename,
   if (proto->ParseFromString(data)) {
     // NOTE(user): When using ParseFromString() from a generic
     // google::protobuf::Message, like we do here, all fields are stored, even
-    // if their are unknown in the underlying proto type. Unless we explicitly
+    // if they are unknown in the underlying proto type. Unless we explicitly
     // discard those 'unknown fields' here, our call to ByteSizeLong() will
     // still count the unknown payload.
     proto->DiscardUnknownFields();
@@ -83,9 +87,15 @@ bool ReadFileToProto(absl::string_view filename,
     VLOG(1) << "ReadFileToProto(): input is a text proto";
     return true;
   }
-  if (google::protobuf::util::JsonStringToMessage(
-          data, proto, google::protobuf::util::JsonParseOptions())
-          .ok()) {
+  // We use `auto` here since protobuf does not use absl::Status.
+  const auto status = JsonStringToMessage(data, proto, JsonParseOptions());
+  if (!status.ok()) {
+    VLOG(1) << status;
+  } else {
+    // NOTE(user): We protect against the JSON proto3 parser being very lenient
+    // and easily accepting any JSON as a valid JSON for our proto: if the
+    // parsed proto's size is too small compared to the JSON, we probably parsed
+    // a JSON that wasn't representing a valid proto.
     constexpr int kMaxJsonToBinaryShrinkFactor = 30;
     if (proto->ByteSizeLong() < data.size() / kMaxJsonToBinaryShrinkFactor) {
       VLOG(1) << "ReadFileToProto(): input is probably JSON, but probably not"
@@ -120,11 +130,23 @@ bool WriteProtoToFile(absl::string_view filename,
         return false;
       }
       break;
-    case ProtoWriteFormat::kJson:
+    case ProtoWriteFormat::kJson: {
       google::protobuf::util::JsonPrintOptions options;
       options.add_whitespace = true;
       options.always_print_primitive_fields = true;
       options.preserve_proto_field_names = true;
+      if (!google::protobuf::util::MessageToJsonString(proto, &output_string,
+                                                       options)
+               .ok()) {
+        LOG(WARNING) << "Printing to stream failed.";
+        return false;
+      }
+      file_type_suffix = ".json";
+      break;
+    }
+    case ProtoWriteFormat::kCanonicalJson:
+      google::protobuf::util::JsonPrintOptions options;
+      options.add_whitespace = true;
       if (!google::protobuf::util::MessageToJsonString(proto, &output_string,
                                                        options)
                .ok()) {

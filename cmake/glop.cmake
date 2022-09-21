@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 if(NOT BUILD_GLOP)
   return()
 endif()
@@ -58,7 +71,8 @@ target_compile_options(glop_proto PUBLIC ${GLOP_COMPILE_OPTIONS})
 target_link_libraries(glop_proto PRIVATE protobuf::libprotobuf)
 
 # Main Target
-add_library(glop
+add_library(glop)
+target_sources(glop PRIVATE
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h
@@ -125,18 +139,28 @@ add_library(glop
   ortools/lp_data/sparse.h
   ortools/lp_data/sparse_column.cc
   ortools/port/sysinfo.h
-  ortools/port/sysinfo_nonport.cc
+  ortools/port/sysinfo.cc
   ortools/util/file_util.cc
   ortools/util/file_util.h
   ortools/util/fp_utils.cc
   ortools/util/fp_utils.h
+  ortools/util/logging.cc
+  ortools/util/logging.h
   ortools/util/rational_approximation.cc
   ortools/util/rational_approximation.h
   ortools/util/stats.cc
   ortools/util/stats.h
+  ortools/util/strong_integers.h
   ortools/util/time_limit.cc
   ortools/util/time_limit.h
   )
+if(BUILD_LP_PARSER)
+  target_sources(glop PRIVATE
+    ortools/base/case.cc
+    ortools/base/case.h
+    ortools/lp_data/lp_parser.cc
+    ortools/lp_data/lp_parser.h)
+endif()
 
 if(WIN32)
   list(APPEND GLOP_COMPILE_DEFINITIONS "__WIN32__")
@@ -224,9 +248,9 @@ target_link_libraries(glop PUBLIC
   absl::time
   absl::strings
   absl::statusor
-  absl::container
   absl::str_format
   protobuf::libprotobuf
+  ${RE2_DEPS}
   )
 if(WIN32)
   #target_link_libraries(glop PUBLIC psapi.lib ws2_32.lib)
@@ -269,6 +293,7 @@ install(FILES
   ortools/base/file.h
   ortools/base/hash.h
   ortools/base/int_type.h
+  ortools/base/strong_int.h
   ortools/base/strong_vector.h
   ortools/base/integral_types.h
   ortools/base/log_severity.h
@@ -311,11 +336,13 @@ install(FILES
   ortools/util/bitset.h
   ortools/util/file_util.h
   ortools/util/fp_utils.h
+  ortools/util/logging.h
   ortools/util/random_engine.h
   ortools/util/rational_approximation.h
   ortools/util/return_macros.h
   ortools/util/running_stat.h
   ortools/util/stats.h
+  ortools/util/strong_integers.h
   ortools/util/time_limit.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ortools/util
   COMPONENT Devel)
@@ -349,6 +376,3 @@ install(
   "${PROJECT_BINARY_DIR}/glopConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/glop"
   COMPONENT Devel)
-
-# Build glop samples
-add_subdirectory(ortools/glop/samples)

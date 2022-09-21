@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,7 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <vector>
+
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -67,7 +77,7 @@ void RankingSampleSat() {
     for (int i = 0; i < num_tasks; ++i) {
       LinearExpr sum_of_predecessors(-1);
       for (int j = 0; j < num_tasks; ++j) {
-        sum_of_predecessors.AddVar(precedences[j][i]);
+        sum_of_predecessors += precedences[j][i];
       }
       cp_model.AddEquality(ranks[i], sum_of_predecessors);
     }
@@ -84,7 +94,7 @@ void RankingSampleSat() {
 
   for (int t = 0; t < kNumTasks; ++t) {
     const IntVar start = cp_model.NewIntVar(horizon);
-    const IntVar duration = cp_model.NewConstant(t + 1);
+    const int64_t duration = t + 1;
     const IntVar end = cp_model.NewIntVar(horizon);
     const BoolVar presence =
         t < kNumTasks / 2 ? cp_model.TrueVar() : cp_model.NewBoolVar();
@@ -116,10 +126,9 @@ void RankingSampleSat() {
 
   // Create objective: minimize 2 * makespan - 7 * sum of presences.
   // That is you gain 7 by interval performed, but you pay 2 by day of delays.
-  LinearExpr objective;
-  objective.AddTerm(makespan, 2);
+  LinearExpr objective = 2 * makespan;
   for (int t = 0; t < kNumTasks; ++t) {
-    objective.AddTerm(presences[t], -7);
+    objective -= 7 * presences[t];
   }
   cp_model.Minimize(objective);
 

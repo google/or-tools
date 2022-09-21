@@ -1,18 +1,29 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set_property(SOURCE linear_solver.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE linear_solver.i PROPERTY SWIG_MODULE_NAME pywraplp)
 set_property(SOURCE linear_solver.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 swig_add_library(pywraplp
-  TYPE SHARED
+  TYPE MODULE
   LANGUAGE python
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/linear_solver
+  OUTPUT_DIR ${PYTHON_PROJECT_DIR}/linear_solver
   SOURCES linear_solver.i)
 
-target_include_directories(pywraplp PRIVATE ${Python_INCLUDE_DIRS})
+target_include_directories(pywraplp PRIVATE ${Python3_INCLUDE_DIRS})
 set_property(TARGET pywraplp PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
-if(Python_VERSION VERSION_GREATER_EQUAL 3)
-  target_compile_definitions(pywraplp PUBLIC "PY3")
-endif()
+target_compile_definitions(pywraplp PUBLIC "PY3")
 
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
@@ -32,5 +43,25 @@ target_link_libraries(pywraplp PRIVATE ortools::ortools)
 # i.e. we can't use: $<$<PLATFORM_ID:Windows>:${PYTHON_LIBRARIES}>
 # see: https://cmake.org/cmake/help/git-stage/command/target_link_libraries.html#command:target_link_libraries
 if(MSVC)
-  target_link_libraries(pywraplp PRIVATE ${Python_LIBRARIES})
+  target_link_libraries(pywraplp PRIVATE ${Python3_LIBRARIES})
 endif()
+
+pybind11_add_module(pywrap_model_builder_helper MODULE pywrap_model_builder_helper.cc)
+
+# note: macOS is APPLE and also UNIX !
+if(APPLE)
+  set_target_properties(pywrap_model_builder_helper PROPERTIES
+    SUFFIX ".so"
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
+    )
+  set_property(TARGET pywrap_model_builder_helper APPEND PROPERTY
+    LINK_FLAGS "-flat_namespace -undefined suppress"
+    )
+elseif(UNIX)
+  set_target_properties(pywrap_model_builder_helper PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
+    )
+endif()
+
+target_link_libraries(pywrap_model_builder_helper PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::pywrap_model_builder_helper ALIAS pywrap_model_builder_helper)

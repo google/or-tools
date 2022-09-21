@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,14 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// See: //depot/google3/java/com/google/wireless/genie/frontend
-//       /mixer/matching/HungarianOptimizer.java
-
 #include "ortools/algorithms/hungarian.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <limits>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
@@ -463,8 +462,6 @@ void HungarianOptimizer::ReduceRows() {
 // Step 2.
 // Find a zero (Z) in the matrix.  If there is no starred zero in its row
 // or column, star Z.  Repeat for every element in the matrix.  Go to step 3.
-// of the CPU - the next slowest step takes 0.6%.  I can't think of a way
-// of speeding it up though.
 void HungarianOptimizer::StarZeroes() {
   // Since no rows or columns are covered on entry to this step, we use the
   // covers as a quick way of marking which rows & columns have stars in them.

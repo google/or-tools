@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,10 @@
 
 #include "ortools/glop/entering_variable.h"
 
+#include <algorithm>
+#include <limits>
 #include <queue>
+#include <vector>
 
 #include "ortools/base/timer.h"
 #include "ortools/lp_data/lp_utils.h"
@@ -23,85 +26,39 @@ namespace operations_research {
 namespace glop {
 
 EnteringVariable::EnteringVariable(const VariablesInfo& variables_info,
-                                   random_engine_t* random,
-                                   ReducedCosts* reduced_costs,
-                                   PrimalEdgeNorms* primal_edge_norms)
+                                   absl::BitGenRef random,
+                                   ReducedCosts* reduced_costs)
     : variables_info_(variables_info),
       random_(random),
       reduced_costs_(reduced_costs),
-      primal_edge_norms_(primal_edge_norms),
-      parameters_(),
-      rule_(GlopParameters::DANTZIG),
-      unused_columns_() {}
-
-Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
-  SCOPED_TIME_STAT(&stats_);
-  GLOP_RETURN_ERROR_IF_NULL(entering_col);
-
-  // For better redability of the templated function calls below.
-  const bool kNormalize = true;
-  const bool kNested = true;
-  const bool kSteepest = true;
-
-  switch (rule_) {
-    case GlopParameters::DANTZIG:
-      if (parameters_.use_nested_pricing()) {
-        if (unused_columns_.size() != variables_info_.GetNumberOfColumns()) {
-          ResetUnusedColumns();
-        }
-        if (parameters_.normalize_using_column_norm()) {
-          DantzigChooseEnteringColumn<kNormalize, kNested>(entering_col);
-        } else {
-          DantzigChooseEnteringColumn<!kNormalize, kNested>(entering_col);
-        }
-        if (*entering_col != kInvalidCol) {
-          unused_columns_.Clear(*entering_col);
-          return Status::OK();
-        }
-        ResetUnusedColumns();
-        if (parameters_.normalize_using_column_norm()) {
-          DantzigChooseEnteringColumn<kNormalize, kNested>(entering_col);
-        } else {
-          DantzigChooseEnteringColumn<!kNormalize, kNested>(entering_col);
-        }
-      } else {
-        if (parameters_.normalize_using_column_norm()) {
-          DantzigChooseEnteringColumn<kNormalize, !kNested>(entering_col);
-        } else {
-          DantzigChooseEnteringColumn<!kNormalize, !kNested>(entering_col);
-        }
-      }
-      return Status::OK();
-    case GlopParameters::STEEPEST_EDGE:
-      NormalizedChooseEnteringColumn<kSteepest>(entering_col);
-      return Status::OK();
-    case GlopParameters::DEVEX:
-      NormalizedChooseEnteringColumn<!kSteepest>(entering_col);
-      return Status::OK();
-  }
-  LOG(DFATAL) << "Unknown pricing rule: "
-              << ProtoEnumToString<GlopParameters::PricingRule>(rule_)
-              << ". Using steepest edge.";
-  NormalizedChooseEnteringColumn<kSteepest>(entering_col);
-  return Status::OK();
-}
+      parameters_() {}
 
 Status EnteringVariable::DualChooseEnteringColumn(
-    const UpdateRow& update_row, Fractional cost_variation,
-    std::vector<ColIndex>* bound_flip_candidates, ColIndex* entering_col,
-    Fractional* step) {
+    bool nothing_to_recompute, const UpdateRow& update_row,
+    Fractional cost_variation, std::vector<ColIndex>* bound_flip_candidates,
+    ColIndex* entering_col) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
-  GLOP_RETURN_ERROR_IF_NULL(step);
   const DenseRow& update_coefficient = update_row.GetCoefficients();
   const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
 
   breakpoints_.clear();
   breakpoints_.reserve(update_row.GetNonZeroPositions().size());
-  const Fractional threshold = parameters_.ratio_test_zero_threshold();
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   const DenseBitRow& is_boxed = variables_info_.GetNonBasicBoxedVariables();
+
+  // If everything has the best possible precision currently, we ignore
+  // low coefficients. This make sure we will never choose a pivot too small. It
+  // however can degrade the dual feasibility of the solution, but we can always
+  // fix that later.
+  //
+  // TODO(user): It is unclear if this is a good idea, but the primal simplex
+  // have pretty good/stable behavior with a similar logic. Experiment seems
+  // to show that this works well with the dual too.
+  const Fractional threshold = nothing_to_recompute
+                                   ? parameters_.minimum_acceptable_pivot()
+                                   : parameters_.ratio_test_zero_threshold();
 
   // Harris ratio test. See below for more explanation. Here this is used to
   // prune the first pass by not enqueueing ColWithRatio for columns that have
@@ -111,6 +68,13 @@ Status EnteringVariable::DualChooseEnteringColumn(
       reduced_costs_->GetDualFeasibilityTolerance();
   Fractional harris_ratio = std::numeric_limits<Fractional>::max();
 
+  // Like for the primal, we always allow a positive ministep, even if a
+  // variable is already infeasible by more than the tolerance.
+  const Fractional minimum_delta =
+      parameters_.degenerate_ministep_factor() *
+      reduced_costs_->GetDualFeasibilityTolerance();
+
+  num_operations_ += 10 * update_row.GetNonZeroPositions().size();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     // We will add ratio * coeff to this column with a ratio positive or zero.
     // cost_variation makes sure the leaving variable will be dual-feasible
@@ -125,7 +89,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
         if (-reduced_costs[col] > harris_ratio * coeff) continue;
         harris_ratio = std::min(
             harris_ratio, (-reduced_costs[col] + harris_tolerance) / coeff);
-        harris_ratio = std::max(0.0, harris_ratio);
+        harris_ratio = std::max(minimum_delta / coeff, harris_ratio);
       }
       breakpoints_.push_back(ColWithRatio(col, -reduced_costs[col], coeff));
       continue;
@@ -138,7 +102,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
         if (reduced_costs[col] > harris_ratio * -coeff) continue;
         harris_ratio = std::min(
             harris_ratio, (reduced_costs[col] + harris_tolerance) / -coeff);
-        harris_ratio = std::max(0.0, harris_ratio);
+        harris_ratio = std::max(minimum_delta / -coeff, harris_ratio);
       }
       breakpoints_.push_back(ColWithRatio(col, reduced_costs[col], -coeff));
       continue;
@@ -165,6 +129,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
   *entering_col = kInvalidCol;
   bound_flip_candidates->clear();
+  Fractional step = 0.0;
   Fractional best_coeff = -1.0;
   Fractional variation_magnitude = std::abs(cost_variation);
   equivalent_entering_choices_.clear();
@@ -210,9 +175,10 @@ Status EnteringVariable::DualChooseEnteringColumn(
       // negative. In this case we set it to 0.0, allowing any infeasible
       // position to enter the basis. This is quite important because its
       // helps in the choice of a stable pivot.
-      harris_ratio = std::max(harris_ratio, 0.0);
+      harris_ratio =
+          std::max(harris_ratio, minimum_delta / top.coeff_magnitude);
 
-      if (top.coeff_magnitude == best_coeff && top.ratio == *step) {
+      if (top.coeff_magnitude == best_coeff && top.ratio == step) {
         DCHECK_NE(*entering_col, kInvalidCol);
         equivalent_entering_choices_.push_back(top.col);
       } else {
@@ -222,7 +188,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
         // Note that the step is not directly used, so it is okay to leave it
         // negative.
-        *step = top.ratio;
+        step = top.ratio;
       }
     }
 
@@ -237,39 +203,37 @@ Status EnteringVariable::DualChooseEnteringColumn(
     equivalent_entering_choices_.push_back(*entering_col);
     *entering_col =
         equivalent_entering_choices_[std::uniform_int_distribution<int>(
-            0, equivalent_entering_choices_.size() - 1)(*random_)];
+            0, equivalent_entering_choices_.size() - 1)(random_)];
     IF_STATS_ENABLED(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }
 
   if (*entering_col == kInvalidCol) return Status::OK();
 
-  // If the step is 0.0, we make sure the reduced cost is 0.0 so
-  // UpdateReducedCosts() will not take a step that goes in the wrong way (a few
-  // experiments seems to indicate that this is not a good idea). See comment
-  // at the top of UpdateReducedCosts().
-  //
-  // Note that ShiftCost() actually shifts the cost a bit more in order to do a
-  // non-zero step. This helps on degenerate problems. See the comment of
-  // ShiftCost() for more detail.
-  //
-  // TODO(user): Do not do that if we do not end up using this pivot?
-  if (*step <= 0.0) {
-    // In order to be mathematically consistent, we shift the cost of the
-    // entering column in such a way that its reduced cost is indeed zero. This
-    // is called cost-shifting or perturbation in the literature and it does
-    // really help on degenerate problems. The pertubation will be removed once
-    // the pertubed problem is solved to the optimal.
-    reduced_costs_->ShiftCost(*entering_col);
+  // If best_coeff is small and they are potential bound flips, we can take a
+  // smaller step but use a good pivot.
+  const Fractional pivot_limit = parameters_.minimum_acceptable_pivot();
+  if (best_coeff < pivot_limit && !bound_flip_candidates->empty()) {
+    // Note that it is okay to leave more candidate than necessary in the
+    // returned bound_flip_candidates vector.
+    for (int i = bound_flip_candidates->size() - 1; i >= 0; --i) {
+      const ColIndex col = (*bound_flip_candidates)[i];
+      if (std::abs(update_coefficient[col]) < pivot_limit) continue;
+
+      VLOG(1) << "Used bound flip to avoid bad pivot. Before: " << best_coeff
+              << " now: " << std::abs(update_coefficient[col]);
+      *entering_col = col;
+      break;
+    }
   }
+
   return Status::OK();
 }
 
 Status EnteringVariable::DualPhaseIChooseEnteringColumn(
-    const UpdateRow& update_row, Fractional cost_variation,
-    ColIndex* entering_col, Fractional* step) {
+    bool nothing_to_recompute, const UpdateRow& update_row,
+    Fractional cost_variation, ColIndex* entering_col) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
-  GLOP_RETURN_ERROR_IF_NULL(step);
   const DenseRow& update_coefficient = update_row.GetCoefficients();
   const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
@@ -279,13 +243,20 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   breakpoints_.clear();
   breakpoints_.reserve(update_row.GetNonZeroPositions().size());
 
-  // Ratio test.
-  const Fractional threshold = parameters_.ratio_test_zero_threshold();
+  const Fractional threshold = nothing_to_recompute
+                                   ? parameters_.minimum_acceptable_pivot()
+                                   : parameters_.ratio_test_zero_threshold();
   const Fractional dual_feasibility_tolerance =
       reduced_costs_->GetDualFeasibilityTolerance();
+  const Fractional harris_tolerance =
+      parameters_.harris_tolerance_ratio() * dual_feasibility_tolerance;
+  const Fractional minimum_delta =
+      parameters_.degenerate_ministep_factor() * dual_feasibility_tolerance;
+
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
+  num_operations_ += 10 * update_row.GetNonZeroPositions().size();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     // Boxed variables shouldn't be in the update position list because they
     // will be dealt with afterwards by MakeBoxedVariableDualFeasible().
@@ -307,25 +278,31 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
                                                     : -update_coefficient[col];
 
     // Only proceed if there is a transition, note that if reduced_costs[col]
-    // is close to zero, then the variable is supposed to be dual-feasible.
+    // is close to zero, then the variable is counted as dual-feasible.
     if (std::abs(reduced_costs[col]) <= dual_feasibility_tolerance) {
       // Continue if the variation goes in the dual-feasible direction.
       if (coeff > 0 && !can_decrease.IsSet(col)) continue;
       if (coeff < 0 && !can_increase.IsSet(col)) continue;
 
-      // Note that here, a variable which is already dual-infeasible will still
-      // have a positive ratio. This may sounds weird, but the idea is to put
-      // first in the sorted breakpoint list a variable which has a reduced
-      // costs close to zero in order to minimize the magnitude of a step in the
-      // wrong direction.
+      // For an already dual-infeasible variable, we allow to push it until
+      // the harris_tolerance. But if it is past that or close to it, we also
+      // always enforce a minimum push.
+      if (coeff * reduced_costs[col] > 0.0) {
+        breakpoints_.push_back(ColWithRatio(
+            col,
+            std::max(minimum_delta,
+                     harris_tolerance - std::abs(reduced_costs[col])),
+            std::abs(coeff)));
+        continue;
+      }
     } else {
       // If the two are of the same sign, there is no transition, skip.
-      if (coeff * reduced_costs[col] > 0) continue;
+      if (coeff * reduced_costs[col] > 0.0) continue;
     }
 
     // We are sure there is a transition, add it to the set of breakpoints.
-    breakpoints_.push_back(
-        ColWithRatio(col, std::abs(reduced_costs[col]), std::abs(coeff)));
+    breakpoints_.push_back(ColWithRatio(
+        col, std::abs(reduced_costs[col]) + harris_tolerance, std::abs(coeff)));
   }
 
   // Process the breakpoints in priority order.
@@ -339,17 +316,17 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   // Select the last breakpoint that still improves the infeasibility and has a
   // numerically stable pivot.
   *entering_col = kInvalidCol;
-  *step = -1.0;
+  Fractional step = -1.0;
   Fractional improvement = std::abs(cost_variation);
   while (!breakpoints_.empty()) {
     const ColWithRatio top = breakpoints_.front();
 
     // We keep the greatest coeff_magnitude for the same ratio.
-    DCHECK(top.ratio > *step ||
-           (top.ratio == *step && top.coeff_magnitude <= pivot_magnitude));
-    if (top.ratio > *step && top.coeff_magnitude >= pivot_magnitude) {
+    DCHECK(top.ratio > step ||
+           (top.ratio == step && top.coeff_magnitude <= pivot_magnitude));
+    if (top.ratio > step && top.coeff_magnitude >= pivot_magnitude) {
       *entering_col = top.col;
-      *step = top.ratio;
+      step = top.ratio;
       pivot_magnitude = top.coeff_magnitude;
     }
     improvement -= top.coeff_magnitude;
@@ -371,111 +348,6 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
 
 void EnteringVariable::SetParameters(const GlopParameters& parameters) {
   parameters_ = parameters;
-}
-
-void EnteringVariable::SetPricingRule(GlopParameters::PricingRule rule) {
-  rule_ = rule;
-}
-
-DenseBitRow* EnteringVariable::ResetUnusedColumns() {
-  SCOPED_TIME_STAT(&stats_);
-  const ColIndex num_cols = variables_info_.GetNumberOfColumns();
-  if (unused_columns_.size() != num_cols) {
-    unused_columns_.ClearAndResize(num_cols);
-  }
-
-  // Invert the set of unused columns, minus the basis.
-  const DenseBitRow& is_basic = variables_info_.GetIsBasicBitRow();
-  for (ColIndex col(0); col < num_cols; ++col) {
-    if (unused_columns_.IsSet(col)) {
-      unused_columns_.Clear(col);
-    } else {
-      if (!is_basic.IsSet(col)) {
-        unused_columns_.Set(col);
-      }
-    }
-  }
-  return &unused_columns_;
-}
-
-template <bool normalize, bool nested_pricing>
-void EnteringVariable::DantzigChooseEnteringColumn(ColIndex* entering_col) {
-  DenseRow dummy;
-  const DenseRow& matrix_column_norms =
-      normalize ? primal_edge_norms_->GetMatrixColumnNorms() : dummy;
-  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
-  SCOPED_TIME_STAT(&stats_);
-
-  Fractional best_price(0.0);
-  *entering_col = kInvalidCol;
-  for (const ColIndex col : reduced_costs_->GetDualInfeasiblePositions()) {
-    if (nested_pricing && !unused_columns_.IsSet(col)) continue;
-    const Fractional unormalized_price = std::abs(reduced_costs[col]);
-    if (normalize) {
-      if (unormalized_price > best_price * matrix_column_norms[col]) {
-        best_price = unormalized_price / matrix_column_norms[col];
-        *entering_col = col;
-      }
-    } else {
-      if (unormalized_price > best_price) {
-        best_price = unormalized_price;
-        *entering_col = col;
-      }
-    }
-  }
-}
-
-// TODO(user): Here we could fill a priority queue with the normalized
-// reduced cost of the top n candidate columns. This makes it possible
-// - To respond right away after each bound flip iteration.
-// - To return the top-n choices if we want to consider multiple candidates in
-//   the other parts of the simplex algorithm.
-template <bool use_steepest_edge>
-void EnteringVariable::NormalizedChooseEnteringColumn(ColIndex* entering_col) {
-  const DenseRow& weights = use_steepest_edge
-                                ? primal_edge_norms_->GetEdgeSquaredNorms()
-                                : primal_edge_norms_->GetDevexWeights();
-  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
-  SCOPED_TIME_STAT(&stats_);
-
-  Fractional best_price(0.0);
-  *entering_col = kInvalidCol;
-  equivalent_entering_choices_.clear();
-  for (const ColIndex col : reduced_costs_->GetDualInfeasiblePositions()) {
-    if (use_steepest_edge) {
-      // Note that here the weights are squared.
-      const Fractional squared_reduced_cost = Square(reduced_costs[col]);
-      if (squared_reduced_cost >= best_price * weights[col]) {
-        if (squared_reduced_cost == best_price * weights[col]) {
-          equivalent_entering_choices_.push_back(col);
-          continue;
-        }
-        equivalent_entering_choices_.clear();
-        best_price = squared_reduced_cost / weights[col];
-        *entering_col = col;
-      }
-    } else {
-      const Fractional positive_reduced_cost = std::abs(reduced_costs[col]);
-      if (positive_reduced_cost >= best_price * weights[col]) {
-        if (positive_reduced_cost == best_price * weights[col]) {
-          equivalent_entering_choices_.push_back(col);
-          continue;
-        }
-        equivalent_entering_choices_.clear();
-        best_price = positive_reduced_cost / weights[col];
-        *entering_col = col;
-      }
-    }
-  }
-  // Break the ties randomly.
-  if (!equivalent_entering_choices_.empty()) {
-    equivalent_entering_choices_.push_back(*entering_col);
-    *entering_col =
-        equivalent_entering_choices_[std::uniform_int_distribution<int>(
-            0, equivalent_entering_choices_.size() - 1)(*random_)];
-    IF_STATS_ENABLED(
-        stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
-  }
 }
 
 }  // namespace glop

@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # [START program]
 """Cryptarithmetic puzzle.
 
@@ -18,13 +20,12 @@ where each letter represents a unique digit.
 
 This problem has 72 different solutions in base 10.
 """
-
-# [START program]
-
+# [START import]
 from ortools.sat.python import cp_model
+# [END import]
 
 
-# [START solution_printing]
+# [START solution_printer]
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
@@ -41,13 +42,15 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def solution_count(self):
         return self.__solution_count
-        # [END solution_printing]
+        # [END solution_printer]
 
 
-def CPIsFunSat():
+def main():
     """Solve the CP+IS+FUN==TRUE cryptarithm."""
     # Constraint programming engine
+    # [START model]
     model = cp_model.CpModel()
+    # [END model]
 
     # [START variables]
     base = 10
@@ -70,8 +73,8 @@ def CPIsFunSat():
     assert base >= len(letters)
     # [END variables]
 
-    # [START constraints]
     # Define constraints.
+    # [START constraints]
     model.AddAllDifferent(letters)
 
     # CP + IS + FUN = TRUE
@@ -79,22 +82,27 @@ def CPIsFunSat():
               n == t * base * base * base + r * base * base + u * base + e)
     # [END constraints]
 
+    # Creates a solver and solves the model.
     # [START solve]
-    ### Solve model.
     solver = cp_model.CpSolver()
     solution_printer = VarArraySolutionPrinter(letters)
-    status = solver.SearchForAllSolutions(model, solution_printer)
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
+    # Solve.
+    status = solver.Solve(model, solution_printer)
     # [END solve]
 
-    print()
-    print('Statistics')
-    print('  - status          : %s' % solver.StatusName(status))
-    print('  - conflicts       : %i' % solver.NumConflicts())
-    print('  - branches        : %i' % solver.NumBranches())
-    print('  - wall time       : %f s' % solver.WallTime())
-    print('  - solutions found : %i' % solution_printer.solution_count())
+    # Statistics.
+    # [START statistics]
+    print('\nStatistics')
+    print(f'  status   : {solver.StatusName(status)}')
+    print(f'  conflicts: {solver.NumConflicts()}')
+    print(f'  branches : {solver.NumBranches()}')
+    print(f'  wall time: {solver.WallTime()} s')
+    print(f'  sol found: {solution_printer.solution_count()}')
+    # [END statistics]
 
 
 if __name__ == '__main__':
-    CPIsFunSat()
-    # [END probram]
+    main()
+# [END program]

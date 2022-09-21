@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FLAGS_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FLAGS_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
@@ -47,9 +48,9 @@ ABSL_DECLARE_FLAG(bool, routing_tabu_search);
 ABSL_DECLARE_FLAG(bool, routing_generic_tabu_search);
 
 /// Search limits
-ABSL_DECLARE_FLAG(int64, routing_solution_limit);
-ABSL_DECLARE_FLAG(int64, routing_time_limit);
-ABSL_DECLARE_FLAG(int64, routing_lns_time_limit);
+ABSL_DECLARE_FLAG(int64_t, routing_solution_limit);
+ABSL_DECLARE_FLAG(int64_t, routing_time_limit);
+ABSL_DECLARE_FLAG(int64_t, routing_lns_time_limit);
 
 /// Search control
 ABSL_DECLARE_FLAG(std::string, routing_first_solution);
@@ -69,7 +70,7 @@ ABSL_DECLARE_FLAG(bool, routing_use_light_propagation);
 
 /// Cache settings.
 ABSL_DECLARE_FLAG(bool, routing_cache_callbacks);
-ABSL_DECLARE_FLAG(int64, routing_max_cache_size);
+ABSL_DECLARE_FLAG(int64_t, routing_max_cache_size);
 
 /// Misc
 ABSL_DECLARE_FLAG(bool, routing_trace);

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,15 +15,19 @@
 #define OR_TOOLS_SAT_MODEL_H_
 
 #include <cstddef>
+#include <cstdio>
+#include <ctime>
 #include <functional>
 #include <map>
 #include <memory>
+#include <new>
+#include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/typeid.h"
 
 namespace operations_research {
@@ -56,15 +60,15 @@ class Model {
   /**
    * This makes it possible  to have a nicer API on the client side, and it
    * allows both of these forms:
-   *   - ConstraintCreationFunction(contraint_args, &model);
-   *   - model.Add(ConstraintCreationFunction(contraint_args));
+   *   - ConstraintCreationFunction(constraint_args, &model);
+   *   - model.Add(ConstraintCreationFunction(constraint_args));
    *
    * The second form is a bit nicer for the client and it also allows to store
    * constraints and add them later. However, the function creating the
    * constraint is slighly more involved.
    *
    * \code
-   std::function<void(Model*)> ConstraintCreationFunction(contraint_args) {
+   std::function<void(Model*)> ConstraintCreationFunction(constraint_args) {
      return [=] (Model* model) {
         ... the same code ...
      };
@@ -125,8 +129,9 @@ class Model {
    */
   template <typename T>
   const T* Get() const {
-    return static_cast<const T*>(
-        gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
+    const auto& it = singletons_.find(gtl::FastTypeId<T>());
+    return it != singletons_.end() ? static_cast<const T*>(it->second)
+                                   : nullptr;
   }
 
   /**
@@ -134,8 +139,8 @@ class Model {
    */
   template <typename T>
   T* Mutable() const {
-    return static_cast<T*>(
-        gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
+    const auto& it = singletons_.find(gtl::FastTypeId<T>());
+    return it != singletons_.end() ? static_cast<T*>(it->second) : nullptr;
   }
 
   /**
@@ -144,8 +149,9 @@ class Model {
    * It will be destroyed when the model is.
    */
   template <typename T>
-  void TakeOwnership(T* t) {
+  T* TakeOwnership(T* t) {
     cleanup_list_.emplace_back(new Delete<T>(t));
+    return t;
   }
 
   /**
@@ -168,7 +174,7 @@ class Model {
   template <typename T>
   void Register(T* non_owned_class) {
     const size_t type_id = gtl::FastTypeId<T>();
-    CHECK(!gtl::ContainsKey(singletons_, type_id));
+    CHECK(!singletons_.contains(type_id));
     singletons_[type_id] = non_owned_class;
   }
 

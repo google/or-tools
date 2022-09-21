@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -50,11 +51,11 @@ def main():
     # [START constraints]
     # Each worker is assigned to at most one task.
     for i in range(num_workers):
-        model.Add(sum(x[i][j] for j in range(num_tasks)) <= 1)
+        model.AddAtMostOne(x[i][j] for j in range(num_tasks))
 
     # Each task is assigned to exactly one worker.
     for j in range(num_tasks):
-        model.Add(sum(x[i][j] for i in range(num_workers)) == 1)
+        model.AddExactlyOne(x[i][j] for i in range(num_workers))
     # [END constraints]
 
     # Objective

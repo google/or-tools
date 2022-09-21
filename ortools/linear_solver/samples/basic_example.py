@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,6 +15,7 @@
 # [START program]
 # [START import]
 from ortools.linear_solver import pywraplp
+from ortools.init import pywrapinit
 # [END import]
 
 
@@ -21,6 +23,8 @@ def main():
     # [START solver]
     # Create the linear solver with the GLOP backend.
     solver = pywraplp.Solver.CreateSolver('GLOP')
+    if not solver:
+        return
     # [END solver]
 
     # [START variables]
@@ -61,5 +65,11 @@ def main():
 
 
 if __name__ == '__main__':
+    pywrapinit.CppBridge.InitLogging('basic_example.py')
+    cpp_flags = pywrapinit.CppFlags()
+    cpp_flags.logtostderr = True
+    cpp_flags.log_prefix = False
+    pywrapinit.CppBridge.SetFlags(cpp_flags)
+
     main()
 # [END program]

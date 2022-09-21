@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,10 @@
 
 #include "ortools/constraint_solver/routing_index_manager.h"
 
+#include <cstdint>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/logging.h"
@@ -21,7 +24,7 @@
 
 namespace operations_research {
 
-const int64 RoutingIndexManager::kUnassigned = -1;
+const int64_t RoutingIndexManager::kUnassigned = -1;
 
 RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
                                          NodeIndex depot)
@@ -77,9 +80,9 @@ void RoutingIndexManager::Initialize(
   node_to_index_.resize(num_nodes_, kUnassigned);
   vehicle_to_start_.resize(num_vehicles_);
   vehicle_to_end_.resize(num_vehicles_);
-  int64 index = 0;
+  int64_t index = 0;
   for (NodeIndex i = kZeroNode; i < num_nodes_; ++i) {
-    if (gtl::ContainsKey(starts, i) || !gtl::ContainsKey(ends, i)) {
+    if (starts.contains(i) || !ends.contains(i)) {
       index_to_node_[index] = i;
       node_to_index_[i] = index;
       ++index;
@@ -88,9 +91,9 @@ void RoutingIndexManager::Initialize(
   absl::flat_hash_set<NodeIndex> seen_starts;
   for (int i = 0; i < num_vehicles_; ++i) {
     const NodeIndex start = starts_ends[i].first;
-    if (!gtl::ContainsKey(seen_starts, start)) {
+    if (!seen_starts.contains(start)) {
       seen_starts.insert(start);
-      const int64 start_index = node_to_index_[start];
+      const int64_t start_index = node_to_index_[start];
       vehicle_to_start_[i] = start_index;
       CHECK_NE(kUnassigned, start_index);
     } else {
@@ -110,7 +113,7 @@ void RoutingIndexManager::Initialize(
   // Logging model information.
   VLOG(1) << "Number of nodes: " << num_nodes_;
   VLOG(1) << "Number of vehicles: " << num_vehicles_;
-  for (int64 index = 0; index < index_to_node_.size(); ++index) {
+  for (int64_t index = 0; index < index_to_node_.size(); ++index) {
     VLOG(2) << "Variable index " << index << " -> Node index "
             << index_to_node_[index];
   }
@@ -120,12 +123,12 @@ void RoutingIndexManager::Initialize(
   }
 }
 
-std::vector<int64> RoutingIndexManager::NodesToIndices(
+std::vector<int64_t> RoutingIndexManager::NodesToIndices(
     const std::vector<NodeIndex>& nodes) const {
-  std::vector<int64> indices;
+  std::vector<int64_t> indices;
   indices.reserve(nodes.size());
   for (const NodeIndex node : nodes) {
-    const int64 index = NodeToIndex(node);
+    const int64_t index = NodeToIndex(node);
     CHECK_NE(kUnassigned, index);
     indices.push_back(index);
   }
@@ -133,10 +136,10 @@ std::vector<int64> RoutingIndexManager::NodesToIndices(
 }
 
 std::vector<RoutingIndexManager::NodeIndex> RoutingIndexManager::IndicesToNodes(
-    const std::vector<int64>& indices) const {
+    const std::vector<int64_t>& indices) const {
   std::vector<NodeIndex> nodes;
   nodes.reserve(indices.size());
-  for (const int64 index : indices) {
+  for (const int64_t index : indices) {
     nodes.push_back(IndexToNode(index));
   }
   return nodes;

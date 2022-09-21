@@ -1,4 +1,4 @@
-# -*- coding: latin-1 -*-
+#!/usr/bin/env python3
 # Copyright 2010 Hakan Kjellerstrand hakank@gmail.com
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-
   Word square in Google CP Solver.
-
   From http://en.wikipedia.org/wiki/Word_square
   '''
   A word square is a special case of acrostic. It consists of a set of words,
@@ -43,7 +41,6 @@ from ortools.constraint_solver import pywrapcp
 
 
 def main(words, word_len, num_answers=20):
-
   # Create the solver.
   solver = pywrapcp.Solver("Problem")
 
@@ -118,7 +115,7 @@ def main(words, word_len, num_answers=20):
 # convert a character to integer
 #
 def get_dict():
-  alpha = "abcdefghijklmnopqrstuvwxyzåäö"
+  alpha = "abcdefghijklmnopqrstuvwxyzÃ¥Ã¤Ã¶"
   d = {}
   rev = {}
   count = 1
@@ -143,22 +140,21 @@ def read_words(word_list, word_len, limit):
   words = open(word_list).readlines()
   for w in words:
     w = w.strip().lower()
-    # if len(w) == word_len and not dict.has_key(w) and not re.search("[^a-zåäö]",w) and count < limit:
+    # if len(w) == word_len and not dict.has_key(w) and not re.search("[^a-zÃ¥Ã¤Ã¶]",w) and count < limit:
     # Later note: The limit is not needed anymore with Mistral
-    if len(w) == word_len and w not in dict and not re.search("[^a-zåäö]", w):
+    if len(w) == word_len and w not in dict and not re.search("[^a-zÃ¥Ã¤Ã¶]", w):
       dict[w] = 1
       all_words.append(w)
       count += 1
   return all_words
 
 
-word_dict = "examples/data/words/list.txt"
+word_dict = "examples/contrib/words_list.txt"
 word_len = 4
 limit = 1000000
 num_answers = 5
 
 if __name__ == "__main__":
-
   if len(sys.argv) > 1:
     word_dict = sys.argv[1]
   if len(sys.argv) > 2:
@@ -170,5 +166,5 @@ if __name__ == "__main__":
 
   # Note: I have to use a limit, otherwise it seg faults
   words = read_words(word_dict, word_len, limit)
-  print("It was", len(words), "words")
+  print(f"It was {len(words)} words")
   main(words, word_len, num_answers)

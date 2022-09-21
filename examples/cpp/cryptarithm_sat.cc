@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -46,24 +46,20 @@ void SendMoreMoney() {
   // Force all letters to take on different values.
   cp_model.AddAllDifferent({s, e, n, d, m, o, r, y});
 
-  // Column 0: Force c0 == m.
+  // Column 0:
   cp_model.AddEquality(c0, m);
 
-  // Column 1: Force c1 + s + m + o == 10*c0.
-  cp_model.AddEquality(LinearExpr::Sum({c1, s, m, o}),
-                       LinearExpr::ScalProd({c0}, {10}));
+  // Column 1:
+  cp_model.AddEquality(c1 + s + m, o + 10 * c0);
 
-  // Column 2: Force c2 + e + o == n + 10*c1.
-  cp_model.AddEquality(LinearExpr::Sum({c2, e, o}),
-                       LinearExpr::ScalProd({n, c1}, {1, 10}));
+  // Column 2:
+  cp_model.AddEquality(c2 + e + o, n + 10 * c1);
 
-  // Column 3: Force c3 + n + r == e + 10*c2.
-  cp_model.AddEquality(LinearExpr::Sum({c3, n, r}),
-                       LinearExpr::ScalProd({e, c2}, {1, 10}));
+  // Column 3:
+  cp_model.AddEquality(c3 + n + r, e + 10 * c2);
 
-  // Column 4: Force d + e == y + 10*c3.
-  cp_model.AddEquality(LinearExpr::Sum({d, e}),
-                       LinearExpr::ScalProd({y, c3}, {1, 10}));
+  // Column 4:
+  cp_model.AddEquality(d + e, y + 10 * c3);
 
   // Declare the model, solve it, and display the results.
   const CpSolverResponse response = Solve(cp_model.Build());

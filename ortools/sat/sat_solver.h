@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,17 +19,19 @@
 #ifndef OR_TOOLS_SAT_SAT_SOLVER_H_
 #define OR_TOOLS_SAT_SAT_SOLVER_H_
 
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -42,7 +44,10 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/stats.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -84,7 +89,7 @@ class SatSolver {
     const int num_vars = NumVariables();
 
     // We need to be able to encode the variable as a literal.
-    CHECK_LT(2 * num_vars, std::numeric_limits<int32>::max());
+    CHECK_LT(2 * num_vars, std::numeric_limits<int32_t>::max());
     SetNumVariables(num_vars + 1);
     return BooleanVariable(num_vars);
   }
@@ -96,17 +101,19 @@ class SatSolver {
   bool AddUnitClause(Literal true_literal);
 
   // Same as AddProblemClause() below, but for small clauses.
-  //
-  // TODO(user): Remove this and AddUnitClause() when initializer lists can be
-  // used in the open-source code like in AddClause({a, b}).
   bool AddBinaryClause(Literal a, Literal b);
   bool AddTernaryClause(Literal a, Literal b, Literal c);
 
   // Adds a clause to the problem. Returns false if the problem is detected to
   // be UNSAT.
+  // If is_safe is false, we will do some basic presolving like removing
+  // duplicate literals.
   //
-  // TODO(user): Rename this to AddClause().
-  bool AddProblemClause(absl::Span<const Literal> literals);
+  // TODO(user): Rename this to AddClause(), also get rid of the specialized
+  // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
+  // just end up calling this?
+  bool AddProblemClause(absl::Span<const Literal> literals,
+                        bool is_safe = true);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this
@@ -129,11 +136,12 @@ class SatSolver {
   // "sticky" and once this happen, nothing else can be done with the solver.
   //
   // Thanks to this function, a client can safely ignore the return value of any
-  // Add*() functions. If one of them return false, then IsModelUnsat() will
+  // Add*() functions. If one of them return false, then ModelIsUnsat() will
   // return true.
-  //
-  // TODO(user): Rename to ModelIsUnsat().
-  bool IsModelUnsat() const { return model_is_unsat_; }
+  bool ModelIsUnsat() const { return model_is_unsat_; }
+
+  // TODO(user): remove this function.
+  bool IsModelUnsat() const { return model_is_unsat_; }  // DEPRECATED
 
   // Adds and registers the given propagator with the sat solver. Note that
   // during propagation, they will be called in the order they were added.
@@ -159,7 +167,7 @@ class SatSolver {
   void ResetDecisionHeuristicAndSetAllPreferences(
       const std::vector<std::pair<Literal, double>>& prefs) {
     decision_policy_->ResetDecisionHeuristic();
-    for (const std::pair<Literal, double> p : prefs) {
+    for (const std::pair<Literal, double>& p : prefs) {
       decision_policy_->SetAssignmentPreference(p.first, p.second);
     }
   }
@@ -234,6 +242,10 @@ class SatSolver {
   // literal. If there is a conflict and the problem is detected to be UNSAT,
   // returns kUnsatTrailIndex.
   //
+  // Important: In the presence of assumptions, this also returns
+  // kUnsatTrailIndex on ASSUMPTION_UNSAT. One can know the difference with
+  // IsModelUnsat().
+  //
   // A client can determine if there is a conflict by checking if the
   // CurrentDecisionLevel() was increased by 1 or not.
   //
@@ -256,8 +268,13 @@ class SatSolver {
   // of the old stack. Note that decisions that are now consequence of the ones
   // before them will no longer be decisions.
   //
+  // Returns INFEASIBLE if the model was proven infeasible, ASSUMPTION_UNSAT if
+  // the current decision and the one we are trying to take are not compatible
+  // together and FEASIBLE if all decisions are taken.
+  //
   // Note(user): This function can be called with an already assigned literal.
-  int EnqueueDecisionAndBacktrackOnConflict(Literal true_literal);
+  Status EnqueueDecisionAndBacktrackOnConflict(
+      Literal true_literal, int* first_propagation_index = nullptr);
 
   // Tries to enqueue the given decision and performs the propagation.
   // Returns true if no conflict occurred. Otherwise, returns false and restores
@@ -273,7 +290,7 @@ class SatSolver {
   void Backtrack(int target_level);
 
   // Advanced usage. This is meant to restore the solver to a "proper" state
-  // after a solve was interupted due to a limit reached.
+  // after a solve was interrupted due to a limit reached.
   //
   // Without assumption (i.e. if AssumptionLevel() is 0), this will revert all
   // decisions and make sure that all the fixed literals are propagated. In
@@ -285,7 +302,7 @@ class SatSolver {
   // case it will return false.
   bool RestoreSolverToAssumptionLevel();
 
-  // Advanced usage. Finish the progation if it was interupted. Note that this
+  // Advanced usage. Finish the progation if it was interrupted. Note that this
   // might run into conflict and will propagate again until a fixed point is
   // reached or the model was proven UNSAT. Returns IsModelUnsat().
   bool FinishPropagation();
@@ -296,6 +313,15 @@ class SatSolver {
 
   // Changes the assumptions level and the current solver assumptions. Returns
   // false if the model is UNSAT or ASSUMPTION_UNSAT, true otherwise.
+  //
+  // This uses the "new" assumptions handling, where all assumptions are
+  // enqueued at once at decision level 1 before we start to propagate. This has
+  // many advantages. In particular, because we propagate with the binary
+  // implications first, if we ever have assumption => not(other_assumptions) we
+  // are guaranteed to find it and returns a core of size 2.
+  //
+  // Paper: "Speeding Up Assumption-Based SAT", Randy Hickey and Fahiem Bacchus
+  // http://www.maxhs.org/docs/Hickey-Bacchus2019_Chapter_SpeedingUpAssumption-BasedSAT.pdf
   bool ResetWithGivenAssumptions(const std::vector<Literal>& assumptions);
 
   // Advanced usage. If the decision level is smaller than the assumption level,
@@ -362,14 +388,14 @@ class SatSolver {
   const VariablesAssignment& Assignment() const { return trail_->Assignment(); }
 
   // Some statistics since the creation of the solver.
-  int64 num_branches() const;
-  int64 num_failures() const;
-  int64 num_propagations() const;
+  int64_t num_branches() const;
+  int64_t num_failures() const;
+  int64_t num_propagations() const;
 
   // Note that we count the number of backtrack to level zero from a positive
   // level. Those can corresponds to actual restarts, or conflicts that learn
   // unit clauses or any other reason that trigger such backtrack.
-  int64 num_restarts() const;
+  int64_t num_restarts() const;
 
   // A deterministic number that should be correlated with the time spent in
   // the Solve() function. The order of magnitude should be close to the time
@@ -380,7 +406,7 @@ class SatSolver {
   // The idea is that if we know that a given assignment is satisfiable, then
   // all the learned clauses or PB constraints must be satisfiable by it. In
   // debug mode, and after this is called, all the learned clauses are tested to
-  // satisfy this saved assignement.
+  // satisfy this saved assignment.
   void SaveDebugAssignment();
 
   // Returns true iff the loaded problem only contains clauses.
@@ -417,6 +443,12 @@ class SatSolver {
   // use propagation to try to minimize some clauses from the database.
   void MinimizeSomeClauses(int decisions_budget);
 
+  // Sets the export function to the shared clauses manager.
+  void SetShareBinaryClauseCallback(const std::function<void(Literal, Literal)>&
+                                        shared_binary_clauses_callback) {
+    shared_binary_clauses_callback_ = shared_binary_clauses_callback;
+  }
+
   // Advance the given time limit with all the deterministic time that was
   // elapsed since last call.
   void AdvanceDeterministicTime(TimeLimit* limit) {
@@ -429,7 +461,7 @@ class SatSolver {
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
 
-  int64 NumFixedVariables() const {
+  int64_t NumFixedVariables() const {
     if (!decisions_.empty()) return decisions_[0].trail_index;
     CHECK_EQ(CurrentDecisionLevel(), 0);
     return trail_->Index();
@@ -439,6 +471,9 @@ class SatSolver {
   // Calls Propagate() and returns true if no conflict occurred. Otherwise,
   // learns the conflict, backtracks, enqueues the consequence of the learned
   // conflict and returns false.
+  //
+  // When handling assumptions, this might return false without backtracking
+  // in case of ASSUMPTIONS_UNSAT.
   bool PropagateAndStopAfterOneConflictResolution();
 
   // All Solve() functions end up calling this one.
@@ -446,12 +481,15 @@ class SatSolver {
 
   // Adds a binary clause to the BinaryImplicationGraph and to the
   // BinaryClauseManager when track_binary_clauses_ is true.
-  void AddBinaryClauseInternal(Literal a, Literal b);
+  //
+  // If export_clause is true, then we will also export_clause that to a
+  // potential shared_binary_clauses_callback_.
+  void AddBinaryClauseInternal(Literal a, Literal b, bool export_clause);
 
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
   // were added since that time, they will be considered unassigned.
-  bool ClauseIsValidUnderDebugAssignement(
+  bool ClauseIsValidUnderDebugAssignment(
       const std::vector<Literal>& clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
       const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const;
@@ -479,7 +517,8 @@ class SatSolver {
   //
   // first_propagation_index will be filled with the trail index of the first
   // newly propagated literal, or with -1 if INFEASIBLE is returned.
-  Status ReapplyDecisionsUpTo(int level, int* first_propagation_index);
+  Status ReapplyDecisionsUpTo(int level,
+                              int* first_propagation_index = nullptr);
 
   // Returns false if the thread memory is over the limit.
   bool IsMemoryLimitReached() const;
@@ -534,6 +573,10 @@ class SatSolver {
   // action.
   bool AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>& cst,
                                    Coefficient rhs, Coefficient max_value);
+
+  // Makes sure a pseudo boolean constraint is in canonical form.
+  void CanonicalizeLinear(std::vector<LiteralWithCoeff>* cst,
+                          Coefficient* bound_shift, Coefficient* max_value);
 
   // Adds a learned clause to the problem. This should be called after
   // Backtrack(). The backtrack is such that after it is applied, all the
@@ -590,14 +633,6 @@ class SatSolver {
   // the literals already present in the input.
   void ComputeUnionOfReasons(const std::vector<Literal>& input,
                              std::vector<Literal>* literals);
-
-  // Given an assumption (i.e. literal) currently assigned to false, this will
-  // returns the set of all assumptions that caused this particular assignment.
-  //
-  // This is useful to get a small set of assumptions that can't be all
-  // satisfied together.
-  void FillUnsatAssumptions(Literal false_assumption,
-                            std::vector<Literal>* unsat_assumptions);
 
   // Do the full pseudo-Boolean constraint analysis. This calls multiple
   // time ResolvePBConflict() on the current conflict until we have a conflict
@@ -691,6 +726,7 @@ class SatSolver {
 
   // Ordered list of propagators used by Propagate()/Untrail().
   std::vector<SatPropagator*> propagators_;
+  std::vector<SatPropagator*> non_empty_propagators_;
 
   // Ordered list of propagators added with AddPropagator().
   std::vector<SatPropagator*> external_propagators_;
@@ -709,6 +745,7 @@ class SatSolver {
   SatParameters* parameters_;
   RestartPolicy* restart_;
   SatDecisionPolicy* decision_policy_;
+  SolverLogger* logger_;
 
   // Used for debugging only. See SaveDebugAssignment().
   VariablesAssignment debug_assignment_;
@@ -726,6 +763,7 @@ class SatSolver {
 
   // The assumption level. See SolveWithAssumptions().
   int assumption_level_ = 0;
+  std::vector<Literal> assumptions_;
 
   // The size of the trail when ProcessNewlyFixedVariables() was last called.
   // Note that the trail contains only fixed literals (that is literals of
@@ -738,28 +776,28 @@ class SatSolver {
 
   // Tracks various information about the solver progress.
   struct Counters {
-    int64 num_branches = 0;
-    int64 num_failures = 0;
-    int64 num_restarts = 0;
+    int64_t num_branches = 0;
+    int64_t num_failures = 0;
+    int64_t num_restarts = 0;
 
     // Minimization stats.
-    int64 num_minimizations = 0;
-    int64 num_literals_removed = 0;
+    int64_t num_minimizations = 0;
+    int64_t num_literals_removed = 0;
 
     // PB constraints.
-    int64 num_learned_pb_literals = 0;
+    int64_t num_learned_pb_literals = 0;
 
     // Clause learning /deletion stats.
-    int64 num_literals_learned = 0;
-    int64 num_literals_forgotten = 0;
-    int64 num_subsumed_clauses = 0;
+    int64_t num_literals_learned = 0;
+    int64_t num_literals_forgotten = 0;
+    int64_t num_subsumed_clauses = 0;
 
     // TryToMinimizeClause() stats.
-    int64 minimization_num_clauses = 0;
-    int64 minimization_num_decisions = 0;
-    int64 minimization_num_true = 0;
-    int64 minimization_num_subsumed = 0;
-    int64 minimization_num_removed_literals = 0;
+    int64_t minimization_num_clauses = 0;
+    int64_t minimization_num_decisions = 0;
+    int64_t minimization_num_true = 0;
+    int64_t minimization_num_subsumed = 0;
+    int64_t minimization_num_removed_literals = 0;
   };
   Counters counters_;
 
@@ -787,11 +825,11 @@ class SatSolver {
   std::vector<BooleanVariable> dfs_stack_;
   std::vector<BooleanVariable> variable_to_process_;
 
-  // Temporary member used by AddLinearConstraintInternal().
+  // Temporary member used when adding clauses.
   std::vector<Literal> literals_scratchpad_;
 
   // A boolean vector used to temporarily mark decision levels.
-  DEFINE_INT_TYPE(SatDecisionLevel, int);
+  DEFINE_STRONG_INDEX_TYPE(SatDecisionLevel);
   SparseBitset<SatDecisionLevel> is_level_marked_;
 
   // Temporary vectors used by EnqueueDecisionAndBackjumpOnConflict().
@@ -811,9 +849,6 @@ class SatSolver {
   // analysis.
   VariableWithSameReasonIdentifier same_reason_identifier_;
 
-  // Temporary vector used by AddProblemClause().
-  std::vector<LiteralWithCoeff> tmp_pb_constraint_;
-
   // Boolean used to include/exclude constraints from the core computation.
   bool is_relevant_for_core_computation_;
 
@@ -831,6 +866,10 @@ class SatSolver {
   DratProofHandler* drat_proof_handler_;
 
   mutable StatsGroup stats_;
+
+  std::function<void(Literal, Literal)> shared_binary_clauses_callback_ =
+      nullptr;
+
   DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
 
@@ -841,6 +880,8 @@ class SatSolver {
 //
 // Important: The given SatSolver must be the one that just produced the given
 // core.
+//
+// TODO(user): One should use MinimizeCoreWithPropagation() instead.
 void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 
 // ============================================================================
@@ -850,7 +891,8 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 // ============================================================================
 
 inline std::function<void(Model*)> BooleanLinearConstraint(
-    int64 lower_bound, int64 upper_bound, std::vector<LiteralWithCoeff>* cst) {
+    int64_t lower_bound, int64_t upper_bound,
+    std::vector<LiteralWithCoeff>* cst) {
   return [=](Model* model) {
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
         /*use_lower_bound=*/true, Coefficient(lower_bound),
@@ -859,7 +901,7 @@ inline std::function<void(Model*)> BooleanLinearConstraint(
 }
 
 inline std::function<void(Model*)> CardinalityConstraint(
-    int64 lower_bound, int64 upper_bound,
+    int64_t lower_bound, int64_t upper_bound,
     const std::vector<Literal>& literals) {
   return [=](Model* model) {
     std::vector<LiteralWithCoeff> cst;
@@ -991,7 +1033,7 @@ inline std::function<void(Model*)> ReifiedBoolLe(Literal a, Literal b,
 }
 
 // This checks that the variable is fixed.
-inline std::function<int64(const Model&)> Value(Literal l) {
+inline std::function<int64_t(const Model&)> Value(Literal l) {
   return [=](const Model& model) {
     const Trail* trail = model.Get<Trail>();
     CHECK(trail->Assignment().VariableIsAssigned(l.Variable()));
@@ -1000,7 +1042,7 @@ inline std::function<int64(const Model&)> Value(Literal l) {
 }
 
 // This checks that the variable is fixed.
-inline std::function<int64(const Model&)> Value(BooleanVariable b) {
+inline std::function<int64_t(const Model&)> Value(BooleanVariable b) {
   return [=](const Model& model) {
     const Trail* trail = model.Get<Trail>();
     CHECK(trail->Assignment().VariableIsAssigned(b));

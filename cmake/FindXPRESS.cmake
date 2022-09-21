@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #[=======================================================================[.rst:
 FindXPRESS
 --------
@@ -51,11 +64,10 @@ if(XPRESS_FOUND AND NOT TARGET XPRESS::XPRESS)
   add_library(XPRESS::XPRESS UNKNOWN IMPORTED)
 
   if(UNIX)
-    set_target_properties(XPRESS::XPRESS PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${XPRESS_ROOT}/include")
+    target_include_directories(XPRESS::XPRESS SYSTEM INTERFACE "${XPRESS_ROOT}/include")
   endif()
 
-  if(APPLE)
+  if(APPLE) # be aware that `UNIX` is `TRUE` on OS X, so this check must be first
     set_target_properties(XPRESS::XPRESS PROPERTIES
       #INSTALL_RPATH_USE_LINK_PATH TRUE
       #BUILD_WITH_INSTALL_RPATH TRUE
@@ -70,5 +82,7 @@ if(XPRESS_FOUND AND NOT TARGET XPRESS::XPRESS)
     set_target_properties(XPRESS::XPRESS PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${XPRESS_ROOT}\\include"
       IMPORTED_LOCATION "${XPRESS_ROOT}\\lib\\xprs.lib")
+  else()
+    message(FATAL_ERROR "XPRESS not supported for ${CMAKE_SYSTEM}")
   endif()
 endif()

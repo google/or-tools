@@ -274,13 +274,13 @@ public class NurseRostering
     {
         int nurse_multiplier = 1;
         int week_multiplier = 1;
-        if (args.Length > 0)
-        {
-            nurse_multiplier = Convert.ToInt32(args[0]);
-        }
         if (args.Length > 1)
         {
-            week_multiplier = Convert.ToInt32(args[1]);
+            nurse_multiplier = Convert.ToInt32(args[1]);
+        }
+        if (args.Length > 2)
+        {
+            week_multiplier = Convert.ToInt32(args[2]);
         }
 
         Solve(nurse_multiplier, week_multiplier);

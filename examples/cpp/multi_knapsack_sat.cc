@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,12 +19,12 @@
 // Data is for 1 bin and 10 items. Scaling is done my having m bins and m copies
 // of each items.
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 
@@ -65,9 +65,9 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   }
 
   // Fill up scaled values, weights, volumes;
-  std::vector<int64> values(num_items);
-  std::vector<int64> weights(num_items);
-  std::vector<int64> volumes(num_items);
+  std::vector<int64_t> values(num_items);
+  std::vector<int64_t> weights(num_items);
+  std::vector<int64_t> volumes(num_items);
   for (int i = 0; i < num_items; ++i) {
     const int index = i % kNumItems;
     weights[i] = kItemsWeights[index];
@@ -79,10 +79,10 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   for (int b = 0; b < num_bins; ++b) {
     IntVar bin_weight = builder.NewIntVar({kWeightMin, kWeightMax});
     bin_weights.push_back(bin_weight);
-    builder.AddEquality(LinearExpr::BooleanScalProd(items_in_bins[b], weights),
+    builder.AddEquality(LinearExpr::WeightedSum(items_in_bins[b], weights),
                         bin_weight);
     builder.AddLinearConstraint(
-        LinearExpr::BooleanScalProd(items_in_bins[b], volumes),
+        LinearExpr::WeightedSum(items_in_bins[b], volumes),
         {kVolumeMin, kVolumeMax});
   }
 
@@ -92,8 +92,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
     for (int b = 0; b < num_bins; ++b) {
       bin_contain_item[b] = items_in_bins[b][i];
     }
-    builder.AddEquality(LinearExpr::BooleanSum(bin_contain_item),
-                        selected_items[i]);
+    builder.AddEquality(LinearExpr::Sum(bin_contain_item), selected_items[i]);
   }
 
   // Maximize the sums of weights.
@@ -110,8 +109,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::sat::MultiKnapsackSat(absl::GetFlag(FLAGS_size),
                                              absl::GetFlag(FLAGS_params));
   return EXIT_SUCCESS;

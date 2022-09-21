@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,12 +13,32 @@
 
 #include "ortools/sat/sat_inprocessing.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <deque>
+#include <limits>
+#include <utility>
+#include <vector>
+
 #include "absl/container/inlined_vector.h"
+#include "absl/random/distributions.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/sat/clause.h"
+#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/probing.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/integer_pq.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -207,12 +227,12 @@ bool Inprocessing::InprocessingRound() {
 #undef RETURN_IF_FALSE
 
 bool Inprocessing::MoreFixedVariableToClean() const {
-  const int64 new_num_fixed_variables = trail_->Index();
+  const int64_t new_num_fixed_variables = trail_->Index();
   return last_num_fixed_variables_ < new_num_fixed_variables;
 }
 
 bool Inprocessing::MoreRedundantVariableToClean() const {
-  const int64 new_num_redundant_literals =
+  const int64_t new_num_redundant_literals =
       implication_graph_->num_redundant_literals();
   return last_num_redundant_literals_ < new_num_redundant_literals;
 }
@@ -262,9 +282,9 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   // function. We should also merge the code with the deletion code in
   // sat_solver_.cc, but that require some refactoring of the dependence between
   // files.
-  const int64 new_num_redundant_literals =
+  const int64_t new_num_redundant_literals =
       implication_graph_->num_redundant_literals();
-  const int64 new_num_fixed_variables = trail_->Index();
+  const int64_t new_num_fixed_variables = trail_->Index();
   if (last_num_redundant_literals_ == new_num_redundant_literals &&
       last_num_fixed_variables_ == new_num_fixed_variables) {
     return true;
@@ -276,8 +296,8 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  int64 num_removed_literals = 0;
-  int64 num_inspected_literals = 0;
+  int64_t num_removed_literals = 0;
+  int64_t num_inspected_literals = 0;
 
   // We need this temporary vector for the DRAT proof settings, otherwise
   // we could just have done an in-place transformation.
@@ -360,10 +380,10 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  int64 num_subsumed_clauses = 0;
-  int64 num_removed_literals = 0;
-  int64 num_inspected_signatures = 0;
-  int64 num_inspected_literals = 0;
+  int64_t num_subsumed_clauses = 0;
+  int64_t num_removed_literals = 0;
+  int64_t num_inspected_signatures = 0;
+  int64_t num_inspected_literals = 0;
 
   // We need this temporary vector for the DRAT proof settings, otherwise
   // we could just have done an in-place transformation.
@@ -394,7 +414,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       num_literals.value());
 
   // Clause signatures in the same order as clauses.
-  std::vector<uint64> signatures(clauses.size());
+  std::vector<uint64_t> signatures(clauses.size());
 
   std::vector<Literal> candidates_for_removal;
   for (int clause_index = 0; clause_index < clauses.size(); ++clause_index) {
@@ -419,11 +439,11 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     // subsumption.
 
     // Compute hash and mark literals.
-    uint64 signature = 0;
+    uint64_t signature = 0;
     marked.SparseClearAll();
     for (const Literal l : clause->AsSpan()) {
       marked.Set(l.Index());
-      signature |= (uint64{1} << (l.Variable().value() % 64));
+      signature |= (uint64_t{1} << (l.Variable().value() % 64));
     }
 
     // Look for clause that subsumes this one. Note that because we inspect
@@ -431,7 +451,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     // included inside this one, it must appear in one of these lists.
     bool removed = false;
     candidates_for_removal.clear();
-    const uint64 mask = ~signature;
+    const uint64_t mask = ~signature;
     for (const Literal l : clause->AsSpan()) {
       num_inspected_signatures += one_watcher[l.Index()].size();
       for (const int i : one_watcher[l.Index()]) {
@@ -518,7 +538,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       // Recompute signature.
       signature = 0;
       for (const Literal l : clause->AsSpan()) {
-        signature |= (uint64{1} << (l.Variable().value() % 64));
+        signature |= (uint64_t{1} << (l.Variable().value() % 64));
       }
     }
 
@@ -536,7 +556,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     // Important: we can only use this clause to subsume/strenghten others if
     // it cannot be deleted later.
     if (!clause_manager_->IsRemovable(clause)) {
-      int min_size = kint32max;
+      int min_size = std::numeric_limits<int32_t>::max();
       LiteralIndex min_literal = kNoLiteralIndex;
       for (const Literal l : clause->AsSpan()) {
         if (one_watcher[l.Index()].size() < min_size) {
@@ -586,7 +606,7 @@ bool StampingSimplifier::DoOneRound(bool log_info) {
   if (!stamps_are_already_computed_) {
     // We need a DAG so that we don't have cycle while we sample the tree.
     // TODO(user): We could probably deal with it if needed so that we don't
-    // need to do equivalence detetion each time we want to run this.
+    // need to do equivalence detection each time we want to run this.
     implication_graph_->RemoveFixedVariables();
     if (!implication_graph_->DetectEquivalences(log_info)) return true;
     SampleTreeAndFillParent();
@@ -703,7 +723,7 @@ bool StampingSimplifier::ComputeStamps() {
   }
 
   // Perform a DFS from each root to compute the stamps.
-  int64 stamp = 0;
+  int64_t stamp = 0;
   first_stamps_.resize(size);
   last_stamps_.resize(size);
   marked_.assign(size, false);
@@ -1325,12 +1345,13 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
       if (!score_only && l != lit) resolvant_.push_back(l);
       marked_[l.Index()] = true;
     }
+    DCHECK(marked_[lit.Index()]);
     num_inspected_literals_ += clause.size() + implications.size();
 
     // If this is true, then "clause" is subsumed by one of its resolvant and we
     // can just remove lit from it. Then it doesn't need to be acounted at all.
     bool clause_can_be_simplified = false;
-    const int64 saved_score = new_score_;
+    const int64_t saved_score = new_score_;
 
     // Resolution with binary clauses.
     for (const Literal l : implications) {
@@ -1381,7 +1402,12 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
         // If this is the case, the other clause is subsumed by the resolvant.
         // We can just remove not_lit from it and ignore it.
         if (score_only && clause.size() + extra_size <= other.size()) {
-          CHECK_EQ(clause.size() + extra_size, other.size());
+          // TODO(user): We should have an exact equality here, except if
+          // presolve is off before the clause are added to the sat solver and
+          // we have duplicate literals. The code should still work but it
+          // wasn't written with that in mind nor tested like this, so we should
+          // just enforce the invariant.
+          if (false) DCHECK_EQ(clause.size() + extra_size, other.size());
           ++num_simplifications_;
 
           // Note that we update the threshold since this clause was counted in
@@ -1511,7 +1537,7 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
 
   // Compute the current score.
   // TODO(user): cleanup the list lazily at the same time?
-  int64 score = 0;
+  int64_t score = 0;
   const int clause_weight = parameters_.presolve_bve_clause_weight();
   score +=
       implication_graph_->DirectImplications(lit).size() * (clause_weight + 2);

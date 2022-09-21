@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,8 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -61,8 +63,8 @@ class Diffn : public Constraint {
     delayed_demon_ = MakeDelayedConstraintDemon0(s, this, &Diffn::PropagateAll,
                                                  "PropagateAll");
     if (solver()->parameters().diffn_use_cumulative() &&
-        IsArrayInRange<int64>(x_, 0, kint64max) &&
-        IsArrayInRange<int64>(y_, 0, kint64max)) {
+        IsArrayInRange<int64_t>(x_, 0, std::numeric_limits<int64_t>::max()) &&
+        IsArrayInRange<int64_t>(y_, 0, std::numeric_limits<int64_t>::max())) {
       Constraint* ct1 = nullptr;
       Constraint* ct2 = nullptr;
       {
@@ -71,20 +73,20 @@ class Diffn : public Constraint {
         // constraints leads to a failure. A cumulative constraint is
         // a scheduling constraint that will perform finer energy
         // based reasoning to do more propagation. (see Solver::MakeCumulative).
-        const int64 min_x = MinVarArray(x_);
-        const int64 max_x = MaxVarArray(x_);
-        const int64 max_size_x = MaxVarArray(dx_);
-        const int64 min_y = MinVarArray(y_);
-        const int64 max_y = MaxVarArray(y_);
-        const int64 max_size_y = MaxVarArray(dy_);
+        const int64_t min_x = MinVarArray(x_);
+        const int64_t max_x = MaxVarArray(x_);
+        const int64_t max_size_x = MaxVarArray(dx_);
+        const int64_t min_y = MinVarArray(y_);
+        const int64_t max_y = MaxVarArray(y_);
+        const int64_t max_size_y = MaxVarArray(dy_);
         if (AreAllBound(dx_)) {
-          std::vector<int64> size_x;
+          std::vector<int64_t> size_x;
           FillValues(dx_, &size_x);
           ct1 = MakeCumulativeConstraint(x_, size_x, dy_,
                                          max_size_y + max_y - min_y);
         }
         if (AreAllBound(dy_)) {
-          std::vector<int64> size_y;
+          std::vector<int64_t> size_y;
           FillValues(dy_, &size_y);
           ct2 = MakeCumulativeConstraint(y_, size_y, dx_,
                                          max_size_x + max_x - min_x);
@@ -192,11 +194,11 @@ class Diffn : public Constraint {
   // (that must already be computed in neighbors_) is greater than the area of a
   // bounding box that necessarily contains all these boxes.
   void FailWhenEnergyIsTooLarge(int box) {
-    int64 area_min_x = x_[box]->Min();
-    int64 area_max_x = x_[box]->Max() + dx_[box]->Max();
-    int64 area_min_y = y_[box]->Min();
-    int64 area_max_y = y_[box]->Max() + dy_[box]->Max();
-    int64 sum_of_areas = dx_[box]->Min() * dy_[box]->Min();
+    int64_t area_min_x = x_[box]->Min();
+    int64_t area_max_x = x_[box]->Max() + dx_[box]->Max();
+    int64_t area_min_y = y_[box]->Min();
+    int64_t area_max_y = y_[box]->Max() + dy_[box]->Max();
+    int64_t sum_of_areas = dx_[box]->Min() * dy_[box]->Min();
     // TODO(user): Is there a better order, maybe sort by distance
     // with the current box.
     for (int i = 0; i < neighbors_.size(); ++i) {
@@ -208,7 +210,7 @@ class Diffn : public Constraint {
       area_max_y = std::max(area_max_y, y_[other]->Max() + dy_[other]->Max());
       // Update sum of areas.
       sum_of_areas += dx_[other]->Min() * dy_[other]->Min();
-      const int64 bounding_area =
+      const int64_t bounding_area =
           (area_max_x - area_min_x) * (area_max_y - area_min_y);
       if (sum_of_areas > bounding_area) {
         solver()->Fail();
@@ -272,9 +274,9 @@ class Diffn : public Constraint {
   }
 
   Constraint* MakeCumulativeConstraint(const std::vector<IntVar*>& positions,
-                                       const std::vector<int64>& sizes,
+                                       const std::vector<int64_t>& sizes,
                                        const std::vector<IntVar*>& demands,
-                                       int64 capacity) {
+                                       int64_t capacity) {
     std::vector<IntervalVar*> intervals;
     solver()->MakeFixedDurationIntervalVarArray(positions, sizes, "interval",
                                                 &intervals);
@@ -286,11 +288,11 @@ class Diffn : public Constraint {
   std::vector<IntVar*> dx_;
   std::vector<IntVar*> dy_;
   const bool strict_;
-  const int64 size_;
+  const int64_t size_;
   Demon* delayed_demon_;
   absl::flat_hash_set<int> to_propagate_;
   std::vector<int> neighbors_;
-  uint64 fail_stamp_;
+  uint64_t fail_stamp_;
 };
 }  // namespace
 
@@ -302,7 +304,7 @@ Constraint* Solver::MakeNonOverlappingBoxesConstraint(
 
 Constraint* Solver::MakeNonOverlappingBoxesConstraint(
     const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int64>& x_size, const std::vector<int64>& y_size) {
+    const std::vector<int64_t>& x_size, const std::vector<int64_t>& y_size) {
   std::vector<IntVar*> dx(x_size.size());
   std::vector<IntVar*> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {
@@ -332,7 +334,7 @@ Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
 
 Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
     const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int64>& x_size, const std::vector<int64>& y_size) {
+    const std::vector<int64_t>& x_size, const std::vector<int64_t>& y_size) {
   std::vector<IntVar*> dx(x_size.size());
   std::vector<IntVar*> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {

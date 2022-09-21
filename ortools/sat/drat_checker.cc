@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,14 +13,28 @@
 
 #include "ortools/sat/drat_checker.h"
 
-#include <algorithm>
-#include <fstream>
+#include <stddef.h>
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <fstream>
+#include <limits>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/stl_util.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -151,7 +165,7 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
   // to check it. In turn, only these marked clauses need to be checked (and so
   // on recursively). By contrast, a forward iteration needs to check all the
   // clauses.
-  const int64 start_time_nanos = absl::GetCurrentTimeNanos();
+  const int64_t start_time_nanos = absl::GetCurrentTimeNanos();
   TimeLimit time_limit(max_time_in_seconds);
   Init();
   for (ClauseIndex i(clauses_.size() - 1); i >= first_infered_clause_index_;
@@ -172,7 +186,7 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
     if (HasRupProperty(i, Literals(clause))) {
       continue;
     }
-    // or the Reverse Asymetric Tautology (RAT) property. This property is
+    // or the Reverse Asymmetric Tautology (RAT) property. This property is
     // defined by the fact that all clauses which contain the negation of
     // the RAT literal of 'clause', after resolution with 'clause', must have
     // the RUP property.
@@ -435,7 +449,7 @@ void DratChecker::MarkAsNeededForProof(Clause* clause) {
   }
 }
 
-void DratChecker::LogStatistics(int64 duration_nanos) const {
+void DratChecker::LogStatistics(int64_t duration_nanos) const {
   int problem_clauses_needed_for_proof = 0;
   int infered_clauses_needed_for_proof = 0;
   for (ClauseIndex i(0); i < clauses_.size(); ++i) {

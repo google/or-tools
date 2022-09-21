@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,8 +32,8 @@ syntax = "proto2";
 option java_package = "com.google.ortools.linearsolver";
 option java_multiple_files = true;
 
-// import "google/protobuf/wrappers.proto";
 import "ortools/util/optional_boolean.proto";
+
 
 package operations_research;
 
@@ -293,6 +293,29 @@ message MPModelProto {
   // try to return a solution "close" to this assignment in case of multiple
   // optimal solutions.
   optional PartialVariableAssignment solution_hint = 6;
+
+  // Annotations can be freely added by users who want to attach arbitrary
+  // payload to the model's variables or constraints.
+  message Annotation {
+    // The target of an Annotation is a single entity (e.g. a variable).
+    // Several Annotations may apply to the same entity.
+    enum TargetType {
+      VARIABLE_DEFAULT = 0;
+      CONSTRAINT = 1;
+      GENERAL_CONSTRAINT = 2;
+    }
+    optional TargetType target_type = 1;
+    // If both `target_index` and `target_name` are set, they must point to the
+    // same entity.
+    optional int32 target_index = 2;  // Index in the MPModelProto.
+    optional string target_name = 3;  // Alternate to index. Assumes uniqueness.
+
+    // The payload is a (key, value) string pair. Depending on the use cases,
+    // one of the two may be omitted.
+    optional string payload_key = 4;
+    optional string payload_value = 5;
+  }
+  repeated Annotation annotation = 9;
 }
 
 // To support 'unspecified' double value in proto3, the simplest is to wrap
@@ -385,7 +408,7 @@ message MPModelDeltaProto {
   // NOTE(user): We may also add more deltas, eg. objective offset.
 }
 
-// Next id: 11.
+// Next id: 17.
 message MPModelRequest {
   // The model to be optimized by the server.
   optional MPModelProto model = 1;
@@ -396,8 +419,8 @@ message MPModelRequest {
   // program?).
   // This must remain consistent with MPSolver::OptimizationProblemType.
   enum SolverType {
-    GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
     CLP_LINEAR_PROGRAMMING = 0;
+    GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
     GLPK_LINEAR_PROGRAMMING = 1;
     GUROBI_LINEAR_PROGRAMMING = 6;  // Commercial, needs a valid license.
     XPRESS_LINEAR_PROGRAMMING = 101;  // Commercial, needs a valid license. NOLINT
@@ -417,9 +440,14 @@ message MPModelRequest {
     // variables).
     SAT_INTEGER_PROGRAMMING = 14;
 
+
+    // In-house linear programming solver based on the primal-dual hybrid
+    // gradient method. Sometimes faster than Glop for medium-size problems and
+    // scales to much larger problems than Glop.
+    PDLP_LINEAR_PROGRAMMING = 8;
     KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13;
   }
-  optional SolverType solver_type = 2;
+  optional SolverType solver_type = 2 [default = GLOP_LINEAR_PROGRAMMING];
 
   // Maximum time to be spent by the solver to solve 'model'. If the server is
   // busy and the RPC's deadline_left is less than this, it will immediately
@@ -431,6 +459,7 @@ message MPModelRequest {
   //
   // If not specified, the time limit on the solver is the RPC's deadline_left.
   optional double solver_time_limit_seconds = 3;
+
 
   // If this is set, then EnableOutput() will be set on the internal MPSolver
   // that solves the model.
@@ -460,7 +489,19 @@ message MPModelRequest {
   // definition of MPModelDeltaProto.
   optional MPModelDeltaProto model_delta = 8;
 
+
+
+  // Controls the recovery of additional solutions, if any, saved by the
+  // underlying solver back in the MPSolutionResponse.additional_solutions.
+  // The repeated field will be length
+  //    min(populate_addition_solutions_up_to,
+  //        #additional_solutions_available_in_underlying_solver)
+  // These additional solutions may have a worse objective than the main
+  // solution returned in the response.
+  optional int32 populate_additional_solutions_up_to = 11 [default = 0];
+
 }
+
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to
 // allow us to add more enum values in the future. Clients should use
@@ -518,6 +559,9 @@ enum MPSolverResponseStatus {
   // Like "NOT_SOLVED", but typically used by model validation functions
   // returning a "model status", to enhance readability of the client code.
   MPSOLVER_MODEL_IS_VALID = 0x61;
+  // The solve was interrupted by the user, and the solver didn't have time to
+  // return a proper status.
+  MPSOLVER_CANCELLED_BY_USER = 0x62;
   // Special value: the solver status could not be properly translated and is
   // unknown.
   MPSOLVER_UNKNOWN_STATUS = 0x63;
@@ -536,9 +580,30 @@ enum MPSolverResponseStatus {
   // The linear solver binary was probably not linked with the required library,
   // eg //ortools/linear_solver:linear_solver_scip for SCIP.
   MPSOLVER_SOLVER_TYPE_UNAVAILABLE = 0x7;
+  // Some of the selected options were incompatible, e.g. a cancellable solve
+  // was requested via SolverClient::SolveMipRemotely() with an underlying
+  // solver that doesn't support cancellation. status_str should contain a
+  // description of the issue.
+  MPSOLVER_INCOMPATIBLE_OPTIONS = 0x71;
 
 }
 
+message MPSolution {
+  optional double objective_value = 1;
+  repeated double variable_value = 2 [packed = true];
+}
+
+message MPSolveInfo {
+  // How much wall time (resp. user time) elapsed during the Solve() of the
+  // underlying solver library. "wall" time and "user" time are to be
+  // interpreted like for the "time" command in bash (see "help time").
+  // In particular, "user time" is CPU time and can be greater than wall time
+  // when using several threads.
+  optional double solve_wall_time_seconds = 1;
+  optional double solve_user_time_seconds = 2;
+}
+
+// Next id: 12.
 message MPSolutionResponse {
   // Result of the optimization.
   optional /*required*/ MPSolverResponseStatus status = 1
@@ -567,6 +632,15 @@ message MPSolutionResponse {
   // FEASIBLE.
   repeated double variable_value = 3 [packed = true];
 
+  // Contains extra information about the solve, populated if the underlying
+  // solver (and its interface) supports it. As of 2021/07/19 this is supported
+  // by SCIP and Gurobi proto solves.
+  optional MPSolveInfo solve_info = 10;
+
+  // Opaque solver-specific information.
+  // For the PDLP solver, this is a serialized pdlp::SolveLog proto.
+  optional bytes solver_specific_info = 11;
+
   // [Advanced usage.]
   // Values of the dual variables values in the same order as the
   // MPModelProto::constraint field. This is a dense representation.
@@ -582,4 +656,12 @@ message MPSolutionResponse {
   // is actually a linear program).
   // These are set iff 'status' is OPTIMAL or FEASIBLE.
   repeated double reduced_cost = 6 [packed = true];
+
+  // [Advanced usage.]
+  // If `MPModelRequest.populate_additional_solutions_up_to` > 0, up to that
+  // number of additional solutions may be populated here, if available. These
+  // additional solutions are different than the main solution described by the
+  // above fields `objective_value` and `variable_value`.
+  repeated MPSolution additional_solutions = 8;
+
 }

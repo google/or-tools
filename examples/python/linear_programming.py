@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -41,7 +42,7 @@ def RunLinearExampleNaturalLanguageAPI(optimization_problem_type):
     sum_of_vars = sum([x1, x2, x3])
     c2 = solver.Add(sum_of_vars <= 100.0, 'OtherConstraintName')
 
-    SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2])
+    SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2], optimization_problem_type != 'PDLP')
     # Print a linear expression's solution value.
     print('Sum of vars: %s = %s' % (sum_of_vars, sum_of_vars.solution_value()))
 
@@ -85,10 +86,11 @@ def RunLinearExampleCppStyleAPI(optimization_problem_type):
     c2.SetCoefficient(x2, 2)
     c2.SetCoefficient(x3, 6)
 
-    SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2])
+    SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2],
+                  optimization_problem_type != 'PDLP')
 
 
-def SolveAndPrint(solver, variable_list, constraint_list):
+def SolveAndPrint(solver, variable_list, constraint_list, is_precise):
     """Solve the problem and print the solution."""
     print('Number of variables = %d' % solver.NumVariables())
     print('Number of constraints = %d' % solver.NumConstraints())
@@ -100,7 +102,8 @@ def SolveAndPrint(solver, variable_list, constraint_list):
 
     # The solution looks legit (when using solvers others than
     # GLOP_LINEAR_PROGRAMMING, verifying the solution is highly recommended!).
-    assert solver.VerifySolution(1e-7, True)
+    if is_precise:
+        assert solver.VerifySolution(1e-7, True)
 
     print('Problem solved in %f milliseconds' % solver.wall_time())
 
@@ -127,10 +130,12 @@ def main():
     RunLinearExampleNaturalLanguageAPI('GLOP')
     RunLinearExampleNaturalLanguageAPI('GLPK_LP')
     RunLinearExampleNaturalLanguageAPI('CLP')
+    RunLinearExampleNaturalLanguageAPI('PDLP')
 
     RunLinearExampleCppStyleAPI('GLOP')
     RunLinearExampleCppStyleAPI('GLPK_LP')
     RunLinearExampleCppStyleAPI('CLP')
+    RunLinearExampleCppStyleAPI('PDLP')
 
 
 if __name__ == '__main__':

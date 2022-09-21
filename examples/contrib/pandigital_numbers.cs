@@ -157,14 +157,14 @@ public class PandigitalNumbers
         int bbase = 10;
         int start = 1;
 
-        if (args.Length > 0)
-        {
-            bbase = Convert.ToInt32(args[0]);
-        }
-
         if (args.Length > 1)
         {
-            start = Convert.ToInt32(args[1]);
+            bbase = Convert.ToInt32(args[1]);
+        }
+
+        if (args.Length > 2)
+        {
+            start = Convert.ToInt32(args[2]);
         }
 
         int x_len = bbase - 1 + 1 - start;

@@ -247,14 +247,14 @@ public class Crew
     {
         int n = 1;
         int min = 0; // > 0 -> minimize num_working
-        if (args.Length > 0)
-        {
-            n = Convert.ToInt32(args[0]);
-        }
-
         if (args.Length > 1)
         {
-            min = Convert.ToInt32(args[1]);
+            n = Convert.ToInt32(args[1]);
+        }
+
+        if (args.Length > 2)
+        {
+            min = Convert.ToInt32(args[2]);
         }
 
         Solve(n, min);

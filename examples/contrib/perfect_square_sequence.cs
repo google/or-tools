@@ -126,9 +126,9 @@ public class PerfectSquareSequence
     public static void Main(String[] args)
     {
         int n = 15;
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            n = Convert.ToInt32(args[0]);
+            n = Convert.ToInt32(args[1]);
         }
 
         if (n == 0)

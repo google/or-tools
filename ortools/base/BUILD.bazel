@@ -1,0 +1,502 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "on_linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+config_setting(
+    name = "on_macos",
+    constraint_values = ["@platforms//os:macos"],
+)
+
+config_setting(
+    name = "on_windows",
+    constraint_values = ["@platforms//os:windows"],
+)
+
+cc_library(
+    name = "base",
+    srcs = [
+        "version.cc",
+    ],
+    hdrs = [
+        "init_google.h",
+        "logging_flags.h",
+        "stl_logging.h",
+        "version.h",
+    ],
+    copts = [
+        "-DOR_TOOLS_MAJOR=9999",
+        "-DOR_TOOLS_MINOR=0",
+        "-DOR_TOOLS_PATCH=0",
+    ],
+    deps = [
+        ":basictypes",
+        ":check",
+        ":commandlineflags",
+        ":integral_types",
+        ":log",
+        ":logging",
+        ":logging_extensions",
+        ":macros",
+        ":sysinfo",
+        ":vlog",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
+cc_library(
+    name = "accurate_sum",
+    hdrs = ["accurate_sum.h"],
+)
+
+cc_library(
+    name = "adjustable_priority_queue",
+    hdrs = [
+        "adjustable_priority_queue.h",
+        "adjustable_priority_queue-inl.h",
+    ],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "basictypes",
+    hdrs = ["basictypes.h"],
+    deps = [
+        ":integral_types",
+        ":logging",
+    ],
+)
+
+cc_library(
+    name = "bitmap",
+    srcs = ["bitmap.cc"],
+    hdrs = ["bitmap.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "case",
+    srcs = ["case.cc"],
+    hdrs = ["case.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "check",
+    hdrs = ["check.h"],
+    deps = [
+        ":log",
+        ":log_severity",
+        ":logging_export",
+    ],
+)
+
+cc_library(
+    name = "cleanup",
+    hdrs = ["cleanup.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "commandlineflags",
+    srcs = [
+        "commandlineflags.cc",
+    ],
+    hdrs = ["commandlineflags.h"],
+    deps = [
+        ":logging",
+        ":logging_extensions",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+    ],
+)
+
+cc_library(
+    name = "container_logging",
+    hdrs = ["container_logging.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "dump_vars",
+    hdrs = ["dump_vars.h"],
+    deps = [
+        "@com_google_absl//absl/container:inlined_vector",
+    ],
+)
+
+cc_test(
+    name = "dump_vars_test",
+    size = "small",
+    srcs = ["dump_vars_test.cc"],
+    deps = [
+        ":dump_vars",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "dynamic_library",
+    hdrs = ["dynamic_library.h"],
+    linkopts = select({
+        "on_linux": ["-Wl,--no-as-needed -ldl"],
+        "on_macos": [],
+        "on_windows": [],
+        "//conditions:default": [],
+    }),
+    deps = [":base"],
+)
+
+cc_library(
+    name = "encodingutils",
+    hdrs = ["encodingutils.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "flags",
+    hdrs = ["flags.h"],
+    deps = [
+        "@com_google_absl//absl/flags:flag",
+    ],
+)
+
+cc_library(
+    name = "file",
+    srcs = ["file.cc"],
+    hdrs = [
+        "file.h",
+        "helpers.h",
+    ],
+    deps = [
+        ":base",
+        ":status_macros",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "gzipstring",
+    hdrs = ["gzipstring.h"],
+    deps = [
+        ":base",
+        "@zlib",
+    ],
+)
+
+cc_library(
+    name = "hash",
+    hdrs = [
+        "hash.h",
+        "thorough_hash.h",
+    ],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/strings",
+        #"@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "int_type",
+    hdrs = ["int_type.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "integral_types",
+    hdrs = ["integral_types.h"],
+)
+
+cc_library(
+    name = "intops",
+    hdrs = ["strong_int.h"],
+    deps = [":int_type"],
+)
+
+cc_library(
+    name = "iterator_adaptors",
+    hdrs = ["iterator_adaptors.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "linked_hash_map",
+    hdrs = ["linked_hash_map.h"],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/container:common",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
+    name = "log",
+    srcs = [
+        "log.cc",
+        "logging_utilities.cc",
+        "logging_utilities.h",
+        "raw_logging.cc",
+        "raw_logging.h",
+        "vlog_is_on.cc",
+    ],
+    hdrs = [
+        "check.h",
+        "die_if_null.h",
+        "log.h",
+    ],
+    deps = [
+        ":flags",
+        ":integral_types",
+        ":log_severity",
+        ":logging_export",
+        ":logging_extensions",
+        ":macros",
+        ":vlog",
+        "@com_google_absl//absl/debugging:failure_signal_handler",
+        "@com_google_absl//absl/debugging:stacktrace",
+        "@com_google_absl//absl/debugging:symbolize",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_library(
+    name = "log_severity",
+    hdrs = ["log_severity.h"],
+    deps = [
+        ":logging_export",
+    ],
+)
+
+cc_library(
+    name = "logging",
+    hdrs = ["logging.h"],
+    deps = [
+        ":check",
+        ":log",
+        ":log_severity",
+        ":logging_extensions",
+        ":vlog",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "logging_export",
+    hdrs = ["logging_export.h"],
+    defines = select({
+        "on_linux": [],
+        "on_macos": [],
+        "on_windows": ["OR_TOOLS_EXPORTS"],  # For logging_export.h
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "logging_extensions",
+    hdrs = ["logging_extensions.h"],
+)
+
+cc_library(
+    name = "macros",
+    hdrs = ["macros.h"],
+)
+
+cc_library(
+    name = "map_util",
+    hdrs = ["map_util.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "mathutil",
+    hdrs = ["mathutil.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "murmur",
+    hdrs = ["murmur.h"],
+    deps = [
+        ":base",
+        ":hash",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "path",
+    srcs = ["path.cc"],
+    hdrs = ["path.h"],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "protobuf_util",
+    hdrs = ["protobuf_util.h"],
+)
+
+cc_library(
+    name = "protoutil",
+    hdrs = ["protoutil.h"],
+    deps = [
+        ":timer",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "ptr_util",
+    hdrs = ["ptr_util.h"],
+)
+
+cc_library(
+    name = "recordio",
+    srcs = ["recordio.cc"],
+    hdrs = ["recordio.h"],
+    deps = [
+        ":base",
+        ":file",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@zlib",
+    ],
+)
+
+cc_library(
+    name = "small_map",
+    hdrs = ["small_map.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "source_location",
+    hdrs = ["source_location.h"],
+    deps = ["@com_google_absl//absl/base:config"],
+)
+
+cc_library(
+    name = "status_builder",
+    hdrs = ["status_builder.h"],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "status_macros",
+    hdrs = ["status_macros.h"],
+    deps = [
+        ":base",
+        ":status_builder",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_library(
+    name = "stl_util",
+    hdrs = ["stl_util.h"],
+    deps = [":base"],
+)
+
+cc_library(
+    name = "strong_vector",
+    hdrs = ["strong_vector.h"],
+    deps = [
+        ":base",
+        ":intops",
+    ],
+)
+
+cc_library(
+    name = "strtoint",
+    srcs = ["strtoint.cc"],
+    hdrs = ["strtoint.h"],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "sysinfo",
+    srcs = ["sysinfo.cc"],
+    hdrs = ["sysinfo.h"],
+    deps = [
+        ":basictypes",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "threadpool",
+    srcs = ["threadpool.cc"],
+    hdrs = ["threadpool.h"],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
+cc_library(
+    name = "timer",
+    srcs = ["timer.cc"],
+    hdrs = ["timer.h"],
+    deps = [
+        ":basictypes",
+        ":check",
+        ":macros",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_library(
+    name = "typeid",
+    hdrs = ["typeid.h"],
+)
+
+cc_library(
+    name = "vlog",
+    hdrs = ["vlog_is_on.h"],
+    deps = [
+        ":integral_types",
+        ":log_severity",
+    ],
+)

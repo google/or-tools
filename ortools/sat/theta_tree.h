@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_THETA_TREE_H_
 #define OR_TOOLS_SAT_THETA_TREE_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/base/logging.h"
@@ -24,7 +25,7 @@ namespace sat {
 
 // The Theta-Lambda tree can be used to implement several scheduling algorithms.
 //
-// This template class is instantiated only for IntegerValue and int64.
+// This template class is instantiated only for IntegerValue and int64_t.
 //
 // The tree structure itself is a binary tree coded in a vector, where node 0 is
 // unused, node 1 is the root, node 2 is the left child of the root, node 3 its
@@ -245,7 +246,7 @@ class ThetaLambdaTree {
 
 // Explicit instantiations in theta_Tree.cc.
 extern template class ThetaLambdaTree<IntegerValue>;
-extern template class ThetaLambdaTree<int64>;
+extern template class ThetaLambdaTree<int64_t>;
 
 }  // namespace sat
 }  // namespace operations_research

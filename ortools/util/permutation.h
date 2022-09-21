@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -42,17 +42,12 @@
 // simple because the containers of interest can be indexable without
 // providing any consistent way of accessing their contents that
 // applies to all the containers of interest. For instance, if we
-// could insist that every indexable container must define an lvalue
-// operator[]() we could simply use that for the assignments we need
-// to do while walking around cycles of the permutation. But we cannot
-// insist on any such thing. To see why, consider the PackedArray
-// class template in ortools/util/packed_array.h
-// where operator[] is supplied for rvalues, but because each logical
-// array element is packed across potentially multiple instances of
-// the underlying data type that the C++ language knows about, there
-// is no way to have a C++ reference to an element of a
-// PackedArray. There are other such examples besides PackedArray,
-// too. This is the main reason we need a codified description (2) of
+// could insist that every indexable container must define a
+// `value_type& operator[]` we could simply use that for the assignments we need
+// to do while walking around cycles of the permutation. This is not guaranteed
+// though (common examples are `std::vector<bool>` or containers of bit-sized
+// integers for which no c++ reference exists).
+// This is the main reason we need a codified description (2) of
 // how to move data around in the indexable container. That
 // description comes to us via the PermutationApplier constructor's
 // argument which is a PermutationCycleHandler instance. Such an

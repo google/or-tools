@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -168,7 +168,7 @@ void SlitherLink(const std::vector<std::vector<int> >& data) {
       const int right_arc = undirected_vertical_arc(x + 1, y);
       neighbors.push_back(vertical_arcs[2 * right_arc]);
       neighbors.push_back(vertical_arcs[2 * right_arc + 1]);
-      builder.AddEquality(LinearExpr::BooleanSum(neighbors), data[y][x]);
+      builder.AddEquality(LinearExpr::Sum(neighbors), data[y][x]);
     }
   }
 

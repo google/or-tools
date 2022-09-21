@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,14 +15,17 @@
 
 #if defined(USE_GLPK)
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
@@ -30,6 +33,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/glpk/glpk_env_deleter.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 extern "C" {
@@ -133,9 +137,9 @@ class GLPKInterface : public MPSolverInterface {
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex iterations
-  int64 iterations() const override;
+  int64_t iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  int64 nodes() const override;
+  int64_t nodes() const override;
 
   // Returns the basis status of a row.
   MPSolver::BasisStatus row_status(int constraint_index) const override;
@@ -210,10 +214,13 @@ class GLPKInterface : public MPSolverInterface {
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GLPKInterface::GLPKInterface(MPSolver* const solver, bool mip)
     : MPSolverInterface(solver), lp_(nullptr), mip_(mip) {
+  // Make sure glp_free_env() is called at the exit of the current thread.
+  SetupGlpkEnvAutomaticDeletion();
+
   lp_ = glp_create_prob();
   glp_set_prob_name(lp_, solver_->name_.c_str());
   glp_set_obj_dir(lp_, GLP_MIN);
-  mip_callback_info_ = absl::make_unique<GLPKInformation>(maximize_);
+  mip_callback_info_ = std::make_unique<GLPKInformation>(maximize_);
 }
 
 // Frees the LP memory allocations.
@@ -667,12 +674,13 @@ MPSolver::BasisStatus GLPKInterface::TransformGLPKBasisStatus(
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 GLPKInterface::iterations() const {
+int64_t GLPKInterface::iterations() const {
 #if GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION < 49
   if (!mip_ && CheckSolutionIsSynchronized()) {
     return lpx_get_int_parm(lp_, LPX_K_ITCNT);
   }
-#elif GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION >= 53
+#elif (GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION >= 53) || \
+    GLP_MAJOR_VERSION >= 5
   if (!mip_ && CheckSolutionIsSynchronized()) {
     return glp_get_it_cnt(lp_);
   }
@@ -681,7 +689,7 @@ int64 GLPKInterface::iterations() const {
   return kUnknownNumberOfIterations;
 }
 
-int64 GLPKInterface::nodes() const {
+int64_t GLPKInterface::nodes() const {
   if (mip_) {
     if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
     return mip_callback_info_->num_all_nodes_;

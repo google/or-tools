@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,7 +14,9 @@
 // [START program]
 // [START import]
 #include <iostream>
+#include <memory>
 #include <numeric>
+#include <ostream>
 #include <vector>
 
 #include "ortools/linear_solver/linear_expr.h"
@@ -41,7 +43,11 @@ void BinPackingMip() {
 
   // [START solver]
   // Create the mip solver with the SCIP backend.
-  MPSolver solver("bin_packing_mip", MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  if (!solver) {
+    LOG(WARNING) << "SCIP solver unavailable.";
+    return;
+  }
   // [END solver]
 
   // [START program_part2]
@@ -50,13 +56,13 @@ void BinPackingMip() {
       data.num_items, std::vector<const MPVariable*>(data.num_bins));
   for (int i = 0; i < data.num_items; ++i) {
     for (int j = 0; j < data.num_bins; ++j) {
-      x[i][j] = solver.MakeIntVar(0.0, 1.0, "");
+      x[i][j] = solver->MakeIntVar(0.0, 1.0, "");
     }
   }
   // y[j] = 1 if bin j is used.
   std::vector<const MPVariable*> y(data.num_bins);
   for (int j = 0; j < data.num_bins; ++j) {
-    y[j] = solver.MakeIntVar(0.0, 1.0, "");
+    y[j] = solver->MakeIntVar(0.0, 1.0, "");
   }
   // [END variables]
 
@@ -68,7 +74,7 @@ void BinPackingMip() {
     for (int j = 0; j < data.num_bins; ++j) {
       sum += x[i][j];
     }
-    solver.MakeRowConstraint(sum == 1.0);
+    solver->MakeRowConstraint(sum == 1.0);
   }
   // For each bin that is used, the total packed weight can be at most
   // the bin capacity.
@@ -77,13 +83,13 @@ void BinPackingMip() {
     for (int i = 0; i < data.num_items; ++i) {
       weight += data.weights[i] * LinearExpr(x[i][j]);
     }
-    solver.MakeRowConstraint(weight <= LinearExpr(y[j]) * data.bin_capacity);
+    solver->MakeRowConstraint(weight <= LinearExpr(y[j]) * data.bin_capacity);
   }
   // [END constraints]
 
   // [START objective]
   // Create the objective function.
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective* const objective = solver->MutableObjective();
   LinearExpr num_bins_used;
   for (int j = 0; j < data.num_bins; ++j) {
     num_bins_used += y[j];
@@ -92,7 +98,7 @@ void BinPackingMip() {
   // [END objective]
 
   // [START solve]
-  const MPSolver::ResultStatus result_status = solver.Solve();
+  const MPSolver::ResultStatus result_status = solver->Solve();
   // [END solve]
 
   // [START print_solution]

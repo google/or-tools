@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,17 +15,22 @@
 #define OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
 
 #include <algorithm>
+#include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -90,6 +95,10 @@ class ImpliedBounds {
   // level zero lower bound of the variable.
   void Add(Literal literal, IntegerLiteral integer_literal);
 
+  // Adds literal => var == value.
+  void AddLiteralImpliesVarEqValue(Literal literal, IntegerVariable var,
+                                   IntegerValue value);
+
   // This must be called after first_decision has been enqueued and propagated.
   // It will inspect the trail and add all new implied bounds.
   //
@@ -107,6 +116,28 @@ class ImpliedBounds {
   const std::vector<IntegerVariable>& VariablesWithImpliedBounds() const {
     return has_implied_bounds_.PositionsSetAtLeastOnce();
   }
+
+  // Returns all the implied values stored for a given literal.
+  const absl::flat_hash_map<IntegerVariable, IntegerValue>& GetImpliedValues(
+      Literal literal) const {
+    const auto it = literal_to_var_to_value_.find(literal.Index());
+    return it != literal_to_var_to_value_.end() ? it->second
+                                                : empty_var_to_value_;
+  }
+
+  // Register the fact that var = sum literal * value with sum literal == 1.
+  // Note that we call this an "element" encoding because a value can appear
+  // more than once.
+  void AddElementEncoding(IntegerVariable var,
+                          const std::vector<ValueLiteralPair>& encoding,
+                          int exactly_one_index);
+
+  // Returns an empty map if there is no such encoding.
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+  GetElementEncodings(IntegerVariable var);
+
+  // Get an unsorted set of variables appearing in element encodings.
+  const std::vector<IntegerVariable>& GetElementEncodedVariables() const;
 
   // Adds to the integer trail all the new level-zero deduction made here.
   // This can only be called at decision level zero. Returns false iff the model
@@ -151,15 +182,48 @@ class ImpliedBounds {
   // Track the list of variables with some implied bounds.
   SparseBitset<IntegerVariable> has_implied_bounds_;
 
+  // Stores implied values per variable.
+  absl::flat_hash_map<LiteralIndex,
+                      absl::flat_hash_map<IntegerVariable, IntegerValue>>
+      literal_to_var_to_value_;
+  const absl::flat_hash_map<IntegerVariable, IntegerValue> empty_var_to_value_;
+
+  absl::flat_hash_map<IntegerVariable,
+                      absl::flat_hash_map<int, std::vector<ValueLiteralPair>>>
+      var_to_index_to_element_encodings_;
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>
+      empty_element_encoding_;
+  std::vector<IntegerVariable> element_encoded_variables_;
+
   // TODO(user): Ideally, this should go away if we manage to push level-zero
   // fact at a positive level directly.
   absl::StrongVector<IntegerVariable, IntegerValue> level_zero_lower_bounds_;
   SparseBitset<IntegerVariable> new_level_zero_bounds_;
 
   // Stats.
-  int64 num_deductions_ = 0;
-  int64 num_enqueued_in_var_to_bounds_ = 0;
+  int64_t num_deductions_ = 0;
+  int64_t num_enqueued_in_var_to_bounds_ = 0;
 };
+
+// Tries to decompose a product left * right in a list of constant alternative
+// left_value * right_value controlled by literals in an exactly one
+// relationship. We construct this by using literals from the full encoding or
+// element encodings of the variables of the two affine expressions.
+// If it fails, it returns an empty vector.
+std::vector<LiteralValueValue> TryToDecomposeProduct(
+    const AffineExpression& left, const AffineExpression& right, Model* model);
+
+// Looks at value encodings and detects if the product of two variables can be
+// linearized.
+//
+// In the returned encoding, note that all the literals will be unique and in
+// exactly one relation, and that the values can be duplicated. This is what we
+// call an "element" encoding.
+//
+// The expressions will also be canonical.
+bool DetectLinearEncodingOfProducts(const AffineExpression& left,
+                                    const AffineExpression& right, Model* model,
+                                    LinearConstraintBuilder* builder);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 #include <stddef.h>
 
+#include <cstdint>
+#include <limits>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -40,8 +43,8 @@ IntVarElement::IntVarElement(IntVar* const var) { Reset(var); }
 
 void IntVarElement::Reset(IntVar* const var) {
   var_ = var;
-  min_ = kint64min;
-  max_ = kint64max;
+  min_ = std::numeric_limits<int64_t>::min();
+  max_ = std::numeric_limits<int64_t>::max();
 }
 
 IntVarElement* IntVarElement::Clone() {
@@ -114,12 +117,12 @@ IntervalVarElement::IntervalVarElement(IntervalVar* const var) { Reset(var); }
 
 void IntervalVarElement::Reset(IntervalVar* const var) {
   var_ = var;
-  start_min_ = kint64min;
-  start_max_ = kint64max;
-  duration_min_ = kint64min;
-  duration_max_ = kint64max;
-  end_min_ = kint64min;
-  end_max_ = kint64max;
+  start_min_ = std::numeric_limits<int64_t>::min();
+  start_max_ = std::numeric_limits<int64_t>::max();
+  duration_min_ = std::numeric_limits<int64_t>::min();
+  duration_max_ = std::numeric_limits<int64_t>::max();
+  end_min_ = std::numeric_limits<int64_t>::min();
+  end_max_ = std::numeric_limits<int64_t>::max();
   performed_min_ = 0;
   performed_max_ = 1;
 }
@@ -144,8 +147,8 @@ void IntervalVarElement::Copy(const IntervalVarElement& element) {
 }
 
 void IntervalVarElement::Store() {
-  performed_min_ = static_cast<int64>(var_->MustBePerformed());
-  performed_max_ = static_cast<int64>(var_->MayBePerformed());
+  performed_min_ = static_cast<int64_t>(var_->MustBePerformed());
+  performed_max_ = static_cast<int64_t>(var_->MayBePerformed());
   if (performed_max_ != 0LL) {
     start_min_ = var_->StartMin();
     start_max_ = var_->StartMax();
@@ -281,15 +284,16 @@ void SequenceVarElement::Restore() {
 
 void SequenceVarElement::LoadFromProto(
     const SequenceVarAssignment& sequence_var_assignment_proto) {
-  for (const int32 forward_sequence :
+  for (const int32_t forward_sequence :
        sequence_var_assignment_proto.forward_sequence()) {
     forward_sequence_.push_back(forward_sequence);
   }
-  for (const int32 backward_sequence :
+  for (const int32_t backward_sequence :
        sequence_var_assignment_proto.backward_sequence()) {
     backward_sequence_.push_back(backward_sequence);
   }
-  for (const int32 unperformed : sequence_var_assignment_proto.unperformed()) {
+  for (const int32_t unperformed :
+       sequence_var_assignment_proto.unperformed()) {
     unperformed_.push_back(unperformed);
   }
   if (sequence_var_assignment_proto.active()) {
@@ -381,19 +385,19 @@ void SequenceVarElement::SetUnperformed(const std::vector<int>& unperformed) {
 bool SequenceVarElement::CheckClassInvariants() {
   absl::flat_hash_set<int> visited;
   for (const int forward_sequence : forward_sequence_) {
-    if (gtl::ContainsKey(visited, forward_sequence)) {
+    if (visited.contains(forward_sequence)) {
       return false;
     }
     visited.insert(forward_sequence);
   }
   for (const int backward_sequence : backward_sequence_) {
-    if (gtl::ContainsKey(visited, backward_sequence)) {
+    if (visited.contains(backward_sequence)) {
       return false;
     }
     visited.insert(backward_sequence);
   }
   for (const int unperformed : unperformed_) {
-    if (gtl::ContainsKey(visited, unperformed)) {
+    if (visited.contains(unperformed)) {
       return false;
     }
     visited.insert(unperformed);
@@ -453,7 +457,7 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
     if (name.empty()) {
       LOG(INFO) << "Cannot save/load variables with empty name"
                 << "; variable will be ignored";
-    } else if (gtl::ContainsKey(*id_to_element_map, name)) {
+    } else if (id_to_element_map->contains(name)) {
       LOG(INFO) << "Cannot save/load variables with duplicate names: " << name
                 << "; variable will be ignored";
     } else {
@@ -542,8 +546,8 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
     const std::string& objective_id = objective.var_id();
     CHECK(!objective_id.empty());
     if (HasObjective() && objective_id == Objective()->name()) {
-      const int64 obj_min = objective.min();
-      const int64 obj_max = objective.max();
+      const int64_t obj_min = objective.min();
+      const int64_t obj_max = objective.max();
       SetObjectiveRange(obj_min, obj_max);
       if (objective.active()) {
         ActivateObjective();
@@ -601,8 +605,8 @@ void Assignment::Save(AssignmentProto* const assignment_proto) const {
     if (!name.empty()) {
       IntVarAssignment* objective = assignment_proto->mutable_objective();
       objective->set_var_id(name);
-      const int64 obj_min = ObjectiveMin();
-      const int64 obj_max = ObjectiveMax();
+      const int64_t obj_min = ObjectiveMin();
+      const int64_t obj_max = ObjectiveMax();
       objective->set_min(obj_min);
       objective->set_max(obj_max);
       objective->set_active(ActivatedObjective());
@@ -648,15 +652,15 @@ IntVarElement* Assignment::FastAdd(IntVar* const var) {
   return int_var_container_.FastAdd(var);
 }
 
-int64 Assignment::Min(const IntVar* const var) const {
+int64_t Assignment::Min(const IntVar* const var) const {
   return int_var_container_.Element(var).Min();
 }
 
-int64 Assignment::Max(const IntVar* const var) const {
+int64_t Assignment::Max(const IntVar* const var) const {
   return int_var_container_.Element(var).Max();
 }
 
-int64 Assignment::Value(const IntVar* const var) const {
+int64_t Assignment::Value(const IntVar* const var) const {
   return int_var_container_.Element(var).Value();
 }
 
@@ -664,19 +668,19 @@ bool Assignment::Bound(const IntVar* const var) const {
   return int_var_container_.Element(var).Bound();
 }
 
-void Assignment::SetMin(const IntVar* const var, int64 m) {
+void Assignment::SetMin(const IntVar* const var, int64_t m) {
   int_var_container_.MutableElement(var)->SetMin(m);
 }
 
-void Assignment::SetMax(const IntVar* const var, int64 m) {
+void Assignment::SetMax(const IntVar* const var, int64_t m) {
   int_var_container_.MutableElement(var)->SetMax(m);
 }
 
-void Assignment::SetRange(const IntVar* const var, int64 l, int64 u) {
+void Assignment::SetRange(const IntVar* const var, int64_t l, int64_t u) {
   int_var_container_.MutableElement(var)->SetRange(l, u);
 }
 
-void Assignment::SetValue(const IntVar* const var, int64 value) {
+void Assignment::SetValue(const IntVar* const var, int64_t value) {
   int_var_container_.MutableElement(var)->SetValue(value);
 }
 
@@ -696,118 +700,120 @@ IntervalVarElement* Assignment::FastAdd(IntervalVar* const var) {
   return interval_var_container_.FastAdd(var);
 }
 
-int64 Assignment::StartMin(const IntervalVar* const var) const {
+int64_t Assignment::StartMin(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).StartMin();
 }
 
-int64 Assignment::StartMax(const IntervalVar* const var) const {
+int64_t Assignment::StartMax(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).StartMax();
 }
 
-int64 Assignment::StartValue(const IntervalVar* const var) const {
+int64_t Assignment::StartValue(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).StartValue();
 }
 
-int64 Assignment::DurationMin(const IntervalVar* const var) const {
+int64_t Assignment::DurationMin(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).DurationMin();
 }
 
-int64 Assignment::DurationMax(const IntervalVar* const var) const {
+int64_t Assignment::DurationMax(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).DurationMax();
 }
 
-int64 Assignment::DurationValue(const IntervalVar* const var) const {
+int64_t Assignment::DurationValue(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).DurationValue();
 }
 
-int64 Assignment::EndMin(const IntervalVar* const var) const {
+int64_t Assignment::EndMin(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).EndMin();
 }
 
-int64 Assignment::EndMax(const IntervalVar* const var) const {
+int64_t Assignment::EndMax(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).EndMax();
 }
 
-int64 Assignment::EndValue(const IntervalVar* const var) const {
+int64_t Assignment::EndValue(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).EndValue();
 }
 
-int64 Assignment::PerformedMin(const IntervalVar* const var) const {
+int64_t Assignment::PerformedMin(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).PerformedMin();
 }
 
-int64 Assignment::PerformedMax(const IntervalVar* const var) const {
+int64_t Assignment::PerformedMax(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).PerformedMax();
 }
 
-int64 Assignment::PerformedValue(const IntervalVar* const var) const {
+int64_t Assignment::PerformedValue(const IntervalVar* const var) const {
   return interval_var_container_.Element(var).PerformedValue();
 }
 
-void Assignment::SetStartMin(const IntervalVar* const var, int64 m) {
+void Assignment::SetStartMin(const IntervalVar* const var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetStartMin(m);
 }
 
-void Assignment::SetStartMax(const IntervalVar* const var, int64 m) {
+void Assignment::SetStartMax(const IntervalVar* const var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetStartMax(m);
 }
 
-void Assignment::SetStartRange(const IntervalVar* const var, int64 mi,
-                               int64 ma) {
+void Assignment::SetStartRange(const IntervalVar* const var, int64_t mi,
+                               int64_t ma) {
   interval_var_container_.MutableElement(var)->SetStartRange(mi, ma);
 }
 
-void Assignment::SetStartValue(const IntervalVar* const var, int64 value) {
+void Assignment::SetStartValue(const IntervalVar* const var, int64_t value) {
   interval_var_container_.MutableElement(var)->SetStartValue(value);
 }
 
-void Assignment::SetDurationMin(const IntervalVar* const var, int64 m) {
+void Assignment::SetDurationMin(const IntervalVar* const var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetDurationMin(m);
 }
 
-void Assignment::SetDurationMax(const IntervalVar* const var, int64 m) {
+void Assignment::SetDurationMax(const IntervalVar* const var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetDurationMax(m);
 }
 
-void Assignment::SetDurationRange(const IntervalVar* const var, int64 mi,
-                                  int64 ma) {
+void Assignment::SetDurationRange(const IntervalVar* const var, int64_t mi,
+                                  int64_t ma) {
   interval_var_container_.MutableElement(var)->SetDurationRange(mi, ma);
 }
 
-void Assignment::SetDurationValue(const IntervalVar* const var, int64 value) {
+void Assignment::SetDurationValue(const IntervalVar* const var, int64_t value) {
   interval_var_container_.MutableElement(var)->SetDurationValue(value);
 }
 
-void Assignment::SetEndMin(const IntervalVar* const var, int64 m) {
+void Assignment::SetEndMin(const IntervalVar* const var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetEndMin(m);
 }
 
-void Assignment::SetEndMax(const IntervalVar* const var, int64 m) {
+void Assignment::SetEndMax(const IntervalVar* const var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetEndMax(m);
 }
 
-void Assignment::SetEndRange(const IntervalVar* const var, int64 mi, int64 ma) {
+void Assignment::SetEndRange(const IntervalVar* const var, int64_t mi,
+                             int64_t ma) {
   interval_var_container_.MutableElement(var)->SetEndRange(mi, ma);
 }
 
-void Assignment::SetEndValue(const IntervalVar* const var, int64 value) {
+void Assignment::SetEndValue(const IntervalVar* const var, int64_t value) {
   interval_var_container_.MutableElement(var)->SetEndValue(value);
 }
 
-void Assignment::SetPerformedMin(const IntervalVar* const var, int64 m) {
+void Assignment::SetPerformedMin(const IntervalVar* const var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetPerformedMin(m);
 }
 
-void Assignment::SetPerformedMax(const IntervalVar* const var, int64 m) {
+void Assignment::SetPerformedMax(const IntervalVar* const var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetPerformedMax(m);
 }
 
-void Assignment::SetPerformedRange(const IntervalVar* const var, int64 mi,
-                                   int64 ma) {
+void Assignment::SetPerformedRange(const IntervalVar* const var, int64_t mi,
+                                   int64_t ma) {
   interval_var_container_.MutableElement(var)->SetPerformedRange(mi, ma);
 }
 
-void Assignment::SetPerformedValue(const IntervalVar* const var, int64 value) {
+void Assignment::SetPerformedValue(const IntervalVar* const var,
+                                   int64_t value) {
   interval_var_container_.MutableElement(var)->SetPerformedValue(value);
 }
 
@@ -869,29 +875,21 @@ void Assignment::SetUnperformed(const SequenceVar* const var,
 
 // ----- Objective -----
 
-void Assignment::AddObjective(IntVar* const v) {
-  // Check if adding twice an objective to the solution.
-  CHECK(!HasObjective());
-  objective_element_.Reset(v);
-}
-
-IntVar* Assignment::Objective() const { return objective_element_.Var(); }
-
-int64 Assignment::ObjectiveMin() const {
+int64_t Assignment::ObjectiveMin() const {
   if (HasObjective()) {
     return objective_element_.Min();
   }
   return 0;
 }
 
-int64 Assignment::ObjectiveMax() const {
+int64_t Assignment::ObjectiveMax() const {
   if (HasObjective()) {
     return objective_element_.Max();
   }
   return 0;
 }
 
-int64 Assignment::ObjectiveValue() const {
+int64_t Assignment::ObjectiveValue() const {
   if (HasObjective()) {
     return objective_element_.Value();
   }
@@ -905,25 +903,25 @@ bool Assignment::ObjectiveBound() const {
   return true;
 }
 
-void Assignment::SetObjectiveMin(int64 m) {
+void Assignment::SetObjectiveMin(int64_t m) {
   if (HasObjective()) {
     objective_element_.SetMin(m);
   }
 }
 
-void Assignment::SetObjectiveMax(int64 m) {
+void Assignment::SetObjectiveMax(int64_t m) {
   if (HasObjective()) {
     objective_element_.SetMax(m);
   }
 }
 
-void Assignment::SetObjectiveRange(int64 l, int64 u) {
+void Assignment::SetObjectiveRange(int64_t l, int64_t u) {
   if (HasObjective()) {
     objective_element_.SetRange(l, u);
   }
 }
 
-void Assignment::SetObjectiveValue(int64 value) {
+void Assignment::SetObjectiveValue(int64_t value) {
   if (HasObjective()) {
     objective_element_.SetValue(value);
   }
@@ -1049,7 +1047,7 @@ class RestoreAssignment : public DecisionBuilder {
 
   ~RestoreAssignment() override {}
 
-  Decision* Next(Solver* const solver) override {
+  Decision* Next(Solver* const /*solver*/) override {
     assignment_->Restore();
     return nullptr;
   }
@@ -1066,7 +1064,7 @@ class StoreAssignment : public DecisionBuilder {
 
   ~StoreAssignment() override {}
 
-  Decision* Next(Solver* const solver) override {
+  Decision* Next(Solver* const /*solver*/) override {
     assignment_->Store();
     return nullptr;
   }

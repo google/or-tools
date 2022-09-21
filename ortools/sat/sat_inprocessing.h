@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,14 +21,23 @@
 #ifndef OR_TOOLS_SAT_SAT_INPROCESSING_H_
 #define OR_TOOLS_SAT_SAT_INPROCESSING_H_
 
+#include <cstdint>
+#include <deque>
+#include <vector>
+
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/integer_pq.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -47,9 +56,9 @@ struct PostsolveClauses {
   std::deque<std::vector<Literal>> clauses;
 };
 
-class StampingSimplifier;
 class BlockedClauseSimplifier;
 class BoundedVariableElimination;
+class StampingSimplifier;
 
 struct SatPresolveOptions {
   // The time budget to spend.
@@ -152,8 +161,8 @@ class Inprocessing {
   Model* model_;
 
   // Last since clause database was cleaned up.
-  int64 last_num_redundant_literals_ = 0;
-  int64 last_num_fixed_variables_ = 0;
+  int64_t last_num_redundant_literals_ = 0;
+  int64_t last_num_fixed_variables_ = 0;
 };
 
 // Implements "stamping" as described in "Efficient CNF Simplification based on
@@ -214,9 +223,9 @@ class StampingSimplifier {
 
   // Reset at each round.
   double dtime_ = 0.0;
-  int64 num_subsumed_clauses_ = 0;
-  int64 num_removed_literals_ = 0;
-  int64 num_fixed_ = 0;
+  int64_t num_subsumed_clauses_ = 0;
+  int64_t num_removed_literals_ = 0;
+  int64_t num_fixed_ = 0;
 
   // Encode a spanning tree of the implication graph.
   absl::StrongVector<LiteralIndex, LiteralIndex> parents_;
@@ -270,8 +279,8 @@ class BlockedClauseSimplifier {
   TimeLimit* time_limit_;
 
   double dtime_ = 0.0;
-  int32 num_blocked_clauses_ = 0;
-  int64 num_inspected_literals_ = 0;
+  int32_t num_blocked_clauses_ = 0;
+  int64_t num_inspected_literals_ = 0;
 
   // Temporary vector to mark literal of a clause.
   absl::StrongVector<LiteralIndex, bool> marked_;
@@ -283,7 +292,7 @@ class BlockedClauseSimplifier {
 
   // We compute the occurrence graph just once at the beginning of each round
   // and we do not shrink it as we remove blocked clauses.
-  DEFINE_INT_TYPE(ClauseIndex, int32);
+  DEFINE_STRONG_INDEX_TYPE(rat_literal_clause_index);
   absl::StrongVector<ClauseIndex, SatClause*> clauses_;
   absl::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;
@@ -331,15 +340,15 @@ class BoundedVariableElimination {
   int propagation_index_;
 
   double dtime_ = 0.0;
-  int64 num_inspected_literals_ = 0;
-  int64 num_simplifications_ = 0;
-  int64 num_blocked_clauses_ = 0;
-  int64 num_eliminated_variables_ = 0;
-  int64 num_literals_diff_ = 0;
-  int64 num_clauses_diff_ = 0;
+  int64_t num_inspected_literals_ = 0;
+  int64_t num_simplifications_ = 0;
+  int64_t num_blocked_clauses_ = 0;
+  int64_t num_eliminated_variables_ = 0;
+  int64_t num_literals_diff_ = 0;
+  int64_t num_clauses_diff_ = 0;
 
-  int64 new_score_;
-  int64 score_threshold_;
+  int64_t new_score_;
+  int64_t score_threshold_;
 
   // Temporary vector to mark literal of a clause and compute its resolvant.
   absl::StrongVector<LiteralIndex, bool> marked_;
@@ -349,7 +358,7 @@ class BoundedVariableElimination {
   // We will process highest priority first.
   struct VariableWithPriority {
     BooleanVariable var;
-    int32 priority;
+    int32_t priority;
 
     // Interface for the IntegerPriorityQueue.
     int Index() const { return var.value(); }
@@ -366,7 +375,7 @@ class BoundedVariableElimination {
   // We compute the occurrence graph just once at the beginning of each round.
   // We maintains the sizes at all time and lazily shrink the graph with deleted
   // clauses.
-  DEFINE_INT_TYPE(ClauseIndex, int32);
+  DEFINE_STRONG_INDEX_TYPE(ClauseIndex);
   absl::StrongVector<ClauseIndex, SatClause*> clauses_;
   absl::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;

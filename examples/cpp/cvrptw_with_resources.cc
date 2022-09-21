@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,14 +21,14 @@
 // empty routes; fix this when we have an API on the cumulative constraints
 // with variable demands.
 
+#include <cstdint>
 #include <vector>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/random/random.h"
 #include "examples/cpp/cvrptw_lib.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/routing.h"
@@ -64,8 +64,7 @@ const char* kTime = "Time";
 const char* kCapacity = "Capacity";
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_vehicles))
@@ -79,9 +78,9 @@ int main(int argc, char** argv) {
   RoutingModel routing(manager);
 
   // Setting up locations.
-  const int64 kXMax = 100000;
-  const int64 kYMax = 100000;
-  const int64 kSpeed = 10;
+  const int64_t kXMax = 100000;
+  const int64_t kYMax = 100000;
+  const int64_t kSpeed = 10;
   LocationContainer locations(
       kSpeed, absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   for (int location = 0; location <= absl::GetFlag(FLAGS_vrp_orders);
@@ -90,29 +89,30 @@ int main(int argc, char** argv) {
   }
 
   // Setting the cost function.
-  const int vehicle_cost =
-      routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
+  const int vehicle_cost = routing.RegisterTransitCallback(
+      [&locations, &manager](int64_t i, int64_t j) {
         return locations.ManhattanDistance(manager.IndexToNode(i),
                                            manager.IndexToNode(j));
       });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
-  const int64 kVehicleCapacity = 40;
-  const int64 kNullCapacitySlack = 0;
+  const int64_t kVehicleCapacity = 40;
+  const int64_t kNullCapacitySlack = 0;
   RandomDemand demand(manager.num_nodes(), kDepot,
                       absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
-  routing.AddDimension(
-      routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
-        return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
-      }),
-      kNullCapacitySlack, kVehicleCapacity,
-      /*fix_start_cumul_to_zero=*/true, kCapacity);
+  routing.AddDimension(routing.RegisterTransitCallback(
+                           [&demand, &manager](int64_t i, int64_t j) {
+                             return demand.Demand(manager.IndexToNode(i),
+                                                  manager.IndexToNode(j));
+                           }),
+                       kNullCapacitySlack, kVehicleCapacity,
+                       /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
-  const int64 kTimePerDemandUnit = 300;
-  const int64 kHorizon = 24 * 3600;
+  const int64_t kTimePerDemandUnit = 300;
+  const int64_t kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
       kTimePerDemandUnit,
       [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
         return locations.ManhattanTime(i, j);
       });
   routing.AddDimension(
-      routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&time, &manager](int64_t i, int64_t j) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
@@ -131,9 +131,9 @@ int main(int argc, char** argv) {
   // Adding time windows.
   std::mt19937 randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
-  const int64 kTWDuration = 5 * 3600;
+  const int64_t kTWDuration = 5 * 3600;
   for (int order = 1; order < manager.num_nodes(); ++order) {
-    const int64 start =
+    const int64_t start =
         absl::Uniform<int32_t>(randomizer, 0, kHorizon - kTWDuration);
     time_dimension.CumulVar(order)->SetRange(start, start + kTWDuration);
   }
@@ -146,14 +146,14 @@ int main(int argc, char** argv) {
     start_end_times.push_back(time_dimension.CumulVar(routing.Start(i)));
   }
   // Build corresponding time intervals.
-  const int64 kVehicleSetup = 180;
+  const int64_t kVehicleSetup = 180;
   Solver* const solver = routing.solver();
   std::vector<IntervalVar*> intervals;
   solver->MakeFixedDurationIntervalVarArray(start_end_times, kVehicleSetup,
                                             "depot_interval", &intervals);
   // Constrain the number of maximum simultaneous intervals at depot.
-  const int64 kDepotCapacity = 5;
-  std::vector<int64> depot_usage(start_end_times.size(), 1);
+  const int64_t kDepotCapacity = 5;
+  std::vector<int64_t> depot_usage(start_end_times.size(), 1);
   solver->AddConstraint(
       solver->MakeCumulative(intervals, depot_usage, kDepotCapacity, "depot"));
   // Instantiate route start and end times to produce feasible times.
@@ -162,11 +162,11 @@ int main(int argc, char** argv) {
   }
 
   // Adding penalty costs to allow skipping orders.
-  const int64 kPenalty = 100000;
+  const int64_t kPenalty = 100000;
   const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
   for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
        order < manager.num_nodes(); ++order) {
-    std::vector<int64> orders(1, manager.NodeToIndex(order));
+    std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
 

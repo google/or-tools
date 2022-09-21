@@ -39,7 +39,7 @@
 <scm>
   <connection>scm:git:git://github.com/google/or-tools.git</connection>
   <developerConnection>scm:git:ssh://github.com:google/or-tools.git</developerConnection>
-  <url>http://github.com/google/or-tools/tree/master</url>
+  <url>http://github.com/google/or-tools/tree/main</url>
   <tag>HEAD</tag>
 </scm>
 
@@ -47,6 +47,17 @@
   <system>GitHub Issues</system>
   <url>http://github.com/google/or-tools/issues</url>
 </issueManagement>
+
+<distributionManagement>
+  <snapshotRepository>
+    <id>ossrh</id>
+    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+  </snapshotRepository>
+  <repository>
+    <id>ossrh</id>
+    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+  </repository>
+</distributionManagement>
 
 <properties>
   <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -90,6 +101,25 @@
           <goals>
             <goal>javadoc-no-fork</goal>
           </goals>
+        </execution>
+      </executions>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-gpg-plugin</artifactId>
+      <version>1.6</version>
+      <executions>
+        <execution>
+          <id>sign-artifacts</id>
+          <phase>verify</phase>
+          <goals>
+            <goal>sign</goal>
+          </goals>
+          <configuration>
+            <gpgArguments>
+              @GPG_ARGS@
+            </gpgArguments>
+          </configuration>
         </execution>
       </executions>
     </plugin>

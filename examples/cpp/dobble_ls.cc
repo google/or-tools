@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,14 +30,16 @@
 // search operators and local search filters.
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
+#include <random>
+#include <utility>
 #include <vector>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -473,7 +475,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   // which is the difference between the current delta and the last
   // delta that was given to Accept() -- but we don't use it here.
   bool Accept(const Assignment* delta, const Assignment* unused_deltadelta,
-              int64 objective_min, int64 objective_max) override {
+              int64_t objective_min, int64_t objective_max) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 
@@ -535,9 +537,9 @@ class DobbleFilter : public IntVarLocalSearchFilter {
  private:
   // Undo information after an evaluation.
   struct UndoChange {
-    UndoChange(int c, uint64 b) : card(c), bitset(b) {}
+    UndoChange(int c, uint64_t b) : card(c), bitset(b) {}
     int card;
-    uint64 bitset;
+    uint64_t bitset;
   };
 
   int VarIndex(int card, int symbol) { return card * num_symbols_ + symbol; }
@@ -553,7 +555,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     for (int i = 0; i < touched_cards.size(); ++i) {
       const int touched = touched_cards[i];
       SetBit64(&temporary_bitset_, touched);
-      const uint64 card_bitset = symbol_bitmask_per_card_[touched];
+      const uint64_t card_bitset = symbol_bitmask_per_card_[touched];
       const std::vector<int>& row_cost = violation_costs_[touched];
       for (int other_card = 0; other_card < num_cards_; ++other_card) {
         if (!IsBitSet64(&temporary_bitset_, other_card)) {
@@ -573,7 +575,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     const int solution_delta_size = solution_delta.Size();
     const int kUnassigned = -1;
     for (int index = 0; index < solution_delta_size; ++index) {
-      int64 touched_var = kUnassigned;
+      int64_t touched_var = kUnassigned;
       FindIndex(solution_delta.Element(index).Var(), &touched_var);
       CHECK_NE(touched_var, kUnassigned);
       const int card = touched_var / num_symbols_;
@@ -620,15 +622,15 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     return true;
   }
 
-  int ViolationCost(uint64 cardinality) const {
+  int ViolationCost(uint64_t cardinality) const {
     return (cardinality > 0 ? cardinality - 1 : 1);
   }
 
   const int num_cards_;
   const int num_symbols_;
   const int num_symbols_per_card_;
-  uint64 temporary_bitset_;
-  std::vector<uint64> symbol_bitmask_per_card_;
+  uint64_t temporary_bitset_;
+  std::vector<uint64_t> symbol_bitmask_per_card_;
   std::vector<std::vector<int> > violation_costs_;
   std::vector<UndoChange> restore_information_;
 };
@@ -760,8 +762,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   // These constants comes directly from the dobble game.
   // There are actually 55 cards, but we can create up to 57 cards.
   const int kSymbolsPerCard = absl::GetFlag(FLAGS_symbols_per_card);

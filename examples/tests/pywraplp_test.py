@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,12 +13,10 @@
 # limitations under the License.
 """Simple unit tests for python/linear_solver.swig. Not exhaustive."""
 
-
-from google.protobuf import text_format
+import unittest
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver import pywraplp
-import types
-import unittest
+from google.protobuf import text_format
 
 TEXT_MODEL = """
 variable {
@@ -42,11 +41,13 @@ constraint {
 
 
 class PyWrapLp(unittest.TestCase):
+
     def test_proto(self):
         input_proto = linear_solver_pb2.MPModelProto()
         text_format.Merge(TEXT_MODEL, input_proto)
-        solver = pywraplp.Solver('solveFromProto',
-                                 pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+        solver = pywraplp.Solver.CreateSolver('CBC')
+        if not solver:
+          return
         # For now, create the model from the proto by parsing the proto
         errors = solver.LoadModelFromProto(input_proto)
         self.assertFalse(errors)
@@ -60,8 +61,7 @@ class PyWrapLp(unittest.TestCase):
         self.assertEqual(solution.best_objective_bound, 3.0)
 
     def test_external_api(self):
-        solver = pywraplp.Solver('TestExternalAPI',
-                                 pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+        solver = pywraplp.Solver.CreateSolver('GLOP')
         infinity = solver.Infinity()
         infinity2 = solver.infinity()
         self.assertEqual(infinity, infinity2)

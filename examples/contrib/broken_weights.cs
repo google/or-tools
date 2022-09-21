@@ -150,14 +150,14 @@ public class BrokenWeights
         int m = 40;
         int n = 4;
 
-        if (args.Length > 0)
-        {
-            m = Convert.ToInt32(args[0]);
-        }
-
         if (args.Length > 1)
         {
-            n = Convert.ToInt32(args[1]);
+            m = Convert.ToInt32(args[1]);
+        }
+
+        if (args.Length > 2)
+        {
+            n = Convert.ToInt32(args[2]);
         }
 
         Solve(m, n);

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,23 +14,25 @@
 #ifndef OR_TOOLS_SAT_SAT_CNF_READER_H_
 #define OR_TOOLS_SAT_SAT_CNF_READER_H_
 
-#include <map>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/flags/flag.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/filelineiter.h"
 
 ABSL_FLAG(bool, wcnf_use_strong_slack, true,
           "If true, when we add a slack variable to reify a soft clause, we "
@@ -58,13 +60,13 @@ struct LinearBooleanProblemWrapper {
     }
   }
 
-  void AddObjectiveTerm(int literal, int64 value) {
+  void AddObjectiveTerm(int literal, int64_t value) {
     CHECK_GE(literal, 0) << "Negative literal not supported.";
     problem->mutable_objective()->add_literals(literal);
     problem->mutable_objective()->add_coefficients(value);
   }
 
-  void SetObjectiveOffset(int64 offset) {
+  void SetObjectiveOffset(int64_t offset) {
     problem->mutable_objective()->set_offset(offset);
   }
 
@@ -100,13 +102,13 @@ struct CpModelProtoWrapper {
     }
   }
 
-  void AddObjectiveTerm(int literal, int64 value) {
+  void AddObjectiveTerm(int literal, int64_t value) {
     CHECK_GE(literal, 0) << "Negative literal not supported.";
     problem->mutable_objective()->add_vars(LiteralToRef(literal));
     problem->mutable_objective()->add_coeffs(value);
   }
 
-  void SetObjectiveOffset(int64 offset) {
+  void SetObjectiveOffset(int64_t offset) {
     problem->mutable_objective()->set_offset(offset);
   }
 
@@ -166,7 +168,7 @@ class SatCnfReader {
 
     // Fill the objective.
     if (!positive_literal_to_weight_.empty()) {
-      for (const std::pair<int, int64> p : positive_literal_to_weight_) {
+      for (const std::pair<int, int64_t> p : positive_literal_to_weight_) {
         if (p.second != 0) {
           problem->AddObjectiveTerm(p.first, p.second);
         }
@@ -192,8 +194,8 @@ class SatCnfReader {
     return problem_name;
   }
 
-  int64 StringPieceAtoi(absl::string_view input) {
-    int64 value;
+  int64_t StringPieceAtoi(absl::string_view input) {
+    int64_t value;
     // Hack: data() is not null terminated, but we do know that it points
     // inside a string where numbers are separated by " " and since SimpleAtoi
     // will stop at the first invalid char, this works.
@@ -236,11 +238,12 @@ class SatCnfReader {
     auto splitter = absl::StrSplit(line, kWordDelimiters, absl::SkipEmpty());
 
     tmp_clause_.clear();
-    int64 weight = (!is_wcnf_ && interpret_cnf_as_max_sat_) ? 1 : hard_weight_;
+    int64_t weight =
+        (!is_wcnf_ && interpret_cnf_as_max_sat_) ? 1 : hard_weight_;
     bool first = true;
     bool end_marker_seen = false;
     for (const absl::string_view word : splitter) {
-      const int64 signed_value = StringPieceAtoi(word);
+      const int64_t signed_value = StringPieceAtoi(word);
       if (first && is_wcnf_) {
         // Mathematically, a soft clause of weight 0 can be removed.
         if (signed_value == 0) {
@@ -315,14 +318,14 @@ class SatCnfReader {
 
   // We stores the objective in a map because we want the variables to appear
   // only once in the LinearObjective proto.
-  std::map<int, int64> positive_literal_to_weight_;
-  int64 objective_offset_;
+  absl::btree_map<int, int64_t> positive_literal_to_weight_;
+  int64_t objective_offset_;
 
   // Used for the wcnf format.
   bool is_wcnf_;
   // Some files have text after %. This indicates if we have seen the '%'.
   bool end_marker_seen_;
-  int64 hard_weight_;
+  int64_t hard_weight_;
 
   int num_slack_variables_;
   int num_skipped_soft_clauses_;

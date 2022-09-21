@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,19 +13,20 @@
 
 #include "ortools/util/proto_tools.h"
 
+#include <string>
+
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 
 namespace operations_research {
-
+namespace {
 using ::google::protobuf::Descriptor;
 using ::google::protobuf::FieldDescriptor;
 using ::google::protobuf::Reflection;
 using ::google::protobuf::TextFormat;
 
-namespace {
 void WriteFullProtocolMessage(const google::protobuf::Message& message,
                               int indent_level, std::string* out) {
   std::string temp_string;

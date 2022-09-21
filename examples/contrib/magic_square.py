@@ -28,6 +28,8 @@ from ortools.constraint_solver import pywrapcp
 def main(n, limit):
   # Create the solver.
   solver = pywrapcp.Solver("n-queens")
+  if not solver:
+    return
 
   #
   # data

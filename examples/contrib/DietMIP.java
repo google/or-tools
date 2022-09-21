@@ -27,7 +27,12 @@ import com.google.ortools.linearsolver.MPVariable;
 
 public class DietMIP {
   private static void solve(String solverType) {
+    System.out.println("---- DietMIP with " + solverType);
+
     MPSolver solver = MPSolver.createSolver(solverType);
+    if (solver == null)
+      return;
+
     double infinity = MPSolver.infinity();
 
     int n = 4; // variables number
@@ -77,6 +82,7 @@ public class DietMIP {
 
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
+    solve("SCIP");
     solve("CBC");
   }
 }

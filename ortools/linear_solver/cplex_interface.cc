@@ -97,9 +97,9 @@ class CplexInterface : public MPSolverInterface {
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex iterations
-  virtual int64 iterations() const;
+  virtual int64_t iterations() const;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  virtual int64 nodes() const;
+  virtual int64_t nodes() const;
 
   // Returns the basis status of a row.
   virtual MPSolver::BasisStatus row_status(int constraint_index) const;
@@ -592,19 +592,19 @@ void CplexInterface::ClearObjective() {
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 CplexInterface::iterations() const {
+int64_t CplexInterface::iterations() const {
   int iter;
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   if (mMip)
-    return static_cast<int64>(CPXXgetmipitcnt(mEnv, mLp));
+    return static_cast<int64_t>(CPXXgetmipitcnt(mEnv, mLp));
   else
-    return static_cast<int64>(CPXXgetitcnt(mEnv, mLp));
+    return static_cast<int64_t>(CPXXgetitcnt(mEnv, mLp));
 }
 
-int64 CplexInterface::nodes() const {
+int64_t CplexInterface::nodes() const {
   if (mMip) {
     if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
-    return static_cast<int64>(CPXXgetnodecnt(mEnv, mLp));
+    return static_cast<int64_t>(CPXXgetnodecnt(mEnv, mLp));
   } else {
     LOG(DFATAL) << "Number of nodes only available for discrete problems";
     return kUnknownNumberOfNodes;

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -37,15 +40,16 @@ namespace operations_research {
 IntExpr* BuildStartExpr(IntervalVar* var);
 IntExpr* BuildDurationExpr(IntervalVar* var);
 IntExpr* BuildEndExpr(IntervalVar* var);
-IntExpr* BuildSafeStartExpr(IntervalVar* var, int64 unperformed_value);
-IntExpr* BuildSafeDurationExpr(IntervalVar* var, int64 unperformed_value);
-IntExpr* BuildSafeEndExpr(IntervalVar* var, int64 unperformed_value);
+IntExpr* BuildSafeStartExpr(IntervalVar* var, int64_t unperformed_value);
+IntExpr* BuildSafeDurationExpr(IntervalVar* var, int64_t unperformed_value);
+IntExpr* BuildSafeEndExpr(IntervalVar* var, int64_t unperformed_value);
 void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var);
 
 // It's good to have the two extreme values being symmetrical around zero: it
 // makes mirroring easier.
-const int64 IntervalVar::kMaxValidValue = kint64max >> 2;
-const int64 IntervalVar::kMinValidValue = -kMaxValidValue;
+const int64_t IntervalVar::kMaxValidValue =
+    std::numeric_limits<int64_t>::max() >> 2;
+const int64_t IntervalVar::kMinValidValue = -kMaxValidValue;
 
 namespace {
 enum IntervalField { START, DURATION, END };
@@ -61,37 +65,41 @@ class MirrorIntervalVar : public IntervalVar {
 
   // These methods query, set and watch the start position of the
   // interval var.
-  int64 StartMin() const override { return -t_->EndMax(); }
-  int64 StartMax() const override { return -t_->EndMin(); }
-  void SetStartMin(int64 m) override { t_->SetEndMax(-m); }
-  void SetStartMax(int64 m) override { t_->SetEndMin(-m); }
-  void SetStartRange(int64 mi, int64 ma) override { t_->SetEndRange(-ma, -mi); }
-  int64 OldStartMin() const override { return -t_->OldEndMax(); }
-  int64 OldStartMax() const override { return -t_->OldEndMin(); }
+  int64_t StartMin() const override { return -t_->EndMax(); }
+  int64_t StartMax() const override { return -t_->EndMin(); }
+  void SetStartMin(int64_t m) override { t_->SetEndMax(-m); }
+  void SetStartMax(int64_t m) override { t_->SetEndMin(-m); }
+  void SetStartRange(int64_t mi, int64_t ma) override {
+    t_->SetEndRange(-ma, -mi);
+  }
+  int64_t OldStartMin() const override { return -t_->OldEndMax(); }
+  int64_t OldStartMax() const override { return -t_->OldEndMin(); }
   void WhenStartRange(Demon* const d) override { t_->WhenEndRange(d); }
   void WhenStartBound(Demon* const d) override { t_->WhenEndBound(d); }
 
   // These methods query, set and watch the duration of the interval var.
-  int64 DurationMin() const override { return t_->DurationMin(); }
-  int64 DurationMax() const override { return t_->DurationMax(); }
-  void SetDurationMin(int64 m) override { t_->SetDurationMin(m); }
-  void SetDurationMax(int64 m) override { t_->SetDurationMax(m); }
-  void SetDurationRange(int64 mi, int64 ma) override {
+  int64_t DurationMin() const override { return t_->DurationMin(); }
+  int64_t DurationMax() const override { return t_->DurationMax(); }
+  void SetDurationMin(int64_t m) override { t_->SetDurationMin(m); }
+  void SetDurationMax(int64_t m) override { t_->SetDurationMax(m); }
+  void SetDurationRange(int64_t mi, int64_t ma) override {
     t_->SetDurationRange(mi, ma);
   }
-  int64 OldDurationMin() const override { return t_->OldDurationMin(); }
-  int64 OldDurationMax() const override { return t_->OldDurationMax(); }
+  int64_t OldDurationMin() const override { return t_->OldDurationMin(); }
+  int64_t OldDurationMax() const override { return t_->OldDurationMax(); }
   void WhenDurationRange(Demon* const d) override { t_->WhenDurationRange(d); }
   void WhenDurationBound(Demon* const d) override { t_->WhenDurationBound(d); }
 
   // These methods query, set and watch the end position of the interval var.
-  int64 EndMin() const override { return -t_->StartMax(); }
-  int64 EndMax() const override { return -t_->StartMin(); }
-  void SetEndMin(int64 m) override { t_->SetStartMax(-m); }
-  void SetEndMax(int64 m) override { t_->SetStartMin(-m); }
-  void SetEndRange(int64 mi, int64 ma) override { t_->SetStartRange(-ma, -mi); }
-  int64 OldEndMin() const override { return -t_->OldStartMax(); }
-  int64 OldEndMax() const override { return -t_->OldStartMin(); }
+  int64_t EndMin() const override { return -t_->StartMax(); }
+  int64_t EndMax() const override { return -t_->StartMin(); }
+  void SetEndMin(int64_t m) override { t_->SetStartMax(-m); }
+  void SetEndMax(int64_t m) override { t_->SetStartMin(-m); }
+  void SetEndRange(int64_t mi, int64_t ma) override {
+    t_->SetStartRange(-ma, -mi);
+  }
+  int64_t OldEndMin() const override { return -t_->OldStartMax(); }
+  int64_t OldEndMax() const override { return -t_->OldStartMin(); }
   void WhenEndRange(Demon* const d) override { t_->WhenStartRange(d); }
   void WhenEndBound(Demon* const d) override { t_->WhenStartBound(d); }
 
@@ -124,13 +132,13 @@ class MirrorIntervalVar : public IntervalVar {
   // These methods create expressions encapsulating the start, end
   // and duration of the interval var. If the interval var is
   // unperformed, they will return the unperformed_value.
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return solver()->MakeOpposite(t_->SafeEndExpr(-unperformed_value));
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return t_->SafeDurationExpr(unperformed_value);
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override {
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
     return solver()->MakeOpposite(t_->SafeStartExpr(-unperformed_value));
   }
 
@@ -166,55 +174,57 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
         end_expr_(nullptr) {}
 
   ~AlwaysPerformedIntervalVarWrapper() override {}
-  int64 StartMin() const override {
+  int64_t StartMin() const override {
     return MayUnderlyingBePerformed() ? t_->StartMin() : kMinValidValue;
   }
-  int64 StartMax() const override {
+  int64_t StartMax() const override {
     return MayUnderlyingBePerformed() ? t_->StartMax() : kMaxValidValue;
   }
-  void SetStartMin(int64 m) override { t_->SetStartMin(m); }
-  void SetStartMax(int64 m) override { t_->SetStartMax(m); }
-  void SetStartRange(int64 mi, int64 ma) override { t_->SetStartRange(mi, ma); }
-  int64 OldStartMin() const override {
+  void SetStartMin(int64_t m) override { t_->SetStartMin(m); }
+  void SetStartMax(int64_t m) override { t_->SetStartMax(m); }
+  void SetStartRange(int64_t mi, int64_t ma) override {
+    t_->SetStartRange(mi, ma);
+  }
+  int64_t OldStartMin() const override {
     return MayUnderlyingBePerformed() ? t_->OldStartMin() : kMinValidValue;
   }
-  int64 OldStartMax() const override {
+  int64_t OldStartMax() const override {
     return MayUnderlyingBePerformed() ? t_->OldStartMax() : kMaxValidValue;
   }
   void WhenStartRange(Demon* const d) override { t_->WhenStartRange(d); }
   void WhenStartBound(Demon* const d) override { t_->WhenStartBound(d); }
-  int64 DurationMin() const override {
+  int64_t DurationMin() const override {
     return MayUnderlyingBePerformed() ? t_->DurationMin() : 0LL;
   }
-  int64 DurationMax() const override {
+  int64_t DurationMax() const override {
     return MayUnderlyingBePerformed() ? t_->DurationMax() : 0LL;
   }
-  void SetDurationMin(int64 m) override { t_->SetDurationMin(m); }
-  void SetDurationMax(int64 m) override { t_->SetDurationMax(m); }
-  void SetDurationRange(int64 mi, int64 ma) override {
+  void SetDurationMin(int64_t m) override { t_->SetDurationMin(m); }
+  void SetDurationMax(int64_t m) override { t_->SetDurationMax(m); }
+  void SetDurationRange(int64_t mi, int64_t ma) override {
     t_->SetDurationRange(mi, ma);
   }
-  int64 OldDurationMin() const override {
+  int64_t OldDurationMin() const override {
     return MayUnderlyingBePerformed() ? t_->OldDurationMin() : 0LL;
   }
-  int64 OldDurationMax() const override {
+  int64_t OldDurationMax() const override {
     return MayUnderlyingBePerformed() ? t_->OldDurationMax() : 0LL;
   }
   void WhenDurationRange(Demon* const d) override { t_->WhenDurationRange(d); }
   void WhenDurationBound(Demon* const d) override { t_->WhenDurationBound(d); }
-  int64 EndMin() const override {
+  int64_t EndMin() const override {
     return MayUnderlyingBePerformed() ? t_->EndMin() : kMinValidValue;
   }
-  int64 EndMax() const override {
+  int64_t EndMax() const override {
     return MayUnderlyingBePerformed() ? t_->EndMax() : kMaxValidValue;
   }
-  void SetEndMin(int64 m) override { t_->SetEndMin(m); }
-  void SetEndMax(int64 m) override { t_->SetEndMax(m); }
-  void SetEndRange(int64 mi, int64 ma) override { t_->SetEndRange(mi, ma); }
-  int64 OldEndMin() const override {
+  void SetEndMin(int64_t m) override { t_->SetEndMin(m); }
+  void SetEndMax(int64_t m) override { t_->SetEndMax(m); }
+  void SetEndRange(int64_t mi, int64_t ma) override { t_->SetEndRange(mi, ma); }
+  int64_t OldEndMin() const override {
     return MayUnderlyingBePerformed() ? t_->OldEndMin() : kMinValidValue;
   }
-  int64 OldEndMax() const override {
+  int64_t OldEndMax() const override {
     return MayUnderlyingBePerformed() ? t_->OldEndMax() : kMaxValidValue;
   }
   void WhenEndRange(Demon* const d) override { t_->WhenEndRange(d); }
@@ -256,13 +266,13 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
     return end_expr_;
   }
   IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return StartExpr();
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return DurationExpr();
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override { return EndExpr(); }
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override { return EndExpr(); }
 
  protected:
   IntervalVar* const underlying() const { return t_; }
@@ -296,21 +306,21 @@ class IntervalVarRelaxedMax : public AlwaysPerformedIntervalVarWrapper {
   explicit IntervalVarRelaxedMax(IntervalVar* const t)
       : AlwaysPerformedIntervalVarWrapper(t) {}
   ~IntervalVarRelaxedMax() override {}
-  int64 StartMax() const override {
+  int64_t StartMax() const override {
     // It matters to use DurationMin() and not underlying()->DurationMin() here.
     return underlying()->MustBePerformed() ? underlying()->StartMax()
                                            : (kMaxValidValue - DurationMin());
   }
-  void SetStartMax(int64 m) override {
+  void SetStartMax(int64_t m) override {
     LOG(FATAL)
         << "Calling SetStartMax on a IntervalVarRelaxedMax is not supported, "
         << "as it seems there is no legitimate use case.";
   }
-  int64 EndMax() const override {
+  int64_t EndMax() const override {
     return underlying()->MustBePerformed() ? underlying()->EndMax()
                                            : kMaxValidValue;
   }
-  void SetEndMax(int64 m) override {
+  void SetEndMax(int64_t m) override {
     LOG(FATAL)
         << "Calling SetEndMax on a IntervalVarRelaxedMax is not supported, "
         << "as it seems there is no legitimate use case.";
@@ -346,21 +356,21 @@ class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
   explicit IntervalVarRelaxedMin(IntervalVar* const t)
       : AlwaysPerformedIntervalVarWrapper(t) {}
   ~IntervalVarRelaxedMin() override {}
-  int64 StartMin() const override {
+  int64_t StartMin() const override {
     return underlying()->MustBePerformed() ? underlying()->StartMin()
                                            : kMinValidValue;
   }
-  void SetStartMin(int64 m) override {
+  void SetStartMin(int64_t m) override {
     LOG(FATAL)
         << "Calling SetStartMin on a IntervalVarRelaxedMin is not supported, "
         << "as it seems there is no legitimate use case.";
   }
-  int64 EndMin() const override {
+  int64_t EndMin() const override {
     // It matters to use DurationMin() and not underlying()->DurationMin() here.
     return underlying()->MustBePerformed() ? underlying()->EndMin()
                                            : (kMinValidValue + DurationMin());
   }
-  void SetEndMin(int64 m) override {
+  void SetEndMin(int64_t m) override {
     LOG(FATAL)
         << "Calling SetEndMin on a IntervalVarRelaxedMin is not supported, "
         << "as it seems there is no legitimate use case.";
@@ -423,7 +433,7 @@ class BaseIntervalVar : public IntervalVar {
 
 class RangeVar : public IntExpr {
  public:
-  RangeVar(Solver* const s, BaseIntervalVar* var, int64 mi, int64 ma)
+  RangeVar(Solver* const s, BaseIntervalVar* var, int64_t mi, int64_t ma)
       : IntExpr(s),
         min_(mi),
         max_(ma),
@@ -438,11 +448,11 @@ class RangeVar : public IntExpr {
 
   bool Bound() const override { return min_.Value() == max_.Value(); }
 
-  int64 Min() const override { return min_.Value(); }
+  int64_t Min() const override { return min_.Value(); }
 
-  int64 Max() const override { return max_.Value(); }
+  int64_t Max() const override { return max_.Value(); }
 
-  void SetMin(int64 m) override {
+  void SetMin(int64_t m) override {
     // No Op.
     if (m <= min_.Value()) {
       return;
@@ -468,12 +478,12 @@ class RangeVar : public IntExpr {
     }
   }
 
-  int64 OldMin() const {
+  int64_t OldMin() const {
     DCHECK(var_->InProcess());
     return previous_min_;
   }
 
-  void SetMax(int64 m) override {
+  void SetMax(int64_t m) override {
     if (m >= max_.Value()) {
       return;
     }
@@ -497,9 +507,9 @@ class RangeVar : public IntExpr {
     }
   }
 
-  int64 OldMax() const { return previous_min_; }
+  int64_t OldMax() const { return previous_min_; }
 
-  void SetRange(int64 mi, int64 ma) override {
+  void SetRange(int64_t mi, int64_t ma) override {
     if (mi <= min_.Value() && ma >= max_.Value()) {
       // No Op.
       return;
@@ -627,17 +637,17 @@ class RangeVar : public IntExpr {
   }
 
   // The current reversible bounds of the interval.
-  NumericalRev<int64> min_;
-  NumericalRev<int64> max_;
+  NumericalRev<int64_t> min_;
+  NumericalRev<int64_t> max_;
   BaseIntervalVar* const var_;
   // When in process, the modifications are postponed and stored in
   // these 2 fields.
-  int64 postponed_min_;
-  int64 postponed_max_;
+  int64_t postponed_min_;
+  int64_t postponed_max_;
   // The previous bounds stores the bounds since the last time
   // ProcessDemons() was run. These are maintained lazily.
-  int64 previous_min_;
-  int64 previous_max_;
+  int64_t previous_min_;
+  int64_t previous_max_;
   // Demons attached to the 'bound' event (min == max).
   SimpleRevFIFO<Demon*> bound_demons_;
   SimpleRevFIFO<Demon*> delayed_bound_demons_;
@@ -669,7 +679,7 @@ class PerformedVar : public BooleanVar {
 
   ~PerformedVar() override {}
 
-  void SetValue(int64 v) override {
+  void SetValue(int64_t v) override {
     if ((v & 0xfffffffffffffffe) != 0 ||  // Not 0 or 1.
         (value_ != kUnboundBooleanVarValue && v != value_)) {
       solver()->Fail();
@@ -689,9 +699,9 @@ class PerformedVar : public BooleanVar {
     }
   }
 
-  int64 OldMin() const override { return previous_value_ == 1; }
+  int64_t OldMin() const override { return previous_value_ == 1; }
 
-  int64 OldMax() const override { return previous_value_ != 0; }
+  int64_t OldMax() const override { return previous_value_ != 0; }
 
   void RestoreValue() override {
     previous_value_ = kUnboundBooleanVarValue;
@@ -737,20 +747,20 @@ class PerformedVar : public BooleanVar {
 
 class FixedDurationIntervalVar : public BaseIntervalVar {
  public:
-  FixedDurationIntervalVar(Solver* const s, int64 start_min, int64 start_max,
-                           int64 duration, bool optional,
+  FixedDurationIntervalVar(Solver* const s, int64_t start_min,
+                           int64_t start_max, int64_t duration, bool optional,
                            const std::string& name);
   // Unperformed interval.
   FixedDurationIntervalVar(Solver* const s, const std::string& name);
   ~FixedDurationIntervalVar() override {}
 
-  int64 StartMin() const override;
-  int64 StartMax() const override;
-  void SetStartMin(int64 m) override;
-  void SetStartMax(int64 m) override;
-  void SetStartRange(int64 mi, int64 ma) override;
-  int64 OldStartMin() const override { return start_.OldMin(); }
-  int64 OldStartMax() const override { return start_.OldMax(); }
+  int64_t StartMin() const override;
+  int64_t StartMax() const override;
+  void SetStartMin(int64_t m) override;
+  void SetStartMax(int64_t m) override;
+  void SetStartRange(int64_t mi, int64_t ma) override;
+  int64_t OldStartMin() const override { return start_.OldMin(); }
+  int64_t OldStartMax() const override { return start_.OldMax(); }
   void WhenStartRange(Demon* const d) override {
     if (performed_.Max() == 1) {
       start_.WhenRange(d);
@@ -762,23 +772,27 @@ class FixedDurationIntervalVar : public BaseIntervalVar {
     }
   }
 
-  int64 DurationMin() const override;
-  int64 DurationMax() const override;
-  void SetDurationMin(int64 m) override;
-  void SetDurationMax(int64 m) override;
-  void SetDurationRange(int64 mi, int64 ma) override;
-  int64 OldDurationMin() const override { return duration_; }
-  int64 OldDurationMax() const override { return duration_; }
+  int64_t DurationMin() const override;
+  int64_t DurationMax() const override;
+  void SetDurationMin(int64_t m) override;
+  void SetDurationMax(int64_t m) override;
+  void SetDurationRange(int64_t mi, int64_t ma) override;
+  int64_t OldDurationMin() const override { return duration_; }
+  int64_t OldDurationMax() const override { return duration_; }
   void WhenDurationRange(Demon* const d) override {}
   void WhenDurationBound(Demon* const d) override {}
 
-  int64 EndMin() const override;
-  int64 EndMax() const override;
-  void SetEndMin(int64 m) override;
-  void SetEndMax(int64 m) override;
-  void SetEndRange(int64 mi, int64 ma) override;
-  int64 OldEndMin() const override { return CapAdd(OldStartMin(), duration_); }
-  int64 OldEndMax() const override { return CapAdd(OldStartMax(), duration_); }
+  int64_t EndMin() const override;
+  int64_t EndMax() const override;
+  void SetEndMin(int64_t m) override;
+  void SetEndMax(int64_t m) override;
+  void SetEndRange(int64_t mi, int64_t ma) override;
+  int64_t OldEndMin() const override {
+    return CapAdd(OldStartMin(), duration_);
+  }
+  int64_t OldEndMax() const override {
+    return CapAdd(OldStartMax(), duration_);
+  }
   void WhenEndRange(Demon* const d) override { WhenStartRange(d); }
   void WhenEndBound(Demon* const d) override { WhenStartBound(d); }
 
@@ -802,13 +816,13 @@ class FixedDurationIntervalVar : public BaseIntervalVar {
     return solver()->MakeSum(StartExpr(), duration_);
   }
   IntExpr* PerformedExpr() override { return &performed_; }
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return BuildSafeStartExpr(this, unperformed_value);
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return BuildSafeDurationExpr(this, unperformed_value);
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override {
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
     return BuildSafeEndExpr(this, unperformed_value);
   }
 
@@ -816,12 +830,12 @@ class FixedDurationIntervalVar : public BaseIntervalVar {
 
  private:
   RangeVar start_;
-  int64 duration_;
+  int64_t duration_;
   PerformedVar performed_;
 };
 
 FixedDurationIntervalVar::FixedDurationIntervalVar(
-    Solver* const s, int64 start_min, int64 start_max, int64 duration,
+    Solver* const s, int64_t start_min, int64_t start_max, int64_t duration,
     bool optional, const std::string& name)
     : BaseIntervalVar(s, name),
       start_(s, this, start_min, start_max),
@@ -852,81 +866,81 @@ void FixedDurationIntervalVar::Process() {
   performed_.UpdatePreviousValueAndApplyPostponedValue();
 }
 
-int64 FixedDurationIntervalVar::StartMin() const {
+int64_t FixedDurationIntervalVar::StartMin() const {
   CHECK_EQ(performed_.Max(), 1);
   return start_.Min();
 }
 
-int64 FixedDurationIntervalVar::StartMax() const {
+int64_t FixedDurationIntervalVar::StartMax() const {
   CHECK_EQ(performed_.Max(), 1);
   return start_.Max();
 }
 
-void FixedDurationIntervalVar::SetStartMin(int64 m) {
+void FixedDurationIntervalVar::SetStartMin(int64_t m) {
   if (performed_.Max() == 1) {
     start_.SetMin(m);
   }
 }
 
-void FixedDurationIntervalVar::SetStartMax(int64 m) {
+void FixedDurationIntervalVar::SetStartMax(int64_t m) {
   if (performed_.Max() == 1) {
     start_.SetMax(m);
   }
 }
 
-void FixedDurationIntervalVar::SetStartRange(int64 mi, int64 ma) {
+void FixedDurationIntervalVar::SetStartRange(int64_t mi, int64_t ma) {
   if (performed_.Max() == 1) {
     start_.SetRange(mi, ma);
   }
 }
 
-int64 FixedDurationIntervalVar::DurationMin() const {
+int64_t FixedDurationIntervalVar::DurationMin() const {
   CHECK_EQ(performed_.Max(), 1);
   return duration_;
 }
 
-int64 FixedDurationIntervalVar::DurationMax() const {
+int64_t FixedDurationIntervalVar::DurationMax() const {
   CHECK_EQ(performed_.Max(), 1);
   return duration_;
 }
 
-void FixedDurationIntervalVar::SetDurationMin(int64 m) {
+void FixedDurationIntervalVar::SetDurationMin(int64_t m) {
   if (m > duration_) {
     SetPerformed(false);
   }
 }
 
-void FixedDurationIntervalVar::SetDurationMax(int64 m) {
+void FixedDurationIntervalVar::SetDurationMax(int64_t m) {
   if (m < duration_) {
     SetPerformed(false);
   }
 }
 
-void FixedDurationIntervalVar::SetDurationRange(int64 mi, int64 ma) {
+void FixedDurationIntervalVar::SetDurationRange(int64_t mi, int64_t ma) {
   if (mi > duration_ || ma < duration_ || mi > ma) {
     SetPerformed(false);
   }
 }
 
-int64 FixedDurationIntervalVar::EndMin() const {
+int64_t FixedDurationIntervalVar::EndMin() const {
   CHECK_EQ(performed_.Max(), 1);
   return start_.Min() + duration_;
 }
 
-int64 FixedDurationIntervalVar::EndMax() const {
+int64_t FixedDurationIntervalVar::EndMax() const {
   CHECK_EQ(performed_.Max(), 1);
   return CapAdd(start_.Max(), duration_);
 }
 
-void FixedDurationIntervalVar::SetEndMin(int64 m) {
+void FixedDurationIntervalVar::SetEndMin(int64_t m) {
   SetStartMin(CapSub(m, duration_));
 }
 
-void FixedDurationIntervalVar::SetEndMax(int64 m) {
+void FixedDurationIntervalVar::SetEndMax(int64_t m) {
   SetStartMax(CapSub(m, duration_));
 }
 
-void FixedDurationIntervalVar::SetEndRange(int64 mi, int64 ma) {
+void FixedDurationIntervalVar::SetEndRange(int64_t mi, int64_t ma) {
   SetStartRange(CapSub(mi, duration_), CapSub(ma, duration_));
 }
 
@@ -974,40 +988,44 @@ std::string FixedDurationIntervalVar::DebugString() const {
 
 class FixedDurationPerformedIntervalVar : public BaseIntervalVar {
  public:
-  FixedDurationPerformedIntervalVar(Solver* const s, int64 start_min,
-                                    int64 start_max, int64 duration,
+  FixedDurationPerformedIntervalVar(Solver* const s, int64_t start_min,
+                                    int64_t start_max, int64_t duration,
                                     const std::string& name);
   // Unperformed interval.
   FixedDurationPerformedIntervalVar(Solver* const s, const std::string& name);
   ~FixedDurationPerformedIntervalVar() override {}
 
-  int64 StartMin() const override;
-  int64 StartMax() const override;
-  void SetStartMin(int64 m) override;
-  void SetStartMax(int64 m) override;
-  void SetStartRange(int64 mi, int64 ma) override;
-  int64 OldStartMin() const override { return start_.OldMin(); }
-  int64 OldStartMax() const override { return start_.OldMax(); }
+  int64_t StartMin() const override;
+  int64_t StartMax() const override;
+  void SetStartMin(int64_t m) override;
+  void SetStartMax(int64_t m) override;
+  void SetStartRange(int64_t mi, int64_t ma) override;
+  int64_t OldStartMin() const override { return start_.OldMin(); }
+  int64_t OldStartMax() const override { return start_.OldMax(); }
   void WhenStartRange(Demon* const d) override { start_.WhenRange(d); }
   void WhenStartBound(Demon* const d) override { start_.WhenBound(d); }
 
-  int64 DurationMin() const override;
-  int64 DurationMax() const override;
-  void SetDurationMin(int64 m) override;
-  void SetDurationMax(int64 m) override;
-  void SetDurationRange(int64 mi, int64 ma) override;
-  int64 OldDurationMin() const override { return duration_; }
-  int64 OldDurationMax() const override { return duration_; }
+  int64_t DurationMin() const override;
+  int64_t DurationMax() const override;
+  void SetDurationMin(int64_t m) override;
+  void SetDurationMax(int64_t m) override;
+  void SetDurationRange(int64_t mi, int64_t ma) override;
+  int64_t OldDurationMin() const override { return duration_; }
+  int64_t OldDurationMax() const override { return duration_; }
   void WhenDurationRange(Demon* const d) override {}
   void WhenDurationBound(Demon* const d) override {}
 
-  int64 EndMin() const override;
-  int64 EndMax() const override;
-  void SetEndMin(int64 m) override;
-  void SetEndMax(int64 m) override;
-  void SetEndRange(int64 mi, int64 ma) override;
-  int64 OldEndMin() const override { return CapAdd(OldStartMin(), duration_); }
-  int64 OldEndMax() const override { return CapAdd(OldStartMax(), duration_); }
+  int64_t EndMin() const override;
+  int64_t EndMax() const override;
+  void SetEndMin(int64_t m) override;
+  void SetEndMax(int64_t m) override;
+  void SetEndRange(int64_t mi, int64_t ma) override;
+  int64_t OldEndMin() const override {
+    return CapAdd(OldStartMin(), duration_);
+  }
+  int64_t OldEndMax() const override {
+    return CapAdd(OldStartMax(), duration_);
+  }
   void WhenEndRange(Demon* const d) override { WhenStartRange(d); }
   void WhenEndBound(Demon* const d) override { WhenEndRange(d); }
 
@@ -1029,24 +1047,24 @@ class FixedDurationPerformedIntervalVar : public BaseIntervalVar {
     return solver()->MakeSum(StartExpr(), duration_);
   }
   IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return StartExpr();
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return DurationExpr();
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override { return EndExpr(); }
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override { return EndExpr(); }
 
  private:
   void CheckOldPerformed() {}
   void Push() override;
 
   RangeVar start_;
-  int64 duration_;
+  int64_t duration_;
 };
 
 FixedDurationPerformedIntervalVar::FixedDurationPerformedIntervalVar(
-    Solver* const s, int64 start_min, int64 start_max, int64 duration,
+    Solver* const s, int64_t start_min, int64_t start_max, int64_t duration,
     const std::string& name)
     : BaseIntervalVar(s, name),
       start_(s, this, start_min, start_max),
@@ -1068,66 +1086,67 @@ void FixedDurationPerformedIntervalVar::Process() {
   start_.ApplyPostponedBounds(START);
 }
 
-int64 FixedDurationPerformedIntervalVar::StartMin() const {
+int64_t FixedDurationPerformedIntervalVar::StartMin() const {
   return start_.Min();
 }
 
-int64 FixedDurationPerformedIntervalVar::StartMax() const {
+int64_t FixedDurationPerformedIntervalVar::StartMax() const {
   return start_.Max();
 }
 
-void FixedDurationPerformedIntervalVar::SetStartMin(int64 m) {
+void FixedDurationPerformedIntervalVar::SetStartMin(int64_t m) {
   start_.SetMin(m);
 }
 
-void FixedDurationPerformedIntervalVar::SetStartMax(int64 m) {
+void FixedDurationPerformedIntervalVar::SetStartMax(int64_t m) {
   start_.SetMax(m);
 }
 
-void FixedDurationPerformedIntervalVar::SetStartRange(int64 mi, int64 ma) {
+void FixedDurationPerformedIntervalVar::SetStartRange(int64_t mi, int64_t ma) {
   start_.SetRange(mi, ma);
 }
 
-int64 FixedDurationPerformedIntervalVar::DurationMin() const {
+int64_t FixedDurationPerformedIntervalVar::DurationMin() const {
   return duration_;
 }
 
-int64 FixedDurationPerformedIntervalVar::DurationMax() const {
+int64_t FixedDurationPerformedIntervalVar::DurationMax() const {
   return duration_;
 }
 
-void FixedDurationPerformedIntervalVar::SetDurationMin(int64 m) {
+void FixedDurationPerformedIntervalVar::SetDurationMin(int64_t m) {
   if (m > duration_) {
     SetPerformed(false);
   }
 }
 
-void FixedDurationPerformedIntervalVar::SetDurationMax(int64 m) {
+void FixedDurationPerformedIntervalVar::SetDurationMax(int64_t m) {
   if (m < duration_) {
     SetPerformed(false);
   }
 }
-int64 FixedDurationPerformedIntervalVar::EndMin() const {
+int64_t FixedDurationPerformedIntervalVar::EndMin() const {
   return CapAdd(start_.Min(), duration_);
 }
 
-int64 FixedDurationPerformedIntervalVar::EndMax() const {
+int64_t FixedDurationPerformedIntervalVar::EndMax() const {
   return CapAdd(start_.Max(), duration_);
 }
 
-void FixedDurationPerformedIntervalVar::SetEndMin(int64 m) {
+void FixedDurationPerformedIntervalVar::SetEndMin(int64_t m) {
   SetStartMin(CapSub(m, duration_));
 }
 
-void FixedDurationPerformedIntervalVar::SetEndMax(int64 m) {
+void FixedDurationPerformedIntervalVar::SetEndMax(int64_t m) {
   SetStartMax(CapSub(m, duration_));
 }
 
-void FixedDurationPerformedIntervalVar::SetEndRange(int64 mi, int64 ma) {
+void FixedDurationPerformedIntervalVar::SetEndRange(int64_t mi, int64_t ma) {
   SetStartRange(CapSub(mi, duration_), CapSub(ma, duration_));
 }
 
-void FixedDurationPerformedIntervalVar::SetDurationRange(int64 mi, int64 ma) {
+void FixedDurationPerformedIntervalVar::SetDurationRange(int64_t mi,
+                                                         int64_t ma) {
   if (mi > duration_ || ma < duration_ || mi > ma) {
     SetPerformed(false);
   }
@@ -1167,36 +1186,40 @@ std::string FixedDurationPerformedIntervalVar::DebugString() const {
 class StartVarPerformedIntervalVar : public IntervalVar {
  public:
   StartVarPerformedIntervalVar(Solver* const s, IntVar* const var,
-                               int64 duration, const std::string& name);
+                               int64_t duration, const std::string& name);
   ~StartVarPerformedIntervalVar() override {}
 
-  int64 StartMin() const override;
-  int64 StartMax() const override;
-  void SetStartMin(int64 m) override;
-  void SetStartMax(int64 m) override;
-  void SetStartRange(int64 mi, int64 ma) override;
-  int64 OldStartMin() const override { return start_var_->OldMin(); }
-  int64 OldStartMax() const override { return start_var_->OldMax(); }
+  int64_t StartMin() const override;
+  int64_t StartMax() const override;
+  void SetStartMin(int64_t m) override;
+  void SetStartMax(int64_t m) override;
+  void SetStartRange(int64_t mi, int64_t ma) override;
+  int64_t OldStartMin() const override { return start_var_->OldMin(); }
+  int64_t OldStartMax() const override { return start_var_->OldMax(); }
   void WhenStartRange(Demon* const d) override { start_var_->WhenRange(d); }
   void WhenStartBound(Demon* const d) override { start_var_->WhenBound(d); }
 
-  int64 DurationMin() const override;
-  int64 DurationMax() const override;
-  void SetDurationMin(int64 m) override;
-  void SetDurationMax(int64 m) override;
-  void SetDurationRange(int64 mi, int64 ma) override;
-  int64 OldDurationMin() const override { return duration_; }
-  int64 OldDurationMax() const override { return duration_; }
+  int64_t DurationMin() const override;
+  int64_t DurationMax() const override;
+  void SetDurationMin(int64_t m) override;
+  void SetDurationMax(int64_t m) override;
+  void SetDurationRange(int64_t mi, int64_t ma) override;
+  int64_t OldDurationMin() const override { return duration_; }
+  int64_t OldDurationMax() const override { return duration_; }
   void WhenDurationRange(Demon* const d) override {}
   void WhenDurationBound(Demon* const d) override {}
 
-  int64 EndMin() const override;
-  int64 EndMax() const override;
-  void SetEndMin(int64 m) override;
-  void SetEndMax(int64 m) override;
-  void SetEndRange(int64 mi, int64 ma) override;
-  int64 OldEndMin() const override { return CapAdd(OldStartMin(), duration_); }
-  int64 OldEndMax() const override { return CapAdd(OldStartMax(), duration_); }
+  int64_t EndMin() const override;
+  int64_t EndMax() const override;
+  void SetEndMin(int64_t m) override;
+  void SetEndMax(int64_t m) override;
+  void SetEndRange(int64_t mi, int64_t ma) override;
+  int64_t OldEndMin() const override {
+    return CapAdd(OldStartMin(), duration_);
+  }
+  int64_t OldEndMax() const override {
+    return CapAdd(OldStartMax(), duration_);
+  }
   void WhenEndRange(Demon* const d) override { start_var_->WhenRange(d); }
   void WhenEndBound(Demon* const d) override { start_var_->WhenBound(d); }
 
@@ -1213,13 +1236,13 @@ class StartVarPerformedIntervalVar : public IntervalVar {
     return solver()->MakeSum(start_var_, duration_);
   }
   IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return StartExpr();
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return DurationExpr();
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override { return EndExpr(); }
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override { return EndExpr(); }
 
   void Accept(ModelVisitor* const visitor) const override {
     visitor->VisitIntervalVariable(this, "", 0, NullInterval());
@@ -1227,70 +1250,71 @@ class StartVarPerformedIntervalVar : public IntervalVar {
 
  private:
   IntVar* const start_var_;
-  int64 duration_;
+  int64_t duration_;
 };
 
 // TODO(user): Take care of overflows.
 StartVarPerformedIntervalVar::StartVarPerformedIntervalVar(
-    Solver* const s, IntVar* const var, int64 duration, const std::string& name)
+    Solver* const s, IntVar* const var, int64_t duration,
+    const std::string& name)
     : IntervalVar(s, name), start_var_(var), duration_(duration) {}
 
-int64 StartVarPerformedIntervalVar::StartMin() const {
+int64_t StartVarPerformedIntervalVar::StartMin() const {
   return start_var_->Min();
 }
 
-int64 StartVarPerformedIntervalVar::StartMax() const {
+int64_t StartVarPerformedIntervalVar::StartMax() const {
   return start_var_->Max();
 }
 
-void StartVarPerformedIntervalVar::SetStartMin(int64 m) {
+void StartVarPerformedIntervalVar::SetStartMin(int64_t m) {
   start_var_->SetMin(m);
 }
 
-void StartVarPerformedIntervalVar::SetStartMax(int64 m) {
+void StartVarPerformedIntervalVar::SetStartMax(int64_t m) {
   start_var_->SetMax(m);
 }
 
-void StartVarPerformedIntervalVar::SetStartRange(int64 mi, int64 ma) {
+void StartVarPerformedIntervalVar::SetStartRange(int64_t mi, int64_t ma) {
   start_var_->SetRange(mi, ma);
 }
 
-int64 StartVarPerformedIntervalVar::DurationMin() const { return duration_; }
+int64_t StartVarPerformedIntervalVar::DurationMin() const { return duration_; }
 
-int64 StartVarPerformedIntervalVar::DurationMax() const { return duration_; }
+int64_t StartVarPerformedIntervalVar::DurationMax() const { return duration_; }
 
-void StartVarPerformedIntervalVar::SetDurationMin(int64 m) {
+void StartVarPerformedIntervalVar::SetDurationMin(int64_t m) {
   if (m > duration_) {
     solver()->Fail();
   }
 }
 
-void StartVarPerformedIntervalVar::SetDurationMax(int64 m) {
+void StartVarPerformedIntervalVar::SetDurationMax(int64_t m) {
   if (m < duration_) {
     solver()->Fail();
   }
 }
-int64 StartVarPerformedIntervalVar::EndMin() const {
+int64_t StartVarPerformedIntervalVar::EndMin() const {
   return start_var_->Min() + duration_;
 }
 
-int64 StartVarPerformedIntervalVar::EndMax() const {
+int64_t StartVarPerformedIntervalVar::EndMax() const {
   return start_var_->Max() + duration_;
 }
 
-void StartVarPerformedIntervalVar::SetEndMin(int64 m) {
+void StartVarPerformedIntervalVar::SetEndMin(int64_t m) {
   SetStartMin(CapSub(m, duration_));
 }
 
-void StartVarPerformedIntervalVar::SetEndMax(int64 m) {
+void StartVarPerformedIntervalVar::SetEndMax(int64_t m) {
   SetStartMax(CapSub(m, duration_));
 }
 
-void StartVarPerformedIntervalVar::SetEndRange(int64 mi, int64 ma) {
+void StartVarPerformedIntervalVar::SetEndRange(int64_t mi, int64_t ma) {
   SetStartRange(CapSub(mi, duration_), CapSub(ma, duration_));
 }
 
-void StartVarPerformedIntervalVar::SetDurationRange(int64 mi, int64 ma) {
+void StartVarPerformedIntervalVar::SetDurationRange(int64_t mi, int64_t ma) {
   if (mi > duration_ || ma < duration_ || mi > ma) {
     solver()->Fail();
   }
@@ -1327,17 +1351,17 @@ std::string StartVarPerformedIntervalVar::DebugString() const {
 
 class StartVarIntervalVar : public BaseIntervalVar {
  public:
-  StartVarIntervalVar(Solver* const s, IntVar* const start, int64 duration,
+  StartVarIntervalVar(Solver* const s, IntVar* const start, int64_t duration,
                       IntVar* const performed, const std::string& name);
   ~StartVarIntervalVar() override {}
 
-  int64 StartMin() const override;
-  int64 StartMax() const override;
-  void SetStartMin(int64 m) override;
-  void SetStartMax(int64 m) override;
-  void SetStartRange(int64 mi, int64 ma) override;
-  int64 OldStartMin() const override { return start_->OldMin(); }
-  int64 OldStartMax() const override { return start_->OldMax(); }
+  int64_t StartMin() const override;
+  int64_t StartMax() const override;
+  void SetStartMin(int64_t m) override;
+  void SetStartMax(int64_t m) override;
+  void SetStartRange(int64_t mi, int64_t ma) override;
+  int64_t OldStartMin() const override { return start_->OldMin(); }
+  int64_t OldStartMax() const override { return start_->OldMax(); }
   void WhenStartRange(Demon* const d) override {
     if (performed_->Max() == 1) {
       start_->WhenRange(d);
@@ -1349,23 +1373,27 @@ class StartVarIntervalVar : public BaseIntervalVar {
     }
   }
 
-  int64 DurationMin() const override;
-  int64 DurationMax() const override;
-  void SetDurationMin(int64 m) override;
-  void SetDurationMax(int64 m) override;
-  void SetDurationRange(int64 mi, int64 ma) override;
-  int64 OldDurationMin() const override { return duration_; }
-  int64 OldDurationMax() const override { return duration_; }
+  int64_t DurationMin() const override;
+  int64_t DurationMax() const override;
+  void SetDurationMin(int64_t m) override;
+  void SetDurationMax(int64_t m) override;
+  void SetDurationRange(int64_t mi, int64_t ma) override;
+  int64_t OldDurationMin() const override { return duration_; }
+  int64_t OldDurationMax() const override { return duration_; }
   void WhenDurationRange(Demon* const d) override {}
   void WhenDurationBound(Demon* const d) override {}
 
-  int64 EndMin() const override;
-  int64 EndMax() const override;
-  void SetEndMin(int64 m) override;
-  void SetEndMax(int64 m) override;
-  void SetEndRange(int64 mi, int64 ma) override;
-  int64 OldEndMin() const override { return CapAdd(OldStartMin(), duration_); }
-  int64 OldEndMax() const override { return CapAdd(OldStartMax(), duration_); }
+  int64_t EndMin() const override;
+  int64_t EndMax() const override;
+  void SetEndMin(int64_t m) override;
+  void SetEndMax(int64_t m) override;
+  void SetEndRange(int64_t mi, int64_t ma) override;
+  int64_t OldEndMin() const override {
+    return CapAdd(OldStartMin(), duration_);
+  }
+  int64_t OldEndMax() const override {
+    return CapAdd(OldStartMax(), duration_);
+  }
   void WhenEndRange(Demon* const d) override { WhenStartRange(d); }
   void WhenEndBound(Demon* const d) override { WhenStartBound(d); }
 
@@ -1388,13 +1416,13 @@ class StartVarIntervalVar : public BaseIntervalVar {
     return solver()->MakeSum(StartExpr(), duration_);
   }
   IntExpr* PerformedExpr() override { return performed_; }
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return BuildSafeStartExpr(this, unperformed_value);
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return BuildSafeDurationExpr(this, unperformed_value);
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override {
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
     return BuildSafeEndExpr(this, unperformed_value);
   }
 
@@ -1402,19 +1430,19 @@ class StartVarIntervalVar : public BaseIntervalVar {
 
   void Push() override { LOG(FATAL) << "Should not be here"; }
 
-  int64 StoredMin() const { return start_min_.Value(); }
-  int64 StoredMax() const { return start_max_.Value(); }
+  int64_t StoredMin() const { return start_min_.Value(); }
+  int64_t StoredMax() const { return start_max_.Value(); }
 
  private:
   IntVar* const start_;
-  int64 duration_;
+  int64_t duration_;
   IntVar* const performed_;
-  Rev<int64> start_min_;
-  Rev<int64> start_max_;
+  Rev<int64_t> start_min_;
+  Rev<int64_t> start_max_;
 };
 
 StartVarIntervalVar::StartVarIntervalVar(Solver* const s, IntVar* const start,
-                                         int64 duration,
+                                         int64_t duration,
                                          IntVar* const performed,
                                          const std::string& name)
     : BaseIntervalVar(s, name),
@@ -1424,17 +1452,17 @@ StartVarIntervalVar::StartVarIntervalVar(Solver* const s, IntVar* const start,
       start_min_(start->Min()),
       start_max_(start->Max()) {}
 
-int64 StartVarIntervalVar::StartMin() const {
+int64_t StartVarIntervalVar::StartMin() const {
   DCHECK_EQ(performed_->Max(), 1);
   return std::max(start_->Min(), start_min_.Value());
 }
 
-int64 StartVarIntervalVar::StartMax() const {
+int64_t StartVarIntervalVar::StartMax() const {
   DCHECK_EQ(performed_->Max(), 1);
   return std::min(start_->Max(), start_max_.Value());
 }
 
-void StartVarIntervalVar::SetStartMin(int64 m) {
+void StartVarIntervalVar::SetStartMin(int64_t m) {
   if (performed_->Min() == 1) {
     start_->SetMin(m);
   } else {
@@ -1445,7 +1473,7 @@ void StartVarIntervalVar::SetStartMin(int64 m) {
   }
 }
 
-void StartVarIntervalVar::SetStartMax(int64 m) {
+void StartVarIntervalVar::SetStartMax(int64_t m) {
   if (performed_->Min() == 1) {
     start_->SetMax(m);
   } else {
@@ -1456,7 +1484,7 @@ void StartVarIntervalVar::SetStartMax(int64 m) {
   }
 }
 
-void StartVarIntervalVar::SetStartRange(int64 mi, int64 ma) {
+void StartVarIntervalVar::SetStartRange(int64_t mi, int64_t ma) {
   if (performed_->Min() == 1) {
     start_->SetRange(mi, ma);
   } else {
@@ -1469,53 +1497,53 @@ void StartVarIntervalVar::SetStartRange(int64 mi, int64 ma) {
   }
 }
 
-int64 StartVarIntervalVar::DurationMin() const {
+int64_t StartVarIntervalVar::DurationMin() const {
   DCHECK_EQ(performed_->Max(), 1);
   return duration_;
 }
 
-int64 StartVarIntervalVar::DurationMax() const {
+int64_t StartVarIntervalVar::DurationMax() const {
   DCHECK_EQ(performed_->Max(), 1);
   return duration_;
 }
 
-void StartVarIntervalVar::SetDurationMin(int64 m) {
+void StartVarIntervalVar::SetDurationMin(int64_t m) {
   if (m > duration_) {
     SetPerformed(false);
   }
 }
 
-void StartVarIntervalVar::SetDurationMax(int64 m) {
+void StartVarIntervalVar::SetDurationMax(int64_t m) {
   if (m < duration_) {
     SetPerformed(false);
   }
 }
 
-void StartVarIntervalVar::SetDurationRange(int64 mi, int64 ma) {
+void StartVarIntervalVar::SetDurationRange(int64_t mi, int64_t ma) {
   if (mi > duration_ || ma < duration_ || mi > ma) {
     SetPerformed(false);
   }
 }
 
-int64 StartVarIntervalVar::EndMin() const {
+int64_t StartVarIntervalVar::EndMin() const {
   DCHECK_EQ(performed_->Max(), 1);
   return CapAdd(StartMin(), duration_);
 }
 
-int64 StartVarIntervalVar::EndMax() const {
+int64_t StartVarIntervalVar::EndMax() const {
   DCHECK_EQ(performed_->Max(), 1);
   return CapAdd(StartMax(), duration_);
 }
 
-void StartVarIntervalVar::SetEndMin(int64 m) {
+void StartVarIntervalVar::SetEndMin(int64_t m) {
   SetStartMin(CapSub(m, duration_));
 }
 
-void StartVarIntervalVar::SetEndMax(int64 m) {
+void StartVarIntervalVar::SetEndMax(int64_t m) {
   SetStartMax(CapSub(m, duration_));
 }
 
-void StartVarIntervalVar::SetEndRange(int64 mi, int64 ma) {
+void StartVarIntervalVar::SetEndRange(int64_t mi, int64_t ma) {
   SetStartRange(CapSub(mi, duration_), CapSub(ma, duration_));
 }
 
@@ -1598,37 +1626,37 @@ class LinkStartVarIntervalVar : public Constraint {
 
 class FixedInterval : public IntervalVar {
  public:
-  FixedInterval(Solver* const s, int64 start, int64 duration,
+  FixedInterval(Solver* const s, int64_t start, int64_t duration,
                 const std::string& name);
   ~FixedInterval() override {}
 
-  int64 StartMin() const override { return start_; }
-  int64 StartMax() const override { return start_; }
-  void SetStartMin(int64 m) override;
-  void SetStartMax(int64 m) override;
-  void SetStartRange(int64 mi, int64 ma) override;
-  int64 OldStartMin() const override { return start_; }
-  int64 OldStartMax() const override { return start_; }
+  int64_t StartMin() const override { return start_; }
+  int64_t StartMax() const override { return start_; }
+  void SetStartMin(int64_t m) override;
+  void SetStartMax(int64_t m) override;
+  void SetStartRange(int64_t mi, int64_t ma) override;
+  int64_t OldStartMin() const override { return start_; }
+  int64_t OldStartMax() const override { return start_; }
   void WhenStartRange(Demon* const d) override {}
   void WhenStartBound(Demon* const d) override {}
 
-  int64 DurationMin() const override { return duration_; }
-  int64 DurationMax() const override { return duration_; }
-  void SetDurationMin(int64 m) override;
-  void SetDurationMax(int64 m) override;
-  void SetDurationRange(int64 mi, int64 ma) override;
-  int64 OldDurationMin() const override { return duration_; }
-  int64 OldDurationMax() const override { return duration_; }
+  int64_t DurationMin() const override { return duration_; }
+  int64_t DurationMax() const override { return duration_; }
+  void SetDurationMin(int64_t m) override;
+  void SetDurationMax(int64_t m) override;
+  void SetDurationRange(int64_t mi, int64_t ma) override;
+  int64_t OldDurationMin() const override { return duration_; }
+  int64_t OldDurationMax() const override { return duration_; }
   void WhenDurationRange(Demon* const d) override {}
   void WhenDurationBound(Demon* const d) override {}
 
-  int64 EndMin() const override { return start_ + duration_; }
-  int64 EndMax() const override { return start_ + duration_; }
-  void SetEndMin(int64 m) override;
-  void SetEndMax(int64 m) override;
-  void SetEndRange(int64 mi, int64 ma) override;
-  int64 OldEndMin() const override { return start_ + duration_; }
-  int64 OldEndMax() const override { return start_ + duration_; }
+  int64_t EndMin() const override { return start_ + duration_; }
+  int64_t EndMax() const override { return start_ + duration_; }
+  void SetEndMin(int64_t m) override;
+  void SetEndMax(int64_t m) override;
+  void SetEndRange(int64_t mi, int64_t ma) override;
+  int64_t OldEndMin() const override { return start_ + duration_; }
+  int64_t OldEndMax() const override { return start_ + duration_; }
   void WhenEndRange(Demon* const d) override {}
   void WhenEndBound(Demon* const d) override {}
 
@@ -1649,72 +1677,72 @@ class FixedInterval : public IntervalVar {
     return solver()->MakeIntConst(start_ + duration_);
   }
   IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return StartExpr();
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return DurationExpr();
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override { return EndExpr(); }
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override { return EndExpr(); }
 
  private:
-  const int64 start_;
-  const int64 duration_;
+  const int64_t start_;
+  const int64_t duration_;
 };
 
-FixedInterval::FixedInterval(Solver* const s, int64 start, int64 duration,
+FixedInterval::FixedInterval(Solver* const s, int64_t start, int64_t duration,
                              const std::string& name)
     : IntervalVar(s, name), start_(start), duration_(duration) {}
 
-void FixedInterval::SetStartMin(int64 m) {
+void FixedInterval::SetStartMin(int64_t m) {
   if (m > start_) {
     solver()->Fail();
   }
 }
 
-void FixedInterval::SetStartMax(int64 m) {
+void FixedInterval::SetStartMax(int64_t m) {
   if (m < start_) {
     solver()->Fail();
   }
 }
 
-void FixedInterval::SetStartRange(int64 mi, int64 ma) {
+void FixedInterval::SetStartRange(int64_t mi, int64_t ma) {
   if (mi > start_ || ma < start_) {
     solver()->Fail();
   }
 }
 
-void FixedInterval::SetDurationMin(int64 m) {
+void FixedInterval::SetDurationMin(int64_t m) {
   if (m > duration_) {
     solver()->Fail();
   }
 }
 
-void FixedInterval::SetDurationMax(int64 m) {
+void FixedInterval::SetDurationMax(int64_t m) {
   if (m < duration_) {
     solver()->Fail();
   }
 }
 
-void FixedInterval::SetEndMin(int64 m) {
+void FixedInterval::SetEndMin(int64_t m) {
   if (m > start_ + duration_) {
     solver()->Fail();
   }
 }
 
-void FixedInterval::SetEndMax(int64 m) {
+void FixedInterval::SetEndMax(int64_t m) {
   if (m < start_ + duration_) {
     solver()->Fail();
   }
 }
 
-void FixedInterval::SetEndRange(int64 mi, int64 ma) {
+void FixedInterval::SetEndRange(int64_t mi, int64_t ma) {
   if (mi > start_ + duration_ || ma < start_ + duration_) {
     solver()->Fail();
   }
 }
 
-void FixedInterval::SetDurationRange(int64 mi, int64 ma) {
+void FixedInterval::SetDurationRange(int64_t mi, int64_t ma) {
   if (mi > duration_ || ma < duration_) {
     solver()->Fail();
   }
@@ -1743,9 +1771,10 @@ std::string FixedInterval::DebugString() const {
 
 class VariableDurationIntervalVar : public BaseIntervalVar {
  public:
-  VariableDurationIntervalVar(Solver* const s, int64 start_min, int64 start_max,
-                              int64 duration_min, int64 duration_max,
-                              int64 end_min, int64 end_max, bool optional,
+  VariableDurationIntervalVar(Solver* const s, int64_t start_min,
+                              int64_t start_max, int64_t duration_min,
+                              int64_t duration_max, int64_t end_min,
+                              int64_t end_max, bool optional,
                               const std::string& name)
       : BaseIntervalVar(s, name),
         start_(s, this, std::max(start_min, CapSub(end_min, duration_max)),
@@ -1758,41 +1787,41 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
 
   ~VariableDurationIntervalVar() override {}
 
-  int64 StartMin() const override {
+  int64_t StartMin() const override {
     CHECK_EQ(performed_.Max(), 1);
     return start_.Min();
   }
 
-  int64 StartMax() const override {
+  int64_t StartMax() const override {
     CHECK_EQ(performed_.Max(), 1);
     return start_.Max();
   }
 
-  void SetStartMin(int64 m) override {
+  void SetStartMin(int64_t m) override {
     if (performed_.Max() == 1) {
       start_.SetMin(m);
     }
   }
 
-  void SetStartMax(int64 m) override {
+  void SetStartMax(int64_t m) override {
     if (performed_.Max() == 1) {
       start_.SetMax(m);
     }
   }
 
-  void SetStartRange(int64 mi, int64 ma) override {
+  void SetStartRange(int64_t mi, int64_t ma) override {
     if (performed_.Max() == 1) {
       start_.SetRange(mi, ma);
     }
   }
 
-  int64 OldStartMin() const override {
+  int64_t OldStartMin() const override {
     CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return start_.OldMin();
   }
 
-  int64 OldStartMax() const override {
+  int64_t OldStartMax() const override {
     CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return start_.OldMax();
@@ -1810,41 +1839,41 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
     }
   }
 
-  int64 DurationMin() const override {
+  int64_t DurationMin() const override {
     CHECK_EQ(performed_.Max(), 1);
     return duration_.Min();
   }
 
-  int64 DurationMax() const override {
+  int64_t DurationMax() const override {
     CHECK_EQ(performed_.Max(), 1);
     return duration_.Max();
   }
 
-  void SetDurationMin(int64 m) override {
+  void SetDurationMin(int64_t m) override {
     if (performed_.Max() == 1) {
       duration_.SetMin(m);
     }
   }
 
-  void SetDurationMax(int64 m) override {
+  void SetDurationMax(int64_t m) override {
     if (performed_.Max() == 1) {
       duration_.SetMax(m);
     }
   }
 
-  void SetDurationRange(int64 mi, int64 ma) override {
+  void SetDurationRange(int64_t mi, int64_t ma) override {
     if (performed_.Max() == 1) {
       duration_.SetRange(mi, ma);
     }
   }
 
-  int64 OldDurationMin() const override {
+  int64_t OldDurationMin() const override {
     CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return duration_.OldMin();
   }
 
-  int64 OldDurationMax() const override {
+  int64_t OldDurationMax() const override {
     CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return duration_.OldMax();
@@ -1862,41 +1891,41 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
     }
   }
 
-  int64 EndMin() const override {
+  int64_t EndMin() const override {
     CHECK_EQ(performed_.Max(), 1);
     return end_.Min();
   }
 
-  int64 EndMax() const override {
+  int64_t EndMax() const override {
     CHECK_EQ(performed_.Max(), 1);
     return end_.Max();
   }
 
-  void SetEndMin(int64 m) override {
+  void SetEndMin(int64_t m) override {
     if (performed_.Max() == 1) {
       end_.SetMin(m);
     }
   }
 
-  void SetEndMax(int64 m) override {
+  void SetEndMax(int64_t m) override {
     if (performed_.Max() == 1) {
       end_.SetMax(m);
     }
   }
 
-  void SetEndRange(int64 mi, int64 ma) override {
+  void SetEndRange(int64_t mi, int64_t ma) override {
     if (performed_.Max() == 1) {
       end_.SetRange(mi, ma);
     }
   }
 
-  int64 OldEndMin() const override {
+  int64_t OldEndMin() const override {
     CHECK_EQ(performed_.Max(), 1);
     DCHECK(in_process_);
     return end_.OldMin();
   }
 
-  int64 OldEndMax() const override {
+  int64_t OldEndMax() const override {
     CHECK_EQ(performed_.Max(), 1);
     DCHECK(in_process_);
     return end_.OldMax();
@@ -1985,13 +2014,13 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   IntExpr* DurationExpr() override { return &duration_; }
   IntExpr* EndExpr() override { return &end_; }
   IntExpr* PerformedExpr() override { return &performed_; }
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return BuildSafeStartExpr(this, unperformed_value);
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return BuildSafeDurationExpr(this, unperformed_value);
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override {
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
     return BuildSafeEndExpr(this, unperformed_value);
   }
 
@@ -2023,43 +2052,47 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
 
 class FixedDurationSyncedIntervalVar : public IntervalVar {
  public:
-  FixedDurationSyncedIntervalVar(IntervalVar* const t, int64 duration,
-                                 int64 offset, const std::string& name)
+  FixedDurationSyncedIntervalVar(IntervalVar* const t, int64_t duration,
+                                 int64_t offset, const std::string& name)
       : IntervalVar(t->solver(), name),
         t_(t),
         duration_(duration),
         offset_(offset) {}
   ~FixedDurationSyncedIntervalVar() override {}
-  int64 DurationMin() const override { return duration_; }
-  int64 DurationMax() const override { return duration_; }
-  void SetDurationMin(int64 m) override {
+  int64_t DurationMin() const override { return duration_; }
+  int64_t DurationMax() const override { return duration_; }
+  void SetDurationMin(int64_t m) override {
     if (m > duration_) {
       solver()->Fail();
     }
   }
-  void SetDurationMax(int64 m) override {
+  void SetDurationMax(int64_t m) override {
     if (m < duration_) {
       solver()->Fail();
     }
   }
-  void SetDurationRange(int64 mi, int64 ma) override {
+  void SetDurationRange(int64_t mi, int64_t ma) override {
     if (mi > duration_ || ma < duration_ || mi > ma) {
       solver()->Fail();
     }
   }
-  int64 OldDurationMin() const override { return duration_; }
-  int64 OldDurationMax() const override { return duration_; }
+  int64_t OldDurationMin() const override { return duration_; }
+  int64_t OldDurationMax() const override { return duration_; }
   void WhenDurationRange(Demon* const d) override {}
   void WhenDurationBound(Demon* const d) override {}
-  int64 EndMin() const override { return CapAdd(StartMin(), duration_); }
-  int64 EndMax() const override { return CapAdd(StartMax(), duration_); }
-  void SetEndMin(int64 m) override { SetStartMin(CapSub(m, duration_)); }
-  void SetEndMax(int64 m) override { SetStartMax(CapSub(m, duration_)); }
-  void SetEndRange(int64 mi, int64 ma) override {
+  int64_t EndMin() const override { return CapAdd(StartMin(), duration_); }
+  int64_t EndMax() const override { return CapAdd(StartMax(), duration_); }
+  void SetEndMin(int64_t m) override { SetStartMin(CapSub(m, duration_)); }
+  void SetEndMax(int64_t m) override { SetStartMax(CapSub(m, duration_)); }
+  void SetEndRange(int64_t mi, int64_t ma) override {
     SetStartRange(CapSub(mi, duration_), CapSub(ma, duration_));
   }
-  int64 OldEndMin() const override { return CapAdd(OldStartMin(), duration_); }
-  int64 OldEndMax() const override { return CapAdd(OldStartMax(), duration_); }
+  int64_t OldEndMin() const override {
+    return CapAdd(OldStartMin(), duration_);
+  }
+  int64_t OldEndMax() const override {
+    return CapAdd(OldStartMax(), duration_);
+  }
   void WhenEndRange(Demon* const d) override { WhenStartRange(d); }
   void WhenEndBound(Demon* const d) override { WhenStartBound(d); }
   bool MustBePerformed() const override { return t_->MustBePerformed(); }
@@ -2072,8 +2105,8 @@ class FixedDurationSyncedIntervalVar : public IntervalVar {
 
  protected:
   IntervalVar* const t_;
-  const int64 duration_;
-  const int64 offset_;
+  const int64_t duration_;
+  const int64_t offset_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(FixedDurationSyncedIntervalVar);
@@ -2085,24 +2118,24 @@ class FixedDurationIntervalVarStartSyncedOnStart
     : public FixedDurationSyncedIntervalVar {
  public:
   FixedDurationIntervalVarStartSyncedOnStart(IntervalVar* const t,
-                                             int64 duration, int64 offset)
+                                             int64_t duration, int64_t offset)
       : FixedDurationSyncedIntervalVar(
             t, duration, offset,
             absl::StrFormat(
                 "IntervalStartSyncedOnStart(%s, duration = %d, offset = %d)",
                 t->name(), duration, offset)) {}
   ~FixedDurationIntervalVarStartSyncedOnStart() override {}
-  int64 StartMin() const override { return CapAdd(t_->StartMin(), offset_); }
-  int64 StartMax() const override { return CapAdd(t_->StartMax(), offset_); }
-  void SetStartMin(int64 m) override { t_->SetStartMin(CapSub(m, offset_)); }
-  void SetStartMax(int64 m) override { t_->SetStartMax(CapSub(m, offset_)); }
-  void SetStartRange(int64 mi, int64 ma) override {
+  int64_t StartMin() const override { return CapAdd(t_->StartMin(), offset_); }
+  int64_t StartMax() const override { return CapAdd(t_->StartMax(), offset_); }
+  void SetStartMin(int64_t m) override { t_->SetStartMin(CapSub(m, offset_)); }
+  void SetStartMax(int64_t m) override { t_->SetStartMax(CapSub(m, offset_)); }
+  void SetStartRange(int64_t mi, int64_t ma) override {
     t_->SetStartRange(CapSub(mi, offset_), CapSub(ma, offset_));
   }
-  int64 OldStartMin() const override {
+  int64_t OldStartMin() const override {
     return CapAdd(t_->OldStartMin(), offset_);
   }
-  int64 OldStartMax() const override {
+  int64_t OldStartMax() const override {
     return CapAdd(t_->OldStartMax(), offset_);
   }
   void WhenStartRange(Demon* const d) override { t_->WhenStartRange(d); }
@@ -2118,13 +2151,13 @@ class FixedDurationIntervalVarStartSyncedOnStart
   // These methods create expressions encapsulating the start, end
   // and duration of the interval var. If the interval var is
   // unperformed, they will return the unperformed_value.
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return BuildSafeStartExpr(t_, unperformed_value);
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return BuildSafeDurationExpr(t_, unperformed_value);
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override {
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
     return BuildSafeEndExpr(t_, unperformed_value);
   }
   void Accept(ModelVisitor* const visitor) const override {
@@ -2143,25 +2176,25 @@ class FixedDurationIntervalVarStartSyncedOnStart
 class FixedDurationIntervalVarStartSyncedOnEnd
     : public FixedDurationSyncedIntervalVar {
  public:
-  FixedDurationIntervalVarStartSyncedOnEnd(IntervalVar* const t, int64 duration,
-                                           int64 offset)
+  FixedDurationIntervalVarStartSyncedOnEnd(IntervalVar* const t,
+                                           int64_t duration, int64_t offset)
       : FixedDurationSyncedIntervalVar(
             t, duration, offset,
             absl::StrFormat(
                 "IntervalStartSyncedOnEnd(%s, duration = %d, offset = %d)",
                 t->name(), duration, offset)) {}
   ~FixedDurationIntervalVarStartSyncedOnEnd() override {}
-  int64 StartMin() const override { return CapAdd(t_->EndMin(), offset_); }
-  int64 StartMax() const override { return CapAdd(t_->EndMax(), offset_); }
-  void SetStartMin(int64 m) override { t_->SetEndMin(CapSub(m, offset_)); }
-  void SetStartMax(int64 m) override { t_->SetEndMax(CapSub(m, offset_)); }
-  void SetStartRange(int64 mi, int64 ma) override {
+  int64_t StartMin() const override { return CapAdd(t_->EndMin(), offset_); }
+  int64_t StartMax() const override { return CapAdd(t_->EndMax(), offset_); }
+  void SetStartMin(int64_t m) override { t_->SetEndMin(CapSub(m, offset_)); }
+  void SetStartMax(int64_t m) override { t_->SetEndMax(CapSub(m, offset_)); }
+  void SetStartRange(int64_t mi, int64_t ma) override {
     t_->SetEndRange(CapSub(mi, offset_), CapSub(ma, offset_));
   }
-  int64 OldStartMin() const override {
+  int64_t OldStartMin() const override {
     return CapAdd(t_->OldEndMin(), offset_);
   }
-  int64 OldStartMax() const override {
+  int64_t OldStartMax() const override {
     return CapAdd(t_->OldEndMax(), offset_);
   }
   void WhenStartRange(Demon* const d) override { t_->WhenEndRange(d); }
@@ -2177,13 +2210,13 @@ class FixedDurationIntervalVarStartSyncedOnEnd
   // These methods create expressions encapsulating the start, end
   // and duration of the interval var. If the interval var is
   // unperformed, they will return the unperformed_value.
-  IntExpr* SafeStartExpr(int64 unperformed_value) override {
+  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
     return BuildSafeStartExpr(t_, unperformed_value);
   }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
+  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
     return BuildSafeDurationExpr(t_, unperformed_value);
   }
-  IntExpr* SafeEndExpr(int64 unperformed_value) override {
+  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
     return BuildSafeEndExpr(t_, unperformed_value);
   }
 
@@ -2231,14 +2264,15 @@ void IntervalVar::WhenAnything(Demon* const d) {
   WhenPerformedBound(d);
 }
 
-IntervalVar* Solver::MakeFixedInterval(int64 start, int64 duration,
+IntervalVar* Solver::MakeFixedInterval(int64_t start, int64_t duration,
                                        const std::string& name) {
   return RevAlloc(new FixedInterval(this, start, duration, name));
 }
 
-IntervalVar* Solver::MakeFixedDurationIntervalVar(int64 start_min,
-                                                  int64 start_max,
-                                                  int64 duration, bool optional,
+IntervalVar* Solver::MakeFixedDurationIntervalVar(int64_t start_min,
+                                                  int64_t start_max,
+                                                  int64_t duration,
+                                                  bool optional,
                                                   const std::string& name) {
   if (start_min == start_max && !optional) {
     return MakeFixedInterval(start_min, duration, name);
@@ -2251,8 +2285,8 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(int64 start_min,
 }
 
 void Solver::MakeFixedDurationIntervalVarArray(
-    int count, int64 start_min, int64 start_max, int64 duration, bool optional,
-    const std::string& name, std::vector<IntervalVar*>* array) {
+    int count, int64_t start_min, int64_t start_max, int64_t duration,
+    bool optional, const std::string& name, std::vector<IntervalVar*>* array) {
   CHECK_GT(count, 0);
   CHECK(array != nullptr);
   array->clear();
@@ -2264,7 +2298,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 }
 
 IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* const start_variable,
-                                                  int64 duration,
+                                                  int64_t duration,
                                                   const std::string& name) {
   CHECK(start_variable != nullptr);
   CHECK_GE(duration, 0);
@@ -2275,7 +2309,7 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* const start_variable,
 // Creates an interval var with a fixed duration, and performed var.
 // The duration must be greater than 0.
 IntervalVar* Solver::MakeFixedDurationIntervalVar(
-    IntVar* const start_variable, int64 duration,
+    IntVar* const start_variable, int64_t duration,
     IntVar* const performed_variable, const std::string& name) {
   CHECK(start_variable != nullptr);
   CHECK(performed_variable != nullptr);
@@ -2296,7 +2330,7 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(
 }
 
 void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables, int64 duration,
+    const std::vector<IntVar*>& start_variables, int64_t duration,
     const std::string& name, std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   array->clear();
@@ -2311,7 +2345,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 // the corresponding start variables.
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
-    const std::vector<int64>& durations, const std::string& name,
+    const std::vector<int64_t>& durations, const std::string& name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   CHECK_EQ(start_variables.size(), durations.size());
@@ -2353,7 +2387,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
-    const std::vector<int64>& durations,
+    const std::vector<int64_t>& durations,
     const std::vector<IntVar*>& performed_variables, const std::string& name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
@@ -2367,18 +2401,19 @@ void Solver::MakeFixedDurationIntervalVarArray(
 
 // Variable Duration Interval Var
 
-IntervalVar* Solver::MakeIntervalVar(int64 start_min, int64 start_max,
-                                     int64 duration_min, int64 duration_max,
-                                     int64 end_min, int64 end_max,
+IntervalVar* Solver::MakeIntervalVar(int64_t start_min, int64_t start_max,
+                                     int64_t duration_min, int64_t duration_max,
+                                     int64_t end_min, int64_t end_max,
                                      bool optional, const std::string& name) {
   return RegisterIntervalVar(RevAlloc(new VariableDurationIntervalVar(
       this, start_min, start_max, duration_min, duration_max, end_min, end_max,
       optional, name)));
 }
 
-void Solver::MakeIntervalVarArray(int count, int64 start_min, int64 start_max,
-                                  int64 duration_min, int64 duration_max,
-                                  int64 end_min, int64 end_max, bool optional,
+void Solver::MakeIntervalVarArray(int count, int64_t start_min,
+                                  int64_t start_max, int64_t duration_min,
+                                  int64_t duration_max, int64_t end_min,
+                                  int64_t end_max, bool optional,
                                   const std::string& name,
                                   std::vector<IntervalVar*>* const array) {
   CHECK_GT(count, 0);
@@ -2394,28 +2429,28 @@ void Solver::MakeIntervalVarArray(int count, int64 start_min, int64 start_max,
 
 // Synced Interval Vars
 IntervalVar* Solver::MakeFixedDurationStartSyncedOnStartIntervalVar(
-    IntervalVar* const interval_var, int64 duration, int64 offset) {
+    IntervalVar* const interval_var, int64_t duration, int64_t offset) {
   return RegisterIntervalVar(
       RevAlloc(new FixedDurationIntervalVarStartSyncedOnStart(
           interval_var, duration, offset)));
 }
 
 IntervalVar* Solver::MakeFixedDurationStartSyncedOnEndIntervalVar(
-    IntervalVar* const interval_var, int64 duration, int64 offset) {
+    IntervalVar* const interval_var, int64_t duration, int64_t offset) {
   return RegisterIntervalVar(
       RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(interval_var,
                                                             duration, offset)));
 }
 
 IntervalVar* Solver::MakeFixedDurationEndSyncedOnStartIntervalVar(
-    IntervalVar* const interval_var, int64 duration, int64 offset) {
+    IntervalVar* const interval_var, int64_t duration, int64_t offset) {
   return RegisterIntervalVar(
       RevAlloc(new FixedDurationIntervalVarStartSyncedOnStart(
           interval_var, duration, CapSub(offset, duration))));
 }
 
 IntervalVar* Solver::MakeFixedDurationEndSyncedOnEndIntervalVar(
-    IntervalVar* const interval_var, int64 duration, int64 offset) {
+    IntervalVar* const interval_var, int64_t duration, int64_t offset) {
   return RegisterIntervalVar(
       RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(
           interval_var, duration, CapSub(offset, duration))));

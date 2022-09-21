@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,10 @@
 
 #include "ortools/constraint_solver/routing_flags.h"
 
+#include <cstdint>
+#include <limits>
 #include <map>
+#include <string>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -75,10 +78,11 @@ ABSL_FLAG(bool, routing_generic_tabu_search, false,
           "Routing: use tabu search based on a list of values.");
 
 // Search limits
-ABSL_FLAG(int64, routing_solution_limit, kint64max,
+ABSL_FLAG(int64_t, routing_solution_limit, std::numeric_limits<int64_t>::max(),
           "Routing: number of solutions limit.");
-ABSL_FLAG(int64, routing_time_limit, kint64max, "Routing: time limit in ms.");
-ABSL_FLAG(int64, routing_lns_time_limit, 100,
+ABSL_FLAG(int64_t, routing_time_limit, std::numeric_limits<int64_t>::max(),
+          "Routing: time limit in ms.");
+ABSL_FLAG(int64_t, routing_lns_time_limit, 100,
           "Routing: time limit in ms for LNS sub-decisionbuilder.");
 
 // Search control
@@ -117,7 +121,7 @@ ABSL_FLAG(bool, routing_use_light_propagation, true,
 
 // Cache settings.
 ABSL_FLAG(bool, routing_cache_callbacks, false, "Cache callback calls.");
-ABSL_FLAG(int64, routing_max_cache_size, 1000,
+ABSL_FLAG(int64_t, routing_max_cache_size, 1000,
           "Maximum cache size when callback caching is on.");
 
 // Misc
@@ -285,12 +289,14 @@ void SetSearchLimitsFromFlags(RoutingSearchParameters* parameters) {
   parameters->set_number_of_solutions_to_collect(
       absl::GetFlag(FLAGS_routing_number_of_solutions_to_collect));
   parameters->set_solution_limit(absl::GetFlag(FLAGS_routing_solution_limit));
-  if (absl::GetFlag(FLAGS_routing_time_limit) != kint64max) {
+  if (absl::GetFlag(FLAGS_routing_time_limit) !=
+      std::numeric_limits<int64_t>::max()) {
     CHECK_OK(util_time::EncodeGoogleApiProto(
         absl::Milliseconds(absl::GetFlag(FLAGS_routing_time_limit)),
         parameters->mutable_time_limit()));
   }
-  if (absl::GetFlag(FLAGS_routing_lns_time_limit) != kint64max) {
+  if (absl::GetFlag(FLAGS_routing_lns_time_limit) !=
+      std::numeric_limits<int64_t>::max()) {
     CHECK_OK(util_time::EncodeGoogleApiProto(
         absl::Milliseconds(absl::GetFlag(FLAGS_routing_lns_time_limit)),
         parameters->mutable_lns_time_limit()));
@@ -307,9 +313,10 @@ void SetMiscellaneousParametersFromFlags(RoutingSearchParameters* parameters) {
       FLAGS_routing_relocate_expensive_chain_num_arcs_to_consider));
   parameters->set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
   parameters->set_heuristic_close_nodes_lns_num_nodes(5);
-  parameters->set_continuous_scheduling_solver(RoutingSearchParameters::GLOP);
+  parameters->set_continuous_scheduling_solver(
+      RoutingSearchParameters::SCHEDULING_GLOP);
   parameters->set_mixed_integer_scheduling_solver(
-      RoutingSearchParameters::CP_SAT);
+      RoutingSearchParameters::SCHEDULING_CP_SAT);
 }
 
 RoutingSearchParameters BuildSearchParametersFromFlags() {

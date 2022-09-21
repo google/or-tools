@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -892,99 +892,6 @@ template <typename In1, typename In2>
 bool SortedContainersHaveIntersection(const In1& in1, const In2& in2) {
   return SortedContainersHaveIntersection(
       in1, in2, gtl::stl_util_internal::TransparentLess());
-}
-
-// An std::allocator<T> subclass that keeps count of the active bytes allocated
-// by this class of allocators. This allocator is thread compatible
-// (go/thread-compatible). This should only be used in situations where you can
-// ensure that only a single thread performs allocation and deallocation.
-//
-// Example:
-//   using MyAlloc = STLCountingAllocator<std::string>;
-//   int64 bytes = 0;
-//   std::vector<std::string, MyAlloc> v(MyAlloc(&bytes));
-//   v.push_back("hi");
-//   LOG(INFO) << "Bytes allocated " << bytes;
-//
-template <typename T, typename Alloc = std::allocator<T>>
-class STLCountingAllocator : public Alloc {
- public:
-  using Base = Alloc;
-  using pointer = typename Alloc::pointer;
-  using size_type = typename Alloc::size_type;
-
-  STLCountingAllocator() : bytes_used_(nullptr) {}
-  explicit STLCountingAllocator(int64* b) : bytes_used_(b) {}
-
-  // Constructor used for rebinding
-  template <typename U, typename B>
-  STLCountingAllocator(const STLCountingAllocator<U, B>& x)
-      : Alloc(x), bytes_used_(x.bytes_used()) {}
-
-  pointer allocate(size_type n,
-                   std::allocator<void>::const_pointer hint = nullptr) {
-    assert(bytes_used_ != nullptr);
-    *bytes_used_ += n * sizeof(T);
-    return Alloc::allocate(n, hint);
-  }
-
-  void deallocate(pointer p, size_type n) {
-    Alloc::deallocate(p, n);
-    assert(bytes_used_ != nullptr);
-    *bytes_used_ -= n * sizeof(T);
-  }
-
-  // Rebind allows an std::allocator<T> to be used for a different type
-  template <typename U>
-  class rebind {
-    using OtherA = typename Alloc::template rebind<U>::other;
-
-   public:
-    using other = STLCountingAllocator<U, OtherA>;
-  };
-
-  int64* bytes_used() const { return bytes_used_; }
-
- private:
-  int64* bytes_used_;
-};
-
-template <typename A>
-class STLCountingAllocator<void, A> : public A {
- public:
-  STLCountingAllocator() : bytes_used_(nullptr) {}
-  explicit STLCountingAllocator(int64* b) : bytes_used_(b) {}
-
-  // Constructor used for rebinding
-  template <typename U, typename B>
-  STLCountingAllocator(const STLCountingAllocator<U, B>& x)
-      : A(x), bytes_used_(x.bytes_used()) {}
-
-  template <typename U>
-  class rebind {
-    using OtherA = typename A::template rebind<U>::other;
-
-   public:
-    using other = STLCountingAllocator<U, OtherA>;
-  };
-  int64* bytes_used() const { return bytes_used_; }
-
- private:
-  int64* bytes_used_;
-};
-
-template <typename T, typename A>
-bool operator==(const STLCountingAllocator<T, A>& a,
-                const STLCountingAllocator<T, A>& b) {
-  using Base = typename STLCountingAllocator<T, A>::Base;
-  return static_cast<const Base&>(a) == static_cast<const Base&>(b) &&
-         a.bytes_used() == b.bytes_used();
-}
-
-template <typename T, typename A>
-bool operator!=(const STLCountingAllocator<T, A>& a,
-                const STLCountingAllocator<T, A>& b) {
-  return !(a == b);
 }
 
 }  // namespace gtl

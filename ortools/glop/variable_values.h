@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,7 +14,12 @@
 #ifndef OR_TOOLS_GLOP_VARIABLE_VALUES_H_
 #define OR_TOOLS_GLOP_VARIABLE_VALUES_H_
 
+#include <string>
+#include <vector>
+
 #include "ortools/glop/basis_representation.h"
+#include "ortools/glop/dual_edge_norms.h"
+#include "ortools/glop/pricing.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
@@ -43,7 +48,9 @@ class VariableValues {
                  const CompactSparseMatrix& matrix,
                  const RowToColMapping& basis,
                  const VariablesInfo& variables_info,
-                 const BasisFactorization& basis_factorization);
+                 const BasisFactorization& basis_factorization,
+                 DualEdgeNorms* dual_edge_norms,
+                 DynamicMaximum<RowIndex>* dual_prices);
 
   // Getters for the variable values.
   const Fractional Get(ColIndex col) const { return variable_values_[col]; }
@@ -54,8 +61,17 @@ class VariableValues {
   // function and it is up to the client to call RecomputeBasicVariableValues().
   void SetNonBasicVariableValueFromStatus(ColIndex col);
 
-  // Calls SetNonBasicVariableValueFromStatus() on all non-basic variables.
-  void ResetAllNonBasicVariableValues();
+  // Calls SetNonBasicVariableValueFromStatus() on all non-basic variables. We
+  // accept any size for free_initial_values, for columns col that are valid
+  // indices, free_initial_values[col] will be used instead of 0.0 for a free
+  // column. If free_initial_values is empty, then we have the default behavior
+  // of starting at zero for all FREE variables.
+  //
+  // Note(user): It is okay to always use the same value to reset a FREE
+  // variable because as soon as a FREE variable value is modified, this
+  // variable shouldn't be FREE anymore. It will either move to a bound or enter
+  // the basis, these are the only options.
+  void ResetAllNonBasicVariableValues(const DenseRow& free_initial_values);
 
   // Recomputes the value of the basic variables from the non-basic ones knowing
   // that the linear program matrix A times the variable values vector must be
@@ -86,21 +102,20 @@ class VariableValues {
   // updates the basic variable values and infeasibility statuses if
   // update_basic_variables is true. The update is done in an incremental way
   // and is thus more efficient than calling afterwards
-  // RecomputeBasicVariableValues() and ResetPrimalInfeasibilityInformation().
+  // RecomputeBasicVariableValues() and RecomputeDualPrices().
   void UpdateGivenNonBasicVariables(const std::vector<ColIndex>& cols_to_update,
                                     bool update_basic_variables);
 
   // Functions dealing with the primal-infeasible basic variables. A basic
   // variable is primal-infeasible if its infeasibility is stricly greater than
-  // the primal feasibility tolerance.
+  // the primal feasibility tolerance. These are exactly the dual "prices" and
+  // are just used during the dual simplex.
   //
-  // This information is only available after a call to
-  // ResetPrimalInfeasibilityInformation() and has to be kept in sync by calling
-  // UpdatePrimalInfeasibilityInformation() for the rows that changed values.
-  const DenseBitColumn& GetPrimalInfeasiblePositions() const;
-  const DenseColumn& GetPrimalSquaredInfeasibilities() const;
-  void ResetPrimalInfeasibilityInformation();
-  void UpdatePrimalInfeasibilityInformation(const std::vector<RowIndex>& rows);
+  // This information is only available after a call to RecomputeDualPrices()
+  // and has to be kept in sync by calling UpdateDualPrices() for the rows that
+  // changed values.
+  void RecomputeDualPrices();
+  void UpdateDualPrices(const std::vector<RowIndex>& row);
 
   // The primal phase I objective is related to the primal infeasible
   // information above. The cost of a basic column will be 1 if the variable is
@@ -137,12 +152,12 @@ class VariableValues {
   const VariablesInfo& variables_info_;
   const BasisFactorization& basis_factorization_;
 
+  // The dual prices are a normalized version of the primal infeasibility.
+  DualEdgeNorms* dual_edge_norms_;
+  DynamicMaximum<RowIndex>* dual_prices_;
+
   // Values of the variables.
   DenseRow variable_values_;
-
-  // Members used for the basic primal-infeasible variables.
-  DenseColumn primal_squared_infeasibilities_;
-  DenseBitColumn primal_infeasible_positions_;
 
   mutable StatsGroup stats_;
   mutable ScatteredColumn scratchpad_;

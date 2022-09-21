@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 
 // This library solves 0-1 one-dimensional knapsack problems with fractional
 // profits and weights using the branch and bound algorithm. Note that
-// algorithms/knapsack_solver uses 'int64' for the profits and the weights.
+// algorithms/knapsack_solver uses 'int64_t' for the profits and the weights.
 // TODO(user): Merge this code with algorithms/knapsack_solver.
 //
 // Given n items, each with a profit and a weight and a knapsack of
@@ -44,6 +44,8 @@
 #ifndef OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_FOR_CUTS_H_
 #define OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_FOR_CUTS_H_
 
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -55,8 +57,8 @@
 
 namespace operations_research {
 
-// ----- KnapsackAssignementForCuts -----
-// KnapsackAssignementForCuts is a small struct used to pair an item with
+// ----- KnapsackAssignmentForCuts -----
+// KnapsackAssignmentForCuts is a small struct used to pair an item with
 // its assignment. It is mainly used for search nodes and updates.
 struct KnapsackAssignmentForCuts {
   KnapsackAssignmentForCuts(int item_id, bool is_in)
@@ -94,7 +96,7 @@ using KnapsackItemForCutsPtr = std::unique_ptr<KnapsackItemForCuts>;
 // KnapsackSearchNodeForCuts is a class used to describe a decision in the
 // decision search tree.
 // The node is defined by a pointer to the parent search node and an
-// assignment (see KnapsackAssignementForCuts).
+// assignment (see KnapsackAssignmentForCuts).
 // As the current state is not explicitly stored in a search node, one should
 // go through the search tree to incrementally build a partial solution from
 // a previous search node.
@@ -294,7 +296,7 @@ class KnapsackPropagatorForCuts {
 // ----- KnapsackSolverForCuts -----
 // KnapsackSolverForCuts is the one-dimensional knapsack solver class.
 // In the current implementation, the next item to assign is given by the
-// master propagator. Using SetMasterPropagator allows changing the default
+// primary propagator. Using SetPrimaryPropagator allows changing the default
 // (propagator of the first dimension).
 class KnapsackSolverForCuts {
  public:
@@ -332,7 +334,7 @@ class KnapsackSolverForCuts {
   }
 
   // Stops the knapsack solver after processing 'node_limit' nodes.
-  void set_node_limit(const int64 node_limit) { node_limit_ = node_limit; }
+  void set_node_limit(const int64_t node_limit) { node_limit_ = node_limit; }
 
   // Solves the problem and returns the profit of the best solution found.
   double Solve(TimeLimit* time_limit, bool* is_solution_optimal);
@@ -376,7 +378,7 @@ class KnapsackSolverForCuts {
       std::numeric_limits<double>::infinity();
   double solution_upper_bound_threshold_ =
       -std::numeric_limits<double>::infinity();
-  int64 node_limit_ = kint64max;
+  int64_t node_limit_ = std::numeric_limits<int64_t>::max();
 };
 // TODO(user) : Add reduction algorithm.
 

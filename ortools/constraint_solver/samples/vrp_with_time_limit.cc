@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 // [START program]
 // [START import]
+#include <algorithm>
+#include <cstdint>
+#include <sstream>
 #include <vector>
 
 #include "google/protobuf/duration.pb.h"
@@ -30,18 +33,18 @@ namespace operations_research {
 // [START solution_printer]
 void PrintSolution(const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
-  int64 max_route_distance{0};
+  int64_t max_route_distance{0};
   for (int vehicle_id = 0; vehicle_id < manager.num_vehicles(); ++vehicle_id) {
-    int64 index = routing.Start(vehicle_id);
+    int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64 route_distance{0};
+    int64_t route_distance{0};
     std::stringstream route;
     while (routing.IsEnd(index) == false) {
       route << manager.IndexToNode(index).value() << " -> ";
-      int64 previous_index = index;
+      int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
       route_distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-          previous_index, index, int64{vehicle_id});
+          previous_index, index, int64_t{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << route_distance << "m";
@@ -74,7 +77,7 @@ void VrpGlobalSpan() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [](int64 from_index, int64 to_index) -> int64 { return 1; });
+      [](int64_t from_index, int64_t to_index) -> int64_t { return 1; });
   // [END transit_callback]
 
   // Define cost of each arc.
@@ -102,7 +105,7 @@ void VrpGlobalSpan() {
   search_parameters.set_local_search_metaheuristic(
       LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
   search_parameters.set_log_search(true);
-  search_parameters.mutable_time_limit()->set_seconds(10);
+  search_parameters.mutable_time_limit()->set_seconds(5);
   // [END parameters]
 
   // Solve the problem.

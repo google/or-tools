@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Check dependencies
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREAD_PREFER_PTHREAD_FLAG TRUE)
@@ -48,10 +61,14 @@ if(NOT TARGET protobuf::libprotobuf)
   message(FATAL_ERROR "Target protobuf::libprotobuf not available.")
 endif()
 
-if(USE_SCIP)
-  if(NOT BUILD_SCIP)
-    find_package(SCIP REQUIRED)
+if(BUILD_LP_PARSER)
+  if(NOT BUILD_re2)
+    find_package(re2 REQUIRED)
   endif()
+  if(NOT TARGET re2::re2)
+    message(FATAL_ERROR "Target re2::re2 not available.")
+  endif()
+  set(RE2_DEPS re2::re2)
 endif()
 
 if(USE_COINOR)
@@ -78,6 +95,32 @@ if(USE_COINOR)
   set(COINOR_DEPS Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp)
 endif()
 
+if(USE_GLPK)
+  if(NOT BUILD_GLPK)
+    find_package(GLPK REQUIRED)
+  endif()
+endif()
+
+if(USE_PDLP)
+  if(NOT BUILD_PDLP)
+    find_package(PDLP REQUIRED)
+  else()
+    if(NOT BUILD_Eigen3)
+      find_package(Eigen3 REQUIRED)
+    endif()
+    if(NOT TARGET Eigen3::Eigen)
+      message(FATAL_ERROR "Target Eigen3::Eigen not available.")
+    endif()
+    set(PDLP_DEPS Eigen3::Eigen)
+  endif()
+endif()
+
+if(USE_SCIP)
+  if(NOT BUILD_SCIP)
+    find_package(SCIP REQUIRED)
+  endif()
+endif()
+
 # Check optional Dependencies
 if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
@@ -86,3 +129,11 @@ endif()
 if(USE_XPRESS)
   find_package(XPRESS REQUIRED)
 endif()
+
+# Check language Dependencies
+if(BUILD_PYTHON)
+  if(NOT BUILD_pybind11)
+    find_package(pybind11 REQUIRED)
+  endif()
+endif()
+

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <memory>
 #include <vector>
 
 #include "ortools/base/logging.h"
@@ -34,7 +35,11 @@ void AssignmentMip() {
   // Solver
   // [START solver]
   // Create the mip solver with the SCIP backend.
-  MPSolver solver("assignment_mip", MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  if (!solver) {
+    LOG(WARNING) << "SCIP solver unavailable.";
+    return;
+  }
   // [END solver]
 
   // Variables
@@ -45,7 +50,7 @@ void AssignmentMip() {
       num_workers, std::vector<const MPVariable*>(num_tasks));
   for (int i = 0; i < num_workers; ++i) {
     for (int j = 0; j < num_tasks; ++j) {
-      x[i][j] = solver.MakeIntVar(0, 1, "");
+      x[i][j] = solver->MakeIntVar(0, 1, "");
     }
   }
   // [END variables]
@@ -58,7 +63,7 @@ void AssignmentMip() {
     for (int j = 0; j < num_tasks; ++j) {
       worker_sum += x[i][j];
     }
-    solver.MakeRowConstraint(worker_sum <= 1.0);
+    solver->MakeRowConstraint(worker_sum <= 1.0);
   }
   // Each task is assigned to exactly one worker.
   for (int j = 0; j < num_tasks; ++j) {
@@ -66,13 +71,13 @@ void AssignmentMip() {
     for (int i = 0; i < num_workers; ++i) {
       task_sum += x[i][j];
     }
-    solver.MakeRowConstraint(task_sum == 1.0);
+    solver->MakeRowConstraint(task_sum == 1.0);
   }
   // [END constraints]
 
   // Objective.
   // [START objective]
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective* const objective = solver->MutableObjective();
   for (int i = 0; i < num_workers; ++i) {
     for (int j = 0; j < num_tasks; ++j) {
       objective->SetCoefficient(x[i][j], costs[i][j]);
@@ -83,13 +88,13 @@ void AssignmentMip() {
 
   // Solve
   // [START solve]
-  const MPSolver::ResultStatus result_status = solver.Solve();
+  const MPSolver::ResultStatus result_status = solver->Solve();
   // [END solve]
 
   // Print solution.
   // [START print_solution]
   // Check that the problem has a feasible solution.
-  if (result_status != MPSolver::OPTIMAL &
+  if (result_status != MPSolver::OPTIMAL &&
       result_status != MPSolver::FEASIBLE) {
     LOG(FATAL) << "No solution found.";
   }

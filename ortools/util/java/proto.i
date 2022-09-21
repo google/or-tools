@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -91,7 +91,7 @@
 %typemap(out) CppProtoType {
   const long size = $1.ByteSizeLong();
   std::unique_ptr<char[]> buf(new char[size]);
-  $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
+  $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buf.get()));
   $result = JNIUtil::MakeJByteArray(jenv, buf.get(), size);
 }
 %enddef // PROTO2_RETURN

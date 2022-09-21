@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,11 @@
 
 #include "ortools/glop/markowitz.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <limits>
+#include <string>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "ortools/lp_data/lp_types.h"
@@ -72,8 +76,8 @@ Status Markowitz::ComputeRowAndColumnPermutation(
     // matrix becomes dense (i.e. when its density factor is above a certain
     // threshold). The residual size is 'end_index - index' and the
     // density can either be computed exactly or estimated from min_markowitz.
-    const int64 min_markowitz = FindPivot(*row_perm, *col_perm, &pivot_row,
-                                          &pivot_col, &pivot_coefficient);
+    const int64_t min_markowitz = FindPivot(*row_perm, *col_perm, &pivot_row,
+                                            &pivot_col, &pivot_coefficient);
 
     // Singular matrix? No pivot will be selected if a column has no entries. If
     // a column has some entries, then we are sure that a pivot will be selected
@@ -133,10 +137,15 @@ Status Markowitz::ComputeRowAndColumnPermutation(
     ++index;
   }
 
+  // To get a better deterministic time, we add a factor that depend on the
+  // final number of entries in the result.
+  num_fp_operations_ += 10 * lower_.num_entries().value();
+  num_fp_operations_ += 10 * upper_.num_entries().value();
+
   stats_.pivots_without_fill_in_ratio.Add(
-      1.0 * stats_num_pivots_without_fill_in / end_index);
+      1.0 * stats_num_pivots_without_fill_in / num_rows.value());
   stats_.degree_two_pivot_columns.Add(1.0 * stats_degree_two_pivot_columns /
-                                      end_index);
+                                      num_rows.value());
   return Status::OK();
 }
 
@@ -167,6 +176,7 @@ void Markowitz::Clear() {
   residual_matrix_non_zero_.Clear();
   col_by_degree_.Clear();
   examined_col_.clear();
+  num_fp_operations_ = 0;
   is_col_by_degree_initialized_ = false;
 }
 
@@ -211,7 +221,7 @@ void Markowitz::ExtractSingletonColumns(
     }
   }
   stats_.basis_singleton_column_ratio.Add(static_cast<double>(*index) /
-                                          num_cols.value());
+                                          basis_matrix.num_rows().value());
 }
 
 bool Markowitz::IsResidualSingletonColumn(const ColumnView& column,
@@ -243,8 +253,8 @@ void Markowitz::ExtractResidualSingletonColumns(
     upper_.AddTriangularColumn(column, row);
     ++(*index);
   }
-  stats_.basis_residual_singleton_column_ratio.Add(static_cast<double>(*index) /
-                                                   num_cols.value());
+  stats_.basis_residual_singleton_column_ratio.Add(
+      static_cast<double>(*index) / basis_matrix.num_rows().value());
 }
 
 const SparseColumn& Markowitz::ComputeColumn(const RowPermutation& row_perm,
@@ -271,6 +281,8 @@ const SparseColumn& Markowitz::ComputeColumn(const RowPermutation& row_perm,
     lower_.PermutedLowerSparseSolve(input, row_perm, lower_column,
                                     permuted_upper_.mutable_column(col));
     permuted_lower_column_needs_solve_[col] = false;
+    num_fp_operations_ +=
+        lower_.NumFpOperationsInLastPermutedLowerSparseSolve();
     return *lower_column;
   }
 
@@ -285,20 +297,23 @@ const SparseColumn& Markowitz::ComputeColumn(const RowPermutation& row_perm,
   // appropriate ColumnView in basis_matrix_.
   // TODO(user): add PopulateFromColumnView if it is useful elsewhere.
   if (first_time) {
-    lower_column->Reserve(basis_matrix_->column(col).num_entries());
+    const EntryIndex num_entries = basis_matrix_->column(col).num_entries();
+    num_fp_operations_ += num_entries.value();
+    lower_column->Reserve(num_entries);
     for (const auto e : basis_matrix_->column(col)) {
       lower_column->SetCoefficient(e.row(), e.coefficient());
     }
   }
+  num_fp_operations_ += lower_column->num_entries().value();
   lower_column->MoveTaggedEntriesTo(row_perm,
                                     permuted_upper_.mutable_column(col));
   return *lower_column;
 }
 
-int64 Markowitz::FindPivot(const RowPermutation& row_perm,
-                           const ColumnPermutation& col_perm,
-                           RowIndex* pivot_row, ColIndex* pivot_col,
-                           Fractional* pivot_coefficient) {
+int64_t Markowitz::FindPivot(const RowPermutation& row_perm,
+                             const ColumnPermutation& col_perm,
+                             RowIndex* pivot_row, ColIndex* pivot_col,
+                             Fractional* pivot_coefficient) {
   SCOPED_TIME_STAT(&stats_);
 
   // Fast track for singleton columns.
@@ -378,9 +393,9 @@ int64 Markowitz::FindPivot(const RowPermutation& row_perm,
     }
   }
 
-  // Note(user): we use int64 since this is a product of two ints, moreover
+  // Note(user): we use int64_t since this is a product of two ints, moreover
   // the ints should be relatively small, so that should be fine for a while.
-  int64 min_markowitz_number = std::numeric_limits<int64>::max();
+  int64_t min_markowitz_number = std::numeric_limits<int64_t>::max();
   examined_col_.clear();
   const int num_columns_to_examine = parameters_.markowitz_zlatev_parameter();
   const Fractional threshold = parameters_.lu_factorization_pivot_threshold();
@@ -400,7 +415,7 @@ int64 Markowitz::FindPivot(const RowPermutation& row_perm,
     // to eventually have a better pivot.
     //
     // Todo(user): keep the minimum row degree to have a better bound?
-    const int64 markowitz_lower_bound = col_degree - 1;
+    const int64_t markowitz_lower_bound = col_degree - 1;
     if (min_markowitz_number < markowitz_lower_bound) break;
 
     // TODO(user): col_degree (which is the same as column.num_entries()) is
@@ -427,7 +442,7 @@ int64 Markowitz::FindPivot(const RowPermutation& row_perm,
       if (magnitude < skip_threshold) continue;
 
       const int row_degree = residual_matrix_non_zero_.RowDegree(e.row());
-      const int64 markowitz_number = (col_degree - 1) * (row_degree - 1);
+      const int64_t markowitz_number = (col_degree - 1) * (row_degree - 1);
       DCHECK_NE(markowitz_number, 0);
       if (markowitz_number < min_markowitz_number ||
           ((markowitz_number == min_markowitz_number) &&
@@ -538,6 +553,10 @@ void Markowitz::UpdateResidualMatrix(RowIndex pivot_row, ColIndex pivot_col) {
   RemoveColumnFromResidualMatrix(pivot_row, pivot_col);
 }
 
+double Markowitz::DeterministicTimeOfLastFactorization() const {
+  return DeterministicTimeForFpOperations(num_fp_operations_);
+}
+
 void MatrixNonZeroPattern::Clear() {
   row_degree_.clear();
   col_degree_.clear();
@@ -596,7 +615,7 @@ void MatrixNonZeroPattern::InitializeFromMatrixSubset(
   // Initialize row_non_zero_.
   for (ColIndex col(0); col < num_cols; ++col) {
     if (col_perm[col] != kInvalidCol) continue;
-    int32 col_degree = 0;
+    int32_t col_degree = 0;
     for (const SparseColumn::Entry e : basis_matrix.column(col)) {
       const RowIndex row = e.row();
       if (row_perm[row] == kInvalidRow) {
@@ -615,11 +634,11 @@ void MatrixNonZeroPattern::AddEntry(RowIndex row, ColIndex col) {
   row_non_zero_[row].push_back(col);
 }
 
-int32 MatrixNonZeroPattern::DecreaseColDegree(ColIndex col) {
+int32_t MatrixNonZeroPattern::DecreaseColDegree(ColIndex col) {
   return --col_degree_[col];
 }
 
-int32 MatrixNonZeroPattern::DecreaseRowDegree(RowIndex row) {
+int32_t MatrixNonZeroPattern::DecreaseRowDegree(RowIndex row) {
   return --row_degree_[row];
 }
 
@@ -801,15 +820,18 @@ void ColumnPriorityQueue::Reset(int max_degree, ColIndex num_cols) {
   col_degree_.assign(num_cols, 0);
   col_index_.assign(num_cols, -1);
   col_by_degree_.resize(max_degree + 1);
-  min_degree_ = num_cols.value();
+  min_degree_ = max_degree + 1;
 }
 
-void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32 degree) {
+void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32_t degree) {
   DCHECK_GE(degree, 0);
   DCHECK_LT(degree, col_by_degree_.size());
-  const int32 old_degree = col_degree_[col];
+  DCHECK_GE(col, 0);
+  DCHECK_LT(col, col_degree_.size());
+
+  const int32_t old_degree = col_degree_[col];
   if (degree != old_degree) {
-    const int32 old_index = col_index_[col];
+    const int32_t old_index = col_index_[col];
     if (old_index != -1) {
       col_by_degree_[old_degree][old_index] = col_by_degree_[old_degree].back();
       col_index_[col_by_degree_[old_degree].back()] = old_index;
@@ -828,9 +850,12 @@ void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32 degree) {
 }
 
 ColIndex ColumnPriorityQueue::Pop() {
-  while (col_by_degree_[min_degree_].empty()) {
-    min_degree_++;
+  DCHECK_GE(min_degree_, 0);
+  DCHECK_LE(min_degree_, col_by_degree_.size());
+  while (true) {
     if (min_degree_ == col_by_degree_.size()) return kInvalidCol;
+    if (!col_by_degree_[min_degree_].empty()) break;
+    min_degree_++;
   }
   const ColIndex col = col_by_degree_[min_degree_].back();
   col_by_degree_[min_degree_].pop_back();

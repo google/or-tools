@@ -1,4 +1,0 @@
-var classoperations__research_1_1_local_search_statistics___local_search_operator_statistics_default_type_internal =
-[
-    [ "_instance", "classoperations__research_1_1_local_search_statistics___local_search_operator_statistics_default_type_internal.html#a9dadfb2a7bf42294a5011e813b46a1e5", null ]
-];

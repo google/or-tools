@@ -1,0 +1,23 @@
+name: mips Toolchain
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  mips:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        targets: [
+          [mips64],
+          [mips64el]
+        ]
+      fail-fast: false
+    env:
+      TARGET: ${{ matrix.targets[0] }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: make --directory=cmake ${TARGET}_build
+    - name: Test
+      run: make --directory=cmake ${TARGET}_test

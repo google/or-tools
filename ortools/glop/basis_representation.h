@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 #ifndef OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
 #define OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
+
+#include <string>
+#include <vector>
 
 #include "ortools/base/logging.h"
 #include "ortools/glop/lu_factorization.h"
@@ -188,6 +191,18 @@ class BasisFactorization {
   // could not be factorized.
   ABSL_MUST_USE_RESULT Status Initialize();
 
+  // This mainly forward the call to LuFactorization::ComputeInitialBasis().
+  //
+  // Note that once this is called, one would need to call Initialize() to
+  // actually create the factorization. The only side effect of this is to
+  // update the deterministic time.
+  //
+  // TODO(user): This "double" factorization is a bit inefficient, and we should
+  // probably Initialize() right away the factorization with the new basis, but
+  // more code is needed for that. It is also not that easy also because we want
+  // to permute all the added slack first.
+  RowToColMapping ComputeInitialBasis(const std::vector<ColIndex>& candidates);
+
   // Return the number of rows in the basis.
   RowIndex GetNumberOfRows() const { return compact_matrix_.num_rows(); }
 
@@ -210,7 +225,7 @@ class BasisFactorization {
                                      RowIndex leaving_variable_row,
                                      const ScatteredColumn& direction);
 
-  // Left solves the system y.B = rhs, where y initialy contains rhs.
+  // Left solves the system y.B = rhs, where y initially contains rhs.
   void LeftSolve(ScatteredRow* y) const;
 
   // Left solves the system y.B = e_j, where e_j has only 1 non-zero
@@ -282,6 +297,9 @@ class BasisFactorization {
   double DeterministicTime() const;
 
  private:
+  // Called by ForceRefactorization() or Refactorize() or Initialize().
+  Status ComputeFactorization();
+
   // Return true if the submatrix of matrix_ given by basis_ is exactly the
   // identity (without permutation).
   bool IsIdentityBasis() const;
@@ -359,6 +377,7 @@ class BasisFactorization {
   LuFactorization lu_factorization_;
 
   // mutable because the Solve() functions are const but need to update this.
+  double last_factorization_deterministic_time_ = 0.0;
   mutable double deterministic_time_;
 
   DISALLOW_COPY_AND_ASSIGN(BasisFactorization);

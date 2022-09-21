@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,29 @@
 // limitations under the License.
 
 #include "ortools/sat/implied_bounds.h"
+
+#include <stdint.h>
+
+#include <algorithm>
+#include <limits>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_cat.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -42,9 +65,10 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     return;
   }
 
-  // We skip any IntegerLiteral refering to a variable with only two consecutive
-  // possible values. This is because, once shifted this will already be a
-  // variable in [0, 1] so we shouldn't gain much by substituing it.
+  // We skip any IntegerLiteral referring to a variable with only two
+  // consecutive possible values. This is because, once shifted this will
+  // already be a variable in [0, 1] so we shouldn't gain much by substituing
+  // it.
   if (integer_trail_->LevelZeroLowerBound(var) + 1 >=
       integer_trail_->LevelZeroUpperBound(var)) {
     return;
@@ -59,6 +83,17 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     } else {
       // No new info.
       return;
+    }
+  }
+
+  // Checks if the variable is now fixed.
+  if (integer_trail_->LevelZeroUpperBound(var) == integer_literal.bound) {
+    AddLiteralImpliesVarEqValue(literal, var, integer_literal.bound);
+  } else {
+    const auto it =
+        bounds_.find(std::make_pair(literal.Index(), NegationOf(var)));
+    if (it != bounds_.end() && it->second == -integer_literal.bound) {
+      AddLiteralImpliesVarEqValue(literal, var, integer_literal.bound);
     }
   }
 
@@ -166,6 +201,16 @@ const std::vector<ImpliedBoundEntry>& ImpliedBounds::GetImpliedBounds(
   return ref;
 }
 
+void ImpliedBounds::AddLiteralImpliesVarEqValue(Literal literal,
+                                                IntegerVariable var,
+                                                IntegerValue value) {
+  if (!VariableIsPositive(var)) {
+    var = NegationOf(var);
+    value = -value;
+  }
+  literal_to_var_to_value_[literal.Index()][var] = value;
+}
+
 void ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
   if (!parameters_.use_implied_bounds()) return;
 
@@ -175,6 +220,27 @@ void ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
   for (const IntegerLiteral lit : tmp_integer_literals_) {
     Add(first_decision, lit);
   }
+}
+
+void ImpliedBounds::AddElementEncoding(
+    IntegerVariable var, const std::vector<ValueLiteralPair>& encoding,
+    int exactly_one_index) {
+  var_to_index_to_element_encodings_[var][exactly_one_index] = encoding;
+}
+
+const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+ImpliedBounds::GetElementEncodings(IntegerVariable var) {
+  const auto& it = var_to_index_to_element_encodings_.find(var);
+  if (it == var_to_index_to_element_encodings_.end()) {
+    return empty_element_encoding_;
+  } else {
+    return it->second;
+  }
+}
+
+const std::vector<IntegerVariable>& ImpliedBounds::GetElementEncodedVariables()
+    const {
+  return element_encoded_variables_;
 }
 
 bool ImpliedBounds::EnqueueNewDeductions() {
@@ -189,6 +255,264 @@ bool ImpliedBounds::EnqueueNewDeductions() {
   }
   new_level_zero_bounds_.SparseClearAll();
   return sat_solver_->FinishPropagation();
+}
+
+std::string EncodingStr(const std::vector<ValueLiteralPair>& enc) {
+  std::string result;
+  for (const ValueLiteralPair& term : enc) {
+    absl::StrAppend(&result, term.literal.DebugString(), ":",
+                    term.value.value(), " ");
+  }
+  return result;
+}
+
+// If a variable has a size of 2, it is most likely reduced to an affine
+// expression pointing to a variable with domain [0,1] or [-1,0].
+// If the original variable has been removed from the model, then there are no
+// implied values from any exactly_one constraint to its domain.
+// If we are lucky, one of the literal of the exactly_one constraints, and its
+// negation are used to encode the Boolean variable of the affine.
+//
+// This may fail if exactly_one(l0, l1, l2, l3); l0 and l1 imply x = 0,
+// l2 and l3 imply x = 1. In that case, one must look at the binary
+// implications to find the missing link.
+//
+// TODO(user): Consider removing this once we are more complete in our implied
+// bounds repository. Because if we can reconcile an encoding, then any of the
+// literal in the at most one should imply a value on the boolean view use in
+// the size2 affine.
+std::vector<LiteralValueValue> TryToReconcileEncodings(
+    const AffineExpression& size2_affine, const AffineExpression& affine,
+    const std::vector<ValueLiteralPair>& affine_var_encoding,
+    bool put_affine_left_in_result, Model* model) {
+  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  IntegerVariable binary = size2_affine.var;
+  std::vector<LiteralValueValue> terms;
+  if (!integer_encoder->VariableIsFullyEncoded(binary)) return terms;
+  const std::vector<ValueLiteralPair>& size2_enc =
+      integer_encoder->FullDomainEncoding(binary);
+
+  // TODO(user): I am not sure how this can happen since size2_affine is
+  // supposed to be non-fixed. Maybe we miss some propag. Investigate.
+  if (size2_enc.size() != 2) return terms;
+
+  Literal lit0 = size2_enc[0].literal;
+  IntegerValue value0 = size2_affine.ValueAt(size2_enc[0].value);
+  Literal lit1 = size2_enc[1].literal;
+  IntegerValue value1 = size2_affine.ValueAt(size2_enc[1].value);
+
+  for (const auto& [unused, candidate_literal] : affine_var_encoding) {
+    if (candidate_literal == lit1) {
+      std::swap(lit0, lit1);
+      std::swap(value0, value1);
+    }
+    if (candidate_literal != lit0) continue;
+
+    // Build the decomposition.
+    for (const auto& [value, literal] : affine_var_encoding) {
+      const IntegerValue size_2_value = literal == lit0 ? value0 : value1;
+      const IntegerValue affine_value = affine.ValueAt(value);
+      if (put_affine_left_in_result) {
+        terms.push_back({literal, affine_value, size_2_value});
+      } else {
+        terms.push_back({literal, size_2_value, affine_value});
+      }
+    }
+    break;
+  }
+
+  return terms;
+}
+
+// Specialized case of encoding reconciliation when both variables have a domain
+// of size of 2.
+std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
+    const AffineExpression& left, const AffineExpression& right, Model* model) {
+  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  std::vector<LiteralValueValue> terms;
+  if (!integer_encoder->VariableIsFullyEncoded(left.var) ||
+      !integer_encoder->VariableIsFullyEncoded(right.var)) {
+    return terms;
+  }
+  const std::vector<ValueLiteralPair>& left_enc =
+      integer_encoder->FullDomainEncoding(left.var);
+  const std::vector<ValueLiteralPair>& right_enc =
+      integer_encoder->FullDomainEncoding(right.var);
+  if (left_enc.size() != 2 || right_enc.size() != 2) {
+    VLOG(3) << "encodings are not fully propagated";
+    return terms;
+  }
+
+  const Literal left_lit0 = left_enc[0].literal;
+  const IntegerValue left_value0 = left.ValueAt(left_enc[0].value);
+  const Literal left_lit1 = left_enc[1].literal;
+  const IntegerValue left_value1 = left.ValueAt(left_enc[1].value);
+
+  const Literal right_lit0 = right_enc[0].literal;
+  const IntegerValue right_value0 = right.ValueAt(right_enc[0].value);
+  const Literal right_lit1 = right_enc[1].literal;
+  const IntegerValue right_value1 = right.ValueAt(right_enc[1].value);
+
+  if (left_lit0 == right_lit0 || left_lit0 == right_lit1.Negated()) {
+    terms.push_back({left_lit0, left_value0, right_value0});
+    terms.push_back({left_lit0.Negated(), left_value1, right_value1});
+  } else if (left_lit0 == right_lit1 || left_lit0 == right_lit0.Negated()) {
+    terms.push_back({left_lit0, left_value0, right_value1});
+    terms.push_back({left_lit0.Negated(), left_value1, right_value0});
+  } else if (left_lit1 == right_lit1 || left_lit1 == right_lit0.Negated()) {
+    terms.push_back({left_lit1.Negated(), left_value0, right_value0});
+    terms.push_back({left_lit1, left_value1, right_value1});
+  } else if (left_lit1 == right_lit0 || left_lit1 == right_lit1.Negated()) {
+    terms.push_back({left_lit1.Negated(), left_value0, right_value1});
+    terms.push_back({left_lit1, left_value1, right_value0});
+  } else {
+    VLOG(3) << "Complex size 2 encoding case, need to scan exactly_ones";
+  }
+
+  return terms;
+}
+
+std::vector<LiteralValueValue> TryToDecomposeProduct(
+    const AffineExpression& left, const AffineExpression& right, Model* model) {
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  if (integer_trail->IsFixed(left) || integer_trail->IsFixed(right)) return {};
+
+  // Fill in the encodings for the left variable.
+  ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+      left_encodings = implied_bounds->GetElementEncodings(left.var);
+
+  // Fill in the encodings for the right variable.
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+      right_encodings = implied_bounds->GetElementEncodings(right.var);
+
+  std::vector<int> compatible_keys;
+  for (const auto& [index, encoding] : left_encodings) {
+    if (right_encodings.contains(index)) {
+      compatible_keys.push_back(index);
+    }
+  }
+
+  if (compatible_keys.empty()) {
+    if (integer_trail->InitialVariableDomain(left.var).Size() == 2) {
+      for (const auto& [index, right_encoding] : right_encodings) {
+        const std::vector<LiteralValueValue> result =
+            TryToReconcileEncodings(left, right, right_encoding,
+                                    /*put_affine_left_in_result=*/false, model);
+        if (!result.empty()) {
+          return result;
+        }
+      }
+    }
+    if (integer_trail->InitialVariableDomain(right.var).Size() == 2) {
+      for (const auto& [index, left_encoding] : left_encodings) {
+        const std::vector<LiteralValueValue> result =
+            TryToReconcileEncodings(right, left, left_encoding,
+                                    /*put_affine_left_in_result=*/true, model);
+        if (!result.empty()) {
+          return result;
+        }
+      }
+    }
+    if (integer_trail->InitialVariableDomain(left.var).Size() == 2 &&
+        integer_trail->InitialVariableDomain(right.var).Size() == 2) {
+      const std::vector<LiteralValueValue> result =
+          TryToReconcileSize2Encodings(left, right, model);
+      if (!result.empty()) {
+        return result;
+      }
+    }
+    return {};
+  }
+
+  if (compatible_keys.size() > 1) {
+    VLOG(1) << "More than one exactly_one involved in the encoding of the two "
+               "variables";
+  }
+
+  // Select the compatible encoding with the minimum index.
+  const int min_index =
+      *std::min_element(compatible_keys.begin(), compatible_keys.end());
+  // By construction, encodings follow the order of literals in the exactly_one
+  // constraint.
+  const std::vector<ValueLiteralPair>& left_encoding =
+      left_encodings.at(min_index);
+  const std::vector<ValueLiteralPair>& right_encoding =
+      right_encodings.at(min_index);
+  DCHECK_EQ(left_encoding.size(), right_encoding.size());
+
+  // Build decomposition of the product.
+  std::vector<LiteralValueValue> terms;
+  for (int i = 0; i < left_encoding.size(); ++i) {
+    const Literal literal = left_encoding[i].literal;
+    DCHECK_EQ(literal, right_encoding[i].literal);
+    terms.push_back({literal, left.ValueAt(left_encoding[i].value),
+                     right.ValueAt(right_encoding[i].value)});
+  }
+
+  return terms;
+}
+
+// TODO(user): Experiment with x * x where constants = 0, x is
+// fully encoded, and the domain is small.
+bool DetectLinearEncodingOfProducts(const AffineExpression& left,
+                                    const AffineExpression& right, Model* model,
+                                    LinearConstraintBuilder* builder) {
+  DCHECK(builder != nullptr);
+  builder->Clear();
+
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  if (integer_trail->IsFixed(left)) {
+    if (integer_trail->IsFixed(right)) {
+      builder->AddConstant(integer_trail->FixedValue(left) *
+                           integer_trail->FixedValue(right));
+      return true;
+    }
+    builder->AddTerm(right, integer_trail->FixedValue(left));
+    return true;
+  }
+
+  if (integer_trail->IsFixed(right)) {
+    builder->AddTerm(left, integer_trail->FixedValue(right));
+    return true;
+  }
+
+  // Linearization is possible if both left and right have the same Boolean
+  // variable.
+  if (PositiveVariable(left.var) == PositiveVariable(right.var) &&
+      integer_trail->LowerBound(PositiveVariable(left.var)) == 0 &&
+      integer_trail->UpperBound(PositiveVariable(left.var)) == 1) {
+    const IntegerValue left_coeff =
+        VariableIsPositive(left.var) ? left.coeff : -left.coeff;
+    const IntegerValue right_coeff =
+        VariableIsPositive(right.var) ? right.coeff : -right.coeff;
+    builder->AddTerm(PositiveVariable(left.var),
+                     left_coeff * right_coeff + left.constant * right_coeff +
+                         left_coeff * right.constant);
+    builder->AddConstant(left.constant * right.constant);
+    return true;
+  }
+
+  const std::vector<LiteralValueValue> product =
+      TryToDecomposeProduct(left, right, model);
+  if (product.empty()) return false;
+
+  IntegerValue min_coefficient = kMaxIntegerValue;
+  for (const LiteralValueValue& term : product) {
+    min_coefficient =
+        std::min(min_coefficient, term.left_value * term.right_value);
+  }
+
+  for (const LiteralValueValue& term : product) {
+    const IntegerValue coefficient =
+        term.left_value * term.right_value - min_coefficient;
+    if (coefficient == 0) continue;
+    if (!builder->AddLiteralTerm(term.literal, coefficient)) {
+      return false;
+    }
+  }
+  builder->AddConstant(min_coefficient);
+  return true;
 }
 
 }  // namespace sat

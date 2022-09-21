@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -37,6 +37,8 @@ public final class VrpWithTimeLimit {
   /// @brief Print the solution.
   static void printSolution(
       RoutingIndexManager manager, RoutingModel routing, Assignment solution) {
+    // Solution cost.
+    logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
     long maxRouteDistance = 0;
     for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
@@ -106,7 +108,7 @@ public final class VrpWithTimeLimit {
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
             .setLogSearch(true)
-            .setTimeLimit(Duration.newBuilder().setSeconds(10).build())
+            .setTimeLimit(Duration.newBuilder().setSeconds(5).build())
             .build();
     // [END parameters]
 

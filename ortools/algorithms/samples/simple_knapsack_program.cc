@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,12 @@
 
 // [START program]
 // [START import]
+#include <algorithm>
+#include <cstdint>
 #include <iterator>
 #include <numeric>
 #include <sstream>
+#include <vector>
 
 #include "ortools/algorithms/knapsack_solver.h"
 // [END import]
@@ -30,16 +33,16 @@ void SimpleKnapsackProgram() {
   // [END solver]
 
   // [START data]
-  std::vector<std::vector<int64>> weights = {{565, 406, 194, 130, 435, 367, 230,
-                                              315, 393, 125, 670, 892, 600, 293,
-                                              712, 147, 421, 255}};
-  std::vector<int64> capacities = {850};
-  std::vector<int64> values = weights[0];
+  std::vector<std::vector<int64_t>> weights = {{565, 406, 194, 130, 435, 367,
+                                                230, 315, 393, 125, 670, 892,
+                                                600, 293, 712, 147, 421, 255}};
+  std::vector<int64_t> capacities = {850};
+  std::vector<int64_t> values = weights[0];
   // [END data]
 
   // [START solve]
   solver.Init(values, weights, capacities);
-  int64 computed_value = solver.Solve();
+  int64_t computed_value = solver.Solve();
   // [END solve]
 
   // [START print_solution]
@@ -52,7 +55,7 @@ void SimpleKnapsackProgram() {
             std::ostream_iterator<int>(packed_items_ss, ", "));
   packed_items_ss << packed_items.back();
 
-  std::vector<int64> packed_weights;
+  std::vector<int64_t> packed_weights;
   packed_weights.reserve(packed_items.size());
   for (const auto& it : packed_items) {
     packed_weights.push_back(weights[0][it]);
@@ -62,8 +65,8 @@ void SimpleKnapsackProgram() {
             std::ostream_iterator<int>(packed_weights_ss, ", "));
   packed_weights_ss << packed_weights.back();
 
-  int64 total_weights =
-      std::accumulate(packed_weights.begin(), packed_weights.end(), int64{0});
+  int64_t total_weights =
+      std::accumulate(packed_weights.begin(), packed_weights.end(), int64_t{0});
 
   LOG(INFO) << "Total value: " << computed_value;
   LOG(INFO) << "Packed items: {" << packed_items_ss.str() << "}";

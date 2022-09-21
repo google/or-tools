@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,8 +23,8 @@
 //     problem creation are thus not supported.
 //   * gSCIP uses std::numeric_limits<double>::infinity(), rather than SCIPs
 //     infinity (a default value of 1e20). Doubles with absolute value >= 1e20
-//     are automatically converting to std::numeric_limits<double>::infinity()
-//     by gSCIP. Changing the underlying SCIP's infinity is not supported.
+//     but < inf result in an error. Changing the underlying SCIP's infinity is
+//     not supported.
 //   * absl::Status and absl::StatusOr are used to propagate SCIP errors (and on
 //     a best effort basis, also filter out bad input to gSCIP functions).
 //
@@ -49,15 +49,20 @@
 #define OR_TOOLS_GSCIP_GSCIP_H_
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/gscip/gscip.pb.h"
+#include "ortools/gscip/gscip_message_handler.h"  // IWYU pragma: export
 #include "scip/scip.h"
 #include "scip/scip_prob.h"
 #include "scip/type_cons.h"
@@ -102,14 +107,16 @@ struct GScipLinearRange {
 // optimal solution to the problem.
 enum class GScipVarType { kContinuous, kInteger, kImpliedInteger };
 
+struct GScipIndicatorConstraint;
+struct GScipLogicalConstraintData;
 // Some advanced features, defined at the end of the header file.
 struct GScipQuadraticRange;
 struct GScipSOSData;
-struct GScipIndicatorConstraint;
-struct GScipLogicalConstraintData;
 struct GScipVariableOptions;
+
 const GScipVariableOptions& DefaultGScipVariableOptions();
 struct GScipConstraintOptions;
+
 const GScipConstraintOptions& DefaultGScipConstraintOptions();
 using GScipBranchingPriority = absl::flat_hash_map<SCIP_VAR*, int>;
 enum class GScipHintResult;
@@ -137,7 +144,8 @@ class GScip {
   // this will be reflected in the value of GScipResult::gscip_output::status.
   absl::StatusOr<GScipResult> Solve(
       const GScipParameters& params = GScipParameters(),
-      const std::string& legacy_params = "");
+      const std::string& legacy_params = "",
+      GScipMessageHandler message_handler = nullptr);
 
   // ///////////////////////////////////////////////////////////////////////////
   // Basic Model Construction
@@ -224,6 +232,8 @@ class GScip {
   absl::Status SetLinearConstraintLb(SCIP_CONS* constraint, double lb);
   absl::Status SetLinearConstraintUb(SCIP_CONS* constraint, double ub);
   absl::Status SetLinearConstraintCoef(SCIP_CONS* constraint, SCIP_VAR* var,
+                                       double value);
+  absl::Status AddLinearConstraintCoef(SCIP_CONS* constraint, SCIP_VAR* var,
                                        double value);
 
   // Works on all constraint types. Unlike DeleteVariable, no special action is
@@ -314,10 +324,11 @@ class GScip {
   // more useful.
   absl::Status SetBranchingPriority(SCIP_VAR* var, int priority);
 
-  // Doubles with absolute value of at least this value are replaced by this
-  // value before giving them SCIP. SCIP considers values at least this large to
-  // be infinite. When querying gSCIP, if an absolute value exceeds ScipInf, it
-  // is replaced by std::numeric_limits<double>::infinity().
+  // Doubles with absolute value of at least this value are invalid and result
+  // in errors. Floating point actual infinities are replaced by this value in
+  // SCIP calls. SCIP considers values at least this large to be infinite. When
+  // querying gSCIP, if an absolute value exceeds ScipInf, it is replaced by
+  // std::numeric_limits<double>::infinity().
   double ScipInf();
   static constexpr double kDefaultScipInf = 1e20;
 
@@ -349,10 +360,15 @@ class GScip {
   absl::Status SetParams(const GScipParameters& params,
                          const std::string& legacy_params);
   absl::Status FreeTransform();
-  // Clamps d to [-ScipInf(), ScipInf()].
-  double ScipInfClamp(double d);
+
+  // Replaces +/- inf by +/- ScipInf(), fails when |d| is in [ScipInf(), inf).
+  absl::StatusOr<double> ScipInfClamp(double d);
+
   // Returns +/- inf if |d| >= ScipInf(), otherwise returns d.
   double ScipInfUnclamp(double d);
+
+  // Returns an error if |d| >= ScipInf().
+  absl::Status CheckScipFinite(double d);
 
   absl::Status MaybeKeepConstraintAlive(SCIP_CONS* constraint,
                                         const GScipConstraintOptions& options);

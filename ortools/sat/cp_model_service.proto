@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,51 +13,30 @@
 
 syntax = "proto3";
 
-package operations_research.sat;
+package operations_research.sat.v1;
 
-import "google/protobuf/duration.proto";
 import "ortools/sat/cp_model.proto";
+import "ortools/sat/sat_parameters.proto";
 
 option csharp_namespace = "Google.OrTools.Sat";
-option java_package = "com.google.ortools.sat";
+option java_package = "com.google.ortools.sat.v1";
 option java_multiple_files = true;
 option java_outer_classname = "CpModelServiceProto";
 
 // This service enables sending a CpModelProto to a server and getting back
-// the optimal solution or all intermediate solutions of the problem.
-service CpSatSolver {
-  // Single solve, sends a model, expects the optimal solution.
-  rpc SolveProblem(CpSatSolveRequest) returns (CpSatSolveResponse) {}
+// a solution of the problem.
+service CpSolver {
+  // Single solve, sends a model, gets a response.
+  rpc SolveProblem(CpSolverRequest) returns (CpSolverResponse) {
+  }
 }
 
-// The request set to the remote solve service.
-message CpSatSolveRequest {
+// The request sent to the remote solve service.
+message CpSolverRequest {
+  reserved 2;
   // The model to solve.
   CpModelProto model = 1;
 
-  // The number of search workers to use. A value of 0 means the solver will
-  // try do decide upon a meaningful value.
-  int32 search_workers_count = 2;
-
-  // The max time the solver will spend while trying to find the optimal
-  // solution.
-  google.protobuf.Duration time_limit = 3;
-
-  // Extra solver parameters passed as a string.
-  string search_parameters_as_string = 4;
-
-  // If true, the solver internal log will be copied into the 'search_log' field
-  // of the response message.
-  bool log_search_progress = 5;
+  // Solver parameters.
+  SatParameters parameters = 3;
 }
-
-// The response fo the remove solve service.
-message CpSatSolveResponse {
-  // The actual solver response.
-  CpSolverResponse response = 1;
-
-  // If log_search_progress was set in the solve request, this field will be
-  // filled by the internal log of the solver.
-  string search_log = 2;
-}
-

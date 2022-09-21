@@ -1,0 +1,54 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Proto messages specific to Gurobi.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+// Parameters used to initialize the Gurobi solver.
+message GurobiInitializerProto {
+  message ISVKey {
+    string name = 1;
+    string application_name = 2;
+    int32 expiration = 3;
+    string key = 4;
+  }
+
+  // An optional ISV key to use.
+  //
+  // See http://www.gurobi.com/products/licensing-pricing/isv-program.
+  ISVKey isv_key = 1;
+}
+
+// Gurobi specific parameters for solving. See
+//   https://www.gurobi.com/documentation/9.1/refman/parameters.html
+// for a list of possible parameters.
+//
+// Example text proto to set the Barrier Iteration Limit:
+//   parameters : [{name: "BarIterLimit" value: "10}]
+//
+// With Gurobi, the order that parameters are applied can have an impact in rare
+// situations. Parameters are applied in the following order:
+//  * LogToConsole is set from CommonSolveParameters.enable_output.
+//  * Any common parameters not overwritten by GurobiParameters.
+//  * param_values in iteration order (insertion order).
+// We set LogToConsole first because setting other parameters can generate
+// output.
+message GurobiParametersProto {
+  message Parameter {
+    string name = 1;
+    string value = 2;
+  }
+  repeated Parameter parameters = 1;
+}

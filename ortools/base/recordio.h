@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -41,10 +41,10 @@ class RecordWriter {
   bool WriteProtocolMessage(const P& proto) {
     std::string uncompressed_buffer;
     proto.SerializeToString(&uncompressed_buffer);
-    const uint64 uncompressed_size = uncompressed_buffer.size();
+    const uint64_t uncompressed_size = uncompressed_buffer.size();
     const std::string compressed_buffer =
         use_compression_ ? Compress(uncompressed_buffer) : "";
-    const uint64 compressed_size = compressed_buffer.size();
+    const uint64_t compressed_size = compressed_buffer.size();
     if (file_->Write(&kMagicNumber, sizeof(kMagicNumber)) !=
         sizeof(kMagicNumber)) {
       return false;
@@ -89,8 +89,8 @@ class RecordReader {
 
   template <class P>
   bool ReadProtocolMessage(P* const proto) {
-    uint64 usize = 0;
-    uint64 csize = 0;
+    uint64_t usize = 0;
+    uint64_t csize = 0;
     int magic_number = 0;
     if (file_->Read(&magic_number, sizeof(magic_number)) !=
         sizeof(magic_number)) {
@@ -126,8 +126,8 @@ class RecordReader {
   bool Close();
 
  private:
-  void Uncompress(const char* const source, uint64 source_size,
-                  char* const output_buffer, uint64 output_size) const;
+  void Uncompress(const char* const source, uint64_t source_size,
+                  char* const output_buffer, uint64_t output_size) const;
 
   File* const file_;
 };

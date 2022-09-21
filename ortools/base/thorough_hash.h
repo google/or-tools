@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,11 +17,11 @@
 #include "ortools/base/integral_types.h"
 
 namespace operations_research {
-inline uint64 MixTwoUInt64(uint64 fp1, uint64 fp2) {
+inline uint64_t MixTwoUInt64(uint64_t fp1, uint64_t fp2) {
   // Two big prime numbers.
-  const uint64 kMul1 = 0xc6a4a7935bd1e995ULL;
-  const uint64 kMul2 = 0x228876a7198b743ULL;
-  uint64 a = fp1 * kMul1 + fp2 * kMul2;
+  const uint64_t kMul1 = 0xc6a4a7935bd1e995ULL;
+  const uint64_t kMul2 = 0x228876a7198b743ULL;
+  uint64_t a = fp1 * kMul1 + fp2 * kMul2;
   // Note: The following line also makes sure we never return 0 or 1, because we
   // will only add something to 'a' if there are any MSBs (the remaining bits
   // after the shift) being 0, in which case wrapping around would not happen.
@@ -30,17 +30,17 @@ inline uint64 MixTwoUInt64(uint64 fp1, uint64 fp2) {
 
 // This should be better (collision-wise) than the default hash<string>, without
 // being much slower. It never returns 0 or 1.
-inline uint64 ThoroughHash(const char* bytes, size_t len) {
+inline uint64_t ThoroughHash(const char* bytes, size_t len) {
   // Some big prime numer.
-  uint64 fp = 0xa5b85c5e198ed849ULL;
+  uint64_t fp = 0xa5b85c5e198ed849ULL;
   const char* end = bytes + len;
   while (bytes + 8 <= end) {
-    fp = MixTwoUInt64(fp, *(reinterpret_cast<const uint64*>(bytes)));
+    fp = MixTwoUInt64(fp, *(reinterpret_cast<const uint64_t*>(bytes)));
     bytes += 8;
   }
   // Note: we don't care about "consistency" (little or big endian) between
   // the bulk and the suffix of the message.
-  uint64 last_bytes = 0;
+  uint64_t last_bytes = 0;
   while (bytes < end) {
     last_bytes += *bytes;
     last_bytes <<= 8;

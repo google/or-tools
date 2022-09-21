@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,7 @@
 #define GOOGLE_GLOG_DLL_DECL __declspec(dllexport)
 #else
 #define GOOGLE_GLOG_DLL_DECL __declspec(dllimport)
-#endif  // OR_TOOLS_EXPORT
+#endif  // OR_TOOLS_EXPORTS
 #endif  // _MSC_VER && OR_TOOLS_AS_DYNAMIC_LIB
 
 #ifndef GOOGLE_GLOG_DLL_DECL

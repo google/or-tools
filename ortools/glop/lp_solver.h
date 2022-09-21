@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include "ortools/glop/preprocessor.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -117,6 +118,19 @@ class LPSolver {
     return constraint_statuses_;
   }
 
+  // Accessors to information related to unboundedness. A primal ray is returned
+  // for primal unbounded problems and a dual ray is returned for dual unbounded
+  // problems. constraints_dual_ray corresponds to dual multiplier for
+  // constraints and variable_bounds_dual_ray corresponds to dual multipliers
+  // for variable bounds (cf. reduced_costs).
+  const DenseRow& primal_ray() const { return primal_ray_; }
+  const DenseColumn& constraints_dual_ray() const {
+    return constraints_dual_ray_;
+  }
+  const DenseRow& variable_bounds_dual_ray() const {
+    return variable_bounds_dual_ray_;
+  }
+
   // Returns the primal maximum infeasibility of the solution.
   // This indicates by how much the variable and constraint bounds are violated.
   Fractional GetMaximumPrimalInfeasibility() const;
@@ -148,6 +162,13 @@ class LPSolver {
   //
   // TODO(user): Improve the correlation with the running time.
   double DeterministicTime() const;
+
+  // Returns the SolverLogger used during solves.
+  //
+  // Please note that EnableLogging() and SetLogToStdOut() are reset at the
+  // beginning of each solve based on parameters so setting them will have no
+  // effect.
+  SolverLogger& GetSolverLogger();
 
  private:
   // Resizes all the solution vectors to the given sizes.
@@ -241,6 +262,8 @@ class LPSolver {
   // LinearProgram& input.
   LinearProgram current_linear_program_;
 
+  SolverLogger logger_;
+
   // The revised simplex solver.
   std::unique_ptr<RevisedSimplex> revised_simplex_;
 
@@ -248,16 +271,21 @@ class LPSolver {
   int num_revised_simplex_iterations_;
 
   // The current ProblemSolution.
-  // TODO(user): use a ProblemSolution directly?
+  // TODO(user): use a ProblemSolution directly? Note, that primal_ray_,
+  // constraints_dual_ray_ and variable_bounds_dual_ray_ are not currently in
+  // ProblemSolution and are filled directly by RunRevisedSimplexIfNeeded().
   DenseRow primal_values_;
   DenseColumn dual_values_;
   VariableStatusRow variable_statuses_;
   ConstraintStatusColumn constraint_statuses_;
+  DenseRow primal_ray_;
+  DenseColumn constraints_dual_ray_;
+  DenseRow variable_bounds_dual_ray_;
 
   // Quantities computed from the solution and the linear program.
   DenseRow reduced_costs_;
   DenseColumn constraint_activities_;
-  Fractional problem_objective_value_;
+  Fractional problem_objective_value_ = 0.0;
   bool may_have_multiple_solutions_;
   Fractional max_absolute_primal_infeasibility_;
   Fractional max_absolute_dual_infeasibility_;

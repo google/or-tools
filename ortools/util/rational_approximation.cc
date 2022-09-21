@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,14 +31,14 @@ Fraction RationalApproximation(const double x, const double precision) {
   // Fractional is float or double are as accurate as possible.
   long double abs_x = std::abs(x);
   long double y = abs_x;
-  int64 previous_numerator = 0;
-  int64 previous_denominator = 1;
-  int64 numerator = 1;
-  int64 denominator = 0;
+  int64_t previous_numerator = 0;
+  int64_t previous_denominator = 1;
+  int64_t numerator = 1;
+  int64_t denominator = 0;
   while (true) {
-    const int64 term = static_cast<int64>(std::floor(y));
-    const int64 new_numerator = term * numerator + previous_numerator;
-    const int64 new_denominator = term * denominator + previous_denominator;
+    const int64_t term = static_cast<int64_t>(std::floor(y));
+    const int64_t new_numerator = term * numerator + previous_numerator;
+    const int64_t new_denominator = term * denominator + previous_denominator;
     // If there was an overflow, we prefer returning a not-so-good approximation
     // rather than something that is completely wrong.
     if (new_numerator < 0 || new_denominator < 0) break;

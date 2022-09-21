@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,7 @@
 // limitations under the License.
 
 using System;
+using Google.OrTools.Init;
 using Google.OrTools.LinearSolver;
 
 public class CsIntegerProgramming
@@ -100,6 +101,12 @@ public class CsIntegerProgramming
 
     static void Main()
     {
+        CppBridge.InitLogging("csintegerprogramming.cs");
+        CppFlags flags = new CppFlags();
+        flags.logtostderr = true;
+        flags.log_prefix = false;
+        CppBridge.SetFlags(flags);
+
         Console.WriteLine("---- Integer programming example with GLPK ----");
         RunIntegerProgrammingExample("GLPK");
         Console.WriteLine("---- Linear programming example with CBC ----");

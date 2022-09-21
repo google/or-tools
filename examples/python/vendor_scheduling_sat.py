@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -123,10 +123,11 @@ def main():
 
     # Solve model.
     solver = cp_model.CpSolver()
+    solver.parameters.enumerate_all_solutions = True
     solution_printer = SolutionPrinter(num_vendors, num_hours,
                                        possible_schedules, selected_schedules,
                                        hours_stat, min_vendors)
-    status = solver.SearchForAllSolutions(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
     print('Status = %s' % solver.StatusName(status))
 
     print('Statistics')

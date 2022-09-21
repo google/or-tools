@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2020 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,37 +11,38 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Simple VRP with special locations which need to be visited at end of the route.
-"""
+"""Simple VRP with special locations which need to be visited at end of the route."""
 
+# [START import]
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+# [END import]
+
 
 def create_data_model():
     """Stores the data for the problem."""
     data = {}
     # Special location don't consume token, while regular one consume one
     data['tokens'] = [
-             0, # 0 depot
-             0, # 1 special node
-             0, # 2 special node
-             0, # 3 special node
-             0, # 4 special node
-             0, # 5 special node
-            -1, # 6
-            -1, # 7
-            -1, # 8
-            -1, # 9
-            -1, # 10
-            -1, # 11
-            -1, # 12
-            -1, # 13
-            -1, # 14
-            -1, # 15
-            -1, # 16
-            -1, # 17
-            -1, # 18
+        0,  # 0 depot
+        0,  # 1 special node
+        0,  # 2 special node
+        0,  # 3 special node
+        0,  # 4 special node
+        0,  # 5 special node
+        -1,  # 6
+        -1,  # 7
+        -1,  # 8
+        -1,  # 9
+        -1,  # 10
+        -1,  # 11
+        -1,  # 12
+        -1,  # 13
+        -1,  # 14
+        -1,  # 15
+        -1,  # 16
+        -1,  # 17
+        -1,  # 18
     ]
     # just need to be big enough, not a limiting factor
     data['vehicle_tokens'] = [20, 20, 20, 20]
@@ -52,6 +53,7 @@ def create_data_model():
 
 def print_solution(manager, routing, solution):
     """Prints solution on console."""
+    print(f'Objective: {solution.ObjectiveValue()}')
     token_dimension = routing.GetDimensionOrDie('Token')
     total_distance = 0
     total_token = 0
@@ -87,10 +89,8 @@ def main():
     data = create_data_model()
 
     # Create the routing index manager.
-    manager = pywrapcp.RoutingIndexManager(
-            len(data['tokens']),
-            data['num_vehicles'],
-            data['depot'])
+    manager = pywrapcp.RoutingIndexManager(len(data['tokens']),
+                                           data['num_vehicles'], data['depot'])
 
     # Create Routing Model.
     routing = pywrapcp.RoutingModel(manager)
@@ -98,9 +98,8 @@ def main():
     # Create and register a transit callback.
     def distance_callback(from_index, to_index):
         """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        del from_index
+        del to_index
         return 10
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
@@ -110,8 +109,8 @@ def main():
         0,  # null slack
         3000,  # maximum distance per vehicle
         True,  # start cumul to zero
-        "distance")
-    distance_dimension = routing.GetDimensionOrDie("distance")
+        'distance')
+    distance_dimension = routing.GetDimensionOrDie('distance')
     distance_dimension.SetGlobalSpanCostCoefficient(100)
 
     # Define cost of each arc.
@@ -127,9 +126,9 @@ def main():
     token_callback_index = routing.RegisterUnaryTransitCallback(token_callback)
     routing.AddDimensionWithVehicleCapacity(
         token_callback_index,
-        0, # null capacity slack
-        data['vehicle_tokens'], # vehicle maximum tokens
-        False, # start cumul to zero
+        0,  # null capacity slack
+        data['vehicle_tokens'],  # vehicle maximum tokens
+        False,  # start cumul to zero
         'Token')
     # Add constraint: special node can only be visited if token remaining is zero
     token_dimension = routing.GetDimensionOrDie('Token')
@@ -137,6 +136,14 @@ def main():
         index = manager.NodeToIndex(node)
         routing.solver().Add(token_dimension.CumulVar(index) == 0)
 
+    # Instantiate route start and end times to produce feasible times.
+    # [START depot_start_end_times]
+    for i in range(manager.GetNumberOfVehicles()):
+        routing.AddVariableMinimizedByFinalizer(
+            token_dimension.CumulVar(routing.Start(i)))
+        routing.AddVariableMinimizedByFinalizer(
+            token_dimension.CumulVar(routing.End(i)))
+    # [END depot_start_end_times]
 
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
@@ -150,10 +157,12 @@ def main():
     solution = routing.SolveWithParameters(search_parameters)
 
     # Print solution on console.
+    # [START print_solution]
     if solution:
         print_solution(manager, routing, solution)
     else:
-        print("No solution found !")
+        print('No solution found !')
+    # [END print_solution]
 
 
 if __name__ == '__main__':

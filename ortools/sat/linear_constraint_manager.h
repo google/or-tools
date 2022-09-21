@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,16 +14,25 @@
 #ifndef OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -43,7 +52,7 @@ class LinearConstraintManager {
   struct ConstraintInfo {
     LinearConstraint constraint;
     double l2_norm = 0.0;
-    int64 inactive_count = 0;
+    int64_t inactive_count = 0;
     double objective_parallelism = 0.0;
     bool objective_parallelism_computed = false;
     bool is_in_lp = false;
@@ -67,15 +76,15 @@ class LinearConstraintManager {
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
-        model_(model) {}
-  ~LinearConstraintManager();
+        model_(model),
+        logger_(model->GetOrCreate<SolverLogger>()) {}
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
   // and merge the bounds of constraints with the same terms. We also perform
   // basic preprocessing. If added is given, it will be set to true if this
   // constraint was actually a new one and to false if it was dominated by an
   // already existing one.
-  DEFINE_INT_TYPE(ConstraintIndex, int32);
+  DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
   ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr);
 
   // Same as Add(), but logs some information about the newly added constraint.
@@ -122,14 +131,19 @@ class LinearConstraintManager {
     return lp_constraints_;
   }
 
-  int64 num_cuts() const { return num_cuts_; }
-  int64 num_shortened_constraints() const { return num_shortened_constraints_; }
-  int64 num_coeff_strenghtening() const { return num_coeff_strenghtening_; }
+  int64_t num_cuts() const { return num_cuts_; }
+  int64_t num_shortened_constraints() const {
+    return num_shortened_constraints_;
+  }
+  int64_t num_coeff_strenghtening() const { return num_coeff_strenghtening_; }
 
   // If a debug solution has been loaded, this checks if the given constaint cut
   // it or not. Returns true iff everything is fine and the cut does not violate
   // the loaded solution.
   bool DebugCheckConstraint(const LinearConstraint& cut);
+
+  // Returns statistics on the cut added.
+  std::string Statistics() const;
 
  private:
   // Heuristic that decide which constraints we should remove from the current
@@ -170,7 +184,7 @@ class LinearConstraintManager {
   bool current_lp_is_changed_ = false;
 
   // Optimization to avoid calling SimplifyConstraint() when not needed.
-  int64 last_simplification_timestamp_ = 0;
+  int64_t last_simplification_timestamp_ = 0;
 
   absl::StrongVector<ConstraintIndex, ConstraintInfo> constraint_infos_;
 
@@ -184,15 +198,15 @@ class LinearConstraintManager {
   // constraints.
   absl::flat_hash_map<size_t, ConstraintIndex> equiv_constraints_;
 
-  int64 num_simplifications_ = 0;
-  int64 num_merged_constraints_ = 0;
-  int64 num_shortened_constraints_ = 0;
-  int64 num_splitted_constraints_ = 0;
-  int64 num_coeff_strenghtening_ = 0;
+  int64_t num_simplifications_ = 0;
+  int64_t num_merged_constraints_ = 0;
+  int64_t num_shortened_constraints_ = 0;
+  int64_t num_split_constraints_ = 0;
+  int64_t num_coeff_strenghtening_ = 0;
 
-  int64 num_cuts_ = 0;
-  int64 num_add_cut_calls_ = 0;
-  std::map<std::string, int> type_to_num_cuts_;
+  int64_t num_cuts_ = 0;
+  int64_t num_add_cut_calls_ = 0;
+  absl::btree_map<std::string, int> type_to_num_cuts_;
 
   bool objective_is_defined_ = false;
   bool objective_norm_computed_ = false;
@@ -210,6 +224,7 @@ class LinearConstraintManager {
 
   TimeLimit* time_limit_;
   Model* model_;
+  SolverLogger* logger_;
 
   // We want to decay the active counts of all constraints at each call and
   // increase the active counts of active/violated constraints. However this can
@@ -220,7 +235,7 @@ class LinearConstraintManager {
   // management.
   double constraint_active_count_increase_ = 1.0;
 
-  int32 num_deletable_constraints_ = 0;
+  int32_t num_deletable_constraints_ = 0;
 };
 
 // Keep the top n elements from a stream of elements.

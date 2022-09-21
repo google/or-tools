@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -440,6 +441,172 @@ class DecisionTest(unittest.TestCase):
         db = CustomDecisionBuilderCustomDecision()
         print(str(db))
         solver.Solve(db)
+
+
+class LocalSearchTest(unittest.TestCase):
+    class OneVarLNS(pywrapcp.BaseLns):
+      """One Var LNS."""
+      def __init__(self, vars):
+        pywrapcp.BaseLns.__init__(self, vars)
+        self.__index = 0
+
+      def InitFragments(self):
+        self.__index = 0
+
+      def NextFragment(self):
+        if self.__index < self.Size():
+          self.AppendToFragment(self.__index)
+          self.__index += 1
+          return True
+        else:
+          return False
+
+
+    class MoveOneVar(pywrapcp.IntVarLocalSearchOperator):
+      """Move one var up or down."""
+      def __init__(self, vars):
+        pywrapcp.IntVarLocalSearchOperator.__init__(self, vars)
+        self.__index = 0
+        self.__up = False
+
+      def OneNeighbor(self):
+        current_value = self.OldValue(self.__index)
+        if self.__up:
+          self.SetValue(self.__index, current_value + 1)
+          self.__index = (self.__index + 1) % self.Size()
+        else:
+          self.SetValue(self.__index, current_value - 1)
+        self.__up = not self.__up
+        return True
+
+      def OnStart(self):
+        pass
+
+      def IsIncremental(self):
+        return False
+
+
+    class SumFilter(pywrapcp.IntVarLocalSearchFilter):
+      """Filter to speed up LS computation."""
+      def __init__(self, vars):
+        pywrapcp.IntVarLocalSearchFilter.__init__(self, vars)
+        self.__sum = 0
+
+      def OnSynchronize(self, delta):
+        self.__sum = sum(self.Value(index) for index in range(self.Size()))
+
+      def Accept(self, delta, unused_delta_delta, unused_objective_min,
+                 unused_objective_max):
+        solution_delta = delta.IntVarContainer()
+        solution_delta_size = solution_delta.Size()
+        for i in range(solution_delta_size):
+          if not solution_delta.Element(i).Activated():
+            return True
+        new_sum = self.__sum
+        for i in range(solution_delta_size):
+          element = solution_delta.Element(i)
+          int_var = element.Var()
+          touched_var_index = self.IndexFromVar(int_var)
+          old_value = self.Value(touched_var_index)
+          new_value = element.Value()
+          new_sum += new_value - old_value
+
+        return new_sum < self.__sum
+
+      def IsIncremental(self):
+        return False
+
+
+    def Solve(self, type):
+        solver = pywrapcp.Solver('Solve')
+        int_vars = [solver.IntVar(0, 4) for _ in range(4)]
+        sum_var = solver.Sum(int_vars).Var()
+        obj = solver.Minimize(sum_var, 1)
+        db = solver.Phase(int_vars, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE)
+        ls = None
+
+        if type == 0:  # LNS
+          print('Large Neighborhood Search')
+          one_var_lns = self.OneVarLNS(int_vars)
+          ls_params = solver.LocalSearchPhaseParameters(sum_var, one_var_lns, db)
+          ls = solver.LocalSearchPhase(int_vars, db, ls_params)
+        elif type == 1:  # LS
+          print('Local Search')
+          move_one_var = self.MoveOneVar(int_vars)
+          ls_params = solver.LocalSearchPhaseParameters(sum_var, move_one_var, db)
+          ls = solver.LocalSearchPhase(int_vars, db, ls_params)
+        else:
+          print('Local Search with Filter')
+          move_one_var = self.MoveOneVar(int_vars)
+          sum_filter = self.SumFilter(int_vars)
+          filter_manager = pywrapcp.LocalSearchFilterManager([sum_filter])
+          ls_params = solver.LocalSearchPhaseParameters(sum_var, move_one_var, db, None,
+                                                        filter_manager)
+          ls = solver.LocalSearchPhase(int_vars, db, ls_params)
+
+        collector = solver.LastSolutionCollector()
+        collector.Add(int_vars)
+        collector.AddObjective(sum_var)
+        log = solver.SearchLog(1000, obj)
+        solver.Solve(ls, [collector, obj, log])
+        print('Objective value = %d' % collector.ObjectiveValue(0))
+
+    def test_large_neighborhood_search(self):
+        self.Solve(0)
+
+    def test_local_search(self):
+        pass
+        self.Solve(1)
+
+    def test_local_search_with_filter(self):
+        pass
+        self.Solve(2)
+
+
+class IntVarLocalSearchOperatorTest(unittest.TestCase):
+    def test_ctor(self):
+        solver = pywrapcp.Solver('Solve')
+        int_vars = [solver.IntVar(0, 4) for _ in range(4)]
+        ivlso = pywrapcp.IntVarLocalSearchOperator(int_vars)
+        assert ivlso != None
+
+    def test_api(self):
+        print(f"{dir(pywrapcp.IntVarLocalSearchOperator)}")
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'Size')
+
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'Var')
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'AddVars')
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'IsIncremental')
+
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'Activate')
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'Deactivate')
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'Activated')
+
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'OldValue')
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'PrevValue')
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'Value')
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'SetValue')
+
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'Start')
+        assert hasattr(pywrapcp.IntVarLocalSearchOperator, 'OnStart')
+
+        # Activate(int64_t index)
+        # Deactivate(int64_t index)
+        # Activated(int64_t index) const
+
+        # AddVars(const std::vector<IntVar*>& vars)
+        # Size() const
+        # IsIncremental() const
+
+        # OldValue(int64_t index) const
+        # PrevValue(int64_t index) const
+
+        # SetValue(int64_t index, int64_t value)
+        # Value(int64_t index) const
+
+        # OnStart()
+        # SkipUnchanged(int index) const
+        # Var(int64_t index) const
 
 
 if __name__ == '__main__':

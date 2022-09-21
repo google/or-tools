@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,14 @@
 
 #include "ortools/sat/cp_model_objective.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+
+#include "ortools/base/logging.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -25,7 +32,7 @@ void EncodeObjectiveAsSingleVariable(CpModelProto* cp_model) {
     // Canonicalize the objective to make it easier on us by always making the
     // coefficient equal to 1.0.
     const int old_ref = cp_model->objective().vars(0);
-    const int64 old_coeff = cp_model->objective().coeffs(0);
+    const int64_t old_coeff = cp_model->objective().coeffs(0);
     const double muliplier = static_cast<double>(std::abs(old_coeff));
     if (old_coeff < 0) {
       cp_model->mutable_objective()->set_vars(0, NegatedRef(old_ref));
@@ -48,17 +55,17 @@ void EncodeObjectiveAsSingleVariable(CpModelProto* cp_model) {
   // overflow checker might not be happy with the new constraint we are about
   // to create. Note that the model validator should make sure that there is no
   // overflow in the computation below.
-  int64 min_obj = 0;
-  int64 max_obj = 0;
+  int64_t min_obj = 0;
+  int64_t max_obj = 0;
   for (int i = 0; i < cp_model->objective().vars_size(); ++i) {
     const int ref = cp_model->objective().vars(i);
     const int var = PositiveRef(ref);
-    const int64 coeff =
+    const int64_t coeff =
         cp_model->objective().coeffs(i) * (RefIsPositive(ref) ? 1 : -1);
-    const int64 value1 = cp_model->variables(var).domain(0) * coeff;
-    const int64 value2 = cp_model->variables(var).domain(
-                             cp_model->variables(var).domain_size() - 1) *
-                         coeff;
+    const int64_t value1 = cp_model->variables(var).domain(0) * coeff;
+    const int64_t value2 = cp_model->variables(var).domain(
+                               cp_model->variables(var).domain_size() - 1) *
+                           coeff;
     min_obj += std::min(value1, value2);
     max_obj += std::max(value1, value2);
   }

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <cstdint>
 #include <deque>
 #include <memory>
 #include <string>
@@ -72,20 +73,20 @@ class NoCycle : public Constraint {
   }
 
  private:
-  int64 size() const { return nexts_.size(); }
+  int64_t size() const { return nexts_.size(); }
 
   const std::vector<IntVar*> nexts_;
   const std::vector<IntVar*> active_;
   std::vector<IntVarIterator*> iterators_;
-  RevArray<int64> starts_;
-  RevArray<int64> ends_;
+  RevArray<int64_t> starts_;
+  RevArray<int64_t> ends_;
   RevArray<bool> marked_;
   bool all_nexts_bound_;
-  std::vector<int64> outbound_supports_;
-  std::vector<int64> support_leaves_;
-  std::vector<int64> unsupported_;
+  std::vector<int64_t> outbound_supports_;
+  std::vector<int64_t> support_leaves_;
+  std::vector<int64_t> unsupported_;
   Solver::IndexFilter1 sink_handler_;
-  std::vector<int64> sinks_;
+  std::vector<int64_t> sinks_;
   bool assume_paths_;
 };
 
@@ -151,8 +152,8 @@ void NoCycle::Post() {
     active_[i]->WhenBound(active_demon);
   }
   // Setting up sinks
-  int64 min_min = nexts_[0]->Min();
-  int64 max_max = nexts_[0]->Max();
+  int64_t min_min = nexts_[0]->Min();
+  int64_t max_max = nexts_[0]->Max();
   for (int i = 1; i < size(); ++i) {
     const IntVar* next = nexts_[i];
     min_min = std::min(min_min, next->Min());
@@ -202,9 +203,9 @@ void NoCycle::NextBound(int index) {
   // Subtle: marking indices to avoid overwriting chain starts and ends if
   // propagation for active_[index] or nexts_[index] has already been done.
   marked_.SetValue(s, index, true);
-  const int64 next = nexts_[index]->Value();
-  const int64 chain_start = starts_[index];
-  const int64 chain_end = !sink_handler_(next) ? ends_[next] : next;
+  const int64_t next = nexts_[index]->Value();
+  const int64_t chain_start = starts_[index];
+  const int64_t chain_end = !sink_handler_(next) ? ends_[next] : next;
   if (!sink_handler_(chain_start)) {
     ends_.SetValue(s, chain_start, chain_end);
     if (!sink_handler_(chain_end)) {
@@ -212,7 +213,7 @@ void NoCycle::NextBound(int index) {
       nexts_[chain_end]->RemoveValue(chain_start);
       if (!assume_paths_) {
         for (int i = 0; i < size(); ++i) {
-          int64 current = i;
+          int64_t current = i;
           bool found = (current == chain_end);
           // Counter to detect implicit cycles.
           int count = 0;
@@ -252,7 +253,7 @@ void NoCycle::ComputeSupports() {
     const IntVar* next = nexts_[i];
     // If node is not active, no need to try to connect it to a sink.
     if (active_[i]->Max() != 0) {
-      const int64 current_support = outbound_supports_[i];
+      const int64_t current_support = outbound_supports_[i];
       // Optimization: if this node was already supported by a sink, check if
       // it's still a valid support.
       if (current_support >= 0 && sink_handler_(current_support) &&
@@ -271,7 +272,7 @@ void NoCycle::ComputeSupports() {
             }
           }
         } else {
-          for (const int64 value : InitAndGetValues(iterators_[i])) {
+          for (const int64_t value : InitAndGetValues(iterators_[i])) {
             if (sink_handler_(value)) {
               outbound_supports_[i] = value;
               support_leaves_.push_back(i);
@@ -292,9 +293,9 @@ void NoCycle::ComputeSupports() {
   size_t leaves_end = support_leaves_.size();
   while (!unsupported_.empty()) {
     // Try to connected unsupported nodes to nodes connected to sinks.
-    for (int64 unsupported_index = 0; unsupported_index < unsupported_.size();
+    for (int64_t unsupported_index = 0; unsupported_index < unsupported_.size();
          ++unsupported_index) {
-      const int64 unsupported = unsupported_[unsupported_index];
+      const int64_t unsupported = unsupported_[unsupported_index];
       const IntVar* const next = nexts_[unsupported];
       for (int i = leaves_begin; i < leaves_end; ++i) {
         if (next->Contains(support_leaves_[i])) {
@@ -318,7 +319,7 @@ void NoCycle::ComputeSupports() {
     leaves_end = support_leaves_.size();
   }
   // Mark as inactive any unsupported node.
-  for (int64 unsupported_index = 0; unsupported_index < unsupported_.size();
+  for (int64_t unsupported_index = 0; unsupported_index < unsupported_.size();
        ++unsupported_index) {
     active_[unsupported_[unsupported_index]]->SetMax(0);
   }
@@ -328,13 +329,13 @@ void NoCycle::ComputeSupport(int index) {
   // Try to reconnect the node to the support tree by finding a next node
   // which is both supported and was not a descendant of the node in the tree.
   if (active_[index]->Max() != 0) {
-    for (const int64 next : InitAndGetValues(iterators_[index])) {
+    for (const int64_t next : InitAndGetValues(iterators_[index])) {
       if (sink_handler_(next)) {
         outbound_supports_[index] = next;
         return;
       }
       if (next != index && next < outbound_supports_.size()) {
-        int64 next_support = outbound_supports_[next];
+        int64_t next_support = outbound_supports_[next];
         if (next_support >= 0) {
           // Check if next is not already a descendant of index.
           bool ancestor_found = false;
@@ -500,7 +501,7 @@ class Circuit : public Constraint {
     }
   }
 
-  void TryInsertReached(int candidate, int64 after) {
+  void TryInsertReached(int candidate, int64_t after) {
     if (!reached_[after]) {
       reached_[after] = true;
       insertion_queue_.push_back(after);
@@ -540,7 +541,7 @@ class Circuit : public Constraint {
         }
         default: {
           IntVarIterator* const domain = domains_[candidate];
-          for (const int64 value : InitAndGetValues(domain)) {
+          for (const int64_t value : InitAndGetValues(domain)) {
             TryInsertReached(candidate, value);
           }
         }
@@ -622,8 +623,8 @@ Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
                                 bool assume_paths) {
   CHECK_EQ(nexts.size(), active.size());
   if (sink_handler == nullptr) {
-    const int64 size = nexts.size();
-    sink_handler = [size](int64 index) { return index >= size; };
+    const int64_t size = nexts.size();
+    sink_handler = [size](int64_t index) { return index >= size; };
   }
   return RevAlloc(new NoCycle(this, nexts, active, sink_handler, assume_paths));
 }
@@ -662,7 +663,7 @@ class BasePathCumul : public Constraint {
   std::string DebugString() const override;
 
  protected:
-  int64 size() const { return nexts_.size(); }
+  int64_t size() const { return nexts_.size(); }
   int cumul_size() const { return cumuls_.size(); }
 
   const std::vector<IntVar*> nexts_;
@@ -809,7 +810,7 @@ void PathCumul::Post() {
 
 void PathCumul::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
-  const int64 next = nexts_[index]->Value();
+  const int64_t next = nexts_[index]->Value();
   IntVar* cumul = cumuls_[index];
   IntVar* cumul_next = cumuls_[next];
   IntVar* transit = transits_[index];
@@ -875,7 +876,7 @@ class StampedVector {
   }
 
   std::vector<T> values_;
-  uint64 stamp_;
+  uint64_t stamp_;
 };
 }  // namespace
 
@@ -900,7 +901,7 @@ class DelayedPathCumul : public Constraint {
         supports_(nexts.size()),
         was_bound_(nexts.size(), false),
         has_cumul_demon_(cumuls.size(), false) {
-    for (int64 i = 0; i < cumuls_.size(); ++i) {
+    for (int64_t i = 0; i < cumuls_.size(); ++i) {
       cumul_transit_demons_[i] = MakeDelayedConstraintDemon1(
           solver, this, &DelayedPathCumul::CumulRange, "CumulRange", i);
       chain_starts_[i] = i;
@@ -975,7 +976,7 @@ class DelayedPathCumul : public Constraint {
       IntVar* const next_var = nexts_[touched];
       if (!was_bound_[touched] && next_var->Bound() &&
           active_[touched]->Min() > 0) {
-        const int64 next = next_var->Min();
+        const int64_t next = next_var->Min();
         was_bound_.SetValue(solver(), touched, true);
         chain_starts_[chain_ends_[next]] = chain_starts_[touched];
         chain_ends_[chain_starts_[touched]] = chain_ends_[next];
@@ -988,8 +989,8 @@ class DelayedPathCumul : public Constraint {
       // Is touched the start of a chain ?
       if (is_chain_start_[touched]) {
         // Propagate min cumuls from chain_starts[touch] to chain_ends_[touch].
-        int64 current = touched;
-        int64 next = nexts_[current]->Min();
+        int64_t current = touched;
+        int64_t next = nexts_[current]->Min();
         while (current != chain_ends_[touched]) {
           prevs_.SetValue(solver(), next, current);
           PropagateLink(current, next);
@@ -999,7 +1000,7 @@ class DelayedPathCumul : public Constraint {
           }
         }
         // Propagate max cumuls from chain_ends_[i] to chain_starts_[i].
-        int64 prev = prevs_[current];
+        int64_t prev = prevs_[current];
         while (current != touched) {
           PropagateLink(prev, current);
           current = prev;
@@ -1057,7 +1058,7 @@ class DelayedPathCumul : public Constraint {
   }
 
  private:
-  void CumulRange(int64 index) {
+  void CumulRange(int64_t index) {
     if (index < nexts_.size()) {
       if (nexts_[index]->Bound()) {
         if (active_[index]->Min() > 0) {
@@ -1090,16 +1091,16 @@ class DelayedPathCumul : public Constraint {
       active_[index]->SetMax(0);
     }
   }
-  void PropagateLink(int64 index, int64 next) {
+  void PropagateLink(int64_t index, int64_t next) {
     IntVar* const cumul_var = cumuls_[index];
     IntVar* const next_cumul_var = cumuls_[next];
     IntVar* const transit = transits_[index];
-    const int64 transit_min = transit->Min();
-    const int64 transit_max = transit->Max();
+    const int64_t transit_min = transit->Min();
+    const int64_t transit_max = transit->Max();
     next_cumul_var->SetMin(CapAdd(cumul_var->Min(), transit_min));
     next_cumul_var->SetMax(CapAdd(cumul_var->Max(), transit_max));
-    const int64 next_cumul_min = next_cumul_var->Min();
-    const int64 next_cumul_max = next_cumul_var->Max();
+    const int64_t next_cumul_min = next_cumul_var->Min();
+    const int64_t next_cumul_max = next_cumul_var->Max();
     cumul_var->SetMin(CapSub(next_cumul_min, transit_max));
     cumul_var->SetMax(CapSub(next_cumul_max, transit_min));
     transit->SetMin(CapSub(next_cumul_min, cumul_var->Max()));
@@ -1120,8 +1121,8 @@ class DelayedPathCumul : public Constraint {
   std::vector<Demon*> cumul_transit_demons_;
   Demon* path_demon_;
   StampedVector<int> touched_;
-  std::vector<int64> chain_starts_;
-  std::vector<int64> chain_ends_;
+  std::vector<int64_t> chain_starts_;
+  std::vector<int64_t> chain_ends_;
   std::vector<bool> is_chain_start_;
   RevArray<int> prevs_;
   std::vector<int> supports_;
@@ -1169,10 +1170,10 @@ IndexEvaluator2PathCumul::IndexEvaluator2PathCumul(
 
 void IndexEvaluator2PathCumul::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
-  const int64 next = nexts_[index]->Value();
+  const int64_t next = nexts_[index]->Value();
   IntVar* cumul = cumuls_[index];
   IntVar* cumul_next = cumuls_[next];
-  const int64 transit = transits_evaluator_(index, next);
+  const int64_t transit = transits_evaluator_(index, next);
   cumul_next->SetMin(cumul->Min() + transit);
   cumul_next->SetMax(CapAdd(cumul->Max(), transit));
   cumul->SetMin(CapSub(cumul_next->Min(), transit));
@@ -1185,7 +1186,7 @@ void IndexEvaluator2PathCumul::NextBound(int index) {
 bool IndexEvaluator2PathCumul::AcceptLink(int i, int j) const {
   const IntVar* const cumul_i = cumuls_[i];
   const IntVar* const cumul_j = cumuls_[j];
-  const int64 transit = transits_evaluator_(i, j);
+  const int64_t transit = transits_evaluator_(i, j);
   return transit <= CapSub(cumul_j->Max(), cumul_i->Min()) &&
          CapSub(cumul_j->Min(), cumul_i->Max()) <= transit;
 }
@@ -1264,13 +1265,15 @@ void IndexEvaluator2SlackPathCumul::SlackRange(int index) {
 
 void IndexEvaluator2SlackPathCumul::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
-  const int64 next = nexts_[index]->Value();
+  const int64_t next = nexts_[index]->Value();
   IntVar* const cumul = cumuls_[index];
   IntVar* const cumul_next = cumuls_[next];
   IntVar* const slack = slacks_[index];
-  const int64 transit = transits_evaluator_(index, next);
-  const int64 cumul_next_minus_transit_min = CapSub(cumul_next->Min(), transit);
-  const int64 cumul_next_minus_transit_max = CapSub(cumul_next->Max(), transit);
+  const int64_t transit = transits_evaluator_(index, next);
+  const int64_t cumul_next_minus_transit_min =
+      CapSub(cumul_next->Min(), transit);
+  const int64_t cumul_next_minus_transit_max =
+      CapSub(cumul_next->Max(), transit);
   cumul_next->SetMin(CapAdd(CapAdd(cumul->Min(), transit), slack->Min()));
   cumul_next->SetMax(CapAdd(CapAdd(cumul->Max(), transit), slack->Max()));
   cumul->SetMin(CapSub(cumul_next_minus_transit_min, slack->Max()));
@@ -1286,7 +1289,7 @@ bool IndexEvaluator2SlackPathCumul::AcceptLink(int i, int j) const {
   const IntVar* const cumul_i = cumuls_[i];
   const IntVar* const cumul_j = cumuls_[j];
   const IntVar* const slack = slacks_[i];
-  const int64 transit = transits_evaluator_(i, j);
+  const int64_t transit = transits_evaluator_(i, j);
   return CapAdd(transit, slack->Min()) <=
              CapSub(cumul_j->Max(), cumul_i->Min()) &&
          CapSub(cumul_j->Min(), cumul_i->Max()) <=
@@ -1337,8 +1340,9 @@ namespace {
 class PathConnectedConstraint : public Constraint {
  public:
   PathConnectedConstraint(Solver* solver, std::vector<IntVar*> nexts,
-                          const std::vector<int64>& sources,
-                          std::vector<int64> sinks, std::vector<IntVar*> status)
+                          const std::vector<int64_t>& sources,
+                          std::vector<int64_t> sinks,
+                          std::vector<IntVar*> status)
       : Constraint(solver),
         sources_(sources.size(), -1),
         index_to_path_(nexts.size(), -1),
@@ -1349,7 +1353,7 @@ class PathConnectedConstraint : public Constraint {
     CHECK_EQ(status_.size(), sources_.size());
     CHECK_EQ(status_.size(), sinks_.size());
     for (int i = 0; i < status_.size(); ++i) {
-      const int64 source = sources[i];
+      const int64_t source = sources[i];
       sources_.SetValue(solver, i, source);
       if (source < index_to_path_.size()) {
         index_to_path_.SetValue(solver, source, i);
@@ -1383,7 +1387,7 @@ class PathConnectedConstraint : public Constraint {
     for (int i = 0; i < sources_.size(); ++i) {
       elements.push_back(absl::StrCat(sources_[i]));
     }
-    for (int64 sink : sinks_) {
+    for (int64_t sink : sinks_) {
       elements.push_back(absl::StrCat(sink));
     }
     for (IntVar* const status : status_) {
@@ -1402,8 +1406,8 @@ class PathConnectedConstraint : public Constraint {
   }
   void EvaluatePath(int path) {
     touched_.SparseClearAll();
-    int64 source = sources_[path];
-    const int64 end = sinks_[path];
+    int64_t source = sources_[path];
+    const int64_t end = sinks_[path];
     while (source != end) {
       if (source >= nexts_.size() || touched_[source]) {
         status_[path]->SetValue(0);
@@ -1422,18 +1426,18 @@ class PathConnectedConstraint : public Constraint {
     status_[path]->SetValue(1);
   }
 
-  RevArray<int64> sources_;
+  RevArray<int64_t> sources_;
   RevArray<int> index_to_path_;
-  const std::vector<int64> sinks_;
+  const std::vector<int64_t> sinks_;
   const std::vector<IntVar*> nexts_;
   const std::vector<IntVar*> status_;
-  SparseBitset<int64> touched_;
+  SparseBitset<int64_t> touched_;
 };
 }  // namespace
 
 Constraint* Solver::MakePathConnected(std::vector<IntVar*> nexts,
-                                      std::vector<int64> sources,
-                                      std::vector<int64> sinks,
+                                      std::vector<int64_t> sources,
+                                      std::vector<int64_t> sinks,
                                       std::vector<IntVar*> status) {
   return RevAlloc(new PathConnectedConstraint(
       this, std::move(nexts), sources, std::move(sinks), std::move(status)));
@@ -1528,7 +1532,7 @@ class PathTransitPrecedenceConstraint : public Constraint {
     forbidden_.clear();
     marked_.clear();
     pushed_.clear();
-    int64 transit_cumul = 0;
+    int64_t transit_cumul = 0;
     const bool has_transits = !transits_.empty();
     while (current < nexts_.size() && current != end) {
       transit_cumuls_[current] = transit_cumul;
@@ -1598,7 +1602,7 @@ class PathTransitPrecedenceConstraint : public Constraint {
   absl::flat_hash_set<int> forbidden_;
   absl::flat_hash_set<int> marked_;
   std::deque<int> pushed_;
-  std::vector<int64> transit_cumuls_;
+  std::vector<int64_t> transit_cumuls_;
 };
 
 Constraint* MakePathTransitTypedPrecedenceConstraint(

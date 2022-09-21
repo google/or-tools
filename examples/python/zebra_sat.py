@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -72,13 +73,12 @@ def solve_zebra():
     lucky_strike = model.NewIntVar(1, 5, 'lucky strike')
     parliaments = model.NewIntVar(1, 5, 'parliaments')
 
-    model.AddAllDifferent([red, green, yellow, blue, ivory])
-    model.AddAllDifferent(
-        [englishman, spaniard, japanese, ukrainian, norwegian])
-    model.AddAllDifferent([dog, snails, fox, zebra, horse])
-    model.AddAllDifferent([tea, coffee, water, milk, fruit_juice])
-    model.AddAllDifferent(
-        [parliaments, kools, chesterfields, lucky_strike, old_gold])
+    model.AddAllDifferent(red, green, yellow, blue, ivory)
+    model.AddAllDifferent(englishman, spaniard, japanese, ukrainian, norwegian)
+    model.AddAllDifferent(dog, snails, fox, zebra, horse)
+    model.AddAllDifferent(tea, coffee, water, milk, fruit_juice)
+    model.AddAllDifferent(parliaments, kools, chesterfields, lucky_strike,
+                          old_gold)
 
     model.Add(englishman == red)
     model.Add(spaniard == dog)

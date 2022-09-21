@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,14 +19,15 @@
 #ifndef OR_TOOLS_SAT_SIMPLIFICATION_H_
 #define OR_TOOLS_SAT_SIMPLIFICATION_H_
 
+#include <cstdint>
 #include <deque>
 #include <memory>
-#include <set>
+#include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
@@ -34,6 +35,8 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -143,12 +146,13 @@ class SatPostsolver {
 class SatPresolver {
  public:
   // TODO(user): use IntType!
-  typedef int32 ClauseIndex;
+  typedef int32_t ClauseIndex;
 
-  explicit SatPresolver(SatPostsolver* postsolver)
+  explicit SatPresolver(SatPostsolver* postsolver, SolverLogger* logger)
       : postsolver_(postsolver),
         num_trivial_clauses_(0),
-        drat_proof_handler_(nullptr) {}
+        drat_proof_handler_(nullptr),
+        logger_(logger) {}
 
   void SetParameters(const SatParameters& params) { parameters_ = params; }
   void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
@@ -174,8 +178,7 @@ class SatPresolver {
 
   // Same as Presolve() but only allow to remove BooleanVariable whose index
   // is set to true in the given vector.
-  bool Presolve(const std::vector<bool>& var_that_can_be_removed,
-                bool log_info = false);
+  bool Presolve(const std::vector<bool>& var_that_can_be_removed);
 
   // All the clauses managed by this class.
   // Note that deleted clauses keep their indices (they are just empty).
@@ -269,7 +272,7 @@ class SatPresolver {
   // Returns a hash of the given clause variables (not literal) in such a way
   // that hash1 & not(hash2) == 0 iff the set of variable of clause 1 is a
   // subset of the one of clause2.
-  uint64 ComputeSignatureOfClauseVariables(ClauseIndex ci);
+  uint64_t ComputeSignatureOfClauseVariables(ClauseIndex ci);
 
   // The "active" variables on which we want to call CrossProduct() are kept
   // in a priority queue so that we process first the ones that occur the least
@@ -322,7 +325,7 @@ class SatPresolver {
   AdjustablePriorityQueue<BvaPqElement> bva_pq_;
 
   // Temporary data for SimpleBva().
-  std::set<LiteralIndex> m_lit_;
+  absl::btree_set<LiteralIndex> m_lit_;
   std::vector<ClauseIndex> m_cls_;
   absl::StrongVector<LiteralIndex, int> literal_to_p_size_;
   std::vector<std::pair<LiteralIndex, ClauseIndex>> flattened_p_;
@@ -338,9 +341,9 @@ class SatPresolver {
   std::vector<std::vector<Literal>> clauses_;  // Indexed by ClauseIndex
 
   // The cached value of ComputeSignatureOfClauseVariables() for each clause.
-  std::vector<uint64> signatures_;  // Indexed by ClauseIndex
-  int64 num_inspected_signatures_ = 0;
-  int64 num_inspected_literals_ = 0;
+  std::vector<uint64_t> signatures_;  // Indexed by ClauseIndex
+  int64_t num_inspected_signatures_ = 0;
+  int64_t num_inspected_literals_ = 0;
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
@@ -361,6 +364,7 @@ class SatPresolver {
   SatParameters parameters_;
   DratProofHandler* drat_proof_handler_;
   TimeLimit* time_limit_ = nullptr;
+  SolverLogger* logger_;
 
   DISALLOW_COPY_AND_ASSIGN(SatPresolver);
 };
@@ -380,7 +384,7 @@ class SatPresolver {
 // of scanning b linearly.
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
                     LiteralIndex* opposite_literal,
-                    int64* num_inspected_literals = nullptr);
+                    int64_t* num_inspected_literals = nullptr);
 
 // Visible for testing. Returns kNoLiteralIndex except if:
 // - a and b differ in only one literal.
@@ -437,7 +441,8 @@ void ProbeAndFindEquivalentLiteral(
 SatSolver::Status SolveWithPresolve(
     std::unique_ptr<SatSolver>* solver, TimeLimit* time_limit,
     std::vector<bool>* solution /* only filled if SAT */,
-    DratProofHandler* drat_proof_handler /* can be nullptr */);
+    DratProofHandler* drat_proof_handler /* can be nullptr */,
+    SolverLogger* logger);
 
 }  // namespace sat
 }  // namespace operations_research

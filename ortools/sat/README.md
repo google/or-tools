@@ -4,6 +4,12 @@ This directory contains a next-gen Constraint Programming (CP) solver with
 clause learning. It is built on top of an efficient SAT/max-SAT solver whose
 code is also in this directory.
 
+The technology started in 2009. A complete presentation is available
+[here](https://people.eng.unimelb.edu.au/pstuckey/PPDP2013.pdf).
+
+CP-SAT was described during the CPAIOR 2020 masterclass. The recording is
+available [here](https://www.youtube.com/watch?v=lmy1ddn4cyw).
+
 To begin, skim
 [cp_model.proto](../cp_model.proto) to
 understand how optimization problems can be modeled using the solver. You can
@@ -138,4 +144,4 @@ Scheduling constraints:
 ## Recipes
 
 You can find a set a code recipes in
-[the documentation directory](doc/README.md).
+[the documentation directory](docs/README.md).

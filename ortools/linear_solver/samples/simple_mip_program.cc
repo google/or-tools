@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 // Mixed Integer programming example that shows how to use the API.
 // [START program]
 // [START import]
+#include <memory>
+
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
 
@@ -21,7 +23,11 @@ namespace operations_research {
 void SimpleMipProgram() {
   // [START solver]
   // Create the mip solver with the SCIP backend.
-  MPSolver* solver = MPSolver::CreateSolver("SCIP");
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  if (!solver) {
+    LOG(WARNING) << "SCIP solver unavailable.";
+    return;
+  }
   // [END solver]
 
   // [START variables]

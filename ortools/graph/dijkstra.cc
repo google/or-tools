@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,9 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -33,13 +36,13 @@ class Element {
   }
   void SetHeapIndex(int h) { heap_index_ = h; }
   int GetHeapIndex() const { return heap_index_; }
-  void set_distance(int64 distance) { distance_ = distance; }
-  int64 distance() const { return distance_; }
+  void set_distance(int64_t distance) { distance_ = distance; }
+  int64_t distance() const { return distance_; }
   void set_node(int node) { node_ = node; }
   int node() const { return node_; }
 
  private:
-  int64 distance_ = 0;
+  int64_t distance_ = 0;
   int heap_index_ = -1;
   int node_ = -1;
 };
@@ -48,10 +51,11 @@ class Element {
 template <class S>
 class DijkstraSP {
  public:
-  static constexpr int64 kInfinity = kint64max / 2;
+  static constexpr int64_t kInfinity = std::numeric_limits<int64_t>::max() / 2;
 
   DijkstraSP(int node_count, int start_node,
-             std::function<int64(int, int)> graph, int64 disconnected_distance)
+             std::function<int64_t(int, int)> graph,
+             int64_t disconnected_distance)
       : node_count_(node_count),
         start_node_(start_node),
         graph_(std::move(graph)),
@@ -63,7 +67,7 @@ class DijkstraSP {
     Initialize();
     bool found = false;
     while (!frontier_.IsEmpty()) {
-      int64 distance;
+      int64_t distance;
       int node = SelectClosestNode(&distance);
       if (distance == kInfinity) {
         found = false;
@@ -96,7 +100,7 @@ class DijkstraSP {
     }
   }
 
-  int SelectClosestNode(int64* distance) {
+  int SelectClosestNode(int64_t* distance) {
     const int node = frontier_.Top()->node();
     *distance = frontier_.Top()->distance();
     frontier_.Pop();
@@ -107,14 +111,15 @@ class DijkstraSP {
 
   void Update(int node) {
     for (const auto& other_node : not_visited_) {
-      const int64 graph_node_i = graph_(node, other_node);
+      const int64_t graph_node_i = graph_(node, other_node);
       if (graph_node_i != disconnected_distance_) {
         if (added_to_the_frontier_.find(other_node) ==
             added_to_the_frontier_.end()) {
           frontier_.Add(&elements_[other_node]);
           added_to_the_frontier_.insert(other_node);
         }
-        const int64 other_distance = elements_[node].distance() + graph_node_i;
+        const int64_t other_distance =
+            elements_[node].distance() + graph_node_i;
         if (elements_[other_node].distance() > other_distance) {
           elements_[other_node].set_distance(other_distance);
           frontier_.NoteChangedPriority(&elements_[other_node]);
@@ -135,8 +140,8 @@ class DijkstraSP {
 
   const int node_count_;
   const int start_node_;
-  std::function<int64(int, int)> graph_;
-  const int64 disconnected_distance_;
+  std::function<int64_t(int, int)> graph_;
+  const int64_t disconnected_distance_;
   std::unique_ptr<int[]> predecessor_;
   AdjustablePriorityQueue<Element> frontier_;
   std::vector<Element> elements_;
@@ -145,8 +150,8 @@ class DijkstraSP {
 };
 
 bool DijkstraShortestPath(int node_count, int start_node, int end_node,
-                          std::function<int64(int, int)> graph,
-                          int64 disconnected_distance,
+                          std::function<int64_t(int, int)> graph,
+                          int64_t disconnected_distance,
                           std::vector<int>* nodes) {
   DijkstraSP<absl::flat_hash_set<int>> bf(
       node_count, start_node, std::move(graph), disconnected_distance);
@@ -154,8 +159,8 @@ bool DijkstraShortestPath(int node_count, int start_node, int end_node,
 }
 
 bool StableDijkstraShortestPath(int node_count, int start_node, int end_node,
-                                std::function<int64(int, int)> graph,
-                                int64 disconnected_distance,
+                                std::function<int64_t(int, int)> graph,
+                                int64_t disconnected_distance,
                                 std::vector<int>* nodes) {
   DijkstraSP<std::set<int>> bf(node_count, start_node, std::move(graph),
                                disconnected_distance);

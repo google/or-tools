@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -33,17 +34,19 @@ class IntervalVarStartExpr : public BaseIntExpr {
       : BaseIntExpr(i->solver()), interval_(i) {}
   ~IntervalVarStartExpr() override {}
 
-  int64 Min() const override { return interval_->StartMin(); }
+  int64_t Min() const override { return interval_->StartMin(); }
 
-  void SetMin(int64 m) override { interval_->SetStartMin(m); }
+  void SetMin(int64_t m) override { interval_->SetStartMin(m); }
 
-  int64 Max() const override { return interval_->StartMax(); }
+  int64_t Max() const override { return interval_->StartMax(); }
 
-  void SetMax(int64 m) override { interval_->SetStartMax(m); }
+  void SetMax(int64_t m) override { interval_->SetStartMax(m); }
 
-  void SetRange(int64 l, int64 u) override { interval_->SetStartRange(l, u); }
+  void SetRange(int64_t l, int64_t u) override {
+    interval_->SetStartRange(l, u);
+  }
 
-  void SetValue(int64 v) override { interval_->SetStartRange(v, v); }
+  void SetValue(int64_t v) override { interval_->SetStartRange(v, v); }
 
   bool Bound() const override {
     return interval_->StartMin() == interval_->StartMax();
@@ -72,17 +75,17 @@ class IntervalVarEndExpr : public BaseIntExpr {
       : BaseIntExpr(i->solver()), interval_(i) {}
   ~IntervalVarEndExpr() override {}
 
-  int64 Min() const override { return interval_->EndMin(); }
+  int64_t Min() const override { return interval_->EndMin(); }
 
-  void SetMin(int64 m) override { interval_->SetEndMin(m); }
+  void SetMin(int64_t m) override { interval_->SetEndMin(m); }
 
-  int64 Max() const override { return interval_->EndMax(); }
+  int64_t Max() const override { return interval_->EndMax(); }
 
-  void SetMax(int64 m) override { interval_->SetEndMax(m); }
+  void SetMax(int64_t m) override { interval_->SetEndMax(m); }
 
-  void SetRange(int64 l, int64 u) override { interval_->SetEndRange(l, u); }
+  void SetRange(int64_t l, int64_t u) override { interval_->SetEndRange(l, u); }
 
-  void SetValue(int64 v) override { interval_->SetEndRange(v, v); }
+  void SetValue(int64_t v) override { interval_->SetEndRange(v, v); }
 
   bool Bound() const override {
     return interval_->EndMin() == interval_->EndMax();
@@ -111,19 +114,19 @@ class IntervalVarDurationExpr : public BaseIntExpr {
       : BaseIntExpr(i->solver()), interval_(i) {}
   ~IntervalVarDurationExpr() override {}
 
-  int64 Min() const override { return interval_->DurationMin(); }
+  int64_t Min() const override { return interval_->DurationMin(); }
 
-  void SetMin(int64 m) override { interval_->SetDurationMin(m); }
+  void SetMin(int64_t m) override { interval_->SetDurationMin(m); }
 
-  int64 Max() const override { return interval_->DurationMax(); }
+  int64_t Max() const override { return interval_->DurationMax(); }
 
-  void SetMax(int64 m) override { interval_->SetDurationMax(m); }
+  void SetMax(int64_t m) override { interval_->SetDurationMax(m); }
 
-  void SetRange(int64 l, int64 u) override {
+  void SetRange(int64_t l, int64_t u) override {
     interval_->SetDurationRange(l, u);
   }
 
-  void SetValue(int64 v) override { interval_->SetDurationRange(v, v); }
+  void SetValue(int64_t v) override { interval_->SetDurationRange(v, v); }
 
   bool Bound() const override {
     return interval_->DurationMin() == interval_->DurationMax();
@@ -179,17 +182,17 @@ IntExpr* BuildEndExpr(IntervalVar* var) {
   return expr;
 }
 
-IntExpr* BuildSafeStartExpr(IntervalVar* var, int64 unperformed_value) {
+IntExpr* BuildSafeStartExpr(IntervalVar* var, int64_t unperformed_value) {
   return var->solver()->MakeConditionalExpression(
       var->PerformedExpr()->Var(), var->StartExpr(), unperformed_value);
 }
 
-IntExpr* BuildSafeDurationExpr(IntervalVar* var, int64 unperformed_value) {
+IntExpr* BuildSafeDurationExpr(IntervalVar* var, int64_t unperformed_value) {
   return var->solver()->MakeConditionalExpression(
       var->PerformedExpr()->Var(), var->DurationExpr(), unperformed_value);
 }
 
-IntExpr* BuildSafeEndExpr(IntervalVar* var, int64 unperformed_value) {
+IntExpr* BuildSafeEndExpr(IntervalVar* var, int64_t unperformed_value) {
   return var->solver()->MakeConditionalExpression(
       var->PerformedExpr()->Var(), var->EndExpr(), unperformed_value);
 }

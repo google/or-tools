@@ -1,0 +1,23 @@
+name: aarch64 Toolchain
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  aarch64:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        targets: [
+          [aarch64], # bootlin
+          [aarch64be] # bootlin
+        ]
+      fail-fast: false
+    env:
+      TARGET: ${{ matrix.targets[0] }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: make --directory=cmake ${TARGET}_build
+    - name: Test
+      run: make --directory=cmake ${TARGET}_test

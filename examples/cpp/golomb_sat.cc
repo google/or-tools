@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,13 +24,14 @@
 //   0, 1, 4, 10, 12, 17
 //   0, 1, 4, 10, 18, 23, 25
 
+#include <cstdint>
 #include <cstdio>
+#include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
@@ -57,7 +58,7 @@ void GolombRuler(int size) {
 
   std::vector<IntVar> ticks(size);
   ticks[0] = cp_model.NewConstant(0);
-  const int64 max = size * size;
+  const int64_t max = size * size;
   Domain domain(1, max);
   for (int i = 1; i < size; ++i) {
     ticks[i] = cp_model.NewIntVar(domain);
@@ -66,7 +67,7 @@ void GolombRuler(int size) {
   for (int i = 0; i < size; ++i) {
     for (int j = i + 1; j < size; ++j) {
       const IntVar diff = cp_model.NewIntVar(domain);
-      cp_model.AddEquality(LinearExpr::Sum({diff, ticks[i]}), ticks[j]);
+      cp_model.AddEquality(diff, ticks[j] - ticks[i]);
       diffs.push_back(diff);
     }
   }
@@ -98,8 +99,8 @@ void GolombRuler(int size) {
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
   if (response.status() == CpSolverStatus::OPTIMAL) {
-    const int64 result = SolutionIntegerValue(response, ticks.back());
-    const int64 num_failures = response.num_conflicts();
+    const int64_t result = SolutionIntegerValue(response, ticks.back());
+    const int64_t num_failures = response.num_conflicts();
     absl::PrintF("N = %d, optimal length = %d (conflicts:%d, time=%f s)\n",
                  size, result, num_failures, response.wall_time());
     if (size - 1 < kKnownSolutions) {
@@ -107,7 +108,7 @@ void GolombRuler(int size) {
     }
     if (absl::GetFlag(FLAGS_print)) {
       for (int i = 0; i < size; ++i) {
-        const int64 tick = SolutionIntegerValue(response, ticks[i]);
+        const int64_t tick = SolutionIntegerValue(response, ticks[i]);
         printf("%d ", static_cast<int>(tick));
       }
       printf("\n");
@@ -120,8 +121,7 @@ void GolombRuler(int size) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   if (absl::GetFlag(FLAGS_size) != 0) {
     operations_research::sat::GolombRuler(absl::GetFlag(FLAGS_size));

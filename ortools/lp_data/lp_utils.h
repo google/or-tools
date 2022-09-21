@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 
 #ifndef OR_TOOLS_LP_DATA_LP_UTILS_H_
 #define OR_TOOLS_LP_DATA_LP_UTILS_H_
+
+#include <cmath>
 
 #include "ortools/base/accurate_sum.h"
 #include "ortools/lp_data/lp_types.h"
@@ -316,20 +318,32 @@ inline void ChangeSign(StrictITIVector<IndexType, Fractional>* data) {
 //
 // The numerical accuracy suffers however. If X is 1e100 and SumWithout(X)
 // should be 1e-100, then the value actually returned by SumWithout(X) is likely
-// to be wrong (by up to std::numeric_limits<Fractional>::epsilon() ^ 2).
+// to be wrong.
 template <bool supported_infinity_is_positive>
 class SumWithOneMissing {
  public:
   SumWithOneMissing() : num_infinities_(0), sum_() {}
 
   void Add(Fractional x) {
-    if (num_infinities_ > 1) return;
-    if (IsFinite(x)) {
-      sum_.Add(x);
+    DCHECK(!std::isnan(x));
+
+    if (!IsFinite(x)) {
+      DCHECK_EQ(x, Infinity());
+      ++num_infinities_;
       return;
     }
-    DCHECK_EQ(Infinity(), x);
-    ++num_infinities_;
+
+    // If we overflow, then there is not much we can do. This is needed
+    // because KahanSum seems to give nan if we try to add stuff to an
+    // infinite sum.
+    if (!IsFinite(sum_.Value())) return;
+
+    sum_.Add(x);
+  }
+
+  void RemoveOneInfinity() {
+    DCHECK_GE(num_infinities_, 1);
+    --num_infinities_;
   }
 
   Fractional Sum() const {
@@ -347,13 +361,24 @@ class SumWithOneMissing {
     return sum_.Value();
   }
 
+  // When the term we substract has a big magnitude, the SumWithout() can be
+  // quite imprecise. On can use these version to have more defensive bounds.
+  Fractional SumWithoutLb(Fractional c) const {
+    if (!IsFinite(c)) return SumWithout(c);
+    return SumWithout(c) - std::abs(c) * 1e-12;
+  }
+
+  Fractional SumWithoutUb(Fractional c) const {
+    if (!IsFinite(c)) return SumWithout(c);
+    return SumWithout(c) + std::abs(c) * 1e-12;
+  }
+
  private:
   Fractional Infinity() const {
     return supported_infinity_is_positive ? kInfinity : -kInfinity;
   }
 
-  // Count how many times Add() was called with an infinite value. The count is
-  // stopped at 2 to be a bit faster.
+  // Count how many times Add() was called with an infinite value.
   int num_infinities_;
   KahanSum sum_;  // stripped of all the infinite values.
 };

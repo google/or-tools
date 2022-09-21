@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -53,9 +53,9 @@ RecordReader::RecordReader(File* const file) : file_(file) {}
 
 bool RecordReader::Close() { return file_->Close(); }
 
-void RecordReader::Uncompress(const char* const source, uint64 source_size,
+void RecordReader::Uncompress(const char* const source, uint64_t source_size,
                               char* const output_buffer,
-                              uint64 output_size) const {
+                              uint64_t output_size) const {
   unsigned long result_size = output_size;  // NOLINT
   // Use uncompress() from zlib.h
   const int result =

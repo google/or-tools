@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,16 +26,16 @@ Constraints:
 import collections
 import math
 
-from google.protobuf import text_format
 from absl import app
 from absl import flags
+from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('output_proto', '',
                     'Output file to write the cp_model proto to.')
-flags.DEFINE_string('params', 'num_search_workers:8,log_search_progress:true',
+flags.DEFINE_string('params', 'num_search_workers:16,log_search_progress:true',
                     'Sat solver parameters.')
 flags.DEFINE_integer('instance', 1, 'Instance to select (1, 2, 3).', 1, 3)
 
@@ -1888,18 +1889,18 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             model.Add(working_times[d] >= min_working_time)
 
         # Create circuit constraint.
-        model.Add(sum(outgoing_source_literals) == 1)
+        model.AddExactlyOne(outgoing_source_literals)
         for s in range(num_shifts):
-            model.Add(sum(outgoing_literals[s]) == 1)
-            model.Add(sum(incoming_literals[s]) == 1)
-        model.Add(sum(incoming_sink_literals) == 1)
+            model.AddExactlyOne(outgoing_literals[s])
+            model.AddExactlyOne(incoming_literals[s])
+        model.AddExactlyOne(incoming_sink_literals)
 
     # Each shift is covered.
     for s in range(num_shifts):
-        model.Add(sum(performed[d, s] for d in range(num_drivers)) == 1)
+        model.AddExactlyOne(performed[d, s] for d in range(num_drivers))
         # Globally, each node has one incoming and one outgoing literal
-        model.Add(sum(shared_incoming_literals[s]) == 1)
-        model.Add(sum(shared_outgoing_literals[s]) == 1)
+        model.AddExactlyOne(shared_incoming_literals[s])
+        model.AddExactlyOne(shared_outgoing_literals[s])
 
     # Symmetry breaking
 
@@ -1921,7 +1922,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
         model.Add(
             cp_model.LinearExpr.Sum(working_times) == total_driving_time +
             num_drivers * (setup_time + cleanup_time) +
-            cp_model.LinearExpr.ScalProd(delay_literals, delay_weights))
+            cp_model.LinearExpr.WeightedSum(delay_literals, delay_weights))
 
     if minimize_drivers:
         # Minimize the number of working drivers
@@ -1930,7 +1931,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
         # Minimize the sum of delays between tasks, which in turns minimize the
         # sum of working times as the total driving time is fixed
         model.Minimize(
-            cp_model.LinearExpr.ScalProd(delay_literals, delay_weights))
+            cp_model.LinearExpr.WeightedSum(delay_literals, delay_weights))
 
     if not minimize_drivers and FLAGS.output_proto:
         print('Writing proto to %s' % FLAGS.output_proto)
@@ -1977,7 +1978,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
     return int(solver.ObjectiveValue())
 
 
-def main(_):
+def solve_bus_driver_scheduling():
     """Optimize the bus driver allocation in two passes."""
     print('----------- first pass: minimize the number of drivers')
     num_drivers = bus_driver_scheduling(True, -1)
@@ -1986,6 +1987,10 @@ def main(_):
     else:
         print('----------- second pass: minimize the sum of working times')
         bus_driver_scheduling(False, num_drivers)
+
+
+def main(_=None):
+    solve_bus_driver_scheduling()
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# [START program]
 """Appointment selection.
 
 This module maximizes the number of appointments that can
@@ -20,10 +22,12 @@ ratio of appointment types.
 # overloaded sum() clashes with pytype.
 # pytype: disable=wrong-arg-types
 
+# [START import]
 from absl import app
 from absl import flags
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
+# [END import]
 
 FLAGS = flags.FLAGS
 flags.DEFINE_integer('load_min', 480, 'Minimum load in minutes.')
@@ -73,7 +77,10 @@ def EnumerateAllKnapsacksWithRepetition(item_sizes, total_size_min,
 
     solver = cp_model.CpSolver()
     solution_collector = AllSolutionCollector(variables)
-    solver.SearchForAllSolutions(model, solution_collector)
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
+    # Solve
+    solver.Solve(model, solution_collector)
     return solution_collector.combinations()
 
 
@@ -109,8 +116,9 @@ def AggregateItemCollectionsOptimally(item_collections, max_num_collections,
       - and its associated "num_selections" is the number of times it was
         selected.
   """
-    solver = pywraplp.Solver('Select',
-                             pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('SCIP')
+    if not solver:
+      return []
     n = len(ideal_item_ratios)
     num_distinct_collections = len(item_collections)
     max_num_items_per_collection = 0
@@ -200,7 +208,7 @@ def GetOptimalSchedule(demand):
     return output
 
 
-def main(_):
+def solve_appointments(_):
     demand = [(45.0, 'Type1', 90), (30.0, 'Type2', 120), (25.0, 'Type3', 180)]
     print('*** input problem ***')
     print('Appointments: ')
@@ -217,6 +225,7 @@ def main(_):
     for a in demand:
         installed_per_type[a[1]] = 0
 
+    # [START print_solution]
     print('*** output solution ***')
     for template in selection:
         num_instances = template[0]
@@ -230,11 +239,15 @@ def main(_):
     print()
     print('%d installations planned' % installed)
     for a in demand:
-        name = a[1]
-        per_type = installed_per_type[name]
-        print(('   %d (%.2f%%) installations of type %s planned' %
-               (per_type, per_type * 100.0 / installed, name)))
+      name = a[1]
+      per_type = installed_per_type[name]
+      if installed != 0:
+        print(f'   {per_type} ({per_type * 100.0 / installed}%) installations of type {name} planned')
+      else:
+        print(f'   {per_type} installations of type {name} planned')
+    # [END print_solution]
 
 
 if __name__ == '__main__':
-    app.run(main)
+    app.run(solve_appointments)
+# [END program]

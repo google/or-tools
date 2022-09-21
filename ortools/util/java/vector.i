@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,11 +14,6 @@
 // SWIG Macros to use std::vector<Num> and const std::vector<Num>& in Java,
 // where Num is an atomic numeric type.
 //
-// Normally we'd simply use %include "std_vector.i" with the %template
-// directive (see http://www.swig.org/Doc1.3/Library.html#Library_nn15), but
-// in google3 we can't, because exceptions are forbidden.
-//
-// TODO(user): move to base/swig/java.
 
 %include "stdint.i"
 
@@ -98,7 +93,7 @@
 %enddef  // VECTOR_AS_JAVA_ARRAY
 
 VECTOR_AS_JAVA_ARRAY(int, int, Int);
-VECTOR_AS_JAVA_ARRAY(int64, long, Long);
+VECTOR_AS_JAVA_ARRAY(int64_t, long, Long);
 VECTOR_AS_JAVA_ARRAY(double, double, Double);
 
 
@@ -285,7 +280,7 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 %enddef  // MATRIX_AS_JAVA_ARRAY
 
 MATRIX_AS_JAVA_ARRAY(int, int, Int);
-MATRIX_AS_JAVA_ARRAY(int64, long, Long);
+MATRIX_AS_JAVA_ARRAY(int64_t, long, Long);
 MATRIX_AS_JAVA_ARRAY(double, double, Double);
 
 %define REINTERPRET_CAST(CType, ptr)

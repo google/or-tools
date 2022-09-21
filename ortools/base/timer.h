@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,7 +17,6 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/basictypes.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 
 class WallTimer {
@@ -43,21 +42,22 @@ class WallTimer {
     }
   }
   double Get() const { return GetNanos() * 1e-9; }
-  int64 GetInMs() const { return GetNanos() / 1000000; }
-  int64 GetInUsec() const { return GetNanos() / 1000; }
+  int64_t GetInMs() const { return GetNanos() / 1000000; }
+  int64_t GetInUsec() const { return GetNanos() / 1000; }
   inline absl::Duration GetDuration() const {
     return absl::Nanoseconds(GetNanos());
   }
+  bool IsRunning() const { return running_; }
 
  protected:
-  int64 GetNanos() const {
+  int64_t GetNanos() const {
     return running_ ? absl::GetCurrentTimeNanos() - start_ + sum_ : sum_;
   }
 
  private:
   bool running_;
-  int64 start_;
-  int64 sum_;
+  int64_t start_;
+  int64_t sum_;
 };
 
 // This is meant to measure the actual CPU usage time.
@@ -73,7 +73,7 @@ class CycleTimer : public WallTimer {
  public:
   // This actually returns a number of nanoseconds instead of the number
   // of CPU cycles.
-  int64 GetCycles() const { return GetNanos(); }
+  int64_t GetCycles() const { return GetNanos(); }
 };
 
 typedef CycleTimer SimpleCycleTimer;
@@ -81,10 +81,12 @@ typedef CycleTimer SimpleCycleTimer;
 // Conversion routines between CycleTimer::GetCycles and actual times.
 class CycleTimerBase {
  public:
-  static int64 SecondsToCycles(double s) { return static_cast<int64>(s * 1e9); }
-  static double CyclesToSeconds(int64 c) { return c * 1e-9; }
-  static int64 CyclesToMs(int64 c) { return c / 1000000; }
-  static int64 CyclesToUsec(int64 c) { return c / 1000; }
+  static int64_t SecondsToCycles(double s) {
+    return static_cast<int64_t>(s * 1e9);
+  }
+  static double CyclesToSeconds(int64_t c) { return c * 1e-9; }
+  static int64_t CyclesToMs(int64_t c) { return c / 1000000; }
+  static int64_t CyclesToUsec(int64_t c) { return c / 1000; }
 };
 typedef CycleTimerBase CycleTimerInstance;
 

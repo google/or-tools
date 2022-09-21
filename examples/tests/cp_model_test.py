@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Tests for ortools.sat.python.cp_model."""
 
 import unittest
@@ -18,6 +19,20 @@ class SolutionCounter(cp_model.CpSolverSolutionCallback):
 
     def solution_count(self):
         return self.__solution_count
+
+
+class LogToString(object):
+  """Record log in a string."""
+
+  def __init__(self):
+    self.__log = ''
+
+  def NewMessage(self, message: str):
+    self.__log += message
+    self.__log += '\n'
+
+  def Log(self):
+    return self.__log
 
 
 class CpModelTest(unittest.TestCase):
@@ -313,7 +328,7 @@ class CpModelTest(unittest.TestCase):
         model.AddAllDifferent(x)
         self.assertEqual(5, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].all_diff.vars))
+        self.assertEqual(5, len(model.Proto().constraints[0].all_diff.exprs))
 
     def testMaxEquality(self):
         print('testMaxEquality')
@@ -323,8 +338,9 @@ class CpModelTest(unittest.TestCase):
         model.AddMaxEquality(x, y)
         self.assertEqual(6, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].int_max.vars))
-        self.assertEqual(0, model.Proto().constraints[0].int_max.target)
+        self.assertEqual(5, len(model.Proto().constraints[0].lin_max.exprs))
+        self.assertEqual(0, model.Proto().constraints[0].lin_max.target.vars[0])
+        self.assertEqual(1, model.Proto().constraints[0].lin_max.target.coeffs[0])
 
     def testMinEquality(self):
         print('testMinEquality')
@@ -334,34 +350,39 @@ class CpModelTest(unittest.TestCase):
         model.AddMinEquality(x, y)
         self.assertEqual(6, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].int_min.vars))
-        self.assertEqual(0, model.Proto().constraints[0].int_min.target)
+        self.assertEqual(5, len(model.Proto().constraints[0].lin_max.exprs))
+        self.assertEqual(0, model.Proto().constraints[0].lin_max.target.vars[0])
+        self.assertEqual(-1, model.Proto().constraints[0].lin_max.target.coeffs[0])
 
     def testMinEqualityWithConstant(self):
         print('testMinEqualityWithConstant')
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 4, 'x')
         y = model.NewIntVar(0, 4, 'y')
-        model.AddMinEquality(x, [y, 3])
-        self.assertEqual(3, len(model.Proto().variables))
+        model.AddMinEquality(x, [2 * y, 3])
+        self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_min.vars))
-        self.assertEqual(1, model.Proto().constraints[0].int_min.vars[0])
-        self.assertEqual(2, model.Proto().constraints[0].int_min.vars[1])
-        self.assertEqual(3, model.Proto().variables[2].domain[0])
-        self.assertEqual(3, model.Proto().variables[2].domain[1])
+        self.assertEqual(2, len(model.Proto().constraints[0].lin_max.exprs))
+        self.assertEqual(1, model.Proto().constraints[0].lin_max.exprs[0].vars[0])
+        self.assertEqual(-2, model.Proto().constraints[0].lin_max.exprs[0].coeffs[0])
+        self.assertEqual(-3, model.Proto().constraints[0].lin_max.exprs[1].offset)
 
     def testAbs(self):
         print('testAbs')
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 4, 'x')
         y = model.NewIntVar(-5, 5, 'y')
-        model.AddMaxEquality(x, [-y, y])
+        model.AddAbsEquality(x, y)
         self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_max.vars))
-        self.assertEqual(-2, model.Proto().constraints[0].int_max.vars[0])
-        self.assertEqual(1, model.Proto().constraints[0].int_max.vars[1])
+        lin_max = model.Proto().constraints[0].lin_max
+        self.assertEqual(0, lin_max.target.vars[0])
+        self.assertEqual(1, lin_max.target.coeffs[0])
+        self.assertEqual(2, len(lin_max.exprs))
+        self.assertEqual(1, lin_max.exprs[0].vars[0])
+        self.assertEqual(1, lin_max.exprs[0].coeffs[0])
+        self.assertEqual(1, lin_max.exprs[1].vars[0])
+        self.assertEqual(-1, lin_max.exprs[1].coeffs[0])
         passed = False
         try:
             z = abs(x)
@@ -379,11 +400,11 @@ class CpModelTest(unittest.TestCase):
         x = model.NewIntVar(0, 10, 'x')
         y = model.NewIntVar(0, 50, 'y')
         model.AddDivisionEquality(x, y, 6)
-        self.assertEqual(3, len(model.Proto().variables))
+        self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_div.vars))
-        self.assertEqual(1, model.Proto().constraints[0].int_div.vars[0])
-        self.assertEqual(2, model.Proto().constraints[0].int_div.vars[1])
+        self.assertEqual(2, len(model.Proto().constraints[0].int_div.exprs))
+        self.assertEqual(1, model.Proto().constraints[0].int_div.exprs[0].vars[0])
+        self.assertEqual(6, model.Proto().constraints[0].int_div.exprs[1].offset)
 
     def testModulo(self):
         print('testModulo')
@@ -391,22 +412,22 @@ class CpModelTest(unittest.TestCase):
         x = model.NewIntVar(0, 10, 'x')
         y = model.NewIntVar(0, 50, 'y')
         model.AddModuloEquality(x, y, 6)
-        self.assertEqual(3, len(model.Proto().variables))
+        self.assertEqual(2, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(2, len(model.Proto().constraints[0].int_mod.vars))
-        self.assertEqual(1, model.Proto().constraints[0].int_mod.vars[0])
-        self.assertEqual(2, model.Proto().constraints[0].int_mod.vars[1])
+        self.assertEqual(2, len(model.Proto().constraints[0].int_mod.exprs))
+        self.assertEqual(1, model.Proto().constraints[0].int_mod.exprs[0].vars[0])
+        self.assertEqual(6, model.Proto().constraints[0].int_mod.exprs[1].offset)
 
     def testProdEquality(self):
         print('testProdEquality')
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 4, 'x')
         y = [model.NewIntVar(0, 4, 'y%i' % i) for i in range(5)]
-        model.AddProdEquality(x, y)
+        model.AddMultiplicationEquality(x, y)
         self.assertEqual(6, len(model.Proto().variables))
         self.assertEqual(1, len(model.Proto().constraints))
-        self.assertEqual(5, len(model.Proto().constraints[0].int_prod.vars))
-        self.assertEqual(0, model.Proto().constraints[0].int_prod.target)
+        self.assertEqual(5, len(model.Proto().constraints[0].int_prod.exprs))
+        self.assertEqual(0, model.Proto().constraints[0].int_prod.target.vars[0])
 
     def testBoolOr(self):
         print('testBoolOr')
@@ -445,37 +466,37 @@ class CpModelTest(unittest.TestCase):
 
     def testAssertIsInt64(self):
         print('testAssertIsInt64')
-        cp_model_helper.AssertIsInt64(123)
-        cp_model_helper.AssertIsInt64(2**63 - 1)
-        cp_model_helper.AssertIsInt64(-2**63)
+        cp_model_helper.assert_is_int64(123)
+        cp_model_helper.assert_is_int64(2**63 - 1)
+        cp_model_helper.assert_is_int64(-2**63)
 
     def testCapInt64(self):
         print('testCapInt64')
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MAX), cp_model.INT_MAX)
+            cp_model_helper.to_capped_int64(cp_model.INT_MAX), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MAX + 1), cp_model.INT_MAX)
+            cp_model_helper.to_capped_int64(cp_model.INT_MAX + 1), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MIN), cp_model.INT_MIN)
+            cp_model_helper.to_capped_int64(cp_model.INT_MIN), cp_model.INT_MIN)
         self.assertEqual(
-            cp_model_helper.CapInt64(cp_model.INT_MIN - 1), cp_model.INT_MIN)
-        self.assertEqual(cp_model_helper.CapInt64(15), 15)
+            cp_model_helper.to_capped_int64(cp_model.INT_MIN - 1), cp_model.INT_MIN)
+        self.assertEqual(cp_model_helper.to_capped_int64(15), 15)
 
     def testCapSub(self):
         print('testCapSub')
-        self.assertEqual(cp_model_helper.CapSub(10, 5), 5)
+        self.assertEqual(cp_model_helper.capped_subtraction(10, 5), 5)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MIN, 5), cp_model.INT_MIN)
+            cp_model_helper.capped_subtraction(cp_model.INT_MIN, 5), cp_model.INT_MIN)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MIN, -5), cp_model.INT_MIN)
+            cp_model_helper.capped_subtraction(cp_model.INT_MIN, -5), cp_model.INT_MIN)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MAX, 5), cp_model.INT_MAX)
+            cp_model_helper.capped_subtraction(cp_model.INT_MAX, 5), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapSub(cp_model.INT_MAX, -5), cp_model.INT_MAX)
+            cp_model_helper.capped_subtraction(cp_model.INT_MAX, -5), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapSub(2, cp_model.INT_MIN), cp_model.INT_MAX)
+            cp_model_helper.capped_subtraction(2, cp_model.INT_MIN), cp_model.INT_MAX)
         self.assertEqual(
-            cp_model_helper.CapSub(2, cp_model.INT_MAX), cp_model.INT_MIN)
+            cp_model_helper.capped_subtraction(2, cp_model.INT_MAX), cp_model.INT_MIN)
 
     def testGetOrMakeIndexFromConstant(self):
         print('testGetOrMakeIndexFromConstant')
@@ -489,6 +510,7 @@ class CpModelTest(unittest.TestCase):
         self.assertEqual(3, model_var.domain[1])
 
     def testStr(self):
+        print('testStr')
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 4, 'x')
         self.assertEqual(str(x == 2), 'x == 2')
@@ -496,9 +518,7 @@ class CpModelTest(unittest.TestCase):
         self.assertEqual(str(x <= 2), 'x <= 2')
         self.assertEqual(str(x > 2), 'x >= 3')
         self.assertEqual(str(x < 2), 'x <= 1')
-        self.assertEqual(
-            str(x != 2),
-            'x in [-9223372036854775808..1, 3..9223372036854775807]')
+        self.assertEqual(str(x != 2), 'x != 2')
         self.assertEqual(str(x * 3), '(3 * x)')
         self.assertEqual(str(-x), '-x')
         self.assertEqual(str(x + 3), '(x + 3)')
@@ -508,9 +528,7 @@ class CpModelTest(unittest.TestCase):
         self.assertEqual(
             str(x != -9223372036854775808), 'x >= -9223372036854775807')
         y = model.NewIntVar(0, 4, 'y')
-        self.assertEqual(
-            str(x != y),
-            '(x + -y) in [-9223372036854775808..-1, 1..9223372036854775807]')
+        self.assertEqual(str(x != y), '(x + -y) != 0')
         self.assertEqual('0 <= x <= 10',
                          str(cp_model.BoundedLinearExpression(x, [0, 10])))
         print(str(model))
@@ -521,8 +539,8 @@ class CpModelTest(unittest.TestCase):
         y = model.NewIntVar(0, 3, 'y')
         self.assertEqual(repr(x), 'x(0..4)')
         self.assertEqual(repr(x * 2), 'ProductCst(x(0..4), 2)')
-        self.assertEqual(repr(x + y), 'SumArray(x(0..4), y(0..3), 0)')
-        self.assertEqual(repr(x + 5), 'SumArray(x(0..4), 5)')
+        self.assertEqual(repr(x + y), 'Sum(x(0..4), y(0..3))')
+        self.assertEqual(repr(x + 5), 'Sum(x(0..4), 5)')
 
     def testDisplayBounds(self):
         print('testDisplayBounds')
@@ -559,7 +577,8 @@ class CpModelTest(unittest.TestCase):
 
         solver = cp_model.CpSolver()
         solution_counter = SolutionCounter()
-        status = solver.SearchForAllSolutions(model, solution_counter)
+        solver.parameters.enumerate_all_solutions = True
+        status = solver.Solve(model, solution_counter)
         self.assertEqual(status, cp_model.OPTIMAL)
         self.assertEqual(4, solution_counter.solution_count())
 
@@ -630,6 +649,81 @@ class CpModelTest(unittest.TestCase):
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
         self.assertEqual(status, cp_model.OPTIMAL)
+
+    def testCustomLog(self):
+        print('testCustomLog')
+        model = cp_model.CpModel()
+        x = model.NewIntVar(-10, 10, 'x')
+        y = model.NewIntVar(-10, 10, 'y')
+        model.AddLinearConstraint(x + 2 * y, 0, 10)
+        model.Minimize(y)
+        solver = cp_model.CpSolver()
+        solver.parameters.log_search_progress = True
+        solver.parameters.log_to_stdout = False
+        log_callback = LogToString()
+        solver.log_callback = log_callback.NewMessage
+
+        self.assertEqual(cp_model.OPTIMAL, solver.Solve(model))
+        self.assertEqual(10, solver.Value(x))
+        self.assertEqual(-5, solver.Value(y))
+
+        print(log_callback.Log())
+        self.assertRegex(log_callback.Log(), 'Parameters.*log_to_stdout.*')
+
+    def testIndexToProto(self):
+        print('testIndexToProto')
+
+        model = cp_model.CpModel()
+
+        # Creates the variables.
+        v0 = model.NewBoolVar('buggyVarIndexToVarProto')
+        v1 = model.NewBoolVar('v1')
+
+        self.assertEqual(model.VarIndexToVarProto(0).name, v0.Name())
+
+    def testWrongBoolEvaluation(self):
+        print('testWrongBoolEvaluation')
+
+        model = cp_model.CpModel()
+
+        # Creates the variables.
+        v0 = model.NewIntVar(0, 10, 'v0')
+        v1 = model.NewIntVar(0, 10, 'v1')
+        v2 = model.NewIntVar(0, 10, 'v2')
+
+        with self.assertRaises(NotImplementedError):
+            if v0 == 2:
+                print('== passed')
+
+        with self.assertRaises(NotImplementedError):
+            if v0 >= 3:
+                print('>= passed')
+
+        with self.assertRaises(NotImplementedError):
+            model.Add(v2 == min(v0, v1))
+            print('min passed')
+
+        with self.assertRaises(NotImplementedError):
+            if v0:
+                print('bool passed')
+
+    def testBadSum(self):
+        print('testBadSum')
+
+        model = cp_model.CpModel()
+        xx = dict()
+        for i in range(50):
+            xx[i] = model.NewBoolVar('xx%i' % (i))
+
+        b = model.NewBoolVar('b') # intermediate variable
+        z = model.NewBoolVar('z') # intermediate variable
+
+        # b implies sum of list is >20
+        model.Add(sum(xx[i] for i in range(50)) > 20).OnlyEnforceIf(b)
+        model.Add(sum(xx[i] for i in range(50)) <= 20).OnlyEnforceIf(b.Not())
+
+        model.Add(z == 1).OnlyEnforceIf(b)
+        model.Add(z == 0).OnlyEnforceIf(b.Not())
 
 
 if __name__ == '__main__':

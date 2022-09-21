@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,8 +16,7 @@
 
 %include "ortools/base/base.i"
 
-%include "std_pair.i"
-%template(IntBoolPair) std::pair<int, bool>;
+%include "ortools/util/python/pair.i"
 
 %include "ortools/constraint_solver/python/constraint_solver.i"
 %include "ortools/constraint_solver/python/routing_types.i"
@@ -53,6 +52,7 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::RoutingVehicleClassIndex,
     operations_research::RoutingModel::VehicleClassIndex);
 
+
 %ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
 %ignore operations_research::RoutingModel::StateDependentTransitCallback;
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;
@@ -80,7 +80,7 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
 %include "ortools/constraint_solver/routing_parameters.h"
 %unignoreall
 
-// %including a .proto.h is frowned upon (for good general reasons), so we
+// %including a .pb.h is frowned upon (for good general reasons), so we
 // have to duplicate the OptionalBoolean enum here to give it to python users.
 namespace operations_research {
 enum OptionalBoolean {

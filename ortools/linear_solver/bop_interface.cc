@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,13 +12,18 @@
 // limitations under the License.
 
 #include <atomic>
+#include <cstdint>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/bop/bop_parameters.pb.h"
@@ -73,8 +78,8 @@ class BopInterface : public MPSolverInterface {
   void ClearObjective() override;
 
   // ------ Query statistics on the solution and the solve ------
-  int64 iterations() const override;
-  int64 nodes() const override;
+  int64_t iterations() const override;
+  int64_t nodes() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -253,12 +258,12 @@ void BopInterface::SetObjectiveOffset(double value) { NonIncrementalChange(); }
 
 void BopInterface::ClearObjective() { NonIncrementalChange(); }
 
-int64 BopInterface::iterations() const {
+int64_t BopInterface::iterations() const {
   LOG(DFATAL) << "Number of iterations not available";
   return kUnknownNumberOfIterations;
 }
 
-int64 BopInterface::nodes() const {
+int64_t BopInterface::nodes() const {
   LOG(DFATAL) << "Number of nodes not available";
   return kUnknownNumberOfNodes;
 }

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -82,14 +82,18 @@ class DenseConnectedComponentsFinder {
  public:
   DenseConnectedComponentsFinder() {}
 
+  // We support copy and move construction.
   DenseConnectedComponentsFinder(const DenseConnectedComponentsFinder&) =
-      delete;
+      default;
   DenseConnectedComponentsFinder& operator=(
-      const DenseConnectedComponentsFinder&) = delete;
+      const DenseConnectedComponentsFinder&) = default;
+  DenseConnectedComponentsFinder(DenseConnectedComponentsFinder&&) = default;
+  DenseConnectedComponentsFinder& operator=(DenseConnectedComponentsFinder&&) =
+      default;
 
   // The main API is the same as ConnectedComponentsFinder (below): see the
   // homonymous functions there.
-  void AddEdge(int node1, int node2);
+  bool AddEdge(int node1, int node2);
   bool Connected(int node1, int node2);
   int GetSize(int node);
   int GetNumberOfComponents() const { return num_components_; }
@@ -134,30 +138,45 @@ class DenseConnectedComponentsFinder {
 namespace internal {
 // A helper to deduce the type of map to use depending on whether CompareOrHashT
 // is a comparator or a hasher (prefer the latter).
-template <typename T, typename CompareOrHashT>
+template <typename T, typename CompareOrHashT, typename Eq>
 struct ConnectedComponentsTypeHelper {
   // SFINAE trait to detect hash functors and select unordered containers if so,
   // and ordered containers otherwise (= by default).
-  template <typename U, typename E = void>
+  template <typename U, typename V, typename E = void>
   struct SelectContainer {
     using Set = std::set<T, CompareOrHashT>;
     using Map = std::map<T, int, CompareOrHashT>;
   };
 
+  // Specialization for when U is a hash functor and Eq is void (no custom
+  // equality).
   // The expression inside decltype is basically saying that "H(x)" is
   // well-formed, where H is an instance of U and x is an instance of T, and is
   // a value of integral type. That is, we are "duck-typing" on whether U looks
   // like a hash functor.
-  template <typename U>
+  template <typename U, typename V>
   struct SelectContainer<
-      U, absl::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
-             std::declval<const T&>()))>::value>> {
+      U, V,
+      absl::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
+                            std::declval<const T&>()))>::value &&
+                        std::is_same_v<V, void>>> {
     using Set = absl::flat_hash_set<T, CompareOrHashT>;
     using Map = absl::flat_hash_map<T, int, CompareOrHashT>;
   };
 
-  using Set = typename SelectContainer<CompareOrHashT>::Set;
-  using Map = typename SelectContainer<CompareOrHashT>::Map;
+  // Specialization for when U is a hash functor and Eq is provided (not void).
+  template <typename U, typename V>
+  struct SelectContainer<
+      U, V,
+      absl::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
+                            std::declval<const T&>()))>::value &&
+                        !std::is_same_v<V, void>>> {
+    using Set = absl::flat_hash_set<T, CompareOrHashT, Eq>;
+    using Map = absl::flat_hash_map<T, int, CompareOrHashT, Eq>;
+  };
+
+  using Set = typename SelectContainer<CompareOrHashT, Eq>::Set;
+  using Map = typename SelectContainer<CompareOrHashT, Eq>::Map;
 };
 
 }  // namespace internal
@@ -175,10 +194,14 @@ struct ConnectedComponentsTypeHelper {
 // Each entry in components now contains all the nodes in a single
 // connected component.
 //
+// Protocol buffers can be used as the node type. Equality and hash functions
+// for protocol buffers can be found in ortools/base/message_hasher.h.
+//
 // Usage with flat_hash_set:
 //   using ConnectedComponentType = flat_hash_set<MyNodeType>;
 //   ConnectedComponentsFinder<ConnectedComponentType::key_type,
-//                             ConnectedComponentType::hasher>
+//                             ConnectedComponentType::hasher,
+//                             ConnectedComponentType::key_equal>
 //   cc;
 //   ...
 //   vector<ConnectedComponentType> components;
@@ -194,9 +217,14 @@ struct ConnectedComponentsTypeHelper {
 // ... and so on...
 // Of course, in this usage, the connected components finder retains
 // these pointers through its lifetime (though it doesn't dereference them).
-template <typename T, typename CompareOrHashT = std::less<T>>
+template <typename T, typename CompareOrHashT = std::less<T>,
+          typename Eq = void>
 class ConnectedComponentsFinder {
  public:
+  using Set =
+      typename internal::ConnectedComponentsTypeHelper<T, CompareOrHashT,
+                                                       Eq>::Set;
+
   // Constructs a connected components finder.
   ConnectedComponentsFinder() {}
 
@@ -210,9 +238,11 @@ class ConnectedComponentsFinder {
 
   // Adds an edge in the graph.  Also adds both endpoint nodes as necessary.
   // It is not an error to add the same edge twice.  Self-edges are OK too.
-  void AddEdge(T node1, T node2) {
-    delegate_.AddEdge(LookupOrInsertNode<false>(node1),
-                      LookupOrInsertNode<false>(node2));
+  // Returns true if the two nodes are newly connected, and false if they were
+  // already connected.
+  bool AddEdge(T node1, T node2) {
+    return delegate_.AddEdge(LookupOrInsertNode<false>(node1),
+                             LookupOrInsertNode<false>(node2));
   }
 
   // Returns true iff both nodes are in the same connected component.
@@ -246,9 +276,7 @@ class ConnectedComponentsFinder {
     }
     return components;
   }
-  void FindConnectedComponents(
-      std::vector<typename internal::ConnectedComponentsTypeHelper<
-          T, CompareOrHashT>::Set>* components) {
+  void FindConnectedComponents(std::vector<Set>* components) {
     const auto component_ids = delegate_.GetComponentIds();
     components->clear();
     components->resize(delegate_.GetNumberOfComponents());
@@ -284,7 +312,7 @@ class ConnectedComponentsFinder {
   }
 
   DenseConnectedComponentsFinder delegate_;
-  typename internal::ConnectedComponentsTypeHelper<T, CompareOrHashT>::Map
+  typename internal::ConnectedComponentsTypeHelper<T, CompareOrHashT, Eq>::Map
       index_;
 };
 

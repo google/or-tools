@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,16 +13,37 @@
 
 #include "ortools/sat/feasibility_pump.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <limits>
+#include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/meta/type_traits.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/revised_simplex.h"
+#include "ortools/glop/status.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/sat/cp_model.pb.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -414,7 +435,7 @@ void FeasibilityPump::UpdateBoundsOfLpVariables() {
 }
 
 double FeasibilityPump::GetLPSolutionValue(IntegerVariable variable) const {
-  return lp_solution_[gtl::FindOrDie(mirror_lp_variable_, variable).value()];
+  return lp_solution_[mirror_lp_variable_.at(variable).value()];
 }
 
 double FeasibilityPump::GetVariableValueAtCpScale(ColIndex var) {
@@ -425,9 +446,9 @@ double FeasibilityPump::GetVariableValueAtCpScale(ColIndex var) {
 // -------------------Rounding-------------------------------------
 // ----------------------------------------------------------------
 
-int64 FeasibilityPump::GetIntegerSolutionValue(IntegerVariable variable) const {
-  return integer_solution_[gtl::FindOrDie(mirror_lp_variable_, variable)
-                               .value()];
+int64_t FeasibilityPump::GetIntegerSolutionValue(
+    IntegerVariable variable) const {
+  return integer_solution_[mirror_lp_variable_.at(variable).value()];
 }
 
 bool FeasibilityPump::Round() {
@@ -451,7 +472,7 @@ bool FeasibilityPump::Round() {
 bool FeasibilityPump::NearestIntegerRounding() {
   if (!lp_solution_is_set_) return false;
   for (int i = 0; i < lp_solution_.size(); ++i) {
-    integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
+    integer_solution_[i] = static_cast<int64_t>(std::round(lp_solution_[i]));
   }
   integer_solution_is_set_ = true;
   return true;
@@ -489,11 +510,11 @@ bool FeasibilityPump::LockBasedRounding() {
   for (int i = 0; i < lp_solution_.size(); ++i) {
     if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) < 0.1 ||
         var_up_locks_[i] == var_down_locks_[i]) {
-      integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
+      integer_solution_[i] = static_cast<int64_t>(std::round(lp_solution_[i]));
     } else if (var_up_locks_[i] > var_down_locks_[i]) {
-      integer_solution_[i] = static_cast<int64>(std::floor(lp_solution_[i]));
+      integer_solution_[i] = static_cast<int64_t>(std::floor(lp_solution_[i]));
     } else {
-      integer_solution_[i] = static_cast<int64>(std::ceil(lp_solution_[i]));
+      integer_solution_[i] = static_cast<int64_t>(std::ceil(lp_solution_[i]));
     }
   }
   integer_solution_is_set_ = true;
@@ -509,7 +530,7 @@ bool FeasibilityPump::ActiveLockBasedRounding() {
   // constraint that is tight for the current lp solution.
   for (int i = 0; i < num_vars; ++i) {
     if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) < 0.1) {
-      integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
+      integer_solution_[i] = static_cast<int64_t>(std::round(lp_solution_[i]));
     }
 
     int up_locks = 0;
@@ -532,11 +553,11 @@ bool FeasibilityPump::ActiveLockBasedRounding() {
       }
     }
     if (up_locks == down_locks) {
-      integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
+      integer_solution_[i] = static_cast<int64_t>(std::round(lp_solution_[i]));
     } else if (up_locks > down_locks) {
-      integer_solution_[i] = static_cast<int64>(std::floor(lp_solution_[i]));
+      integer_solution_[i] = static_cast<int64_t>(std::floor(lp_solution_[i]));
     } else {
-      integer_solution_[i] = static_cast<int64>(std::ceil(lp_solution_[i]));
+      integer_solution_[i] = static_cast<int64_t>(std::ceil(lp_solution_[i]));
     }
   }
 
@@ -588,12 +609,12 @@ bool FeasibilityPump::PropagationRounding() {
       continue;
     }
 
-    const int64 rounded_value =
-        static_cast<int64>(std::round(lp_solution_[var_index]));
-    const int64 floor_value =
-        static_cast<int64>(std::floor(lp_solution_[var_index]));
-    const int64 ceil_value =
-        static_cast<int64>(std::ceil(lp_solution_[var_index]));
+    const int64_t rounded_value =
+        static_cast<int64_t>(std::round(lp_solution_[var_index]));
+    const int64_t floor_value =
+        static_cast<int64_t>(std::floor(lp_solution_[var_index]));
+    const int64_t ceil_value =
+        static_cast<int64_t>(std::ceil(lp_solution_[var_index]));
 
     const bool floor_is_in_domain =
         (domain.Contains(floor_value) && lb.value() <= floor_value);
@@ -620,11 +641,11 @@ bool FeasibilityPump::PropagationRounding() {
       const std::pair<IntegerLiteral, IntegerLiteral> values_in_domain =
           integer_encoder_->Canonicalize(
               IntegerLiteral::GreaterOrEqual(var, IntegerValue(rounded_value)));
-      const int64 lower_value = values_in_domain.first.bound.value();
-      const int64 higher_value = -values_in_domain.second.bound.value();
-      const int64 distance_from_lower_value =
+      const int64_t lower_value = values_in_domain.first.bound.value();
+      const int64_t higher_value = -values_in_domain.second.bound.value();
+      const int64_t distance_from_lower_value =
           std::abs(lower_value - rounded_value);
-      const int64 distance_from_higher_value =
+      const int64_t distance_from_higher_value =
           std::abs(higher_value - rounded_value);
 
       integer_solution_[var_index] =
@@ -662,7 +683,7 @@ bool FeasibilityPump::PropagationRounding() {
     }
     sat_solver_->EnqueueDecisionAndBacktrackOnConflict(to_enqueue);
 
-    if (sat_solver_->IsModelUnsat()) {
+    if (sat_solver_->ModelIsUnsat()) {
       model_is_unsat_ = true;
       return false;
     }
@@ -684,26 +705,31 @@ void FeasibilityPump::FillIntegerSolutionStats() {
   num_infeasible_constraints_ = 0;
   integer_solution_infeasibility_ = 0;
   for (RowIndex i(0); i < integer_lp_.size(); ++i) {
-    int64 activity = 0;
+    int64_t activity = 0;
     for (const auto& term : integer_lp_[i].terms) {
-      const int64 prod =
+      const int64_t prod =
           CapProd(integer_solution_[term.first.value()], term.second.value());
-      if (prod <= kint64min || prod >= kint64max) {
+      if (prod <= std::numeric_limits<int64_t>::min() ||
+          prod >= std::numeric_limits<int64_t>::max()) {
         activity = prod;
         break;
       }
       activity = CapAdd(activity, prod);
-      if (activity <= kint64min || activity >= kint64max) break;
+      if (activity <= std::numeric_limits<int64_t>::min() ||
+          activity >= std::numeric_limits<int64_t>::max())
+        break;
     }
     if (activity > integer_lp_[i].ub || activity < integer_lp_[i].lb) {
       integer_solution_is_feasible_ = false;
       num_infeasible_constraints_++;
-      const int64 ub_infeasibility = activity > integer_lp_[i].ub.value()
-                                         ? activity - integer_lp_[i].ub.value()
-                                         : 0;
-      const int64 lb_infeasibility = activity < integer_lp_[i].lb.value()
-                                         ? integer_lp_[i].lb.value() - activity
-                                         : 0;
+      const int64_t ub_infeasibility =
+          activity > integer_lp_[i].ub.value()
+              ? activity - integer_lp_[i].ub.value()
+              : 0;
+      const int64_t lb_infeasibility =
+          activity < integer_lp_[i].lb.value()
+              ? integer_lp_[i].lb.value() - activity
+              : 0;
       integer_solution_infeasibility_ =
           std::max(integer_solution_infeasibility_,
                    std::max(ub_infeasibility, lb_infeasibility));

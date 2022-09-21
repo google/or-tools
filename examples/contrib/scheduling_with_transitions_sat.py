@@ -192,7 +192,7 @@ def main(args):
         l_machine = task[alt_id][1]
         l_type = task[alt_id][2]
 
-        # Link the master variables with the local ones.
+        # Link the original variables with the local ones.
         model.Add(start == l_start).OnlyEnforceIf(l_presence)
         model.Add(duration == l_duration).OnlyEnforceIf(l_presence)
         model.Add(end == l_end).OnlyEnforceIf(l_presence)
@@ -271,8 +271,8 @@ def main(args):
         # of the tasks.
         model.Add(machine_starts[j] == machine_ends[i] +
                   transition_time).OnlyEnforceIf(lit)
-
-    model.AddCircuit(arcs)
+    if arcs:
+        model.AddCircuit(arcs)
 
   #----------------------------------------------------------------------------
   # Objective.
@@ -297,7 +297,7 @@ def main(args):
   if parameters:
     text_format.Merge(parameters, solver.parameters)
   solution_printer = SolutionPrinter(makespan)
-  status = solver.SolveWithSolutionCallback(model, solution_printer)
+  status = solver.Solve(model, solution_printer)
 
   #----------------------------------------------------------------------------
   # Print solution.

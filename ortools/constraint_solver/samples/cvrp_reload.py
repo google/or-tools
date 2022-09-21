@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # This Python file uses the following encoding: utf-8
 # Copyright 2015 Tin Arm Engineering AB
 # Copyright 2018 Google LLC
@@ -16,11 +16,30 @@
 """Capacitated Vehicle Routing Problem (CVRP).
 
    This is a sample using the routing library python wrapper to solve a CVRP
-   problem.
-   A description of the problem can be found here:
+   problem while allowing multiple trips, i.e., vehicles can return to a depot
+   to reset their load ("reload").
+
+   A description of the CVRP problem can be found here:
    http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
    Distances are in meters.
+
+   In order to implement multiple trips, new nodes are introduced at the same
+   locations of the original depots. These additional nodes can be dropped
+   from the schedule at 0 cost.
+
+   The max_slack parameter associated to the capacity constraints of all nodes
+   can be set to be the maximum of the vehicles' capacities, rather than 0 like
+   in a traditional CVRP. Slack is required since before a solution is found,
+   it is not known how much capacity will be transferred at the new nodes. For
+   all the other (original) nodes, the slack is then re-set to 0.
+
+   The above two considerations are implemented in `add_capacity_constraints()`.
+
+   Last, it is useful to set a large distance between the initial depot and the
+   new nodes introduced, to avoid schedules having spurious transits through
+   those new nodes unless it's necessary to reload. This consideration is taken
+   into account in `create_distance_evaluator()`.
 """
 
 
@@ -40,9 +59,9 @@ def create_data_model():
     # Locations in block unit
     _locations = [
         (4, 4),  # depot
-        (4, 4),  # unload depot_prime
+        (4, 4),  # unload depot_first
         (4, 4),  # unload depot_second
-        (4, 4),  # unload depot_fourth
+        (4, 4),  # unload depot_third
         (4, 4),  # unload depot_fourth
         (4, 4),  # unload depot_fifth
         (2, 0),
@@ -70,11 +89,11 @@ def create_data_model():
     data['num_locations'] = len(data['locations'])
     data['demands'] = \
           [0, # depot
-           -_capacity,
-           -_capacity,
-           -_capacity,
-           -_capacity,
-           -_capacity,
+           -_capacity, # unload depot_first
+           -_capacity, # unload depot_second
+           -_capacity, # unload depot_third
+           -_capacity, # unload depot_fourth
+           -_capacity, # unload depot_fifth
            3, 3, # 1, 2
            3, 4, # 3, 4
            3, 4, # 5, 6
@@ -86,11 +105,11 @@ def create_data_model():
     data['time_per_demand_unit'] = 5  # 5 minutes/unit
     data['time_windows'] = \
           [(0, 0), # depot
-           (0, 1000),
-           (0, 1000),
-           (0, 1000),
-           (0, 1000),
-           (0, 1000),
+           (0, 1000), # unload depot_first
+           (0, 1000), # unload depot_second
+           (0, 1000), # unload depot_third
+           (0, 1000), # unload depot_fourth
+           (0, 1000), # unload depot_fifth
            (75, 850), (75, 850), # 1, 2
            (60, 700), (45, 550), # 3, 4
            (0, 800), (50, 600), # 5, 6
@@ -184,14 +203,14 @@ def add_capacity_constraints(routing, manager, data, demand_evaluator_index):
     # so we have CumulVar = 10(current load) + -15(unload) + 5(slack) = 0.
     capacity_dimension = routing.GetDimensionOrDie(capacity)
     # Allow to drop reloading nodes with zero cost.
-    for node_index in [1, 2, 3, 4, 5]:
-        index = manager.NodeToIndex(node_index)
+    for node in [1, 2, 3, 4, 5]:
+        node_index = manager.NodeToIndex(node)
         routing.AddDisjunction([node_index], 0)
 
     # Allow to drop regular node with a cost.
-    for node_index in range(6, len(data['demands'])):
-        index = manager.NodeToIndex(node_index)
-        capacity_dimension.SlackVar(index).SetValue(0)
+    for node in range(6, len(data['demands'])):
+        node_index = manager.NodeToIndex(node)
+        capacity_dimension.SlackVar(node_index).SetValue(0)
         routing.AddDisjunction([node_index], 100_000)
 
 

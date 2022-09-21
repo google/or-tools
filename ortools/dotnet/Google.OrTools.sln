@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.linu
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.osx-x64",   "Google.OrTools.runtime.osx-x64\Google.OrTools.runtime.osx-x64.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.win-x64",   "Google.OrTools.runtime.win-x64\Google.OrTools.runtime.win-x64.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools",   "Google.OrTools\Google.OrTools.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.FSharp",   "Google.OrTools.FSharp\Google.OrTools.FSharp.fsproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.FSharp.Tests",   "Google.OrTools.FSharp.Tests\Google.OrTools.FSharp.Tests.fsproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
 EndProject
 Global
 GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -42,7 +42,7 @@ def cover_rectangle(num_squares):
         interval_y = model.NewIntervalVar(start_y, size, end_y, 'iy_%i' % i)
 
         area = model.NewIntVar(1, size_y * size_y, 'area_%i' % i)
-        model.AddProdEquality(area, [size, size])
+        model.AddMultiplicationEquality(area, [size, size])
 
         areas.append(area)
         x_intervals.append(interval_x)

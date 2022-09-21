@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,17 +17,12 @@
 // - ortools/algorithms/samples/knapsack.py
 // - ./pywrapknapsack_solver_test.py
 
-%include "stdint.i"
-
 %include "ortools/base/base.i"
 %import "ortools/util/python/vector.i"
 
 %{
 #include "ortools/algorithms/knapsack_solver.h"
 %}
-
-typedef int64_t int64;
-typedef uint64_t uint64;
 
 %ignoreall
 %unignore operations_research;
@@ -52,6 +47,8 @@ typedef uint64_t uint64;
           KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER;
 %unignore operations_research::KnapsackSolver::
           KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER;
+%unignore operations_research::KnapsackSolver::
+          KNAPSACK_DIVIDE_AND_CONQUER_SOLVER;
 
 %include "ortools/algorithms/knapsack_solver.h"
 

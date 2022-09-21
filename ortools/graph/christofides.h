@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,10 +15,20 @@
 // Salesman Problen using the Christofides algorithm (c.f.
 // https://en.wikipedia.org/wiki/Christofides_algorithm).
 // Note that the algorithm guarantees finding a solution within 3/2 of the
-// optimum. Its complexity is O(n^2 * log(n)) where n is the number of nodes.
+// optimum when using minimum weight perfect matching in the matching phase.
+// The complexity of the algorithm is dominated by the complexity of the
+// matching algorithm: O(n^2 * log(n)) if minimal matching is used, or at least
+// O(n^3) or O(nmlog(n)) otherwise, depending on the implementation of the
+// perfect matching algorithm used, where n is the number of nodes and m is the
+// number of edges of the subgraph induced by odd-degree nodes of the minimum
+// spanning tree.
 
 #ifndef OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 #define OR_TOOLS_GRAPH_CHRISTOFIDES_H_
+
+#include <cstdint>
+#include <string>
+#include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -36,8 +46,8 @@ namespace operations_research {
 
 using ::util::CompleteGraph;
 
-template <typename CostType, typename ArcIndex = int64,
-          typename NodeIndex = int32,
+template <typename CostType, typename ArcIndex = int64_t,
+          typename NodeIndex = int32_t,
           typename CostFunction = std::function<CostType(NodeIndex, NodeIndex)>>
 class ChristofidesPathSolver {
  public:
@@ -50,7 +60,7 @@ class ChristofidesPathSolver {
   };
   ChristofidesPathSolver(NodeIndex num_nodes, CostFunction costs);
 
-  // Sets the matching algorith to use. A minimum weight perfect matching
+  // Sets the matching algorithm to use. A minimum weight perfect matching
   // (MINIMUM_WEIGHT_MATCHING) guarantees the 3/2 upper bound to the optimal
   // solution. A minimal weight perfect matching (MINIMAL_WEIGHT_MATCHING)
   // finds a locally minimal weight matching which does not offer any bound
@@ -73,15 +83,7 @@ class ChristofidesPathSolver {
   bool Solve();
 
  private:
-  // Safe addition operator to avoid overflows when possible.
-  //template <typename T>
-  //T SafeAdd(T a, T b) {
-  //  return a + b;
-  //}
-  //template <>
-  int64 SafeAdd(int64 a, int64 b) {
-    return CapAdd(a, b);
-  }
+  int64_t SafeAdd(int64_t a, int64_t b) { return CapAdd(a, b); }
 
   // Matching algorithm to use.
   MatchingAlgorithm matching_;

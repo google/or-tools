@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,10 +17,12 @@
 #define UTIL_GRAPH_UTIL_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -420,7 +422,7 @@ std::vector<int> ComputeOnePossibleReverseArcMapping(
   }
   // Algorithm check, for debugging.
   if (DEBUG_MODE) {
-    int64 num_unmapped_arcs = 0;
+    int64_t num_unmapped_arcs = 0;
     for (const auto& p : arc_map) {
       num_unmapped_arcs += p.second.size();
     }

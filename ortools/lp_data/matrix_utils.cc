@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,9 @@
 #include "ortools/lp_data/matrix_utils.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <vector>
 
 #include "ortools/base/hash.h"
 
@@ -54,10 +57,10 @@ bool AreColumnsProportional(const SparseColumn& a, const SparseColumn& b,
 
 // A column index together with its fingerprint. See ComputeFingerprint().
 struct ColumnFingerprint {
-  ColumnFingerprint(ColIndex _col, int64 _hash, double _value)
+  ColumnFingerprint(ColIndex _col, int64_t _hash, double _value)
       : col(_col), hash(_hash), value(_value) {}
   ColIndex col;
-  int64 hash;
+  int64_t hash;
   double value;
 
   // This order has the property that if AreProportionalCandidates() is true for
@@ -86,7 +89,7 @@ bool AreProportionalCandidates(ColumnFingerprint a, ColumnFingerprint b,
 // - A double value which should be the same for two proportional columns
 //   modulo numerical errors.
 ColumnFingerprint ComputeFingerprint(ColIndex col, const SparseColumn& column) {
-  int64 non_zero_pattern_hash = 0;
+  int64_t non_zero_pattern_hash = 0;
   Fractional min_abs = std::numeric_limits<Fractional>::max();
   Fractional max_abs = 0.0;
   Fractional sum = 0.0;

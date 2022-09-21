@@ -102,7 +102,7 @@
 			"${workspaceRoot}/ortools/gen",
 			"${workspaceRoot}/dependencies/install/include",
 		],
-		"C_Cpp.default.cppStandard": "c++17",
+		"C_Cpp.default.cppStandard": "c++20",
 		"C_Cpp.default.cStandard": "c11",
 		"C_Cpp.default.defines": [
 			"USE_BOP",
@@ -122,10 +122,10 @@
 			"editor.tabSize": 2,
 		},
 		"[csharp]": {
-			"editor.tabSize": 2,       
+			"editor.tabSize": 2,
 		},
 		"[java]": {
-			"editor.tabSize": 2,       
+			"editor.tabSize": 2,
 		},
 		"[python]": {
 			"editor.tabSize": 4,

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,13 +31,14 @@ import java.util.Objects;
 
 /** Load native libraries needed for using ortools-java.*/
 public class Loader {
+  private static final String RESOURCE_PATH = "ortools-" + Platform.RESOURCE_PREFIX + "/";
+
   /** Try to locate the native libraries directory.*/
   private static URI getNativeResourceURI() throws IOException {
     ClassLoader loader = Loader.class.getClassLoader();
-    String resource = Platform.RESOURCE_PREFIX + "/";
-    URL resourceURL = loader.getResource(resource);
+    URL resourceURL = loader.getResource(RESOURCE_PATH);
     Objects.requireNonNull(resourceURL,
-        String.format("Resource %s was not found in ClassLoader %s", resource, loader));
+        String.format("Resource %s was not found in ClassLoader %s", RESOURCE_PATH, loader));
 
     URI resourceURI;
     try {
@@ -99,13 +100,14 @@ public class Loader {
 
   /** Unpack and Load the native libraries needed for using ortools-java.*/
   private static boolean loaded = false;
-  public static void loadNativeLibraries() {
+
+  public static synchronized void loadNativeLibraries() {
     if (!loaded) {
       try {
         URI resourceURI = getNativeResourceURI();
         Path tempPath = unpackNativeResources(resourceURI);
         // Load the native library
-        System.load(tempPath.resolve(Platform.RESOURCE_PREFIX)
+        System.load(tempPath.resolve(RESOURCE_PATH)
                         .resolve(System.mapLibraryName("jniortools"))
                         .toString());
         loaded = true;

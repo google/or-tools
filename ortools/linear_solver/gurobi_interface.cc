@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -42,15 +42,20 @@
 // poorly tested, proceed with caution.
 //
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
@@ -59,12 +64,13 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
-#include "ortools/linear_solver/gurobi_environment.h"
-#include "ortools/linear_solver/gurobi_proto_solver.h"
+#include "ortools/gurobi/environment.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
+#include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
+#include "ortools/util/time_limit.h"
 
-ABSL_FLAG(int, num_gurobi_threads, 4,
+ABSL_FLAG(int, num_gurobi_threads, /*auto=*/0,
           "Number of threads available for Gurobi.");
 
 namespace operations_research {
@@ -81,9 +87,8 @@ class GurobiInterface : public MPSolverInterface {
   // ----- Solve -----
   // Solves the problem using the parameter values specified.
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  absl::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request) override;
-
+  std::optional<MPSolutionResponse> DirectlySolveProto(
+      const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   // Writes the model.
   void Write(const std::string& filename) override;
 
@@ -118,9 +123,9 @@ class GurobiInterface : public MPSolverInterface {
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex or interior-point iterations
-  int64 iterations() const override;
+  int64_t iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  int64 nodes() const override;
+  int64_t nodes() const override;
 
   // Returns the basis status of a row.
   MPSolver::BasisStatus row_status(int constraint_index) const override;
@@ -159,7 +164,7 @@ class GurobiInterface : public MPSolverInterface {
       return 0.0;
     }
 
-    // TODO(user,user): Not yet working.
+    // TODO(user): Not yet working.
     LOG(DFATAL) << "ComputeExactConditionNumber not implemented for"
                 << " GUROBI_LINEAR_PROGRAMMING";
     return 0.0;
@@ -262,9 +267,10 @@ class GurobiInterface : public MPSolverInterface {
 
 namespace {
 
+constexpr int kGurobiOkCode = 0;
 void CheckedGurobiCall(int err, GRBenv* const env) {
-  CHECK_EQ(0, err) << "Fatal error with code " << err << ", due to "
-                   << GRBgeterrormsg(env);
+  CHECK_EQ(kGurobiOkCode, err)
+      << "Fatal error with code " << err << ", due to " << GRBgeterrormsg(env);
 }
 
 // For interacting directly with the Gurobi C API for callbacks.
@@ -289,7 +295,7 @@ class GurobiMPCallbackContext : public MPCallbackContext {
   void AddLazyConstraint(const LinearRange& lazy_constraint) override;
   double SuggestSolution(
       const absl::flat_hash_map<const MPVariable*, double>& solution) override;
-  int64 NumExploredNodes() override;
+  int64_t NumExploredNodes() override;
 
   // Call this method to update the internal state of the callback context
   // before passing it to MPCallback::RunCallback().
@@ -342,13 +348,13 @@ void GurobiMPCallbackContext::UpdateFromGurobiState(
   variable_values_extracted_ = false;
 }
 
-int64 GurobiMPCallbackContext::NumExploredNodes() {
+int64_t GurobiMPCallbackContext::NumExploredNodes() {
   switch (Event()) {
     case MPCallbackEvent::kMipNode:
-      return static_cast<int64>(GurobiCallbackGet<double>(
+      return static_cast<int64_t>(GurobiCallbackGet<double>(
           current_gurobi_internal_callback_context_, GRB_CB_MIPNODE_NODCNT));
     case MPCallbackEvent::kMipSolution:
-      return static_cast<int64>(GurobiCallbackGet<double>(
+      return static_cast<int64_t>(GurobiCallbackGet<double>(
           current_gurobi_internal_callback_context_, GRB_CB_MIPSOL_NODCNT));
     default:
       LOG(FATAL) << "Node count is supported only for callback events MIP_NODE "
@@ -515,8 +521,9 @@ struct MPCallbackWithGurobiContext {
 
 // NOTE(user): This function must have this exact API, because we are passing
 // it to Gurobi as a callback.
-int STDCALL CallbackImpl(GRBmodel* model, void* gurobi_internal_callback_data,
-                         int where, void* raw_model_and_callback) {
+int GUROBI_STDCALL CallbackImpl(GRBmodel* model,
+                                void* gurobi_internal_callback_data, int where,
+                                void* raw_model_and_callback) {
   MPCallbackWithGurobiContext* const callback_with_context =
       static_cast<MPCallbackWithGurobiContext*>(raw_model_and_callback);
   CHECK(callback_with_context != nullptr);
@@ -603,7 +610,7 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
       env_(nullptr),
       mip_(mip),
       current_solution_index_(0) {
-  CHECK_OK(LoadGurobiEnvironment(&env_));
+  env_ = GetGurobiEnv().value();
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
                                 nullptr,    // obj
@@ -715,7 +722,7 @@ bool GurobiInterface::AddIndicatorConstraint(MPConstraint* const ct) {
   return !IsContinuous();
 }
 
-void GurobiInterface::AddVariable(MPVariable* const ct) {
+void GurobiInterface::AddVariable(MPVariable* const var) {
   sync_status_ = MUST_RELOAD;
 }
 
@@ -788,17 +795,17 @@ void GurobiInterface::BranchingPriorityChangedForVariable(int var_index) {
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 GurobiInterface::iterations() const {
+int64_t GurobiInterface::iterations() const {
   double iter;
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   CheckedGurobiCall(GRBgetdblattr(model_, GRB_DBL_ATTR_ITERCOUNT, &iter));
-  return static_cast<int64>(iter);
+  return static_cast<int64_t>(iter);
 }
 
-int64 GurobiInterface::nodes() const {
+int64_t GurobiInterface::nodes() const {
   if (mip_) {
     if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
-    return static_cast<int64>(GetDoubleAttr(GRB_DBL_ATTR_NODECOUNT));
+    return static_cast<int64_t>(GetDoubleAttr(GRB_DBL_ATTR_NODECOUNT));
   } else {
     LOG(DFATAL) << "Number of nodes only available for discrete problems.";
     return kUnknownNumberOfNodes;
@@ -1072,13 +1079,13 @@ void GurobiInterface::SetDualTolerance(double value) {
 void GurobiInterface::SetPresolveMode(int value) {
   switch (value) {
     case MPSolverParameters::PRESOLVE_OFF: {
-      CheckedGurobiCall(
-          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, false));
+      CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE,
+                                       GRB_PRESOLVE_OFF));
       break;
     }
     case MPSolverParameters::PRESOLVE_ON: {
-      CheckedGurobiCall(
-          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, true));
+      CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE,
+                                       GRB_PRESOLVE_AUTO));
       break;
     }
     default: {
@@ -1201,7 +1208,7 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   if (callback_ == nullptr) {
     CheckedGurobiCall(GRBsetcallbackfunc(model_, nullptr, nullptr));
   } else {
-    gurobi_context = absl::make_unique<GurobiMPCallbackContext>(
+    gurobi_context = std::make_unique<GurobiMPCallbackContext>(
         env_, &mp_var_to_gurobi_var_, num_gurobi_vars_,
         callback_->might_add_cuts(), callback_->might_add_lazy_constraints());
     mp_callback_with_context.context = gurobi_context.get();
@@ -1243,7 +1250,7 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
       result_status_ = MPSolver::UNBOUNDED;
       break;
     case GRB_INF_OR_UNBD:
-      // TODO(user,user): We could introduce our own "infeasible or
+      // TODO(user): We could introduce our own "infeasible or
       // unbounded" status.
       result_status_ = MPSolver::INFEASIBLE;
       break;
@@ -1315,15 +1322,18 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-absl::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
-    const MPModelRequest& request) {
+std::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
+    const MPModelRequest& request, std::atomic<bool>* interrupt) {
+  // Interruption via atomic<bool> is not directly supported by Gurobi.
+  if (interrupt != nullptr) return std::nullopt;
+
   // Here we reuse the Gurobi environment to support single-use license that
   // forbids creating a second environment if one already exists.
   const auto status_or = GurobiSolveProto(request, env_);
   if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
-  if (absl::IsUnimplemented(status_or.status())) return absl::nullopt;
+  if (absl::IsUnimplemented(status_or.status())) return std::nullopt;
 
   if (request.enable_internal_solver_output()) {
     LOG(INFO) << "Invalid Gurobi status: " << status_or.status();
@@ -1360,7 +1370,7 @@ bool GurobiInterface::NextSolution() {
     var->set_solution_value(
         grb_variable_values.at(mp_var_to_gurobi_var_.at(i)));
   }
-  // TODO(user,user): This reset may not be necessary, investigate.
+  // TODO(user): This reset may not be necessary, investigate.
   GRBresetparams(GRBgetenv(model_));
   return true;
 }

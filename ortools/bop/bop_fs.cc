@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,12 @@
 
 #include "ortools/bop/bop_fs.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/memory/memory.h"
@@ -41,7 +46,7 @@ using ::operations_research::glop::GlopParameters;
 using ::operations_research::glop::RowIndex;
 
 BopOptimizerBase::Status SolutionStatus(const BopSolution& solution,
-                                        int64 lower_bound) {
+                                        int64_t lower_bound) {
   // The lower bound might be greater that the cost of a feasible solution due
   // to rounding errors in the problem scaling and Glop.
   return solution.IsFeasible() ? (solution.GetCost() <= lower_bound
@@ -93,7 +98,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
 
   // Create the sat_solver if not already done.
   if (!sat_solver_) {
-    sat_solver_ = absl::make_unique<sat::SatSolver>();
+    sat_solver_ = std::make_unique<sat::SatSolver>();
 
     // Add in symmetries.
     if (problem_state.GetParameters()
@@ -186,7 +191,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 
   if (sat_status == sat::SatSolver::INFEASIBLE) {
     if (policy_ != Policy::kNotGuided) abort_ = true;
-    if (problem_state.upper_bound() != kint64max) {
+    if (problem_state.upper_bound() != std::numeric_limits<int64_t>::max()) {
       // As the solution in the state problem is feasible, it is proved optimal.
       learned_info->lower_bound = problem_state.upper_bound();
       return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
@@ -210,7 +215,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 //------------------------------------------------------------------------------
 BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
     const std::string& name, const BopParameters& parameters,
-    sat::SatSolver* sat_propagator, MTRandom* random)
+    sat::SatSolver* sat_propagator, absl::BitGenRef random)
     : BopOptimizerBase(name),
       random_(random),
       sat_propagator_(sat_propagator) {}
@@ -236,16 +241,17 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
       sat_propagator_->AllPreferences();
 
   const int kMaxNumConflicts = 10;
-  int64 best_cost = problem_state.solution().IsFeasible()
-                        ? problem_state.solution().GetCost()
-                        : kint64max;
-  int64 remaining_num_conflicts =
+  int64_t best_cost = problem_state.solution().IsFeasible()
+                          ? problem_state.solution().GetCost()
+                          : std::numeric_limits<int64_t>::max();
+  int64_t remaining_num_conflicts =
       parameters.max_number_of_conflicts_in_random_solution_generation();
-  int64 old_num_failures = 0;
+  int64_t old_num_failures = 0;
 
   // Optimization: Since each Solve() is really fast, we want to limit as
   // much as possible the work around one.
-  bool objective_need_to_be_overconstrained = (best_cost != kint64max);
+  bool objective_need_to_be_overconstrained =
+      (best_cost != std::numeric_limits<int64_t>::max());
 
   bool solution_found = false;
   while (remaining_num_conflicts > 0 && !time_limit->LimitReached()) {
@@ -264,7 +270,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
               true, sat::Coefficient(best_cost) - 1, sat_propagator_)) {
         // The solution is proved optimal (if any).
         learned_info->lower_bound = best_cost;
-        return best_cost == kint64max
+        return best_cost == std::numeric_limits<int64_t>::max()
                    ? BopOptimizerBase::INFEASIBLE
                    : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
       }
@@ -272,7 +278,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
     }
 
     // Special assignment preference parameters.
-    const int preference = random_->Uniform(4);
+    const int preference = absl::Uniform(random_, 0, 4);
     if (preference == 0) {
       UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
                                              sat_propagator_);
@@ -298,8 +304,9 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
     } else if (sat_status == sat::SatSolver::INFEASIBLE) {
       // The solution is proved optimal (if any).
       learned_info->lower_bound = best_cost;
-      return best_cost == kint64max ? BopOptimizerBase::INFEASIBLE
-                                    : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
+      return best_cost == std::numeric_limits<int64_t>::max()
+                 ? BopOptimizerBase::INFEASIBLE
+                 : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
     }
 
     // The number of failure is a good approximation of the number of conflicts.
@@ -322,8 +329,9 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   if (sat_propagator_->IsModelUnsat()) {
     // The solution is proved optimal (if any).
     learned_info->lower_bound = best_cost;
-    return best_cost == kint64max ? BopOptimizerBase::INFEASIBLE
-                                  : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
+    return best_cost == std::numeric_limits<int64_t>::max()
+               ? BopOptimizerBase::INFEASIBLE
+               : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
   }
 
   ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
@@ -400,10 +408,10 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
     for (const sat::BinaryClause& clause :
          problem_state.NewlyAddedBinaryClauses()) {
       const RowIndex constraint_index = lp_model_.CreateNewConstraint();
-      const int64 coefficient_a = clause.a.IsPositive() ? 1 : -1;
-      const int64 coefficient_b = clause.b.IsPositive() ? 1 : -1;
-      const int64 rhs = 1 + (clause.a.IsPositive() ? 0 : -1) +
-                        (clause.b.IsPositive() ? 0 : -1);
+      const int64_t coefficient_a = clause.a.IsPositive() ? 1 : -1;
+      const int64_t coefficient_b = clause.b.IsPositive() ? 1 : -1;
+      const int64_t rhs = 1 + (clause.a.IsPositive() ? 0 : -1) +
+                          (clause.b.IsPositive() ? 0 : -1);
       const ColIndex col_a(clause.a.Variable().value());
       const ColIndex col_b(clause.b.Variable().value());
       const std::string name_a = lp_model_.GetVariableName(col_a);
@@ -492,7 +500,7 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
              lp_solver_.GetParameters().solution_feasibility_tolerance()) /
             scaling_ -
         offset_;
-    learned_info->lower_bound = static_cast<int64>(ceil(unscaled_cost));
+    learned_info->lower_bound = static_cast<int64_t>(ceil(unscaled_cost));
 
     if (AllIntegralValues(
             learned_info->lp_values,

@@ -1,5 +1,0 @@
-var classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper =
-[
-    [ "SWIGRegisterStringCallback_operations_research_algorithms", "classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html#abae544aa94ecba5f3bb316e1cebba97f", null ],
-    [ "SWIGStringDelegate", "classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html#a09806292f70eb61f70057ee6fd528c34", null ]
-];

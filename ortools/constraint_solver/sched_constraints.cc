@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +21,9 @@
 //   var unperformed implies all intervals unperformed, cover var
 //   performed implis at least one interval performed).
 
+#include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -75,9 +78,9 @@ class TreeArrayConstraint : public Constraint {
   }
 
   // Reduce the range of a given node (interval, state).
-  void ReduceDomain(int depth, int position, int64 new_start_min,
-                    int64 new_start_max, int64 new_end_min, int64 new_end_max,
-                    PerformedStatus performed) {
+  void ReduceDomain(int depth, int position, int64_t new_start_min,
+                    int64_t new_start_max, int64_t new_end_min,
+                    int64_t new_end_max, PerformedStatus performed) {
     NodeInfo* const info = &tree_[depth][position];
     if (new_start_min > info->start_min.Value()) {
       info->start_min.SetValue(solver(), new_start_min);
@@ -98,14 +101,14 @@ class TreeArrayConstraint : public Constraint {
     }
   }
 
-  void InitLeaf(int position, int64 start_min, int64 start_max, int64 end_min,
-                int64 end_max, PerformedStatus performed) {
+  void InitLeaf(int position, int64_t start_min, int64_t start_max,
+                int64_t end_min, int64_t end_max, PerformedStatus performed) {
     InitNode(MaxDepth(), position, start_min, start_max, end_min, end_max,
              performed);
   }
 
-  void InitNode(int depth, int position, int64 start_min, int64 start_max,
-                int64 end_min, int64 end_max, PerformedStatus performed) {
+  void InitNode(int depth, int position, int64_t start_min, int64_t start_max,
+                int64_t end_min, int64_t end_max, PerformedStatus performed) {
     tree_[depth][position].start_min.SetValue(solver(), start_min);
     tree_[depth][position].start_max.SetValue(solver(), start_max);
     tree_[depth][position].end_min.SetValue(solver(), end_min);
@@ -114,19 +117,19 @@ class TreeArrayConstraint : public Constraint {
                                               static_cast<int>(performed));
   }
 
-  int64 StartMin(int depth, int position) const {
+  int64_t StartMin(int depth, int position) const {
     return tree_[depth][position].start_min.Value();
   }
 
-  int64 StartMax(int depth, int position) const {
+  int64_t StartMax(int depth, int position) const {
     return tree_[depth][position].start_max.Value();
   }
 
-  int64 EndMax(int depth, int position) const {
+  int64_t EndMax(int depth, int position) const {
     return tree_[depth][position].end_max.Value();
   }
 
-  int64 EndMin(int depth, int position) const {
+  int64_t EndMin(int depth, int position) const {
     return tree_[depth][position].end_min.Value();
   }
 
@@ -137,47 +140,47 @@ class TreeArrayConstraint : public Constraint {
     return static_cast<PerformedStatus>(p);
   }
 
-  int64 RootStartMin() const { return root_node_->start_min.Value(); }
+  int64_t RootStartMin() const { return root_node_->start_min.Value(); }
 
-  int64 RootStartMax() const { return root_node_->start_max.Value(); }
+  int64_t RootStartMax() const { return root_node_->start_max.Value(); }
 
-  int64 RootEndMin() const { return root_node_->end_min.Value(); }
+  int64_t RootEndMin() const { return root_node_->end_min.Value(); }
 
-  int64 RootEndMax() const { return root_node_->end_max.Value(); }
+  int64_t RootEndMax() const { return root_node_->end_max.Value(); }
 
   PerformedStatus RootPerformed() const { return Performed(0, 0); }
 
   // This getters query first if the var can be performed, and will
   // return a default value if not.
-  int64 VarStartMin(int position) const {
+  int64_t VarStartMin(int position) const {
     return vars_[position]->MayBePerformed() ? vars_[position]->StartMin() : 0;
   }
 
-  int64 VarStartMax(int position) const {
+  int64_t VarStartMax(int position) const {
     return vars_[position]->MayBePerformed() ? vars_[position]->StartMax() : 0;
   }
 
-  int64 VarEndMin(int position) const {
+  int64_t VarEndMin(int position) const {
     return vars_[position]->MayBePerformed() ? vars_[position]->EndMin() : 0;
   }
 
-  int64 VarEndMax(int position) const {
+  int64_t VarEndMax(int position) const {
     return vars_[position]->MayBePerformed() ? vars_[position]->EndMax() : 0;
   }
 
-  int64 TargetVarStartMin() const {
+  int64_t TargetVarStartMin() const {
     return target_var_->MayBePerformed() ? target_var_->StartMin() : 0;
   }
 
-  int64 TargetVarStartMax() const {
+  int64_t TargetVarStartMax() const {
     return target_var_->MayBePerformed() ? target_var_->StartMax() : 0;
   }
 
-  int64 TargetVarEndMin() const {
+  int64_t TargetVarEndMin() const {
     return target_var_->MayBePerformed() ? target_var_->EndMin() : 0;
   }
 
-  int64 TargetVarEndMax() const {
+  int64_t TargetVarEndMax() const {
     return target_var_->MayBePerformed() ? target_var_->EndMax() : 0;
   }
 
@@ -238,10 +241,10 @@ class TreeArrayConstraint : public Constraint {
           end_max(0),
           performed(UNDECIDED) {}
 
-    Rev<int64> start_min;
-    Rev<int64> start_max;
-    Rev<int64> end_min;
-    Rev<int64> end_max;
+    Rev<int64_t> start_min;
+    Rev<int64_t> start_max;
+    Rev<int64_t> end_min;
+    Rev<int64_t> end_max;
     Rev<int> performed;
   };
 
@@ -284,10 +287,10 @@ class CoverConstraint : public TreeArrayConstraint {
     // Compute up.
     for (int i = MaxDepth() - 1; i >= 0; --i) {
       for (int j = 0; j < Width(i); ++j) {
-        int64 bucket_start_min = kint64max;
-        int64 bucket_start_max = kint64max;
-        int64 bucket_end_min = kint64min;
-        int64 bucket_end_max = kint64min;
+        int64_t bucket_start_min = std::numeric_limits<int64_t>::max();
+        int64_t bucket_start_max = std::numeric_limits<int64_t>::max();
+        int64_t bucket_end_min = std::numeric_limits<int64_t>::min();
+        int64_t bucket_end_max = std::numeric_limits<int64_t>::min();
         bool one_undecided = false;
         const PerformedStatus up_performed = ComputePropagationUp(
             i, j, &bucket_start_min, &bucket_start_max, &bucket_end_min,
@@ -326,8 +329,8 @@ class CoverConstraint : public TreeArrayConstraint {
              TargetVarEndMax(), TargetVarPerformed());
   }
 
-  void PushDown(int depth, int position, int64 new_start_min,
-                int64 new_start_max, int64 new_end_min, int64 new_end_max,
+  void PushDown(int depth, int position, int64_t new_start_min,
+                int64_t new_start_max, int64_t new_end_min, int64_t new_end_max,
                 PerformedStatus performed) {
     // TODO(user): Propagate start_max and end_min going down.
     // Nothing to do?
@@ -418,10 +421,10 @@ class CoverConstraint : public TreeArrayConstraint {
     // Do we need to propagate up?
     const int parent = Parent(term_index);
     const int parent_depth = MaxDepth() - 1;
-    const int64 parent_start_min = StartMin(parent_depth, parent);
-    const int64 parent_start_max = StartMax(parent_depth, parent);
-    const int64 parent_end_min = EndMin(parent_depth, parent);
-    const int64 parent_end_max = EndMax(parent_depth, parent);
+    const int64_t parent_start_min = StartMin(parent_depth, parent);
+    const int64_t parent_start_max = StartMax(parent_depth, parent);
+    const int64_t parent_end_min = EndMin(parent_depth, parent);
+    const int64_t parent_end_max = EndMax(parent_depth, parent);
     IntervalVar* const var = vars_[term_index];
     const bool performed_bound = var->IsPerformedBound();
     const bool was_performed_bound = var->WasPerformedBound();
@@ -442,10 +445,10 @@ class CoverConstraint : public TreeArrayConstraint {
     while (depth > 0) {
       const int parent = Parent(position);
       const int parent_depth = depth - 1;
-      int64 bucket_start_min = kint64max;
-      int64 bucket_start_max = kint64max;
-      int64 bucket_end_min = kint64min;
-      int64 bucket_end_max = kint64min;
+      int64_t bucket_start_min = std::numeric_limits<int64_t>::max();
+      int64_t bucket_start_max = std::numeric_limits<int64_t>::max();
+      int64_t bucket_end_min = std::numeric_limits<int64_t>::min();
+      int64_t bucket_end_max = std::numeric_limits<int64_t>::min();
       bool one_undecided = false;
       const PerformedStatus status_up = ComputePropagationUp(
           parent_depth, parent, &bucket_start_min, &bucket_start_max,
@@ -483,15 +486,15 @@ class CoverConstraint : public TreeArrayConstraint {
 
  private:
   PerformedStatus ComputePropagationUp(int parent_depth, int parent_position,
-                                       int64* const bucket_start_min,
-                                       int64* const bucket_start_max,
-                                       int64* const bucket_end_min,
-                                       int64* const bucket_end_max,
+                                       int64_t* const bucket_start_min,
+                                       int64_t* const bucket_start_max,
+                                       int64_t* const bucket_end_min,
+                                       int64_t* const bucket_end_max,
                                        bool* one_undecided) {
-    *bucket_start_min = kint64max;
-    *bucket_start_max = kint64max;
-    *bucket_end_min = kint64min;
-    *bucket_end_max = kint64min;
+    *bucket_start_min = std::numeric_limits<int64_t>::max();
+    *bucket_start_max = std::numeric_limits<int64_t>::max();
+    *bucket_end_min = std::numeric_limits<int64_t>::min();
+    *bucket_end_max = std::numeric_limits<int64_t>::min();
 
     int may_be_performed_count = 0;
     int must_be_performed_count = 0;

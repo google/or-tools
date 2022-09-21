@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,13 +13,15 @@
 
 package com.google.ortools.sat;
 
-/** A linear expression interface that can be parsed. */
-public interface LinearExpr {
-  /** Returns the number of elements in the interface. */
+import com.google.ortools.sat.LinearExpressionProto;
+
+/** A linear expression (sum (ai * xi) + b). It specifies methods to help parsing the expression. */
+public interface LinearExpr extends LinearArgument {
+  /** Returns the number of terms (excluding the constant one) in this expression. */
   int numElements();
 
-  /** Returns the ith variable. */
-  IntVar getVariable(int index);
+  /** Returns the index of the ith variable. */
+  int getVariableIndex(int index);
 
   /** Returns the ith coefficient. */
   long getCoefficient(int index);
@@ -27,64 +29,51 @@ public interface LinearExpr {
   /** Returns the constant part of the expression. */
   long getOffset();
 
-  /** Creates a sum expression. */
-  static LinearExpr sum(IntVar[] variables) {
-    return new SumOfVariables(variables);
+  /** Returns a builder */
+  static LinearExprBuilder newBuilder() {
+    return new LinearExprBuilder();
   }
 
-  /** Creates a sum expression. */
-  static LinearExpr booleanSum(Literal[] literals) {
-    // We need the scalar product for the negative coefficient of negated Boolean variables.
-    return new ScalProd(literals);
+  /** Shortcut for newBuilder().add(value).build() */
+  static LinearExpr constant(long value) {
+    return newBuilder().add(value).build();
   }
 
-  /** Creates a scalar product. */
-  static LinearExpr scalProd(IntVar[] variables, long[] coefficients)
-      throws CpModel.MismatchedArrayLengths {
-    if (variables.length != coefficients.length) {
-      throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "variables", "coefficients");
-    }
-    return new ScalProd(variables, coefficients);
+  /** Shortcut for newBuilder().addTerm(expr, coeff).build() */
+  static LinearExpr term(LinearArgument expr, long coeff) {
+    return newBuilder().addTerm(expr, coeff).build();
   }
 
-  /** Creates a scalar product. */
-  static LinearExpr scalProd(IntVar[] variables, int[] coefficients)
-      throws CpModel.MismatchedArrayLengths {
-    if (variables.length != coefficients.length) {
-      throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "variables", "coefficients");
-    }
-    long[] tmp = new long[coefficients.length];
-    for (int i = 0; i < coefficients.length; ++i) {
-      tmp[i] = coefficients[i];
-    }
-    return new ScalProd(variables, tmp);
+  /** Shortcut for newBuilder().addTerm(expr, coeff).add(offset).build() */
+  static LinearExpr affine(LinearArgument expr, long coeff, long offset) {
+    return newBuilder().addTerm(expr, coeff).add(offset).build();
   }
 
-  /** Creates a scalar product. */
-  static LinearExpr booleanScalProd(Literal[] literals, long[] coefficients)
-      throws CpModel.MismatchedArrayLengths {
-    if (literals.length != coefficients.length) {
-      throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "literals", "coefficients");
-    }
-    return new ScalProd(literals, coefficients);
+  /** Shortcut for newBuilder().addSum(exprs).build() */
+  static LinearExpr sum(LinearArgument[] exprs) {
+    return newBuilder().addSum(exprs).build();
   }
 
-  /** Creates a scalar product. */
-  static LinearExpr booleanScalProd(Literal[] literals, int[] coefficients)
-      throws CpModel.MismatchedArrayLengths {
-    if (literals.length != coefficients.length) {
-      throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "literals", "coefficients");
-    }
-
-    long[] tmp = new long[coefficients.length];
-    for (int i = 0; i < coefficients.length; ++i) {
-      tmp[i] = coefficients[i];
-    }
-    return new ScalProd(literals, tmp);
+  /** Shortcut for newBuilder().addWeightedSum(exprs, coeffs).build() */
+  static LinearExpr weightedSum(LinearArgument[] exprs, long[] coeffs) {
+    return newBuilder().addWeightedSum(exprs, coeffs).build();
   }
 
-  /** Creates a linear term (var * coefficient). */
-  static LinearExpr term(IntVar variable, long coefficient) {
-    return new ScalProd(new IntVar[] {variable}, new long[] {coefficient});
+  static LinearExpr rebuildFromLinearExpressionProto(LinearExpressionProto proto) {
+    int numElements = proto.getVarsCount();
+    if (numElements == 0) {
+      return new ConstantExpression(proto.getOffset());
+    } else if (numElements == 1) {
+      return new AffineExpression(proto.getVars(0), proto.getCoeffs(0), proto.getOffset());
+    } else {
+      int[] varsIndices = new int[numElements];
+      long[] coeffs = new long[numElements];
+      long offset = proto.getOffset();
+      for (int i = 0; i < numElements; ++i) {
+        varsIndices[i] = proto.getVars(i);
+        coeffs[i] = proto.getCoeffs(i);
+      }
+      return new WeightedSumExpression(varsIndices, coeffs, offset);
+    }
   }
 }

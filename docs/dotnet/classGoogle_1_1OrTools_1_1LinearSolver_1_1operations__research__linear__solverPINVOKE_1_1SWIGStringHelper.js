@@ -1,5 +1,0 @@
-var classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper =
-[
-    [ "SWIGRegisterStringCallback_operations_research_linear_solver", "classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html#aef4f16365d83b1d89815a95ef48a0003", null ],
-    [ "SWIGStringDelegate", "classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html#a09806292f70eb61f70057ee6fd528c34", null ]
-];

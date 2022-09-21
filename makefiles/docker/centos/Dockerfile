@@ -1,7 +1,6 @@
 # Create a virtual environment with all tools installed
-# ref: https://hub.docker.com/_/centos
-FROM centos:latest AS base
-LABEL maintainer="corentinl@google.com"
+# ref: https://quay.io/repository/centos/centos
+FROM quay.io/centos/centos:stream AS base
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
@@ -11,11 +10,21 @@ RUN dnf -y update \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 
-# Install CMake 3.18.5
-RUN wget "https://cmake.org/files/v3.18/cmake-3.18.5-Linux-x86_64.sh" \
-&& chmod a+x cmake-3.18.5-Linux-x86_64.sh \
-&& ./cmake-3.18.5-Linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.18.5-Linux-x86_64.sh
+# Install system build dependencies
+ENV PATH=/usr/local/bin:$PATH
+RUN dnf -y update \
+&& dnf -y install gcc-toolset-11 \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
+
+RUN echo "source /opt/rh/gcc-toolset-11/enable" >> /etc/bashrc
+SHELL ["/bin/bash", "--login", "-c"]
+
+# Install CMake 3.21.1
+RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
+&& chmod a+x cmake-3.21.1-linux-x86_64.sh \
+&& ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.21.1-linux-x86_64.sh
 CMD [ "/usr/bin/bash" ]
 
 # Install SWIG 4.0.2
@@ -24,7 +33,7 @@ RUN dnf -y update \
 && dnf -y install pcre-devel \
 && dnf clean all \
 && rm -rf /var/cache/dnf \
-&& wget "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz" \
+&& wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz" \
 && tar xvf swig-4.0.2.tar.gz \
 && rm swig-4.0.2.tar.gz \
 && cd swig-4.0.2 \

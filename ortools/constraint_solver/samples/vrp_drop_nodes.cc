@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 // [START program]
 // [START import]
+#include <cstdint>
+#include <sstream>
 #include <vector>
 
 #include "google/protobuf/duration.pb.h"
@@ -25,7 +27,7 @@
 namespace operations_research {
 // [START data_model]
 struct DataModel {
-  const std::vector<std::vector<int64>> distance_matrix{
+  const std::vector<std::vector<int64_t>> distance_matrix{
       {0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354, 468,
        776, 662},
       {548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674,
@@ -62,10 +64,10 @@ struct DataModel {
        194, 798, 0},
   };
   // [START demands_capacities]
-  const std::vector<int64> demands{
+  const std::vector<int64_t> demands{
       0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8,
   };
-  const std::vector<int64> vehicle_capacities{15, 15, 15, 15};
+  const std::vector<int64_t> vehicle_capacities{15, 15, 15, 15};
   // [END demands_capacities]
   const int num_vehicles = 4;
   const RoutingIndexManager::NodeIndex depot{0};
@@ -82,7 +84,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
   // Display dropped nodes.
   std::ostringstream dropped_nodes;
-  for (int64 node = 0; node < routing.Size(); ++node) {
+  for (int64_t node = 0; node < routing.Size(); ++node) {
     if (routing.IsStart(node) || routing.IsEnd(node)) continue;
     if (solution.Value(routing.NextVar(node)) == node) {
       dropped_nodes << " " << manager.IndexToNode(node).value();
@@ -90,22 +92,22 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
   }
   LOG(INFO) << "Dropped nodes:" << dropped_nodes.str();
   // Display routes
-  int64 total_distance{0};
-  int64 total_load{0};
+  int64_t total_distance{0};
+  int64_t total_load{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
-    int64 index = routing.Start(vehicle_id);
+    int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64 route_distance{0};
-    int64 route_load{0};
+    int64_t route_distance{0};
+    int64_t route_load{0};
     std::ostringstream route;
     while (routing.IsEnd(index) == false) {
-      int64 node_index = manager.IndexToNode(index).value();
+      int64_t node_index = manager.IndexToNode(index).value();
       route_load += data.demands[node_index];
       route << node_index << " Load(" << route_load << ") -> ";
-      int64 previous_index = index;
+      int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
       route_distance += routing.GetArcCostForVehicle(previous_index, index,
-                                                     int64{vehicle_id});
+                                                     int64_t{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << route_distance << "m";
@@ -141,7 +143,7 @@ void VrpDropNodes() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64 from_index, int64 to_index) -> int64 {
+      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();
@@ -157,19 +159,19 @@ void VrpDropNodes() {
   // Add Capacity constraint.
   // [START capacity_constraint]
   const int demand_callback_index = routing.RegisterUnaryTransitCallback(
-      [&data, &manager](int64 from_index) -> int64 {
+      [&data, &manager](int64_t from_index) -> int64_t {
         // Convert from routing variable Index to demand NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         return data.demands[from_node];
       });
   routing.AddDimensionWithVehicleCapacity(
       demand_callback_index,    // transit callback index
-      int64{0},                 // null capacity slack
+      int64_t{0},               // null capacity slack
       data.vehicle_capacities,  // vehicle maximum capacities
       true,                     // start cumul to zero
       "Capacity");
   // Allow to drop nodes.
-  int64 penalty{1000};
+  int64_t penalty{1000};
   for (int i = 1; i < data.distance_matrix.size(); ++i) {
     routing.AddDisjunction(
         {manager.NodeToIndex(RoutingIndexManager::NodeIndex(i))}, penalty);

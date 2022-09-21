@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ortools.util.sorted_interval_list."""
+"""Tests for ortools.util.python.sorted_interval_list."""
 
 
 import unittest
-from ortools.util import sorted_interval_list
+from ortools.util.python import sorted_interval_list
 
 
 class SortedIntervalListTest(unittest.TestCase):
@@ -54,6 +55,36 @@ class SortedIntervalListTest(unittest.TestCase):
     def testNegation(self):
         domain = sorted_interval_list.Domain(5, 20)
         self.assertEqual([-20, -5], domain.Negation().FlattenedIntervals())
+
+    def testUnion(self):
+        d1 = sorted_interval_list.Domain(0, 5)
+        d2 = sorted_interval_list.Domain(10, 15)
+        d3 = d1.UnionWith(d2)
+        self.assertEqual([0, 5], d1.FlattenedIntervals())
+        self.assertEqual([10, 15], d2.FlattenedIntervals())
+        self.assertEqual([0, 5, 10, 15], d3.FlattenedIntervals())
+
+    def testIntersection(self):
+        d1 = sorted_interval_list.Domain(0, 10)
+        d2 = sorted_interval_list.Domain(5, 15)
+        d3 = d1.IntersectionWith(d2)
+        self.assertEqual([0, 10], d1.FlattenedIntervals())
+        self.assertEqual([5, 15], d2.FlattenedIntervals())
+        self.assertEqual([5, 10], d3.FlattenedIntervals())
+
+    def testAddition(self):
+        d1 = sorted_interval_list.Domain(0, 5)
+        d2 = sorted_interval_list.Domain(10, 15)
+        d3 = d1.AdditionWith(d2)
+        self.assertEqual([0, 5], d1.FlattenedIntervals())
+        self.assertEqual([10, 15], d2.FlattenedIntervals())
+        self.assertEqual([10, 20], d3.FlattenedIntervals())
+
+    def testComplement(self):
+        d1 = sorted_interval_list.Domain(-9223372036854775808, 5)
+        d2 = d1.Complement()
+        self.assertEqual([-9223372036854775808, 5], d1.FlattenedIntervals())
+        self.assertEqual([6, 9223372036854775807], d2.FlattenedIntervals())
 
 
 if __name__ == '__main__':

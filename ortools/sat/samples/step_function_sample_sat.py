@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -71,8 +72,8 @@ def step_function_sample_sat():
     model.Add(x == 7).OnlyEnforceIf(b3)
     model.Add(expr == 3).OnlyEnforceIf(b3)
 
-    # At least one bi is true. (we could use a sum == 1).
-    model.AddBoolOr([b0, b2, b3])
+    # At least one bi is true. (we could use an exactly one constraint).
+    model.AddBoolOr(b0, b2, b3)
 
     # Search for x values in increasing order.
     model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,
@@ -83,10 +84,12 @@ def step_function_sample_sat():
 
     # Force the solver to follow the decision strategy exactly.
     solver.parameters.search_branching = cp_model.FIXED_SEARCH
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
 
     # Search and print out all solutions.
     solution_printer = VarArraySolutionPrinter([x, expr])
-    solver.SearchForAllSolutions(model, solution_printer)
+    solver.Solve(model, solution_printer)
 
 
 step_function_sample_sat()

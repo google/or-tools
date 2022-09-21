@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,12 +13,14 @@
 
 //
 
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
@@ -105,9 +107,9 @@ class CBCInterface : public MPSolverInterface {
   void ClearObjective() override { sync_status_ = MUST_RELOAD; }
 
   // Number of simplex iterations
-  int64 iterations() const override;
+  int64_t iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  int64 nodes() const override;
+  int64_t nodes() const override;
 
   // Returns the basis status of a row.
   MPSolver::BasisStatus row_status(int constraint_index) const override {
@@ -148,8 +150,8 @@ class CBCInterface : public MPSolverInterface {
 
   OsiClpSolverInterface osi_;
   // TODO(user): remove and query number of iterations directly from CbcModel
-  int64 iterations_;
-  int64 nodes_;
+  int64_t iterations_;
+  int64_t nodes_;
   // Special way to handle the relative MIP gap parameter.
   double relative_mip_gap_;
   int num_threads_ = 1;
@@ -467,12 +469,12 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 CBCInterface::iterations() const {
+int64_t CBCInterface::iterations() const {
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
   return iterations_;
 }
 
-int64 CBCInterface::nodes() const {
+int64_t CBCInterface::nodes() const {
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   return nodes_;
 }

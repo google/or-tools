@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,16 +15,17 @@
 #define OR_TOOLS_SAT_OPB_READER_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 namespace sat {
@@ -82,7 +83,7 @@ class OpbReader {
           num_variables_ = std::max(num_variables_, literal);
           objective->add_literals(literal);
         } else {
-          int64 value;
+          int64_t value;
           CHECK(absl::SimpleAtoi(word, &value));
           objective->add_coefficients(value);
         }
@@ -99,13 +100,13 @@ class OpbReader {
       CHECK(!word.empty());
       if (word == ">=") {
         CHECK_LT(i + 1, words.size());
-        int64 value;
+        int64_t value;
         CHECK(absl::SimpleAtoi(words[i + 1], &value));
         constraint->set_lower_bound(value);
         break;
       } else if (word == "=") {
         CHECK_LT(i + 1, words.size());
-        int64 value;
+        int64_t value;
         CHECK(absl::SimpleAtoi(words[i + 1], &value));
         constraint->set_upper_bound(value);
         constraint->set_lower_bound(value);
@@ -117,7 +118,7 @@ class OpbReader {
           num_variables_ = std::max(num_variables_, literal);
           constraint->add_literals(literal);
         } else {
-          int64 value;
+          int64_t value;
           CHECK(absl::SimpleAtoi(words[i], &value));
           constraint->add_coefficients(value);
         }

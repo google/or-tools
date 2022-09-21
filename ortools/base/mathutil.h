@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -104,11 +104,11 @@ class MathUtil {
 
   // Euclid's Algorithm.
   // Returns: the greatest common divisor of two unsigned integers x and y.
-  static int64 GCD64(int64 x, int64 y) {
+  static int64_t GCD64(int64_t x, int64_t y) {
     DCHECK_GE(x, 0);
     DCHECK_GE(y, 0);
     while (y != 0) {
-      int64 r = x % y;
+      int64_t r = x % y;
       x = y;
       y = r;
     }
@@ -135,7 +135,7 @@ class MathUtil {
     return static_cast<IntOut>(x < 0 ? (x - 0.5) : (x + 0.5));
   }
 
-  static int64 FastInt64Round(double x) { return Round<int64>(x); }
+  static int64_t FastInt64Round(double x) { return Round<int64_t>(x); }
 };
 }  // namespace operations_research
 

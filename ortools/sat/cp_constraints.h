@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,11 +14,12 @@
 #ifndef OR_TOOLS_SAT_CP_CONSTRAINTS_H_
 #define OR_TOOLS_SAT_CP_CONSTRAINTS_H_
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <vector>
 
-#include "ortools/base/int_type.h"
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -26,6 +27,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/rev.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -99,7 +101,7 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
 // ============================================================================
 
 inline std::vector<IntegerValue> ToIntegerValueVector(
-    const std::vector<int64>& input) {
+    const std::vector<int64_t>& input) {
   std::vector<IntegerValue> result(input.size());
   for (int i = 0; i < input.size(); ++i) {
     result[i] = IntegerValue(input[i]);

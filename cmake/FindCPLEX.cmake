@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #[=======================================================================[.rst:
 FindCPLEX
 --------
@@ -37,14 +50,12 @@ else()
   message(FATAL_ERROR "FindCPLEX only works if either C or CXX language is enabled")
 endif()
 
-if(APPLE)
-  message(FATAL_ERROR "CPLEX not yet supported on macOS")
-elseif(UNIX)
-  message(FATAL_ERROR "CPLEX not yet supported on Linux")
-endif()
-
 if(NOT CPLEX_ROOT)
-  set(CPLEX_ROOT $ENV{CPLEX_ROOT})
+  if(DEFINED ENV{UNIX_CPLEX_DIR})
+    set(CPLEX_ROOT $ENV{UNIX_CPLEX_DIR})
+  elseif(DEFINED ENV{CPLEX_ROOT})
+    set(CPLEX_ROOT $ENV{CPLEX_ROOT})
+  endif()
 endif()
 message(STATUS "CPLEX_ROOT: ${CPLEX_ROOT}")
 if(NOT CPLEX_ROOT)
@@ -53,12 +64,25 @@ else()
   set(CPLEX_FOUND TRUE)
 endif()
 
+# TODO(user) Bump support to CPLEX 20.1.0
+# ref: https://www.ibm.com/docs/en/icos/20.1.0?topic=cplex-setting-up-gnulinuxmacos
+# ref: https://www.ibm.com/docs/en/icos/20.1.0?topic=cplex-setting-up-windows
+
+# ref: https://www.ibm.com/docs/en/icos/12.10.0?topic=cplex-setting-up-gnulinuxmacos
 if(CPLEX_FOUND AND NOT TARGET CPLEX::CPLEX)
   add_library(CPLEX::CPLEX UNKNOWN IMPORTED)
+  target_include_directories(CPLEX::CPLEX SYSTEM INTERFACE "${CPLEX_ROOT}/cplex/include")
 
-  set_target_properties(CPLEX::CPLEX PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${CPLEX_INCLUDE_DIRS}")
-
-  set_target_properties(CPLEX::CPLEX PROPERTIES
-    IMPORTED_LOCATION "${CPLEX_ROOT}/cplex/lib/x64_windows_msvc14/stat_mda/cplex12100.lib")
+  if(APPLE) # be aware that `UNIX` is `TRUE` on OS X, so this check must be first
+    set_target_properties(CPLEX::CPLEX PROPERTIES
+      IMPORTED_LOCATION "${CPLEX_ROOT}/cplex/lib/x86-64_osx/static_pic/libcplex.a")
+  elseif(UNIX)
+    set_target_properties(CPLEX::CPLEX PROPERTIES
+      IMPORTED_LOCATION "${CPLEX_ROOT}/cplex/lib/x86-64_linux/static_pic/libcplex.a")
+  elseif(MSVC)
+    set_target_properties(CPLEX::CPLEX PROPERTIES
+      IMPORTED_LOCATION "${CPLEX_ROOT}/cplex/lib/x64_windows_msvc14/stat_mda/cplex12100.lib")
+  else()
+    message(FATAL_ERROR "CPLEX not supported for ${CMAKE_SYSTEM}")
+  endif()
 endif()

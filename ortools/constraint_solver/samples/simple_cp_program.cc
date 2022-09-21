@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 // [START program]
 // [START import]
+#include <ostream>
+#include <string>
+
 #include "ortools/constraint_solver/constraint_solver.h"
 // [END import]
 
@@ -26,7 +29,7 @@ void SimpleCpProgram() {
 
   // Create the variables.
   // [START variables]
-  const int64 num_vals = 3;
+  const int64_t num_vals = 3;
   IntVar* const x = solver.MakeIntVar(0, num_vals - 1, "x");
   IntVar* const y = solver.MakeIntVar(0, num_vals - 1, "y");
   IntVar* const z = solver.MakeIntVar(0, num_vals - 1, "z");

@@ -1,0 +1,23 @@
+name: powerpc Toolchain
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  powerpc:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        targets: [
+          [ppc64],
+          [ppc64le],
+        ]
+      fail-fast: false
+    env:
+      TARGET: ${{ matrix.targets[0] }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: make --directory=cmake ${TARGET}_build
+    - name: Test
+      run: make --directory=cmake ${TARGET}_test

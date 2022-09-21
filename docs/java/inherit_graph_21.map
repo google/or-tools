@@ -1,8 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html" title="A linear expression interface that can be parsed." alt="" coords="5,56,96,83"/>
-<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html" title="An integer variable." alt="" coords="189,107,251,133"/>
-<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html" title="A linear expression interface that can be parsed." alt="" coords="181,5,259,32"/>
-<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1sat_1_1SumOfVariables.html" title="A linear expression interface that can be parsed." alt="" coords="157,56,283,83"/>
-<area shape="rect" id="node5" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1Literal.html" title="Interface to describe a boolean variable or its negation." alt="" coords="19,132,82,159"/>
-<area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1sat_1_1NotBooleanVariable.html" title="The negation of a boolean variable." alt="" coords="144,157,296,184"/>
-</map>

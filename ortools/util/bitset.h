@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
@@ -30,27 +31,27 @@ namespace operations_research {
 // Basic bit operations
 
 // Useful constants: word and double word will all bits set.
-static const uint64 kAllBits64 = uint64_t{0xFFFFFFFFFFFFFFFF};
-static const uint64 kAllBitsButLsb64 = uint64_t{0xFFFFFFFFFFFFFFFE};
-static const uint32 kAllBits32 = 0xFFFFFFFFU;
+static const uint64_t kAllBits64 = uint64_t{0xFFFFFFFFFFFFFFFF};
+static const uint64_t kAllBitsButLsb64 = uint64_t{0xFFFFFFFFFFFFFFFE};
+static const uint32_t kAllBits32 = 0xFFFFFFFFU;
 
 // Returns a word with only bit pos set.
-inline uint64 OneBit64(int pos) { return uint64_t{1} << pos; }
-inline uint32 OneBit32(int pos) { return 1U << pos; }
+inline uint64_t OneBit64(int pos) { return uint64_t{1} << pos; }
+inline uint32_t OneBit32(int pos) { return 1U << pos; }
 
 // Returns the number of bits set in n.
-inline uint64 BitCount64(uint64 n) {
-  const uint64 m1 = uint64_t{0x5555555555555555};
-  const uint64 m2 = uint64_t{0x3333333333333333};
-  const uint64 m4 = uint64_t{0x0F0F0F0F0F0F0F0F};
-  const uint64 h01 = uint64_t{0x0101010101010101};
+inline uint64_t BitCount64(uint64_t n) {
+  const uint64_t m1 = uint64_t{0x5555555555555555};
+  const uint64_t m2 = uint64_t{0x3333333333333333};
+  const uint64_t m4 = uint64_t{0x0F0F0F0F0F0F0F0F};
+  const uint64_t h01 = uint64_t{0x0101010101010101};
   n -= (n >> 1) & m1;
   n = (n & m2) + ((n >> 2) & m2);
   n = (n + (n >> 4)) & m4;
   n = (n * h01) >> 56;
   return n;
 }
-inline uint32 BitCount32(uint32 n) {
+inline uint32_t BitCount32(uint32_t n) {
   n -= (n >> 1) & 0x55555555UL;
   n = (n & 0x33333333) + ((n >> 2) & 0x33333333UL);
   n = (n + (n >> 4)) & 0x0F0F0F0FUL;
@@ -60,8 +61,8 @@ inline uint32 BitCount32(uint32 n) {
 }
 
 // Returns a word with only the least significant bit of n set.
-inline uint64 LeastSignificantBitWord64(uint64 n) { return n & ~(n - 1); }
-inline uint32 LeastSignificantBitWord32(uint32 n) { return n & ~(n - 1); }
+inline uint64_t LeastSignificantBitWord64(uint64_t n) { return n & ~(n - 1); }
+inline uint32_t LeastSignificantBitWord32(uint32_t n) { return n & ~(n - 1); }
 
 // Returns the least significant bit position in n.
 // Discussion around lsb computation:
@@ -73,13 +74,13 @@ inline uint32 LeastSignificantBitWord32(uint32 n) { return n & ~(n - 1); }
 #endif
 
 #if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
-inline int LeastSignificantBitPosition64Fast(uint64 n) {
+inline int LeastSignificantBitPosition64Fast(uint64_t n) {
   return n == 0 ? 0 : __builtin_ctzll(n);
 }
 #endif
 
-inline int LeastSignificantBitPosition64DeBruijn(uint64 n) {
-  static const uint64 kSeq = uint64_t{0x0218a392dd5fb34f};
+inline int LeastSignificantBitPosition64DeBruijn(uint64_t n) {
+  static const uint64_t kSeq = uint64_t{0x0218a392dd5fb34f};
   static const int kTab[64] = {
       // initialized by 'kTab[(kSeq << i) >> 58] = i
       0,  1,  2,  7,  3,  13, 8,  19, 4,  25, 14, 28, 9,  52, 20, 58,
@@ -90,7 +91,7 @@ inline int LeastSignificantBitPosition64DeBruijn(uint64 n) {
   return kTab[((n & (~n + 1)) * kSeq) >> 58];
 }
 
-inline int LeastSignificantBitPosition64Default(uint64 n) {
+inline int LeastSignificantBitPosition64Default(uint64_t n) {
   if (n == 0) return 0;
   int pos = 63;
   if (n & 0x00000000FFFFFFFFLL) {
@@ -124,7 +125,7 @@ inline int LeastSignificantBitPosition64Default(uint64 n) {
   return pos;
 }
 
-inline int LeastSignificantBitPosition64(uint64 n) {
+inline int LeastSignificantBitPosition64(uint64_t n) {
   DCHECK_NE(n, 0);
 #ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
   return LeastSignificantBitPosition64Fast(n);
@@ -136,13 +137,13 @@ inline int LeastSignificantBitPosition64(uint64 n) {
 }
 
 #if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
-inline int LeastSignificantBitPosition32Fast(uint32 n) {
+inline int LeastSignificantBitPosition32Fast(uint32_t n) {
   return n == 0 ? 0 : __builtin_ctzl(n);
 }
 #endif
 
-inline int LeastSignificantBitPosition32DeBruijn(uint32 n) {
-  static const uint32 kSeq = 0x077CB531U;  // de Bruijn sequence
+inline int LeastSignificantBitPosition32DeBruijn(uint32_t n) {
+  static const uint32_t kSeq = 0x077CB531U;  // de Bruijn sequence
   static const int kTab[32] = {// initialized by 'kTab[(kSeq << i) >> 27] = i
                                0,  1,  28, 2,  29, 14, 24, 3,  30, 22, 20,
                                15, 25, 17, 4,  8,  31, 27, 13, 23, 21, 19,
@@ -150,7 +151,7 @@ inline int LeastSignificantBitPosition32DeBruijn(uint32 n) {
   return kTab[((n & (~n + 1)) * kSeq) >> 27];
 }
 
-inline int LeastSignificantBitPosition32Default(uint32 n) {
+inline int LeastSignificantBitPosition32Default(uint32_t n) {
   if (n == 0) return 0;
   int pos = 31;
   if (n & 0x0000FFFFL) {
@@ -179,7 +180,7 @@ inline int LeastSignificantBitPosition32Default(uint32 n) {
   return pos;
 }
 
-inline int LeastSignificantBitPosition32(uint32 n) {
+inline int LeastSignificantBitPosition32(uint32_t n) {
   DCHECK_NE(n, 0);
 #ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
   return LeastSignificantBitPosition32Fast(n);
@@ -192,15 +193,15 @@ inline int LeastSignificantBitPosition32(uint32 n) {
 
 // Returns the most significant bit position in n.
 #if USE_FAST_LEAST_SIGNIFICANT_BIT
-inline int MostSignificantBitPosition64Fast(uint64 n) {
+inline int MostSignificantBitPosition64Fast(uint64_t n) {
   // __builtin_clzll(1) should always return 63. There is no penalty in
-  // using offset, and the code looks more like its uint32 counterpart.
+  // using offset, and the code looks more like its uint32_t counterpart.
   const int offset = __builtin_clzll(1);
   return n == 0 ? 0 : (offset - __builtin_clzll(n));
 }
 #endif
 
-inline int MostSignificantBitPosition64Default(uint64 n) {
+inline int MostSignificantBitPosition64Default(uint64_t n) {
   int b = 0;
   if (0 != (n & (kAllBits64 << (1 << 5)))) {
     b |= (1 << 5);
@@ -228,7 +229,7 @@ inline int MostSignificantBitPosition64Default(uint64 n) {
   return b;
 }
 
-inline int MostSignificantBitPosition64(uint64 n) {
+inline int MostSignificantBitPosition64(uint64_t n) {
 #ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
   return MostSignificantBitPosition64Fast(n);
 #else
@@ -237,7 +238,7 @@ inline int MostSignificantBitPosition64(uint64 n) {
 }
 
 #if USE_FAST_LEAST_SIGNIFICANT_BIT
-inline int MostSignificantBitPosition32Fast(uint32 n) {
+inline int MostSignificantBitPosition32Fast(uint32_t n) {
   // The constant here depends on whether we are on a 32-bit or 64-bit machine.
   // __builtin_clzl(1) returns 63 on a 64-bit machine and 31 on a 32-bit
   // machine.
@@ -246,7 +247,7 @@ inline int MostSignificantBitPosition32Fast(uint32 n) {
 }
 #endif
 
-inline int MostSignificantBitPosition32Default(uint32 n) {
+inline int MostSignificantBitPosition32Default(uint32_t n) {
   int b = 0;
   if (0 != (n & (kAllBits32 << (1 << 4)))) {
     b |= (1 << 4);
@@ -270,7 +271,7 @@ inline int MostSignificantBitPosition32Default(uint32 n) {
   return b;
 }
 
-inline int MostSignificantBitPosition32(uint32 n) {
+inline int MostSignificantBitPosition32(uint32_t n) {
 #ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
   return MostSignificantBitPosition32Fast(n);
 #else
@@ -282,14 +283,14 @@ inline int MostSignificantBitPosition32(uint32 n) {
 #undef USE_FAST_LEAST_SIGNIFICANT_BIT
 
 // Returns a word with bits from s to e set.
-inline uint64 OneRange64(uint64 s, uint64 e) {
+inline uint64_t OneRange64(uint64_t s, uint64_t e) {
   DCHECK_LE(s, 63);
   DCHECK_LE(e, 63);
   DCHECK_LE(s, e);
   return (kAllBits64 << s) ^ ((kAllBits64 - 1) << e);
 }
 
-inline uint32 OneRange32(uint32 s, uint32 e) {
+inline uint32_t OneRange32(uint32_t s, uint32_t e) {
   DCHECK_LE(s, 31);
   DCHECK_LE(e, 31);
   DCHECK_LE(s, e);
@@ -297,29 +298,29 @@ inline uint32 OneRange32(uint32 s, uint32 e) {
 }
 
 // Returns a word with s least significant bits unset.
-inline uint64 IntervalUp64(uint64 s) {
+inline uint64_t IntervalUp64(uint64_t s) {
   DCHECK_LE(s, 63);
   return kAllBits64 << s;
 }
 
-inline uint32 IntervalUp32(uint32 s) {
+inline uint32_t IntervalUp32(uint32_t s) {
   DCHECK_LE(s, 31);
   return kAllBits32 << s;
 }
 
 // Returns a word with the s most significant bits unset.
-inline uint64 IntervalDown64(uint64 s) {
+inline uint64_t IntervalDown64(uint64_t s) {
   DCHECK_LE(s, 63);
   return kAllBits64 >> (63 - s);
 }
 
-inline uint32 IntervalDown32(uint32 s) {
+inline uint32_t IntervalDown32(uint32_t s) {
   DCHECK_LE(s, 31);
   return kAllBits32 >> (31 - s);
 }
 
 // ----- Bitset operators -----
-// Bitset: array of uint32/uint64 words
+// Bitset: array of uint32_t/uint64_t words
 
 // Bit operators used to manipulates bitsets.
 
@@ -327,86 +328,90 @@ inline uint32 IntervalDown32(uint32 s) {
 // corresponding to the bit at position pos in the bitset.
 // Note: '& 63' is faster than '% 64'
 // TODO(user): rename BitPos and BitOffset to something more understandable.
-inline uint32 BitPos64(uint64 pos) { return (pos & 63); }
-inline uint32 BitPos32(uint32 pos) { return (pos & 31); }
+inline uint32_t BitPos64(uint64_t pos) { return (pos & 63); }
+inline uint32_t BitPos32(uint32_t pos) { return (pos & 31); }
 
 // Returns the word number corresponding to bit number pos.
-inline uint64 BitOffset64(uint64 pos) { return (pos >> 6); }
-inline uint32 BitOffset32(uint32 pos) { return (pos >> 5); }
+inline uint64_t BitOffset64(uint64_t pos) { return (pos >> 6); }
+inline uint32_t BitOffset32(uint32_t pos) { return (pos >> 5); }
 
 // Returns the number of words needed to store size bits.
-inline uint64 BitLength64(uint64 size) { return ((size + 63) >> 6); }
-inline uint32 BitLength32(uint32 size) { return ((size + 31) >> 5); }
+inline uint64_t BitLength64(uint64_t size) { return ((size + 63) >> 6); }
+inline uint32_t BitLength32(uint32_t size) { return ((size + 31) >> 5); }
 
 // Returns the bit number in the bitset of the first bit of word number v.
-inline uint64 BitShift64(uint64 v) { return v << 6; }
-inline uint32 BitShift32(uint32 v) { return v << 5; }
+inline uint64_t BitShift64(uint64_t v) { return v << 6; }
+inline uint32_t BitShift32(uint32_t v) { return v << 5; }
 
 // Returns true if the bit pos is set in bitset.
-inline bool IsBitSet64(const uint64* const bitset, uint64 pos) {
+inline bool IsBitSet64(const uint64_t* const bitset, uint64_t pos) {
   return (bitset[BitOffset64(pos)] & OneBit64(BitPos64(pos)));
 }
-inline bool IsBitSet32(const uint32* const bitset, uint32 pos) {
+inline bool IsBitSet32(const uint32_t* const bitset, uint32_t pos) {
   return (bitset[BitOffset32(pos)] & OneBit32(BitPos32(pos)));
 }
 
 // Sets the bit pos to true in bitset.
-inline void SetBit64(uint64* const bitset, uint64 pos) {
+inline void SetBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] |= OneBit64(BitPos64(pos));
 }
-inline void SetBit32(uint32* const bitset, uint32 pos) {
+inline void SetBit32(uint32_t* const bitset, uint32_t pos) {
   bitset[BitOffset32(pos)] |= OneBit32(BitPos32(pos));
 }
 
 // Sets the bit pos to false in bitset.
-inline void ClearBit64(uint64* const bitset, uint64 pos) {
+inline void ClearBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
 }
-inline void ClearBit32(uint32* const bitset, uint32 pos) {
+inline void ClearBit32(uint32_t* const bitset, uint32_t pos) {
   bitset[BitOffset32(pos)] &= ~OneBit32(BitPos32(pos));
 }
 
 // Returns the number of bits set in bitset between positions start and end.
-uint64 BitCountRange64(const uint64* const bitset, uint64 start, uint64 end);
-uint32 BitCountRange32(const uint32* const bitset, uint32 start, uint32 end);
+uint64_t BitCountRange64(const uint64_t* const bitset, uint64_t start,
+                         uint64_t end);
+uint32_t BitCountRange32(const uint32_t* const bitset, uint32_t start,
+                         uint32_t end);
 
 // Returns true if no bits are set in bitset between start and end.
-bool IsEmptyRange64(const uint64* const bitset, uint64 start, uint64 end);
-bool IsEmptyRange32(const uint32* const bitset, uint32 start, uint32 end);
+bool IsEmptyRange64(const uint64_t* const bitset, uint64_t start, uint64_t end);
+bool IsEmptyRange32(const uint32_t* const bitset, uint32_t start, uint32_t end);
 
 // Returns the first bit set in bitset between start and max_bit.
-int64 LeastSignificantBitPosition64(const uint64* const bitset, uint64 start,
-                                    uint64 end);
-int LeastSignificantBitPosition32(const uint32* const bitset, uint32 start,
-                                  uint32 end);
+int64_t LeastSignificantBitPosition64(const uint64_t* const bitset,
+                                      uint64_t start, uint64_t end);
+int LeastSignificantBitPosition32(const uint32_t* const bitset, uint32_t start,
+                                  uint32_t end);
 
 // Returns the last bit set in bitset between min_bit and start.
-int64 MostSignificantBitPosition64(const uint64* const bitset, uint64 start,
-                                   uint64 end);
-int MostSignificantBitPosition32(const uint32* const bitset, uint32 start,
-                                 uint32 end);
+int64_t MostSignificantBitPosition64(const uint64_t* const bitset,
+                                     uint64_t start, uint64_t end);
+int MostSignificantBitPosition32(const uint32_t* const bitset, uint32_t start,
+                                 uint32_t end);
 
 // Unsafe versions of the functions above where respectively end and start
 // are supposed to be set.
-int64 UnsafeLeastSignificantBitPosition64(const uint64* const bitset,
-                                          uint64 start, uint64 end);
-int32 UnsafeLeastSignificantBitPosition32(const uint32* const bitset,
-                                          uint32 start, uint32 end);
+int64_t UnsafeLeastSignificantBitPosition64(const uint64_t* const bitset,
+                                            uint64_t start, uint64_t end);
+int32_t UnsafeLeastSignificantBitPosition32(const uint32_t* const bitset,
+                                            uint32_t start, uint32_t end);
 
-int64 UnsafeMostSignificantBitPosition64(const uint64* const bitset,
-                                         uint64 start, uint64 end);
-int32 UnsafeMostSignificantBitPosition32(const uint32* const bitset,
-                                         uint32 start, uint32 end);
+int64_t UnsafeMostSignificantBitPosition64(const uint64_t* const bitset,
+                                           uint64_t start, uint64_t end);
+int32_t UnsafeMostSignificantBitPosition32(const uint32_t* const bitset,
+                                           uint32_t start, uint32_t end);
 
 // Returns a mask with the bits pos % 64 and (pos ^ 1) % 64 sets.
-inline uint64 TwoBitsFromPos64(uint64 pos) { return uint64_t{3} << (pos & 62); }
+inline uint64_t TwoBitsFromPos64(uint64_t pos) {
+  return uint64_t{3} << (pos & 62);
+}
 
 // This class is like an ITIVector<IndexType, bool> except that it provides a
 // more efficient way to iterate over the positions set to true. It achieves
-// this by caching the current uint64 bucket in the Iterator and using
+// this by caching the current uint64_t bucket in the Iterator and using
 // LeastSignificantBitPosition64() to iterate over the positions at 1 in this
 // bucket.
-template <typename IndexType = int64>
+template <typename IndexType = int64_t>
 class Bitset64 {
  public:
   Bitset64() : size_(), data_(), end_(*this, /*at_end=*/true) {}
@@ -443,11 +448,11 @@ class Bitset64 {
     const size_t bit_length = static_cast<size_t>(BitLength64(Value(size_)));
     const size_t to_clear = std::min(data_.size(), bit_length);
     data_.resize(bit_length, 0);
-    memset(data_.data(), 0, to_clear * sizeof(int64));
+    memset(data_.data(), 0, to_clear * sizeof(int64_t));
   }
 
   // Sets all bits to 0.
-  void ClearAll() { memset(data_.data(), 0, data_.size() * sizeof(int64)); }
+  void ClearAll() { memset(data_.data(), 0, data_.size() * sizeof(int64_t)); }
 
   // Sets the bit at position i to 0.
   void Clear(IndexType i) {
@@ -505,7 +510,7 @@ class Bitset64 {
 
   // Copies bucket containing bit i from "other" to "this".
   void CopyBucket(const Bitset64<IndexType>& other, IndexType i) {
-    const uint64 offset = BitOffset64(Value(i));
+    const uint64_t offset = BitOffset64(Value(i));
     data_[offset] = other.data_[offset];
   }
 
@@ -514,13 +519,13 @@ class Bitset64 {
   // larger, its high order bits are ignored. In any case "this" is not resized.
   template <typename OtherIndexType>
   void SetContentFromBitset(const Bitset64<OtherIndexType>& other) {
-    const int64 min_size = std::min(data_.size(), other.data_.size());
+    const int64_t min_size = std::min(data_.size(), other.data_.size());
     if (min_size == 0) return;
-    const uint64 last_common_bucket = data_[min_size - 1];
-    memcpy(data_.data(), other.data_.data(), min_size * sizeof(uint64));
+    const uint64_t last_common_bucket = data_[min_size - 1];
+    memcpy(data_.data(), other.data_.data(), min_size * sizeof(uint64_t));
     if (data_.size() >= other.data_.size()) {
-      const uint64 bitmask = kAllBitsButLsb64
-                             << BitPos64(other.Value(other.size() - 1));
+      const uint64_t bitmask = kAllBitsButLsb64
+                               << BitPos64(other.Value(other.size() - 1));
       data_[min_size - 1] &= ~bitmask;
       data_[min_size - 1] |= (bitmask & last_common_bucket);
     }
@@ -530,7 +535,7 @@ class Bitset64 {
   template <typename OtherIndexType>
   void SetContentFromBitsetOfSameSize(const Bitset64<OtherIndexType>& other) {
     DCHECK_EQ(Value(size()), other.Value(other.size()));
-    memcpy(data_.data(), other.data_.data(), data_.size() * sizeof(uint64));
+    memcpy(data_.data(), other.data_.data(), data_.size() * sizeof(uint64_t));
   }
 
   // Sets "this" to be the intersection of "this" and "other". The
@@ -558,7 +563,7 @@ class Bitset64 {
 
   // Class to iterate over the bit positions at 1 of a Bitset64.
   //
-  // IMPORTANT: Because the iterator "caches" the current uint64 bucket, this
+  // IMPORTANT: Because the iterator "caches" the current uint64_t bucket, this
   // will probably not do what you want if Bitset64 is modified while iterating.
   class Iterator {
    public:
@@ -623,7 +628,7 @@ class Bitset64 {
     const Bitset64& bitset_;
     int index_;
     int base_index_;
-    uint64 current_;
+    uint64_t current_;
   };
 
   // Allows range-based "for" loop on the non-zero positions:
@@ -634,22 +639,19 @@ class Bitset64 {
   Iterator begin() const { return Iterator(*this); }
   Iterator end() const { return end_; }
 
-  // Cryptic function!
-  // This is just an optimized version of a given piece of code and has probably
-  // little general use. Sets the bit at position i to the result of
-  // (other1[i] && use1) XOR (other2[i] && use2).
-  void SetBitFromOtherBitSets(IndexType i, const Bitset64<IndexType>& other1,
-                              uint64 use1, const Bitset64<IndexType>& other2,
-                              uint64 use2) {
-    DCHECK_EQ(data_.size(), other1.data_.size());
-    DCHECK_EQ(data_.size(), other2.data_.size());
+  // Cryptic function! This is just an optimized version of a given piece of
+  // code and has probably little general use.
+  static uint64_t ConditionalXorOfTwoBits(IndexType i, uint64_t use1,
+                                          const Bitset64<IndexType>& set1,
+                                          uint64_t use2,
+                                          const Bitset64<IndexType>& set2) {
+    DCHECK_EQ(set1.data_.size(), set1.data_.size());
     DCHECK(use1 == 0 || use1 == 1);
     DCHECK(use2 == 0 || use2 == 1);
     const int bucket = BitOffset64(Value(i));
     const int pos = BitPos64(Value(i));
-    data_[bucket] ^= ((1ull << pos) & data_[bucket]) ^
-                     ((use1 << pos) & other1.data_[bucket]) ^
-                     ((use2 << pos) & other2.data_[bucket]);
+    return ((use1 << pos) & set1.data_[bucket]) ^
+           ((use2 << pos) & set2.data_[bucket]);
   }
 
   // Returns a 0/1 string representing the bitset.
@@ -663,11 +665,11 @@ class Bitset64 {
 
  private:
   // Returns the value of the index type.
-  // This function is specialized below to work with IntType and int64.
-  int64 Value(IndexType input) const;
+  // This function is specialized below to work with IntType and int64_t.
+  static int Value(IndexType input);
 
   IndexType size_;
-  std::vector<uint64> data_;
+  std::vector<uint64_t> data_;
 
   // It is faster to store the end() Iterator than to recompute it every time.
   // Note that we cannot do the same for begin().
@@ -724,7 +726,7 @@ class BitQueue64 {
   void ClearTop() {
     DCHECK_NE(top_, -1);
     int bucket_index = static_cast<int>(BitOffset64(top_));
-    uint64 bucket = data_[bucket_index] &= ~OneBit64(BitPos64(top_));
+    uint64_t bucket = data_[bucket_index] &= ~OneBit64(BitPos64(top_));
     while (!bucket) {
       if (bucket_index == 0) {
         top_ = -1;
@@ -735,7 +737,7 @@ class BitQueue64 {
 
     // Note(user): I experimented with reversing the bit order in a bucket to
     // use LeastSignificantBitPosition64() and it is only slightly faster at the
-    // cost of a lower Set() speed. So I prefered this version.
+    // cost of a lower Set() speed. So I preferred this version.
     top_ = static_cast<int>(BitShift64(bucket_index) +
                             MostSignificantBitPosition64(bucket));
   }
@@ -743,25 +745,30 @@ class BitQueue64 {
  private:
   int size_;
   int top_;
-  std::vector<uint64> data_;
+  std::vector<uint64_t> data_;
   DISALLOW_COPY_AND_ASSIGN(BitQueue64);
 };
 
-// The specialization of Value() for IntType and int64.
+// The specialization of Value() for IntType and int64_t.
 template <typename IntType>
-inline int64 Bitset64<IntType>::Value(IntType input) const {
+inline int Bitset64<IntType>::Value(IntType input) {
   DCHECK_GE(input.value(), 0);
   return input.value();
 }
 template <>
-inline int64 Bitset64<int64>::Value(int64 input) const {
+inline int Bitset64<int>::Value(int input) {
+  DCHECK_GE(input, 0);
+  return input;
+}
+template <>
+inline int Bitset64<int64_t>::Value(int64_t input) {
   DCHECK_GE(input, 0);
   return input;
 }
 
 // A simple utility class to set/unset integer in a range [0, size).
 // This is optimized for sparsity.
-template <typename IntegerType = int64>
+template <typename IntegerType = int64_t>
 class SparseBitset {
  public:
   SparseBitset() {}

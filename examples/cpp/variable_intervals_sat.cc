@@ -24,7 +24,7 @@ void Solve() {
   const IntVar end_p2 = cp_model.NewIntVar(Domain(500, 1000));
   const IntervalVar p2 = cp_model.NewIntervalVar(start_p2, duration_p2, end_p2);
 
-  cp_model.AddEquality(LinearExpr::Sum({duration_p1, duration_p2}), 360);
+  cp_model.AddEquality(duration_p1 + duration_p2, 360);
   cp_model.AddLessOrEqual(end_p1, start_p2);
 
   cp_model.AddNoOverlap({ins, p1, p2});

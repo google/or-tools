@@ -117,9 +117,9 @@ public class MagicSquareAndCards
     {
         int n = 3;
 
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            n = Convert.ToInt32(args[0]);
+            n = Convert.ToInt32(args[1]);
         }
 
         Solve(n);

@@ -4,18 +4,22 @@
 
 namespace operations_research {
 void SolveLP() {
-  MPSolver solver("test", MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-  const double kInfinity = solver.infinity();
-  MPVariable* const x = solver.MakeNumVar(-kInfinity, kInfinity, "x");
+  // Create the linear solver with the GLOP backend.
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("CBC"));
+  if (!solver) {
+    return;
+  }
+  const double kInfinity = solver->infinity();
+  MPVariable* const x = solver->MakeNumVar(-kInfinity, kInfinity, "x");
 
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective* const objective = solver->MutableObjective();
   objective->SetMaximization();
   objective->SetCoefficient(x, 1);
 
-  MPConstraint* const constraint = solver.MakeRowConstraint(0, 5);
+  MPConstraint* const constraint = solver->MakeRowConstraint(0, 5);
   constraint->SetCoefficient(x, 1);
 
-  solver.Solve();
+  solver->Solve();
 }
 
 void BreakLoop() {

@@ -1,5 +1,0 @@
-var structinternal_1_1_connected_components_type_helper_1_1_select_container_3_01_u_00_01absl_1_1ena4377d43c3c42f63e44f1faa2099dbc3b =
-[
-    [ "Map", "structinternal_1_1_connected_components_type_helper_1_1_select_container_3_01_u_00_01absl_1_1ena4377d43c3c42f63e44f1faa2099dbc3b.html#a8f1c62e9492e61eb89e496a52e6a08b0", null ],
-    [ "Set", "structinternal_1_1_connected_components_type_helper_1_1_select_container_3_01_u_00_01absl_1_1ena4377d43c3c42f63e44f1faa2099dbc3b.html#ad2ffa2bd07fdca63ea3e9b18d1ec58ab", null ]
-];

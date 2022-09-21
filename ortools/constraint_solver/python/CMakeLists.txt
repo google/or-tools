@@ -1,19 +1,30 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME pywrapcp)
 set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS -nofastunpack)
 swig_add_library(pywrapcp
-  TYPE SHARED
+  TYPE MODULE
   LANGUAGE python
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/constraint_solver
+  OUTPUT_DIR ${PYTHON_PROJECT_DIR}/constraint_solver
   SOURCES routing.i)
 
-target_include_directories(pywrapcp PRIVATE ${Python_INCLUDE_DIRS})
+target_include_directories(pywrapcp PRIVATE ${Python3_INCLUDE_DIRS})
 set_property(TARGET pywrapcp PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
-if(Python_VERSION VERSION_GREATER_EQUAL 3)
-  target_compile_definitions(pywrapcp PUBLIC "PY3")
-endif()
+target_compile_definitions(pywrapcp PUBLIC "PY3")
 
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
@@ -33,5 +44,5 @@ target_link_libraries(pywrapcp PRIVATE ortools::ortools)
 # i.e. we can't use: $<$<PLATFORM_ID:Windows>:${PYTHON_LIBRARIES}>
 # see: https://cmake.org/cmake/help/git-stage/command/target_link_libraries.html#command:target_link_libraries
 if(MSVC)
-  target_link_libraries(pywrapcp PRIVATE ${Python_LIBRARIES})
+  target_link_libraries(pywrapcp PRIVATE ${Python3_LIBRARIES})
 endif()

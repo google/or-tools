@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 #ifndef OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_
 #define OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_
+
+#include <string>
 
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
@@ -62,8 +64,9 @@ class DualEdgeNorms {
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetEdgeSquaredNorms(). This is because the latter will
   // recompute the norms from scratch and therefore needs a hightened precision
-  // and speed.
-  bool NeedsBasisRefactorization();
+  // and speed. This also indicates if GetEdgeSquaredNorms() will trigger a
+  // recomputation.
+  bool NeedsBasisRefactorization() const;
 
   // Returns the dual edge squared norms. This is only valid if the caller
   // properly called UpdateBeforeBasisPivot() before each basis pivot, or just

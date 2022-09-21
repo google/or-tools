@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,12 @@
 #ifndef OR_TOOLS_SAT_VAR_DOMINATION_H_
 #define OR_TOOLS_SAT_VAR_DOMINATION_H_
 
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -48,7 +54,7 @@ class VarDomination {
   VarDomination() {}
 
   // This is the translation used from "ref" to IntegerVariable. The API
-  // understand the cp_mode.proto ref, but internally we only store
+  // understand the cp_model.proto ref, but internally we only store
   // IntegerVariable.
   static IntegerVariable RefToIntegerVariable(int ref) {
     return RefIsPositive(ref) ? IntegerVariable(2 * ref)
@@ -59,7 +65,7 @@ class VarDomination {
                                    : NegatedRef(var.value() / 2);
   }
 
-  // Reset the class to a clean state.
+  // Resets the class to a clean state.
   // At the beginning, we assume that there is no constraint.
   void Reset(int num_variables);
 
@@ -87,23 +93,26 @@ class VarDomination {
   // increase / decrease functions also refine the partition.
   void CanOnlyDominateEachOther(absl::Span<const int> refs);
   void ActivityShouldNotChange(absl::Span<const int> refs,
-                               absl::Span<const int64> coeffs);
+                               absl::Span<const int64_t> coeffs);
   void ActivityShouldNotDecrease(absl::Span<const int> enforcements,
                                  absl::Span<const int> refs,
-                                 absl::Span<const int64> coeffs);
+                                 absl::Span<const int64_t> coeffs);
   void ActivityShouldNotIncrease(absl::Span<const int> enforcements,
                                  absl::Span<const int> refs,
-                                 absl::Span<const int64> coeffs);
+                                 absl::Span<const int64_t> coeffs);
 
   // EndFirstPhase() must be called once all constraints have been processed
   // once. One then needs to redo the calls to ActivityShouldNotIncrease() and
   // ActivityShouldNotDecrease(). And finally call EndSecondPhase() before
   // querying the domination information.
-  void EndFirstPhase();
+  //
+  // If EndFirstPhase() return false, there is no point continuing.
+  bool EndFirstPhase();
   void EndSecondPhase();
 
   // This is true if this variable was never restricted by any call. We can thus
-  // fix it to its lower bound.
+  // fix it to its lower bound. Note that we don't do that here as the
+  // DualBoundStrengthening class will take care of that.
   bool CanFreelyDecrease(int ref) const;
   bool CanFreelyDecrease(IntegerVariable var) const;
 
@@ -124,7 +133,7 @@ class VarDomination {
   struct IntegerVariableWithRank {
     IntegerVariable var;
     int part;
-    int64 rank;
+    int64_t rank;
 
     bool operator<(const IntegerVariableWithRank& o) const {
       return rank < o.rank;
@@ -139,7 +148,7 @@ class VarDomination {
   void FillTempRanks(bool reverse_references,
                      absl::Span<const int> enforcements,
                      absl::Span<const int> refs,
-                     absl::Span<const int64> coeffs);
+                     absl::Span<const int64_t> coeffs);
 
   // First phase functions. We will keep for each variable a list of possible
   // candidates which is as short as possible.
@@ -163,22 +172,22 @@ class VarDomination {
   // start of the first variable in tmp_ranks_ with this rank.
   //
   // Note that the rank should be int, but to reuse the same vector when we
-  // construct it, we need int64. See FillTempRanks().
+  // construct it, we need int64_t. See FillTempRanks().
   std::vector<IntegerVariableWithRank> tmp_ranks_;
 
   // This do not change after EndFirstPhase().
   //
-  // We will add to the Dynamic partion, a set of subset S, each meaning that
+  // We will add to the Dynamic partition, a set of subset S, each meaning that
   // any variable in S can only dominate or be dominated by another variable in
   // S.
   std::vector<int> tmp_vars_;
-  std::unique_ptr<DynamicPartition> partition_;
+  std::unique_ptr<SimpleDynamicPartition> partition_;
   absl::StrongVector<IntegerVariable, bool> can_freely_decrease_;
 
   // For all one sided constraints, we keep the bitmap of constraint indices
   // modulo 64 that block on the lower side each variable.
-  int64 ct_index_for_signature_ = 0;
-  absl::StrongVector<IntegerVariable, uint64> block_down_signatures_;
+  int64_t ct_index_for_signature_ = 0;
+  absl::StrongVector<IntegerVariable, uint64_t> block_down_signatures_;
 
   // Used by FilterUsingTempRanks().
   int num_vars_with_negation_;
@@ -220,14 +229,14 @@ class DualBoundStrengthening {
   // All constraints should be mapped to one of more call to these functions.
   void CannotDecrease(absl::Span<const int> refs, int ct_index = -1);
   void CannotIncrease(absl::Span<const int> refs, int ct_index = -1);
-  void CannotMove(absl::Span<const int> refs);
+  void CannotMove(absl::Span<const int> refs, int ct_index = -1);
 
   // Most of the logic here deals with linear constraints.
   template <typename LinearProto>
   void ProcessLinearConstraint(bool is_objective,
                                const PresolveContext& context,
-                               const LinearProto& linear, int64 min_activity,
-                               int64 max_activity);
+                               const LinearProto& linear, int64_t min_activity,
+                               int64_t max_activity, int ct_index = -1);
 
   // Once ALL constraints have been processed, call this to fix variables or
   // reduce their domain if possible.
@@ -240,9 +249,12 @@ class DualBoundStrengthening {
 
   // The given ref can always freely decrease until the returned value.
   // Note that this does not take into account the domain of the variable.
-  int64 CanFreelyDecreaseUntil(int ref) const {
+  int64_t CanFreelyDecreaseUntil(int ref) const {
     return can_freely_decrease_until_[RefToIntegerVariable(ref)].value();
   }
+
+  // Reset on each Strengthen() call.
+  int NumDeletedConstraints() const { return num_deleted_constraints_; }
 
  private:
   // We encode proto ref as IntegerVariable for indexing vectors.
@@ -256,11 +268,13 @@ class DualBoundStrengthening {
 
   // How many times can_freely_decrease_until_[var] was set by a constraints.
   // If only one constraint is blocking, we can do more presolve.
-  absl::StrongVector<IntegerVariable, int64> num_locks_;
+  absl::StrongVector<IntegerVariable, int64_t> num_locks_;
 
   // If num_locks_[var] == 1, this will be the unique constraint that block var
   // in this direction. Note that it can be set to -1 if this wasn't recorded.
-  absl::StrongVector<IntegerVariable, int64> locking_ct_index_;
+  absl::StrongVector<IntegerVariable, int64_t> locking_ct_index_;
+
+  int num_deleted_constraints_ = 0;
 };
 
 // Detect the variable dominance relations within the given model. Note that

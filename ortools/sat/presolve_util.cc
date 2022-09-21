@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,22 @@
 
 #include "ortools/sat/presolve_util.h"
 
-#include "ortools/base/map_util.h"
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <utility>
+#include <vector>
+
+#include "absl/container/flat_hash_map.h"
+#include "absl/meta/type_traits.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -42,6 +56,14 @@ void DomainDeductions::AddDeduction(int literal_ref, int var, Domain domain) {
       something_changed_.Set(index);
     }
   }
+}
+
+Domain DomainDeductions::ImpliedDomain(int literal_ref, int var) const {
+  CHECK_GE(var, 0);
+  const Index index = IndexFromLiteral(literal_ref);
+  const auto it = deductions_.find({index, var});
+  if (it == deductions_.end()) return Domain::AllValues();
+  return it->second;
 }
 
 std::vector<std::pair<int, Domain>> DomainDeductions::ProcessClause(
@@ -85,8 +107,7 @@ std::vector<std::pair<int, Domain>> DomainDeductions::ProcessClause(
   for (const int ref : clause) {
     const Index index = IndexFromLiteral(ref);
     for (int i = 0; i < to_process.size(); ++i) {
-      domains[i] = domains[i].UnionWith(
-          gtl::FindOrDieNoPrint(deductions_, {index, to_process[i]}));
+      domains[i] = domains[i].UnionWith(deductions_.at({index, to_process[i]}));
     }
   }
 
@@ -100,44 +121,41 @@ namespace {
 // Helper method for variable substitution. Returns the coefficient of 'var' in
 // 'proto' and copies other terms in 'terms'.
 template <typename ProtoWithVarsAndCoeffs>
-int64 GetVarCoeffAndCopyOtherTerms(const int var,
-                                   const ProtoWithVarsAndCoeffs& proto,
-                                   std::vector<std::pair<int, int64>>* terms) {
-  bool found = false;
-  int64 var_coeff = 0;
+int64_t GetVarCoeffAndCopyOtherTerms(
+    const int var, const ProtoWithVarsAndCoeffs& proto,
+    std::vector<std::pair<int, int64_t>>* terms) {
+  int64_t var_coeff = 0;
   const int size = proto.vars().size();
   for (int i = 0; i < size; ++i) {
     int ref = proto.vars(i);
-    int64 coeff = proto.coeffs(i);
+    int64_t coeff = proto.coeffs(i);
     if (!RefIsPositive(ref)) {
       ref = NegatedRef(ref);
       coeff = -coeff;
     }
 
     if (ref == var) {
-      CHECK(!found);
-      found = true;
-      var_coeff = coeff;
+      // If var appear multiple time, we add its coefficient.
+      var_coeff += coeff;
       continue;
     } else {
       terms->push_back({ref, coeff});
     }
   }
-  CHECK(found);
   return var_coeff;
 }
 
 // Helper method for variable substituion. Sorts and merges the terms in 'terms'
 // and adds them to 'proto'.
 template <typename ProtoWithVarsAndCoeffs>
-void SortAndMergeTerms(std::vector<std::pair<int, int64>>* terms,
+void SortAndMergeTerms(std::vector<std::pair<int, int64_t>>* terms,
                        ProtoWithVarsAndCoeffs* proto) {
   proto->clear_vars();
   proto->clear_coeffs();
   std::sort(terms->begin(), terms->end());
   int current_var = 0;
-  int64 current_coeff = 0;
-  for (const auto entry : *terms) {
+  int64_t current_coeff = 0;
+  for (const auto& entry : *terms) {
     CHECK(RefIsPositive(entry.first));
     if (entry.first == current_var) {
       current_coeff += entry.second;
@@ -158,13 +176,13 @@ void SortAndMergeTerms(std::vector<std::pair<int, int64>>* terms,
 
 // Adds all the terms from the var definition constraint with given var
 // coefficient.
-void AddTermsFromVarDefinition(const int var, const int64 var_coeff,
+void AddTermsFromVarDefinition(const int var, const int64_t var_coeff,
                                const ConstraintProto& definition,
-                               std::vector<std::pair<int, int64>>* terms) {
+                               std::vector<std::pair<int, int64_t>>* terms) {
   const int definition_size = definition.linear().vars().size();
   for (int i = 0; i < definition_size; ++i) {
     int ref = definition.linear().vars(i);
-    int64 coeff = definition.linear().coeffs(i);
+    int64_t coeff = definition.linear().coeffs(i);
     if (!RefIsPositive(ref)) {
       ref = NegatedRef(ref);
       coeff = -coeff;
@@ -179,15 +197,16 @@ void AddTermsFromVarDefinition(const int var, const int64 var_coeff,
 }
 }  // namespace
 
-void SubstituteVariable(int var, int64 var_coeff_in_definition,
+bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition,
                         ConstraintProto* ct) {
   CHECK(RefIsPositive(var));
   CHECK_EQ(std::abs(var_coeff_in_definition), 1);
 
-  // Copy all the terms (except the one refering to var).
-  std::vector<std::pair<int, int64>> terms;
-  int64 var_coeff = GetVarCoeffAndCopyOtherTerms(var, ct->linear(), &terms);
+  // Copy all the terms (except the one referring to var).
+  std::vector<std::pair<int, int64_t>> terms;
+  int64_t var_coeff = GetVarCoeffAndCopyOtherTerms(var, ct->linear(), &terms);
+  if (var_coeff == 0) return false;
 
   if (var_coeff_in_definition < 0) var_coeff *= -1;
 
@@ -204,6 +223,7 @@ void SubstituteVariable(int var, int64 var_coeff_in_definition,
   FillDomainInProto(rhs.AdditionWith(offset), ct->mutable_linear());
 
   SortAndMergeTerms(&terms, ct->mutable_linear());
+  return true;
 }
 
 }  // namespace sat

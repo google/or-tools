@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,31 +12,36 @@
 // limitations under the License.
 
 // [START program]
-// From Bradley, H., and M., 'Applied Mathematical Programming', figure 8.1.
+// From Bradley, Hax and Maganti, 'Applied Mathematical Programming', figure 8.1
 // [START import]
+#include <cstdint>
+#include <vector>
+
 #include "ortools/graph/min_cost_flow.h"
 // [END import]
 
 namespace operations_research {
-
+// MinCostFlow simple interface example.
 void SimpleMinCostFlowProgram() {
+  // [START solver]
+  // Instantiate a SimpleMinCostFlow solver.
+  SimpleMinCostFlow min_cost_flow;
+  // [END solver]
+
   // [START data]
   // Define four parallel arrays: sources, destinations, capacities,
   // and unit costs between each pair. For instance, the arc from node 0
   // to node 1 has a capacity of 15.
-  std::vector<int64> start_nodes = {0, 0, 1, 1, 1, 2, 2, 3, 4};
-  std::vector<int64> end_nodes = {1, 2, 2, 3, 4, 3, 4, 4, 2};
-  std::vector<int64> capacities = {15, 8, 20, 4, 10, 15, 4, 20, 5};
-  std::vector<int64> unit_costs = {4, 4, 2, 2, 6, 1, 3, 2, 3};
+  std::vector<int64_t> start_nodes = {0, 0, 1, 1, 1, 2, 2, 3, 4};
+  std::vector<int64_t> end_nodes = {1, 2, 2, 3, 4, 3, 4, 4, 2};
+  std::vector<int64_t> capacities = {15, 8, 20, 4, 10, 15, 4, 20, 5};
+  std::vector<int64_t> unit_costs = {4, 4, 2, 2, 6, 1, 3, 2, 3};
 
   // Define an array of supplies at each node.
-  std::vector<int64> supplies = {20, 0, 0, -5, -15};
+  std::vector<int64_t> supplies = {20, 0, 0, -5, -15};
   // [END data]
 
   // [START constraints]
-  // Instantiate a SimpleMinCostFlow solver.
-  SimpleMinCostFlow min_cost_flow;
-
   // Add each arc.
   for (int i = 0; i < start_nodes.size(); ++i) {
     int arc = min_cost_flow.AddArcWithCapacityAndUnitCost(
@@ -52,23 +57,23 @@ void SimpleMinCostFlowProgram() {
 
   // [START solve]
   // Find the min cost flow.
-  int solve_status = min_cost_flow.Solve();
+  int status = min_cost_flow.Solve();
   // [END solve]
 
   // [START print_solution]
-  if (solve_status == MinCostFlow::OPTIMAL) {
+  if (status == MinCostFlow::OPTIMAL) {
     LOG(INFO) << "Minimum cost flow: " << min_cost_flow.OptimalCost();
     LOG(INFO) << "";
     LOG(INFO) << " Arc   Flow / Capacity  Cost";
     for (std::size_t i = 0; i < min_cost_flow.NumArcs(); ++i) {
-      int64 cost = min_cost_flow.Flow(i) * min_cost_flow.UnitCost(i);
+      int64_t cost = min_cost_flow.Flow(i) * min_cost_flow.UnitCost(i);
       LOG(INFO) << min_cost_flow.Tail(i) << " -> " << min_cost_flow.Head(i)
                 << "  " << min_cost_flow.Flow(i) << "  / "
                 << min_cost_flow.Capacity(i) << "       " << cost;
     }
   } else {
     LOG(INFO) << "Solving the min cost flow problem failed. Solver status: "
-              << solve_status;
+              << status;
   }
   // [END print_solution]
 }

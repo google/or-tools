@@ -1,0 +1,31 @@
+name: Bazel Linux
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # min hours day(month) month day(week)
+    - cron: '0 0 7,22 * *'
+
+jobs:
+  # Building using the github runner environement directly.
+  bazel:
+    runs-on: ubuntu-latest
+    env:
+      CC:  gcc-10
+      CXX: g++-10
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Bazel
+        run: |
+          curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
+          sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
+          echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
+          sudo apt-get update
+          sudo apt-get install bazel
+          bazel --version
+      - name: Build
+        run: bazel build -c opt --cxxopt=-std=c++20 //ortools/... //examples/...
+      - name: Test
+        run: bazel test -c opt --cxxopt=-std=c++20 --test_output=errors //ortools/... //examples/...

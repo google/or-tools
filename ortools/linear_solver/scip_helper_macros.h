@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,10 +21,6 @@
 namespace operations_research {
 namespace internal {
 // Our own version of SCIP_CALL to do error management.
-// NOTE(user): There are so many SCIP error codes, in so many different
-// situations. We don't try to match them perfectly to google3 error codes.
-// Instead, we use the most likely/generic code "invalid argument" and surface
-// the internal SCIP error code to the user.
 inline absl::Status ScipCodeToUtilStatus(/*SCIP_Retcode*/ int retcode,
                                          const char* source_file,
                                          int source_line,

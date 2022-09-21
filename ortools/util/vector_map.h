@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/map_util.h"
+#include "ortools/base/logging.h"
 
 namespace operations_research {
 
@@ -52,21 +52,18 @@ class VectorMap {
   }
 
   // Will return the index of the element if present, or die otherwise.
-  int IndexOrDie(const T& element) const {
-    return gtl::FindOrDie(map_, element);
-  }
+  int IndexOrDie(const T& element) const { return map_.at(element); }
 
   // Returns -1 if the element is not in the vector, or its unique
   // index if it is.
   int Index(const T& element) const {
-    return gtl::FindWithDefault(map_, element, -1);
+    const auto& it = map_.find(element);
+    return it != map_.end() ? it->second : -1;
   }
   // TODO(user): explore a int-type version.
 
   // Returns whether the element has already been added to the vector-map.
-  bool Contains(const T& element) const {
-    return gtl::ContainsKey(map_, element);
-  }
+  bool Contains(const T& element) const { return map_.contains(element); }
 
   // Returns the element at position index.
   const T& Element(int index) const {

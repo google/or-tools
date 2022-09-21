@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,13 +15,26 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdlib>
 #include <limits>
+#include <string>
 #include <utility>
+#include <vector>
 
-#include "absl/container/flat_hash_set.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/meta/type_traits.h"
+#include "absl/strings/str_cat.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -43,33 +56,38 @@ size_t ComputeHashOfTerms(const LinearConstraint& ct) {
 
 }  // namespace
 
-LinearConstraintManager::~LinearConstraintManager() {
+std::string LinearConstraintManager::Statistics() const {
+  std::string result;
+  absl::StrAppend(&result, "  managed constraints: ", constraint_infos_.size(),
+                  "\n");
   if (num_merged_constraints_ > 0) {
-    VLOG(2) << "num_merged_constraints: " << num_merged_constraints_;
+    absl::StrAppend(&result, "  merged constraints: ", num_merged_constraints_,
+                    "\n");
   }
   if (num_shortened_constraints_ > 0) {
-    VLOG(2) << "num_shortened_constraints: " << num_shortened_constraints_;
+    absl::StrAppend(
+        &result, "  shortened constraints: ", num_shortened_constraints_, "\n");
   }
-  if (num_splitted_constraints_ > 0) {
-    VLOG(2) << "num_splitted_constraints: " << num_splitted_constraints_;
+  if (num_split_constraints_ > 0) {
+    absl::StrAppend(&result, "  split constraints: ", num_split_constraints_,
+                    "\n");
   }
   if (num_coeff_strenghtening_ > 0) {
-    VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
+    absl::StrAppend(&result,
+                    "  coefficient strenghtenings: ", num_coeff_strenghtening_,
+                    "\n");
   }
-  if (sat_parameters_.log_search_progress() && num_cuts_ > 0) {
-    LOG(INFO) << "Total cuts added: " << num_cuts_ << " (out of "
-              << num_add_cut_calls_ << " calls) worker: '" << model_->Name()
-              << "'";
-    LOG(INFO) << "  - num simplifications: " << num_simplifications_;
-    for (const auto& entry : type_to_num_cuts_) {
-      if (entry.second == 1) {
-        LOG(INFO) << "  - added 1 cut of type '" << entry.first << "'.";
-      } else {
-        LOG(INFO) << "  - added " << entry.second << " cuts of type '"
-                  << entry.first << "'.";
-      }
-    }
+  if (num_simplifications_ > 0) {
+    absl::StrAppend(&result, "  num simplifications: ", num_simplifications_,
+                    "\n");
   }
+  absl::StrAppend(&result, "  total cuts added: ", num_cuts_, " (out of ",
+                  num_add_cut_calls_, " calls)\n");
+  for (const auto& entry : type_to_num_cuts_) {
+    absl::StrAppend(&result, "    - '", entry.first, "': ", entry.second, "\n");
+  }
+  if (!result.empty()) result.pop_back();  // Remove last \n.
+  return result;
 }
 
 void LinearConstraintManager::RescaleActiveCounts(const double scaling_factor) {
@@ -137,7 +155,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
 
   // If an identical constraint exists, only updates its bound.
   const size_t key = ComputeHashOfTerms(ct);
-  if (gtl::ContainsKey(equiv_constraints_, key)) {
+  if (equiv_constraints_.contains(key)) {
     const ConstraintIndex ct_index = equiv_constraints_[key];
     if (constraint_infos_[ct_index].constraint.vars == ct.vars &&
         constraint_infos_[ct_index].constraint.coeffs == ct.coeffs) {
@@ -312,6 +330,7 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
   sum_of_squared_objective_coeffs_ += coeff_as_double * coeff_as_double;
 }
 
+// TODO(user): Also consider partial gcd simplification? see presolve.
 bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   bool term_changed = false;
 
@@ -386,7 +405,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   // computation. We should check this.
   if (ct->ub != kMaxIntegerValue && max_magnitude > max_sum - ct->ub) {
     if (ct->lb != kMinIntegerValue) {
-      ++num_splitted_constraints_;
+      ++num_split_constraints_;
     } else {
       term_changed = true;
       ++num_coeff_strenghtening_;
@@ -411,7 +430,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
 
   if (ct->lb != kMinIntegerValue && max_magnitude > ct->lb - min_sum) {
     if (ct->ub != kMaxIntegerValue) {
-      ++num_splitted_constraints_;
+      ++num_split_constraints_;
     } else {
       term_changed = true;
       ++num_coeff_strenghtening_;

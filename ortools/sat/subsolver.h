@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,7 +21,9 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
@@ -58,7 +60,7 @@ class SubSolver {
   // TODO(user): We could use a more complex selection logic and pass in the
   // deterministic time limit this subtask should run for. Unclear at this
   // stage.
-  virtual std::function<void()> GenerateTask(int64 task_id) = 0;
+  virtual std::function<void()> GenerateTask(int64_t task_id) = 0;
 
   // Synchronizes with the external world from this SubSolver point of view.
   // Also incorporate the results of the latest completed tasks if any.
@@ -83,6 +85,9 @@ class SubSolver {
   // Returns the name of this SubSolver. Used in logs.
   std::string name() const { return name_; }
 
+  // Returns search statistics.
+  virtual std::string StatisticsString() const { return std::string(); }
+
  protected:
   const std::string name_;
   double score_ = 0.0;
@@ -95,7 +100,7 @@ class SynchronizationPoint : public SubSolver {
   explicit SynchronizationPoint(std::function<void()> f)
       : SubSolver(""), f_(std::move(f)) {}
   bool TaskIsAvailable() final { return false; }
-  std::function<void()> GenerateTask(int64 task_id) final { return nullptr; }
+  std::function<void()> GenerateTask(int64_t task_id) final { return nullptr; }
   void Synchronize() final { f_(); }
 
  private:

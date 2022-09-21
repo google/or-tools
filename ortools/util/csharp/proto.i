@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -47,10 +47,10 @@
 //        type
 // @param param_name the parameter name
 %define PROTO_INPUT(CppProtoType, CSharpProtoType, param_name)
-%typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, uint8*"
+%typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, uint8_t*"
 %typemap(imtype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, byte[]"
 %typemap(cstype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "CSharpProtoType"
-%typemap(csin)   PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.CalculateSize(), ProtoHelper.ProtoToByteArray($csinput)"
+%typemap(csin)   PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "ProtoHelper.ProtoToByteArray($csinput, out var buffer), buffer"
 %typemap(in)     PROTO_TYPE* INPUT, PROTO_TYPE& INPUT {
   $1 = new CppProtoType;
   bool parsed_ok = $1->ParseFromArray($input, param_name ## _size);
@@ -70,35 +70,37 @@
 %enddef // end PROTO_INPUT
 
 %define PROTO2_RETURN(CppProtoType, CSharpProtoType)
-%typemap(ctype)  CppProtoType "uint8*"
+%typemap(ctype)  CppProtoType "uint8_t*"
 %typemap(imtype) CppProtoType "System.IntPtr"
 %typemap(cstype) CppProtoType "CSharpProtoType"
 %typemap(csout)  CppProtoType {
-  byte[] tmp = new byte[4];
-  System.IntPtr data = $imcall;
-  System.Runtime.InteropServices.Marshal.Copy(data, tmp, 0, 4);
-  int size = System.BitConverter.ToInt32(tmp, 0);
-  byte[] buf = new byte[size + 4];
-  System.Runtime.InteropServices.Marshal.Copy(data, buf, 0, size + 4);
-  // TODO(user): delete the C++ buffer.
-  try {
-    Google.Protobuf.CodedInputStream input =
-        new Google.Protobuf.CodedInputStream(buf, 4, size);
-    CSharpProtoType proto = new CSharpProtoType();
-    proto.MergeFrom(input);
-    return proto;
-  } catch (Google.Protobuf.InvalidProtocolBufferException /*e*/) {
-    throw new System.Exception(
-        "Unable to parse CSharpProtoType protocol message.");
+  System.IntPtr dataPointer = $imcall;
+  try
+  {
+    int size = System.Runtime.InteropServices.Marshal.ReadInt32(dataPointer);
+    unsafe
+    {
+      var data = new System.ReadOnlySpan<byte>((dataPointer + sizeof(int)).ToPointer(), size);
+      return CSharpProtoType.Parser.ParseFrom(data);
+    }
+  } catch (Google.Protobuf.InvalidProtocolBufferException /*e*/)
+  {
+    throw new System.Exception("Unable to parse CSharpProtoType protocol message.");
+  }
+  finally
+  {
+    Google.OrTools.Init.CppBridge.DeleteByteArray(dataPointer);
   }
 }
 %typemap(out) CppProtoType {
   const long size = $1.ByteSizeLong();
-  $result = new uint8[size + 4];
+  $result = new uint8_t[size + 4];
   $1.SerializeWithCachedSizesToArray($result + 4);
   $result[0] = size & 0xFF;
   $result[1] = (size >> 8) & 0xFF;
   $result[2] = (size >> 16) & 0xFF;
   $result[3] = (size >> 24) & 0xFF;
 }
+
 %enddef // end PROTO2_RETURN
+

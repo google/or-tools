@@ -1,0 +1,93 @@
+@startdot
+digraph DockerDeps {
+  //rankdir=BT;
+  rankdir=TD;
+  node [shape=cylinder, style="rounded,filled", color=black, fillcolor=royalblue];
+
+  CPP_PKG [label="C++ Tools\ne.g. cmake, g++", shape=box3d];
+  DOTNET_PKG [label=".Net Tools\ne.g. dotnet-sdk", shape=box3d, fillcolor=forestgreen];
+  JAVA_PKG [label="Java Tools\ne.g. openjdk, maven", shape=box3d, fillcolor=crimson];
+  PY_PKG [label="Python Tools\ne.g. python, wheel", shape=box3d, fillcolor=gold];
+  SRC [label="git repo", shape=folder];
+
+  // ARCHIVE
+  subgraph clusterDocker {
+    DISTRO_IMG [label="<distro>:latest"];
+    ENV_IMG [label="or-tools/docker:<platform>_<distro>_env\n<platform>_<distro>_env"];
+    DEVEL_IMG [label="or-tools/docker:<platform>_<distro>_devel\n<platform>_<distro>_devel"];
+    BUILD_IMG [label="or-tools/docker:<platform>_<distro>_<lang>_build\n<platform>_<distro>_<lang>_build"];
+    ARCHIVE_IMG [label="or-tools/docker:<platform>_<distro>_<lang>_archive\n<platform>_<distro>_<lang>_archive"];
+
+    edge [color=black];
+    DISTRO_IMG -> ENV_IMG;
+    ENV_IMG -> DEVEL_IMG;
+    DEVEL_IMG -> BUILD_IMG;
+    BUILD_IMG -> ARCHIVE_IMG;
+
+    subgraph clusterArchive {
+      node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+      OR_TAR [label="or-tools_<platform>_<distro>_<lang>_vX.Y.Z.tar.gz"];
+
+      color=royalblue;
+      label = "export/archives/";
+    }
+    edge [color=red];
+    ARCHIVE_IMG -> OR_TAR [label="make <platform>_<distro>_<lang>_export"];
+
+    subgraph clusterTestArchive {
+      TEST_IMG [label="or-tools/docker:<platform>_<distro>_<lang>_test\n<platform>_<distro>_<lang>_test"];
+
+      edge [color=black, label="copy", style="dashed"];
+      OR_TAR -> TEST_IMG;
+
+      color=royalblue;
+      label = "test/<distro>/<lang>.Dockerfile";
+    }
+    edge [color=black];
+    ENV_IMG -> TEST_IMG;
+
+    color=royalblue;
+    label = "images/<distro>.Dockerfile";
+  }
+  edge [color=black];
+  CPP_PKG -> ENV_IMG [label="install", style="dashed"];
+  DOTNET_PKG -> ENV_IMG [label="install", style="dashed"];
+  JAVA_PKG -> ENV_IMG [label="install", style="dashed"];
+  PY_PKG -> ENV_IMG [label="install", style="dashed"];
+  SRC -> DEVEL_IMG [label="copy", style="dashed"];
+
+  // PYTHON
+  subgraph clusterPython {
+    PY_DISTRO_IMG [label="manylinux:latest"];
+    PY_ENV_IMG [label="or-tools/docker:python_<platform>_env\nenv"];
+    PY_DEVEL_IMG [label="or-tools/docker:python_<platform>_devel\ndevel"];
+    PY_BUILD_IMG [label="or-tools/docker:python_<platform>_build\nbuild"];
+    edge [color=black];
+    PY_DISTRO_IMG -> PY_ENV_IMG
+    PY_ENV_IMG -> PY_DEVEL_IMG
+    PY_DEVEL_IMG -> PY_BUILD_IMG
+
+    subgraph clusterPythonWheel {
+      node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+      OR_WHL [label="ortools.manylinux.X.Y.Z.whl"];
+
+      color=royalblue;
+      label = "export/python/archives/";
+    }
+    edge [color=red];
+    PY_BUILD_IMG -> OR_WHL [label="make python_<platform>_<distro>_export"];
+
+    PY_TEST_IMG [label="or-tools/docker:python_<platform>_test\ntest"];
+    edge [color=black];
+    PY_DISTRO_IMG -> PY_TEST_IMG
+    OR_WHL -> PY_TEST_IMG
+
+    color=royalblue;
+    label = "python/<platform>/Dockerfile";
+  }
+  edge [color=black];
+  PY_PKG -> PY_DISTRO_IMG [label="install", style="dashed"];
+  CPP_PKG -> PY_ENV_IMG [label="install", style="dashed"];
+  SRC -> PY_DEVEL_IMG [label="copy", style="dashed"];
+}
+@enddot

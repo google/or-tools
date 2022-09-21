@@ -28,19 +28,19 @@ You'll need "Python >= 3.6" and few python modules ("wheel" and "absl-py").
 ## Build Process
 
 To Create a native dependent package which will contains two parts:
+
 * A bunch of native libraries for the supported platform targeted.
 * The Python code depending on it.
 
-[`platform` names](https://github.com/java-native-access/jna/blob/cc1acdac02e4d0dda93ba01bbe3a3435b8933dab/test/com/sun/jna/PlatformTest.java#L31-L100)
-come from the JNA project (Java Native Access) which will be use to find at
-runtime on which platform the code is currently running.
+note: Since [Pypi.org](https://pypi.org/) support multiple packages, we will
+simply upload one package per supported platform.
 
 ### Local Package
 
 The pipeline for `linux-x86-64` should be as follow: \
 note: The pipeline will be similar for other architectures, don't hesitate to
-look at the CI log! ![Local Pipeline](doc/local_pipeline.svg)
-![Legend](doc/legend.svg)
+look at the CI log! ![Local Pipeline](docs/local_pipeline.svg)
+![Legend](docs/legend.svg)
 
 #### Building local native Package
 
@@ -48,9 +48,11 @@ Thus we have the C++ shared library `libortools.so` and the SWIG generated
 Python wrappers e.g. `pywrapsat.py` in the same package.
 
 Here some dev-note concerning this `setup.py`.
+
 * This package is a native package containing native libraries.
 
 Then you can generate the package and install it locally using:
+
 ```bash
 python3 setup.py bdist_wheel
 python3 -m pip install --user --find-links=dist ortools
@@ -58,8 +60,9 @@ python3 -m pip install --user --find-links=dist ortools
 
 If everything good the package (located in `<buildir>/python/dist`) should have
 this layout:
+
 ```
-{...}/dist/ortools-8.0.9999-cp38-cp38-<platform>.whl:
+{...}/dist/ortools-X.Y.9999-cp3Z-cp3Z-<platform>.whl:
 \- ortools
    \- __init__.py
    \- .libs
@@ -74,7 +77,7 @@ this layout:
       \- _pywrap....so
 ...
 ```
-note: `<platform>` could be `manylinux2010_x86_64`, `macosx_10_9_x86_64` or `win-amd64`.
+note: `<platform>` could be `manylinux2014_x86_64`, `macosx_10_9_x86_64` or `win-amd64`.
 
 tips: since wheel package are just zip archive you can use `unzip -l <package>.whl`
 to study their layout.
@@ -88,11 +91,13 @@ Few links on the subject...
 * [Packaging Python Project](https://packaging.python.org/tutorials/packaging-projects/)
 * [PEP 513 -- A Platform Tag for Portable Linux Built Distributions](https://www.python.org/dev/peps/pep-0513/)
 * [PEP 571 -- The manylinux2010 Platform Tag](https://www.python.org/dev/peps/pep-0571/)
+* [PEP 600  Future 'manylinux' Platform Tags](https://www.python.org/dev/peps/pep-0600/)
 
 ## Misc
 
 Image has been generated using [plantuml](http://plantuml.com/):
+
 ```bash
-plantuml -Tsvg doc/{file}.dot
+plantuml -Tsvg docs/{file}.dot
 ```
-So you can find the dot source files in [doc](doc).
+So you can find the dot source files in [docs](docs).

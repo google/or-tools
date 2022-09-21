@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -43,12 +43,14 @@
 // We also introduces a variable at_home[d][i] which is true if team i
 // plays any opponent at home on day d.
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
+#include <string>
+#include <vector>
+
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -56,7 +58,8 @@
 
 // Problem main flags.
 ABSL_FLAG(int, num_teams, 10, "Number of teams in the problem.");
-ABSL_FLAG(std::string, params, "", "Sat parameters.");
+ABSL_FLAG(std::string, params,
+          "log_search_progress:true,max_time_in_seconds:20", "Sat parameters.");
 ABSL_FLAG(int, model, 1, "1 = opponent model, 2 = fixture model");
 
 namespace operations_research {
@@ -96,8 +99,7 @@ void OpponentModel(int num_teams) {
 
       // Link opponent, home_away, and signed_opponent.
       builder.AddEquality(opp, signed_opp).OnlyEnforceIf(Not(home));
-      builder.AddEquality(LinearExpr(opp).AddConstant(num_teams), signed_opp)
-          .OnlyEnforceIf(home);
+      builder.AddEquality(opp + num_teams, signed_opp).OnlyEnforceIf(home);
     }
   }
 
@@ -107,17 +109,17 @@ void OpponentModel(int num_teams) {
     std::vector<IntVar> day_home_aways;
     for (int t = 0; t < num_teams; ++t) {
       day_opponents.push_back(opponents[t][d]);
-      day_home_aways.push_back(home_aways[t][d]);
+      day_home_aways.push_back(IntVar(home_aways[t][d]));
     }
 
     builder.AddInverseConstraint(day_opponents, day_opponents);
 
     for (int first_team = 0; first_team < num_teams; ++first_team) {
-      IntVar first_home = day_home_aways[first_team];
-      IntVar second_home = builder.NewBoolVar();
+      const IntVar first_home = IntVar(day_home_aways[first_team]);
+      const IntVar second_home = IntVar(builder.NewBoolVar());
       builder.AddVariableElement(day_opponents[first_team], day_home_aways,
                                  second_home);
-      builder.AddEquality(LinearExpr::Sum({first_home, second_home}), 1);
+      builder.AddEquality(first_home + second_home, 1);
     }
 
     builder.AddEquality(LinearExpr::Sum(day_home_aways), num_teams / 2);
@@ -140,7 +142,7 @@ void OpponentModel(int num_teams) {
       builder.AddAllDifferent(moving);
     }
 
-    builder.AddEquality(LinearExpr::BooleanSum(home_aways[t]), num_teams - 1);
+    builder.AddEquality(LinearExpr::Sum(home_aways[t]), num_teams - 1);
 
     // Forbid sequence of 3 homes or 3 aways.
     for (int start = 0; start < num_days - 2; ++start) {
@@ -165,7 +167,7 @@ void OpponentModel(int num_teams) {
     }
   }
 
-  builder.Minimize(LinearExpr::BooleanSum(breaks));
+  builder.Minimize(LinearExpr::Sum(breaks));
 
   Model model;
   if (!absl::GetFlag(FLAGS_params).empty()) {
@@ -183,9 +185,9 @@ void OpponentModel(int num_teams) {
         const int opponent = SolutionIntegerValue(response, opponents[t][d]);
         const bool home = SolutionBooleanValue(response, home_aways[t][d]);
         if (home) {
-          output += absl::StrCat(" %2d@", opponent);
+          absl::StrAppendFormat(&output, " %2d@", opponent);
         } else {
-          output += absl::StrCat(" %2d ", opponent);
+          absl::StrAppendFormat(&output, " %2d ", opponent);
         }
       }
       LOG(INFO) << output;
@@ -233,7 +235,7 @@ void FixtureModel(int num_teams) {
         possible_opponents.push_back(fixtures[d][team][other]);
         possible_opponents.push_back(fixtures[d][other][team]);
       }
-      builder.AddEquality(LinearExpr::BooleanSum(possible_opponents), 1);
+      builder.AddEquality(LinearExpr::Sum(possible_opponents), 1);
     }
   }
 
@@ -245,7 +247,7 @@ void FixtureModel(int num_teams) {
       for (int d = 0; d < num_days; ++d) {
         possible_days.push_back(fixtures[d][team][other]);
       }
-      builder.AddEquality(LinearExpr::BooleanSum(possible_days), 1);
+      builder.AddEquality(LinearExpr::Sum(possible_days), 1);
     }
   }
 
@@ -261,8 +263,8 @@ void FixtureModel(int num_teams) {
         second_half.push_back(fixtures[d + matches_per_day][team][other]);
         second_half.push_back(fixtures[d + matches_per_day][other][team]);
       }
-      builder.AddEquality(LinearExpr::BooleanSum(first_half), 1);
-      builder.AddEquality(LinearExpr::BooleanSum(second_half), 1);
+      builder.AddEquality(LinearExpr::Sum(first_half), 1);
+      builder.AddEquality(LinearExpr::Sum(second_half), 1);
     }
   }
 
@@ -304,9 +306,9 @@ void FixtureModel(int num_teams) {
     }
   }
 
-  builder.AddGreaterOrEqual(LinearExpr::BooleanSum(breaks), 2 * num_teams - 4);
+  builder.AddGreaterOrEqual(LinearExpr::Sum(breaks), 2 * num_teams - 4);
 
-  builder.Minimize(LinearExpr::BooleanSum(breaks));
+  builder.Minimize(LinearExpr::Sum(breaks));
 
   Model model;
   if (!absl::GetFlag(FLAGS_params).empty()) {
@@ -322,12 +324,11 @@ void FixtureModel(int num_teams) {
 
 static const char kUsage[] =
     "Usage: see flags.\nThis program runs a sports scheduling problem."
-    "There is no output besides the debug LOGs of the solver.";
+    "There is no output besides the LOGs of the solver.";
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(kUsage);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(kUsage, &argc, &argv, true);
   CHECK_EQ(0, absl::GetFlag(FLAGS_num_teams) % 2)
       << "The number of teams must be even";
   CHECK_GE(absl::GetFlag(FLAGS_num_teams), 2) << "At least 2 teams";

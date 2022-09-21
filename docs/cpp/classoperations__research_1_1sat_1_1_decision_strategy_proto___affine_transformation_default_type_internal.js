@@ -1,4 +1,0 @@
-var classoperations__research_1_1sat_1_1_decision_strategy_proto___affine_transformation_default_type_internal =
-[
-    [ "_instance", "classoperations__research_1_1sat_1_1_decision_strategy_proto___affine_transformation_default_type_internal.html#a5a5c25d13c4b1f7ebe7f0a3d995c3a1e", null ]
-];

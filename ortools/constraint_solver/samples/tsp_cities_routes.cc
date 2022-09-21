@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,8 @@
 // [START program]
 // [START import]
 #include <cmath>
+#include <cstdint>
+#include <sstream>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -25,7 +27,7 @@
 namespace operations_research {
 // [START data_model]
 struct DataModel {
-  const std::vector<std::vector<int64>> distance_matrix{
+  const std::vector<std::vector<int64_t>> distance_matrix{
       {0, 2451, 713, 1018, 1631, 1374, 2408, 213, 2571, 875, 1420, 2145, 1972},
       {2451, 0, 1745, 1524, 831, 1240, 959, 2596, 403, 1589, 1374, 357, 579},
       {713, 1745, 0, 355, 920, 803, 1737, 851, 1858, 262, 940, 1453, 1260},
@@ -50,10 +52,10 @@ void PrintSolution(
     const std::vector<std::vector<RoutingIndexManager::NodeIndex>>& routes) {
   // Print routes.
   DataModel data;
-  int64 total_distance = 0;
+  int64_t total_distance = 0;
   for (int i = 0; i < routes.size(); ++i) {
     std::vector<RoutingIndexManager::NodeIndex> route = routes[i];
-    int64 route_distance{0};
+    int64_t route_distance{0};
     std::stringstream route_text;
     LOG(INFO) << "Route for Vehicle " << i << ":";
     route_text << route[0];
@@ -90,7 +92,7 @@ void Tsp() {
   // Define cost of each arc.
   // [START arc_cost]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64 from_index, int64 to_index) -> int64 {
+      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();
@@ -114,7 +116,7 @@ void Tsp() {
   // [START get_routes]
   // Get the routes and convert indices to nodes.
   std::vector<std::vector<RoutingIndexManager::NodeIndex>> routes;
-  for (const std::vector<int64>& route_indices :
+  for (const std::vector<int64_t>& route_indices :
        routing.GetRoutesFromAssignment(*solution)) {
     routes.push_back(manager.IndicesToNodes(route_indices));
   }

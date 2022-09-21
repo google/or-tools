@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,12 +15,14 @@
 #define OR_TOOLS_UTIL_FILE_UTIL_H_
 
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/recordio.h"
 
 namespace operations_research {
@@ -44,13 +46,15 @@ Proto ReadFileToProtoOrDie(absl::string_view filename) {
   return proto;
 }
 
-enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson };
+// Specifies how the proto should be formatted when writing it to a file.
+// kCanonicalJson converts field names to lower camel-case.
+enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson, kCanonicalJson };
 
 // Writes a proto to a file. Supports the following formats: binary, text, JSON,
 // all of those optionally gzipped. Returns false on failure.
 // If 'proto_write_format' is kProtoBinary, ".bin" is appended to file_name. If
-// 'proto_write_format' is kJson, ".json" is appended to file_name. If 'gzipped'
-// is true, ".gz" is appended to file_name.
+// 'proto_write_format' is kJson or kCanonicalJson, ".json" is appended to
+// file_name. If 'gzipped' is true, ".gz" is appended to file_name.
 bool WriteProtoToFile(absl::string_view filename,
                       const google::protobuf::Message& proto,
                       ProtoWriteFormat proto_write_format, bool gzipped = false,

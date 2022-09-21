@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,7 +28,7 @@ class SparsePermutation {
  public:
   explicit SparsePermutation(int size) : size_(size) {}  // Identity.
 
-  // TODO(user,user): complete the reader API.
+  // TODO(user): complete the reader API.
   int Size() const { return size_; }
   int NumCycles() const { return cycle_ends_.size(); }
 

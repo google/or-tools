@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,120 +12,88 @@
 // limitations under the License.
 
 // [START program]
+// Solves a multiple knapsack problem using the CP-SAT solver.
 // [START import]
+#include <stdlib.h>
+
+#include <map>
+#include <numeric>
+#include <tuple>
+#include <vector>
+
+#include "absl/strings/str_format.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 // [END import]
+
 namespace operations_research {
 namespace sat {
 
-// [START data_model]
-struct DataModel {
-  const std::vector<int> weights = {{
-      48,
-      30,
-      42,
-      36,
-      36,
-      48,
-      42,
-      42,
-      36,
-      24,
-      30,
-      30,
-      42,
-      36,
-      36,
-  }};
-  const std::vector<int> values = {
-      {10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25}};
-  const int num_items = weights.size();
-  const int total_value = std::accumulate(values.begin(), values.end(), 0);
-  const std::vector<int> kBinCapacities = {{100, 100, 100, 100, 100}};
-  const int kNumBins = 5;
-};
-// [END data_model]
-
-// [START solution_printer]
-void PrintSolution(const DataModel data,
-                   const std::vector<std::vector<IntVar>> x,
-                   const std::vector<IntVar> load,
-                   const std::vector<IntVar> value,
-                   const CpSolverResponse response) {
-  for (int b = 0; b < data.kNumBins; ++b) {
-    LOG(INFO) << "Bin " << b;
-    LOG(INFO);
-    for (int i = 0; i < data.num_items; ++i) {
-      if (SolutionIntegerValue(response, x[i][b]) > 0) {
-        LOG(INFO) << "Item " << i << "  -  Weight: " << data.weights[i]
-                  << " Value: " << data.values[i];
-      }
-    }
-    LOG(INFO) << "Packed bin weight: "
-              << SolutionIntegerValue(response, load[b]);
-    LOG(INFO) << "Packed bin value: "
-              << SolutionIntegerValue(response, value[b]);
-    LOG(INFO);
-  }
-  LOG(INFO) << "Total packed weight: "
-            << SolutionIntegerValue(response, LinearExpr::Sum(load));
-  LOG(INFO) << "Total packed value: "
-            << SolutionIntegerValue(response, LinearExpr::Sum(value));
-}
-// [END solution_printer]
-
 void MultipleKnapsackSat() {
   // [START data]
-  DataModel data;
+  const std::vector<int> weights = {
+      {48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36}};
+  const std::vector<int> values = {
+      {10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25}};
+  const int num_items = static_cast<int>(weights.size());
+  std::vector<int> all_items(num_items);
+  std::iota(all_items.begin(), all_items.end(), 0);
+
+  const std::vector<int> bin_capacities = {{100, 100, 100, 100, 100}};
+  const int num_bins = static_cast<int>(bin_capacities.size());
+  std::vector<int> all_bins(num_bins);
+  std::iota(all_bins.begin(), all_bins.end(), 0);
   // [END data]
 
   // [START model]
   CpModelBuilder cp_model;
   // [END model]
 
+  // Variables.
   // [START variables]
-  // Main variables.
-  std::vector<std::vector<IntVar>> x(data.num_items);
-  for (int i = 0; i < data.num_items; ++i) {
-    for (int b = 0; b < data.kNumBins; ++b) {
-      x[i].push_back(cp_model.NewIntVar({0, 1}));
+  // x[i, b] = 1 if item i is packed in bin b.
+  std::map<std::tuple<int, int>, BoolVar> x;
+  for (int i : all_items) {
+    for (int b : all_bins) {
+      auto key = std::make_tuple(i, b);
+      x[key] = cp_model.NewBoolVar().WithName(absl::StrFormat("x_%d_%d", i, b));
     }
-  }
-
-  // Load variables.
-  std::vector<IntVar> load(data.kNumBins);
-  std::vector<IntVar> value(data.kNumBins);
-  for (int b = 0; b < data.kNumBins; ++b) {
-    load[b] = cp_model.NewIntVar({0, data.kBinCapacities[b]});
-    value[b] = cp_model.NewIntVar({0, data.total_value});
-  }
-
-  // Links load and x.
-  for (int b = 0; b < data.kNumBins; ++b) {
-    LinearExpr weightsExpr;
-    LinearExpr valuesExpr;
-    for (int i = 0; i < data.num_items; ++i) {
-      weightsExpr.AddTerm(x[i][b], data.weights[i]);
-      valuesExpr.AddTerm(x[i][b], data.values[i]);
-    }
-    cp_model.AddEquality(weightsExpr, load[b]);
-    cp_model.AddEquality(valuesExpr, value[b]);
   }
   // [END variables]
 
+  // Constraints.
   // [START constraints]
-  // Each item can be in at most one bin.
-  for (int i = 0; i < data.num_items; ++i) {
-    LinearExpr expr;
-    for (int b = 0; b < data.kNumBins; ++b) {
-      expr.AddTerm(x[i][b], 1);
+  // Each item is assigned to at most one bin.
+  for (int i : all_items) {
+    std::vector<BoolVar> copies;
+    for (int b : all_bins) {
+      copies.push_back(x[std::make_tuple(i, b)]);
     }
-    cp_model.AddLessOrEqual(expr, 1);
+    cp_model.AddAtMostOne(copies);
+  }
+
+  // The amount packed in each bin cannot exceed its capacity.
+  for (int b : all_bins) {
+    LinearExpr bin_weight;
+    for (int i : all_items) {
+      bin_weight += x[std::make_tuple(i, b)] * weights[i];
+    }
+    cp_model.AddLessOrEqual(bin_weight, bin_capacities[b]);
   }
   // [END constraints]
-  // Maximize sum of load.
+
+  // Objective.
   // [START objective]
-  cp_model.Maximize(LinearExpr::Sum(value));
+  // Maximize total value of packed items.
+  LinearExpr objective;
+  for (int i : all_items) {
+    for (int b : all_bins) {
+      objective += x[std::make_tuple(i, b)] * values[i];
+    }
+  }
+  cp_model.Maximize(objective);
   // [END objective]
 
   // [START solve]
@@ -133,16 +101,44 @@ void MultipleKnapsackSat() {
   // [END solve]
 
   // [START print_solution]
-  PrintSolution(data, x, load, value, response);
+  if (response.status() == CpSolverStatus::OPTIMAL ||
+      response.status() == CpSolverStatus::FEASIBLE) {
+    LOG(INFO) << "Total packed value: " << response.objective_value();
+    double total_weight = 0.0;
+    for (int b : all_bins) {
+      LOG(INFO) << "Bin " << b;
+      double bin_weight = 0.0;
+      double bin_value = 0.0;
+      for (int i : all_items) {
+        auto key = std::make_tuple(i, b);
+        if (SolutionIntegerValue(response, x[key]) > 0) {
+          LOG(INFO) << "Item " << i << " weight: " << weights[i]
+                    << " value: " << values[i];
+          bin_weight += weights[i];
+          bin_value += values[i];
+        }
+      }
+      LOG(INFO) << "Packed bin weight: " << bin_weight;
+      LOG(INFO) << "Packed bin value: " << bin_value;
+      total_weight += bin_weight;
+    }
+    LOG(INFO) << "Total packed weight: " << total_weight;
+  } else {
+    LOG(INFO) << "The problem does not have an optimal solution.";
+  }
   // [END print_solution]
-}
 
+  // Statistics.
+  // [START statistics]
+  LOG(INFO) << "Statistics";
+  LOG(INFO) << CpSolverResponseStats(response);
+  // [END statistics]
+}
 }  // namespace sat
 }  // namespace operations_research
 
 int main() {
   operations_research::sat::MultipleKnapsackSat();
-
   return EXIT_SUCCESS;
 }
 // [END program]

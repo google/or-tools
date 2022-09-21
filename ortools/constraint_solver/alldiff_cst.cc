@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 //  AllDifferent constraints
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -41,7 +42,7 @@ class BaseAllDifferent : public Constraint {
 
  protected:
   const std::vector<IntVar*> vars_;
-  int64 size() const { return vars_.size(); }
+  int64_t size() const { return vars_.size(); }
 };
 
 //-----------------------------------------------------------------------------
@@ -92,7 +93,7 @@ void ValueAllDifferent::InitialPropagate() {
 
 void ValueAllDifferent::OneMove(int index) {
   if (!AllMoves()) {
-    const int64 val = vars_[index]->Value();
+    const int64_t val = vars_[index]->Value();
     for (int j = 0; j < size(); ++j) {
       if (index != j) {
         if (vars_[j]->Size() < 0xFFFFFF) {
@@ -114,7 +115,7 @@ bool ValueAllDifferent::AllMoves() {
       return false;
     }
   }
-  std::unique_ptr<int64[]> values(new int64[size()]);
+  std::unique_ptr<int64_t[]> values(new int64_t[size()]);
   for (int i = 0; i < size(); ++i) {
     values[i] = vars_[i]->Value();
   }
@@ -135,8 +136,8 @@ bool ValueAllDifferent::AllMoves() {
 class RangeBipartiteMatching {
  public:
   struct Interval {
-    int64 min;
-    int64 max;
+    int64_t min;
+    int64_t max;
     int min_rank;
     int max_rank;
   };
@@ -147,9 +148,9 @@ class RangeBipartiteMatching {
         intervals_(new Interval[size + 1]),
         min_sorted_(new Interval*[size]),
         max_sorted_(new Interval*[size]),
-        bounds_(new int64[2 * size + 2]),
+        bounds_(new int64_t[2 * size + 2]),
         tree_(new int[2 * size + 2]),
-        diff_(new int64[2 * size + 2]),
+        diff_(new int64_t[2 * size + 2]),
         hall_(new int[2 * size + 2]),
         active_size_(0) {
     for (int i = 0; i < size; ++i) {
@@ -158,7 +159,7 @@ class RangeBipartiteMatching {
     }
   }
 
-  void SetRange(int index, int64 imin, int64 imax) {
+  void SetRange(int index, int64_t imin, int64_t imax) {
     intervals_[index].min = imin;
     intervals_[index].max = imax;
   }
@@ -171,9 +172,9 @@ class RangeBipartiteMatching {
     return modified1 || modified2;
   }
 
-  int64 Min(int index) const { return intervals_[index].min; }
+  int64_t Min(int index) const { return intervals_[index].min; }
 
-  int64 Max(int index) const { return intervals_[index].max; }
+  int64_t Max(int index) const { return intervals_[index].max; }
 
  private:
   // This method sorts the min_sorted_ and max_sorted_ arrays and fill
@@ -184,9 +185,9 @@ class RangeBipartiteMatching {
     std::sort(max_sorted_.get(), max_sorted_.get() + size_,
               CompareIntervalMax());
 
-    int64 min = min_sorted_[0]->min;
-    int64 max = max_sorted_[0]->max + 1;
-    int64 last = min - 2;
+    int64_t min = min_sorted_[0]->min;
+    int64_t max = max_sorted_[0]->max + 1;
+    int64_t last = min - 2;
     bounds_[0] = last;
 
     int i = 0;
@@ -343,10 +344,10 @@ class RangeBipartiteMatching {
   std::unique_ptr<Interval*[]> max_sorted_;
   // bounds_[1..active_size_] hold set of min & max in the n intervals_
   // while bounds_[0] and bounds_[active_size_ + 1] allow sentinels.
-  std::unique_ptr<int64[]> bounds_;
-  std::unique_ptr<int[]> tree_;    // tree links.
-  std::unique_ptr<int64[]> diff_;  // diffs between critical capacities.
-  std::unique_ptr<int[]> hall_;    // hall interval links.
+  std::unique_ptr<int64_t[]> bounds_;
+  std::unique_ptr<int[]> tree_;      // tree links.
+  std::unique_ptr<int64_t[]> diff_;  // diffs between critical capacities.
+  std::unique_ptr<int[]> hall_;      // hall interval links.
   int active_size_;
 };
 
@@ -393,7 +394,7 @@ class BoundsAllDifferent : public BaseAllDifferent {
   }
 
   void PropagateValue(int index) {
-    const int64 to_remove = vars_[index]->Value();
+    const int64_t to_remove = vars_[index]->Value();
     for (int j = 0; j < index; j++) {
       if (vars_[j]->Size() < 0xFFFFFF) {
         vars_[j]->RemoveValue(to_remove);
@@ -451,8 +452,8 @@ class SortConstraint : public Constraint {
 
   void InitialPropagate() override {
     for (int i = 0; i < size(); ++i) {
-      int64 vmin = 0;
-      int64 vmax = 0;
+      int64_t vmin = 0;
+      int64_t vmax = 0;
       ovars_[i]->Range(&vmin, &vmax);
       mins_[i] = vmin;
       maxs_[i] = vmax;
@@ -472,15 +473,15 @@ class SortConstraint : public Constraint {
     }
     // Reverse propagation.
     for (int i = 0; i < size(); ++i) {
-      int64 imin = 0;
-      int64 imax = 0;
+      int64_t imin = 0;
+      int64_t imax = 0;
       FindIntersectionRange(i, &imin, &imax);
       matching_.SetRange(i, imin, imax);
     }
     matching_.Propagate();
     for (int i = 0; i < size(); ++i) {
-      const int64 vmin = svars_[matching_.Min(i)]->Min();
-      const int64 vmax = svars_[matching_.Max(i)]->Max();
+      const int64_t vmin = svars_[matching_.Min(i)]->Min();
+      const int64_t vmax = svars_[matching_.Max(i)]->Max();
       ovars_[i]->SetRange(vmin, vmax);
     }
   }
@@ -500,20 +501,20 @@ class SortConstraint : public Constraint {
   }
 
  private:
-  int64 size() const { return ovars_.size(); }
+  int64_t size() const { return ovars_.size(); }
 
-  void FindIntersectionRange(int index, int64* const range_min,
-                             int64* const range_max) const {
+  void FindIntersectionRange(int index, int64_t* const range_min,
+                             int64_t* const range_max) const {
     // Naive version.
     // TODO(user): Implement log(n) version.
-    int64 imin = 0;
+    int64_t imin = 0;
     while (imin < size() && NotIntersect(index, imin)) {
       imin++;
     }
     if (imin == size()) {
       solver()->Fail();
     }
-    int64 imax = size() - 1;
+    int64_t imax = size() - 1;
     while (imax > imin && NotIntersect(index, imax)) {
       imax--;
     }
@@ -528,8 +529,8 @@ class SortConstraint : public Constraint {
 
   const std::vector<IntVar*> ovars_;
   const std::vector<IntVar*> svars_;
-  std::vector<int64> mins_;
-  std::vector<int64> maxs_;
+  std::vector<int64_t> mins_;
+  std::vector<int64_t> maxs_;
   RangeBipartiteMatching matching_;
 };
 
@@ -538,7 +539,7 @@ class SortConstraint : public Constraint {
 class AllDifferentExcept : public Constraint {
  public:
   AllDifferentExcept(Solver* const s, std::vector<IntVar*> vars,
-                     int64 escape_value)
+                     int64_t escape_value)
       : Constraint(s), vars_(std::move(vars)), escape_value_(escape_value) {}
 
   ~AllDifferentExcept() override {}
@@ -561,7 +562,7 @@ class AllDifferentExcept : public Constraint {
   }
 
   void Propagate(int index) {
-    const int64 val = vars_[index]->Value();
+    const int64_t val = vars_[index]->Value();
     if (val != escape_value_) {
       for (int j = 0; j < vars_.size(); ++j) {
         if (index != j) {
@@ -586,7 +587,7 @@ class AllDifferentExcept : public Constraint {
 
  private:
   std::vector<IntVar*> vars_;
-  const int64 escape_value_;
+  const int64_t escape_value_;
 };
 
 // Creates a constraint that states that all variables in the first
@@ -597,7 +598,8 @@ class AllDifferentExcept : public Constraint {
 class NullIntersectArrayExcept : public Constraint {
  public:
   NullIntersectArrayExcept(Solver* const s, std::vector<IntVar*> first_vars,
-                           std::vector<IntVar*> second_vars, int64 escape_value)
+                           std::vector<IntVar*> second_vars,
+                           int64_t escape_value)
       : Constraint(s),
         first_vars_(std::move(first_vars)),
         second_vars_(std::move(second_vars)),
@@ -645,7 +647,7 @@ class NullIntersectArrayExcept : public Constraint {
   }
 
   void PropagateFirst(int index) {
-    const int64 val = first_vars_[index]->Value();
+    const int64_t val = first_vars_[index]->Value();
     if (!has_escape_value_ || val != escape_value_) {
       for (int j = 0; j < second_vars_.size(); ++j) {
         second_vars_[j]->RemoveValue(val);
@@ -654,7 +656,7 @@ class NullIntersectArrayExcept : public Constraint {
   }
 
   void PropagateSecond(int index) {
-    const int64 val = second_vars_[index]->Value();
+    const int64_t val = second_vars_[index]->Value();
     if (!has_escape_value_ || val != escape_value_) {
       for (int j = 0; j < first_vars_.size(); ++j) {
         first_vars_[j]->RemoveValue(val);
@@ -682,7 +684,7 @@ class NullIntersectArrayExcept : public Constraint {
  private:
   std::vector<IntVar*> first_vars_;
   std::vector<IntVar*> second_vars_;
-  const int64 escape_value_;
+  const int64_t escape_value_;
   const bool has_escape_value_;
 };
 }  // namespace
@@ -718,7 +720,7 @@ Constraint* Solver::MakeSortingConstraint(const std::vector<IntVar*>& vars,
 }
 
 Constraint* Solver::MakeAllDifferentExcept(const std::vector<IntVar*>& vars,
-                                           int64 escape_value) {
+                                           int64_t escape_value) {
   int escape_candidates = 0;
   for (int i = 0; i < vars.size(); ++i) {
     escape_candidates += (vars[i]->Contains(escape_value));
@@ -737,7 +739,7 @@ Constraint* Solver::MakeNullIntersect(const std::vector<IntVar*>& first_vars,
 
 Constraint* Solver::MakeNullIntersectExcept(
     const std::vector<IntVar*>& first_vars,
-    const std::vector<IntVar*>& second_vars, int64 escape_value) {
+    const std::vector<IntVar*>& second_vars, int64_t escape_value) {
   int first_escape_candidates = 0;
   for (int i = 0; i < first_vars.size(); ++i) {
     first_escape_candidates += (first_vars[i]->Contains(escape_value));

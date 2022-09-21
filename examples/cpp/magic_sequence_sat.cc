@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,12 +16,15 @@
 // Compute a sequence of numbers such that the number of occurrences of i
 // in the sequence is equal to the value of the ith number.
 
-#include <cstdio>
+#include <cstdint>
+#include <cstdlib>
+#include <numeric>
+#include <string>
+#include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
@@ -46,11 +49,11 @@ void MagicSequence(int size) {
 
   // Domain constraint on each position.
   for (int i = 0; i < size; ++i) {
-    cp_model.AddEquality(LinearExpr::BooleanSum(var_domains[i]), 1);
+    cp_model.AddEquality(LinearExpr::Sum(var_domains[i]), 1);
   }
 
   // The number of variables equal to j shall be the value of vars[j].
-  std::vector<int64> values(size);
+  std::vector<int64_t> values(size);
   std::iota(values.begin(), values.end(), 0);  // [0, 1, 2, .., size - 1]
   std::vector<BoolVar> vars_equal_to_j;
 
@@ -59,8 +62,8 @@ void MagicSequence(int size) {
     for (int i = 0; i < size; ++i) {
       vars_equal_to_j.push_back(var_domains[i][j]);
     }
-    cp_model.AddEquality(LinearExpr::BooleanScalProd(var_domains[j], values),
-                         LinearExpr::BooleanSum(vars_equal_to_j));
+    cp_model.AddEquality(LinearExpr::WeightedSum(var_domains[j], values),
+                         LinearExpr::Sum(vars_equal_to_j));
   }
 
   const CpSolverResponse response =
@@ -90,8 +93,7 @@ void MagicSequence(int size) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::MagicSequence(absl::GetFlag(FLAGS_size));
   return EXIT_SUCCESS;

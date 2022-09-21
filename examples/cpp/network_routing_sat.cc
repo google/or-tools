@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,20 +25,22 @@
 
 // A random problem generator is also included.
 
+#include <algorithm>
 #include <atomic>
+#include <cstdint>
 #include <random>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/random/uniform_int_distribution.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/shortestpaths.h"
@@ -86,7 +88,7 @@ ABSL_FLAG(std::string, params, "", "Sat parameters.");
 namespace operations_research {
 namespace sat {
 // ---------- Data and Data Generation ----------
-static const int64 kDisconnectedDistance = -1LL;
+static const int64_t kDisconnectedDistance = -1LL;
 
 // ----- Data -----
 // Contains problem data. It assumes capacities are symmetrical:
@@ -109,16 +111,16 @@ class NetworkRoutingData {
 
   // Returns the capacity of an arc, and 0 if the arc is not defined.
   int Capacity(int node1, int node2) const {
-    return gtl::FindWithDefault(
-        all_arcs_,
-        std::make_pair(std::min(node1, node2), std::max(node1, node2)), 0);
+    const auto& iter = all_arcs_.find(
+        std::make_pair(std::min(node1, node2), std::max(node1, node2)));
+    return iter != all_arcs_.end() ? iter->second : 0;
   }
 
   // Returns the demand between the source and the destination, and 0 if
   // there are no demands between the source and the destination.
   int Demand(int source, int destination) const {
-    return gtl::FindWithDefault(all_demands_,
-                                std::make_pair(source, destination), 0);
+    const auto& iter = all_demands_.find(std::make_pair(source, destination));
+    return iter != all_demands_.end() ? iter->second : 0;
   }
 
   // External building API.
@@ -232,8 +234,8 @@ class NetworkRoutingDataBuilder {
       AddEdge(i, j);
     }
 
-    std::set<int> to_complete;
-    std::set<int> not_full;
+    absl::btree_set<int> to_complete;
+    absl::btree_set<int> not_full;
     for (int i = 0; i < num_backbones_; ++i) {
       if (degrees_[i] < min_backbone_degree_) {
         to_complete.insert(i);
@@ -440,7 +442,7 @@ class NetworkRoutingSolver {
     return num_paths;
   }
 
-  void AddArcData(int64 source, int64 destination, int arc_id) {
+  void AddArcData(int64_t source, int64_t destination, int arc_id) {
     arcs_data_.push_back({source, destination, arc_id});
   }
 
@@ -488,9 +490,9 @@ class NetworkRoutingSolver {
     return total_demand;
   }
 
-  int64 InitShortestPaths(const NetworkRoutingData& data) {
+  int64_t InitShortestPaths(const NetworkRoutingData& data) {
     const int num_demands = data.num_demands();
-    int64 total_cumulated_traffic = 0;
+    int64_t total_cumulated_traffic = 0;
     all_min_path_lengths_.clear();
     std::vector<int> paths;
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
@@ -537,7 +539,7 @@ class NetworkRoutingSolver {
 
     InitArcInfo(data);
     const int total_demand = InitDemandInfo(data);
-    const int64 total_cumulated_traffic = InitShortestPaths(data);
+    const int64_t total_cumulated_traffic = InitShortestPaths(data);
     const int num_paths = InitPaths(data, extra_hops, max_paths);
 
     // ----- Report Problem Sizes -----
@@ -554,7 +556,7 @@ class NetworkRoutingSolver {
 
   // ----- Callback for Dijkstra Shortest Path -----
 
-  int64 HasArc(int i, int j) {
+  int64_t HasArc(int i, int j) {
     if (capacity_[i][j] > 0) {
       return 1;
     } else {
@@ -564,7 +566,7 @@ class NetworkRoutingSolver {
 
   // ----- Main Solve routine -----
 
-  int64 Solve() {
+  int64_t Solve() {
     LOG(INFO) << "Solving model";
     const int num_demands = demands_array_.size();
     const int num_arcs = count_arcs();
@@ -576,13 +578,13 @@ class NetworkRoutingSolver {
     // Node - Graph Constraint.
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
       for (int arc = 0; arc < num_arcs; ++arc) {
-        path_vars[demand_index].push_back(cp_model.NewBoolVar());
+        path_vars[demand_index].push_back(IntVar(cp_model.NewBoolVar()));
       }
       // Fill Tuple Set for AllowedAssignment constraint.
       TableConstraint path_ct =
           cp_model.AddAllowedAssignments(path_vars[demand_index]);
       for (const auto& one_path : all_paths_[demand_index]) {
-        std::vector<int64> tuple(count_arcs(), 0);
+        std::vector<int64_t> tuple(count_arcs(), 0);
         for (const int arc : one_path) {
           tuple[arc] = 1;
         }
@@ -593,34 +595,32 @@ class NetworkRoutingSolver {
     std::vector<IntVar> traffic_vars(num_arcs);
     std::vector<IntVar> normalized_traffic_vars(num_arcs);
     std::vector<BoolVar> comfortable_traffic_vars(num_arcs);
-    int64 max_normalized_traffic = 0;
+    int64_t max_normalized_traffic = 0;
     for (int arc_index = 0; arc_index < num_arcs; ++arc_index) {
-      int64 sum_of_traffic = 0;
+      int64_t sum_of_traffic = 0;
       LinearExpr traffic_expr;
       for (int i = 0; i < path_vars.size(); ++i) {
         sum_of_traffic += demands_array_[i].traffic;
-        traffic_expr.AddTerm(path_vars[i][arc_index],
-                             demands_array_[i].traffic);
+        traffic_expr += path_vars[i][arc_index] * demands_array_[i].traffic;
       }
       const IntVar traffic_var = cp_model.NewIntVar(Domain(0, sum_of_traffic));
       traffic_vars[arc_index] = traffic_var;
       cp_model.AddEquality(traffic_expr, traffic_var);
 
-      const int64 capacity = arc_capacity_[arc_index];
+      const int64_t capacity = arc_capacity_[arc_index];
       IntVar scaled_traffic =
           cp_model.NewIntVar(Domain(0, sum_of_traffic * 1000));
-      cp_model.AddEquality(LinearExpr::ScalProd({traffic_var}, {1000}),
-                           scaled_traffic);
+      cp_model.AddEquality(traffic_var * 1000, scaled_traffic);
       IntVar normalized_traffic =
           cp_model.NewIntVar(Domain(0, sum_of_traffic * 1000 / capacity));
       max_normalized_traffic =
           std::max(max_normalized_traffic, sum_of_traffic * 1000 / capacity);
       cp_model.AddDivisionEquality(normalized_traffic, scaled_traffic,
-                                   cp_model.NewConstant(capacity));
+                                   capacity);
       normalized_traffic_vars[arc_index] = normalized_traffic;
       const BoolVar comfort = cp_model.NewBoolVar();
-      const int64 safe_capacity =
-          static_cast<int64>(capacity * absl::GetFlag(FLAGS_comfort_zone));
+      const int64_t safe_capacity =
+          static_cast<int64_t>(capacity * absl::GetFlag(FLAGS_comfort_zone));
       cp_model.AddGreaterThan(traffic_var, safe_capacity)
           .OnlyEnforceIf(comfort);
       cp_model.AddLessOrEqual(traffic_var, safe_capacity)
@@ -632,12 +632,8 @@ class NetworkRoutingSolver {
         cp_model.NewIntVar(Domain(0, max_normalized_traffic));
     cp_model.AddMaxEquality(max_usage_cost, normalized_traffic_vars);
 
-    LinearExpr objective_expr;
-    objective_expr.AddVar(max_usage_cost);
-    for (const BoolVar var : comfortable_traffic_vars) {
-      objective_expr.AddVar(var);
-    }
-    cp_model.Minimize(objective_expr);
+    cp_model.Minimize(LinearExpr::Sum(comfortable_traffic_vars) +
+                      max_usage_cost);
 
     Model model;
     if (!absl::GetFlag(FLAGS_params).empty()) {
@@ -668,11 +664,11 @@ class NetworkRoutingSolver {
  private:
   int count_arcs() const { return arcs_data_.size() / 2; }
 
-  std::vector<std::vector<int64>> arcs_data_;
+  std::vector<std::vector<int64_t>> arcs_data_;
   std::vector<int> arc_capacity_;
   std::vector<Demand> demands_array_;
   int num_nodes_;
-  std::vector<int64> all_min_path_lengths_;
+  std::vector<int64_t> all_min_path_lengths_;
   std::vector<std::vector<int>> capacity_;
   std::vector<std::vector<OnePath>> all_paths_;
 };
@@ -682,8 +678,7 @@ class NetworkRoutingSolver {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::NetworkRoutingData data;
   operations_research::sat::NetworkRoutingDataBuilder builder(

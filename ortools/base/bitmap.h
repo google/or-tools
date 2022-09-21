@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,35 +14,36 @@
 #ifndef OR_TOOLS_BASE_BITMAP_H_
 #define OR_TOOLS_BASE_BITMAP_H_
 
-#include <string.h>
+#include <cassert>
+#include <cstring>
 
 #include "ortools/base/basictypes.h"
 
 namespace operations_research {
 namespace internal {
-inline uint64 OneBit64(int pos) { return uint64_t{1} << pos; }
-inline uint64 BitPos64(uint64 pos) { return (pos & 63); }
-inline uint64 BitOffset64(uint64 pos) { return (pos >> 6); }
-inline uint64 BitLength64(uint64 size) { return ((size + 63) >> 6); }
-inline bool IsBitSet64(const uint64* const bitset, uint64 pos) {
+inline uint64_t OneBit64(int pos) { return uint64_t{1} << pos; }
+inline uint64_t BitPos64(uint64_t pos) { return (pos & 63); }
+inline uint64_t BitOffset64(uint64_t pos) { return (pos >> 6); }
+inline uint64_t BitLength64(uint64_t size) { return ((size + 63) >> 6); }
+inline bool IsBitSet64(const uint64_t* const bitset, uint64_t pos) {
   return (bitset[BitOffset64(pos)] & OneBit64(BitPos64(pos)));
 }
-inline void SetBit64(uint64* const bitset, uint64 pos) {
+inline void SetBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] |= OneBit64(BitPos64(pos));
 }
-inline void ClearBit64(uint64* const bitset, uint64 pos) {
+inline void ClearBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
 }
 }  // namespace internal
 
 class Bitmap {
  public:
-  // Constructor : This allocates on a uint32 boundary.
+  // Constructor : This allocates on a uint32_t boundary.
   // fill: true = initialize with 1's, false = initialize with 0's.
-  explicit Bitmap(uint32 size, bool fill = false)
+  explicit Bitmap(uint32_t size, bool fill = false)
       : max_size_(size),
         array_size_(internal::BitLength64(size)),
-        map_(new uint64[array_size_]) {
+        map_(new uint64_t[array_size_]) {
     // initialize all of the bits
     SetAll(fill);
   }
@@ -53,13 +54,13 @@ class Bitmap {
   // Resizes the bitmap.
   // If size < bits(), the extra bits will be discarded.
   // If size > bits(), the extra bits will be filled with the fill value.
-  void Resize(uint32 size, bool fill = false);
+  void Resize(uint32_t size, bool fill = false);
 
-  bool Get(uint32 index) const {
+  bool Get(uint32_t index) const {
     assert(max_size_ == 0 || index < max_size_);
     return internal::IsBitSet64(map_, index);
   }
-  void Set(uint32 index, bool value) {
+  void Set(uint32_t index, bool value) {
     assert(max_size_ == 0 || index < max_size_);
     if (value) {
       internal::SetBit64(map_, index);
@@ -77,9 +78,9 @@ class Bitmap {
   void Clear() { SetAll(false); }
 
  private:
-  uint32 max_size_;  // the upper bound of the bitmap
-  uint32 array_size_;
-  uint64* map_;  // the bitmap
+  uint32_t max_size_;  // the upper bound of the bitmap
+  uint32_t array_size_;
+  uint64_t* map_;  // the bitmap
 };
 
 }  // namespace operations_research

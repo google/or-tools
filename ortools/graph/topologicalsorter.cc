@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,9 +15,11 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <queue>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ortools/base/map_util.h"
@@ -61,13 +63,42 @@ void DenseIntTopologicalSorterTpl<stable_sort>::AddNode(int node_index) {
 static const int kLazyDuplicateDetectionSizeThreshold = 16;
 
 template <bool stable_sort>
+void DenseIntTopologicalSorterTpl<stable_sort>::AddEdges(
+    const std::vector<std::pair<int, int>>& edges) {
+  CHECK(!TraversalStarted()) << "Cannot add edges after starting traversal";
+
+  // Make a first pass to detect the number of nodes.
+  int max_node = -1;
+  for (const auto& [from, to] : edges) {
+    if (from > max_node) max_node = from;
+    if (to > max_node) max_node = to;
+  }
+  if (max_node >= 0) AddNode(max_node);
+
+  // Make a second pass to reserve the adjacency list sizes.
+  // We use indegree_ as temporary node buffer to store the node out-degrees,
+  // since it isn't being used yet.
+  indegree_.assign(max_node + 1, 0);
+  for (const auto& [from, to] : edges) ++indegree_[from];
+  for (int node = 0; node < max_node; ++node) {
+    adjacency_lists_[node].reserve(indegree_[node]);
+  }
+  indegree_.clear();
+
+  // Finally, add edges to the adjacency lists in a third pass. Don't bother
+  // doing the duplicate detection: in the bulk API, we assume that there isn't
+  // much edge duplication.
+  for (const auto& [from, to] : edges) adjacency_lists_[from].push_back(to);
+}
+
+template <bool stable_sort>
 void DenseIntTopologicalSorterTpl<stable_sort>::AddEdge(int from, int to) {
   CHECK(!TraversalStarted()) << "Cannot add edges after starting traversal";
 
   AddNode(std::max(from, to));
 
   AdjacencyList& adj_list = adjacency_lists_[from];
-  const uint32 adj_list_size = adj_list.size();
+  const uint32_t adj_list_size = adj_list.size();
   if (adj_list_size <= kLazyDuplicateDetectionSizeThreshold) {
     for (AdjacencyList::const_iterator it = adj_list.begin();
          it != adj_list.end(); ++it) {
@@ -108,7 +139,7 @@ bool DenseIntTopologicalSorterTpl<stable_sort>::GetNext(
             << " available.  This graph is cyclic! Use ExtractCycle() for"
             << " more information.";
     *cyclic = true;
-    if (output_cycle_nodes != NULL) {
+    if (output_cycle_nodes != nullptr) {
       ExtractCycle(output_cycle_nodes);
     }
     return false;

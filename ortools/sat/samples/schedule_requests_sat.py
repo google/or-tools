@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Nurse scheduling problem with shift requests."""
 
 # [START program]
+"""Nurse scheduling problem with shift requests."""
 # [START import]
 from ortools.sat.python import cp_model
 # [END import]
@@ -41,6 +42,7 @@ def main():
                       [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 0, 0], [1, 0, 0],
                        [0, 1, 0], [0, 0, 0]]]
     # [END data]
+
     # Creates the model.
     # [START model]
     model = cp_model.CpModel()
@@ -61,14 +63,14 @@ def main():
     # [START exactly_one_nurse]
     for d in all_days:
         for s in all_shifts:
-            model.Add(sum(shifts[(n, d, s)] for n in all_nurses) == 1)
+            model.AddExactlyOne(shifts[(n, d, s)] for n in all_nurses)
     # [END exactly_one_nurse]
 
     # Each nurse works at most one shift per day.
     # [START at_most_one_shift]
     for n in all_nurses:
         for d in all_days:
-            model.Add(sum(shifts[(n, d, s)] for s in all_shifts) <= 1)
+            model.AddAtMostOne(shifts[(n, d, s)] for s in all_shifts)
     # [END at_most_one_shift]
 
     # [START assign_nurses_evenly]
@@ -96,30 +98,40 @@ def main():
         sum(shift_requests[n][d][s] * shifts[(n, d, s)] for n in all_nurses
             for d in all_days for s in all_shifts))
     # [END objective]
+
     # Creates the solver and solve.
     # [START solve]
     solver = cp_model.CpSolver()
-    solver.Solve(model)
-    for d in all_days:
-        print('Day', d)
-        for n in all_nurses:
-            for s in all_shifts:
-                if solver.Value(shifts[(n, d, s)]) == 1:
-                    if shift_requests[n][d][s] == 1:
-                        print('Nurse', n, 'works shift', s, '(requested).')
-                    else:
-                        print('Nurse', n, 'works shift', s, '(not requested).')
-        print()
+    status = solver.Solve(model)
     # [END solve]
 
-    # Statistics.
     # [START print_solution]
-    print()
-    print('Statistics')
-    print('  - Number of shift requests met = %i' % solver.ObjectiveValue(),
-          '(out of', num_nurses * min_shifts_per_nurse, ')')
-    print('  - wall time       : %f s' % solver.WallTime())
+    if status == cp_model.OPTIMAL:
+        print('Solution:')
+        for d in all_days:
+            print('Day', d)
+            for n in all_nurses:
+                for s in all_shifts:
+                    if solver.Value(shifts[(n, d, s)]) == 1:
+                        if shift_requests[n][d][s] == 1:
+                            print('Nurse', n, 'works shift', s, '(requested).')
+                        else:
+                            print('Nurse', n, 'works shift', s,
+                                  '(not requested).')
+            print()
+        print(f'Number of shift requests met = {solver.ObjectiveValue()}',
+              f'(out of {num_nurses * min_shifts_per_nurse})')
+    else:
+        print('No optimal solution found !')
     # [END print_solution]
+
+    # Statistics.
+    # [START statistics]
+    print('\nStatistics')
+    print('  - conflicts: %i' % solver.NumConflicts())
+    print('  - branches : %i' % solver.NumBranches())
+    print('  - wall time: %f s' % solver.WallTime())
+    # [END statistics]
 
 
 if __name__ == '__main__':

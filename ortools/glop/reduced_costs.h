@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,8 +14,13 @@
 #ifndef OR_TOOLS_GLOP_REDUCED_COSTS_H_
 #define OR_TOOLS_GLOP_REDUCED_COSTS_H_
 
+#include <string>
+#include <vector>
+
+#include "absl/random/bit_gen_ref.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/pricing.h"
 #include "ortools/glop/primal_edge_norms.h"
 #include "ortools/glop/status.h"
 #include "ortools/glop/update_row.h"
@@ -23,7 +28,6 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -52,27 +56,34 @@ class ReducedCosts {
                const RowToColMapping& basis,
                const VariablesInfo& variables_info,
                const BasisFactorization& basis_factorization,
-               random_engine_t* random);
+               absl::BitGenRef random);
 
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetReducedCosts().
   bool NeedsBasisRefactorization() const;
 
   // Checks the precision of the entering variable choice now that the direction
-  // is computed, and return true if we can continue with this entering column,
-  // or false if this column is actually not good and ChooseEnteringColumn()
-  // need to be called again.
-  bool TestEnteringReducedCostPrecision(ColIndex entering_col,
-                                        const ScatteredColumn& direction,
-                                        Fractional* reduced_cost);
+  // is computed. Returns its precise version. This will also trigger a
+  // reduced cost recomputation if it was deemed too imprecise.
+  Fractional TestEnteringReducedCostPrecision(ColIndex entering_col,
+                                              const ScatteredColumn& direction);
 
   // Computes the current dual residual and infeasibility. Note that these
   // functions are not really fast (many scalar products will be computed) and
-  // shouldn't be called at each iteration. They will return 0.0 if the reduced
-  // costs need to be recomputed first and fail in debug mode.
-  Fractional ComputeMaximumDualResidual() const;
-  Fractional ComputeMaximumDualInfeasibility() const;
-  Fractional ComputeSumOfDualInfeasibilities() const;
+  // shouldn't be called at each iteration.
+  //
+  // These function will compute the reduced costs if needed.
+  // ComputeMaximumDualResidual() also needs ComputeBasicObjectiveLeftInverse()
+  // and do not depends on reduced costs.
+  Fractional ComputeMaximumDualResidual();
+  Fractional ComputeMaximumDualInfeasibility();
+  Fractional ComputeSumOfDualInfeasibilities();
+
+  // Same as ComputeMaximumDualInfeasibility() but ignore boxed variables.
+  // Because we can always switch bounds of boxed variables, if this is under
+  // the dual tolerance, then we can easily have a dual feasible solution and do
+  // not need to run a dual phase I algorithm.
+  Fractional ComputeMaximumDualInfeasibilityOnNonBoxedVariables();
 
   // Updates any internal data BEFORE the given simplex pivot is applied to B.
   // Note that no updates are needed in case of a bound flip.
@@ -83,15 +94,6 @@ class ReducedCosts {
   void UpdateBeforeBasisPivot(ColIndex entering_col, RowIndex leaving_row,
                               const ScatteredColumn& direction,
                               UpdateRow* update_row);
-
-  // Once a pivot has been done, this need to be called on the column that just
-  // left the basis before the next ChooseEnteringColumn(). On a bound flip,
-  // this must also be called with the variable that flipped.
-  //
-  // In both cases, the variable should be dual-feasible by construction. This
-  // sets is_dual_infeasible_[col] to false and checks in debug mode that the
-  // variable is indeed not an entering candidate.
-  void SetAndDebugCheckThatColumnIsDualFeasible(ColIndex col);
 
   // Sets the cost of the given non-basic variable to zero and updates its
   // reduced cost. Note that changing the cost of a non-basic variable only
@@ -127,15 +129,23 @@ class ReducedCosts {
   void PerturbCosts();
 
   // Shifts the cost of the given non-basic column such that its current reduced
-  // cost becomes 0.0. Actually, this shifts the cost a bit more, so that the
-  // reduced cost becomes slightly of the other sign.
+  // cost becomes 0.0. Actually, this shifts the cost a bit more according to
+  // the positive_direction parameter.
   //
   // This is explained in Koberstein's thesis (section 6.2.2.3) and helps on
   // degenerate problems. As of july 2013, this allowed to pass dano3mip and
   // dbic1 without cycling forever. Note that contrary to what is explained in
   // the thesis, we do not shift any other variable costs. If any becomes
   // infeasible, it will be selected and shifted in subsequent iterations.
-  void ShiftCost(ColIndex col);
+  void ShiftCostIfNeeded(bool increasing_rc_is_needed, ColIndex col);
+
+  // Returns true if ShiftCostIfNeeded() was applied since the last
+  // ClearAndRemoveCostShifts().
+  bool HasCostShift() const { return has_cost_shift_; }
+
+  // Returns true if this step direction make the given column even more
+  // infeasible. This is just used for reporting stats.
+  bool StepIsDualDegenerate(bool increasing_rc_is_needed, ColIndex col);
 
   // Removes any cost shift and cost perturbation. This also lazily forces a
   // recomputation of all the derived quantities. This effectively resets the
@@ -144,9 +154,6 @@ class ReducedCosts {
 
   // Invalidates all internal structure that depends on the objective function.
   void ResetForNewObjective();
-
-  // Sets whether or not the bitset of the dual infeasible positions is updated.
-  void MaintainDualInfeasiblePositions(bool maintain);
 
   // Invalidates the data that depends on the order of the column in basis_.
   void UpdateDataOnBasisPermutation();
@@ -158,13 +165,10 @@ class ReducedCosts {
   // variables_info_.GetIsRelevantBitRow().
   const DenseRow& GetReducedCosts();
 
-  // Returns the non-basic columns that are dual-infeasible. These are also
-  // the primal simplex possible entering columns.
-  const DenseBitRow& GetDualInfeasiblePositions() const {
-    // TODO(user): recompute if needed?
-    DCHECK(are_dual_infeasible_positions_maintained_);
-    return is_dual_infeasible_;
-  }
+  // Same as GetReducedCosts() but trigger a recomputation if not already done
+  // to have access to the reduced costs on all positions, not just the relevant
+  // one.
+  const DenseRow& GetFullReducedCosts();
 
   // Returns the dual values associated to the current basis.
   const DenseColumn& GetDualValues();
@@ -177,11 +181,20 @@ class ReducedCosts {
     return dual_feasibility_tolerance_;
   }
 
-  // Does basic checking of an entering candidate. To be used in DCHECK().
+  // Does basic checking of an entering candidate.
   bool IsValidPrimalEnteringCandidate(ColIndex col) const;
 
   // Visible for testing.
   const DenseRow& GetCostPerturbations() const { return cost_perturbations_; }
+
+  // The deterministic time used by this class.
+  double DeterministicTime() const { return deterministic_time_; }
+
+  // Registers a boolean that will be set to true each time the reduced costs
+  // are or will be recomputed. This allows anyone that depends on this to know
+  // that it cannot just assume an incremental changes and needs to updates its
+  // data. Important: UpdateBeforeBasisPivot() will not trigger this.
+  void AddRecomputationWatcher(bool* watcher) { watchers_.push_back(watcher); }
 
  private:
   // Statistics about this class.
@@ -197,10 +210,6 @@ class ReducedCosts {
     DoubleDistribution cost_shift;
   };
 
-  // Small utility function to be called before reduced_costs_ and/or
-  // is_dual_infeasible_ are accessed.
-  void RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded();
-
   // All these Compute() functions fill the corresponding DenseRow using
   // the current problem data.
   void ComputeBasicObjective();
@@ -210,22 +219,16 @@ class ReducedCosts {
   // Updates reduced_costs_ according to the given pivot. This adds a multiple
   // of the vector equal to 1.0 on the leaving column and given by
   // ComputeUpdateRow() on the non-basic columns. The multiple is such that the
-  // new leaving reduced cost is zero. If update_column_status is false, then
-  // is_dual_infeasible_ will not be updated.
+  // new leaving reduced cost is zero.
   void UpdateReducedCosts(ColIndex entering_col, ColIndex leaving_col,
                           RowIndex leaving_row, Fractional pivot,
                           UpdateRow* update_row);
 
-  // Recomputes from scratch the is_dual_infeasible_ bit row. Note that an
-  // entering candidate is by definition a dual-infeasible variable.
-  void ResetDualInfeasibilityBitSet();
-
-  // Recomputes is_dual_infeasible_ but only for the given column indices.
-  template <typename ColumnsToUpdate>
-  void UpdateEnteringCandidates(const ColumnsToUpdate& cols);
-
   // Updates basic_objective_ according to the given pivot.
   void UpdateBasicObjective(ColIndex entering_col, RowIndex leaving_row);
+
+  // All places that do 'recompute_reduced_costs_ = true' must go through here.
+  void SetRecomputeReducedCostsAndNotifyWatchers();
 
   // Problem data that should be updated from outside.
   const CompactSparseMatrix& matrix_;
@@ -233,7 +236,7 @@ class ReducedCosts {
   const RowToColMapping& basis_;
   const VariablesInfo& variables_info_;
   const BasisFactorization& basis_factorization_;
-  random_engine_t* random_;
+  absl::BitGenRef random_;
 
   // Internal data.
   GlopParameters parameters_;
@@ -248,6 +251,8 @@ class ReducedCosts {
   // Indicates if we have computed the reduced costs with a good precision.
   bool are_reduced_costs_precise_;
   bool are_reduced_costs_recomputed_;
+
+  bool has_cost_shift_ = false;
 
   // Values of the objective on the columns of the basis. The order is given by
   // the basis_ mapping. It is usually denoted as 'c_B' in the literature .
@@ -276,15 +281,60 @@ class ReducedCosts {
   // the tolerance.
   Fractional dual_feasibility_tolerance_;
 
-  // True for the columns that can enter the basis.
-  // TODO(user): Investigate using a list of ColIndex instead (but we need
-  // dynamic update and may lose the ordering of the indices).
-  DenseBitRow is_dual_infeasible_;
+  // Boolean(s) to set to false when the reduced cost are changed outside of the
+  // UpdateBeforeBasisPivot() function.
+  std::vector<bool*> watchers_;
 
-  // Indicates if the dual-infeasible positions are maintained or not.
-  bool are_dual_infeasible_positions_maintained_;
+  double deterministic_time_ = 0.0;
 
   DISALLOW_COPY_AND_ASSIGN(ReducedCosts);
+};
+
+// Maintains the list of dual infeasible positions and their associated prices.
+//
+// TODO(user): Not high priority but should probably be moved to its own file.
+class PrimalPrices {
+ public:
+  // Takes references to what we need.
+  // TODO(user): Switch to a model based API like in CP-SAT.
+  PrimalPrices(absl::BitGenRef random, const VariablesInfo& variables_info,
+               PrimalEdgeNorms* primal_edge_norms, ReducedCosts* reduced_costs);
+
+  // Returns the best candidate out of the dual infeasible positions to enter
+  // the basis during a primal simplex iterations.
+  ColIndex GetBestEnteringColumn();
+
+  // Similar to the other UpdateBeforeBasisPivot() functions.
+  //
+  // Important: Both the primal norms and reduced costs must have been updated
+  // before this is called.
+  void UpdateBeforeBasisPivot(ColIndex entering_col, UpdateRow* update_row);
+
+  // Triggers a recomputation of the price at the given column only.
+  void RecomputePriceAt(ColIndex col);
+
+  // Same than RecomputePriceAt() for the case where we know the position is
+  // dual feasible.
+  void SetAndDebugCheckThatColumnIsDualFeasible(ColIndex col);
+
+  // If the incremental updates are not properly called for a while, then it is
+  // important to make sure that the prices will be recomputed the next time
+  // GetBestEnteringColumn() is called.
+  void ForceRecomputation() { recompute_ = true; }
+
+ private:
+  // Recomputes the primal prices but only for the given column indices. If
+  // from_clean_state is true, then we assume that there is currently no
+  // candidates in prices_.
+  template <bool from_clean_state, typename ColumnsToUpdate>
+  void UpdateEnteringCandidates(const ColumnsToUpdate& cols);
+
+  bool recompute_ = true;
+  DynamicMaximum<ColIndex> prices_;
+
+  const VariablesInfo& variables_info_;
+  PrimalEdgeNorms* primal_edge_norms_;
+  ReducedCosts* reduced_costs_;
 };
 
 }  // namespace glop

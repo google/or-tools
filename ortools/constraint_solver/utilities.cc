@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,7 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <string>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -29,24 +31,26 @@ namespace operations_research {
 
 // ---------- SmallRevBitSet ----------
 
-SmallRevBitSet::SmallRevBitSet(int64 size) : bits_(0LL) {
+SmallRevBitSet::SmallRevBitSet(int64_t size) : bits_(0LL) {
   DCHECK_GT(size, 0);
   DCHECK_LE(size, 64);
 }
 
-void SmallRevBitSet::SetToOne(Solver* const solver, int64 pos) {
+void SmallRevBitSet::SetToOne(Solver* const solver, int64_t pos) {
   DCHECK_GE(pos, 0);
   bits_.SetValue(solver, bits_.Value() | OneBit64(pos));
 }
 
-void SmallRevBitSet::SetToZero(Solver* const solver, int64 pos) {
+void SmallRevBitSet::SetToZero(Solver* const solver, int64_t pos) {
   DCHECK_GE(pos, 0);
   bits_.SetValue(solver, bits_.Value() & ~OneBit64(pos));
 }
 
-int64 SmallRevBitSet::Cardinality() const { return BitCount64(bits_.Value()); }
+int64_t SmallRevBitSet::Cardinality() const {
+  return BitCount64(bits_.Value());
+}
 
-int64 SmallRevBitSet::GetFirstOne() const {
+int64_t SmallRevBitSet::GetFirstOne() const {
   if (bits_.Value() == 0) {
     return -1;
   }
@@ -55,11 +59,11 @@ int64 SmallRevBitSet::GetFirstOne() const {
 
 // ---------- RevBitSet ----------
 
-RevBitSet::RevBitSet(int64 size)
+RevBitSet::RevBitSet(int64_t size)
     : size_(size),
       length_(BitLength64(size)),
-      bits_(new uint64[length_]),
-      stamps_(new uint64[length_]) {
+      bits_(new uint64_t[length_]),
+      stamps_(new uint64_t[length_]) {
   DCHECK_GE(size, 1);
   memset(bits_, 0, sizeof(*bits_) * length_);
   memset(stamps_, 0, sizeof(*stamps_) * length_);
@@ -71,43 +75,43 @@ RevBitSet::~RevBitSet() {
 }
 
 void RevBitSet::Save(Solver* const solver, int offset) {
-  const uint64 current_stamp = solver->stamp();
+  const uint64_t current_stamp = solver->stamp();
   if (current_stamp > stamps_[offset]) {
     stamps_[offset] = current_stamp;
     solver->SaveValue(&bits_[offset]);
   }
 }
 
-void RevBitSet::SetToOne(Solver* const solver, int64 index) {
+void RevBitSet::SetToOne(Solver* const solver, int64_t index) {
   DCHECK_GE(index, 0);
   DCHECK_LT(index, size_);
-  const int64 offset = BitOffset64(index);
-  const int64 pos = BitPos64(index);
+  const int64_t offset = BitOffset64(index);
+  const int64_t pos = BitPos64(index);
   if (!(bits_[offset] & OneBit64(pos))) {
     Save(solver, offset);
     bits_[offset] |= OneBit64(pos);
   }
 }
 
-void RevBitSet::SetToZero(Solver* const solver, int64 index) {
+void RevBitSet::SetToZero(Solver* const solver, int64_t index) {
   DCHECK_GE(index, 0);
   DCHECK_LT(index, size_);
-  const int64 offset = BitOffset64(index);
-  const int64 pos = BitPos64(index);
+  const int64_t offset = BitOffset64(index);
+  const int64_t pos = BitPos64(index);
   if (bits_[offset] & OneBit64(pos)) {
     Save(solver, offset);
     bits_[offset] &= ~OneBit64(pos);
   }
 }
 
-bool RevBitSet::IsSet(int64 index) const {
+bool RevBitSet::IsSet(int64_t index) const {
   DCHECK_GE(index, 0);
   DCHECK_LT(index, size_);
   return IsBitSet64(bits_, index);
 }
 
-int64 RevBitSet::Cardinality() const {
-  int64 card = 0;
+int64_t RevBitSet::Cardinality() const {
+  int64_t card = 0;
   for (int i = 0; i < length_; ++i) {
     card += BitCount64(bits_[i]);
   }
@@ -126,7 +130,7 @@ bool RevBitSet::IsCardinalityZero() const {
 bool RevBitSet::IsCardinalityOne() const {
   bool found_one = false;
   for (int i = 0; i < length_; ++i) {
-    const uint64 partial = bits_[i];
+    const uint64_t partial = bits_[i];
     if (partial) {
       if (!(partial & (partial - 1))) {
         if (found_one) {
@@ -141,7 +145,7 @@ bool RevBitSet::IsCardinalityOne() const {
   return found_one;
 }
 
-int64 RevBitSet::GetFirstBit(int start) const {
+int64_t RevBitSet::GetFirstBit(int start) const {
   return LeastSignificantBitPosition64(bits_, start, size_ - 1);
 }
 
@@ -156,7 +160,7 @@ void RevBitSet::ClearAll(Solver* const solver) {
 
 // ----- RevBitMatrix -----
 
-RevBitMatrix::RevBitMatrix(int64 rows, int64 columns)
+RevBitMatrix::RevBitMatrix(int64_t rows, int64_t columns)
     : RevBitSet(rows * columns), rows_(rows), columns_(columns) {
   DCHECK_GE(rows, 1);
   DCHECK_GE(columns, 1);
@@ -164,7 +168,7 @@ RevBitMatrix::RevBitMatrix(int64 rows, int64 columns)
 
 RevBitMatrix::~RevBitMatrix() {}
 
-void RevBitMatrix::SetToOne(Solver* const solver, int64 row, int64 column) {
+void RevBitMatrix::SetToOne(Solver* const solver, int64_t row, int64_t column) {
   DCHECK_GE(row, 0);
   DCHECK_LT(row, rows_);
   DCHECK_GE(column, 0);
@@ -172,7 +176,8 @@ void RevBitMatrix::SetToOne(Solver* const solver, int64 row, int64 column) {
   RevBitSet::SetToOne(solver, row * columns_ + column);
 }
 
-void RevBitMatrix::SetToZero(Solver* const solver, int64 row, int64 column) {
+void RevBitMatrix::SetToZero(Solver* const solver, int64_t row,
+                             int64_t column) {
   DCHECK_GE(row, 0);
   DCHECK_LT(row, rows_);
   DCHECK_GE(column, 0);
@@ -180,7 +185,7 @@ void RevBitMatrix::SetToZero(Solver* const solver, int64 row, int64 column) {
   RevBitSet::SetToZero(solver, row * columns_ + column);
 }
 
-int64 RevBitMatrix::Cardinality(int row) const {
+int64_t RevBitMatrix::Cardinality(int row) const {
   DCHECK_GE(row, 0);
   DCHECK_LT(row, rows_);
   const int start = row * columns_;
@@ -197,14 +202,15 @@ bool RevBitMatrix::IsCardinalityZero(int row) const {
   return IsEmptyRange64(bits_, start, start + columns_ - 1);
 }
 
-int64 RevBitMatrix::GetFirstBit(int row, int start) const {
+int64_t RevBitMatrix::GetFirstBit(int row, int start) const {
   DCHECK_GE(start, 0);
   DCHECK_GE(row, 0);
   DCHECK_LT(row, rows_);
   DCHECK_LT(start, columns_);
   const int beginning = row * columns_;
   const int end = beginning + columns_ - 1;
-  int64 position = LeastSignificantBitPosition64(bits_, beginning + start, end);
+  int64_t position =
+      LeastSignificantBitPosition64(bits_, beginning + start, end);
   if (position == -1) {
     return -1;
   } else {
@@ -225,7 +231,7 @@ UnsortedNullableRevBitset::UnsortedNullableRevBitset(int bit_size)
       active_words_(word_size_) {}
 
 void UnsortedNullableRevBitset::Init(Solver* const solver,
-                                     const std::vector<uint64>& mask) {
+                                     const std::vector<uint64_t>& mask) {
   CHECK_LE(mask.size(), word_size_);
   for (int i = 0; i < mask.size(); ++i) {
     if (mask[i]) {
@@ -236,13 +242,13 @@ void UnsortedNullableRevBitset::Init(Solver* const solver,
 }
 
 bool UnsortedNullableRevBitset::RevSubtract(Solver* const solver,
-                                            const std::vector<uint64>& mask) {
+                                            const std::vector<uint64_t>& mask) {
   bool changed = false;
   to_remove_.clear();
   for (int index : active_words_) {
     if (index < mask.size() && (bits_[index] & mask[index]) != 0) {
       changed = true;
-      const uint64 result = bits_[index] & ~mask[index];
+      const uint64_t result = bits_[index] & ~mask[index];
       bits_.SetValue(solver, index, result);
       if (result == 0) {
         to_remove_.push_back(index);
@@ -263,14 +269,14 @@ void UnsortedNullableRevBitset::CleanUpActives(Solver* const solver) {
 }
 
 bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
-                                       const std::vector<uint64>& mask) {
+                                       const std::vector<uint64_t>& mask) {
   bool changed = false;
   to_remove_.clear();
   for (int index : active_words_) {
     if (index < mask.size()) {
       if ((bits_[index] & ~mask[index]) != 0) {
         changed = true;
-        const uint64 result = bits_[index] & mask[index];
+        const uint64_t result = bits_[index] & mask[index];
         bits_.SetValue(solver, index, result);
         if (result == 0) {
           to_remove_.push_back(index);
@@ -287,7 +293,7 @@ bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
   return changed;
 }
 
-bool UnsortedNullableRevBitset::Intersects(const std::vector<uint64>& mask,
+bool UnsortedNullableRevBitset::Intersects(const std::vector<uint64_t>& mask,
                                            int* support_index) {
   DCHECK_GE(*support_index, 0);
   DCHECK_LT(*support_index, word_size_);
@@ -366,7 +372,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   void VisitIntegerVariable(const IntVar* const variable,
-                            const std::string& operation, int64 value,
+                            const std::string& operation, int64_t value,
                             IntVar* const delegate) override {
     LOG(INFO) << Spaces() << "IntVar";
     Increase();
@@ -377,7 +383,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   void VisitIntervalVariable(const IntervalVar* const variable,
-                             const std::string& operation, int64 value,
+                             const std::string& operation, int64_t value,
                              IntervalVar* const delegate) override {
     if (delegate != nullptr) {
       LOG(INFO) << Spaces() << operation << " <" << value << ", ";
@@ -395,12 +401,13 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Variables.
-  void VisitIntegerArgument(const std::string& arg_name, int64 value) override {
+  void VisitIntegerArgument(const std::string& arg_name,
+                            int64_t value) override {
     LOG(INFO) << Spaces() << arg_name << ": " << value;
   }
 
   void VisitIntegerArrayArgument(const std::string& arg_name,
-                                 const std::vector<int64>& values) override {
+                                 const std::vector<int64_t>& values) override {
     LOG(INFO) << Spaces() << arg_name << ": [" << absl::StrJoin(values, ", ")
               << "]";
   }
@@ -592,7 +599,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   void VisitIntegerVariable(const IntVar* const variable,
-                            const std::string& operation, int64 value,
+                            const std::string& operation, int64_t value,
                             IntVar* const delegate) override {
     num_variables_++;
     Register(variable);
@@ -601,7 +608,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   void VisitIntervalVariable(const IntervalVar* const variable,
-                             const std::string& operation, int64 value,
+                             const std::string& operation, int64_t value,
                              IntervalVar* const delegate) override {
     num_intervals_++;
     if (delegate) {
@@ -666,7 +673,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   bool AlreadyVisited(const BaseObject* const object) {
-    return gtl::ContainsKey(already_visited_, object);
+    return already_visited_.contains(object);
   }
 
   // T should derive from BaseObject
@@ -717,7 +724,7 @@ class VariableDegreeVisitor : public ModelVisitor {
   void VisitIntegerVariable(const IntVar* const variable,
                             IntExpr* const delegate) override {
     IntVar* const var = const_cast<IntVar*>(variable);
-    if (gtl::ContainsKey(*map_, var)) {
+    if (map_->contains(var)) {
       (*map_)[var]++;
     }
     if (delegate) {
@@ -726,17 +733,17 @@ class VariableDegreeVisitor : public ModelVisitor {
   }
 
   void VisitIntegerVariable(const IntVar* const variable,
-                            const std::string& operation, int64 value,
+                            const std::string& operation, int64_t value,
                             IntVar* const delegate) override {
     IntVar* const var = const_cast<IntVar*>(variable);
-    if (gtl::ContainsKey(*map_, var)) {
+    if (map_->contains(var)) {
       (*map_)[var]++;
     }
     VisitSubArgument(delegate);
   }
 
   void VisitIntervalVariable(const IntervalVar* const variable,
-                             const std::string& operation, int64 value,
+                             const std::string& operation, int64_t value,
                              IntervalVar* const delegate) override {
     if (delegate) {
       VisitSubArgument(delegate);
@@ -819,8 +826,8 @@ ModelVisitor* Solver::MakeVariableDegreeVisitor(
 
 // ----- Vector manipulations -----
 
-std::vector<int64> ToInt64Vector(const std::vector<int>& input) {
-  std::vector<int64> result(input.size());
+std::vector<int64_t> ToInt64Vector(const std::vector<int>& input) {
+  std::vector<int64_t> result(input.size());
   for (int i = 0; i < input.size(); ++i) {
     result[i] = input[i];
   }

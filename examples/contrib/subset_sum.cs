@@ -102,9 +102,9 @@ public class SubsetSum
         int[] coins = { 16, 17, 23, 24, 39, 40 };
         int total = 100;
 
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            total = Convert.ToInt32(args[0]);
+            total = Convert.ToInt32(args[1]);
         }
 
         Solve(coins, total);

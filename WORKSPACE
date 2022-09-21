@@ -1,61 +1,66 @@
+workspace(name = "com_google_ortools")
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 
-http_archive(
-    name = "zlib",
-    build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
-    sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
-    strip_prefix = "zlib-1.2.11",
-    urls = [
-        "https://mirror.bazel.build/zlib.net/zlib-1.2.11.tar.gz",
-        "https://zlib.net/zlib-1.2.11.tar.gz",
-    ],
-)
-
+# Bazel Skylib rules.
 git_repository(
     name = "bazel_skylib",
-    commit = "e59b620",  # release 1.0.2
+    tag = "1.2.1",
     remote = "https://github.com/bazelbuild/bazel-skylib.git",
 )
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+bazel_skylib_workspace()
 
-# Python Rules
-http_archive(
-    name = "rules_python",
-    sha256 = "b5668cde8bb6e3515057ef465a35ad712214962f0b3a314e551204266c7be90c",
-    strip_prefix = "rules_python-0.0.2",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
+# Bazel Platforms rules.
+git_repository(
+    name = "platforms",
+    tag = "0.0.5",
+    remote = "https://github.com/bazelbuild/platforms.git",
+)
+
+# Abseil-cpp
+git_repository(
+    name = "com_google_absl",
+    tag = "20220623.1",
+    remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    commit = "2514f0b",  # release v3.14.0
+    tag = "v21.5",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
-
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
 # Load common dependencies.
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
-git_repository(
-    name = "com_google_absl",
-    commit = "6f9d96a", # release 20200923.3
-    remote = "https://github.com/abseil/abseil-cpp.git",
+# ZLIB
+new_git_repository(
+    name = "zlib",
+    build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
+    tag = "v1.2.11",
+    remote = "https://github.com/madler/zlib.git",
 )
 
-http_archive(
-    name = "gtest",
-    build_file = "//bazel:gtest.BUILD",
-    strip_prefix = "googletest-release-1.8.0/googletest",
-    url = "https://github.com/google/googletest/archive/release-1.8.0.zip",
+git_repository(
+    name = "com_google_re2",
+    tag = "2022-04-01",
+    remote = "https://github.com/google/re2.git",
+)
+
+git_repository(
+    name = "com_google_googletest",
+    tag = "release-1.12.1",
+    remote = "https://github.com/google/googletest.git",
 )
 
 http_archive(
     name = "glpk",
     build_file = "//bazel:glpk.BUILD",
-    sha256 = "4281e29b628864dfe48d393a7bedd781e5b475387c20d8b0158f329994721a10",
-    url = "http://ftp.gnu.org/gnu/glpk/glpk-4.65.tar.gz",
+    sha256 = "4a1013eebb50f728fc601bdd833b0b2870333c3b3e5a816eeba921d95bec6f15",
+    url = "http://ftp.gnu.org/gnu/glpk/glpk-5.0.tar.gz",
 )
 
 http_archive(
@@ -63,13 +68,67 @@ http_archive(
     build_file = "//bazel:bliss.BUILD",
     patches = ["//bazel:bliss-0.73.patch"],
     sha256 = "f57bf32804140cad58b1240b804e0dbd68f7e6bf67eba8e0c0fa3a62fd7f0f84",
-    url = "http://www.tcs.hut.fi/Software/bliss/bliss-0.73.zip",
+    url = "https://github.com/google/or-tools/releases/download/v9.0/bliss-0.73.zip",
+    #url = "http://www.tcs.hut.fi/Software/bliss/bliss-0.73.zip",
 )
 
-http_archive(
+new_git_repository(
     name = "scip",
     build_file = "//bazel:scip.BUILD",
     patches = ["//bazel:scip.patch"],
-    sha256 = "033bf240298d3a1c92e8ddb7b452190e0af15df2dad7d24d0572f10ae8eec5aa",
-    url = "https://github.com/google/or-tools/releases/download/v7.7/scip-7.0.1.tgz",
+    patch_args = ["-p1"],
+    tag = "v801",
+    remote = "https://github.com/scipopt/scip.git",
 )
+
+# Eigen has no Bazel build.
+new_git_repository(
+    name = "eigen",
+    tag = "3.4.0",
+    remote = "https://gitlab.com/libeigen/eigen.git",
+    build_file_content =
+"""
+cc_library(
+    name = 'eigen3',
+    srcs = [],
+    includes = ['.'],
+    hdrs = glob(['Eigen/**']),
+    visibility = ['//visibility:public'],
+)
+"""
+)
+
+# Python
+## Bazel Python rules.
+git_repository(
+    name = "rules_python",
+    tag = "0.12.0",
+    remote = "https://github.com/bazelbuild/rules_python.git",
+)
+
+load("@rules_python//python:pip.bzl", "pip_install")
+
+# Create a central external repo, @ortools_deps, that contains Bazel targets for all the
+# third-party packages specified in the python_deps.txt file.
+pip_install(
+   name = "ortools_deps",
+   requirements = "//bazel:python_deps.txt",
+)
+
+git_repository(
+    name = "pybind11_bazel",
+    commit = "72cbbf1fbc830e487e3012862b7b720001b70672",
+    patches = ["//patches:pybind11_bazel.patch"], # see pybind/pybind11_bazel#38
+    patch_args = ["-p1"],
+    remote = "https://github.com/pybind/pybind11_bazel.git",
+)
+
+new_git_repository(
+    name = "pybind11",
+    build_file = "@pybind11_bazel//:pybind11.BUILD",
+    tag = "v2.10.0",
+    remote = "https://github.com/pybind/pybind11.git",
+)
+
+load("@pybind11_bazel//:python_configure.bzl", "python_configure")
+python_configure(name = "local_config_python", python_version = "3")

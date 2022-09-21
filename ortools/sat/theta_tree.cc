@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,9 +14,10 @@
 #include "ortools/sat/theta_tree.h"
 
 #include <algorithm>
-#include <memory>
+#include <cstdint>
 
-#include "ortools/base/int_type.h"
+#include "ortools/base/logging.h"
+#include "ortools/sat/integer.h"
 
 namespace operations_research {
 namespace sat {
@@ -298,7 +299,7 @@ void ThetaLambdaTree<IntegerType>::GetLeavesWithOptionalEnvelopeGreaterThan(
 }
 
 template class ThetaLambdaTree<IntegerValue>;
-template class ThetaLambdaTree<int64>;
+template class ThetaLambdaTree<int64_t>;
 
 }  // namespace sat
 }  // namespace operations_research

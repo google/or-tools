@@ -63,8 +63,11 @@ public class MultiThreadTest {
   }
 
   private static MPSolver makeProblem() {
-    MPSolver solver = new MPSolver(
-        UUID.randomUUID().toString(), OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    MPSolver solver = MPSolver.createSolver("CBC");
+    if (solver == null) {
+      System.out.println("Could not create solver CBC");
+      return solver;
+    }
 
     double infinity = MPSolver.infinity();
 
@@ -97,11 +100,14 @@ public class MultiThreadTest {
     @Override
     public ResultStatus call() throws Exception {
       MPSolver solver = makeProblem();
-      statusSolver = solver.solve();
-
-      // Check that the problem has an optimal solution.
-      if (MPSolver.ResultStatus.OPTIMAL.equals(statusSolver)) {
-        throw new RuntimeException("Non OPTIMAL status after solve.");
+      if (solver == null) {
+        statusSolver = MPSolver.ResultStatus.NOT_SOLVED;
+      } else {
+        statusSolver = solver.solve();
+        // Check that the problem has an optimal solution.
+        if (MPSolver.ResultStatus.OPTIMAL.equals(statusSolver)) {
+          throw new RuntimeException("Non OPTIMAL status after solve.");
+        }
       }
       return statusSolver;
     }

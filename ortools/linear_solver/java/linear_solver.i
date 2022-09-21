@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -157,7 +157,10 @@ PROTO2_RETURN(
    *       that.
    */
    bool loadSolutionFromProto(const MPSolutionResponse& response) {
-     return $self->LoadSolutionFromProto(response).ok();
+     const absl::Status status =
+         $self->LoadSolutionFromProto(response);
+     LOG_IF(ERROR, !status.ok()) << "LoadSolutionFromProto() failed: " << status;
+     return status.ok();
    }
 
   /**
@@ -298,6 +301,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::PDLP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
@@ -306,7 +310,6 @@ PROTO2_RETURN(
 // These aren't unit tested, as they only run on machines with a Gurobi license.
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
-%rename (setGurobiLibraryPath) operations_research::MPSolver::SetGurobiLibraryPath;
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
@@ -320,6 +323,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::INFEASIBLE;  // no test
 %unignore operations_research::MPSolver::UNBOUNDED;  // no test
 %unignore operations_research::MPSolver::ABNORMAL;  // no test
+%unignore operations_research::MPSolver::MODEL_INVALID;  // no test
 %unignore operations_research::MPSolver::NOT_SOLVED;  // no test
 
 // Expose the MPSolver's basic API, with some non-trivial renames.
@@ -357,13 +361,16 @@ PROTO2_RETURN(
 // - loadSolutionFromProto;  // Use hand-written version.
 
 // Expose some of the more advanced MPSolver API.
+%rename (problemType) operations_research::MPSolver::ProblemType;  // no test
 %rename (supportsProblemType) operations_research::MPSolver::SupportsProblemType;  // no test
 %rename (setSolverSpecificParametersAsString)
     operations_research::MPSolver::SetSolverSpecificParametersAsString;  // no test
 %rename (interruptSolve) operations_research::MPSolver::InterruptSolve;  // no test
 %rename (wallTime) operations_research::MPSolver::wall_time;
 %rename (clear) operations_research::MPSolver::Clear;  // no test
+%unignore operations_research::MPSolver::constraint;
 %unignore operations_research::MPSolver::constraints;
+%unignore operations_research::MPSolver::variable;
 %unignore operations_research::MPSolver::variables;
 %rename (numVariables) operations_research::MPSolver::NumVariables;
 %rename (numConstraints) operations_research::MPSolver::NumConstraints;

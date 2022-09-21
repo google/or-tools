@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,9 +14,10 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_
 
-#include <tuple>
+#include <utility>
 #include <vector>
 
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/routing_types.h"
@@ -48,7 +49,7 @@ namespace operations_research {
 class RoutingIndexManager {
  public:
   typedef RoutingNodeIndex NodeIndex;
-  static const int64 kUnassigned;
+  static const int64_t kUnassigned;
 
   /// Creates a NodeIndex to variable index mapping for a problem containing
   /// 'num_nodes', 'num_vehicles' and the given starts and ends for each
@@ -70,35 +71,38 @@ class RoutingIndexManager {
   // Returns the number of indices mapped to nodes.
   int num_indices() const { return index_to_node_.size(); }
   // Returns start and end indices of the given vehicle.
-  int64 GetStartIndex(int vehicle) const { return vehicle_to_start_[vehicle]; }
-  int64 GetEndIndex(int vehicle) const { return vehicle_to_end_[vehicle]; }
+  int64_t GetStartIndex(int vehicle) const {
+    return vehicle_to_start_[vehicle];
+  }
+  int64_t GetEndIndex(int vehicle) const { return vehicle_to_end_[vehicle]; }
   // Returns the index of a node. A node can correspond to multiple indices if
   // it's a start or end node. As of 03/2020, kUnassigned will be returned for
   // all end nodes. If a node appears more than once as a start node, the index
   // of the first node in the list of start nodes is returned.
-  int64 NodeToIndex(NodeIndex node) const {
+  int64_t NodeToIndex(NodeIndex node) const {
     DCHECK_GE(node.value(), 0);
     DCHECK_LT(node.value(), node_to_index_.size());
     return node_to_index_[node];
   }
   // Same as NodeToIndex but for a given vector of nodes.
-  std::vector<int64> NodesToIndices(const std::vector<NodeIndex>& nodes) const;
+  std::vector<int64_t> NodesToIndices(
+      const std::vector<NodeIndex>& nodes) const;
   // Returns the node corresponding to an index. A node may appear more than
   // once if it is used as the start or the end node of multiple vehicles.
-  NodeIndex IndexToNode(int64 index) const {
+  NodeIndex IndexToNode(int64_t index) const {
     DCHECK_GE(index, 0);
     DCHECK_LT(index, index_to_node_.size());
     return index_to_node_[index];
   }
   // Same as IndexToNode but for a given vector of indices.
   std::vector<NodeIndex> IndicesToNodes(
-      const std::vector<int64>& indices) const;
+      const std::vector<int64_t>& indices) const;
   // TODO(user) Add unit tests for NodesToIndices and IndicesToNodes.
   // TODO(user): Remove when removal of NodeIndex from RoutingModel is
   /// complete.
   int num_unique_depots() const { return num_unique_depots_; }
   std::vector<NodeIndex> GetIndexToNodeMap() const { return index_to_node_; }
-  absl::StrongVector<NodeIndex, int64> GetNodeToIndexMap() const {
+  absl::StrongVector<NodeIndex, int64_t> GetNodeToIndexMap() const {
     return node_to_index_;
   }
 
@@ -108,9 +112,9 @@ class RoutingIndexManager {
       const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
 
   std::vector<NodeIndex> index_to_node_;
-  absl::StrongVector<NodeIndex, int64> node_to_index_;
-  std::vector<int64> vehicle_to_start_;
-  std::vector<int64> vehicle_to_end_;
+  absl::StrongVector<NodeIndex, int64_t> node_to_index_;
+  std::vector<int64_t> vehicle_to_start_;
+  std::vector<int64_t> vehicle_to_end_;
   int num_nodes_;
   int num_vehicles_;
   int num_unique_depots_;

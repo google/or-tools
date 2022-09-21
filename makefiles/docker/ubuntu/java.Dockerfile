@@ -1,6 +1,6 @@
 FROM ortools/make:ubuntu_swig AS env
 RUN apt-get update -qq \
-&& apt-get install -yq default-jdk maven \
+&& DEBIAN_FRONTEND=noninteractive apt-get install -yq default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV JAVA_HOME=/usr/lib/jvm/default-java
@@ -10,7 +10,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
 RUN make java
 
 FROM build AS test

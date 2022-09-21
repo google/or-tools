@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,20 +16,21 @@ package com.google.ortools.sat;
 import com.google.ortools.sat.AllDifferentConstraintProto;
 import com.google.ortools.sat.AutomatonConstraintProto;
 import com.google.ortools.sat.BoolArgumentProto;
-import com.google.ortools.sat.CircuitConstraintProto;
 import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.CpObjectiveProto;
 import com.google.ortools.sat.CumulativeConstraintProto;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.ElementConstraintProto;
-import com.google.ortools.sat.IntegerArgumentProto;
+import com.google.ortools.sat.FloatObjectiveProto;
 import com.google.ortools.sat.InverseConstraintProto;
+import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.sat.LinearConstraintProto;
-import com.google.ortools.sat.NoOverlap2DConstraintProto;
+import com.google.ortools.sat.LinearExpressionProto;
 import com.google.ortools.sat.NoOverlapConstraintProto;
 import com.google.ortools.sat.ReservoirConstraintProto;
 import com.google.ortools.sat.TableConstraintProto;
 import com.google.ortools.util.Domain;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -39,7 +40,7 @@ import java.util.Map;
  * <p>Proposes a factory to create all modeling objects understood by the SAT solver.
  */
 public final class CpModel {
-  static class CpModelException extends Exception {
+  static class CpModelException extends RuntimeException {
     public CpModelException(String methodName, String msg) {
       // Call constructor of parent Exception
       super(methodName + ": " + msg);
@@ -59,6 +60,7 @@ public final class CpModel {
       super(methodName, msg);
     }
   }
+
   public CpModel() {
     modelBuilder = CpModelProto.newBuilder();
     constantMap = new LinkedHashMap<>();
@@ -83,34 +85,49 @@ public final class CpModel {
   }
 
   /** Creates a Boolean variable with the given name. */
-  public IntVar newBoolVar(String name) {
-    return new IntVar(modelBuilder, new Domain(0, 1), name);
+  public BoolVar newBoolVar(String name) {
+    return new BoolVar(modelBuilder, new Domain(0, 1), name);
   }
 
   /** Creates a constant variable. */
   public IntVar newConstant(long value) {
     if (constantMap.containsKey(value)) {
-      return constantMap.get(value);
+      return new IntVar(modelBuilder, constantMap.get(value));
     }
     IntVar cste = new IntVar(modelBuilder, new Domain(value), ""); // bounds and name.
-    constantMap.put(value, cste);
+    constantMap.put(value, cste.getIndex());
     return cste;
   }
 
   /** Returns the true literal. */
   public Literal trueLiteral() {
-    return newConstant(1);
+    if (constantMap.containsKey(1L)) {
+      return new BoolVar(modelBuilder, constantMap.get(1L));
+    }
+    BoolVar cste = new BoolVar(modelBuilder, new Domain(1), ""); // bounds and name.
+    constantMap.put(1L, cste.getIndex());
+    return cste;
   }
 
   /** Returns the false literal. */
   public Literal falseLiteral() {
-    return newConstant(0);
+    if (constantMap.containsKey(0L)) {
+      return new BoolVar(modelBuilder, constantMap.get(0L));
+    }
+    BoolVar cste = new BoolVar(modelBuilder, new Domain(0), ""); // bounds and name.
+    constantMap.put(0L, cste.getIndex());
+    return cste;
   }
 
   // Boolean Constraints.
 
   /** Adds {@code Or(literals) == true}. */
   public Constraint addBoolOr(Literal[] literals) {
+    return addBoolOr(Arrays.asList(literals));
+  }
+
+  /** Adds {@code Or(literals) == true}. */
+  public Constraint addBoolOr(Iterable<Literal> literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
     for (Literal lit : literals) {
@@ -119,22 +136,72 @@ public final class CpModel {
     return ct;
   }
 
+  /** Same as addBoolOr. {@code Sum(literals) >= 1}. */
+  public Constraint addAtLeastOne(Literal[] literals) {
+    return addBoolOr(Arrays.asList(literals));
+  }
+
+  /** Same as addBoolOr. {@code Sum(literals) >= 1}. */
+  public Constraint addAtLeastOne(Iterable<Literal> literals) {
+    return addBoolOr(literals);
+  }
+
+  /** Adds {@code AtMostOne(literals): Sum(literals) <= 1}. */
+  public Constraint addAtMostOne(Literal[] literals) {
+    return addAtMostOne(Arrays.asList(literals));
+  }
+
+  /** Adds {@code AtMostOne(literals): Sum(literals) <= 1}. */
+  public Constraint addAtMostOne(Iterable<Literal> literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder atMostOne = ct.getBuilder().getAtMostOneBuilder();
+    for (Literal lit : literals) {
+      atMostOne.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
+  /** Adds {@code ExactlyOne(literals): Sum(literals) == 1}. */
+  public Constraint addExactlyOne(Literal[] literals) {
+    return addExactlyOne(Arrays.asList(literals));
+  }
+
+  /** Adds {@code ExactlyOne(literals): Sum(literals) == 1}. */
+  public Constraint addExactlyOne(Iterable<Literal> literals) {
+    Constraint ct = new Constraint(modelBuilder);
+    BoolArgumentProto.Builder exactlyOne = ct.getBuilder().getExactlyOneBuilder();
+    for (Literal lit : literals) {
+      exactlyOne.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
   /** Adds {@code And(literals) == true}. */
   public Constraint addBoolAnd(Literal[] literals) {
+    return addBoolAnd(Arrays.asList(literals));
+  }
+
+  /** Adds {@code And(literals) == true}. */
+  public Constraint addBoolAnd(Iterable<Literal> literals) {
     Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolAndBuilder();
+    BoolArgumentProto.Builder boolAnd = ct.getBuilder().getBoolAndBuilder();
     for (Literal lit : literals) {
-      boolOr.addLiterals(lit.getIndex());
+      boolAnd.addLiterals(lit.getIndex());
     }
     return ct;
   }
 
   /** Adds {@code XOr(literals) == true}. */
   public Constraint addBoolXor(Literal[] literals) {
+    return addBoolXor(Arrays.asList(literals));
+  }
+
+  /** Adds {@code XOr(literals) == true}. */
+  public Constraint addBoolXor(Iterable<Literal> literals) {
     Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolXorBuilder();
+    BoolArgumentProto.Builder boolXOr = ct.getBuilder().getBoolXorBuilder();
     for (Literal lit : literals) {
-      boolOr.addLiterals(lit.getIndex());
+      boolXOr.addLiterals(lit.getIndex());
     }
     return ct;
   }
@@ -147,129 +214,134 @@ public final class CpModel {
   // Linear constraints.
 
   /** Adds {@code expr in domain}. */
-  public Constraint addLinearExpressionInDomain(LinearExpr expr, Domain domain) {
+  public Constraint addLinearExpressionInDomain(LinearArgument expr, Domain domain) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    for (int i = 0; i < expr.numElements(); ++i) {
-      lin.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
+    final LinearExpr e = expr.build();
+    for (int i = 0; i < e.numElements(); ++i) {
+      lin.addVars(e.getVariableIndex(i)).addCoeffs(e.getCoefficient(i));
     }
-    long offset = expr.getOffset();
-    if (offset != 0) {
-      lin.addVars(newConstant(1).getIndex()).addCoeffs(offset);
-    }
+    long offset = e.getOffset();
     for (long b : domain.flattenedIntervals()) {
-      lin.addDomain(b);
+      if (b == Long.MIN_VALUE || b == Long.MAX_VALUE) {
+        lin.addDomain(b);
+      } else {
+        lin.addDomain(b - offset);
+      }
     }
     return ct;
   }
 
   /** Adds {@code lb <= expr <= ub}. */
-  public Constraint addLinearConstraint(LinearExpr expr, long lb, long ub) {
+  public Constraint addLinearConstraint(LinearArgument expr, long lb, long ub) {
     return addLinearExpressionInDomain(expr, new Domain(lb, ub));
   }
 
   /** Adds {@code expr == value}. */
-  public Constraint addEquality(LinearExpr expr, long value) {
+  public Constraint addEquality(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(value));
   }
 
   /** Adds {@code left == right}. */
-  public Constraint addEquality(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(0));
-  }
-
-  /** Adds {@code left + offset == right}. */
-  public Constraint addEqualityWithOffset(LinearExpr left, LinearExpr right, long offset) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(-offset));
+  public Constraint addEquality(LinearArgument left, LinearArgument right) {
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
+    return addLinearExpressionInDomain(difference, new Domain(0));
   }
 
   /** Adds {@code expr <= value}. */
-  public Constraint addLessOrEqual(LinearExpr expr, long value) {
+  public Constraint addLessOrEqual(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(Long.MIN_VALUE, value));
   }
 
   /** Adds {@code left <= right}. */
-  public Constraint addLessOrEqual(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(Long.MIN_VALUE, 0));
+  public Constraint addLessOrEqual(LinearArgument left, LinearArgument right) {
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
+    return addLinearExpressionInDomain(difference, new Domain(Long.MIN_VALUE, 0));
   }
 
   /** Adds {@code expr < value}. */
-  public Constraint addLessThan(LinearExpr expr, long value) {
+  public Constraint addLessThan(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(Long.MIN_VALUE, value - 1));
   }
 
   /** Adds {@code left < right}. */
-  public Constraint addLessThan(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(Long.MIN_VALUE, -1));
-  }
-
-  /** Adds {@code left + offset <= right}. */
-  public Constraint addLessOrEqualWithOffset(LinearExpr left, LinearExpr right, long offset) {
-    return addLinearExpressionInDomain(
-        new Difference(left, right), new Domain(Long.MIN_VALUE, -offset));
+  public Constraint addLessThan(LinearArgument left, LinearArgument right) {
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
+    return addLinearExpressionInDomain(difference, new Domain(Long.MIN_VALUE, -1));
   }
 
   /** Adds {@code expr >= value}. */
-  public Constraint addGreaterOrEqual(LinearExpr expr, long value) {
+  public Constraint addGreaterOrEqual(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(value, Long.MAX_VALUE));
   }
 
   /** Adds {@code left >= right}. */
-  public Constraint addGreaterOrEqual(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(0, Long.MAX_VALUE));
+  public Constraint addGreaterOrEqual(LinearArgument left, LinearArgument right) {
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
+    return addLinearExpressionInDomain(difference, new Domain(0, Long.MAX_VALUE));
   }
 
   /** Adds {@code expr > value}. */
-  public Constraint addGreaterThan(LinearExpr expr, long value) {
+  public Constraint addGreaterThan(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr, new Domain(value + 1, Long.MAX_VALUE));
   }
 
   /** Adds {@code left > right}. */
-  public Constraint addGreaterThan(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), new Domain(1, Long.MAX_VALUE));
-  }
-
-  /** Adds {@code left + offset >= right}. */
-  public Constraint addGreaterOrEqualWithOffset(LinearExpr left, LinearExpr right, long offset) {
-    return addLinearExpressionInDomain(
-        new Difference(left, right), new Domain(-offset, Long.MAX_VALUE));
+  public Constraint addGreaterThan(LinearArgument left, LinearArgument right) {
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
+    return addLinearExpressionInDomain(difference, new Domain(1, Long.MAX_VALUE));
   }
 
   /** Adds {@code expr != value}. */
-  public Constraint addDifferent(LinearExpr expr, long value) {
+  public Constraint addDifferent(LinearArgument expr, long value) {
     return addLinearExpressionInDomain(expr,
         Domain.fromFlatIntervals(
             new long[] {Long.MIN_VALUE, value - 1, value + 1, Long.MAX_VALUE}));
   }
 
   /** Adds {@code left != right}. */
-  public Constraint addDifferent(IntVar left, IntVar right) {
-    return addLinearExpressionInDomain(new Difference(left, right),
-        Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
-  }
-
-  /** Adds {@code left + offset != right}. */
-  public Constraint addDifferentWithOffset(IntVar left, IntVar right, long offset) {
-    return addLinearExpressionInDomain(new Difference(left, right),
-        Domain.fromFlatIntervals(
-            new long[] {Long.MIN_VALUE, -offset - 1, -offset + 1, Long.MAX_VALUE}));
+  public Constraint addDifferent(LinearArgument left, LinearArgument right) {
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
+    return addLinearExpressionInDomain(
+        difference, Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
   }
 
   // Integer constraints.
 
   /**
-   * Adds {@code AllDifferent(variables)}.
+   * Adds {@code AllDifferent(expressions)}.
    *
-   * <p>This constraint forces all variables to have different values.
+   * <p>This constraint forces all affine expressions to have different values.
    *
-   * @param variables a list of integer variables
+   * @param expressions a list of affine integer expressions
    * @return an instance of the Constraint class
    */
-  public Constraint addAllDifferent(IntVar[] variables) {
+  public Constraint addAllDifferent(LinearArgument[] expressions) {
+    return addAllDifferent(Arrays.asList(expressions));
+  }
+
+  /**
+   * Adds {@code AllDifferent(expressions)}.
+   *
+   * @see addAllDifferent(LinearArgument[]).
+   */
+  public Constraint addAllDifferent(Iterable<? extends LinearArgument> expressions) {
     Constraint ct = new Constraint(modelBuilder);
     AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
-    for (IntVar var : variables) {
-      allDiff.addVars(var.getIndex());
+    for (LinearArgument expr : expressions) {
+      allDiff.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
@@ -292,7 +364,7 @@ public final class CpModel {
     ElementConstraintProto.Builder element =
         ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (long v : values) {
-      element.addVars(indexFromConstant(v));
+      element.addVars(newConstant(v).getIndex());
     }
     element.setTarget(target.getIndex());
     return ct;
@@ -304,138 +376,95 @@ public final class CpModel {
     ElementConstraintProto.Builder element =
         ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (long v : values) {
-      element.addVars(indexFromConstant(v));
+      element.addVars(newConstant(v).getIndex());
     }
     element.setTarget(target.getIndex());
     return ct;
   }
 
   /**
-   * Adds {@code Circuit(tails, heads, literals)}.
+   * Adds {@code Circuit()}.
    *
-   * <p>Adds a circuit constraint from a sparse list of arcs that encode the graph.
+   * <p>Adds an empty circuit constraint.
    *
    * <p>A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node 'i'
    * is not in the path, then there must be a loop arc {@code 'i -> i'} associated with a true
    * literal. Otherwise this constraint will fail.
-   *
-   * @param tails the tails of all arcs
-   * @param heads the heads of all arcs
-   * @param literals the literals that control whether an arc is selected or not
-   * @return an instance of the Constraint class
-   * @throws MismatchedArrayLengths if the arrays have different sizes
    */
-  public Constraint addCircuit(int[] tails, int[] heads, Literal[] literals)
-      throws MismatchedArrayLengths {
-    if (tails.length != heads.length) {
-      throw new MismatchedArrayLengths("CpModel.addCircuit", "tails", "heads");
-    }
-    if (tails.length != literals.length) {
-      throw new MismatchedArrayLengths("CpModel.addCircuit", "tails", "literals");
-    }
-
-    Constraint ct = new Constraint(modelBuilder);
-    CircuitConstraintProto.Builder circuit = ct.getBuilder().getCircuitBuilder();
-    for (int t : tails) {
-      circuit.addTails(t);
-    }
-    for (int h : heads) {
-      circuit.addHeads(h);
-    }
-    for (Literal lit : literals) {
-      circuit.addLiterals(lit.getIndex());
-    }
-    return ct;
+  public CircuitConstraint addCircuit() {
+    return new CircuitConstraint(modelBuilder);
   }
 
   /**
-   * Adds {@code AllowedAssignments(variables, tuplesList)}.
+   * Adds {@code MultipleCircuit()}.
+   *
+   * <p>Adds an empty multiple circuit constraint.
+   *
+   * <p>A multiple circuit is set of cycles in a subgraph of the total graph. The node index by 0
+   * must be part of all cycles of length > 1. Each node with index > 0 belongs to exactly one
+   * cycle. If such node does not belong in any cycle of length > 1, then there must be a looping
+   * arc on this node attached to a literal that will be true. Otherwise, the constraint will fail.
+   */
+  public MultipleCircuitConstraint addMultipleCircuit() {
+    return new MultipleCircuitConstraint(modelBuilder);
+  }
+
+  /**
+   * Adds {@code AllowedAssignments(variables)}.
    *
    * <p>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
    * all variables are fixed to a single value, that the corresponding list of values is equal to
    * one of the tuples of the tupleList.
    *
    * @param variables a list of variables
-   * @param tuplesList a list of admissible tuples. Each tuple must have the same length as the
-   *     variables, and the ith value of a tuple corresponds to the ith variable.
-   * @return an instance of the Constraint class
-   * @throws WrongLength if one tuple does not have the same length as the variables
+   * @return an instance of the TableConstraint class without any tuples. Tuples can be added
+   *     directly to the table constraint.
    */
-  public Constraint addAllowedAssignments(IntVar[] variables, long[][] tuplesList)
-      throws WrongLength {
-    Constraint ct = new Constraint(modelBuilder);
-    TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
-    for (IntVar var : variables) {
-      table.addVars(var.getIndex());
-    }
-    int numVars = variables.length;
-    for (int t = 0; t < tuplesList.length; ++t) {
-      if (tuplesList[t].length != numVars) {
-        throw new WrongLength("CpModel.addAllowedAssignments",
-            "tuple " + t + " does not have the same length as the variables");
-      }
-      for (int i = 0; i < tuplesList[t].length; ++i) {
-        table.addValues(tuplesList[t][i]);
-      }
-    }
-    return ct;
+  public TableConstraint addAllowedAssignments(IntVar[] variables) {
+    return addAllowedAssignments(Arrays.asList(variables));
   }
 
   /**
-   * Adds {@code AllowedAssignments(variables, tuplesList)}.
+   * Adds {@code AllowedAssignments(variables)}.
    *
-   * @see #addAllowedAssignments(IntVar[], long[][]) addAllowedAssignments
+   * @see addAllowedAssignments(IntVar[])
    */
-  public Constraint addAllowedAssignments(IntVar[] variables, int[][] tuplesList)
-      throws WrongLength {
-    Constraint ct = new Constraint(modelBuilder);
+  public TableConstraint addAllowedAssignments(Iterable<IntVar> variables) {
+    TableConstraint ct = new TableConstraint(modelBuilder);
     TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
     for (IntVar var : variables) {
       table.addVars(var.getIndex());
     }
-    int numVars = variables.length;
-    for (int t = 0; t < tuplesList.length; ++t) {
-      if (tuplesList[t].length != numVars) {
-        throw new WrongLength("CpModel.addAllowedAssignments",
-            "tuple " + t + " does not have the same length as the variables");
-      }
-      for (int i = 0; i < tuplesList[t].length; ++i) {
-        table.addValues(tuplesList[t][i]);
-      }
-    }
+    table.setNegated(false);
     return ct;
   }
 
   /**
-   * Adds {@code ForbiddenAssignments(variables, tuplesList)}.
+   * Adds {@code ForbiddenAssignments(variables)}.
    *
    * <p>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
    * impossible combinations is provided in the tuples list.
    *
    * @param variables a list of variables
-   * @param tuplesList a list of forbidden tuples. Each tuple must have the same length as the
-   *     variables, and the ith value of a tuple corresponds to the ith variable.
-   * @return an instance of the Constraint class
-   * @throws WrongLength if one tuple does not have the same length as the variables
+   * @return an instance of the TableConstraint class without any tuples. Tuples can be added
+   *     directly to the table constraint.
    */
-  public Constraint addForbiddenAssignments(IntVar[] variables, long[][] tuplesList)
-      throws WrongLength {
-    Constraint ct = addAllowedAssignments(variables, tuplesList);
-    // Reverse the flag.
-    ct.getBuilder().getTableBuilder().setNegated(true);
-    return ct;
+  public TableConstraint addForbiddenAssignments(IntVar[] variables) {
+    return addForbiddenAssignments(Arrays.asList(variables));
   }
 
   /**
-   * Adds {@code ForbiddenAssignments(variables, tuplesList)}.
+   * Adds {@code ForbiddenAssignments(variables)}.
    *
-   * @see #addForbiddenAssignments(IntVar[], long[][]) addForbiddenAssignments
+   * @see addForbiddenAssignments(IntVar[])
    */
-  public Constraint addForbiddenAssignments(IntVar[] variables, int[][] tuplesList)
-      throws WrongLength {
-    Constraint ct = addAllowedAssignments(variables, tuplesList);
-    // Reverse the flag.
-    ct.getBuilder().getTableBuilder().setNegated(true);
+  public TableConstraint addForbiddenAssignments(Iterable<IntVar> variables) {
+    TableConstraint ct = new TableConstraint(modelBuilder);
+    TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
+    for (IntVar var : variables) {
+      table.addVars(var.getIndex());
+    }
+    table.setNegated(true);
     return ct;
   }
 
@@ -443,7 +472,8 @@ public final class CpModel {
    * Adds an automaton constraint.
    *
    * <p>An automaton constraint takes a list of variables (of size n), an initial state, a set of
-   * final states, and a set of transitions. A transition is a triplet ('tail', 'transition',
+   * final states, and a set of transitions that will be added incrementally directly on the
+   * returned AutomatonConstraint instance. A transition is a triplet ('tail', 'transition',
    * 'head'), where 'tail' and 'head' are states, and 'transition' is the label of an arc from
    * 'head' to 'tail', corresponding to the value of one variable in the list of variables.
    *
@@ -465,14 +495,11 @@ public final class CpModel {
    *     of the arcs traversed by the automaton
    * @param startingState the initial state of the automaton
    * @param finalStates a non empty list of admissible final states
-   * @param transitions a list of transition for the automaton, in the following format
-   *     (currentState, variableValue, nextState)
    * @return an instance of the Constraint class
-   * @throws WrongLength if one transition does not have a length of 3
    */
-  public Constraint addAutomaton(IntVar[] transitionVariables, long startingState,
-      long[] finalStates, long[][] transitions) throws WrongLength {
-    Constraint ct = new Constraint(modelBuilder);
+  public AutomatonConstraint addAutomaton(
+      IntVar[] transitionVariables, long startingState, long[] finalStates) {
+    AutomatonConstraint ct = new AutomatonConstraint(modelBuilder);
     AutomatonConstraintProto.Builder automaton = ct.getBuilder().getAutomatonBuilder();
     for (IntVar var : transitionVariables) {
       automaton.addVars(var.getIndex());
@@ -480,12 +507,6 @@ public final class CpModel {
     automaton.setStartingState(startingState);
     for (long c : finalStates) {
       automaton.addFinalStates(c);
-    }
-    for (long[] t : transitions) {
-      if (t.length != 3) {
-        throw new WrongLength("CpModel.addAutomaton", "transition does not have length 3");
-      }
-      automaton.addTransitionTail(t[0]).addTransitionLabel(t[1]).addTransitionHead(t[2]);
     }
     return ct;
   }
@@ -501,8 +522,7 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if variables and inverseVariables have different length
    */
-  public Constraint addInverse(IntVar[] variables, IntVar[] inverseVariables)
-      throws MismatchedArrayLengths {
+  public Constraint addInverse(IntVar[] variables, IntVar[] inverseVariables) {
     if (variables.length != inverseVariables.length) {
       throw new MismatchedArrayLengths("CpModel.addInverse", "variables", "inverseVariables");
     }
@@ -518,127 +538,39 @@ public final class CpModel {
   }
 
   /**
-   * Adds {@code Reservoir(times, demands, minLevel, maxLevel)}.
+   * Adds a reservoir constraint with optional refill/emptying events.
    *
-   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any times, it
-   * must be between minLevel and maxLevel. If the variable {@code times[i]} is assigned a value t,
-   * and if {@code actives[i]} is true, then the current level changes by {@code demands[i]} (which
-   * is constant) at the time t.
+   * <p>Maintain a reservoir level within bounds. The water level starts at 0, and at any time, it
+   * must be within [min_level, max_level].
    *
-   * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
-   * Therefore, {@code forall t : minLevel <= sum(demands[i] if times[i] <= t) <= maxLevel}.
+   * <p>Given an event (time, levelChange, active), if active is true, and if time is assigned a
+   * value t, then the level of the reservoir changes by levelChange (which is constant) at time t.
+   * Therefore, at any time t:
    *
-   * @param times a list of integer variables which specify the time of the filling or emptying the
-   *     reservoir
-   * @param demands a list of integer values that specifies the amount of the emptying or feeling
+   * <p>sum(levelChanges[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+   *
+   * <p>Note that min level must be <= 0, and the max level must be >= 0. Please use fixed
+   * level_changes to simulate an initial state.
+   *
    * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
    *     level. minLevel must me <= 0.
    * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
    *     level. maxLevel must be >= 0.
-   * @return an instance of the Constraint class
-   * @throws MismatchedArrayLengths if times and demands have different length
+   * @return an instance of the ReservoirConstraint class
    * @throws IllegalArgumentException if minLevel > 0
    * @throws IllegalArgumentException if maxLevel < 0
    */
-  public Constraint addReservoirConstraint(
-      IntVar[] times, long[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
-    if (times.length != demands.length) {
-      throw new MismatchedArrayLengths("CpModel.addReservoirConstraint", "times", "demands");
-    }
+  public ReservoirConstraint addReservoirConstraint(long minLevel, long maxLevel) {
     if (minLevel > 0) {
       throw new IllegalArgumentException("CpModel.addReservoirConstraint: minLevel must be <= 0");
     }
     if (maxLevel < 0) {
       throw new IllegalArgumentException("CpModel.addReservoirConstraint: maxLevel must be >= 0");
     }
-    Constraint ct = new Constraint(modelBuilder);
+    ReservoirConstraint ct = new ReservoirConstraint(this);
     ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
-    for (IntVar var : times) {
-      reservoir.addTimes(var.getIndex());
-    }
-    for (long d : demands) {
-      reservoir.addDemands(d);
-    }
     reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
     return ct;
-  }
-
-  /**
-   * Adds {@code Reservoir(times, demands, minLevel, maxLevel)}.
-   *
-   * @see #addReservoirConstraint(IntVar[], long[], long, long) Reservoir
-   */
-  public Constraint addReservoirConstraint(
-      IntVar[] times, int[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
-    return addReservoirConstraint(times, toLongArray(demands), minLevel, maxLevel);
-  }
-
-  /**
-   * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
-   *
-   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any time, it
-   * must be between minLevel and maxLevel. If the variable {@code times[i]} is assigned a value t,
-   * then the current level changes by {@code demands[i]} (which is constant) at the time t.
-   *
-   * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
-   * Therefore, {@code forall t : minLevel <= sum(demands[i] * actives[i] if times[i] <= t) <=
-   * maxLevel}.
-   *
-   * @param times a list of integer variables which specify the time of the filling or emptying the
-   *     reservoir
-   * @param demands a list of integer values that specifies the amount of the emptying or feeling
-   * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
-   *     level. minLevel must me <= 0.
-   * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
-   *     level. maxLevel must be >= 0.
-   * @return an instance of the Constraint class
-   * @throws MismatchedArrayLengths if times, demands, or actives have different length
-   * @throws IllegalArgumentException if minLevel > 0
-   * @throws IllegalArgumentException if maxLevel < 0
-   */
-  public Constraint addReservoirConstraintWithActive(IntVar[] times, long[] demands,
-      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
-    if (times.length != demands.length) {
-      throw new MismatchedArrayLengths(
-          "CpModel.addReservoirConstraintWithActive", "times", "demands");
-    }
-    if (times.length != actives.length) {
-      throw new MismatchedArrayLengths(
-          "CpModel.addReservoirConstraintWithActive", "times", "actives");
-    }
-    if (minLevel > 0) {
-      throw new IllegalArgumentException(
-          "CpModel.addReservoirConstraintWithActive: minLevel must be <= 0");
-    }
-    if (maxLevel < 0) {
-      throw new IllegalArgumentException(
-          "CpModel.addReservoirConstraintWithActive: maxLevel must be >= 0");
-    }
-
-    Constraint ct = new Constraint(modelBuilder);
-    ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
-    for (IntVar var : times) {
-      reservoir.addTimes(var.getIndex());
-    }
-    for (long d : demands) {
-      reservoir.addDemands(d);
-    }
-    for (IntVar var : actives) {
-      reservoir.addActives(var.getIndex());
-    }
-    reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
-    return ct;
-  }
-
-  /**
-   * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
-   *
-   * @see #addReservoirConstraintWithActive(IntVar[], long[], IntVar[], long, long) Reservoir
-   */
-  public Constraint addReservoirConstraintWithActive(IntVar[] times, int[] demands,
-      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
-    return addReservoirConstraintWithActive(
-        times, toLongArray(demands), actives, minLevel, maxLevel);
   }
 
   /** Adds {@code var == i + offset <=> booleans[i] == true for all i in [0, booleans.length)}. */
@@ -650,140 +582,173 @@ public final class CpModel {
   }
 
   /** Adds {@code target == Min(vars)}. */
-  public Constraint addMinEquality(IntVar target, IntVar[] vars) {
+  public Constraint addMinEquality(LinearArgument target, LinearArgument[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMin =
-        ct.getBuilder().getIntMinBuilder().setTarget(target.getIndex());
-    for (IntVar var : vars) {
-      intMin.addVars(var.getIndex());
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/true));
+    for (LinearArgument expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/true));
+    }
+    return ct;
+  }
+
+  /** Adds {@code target == Min(exprs)}. */
+  public Constraint addMinEquality(
+      LinearArgument target, Iterable<? extends LinearArgument> exprs) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/true));
+    for (LinearArgument expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/true));
     }
     return ct;
   }
 
   /** Adds {@code target == Max(vars)}. */
-  public Constraint addMaxEquality(IntVar target, IntVar[] vars) {
+  public Constraint addMaxEquality(LinearArgument target, LinearArgument[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMax =
-        ct.getBuilder().getIntMaxBuilder().setTarget(target.getIndex());
-    for (IntVar var : vars) {
-      intMax.addVars(var.getIndex());
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    for (LinearArgument expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
+    }
+    return ct;
+  }
+
+  /** Adds {@code target == Max(exprs)}. */
+  public Constraint addMaxEquality(
+      LinearArgument target, Iterable<? extends LinearArgument> exprs) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    for (LinearArgument expr : exprs) {
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
 
   /** Adds {@code target == num / denom}, rounded towards 0. */
-  public Constraint addDivisionEquality(IntVar target, IntVar num, IntVar denom) {
+  public Constraint addDivisionEquality(
+      LinearArgument target, LinearArgument num, LinearArgument denom) {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntDivBuilder()
-        .setTarget(target.getIndex())
-        .addVars(num.getIndex())
-        .addVars(denom.getIndex());
+        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(num, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(denom, /*negate=*/false));
     return ct;
   }
 
-  /** Adds {@code target == Abs(var)}. */
-  public Constraint addAbsEquality(IntVar target, IntVar var) {
+  /** Adds {@code target == Abs(expr)}. */
+  public Constraint addAbsEquality(LinearArgument target, LinearArgument expr) {
     Constraint ct = new Constraint(modelBuilder);
-    ct.getBuilder()
-        .getIntMaxBuilder()
-        .setTarget(target.getIndex())
-        .addVars(var.getIndex())
-        .addVars(-var.getIndex() - 1);
-    return ct;
-  }
-
-  /** Adds {@code target == var % mod}. */
-  public Constraint addModuloEquality(IntVar target, IntVar var, IntVar mod) {
-    Constraint ct = new Constraint(modelBuilder);
-    ct.getBuilder()
-        .getIntModBuilder()
-        .setTarget(target.getIndex())
-        .addVars(var.getIndex())
-        .addVars(mod.getIndex());
+    LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
+    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/true));
     return ct;
   }
 
   /** Adds {@code target == var % mod}. */
-  public Constraint addModuloEquality(IntVar target, IntVar var, long mod) {
+  public Constraint addModuloEquality(
+      LinearArgument target, LinearArgument var, LinearArgument mod) {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntModBuilder()
-        .setTarget(target.getIndex())
-        .addVars(var.getIndex())
-        .addVars(indexFromConstant(mod));
+        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(var, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(mod, /*negate=*/false));
     return ct;
   }
 
-  /** Adds {@code target == Product(vars)}. */
-  public Constraint addProductEquality(IntVar target, IntVar[] vars) {
+  /** Adds {@code target == var % mod}. */
+  public Constraint addModuloEquality(LinearArgument target, LinearArgument var, long mod) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intProd =
-        ct.getBuilder().getIntProdBuilder().setTarget(target.getIndex());
-    for (IntVar var : vars) {
-      intProd.addVars(var.getIndex());
+    ct.getBuilder()
+        .getIntModBuilder()
+        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(var, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLong(mod));
+    return ct;
+  }
+
+  /** Adds {@code target == Product(exprs)}. */
+  public Constraint addMultiplicationEquality(LinearArgument target, LinearArgument[] exprs) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
+    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    for (LinearArgument expr : exprs) {
+      intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
+    return ct;
+  }
+
+  /** Adds {@code target == left * right}. */
+  public Constraint addMultiplicationEquality(
+      LinearArgument target, LinearArgument left, LinearArgument right) {
+    Constraint ct = new Constraint(modelBuilder);
+    LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
+    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(left, /*negate=*/false));
+    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(right, /*negate=*/false));
     return ct;
   }
 
   // Scheduling support.
 
   /**
-   * Creates an interval variable from start, size, and end.
+   * Creates an interval variable from three affine expressions start, size, and end.
    *
    * <p>An interval variable is a constraint, that is itself used in other constraints like
    * NoOverlap.
    *
    * <p>Internally, it ensures that {@code start + size == end}.
    *
-   * @param start the start of the interval
-   * @param size the size of the interval
-   * @param end the end of the interval
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the size of the interval. It needs to be an affine or constant expression.
+   * @param end the end of the interval. It needs to be an affine or constant expression.
    * @param name the name of the interval variable
    * @return An IntervalVar object
    */
-  public IntervalVar newIntervalVar(IntVar start, IntVar size, IntVar end, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), end.getIndex(), name);
+  public IntervalVar newIntervalVar(
+      LinearArgument start, LinearArgument size, LinearArgument end, String name) {
+    addEquality(LinearExpr.newBuilder().add(start).add(size), end);
+    return new IntervalVar(modelBuilder,
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(size, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(end, /*negate=*/false), name);
   }
 
   /**
-   * Creates an interval variable with a fixed end.
+   * Creates an interval variable from an affine expression start, and a fixed size.
    *
-   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
-   */
-  public IntervalVar newIntervalVar(IntVar start, IntVar size, long end, String name) {
-    return new IntervalVar(
-        modelBuilder, start.getIndex(), size.getIndex(), indexFromConstant(end), name);
-  }
-
-  /**
-   * Creates an interval variable with a fixed size.
+   * <p>An interval variable is a constraint, that is itself used in other constraints like
+   * NoOverlap.
    *
-   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the fixed size of the interval.
+   * @param name the name of the interval variable.
+   * @return An IntervalVar object
    */
-  public IntervalVar newIntervalVar(IntVar start, long size, IntVar end, String name) {
-    return new IntervalVar(
-        modelBuilder, start.getIndex(), indexFromConstant(size), end.getIndex(), name);
-  }
-
-  /**
-   * Creates an interval variable with a fixed start.
-   *
-   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
-   */
-  public IntervalVar newIntervalVar(long start, IntVar size, IntVar end, String name) {
-    return new IntervalVar(
-        modelBuilder, indexFromConstant(start), size.getIndex(), end.getIndex(), name);
+  public IntervalVar newFixedSizeIntervalVar(LinearArgument start, long size, String name) {
+    return new IntervalVar(modelBuilder,
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLinearArgument(
+            LinearExpr.newBuilder().add(start).add(size), /*negate=*/false),
+        name);
   }
 
   /** Creates a fixed interval from its start and its size. */
   public IntervalVar newFixedInterval(long start, long size, String name) {
-    return new IntervalVar(modelBuilder, indexFromConstant(start), indexFromConstant(size),
-        indexFromConstant(start + size), name);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLong(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLong(start + size), name);
   }
 
   /**
-   * Creates an optional interval variable from start, size, end, and isPresent.
+   * Creates an optional interval variable from three affine expressions start, size, end, and
+   * isPresent.
    *
    * <p>An optional interval variable is a constraint, that is itself used in other constraints like
    * NoOverlap. This constraint is protected by an {@code isPresent} literal that indicates if it is
@@ -791,58 +756,53 @@ public final class CpModel {
    *
    * <p>Internally, it ensures that {@code isPresent => start + size == end}.
    *
-   * @param start the start of the interval. It can be an integer value, or an integer variable.
-   * @param size the size of the interval. It can be an integer value, or an integer variable.
-   * @param end the end of the interval. It can be an integer value, or an integer variable.
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the size of the interval. It needs to be an affine or constant expression.
+   * @param end the end of the interval. It needs to be an affine or constant expression.
    * @param isPresent a literal that indicates if the interval is active or not. A inactive interval
    *     is simply ignored by all constraints.
    * @param name The name of the interval variable
    * @return an IntervalVar object
    */
-  public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), end.getIndex(),
+  public IntervalVar newOptionalIntervalVar(LinearArgument start, LinearArgument size,
+      LinearArgument end, Literal isPresent, String name) {
+    addEquality(LinearExpr.newBuilder().add(start).add(size), end).onlyEnforceIf(isPresent);
+    return new IntervalVar(modelBuilder,
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(size, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(end, /*negate=*/false),
         isPresent.getIndex(), name);
   }
 
   /**
-   * Creates an optional interval with a fixed end.
+   * Creates an optional interval variable from an affine expression start, and a fixed size.
    *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
+   * <p>An interval variable is a constraint, that is itself used in other constraints like
+   * NoOverlap.
+   *
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the fixed size of the interval.
+   * @param isPresent a literal that indicates if the interval is active or not. A inactive interval
+   *     is simply ignored by all constraints.
+   * @param name the name of the interval variable.
+   * @return An IntervalVar object
    */
-  public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar size, long end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), indexFromConstant(end),
+  public IntervalVar newOptionalFixedSizeIntervalVar(
+      LinearArgument start, long size, Literal isPresent, String name) {
+    return new IntervalVar(modelBuilder,
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLinearArgument(
+            LinearExpr.newBuilder().add(start).add(size), /*negate=*/false),
         isPresent.getIndex(), name);
   }
 
-  /**
-   * Creates an optional interval with a fixed size.
-   *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
-   */
-  public IntervalVar newOptionalIntervalVar(
-      IntVar start, long size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), indexFromConstant(size), end.getIndex(),
-        isPresent.getIndex(), name);
-  }
-
-  /** Creates an optional interval with a fixed start. */
-  public IntervalVar newOptionalIntervalVar(
-      long start, IntVar size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, indexFromConstant(start), size.getIndex(), end.getIndex(),
-        isPresent.getIndex(), name);
-  }
-
-  /**
-   * Creates an optional fixed interval from start and size.
-   *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
-   */
+  /** Creates an optional fixed interval from start and size, and an isPresent literal. */
   public IntervalVar newOptionalFixedInterval(
       long start, long size, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, indexFromConstant(start), indexFromConstant(size),
-        indexFromConstant(start + size), isPresent.getIndex(), name);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLong(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLong(start + size), isPresent.getIndex(), name);
   }
 
   /**
@@ -854,6 +814,15 @@ public final class CpModel {
    * @return an instance of the Constraint class
    */
   public Constraint addNoOverlap(IntervalVar[] intervalVars) {
+    return addNoOverlap(Arrays.asList(intervalVars));
+  }
+
+  /**
+   * Adds {@code NoOverlap(intervalVars)}.
+   *
+   * @see addNoOverlap(IntervalVar[]).
+   */
+  public Constraint addNoOverlap(Iterable<IntervalVar> intervalVars) {
     Constraint ct = new Constraint(modelBuilder);
     NoOverlapConstraintProto.Builder noOverlap = ct.getBuilder().getNoOverlapBuilder();
     for (IntervalVar var : intervalVars) {
@@ -869,120 +838,45 @@ public final class CpModel {
    * rectangle is aligned with the X and Y axis, and is defined by two intervals which represent its
    * projection onto the X and Y axis.
    *
-   * @param xIntervals the X coordinates of the rectangles
-   * @param yIntervals the Y coordinates of the rectangles
-   * @return an instance of the Constraint class
+   * <p>Furthermore, one box is optional if at least one of the x or y interval is optional.
+   *
+   * @return an instance of the NoOverlap2dConstraint class. This class allows adding rectangles
+   *     incrementally.
    */
-  public Constraint addNoOverlap2D(IntervalVar[] xIntervals, IntervalVar[] yIntervals) {
-    Constraint ct = new Constraint(modelBuilder);
-    NoOverlap2DConstraintProto.Builder noOverlap2d = ct.getBuilder().getNoOverlap2DBuilder();
-    for (IntervalVar x : xIntervals) {
-      noOverlap2d.addXIntervals(x.getIndex());
-    }
-    for (IntervalVar y : yIntervals) {
-      noOverlap2d.addYIntervals(y.getIndex());
-    }
-    return ct;
+  public NoOverlap2dConstraint addNoOverlap2D() {
+    return new NoOverlap2dConstraint(modelBuilder);
   }
 
   /**
-   * Adds {@code Cumulative(intervals, demands, capacity)}.
+   * Adds {@code Cumulative(capacity)}.
    *
    * <p>This constraint enforces that:
    *
    * <p>{@code forall t: sum(demands[i] if (start(intervals[t]) <= t < end(intervals[t])) and (t is
    * present)) <= capacity}.
    *
-   * @param intervals the list of intervals
-   * @param demands the list of demands for each interval. Each demand must be a positive integer
-   *     variable.
-   * @param capacity the maximum capacity of the cumulative constraint. It must be a positive
-   *     integer variable.
-   * @return an instance of the Constraint class
+   * @param capacity the maximum capacity of the cumulative constraint. It must be a positive affine
+   *     expression.
+   * @return an instance of the CumulativeConstraint class. this class allows adding (interval,
+   *     demand) pairs incrementally.
    */
-  public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, IntVar capacity) {
-    Constraint ct = new Constraint(modelBuilder);
+  public CumulativeConstraint addCumulative(LinearArgument capacity) {
+    CumulativeConstraint ct = new CumulativeConstraint(this);
     CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
-    for (IntervalVar interval : intervals) {
-      cumul.addIntervals(interval.getIndex());
-    }
-    for (IntVar var : demands) {
-      cumul.addDemands(var.getIndex());
-    }
-    cumul.setCapacity(capacity.getIndex());
+    cumul.setCapacity(getLinearExpressionProtoBuilderFromLinearArgument(capacity, false));
     return ct;
   }
 
   /**
-   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
+   * Adds {@code Cumulative(capacity)}.
    *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
+   * @see #addCumulative(LinearArgument capacity)
    */
-  public Constraint addCumulative(IntervalVar[] intervals, long[] demands, IntVar capacity) {
-    Constraint ct = new Constraint(modelBuilder);
+  public CumulativeConstraint addCumulative(long capacity) {
+    CumulativeConstraint ct = new CumulativeConstraint(this);
     CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
-    for (IntervalVar interval : intervals) {
-      cumul.addIntervals(interval.getIndex());
-    }
-    for (long d : demands) {
-      cumul.addDemands(indexFromConstant(d));
-    }
-    cumul.setCapacity(capacity.getIndex());
+    cumul.setCapacity(getLinearExpressionProtoBuilderFromLong(capacity));
     return ct;
-  }
-
-  /**
-   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
-   *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
-   */
-  public Constraint addCumulative(IntervalVar[] intervals, int[] demands, IntVar capacity) {
-    return addCumulative(intervals, toLongArray(demands), capacity);
-  }
-
-  /**
-   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed capacity.
-   *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
-   */
-  public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, long capacity) {
-    Constraint ct = new Constraint(modelBuilder);
-    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
-    for (IntervalVar interval : intervals) {
-      cumul.addIntervals(interval.getIndex());
-    }
-    for (IntVar var : demands) {
-      cumul.addDemands(var.getIndex());
-    }
-    cumul.setCapacity(indexFromConstant(capacity));
-    return ct;
-  }
-
-  /**
-   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands and fixed capacity.
-   *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
-   */
-  public Constraint addCumulative(IntervalVar[] intervals, long[] demands, long capacity) {
-    Constraint ct = new Constraint(modelBuilder);
-    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
-    for (IntervalVar interval : intervals) {
-      cumul.addIntervals(interval.getIndex());
-    }
-    for (long d : demands) {
-      cumul.addDemands(indexFromConstant(d));
-    }
-    cumul.setCapacity(indexFromConstant(capacity));
-    return ct;
-  }
-
-  /**
-   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands and fixed capacity.
-   *
-   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
-   */
-  public Constraint addCumulative(IntervalVar[] intervals, int[] demands, long capacity) {
-    return addCumulative(intervals, toLongArray(demands), capacity);
   }
 
   /** Adds hinting to a variable */
@@ -1016,22 +910,57 @@ public final class CpModel {
   // Objective.
 
   /** Adds a minimization objective of a linear expression. */
-  public void minimize(LinearExpr expr) {
+  public void minimize(LinearArgument expr) {
+    clearObjective();
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    for (int i = 0; i < expr.numElements(); ++i) {
-      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
+    final LinearExpr e = expr.build();
+    for (int i = 0; i < e.numElements(); ++i) {
+      obj.addVars(e.getVariableIndex(i)).addCoeffs(e.getCoefficient(i));
     }
-    obj.setOffset(expr.getOffset());
+    obj.setOffset((double) e.getOffset());
+  }
+
+  /** Adds a minimization objective of a linear expression. */
+  public void minimize(DoubleLinearExpr expr) {
+    clearObjective();
+    FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
+    for (int i = 0; i < expr.numElements(); ++i) {
+      obj.addVars(expr.getVariableIndex(i)).addCoeffs(expr.getCoefficient(i));
+    }
+    obj.setOffset(expr.getOffset()).setMaximize(false);
   }
 
   /** Adds a maximization objective of a linear expression. */
-  public void maximize(LinearExpr expr) {
+  public void maximize(LinearArgument expr) {
+    clearObjective();
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    for (int i = 0; i < expr.numElements(); ++i) {
-      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(-expr.getCoefficient(i));
+    final LinearExpr e = expr.build();
+    for (int i = 0; i < e.numElements(); ++i) {
+      obj.addVars(e.getVariableIndex(i)).addCoeffs(-e.getCoefficient(i));
     }
-    obj.setOffset(-expr.getOffset());
+    obj.setOffset((double) -e.getOffset());
     obj.setScalingFactor(-1.0);
+  }
+
+  /** Adds a maximization objective of a linear expression. */
+  public void maximize(DoubleLinearExpr expr) {
+    clearObjective();
+    FloatObjectiveProto.Builder obj = modelBuilder.getFloatingPointObjectiveBuilder();
+    for (int i = 0; i < expr.numElements(); ++i) {
+      obj.addVars(expr.getVariableIndex(i)).addCoeffs(expr.getCoefficient(i));
+    }
+    obj.setOffset(expr.getOffset()).setMaximize(true);
+  }
+
+  /** Clears the objective. */
+  public void clearObjective() {
+    modelBuilder.clearObjective();
+    modelBuilder.clearFloatingPointObjective();
+  }
+
+  /** Checks if the model contains an objective. */
+  public boolean hasObjective() {
+    return modelBuilder.hasObjective() || modelBuilder.hasFloatingPointObjective();
   }
 
   // DecisionStrategy
@@ -1049,33 +978,45 @@ public final class CpModel {
 
   /** Returns some statistics on model as a string. */
   public String modelStats() {
-    return SatHelper.modelStats(model());
+    return CpSatHelper.modelStats(model());
   }
 
   /** Returns a non empty string explaining the issue if the model is invalid. */
   public String validate() {
-    return SatHelper.validateModel(model());
+    return CpSatHelper.validateModel(model());
   }
 
-  /** Write the model as a ascii protocol buffer to 'file'. */
+  /**
+   * Write the model as a protocol buffer to 'file'.
+   *
+   * @param file file to write the model to. If the filename ends with 'txt', the
+   *    model will be written as a text file, otherwise, the binary format will be used.
+   *
+   * @return true if the model was correctly written.
+   */
   public Boolean exportToFile(String file) {
-    return SatHelper.writeModelToFile(model(), file);
+    return CpSatHelper.writeModelToFile(model(), file);
   }
 
   // Helpers
-
-  long[] toLongArray(int[] values) {
-    long[] result = new long[values.length];
-    for (int i = 0; i < values.length; ++i) {
-      result[i] = values[i];
+  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLinearArgument(
+      LinearArgument arg, boolean negate) {
+    LinearExpressionProto.Builder builder = LinearExpressionProto.newBuilder();
+    final LinearExpr expr = arg.build();
+    final int numVariables = expr.numElements();
+    final long mult = negate ? -1 : 1;
+    for (int i = 0; i < numVariables; ++i) {
+      builder.addVars(expr.getVariableIndex(i));
+      builder.addCoeffs(expr.getCoefficient(i) * mult);
     }
-    return result;
+    builder.setOffset(expr.getOffset() * mult);
+    return builder;
   }
 
-  int indexFromConstant(long constant) {
-    int index = modelBuilder.getVariablesCount();
-    modelBuilder.addVariablesBuilder().addDomain(constant).addDomain(constant);
-    return index;
+  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLong(long value) {
+    LinearExpressionProto.Builder builder = LinearExpressionProto.newBuilder();
+    builder.setOffset(value);
+    return builder;
   }
 
   // Getters.
@@ -1094,5 +1035,5 @@ public final class CpModel {
   }
 
   private final CpModelProto.Builder modelBuilder;
-  private final Map<Long, IntVar> constantMap;
+  private final Map<Long, Integer> constantMap;
 }

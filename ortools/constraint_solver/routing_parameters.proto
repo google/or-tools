@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,6 +24,7 @@ option csharp_namespace = "Google.OrTools.ConstraintSolver";
 import "google/protobuf/duration.proto";
 import "ortools/constraint_solver/routing_enums.proto";
 import "ortools/constraint_solver/solver_parameters.proto";
+import "ortools/sat/sat_parameters.proto";
 import "ortools/util/optional_boolean.proto";
 
 package operations_research;
@@ -34,7 +35,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 46
+// Next ID: 51
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -96,9 +97,21 @@ message RoutingSearchParameters {
   double cheapest_insertion_ls_operator_neighbors_ratio = 31;
   int32 cheapest_insertion_ls_operator_min_neighbors = 45;
 
+  // Whether or not to only consider closest neighbors when initializing the
+  // assignment for the first solution.
+  bool
+      cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization =
+          46;
   // Whether or not to consider entries making the nodes/pairs unperformed in
   // the GlobalCheapestInsertion heuristic.
   bool cheapest_insertion_add_unperformed_entries = 40;
+
+  // Whether or not to insert pickup/delivery pairs greedily in the
+  // LocalCheapestInsertion heuristic. If true, the insertion position of a
+  // pickup is evaluated independently of its delivery. If false, insertion
+  // positions of both a pickup and its delivery are evaluated together.
+  bool local_cheapest_insertion_evaluate_pickup_delivery_costs_independently =
+      49;
 
   // If true use minimum matching instead of minimal matching in the
   // Christofides algorithm.
@@ -155,7 +168,7 @@ message RoutingSearchParameters {
     // 1 -> A -> [E] -> B -> C -> D -> 2
     // 1 -> A -> B -> [E] -> C -> D -> 2
     // 1 -> A -> B -> C -> [E] -> D -> 2
-    // This operator is extremelly useful to move chains of nodes which are
+    // This operator is extremely useful to move chains of nodes which are
     // located at the same place (for instance nodes part of a same stop).
     OptionalBoolean use_relocate_neighbors = 3;
     // Relocate neighborhood that moves subpaths all pickup and delivery
@@ -216,7 +229,7 @@ message RoutingSearchParameters {
     //   1 -> 2      3 -> A -> D -> [B -> C] -> 4
     OptionalBoolean use_relocate_expensive_chain = 23;
     // --- Intra-route operators ---
-    // Operator which reverves a sub-chain of a path. It is called TwoOpt
+    // Operator which reverses a subchain of a path. It is called TwoOpt
     // because it breaks two arcs on the path; resulting paths are called
     // two-optimal.
     // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
@@ -320,7 +333,7 @@ message RoutingSearchParameters {
     // Note that the two sub-chains can be part of the same path; they even may
     // overlap.
     OptionalBoolean use_path_lns = 16;
-    // Operator which relaxes one entire path and all unactive nodes.
+    // Operator which relaxes one entire path and all inactive nodes.
     OptionalBoolean use_full_path_lns = 17;
     // TSP-base LNS.
     // Randomly merges consecutive nodes until n "meta"-nodes remain and solves
@@ -331,7 +344,7 @@ message RoutingSearchParameters {
     OptionalBoolean use_tsp_lns = 18;
     // Operator which relaxes all inactive nodes and one sub-chain of six
     // consecutive arcs. That way the path can be improved by inserting inactive
-    // nodes or swaping arcs.
+    // nodes or swapping arcs.
     OptionalBoolean use_inactive_lns = 19;
     // --- LNS-like large neighborhood search operators using heuristics ---
     // Operator which makes all nodes on a route unperformed, and reinserts them
@@ -418,15 +431,26 @@ message RoutingSearchParameters {
   // remaining and will use the CP solution as a hint for the CP-SAT search.
   // As of 5/2019, only TSP models can be solved.
   OptionalBoolean use_cp_sat = 27;
+  // If true, use the CP-SAT solver to find a solution on generalized routing
+  // model. If use_cp is also true, the CP-SAT solver will be run after the CP
+  // solver if there is time remaining and will use the CP solution as a hint
+  // for the CP-SAT search.
+  OptionalBoolean use_generalized_cp_sat = 47;
+  // If use_cp_sat or use_generalized_cp_sat is true, contains the SAT algorithm
+  // parameters which will be used.
+  sat.SatParameters sat_parameters = 48;
   // Underlying solver to use in dimension scheduling, respectively for
   // continuous and mixed models.
   enum SchedulingSolver {
-    UNSET = 0;
-    GLOP = 1;
-    CP_SAT = 2;
+    SCHEDULING_UNSET = 0;
+    SCHEDULING_GLOP = 1;
+    SCHEDULING_CP_SAT = 2;
   }
   SchedulingSolver continuous_scheduling_solver = 33;
   SchedulingSolver mixed_integer_scheduling_solver = 34;
+  // Setting this to true completely disables the LP and MIP scheduling in the
+  // solver. This overrides the 2 SchedulingSolver options above.
+  optional bool disable_scheduling_beware_this_may_degrade_performance = 50;
   // Minimum step by which the solution must be improved in local search. 0
   // means "unspecified". If this value is fractional, it will get rounded to
   // the nearest integer.

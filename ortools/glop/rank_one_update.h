@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 #ifndef OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_
 #define OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_
+
+#include <vector>
 
 #include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
@@ -157,6 +159,7 @@ class RankOneUpdateFactorization {
     for (int i = elementary_matrices_.size() - 1; i >= 0; --i) {
       elementary_matrices_[i].LeftSolve(y);
     }
+    dtime_ += DeterministicTimeForFpOperations(num_entries_.value());
   }
 
   // Same as LeftSolve(), but if the given non_zeros are not empty, then all
@@ -182,6 +185,7 @@ class RankOneUpdateFactorization {
     }
     y->ClearSparseMask();
     y->ClearNonZerosIfTooDense(hypersparse_ratio_);
+    dtime_ += DeterministicTimeForFpOperations(num_entries_.value());
   }
 
   // Right-solves all systems from left to right, i.e. T_i.d_{i+1} = d_i
@@ -191,6 +195,7 @@ class RankOneUpdateFactorization {
     for (int i = 0; i < end; ++i) {
       elementary_matrices_[i].RightSolve(d);
     }
+    dtime_ += DeterministicTimeForFpOperations(num_entries_.value());
   }
 
   // Same as RightSolve(), but if the given non_zeros are not empty, then all
@@ -217,11 +222,23 @@ class RankOneUpdateFactorization {
     }
     d->ClearSparseMask();
     d->ClearNonZerosIfTooDense(hypersparse_ratio_);
+    dtime_ += DeterministicTimeForFpOperations(num_entries_.value());
   }
 
   EntryIndex num_entries() const { return num_entries_; }
 
+  // Deterministic time spent in all the solves function since last reset.
+  //
+  // TODO(user): This is quite precise. However we overcount a bit, because in
+  // each elementary solves, if the scalar product involved is zero, we skip
+  // some of the operations counted here. Is it worth spending a bit more time
+  // to be more precise here?
+  double DeterministicTimeSinceLastReset() const { return dtime_; }
+  void ResetDeterministicTime() { dtime_ = 0.0; }
+
  private:
+  mutable double dtime_ = 0.0;
+
   double hypersparse_ratio_;
   EntryIndex num_entries_;
   std::vector<RankOneUpdateElementaryMatrix> elementary_matrices_;

@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file implements piecewise linear functions over int64. It is built
+// This file implements piecewise linear functions over int64_t. It is built
 // by inserting segments.
 //
 // This class maintains a minimal internal representation and checks for
@@ -24,6 +24,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ortools/base/basictypes.h"
@@ -37,38 +38,38 @@ namespace operations_research {
 // It is defined for x values between start_x and end_x.
 class PiecewiseSegment {
  public:
-  PiecewiseSegment(int64 point_x, int64 point_y, int64 slope,
-                   int64 other_point_x);
+  PiecewiseSegment(int64_t point_x, int64_t point_y, int64_t slope,
+                   int64_t other_point_x);
 
   // Returns the value of the segment at point x.
-  int64 Value(int64 x) const;
+  int64_t Value(int64_t x) const;
   // Returns the start of the segment's domain.
-  int64 start_x() const { return start_x_; }
+  int64_t start_x() const { return start_x_; }
   // Returns the end of the segment's domain.
-  int64 end_x() const { return end_x_; }
+  int64_t end_x() const { return end_x_; }
   // Returns the value at the start of the segment's domain.
-  int64 start_y() const { return Value(start_x_); }
+  int64_t start_y() const { return Value(start_x_); }
   // Returns the value at the end of the segment's domain.
-  int64 end_y() const { return Value(end_x_); }
+  int64_t end_y() const { return Value(end_x_); }
   // Returns the segment's slope.
-  int64 slope() const { return slope_; }
+  int64_t slope() const { return slope_; }
   // Returns the intersection of the segment's extension with the y axis.
-  int64 intersection_y() const { return intersection_y_; }
+  int64_t intersection_y() const { return intersection_y_; }
 
   // Comparison method useful for sorting a sequence of segments.
   static bool SortComparator(const PiecewiseSegment& segment1,
                              const PiecewiseSegment& segment2);
   // Comparison method useful for finding in which segment a point belongs.
-  static bool FindComparator(int64 point, const PiecewiseSegment& segment);
+  static bool FindComparator(int64_t point, const PiecewiseSegment& segment);
 
   // Expands segment to the specified endpoint, if it is further
   // than the current endpoint. The reference point of the segment
   // doesn't change for overflow reasons.
-  void ExpandEnd(int64 end_x);
+  void ExpandEnd(int64_t end_x);
   // Adds 'constant' to the 'x' the segments.
-  void AddConstantToX(int64 constant);
+  void AddConstantToX(int64_t constant);
   // Adds 'constant' to the 'y' the segments.
-  void AddConstantToY(int64 constant);
+  void AddConstantToY(int64_t constant);
 
   std::string DebugString() const;
 
@@ -76,24 +77,24 @@ class PiecewiseSegment {
   // Computes the value of the segment at point x, taking care of possible
   // overflows when the value x follow the x coordinate of the segment's
   // reference point.
-  int64 SafeValuePostReference(int64 x) const;
+  int64_t SafeValuePostReference(int64_t x) const;
   // Computes the value of the segment at point x, taking care of possible
   // overflows when the value x follow the x coordinate of the segment's
   // reference point.
-  int64 SafeValuePreReference(int64 x) const;
+  int64_t SafeValuePreReference(int64_t x) const;
 
   // The x coordinate of the segment's left endpoint.
-  int64 start_x_;
+  int64_t start_x_;
   // The x coordinate of the segment's right endpoint.
-  int64 end_x_;
+  int64_t end_x_;
   // The segment's slope.
-  int64 slope_;
+  int64_t slope_;
   // The x coordinate of the segment's finite reference point.
-  int64 reference_x_;
+  int64_t reference_x_;
   // The y coordinate of the segment's finite reference point.
-  int64 reference_y_;
+  int64_t reference_y_;
   // The intersection of the segment's extension with the y axis.
-  int64 intersection_y_;
+  int64_t intersection_y_;
 };
 
 // In mathematics, a piecewise linear function is a function composed
@@ -118,15 +119,15 @@ class PiecewiseLinearFunction {
   // The segments represented by these vectors should not be overlapping.
   // Common endpoints are allowed.
   static PiecewiseLinearFunction* CreatePiecewiseLinearFunction(
-      std::vector<int64> points_x, std::vector<int64> points_y,
-      std::vector<int64> slopes, std::vector<int64> other_points_x);
+      std::vector<int64_t> points_x, std::vector<int64_t> points_y,
+      std::vector<int64_t> slopes, std::vector<int64_t> other_points_x);
 
   // Builds a multiple-segment step function with continuous or non continuous
   // domain. The arguments have the same semantics with the generic builder of
   // the piecewise linear function. In the step function all the slopes are 0.
   static PiecewiseLinearFunction* CreateStepFunction(
-      std::vector<int64> points_x, std::vector<int64> points_y,
-      std::vector<int64> other_points_x);
+      std::vector<int64_t> points_x, std::vector<int64_t> points_y,
+      std::vector<int64_t> other_points_x);
 
   // Builds a multiple-segment piecewise linear function with domain from
   // from kint64min to kint64max with n points and n+1 slopes. Each slope
@@ -134,41 +135,39 @@ class PiecewiseLinearFunction {
   // which stops at kint64max. The first slope stops at the first point at
   // the level specified.
   static PiecewiseLinearFunction* CreateFullDomainFunction(
-      int64 initial_level, std::vector<int64> points_x,
-      std::vector<int64> slopes);
+      int64_t initial_level, std::vector<int64_t> points_x,
+      std::vector<int64_t> slopes);
 
   // Builds a function consisting of one segment.
-  static PiecewiseLinearFunction* CreateOneSegmentFunction(int64 point_x,
-                                                           int64 point_y,
-                                                           int64 slope,
-                                                           int64 other_point_x);
+  static PiecewiseLinearFunction* CreateOneSegmentFunction(
+      int64_t point_x, int64_t point_y, int64_t slope, int64_t other_point_x);
 
   // Builds a function consisting of one ray starting at the specified
   // x and y coordinates with the specified slope.
-  static PiecewiseLinearFunction* CreateRightRayFunction(int64 point_x,
-                                                         int64 point_y,
-                                                         int64 slope);
+  static PiecewiseLinearFunction* CreateRightRayFunction(int64_t point_x,
+                                                         int64_t point_y,
+                                                         int64_t slope);
 
   // Builds a function consisting of one ray starting at the specified
   // x and y coordinates with the specified slope.
-  static PiecewiseLinearFunction* CreateLeftRayFunction(int64 point_x,
-                                                        int64 point_y,
-                                                        int64 slope);
+  static PiecewiseLinearFunction* CreateLeftRayFunction(int64_t point_x,
+                                                        int64_t point_y,
+                                                        int64_t slope);
 
   // Builds a two-segment fixed charge piecewise linear cost function. For
   // values less than zero, the cost is zero. For values greater than zero,
   // cost follows the line specified by the slope and the value given as
   // arguments. The slope and value are positive.
-  static PiecewiseLinearFunction* CreateFixedChargeFunction(int64 slope,
-                                                            int64 value);
+  static PiecewiseLinearFunction* CreateFixedChargeFunction(int64_t slope,
+                                                            int64_t value);
 
   // Builds an earliness-tardiness two-segment piecewise linear cost function.
   // The reference specifies the point where the cost is zero. Before the
   // reference, the cost increases with the earliness slope and after the
-  // referece, it increases with the tardiness slope. The absolute values of
+  // reference, it increases with the tardiness slope. The absolute values of
   // the slopes are given.
   static PiecewiseLinearFunction* CreateEarlyTardyFunction(
-      int64 reference, int64 earliness_slope, int64 tardiness_slope);
+      int64_t reference, int64_t earliness_slope, int64_t tardiness_slope);
 
   // Builds an earliness-tardiness three-segment piecewise linear cost function
   // with a slack period around the due date. The early slack is the point
@@ -177,11 +176,11 @@ class PiecewiseLinearFunction {
   // specified. Between the early and the late slack point, the cost is zero.
   // The absolute values of the slopes are given.
   static PiecewiseLinearFunction* CreateEarlyTardyFunctionWithSlack(
-      int64 early_slack, int64 late_slack, int64 earliness_slope,
-      int64 tardiness_slope);
+      int64_t early_slack, int64_t late_slack, int64_t earliness_slope,
+      int64_t tardiness_slope);
 
   // Returns if x is in the domain of the function.
-  bool InDomain(int64 x) const;
+  bool InDomain(int64_t x) const;
   // Determines whether the piecewise linear function is convex or non-convex
   // and returns true when the function is convex.
   bool IsConvex() const;
@@ -190,44 +189,41 @@ class PiecewiseLinearFunction {
   // Returns true if the piecewise linear function is non-increasing.
   bool IsNonIncreasing() const;
   // Returns the value of the piecewise linear function for x.
-  int64 Value(int64 x) const;
+  int64_t Value(int64_t x) const;
   // Returns the maximum value of all the segments in the function.
-  int64 GetMaximum() const;
+  int64_t GetMaximum() const;
   // Returns the minimum value of all the segments in the function.
-  int64 GetMinimum() const;
+  int64_t GetMinimum() const;
   // Returns the maximum endpoint value of the segments in the specified
   // range. If the range is disjoint from the segments in the function, it
   // returns kint64max.
-  int64 GetMaximum(int64 range_start, int64 range_end) const;
+  int64_t GetMaximum(int64_t range_start, int64_t range_end) const;
   // Returns the minimum endpoint value of the segments in the specified
   // range. If the range is disjoint from the segments in the function, it
   // returns kint64max.
-  int64 GetMinimum(int64 range_start, int64 range_end) const;
+  int64_t GetMinimum(int64_t range_start, int64_t range_end) const;
   // Returns the smallest range within a given range containing all values
   // greater than a given value.
-  std::pair<int64, int64> GetSmallestRangeGreaterThanValue(int64 range_start,
-                                                           int64 range_end,
-                                                           int64 value) const;
+  std::pair<int64_t, int64_t> GetSmallestRangeGreaterThanValue(
+      int64_t range_start, int64_t range_end, int64_t value) const;
   // Returns the smallest range within a given range containing all values
   // less than a given value.
-  std::pair<int64, int64> GetSmallestRangeLessThanValue(int64 range_start,
-                                                        int64 range_end,
-                                                        int64 value) const;
+  std::pair<int64_t, int64_t> GetSmallestRangeLessThanValue(
+      int64_t range_start, int64_t range_end, int64_t value) const;
   // Returns the smallest range within a given range containing all values
   // greater than value_min and less than value_max.
-  std::pair<int64, int64> GetSmallestRangeInValueRange(int64 range_start,
-                                                       int64 range_end,
-                                                       int64 value_min,
-                                                       int64 value_max) const;
+  std::pair<int64_t, int64_t> GetSmallestRangeInValueRange(
+      int64_t range_start, int64_t range_end, int64_t value_min,
+      int64_t value_max) const;
 
   // Adds 'constant' to the 'x' of all segments. If the argument is positive,
   // the translation is to the right and when it's negative, to the left. The
   // overflows and the underflows are sticky.
-  void AddConstantToX(int64 constant);
+  void AddConstantToX(int64_t constant);
   // Adds 'constant' to the 'y' of all segments. If the argument is positive,
   // the translation is up and when it's negative, down. The overflows and the
   // underflows are sticky.
-  void AddConstantToY(int64 constant);
+  void AddConstantToY(int64_t constant);
   // Adds the function to the existing one. The domain of the resulting
   // function is the intersection of the two domains. The overflows and
   // the underflows are sticky.
@@ -253,10 +249,10 @@ class PiecewiseLinearFunction {
   // Operation between two functions. In any operation between two functions the
   // final domain is the intersection between the two domains.
   void Operation(const PiecewiseLinearFunction& other,
-                 const std::function<int64(int64, int64)>& operation);
+                 const std::function<int64_t(int64_t, int64_t)>& operation);
   // Finds start and end segment indices from a range; returns false if the
   // range is outside the domain of the function.
-  bool FindSegmentIndicesFromRange(int64 range_start, int64 range_end,
+  bool FindSegmentIndicesFromRange(int64_t range_start, int64_t range_end,
                                    int* start_segment, int* end_segment) const;
   void UpdateStatus() {
     if (is_modified_) {

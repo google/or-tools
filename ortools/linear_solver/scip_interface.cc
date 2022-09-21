@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,11 +16,15 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
@@ -35,9 +39,9 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
+#include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
 #include "ortools/linear_solver/scip_callback.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
-#include "ortools/linear_solver/scip_proto_solver.h"
 #include "scip/cons_indicator.h"
 #include "scip/scip.h"
 #include "scip/scip_copy.h"
@@ -64,8 +68,8 @@ class SCIPInterface : public MPSolverInterface {
 
   void SetOptimizationDirection(bool maximize) override;
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  absl::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request) override;
+  std::optional<MPSolutionResponse> DirectlySolveProto(
+      const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   void Reset() override;
 
   void SetVariableBounds(int var_index, double lb, double ub) override;
@@ -84,8 +88,8 @@ class SCIPInterface : public MPSolverInterface {
   void ClearObjective() override;
   void BranchingPriorityChangedForVariable(int var_index) override;
 
-  int64 iterations() const override;
-  int64 nodes() const override;
+  int64_t iterations() const override;
+  int64_t nodes() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override {
     LOG(DFATAL) << "Basis status only available for continuous problems";
     return MPSolver::FREE;
@@ -712,7 +716,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     CHECK_EQ(scip_constraint_handler_->mp_callback(), callback_);
   } else if (callback_ != nullptr) {
     scip_constraint_handler_ =
-        absl::make_unique<ScipConstraintHandlerForMPCallback>(callback_);
+        std::make_unique<ScipConstraintHandlerForMPCallback>(callback_);
     RegisterConstraintHandler<EmptyStruct>(scip_constraint_handler_.get(),
                                            scip_);
     AddCallbackConstraint<EmptyStruct>(scip_, scip_constraint_handler_.get(),
@@ -858,16 +862,19 @@ void SCIPInterface::SetSolution(SCIP_SOL* solution) {
   }
 }
 
-absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
-    const MPModelRequest& request) {
+std::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
+    const MPModelRequest& request, std::atomic<bool>* interrupt) {
   // ScipSolveProto doesn't solve concurrently.
-  if (solver_->GetNumThreads() > 1) return absl::nullopt;
+  if (solver_->GetNumThreads() > 1) return std::nullopt;
+
+  // Interruption via atomic<bool> is not directly supported by SCIP.
+  if (interrupt != nullptr) return std::nullopt;
 
   const auto status_or = ScipSolveProto(request);
   if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
-  if (absl::IsUnimplemented(status_or.status())) return absl::nullopt;
+  if (absl::IsUnimplemented(status_or.status())) return std::nullopt;
 
   if (request.enable_internal_solver_output()) {
     LOG(INFO) << "Invalid SCIP status: " << status_or.status();
@@ -894,14 +901,14 @@ bool SCIPInterface::NextSolution() {
   return true;
 }
 
-int64 SCIPInterface::iterations() const {
+int64_t SCIPInterface::iterations() const {
   // NOTE(user): As of 2018-12 it doesn't run in the stubby server, and is
   // a specialized call, so it's ok to crash if the status is broken.
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   return SCIPgetNLPIterations(scip_);
 }
 
-int64 SCIPInterface::nodes() const {
+int64_t SCIPInterface::nodes() const {
   // NOTE(user): Same story as iterations(): it's OK to crash here.
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
   // This is the total number of nodes used in the solve, potentially across
@@ -1087,7 +1094,7 @@ class ScipMPCallbackContext : public MPCallbackContext {
     LOG(FATAL) << "SuggestSolution() not currently supported for SCIP.";
   }
 
-  int64 NumExploredNodes() override {
+  int64_t NumExploredNodes() override {
     // scip_context_->NumNodesProcessed() returns:
     //   0 before the root node is solved, e.g. if a heuristic finds a solution.
     //   1 at the root node
@@ -1095,7 +1102,7 @@ class ScipMPCallbackContext : public MPCallbackContext {
     // The NumExploredNodes spec requires that we return 0 at the root node,
     // (this is consistent with gurobi).  Below is a bandaid to try and make the
     // behavior consistent, although some information is lost.
-    return std::max(int64{0}, scip_context_->NumNodesProcessed() - 1);
+    return std::max(int64_t{0}, scip_context_->NumNodesProcessed() - 1);
   }
 
   const std::vector<CallbackRangeConstraint>& constraints_added() {

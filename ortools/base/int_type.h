@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 // as native integer types, but which prevent assignment, construction, and
 // other operations from other similar integer-like types.  Essentially, the
 // template class IntType<IntTypeName, ValueType> (where ValueType assumes
-// valid scalar types such as int, uint, int32, etc) has the additional
+// valid scalar types such as int, uint, int32_t, etc) has the additional
 // property that it cannot be assigned to or constructed from other IntTypes
 // or native integer types of equal or implicitly convertible type.
 //
@@ -40,8 +40,8 @@
 // DISALLOWED OPERATIONS / TYPE-SAFETY ENFORCEMENT -----------------------------
 //
 //  Consider these definitions and variable declarations:
-//    DEFINE_INT_TYPE(GlobalDocID, int64);
-//    DEFINE_INT_TYPE(LocalDocID, int64);
+//    DEFINE_INT_TYPE(GlobalDocID, int64_t);
+//    DEFINE_INT_TYPE(LocalDocID, int64_t);
 //    GlobalDocID global;
 //    LocalDocID local;
 //
@@ -63,11 +63,11 @@
 //
 //  3) Implicit conversion from an IntType to a native integer type.
 //
-//    void GetGlobalDoc(int64 global) { ...
+//    void GetGlobalDoc(int64_t global) { ...
 //    GetGlobalDoc(global);            <-- Fails to compile!
 //    GetGlobalDoc(local);             <-- Fails to compile!
 //
-//    void GetLocalDoc(int32 local) { ...
+//    void GetLocalDoc(int32_t local) { ...
 //    GetLocalDoc(global);             <-- Fails to compile!
 //    GetLocalDoc(local);              <-- Fails to compile!
 //
@@ -88,7 +88,6 @@
 // The class also defines a hash functor that allows the IntType to be used
 // as key to hashable containers such as hash_map and hash_set.
 //
-// We suggest using the IntTypeIndexedContainer wrapper around google3's
 // FixedArray and STL vector (see int-type-indexed-container.h) if an IntType is
 // intended to be used as an index into these containers.  These wrappers are
 // indexed in a type-safe manner using IntTypes to ensure type-safety.
@@ -98,7 +97,7 @@
 //
 // EXAMPLES --------------------------------------------------------------------
 //
-//    DEFINE_INT_TYPE(GlobalDocID, int64);
+//    DEFINE_INT_TYPE(GlobalDocID, int64_t);
 //    GlobalDocID global = 3;
 //    std::cout << global;                      <-- Prints 3 to stdout.
 //
@@ -106,7 +105,7 @@
 //      std::cout << i;
 //    }                                    <-- Print(ln)s 0 1 2 to stdout
 //
-//    DEFINE_INT_TYPE(LocalDocID, int64);
+//    DEFINE_INT_TYPE(LocalDocID, int64_t);
 //    LocalDocID local;
 //    std::cout << local;                       <-- Prints 0 to stdout it
 //    default
@@ -129,8 +128,8 @@
 // class is to prevent *accidental* mingling of similar logical integer types --
 // and not type casting from one type to another.
 //
-//  DEFINE_INT_TYPE(GlobalDocID, int64);
-//  DEFINE_INT_TYPE(LocalDocID, int64);
+//  DEFINE_INT_TYPE(GlobalDocID, int64_t);
+//  DEFINE_INT_TYPE(LocalDocID, int64_t);
 //  GlobalDocID global;
 //  LocalDocID local;
 //
@@ -139,7 +138,7 @@
 //  void GetGlobalDoc(GlobalDocID global) { ...
 //  GetGlobalDoc(local.value());                  <-- Compiles fine.
 //
-//  void GetGlobalDoc(int64 global) { ...
+//  void GetGlobalDoc(int64_t global) { ...
 //  GetGlobalDoc(local.value());                  <-- Compiles fine.
 
 #ifndef OR_TOOLS_BASE_INT_TYPE_H_
@@ -152,6 +151,7 @@
 #include <ostream>  // NOLINT
 #include <type_traits>
 
+#include "absl/base/port.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/macros.h"
 

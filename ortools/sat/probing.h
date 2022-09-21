@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,23 @@
 #ifndef OR_TOOLS_SAT_PROBING_H_
 #define OR_TOOLS_SAT_PROBING_H_
 
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -62,16 +72,27 @@ class Prober {
   //
   // TODO(user): Rename to include Integer in the name and distinguish better
   // from FailedLiteralProbing() below.
-  bool ProbeBooleanVariables(double deterministic_time_limit,
-                             bool log_info = false);
+  bool ProbeBooleanVariables(double deterministic_time_limit);
 
   // Same as above method except it probes only on the variables given in
   // 'bool_vars'.
   bool ProbeBooleanVariables(double deterministic_time_limit,
-                             absl::Span<const BooleanVariable> bool_vars,
-                             bool log_info = false);
+                             absl::Span<const BooleanVariable> bool_vars);
 
   bool ProbeOneVariable(BooleanVariable b);
+
+  // Statistics.
+  // They are reset each time ProbleBooleanVariables() is called.
+  // Note however that we do not reset them on a call to ProbeOneVariable().
+  int num_new_literals_fixed() const { return num_new_literals_fixed_; }
+  int num_new_binary_clauses() const { return num_new_binary_; }
+
+  // Register a callback that will be called on each "propagation".
+  // One can inspect the VariablesAssignment to see what are the inferred
+  // literals.
+  void SetPropagationCallback(std::function<void(Literal decision)> f) {
+    callback_ = f;
+  }
 
  private:
   bool ProbeOneVariableInternal(BooleanVariable b);
@@ -99,6 +120,12 @@ class Prober {
   int num_new_holes_ = 0;
   int num_new_binary_ = 0;
   int num_new_integer_bounds_ = 0;
+  int num_new_literals_fixed_ = 0;
+
+  std::function<void(Literal decision)> callback_ = nullptr;
+
+  // Logger.
+  SolverLogger* logger_;
 };
 
 // Try to randomly tweak the search and stop at the first conflict each time.
@@ -111,8 +138,7 @@ class Prober {
 // abort and leave the solver with the full solution assigned.
 //
 // Returns false iff the problem is UNSAT.
-bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
-                               bool log_info = false);
+bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model);
 
 // Options for the FailedLiteralProbing() code below.
 //

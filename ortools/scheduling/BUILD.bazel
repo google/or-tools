@@ -1,0 +1,79 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "jobshop_scheduling_proto",
+    srcs = ["jobshop_scheduling.proto"],
+    deps = [
+        "@com_google_protobuf//:wrappers_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "jobshop_scheduling_cc_proto",
+    deps = [":jobshop_scheduling_proto"],
+)
+
+cc_library(
+    name = "jobshop_scheduling_parser",
+    srcs = ["jobshop_scheduling_parser.cc"],
+    hdrs = ["jobshop_scheduling_parser.h"],
+    deps = [
+        ":jobshop_scheduling_cc_proto",
+        "//ortools/base",
+        "//ortools/base:path",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+proto_library(
+    name = "rcpsp_proto",
+    srcs = ["rcpsp.proto"],
+)
+
+cc_proto_library(
+    name = "rcpsp_cc_proto",
+    deps = [":rcpsp_proto"],
+)
+
+cc_library(
+    name = "rcpsp_parser",
+    srcs = ["rcpsp_parser.cc"],
+    hdrs = ["rcpsp_parser.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":rcpsp_cc_proto",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:path",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+proto_library(
+    name = "course_scheduling_proto",
+    srcs = ["course_scheduling.proto"],
+)
+
+cc_proto_library(
+    name = "course_scheduling_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":course_scheduling_proto"],
+)

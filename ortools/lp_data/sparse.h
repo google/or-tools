@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,7 +29,10 @@
 #ifndef OR_TOOLS_LP_DATA_SPARSE_H_
 #define OR_TOOLS_LP_DATA_SPARSE_H_
 
+#include <algorithm>
+#include <cstdint>
 #include <string>
+#include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/lp_data/lp_types.h"
@@ -300,6 +303,10 @@ class CompactSparseMatrix {
   // each column is preserved.
   void PopulateFromMatrixView(const MatrixView& input);
 
+  // Creates a CompactSparseMatrix by copying the input and adding an identity
+  // matrix to the left of it.
+  void PopulateFromSparseMatrixAndAddSlacks(const SparseMatrix& input);
+
   // Creates a CompactSparseMatrix from the transpose of the given
   // CompactSparseMatrix. Note that the entries in each columns will be ordered
   // by row indices.
@@ -472,14 +479,18 @@ class CompactSparseMatrixView {
  public:
   CompactSparseMatrixView(const CompactSparseMatrix* compact_matrix,
                           const RowToColMapping* basis)
-      : compact_matrix_(*compact_matrix), basis_(*basis) {}
+      : compact_matrix_(*compact_matrix),
+        columns_(basis->data(), basis->size().value()) {}
+  CompactSparseMatrixView(const CompactSparseMatrix* compact_matrix,
+                          const std::vector<ColIndex>* columns)
+      : compact_matrix_(*compact_matrix), columns_(*columns) {}
 
   // Same behavior as the SparseMatrix functions above.
   bool IsEmpty() const { return compact_matrix_.IsEmpty(); }
   RowIndex num_rows() const { return compact_matrix_.num_rows(); }
-  ColIndex num_cols() const { return RowToColIndex(basis_.size()); }
+  ColIndex num_cols() const { return ColIndex(columns_.size()); }
   const ColumnView column(ColIndex col) const {
-    return compact_matrix_.column(basis_[ColToRowIndex(col)]);
+    return compact_matrix_.column(columns_[col.value()]);
   }
   EntryIndex num_entries() const;
   Fractional ComputeOneNorm() const;
@@ -489,7 +500,7 @@ class CompactSparseMatrixView {
   // We require that the underlying CompactSparseMatrix and RowToColMapping
   // continue to own the (potentially large) data accessed via this view.
   const CompactSparseMatrix& compact_matrix_;
-  const RowToColMapping& basis_;
+  const absl::Span<const ColIndex> columns_;
 };
 
 // Specialization of a CompactSparseMatrix used for triangular matrices.
@@ -696,6 +707,11 @@ class TriangularMatrix : private CompactSparseMatrix {
                                 const RowPermutation& row_perm,
                                 SparseColumn* lower, SparseColumn* upper);
 
+  // This is used to compute the deterministic time of a matrix factorization.
+  int64_t NumFpOperationsInLastPermutedLowerSparseSolve() const {
+    return num_fp_operations_;
+  }
+
   // To be used in DEBUG mode by the client code. This check that the matrix is
   // lower- (resp. upper-) triangular without any permutation and that there is
   // no zero on the diagonal. We can't do that on each Solve() that require so,
@@ -774,6 +790,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   mutable std::vector<RowIndex> nodes_to_explore_;
 
   // For PermutedLowerSparseSolve().
+  int64_t num_fp_operations_;
   mutable std::vector<RowIndex> lower_column_rows_;
   mutable std::vector<RowIndex> upper_column_rows_;
   mutable DenseColumn initially_all_zero_scratchpad_;
@@ -800,7 +817,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   // can prune it and remove it from the adjacency list of the current node.
   //
   // Note(user): I couldn't find any reference for this algorithm, even though
-  // I suspect I am not the first one to need someting similar.
+  // I suspect I am not the first one to need something similar.
   mutable DenseBooleanColumn marked_;
 
   // This is used to represent a pruned sub-matrix of the current matrix that

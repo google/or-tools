@@ -1,4 +1,5 @@
-# Copyright 2010-2018 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,6 +23,8 @@ def LinearProgrammingExample():
     # Instantiate a Glop solver, naming it LinearExample.
     # [START solver]
     solver = pywraplp.Solver.CreateSolver('GLOP')
+    if not solver:
+        return
     # [END solver]
 
     # Create the two variables and let them take on any non-negative value.

@@ -95,14 +95,14 @@ public class Langford
         int k = 8;
         int num_sol = 0; // 0: print all solutions
 
-        if (args.Length > 0)
-        {
-            k = Convert.ToInt32(args[0]);
-        }
-
         if (args.Length > 1)
         {
-            num_sol = Convert.ToInt32(args[1]);
+            k = Convert.ToInt32(args[1]);
+        }
+
+        if (args.Length > 2)
+        {
+            num_sol = Convert.ToInt32(args[2]);
         }
 
         Solve(k, num_sol);

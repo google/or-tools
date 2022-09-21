@@ -1,7 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <Version>1.0.0</Version>
+
+    <!-- Nuget Properties -->
+    <Description>.NET tools use to generate signing key</Description>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <!-- Pack Option -->
+    <Title>Google.CreateSigningKey v1.0.0</Title>
+    <PackageId>Google.CreateSigningKey</PackageId>
+
     <!-- see https://github.com/dotnet/docs/issues/12237 -->
     <RollForward>LatestMajor</RollForward>
   </PropertyGroup>
