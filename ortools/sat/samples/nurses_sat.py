@@ -71,12 +71,12 @@ def main():
     else:
         max_shifts_per_nurse = min_shifts_per_nurse + 1
     for n in all_nurses:
-        num_shifts_worked = []
+        shifts_worked = []
         for d in all_days:
             for s in all_shifts:
-                num_shifts_worked.append(shifts[(n, d, s)])
-        model.Add(min_shifts_per_nurse <= sum(num_shifts_worked))
-        model.Add(sum(num_shifts_worked) <= max_shifts_per_nurse)
+                shifts_worked.append(shifts[(n, d, s)])
+        model.Add(min_shifts_per_nurse <= sum(shifts_worked))
+        model.Add(sum(shifts_worked) <= max_shifts_per_nurse)
     # [END assign_nurses_evenly]
 
     # Creates the solver and solve.

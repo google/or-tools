@@ -98,13 +98,13 @@ public class NursesSat {
       maxShiftsPerNurse = minShiftsPerNurse + 1;
     }
     for (int n : allNurses) {
-      LinearExprBuilder numShiftsWorked = LinearExpr.newBuilder();
+      LinearExprBuilder shiftsWorked = LinearExpr.newBuilder();
       for (int d : allDays) {
         for (int s : allShifts) {
-          numShiftsWorked.add(shifts[n][d][s]);
+          shiftsWorked.add(shifts[n][d][s]);
         }
       }
-      model.addLinearConstraint(numShiftsWorked, minShiftsPerNurse, maxShiftsPerNurse);
+      model.addLinearConstraint(shiftsWorked, minShiftsPerNurse, maxShiftsPerNurse);
     }
     // [END assign_nurses_evenly]
 

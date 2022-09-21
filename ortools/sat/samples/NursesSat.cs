@@ -165,18 +165,18 @@ public class NursesSat
             maxShiftsPerNurse = minShiftsPerNurse + 1;
         }
 
-        List<IntVar> numShiftsWorked = new List<IntVar>();
+        List<IntVar> shiftsWorked = new List<IntVar>();
         foreach (int n in allNurses)
         {
             foreach (int d in allDays)
             {
                 foreach (int s in allShifts)
                 {
-                    numShiftsWorked.Add(shifts[(n, d, s)]);
+                    shiftsWorked.Add(shifts[(n, d, s)]);
                 }
             }
-            model.AddLinearConstraint(LinearExpr.Sum(numShiftsWorked), minShiftsPerNurse, maxShiftsPerNurse);
-            numShiftsWorked.Clear();
+            model.AddLinearConstraint(LinearExpr.Sum(shiftsWorked), minShiftsPerNurse, maxShiftsPerNurse);
+            shiftsWorked.Clear();
         }
         // [END assign_nurses_evenly]
 

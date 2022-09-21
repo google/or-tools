@@ -113,17 +113,16 @@ void NurseSat() {
     max_shifts_per_nurse = min_shifts_per_nurse + 1;
   }
   for (int n : all_nurses) {
-    std::vector<BoolVar> num_shifts_worked;
-    // int num_shifts_worked = 0;
+    std::vector<BoolVar> shifts_worked;
     for (int d : all_days) {
       for (int s : all_shifts) {
         auto key = std::make_tuple(n, d, s);
-        num_shifts_worked.push_back(shifts[key]);
+        shifts_worked.push_back(shifts[key]);
       }
     }
     cp_model.AddLessOrEqual(min_shifts_per_nurse,
-                            LinearExpr::Sum(num_shifts_worked));
-    cp_model.AddLessOrEqual(LinearExpr::Sum(num_shifts_worked),
+                            LinearExpr::Sum(shifts_worked));
+    cp_model.AddLessOrEqual(LinearExpr::Sum(shifts_worked),
                             max_shifts_per_nurse);
   }
   // [END assign_nurses_evenly]
