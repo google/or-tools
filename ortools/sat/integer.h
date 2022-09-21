@@ -223,6 +223,22 @@ inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
   return os;
 }
 
+inline std::ostream& operator<<(std::ostream& os,
+                                absl::Span<const IntegerLiteral> literals) {
+  os << "[";
+  bool first = true;
+  for (const IntegerLiteral literal : literals) {
+    if (first) {
+      first = false;
+    } else {
+      os << ",";
+    }
+    os << literal.DebugString();
+  }
+  os << "]";
+  return os;
+}
+
 using InlinedIntegerLiteralVector = absl::InlinedVector<IntegerLiteral, 2>;
 
 // Represents [coeff * variable + constant] or just a [constant].
@@ -1124,15 +1140,6 @@ class IntegerTrail : public SatPropagator {
 
   // The "is_ignored" literal of the optional variables or kNoLiteralIndex.
   absl::StrongVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
-
-  // This is only filled for variables with a domain more complex than a single
-  // interval of values. var_to_current_lb_interval_index_[var] stores the
-  // intervals in (*domains_)[var] where the current lower-bound lies.
-  //
-  // TODO(user): Avoid using hash_map here, a simple vector should be more
-  // efficient, but we need the "rev" aspect.
-  RevMap<absl::flat_hash_map<IntegerVariable, int>>
-      var_to_current_lb_interval_index_;
 
   // Temporary data used by MergeReasonInto().
   mutable bool has_dependency_ = false;

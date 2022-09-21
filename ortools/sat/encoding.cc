@@ -593,7 +593,7 @@ bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
   nodes->resize(new_node_index);
   nodes->push_back(LazyMergeAllNodeWithPQAndIncreaseLb(min_weight, to_merge,
                                                        solver, repository));
-  return !solver->IsModelUnsat();
+  return !solver->ModelIsUnsat();
 }
 
 bool ProcessCoreWithAlternativeEncoding(const std::vector<Literal>& core,
@@ -662,7 +662,7 @@ bool ProcessCoreWithAlternativeEncoding(const std::vector<Literal>& core,
   new_nodes.push_back(LazyMergeAllNodeWithPQAndIncreaseLb(min_weight, to_merge,
                                                           solver, repository));
   *nodes = new_nodes;
-  return !solver->IsModelUnsat();
+  return !solver->ModelIsUnsat();
 }
 
 }  // namespace sat

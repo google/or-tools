@@ -328,7 +328,7 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
 
         // this is needed because we currently can't create a boolean variable
         // if the model is unsat.
-        if (sat_solver->IsModelUnsat()) return;
+        if (sat_solver->ModelIsUnsat()) return;
 
         literals_with_coeff.push_back(
             LiteralWithCoeff(consume, Coefficient(fixed_demands[t].value())));
@@ -338,7 +338,7 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
                                       fixed_capacity, &literals_with_coeff);
 
       // Abort if UNSAT.
-      if (sat_solver->IsModelUnsat()) return;
+      if (sat_solver->ModelIsUnsat()) return;
     }
   };
 }

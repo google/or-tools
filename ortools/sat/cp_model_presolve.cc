@@ -5864,7 +5864,7 @@ void CpModelPresolver::Probe() {
                "[Probing] implications and bool_or (work_done=", work_done,
                ").", (work_done > work_limit ? " Aborted." : ""));
   }
-  if (sat_solver->IsModelUnsat() || !implication_graph->DetectEquivalences()) {
+  if (sat_solver->ModelIsUnsat() || !implication_graph->DetectEquivalences()) {
     return (void)context_->NotifyThatModelIsUnsat("during probing");
   }
 

@@ -221,7 +221,7 @@ class FuMalikSymmetryBreaker {
 
 void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
                                  std::vector<Literal>* core) {
-  if (solver->IsModelUnsat()) return;
+  if (solver->ModelIsUnsat()) return;
   absl::btree_set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(core->begin(), core->end());
 
@@ -237,7 +237,7 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
         moved_last, solver->CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
     solver->Backtrack(target_level);
-    while (!solver->IsModelUnsat() && !limit->LimitReached() &&
+    while (!solver->ModelIsUnsat() && !limit->LimitReached() &&
            solver->CurrentDecisionLevel() < candidate.size()) {
       const Literal decision = candidate[solver->CurrentDecisionLevel()];
       if (solver->Assignment().LiteralIsTrue(decision)) {
@@ -253,7 +253,7 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
         solver->EnqueueDecisionAndBackjumpOnConflict(decision);
       }
     }
-    if (candidate.empty() || solver->IsModelUnsat()) return;
+    if (candidate.empty() || solver->ModelIsUnsat()) return;
     moved_last.insert(candidate.back().Index());
   }
 

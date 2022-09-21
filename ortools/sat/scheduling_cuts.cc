@@ -165,12 +165,113 @@ struct EnergyEvent : BaseEvent {
   }
 };
 
-void GenerateCumulativeEnergeticCuts(
+namespace {
+
+// Compute the energetic contribution of a task in a given time window, and
+// add it to the cut. It returns false if it tried to generate the cut, and
+// failed.
+ABSL_MUST_USE_RESULT bool AddOneEvent(
+    const EnergyEvent& event, IntegerValue window_start,
+    IntegerValue window_end, const VariablesAssignment& assignment,
+    LinearConstraintBuilder* cut, bool* add_energy_to_name = nullptr,
+    bool* add_quadratic_to_name = nullptr, bool* add_opt_to_name = nullptr,
+    bool* add_lifted_to_name = nullptr) {
+  DCHECK(cut != nullptr);
+
+  if (event.x_end_min <= window_start || event.x_start_max >= window_end) {
+    return true;  // Event can move outside the time window.
+  }
+
+  if (event.x_start_min >= window_start && event.x_end_max <= window_end) {
+    // Event is always contained by the time window.
+    cut->AddLinearExpression(event.linearized_energy);
+
+    if (event.energy_is_quadratic && add_quadratic_to_name != nullptr) {
+      *add_quadratic_to_name = true;
+    }
+    if (add_energy_to_name != nullptr &&
+        event.energy_min > event.x_size_min * event.y_size_min) {
+      *add_energy_to_name = true;
+    }
+    if (!event.IsPresent() && add_opt_to_name != nullptr) {
+      *add_opt_to_name = true;
+    }
+  } else {  // The event has a mandatory overlap with the time window.
+    const IntegerValue min_overlap =
+        event.GetMinOverlap(window_start, window_end);
+    if (min_overlap <= 0) return true;
+    if (add_lifted_to_name != nullptr) *add_lifted_to_name = true;
+
+    if (event.IsPresent()) {
+      const std::vector<LiteralValueValue>& energy = event.decomposed_energy;
+      if (energy.empty()) {
+        cut->AddTerm(event.y_size, min_overlap);
+      } else {
+        const IntegerValue window_size = window_end - window_start;
+        for (const auto [lit, fixed_size, fixed_demand] : energy) {
+          if (assignment.LiteralIsFalse(lit)) continue;
+          const IntegerValue alt_end_min =
+              std::max(event.x_end_min, event.x_start_min + fixed_size);
+          const IntegerValue alt_start_max =
+              std::min(event.x_start_max, event.x_end_max - fixed_size);
+          const IntegerValue energy_min =
+              fixed_demand *
+              std::min({alt_end_min - window_start, window_end - alt_start_max,
+                        fixed_size, window_size});
+          if (energy_min == 0) continue;
+          if (!cut->AddLiteralTerm(lit, energy_min)) return false;
+        }
+        if (add_energy_to_name != nullptr) *add_energy_to_name = true;
+      }
+    } else {
+      if (add_opt_to_name != nullptr) *add_opt_to_name = true;
+      const IntegerValue min_energy = ComputeEnergyMinInWindow(
+          event.x_start_min, event.x_start_max, event.x_end_min,
+          event.x_end_max, event.x_size_min, event.y_size_min,
+          event.decomposed_energy, assignment, window_start, window_end);
+      if (min_energy > event.x_size_min * event.y_size_min &&
+          add_energy_to_name != nullptr) {
+        *add_energy_to_name = true;
+      }
+      if (!cut->AddLiteralTerm(Literal(event.presence_literal_index),
+                               min_energy)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
+                                         const VariablesAssignment& assignment,
+                                         IntegerTrail* integer_trail) {
+  std::vector<int64_t> possible_demands;
+  if (event.decomposed_energy.empty()) {
+    if (integer_trail->IsFixed(event.y_size)) {
+      possible_demands.push_back(
+          integer_trail->FixedValue(event.y_size).value());
+    } else {
+      for (const int64_t var_value :
+           integer_trail->InitialVariableDomain(event.y_size.var).Values()) {
+        possible_demands.push_back(event.y_size.ValueAt(var_value).value());
+      }
+    }
+  } else {
+    for (const auto [lit, fixed_size, fixed_demand] : event.decomposed_energy) {
+      if (assignment.LiteralIsFalse(lit)) continue;
+      possible_demands.push_back(fixed_demand.value());
+    }
+  }
+  return possible_demands;
+}
+
+}  // namespace
+
+void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    std::vector<EnergyEvent> events, const AffineExpression capacity,
-    std::optional<AffineExpression> makespan, Model* model,
-    LinearConstraintManager* manager) {
+    std::vector<EnergyEvent> events, IntegerValue capacity,
+    AffineExpression makespan, Model* model, LinearConstraintManager* manager) {
   double sum_of_energies_lp = 0.0;
   for (const EnergyEvent& event : events) {
     sum_of_energies_lp += event.linearized_energy_lp_value;
@@ -178,87 +279,233 @@ void GenerateCumulativeEnergeticCuts(
 
   // Checks the precondition of the code.
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  DCHECK(!makespan.has_value() || integer_trail->IsFixed(capacity));
+  DCHECK(integer_trail->IsFixed(capacity));
+
+  const VariablesAssignment& assignment =
+      model->GetOrCreate<Trail>()->Assignment();
+
+  // Currently, we look at all the possible time windows, and will push all cuts
+  // in the TopNCuts object. From our observations, this generator creates only
+  // a few cuts for a given run.
+  //
+  // The complexity of this loop is n^3. if we follow the latest research, we
+  // could implement this in n log^2(n). Still, this is not visible in the
+  // profile as we only this method at the root node,
+  struct OverloadedTimeWindowWithMakespan {
+    IntegerValue start;
+    IntegerValue end;
+    IntegerValue fixed_energy_rhs;  // Can be complemented by the makespan.
+    bool use_makespan_lp = false;
+    bool use_subset_sum = false;
+  };
+
+  std::vector<OverloadedTimeWindowWithMakespan> overloaded_time_windows;
+  const double capacity_lp = ToDouble(capacity);
+  const double makespan_lp = makespan.LpValue(lp_values);
+
+  // Compute relevant time points.
+  // TODO(user): We could reduce this set.
+  std::vector<IntegerValue> time_points;
+  std::vector<std::vector<int64_t>> possible_demands(events.size());
+  IntegerValue max_end_min = kMinIntegerValue;
+  const IntegerValue makespan_min = integer_trail->LowerBound(makespan);
+  IntegerValue max_end_max = kMinIntegerValue;
+  for (int i = 0; i < events.size(); ++i) {
+    const EnergyEvent& event = events[i];
+    if (event.x_start_min < makespan_min) {
+      time_points.push_back(event.x_start_min);
+    }
+    if (event.x_start_max < makespan_min) {
+      time_points.push_back(event.x_start_max);
+    }
+    if (event.x_end_min < makespan_min) {
+      time_points.push_back(event.x_end_min);
+    }
+    if (event.x_end_max < makespan_min) {
+      time_points.push_back(event.x_end_max);
+    }
+    max_end_min = std::max(max_end_min, event.x_end_min);
+    max_end_max = std::max(max_end_max, event.x_end_max);
+    possible_demands[i] = FindPossibleDemands(event, assignment, integer_trail);
+  }
+  time_points.push_back(makespan_min);
+  time_points.push_back(max_end_max);
+  gtl::STLSortAndRemoveDuplicates(&time_points);
+
+  const int num_time_points = time_points.size();
+  absl::flat_hash_map<IntegerValue, IntegerValue> reachable_capacity_ending_at;
+
+  MaxBoundedSubsetSum reachable_capacity_subset_sum(capacity.value());
+  for (int i = 1; i < num_time_points; ++i) {
+    const IntegerValue window_start = time_points[i - 1];
+    const IntegerValue window_end = time_points[i];
+    reachable_capacity_subset_sum.Reset(capacity.value());
+    for (int i = 0; i < events.size(); ++i) {
+      const EnergyEvent& event = events[i];
+      if (event.x_start_min >= window_end || event.x_end_max <= window_start) {
+        continue;
+      }
+      reachable_capacity_subset_sum.AddChoices(possible_demands[i]);
+      if (reachable_capacity_subset_sum.CurrentMax() == capacity.value()) break;
+    }
+    reachable_capacity_ending_at[window_end] =
+        reachable_capacity_subset_sum.CurrentMax();
+  }
+
+  const double makespan_min_lp = ToDouble(makespan_min);
+  LinearConstraintBuilder tmp_energy(model);
+  for (int i = 0; i + 1 < num_time_points; ++i) {
+    const IntegerValue window_start = time_points[i];
+    // After max_end_min, all tasks can fit before window_start.
+    if (window_start >= max_end_min) break;
+
+    IntegerValue cumulated_max_energy = 0;
+    IntegerValue cumulated_max_energy_up_to_makespan_min = 0;
+    bool use_subset_sum_before_makespan_min = false;
+    bool use_subset_sum = false;
+
+    for (int j = i + 1; j < num_time_points; ++j) {
+      const IntegerValue strip_start = time_points[j - 1];
+      const IntegerValue window_end = time_points[j];
+      const IntegerValue max_reachable_capacity_in_current_strip =
+          reachable_capacity_ending_at[window_end];
+      CHECK_LE(max_reachable_capacity_in_current_strip, capacity);
+
+      // Update states for the name of the generated cut.
+      if (max_reachable_capacity_in_current_strip < capacity) {
+        use_subset_sum = true;
+        if (window_end <= makespan_min) {
+          use_subset_sum_before_makespan_min = true;
+        }
+      }
+
+      const IntegerValue strip_energy =
+          (window_end - strip_start) * max_reachable_capacity_in_current_strip;
+      cumulated_max_energy += strip_energy;
+      if (window_end <= makespan_min) {
+        cumulated_max_energy_up_to_makespan_min += strip_energy;
+      }
+
+      // TODO(user): We could use max(reachable_capacity over the domain of
+      // makespan) instead of capacity_lp.
+      if (window_start >= makespan_min) {
+        CHECK_EQ(cumulated_max_energy_up_to_makespan_min, 0);
+      }
+      CHECK_LE(cumulated_max_energy, capacity * (window_end - window_start));
+      const double max_energy_up_to_makespan_lp =
+          strip_start >= makespan_min
+              ? ToDouble(cumulated_max_energy_up_to_makespan_min) +
+                    (makespan_lp - makespan_min_lp) * capacity_lp
+              : std::numeric_limits<double>::infinity();
+
+      // We prefer using the makespan as the cut will tighten itself when the
+      // objective value is improved.
+      //
+      // We reuse the min cut violation to allow some slack in the comparison
+      // between the two computed energy values.
+      const bool use_makespan =
+          max_energy_up_to_makespan_lp <=
+          ToDouble(cumulated_max_energy) + kMinCutViolation;
+      const double available_energy_lp = use_makespan
+                                             ? max_energy_up_to_makespan_lp
+                                             : ToDouble(cumulated_max_energy);
+
+      // // Abort all events will fit.
+      // if (available_energy_lp >= sum_of_energies_lp) {
+      //   break;
+      // }
+
+      // Scan all events and sum their energetic contributions.
+      double energy_from_events_lp = 0.0;
+      bool energy_correctly_computed = true;
+      for (const EnergyEvent& event : events) {
+        tmp_energy.Clear();
+        if (!AddOneEvent(event, window_start, window_end, assignment,
+                         &tmp_energy)) {
+          energy_correctly_computed = false;
+          break;  // Abort.
+        }
+        if (!energy_correctly_computed) break;
+        energy_from_events_lp +=
+            tmp_energy.BuildExpression().LpValue(lp_values);
+      }
+      if (!energy_correctly_computed) continue;
+
+      if (energy_from_events_lp >=
+          available_energy_lp * (1.0 + kMinCutViolation)) {
+        overloaded_time_windows.push_back(
+            {window_start, window_end,
+             use_makespan ? cumulated_max_energy_up_to_makespan_min
+                          : cumulated_max_energy,
+             use_makespan,
+             use_makespan ? use_subset_sum_before_makespan_min
+                          : use_subset_sum});
+      }
+    }
+  }
+
+  if (overloaded_time_windows.empty()) return;
+
+  VLOG(2) << "GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity: "
+          << events.size() << " events, " << time_points.size()
+          << " time points, " << overloaded_time_windows.size()
+          << " overloads detected";
+
+  TopNCuts top_n_cuts(5);
+  for (const auto& [window_start, window_end, fixed_energy_rhs, use_makespan,
+                    use_subset_sum] : overloaded_time_windows) {
+    bool cut_generated = true;
+    bool add_opt_to_name = false;
+    bool add_lifted_to_name = false;
+    bool add_quadratic_to_name = false;
+    bool add_energy_to_name = false;
+    LinearConstraintBuilder cut(model, kMinIntegerValue, fixed_energy_rhs);
+
+    if (use_makespan) {
+      cut.AddConstant(makespan_min * capacity);
+      cut.AddTerm(makespan, -capacity);
+    }
+
+    // Add all contributions.
+    for (const EnergyEvent& event : events) {
+      if (!AddOneEvent(event, window_start, window_end, assignment, &cut,
+                       &add_energy_to_name, &add_quadratic_to_name,
+                       &add_opt_to_name, &add_lifted_to_name)) {
+        cut_generated = false;
+        break;  // Exit the event loop.
+      }
+    }
+
+    if (cut_generated) {
+      std::string full_name = cut_name;
+      if (add_opt_to_name) full_name.append("_optional");
+      if (add_quadratic_to_name) full_name.append("_quadratic");
+      if (add_lifted_to_name) full_name.append("_lifted");
+      if (add_energy_to_name) full_name.append("_energy");
+      if (use_makespan) full_name.append("_makespan");
+      if (use_subset_sum) full_name.append("_subsetsum");
+      top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
+    }
+  }
+
+  top_n_cuts.TransferToManager(lp_values, manager);
+}
+
+void GenerateCumulativeEnergeticCuts(
+    const std::string& cut_name,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    std::vector<EnergyEvent> events, const AffineExpression capacity,
+    Model* model, LinearConstraintManager* manager) {
+  double sum_of_energies_lp = 0.0;
+  for (const EnergyEvent& event : events) {
+    sum_of_energies_lp += event.linearized_energy_lp_value;
+  }
 
   // Compute the energetic contribution of a task in a given time window, and
   // add it to the cut. It returns false if it tried to generate the cut, and
   // failed.
   const VariablesAssignment& assignment =
       model->GetOrCreate<Trail>()->Assignment();
-  const auto add_one_event = [&assignment](
-                                 const EnergyEvent& event,
-                                 IntegerValue window_start,
-                                 IntegerValue window_end,
-                                 LinearConstraintBuilder* cut,
-                                 bool* add_energy_to_name = nullptr,
-                                 bool* add_quadratic_to_name = nullptr,
-                                 bool* add_opt_to_name = nullptr,
-                                 bool* add_lifted_to_name = nullptr) {
-    if (event.x_end_min <= window_start || event.x_start_max >= window_end) {
-      return true;  // Event can move outside the time window.
-    }
-
-    DCHECK(cut != nullptr);
-
-    if (event.x_start_min >= window_start && event.x_end_max <= window_end) {
-      // Event is always contained by the time window.
-      cut->AddLinearExpression(event.linearized_energy);
-
-      if (event.energy_is_quadratic && add_quadratic_to_name != nullptr) {
-        *add_quadratic_to_name = true;
-      }
-      if (add_energy_to_name != nullptr &&
-          event.energy_min > event.x_size_min * event.y_size_min) {
-        *add_energy_to_name = true;
-      }
-      if (!event.IsPresent() && add_opt_to_name != nullptr) {
-        *add_opt_to_name = true;
-      }
-    } else {  // The event has a mandatory overlap with the time window.
-      const IntegerValue min_overlap =
-          event.GetMinOverlap(window_start, window_end);
-      if (min_overlap <= 0) return true;
-      if (add_lifted_to_name != nullptr) *add_lifted_to_name = true;
-
-      if (event.IsPresent()) {
-        const std::vector<LiteralValueValue>& energy = event.decomposed_energy;
-        if (energy.empty()) {
-          cut->AddTerm(event.y_size, min_overlap);
-        } else {
-          const IntegerValue window_size = window_end - window_start;
-          for (const auto [lit, fixed_size, fixed_demand] : energy) {
-            if (assignment.LiteralIsFalse(lit)) continue;
-            const IntegerValue alt_end_min =
-                std::max(event.x_end_min, event.x_start_min + fixed_size);
-            const IntegerValue alt_start_max =
-                std::min(event.x_start_max, event.x_end_max - fixed_size);
-            const IntegerValue energy_min =
-                fixed_demand *
-                std::min({alt_end_min - window_start,
-                          window_end - alt_start_max, fixed_size, window_size});
-            if (energy_min == 0) continue;
-            if (!cut->AddLiteralTerm(lit, energy_min)) return false;
-          }
-          if (add_energy_to_name != nullptr) *add_energy_to_name = true;
-        }
-      } else {
-        if (add_opt_to_name != nullptr) *add_opt_to_name = true;
-        const IntegerValue min_energy = ComputeEnergyMinInWindow(
-            event.x_start_min, event.x_start_max, event.x_end_min,
-            event.x_end_max, event.x_size_min, event.y_size_min,
-            event.decomposed_energy, assignment, window_start, window_end);
-        if (min_energy > event.x_size_min * event.y_size_min &&
-            add_energy_to_name != nullptr) {
-          *add_energy_to_name = true;
-        }
-        if (!cut->AddLiteralTerm(Literal(event.presence_literal_index),
-                                 min_energy)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  };
 
   // Currently, we look at all the possible time windows, and will push all cuts
   // in the TopNCuts object. From our observations, this generator creates only
@@ -273,9 +520,6 @@ void GenerateCumulativeEnergeticCuts(
   };
   std::vector<OverloadedTimeWindow> overloaded_time_windows;
   const double capacity_lp = capacity.LpValue(lp_values);
-  const double makespan_lp = makespan.has_value()
-                                 ? makespan->LpValue(lp_values)
-                                 : std::numeric_limits<double>::infinity();
 
   // Compute relevant time points.
   // TODO(user): We could reduce this set.
@@ -298,27 +542,20 @@ void GenerateCumulativeEnergeticCuts(
     // After max_end_min, all tasks can fit before window_start.
     if (window_start >= max_end_min) break;
 
-    // if (ToDouble(window_start) >= makespan_lp) continue;
     for (int j = i + 1; j < num_time_points; ++j) {
       const IntegerValue window_end = time_points[j];
       const double max_energy_lp =
           ToDouble(window_end - window_start) * capacity_lp;
-      const double energy_up_to_makespan_lp =
-          makespan.has_value()
-              ? capacity_lp * (makespan_lp - ToDouble(window_start))
-              : std::numeric_limits<double>::infinity();
 
-      if (std::min(max_energy_lp, energy_up_to_makespan_lp) >=
-          sum_of_energies_lp) {
-        break;
-      }
+      if (max_energy_lp >= sum_of_energies_lp) break;
 
       // Scan all events and sum their energetic contributions.
       double energy_lp = 0.0;
       bool energy_correctly_computed = true;
       for (const EnergyEvent& event : events) {
         tmp_energy.Clear();
-        if (!add_one_event(event, window_start, window_end, &tmp_energy)) {
+        if (!AddOneEvent(event, window_start, window_end, assignment,
+                         &tmp_energy)) {
           energy_correctly_computed = false;
           break;  // Abort.
         }
@@ -326,8 +563,7 @@ void GenerateCumulativeEnergeticCuts(
       }
       if (!energy_correctly_computed) continue;
 
-      if (energy_lp >= std::min(max_energy_lp, energy_up_to_makespan_lp) *
-                           (1.0 + kMinCutViolation)) {
+      if (energy_lp >= max_energy_lp * (1.0 + kMinCutViolation)) {
         overloaded_time_windows.push_back({window_start, window_end});
       }
     }
@@ -346,37 +582,16 @@ void GenerateCumulativeEnergeticCuts(
     bool add_lifted_to_name = false;
     bool add_quadratic_to_name = false;
     bool add_energy_to_name = false;
-    bool use_makespan_in_cut = false;
     LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
 
-    // Compute the max energy available for the tasks with and without the
-    // makespan (if present).
-    const double time_window_energy_lp =
-        ToDouble(window_end - window_start) * capacity_lp;
-    const double energy_up_to_makespan_lp =
-        makespan.has_value()
-            ? capacity_lp * (makespan_lp - ToDouble(window_start))
-            : std::numeric_limits<double>::max();
-
-    // We prefer using the makespan as the cut will tighten itself when the
-    // objective value is improved.
-    //
-    // We reuse the min cut violation to allow some slack in the comparison
-    // between the two computed energy values.
-    if (energy_up_to_makespan_lp <= time_window_energy_lp + kMinCutViolation) {
-      IntegerValue capacity_value = integer_trail->FixedValue(capacity);
-      cut.AddConstant(capacity_value * window_start);
-      cut.AddTerm(makespan.value(), -capacity_value);
-      use_makespan_in_cut = true;
-    } else {
-      cut.AddTerm(capacity, window_start - window_end);
-    }
+    // Compute the max energy available for the tasks.
+    cut.AddTerm(capacity, window_start - window_end);
 
     // Add all contributions.
     for (const EnergyEvent& event : events) {
-      if (!add_one_event(event, window_start, window_end, &cut,
-                         &add_energy_to_name, &add_quadratic_to_name,
-                         &add_opt_to_name, &add_lifted_to_name)) {
+      if (!AddOneEvent(event, window_start, window_end, assignment, &cut,
+                       &add_energy_to_name, &add_quadratic_to_name,
+                       &add_opt_to_name, &add_lifted_to_name)) {
         cut_generated = false;
         break;  // Exit the event loop.
       }
@@ -388,7 +603,6 @@ void GenerateCumulativeEnergeticCuts(
       if (add_quadratic_to_name) full_name.append("_quadratic");
       if (add_lifted_to_name) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
-      if (use_makespan_in_cut) full_name.append("_makespan");
       top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
     }
   }
@@ -431,9 +645,10 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
   AppendVariablesToCumulativeCut(capacity, demands_helper, model, &result.vars);
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   result.generate_cuts =
-      [makespan, capacity, demands_helper, helper, model](
+      [makespan, capacity, demands_helper, helper, integer_trail, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
@@ -461,8 +676,16 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
           events.push_back(e);
         }
 
-        GenerateCumulativeEnergeticCuts("CumulativeEnergy", lp_values, events,
-                                        capacity, makespan, model, manager);
+        if (makespan.has_value() && integer_trail->IsFixed(capacity)) {
+          GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
+              "CumulativeEnergy", lp_values, events,
+              integer_trail->FixedValue(capacity), makespan.value(), model,
+              manager);
+
+        } else {
+          GenerateCumulativeEnergeticCuts("CumulativeEnergy", lp_values, events,
+                                          capacity, model, manager);
+        }
         return true;
       };
 
@@ -500,9 +723,15 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
           events.push_back(e);
         }
 
-        GenerateCumulativeEnergeticCuts("NoOverlapEnergy", lp_values, events,
-                                        IntegerValue(1), makespan, model,
-                                        manager);
+        if (makespan.has_value()) {
+          GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
+              "NoOverlapEnergy", lp_values, events,
+              /*capacity=*/IntegerValue(1), makespan.value(), model, manager);
+        } else {
+          GenerateCumulativeEnergeticCuts("NoOverlapEnergy", lp_values, events,
+                                          /*capacity=*/IntegerValue(1), model,
+                                          manager);
+        }
         return true;
       };
   return result;
@@ -1206,7 +1435,7 @@ bool ComputeMinSumOfWeightedEndMins(std::vector<PermutableEvent>& events,
       num_pruned++;
     }
   } while (std::next_permutation(events.begin(), events.end()));
-  VLOG(1) << "DP: size=" << events.size() << ", explored = " << num_explored
+  VLOG(2) << "DP: size=" << events.size() << ", explored = " << num_explored
           << ", pruned = " << num_pruned
           << ", min_sum_of_end_mins = " << min_sum_of_end_mins
           << ", min_sum_of_weighted_end_mins = "

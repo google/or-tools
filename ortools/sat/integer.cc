@@ -548,10 +548,6 @@ bool IntegerTrail::Propagate(Trail* trail) {
     CHECK_EQ(trail->CurrentDecisionLevel(), integer_search_levels_.size());
   }
 
-  // This is used to map any integer literal out of the initial variable domain
-  // into one that use one of the domain value.
-  var_to_current_lb_interval_index_.SetLevel(level);
-
   // This is required because when loading a model it is possible that we add
   // (literal <-> integer literal) associations for literals that have already
   // been propagated here. This often happens when the presolve is off
@@ -602,7 +598,6 @@ void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
   ++num_untrails_;
   conditional_lbs_.clear();
   const int level = trail.CurrentDecisionLevel();
-  var_to_current_lb_interval_index_.SetLevel(level);
   propagation_trail_index_ =
       std::min(propagation_trail_index_, literal_trail_index);
 
@@ -715,10 +710,6 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
   if (domain.IsEmpty()) return false;
   (*domains_)[var] = domain;
   (*domains_)[NegationOf(var)] = domain.Negation();
-  if (domain.NumIntervals() > 1) {
-    var_to_current_lb_interval_index_.Set(var, 0);
-    var_to_current_lb_interval_index_.Set(NegationOf(var), 0);
-  }
 
   // TODO(user): That works, but it might be better to simply update the
   // bounds here directly. This is because these function might call again
@@ -1301,7 +1292,10 @@ void IntegerTrail::CanonicalizeLiteralIfNeeded(IntegerLiteral* i_lit) {
   const auto& domain = (*domains_)[i_lit->var];
   if (domain.NumIntervals() <= 1) return;
 
-  int index = var_to_current_lb_interval_index_.at(i_lit->var);
+  // TODO(user): we could cache a starting index since in most situation we
+  // ask for tighter and tigher canonicalization. Alternatively, we could
+  // use binary search.
+  int index = 0;
   const int size = domain.NumIntervals();
   while (index < size && i_lit->bound > domain[index].end) {
     ++index;
@@ -1310,7 +1304,6 @@ void IntegerTrail::CanonicalizeLiteralIfNeeded(IntegerLiteral* i_lit) {
     // We will be out of bound and deal with that below.
     DCHECK_GT(i_lit->bound, UpperBound(i_lit->var));
   } else {
-    var_to_current_lb_interval_index_.Set(i_lit->var, index);
     i_lit->bound = std::max(i_lit->bound, IntegerValue(domain[index].start));
   }
 }

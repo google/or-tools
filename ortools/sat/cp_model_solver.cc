@@ -1148,7 +1148,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   PropagateEncodingFromEquivalenceRelations(model_proto, model);
 
   // Check the model is still feasible before continuing.
-  if (sat_solver->IsModelUnsat()) return unsat();
+  if (sat_solver->ModelIsUnsat()) return unsat();
 
   // Fully encode variables as needed by the search strategy.
   AddFullEncodingFromSearchBranching(model_proto, model);
@@ -1182,7 +1182,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
         }
       }
     }
-    if (sat_solver->IsModelUnsat()) {
+    if (sat_solver->ModelIsUnsat()) {
       VLOG(2) << "UNSAT during extraction (after adding '"
               << ConstraintCaseName(ct.constraint_case()) << "'). "
               << ProtobufDebugString(ct);
@@ -1269,7 +1269,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   if (parameters.cp_model_probing_level() > 1) {
     Prober* prober = model->GetOrCreate<Prober>();
     prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
-    if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
+    if (model->GetOrCreate<SatSolver>()->ModelIsUnsat()) {
       return unsat();
     }
     if (!model->GetOrCreate<BinaryImplicationGraph>()

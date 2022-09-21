@@ -136,11 +136,12 @@ class SatSolver {
   // "sticky" and once this happen, nothing else can be done with the solver.
   //
   // Thanks to this function, a client can safely ignore the return value of any
-  // Add*() functions. If one of them return false, then IsModelUnsat() will
+  // Add*() functions. If one of them return false, then ModelIsUnsat() will
   // return true.
-  //
-  // TODO(user): Rename to ModelIsUnsat().
-  bool IsModelUnsat() const { return model_is_unsat_; }
+  bool ModelIsUnsat() const { return model_is_unsat_; }
+
+  // TODO(user): remove this function.
+  bool IsModelUnsat() const { return model_is_unsat_; }  // DEPRECATED
 
   // Adds and registers the given propagator with the sat solver. Note that
   // during propagation, they will be called in the order they were added.

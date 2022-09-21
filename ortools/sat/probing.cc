@@ -76,7 +76,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
     sat_solver_->AdvanceDeterministicTime(time_limit_);
 
-    if (sat_solver_->IsModelUnsat()) return false;
+    if (sat_solver_->ModelIsUnsat()) return false;
     if (sat_solver_->CurrentDecisionLevel() == 0) continue;
     if (trail_.Index() > saved_index) {
       if (callback_ != nullptr) callback_(decision);
@@ -571,7 +571,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
             Literal(next_decision));
     const int new_level = sat_solver->CurrentDecisionLevel();
     sat_solver->AdvanceDeterministicTime(time_limit);
-    if (sat_solver->IsModelUnsat()) return false;
+    if (sat_solver->ModelIsUnsat()) return false;
     if (new_level <= level) {
       ++num_conflicts;
 

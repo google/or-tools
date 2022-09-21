@@ -1323,7 +1323,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     absl::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
     ProbeAndFindEquivalentLiteral((*solver).get(), &postsolver,
                                   drat_proof_handler, &equiv_map);
-    if ((*solver)->IsModelUnsat()) {
+    if ((*solver)->ModelIsUnsat()) {
       VLOG(1) << "UNSAT during probing.";
       return SatSolver::INFEASIBLE;
     }

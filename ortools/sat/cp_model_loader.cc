@@ -356,7 +356,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   auto* sat_solver = m->GetOrCreate<SatSolver>();
 
   // TODO(user): Debug what makes it unsat at this point.
-  if (sat_solver->IsModelUnsat()) return;
+  if (sat_solver->ModelIsUnsat()) return;
 
   // Detection of literal equivalent to (i_var == value). We collect all the
   // half-reified constraint lit => equality or lit => inequality for a given
@@ -526,7 +526,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     m->Add(
         Implication(inequality.literal,
                     encoder->GetOrCreateAssociatedLiteral(inequality.i_lit)));
-    if (sat_solver->IsModelUnsat()) return;
+    if (sat_solver->ModelIsUnsat()) return;
 
     ++num_half_inequalities;
     mapping->already_loaded_ct_.insert(inequality.ct);
@@ -573,7 +573,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     // TODO(user): Try to remove it. Normally we caught UNSAT above, but
     // tests are very flaky (it only happens in parallel). Keeping it there for
     // the time being.
-    if (sat_solver->IsModelUnsat()) return;
+    if (sat_solver->ModelIsUnsat()) return;
 
     // Encode the half-equalities.
     //

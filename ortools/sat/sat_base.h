@@ -115,9 +115,17 @@ inline std::ostream& operator<<(std::ostream& os, Literal literal) {
 
 inline std::ostream& operator<<(std::ostream& os,
                                 absl::Span<const Literal> literals) {
+  os << "[";
+  bool first = true;
   for (const Literal literal : literals) {
-    os << literal.DebugString() << ",";
+    if (first) {
+      first = false;
+    } else {
+      os << ",";
+    }
+    os << literal.DebugString();
   }
+  os << "]";
   return os;
 }
 

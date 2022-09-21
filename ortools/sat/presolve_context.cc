@@ -2071,7 +2071,7 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
     CHECK(LoadConstraint(ct, local_model));
-    if (sat_solver->IsModelUnsat()) {
+    if (sat_solver->ModelIsUnsat()) {
       return context->NotifyThatModelIsUnsat(absl::StrCat(
           "after loading constraint during probing ", ct.ShortDebugString()));
     }

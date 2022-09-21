@@ -1003,7 +1003,7 @@ int PrecedencesPropagator::
     // TODO(user): Find more than one disjoint set of incoming arcs.
     // TODO(user): call MinimizeCoreWithPropagation() on the clause.
     solver->Backtrack(0);
-    if (solver->IsModelUnsat()) return num_added_constraints;
+    if (solver->ModelIsUnsat()) return num_added_constraints;
     std::vector<Literal> clause;
     for (const ArcIndex arc_index : incoming_arcs_[target]) {
       const Literal literal = arcs_[arc_index].presence_literals.front();
@@ -1071,7 +1071,7 @@ int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(Model* model) {
     //   could be combined with probing.
     for (const SatClause* clause : clauses->AllClausesInCreationOrder()) {
       if (time_limit->LimitReached()) return num_added_constraints;
-      if (solver->IsModelUnsat()) return num_added_constraints;
+      if (solver->ModelIsUnsat()) return num_added_constraints;
       num_added_constraints += AddGreaterThanAtLeastOneOfConstraintsFromClause(
           clause->AsSpan(), model);
     }
@@ -1084,7 +1084,7 @@ int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(Model* model) {
     if (num_booleans < 1e6) {
       for (int i = 0; i < num_booleans; ++i) {
         if (time_limit->LimitReached()) return num_added_constraints;
-        if (solver->IsModelUnsat()) return num_added_constraints;
+        if (solver->ModelIsUnsat()) return num_added_constraints;
         num_added_constraints +=
             AddGreaterThanAtLeastOneOfConstraintsFromClause(
                 {Literal(BooleanVariable(i), true),

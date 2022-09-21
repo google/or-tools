@@ -653,12 +653,12 @@ std::function<void(Model*)> SubcircuitConstraint(
     for (int i = 0; i < exactly_one_incoming.size(); ++i) {
       if (i == 0 && multiple_subcircuit_through_zero) continue;
       model->Add(ExactlyOneConstraint(exactly_one_incoming[i]));
-      if (sat_solver->IsModelUnsat()) return;
+      if (sat_solver->ModelIsUnsat()) return;
     }
     for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
       if (i == 0 && multiple_subcircuit_through_zero) continue;
       model->Add(ExactlyOneConstraint(exactly_one_outgoing[i]));
-      if (sat_solver->IsModelUnsat()) return;
+      if (sat_solver->ModelIsUnsat()) return;
     }
 
     CircuitPropagator::Options options;

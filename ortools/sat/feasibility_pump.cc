@@ -683,7 +683,7 @@ bool FeasibilityPump::PropagationRounding() {
     }
     sat_solver_->EnqueueDecisionAndBacktrackOnConflict(to_enqueue);
 
-    if (sat_solver_->IsModelUnsat()) {
+    if (sat_solver_->ModelIsUnsat()) {
       model_is_unsat_ = true;
       return false;
     }
