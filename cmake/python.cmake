@@ -127,6 +127,9 @@ function(search_python_internal_module)
   endif()
 endfunction()
 
+##################
+##  PROTO FILE  ##
+##################
 # Generate Protobuf py sources with mypy support
 search_python_module(
   NAME mypy_protobuf
@@ -141,8 +144,8 @@ file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
   "ortools/sat/*.proto"
-  "ortools/util/*.proto"
   "ortools/scheduling/*.proto"
+  "ortools/util/*.proto"
   )
 if(USE_PDLP)
   file(GLOB_RECURSE pdlp_proto_py_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
@@ -170,6 +173,47 @@ foreach(PROTO_FILE IN LISTS proto_py_files)
 endforeach()
 add_custom_target(Py${PROJECT_NAME}_proto DEPENDS ${PROTO_PYS} ${PROJECT_NAMESPACE}::ortools)
 
+###################
+##  Python Test  ##
+###################
+if(BUILD_TESTING)
+  search_python_module(NAME virtualenv PACKAGE virtualenv)
+  # venv not working on github runners
+  # search_python_internal_module(NAME venv)
+  # Testing using a vitual environment
+  set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m virtualenv)
+  #set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
+  set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/python/venv)
+  if(WIN32)
+    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/Scripts/python.exe)
+  else()
+    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/bin/python)
+  endif()
+
+  # add_python_test()
+  # CMake function to generate and build python test.
+  # Parameters:
+  #  the python filename
+  # e.g.:
+  # add_python_test(foo.py)
+  function(add_python_test FILE_NAME)
+    message(STATUS "Configuring test ${FILE_NAME} ...")
+    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+    add_test(
+      NAME python_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+    message(STATUS "Configuring test ${FILE_NAME} done")
+  endfunction()
+endif()
+
+#######################
+##  PYTHON WRAPPERS  ##
+#######################
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
 #get_target_property(FLAGS ${PROJECT_NAMESPACE}::ortools COMPILE_DEFINITIONS)
 set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
@@ -321,22 +365,7 @@ configure_file(
   @ONLY)
 install(SCRIPT ${PROJECT_BINARY_DIR}/python/python-install.cmake)
 
-###################
-##  Python Test  ##
-###################
 if(BUILD_TESTING)
-  search_python_module(NAME virtualenv PACKAGE virtualenv)
-  # venv not working on github runners
-  # search_python_internal_module(NAME venv)
-  # Testing using a vitual environment
-  set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m virtualenv)
-  #set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
-  set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/python/venv)
-  if(WIN32)
-    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/Scripts/python.exe)
-  else()
-    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/bin/python)
-  endif()
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
     # Clean previous install otherwise pip install may do nothing
@@ -367,27 +396,6 @@ if(BUILD_TESTING)
   add_test(NAME pytest_venv
     COMMAND ${VENV_Python3_EXECUTABLE} ${VENV_DIR}/test.py)
 endif()
-
-# add_python_test()
-# CMake function to generate and build python test.
-# Parameters:
-#  the python filename
-# e.g.:
-# add_python_test(foo.py)
-function(add_python_test FILE_NAME)
-  message(STATUS "Configuring test ${FILE_NAME} ...")
-  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-
-  if(BUILD_TESTING)
-    add_test(
-      NAME python_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${FILE_NAME}
-      WORKING_DIRECTORY ${VENV_DIR})
-  endif()
-  message(STATUS "Configuring test ${FILE_NAME} done")
-endfunction()
 
 #####################
 ##  Python Sample  ##
