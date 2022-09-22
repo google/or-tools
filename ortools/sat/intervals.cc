@@ -884,7 +884,7 @@ std::vector<LiteralValueValue> SchedulingDemandHelper::FilteredDecomposedEnergy(
   for (const auto [lit, fixed_size, fixed_demand] :
        decomposed_energies_[index]) {
     if (assignment_.LiteralIsFalse(lit)) continue;
-    energy.push_back({lit, fixed_size * fixed_demand});
+    energy.push_back({lit, fixed_size, fixed_demand});
   }
   return energy;
 }
