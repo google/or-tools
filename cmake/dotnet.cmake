@@ -90,52 +90,9 @@ message(STATUS ".Net project: ${DOTNET_PROJECT}")
 set(DOTNET_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_PROJECT})
 message(STATUS ".Net project build path: ${DOTNET_PROJECT_DIR}")
 
-# Create the native library
-add_library(google-ortools-native SHARED "")
-set_target_properties(google-ortools-native PROPERTIES
-  PREFIX ""
-  POSITION_INDEPENDENT_CODE ON)
-# note: macOS is APPLE and also UNIX !
-if(APPLE)
-  set_target_properties(google-ortools-native PROPERTIES INSTALL_RPATH "@loader_path")
-  # Xcode fails to build if library doesn't contains at least one source file.
-  if(XCODE)
-    file(GENERATE
-      OUTPUT ${PROJECT_BINARY_DIR}/google-ortools-native/version.cpp
-      CONTENT "namespace {char* version = \"${PROJECT_VERSION}\";}")
-    target_sources(google-ortools-native PRIVATE ${PROJECT_BINARY_DIR}/google-ortools-native/version.cpp)
-  endif()
-elseif(UNIX)
-  set_target_properties(google-ortools-native PROPERTIES INSTALL_RPATH "$ORIGIN")
-endif()
-
-# CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
-#get_target_property(FLAGS ${PROJECT_NAMESPACE}::ortools COMPILE_DEFINITIONS)
-set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
-if(USE_COINOR)
-  list(APPEND FLAGS "-DUSE_CBC" "-DUSE_CLP")
-endif()
-if(USE_GLPK)
-  list(APPEND FLAGS "-DUSE_GLPK")
-endif()
-if(USE_PDLP)
-  list(APPEND FLAGS "-DUSE_PDLP")
-endif()
-if(USE_SCIP)
-  list(APPEND FLAGS "-DUSE_SCIP")
-endif()
-list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
-
-# Swig wrap all libraries
-foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
-  add_subdirectory(ortools/${SUBPROJECT}/csharp)
-  target_link_libraries(google-ortools-native PRIVATE dotnet_${SUBPROJECT})
-endforeach()
-
-file(COPY ${PROJECT_SOURCE_DIR}/tools/doc/orLogo.png DESTINATION ${PROJECT_BINARY_DIR}/dotnet)
-set(DOTNET_LOGO_DIR "${PROJECT_BINARY_DIR}/dotnet")
-configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Directory.Build.props.in ${PROJECT_BINARY_DIR}/dotnet/Directory.Build.props)
-
+##################
+##  PROTO FILE  ##
+##################
 # Generate Protobuf .Net sources
 set(PROTO_DOTNETS)
 file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
@@ -175,6 +132,121 @@ foreach(PROTO_FILE IN LISTS proto_dotnet_files)
   list(APPEND PROTO_DOTNETS ${PROTO_DOTNET})
 endforeach()
 add_custom_target(Dotnet${PROJECT_NAME}_proto DEPENDS ${PROTO_DOTNETS} ${PROJECT_NAMESPACE}::ortools)
+
+# Create the native library
+add_library(google-ortools-native SHARED "")
+set_target_properties(google-ortools-native PROPERTIES
+  PREFIX ""
+  POSITION_INDEPENDENT_CODE ON)
+# note: macOS is APPLE and also UNIX !
+if(APPLE)
+  set_target_properties(google-ortools-native PROPERTIES INSTALL_RPATH "@loader_path")
+  # Xcode fails to build if library doesn't contains at least one source file.
+  if(XCODE)
+    file(GENERATE
+      OUTPUT ${PROJECT_BINARY_DIR}/google-ortools-native/version.cpp
+      CONTENT "namespace {char* version = \"${PROJECT_VERSION}\";}")
+    target_sources(google-ortools-native PRIVATE ${PROJECT_BINARY_DIR}/google-ortools-native/version.cpp)
+  endif()
+elseif(UNIX)
+  set_target_properties(google-ortools-native PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+
+#################
+##  .Net Test  ##
+#################
+if(BUILD_TESTING)
+  # add_dotnet_test()
+  # CMake function to generate and build dotnet test.
+  # Parameters:
+  #  the dotnet filename
+  # e.g.:
+  # add_dotnet_test(FooTests.cs)
+  function(add_dotnet_test FILE_NAME)
+    message(STATUS "Configuring test ${FILE_NAME} ...")
+    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+    set(DOTNET_TEST_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${TEST_NAME})
+    message(STATUS "build path: ${DOTNET_TEST_DIR}")
+
+    configure_file(
+      ${PROJECT_SOURCE_DIR}/ortools/dotnet/Test.csproj.in
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
+      @ONLY)
+
+    add_custom_command(
+      OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_TEST_DIR}
+      COMMAND ${CMAKE_COMMAND} -E copy
+      ${FILE_NAME}
+      ${DOTNET_TEST_DIR}/
+      MAIN_DEPENDENCY ${FILE_NAME}
+      VERBATIM
+      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+
+    add_custom_command(
+      OUTPUT ${DOTNET_TEST_DIR}/timestamp
+      COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+        ${DOTNET_EXECUTABLE} build --nologo -c Release ${TEST_NAME}.csproj
+      sdfasdad
+      COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_DIR}/timestamp
+      DEPENDS
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
+      dotnet_package
+      BYPRODUCTS
+      ${DOTNET_TEST_DIR}/bin
+      ${DOTNET_TEST_DIR}/obj
+      VERBATIM
+      COMMENT "Compiling .Net ${COMPONENT_NAME}/${TEST_NAME}.cs (${DOTNET_TEST_DIR}/timestamp)"
+      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+
+    add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
+      DEPENDS
+      ${DOTNET_TEST_DIR}/timestamp
+      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+
+    add_test(
+      NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+        ${DOTNET_EXECUTABLE} test --nologo -c Release ${TEST_NAME}.csproj
+      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+    message(STATUS "Configuring test ${FILE_NAME} done")
+  endfunction()
+endif()
+
+#######################
+##  DOTNET WRAPPERS  ##
+#######################
+# CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
+#get_target_property(FLAGS ${PROJECT_NAMESPACE}::ortools COMPILE_DEFINITIONS)
+set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
+if(USE_COINOR)
+  list(APPEND FLAGS "-DUSE_CBC" "-DUSE_CLP")
+endif()
+if(USE_GLPK)
+  list(APPEND FLAGS "-DUSE_GLPK")
+endif()
+if(USE_PDLP)
+  list(APPEND FLAGS "-DUSE_PDLP")
+endif()
+if(USE_SCIP)
+  list(APPEND FLAGS "-DUSE_SCIP")
+endif()
+list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
+
+# Swig wrap all libraries
+foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
+  add_subdirectory(ortools/${SUBPROJECT}/csharp)
+  target_link_libraries(google-ortools-native PRIVATE dotnet_${SUBPROJECT})
+endforeach()
+
+file(COPY ${PROJECT_SOURCE_DIR}/tools/doc/orLogo.png DESTINATION ${PROJECT_BINARY_DIR}/dotnet)
+set(DOTNET_LOGO_DIR "${PROJECT_BINARY_DIR}/dotnet")
+configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Directory.Build.props.in ${PROJECT_BINARY_DIR}/dotnet/Directory.Build.props)
 
 ############################
 ##  .Net SNK file  ##
@@ -232,8 +304,10 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT ${DOTNET_NATIVE_PROJECT_DIR}/timestamp
-  COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} build -c Release /p:Platform=${DOTNET_PLATFORM} ${DOTNET_NATIVE_PROJECT}.csproj
-  COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} pack -c Release ${DOTNET_NATIVE_PROJECT}.csproj
+  COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+    ${DOTNET_EXECUTABLE} build --nologo -c Release /p:Platform=${DOTNET_PLATFORM} ${DOTNET_NATIVE_PROJECT}.csproj
+  COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+    ${DOTNET_EXECUTABLE} pack --nologo -c Release ${DOTNET_NATIVE_PROJECT}.csproj
   COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_NATIVE_PROJECT_DIR}/timestamp
   DEPENDS
     ${PROJECT_BINARY_DIR}/dotnet/Directory.Build.props
@@ -277,8 +351,10 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT ${DOTNET_PROJECT_DIR}/timestamp
-  COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} build -c Release /p:Platform=${DOTNET_PLATFORM} ${DOTNET_PROJECT}.csproj
-  COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} pack -c Release ${DOTNET_PROJECT}.csproj
+  COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+    ${DOTNET_EXECUTABLE} build --nologo -c Release /p:Platform=${DOTNET_PLATFORM} ${DOTNET_PROJECT}.csproj
+  COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+    ${DOTNET_EXECUTABLE} pack --nologo -c Release ${DOTNET_PROJECT}.csproj
   COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_PROJECT_DIR}/timestamp
   DEPENDS
     ${PROJECT_BINARY_DIR}/dotnet/or-tools.snk
@@ -295,68 +371,6 @@ add_custom_target(dotnet_package ALL
   DEPENDS
     ${DOTNET_PROJECT_DIR}/timestamp
   WORKING_DIRECTORY ${DOTNET_PROJECT_DIR})
-
-#################
-##  .Net Test  ##
-#################
-# add_dotnet_test()
-# CMake function to generate and build dotnet test.
-# Parameters:
-#  the dotnet filename
-# e.g.:
-# add_dotnet_test(FooTests.cs)
-function(add_dotnet_test FILE_NAME)
-  message(STATUS "Configuring test ${FILE_NAME} ...")
-  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-
-  set(DOTNET_TEST_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${TEST_NAME})
-  message(STATUS "build path: ${DOTNET_TEST_DIR}")
-
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/ortools/dotnet/Test.csproj.in
-    ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
-    @ONLY)
-
-  add_custom_command(
-    OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_TEST_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${FILE_NAME}
-      ${DOTNET_TEST_DIR}/
-    MAIN_DEPENDENCY ${FILE_NAME}
-    VERBATIM
-    WORKING_DIRECTORY ${DOTNET_TEST_DIR})
-
-  add_custom_command(
-    OUTPUT ${DOTNET_TEST_DIR}/timestamp
-    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} build -c Release ${TEST_NAME}.csproj
-    COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_DIR}/timestamp
-    DEPENDS
-      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
-      ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
-      dotnet_package
-    BYPRODUCTS
-      ${DOTNET_TEST_DIR}/bin
-      ${DOTNET_TEST_DIR}/obj
-    VERBATIM
-    COMMENT "Compiling .Net ${COMPONENT_NAME}/${TEST_NAME}.cs (${DOTNET_TEST_DIR}/timestamp)"
-    WORKING_DIRECTORY ${DOTNET_TEST_DIR})
-
-  add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
-    DEPENDS
-      ${DOTNET_TEST_DIR}/timestamp
-    WORKING_DIRECTORY ${DOTNET_TEST_DIR})
-
-  if(BUILD_TESTING)
-    add_test(
-      NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} test --no-build -c Release ${TEST_NAME}.csproj
-      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
-  endif()
-  message(STATUS "Configuring test ${FILE_NAME} done")
-endfunction()
 
 ###################
 ##  .Net Sample  ##
@@ -394,8 +408,10 @@ function(add_dotnet_sample FILE_NAME)
 
   add_custom_command(
     OUTPUT ${DOTNET_SAMPLE_DIR}/timestamp
-    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} build -c Release
-    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} pack -c Release
+    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+      ${DOTNET_EXECUTABLE} build --nologo -c Release
+    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+      ${DOTNET_EXECUTABLE} pack --nologo -c Release
     COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_SAMPLE_DIR}/timestamp
     DEPENDS
       ${DOTNET_SAMPLE_DIR}/${SAMPLE_NAME}.csproj
@@ -416,13 +432,15 @@ function(add_dotnet_sample FILE_NAME)
     if(USE_DOTNET_CORE_31)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_netcoreapp31
-        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} run --no-build --framework netcoreapp3.1 -c Release
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} run --framework netcoreapp3.1 -c Release
         WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
     endif()
     if(USE_DOTNET_6)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_net60
-        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release
         WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
     endif()
   endif()
@@ -465,7 +483,8 @@ function(add_dotnet_example FILE_NAME)
 
   add_custom_command(
     OUTPUT ${DOTNET_EXAMPLE_DIR}/timestamp
-    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} build -c Release ${EXAMPLE_NAME}.csproj
+    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+      ${DOTNET_EXECUTABLE} build --nologo -c Release ${EXAMPLE_NAME}.csproj
     COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} pack -c Release ${EXAMPLE_NAME}.csproj
     COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_EXAMPLE_DIR}/timestamp
     DEPENDS
@@ -488,13 +507,15 @@ function(add_dotnet_example FILE_NAME)
     if(USE_DOTNET_CORE_31)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_netcoreapp31
-        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} run --no-build --framework netcoreapp3.1 -c Release ${EXAMPLE_NAME}.csproj
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} run --no-build --framework netcoreapp3.1 -c Release ${EXAMPLE_NAME}.csproj
         WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
     endif()
     if(USE_DOTNET_6)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_net60
-        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release ${EXAMPLE_NAME}.csproj
+        COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+          ${DOTNET_EXECUTABLE} run --no-build --framework net6.0 -c Release ${EXAMPLE_NAME}.csproj
         WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
     endif()
   endif()

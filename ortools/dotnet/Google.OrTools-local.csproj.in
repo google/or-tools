@@ -28,6 +28,10 @@
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/algorithms/*.cs">
       <Link>algorithms/%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/algorithms/csharp/*.cs"
+             Exclude="@PROJECT_SOURCE_DIR@/ortools/algorithms/csharp/*Tests.cs">
+      <Link>graph/%(Filename)%(Extension)</Link>
+    </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/bop/*.cs">
       <Link>bop/%(Filename)%(Extension)</Link>
@@ -40,43 +44,56 @@
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/graph/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/graph/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/graph/csharp/*.cs"
+             Exclude="@PROJECT_SOURCE_DIR@/ortools/graph/csharp/*Tests.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/linear_solver/*.cs">
       <Link>linear_solver/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/linear_solver/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/linear_solver/csharp/*.cs"
+             Exclude="@PROJECT_SOURCE_DIR@/ortools/linear_solver/csharp/*Tests.cs">
       <Link>linear_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/constraint_solver/*.cs">
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/constraint_solver/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/constraint_solver/csharp/*.cs"
+             Exclude="@PROJECT_SOURCE_DIR@/ortools/constraint_solver/csharp/*Tests.cs">
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/init/*.cs">
       <Link>init/%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/init/csharp/*.cs"
+             Exclude="@PROJECT_SOURCE_DIR@/ortools/init/csharp/*Tests.cs">
+      <Link>sat/%(Filename)%(Extension)</Link>
+    </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/pdlp/*.cs">
+      <Link>sat/%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/pdlp/csharp/*.cs"
+             Exclude="@PROJECT_SOURCE_DIR@/ortools/pdlp/csharp/*Tests.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/sat/*.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/sat/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/sat/csharp/*.cs"
+             Exclude="@PROJECT_SOURCE_DIR@/ortools/sat/csharp/*Tests.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/util/*.cs">
       <Link>util/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/util/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/util/csharp/*.cs"
+             Exclude="@PROJECT_SOURCE_DIR@/ortools/util/csharp/*Tests.cs">
       <Link>util/%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>

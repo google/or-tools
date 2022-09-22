@@ -29,3 +29,10 @@ set_target_properties(dotnet_linear_solver PROPERTIES
   SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(dotnet_linear_solver PRIVATE ortools::ortools)
+
+if(BUILD_TESTING)
+  file(GLOB DOTNET_SRCS "*Tests.cs")
+  foreach(FILE_NAME IN LISTS DOTNET_SRCS)
+    add_dotnet_test(${FILE_NAME})
+  endforeach()
+endif()
