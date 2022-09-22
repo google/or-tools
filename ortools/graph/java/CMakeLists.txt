@@ -28,3 +28,10 @@ set_target_properties(jnigraph PROPERTIES
   SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(jnigraph PRIVATE ortools::ortools)
+
+if(BUILD_TESTING)
+  file(GLOB JAVA_SRCS "*Test.java")
+  foreach(FILE_NAME IN LISTS JAVA_SRCS)
+    add_java_test(${FILE_NAME})
+  endforeach()
+endif()
