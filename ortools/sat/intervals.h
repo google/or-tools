@@ -22,7 +22,6 @@
 
 #include "absl/base/attributes.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -539,6 +538,8 @@ class SchedulingDemandHelper {
   //
   // TODO(user): Add more complex EnergyMinBefore(time) once we also support
   // expressing the interval as a set of alternatives.
+  //
+  // At level 0, it will filter false literals from decomposed energies.
   void CacheAllEnergyValues();
   IntegerValue EnergyMin(int t) const { return cached_energies_min_[t]; }
   IntegerValue EnergyMax(int t) const { return cached_energies_max_[t]; }
@@ -559,22 +560,24 @@ class SchedulingDemandHelper {
   ABSL_MUST_USE_RESULT bool DecreaseEnergyMax(int t, IntegerValue value);
 
   // Different optional representation of the energy of an interval.
+  //
   // Important: first value is size, second value is demand.
   const std::vector<std::vector<LiteralValueValue>>& DecomposedEnergies()
       const {
     return decomposed_energies_;
   }
 
-  // Returns the decomposed energy terms compatible with the current literal
-  // assignment.
-  // It returns en empty vector if the decomposed energy is not available.
-  std::vector<LiteralValueValue> FilteredDecomposedEnergy(int index);
-
   // Visible for testing.
   void OverrideLinearizedEnergies(
       const std::vector<LinearExpression>& energies);
   void OverrideDecomposedEnergies(
       const std::vector<std::vector<LiteralValueValue>>& energies);
+  // Returns the decomposed energy terms compatible with the current literal
+  // assignment. It must not be used to create reasons if not at level 0.
+  // It returns en empty vector if the decomposed energy is not available.
+  //
+  // Important: first value is size, second value is demand.
+  std::vector<LiteralValueValue> FilteredDecomposedEnergy(int index);
 
  private:
   IntegerValue SimpleEnergyMin(int t) const;
@@ -585,6 +588,7 @@ class SchedulingDemandHelper {
   IntegerValue DecomposedEnergyMax(int t) const;
 
   IntegerTrail* integer_trail_;
+  SatSolver* sat_solver_;  // To get the current propagation level.
   const VariablesAssignment& assignment_;
   std::vector<AffineExpression> demands_;
   SchedulingConstraintHelper* helper_;

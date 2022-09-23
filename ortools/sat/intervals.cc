@@ -679,6 +679,7 @@ SchedulingDemandHelper::SchedulingDemandHelper(
     std::vector<AffineExpression> demands, SchedulingConstraintHelper* helper,
     Model* model)
     : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
       assignment_(model->GetOrCreate<SatSolver>()->Assignment()),
       demands_(std::move(demands)),
       helper_(helper) {
@@ -748,7 +749,20 @@ IntegerValue SchedulingDemandHelper::DecomposedEnergyMax(int t) const {
 
 void SchedulingDemandHelper::CacheAllEnergyValues() {
   const int num_tasks = cached_energies_min_.size();
+  const bool is_at_level_zero = sat_solver_->CurrentDecisionLevel() == 0;
   for (int t = 0; t < num_tasks; ++t) {
+    // Try to reduce the size of the decomposed energy vector.
+    if (is_at_level_zero) {
+      int new_size = 0;
+      for (int i = 0; i < decomposed_energies_[t].size(); ++i) {
+        if (assignment_.LiteralIsFalse(decomposed_energies_[t][i].literal)) {
+          continue;
+        }
+        decomposed_energies_[t][new_size++] = decomposed_energies_[t][i];
+      }
+      decomposed_energies_[t].resize(new_size);
+    }
+
     cached_energies_min_[t] = std::max(
         {SimpleEnergyMin(t), LinearEnergyMin(t), DecomposedEnergyMin(t)});
     CHECK_NE(cached_energies_min_[t], kMinIntegerValue);
@@ -874,19 +888,21 @@ void SchedulingDemandHelper::OverrideLinearizedEnergies(
   }
 }
 
-// TODO(user): At level 0, we could filter in place.
 std::vector<LiteralValueValue> SchedulingDemandHelper::FilteredDecomposedEnergy(
     int index) {
-  if (decomposed_energies_.empty() || decomposed_energies_[index].empty()) {
-    return {};
+  if (decomposed_energies_[index].empty()) return {};
+  if (sat_solver_->CurrentDecisionLevel() == 0) {
+    // CacheAllEnergyValues has already filtered false literals.
+    return decomposed_energies_[index];
   }
-  std::vector<LiteralValueValue> energy;
-  for (const auto [lit, fixed_size, fixed_demand] :
-       decomposed_energies_[index]) {
-    if (assignment_.LiteralIsFalse(lit)) continue;
-    energy.push_back({lit, fixed_size, fixed_demand});
+
+  // Scan and filter false literals.
+  std::vector<LiteralValueValue> result;
+  for (const auto& e : decomposed_energies_[index]) {
+    if (assignment_.LiteralIsFalse(e.literal)) continue;
+    result.push_back(e);
   }
-  return energy;
+  return result;
 }
 
 void SchedulingDemandHelper::OverrideDecomposedEnergies(
@@ -915,9 +931,9 @@ void SchedulingDemandHelper::AddEnergyMinInWindowReason(
   // energy is enough.
   const IntegerValue start_max = helper_->StartMax(t);
   const IntegerValue end_min = helper_->EndMin(t);
-  const IntegerValue simple_energy_min =
-      DemandMin(t) * std::min({end_min - window_start, window_end - start_max,
-                               helper_->SizeMin(t)});
+  const IntegerValue min_overlap =
+      helper_->GetMinOverlap(t, window_start, window_end);
+  const IntegerValue simple_energy_min = DemandMin(t) * min_overlap;
   if (simple_energy_min == actual_energy_min) {
     AddDemandMinReason(t);
     helper_->AddSizeMinReason(t);

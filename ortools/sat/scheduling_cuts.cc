@@ -270,7 +270,7 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
 }
 
 // Will scan all event, compute the cumulated energy of all events, and returns
-// if it exceeds available_energy_lp.
+// whether it exceeds available_energy_lp.
 bool CutIsEfficient(
     const std::vector<EnergyEvent>& events, IntegerValue window_start,
     IntegerValue window_end, double available_energy_lp,
@@ -659,7 +659,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
           EnergyEvent e(i, helper);
           e.y_size = demands_helper->Demands()[i];
           e.y_size_min = demands_helper->DemandMin(i);
-          e.decomposed_energy = demands_helper->FilteredDecomposedEnergy(i);
+          e.decomposed_energy = demands_helper->DecomposedEnergies()[i];
           e.energy_min = demands_helper->EnergyMin(i);
           e.energy_is_quadratic = demands_helper->EnergyIsQuadratic(i);
           if (!helper->IsPresent(i)) {
@@ -1807,7 +1807,7 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
               event.y_size_min = demands_helper->DemandMin(index);
               event.energy_min = demands_helper->EnergyMin(index);
               event.decomposed_energy =
-                  demands_helper->FilteredDecomposedEnergy(index);
+                  demands_helper->DecomposedEnergies()[index];
               event.y_size_is_fixed = demands_helper->DemandIsFixed(index);
               events.push_back(event);
             }

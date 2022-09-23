@@ -151,6 +151,10 @@ class StrongVector {
   void resize(size_type new_size, const value_type& x) {
     v_.resize(new_size, x);
   }
+  void resize(IntType new_size) { v_.resize(new_size.value()); }
+  void resize(IntType new_size, const value_type& x) {
+    v_.resize(new_size.value(), x);
+  }
 
   size_type capacity() const { return v_.capacity(); }
   bool empty() const { return v_.empty(); }

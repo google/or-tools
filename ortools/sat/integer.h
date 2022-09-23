@@ -1364,6 +1364,9 @@ class GenericLiteralWatcher : public SatPropagator {
   // more than once at different priority for instance.
   int GetCurrentId() const { return current_id_; }
 
+  // Add the given propagator to its queue.
+  void CallOnNextPropagate(int id);
+
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
   // called.

@@ -837,6 +837,7 @@ cc_library(
     deps = [
         ":integer",
         ":linear_constraint",
+        ":linear_propagation",
         ":model",
         ":precedences",
         ":sat_base",
@@ -847,6 +848,20 @@ cc_library(
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
+    name = "linear_propagation",
+    srcs = ["linear_propagation.cc"],
+    hdrs = ["linear_propagation.h"],
+    deps = [
+        ":integer",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base:strong_vector",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

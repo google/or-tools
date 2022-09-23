@@ -1869,6 +1869,12 @@ GenericLiteralWatcher::GenericLiteralWatcher(Model* model)
   queue_by_priority_.resize(2);  // Because default priority is 1.
 }
 
+void GenericLiteralWatcher::CallOnNextPropagate(int id) {
+  if (in_queue_[id]) return;
+  in_queue_[id] = true;
+  queue_by_priority_[id_to_priority_[id]].push_back(id);
+}
+
 void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
   // Process any new Literal on the trail.
   while (propagation_trail_index_ < trail->Index()) {
