@@ -19,7 +19,6 @@ import unittest
 
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-from ortools.constraint_solver import pywrapcp
 
 
 def Distance(node_i, node_j):
@@ -89,7 +88,8 @@ class TestPyWrapRoutingIndexManager(unittest.TestCase):
         for i in range(manager.GetNumberOfVehicles()):
             self.assertEqual(i + 1,
                              manager.IndexToNode(manager.GetStartIndex(i)))
-            self.assertEqual(i + 4, manager.IndexToNode(manager.GetEndIndex(i)))
+            self.assertEqual(i + 4,
+                             manager.IndexToNode(manager.GetEndIndex(i)))
 
 
 class TestPyWrapRoutingModel(unittest.TestCase):
@@ -359,7 +359,8 @@ class TestPyWrapRoutingModel(unittest.TestCase):
         cost = model.RegisterTransitCallback(partial(TransitDistance, manager))
         model.SetArcCostEvaluatorOfAllVehicles(cost)
         # Add constant dimension
-        constant_id, success = model.AddConstantDimension(1, 100, True, 'count')
+        constant_id, success = model.AddConstantDimension(
+            1, 100, True, 'count')
         self.assertTrue(success)
         self.assertEqual(cost + 1, constant_id)
         count_dimension = model.GetDimensionOrDie('count')
@@ -576,18 +577,21 @@ class TestPyWrapRoutingModel(unittest.TestCase):
         # TODO(user): porting this segfaults the tests.
         cost = model.RegisterTransitCallback(partial(TransitDistance, manager))
         model.SetArcCostEvaluatorOfAllVehicles(cost)
-        routes = [[
-            manager.NodeToIndex(1),
-            manager.NodeToIndex(3),
-            manager.NodeToIndex(5),
-            manager.NodeToIndex(4),
-            manager.NodeToIndex(2),
-            manager.NodeToIndex(6)
-        ], [
-            manager.NodeToIndex(7),
-            manager.NodeToIndex(9),
-            manager.NodeToIndex(8)
-        ]]
+        routes = [
+            [
+                manager.NodeToIndex(1),
+                manager.NodeToIndex(3),
+                manager.NodeToIndex(5),
+                manager.NodeToIndex(4),
+                manager.NodeToIndex(2),
+                manager.NodeToIndex(6)
+            ],
+            [
+                manager.NodeToIndex(7),
+                manager.NodeToIndex(9),
+                manager.NodeToIndex(8)
+            ],
+        ]
         assignment = model.ReadAssignmentFromRoutes(routes, False)
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
         search_parameters.solution_limit = 1
