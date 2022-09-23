@@ -279,7 +279,7 @@ Note: The **ortools::ortools** target is in this case an ALIAS library target
 for the **ortools** library target.
 
 ```cmake
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 project(myproj VERSION 1.0)
 
 add_subdirectory(or-tools)
@@ -293,13 +293,13 @@ added automatically to your target as needed.
 
 #### Using FetchContent
 
-If you have `CMake >= 3.14.7` you can use the built-in module
+If you have `CMake >= 3.18` you can use the built-in module
 [`FetchContent`](https://cmake.org/cmake/help/latest/module/FetchContent.html)
 instead. Note: The **ortools::ortools** target is in this case an ALIAS library
 target for the **ortools** library target.
 
 ```cmake
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 project(myproj VERSION 1.0 LANGUAGES CXX)
 
 include(FetchContent)
