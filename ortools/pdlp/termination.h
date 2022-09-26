@@ -44,6 +44,7 @@ TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
 // unit tests where no TerminationCriteria is naturally available.
 TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
     const TerminationCriteria::SimpleOptimalityCriteria& simple_criteria);
+
 // Checks if any of the simple termination criteria are satisfied by `stats`,
 // and returns a termination reason if so, and nullopt otherwise. The "simple"
 // termination criteria are `time_sec_limit`, `iteration_limit`,
@@ -108,8 +109,18 @@ struct RelativeConvergenceInformation {
 
 RelativeConvergenceInformation ComputeRelativeResiduals(
     const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
-    const QuadraticProgramBoundNorms& norms,
+    const ConvergenceInformation& stats,
+    const QuadraticProgramBoundNorms& bound_norms);
+
+bool ObjectiveGapMet(
+    const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
     const ConvergenceInformation& stats);
+
+// Determines if the optimality criteria are met.
+bool OptimalityCriteriaMet(
+    const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
+    const ConvergenceInformation& stats, const OptimalityNorm optimality_norm,
+    const QuadraticProgramBoundNorms& bound_norms);
 
 }  // namespace operations_research::pdlp
 

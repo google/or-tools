@@ -32,6 +32,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
@@ -175,8 +176,8 @@ std::string ToString(const IterationStats& iter_stats,
   if (convergence_information.has_value()) {
     const RelativeConvergenceInformation relative_information =
         ComputeRelativeResiduals(
-            EffectiveOptimalityCriteria(termination_criteria), bound_norms,
-            *convergence_information);
+            EffectiveOptimalityCriteria(termination_criteria),
+            *convergence_information, bound_norms);
     return absl::StrCat(iteration_string, " | ",
                         ToString(*convergence_information, relative_information,
                                  termination_criteria.optimality_norm()));
@@ -200,8 +201,8 @@ std::string ToShortString(const IterationStats& iter_stats,
   if (convergence_information.has_value()) {
     const RelativeConvergenceInformation relative_information =
         ComputeRelativeResiduals(
-            EffectiveOptimalityCriteria(termination_criteria), bound_norms,
-            *convergence_information);
+            EffectiveOptimalityCriteria(termination_criteria),
+            *convergence_information, bound_norms);
     return absl::StrCat(
         iteration_string, " | ",
         ToShortString(*convergence_information, relative_information,

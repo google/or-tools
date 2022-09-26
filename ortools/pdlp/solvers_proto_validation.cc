@@ -36,6 +36,7 @@ absl::Status CheckNonNegative(const double value,
   }
   return absl::OkStatus();
 }
+
 absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
   if (criteria.optimality_norm() != OPTIMALITY_NORM_L_INF &&
       criteria.optimality_norm() != OPTIMALITY_NORM_L2) {
@@ -100,11 +101,13 @@ absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
       CheckNonNegative(criteria.eps_dual_infeasible(), "eps_dual_infeasible"));
   RETURN_IF_ERROR(
       CheckNonNegative(criteria.time_sec_limit(), "time_sec_limit"));
+
   if (criteria.iteration_limit() < 0) {
     return InvalidArgumentError("iteration_limit must be non-negative");
   }
   RETURN_IF_ERROR(CheckNonNegative(criteria.kkt_matrix_pass_limit(),
                                    "kkt_matrix_pass_limit"));
+
   return OkStatus();
 }
 

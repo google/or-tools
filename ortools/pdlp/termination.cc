@@ -24,18 +24,27 @@
 
 namespace operations_research::pdlp {
 
-namespace {
-
-bool OptimalityCriteriaMet(
-    const OptimalityNorm optimality_norm,
+bool ObjectiveGapMet(
     const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
-    const ConvergenceInformation& stats,
-    const QuadraticProgramBoundNorms& bound_norms) {
+    const ConvergenceInformation& stats) {
+  if (std::isinf(optimality_criteria.eps_optimal_objective_gap_absolute()) ||
+      std::isinf(optimality_criteria.eps_optimal_objective_gap_relative())) {
+    return true;
+  }
   const double abs_obj =
       std::abs(stats.primal_objective()) + std::abs(stats.dual_objective());
   const double gap =
       std::abs(stats.primal_objective() - stats.dual_objective());
+  return std::isfinite(abs_obj) &&
+         gap <= optimality_criteria.eps_optimal_objective_gap_absolute() +
+                    optimality_criteria.eps_optimal_objective_gap_relative() *
+                        abs_obj;
+}
 
+bool OptimalityCriteriaMet(
+    const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
+    const ConvergenceInformation& stats, const OptimalityNorm optimality_norm,
+    const QuadraticProgramBoundNorms& bound_norms) {
   double primal_err;
   double primal_err_baseline;
   double dual_err;
@@ -59,19 +68,24 @@ bool OptimalityCriteriaMet(
                  << OptimalityNorm_Name(optimality_norm);
   }
 
-  return dual_err <=
-             optimality_criteria.eps_optimal_dual_residual_absolute() +
-                 optimality_criteria.eps_optimal_dual_residual_relative() *
-                     dual_err_baseline &&
-         primal_err <=
-             optimality_criteria.eps_optimal_primal_residual_absolute() +
-                 optimality_criteria.eps_optimal_primal_residual_relative() *
-                     primal_err_baseline &&
-         std::isfinite(abs_obj) &&
-         gap <= optimality_criteria.eps_optimal_objective_gap_absolute() +
-                    optimality_criteria.eps_optimal_objective_gap_relative() *
-                        abs_obj;
+  const bool primal_err_ok =
+      std::isinf(optimality_criteria.eps_optimal_primal_residual_absolute()) ||
+      std::isinf(optimality_criteria.eps_optimal_primal_residual_relative()) ||
+      primal_err <=
+          optimality_criteria.eps_optimal_primal_residual_absolute() +
+              optimality_criteria.eps_optimal_primal_residual_relative() *
+                  primal_err_baseline;
+  const bool dual_err_ok =
+      std::isinf(optimality_criteria.eps_optimal_dual_residual_absolute()) ||
+      std::isinf(optimality_criteria.eps_optimal_dual_residual_relative()) ||
+      dual_err <= optimality_criteria.eps_optimal_dual_residual_absolute() +
+                      optimality_criteria.eps_optimal_dual_residual_relative() *
+                          dual_err_baseline;
+  return primal_err_ok && dual_err_ok &&
+         ObjectiveGapMet(optimality_criteria, stats);
 }
+
+namespace {
 
 // Checks if the criteria for primal infeasibility are approximately
 // satisfied; see https://developers.google.com/optimization/lp/pdlp_math for
@@ -97,6 +111,7 @@ bool DualInfeasibilityCriteriaMet(double eps_dual_infeasible,
 }
 
 }  // namespace
+
 TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
     const TerminationCriteria& termination_criteria) {
   if (termination_criteria.has_detailed_optimality_criteria()) {
@@ -165,8 +180,8 @@ std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
   TerminationCriteria::DetailedOptimalityCriteria optimality_criteria =
       EffectiveOptimalityCriteria(criteria);
   for (const auto& convergence_stats : stats.convergence_information()) {
-    if (OptimalityCriteriaMet(criteria.optimality_norm(), optimality_criteria,
-                              convergence_stats, bound_norms)) {
+    if (OptimalityCriteriaMet(optimality_criteria, convergence_stats,
+                              criteria.optimality_norm(), bound_norms)) {
       return TerminationReasonAndPointType{
           .reason = TERMINATION_REASON_OPTIMAL,
           .type = convergence_stats.candidate_type()};
@@ -209,11 +224,14 @@ QuadraticProgramBoundNorms BoundNormsFromProblemStats(
 
 RelativeConvergenceInformation ComputeRelativeResiduals(
     const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
-    const QuadraticProgramBoundNorms& norms,
-    const ConvergenceInformation& stats) {
+    const ConvergenceInformation& stats,
+    const QuadraticProgramBoundNorms& bound_norms) {
   auto eps_ratio = [](const double absolute, const double relative) {
-    return relative == 0.0 ? std::numeric_limits<double>::infinity()
-                           : absolute / relative;
+    // The both-infinite case avoids a NAN.
+    return (std::isinf(absolute) && std::isinf(relative))
+               ? 1.0
+               : (relative == 0.0 ? std::numeric_limits<double>::infinity()
+                                  : absolute / relative);
   };
   const double eps_ratio_primal =
       eps_ratio(optimality_criteria.eps_optimal_primal_residual_absolute(),
@@ -227,16 +245,16 @@ RelativeConvergenceInformation ComputeRelativeResiduals(
   RelativeConvergenceInformation info;
   info.relative_l_inf_primal_residual =
       stats.l_inf_primal_residual() /
-      (eps_ratio_primal + norms.l_inf_norm_constraint_bounds);
+      (eps_ratio_primal + bound_norms.l_inf_norm_constraint_bounds);
   info.relative_l2_primal_residual =
       stats.l2_primal_residual() /
-      (eps_ratio_primal + norms.l2_norm_constraint_bounds);
+      (eps_ratio_primal + bound_norms.l2_norm_constraint_bounds);
   info.relative_l_inf_dual_residual =
       stats.l_inf_dual_residual() /
-      (eps_ratio_dual + norms.l_inf_norm_primal_linear_objective);
+      (eps_ratio_dual + bound_norms.l_inf_norm_primal_linear_objective);
   info.relative_l2_dual_residual =
       stats.l2_dual_residual() /
-      (eps_ratio_dual + norms.l2_norm_primal_linear_objective);
+      (eps_ratio_dual + bound_norms.l2_norm_primal_linear_objective);
   const double abs_obj =
       std::abs(stats.primal_objective()) + std::abs(stats.dual_objective());
   const double gap = stats.primal_objective() - stats.dual_objective();

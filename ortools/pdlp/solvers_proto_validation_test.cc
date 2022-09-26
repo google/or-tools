@@ -28,6 +28,7 @@ namespace operations_research::pdlp {
 namespace {
 
 using ::google::protobuf::util::ParseTextOrDie;
+
 using ::testing::HasSubstr;
 
 TEST(ValidateTerminationCriteria, DefaultIsValid) {
