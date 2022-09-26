@@ -90,6 +90,16 @@ void IntegerSumLE::FillIntegerReason() {
 
 std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
     IntegerLiteral integer_literal, IntegerVariable target_var) const {
+  // The code below is wrong if integer_literal and target_var are the same.
+  // In this case we return the trival bounds.
+  if (PositiveVariable(integer_literal.var) == PositiveVariable(target_var)) {
+    if (integer_literal.var == target_var) {
+      return {kMinIntegerValue, integer_literal.bound};
+    } else {
+      return {integer_literal.Negated().bound, kMinIntegerValue};
+    }
+  }
+
   // Recall that all our coefficient are positive.
   bool literal_var_present = false;
   bool literal_var_present_positively = false;

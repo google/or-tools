@@ -535,6 +535,8 @@ SatSolver::Status LbTreeSearch::Search(
     // dive until we beat the best shared bound. Maybe we shouldn't do that.
     const int base_level = sat_solver_->CurrentDecisionLevel();
     while (true) {
+      // TODO(user): We sometimes branch on the objective variable, this should
+      // probably be avoided.
       const LiteralIndex decision =
           search_helper_->GetDecision(search_heuristic_);
 
