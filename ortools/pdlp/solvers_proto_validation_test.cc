@@ -18,7 +18,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
-//#include "absl/strings/string_view.h"
+#include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/protobuf_util.h"
@@ -46,10 +46,11 @@ TEST(ValidateTerminationCriteria, BadOptimalityNorm) {
 }
 
 void TestTerminationCriteriaValidation(
-    std::string_view termination_criteria_string,
-    std::string_view error_substring) {
+    absl::string_view termination_criteria_string,
+    absl::string_view error_substring) {
   TerminationCriteria termination_criteria =
-      ParseTextOrDie<TerminationCriteria>(std::string(termination_criteria_string));
+      ParseTextOrDie<TerminationCriteria>(
+          std::string(termination_criteria_string));
   const absl::Status status = ValidateTerminationCriteria(termination_criteria);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument)
       << "With termination criteria \"" << termination_criteria_string << "\"";
@@ -60,7 +61,7 @@ void TestTerminationCriteriaValidation(
 // Tests that the given DetailedOptimalityCriteria field can't be negative or
 // NAN.
 void TestDetailedOptimalityCriteriaFieldValidation(
-    std::string_view field_name) {
+    absl::string_view field_name) {
   const std::string full_field_name =
       absl::StrCat("detailed_optimality_criteria.", field_name);
   TestTerminationCriteriaValidation(

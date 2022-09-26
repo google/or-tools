@@ -257,6 +257,7 @@ cc_library(
         ":solvers_cc_proto",
         "//ortools/base:status_macros",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -269,6 +270,7 @@ cc_test(
         ":solvers_proto_validation",
         "//ortools/base:protobuf_util",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
     ],
 )
 
