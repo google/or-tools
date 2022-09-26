@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Simple unit tests for python/init.swig. Not exhaustive."""
+"""Simple unit tests for python/init.i. Not exhaustive."""
 
 import unittest
 from ortools.init import pywrapinit

@@ -13,7 +13,6 @@
 
 // SWIG Macros to use std::vector<Num> and const std::vector<Num>& in Java,
 // where Num is an atomic numeric type.
-//
 
 %include "stdint.i"
 

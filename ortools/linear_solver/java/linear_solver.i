@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // This .i file exposes the linear programming and integer programming
+// solver. See the C++/Python codelab:  (there isn't
 // a java codelab yet, as of July 2014)
 //
 // The java API is pretty much identical to the C++ API, with methods

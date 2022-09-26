@@ -2731,7 +2731,7 @@ class PathStateFilter : public LocalSearchFilter {
   // Selection-based algorithm in O(n^2), to use for small change sets.
   void MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm();
   // From changed_paths_ and changed_arcs_, fill chains_ and paths_.
-  // Generic algorithm in O(std::sort(n)+n), to use for larger change sets.
+  // Generic algorithm in O(sort(n)+n), to use for larger change sets.
   void MakeChainsFromChangedPathsAndArcsWithGenericAlgorithm();
 
   const std::unique_ptr<PathState> path_state_;

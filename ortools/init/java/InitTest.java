@@ -14,9 +14,7 @@
 package com.google.ortools.init;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.ortools.Loader;
 import com.google.ortools.init.CppBridge;
@@ -40,15 +38,15 @@ public final class InitTest {
 
   @Test
   public void testFlags() {
-    final CppFlags cpp_flags = new CppFlags();
-    assertNotNull(cpp_flags);
-    cpp_flags.setLogtostderr(true);
-    cpp_flags.setLog_prefix(true);
-    cpp_flags.setCp_model_dump_prefix("init");
-    cpp_flags.setCp_model_dump_models(true);
-    cpp_flags.setCp_model_dump_lns(true);
-    cpp_flags.setCp_model_dump_response(true);
-    CppBridge.setFlags(cpp_flags);
+    final CppFlags cppFlags = new CppFlags();
+    assertNotNull(cppFlags);
+    cppFlags.setLogtostderr(true);
+    cppFlags.setLog_prefix(true);
+    cppFlags.setCp_model_dump_prefix("init");
+    cppFlags.setCp_model_dump_models(true);
+    cppFlags.setCp_model_dump_lns(true);
+    cppFlags.setCp_model_dump_response(true);
+    CppBridge.setFlags(cppFlags);
   }
 
   @Test

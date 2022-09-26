@@ -6564,6 +6564,7 @@ void RoutingDimension::InitializeTransits(
   InitializeTransitVariables(slack_max);
 }
 
+// TODO(user): Apply -pointer-following.
 void FillPathEvaluation(const std::vector<int64_t>& path,
                         const RoutingModel::TransitCallback2& evaluator,
                         std::vector<int64_t>* values) {
