@@ -49,6 +49,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/graph/graph.h"
 
 namespace util {
 namespace graph {
@@ -77,16 +78,13 @@ namespace graph {
 //   ASSIGN_OR_RETURN(std::vector<int> topo_order, FastTopologicalSort(adj));
 //
 // or
-//   util::StaticGraph<> graph(/*num_nodes=*/10, /*num_edges=*/42);
-//   graph.AddEdge(1, 3);
-//   ...
-//   graph.Build();
-//   ASSIGN_OR_RETURN(std::vector<int> topo_order, FastTopologicalSort(graph));
+//   std::vector<pair<int, int>> arcs = {{.., ..}, ..., };
+//   ASSIGN_OR_RETURN(
+//       std::vector<int> topo_order,
+//       FastTopologicalSort(util::StaticGraph<>::FromArcs(num_nodes, arcs)));
 //
-template <class AdjacencyLists>
+template <class AdjacencyLists>  // vector<vector<int>>, util::StaticGraph<>, ..
 absl::StatusOr<std::vector<int>> FastTopologicalSort(const AdjacencyLists& adj);
-
-}  // namespace graph
 
 // Finds a cycle in the directed graph given as argument: nodes are dense
 // integers in 0..num_nodes-1, and (directed) arcs are pairs of nodes
@@ -94,9 +92,10 @@ absl::StatusOr<std::vector<int>> FastTopologicalSort(const AdjacencyLists& adj);
 // The returned cycle is a list of nodes that form a cycle, eg. {1, 4, 3}
 // if the cycle 1->4->3->1 exists.
 // If the graph is acyclic, returns an empty vector.
-// TODO(user): Deprecate this version and promote an adjacency-list based one.
-ABSL_MUST_USE_RESULT std::vector<int> FindCycleInDenseIntGraph(
-    int num_nodes, const std::vector<std::pair<int, int>>& arcs);
+template <class AdjacencyLists>  // vector<vector<int>>, util::StaticGraph<>, ..
+absl::StatusOr<std::vector<int>> FindCycleInGraph(const AdjacencyLists& adj);
+
+}  // namespace graph
 
 // [Stable]TopologicalSort[OrDie]:
 //
@@ -129,6 +128,14 @@ std::vector<T> StableTopologicalSortOrDie(
     const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs);
 
 // ______________________ END OF THE RECOMMENDED API ___________________________
+
+// DEPRECATED. Use util::graph::FindCycleInGraph() directly.
+inline ABSL_MUST_USE_RESULT std::vector<int> FindCycleInDenseIntGraph(
+    int num_nodes, const std::vector<std::pair<int, int>>& arcs) {
+  return util::graph::FindCycleInGraph(
+             util::StaticGraph<>::FromArcs(num_nodes, arcs))
+      .value();
+}
 
 // DEPRECATED: DenseInt[Stable]TopologicalSort[OrDie].
 // Kept here for legacy reasons, but most new users should use
@@ -611,6 +618,80 @@ absl::StatusOr<std::vector<int>> FastTopologicalSort(
     return absl::InvalidArgumentError("The graph has a cycle");
   }
   return topo_order;
+}
+
+template <class AdjacencyLists>
+absl::StatusOr<std::vector<int>> FindCycleInGraph(const AdjacencyLists& adj) {
+  const size_t num_nodes = adj.size();
+  if (num_nodes > std::numeric_limits<int>::max()) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("Too many nodes: adj.size()=%d", adj.size()));
+  }
+
+  // To find a cycle, we start a DFS from each yet-unvisited node and
+  // try to find a cycle, if we don't find it then we know for sure that
+  // no cycle is reachable from any of the explored nodes (so, we don't
+  // explore them in later DFSs).
+  std::vector<bool> no_cycle_reachable_from(num_nodes, false);
+  // The DFS stack will contain a chain of nodes, from the root of the
+  // DFS to the current leaf.
+  struct DfsState {
+    int node;
+    // Points at the first child node that we did *not* yet look at.
+    int adj_list_index;
+    explicit DfsState(int _node) : node(_node), adj_list_index(0) {}
+  };
+  std::vector<DfsState> dfs_stack;
+  std::vector<bool> in_cur_stack(num_nodes, false);
+  for (int start_node = 0; start_node < static_cast<int>(num_nodes);
+       ++start_node) {
+    if (no_cycle_reachable_from[start_node]) continue;
+    // Start the DFS.
+    dfs_stack.push_back(DfsState(start_node));
+    in_cur_stack[start_node] = true;
+    while (!dfs_stack.empty()) {
+      DfsState* cur_state = &dfs_stack.back();
+      if (static_cast<size_t>(cur_state->adj_list_index) >=
+          adj[cur_state->node].size()) {
+        no_cycle_reachable_from[cur_state->node] = true;
+        in_cur_stack[cur_state->node] = false;
+        dfs_stack.pop_back();
+        continue;
+      }
+      // Look at the current child, and increase the current state's
+      // adj_list_index.
+      // TODO(user): Caching adj[cur_state->node] in a local stack to improve
+      // locality and so that the [] operator is called exactly once per node.
+      const int child = adj[cur_state->node][cur_state->adj_list_index++];
+      if (static_cast<size_t>(child) >= num_nodes) {
+        return absl::InvalidArgumentError(absl::StrFormat(
+            "Invalid child %d in adj[%d]", child, cur_state->node));
+      }
+      if (no_cycle_reachable_from[child]) continue;
+      if (in_cur_stack[child]) {
+        // We detected a cycle! It corresponds to the tail end of dfs_stack,
+        // in reverse order, until we find "child".
+        int cycle_start = dfs_stack.size() - 1;
+        while (dfs_stack[cycle_start].node != child) --cycle_start;
+        const int cycle_size = dfs_stack.size() - cycle_start;
+        std::vector<int> cycle(cycle_size);
+        for (int c = 0; c < cycle_size; ++c) {
+          cycle[c] = dfs_stack[cycle_start + c].node;
+        }
+        return cycle;
+      }
+      // Push the child onto the stack.
+      dfs_stack.push_back(DfsState(child));
+      in_cur_stack[child] = true;
+      // Verify that its adjacency list seems valid.
+      if (adj[child].size() > std::numeric_limits<int>::max()) {
+        return absl::InvalidArgumentError(absl::StrFormat(
+            "Invalid adj[%d].size() = %d", child, adj[child].size()));
+      }
+    }
+  }
+  // If we're here, then all the DFS stopped, and there is no cycle.
+  return std::vector<int>{};
 }
 
 }  // namespace graph

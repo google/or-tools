@@ -739,10 +739,10 @@ void PermuteWithExplicitElementType(const IntVector& permutation,
                                     Array* array_to_permute,
                                     ElementType unused) {
   std::vector<ElementType> temp(permutation.size());
-  for (int i = 0; i < permutation.size(); ++i) {
+  for (size_t i = 0; i < permutation.size(); ++i) {
     temp[i] = (*array_to_permute)[i];
   }
-  for (int i = 0; i < permutation.size(); ++i) {
+  for (size_t i = 0; i < permutation.size(); ++i) {
     (*array_to_permute)[permutation[i]] = temp[i];
   }
 }
@@ -1109,8 +1109,8 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::
   using iterator_category = std::input_iterator_tag;        \
   using difference_type = ptrdiff_t;                        \
   using pointer = const ArcIndexType*;                      \
-  using reference = const ArcIndexType&;                    \
   using value_type = ArcIndexType;                          \
+  using reference = value_type;                             \
   bool operator!=(const iterator_class_name& other) const { \
     return this->index_ != other.index_;                    \
   }                                                         \
@@ -1401,7 +1401,7 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
   }
 
   // We use "tail_" (which now contains rubbish) to permute "head_" faster.
-  CHECK_EQ(tail_.size(), num_arcs_);
+  CHECK_EQ(tail_.size(), static_cast<size_t>(num_arcs_));
   tail_.swap(head_);
   for (int i = 0; i < num_arcs_; ++i) {
     head_[perm[i]] = tail_[i];

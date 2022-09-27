@@ -22,6 +22,7 @@
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
@@ -261,8 +262,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::CheckCostRange()
   if (3 * max_cost_magnitude < quotient) return true;  // Common case.
   if (3 * max_cost_magnitude <= quotient && remainder == 0) return true;
   LOG(DFATAL) << "max(3 * abs(arc cost)) * num_nodes overflows: "
-              << "max_cost_magnitude: " << max_cost_magnitude
-              << "num_nodes: " << num_nodes << "kMaxCost: " << kMaxCost;
+              << DUMP_VARS(max_cost_magnitude, num_nodes, kMaxCost);
   return false;
 }
 

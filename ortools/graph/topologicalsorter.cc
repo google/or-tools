@@ -16,12 +16,14 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <queue>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 
@@ -249,66 +251,7 @@ int DenseIntTopologicalSorterTpl<stable_sort>::RemoveDuplicates(
 template <bool stable_sort>
 void DenseIntTopologicalSorterTpl<stable_sort>::ExtractCycle(
     std::vector<int>* cycle_nodes) const {
-  const int num_nodes = adjacency_lists_.size();
-  cycle_nodes->clear();
-  // To find a cycle, we start a DFS from each yet-unvisited node and
-  // try to find a cycle, if we don't find it then we know for sure that
-  // no cycle is reachable from any of the explored nodes (so, we don't
-  // explore them in later DFSs).
-  std::vector<bool> no_cycle_reachable_from(num_nodes, false);
-  // The DFS stack will contain a chain of nodes, from the root of the
-  // DFS to the current leaf.
-  struct DfsState {
-    int node;
-    // Points at the first child node that we did *not* yet look at.
-    std::size_t adj_list_index;
-    explicit DfsState(int _node) : node(_node), adj_list_index(0) {}
-  };
-  std::vector<DfsState> dfs_stack;
-  std::vector<bool> in_cur_stack(num_nodes, false);
-  for (int start_node = 0; start_node < num_nodes; ++start_node) {
-    if (no_cycle_reachable_from[start_node]) {
-      continue;
-    }
-    // Start the DFS.
-    dfs_stack.push_back(DfsState(start_node));
-    in_cur_stack[start_node] = true;
-    while (!dfs_stack.empty()) {
-      DfsState* cur_state = &dfs_stack.back();
-      if (cur_state->adj_list_index >=
-          adjacency_lists_[cur_state->node].size()) {
-        no_cycle_reachable_from[cur_state->node] = true;
-        in_cur_stack[cur_state->node] = false;
-        dfs_stack.pop_back();
-        continue;
-      }
-      // Look at the current child, and increase the current state's
-      // adj_list_index.
-      const int child =
-          adjacency_lists_[cur_state->node][cur_state->adj_list_index];
-      ++(cur_state->adj_list_index);
-      if (no_cycle_reachable_from[child]) {
-        continue;
-      }
-      if (in_cur_stack[child]) {
-        // We detected a cycle! Fill it and return.
-        for (;;) {
-          cycle_nodes->push_back(dfs_stack.back().node);
-          if (dfs_stack.back().node == child) {
-            std::reverse(cycle_nodes->begin(), cycle_nodes->end());
-            return;
-          }
-          dfs_stack.pop_back();
-        }
-      }
-      // Push the child onto the stack.
-      dfs_stack.push_back(DfsState(child));
-      in_cur_stack[child] = true;
-    }
-  }
-  // If we're here, then all the DFS stopped, and they never encountered
-  // a cycle (otherwise, we would have returned). Just exit; the output
-  // vector has been cleared already.
+  *cycle_nodes = util::graph::FindCycleInGraph(adjacency_lists_).value();
 }
 
 // Generate the templated code.  Including these definitions allows us
@@ -317,18 +260,4 @@ template class DenseIntTopologicalSorterTpl<false>;
 template class DenseIntTopologicalSorterTpl<true>;
 
 }  // namespace internal
-
-std::vector<int> FindCycleInDenseIntGraph(
-    int num_nodes, const std::vector<std::pair<int, int>>& arcs) {
-  std::vector<int> cycle;
-  if (num_nodes < 1) {
-    return cycle;
-  }
-  internal::DenseIntTopologicalSorterTpl</* stable= */ false> sorter(num_nodes);
-  for (const auto& arc : arcs) {
-    sorter.AddEdge(arc.first, arc.second);
-  }
-  sorter.ExtractCycle(&cycle);
-  return cycle;
-}
 }  // namespace util

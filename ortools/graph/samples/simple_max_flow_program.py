@@ -38,7 +38,7 @@ def main():
     # [END data]
 
     # [START constraints]
-    # Add arcs in bulk. 
+    # Add arcs in bulk.
     #   note: we could have used add_arc_with_capacity(start, end, capacity)
     all_arcs = smf.add_arcs_with_capacity(start_nodes, end_nodes, capacities)
     # [END constraints]

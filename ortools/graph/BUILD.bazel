@@ -295,6 +295,7 @@ cc_library(
         ":graphs",
         ":max_flow",
         "//ortools/base",
+        "//ortools/base:dump_vars",
         "//ortools/base:mathutil",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
@@ -360,6 +361,7 @@ cc_library(
     srcs = ["topologicalsorter.cc"],
     hdrs = ["topologicalsorter.h"],
     deps = [
+        ":graph",
         "//ortools/base",
         "//ortools/base:container_logging",
         "//ortools/base:map_util",
