@@ -105,7 +105,7 @@ struct GScipLinearRange {
 // A variable is implied integer if the integrality constraint is not required
 // for the model to be valid, but the variable takes an integer value in any
 // optimal solution to the problem.
-enum class GScipVarType { kContinuous, kInteger, kImpliedInteger };
+enum class GScipVarType { kContinuous, kBinary, kInteger, kImpliedInteger };
 
 struct GScipIndicatorConstraint;
 struct GScipLogicalConstraintData;
@@ -159,6 +159,9 @@ class GScip {
   // returned variable will have the same lifetime as GScip (if instead,
   // GScipVariableOptions::keep_alive is false, SCIP may free the variable at
   // any time, see GScipVariableOptions::keep_alive for details).
+  //
+  // Note that SCIP will internally convert a variable of type `kInteger` with
+  // bounds of [0, 1] to a variable of type `kBinary`.
   absl::StatusOr<SCIP_VAR*> AddVariable(
       double lb, double ub, double obj_coef, GScipVarType var_type,
       const std::string& var_name = "",
@@ -185,6 +188,7 @@ class GScip {
   double Lb(SCIP_VAR* var);
   double Ub(SCIP_VAR* var);
   double ObjCoef(SCIP_VAR* var);
+  // NOTE: The returned type may differ from the type passed to `AddVariable()`.
   GScipVarType VarType(SCIP_VAR* var);
   absl::string_view Name(SCIP_VAR* var);
   const absl::flat_hash_set<SCIP_VAR*>& variables() { return variables_; }
@@ -203,7 +207,13 @@ class GScip {
   // ///////////////////////////////////////////////////////////////////////////
   // Model Updates (needed for incrementalism)
   // ///////////////////////////////////////////////////////////////////////////
+  // TODO(b/246342145): A crash may occur if you attempt to set a lb <= -1.0 on
+  // a binary variable. SCIP can also silently change the vartype of a variable
+  // after construction, so you should check it via `VarType()`.
   absl::Status SetLb(SCIP_VAR* var, double lb);
+  // TODO(b/246342145): A crash may occur if you attempt to set an ub >= 2.0 on
+  // a binary variable. SCIP can also silently change the vartype of a variable
+  // after construction, so you should check it via `VarType()`.
   absl::Status SetUb(SCIP_VAR* var, double ub);
   absl::Status SetObjCoef(SCIP_VAR* var, double obj_coef);
   absl::Status SetVarType(SCIP_VAR* var, GScipVarType var_type);
@@ -437,7 +447,7 @@ struct GScipSOSData {
 // Models the constraint z = 1 => a * x <= b
 // If negate_indicator, then instead: z = 0 => a * x <= b
 struct GScipIndicatorConstraint {
-  // The z variable above.
+  // The z variable above. The vartype must be kBinary.
   SCIP_VAR* indicator_variable = nullptr;
   bool negate_indicator = false;
   // The x variable above.

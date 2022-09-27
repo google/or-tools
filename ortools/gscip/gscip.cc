@@ -68,6 +68,8 @@ SCIP_VARTYPE ConvertVarType(const GScipVarType var_type) {
   switch (var_type) {
     case GScipVarType::kContinuous:
       return SCIP_VARTYPE_CONTINUOUS;
+    case GScipVarType::kBinary:
+      return SCIP_VARTYPE_BINARY;
     case GScipVarType::kImpliedInteger:
       return SCIP_VARTYPE_IMPLINT;
     case GScipVarType::kInteger:
@@ -82,8 +84,9 @@ GScipVarType ConvertVarType(const SCIP_VARTYPE var_type) {
     case SCIP_VARTYPE_IMPLINT:
       return GScipVarType::kImpliedInteger;
     case SCIP_VARTYPE_INTEGER:
-    case SCIP_VARTYPE_BINARY:
       return GScipVarType::kInteger;
+    case SCIP_VARTYPE_BINARY:
+      return GScipVarType::kBinary;
   }
 }
 
