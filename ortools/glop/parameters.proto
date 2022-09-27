@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Contains the definitions for all the GLOP algorithm parameters and their
 // default values.
 //
@@ -28,7 +27,6 @@ option csharp_namespace = "Google.OrTools.Glop";
 
 // next id = 69
 message GlopParameters {
-
   // Supported algorithms for scaling:
   // EQUILIBRATION - progressive scaling by row and column norms until the
   // marginal difference passes below a threshold.
@@ -94,7 +92,6 @@ message GlopParameters {
     // Chapter 9.8.2.1
     MAROS = 3;
   }
-
 
   optional ScalingAlgorithm scaling_method = 57 [default = EQUILIBRATION];
 
@@ -483,5 +480,4 @@ message GlopParameters {
   // evaluating large constraint with variables at their bound shouldn't cause
   // any overflow.
   optional double max_valid_magnitude = 199 [default = 1e30];
-
 }

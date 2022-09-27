@@ -11,9 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 syntax = "proto3";
-
 
 package operations_research;
 
@@ -63,4 +61,3 @@ message AssignmentProto {
   WorkerInfo worker_info = 4;
   bool is_valid = 5;
 }
-

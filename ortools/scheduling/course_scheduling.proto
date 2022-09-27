@@ -15,7 +15,6 @@ syntax = "proto3";
 
 package operations_research;
 
-
 // Information required to create a schedule for a school system.
 message CourseSchedulingModel {
   // Schedule name, used only for logging purposes.
@@ -48,8 +47,7 @@ message CourseSchedulingResult {
   string message = 1;
 
   // Status of the solver.
-  CourseSchedulingResultStatus solver_status = 2
-;
+  CourseSchedulingResultStatus solver_status = 2;
 
   // List of the time slot and room assignments for each section of a course.
   repeated ClassAssignment class_assignments = 3;

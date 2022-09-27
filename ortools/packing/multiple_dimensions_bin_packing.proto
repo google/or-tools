@@ -17,7 +17,6 @@ package operations_research.packing;
 
 option java_multiple_files = true;
 
-
 // A Multiple Dimension BinPacking problem.
 // It supports the following file format:
 //  - 2bp:

@@ -35,7 +35,7 @@
 #if defined(__APPLE__)
 #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
 #endif
-#if defined(__GNUC__) && __GNUC__ < 11
+#if defined(__GNUC__) && !defined(__llvm__) && __GNUC__ < 11
 #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
 #endif
 

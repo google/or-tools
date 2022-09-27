@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +15,7 @@
 import unittest
 from ortools.init import pywrapinit
 
+
 class PyWrapInit(unittest.TestCase):
 
     def test_logging(self):
@@ -26,13 +26,13 @@ class PyWrapInit(unittest.TestCase):
     def test_flags(self):
         print('test_cpp_flags')
         cpp_flags = pywrapinit.CppFlags()
-        #print(f'{dir(cpp_flags)}')
-        assert hasattr(cpp_flags, "logtostderr")
-        assert hasattr(cpp_flags, "log_prefix")
-        assert hasattr(cpp_flags, "cp_model_dump_prefix")
-        assert hasattr(cpp_flags, "cp_model_dump_models")
-        assert hasattr(cpp_flags, "cp_model_dump_lns")
-        assert hasattr(cpp_flags, "cp_model_dump_response")
+        # print(f'{dir(cpp_flags)}')
+        assert hasattr(cpp_flags, 'logtostderr')
+        assert hasattr(cpp_flags, 'log_prefix')
+        assert hasattr(cpp_flags, 'cp_model_dump_prefix')
+        assert hasattr(cpp_flags, 'cp_model_dump_models')
+        assert hasattr(cpp_flags, 'cp_model_dump_lns')
+        assert hasattr(cpp_flags, 'cp_model_dump_response')
         pywrapinit.CppBridge.SetFlags(cpp_flags)
 
     def test_version(self):
@@ -47,6 +47,7 @@ class PyWrapInit(unittest.TestCase):
         self.assertIsInstance(version, str)
         string = f'{major}.{minor}.{patch}'
         self.assertEqual(version, string)
+
 
 if __name__ == '__main__':
     unittest.main()
