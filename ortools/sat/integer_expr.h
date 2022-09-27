@@ -471,8 +471,8 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
             {}, local_vars, local_coeffs, IntegerValue(upper_bound), model);
         constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
         model->TakeOwnership(constraint);
-        return;
       }
+      return;
     }
 
     if (params.new_linear_propagation()) {

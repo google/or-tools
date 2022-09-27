@@ -22,7 +22,6 @@ option java_package = "com.google.ortools.sat";
 option java_multiple_files = true;
 option java_outer_classname = "CpModelProtobuf";
 
-
 // An integer variable.
 //
 // It will be referred to by an int32 corresponding to its index in a

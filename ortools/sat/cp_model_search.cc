@@ -661,6 +661,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       }
       if (name == "less_encoding") continue;
     } else {
+      if (params.optimize_with_lb_tree_search()) continue;
       if (params.optimize_with_core()) continue;
       if (params.search_branching() == SatParameters::LP_SEARCH) continue;
       if (params.search_branching() == SatParameters::PSEUDO_COST_SEARCH) {

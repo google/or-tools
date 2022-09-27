@@ -37,7 +37,7 @@ namespace sat {
  * Class that owns everything related to a particular optimization model.
  *
  * This class is actually a fully generic wrapper that can hold any type of
- * constraints, watchers, solvers and provide a mecanism to wire them together.
+ * constraints, watchers, solvers and provide a mechanism to wire them together.
  */
 class Model {
  public:

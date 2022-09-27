@@ -179,6 +179,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   absl::btree_map<std::string, int> name_to_num_literals;
   absl::btree_map<std::string, int> name_to_num_terms;
   absl::btree_map<std::string, int> name_to_num_complex_domain;
+  absl::btree_map<std::string, int> name_to_num_expressions;
 
   int no_overlap_2d_num_rectangles = 0;
   int no_overlap_2d_num_optional_rectangles = 0;
@@ -249,6 +250,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kExactlyOne) {
       name_to_num_literals[name] += ct.exactly_one().literals().size();
+    } else if (ct.constraint_case() ==
+               ConstraintProto::ConstraintCase::kLinMax) {
+      name_to_num_expressions[name] += ct.lin_max().exprs().size();
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kNoOverlap2D) {
       const int num_boxes = ct.no_overlap_2d().x_intervals_size();
@@ -443,6 +447,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     if (name_to_num_terms.contains(name)) {
       absl::StrAppend(&constraints.back(),
                       " (#terms: ", name_to_num_terms[name], ")");
+    }
+    if (name_to_num_expressions.contains(name)) {
+      absl::StrAppend(&constraints.back(),
+                      " (#expressions: ", name_to_num_expressions[name], ")");
     }
     if (name_to_num_complex_domain.contains(name)) {
       absl::StrAppend(&constraints.back(),

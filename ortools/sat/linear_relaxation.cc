@@ -991,36 +991,42 @@ void AppendLinMaxRelaxationPart2(
 
   // For the relaxation, we use different constraints with a stronger linear
   // relaxation as explained in the .h
-  //
-  // TODO(user): Consider passing the x_vars to this method instead of
-  // computing it here.
-  std::vector<IntegerVariable> x_vars;
-  for (int i = 0; i < num_exprs; ++i) {
-    x_vars.insert(x_vars.end(), exprs[i].vars.begin(), exprs[i].vars.end());
-  }
-  gtl::STLSortAndRemoveDuplicates(&x_vars);
-
-  // All expressions should only contain positive variables.
-  DCHECK(std::all_of(x_vars.begin(), x_vars.end(), [](IntegerVariable var) {
-    return VariableIsPositive(var);
-  }));
-
   std::vector<std::vector<IntegerValue>> sum_of_max_corner_diff(
       num_exprs, std::vector<IntegerValue>(num_exprs, IntegerValue(0)));
 
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  // Cache coefficients.
+  absl::flat_hash_map<std::pair<int, IntegerVariable>, IntegerValue> cache;
   for (int i = 0; i < num_exprs; ++i) {
-    for (int j = 0; j < num_exprs; ++j) {
-      if (i == j) continue;
-      for (const IntegerVariable x_var : x_vars) {
+    for (int j = 0; j < exprs[i].vars.size(); ++j) {
+      cache[std::make_pair(i, exprs[i].vars[j])] = exprs[i].coeffs[j];
+    }
+  }
+  const auto get_coeff = [&cache](IntegerVariable var, int index) {
+    const auto it = cache.find(std::make_pair(index, var));
+    if (it == cache.end()) return IntegerValue(0);
+    return it->second;
+  };
+
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  std::vector<IntegerVariable> active_vars;
+  for (int i = 0; i + 1 < num_exprs; ++i) {
+    for (int j = i + 1; j < num_exprs; ++j) {
+      active_vars = exprs[i].vars;
+      active_vars.insert(active_vars.end(), exprs[j].vars.begin(),
+                         exprs[j].vars.end());
+      gtl::STLSortAndRemoveDuplicates(&active_vars);
+      for (const IntegerVariable x_var : active_vars) {
+        const IntegerValue diff = get_coeff(x_var, j) - get_coeff(x_var, i);
+        if (diff == 0) continue;
+
         const IntegerValue lb = integer_trail->LevelZeroLowerBound(x_var);
         const IntegerValue ub = integer_trail->LevelZeroUpperBound(x_var);
-        const IntegerValue diff =
-            GetCoefficient(x_var, exprs[j]) - GetCoefficient(x_var, exprs[i]);
         sum_of_max_corner_diff[i][j] += std::max(diff * lb, diff * ub);
+        sum_of_max_corner_diff[j][i] += std::max(-diff * lb, -diff * ub);
       }
     }
   }
+
   for (int i = 0; i < num_exprs; ++i) {
     LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
     lc.AddTerm(target, IntegerValue(1));
@@ -1153,7 +1159,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       if (linearization_level > 1) {
         if (is_affine_max) {
           AddMaxAffineCutGenerator(ct, model, relaxation);
-        } else {
+        } else if (ct.lin_max().exprs().size() < 100) {
           AddLinMaxCutGenerator(ct, model, relaxation);
         }
       }

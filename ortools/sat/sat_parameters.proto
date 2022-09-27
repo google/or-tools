@@ -20,7 +20,6 @@ option java_multiple_files = true;
 
 option csharp_namespace = "Google.OrTools.Sat";
 
-
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //

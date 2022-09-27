@@ -62,6 +62,7 @@ bool EnforcementPropagator::Propagate(Trail* /*trail*/) {
     }
     watch_list.resize(new_size);
   }
+  rev_num_enforced_ = static_cast<int>(enforced_.size());
   return true;
 }
 
@@ -126,7 +127,17 @@ void EnforcementPropagator::CallWhenEnforced(EnforcementId id,
 
 // Returns true iff the constraint with given id is currently enforced.
 bool EnforcementPropagator::IsEnforced(EnforcementId id) const {
-  return is_enforced_[id];
+  if (propagation_trail_index_ == trail_.Index()) return is_enforced_[id];
+
+  // TODO(user): In some corner case, when LinearPropagator pushes a literal
+  // we don't repropagate this right away. Maybe we should just simplify this
+  // class and just pay the O(num_enforcement_literal) cost.
+  //
+  // For now we pay the cost to catch bugs.
+  for (const Literal l : GetSpan(id)) {
+    if (!assignment_.LiteralIsTrue(l)) return false;
+  }
+  return true;
 }
 
 // Add the enforcement reason to the given vector.
