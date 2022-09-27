@@ -76,6 +76,8 @@ public class IntegerProgramming {
     runIntegerProgrammingExample("SCIP");
     System.out.println("---- Integer programming example with CBC ----");
     runIntegerProgrammingExample("CBC");
+    System.out.println("---- Integer programming example with GLPK ----");
+    runIntegerProgrammingExample("GLPK");
     System.out.println("---- Integer programming example with CP-SAT ----");
     runIntegerProgrammingExample("SAT");
   }
