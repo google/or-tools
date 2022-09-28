@@ -20,10 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System;
-using Xunit;
 
-namespace Google.OrTools.Test
-{
 public class Task
 {
     public int Id { get; private set; }
@@ -665,13 +662,15 @@ public class FactoryScheduling
     }
 }
 
-public class Issue18Test
+public class Issue33Test
 {
-    [Fact]
-    public void FactorySchedulingTest()
+    public static void FactorySchedulingTest()
     {
         FactoryScheduling scheduling = new FactoryScheduling(new SmallSyntheticData().FetchData());
         scheduling.Solve();
     }
+    static void Main()
+    {
+        FactorySchedulingTest();
+    }
 }
-} // namespace Google.OrTools.Test

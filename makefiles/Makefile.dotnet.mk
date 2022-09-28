@@ -226,7 +226,7 @@ endif
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
 
-DOTNET_EXAMPLES := contrib dotnet
+DOTNET_EXAMPLES := contrib dotnet tests
 $(foreach example,$(DOTNET_EXAMPLES),$(eval $(call dotnet-example-target,$(example))))
 
 # Tests
@@ -390,16 +390,16 @@ check_dotnet: \
  test_dotnet_linear_solver_samples \
  test_dotnet_sat_samples \
 
-.PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
+.PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test and ortools/<cmp>/csharp)
 test_dotnet_tests: \
 	rdotnet_InitTests \
 	rdotnet_LinearSolverTests \
 	rdotnet_ConstraintSolverTests \
 	rdotnet_RoutingSolverTests \
 	rdotnet_SatSolverTests \
-#	rdotnet_issue18 \
-#	rdotnet_issue22 \
-#	rdotnet_issue33
+	rdotnet_issue18 \
+	rdotnet_issue22 \
+	rdotnet_issue33
 
 .PHONY: test_dotnet_contrib # Build and Run all .Net Examples (located in examples/contrib)
 test_dotnet_contrib: \

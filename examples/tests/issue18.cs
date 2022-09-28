@@ -12,16 +12,12 @@
 // limitations under the License.
 
 using System;
-using Xunit;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 
-namespace Google.OrTools.Tests
+public class Issue18
 {
-public class Issue18Test
-{
-    [Fact]
-    public void NewSearchTest()
+    public static void NewSearchTest()
     {
         Solver solver = new Google.OrTools.ConstraintSolver.Solver("p");
 
@@ -52,5 +48,8 @@ public class Issue18Test
         }
         Console.WriteLine("Solutions: " + count);
     }
+    static void Main()
+    {
+        NewSearchTest();
+    }
 }
-} // namespace Google.OrTools.Tests
