@@ -191,7 +191,6 @@ if(BUILD_TESTING)
       OUTPUT ${DOTNET_TEST_DIR}/timestamp
       COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
         ${DOTNET_EXECUTABLE} build --nologo -c Release ${TEST_NAME}.csproj
-      sdfasdad
       COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_DIR}/timestamp
       DEPENDS
       ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
