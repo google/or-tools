@@ -138,6 +138,7 @@ $(TEMP_JAVA_DIR)/$1/%: \
 	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1$S$$*
 
 $(TEMP_JAVA_DIR)/$1/%/pom.xml: \
+ $(SRC_DIR)/ortools/$1/samples/%.java \
  ${SRC_DIR}/ortools/java/pom-sample.xml.in \
  | $(TEMP_JAVA_DIR)/$1/%
 	$(SED) -e "s/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/" \
@@ -174,7 +175,7 @@ rjava_%: \
 	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" exec:java $(ARGS)
 endef
 
-JAVA_SAMPLES := algorithms graph constraint_solver linear_solver model_builder sat
+JAVA_SAMPLES := init algorithms graph constraint_solver linear_solver sat util
 $(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-target,$(sample),$(subst _,,$(sample)))))
 
 # Examples
@@ -188,6 +189,7 @@ $(TEMP_JAVA_DIR)/$1/%: \
 	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1$S$$*
 
 $(TEMP_JAVA_DIR)/$1/%/pom.xml: \
+ $(SRC_DIR)/examples/$1/%.java \
  ${SRC_DIR}/ortools/java/pom-sample.xml.in \
  | $(TEMP_JAVA_DIR)/$1/%
 	$(SED) -e "s/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/" \
@@ -228,49 +230,53 @@ JAVA_EXAMPLES := contrib java
 $(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-target,$(example))))
 
 # Tests
-JAVA_TESTS := tests
+define java-test-target =
+$(TEMP_JAVA_DIR)/$1: | $(TEMP_JAVA_DIR)
+	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1
 
-$(TEMP_JAVA_DIR)/tests: | $(TEMP_JAVA_DIR)
-	-$(MKDIR) $(TEMP_JAVA_DIR)$Stests
+$(TEMP_JAVA_DIR)/$1/%: \
+ $(SRC_DIR)/ortools/$1/java/%.java \
+ | $(TEMP_JAVA_DIR)/$1
+	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1$S$$*
 
-$(TEMP_JAVA_DIR)/tests/%: \
- $(SRC_DIR)/examples/tests/%.java \
- | $(TEMP_JAVA_DIR)/tests
-	-$(MKDIR) $(TEMP_JAVA_DIR)$Stests$S$*
-
-$(TEMP_JAVA_DIR)/tests/%/pom.xml: \
+$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
+ $(SRC_DIR)/ortools/$1/java/%.java \
  ${SRC_DIR}/ortools/java/pom-test.xml.in \
- | $(TEMP_JAVA_DIR)/tests/%
+ | $(TEMP_JAVA_DIR)/$1/%
 	$(SED) -e "s/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/" \
  ortools$Sjava$Spom-test.xml.in \
- > $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
-	$(SED) -i -e 's/@JAVA_TEST_PROJECT@/$*/' \
- $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+ > $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_TEST_PROJECT@/$$*/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
- $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
- $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
- $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
- $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
- $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 
-$(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java: \
- $(SRC_DIR)/examples/tests/%.java \
- | $(TEMP_JAVA_DIR)/tests/%
-	$(MKDIR_P) $(TEMP_JAVA_DIR)$Stests$S$*$S$(JAVA_TEST_PATH)
-	$(COPY) $(SRC_DIR)$Sexamples$Stests$S$*.java \
- $(TEMP_JAVA_DIR)$Stests$S$*$S$(JAVA_TEST_PATH)
+$(TEMP_JAVA_DIR)/$1/%/$(JAVA_TEST_DIR)/%.java: \
+ $(SRC_DIR)/ortools/$1/java/%.java \
+ | $(TEMP_JAVA_DIR)/$1/%
+	$(MKDIR_P) $(TEMP_JAVA_DIR)$S$1$S$$*$S$(JAVA_TEST_PATH)
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Sjava$S$$*.java \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$S$(JAVA_TEST_PATH)
 
 rjava_%: \
  java \
- $(TEMP_JAVA_DIR)/tests/%/pom.xml \
- $(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java \
+ $(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ $(TEMP_JAVA_DIR)/$1/%/$(JAVA_TEST_DIR)/%.java \
  FORCE
-	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" compile -B
-	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" test $(ARGS)
+	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" compile -B
+	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" test $(ARGS)
+endef
+
+JAVA_TESTS := init algorithms graph constraint_solver linear_solver sat util
+$(foreach test,$(JAVA_TESTS),$(eval $(call java-test-target,$(test))))
 
 ####################
 ##  Test targets  ##
@@ -364,16 +370,17 @@ check_java: \
 
 .PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
 test_java_tests: \
+ rjava_InitTest \
  rjava_KnapsackSolverTest \
  rjava_FlowTest \
  rjava_LinearSolverTest \
+ rjava_ModelBuilderTest \
  rjava_ConstraintSolverTest \
  rjava_RoutingSolverTest \
  rjava_LinearExprTest \
  rjava_CpModelTest \
  rjava_CpSolverTest \
- rjava_SatSolverTest \
- rjava_ModelBuilderTest
+ rjava_SatSolverTest
 
 .PHONY: test_java_contrib # Build and Run all Java Contrib (located in examples/contrib)
 test_java_contrib: \
