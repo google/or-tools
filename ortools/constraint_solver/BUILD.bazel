@@ -15,8 +15,21 @@
 
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 
-package(
-    default_visibility = ["//visibility:public"],
+package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "on_linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+config_setting(
+    name = "on_macos",
+    constraint_values = ["@platforms//os:macos"],
+)
+
+config_setting(
+    name = "on_windows",
+    constraint_values = ["@platforms//os:windows"],
 )
 
 proto_library(
@@ -144,7 +157,6 @@ cc_library(
         "constraint_solver.h",
         "constraint_solveri.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":assignment_cc_proto",
         ":demon_profiler_cc_proto",
@@ -199,7 +211,6 @@ cc_library(
 proto_library(
     name = "routing_enums_proto",
     srcs = ["routing_enums.proto"],
-    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
@@ -243,7 +254,6 @@ cc_library(
     name = "routing_parameters",
     srcs = ["routing_parameters.cc"],
     hdrs = ["routing_parameters.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":cp",
         ":routing_enums_cc_proto",
@@ -266,7 +276,6 @@ cc_library(
         "routing_flags.cc",
     ],
     hdrs = ["routing_flags.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":cp",
         ":routing_enums_cc_proto",
@@ -284,7 +293,6 @@ cc_library(
 cc_library(
     name = "routing_types",
     hdrs = ["routing_types.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:intops",
@@ -295,7 +303,6 @@ cc_library(
     name = "routing_index_manager",
     srcs = ["routing_index_manager.cc"],
     hdrs = ["routing_index_manager.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":routing_types",
         "//ortools/base",
@@ -324,7 +331,12 @@ cc_library(
         "routing_neighborhoods.h",
         "routing_search.h",
     ],
-    visibility = ["//visibility:public"],
+    copts = select({
+        "on_linux": [],
+        "on_macos": [],
+        "on_windows": ["/Zc:preprocessor"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":cp",
         ":routing_enums_cc_proto",
