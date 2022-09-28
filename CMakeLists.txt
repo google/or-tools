@@ -259,7 +259,8 @@ if(BUILD_JAVA)
 endif()
 
 if(BUILD_PYTHON)
-  option(BUILD_pybind11 "Build pybind11 library" ON)
+  CMAKE_DEPENDENT_OPTION(BUILD_pybind11 "Build the pybind11 dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
   message(STATUS "Python: Build pybind11: ${BUILD_pybind11}")
 
   option(VENV_USE_SYSTEM_SITE_PACKAGES "Python venv can use system site packages" OFF)
