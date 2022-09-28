@@ -81,7 +81,7 @@ rpy_%: \
 	"$(PYTHON_EXECUTABLE)" ortools$S$1$Ssamples$S$$*.py $(ARGS)
 endef
 
-PYTHON_SAMPLES := algorithms graph constraint_solver linear_solver math_opt model_builder routing sat
+PYTHON_SAMPLES := algorithms graph constraint_solver linear_solver math_opt routing sat
 $(foreach sample,$(PYTHON_SAMPLES),$(eval $(call python-sample-target,$(sample))))
 
 # Examples
@@ -97,11 +97,16 @@ PYTHON_EXAMPLES := contrib python
 $(foreach example,$(PYTHON_EXAMPLES),$(eval $(call python-example-target,$(example))))
 
 # Tests
+define python-test-target =
 rpy_%: \
  python \
- $(SRC_DIR)/examples/tests/%.py \
+ $(SRC_DIR)/ortools/$1/python/%.py \
  FORCE
-	"$(PYTHON_EXECUTABLE)" examples$Stests$S$*.py $(ARGS)
+	"$(PYTHON_EXECUTABLE)" ortools$S$1$Spython$S$$*.py $(ARGS)
+endef
+
+PYTHON_TESTS := init algorithms graph constraint_solver linear_solver math_opt routing sat util
+$(foreach test,$(PYTHON_TESTS),$(eval $(call python-test-target,$(test))))
 
 ####################
 ##  Test targets  ##
@@ -218,16 +223,17 @@ check_python: \
 
 .PHONY: test_python_tests # Run all Python Tests (located in examples/tests)
 test_python_tests: \
+ rpy_pywrapinit_test \
+ rpy_lp_api_test \
  rpy_lp_test \
- rpy_cp_model_test \
  rpy_model_builder_test \
- rpy_sorted_interval_list_test \
- rpy_test_cp_api \
- rpy_test_routing_api \
- rpy_test_lp_api \
- rpy_pywrapcp_test \
  rpy_pywraplp_test \
- rpy_pywraprouting_test
+ rpy_cp_api_test \
+ rpy_routing_api_test \
+ rpy_pywrapcp_test \
+ rpy_pywraprouting_test \
+ rpy_cp_model_test \
+ rpy_sorted_interval_list_test
 
 .PHONY: test_python_contrib # Run all Python Contrib (located in examples/python and examples/contrib)
 test_python_contrib: \
