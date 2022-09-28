@@ -102,7 +102,8 @@ $(TEMP_DOTNET_DIR)/$1/%: \
 	-$(MKDIR) $(TEMP_DOTNET_DIR)$S$1$S$$*
 
 $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
- $${SRC_DIR}/ortools/dotnet/Sample.csproj.in \
+ $(SRC_DIR)/ortools/$1/samples/%.cs \
+ ${SRC_DIR}/ortools/dotnet/Sample.csproj.in \
  | $(TEMP_DOTNET_DIR)/$1/%
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$SSample.csproj.in \
@@ -156,7 +157,7 @@ endif
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
 
-DOTNET_SAMPLES := algorithms graph constraint_solver linear_solver model_builder sat
+DOTNET_SAMPLES := init algorithms graph constraint_solver linear_solver sat util
 $(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-target,$(sample))))
 
 # Examples
@@ -170,7 +171,8 @@ $(TEMP_DOTNET_DIR)/$1/%: \
 	-$(MKDIR) $(TEMP_DOTNET_DIR)$S$1$S$$*
 
 $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
- $${SRC_DIR}/ortools/dotnet/Sample.csproj.in \
+ $(SRC_DIR)/examples/$1/%.cs \
+ ${SRC_DIR}/ortools/dotnet/Sample.csproj.in \
  | $(TEMP_DOTNET_DIR)/$1/%
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$SSample.csproj.in \
@@ -228,71 +230,75 @@ DOTNET_EXAMPLES := contrib dotnet
 $(foreach example,$(DOTNET_EXAMPLES),$(eval $(call dotnet-example-target,$(example))))
 
 # Tests
-DOTNET_TESTS := tests
+define dotnet-test-target =
+$(TEMP_DOTNET_DIR)/$1: | $(TEMP_DOTNET_DIR)
+	-$(MKDIR) $(TEMP_DOTNET_DIR)$S$1
 
-$(TEMP_DOTNET_DIR)/tests: | $(TEMP_DOTNET_DIR)
-	-$(MKDIR) $(TEMP_DOTNET_DIR)$Stests
+$(TEMP_DOTNET_DIR)/$1/%: \
+ $(SRC_DIR)/ortools/$1/csharp/%.cs \
+ | $(TEMP_DOTNET_DIR)/$1
+	-$(MKDIR) $(TEMP_DOTNET_DIR)$S$1$S$$*
 
-$(TEMP_DOTNET_DIR)/tests/%: \
- $(SRC_DIR)/examples/tests/%.cs \
- | $(TEMP_DOTNET_DIR)/tests
-	-$(MKDIR) $(TEMP_DOTNET_DIR)$Stests$S$*
-
-$(TEMP_DOTNET_DIR)/tests/%/%.csproj: \
+$(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
+ $(SRC_DIR)/ortools/$1/csharp/%.cs \
  ${SRC_DIR}/ortools/dotnet/Test.csproj.in \
- | $(TEMP_DOTNET_DIR)/tests/%
+ | $(TEMP_DOTNET_DIR)/$1/%
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$STest.csproj.in \
- > $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 else
  ifeq ($(USE_DOTNET_6),ON)
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net6.0<\/TargetFramework>/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
  else
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>netcoreapp3.1<\/TargetFramework>/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
  endif
 endif
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
-	$(SED) -i -e 's/@TEST_NAME@/$*/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@TEST_NAME@/$$*/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_PROJECT)/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
-	$(SED) -i -e 's/@FILE_NAME@/$*.cs/' \
- $(TEMP_DOTNET_DIR)$Stests$S$*$S$*.csproj
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 
-$(TEMP_DOTNET_DIR)/tests/%/%.cs: \
- $(SRC_DIR)/examples/tests/%.cs \
- | $(TEMP_DOTNET_DIR)/tests/%
-	$(COPY) $(SRC_DIR)$Sexamples$Stests$S$*.cs \
- $(TEMP_DOTNET_DIR)$Stests$S$*
+$(TEMP_DOTNET_DIR)/$1/%/%.cs: \
+ $(SRC_DIR)/ortools/$1/csharp/%.cs \
+ | $(TEMP_DOTNET_DIR)/$1/%
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Scsharp$S$$*.cs \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*
 
 rdotnet_%: \
  dotnet \
- $(TEMP_DOTNET_DIR)/tests/%/%.cs \
- $(TEMP_DOTNET_DIR)/tests/%/%.csproj \
+ $(TEMP_DOTNET_DIR)/$1/%/%.cs \
+ $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  FORCE
 ifeq ($(USE_DOTNET_6),ON)
-	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
-	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build --framework net6.0 -c Release $(ARGS)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" test --no-build --framework net6.0 -c Release $(ARGS)
 endif
 ifeq ($(USE_DOTNET_CORE_31),ON)
-	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" build --framework netcoreapp3.1 -c Release
-	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" test --no-build --framework netcoreapp3.1 -c Release $(ARGS)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework netcoreapp3.1 -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" test --no-build --framework netcoreapp3.1 -c Release $(ARGS)
 endif
-	cd $(TEMP_DOTNET_DIR)$Stests$S$* && "$(DOTNET_BIN)" clean -c Release -v minimal
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
+endef
+
+DOTNET_TESTS := init algorithms graph constraint_solver linear_solver sat util
+$(foreach test,$(DOTNET_TESTS),$(eval $(call dotnet-test-target,$(test))))
 
 ####################
 ##  Test targets  ##
@@ -386,13 +392,14 @@ check_dotnet: \
 
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
 test_dotnet_tests: \
+	rdotnet_InitTests \
 	rdotnet_LinearSolverTests \
 	rdotnet_ConstraintSolverTests \
 	rdotnet_RoutingSolverTests \
 	rdotnet_SatSolverTests \
-	rdotnet_issue18 \
-	rdotnet_issue22 \
-	rdotnet_issue33
+#	rdotnet_issue18 \
+#	rdotnet_issue22 \
+#	rdotnet_issue33
 
 .PHONY: test_dotnet_contrib # Build and Run all .Net Examples (located in examples/contrib)
 test_dotnet_contrib: \
