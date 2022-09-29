@@ -392,9 +392,15 @@ if(BUILD_TESTING)
     COMMENT "Copying test.py"
     VERBATIM)
 
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/init/python/version_test.py.in
+    ${PROJECT_BINARY_DIR}/python/version_test.py
+    @ONLY)
   # run the tests within the virtualenv
   add_test(NAME pytest_venv
     COMMAND ${VENV_Python3_EXECUTABLE} ${VENV_DIR}/test.py)
+  add_test(NAME python_init_version_test
+    COMMAND ${VENV_Python3_EXECUTABLE} ${PROJECT_BINARY_DIR}/python/version_test.py)
 endif()
 
 #####################
