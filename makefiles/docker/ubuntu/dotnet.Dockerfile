@@ -2,13 +2,7 @@ FROM ortools/make:ubuntu_swig AS env
 
 # Install .Net
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
-# note: Ubuntu-22.04+ won't support dotnet-sdk-3.1
-# see: https://github.com/dotnet/core/pull/7423/files
 RUN apt-get update -qq \
-&& apt-get install -yq wget apt-transport-https \
-&& wget -q https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb \
-&& dpkg -i packages-microsoft-prod.deb \
-&& apt-get update -qq \
 && apt-get install -yq dotnet-sdk-6.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
