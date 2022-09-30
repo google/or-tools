@@ -88,8 +88,7 @@ class TestPyWrapRoutingIndexManager(unittest.TestCase):
         for i in range(manager.GetNumberOfVehicles()):
             self.assertEqual(i + 1,
                              manager.IndexToNode(manager.GetStartIndex(i)))
-            self.assertEqual(i + 4,
-                             manager.IndexToNode(manager.GetEndIndex(i)))
+            self.assertEqual(i + 4, manager.IndexToNode(manager.GetEndIndex(i)))
 
 
 class TestPyWrapRoutingModel(unittest.TestCase):
@@ -359,8 +358,7 @@ class TestPyWrapRoutingModel(unittest.TestCase):
         cost = model.RegisterTransitCallback(partial(TransitDistance, manager))
         model.SetArcCostEvaluatorOfAllVehicles(cost)
         # Add constant dimension
-        constant_id, success = model.AddConstantDimension(
-            1, 100, True, 'count')
+        constant_id, success = model.AddConstantDimension(1, 100, True, 'count')
         self.assertTrue(success)
         self.assertEqual(cost + 1, constant_id)
         count_dimension = model.GetDimensionOrDie('count')
