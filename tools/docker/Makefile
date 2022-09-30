@@ -93,6 +93,7 @@ help:
 	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
 	@echo -e "\t\t${BOLD}centos-8${RESET} (Centos Stream 8)"
 	@echo -e "\t\t${BOLD}centos-7${RESET} (Centos 7 LTS)"
+	@echo -e "\t\t${BOLD}debian-sid${RESET} (unstable)"
 	@echo -e "\t\t${BOLD}debian-11${RESET} (bullseye, latest)"
 	@echo -e "\t\t${BOLD}debian-10${RESET} (buster)"
 	@echo -e "\t\t${BOLD}fedora-36${RESET} (latest)"
@@ -402,7 +403,7 @@ DISTROS := \
  alpine-edge \
  archlinux \
  centos-7 centos-8 \
- debian-10 debian-11 \
+ debian-10 debian-11 debian-sid \
  fedora-33 fedora-34 fedora-35 fedora-36 \
  opensuse-leap \
  ubuntu-18.04 ubuntu-20.04 ubuntu-22.04
