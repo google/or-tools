@@ -101,6 +101,7 @@ help:
 	@echo -e "\t\t${BOLD}fedora-34${RESET}"
 	@echo -e "\t\t${BOLD}fedora-33${RESET}"
 	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
+	@echo -e "\t\t${BOLD}ubuntu-22.10${RESET} (Ubuntu 22.10, devel)"
 	@echo -e "\t\t${BOLD}ubuntu-22.04${RESET} (Ubuntu 22.04 LTS, latest)"
 	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
@@ -406,7 +407,7 @@ DISTROS := \
  debian-10 debian-11 debian-sid \
  fedora-33 fedora-34 fedora-35 fedora-36 \
  opensuse-leap \
- ubuntu-18.04 ubuntu-20.04 ubuntu-22.04
+ ubuntu-18.04 ubuntu-20.04 ubuntu-22.04 ubuntu-22.10
 
 # List of stages
 STAGES := env devel
