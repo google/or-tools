@@ -51,7 +51,6 @@ echo Testing ortools Python3... | tee -a test.log
 (cd ${VENV_DIR}/bin && ./python -c "from ortools.sat import pywrapsat") 2>&1 | tee -a test.log
 (cd ${VENV_DIR}/bin && ./python -c "from ortools.graph import pywrapgraph") 2>&1 | tee -a test.log
 (cd ${VENV_DIR}/bin && ./python -c "from ortools.algorithms import pywrapknapsack_solver") 2>&1 | tee -a test.log
-cp test.py.in ${VENV_DIR}/test.py
-${VENV_DIR}/bin/python ${VENV_DIR}/test.py 2>&1 | tee -a test.log
+"${VENV_DIR}/bin/python" "cmake/samples/python/sample.py" 2>&1 | tee -a test.log
 echo Testing ortools Python3...DONE | tee -a test.log
 set -e

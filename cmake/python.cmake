@@ -384,21 +384,11 @@ if(BUILD_TESTING)
     COMMENT "Create venv and install ${PYTHON_PROJECT}"
     VERBATIM)
 
-  add_custom_command(TARGET python_package POST_BUILD
-    DEPENDS python/test.py
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/test.py.in ${VENV_DIR}/test.py
-    BYPRODUCTS ${VENV_DIR}/test.py
-    WORKING_DIRECTORY python
-    COMMENT "Copying test.py"
-    VERBATIM)
-
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/init/python/version_test.py.in
     ${PROJECT_BINARY_DIR}/python/version_test.py
     @ONLY)
   # run the tests within the virtualenv
-  add_test(NAME pytest_venv
-    COMMAND ${VENV_Python3_EXECUTABLE} ${VENV_DIR}/test.py)
   add_test(NAME python_init_version_test
     COMMAND ${VENV_Python3_EXECUTABLE} ${PROJECT_BINARY_DIR}/python/version_test.py)
 endif()
