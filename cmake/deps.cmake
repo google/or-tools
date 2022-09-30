@@ -34,6 +34,7 @@ if(NOT BUILD_absl)
 endif()
 set(ABSL_DEPS
   absl::base
+  absl::core_headers
   absl::flags
   absl::flags_commandlineflag
   absl::flags_parse
