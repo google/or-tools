@@ -859,6 +859,7 @@ class MPSolver {
   friend class BopInterface;
   friend class SatInterface;
   friend class PdlpInterface;
+  friend class HighsInterface;
   friend class KnapsackInterface;
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
@@ -1079,6 +1080,7 @@ class MPObjective {
   friend class BopInterface;
   friend class SatInterface;
   friend class PdlpInterface;
+  friend class HighsInterface;
   friend class KnapsackInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
@@ -1189,6 +1191,7 @@ class MPVariable {
   friend class BopInterface;
   friend class SatInterface;
   friend class PdlpInterface;
+  friend class HighsInterface;
   friend class KnapsackInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
@@ -1331,6 +1334,7 @@ class MPConstraint {
   friend class BopInterface;
   friend class SatInterface;
   friend class PdlpInterface;
+  friend class HighsInterface;
   friend class KnapsackInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface

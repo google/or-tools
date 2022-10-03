@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,7 +46,7 @@ class PyWrapLp(unittest.TestCase):
         text_format.Merge(TEXT_MODEL, input_proto)
         solver = pywraplp.Solver.CreateSolver('CBC')
         if not solver:
-          return
+            return
         # For now, create the model from the proto by parsing the proto
         errors = solver.LoadModelFromProto(input_proto)
         self.assertFalse(errors)

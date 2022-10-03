@@ -75,6 +75,7 @@ cc_library(
         "glop_interface.cc",
         "glop_utils.cc",
         "gurobi_interface.cc",
+        "highs_interface.cc",
         "linear_expr.cc",
         "linear_solver_callback.cc",
         "linear_solver.cc",
@@ -111,6 +112,7 @@ cc_library(
     copts = [
         "-DUSE_PDLP",
         "-DUSE_SCIP",
+        "-DUSE_HIGHS",
     ],
     deps = [
         ":linear_solver_cc_proto",
@@ -160,8 +162,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":linear_solver_cc_proto",
+        "//ortools/base",
         "//ortools/base:accurate_sum",
-        "//ortools/base:commandlineflags",
         "//ortools/base:map_util",
         "//ortools/port:file",
         "//ortools/port:proto_utils",

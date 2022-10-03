@@ -32,7 +32,8 @@ cc_library(
     copts = [
         "-DUSE_HIGHS",
         "-DUSE_PDLP",
-        "-DUSE_SCIP",    ],
+        "-DUSE_SCIP",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/linear_solver",
