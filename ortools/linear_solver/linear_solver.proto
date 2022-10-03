@@ -425,6 +425,7 @@ message MPModelRequest {
     XPRESS_LINEAR_PROGRAMMING =
         101;                        // Commercial, needs a valid license. NOLINT
     CPLEX_LINEAR_PROGRAMMING = 10;  // Commercial, needs a valid license. NOLINT
+    HIGHS_LINEAR_PROGRAMMING = 15;
 
     SCIP_MIXED_INTEGER_PROGRAMMING = 3;  // Recommended default for MIP models.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
@@ -434,13 +435,14 @@ message MPModelRequest {
         102;  // Commercial, needs a valid license. NOLINT
     CPLEX_MIXED_INTEGER_PROGRAMMING =
         11;  // Commercial, needs a valid license. NOLINT
+    HIGHS_MIXED_INTEGER_PROGRAMMING = 16;
     BOP_INTEGER_PROGRAMMING = 12;
 
     // WARNING: This solver will currently interpret all variables as integer,
     // so any solution you get will be valid, but the optimal might be far away
     // for the real one (when you authorise non-integer value for continuous
     // variables).
-    SAT_INTEGER_PROGRAMMING = 14;
+    SAT_INTEGER_PROGRAMMING = 14;  // Recommended for pure integer problems.
 
     // In-house linear programming solver based on the primal-dual hybrid
     // gradient method. Sometimes faster than Glop for medium-size problems and

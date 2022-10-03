@@ -21,6 +21,7 @@
 
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/proto_solver/highs_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #if defined(USE_SCIP)
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
@@ -324,6 +325,22 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       break;
     }
 #endif  // defined(USE_SCIP)
+#if defined(USE_HIGHS)
+    case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING: {
+      const auto temp = HighsSolveProto(request, true);
+      if (temp.ok()) {
+        response_ = std::move(temp.value());
+      }
+      break;
+    }
+    case MPModelRequest::HIGHS_LINEAR_PROGRAMMING: {
+      const auto temp = HighsSolveProto(request, false);
+      if (temp.ok()) {
+        response_ = std::move(temp.value());
+      }
+      break;
+    }
+#endif  // defined(USE_HIGHS)
     default: {
       response_->set_status(
           MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);

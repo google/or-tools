@@ -19,6 +19,7 @@ cc_library(
     name = "proto_solver",
     srcs = [
         "gurobi_proto_solver.cc",
+        "highs_proto_solver.cc",
         "pdlp_proto_solver.cc",
         "sat_proto_solver.cc",
         "sat_solver_utils.cc",
@@ -26,6 +27,7 @@ cc_library(
     ],
     hdrs = [
         "gurobi_proto_solver.h",
+        "highs_proto_solver.h",
         "pdlp_proto_solver.h",
         "sat_proto_solver.h",
         "sat_solver_utils.h",
@@ -34,6 +36,7 @@ cc_library(
     copts = [
         "-DUSE_PDLP",
         "-DUSE_SCIP",
+        "-DUSE_HIGHS",
     ],
     deps = [
         "//ortools/base",

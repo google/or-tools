@@ -177,7 +177,7 @@ class XpressInterface : public MPSolverInterface {
       return 0.0;
     }
 
-    // TODO(user,user): Not yet working.
+    // TODO(user): Not yet working.
     LOG(DFATAL) << "ComputeExactConditionNumber not implemented for"
                 << " XPRESS_LINEAR_PROGRAMMING";
     return 0.0;

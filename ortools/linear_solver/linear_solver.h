@@ -199,10 +199,12 @@ class MPSolver {
     // gradient method. Sometimes faster than Glop for medium-size problems and
     // scales to much larger problems than Glop.
     PDLP_LINEAR_PROGRAMMING = 8,
+    HIGHS_LINEAR_PROGRAMMING = 15,
 
     // Integer programming problems.
     // -----------------------------
-    SCIP_MIXED_INTEGER_PROGRAMMING = 3,  // Recommended default value.
+    // Recommended default value for MIP problems.
+    SCIP_MIXED_INTEGER_PROGRAMMING = 3,
     GLPK_MIXED_INTEGER_PROGRAMMING = 4,
     CBC_MIXED_INTEGER_PROGRAMMING = 5,
 
@@ -214,6 +216,8 @@ class MPSolver {
     XPRESS_LINEAR_PROGRAMMING = 101,
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
 
+    HIGHS_MIXED_INTEGER_PROGRAMMING = 16,
+
     // Boolean optimization problem (requires only integer variables and works
     // best with only Boolean variables).
     BOP_INTEGER_PROGRAMMING = 12,
@@ -221,6 +225,8 @@ class MPSolver {
     // SAT based solver (requires only integer and Boolean variables).
     // If you pass it mixed integer problems, it will scale coefficients to
     // integer values, and solver continuous variables as integral variables.
+    //
+    // Recommended default value for pure integral problems problems.
     SAT_INTEGER_PROGRAMMING = 14,
 
     // Dedicated knapsack solvers.
