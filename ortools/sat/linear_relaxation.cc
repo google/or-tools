@@ -735,6 +735,7 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   std::vector<AffineExpression> starts;
   std::vector<AffineExpression> ends;
   std::vector<Literal> clause;
+  std::vector<int> active_interval_indices;
   bool at_least_one_interval_is_present = false;
   IntegerValue min_of_starts = kMaxIntegerValue;
   IntegerValue max_of_ends = kMinIntegerValue;
@@ -744,10 +745,8 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   for (int index = 0; index < num_intervals; ++index) {
     if (helper->IsAbsent(index)) continue;
 
-    min_of_starts = std::min(min_of_starts, helper->StartMin(index));
-    max_of_ends = std::max(max_of_ends, helper->EndMax(index));
-
     if (helper->IsOptional(index)) {
+      if (demands_helper->EnergyMin(index) == 0) continue;
       num_optionals++;
       const Literal task_lit = helper->PresenceLiteral(index);
       presence_literals.push_back(task_lit);
@@ -757,10 +756,15 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
       presence_literals.push_back(
           model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral());
     }
+    active_interval_indices.push_back(index);
+
+    min_of_starts = std::min(min_of_starts, helper->StartMin(index));
+    max_of_ends = std::max(max_of_ends, helper->EndMax(index));
 
     if (!helper->SizeIsFixed(index) || !demands_helper->DemandIsFixed(index)) {
       num_variable_energies++;
     }
+
     starts.push_back(helper->Starts()[index]);
     ends.push_back(helper->Ends()[index]);
   }
@@ -774,12 +778,30 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   // the scheduling propagators.
   if (num_variable_energies + num_optionals == 0) return;
 
-  const IntegerVariable span_start =
-      integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
-  const AffineExpression span_end =
-      makespan.has_value()
-          ? makespan.value()
-          : integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
+  LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
+  for (const int i : active_interval_indices) {
+    if (helper->IsOptional(i)) {
+      const IntegerValue energy_min = demands_helper->EnergyMin(i);
+      DCHECK_GT(energy_min, 0);
+      if (!lc.AddLiteralTerm(helper->PresenceLiteral(i), energy_min)) {
+        return;
+      }
+
+    } else {
+      const std::vector<LiteralValueValue>& product =
+          demands_helper->DecomposedEnergies()[i];
+      if (!product.empty()) {
+        // The energy is defined if the vector is not empty.
+        if (!lc.AddDecomposedProduct(product)) return;
+      } else {
+        // The energy is not a decomposed product, but it could still be
+        // constant or linear. If not, a McCormick relaxation will be
+        // introduced. AddQuadraticLowerBound() supports all cases.
+        lc.AddQuadraticLowerBound(helper->Sizes()[i],
+                                  demands_helper->Demands()[i], integer_trail);
+      }
+    }
+  }
 
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   const Literal cumulative_is_not_empty =
@@ -794,40 +816,24 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
     sat_solver->AddProblemClause(clause, /*is_safe=*/false);
   }
 
-  // Link span_start and span_end to the starts and ends of the tasks.
+  // Create and link span_start and span_end to the starts and ends of the
+  // tasks.
+  const IntegerVariable span_start =
+      integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
   model->Add(EqualMinOfSelectedVariables(cumulative_is_not_empty, span_start,
                                          starts, presence_literals));
+
+  const AffineExpression span_end =
+      makespan.has_value()
+          ? makespan.value()
+          : integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
   if (!makespan.has_value()) {
     model->Add(EqualMaxOfSelectedVariables(cumulative_is_not_empty, span_end,
                                            ends, presence_literals));
   }
-
-  LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
   lc.AddTerm(span_end, -integer_trail->UpperBound(capacity));
   lc.AddTerm(span_start, integer_trail->UpperBound(capacity));
-  for (int i = 0; i < num_intervals; ++i) {
-    if (helper->IsAbsent(i)) continue;
 
-    if (!helper->IsOptional(i)) {
-      const std::vector<LiteralValueValue>& product =
-          demands_helper->DecomposedEnergies()[i];
-      if (!product.empty()) {
-        // The energy is defined if the vector is not empty.
-        if (!lc.AddDecomposedProduct(product)) return;
-      } else {
-        // The energy is not a decomposed product, but it could still be
-        // constant or linear. If not, a McCormick relaxation will be
-        // introduced.  AddQuadraticLowerBound() supports all cases.
-        lc.AddQuadraticLowerBound(helper->Sizes()[i],
-                                  demands_helper->Demands()[i], integer_trail);
-      }
-    } else {
-      const IntegerValue energy_min = demands_helper->EnergyMin(i);
-      if (!lc.AddLiteralTerm(helper->PresenceLiteral(i), energy_min)) {
-        return;
-      }
-    }
-  }
   relaxation->linear_constraints.push_back(lc.Build());
 }
 
@@ -995,6 +1001,7 @@ void AppendLinMaxRelaxationPart2(
       num_exprs, std::vector<IntegerValue>(num_exprs, IntegerValue(0)));
 
   // Cache coefficients.
+  // TODO(user): Remove hash_map ?
   absl::flat_hash_map<std::pair<int, IntegerVariable>, IntegerValue> cache;
   for (int i = 0; i < num_exprs; ++i) {
     for (int j = 0; j < exprs[i].vars.size(); ++j) {

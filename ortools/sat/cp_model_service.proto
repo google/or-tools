@@ -27,8 +27,7 @@ option java_outer_classname = "CpModelServiceProto";
 // a solution of the problem.
 service CpSolver {
   // Single solve, sends a model, gets a response.
-  rpc SolveProblem(CpSolverRequest) returns (CpSolverResponse) {
-  }
+  rpc SolveProblem(CpSolverRequest) returns (CpSolverResponse) {}
 }
 
 // The request sent to the remote solve service.

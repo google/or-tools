@@ -16,6 +16,8 @@
 
 #include <deque>
 #include <functional>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
@@ -24,13 +26,51 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
 
 DEFINE_STRONG_INDEX_TYPE(EnforcementId);
 
+// A FIFO queue that allows some form of reordering of its element.
+class CustomFifoQueue {
+ public:
+  CustomFifoQueue() {}
+
+  // Note that this requires the queue to be empty or to never have been poped
+  // before.
+  void IncreaseSize(int n);
+
+  int Pop();
+  void Push(int id);
+
+  bool empty() const { return left_ == right_; }
+  bool Contains(int id) const { return pos_[id] != -1; }
+
+  // Reorder the given element to match their given order. They must all be in
+  // the queue.
+  void Reorder(absl::Span<const int> order);
+
+ private:
+  // The queue is stored in [left_, right_) with eventual wrap around % size.
+  // The positions of each element is in pos_[element] and never changes during
+  // normal operation. A position of -1 means that the element is not in the
+  // queue.
+  std::vector<int> pos_;
+  std::vector<int> queue_;
+  int left_ = 0;
+  int right_ = 0;
+
+  std::vector<int> tmp_positions_;
+};
+
 // This is meant as an helper to deal with enforcement for any constraint.
+//
+// TODO(user): Right now if a constraint is false, but more than one literal are
+// unassigned, we don't remember this fact and propagate an enforcement literal
+// to false as soon as possible. The constraint will only be woken up when all
+// enforcement literal are true or one of its var bounds changes.
 class EnforcementPropagator : SatPropagator {
  public:
   explicit EnforcementPropagator(Model* model);
@@ -63,9 +103,9 @@ class EnforcementPropagator : SatPropagator {
 
   // Try to propagate when the enforced constraint is not satisfiable.
   // This is currently in O(enforcement_size);
-  bool PropagateWhenFalse(EnforcementId id,
-                          absl::Span<const Literal> literal_reason,
-                          absl::Span<const IntegerLiteral> integer_reason);
+  ABSL_MUST_USE_RESULT bool PropagateWhenFalse(
+      EnforcementId id, absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason);
 
  private:
   absl::Span<const Literal> GetSpan(EnforcementId id) const;
@@ -100,15 +140,15 @@ class EnforcementPropagator : SatPropagator {
 //
 // TODO(user): This is a work in progress and is currently incomplete:
 // - Lack more incremental support for faster propag.
-// - Lack dissemble subtree + cycle detection which is the point of grouping
-//   all linear together.
 // - Lack detection and propagation of at least one of these linear is true
 //   which can be used to propagate more bound if a variable appear in all these
 //   constraint.
-class LinearPropagator : public PropagatorInterface {
+class LinearPropagator : public PropagatorInterface, ReversibleInterface {
  public:
   explicit LinearPropagator(Model* model);
+  ~LinearPropagator() override;
   bool Propagate() final;
+  void SetLevel(int level) final;
 
   // Adds a new constraint to the propagator.
   void AddConstraint(absl::Span<const Literal> enforcement_literals,
@@ -129,20 +169,32 @@ class LinearPropagator : public PropagatorInterface {
   absl::Span<IntegerValue> GetCoeffs(const ConstraintInfo& info);
   absl::Span<IntegerVariable> GetVariables(const ConstraintInfo& info);
 
-  bool ClearQueuesAndReturnFalse();
+  // Returns false on conflict.
+  ABSL_MUST_USE_RESULT bool PropagateOneConstraint(int id);
+  ABSL_MUST_USE_RESULT bool ReportConflictingCycle();
+  ABSL_MUST_USE_RESULT bool DisassembleSubtreeAndAddToQueue(int root_id,
+                                                            int num_pushed);
+
+  void ClearPropagatedBy();
   void CanonicalizeConstraint(int id);
-  bool PropagateOneConstraint(int id);
   void AddToQueueIfNeeded(int id);
   void AddWatchedToQueue(IntegerVariable var);
+  void SetPropagatedBy(IntegerVariable var, int id);
+  std::string ConstraintDebugString(int id);
 
   // External class needed.
+  Trail* trail_;
   IntegerTrail* integer_trail_;
   EnforcementPropagator* enforcement_propagator_;
   GenericLiteralWatcher* watcher_;
   TimeLimit* time_limit_;
   RevIntRepository* rev_int_repository_;
   RevIntegerValueRepository* rev_integer_value_repository_;
+  SharedStatistics* shared_stats_ = nullptr;
   const int watcher_id_;
+
+  // To know when we backtracked. See SetLevel().
+  int previous_level_ = 0;
 
   // The key to our incrementality. This will be cleared once the propagation
   // is done, and automatically updated by the integer_trail_ with all the
@@ -162,16 +214,57 @@ class LinearPropagator : public PropagatorInterface {
   // For reasons computation. Parallel vectors.
   std::vector<IntegerLiteral> integer_reason_;
   std::vector<IntegerValue> reason_coeffs_;
+  std::vector<Literal> literal_reason_;
 
   // Queue of constraint to propagate.
   std::vector<bool> in_queue_;
-  std::deque<int> propagation_queue_;
-  std::deque<int> not_enforced_queue_;
+  CustomFifoQueue propagation_queue_;
 
   // Watchers.
   absl::StrongVector<IntegerVariable, bool> is_watched_;
   absl::StrongVector<IntegerVariable, absl::InlinedVector<int, 6>>
       var_to_constraint_ids_;
+
+  // For an heuristic similar to Tarjan contribution to Bellman-Ford algorithm.
+  // We mark for each variable the last constraint that pushed it, and also keep
+  // the count of propagated variable for each constraint.
+  SparseBitset<IntegerVariable> propagated_by_was_set_;
+  absl::StrongVector<IntegerVariable, int> propagated_by_;
+  std::vector<int> id_to_propagation_count_;
+
+  // Used by DissasembleSubtreeAndAddToQueue().
+  struct DissasembleQueueEntry {
+    int id;
+    IntegerVariable var;
+  };
+  std::vector<DissasembleQueueEntry> disassemble_queue_;
+  std::vector<std::pair<int, IntegerVariable>> disassemble_branch_;
+  std::vector<std::pair<IntegerVariable, IntegerValue>> disassemble_candidates_;
+  std::vector<int> tmp_to_reorder_;
+  SparseBitset<int> disassemble_scanned_ids_;
+  std::vector<int> disassemble_reverse_topo_order_;
+
+  // Staging queue.
+  // Initially, we add the constraint to the priority queue, and we extract
+  // them one by one, each time reaching the propagation fixed point.
+  std::vector<bool> pq_was_added_;
+  bool pq_in_heap_form_ = false;
+  std::vector<int> pq_;
+  std::vector<int> pq_to_clean_;
+
+  // Stats. Allow to track the time a constraint is scanned more than once.
+  // This is only used in --v 1.
+  SparseBitset<int> id_scanned_at_least_once_;
+  int64_t num_extra_scans_ = 0;
+
+  // Stats.
+  int64_t num_pushes_ = 0;
+  int64_t num_enforcement_pushes_ = 0;
+  int64_t num_simple_cycles_ = 0;
+  int64_t num_complex_cycles_ = 0;
+  int64_t num_scanned_ = 0;
+  int64_t num_explored_constraints_ = 0;
+  int64_t num_bool_aborts_ = 0;
 };
 
 }  // namespace sat

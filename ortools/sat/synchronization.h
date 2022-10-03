@@ -42,7 +42,6 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -171,6 +170,13 @@ class SharedIncompleteSolutionManager {
   mutable absl::Mutex mutex_;
 };
 
+// Used by SharedResponseManager::SetStatsFromModel() to extract statistic to
+// put in a CpSolverResponse. The callbacks registered here are supposed to only
+// modify the statistic fields, nothing else.
+struct CpSolverResponseStatisticCallbacks {
+  std::vector<std::function<void(CpSolverResponse*)>> callbacks;
+};
+
 // Manages the global best response kept by the solver. This class is
 // responsible for logging the progress of the solutions and bounds as they are
 // found.
@@ -271,6 +277,13 @@ class SharedResponseManager {
   // UpdateGapIntegral() but it is not an issue to do so.
   void SetUpdateGapIntegralOnEachChange(bool set);
 
+  // Sets this to false, it you want new solutions to wait for the Synchronize()
+  // call.
+  // The default 'true' indicates that all solutions passed through
+  // NewSolution() are always propagated to the best response and to the
+  // solution manager.
+  void SetSynchronizationMode(bool always_synchronize);
+
   // Updates the inner objective bounds.
   void UpdateInnerObjectiveBounds(const std::string& update_info,
                                   IntegerValue lb, IntegerValue ub);
@@ -317,14 +330,6 @@ class SharedResponseManager {
     return &solutions_;
   }
 
-  // This should be called after the model is loaded. It will read the file
-  // specified by --cp_model_load_debug_solution and properly fill the
-  // model->Get<DebugSolution>() vector.
-  //
-  // TODO(user): Note that for now, only the IntegerVariable value are loaded,
-  // not the value of the pure Booleans variables.
-  void LoadDebugSolution(Model*);
-
   // Debug only. Set dump prefix for solutions written to file.
   void set_dump_prefix(const std::string& dump_prefix) {
     dump_prefix_ = dump_prefix;
@@ -339,14 +344,16 @@ class SharedResponseManager {
                           absl::Time* last_logging_time);
   bool LoggingIsEnabled() const { return logger_->LoggingIsEnabled(); }
 
-  // This is here for the few codepath that needs to modify the returned
-  // response directly. Note that this do not work in parallel.
-  //
-  // TODO(user): This can probably be removed.
+  // TODO(user): Remove.
   CpSolverResponse* MutableResponse() {
     absl::MutexLock mutex_lock(&mutex_);
     return &best_response_;
   }
+
+  // Specific functions to override the best response.
+  void SetResponseInvalidStatus(const std::string& message);
+  void SetResponseStatus(CpSolverStatus status);
+  void SetInfeasibleStatusWithAssumptions(absl::Span<const int> refs);
 
  private:
   void TestGapLimitsIfNeeded() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -386,6 +393,7 @@ class SharedResponseManager {
   int64_t best_solution_objective_value_ ABSL_GUARDED_BY(mutex_) =
       std::numeric_limits<int64_t>::max();
 
+  bool always_synchronize_ ABSL_GUARDED_BY(mutex_) = true;
   IntegerValue synchronized_inner_objective_lower_bound_ ABSL_GUARDED_BY(
       mutex_) = IntegerValue(std::numeric_limits<int64_t>::min());
   IntegerValue synchronized_inner_objective_upper_bound_ ABSL_GUARDED_BY(
@@ -517,6 +525,22 @@ class SharedClausesManager {
 
   // Used for reporting statistics.
   absl::flat_hash_map<int, std::string> id_to_worker_name_;
+};
+
+// Simple class to add statistics by name and print them at the end.
+class SharedStatistics {
+ public:
+  SharedStatistics() {}
+
+  // Adds a bunch of stats, adding count for the same key together.
+  void AddStats(absl::Span<const std::pair<std::string, int64_t>> stats);
+
+  // Logs all the added stats.
+  void Log(SolverLogger* logger);
+
+ private:
+  absl::Mutex mutex_;
+  absl::flat_hash_map<std::string, int64_t> stats_ ABSL_GUARDED_BY(mutex_);
 };
 
 template <typename ValueType>

@@ -37,6 +37,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/rev.h"
@@ -556,7 +557,20 @@ class LinearProgrammingDispatcher
 
 // A class that stores the collection of all LP constraints in a model.
 class LinearProgrammingConstraintCollection
-    : public std::vector<LinearProgrammingConstraint*> {};
+    : public std::vector<LinearProgrammingConstraint*> {
+ public:
+  explicit LinearProgrammingConstraintCollection(Model* model)
+      : std::vector<LinearProgrammingConstraint*>() {
+    model->GetOrCreate<CpSolverResponseStatisticCallbacks>()
+        ->callbacks.push_back([this](CpSolverResponse* response) {
+          int64_t num_lp_iters = 0;
+          for (const LinearProgrammingConstraint* lp : *this) {
+            num_lp_iters += lp->total_num_simplex_iterations();
+          }
+          response->set_num_lp_iterations(num_lp_iters);
+        });
+  }
+};
 
 // Tests for possible overflow in the propagation of the given linear
 // constraint.

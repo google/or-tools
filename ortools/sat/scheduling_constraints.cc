@@ -275,6 +275,7 @@ int SelectedMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   return id;
 }
 
+// TODO(user): Change API to not use the enforcement literal.
 std::function<void(Model*)> EqualMinOfSelectedVariables(
     Literal enforcement_literal, AffineExpression target,
     const std::vector<AffineExpression>& exprs,

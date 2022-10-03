@@ -29,6 +29,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
@@ -57,12 +58,14 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
       : SatPropagator("PrecedencesPropagator"),
         trail_(model->GetOrCreate<Trail>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        shared_stats_(model->Mutable<SharedStatistics>()),
         watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
         watcher_id_(watcher_->Register(this)) {
     model->GetOrCreate<SatSolver>()->AddPropagator(this);
     integer_trail_->RegisterWatcher(&modified_vars_);
     watcher_->SetPropagatorPriority(watcher_id_, 0);
   }
+  ~PrecedencesPropagator() override;
 
   bool Propagate() final;
   bool Propagate(Trail* trail) final;
@@ -250,6 +253,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // new ones.
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  SharedStatistics* shared_stats_ = nullptr;
   GenericLiteralWatcher* watcher_;
   int watcher_id_;
 
@@ -317,6 +321,11 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 
   // Temp vector used by the tree traversal in DisassembleSubtree().
   std::vector<int> tmp_vector_;
+
+  // Stats.
+  int64_t num_cycles_ = 0;
+  int64_t num_pushes_ = 0;
+  int64_t num_enforcement_pushes_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(PrecedencesPropagator);
 };

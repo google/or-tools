@@ -154,6 +154,12 @@ ABSL_FLAG(std::string, contention_profile, "",
           "If non-empty, dump a contention pprof proto to the specified "
           "destination at the end of the solve.");
 
+ABSL_FLAG(
+    std::string, cp_model_load_debug_solution, "",
+    "DEBUG ONLY. When this is set to a non-empty file name, "
+    "we will interpret this as an internal solution which can be used for "
+    "debugging. For instance we use it to identify wrong cuts/reasons.");
+
 namespace operations_research {
 namespace sat {
 
@@ -552,6 +558,47 @@ namespace {
 
 #if !defined(__PORTABLE_PLATFORM__)
 #endif  // __PORTABLE_PLATFORM__
+
+// This should be called after the model is loaded. It will read the file
+// specified by --cp_model_load_debug_solution and properly fill the
+// model->Get<DebugSolution>() vector.
+//
+// TODO(user): Note that for now, only the IntegerVariable value are loaded,
+// not the value of the pure Booleans variables.
+void LoadDebugSolution(const CpModelProto& model_proto, Model* model) {
+#if !defined(__PORTABLE_PLATFORM__)
+  if (absl::GetFlag(FLAGS_cp_model_load_debug_solution).empty()) return;
+  if (model->Get<DebugSolution>() != nullptr) return;  // Already loaded.
+
+  CpSolverResponse response;
+  LOG(INFO) << "Reading solution from '"
+            << absl::GetFlag(FLAGS_cp_model_load_debug_solution) << "'.";
+  CHECK_OK(file::GetTextProto(absl::GetFlag(FLAGS_cp_model_load_debug_solution),
+                              &response, file::Defaults()));
+
+  const auto& mapping = *model->GetOrCreate<CpModelMapping>();
+  auto& debug_solution = *model->GetOrCreate<DebugSolution>();
+  debug_solution.resize(
+      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
+  for (int i = 0; i < response.solution().size(); ++i) {
+    if (!mapping.IsInteger(i)) continue;
+    const IntegerVariable var = mapping.Integer(i);
+    debug_solution[var] = response.solution(i);
+    debug_solution[NegationOf(var)] = -response.solution(i);
+  }
+
+  // The objective variable is usually not part of the proto, but it is still
+  // nice to have it, so we recompute it here.
+  auto* objective_def = model->Get<ObjectiveDefinition>();
+  if (objective_def == nullptr) return;
+
+  const IntegerVariable objective_var = objective_def->objective_var;
+  const int64_t objective_value =
+      ComputeInnerObjective(model_proto.objective(), response);
+  debug_solution[objective_var] = objective_value;
+  debug_solution[NegationOf(objective_var)] = -objective_value;
+#endif  // __PORTABLE_PLATFORM__
+}
 
 void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
                             CpSolverResponse* response) {
@@ -1146,8 +1193,15 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   // TODO(user): The core algo and symmetries seems to be problematic in some
   // cases. See for instance: neos-691058.mps.gz. This is probably because as
   // we modify the model, our symmetry might be wrong? investigate.
+  //
+  // TODO(user): More generally, we cannot load the symmetry if we create
+  // new Booleans and constraints that link them to some Booleans of the model.
+  // Creating Booleans related to integer variable is fine since we only deal
+  // with Boolean only symmetry here. It is why we disable this when we have
+  // linear relaxation as some of them create new constraints.
   if (!parameters.optimize_with_core() && parameters.symmetry_level() > 1 &&
-      !parameters.enumerate_all_solutions()) {
+      !parameters.enumerate_all_solutions() &&
+      parameters.linearization_level() == 0) {
     LoadBooleanSymmetries(model_proto, model);
   }
 
@@ -1277,14 +1331,12 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   if (parameters.cp_model_probing_level() > 1) {
     Prober* prober = model->GetOrCreate<Prober>();
     prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
-    if (model->GetOrCreate<SatSolver>()->ModelIsUnsat()) {
-      return unsat();
-    }
     if (!model->GetOrCreate<BinaryImplicationGraph>()
              ->ComputeTransitiveReduction()) {
       return unsat();
     }
   }
+  if (sat_solver->ModelIsUnsat()) return unsat();
 
   // Create an objective variable and its associated linear constraint if
   // needed.
@@ -2122,6 +2174,11 @@ class FullProblemSolver : public SubSolver {
     if (shared->clauses != nullptr) {
       local_model_->Register<SharedClausesManager>(shared->clauses);
     }
+
+    // TODO(user): For now we do not count LNS statistics. We could easily
+    // by registering the SharedStatistics class with LNS local model.
+    local_model_->Register<SharedStatistics>(
+        shared->global_model->GetOrCreate<SharedStatistics>());
   }
 
   bool TaskIsAvailable() override {
@@ -2552,7 +2609,7 @@ class LnsSolver : public SubSolver {
         QuickSolveWithHint(lns_fragment, &local_model);
         SolveLoadedCpModel(lns_fragment, &local_model);
       } else {
-        local_response_manager->MutableResponse()->set_status(presolve_status);
+        local_response_manager->SetResponseStatus(presolve_status);
       }
       CpSolverResponse local_response = local_response_manager->GetResponse();
 
@@ -3188,9 +3245,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // TODO(user): We currently reuse the MODEL_INVALID status even though it
       // is not the best name for this. Maybe we can add a PARAMETERS_INVALID
       // when it become needed. Or rename to INVALID_INPUT ?
-      shared_response_manager->MutableResponse()->set_status(
-          CpSolverStatus::MODEL_INVALID);
-      shared_response_manager->MutableResponse()->set_solution_info(error);
+      shared_response_manager->SetResponseInvalidStatus(error);
       return shared_response_manager->GetResponse();
     }
   }
@@ -3242,15 +3297,29 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     const std::string error = ValidateInputCpModel(params, model_proto);
     if (!error.empty()) {
       SOLVER_LOG(logger, "Invalid model: ", error);
-      shared_response_manager->MutableResponse()->set_status(
-          CpSolverStatus::MODEL_INVALID);
-      shared_response_manager->MutableResponse()->set_solution_info(error);
+      shared_response_manager->SetResponseInvalidStatus(error);
       return shared_response_manager->GetResponse();
     }
   }
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Initial ", CpModelStats(model_proto));
+
+  // Set up synchronization mode in parallel.
+  const bool always_synchronize =
+      !params.interleave_search() || params.num_workers() <= 1;
+  shared_response_manager->SetSynchronizationMode(always_synchronize);
+
+  // Set up the batch size in interleave mode.
+  if (params.interleave_search() && params.interleave_batch_size() == 0) {
+    const int batch_size =
+        params.num_workers() == 1 ? 1 : params.num_workers() * 5;
+    SOLVER_LOG(
+        logger,
+        "Setting number of tasks in each batch of interleaved search to ",
+        batch_size);
+    model->GetOrCreate<SatParameters>()->set_interleave_batch_size(batch_size);
+  }
 
   // Special case for pure-sat problem.
   // TODO(user): improve the normal presolver to do the same thing.
@@ -3280,6 +3349,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     if (is_pure_sat) {
       // TODO(user): All this duplication will go away when we are fast enough
       // on pure-sat model with the CpModel presolve...
+      // TODO(user): Last usage of MutableResponse(). Maybe just use
+      // NewSolution().
       *shared_response_manager->MutableResponse() =
           SolvePureSatModel(model_proto, wall_timer, model, logger);
       if (params.fill_tightened_domains_in_response()) {
@@ -3456,10 +3527,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     context->InitializeNewDomains();
     for (const int ref : model_proto.assumptions()) {
       if (!context->SetLiteralToTrue(ref)) {
-        shared_response_manager->MutableResponse()->set_status(
-            CpSolverStatus::INFEASIBLE);
-        shared_response_manager->MutableResponse()
-            ->add_sufficient_assumptions_for_infeasibility(ref);
+        shared_response_manager->SetInfeasibleStatusWithAssumptions({ref});
         return shared_response_manager->GetResponse();
       }
     }
@@ -3471,7 +3539,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       PresolveCpModel(context.get(), &postsolve_mapping);
   if (presolve_status != CpSolverStatus::UNKNOWN) {
     SOLVER_LOG(logger, "Problem closed by presolve.");
-    shared_response_manager->MutableResponse()->set_status(presolve_status);
+    shared_response_manager->SetResponseStatus(presolve_status);
     return shared_response_manager->GetResponse();
   }
 
@@ -3643,31 +3711,46 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     SOLVER_LOG(logger, absl::StrFormat("Starting to load the model at %.2fs",
                                        wall_timer->Get()));
     shared_response_manager->SetUpdateGapIntegralOnEachChange(true);
-    LoadCpModel(new_cp_model_proto, model);
-    shared_response_manager->LoadDebugSolution(model);
+
+    // We use a local_model to share statistic report mechanism with the
+    // parallel case. When this model will be destroyed, we will collect some
+    // stats that are used to debug/improve internal algorithm.
+    Model local_model;
+    local_model.Register<TimeLimit>(model->GetOrCreate<TimeLimit>());
+    local_model.Register<SatParameters>(model->GetOrCreate<SatParameters>());
+    local_model.Register<SharedStatistics>(
+        model->GetOrCreate<SharedStatistics>());
+    local_model.Register<SharedResponseManager>(shared_response_manager);
+
+    LoadCpModel(new_cp_model_proto, &local_model);
+    LoadDebugSolution(new_cp_model_proto, &local_model);
 
     SOLVER_LOG(logger, "");
     SOLVER_LOG(logger, absl::StrFormat("Starting sequential search at %.2fs",
                                        wall_timer->Get()));
     if (params.repair_hint()) {
-      MinimizeL1DistanceWithHint(new_cp_model_proto, model);
+      MinimizeL1DistanceWithHint(new_cp_model_proto, &local_model);
     } else {
-      QuickSolveWithHint(new_cp_model_proto, model);
+      QuickSolveWithHint(new_cp_model_proto, &local_model);
     }
-    SolveLoadedCpModel(new_cp_model_proto, model);
+    SolveLoadedCpModel(new_cp_model_proto, &local_model);
 
     // Sequential logging of LP statistics.
     if (logger->LoggingIsEnabled()) {
       const auto& lps =
-          *model->GetOrCreate<LinearProgrammingConstraintCollection>();
+          *local_model.GetOrCreate<LinearProgrammingConstraintCollection>();
       if (!lps.empty()) {
         SOLVER_LOG(logger, "");
         for (const auto* lp : lps) {
           SOLVER_LOG(logger, lp->Statistics());
         }
       }
-      SOLVER_LOG(logger, "");
     }
+  }
+
+  // Extra logging if needed.
+  if (logger->LoggingIsEnabled()) {
+    model->GetOrCreate<SharedStatistics>()->Log(logger);
   }
 
   return shared_response_manager->GetResponse();

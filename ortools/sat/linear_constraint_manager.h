@@ -78,6 +78,7 @@ class LinearConstraintManager {
         time_limit_(model->GetOrCreate<TimeLimit>()),
         model_(model),
         logger_(model->GetOrCreate<SolverLogger>()) {}
+  ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
   // and merge the bounds of constraints with the same terms. We also perform

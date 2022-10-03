@@ -33,6 +33,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -88,6 +89,17 @@ std::string LinearConstraintManager::Statistics() const {
   }
   if (!result.empty()) result.pop_back();  // Remove last \n.
   return result;
+}
+
+LinearConstraintManager::~LinearConstraintManager() {
+  if (!VLOG_IS_ON(1)) return;
+  if (model_->Get<SharedStatistics>() == nullptr) return;
+
+  std::vector<std::pair<std::string, int64_t>> cut_stats;
+  for (const auto& entry : type_to_num_cuts_) {
+    cut_stats.push_back({absl::StrCat("cut/", entry.first), entry.second});
+  }
+  model_->Mutable<SharedStatistics>()->AddStats(cut_stats);
 }
 
 void LinearConstraintManager::RescaleActiveCounts(const double scaling_factor) {
@@ -246,7 +258,7 @@ bool LinearConstraintManager::AddCut(
   // them undeletable.
   constraint_infos_[ct_index].is_deletable = true;
 
-  VLOG(1) << "Cut '" << type_name << "'"
+  VLOG(2) << "Cut '" << type_name << "'"
           << " size=" << constraint_infos_[ct_index].constraint.vars.size()
           << " max_magnitude="
           << ComputeInfinityNorm(constraint_infos_[ct_index].constraint)
@@ -309,7 +321,7 @@ void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
   }
 
   if (num_deleted_constraints > 0) {
-    VLOG(1) << "Constraint manager cleanup: #deleted:"
+    VLOG(2) << "Constraint manager cleanup: #deleted:"
             << num_deleted_constraints;
   }
   num_deletable_constraints_ -= num_deleted_constraints;

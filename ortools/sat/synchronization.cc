@@ -41,12 +41,9 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -61,12 +58,6 @@
 ABSL_FLAG(bool, cp_model_dump_solutions, false,
           "DEBUG ONLY. If true, all the intermediate solution will be dumped "
           "under '\"FLAGS_cp_model_dump_prefix\" + \"solution_xxx.pb.txt\"'.");
-
-ABSL_FLAG(
-    std::string, cp_model_load_debug_solution, "",
-    "DEBUG ONLY. When this is set to a non-empty file name, "
-    "we will interpret this as an internal solution which can be used for "
-    "debugging. For instance we use it to identify wrong cuts/reasons.");
 
 namespace operations_research {
 namespace sat {
@@ -190,6 +181,11 @@ void SharedResponseManager::InitializeObjective(const CpModelProto& cp_model) {
   } else {
     objective_or_null_ = nullptr;
   }
+}
+
+void SharedResponseManager::SetSynchronizationMode(bool always_synchronize) {
+  absl::MutexLock mutex_lock(&mutex_);
+  always_synchronize_ = always_synchronize;
 }
 
 void SharedResponseManager::SetUpdateGapIntegralOnEachChange(bool set) {
@@ -552,10 +548,9 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
     inner_objective_upper_bound_ = objective_value - 1;
   }
 
-  // TODO(user): Hack. In single thread, no one is synchronizing the solution,
-  // so we should do it from here. We currently "reuse"
-  // update_integral_on_each_change_ which should probably just change name.
-  if (update_integral_on_each_change_) {
+  // In single thread, no one is synchronizing the solution manager, so we
+  // should do it from here.
+  if (always_synchronize_) {
     solutions_.Synchronize();
   }
 
@@ -629,41 +624,6 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 #endif  // __PORTABLE_PLATFORM__
 }
 
-void SharedResponseManager::LoadDebugSolution(Model* model) {
-#if !defined(__PORTABLE_PLATFORM__)
-  if (absl::GetFlag(FLAGS_cp_model_load_debug_solution).empty()) return;
-  if (model->Get<DebugSolution>() != nullptr) return;  // Already loaded.
-
-  CpSolverResponse response;
-  LOG(INFO) << "Reading solution from '"
-            << absl::GetFlag(FLAGS_cp_model_load_debug_solution) << "'.";
-  CHECK_OK(file::GetTextProto(absl::GetFlag(FLAGS_cp_model_load_debug_solution),
-                              &response, file::Defaults()));
-
-  const auto& mapping = *model->GetOrCreate<CpModelMapping>();
-  auto& debug_solution = *model->GetOrCreate<DebugSolution>();
-  debug_solution.resize(
-      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
-  for (int i = 0; i < response.solution().size(); ++i) {
-    if (!mapping.IsInteger(i)) continue;
-    const IntegerVariable var = mapping.Integer(i);
-    debug_solution[var] = response.solution(i);
-    debug_solution[NegationOf(var)] = -response.solution(i);
-  }
-
-  // The objective variable is usually not part of the proto, but it is still
-  // nice to have it, so we recompute it here.
-  auto* objective_def = model->Get<ObjectiveDefinition>();
-  if (objective_def == nullptr) return;
-
-  const IntegerVariable objective_var = objective_def->objective_var;
-  const int64_t objective_value =
-      ComputeInnerObjective(*objective_or_null_, response);
-  debug_solution[objective_var] = objective_value;
-  debug_solution[NegationOf(objective_var)] = -objective_value;
-#endif  // __PORTABLE_PLATFORM__
-}
-
 void SharedResponseManager::SetStatsFromModel(Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
   SetStatsFromModelInternal(model);
@@ -685,12 +645,33 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
   best_response_.set_deterministic_time(
       time_limit->GetElapsedDeterministicTime());
 
-  int64_t num_lp_iters = 0;
-  for (const LinearProgrammingConstraint* lp :
-       *model->GetOrCreate<LinearProgrammingConstraintCollection>()) {
-    num_lp_iters += lp->total_num_simplex_iterations();
+  // TODO(user): find a way to clear all stats fields that might be set by
+  // one of the callback.
+  best_response_.set_num_lp_iterations(0);
+  for (const auto& set_stats :
+       model->GetOrCreate<CpSolverResponseStatisticCallbacks>()->callbacks) {
+    set_stats(&best_response_);
   }
-  best_response_.set_num_lp_iterations(num_lp_iters);
+}
+
+void SharedResponseManager::SetResponseInvalidStatus(
+    const std::string& message) {
+  absl::MutexLock mutex_lock(&mutex_);
+  best_response_.set_status(CpSolverStatus::MODEL_INVALID);
+  best_response_.set_solution_info(message);
+}
+
+void SharedResponseManager::SetResponseStatus(CpSolverStatus status) {
+  absl::MutexLock mutex_lock(&mutex_);
+  best_response_.set_status(status);
+}
+
+void SharedResponseManager::SetInfeasibleStatusWithAssumptions(
+    absl::Span<const int> refs) {
+  absl::MutexLock mutex_lock(&mutex_);
+  best_response_.set_status(CpSolverStatus::INFEASIBLE);
+  best_response_.mutable_sufficient_assumptions_for_infeasibility()->Assign(
+      refs.begin(), refs.end());
 }
 
 bool SharedResponseManager::ProblemIsSolved() const {
@@ -952,6 +933,47 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
     for (const auto& entry : name_to_clauses) {
       SOLVER_LOG(logger, "  '", entry.first, "': ", entry.second);
     }
+  }
+}
+
+void SharedStatistics::AddStats(
+    absl::Span<const std::pair<std::string, int64_t>> stats) {
+  absl::MutexLock mutex_lock(&mutex_);
+  for (const auto& [key, count] : stats) {
+    stats_[key] += count;
+  }
+}
+
+namespace {
+
+std::string PositiveNumberWithSeparator(int64_t num) {
+  std::string s = absl::StrCat(num);
+  std::string out;
+  const int size = s.size();
+  for (int i = 0; i < size; ++i) {
+    if (i > 0 && (size - i) % 3 == 0) {
+      out.push_back('\'');
+    }
+    out.push_back(s[i]);
+  }
+  return out;
+}
+
+}  // namespace
+
+void SharedStatistics::Log(SolverLogger* logger) {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (stats_.empty()) return;
+
+  SOLVER_LOG(logger, "");
+  SOLVER_LOG(logger, "Stats across workers (summed):");
+  std::vector<std::pair<std::string, int64_t>> to_sort_;
+  for (const auto& [key, count] : stats_) {
+    to_sort_.push_back({key, count});
+  }
+  std::sort(to_sort_.begin(), to_sort_.end());
+  for (const auto& [key, count] : to_sort_) {
+    SOLVER_LOG(logger, "  ", key, ": ", PositiveNumberWithSeparator(count));
   }
 }
 

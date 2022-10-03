@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -50,6 +51,17 @@ void AppendLowerBoundReasonIfValid(IntegerVariable var,
 }
 
 }  // namespace
+
+PrecedencesPropagator::~PrecedencesPropagator() {
+  if (!VLOG_IS_ON(1)) return;
+  if (shared_stats_ == nullptr) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"precedences/num_cycles", num_cycles_});
+  stats.push_back({"precedences/num_pushes", num_pushes_});
+  stats.push_back(
+      {"precedences/num_enforcement_pushes", num_enforcement_pushes_});
+  shared_stats_->AddStats(stats);
+}
 
 bool PrecedencesPropagator::Propagate(Trail* trail) { return Propagate(); }
 
@@ -580,6 +592,7 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
         for (const Literal l : arc.presence_literals) {
           if (l != to_propagate) literal_reason_.push_back(l.Negated());
         }
+        ++num_enforcement_pushes_;
         integer_trail_->EnqueueLiteral(to_propagate.Negated(), literal_reason_,
                                        integer_reason_);
       }
@@ -596,6 +609,7 @@ IntegerValue PrecedencesPropagator::ArcOffset(const ArcInfo& arc) const {
 bool PrecedencesPropagator::EnqueueAndCheck(const ArcInfo& arc,
                                             IntegerValue new_head_lb,
                                             Trail* trail) {
+  ++num_pushes_;
   DCHECK_GT(new_head_lb, integer_trail_->LowerBound(arc.head_var));
 
   // Compute the reason for new_head_lb.
@@ -832,6 +846,7 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
           AnalyzePositiveCycle(arc_index, trail, &must_be_all_true,
                                &literal_reason_, &integer_reason_);
           if (must_be_all_true.empty()) {
+            ++num_cycles_;
             return integer_trail_->ReportConflict(literal_reason_,
                                                   integer_reason_);
           } else {

@@ -375,8 +375,9 @@ message SatParameters {
   optional bool permute_presolve_constraint_order = 179 [default = false];
   optional bool use_absl_random = 180 [default = false];
 
-  // Whether the solver should log the search progress. By default, it logs to
-  // LOG(INFO). This can be overwritten by the log_destination parameter.
+  // Whether the solver should log the search progress. This is the maing
+  // logging parameter and if this is false, none of the logging (callbacks,
+  // log_to_stdout, log_to_response, ...) will do anything.
   optional bool log_search_progress = 41 [default = false];
 
   // Indicates how much logging should wait before logging periodic search
@@ -613,7 +614,7 @@ message SatParameters {
   // schedule and wait for interleave_batch_size task to be completed before
   // synchronizing and scheduling the next batch of tasks.
   optional bool interleave_search = 136 [default = false];
-  optional int32 interleave_batch_size = 134 [default = 1];
+  optional int32 interleave_batch_size = 134 [default = 0];
 
   // Allows objective sharing between workers.
   optional bool share_objective_bounds = 113 [default = true];
