@@ -79,6 +79,7 @@ bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
     case MPModelRequest::CLP_LINEAR_PROGRAMMING:
     case MPModelRequest::GLPK_LINEAR_PROGRAMMING:
     case MPModelRequest::GUROBI_LINEAR_PROGRAMMING:
+    case MPModelRequest::HIGHS_LINEAR_PROGRAMMING:
     case MPModelRequest::XPRESS_LINEAR_PROGRAMMING:
     case MPModelRequest::CPLEX_LINEAR_PROGRAMMING:
       return false;
@@ -90,6 +91,7 @@ bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
     case MPModelRequest::KNAPSACK_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::BOP_INTEGER_PROGRAMMING:
     case MPModelRequest::SAT_INTEGER_PROGRAMMING:
+    case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::CPLEX_MIXED_INTEGER_PROGRAMMING:
       return true;
@@ -507,6 +509,12 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     return true;
   }
 #endif
+#ifdef USE_HIGHS
+  if (problem_type == HIGHS_MIXED_INTEGER_PROGRAMMING ||
+      problem_type == HIGHS_LINEAR_PROGRAMMING) {
+    return true;
+  }
+#endif
   return false;
 }
 
@@ -530,6 +538,7 @@ constexpr
         {MPSolver::CLP_LINEAR_PROGRAMMING, "clp"},
         {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
         {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
+        {MPSolver::HIGHS_LINEAR_PROGRAMMING, "highs_lp"},
         {MPSolver::CPLEX_LINEAR_PROGRAMMING, "cplex_lp"},
         {MPSolver::XPRESS_LINEAR_PROGRAMMING, "xpress_lp"},
         {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
@@ -538,6 +547,7 @@ constexpr
         {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
         {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi"},
         {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk"},
+        {MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING, "highs"},
         {MPSolver::PDLP_LINEAR_PROGRAMMING, "pdlp"},
         {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
         {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
