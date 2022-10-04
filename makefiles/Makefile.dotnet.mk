@@ -283,8 +283,8 @@ $(TEMP_DOTNET_DIR)/$1/%/%.cs: \
 
 rdotnet_%: \
  dotnet \
- $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
+ $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
 ifeq ($(USE_DOTNET_6),ON)
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
