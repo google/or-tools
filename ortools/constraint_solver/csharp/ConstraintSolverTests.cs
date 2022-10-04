@@ -35,6 +35,7 @@ public class ConstraintSolverTest
     public void IntVarConstructor()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 7, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(7, x.Max());
@@ -45,6 +46,7 @@ public class ConstraintSolverTest
     public void ConstraintConstructor()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 7, "x");
         Assert.Equal("x(3..7)", x.ToString());
 
@@ -79,6 +81,7 @@ public class ConstraintSolverTest
     public void IntExprConstructor()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -96,6 +99,7 @@ public class ConstraintSolverTest
     public void GreaterIntExprConstructor()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -113,6 +117,7 @@ public class ConstraintSolverTest
     public void ConstraintAndScalar()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -175,6 +180,7 @@ public class ConstraintSolverTest
     public void ConstraintAndIntVar()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -238,6 +244,7 @@ public class ConstraintSolverTest
     public void ConstraintAndIntExpr()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -293,6 +300,7 @@ public class ConstraintSolverTest
     public void ConstraintAndConstraint()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -327,6 +335,7 @@ public class ConstraintSolverTest
     public void IntExprAndScalar()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -386,6 +395,7 @@ public class ConstraintSolverTest
     public void IntExprAndIntVar()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -446,6 +456,7 @@ public class ConstraintSolverTest
     public void IntExprAndIntExpr()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -476,6 +487,7 @@ public class ConstraintSolverTest
     public void GreaterIntExprAndScalar()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -532,6 +544,7 @@ public class ConstraintSolverTest
     public void GreaterIntExprAndIntVar()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -592,6 +605,7 @@ public class ConstraintSolverTest
     public void GreaterIntExprAndGreaterIntExpr()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(3, 13, "x");
         Assert.Equal(3, x.Min());
         Assert.Equal(13, x.Max());
@@ -622,6 +636,7 @@ public class ConstraintSolverTest
     public void Downcast()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(2, 17, "x");
         IntExpr e = x + 5;
         IntVar y = e.Var();
@@ -632,6 +647,7 @@ public class ConstraintSolverTest
     public void Sequence()
     {
         Solver solver = new Solver("Solver");
+        Assert.NotNull(solver);
         IntervalVar[] intervals = solver.MakeFixedDurationIntervalVarArray(10, 0, 10, 5, false, "task");
         DisjunctiveConstraint disjunctive = intervals.Disjunctive("Sequence");
         SequenceVar var = disjunctive.SequenceVar();
@@ -664,6 +680,7 @@ public class ConstraintSolverTest
     public void Demon()
     {
         Solver solver = new Solver("DemonTest");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(new int[] { 2, 4, -1, 6, 11, 10 }, "x");
         NetDemon demon = new SetMaxDemon(x);
         Assert.Equal(11, x.Max());
@@ -698,6 +715,7 @@ public class ConstraintSolverTest
     public void MinAndMaxConstraint()
     {
         Solver solver = new Solver("TestConstraint");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(new int[] { 2, 4, -1, 6, 11, 10 }, "x");
         Constraint ct = new SetMinAndMaxConstraint(solver, x);
         solver.Add(ct);
@@ -750,6 +768,7 @@ public class ConstraintSolverTest
     public void FailingConstraint()
     {
         Solver solver = new Solver("TestConstraint");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(new int[] { 2, 4, -1, 6, 11, 10 }, "x");
         Constraint ct = new DumbGreaterOrEqualToFive(solver, x);
         solver.Add(ct);
@@ -764,6 +783,7 @@ public class ConstraintSolverTest
     public void DomainIterator()
     {
         Solver solver = new Solver("TestConstraint");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(new int[] { 2, 4, -1, 6, 11, 10 }, "x");
         ulong count = 0;
         foreach (long value in x.GetDomain())
@@ -822,6 +842,7 @@ public class ConstraintSolverTest
     public void HoleIteratorTest()
     {
         Solver solver = new Solver("TestConstraint");
+        Assert.NotNull(solver);
         IntVar x = solver.MakeIntVar(0, 10, "x");
         RemoveThreeValues ct = new RemoveThreeValues(solver, x);
         solver.Add(ct);
@@ -847,6 +868,7 @@ public class ConstraintSolverTest
     public void SearchLog()
     {
         Solver solver = new Solver("TestSearchLog");
+        Assert.NotNull(solver);
         IntVar var = solver.MakeIntVar(1, 1, "Variable");
         OptimizeVar objective = solver.MakeMinimize(var, 1);
         SearchMonitor searchlog = solver.MakeSearchLog(0);
@@ -860,6 +882,7 @@ public class ConstraintSolverTest
     public void SearchLogWithCallback(bool callGC)
     {
         Solver solver = new Solver("TestSearchLog");
+        Assert.NotNull(solver);
         IntVar var = solver.MakeIntVar(1, 1, "Variable");
         OptimizeVar objective = solver.MakeMinimize(var, 1);
         int count = 0;
@@ -885,6 +908,7 @@ public class ConstraintSolverTest
     public void SearchLogWithObjectiveAndCallback(bool callGC)
     {
         Solver solver = new Solver("TestSearchLog");
+        Assert.NotNull(solver);
         IntVar var = solver.MakeIntVar(1, 1, "Variable");
         OptimizeVar objective = solver.MakeMinimize(var, 1);
         int count = 0;
@@ -911,6 +935,7 @@ public class ConstraintSolverTest
     public void SearchLogWithIntVarAndCallback(bool callGC)
     {
         Solver solver = new Solver("TestSearchLog");
+        Assert.NotNull(solver);
         IntVar var = solver.MakeIntVar(1, 1, "Variable");
         OptimizeVar objective = solver.MakeMinimize(var, 1);
         int count = 0;
