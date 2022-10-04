@@ -29,7 +29,7 @@ git_repository(
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    tag = "v21.5",
+    tag = "v21.7",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
@@ -96,6 +96,12 @@ cc_library(
     visibility = ['//visibility:public'],
 )
 """
+)
+
+git_repository(
+    name = "highs",
+    branch = "bazel",
+    remote = "https://github.com/ERGO-Code/HiGHS.git",
 )
 
 # Python
