@@ -373,6 +373,9 @@ extern MPSolverInterface* BuildCBCInterface(MPSolver* const solver);
 #if defined(USE_GLPK)
 extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
 #endif
+#if defined(USE_HIGHS)
+extern MPSolverInterface* BuildHIGHSInterface(bool mip, MPSolver* const solver);
+#endif
 extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildPdlpInterface(MPSolver* const solver);
@@ -407,6 +410,12 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
       return BuildGLPKInterface(false, solver);
     case MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING:
       return BuildGLPKInterface(true, solver);
+#endif
+#if defined(USE_HIGHS)
+    case MPSolver::HIGHS_LINEAR_PROGRAMMING:
+      return BuildHIGHSInterface(false, solver);
+    case MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING:
+      return BuildHIGHSInterface(true, solver);
 #endif
 #if defined(USE_CLP) || defined(USE_CBC)
     case MPSolver::CLP_LINEAR_PROGRAMMING:

@@ -191,6 +191,23 @@ if(BUILD_GLPK)
 endif()
 
 # ##############################################################################
+# HiGHS
+# ##############################################################################
+if(BUILD_HIGHS)
+  message(CHECK_START "Fetching HiGHS")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  set(CI OFF) # disable CI tests
+  FetchContent_Declare(
+    highs
+    GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
+    GIT_TAG        "v1.2.2"
+  )
+  FetchContent_MakeAvailable(highs)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
+# ##############################################################################
 # SCIP
 # ##############################################################################
 if(BUILD_SCIP)

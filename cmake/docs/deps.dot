@@ -123,6 +123,17 @@ digraph CMakeDeps {
     label = "-DUSE_GLPK=ON AND -DBUILD_GLPK=ON";
   }
 
+  subgraph clusterHIGHSSolver {
+    subgraph clusterHIGHS {
+      HIGHS [label="highs::highs"];
+
+      color=royalblue;
+      label = "ERGO-Code/HIGHS.git";
+    }
+    color=royalblue;
+    label = "-DUSE_HIGHS=ON AND -DBUILD_HIGHS=ON";
+  }
+
   subgraph clusterSCIPSolver {
     subgraph clusterSCIP {
       SCIP [label="scip::scip"];

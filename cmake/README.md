@@ -113,6 +113,9 @@ below).
     *   COIN-OR Cbc (`BUILD_Cbc`),<br>
     note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
     by using `-DUSE_COINOR=OFF` (`ON` by default).
+*   HIGHS (`BUILD_HIGHS`),<br>
+    note: You can disable the support of HiGHS solver
+    by using `-DUSE_HIGHS=OFF` (`ON` by default).
 *   SCIP (`BUILD_SCIP`),<br>
     note: You can disable the support of SCIP solver
     by using `-DUSE_SCIP=OFF` (`ON` by default).<br>
@@ -204,6 +207,8 @@ cmake -S. -Bbuild -LH
 | `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `USE_GLPK`   | OFF\* | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_GLPK` | OFF\* | Static build the GLPK libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
+| `USE_HIGHS`  | ON\* | Enable HIGHS support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_HIGHS` | OFF\* | Static build the HiGHS libraries<br>**Forced** to ON if `USE_HIGHS=ON` **and** `BUILD_DEPS=ON` |
 | `USE_SCIP`   | ON\*  | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_SCIP` | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
 | `USE_CPLEX`  | OFF | Enable CPLEX support |

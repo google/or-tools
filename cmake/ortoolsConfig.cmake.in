@@ -53,6 +53,12 @@ if(@USE_GLPK@)
   endif()
 endif()
 
+if(@USE_HIGHS@)
+  if(NOT HIGHS_FOUND AND NOT TARGET HIGHS::HIGHS)
+    find_dependency(HIGHS REQUIRED ${CONFIG_FLAG})
+  endif()
+endif()
+
 if(@USE_PDLP@)
   if(NOT Eigen3_FOUND AND NOT TARGET Eigen3::Eigen)
     find_dependency(Eigen3 REQUIRED)
