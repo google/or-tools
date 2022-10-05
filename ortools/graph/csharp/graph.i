@@ -46,6 +46,7 @@
 %unignore operations_research::SimpleMaxFlow::SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::~SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::AddArcWithCapacity;
+%unignore operations_research::SimpleMaxFlow::SetArcCapacity;
 %unignore operations_research::SimpleMaxFlow::Solve;
 %unignore operations_research::SimpleMaxFlow::NumNodes;
 %unignore operations_research::SimpleMaxFlow::NumArcs;
