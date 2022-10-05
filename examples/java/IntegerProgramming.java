@@ -10,7 +10,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package com.google.ortools.java;
+
+package com.google.ortools.samples;
 
 import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
@@ -18,7 +19,10 @@ import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
-/** Integer programming example that shows how to use the API. */
+/**
+ * Integer programming example that shows how to use the API.
+ *
+ */
 public class IntegerProgramming {
   private static void runIntegerProgrammingExample(String solverType) {
     MPSolver solver = MPSolver.createSolver(solverType);

@@ -1,4 +1,5 @@
 # .NetCoreApp examples
+
 The following examples showcase how to use OrTools.<br>
 The project solution has examples for C#.
 
