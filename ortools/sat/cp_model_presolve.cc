@@ -2387,7 +2387,7 @@ bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
       return false;
     }
   }
-  // TODO(user, demonet): Make sure the newly generated linear constraint
+  // TODO(user): Make sure the newly generated linear constraint
   // satisfy our no-overflow precondition on the min/max activity.
   // We should check that the model still satisfy conditions in
 
@@ -8950,7 +8950,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         ConstraintProto* new_ct = context_->working_model->add_constraints();
         *new_ct = ct;
         if (ignore_names) {
-          // TODO(user, fdid): find a better way than copy then clear_name()?
+          // TODO(user): find a better way than copy then clear_name()?
           new_ct->clear_name();
         }
       }

@@ -1712,7 +1712,7 @@ void ExpandSomeLinearOfSizeTwo(ConstraintProto* ct, PresolveContext* context) {
     DCHECK(context->DomainContains(var2, value2)) << "value2 = " << value2;
     DCHECK_EQ(coeff1 * value1 + coeff2 * value2,
               infeasible_reachable_values.FixedValue());
-    // TODO(user, fdid): Presolve if one or two variables are Boolean.
+    // TODO(user): Presolve if one or two variables are Boolean.
     if (!context->HasVarValueEncoding(var1, value1, nullptr) || size1 == 2) {
       return;
     }

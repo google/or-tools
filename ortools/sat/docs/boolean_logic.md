@@ -47,18 +47,17 @@ negation of `x`.
 ### Python code
 
 ```python
-"""Code sample to demonstrate Boolean variable and literals."""
-
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 def LiteralSampleSat():
-  model = cp_model.CpModel()
-  x = model.NewBoolVar('x')
-  not_x = x.Not()
-  print(x)
-  print(not_x)
+    model = cp_model.CpModel()
+    x = model.NewBoolVar('x')
+    not_x = x.Not()
+    print(x)
+    print(not_x)
 
 
 LiteralSampleSat()
@@ -98,10 +97,10 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.Literal;
-import com.google.ortools.Loader;
 
 /** Code sample to demonstrate Boolean variable and literals. */
 public class LiteralSampleSat {
@@ -147,19 +146,18 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 ### Python code
 
 ```python
-"""Code sample to demonstrates a simple Boolean constraint."""
-
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 def BoolOrSampleSat():
-  model = cp_model.CpModel()
+    model = cp_model.CpModel()
 
-  x = model.NewBoolVar('x')
-  y = model.NewBoolVar('y')
+    x = model.NewBoolVar('x')
+    y = model.NewBoolVar('y')
 
-  model.AddBoolOr([x, y.Not()])
+    model.AddBoolOr([x, y.Not()])
 
 
 BoolOrSampleSat()
@@ -256,29 +254,29 @@ then is written as Or(not b, x) and Or(not b, not y).
 ### Python code
 
 ```python
-"""Simple model with a reified constraint."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 def ReifiedSampleSat():
-  """Showcase creating a reified constraint."""
-  model = cp_model.CpModel()
+    """Showcase creating a reified constraint."""
+    model = cp_model.CpModel()
 
-  x = model.NewBoolVar('x')
-  y = model.NewBoolVar('y')
-  b = model.NewBoolVar('b')
+    x = model.NewBoolVar('x')
+    y = model.NewBoolVar('y')
+    b = model.NewBoolVar('b')
 
-  # First version using a half-reified bool and.
-  model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)
+    # First version using a half-reified bool and.
+    model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)
 
-  # Second version using implications.
-  model.AddImplication(b, x)
-  model.AddImplication(b, y.Not())
+    # Second version using implications.
+    model.AddImplication(b, x)
+    model.AddImplication(b, y.Not())
 
-  # Third version using bool or.
-  model.AddBoolOr(b.Not(), x)
-  model.AddBoolOr(b.Not(), y.Not())
+    # Third version using bool or.
+    model.AddBoolOr(b.Not(), x)
+    model.AddBoolOr(b.Not(), y.Not())
 
 
 ReifiedSampleSat()
@@ -418,34 +416,33 @@ code samples output this truth table:
 ### Python code
 
 ```python
-"""Code sample that encodes the product of two Boolean variables."""
-
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 def BooleanProductSampleSat():
-  """Encoding of the product of two Boolean variables.
+    """Encoding of the product of two Boolean variables.
 
   p == x * y, which is the same as p <=> x and y
   """
-  model = cp_model.CpModel()
-  x = model.NewBoolVar('x')
-  y = model.NewBoolVar('y')
-  p = model.NewBoolVar('p')
+    model = cp_model.CpModel()
+    x = model.NewBoolVar('x')
+    y = model.NewBoolVar('y')
+    p = model.NewBoolVar('p')
 
-  # x and y implies p, rewrite as not(x and y) or p
-  model.AddBoolOr(x.Not(), y.Not(), p)
+    # x and y implies p, rewrite as not(x and y) or p
+    model.AddBoolOr(x.Not(), y.Not(), p)
 
-  # p implies x and y, expanded into two implication
-  model.AddImplication(p, x)
-  model.AddImplication(p, y)
+    # p implies x and y, expanded into two implication
+    model.AddImplication(p, x)
+    model.AddImplication(p, y)
 
-  # Create a solver and solve.
-  solver = cp_model.CpSolver()
-  solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
-  solver.parameters.enumerate_all_solutions = True
-  solver.Solve(model, solution_printer)
+    # Create a solver and solve.
+    solver = cp_model.CpSolver()
+    solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
+    solver.parameters.enumerate_all_solutions = True
+    solver.Solve(model, solution_printer)
 
 
 BooleanProductSampleSat()

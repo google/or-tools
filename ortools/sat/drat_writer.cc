@@ -19,6 +19,7 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
 #endif  // !__PORTABLE_PLATFORM__
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"

@@ -11,20 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_HIGHS_PROTO_SOLVER_H_
-#define OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_HIGHS_PROTO_SOLVER_H_
+#ifndef OR_TOOLS_BASE_OPTIONS_H_
+#define OR_TOOLS_BASE_OPTIONS_H_
 
-#include <functional>
-#include <string>
+#include "ortools/base/file.h"
 
-#include "absl/status/statusor.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
-
-namespace operations_research {
-
-// Solve the input MIP model with the HIGHS solver.
-absl::StatusOr<MPSolutionResponse> HighsSolveProto(MPModelRequest request);
-
-}  // namespace operations_research
-
-#endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_HIGHS_PROTO_SOLVER_H_
+#endif  // OR_TOOLS_BASE_OPTIONS_H_

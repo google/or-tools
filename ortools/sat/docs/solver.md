@@ -40,35 +40,36 @@ solver. The most useful one is the time limit.
 ### Specifying the time limit in Python
 
 ```python
+#!/usr/bin/env python3
 """Solves a problem with a time limit."""
 
 from ortools.sat.python import cp_model
 
 
 def SolveWithTimeLimitSampleSat():
-  """Minimal CP-SAT example to showcase calling the solver."""
-  # Creates the model.
-  model = cp_model.CpModel()
-  # Creates the variables.
-  num_vals = 3
-  x = model.NewIntVar(0, num_vals - 1, 'x')
-  y = model.NewIntVar(0, num_vals - 1, 'y')
-  z = model.NewIntVar(0, num_vals - 1, 'z')
-  # Adds an all-different constraint.
-  model.Add(x != y)
+    """Minimal CP-SAT example to showcase calling the solver."""
+    # Creates the model.
+    model = cp_model.CpModel()
+    # Creates the variables.
+    num_vals = 3
+    x = model.NewIntVar(0, num_vals - 1, 'x')
+    y = model.NewIntVar(0, num_vals - 1, 'y')
+    z = model.NewIntVar(0, num_vals - 1, 'z')
+    # Adds an all-different constraint.
+    model.Add(x != y)
 
-  # Creates a solver and solves the model.
-  solver = cp_model.CpSolver()
+    # Creates a solver and solves the model.
+    solver = cp_model.CpSolver()
 
-  # Sets a time limit of 10 seconds.
-  solver.parameters.max_time_in_seconds = 10.0
+    # Sets a time limit of 10 seconds.
+    solver.parameters.max_time_in_seconds = 10.0
 
-  status = solver.Solve(model)
+    status = solver.Solve(model)
 
-  if status == cp_model.OPTIMAL:
-    print('x = %i' % solver.Value(x))
-    print('y = %i' % solver.Value(y))
-    print('z = %i' % solver.Value(z))
+    if status == cp_model.OPTIMAL:
+        print('x = %i' % solver.Value(x))
+        print('y = %i' % solver.Value(y))
+        print('z = %i' % solver.Value(z))
 
 
 SolveWithTimeLimitSampleSat()
@@ -135,9 +136,9 @@ int main() {
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Solves a problem with a time limit. */
@@ -210,7 +211,6 @@ public class SolveWithTimeLimitSampleSat
         }
     }
 }
-
 ```
 
 ## Printing intermediate solutions
@@ -223,55 +223,55 @@ The exact implementation depends on the target language.
 ### Python code
 
 ```python
-"""Solves an optimization problem and displays all intermediate solutions."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 # You need to subclass the cp_model.CpSolverSolutionCallback class.
 class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
-  """Print intermediate solutions."""
+    """Print intermediate solutions."""
 
-  def __init__(self, variables):
-    cp_model.CpSolverSolutionCallback.__init__(self)
-    self.__variables = variables
-    self.__solution_count = 0
+    def __init__(self, variables):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__solution_count = 0
 
-  def on_solution_callback(self):
-    print('Solution %i' % self.__solution_count)
-    print('  objective value = %i' % self.ObjectiveValue())
-    for v in self.__variables:
-      print('  %s = %i' % (v, self.Value(v)), end=' ')
-    print()
-    self.__solution_count += 1
+    def on_solution_callback(self):
+        print('Solution %i' % self.__solution_count)
+        print('  objective value = %i' % self.ObjectiveValue())
+        for v in self.__variables:
+            print('  %s = %i' % (v, self.Value(v)), end=' ')
+        print()
+        self.__solution_count += 1
 
-  def solution_count(self):
-    return self.__solution_count
+    def solution_count(self):
+        return self.__solution_count
 
 
 def SolveAndPrintIntermediateSolutionsSampleSat():
-  """Showcases printing intermediate solutions found during search."""
-  # Creates the model.
-  model = cp_model.CpModel()
+    """Showcases printing intermediate solutions found during search."""
+    # Creates the model.
+    model = cp_model.CpModel()
 
-  # Creates the variables.
-  num_vals = 3
-  x = model.NewIntVar(0, num_vals - 1, 'x')
-  y = model.NewIntVar(0, num_vals - 1, 'y')
-  z = model.NewIntVar(0, num_vals - 1, 'z')
+    # Creates the variables.
+    num_vals = 3
+    x = model.NewIntVar(0, num_vals - 1, 'x')
+    y = model.NewIntVar(0, num_vals - 1, 'y')
+    z = model.NewIntVar(0, num_vals - 1, 'z')
 
-  # Creates the constraints.
-  model.Add(x != y)
+    # Creates the constraints.
+    model.Add(x != y)
 
-  model.Maximize(x + 2 * y + 3 * z)
+    model.Maximize(x + 2 * y + 3 * z)
 
-  # Creates a solver and solves.
-  solver = cp_model.CpSolver()
-  solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
-  status = solver.Solve(model, solution_printer)
+    # Creates a solver and solves.
+    solver = cp_model.CpSolver()
+    solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
+    status = solver.Solve(model, solution_printer)
 
-  print('Status = %s' % solver.StatusName(status))
-  print('Number of solutions found: %i' % solution_printer.solution_count())
+    print('Status = %s' % solver.StatusName(status))
+    print('Number of solutions found: %i' % solution_printer.solution_count())
 
 
 SolveAndPrintIntermediateSolutionsSampleSat()
@@ -483,53 +483,53 @@ To search for all solutions, use the Solve() method after setting the correct
 parameter.
 
 ```python
-"""Code sample that solves a model and displays all solutions."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-  """Print intermediate solutions."""
+    """Print intermediate solutions."""
 
-  def __init__(self, variables):
-    cp_model.CpSolverSolutionCallback.__init__(self)
-    self.__variables = variables
-    self.__solution_count = 0
+    def __init__(self, variables):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__solution_count = 0
 
-  def on_solution_callback(self):
-    self.__solution_count += 1
-    for v in self.__variables:
-      print('%s=%i' % (v, self.Value(v)), end=' ')
-    print()
+    def on_solution_callback(self):
+        self.__solution_count += 1
+        for v in self.__variables:
+            print('%s=%i' % (v, self.Value(v)), end=' ')
+        print()
 
-  def solution_count(self):
-    return self.__solution_count
+    def solution_count(self):
+        return self.__solution_count
 
 
 def SearchForAllSolutionsSampleSat():
-  """Showcases calling the solver to search for all solutions."""
-  # Creates the model.
-  model = cp_model.CpModel()
+    """Showcases calling the solver to search for all solutions."""
+    # Creates the model.
+    model = cp_model.CpModel()
 
-  # Creates the variables.
-  num_vals = 3
-  x = model.NewIntVar(0, num_vals - 1, 'x')
-  y = model.NewIntVar(0, num_vals - 1, 'y')
-  z = model.NewIntVar(0, num_vals - 1, 'z')
+    # Creates the variables.
+    num_vals = 3
+    x = model.NewIntVar(0, num_vals - 1, 'x')
+    y = model.NewIntVar(0, num_vals - 1, 'y')
+    z = model.NewIntVar(0, num_vals - 1, 'z')
 
-  # Create the constraints.
-  model.Add(x != y)
+    # Create the constraints.
+    model.Add(x != y)
 
-  # Create a solver and solve.
-  solver = cp_model.CpSolver()
-  solution_printer = VarArraySolutionPrinter([x, y, z])
-  # Enumerate all solutions.
-  solver.parameters.enumerate_all_solutions = True
-  # Solve.
-  status = solver.Solve(model, solution_printer)
+    # Create a solver and solve.
+    solver = cp_model.CpSolver()
+    solution_printer = VarArraySolutionPrinter([x, y, z])
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
+    # Solve.
+    status = solver.Solve(model, solution_printer)
 
-  print('Status = %s' % solver.StatusName(status))
-  print('Number of solutions found: %i' % solution_printer.solution_count())
+    print('Status = %s' % solver.StatusName(status))
+    print('Number of solutions found: %i' % solution_printer.solution_count())
 
 
 SearchForAllSolutionsSampleSat()
@@ -738,53 +738,54 @@ You can stop the search by calling StopSearch() inside of
 CpSolverSolutionCallback.OnSolutionCallback().
 
 ```python
+#!/usr/bin/env python3
 """Code sample that solves a model and displays a small number of solutions."""
 
 from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
-  """Print intermediate solutions."""
+    """Print intermediate solutions."""
 
-  def __init__(self, variables, limit):
-    cp_model.CpSolverSolutionCallback.__init__(self)
-    self.__variables = variables
-    self.__solution_count = 0
-    self.__solution_limit = limit
+    def __init__(self, variables, limit):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__solution_count = 0
+        self.__solution_limit = limit
 
-  def on_solution_callback(self):
-    self.__solution_count += 1
-    for v in self.__variables:
-      print('%s=%i' % (v, self.Value(v)), end=' ')
-    print()
-    if self.__solution_count >= self.__solution_limit:
-      print('Stop search after %i solutions' % self.__solution_limit)
-      self.StopSearch()
+    def on_solution_callback(self):
+        self.__solution_count += 1
+        for v in self.__variables:
+            print('%s=%i' % (v, self.Value(v)), end=' ')
+        print()
+        if self.__solution_count >= self.__solution_limit:
+            print('Stop search after %i solutions' % self.__solution_limit)
+            self.StopSearch()
 
-  def solution_count(self):
-    return self.__solution_count
+    def solution_count(self):
+        return self.__solution_count
 
 
 def StopAfterNSolutionsSampleSat():
-  """Showcases calling the solver to search for small number of solutions."""
-  # Creates the model.
-  model = cp_model.CpModel()
-  # Creates the variables.
-  num_vals = 3
-  x = model.NewIntVar(0, num_vals - 1, 'x')
-  y = model.NewIntVar(0, num_vals - 1, 'y')
-  z = model.NewIntVar(0, num_vals - 1, 'z')
+    """Showcases calling the solver to search for small number of solutions."""
+    # Creates the model.
+    model = cp_model.CpModel()
+    # Creates the variables.
+    num_vals = 3
+    x = model.NewIntVar(0, num_vals - 1, 'x')
+    y = model.NewIntVar(0, num_vals - 1, 'y')
+    z = model.NewIntVar(0, num_vals - 1, 'z')
 
-  # Create a solver and solve.
-  solver = cp_model.CpSolver()
-  solution_printer = VarArraySolutionPrinterWithLimit([x, y, z], 5)
-  # Enumerate all solutions.
-  solver.parameters.enumerate_all_solutions = True
-  # Solve.
-  status = solver.Solve(model, solution_printer)
-  print('Status = %s' % solver.StatusName(status))
-  print('Number of solutions found: %i' % solution_printer.solution_count())
-  assert solution_printer.solution_count() == 5
+    # Create a solver and solve.
+    solver = cp_model.CpSolver()
+    solution_printer = VarArraySolutionPrinterWithLimit([x, y, z], 5)
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
+    # Solve.
+    status = solver.Solve(model, solution_printer)
+    print('Status = %s' % solver.StatusName(status))
+    print('Number of solutions found: %i' % solution_printer.solution_count())
+    assert solution_printer.solution_count() == 5
 
 
 StopAfterNSolutionsSampleSat()

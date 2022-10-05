@@ -34,6 +34,7 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/options.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"

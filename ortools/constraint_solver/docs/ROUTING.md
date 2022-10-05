@@ -89,6 +89,7 @@ int main(int argc, char** argv) {
 ### Python code samples
 
 ```python
+#!/usr/bin/env python3
 """Vehicle Routing example."""
 
 from ortools.constraint_solver import routing_enums_pb2
@@ -96,59 +97,57 @@ from ortools.constraint_solver import pywrapcp
 
 
 def main():
-  """Entry point of the program."""
-  # Instantiate the data problem.
-  num_locations = 5
-  num_vehicles = 1
-  depot = 0
+    """Entry point of the program."""
+    # Instantiate the data problem.
+    num_locations = 5
+    num_vehicles = 1
+    depot = 0
 
-  # Create the routing index manager.
-  manager = pywrapcp.RoutingIndexManager(
-      num_locations,
-      num_vehicles,
-      depot)
+    # Create the routing index manager.
+    manager = pywrapcp.RoutingIndexManager(num_locations, num_vehicles, depot)
 
-  # Create Routing Model.
-  routing = pywrapcp.RoutingModel(manager)
+    # Create Routing Model.
+    routing = pywrapcp.RoutingModel(manager)
 
-  # Create and register a transit callback.
-  def distance_callback(from_index, to_index):
-    """Returns the absolute difference between the two nodes."""
-    # Convert from routing variable Index to user NodeIndex.
-    from_node = int(manager.IndexToNode(from_index))
-    to_node = int(manager.IndexToNode(to_index))
-    return abs(to_node - from_node)
 
-  transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    # Create and register a transit callback.
+    def distance_callback(from_index, to_index):
+        """Returns the absolute difference between the two nodes."""
+        # Convert from routing variable Index to user NodeIndex.
+        from_node = int(manager.IndexToNode(from_index))
+        to_node = int(manager.IndexToNode(to_index))
+        return abs(to_node - from_node)
 
-  # Define cost of each arc.
-  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
 
-  # Setting first solution heuristic.
-  search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-  search_parameters.first_solution_strategy = (
-      routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)  # pylint: disable=no-member
+    # Define cost of each arc.
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
-  # Solve the problem.
-  assignment = routing.SolveWithParameters(search_parameters)
+    # Setting first solution heuristic.
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+    search_parameters.first_solution_strategy = (
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)  # pylint: disable=no-member
 
-  # Print solution on console.
-  print('Objective: {}'.format(assignment.ObjectiveValue()))
-  index = routing.Start(0)
-  plan_output = 'Route for vehicle 0:\n'
-  route_distance = 0
-  while not routing.IsEnd(index):
-    plan_output += '{} -> '.format(manager.IndexToNode(index))
-    previous_index = index
-    index = assignment.Value(routing.NextVar(index))
-    route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
-  plan_output += '{}\n'.format(manager.IndexToNode(index))
-  plan_output += 'Distance of the route: {}m\n'.format(route_distance)
-  print(plan_output)
+    # Solve the problem.
+    assignment = routing.SolveWithParameters(search_parameters)
+
+    # Print solution on console.
+    print('Objective: {}'.format(assignment.ObjectiveValue()))
+    index = routing.Start(0)
+    plan_output = 'Route for vehicle 0:\n'
+    route_distance = 0
+    while not routing.IsEnd(index):
+        plan_output += '{} -> '.format(manager.IndexToNode(index))
+        previous_index = index
+        index = assignment.Value(routing.NextVar(index))
+        route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+    plan_output += '{}\n'.format(manager.IndexToNode(index))
+    plan_output += 'Distance of the route: {}m\n'.format(route_distance)
+    print(plan_output)
 
 
 if __name__ == '__main__':
-  main()
+    main()
 ```
 
 ### Java code samples
@@ -158,18 +157,17 @@ package com.google.ortools.constraintsolver.samples;
 import static java.lang.Math.abs;
 
 import com.google.ortools.Loader;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
+import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
 import java.util.logging.Logger;
 
 /** Minimal Routing example to showcase calling the solver.*/
 public class SimpleRoutingProgram {
-  private static final Logger logger =
-      Logger.getLogger(SimpleRoutingProgram.class.getName());
+  private static final Logger logger = Logger.getLogger(SimpleRoutingProgram.class.getName());
 
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
@@ -185,8 +183,8 @@ public class SimpleRoutingProgram {
     RoutingModel routing = new RoutingModel(manager);
 
     // Create and register a transit callback.
-    final int transitCallbackIndex = routing.registerTransitCallback(
-        (long fromIndex, long toIndex) -> {
+    final int transitCallbackIndex =
+        routing.registerTransitCallback((long fromIndex, long toIndex) -> {
           // Convert from routing variable Index to user NodeIndex.
           int fromNode = manager.indexToNode(fromIndex);
           int toNode = manager.indexToNode(toIndex);
@@ -236,53 +234,58 @@ using Google.OrTools.ConstraintSolver;
 /// <summary>
 ///   This is a sample using the routing library .Net wrapper.
 /// </summary>
-public class SimpleRoutingProgram {
-  public static void Main(String[] args) {
-    // Instantiate the data problem.
-    const int numLocation = 5;
-    const int numVehicles = 1;
-    const int depot = 0;
+public class SimpleRoutingProgram
+{
+    public static void Main(String[] args)
+    {
+        // Instantiate the data problem.
+        const int numLocation = 5;
+        const int numVehicles = 1;
+        const int depot = 0;
 
-    // Create Routing Index Manager
-    RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
+        // Create Routing Index Manager
+        RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
 
-    // Create Routing Model.
-    RoutingModel routing = new RoutingModel(manager);
+        // Create Routing Model.
+        RoutingModel routing = new RoutingModel(manager);
 
-    // Create and register a transit callback.
-    int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) => {
-      // Convert from routing variable Index to distance matrix NodeIndex.
-      var fromNode = manager.IndexToNode(fromIndex);
-      var toNode = manager.IndexToNode(toIndex);
-      return Math.Abs(toNode - fromNode);
-    });
+        // Create and register a transit callback.
+        int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
+                                                                   {
+                                                                       // Convert from routing variable Index to
+                                                                       // distance matrix NodeIndex.
+                                                                       var fromNode = manager.IndexToNode(fromIndex);
+                                                                       var toNode = manager.IndexToNode(toIndex);
+                                                                       return Math.Abs(toNode - fromNode);
+                                                                   });
 
-    // Define cost of each arc.
-    routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+        // Define cost of each arc.
+        routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
 
-    // Setting first solution heuristic.
-    RoutingSearchParameters searchParameters =
-        operations_research_constraint_solver.DefaultRoutingSearchParameters();
-    searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+        // Setting first solution heuristic.
+        RoutingSearchParameters searchParameters =
+            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
-    // Solve the problem.
-    Assignment solution = routing.SolveWithParameters(searchParameters);
+        // Solve the problem.
+        Assignment solution = routing.SolveWithParameters(searchParameters);
 
-    // Print solution on console.
-    Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
-    // Inspect solution.
-    long index = routing.Start(0);
-    Console.WriteLine("Route for Vehicle 0:");
-    long route_distance = 0;
-    while (routing.IsEnd(index) == false) {
-      Console.Write("{0} -> ", manager.IndexToNode((int)index));
-      long previousIndex = index;
-      index = solution.Value(routing.NextVar(index));
-      route_distance += routing.GetArcCostForVehicle(previousIndex, index, 0);
+        // Print solution on console.
+        Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
+        // Inspect solution.
+        long index = routing.Start(0);
+        Console.WriteLine("Route for Vehicle 0:");
+        long route_distance = 0;
+        while (routing.IsEnd(index) == false)
+        {
+            Console.Write("{0} -> ", manager.IndexToNode((int)index));
+            long previousIndex = index;
+            index = solution.Value(routing.NextVar(index));
+            route_distance += routing.GetArcCostForVehicle(previousIndex, index, 0);
+        }
+        Console.WriteLine("{0}", manager.IndexToNode(index));
+        Console.WriteLine("Distance of the route: {0}m", route_distance);
     }
-    Console.WriteLine("{0}", manager.IndexToNode(index));
-    Console.WriteLine("Distance of the route: {0}m", route_distance);
-  }
 }
 ```
 

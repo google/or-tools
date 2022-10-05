@@ -29,8 +29,7 @@
 
 namespace operations_research {
 
-absl::StatusOr<MPSolutionResponse> HighsSolveProto(MPModelRequest request,
-                                                   bool solve_as_a_mip) {
+absl::StatusOr<MPSolutionResponse> HighsSolveProto(MPModelRequest request) {
   return absl::UnimplementedError("Highs support is not yet implemented");
 }
 

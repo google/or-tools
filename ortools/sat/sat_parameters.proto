@@ -317,7 +317,7 @@ message SatParameters {
 
   // Maximum number of conflicts allowed to solve a problem.
   //
-  // TODO(user,user): Maybe change the way the conflict limit is enforced?
+  // TODO(user): Maybe change the way the conflict limit is enforced?
   // currently it is enforced on each independent internal SAT solve, rather
   // than on the overall number of conflicts across all solves. So in the
   // context of an optimization problem, this is not really usable directly by a

@@ -89,38 +89,38 @@ Some remarks:
 ### Python code
 
 ```python
-"""Code sample that solves a model using solution hinting."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 def SolutionHintingSampleSat():
-  """Showcases solution hinting."""
-  # Creates the model.
-  model = cp_model.CpModel()
+    """Showcases solution hinting."""
+    # Creates the model.
+    model = cp_model.CpModel()
 
-  # Creates the variables.
-  num_vals = 3
-  x = model.NewIntVar(0, num_vals - 1, 'x')
-  y = model.NewIntVar(0, num_vals - 1, 'y')
-  z = model.NewIntVar(0, num_vals - 1, 'z')
+    # Creates the variables.
+    num_vals = 3
+    x = model.NewIntVar(0, num_vals - 1, 'x')
+    y = model.NewIntVar(0, num_vals - 1, 'y')
+    z = model.NewIntVar(0, num_vals - 1, 'z')
 
-  # Creates the constraints.
-  model.Add(x != y)
+    # Creates the constraints.
+    model.Add(x != y)
 
-  model.Maximize(x + 2 * y + 3 * z)
+    model.Maximize(x + 2 * y + 3 * z)
 
-  # Solution hinting: x <- 1, y <- 2
-  model.AddHint(x, 1)
-  model.AddHint(y, 2)
+    # Solution hinting: x <- 1, y <- 2
+    model.AddHint(x, 1)
+    model.AddHint(y, 2)
 
-  # Creates a solver and solves.
-  solver = cp_model.CpSolver()
-  solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
-  status = solver.Solve(model, solution_printer)
+    # Creates a solver and solves.
+    solver = cp_model.CpSolver()
+    solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
+    status = solver.Solve(model, solution_printer)
 
-  print('Status = %s' % solver.StatusName(status))
-  print('Number of solutions found: %i' % solution_printer.solution_count())
+    print('Status = %s' % solver.StatusName(status))
+    print('Number of solutions found: %i' % solution_printer.solution_count())
 
 
 SolutionHintingSampleSat()
@@ -321,48 +321,48 @@ illustrated in the following examples.
 ### Python code
 
 ```python
-"""Showcases deep copying of a model."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 def CopyModelSat():
-  """Showcases printing intermediate solutions found during search."""
-  # Creates the model.
-  model = cp_model.CpModel()
+    """Showcases printing intermediate solutions found during search."""
+    # Creates the model.
+    model = cp_model.CpModel()
 
-  # Creates the variables.
-  num_vals = 3
-  x = model.NewIntVar(0, num_vals - 1, 'x')
-  y = model.NewIntVar(0, num_vals - 1, 'y')
-  z = model.NewIntVar(0, num_vals - 1, 'z')
+    # Creates the variables.
+    num_vals = 3
+    x = model.NewIntVar(0, num_vals - 1, 'x')
+    y = model.NewIntVar(0, num_vals - 1, 'y')
+    z = model.NewIntVar(0, num_vals - 1, 'z')
 
-  # Creates the constraints.
-  model.Add(x != y)
+    # Creates the constraints.
+    model.Add(x != y)
 
-  model.Maximize(x + 2 * y + 3 * z)
+    model.Maximize(x + 2 * y + 3 * z)
 
-  # Creates a solver and solves.
-  solver = cp_model.CpSolver()
-  status = solver.Solve(model)
+    # Creates a solver and solves.
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
 
-  if status == cp_model.OPTIMAL:
-    print('Optimal value of the original model: {}'.format(
-        solver.ObjectiveValue()))
+    if status == cp_model.OPTIMAL:
+        print('Optimal value of the original model: {}'.format(
+            solver.ObjectiveValue()))
 
-  # Copy the model.
-  copy = cp_model.CpModel()
-  copy.CopyFrom(model)
+    # Copy the model.
+    copy = cp_model.CpModel()
+    copy.CopyFrom(model)
 
-  copy_x = copy.GetIntVarFromProtoIndex(x.Index())
-  copy_y = copy.GetIntVarFromProtoIndex(y.Index())
+    copy_x = copy.GetIntVarFromProtoIndex(x.Index())
+    copy_y = copy.GetIntVarFromProtoIndex(y.Index())
 
-  copy.Add(copy_x + copy_y <= 1)
-  status = solver.Solve(copy)
+    copy.Add(copy_x + copy_y <= 1)
+    status = solver.Solve(copy)
 
-  if status == cp_model.OPTIMAL:
-    print('Optimal value of the modified model: {}'.format(
-        solver.ObjectiveValue()))
+    if status == cp_model.OPTIMAL:
+        print('Optimal value of the modified model: {}'.format(
+            solver.ObjectiveValue()))
 
 
 CopyModelSat()

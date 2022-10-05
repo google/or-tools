@@ -43,34 +43,35 @@ The Python interface to the CP-SAT solver is implemented using two classes.
     access the solution found by the solve.
 
 ```python
+#!/usr/bin/env python3
 """Simple solve."""
 from ortools.sat.python import cp_model
 
 
 def SimpleSatProgram():
-  """Minimal CP-SAT example to showcase calling the solver."""
-  # Creates the model.
-  model = cp_model.CpModel()
+    """Minimal CP-SAT example to showcase calling the solver."""
+    # Creates the model.
+    model = cp_model.CpModel()
 
-  # Creates the variables.
-  num_vals = 3
-  x = model.NewIntVar(0, num_vals - 1, 'x')
-  y = model.NewIntVar(0, num_vals - 1, 'y')
-  z = model.NewIntVar(0, num_vals - 1, 'z')
+    # Creates the variables.
+    num_vals = 3
+    x = model.NewIntVar(0, num_vals - 1, 'x')
+    y = model.NewIntVar(0, num_vals - 1, 'y')
+    z = model.NewIntVar(0, num_vals - 1, 'z')
 
-  # Creates the constraints.
-  model.Add(x != y)
+    # Creates the constraints.
+    model.Add(x != y)
 
-  # Creates a solver and solves the model.
-  solver = cp_model.CpSolver()
-  status = solver.Solve(model)
+    # Creates a solver and solves the model.
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
 
-  if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-    print('x = %i' % solver.Value(x))
-    print('y = %i' % solver.Value(y))
-    print('z = %i' % solver.Value(z))
-  else:
-    print('No solution found.')
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        print('x = %i' % solver.Value(x))
+        print('y = %i' % solver.Value(y))
+        print('z = %i' % solver.Value(z))
+    else:
+        print('No solution found.')
 
 
 SimpleSatProgram()
@@ -139,9 +140,9 @@ The Java code implements the same interface as the Python code, with a
 ```java
 package com.google.ortools.sat.samples;
 import com.google.ortools.Loader;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Minimal CP-SAT example to showcase calling the solver. */

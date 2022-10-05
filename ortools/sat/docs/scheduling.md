@@ -64,35 +64,34 @@ Creating these intervals is illustrated in the following code snippets.
 ### Python code
 
 ```python
-"""Code sample to demonstrates how to build an interval."""
-
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 def IntervalSampleSat():
-  """Showcases how to build interval variables."""
-  model = cp_model.CpModel()
-  horizon = 100
+    """Showcases how to build interval variables."""
+    model = cp_model.CpModel()
+    horizon = 100
 
-  # An interval can be created from three affine expressions.
-  start_var = model.NewIntVar(0, horizon, 'start')
-  duration = 10  # Python cp/sat code accept integer variables or constants.
-  end_var = model.NewIntVar(0, horizon, 'end')
-  interval_var = model.NewIntervalVar(start_var, duration, end_var + 2,
-                                      'interval')
+    # An interval can be created from three affine expressions.
+    start_var = model.NewIntVar(0, horizon, 'start')
+    duration = 10  # Python cp/sat code accept integer variables or constants.
+    end_var = model.NewIntVar(0, horizon, 'end')
+    interval_var = model.NewIntervalVar(start_var, duration, end_var + 2,
+                                        'interval')
 
-  print(f'interval = {repr(interval_var)}')
+    print(f'interval = {repr(interval_var)}')
 
-  # If the size is fixed, a simpler version uses the start expression and the
-  # size.
-  fixed_size_interval_var = model.NewFixedSizeIntervalVar(
-      start_var, 10, 'fixed_size_interval_var')
-  print(f'fixed_size_interval_var = {repr(fixed_size_interval_var)}')
+    # If the size is fixed, a simpler version uses the start expression and the
+    # size.
+    fixed_size_interval_var = model.NewFixedSizeIntervalVar(
+        start_var, 10, 'fixed_size_interval_var')
+    print(f'fixed_size_interval_var = {repr(fixed_size_interval_var)}')
 
-  # A fixed interval can be created using the same API.
-  fixed_interval = model.NewFixedSizeIntervalVar(5, 10, 'fixed_interval')
-  print(f'fixed_interval = {repr(fixed_interval)}')
+    # A fixed interval can be created using the same API.
+    fixed_interval = model.NewFixedSizeIntervalVar(5, 10, 'fixed_interval')
+    print(f'fixed_interval = {repr(fixed_interval)}')
 
 
 IntervalSampleSat()
@@ -177,12 +176,8 @@ public class IntervalSampleSat {
     // An interval can be created from three affine expressions.
     IntVar startVar = model.newIntVar(0, horizon, "start");
     IntVar endVar = model.newIntVar(0, horizon, "end");
-    IntervalVar intervalVar =
-        model.newIntervalVar(
-            startVar,
-            LinearExpr.constant(10),
-            LinearExpr.newBuilder().add(endVar).add(2),
-            "interval");
+    IntervalVar intervalVar = model.newIntervalVar(
+        startVar, LinearExpr.constant(10), LinearExpr.newBuilder().add(endVar).add(2), "interval");
     System.out.println(intervalVar);
 
     // If the size is fixed, a simpler version uses the start expression and the size.
@@ -237,36 +232,37 @@ understand these presence literals, and correctly ignore inactive intervals.
 ### Python code
 
 ```python
-"""Code sample to demonstrates how to build an optional interval."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 def OptionalIntervalSampleSat():
-  """Showcases how to build optional interval variables."""
-  model = cp_model.CpModel()
-  horizon = 100
+    """Showcases how to build optional interval variables."""
+    model = cp_model.CpModel()
+    horizon = 100
 
-  # An interval can be created from three affine expressions.
-  start_var = model.NewIntVar(0, horizon, 'start')
-  duration = 10  # Python cp/sat code accept integer variables or constants.
-  end_var = model.NewIntVar(0, horizon, 'end')
-  presence_var = model.NewBoolVar('presence')
-  interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var + 2,
-                                              presence_var, 'interval')
+    # An interval can be created from three affine expressions.
+    start_var = model.NewIntVar(0, horizon, 'start')
+    duration = 10  # Python cp/sat code accept integer variables or constants.
+    end_var = model.NewIntVar(0, horizon, 'end')
+    presence_var = model.NewBoolVar('presence')
+    interval_var = model.NewOptionalIntervalVar(start_var, duration,
+                                                end_var + 2, presence_var,
+                                                'interval')
 
-  print(f'interval = {repr(interval_var)}')
+    print(f'interval = {repr(interval_var)}')
 
-  # If the size is fixed, a simpler version uses the start expression and the
-  # size.
-  fixed_size_interval_var = model.NewOptionalFixedSizeIntervalVar(
-      start_var, 10, presence_var, 'fixed_size_interval_var')
-  print(f'fixed_size_interval_var = {repr(fixed_size_interval_var)}')
+    # If the size is fixed, a simpler version uses the start expression and the
+    # size.
+    fixed_size_interval_var = model.NewOptionalFixedSizeIntervalVar(
+        start_var, 10, presence_var, 'fixed_size_interval_var')
+    print(f'fixed_size_interval_var = {repr(fixed_size_interval_var)}')
 
-  # A fixed interval can be created using the same API.
-  fixed_interval = model.NewOptionalFixedSizeIntervalVar(
-      5, 10, presence_var, 'fixed_interval')
-  print(f'fixed_interval = {repr(fixed_interval)}')
+    # A fixed interval can be created using the same API.
+    fixed_interval = model.NewOptionalFixedSizeIntervalVar(
+        5, 10, presence_var, 'fixed_interval')
+    print(f'fixed_interval = {repr(fixed_interval)}')
 
 
 OptionalIntervalSampleSat()
@@ -350,13 +346,8 @@ public class OptionalIntervalSampleSat {
     IntVar startVar = model.newIntVar(0, horizon, "start");
     IntVar endVar = model.newIntVar(0, horizon, "end");
     Literal presence = model.newBoolVar("presence");
-    IntervalVar intervalVar =
-        model.newOptionalIntervalVar(
-            startVar,
-            LinearExpr.constant(10),
-            LinearExpr.newBuilder().add(endVar).add(2),
-            presence,
-            "interval");
+    IntervalVar intervalVar = model.newOptionalIntervalVar(startVar, LinearExpr.constant(10),
+        LinearExpr.newBuilder().add(endVar).add(2), presence, "interval");
     System.out.println(intervalVar);
 
     // If the size is fixed, a simpler version uses the start expression, the size and the literal.
@@ -416,58 +407,59 @@ weekends, making the final day as early as possible.
 ### Python code
 
 ```python
-"""Code sample to demonstrate how to build a NoOverlap constraint."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 def NoOverlapSampleSat():
-  """No overlap sample with fixed activities."""
-  model = cp_model.CpModel()
-  horizon = 21  # 3 weeks.
+    """No overlap sample with fixed activities."""
+    model = cp_model.CpModel()
+    horizon = 21  # 3 weeks.
 
-  # Task 0, duration 2.
-  start_0 = model.NewIntVar(0, horizon, 'start_0')
-  duration_0 = 2  # Python cp/sat code accepts integer variables or constants.
-  end_0 = model.NewIntVar(0, horizon, 'end_0')
-  task_0 = model.NewIntervalVar(start_0, duration_0, end_0, 'task_0')
-  # Task 1, duration 4.
-  start_1 = model.NewIntVar(0, horizon, 'start_1')
-  duration_1 = 4  # Python cp/sat code accepts integer variables or constants.
-  end_1 = model.NewIntVar(0, horizon, 'end_1')
-  task_1 = model.NewIntervalVar(start_1, duration_1, end_1, 'task_1')
+    # Task 0, duration 2.
+    start_0 = model.NewIntVar(0, horizon, 'start_0')
+    duration_0 = 2  # Python cp/sat code accepts integer variables or constants.
+    end_0 = model.NewIntVar(0, horizon, 'end_0')
+    task_0 = model.NewIntervalVar(start_0, duration_0, end_0, 'task_0')
+    # Task 1, duration 4.
+    start_1 = model.NewIntVar(0, horizon, 'start_1')
+    duration_1 = 4  # Python cp/sat code accepts integer variables or constants.
+    end_1 = model.NewIntVar(0, horizon, 'end_1')
+    task_1 = model.NewIntervalVar(start_1, duration_1, end_1, 'task_1')
 
-  # Task 2, duration 3.
-  start_2 = model.NewIntVar(0, horizon, 'start_2')
-  duration_2 = 3  # Python cp/sat code accepts integer variables or constants.
-  end_2 = model.NewIntVar(0, horizon, 'end_2')
-  task_2 = model.NewIntervalVar(start_2, duration_2, end_2, 'task_2')
+    # Task 2, duration 3.
+    start_2 = model.NewIntVar(0, horizon, 'start_2')
+    duration_2 = 3  # Python cp/sat code accepts integer variables or constants.
+    end_2 = model.NewIntVar(0, horizon, 'end_2')
+    task_2 = model.NewIntervalVar(start_2, duration_2, end_2, 'task_2')
 
-  # Weekends.
-  weekend_0 = model.NewIntervalVar(5, 2, 7, 'weekend_0')
-  weekend_1 = model.NewIntervalVar(12, 2, 14, 'weekend_1')
-  weekend_2 = model.NewIntervalVar(19, 2, 21, 'weekend_2')
+    # Weekends.
+    weekend_0 = model.NewIntervalVar(5, 2, 7, 'weekend_0')
+    weekend_1 = model.NewIntervalVar(12, 2, 14, 'weekend_1')
+    weekend_2 = model.NewIntervalVar(19, 2, 21, 'weekend_2')
 
-  # No Overlap constraint.
-  model.AddNoOverlap([task_0, task_1, task_2, weekend_0, weekend_1, weekend_2])
+    # No Overlap constraint.
+    model.AddNoOverlap(
+        [task_0, task_1, task_2, weekend_0, weekend_1, weekend_2])
 
-  # Makespan objective.
-  obj = model.NewIntVar(0, horizon, 'makespan')
-  model.AddMaxEquality(obj, [end_0, end_1, end_2])
-  model.Minimize(obj)
+    # Makespan objective.
+    obj = model.NewIntVar(0, horizon, 'makespan')
+    model.AddMaxEquality(obj, [end_0, end_1, end_2])
+    model.Minimize(obj)
 
-  # Solve model.
-  solver = cp_model.CpSolver()
-  status = solver.Solve(model)
+    # Solve model.
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
 
-  if status == cp_model.OPTIMAL:
-    # Print out makespan and the start times for all tasks.
-    print('Optimal Schedule Length: %i' % solver.ObjectiveValue())
-    print('Task 0 starts at %i' % solver.Value(start_0))
-    print('Task 1 starts at %i' % solver.Value(start_1))
-    print('Task 2 starts at %i' % solver.Value(start_2))
-  else:
-    print('Solver exited with nonoptimal status: %i' % status)
+    if status == cp_model.OPTIMAL:
+        # Print out makespan and the start times for all tasks.
+        print('Optimal Schedule Length: %i' % solver.ObjectiveValue())
+        print('Task 0 starts at %i' % solver.Value(start_0))
+        print('Task 1 starts at %i' % solver.Value(start_1))
+        print('Task 2 starts at %i' % solver.Value(start_2))
+    else:
+        print('Solver exited with nonoptimal status: %i' % status)
 
 
 NoOverlapSampleSat()
@@ -480,8 +472,8 @@ NoOverlapSampleSat()
 
 #include <cstdint>
 
-#include "ortools/base/logging.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -563,9 +555,9 @@ int main() {
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.LinearExpr;
@@ -608,13 +600,10 @@ public class NoOverlapSampleSat {
 
     // Makespan objective.
     IntVar obj = model.newIntVar(0, horizon, "makespan");
-    model.addMaxEquality(
-        obj,
-        new LinearExpr[] {
-          LinearExpr.newBuilder().add(start0).add(duration0).build(),
-          LinearExpr.newBuilder().add(start1).add(duration1).build(),
-          LinearExpr.newBuilder().add(start2).add(duration2).build()
-        });
+    model.addMaxEquality(obj,
+        new LinearExpr[] {LinearExpr.newBuilder().add(start0).add(duration0).build(),
+            LinearExpr.newBuilder().add(start1).add(duration1).build(),
+            LinearExpr.newBuilder().add(start2).add(duration2).build()});
     model.minimize(obj);
 
     // Creates a solver and solves the model.
@@ -718,14 +707,13 @@ number of other intervals that precede it.
 ### Python code
 
 ```python
-"""Code sample to demonstrates how to rank intervals."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
-
 def RankTasks(model, starts, presences, ranks):
-  """This method adds constraints and variables to links tasks and ranks.
+    """This method adds constraints and variables to links tasks and ranks.
 
   This method assumes that all starts are disjoint, meaning that all tasks have
   a strictly positive duration, and they appear in the same NoOverlap
@@ -738,118 +726,124 @@ def RankTasks(model, starts, presences, ranks):
     ranks: The array of rank variables of all tasks.
   """
 
-  num_tasks = len(starts)
-  all_tasks = range(num_tasks)
+    num_tasks = len(starts)
+    all_tasks = range(num_tasks)
 
-  # Creates precedence variables between pairs of intervals.
-  precedences = {}
-  for i in all_tasks:
-    for j in all_tasks:
-      if i == j:
-        precedences[(i, j)] = presences[i]
-      else:
-        prec = model.NewBoolVar('%i before %i' % (i, j))
-        precedences[(i, j)] = prec
-        model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec)
+    # Creates precedence variables between pairs of intervals.
+    precedences = {}
+    for i in all_tasks:
+        for j in all_tasks:
+            if i == j:
+                precedences[(i, j)] = presences[i]
+            else:
+                prec = model.NewBoolVar('%i before %i' % (i, j))
+                precedences[(i, j)] = prec
+                model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec)
 
-  # Treats optional intervals.
-  for i in range(num_tasks - 1):
-    for j in range(i + 1, num_tasks):
-      tmp_array = [precedences[(i, j)], precedences[(j, i)]]
-      if not cp_model.ObjectIsATrueLiteral(presences[i]):
-        tmp_array.append(presences[i].Not())
-        # Makes sure that if i is not performed, all precedences are false.
-        model.AddImplication(presences[i].Not(), precedences[(i, j)].Not())
-        model.AddImplication(presences[i].Not(), precedences[(j, i)].Not())
-      if not cp_model.ObjectIsATrueLiteral(presences[j]):
-        tmp_array.append(presences[j].Not())
-        # Makes sure that if j is not performed, all precedences are false.
-        model.AddImplication(presences[j].Not(), precedences[(i, j)].Not())
-        model.AddImplication(presences[j].Not(), precedences[(j, i)].Not())
-      # The following bool_or will enforce that for any two intervals:
-      #    i precedes j or j precedes i or at least one interval is not
-      #        performed.
-      model.AddBoolOr(tmp_array)
-      # Redundant constraint: it propagates early that at most one precedence
-      # is true.
-      model.AddImplication(precedences[(i, j)], precedences[(j, i)].Not())
-      model.AddImplication(precedences[(j, i)], precedences[(i, j)].Not())
+    # Treats optional intervals.
+    for i in range(num_tasks - 1):
+        for j in range(i + 1, num_tasks):
+            tmp_array = [precedences[(i, j)], precedences[(j, i)]]
+            if not cp_model.ObjectIsATrueLiteral(presences[i]):
+                tmp_array.append(presences[i].Not())
+                # Makes sure that if i is not performed, all precedences are false.
+                model.AddImplication(presences[i].Not(),
+                                     precedences[(i, j)].Not())
+                model.AddImplication(presences[i].Not(),
+                                     precedences[(j, i)].Not())
+            if not cp_model.ObjectIsATrueLiteral(presences[j]):
+                tmp_array.append(presences[j].Not())
+                # Makes sure that if j is not performed, all precedences are false.
+                model.AddImplication(presences[j].Not(),
+                                     precedences[(i, j)].Not())
+                model.AddImplication(presences[j].Not(),
+                                     precedences[(j, i)].Not())
+            # The following bool_or will enforce that for any two intervals:
+            #    i precedes j or j precedes i or at least one interval is not
+            #        performed.
+            model.AddBoolOr(tmp_array)
+            # Redundant constraint: it propagates early that at most one precedence
+            # is true.
+            model.AddImplication(precedences[(i, j)], precedences[(j, i)].Not())
+            model.AddImplication(precedences[(j, i)], precedences[(i, j)].Not())
 
-  # Links precedences and ranks.
-  for i in all_tasks:
-    model.Add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
+    # Links precedences and ranks.
+    for i in all_tasks:
+        model.Add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
 
 
 def RankingSampleSat():
-  """Ranks tasks in a NoOverlap constraint."""
+    """Ranks tasks in a NoOverlap constraint."""
 
-  model = cp_model.CpModel()
-  horizon = 100
-  num_tasks = 4
-  all_tasks = range(num_tasks)
+    model = cp_model.CpModel()
+    horizon = 100
+    num_tasks = 4
+    all_tasks = range(num_tasks)
 
-  starts = []
-  ends = []
-  intervals = []
-  presences = []
-  ranks = []
+    starts = []
+    ends = []
+    intervals = []
+    presences = []
+    ranks = []
 
-  # Creates intervals, half of them are optional.
-  for t in all_tasks:
-    start = model.NewIntVar(0, horizon, 'start_%i' % t)
-    duration = t + 1
-    end = model.NewIntVar(0, horizon, 'end_%i' % t)
-    if t < num_tasks // 2:
-      interval = model.NewIntervalVar(start, duration, end, 'interval_%i' % t)
-      presence = True
-    else:
-      presence = model.NewBoolVar('presence_%i' % t)
-      interval = model.NewOptionalIntervalVar(start, duration, end, presence,
-                                              'o_interval_%i' % t)
-    starts.append(start)
-    ends.append(end)
-    intervals.append(interval)
-    presences.append(presence)
-
-    # Ranks = -1 if and only if the tasks is not performed.
-    ranks.append(model.NewIntVar(-1, num_tasks - 1, 'rank_%i' % t))
-
-  # Adds NoOverlap constraint.
-  model.AddNoOverlap(intervals)
-
-  # Adds ranking constraint.
-  RankTasks(model, starts, presences, ranks)
-
-  # Adds a constraint on ranks.
-  model.Add(ranks[0] < ranks[1])
-
-  # Creates makespan variable.
-  makespan = model.NewIntVar(0, horizon, 'makespan')
-  for t in all_tasks:
-    model.Add(ends[t] <= makespan).OnlyEnforceIf(presences[t])
-
-  # Minimizes makespan - fixed gain per tasks performed.
-  # As the fixed cost is less that the duration of the last interval,
-  # the solver will not perform the last interval.
-  model.Minimize(2 * makespan - 7 * sum(presences[t] for t in all_tasks))
-
-  # Solves the model model.
-  solver = cp_model.CpSolver()
-  status = solver.Solve(model)
-
-  if status == cp_model.OPTIMAL:
-    # Prints out the makespan and the start times and ranks of all tasks.
-    print('Optimal cost: %i' % solver.ObjectiveValue())
-    print('Makespan: %i' % solver.Value(makespan))
+    # Creates intervals, half of them are optional.
     for t in all_tasks:
-      if solver.Value(presences[t]):
-        print('Task %i starts at %i with rank %i' % (t, solver.Value(starts[t]),
-                                                     solver.Value(ranks[t])))
-      else:
-        print('Task %i in not performed and ranked at %i' %
-              (t, solver.Value(ranks[t])))
-  else:
-    print('Solver exited with nonoptimal status: %i' % status)
+        start = model.NewIntVar(0, horizon, 'start_%i' % t)
+        duration = t + 1
+        end = model.NewIntVar(0, horizon, 'end_%i' % t)
+        if t < num_tasks // 2:
+            interval = model.NewIntervalVar(start, duration, end,
+                                            'interval_%i' % t)
+            presence = True
+        else:
+            presence = model.NewBoolVar('presence_%i' % t)
+            interval = model.NewOptionalIntervalVar(start, duration, end,
+                                                    presence,
+                                                    'o_interval_%i' % t)
+        starts.append(start)
+        ends.append(end)
+        intervals.append(interval)
+        presences.append(presence)
+
+        # Ranks = -1 if and only if the tasks is not performed.
+        ranks.append(model.NewIntVar(-1, num_tasks - 1, 'rank_%i' % t))
+
+    # Adds NoOverlap constraint.
+    model.AddNoOverlap(intervals)
+
+    # Adds ranking constraint.
+    RankTasks(model, starts, presences, ranks)
+
+    # Adds a constraint on ranks.
+    model.Add(ranks[0] < ranks[1])
+
+    # Creates makespan variable.
+    makespan = model.NewIntVar(0, horizon, 'makespan')
+    for t in all_tasks:
+        model.Add(ends[t] <= makespan).OnlyEnforceIf(presences[t])
+
+    # Minimizes makespan - fixed gain per tasks performed.
+    # As the fixed cost is less that the duration of the last interval,
+    # the solver will not perform the last interval.
+    model.Minimize(2 * makespan - 7 * sum(presences[t] for t in all_tasks))
+
+    # Solves the model model.
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+
+    if status == cp_model.OPTIMAL:
+        # Prints out the makespan and the start times and ranks of all tasks.
+        print('Optimal cost: %i' % solver.ObjectiveValue())
+        print('Makespan: %i' % solver.Value(makespan))
+        for t in all_tasks:
+            if solver.Value(presences[t]):
+                print('Task %i starts at %i with rank %i' %
+                      (t, solver.Value(starts[t]), solver.Value(ranks[t])))
+            else:
+                print('Task %i in not performed and ranked at %i' %
+                      (t, solver.Value(ranks[t])))
+    else:
+        print('Solver exited with nonoptimal status: %i' % status)
 
 
 RankingSampleSat()
@@ -863,8 +857,8 @@ RankingSampleSat()
 
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -1015,10 +1009,10 @@ int main() {
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.LinearExpr;
@@ -1114,15 +1108,13 @@ public class RankingSampleSat {
       int duration = t + 1;
       ends[t] = model.newIntVar(0, horizon, "end_" + t);
       if (t < numTasks / 2) {
-        intervals[t] =
-            model.newIntervalVar(
-                starts[t], LinearExpr.constant(duration), ends[t], "interval_" + t);
+        intervals[t] = model.newIntervalVar(
+            starts[t], LinearExpr.constant(duration), ends[t], "interval_" + t);
         presences[t] = trueLiteral;
       } else {
         presences[t] = model.newBoolVar("presence_" + t);
-        intervals[t] =
-            model.newOptionalIntervalVar(
-                starts[t], LinearExpr.constant(duration), ends[t], presences[t], "o_interval_" + t);
+        intervals[t] = model.newOptionalIntervalVar(
+            starts[t], LinearExpr.constant(duration), ends[t], presences[t], "o_interval_" + t);
       }
 
       // The rank will be -1 iff the task is not performed.
@@ -1166,9 +1158,8 @@ public class RankingSampleSat {
       System.out.println("Makespan: " + solver.value(makespan));
       for (int t = 0; t < numTasks; ++t) {
         if (solver.booleanValue(presences[t])) {
-          System.out.printf(
-              "Task %d starts at %d with rank %d%n",
-              t, solver.value(starts[t]), solver.value(ranks[t]));
+          System.out.printf("Task %d starts at %d with rank %d%n", t, solver.value(starts[t]),
+              solver.value(ranks[t]));
         } else {
           System.out.printf(
               "Task %d in not performed and ranked at %d%n", t, solver.value(ranks[t]));
@@ -1366,71 +1357,71 @@ The following code displays:
 ### Python code
 
 ```python
-"""Code sample to demonstrate how an interval can span across a break."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-  """Print intermediate solutions."""
+    """Print intermediate solutions."""
 
-  def __init__(self, variables):
-    cp_model.CpSolverSolutionCallback.__init__(self)
-    self.__variables = variables
-    self.__solution_count = 0
+    def __init__(self, variables):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__solution_count = 0
 
-  def on_solution_callback(self):
-    self.__solution_count += 1
-    for v in self.__variables:
-      print('%s=%i' % (v, self.Value(v)), end=' ')
-    print()
+    def on_solution_callback(self):
+        self.__solution_count += 1
+        for v in self.__variables:
+            print('%s=%i' % (v, self.Value(v)), end=' ')
+        print()
 
-  def solution_count(self):
-    return self.__solution_count
+    def solution_count(self):
+        return self.__solution_count
 
 
 def SchedulingWithCalendarSampleSat():
-  """Interval spanning across a lunch break."""
-  model = cp_model.CpModel()
+    """Interval spanning across a lunch break."""
+    model = cp_model.CpModel()
 
-  # The data is the following:
-  #   Work starts at 8h, ends at 18h, with a lunch break between 13h and 14h.
-  #   We need to schedule a task that needs 3 hours of processing time.
-  #   Total duration can be 3 or 4 (if it spans the lunch break).
-  #
-  # Because the duration is at least 3 hours, work cannot start after 15h.
-  # Because of the break, work cannot start at 13h.
+    # The data is the following:
+    #   Work starts at 8h, ends at 18h, with a lunch break between 13h and 14h.
+    #   We need to schedule a task that needs 3 hours of processing time.
+    #   Total duration can be 3 or 4 (if it spans the lunch break).
+    #
+    # Because the duration is at least 3 hours, work cannot start after 15h.
+    # Because of the break, work cannot start at 13h.
 
-  start = model.NewIntVarFromDomain(
-      cp_model.Domain.FromIntervals([(8, 12), (14, 15)]), 'start')
-  duration = model.NewIntVar(3, 4, 'duration')
-  end = model.NewIntVar(8, 18, 'end')
-  unused_interval = model.NewIntervalVar(start, duration, end, 'interval')
+    start = model.NewIntVarFromDomain(
+        cp_model.Domain.FromIntervals([(8, 12), (14, 15)]), 'start')
+    duration = model.NewIntVar(3, 4, 'duration')
+    end = model.NewIntVar(8, 18, 'end')
+    unused_interval = model.NewIntervalVar(start, duration, end, 'interval')
 
-  # We have 2 states (spanning across lunch or not)
-  across = model.NewBoolVar('across')
-  non_spanning_hours = cp_model.Domain.FromValues([8, 9, 10, 14, 15])
-  model.AddLinearExpressionInDomain(start, non_spanning_hours).OnlyEnforceIf(
-      across.Not())
-  model.AddLinearConstraint(start, 11, 12).OnlyEnforceIf(across)
-  model.Add(duration == 3).OnlyEnforceIf(across.Not())
-  model.Add(duration == 4).OnlyEnforceIf(across)
+    # We have 2 states (spanning across lunch or not)
+    across = model.NewBoolVar('across')
+    non_spanning_hours = cp_model.Domain.FromValues([8, 9, 10, 14, 15])
+    model.AddLinearExpressionInDomain(start, non_spanning_hours).OnlyEnforceIf(
+        across.Not())
+    model.AddLinearConstraint(start, 11, 12).OnlyEnforceIf(across)
+    model.Add(duration == 3).OnlyEnforceIf(across.Not())
+    model.Add(duration == 4).OnlyEnforceIf(across)
 
-  # Search for x values in increasing order.
-  model.AddDecisionStrategy([start], cp_model.CHOOSE_FIRST,
-                            cp_model.SELECT_MIN_VALUE)
+    # Search for x values in increasing order.
+    model.AddDecisionStrategy([start], cp_model.CHOOSE_FIRST,
+                              cp_model.SELECT_MIN_VALUE)
 
-  # Create a solver and solve with a fixed search.
-  solver = cp_model.CpSolver()
+    # Create a solver and solve with a fixed search.
+    solver = cp_model.CpSolver()
 
-  # Force the solver to follow the decision strategy exactly.
-  solver.parameters.search_branching = cp_model.FIXED_SEARCH
-  # Enumerate all solutions.
-  solver.parameters.enumerate_all_solutions = True
+    # Force the solver to follow the decision strategy exactly.
+    solver.parameters.search_branching = cp_model.FIXED_SEARCH
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
 
-  # Search and print all solutions.
-  solution_printer = VarArraySolutionPrinter([start, duration, across])
-  solver.Solve(model, solution_printer)
+    # Search and print all solutions.
+    solution_printer = VarArraySolutionPrinter([start, duration, across])
+    solver.Solve(model, solution_printer)
 
 
 SchedulingWithCalendarSampleSat()
@@ -1472,86 +1463,86 @@ start_a=1 start_b=5 a_overlaps_b=0
 ### Python code
 
 ```python
-"""Code sample to demonstrates how to detect if two intervals overlap."""
+#!/usr/bin/env python3
 
 from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-  """Print intermediate solutions."""
+    """Print intermediate solutions."""
 
-  def __init__(self, variables):
-    cp_model.CpSolverSolutionCallback.__init__(self)
-    self.__variables = variables
-    self.__solution_count = 0
+    def __init__(self, variables):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__solution_count = 0
 
-  def on_solution_callback(self):
-    self.__solution_count += 1
-    for v in self.__variables:
-      print('%s=%i' % (v, self.Value(v)), end=' ')
-    print()
+    def on_solution_callback(self):
+        self.__solution_count += 1
+        for v in self.__variables:
+            print('%s=%i' % (v, self.Value(v)), end=' ')
+        print()
 
-  def solution_count(self):
-    return self.__solution_count
+    def solution_count(self):
+        return self.__solution_count
 
 
 def OverlappingIntervals():
-  """Create the overlapping Boolean variables and enumerate all states."""
-  model = cp_model.CpModel()
+    """Create the overlapping Boolean variables and enumerate all states."""
+    model = cp_model.CpModel()
 
-  horizon = 7
+    horizon = 7
 
-  # First interval.
-  start_var_a = model.NewIntVar(0, horizon, 'start_a')
-  duration_a = 3
-  end_var_a = model.NewIntVar(0, horizon, 'end_a')
-  unused_interval_var_a = model.NewIntervalVar(start_var_a, duration_a,
-                                               end_var_a, 'interval_a')
+    # First interval.
+    start_var_a = model.NewIntVar(0, horizon, 'start_a')
+    duration_a = 3
+    end_var_a = model.NewIntVar(0, horizon, 'end_a')
+    unused_interval_var_a = model.NewIntervalVar(start_var_a, duration_a,
+                                                 end_var_a, 'interval_a')
 
-  # Second interval.
-  start_var_b = model.NewIntVar(0, horizon, 'start_b')
-  duration_b = 2
-  end_var_b = model.NewIntVar(0, horizon, 'end_b')
-  unused_interval_var_b = model.NewIntervalVar(start_var_b, duration_b,
-                                               end_var_b, 'interval_b')
+    # Second interval.
+    start_var_b = model.NewIntVar(0, horizon, 'start_b')
+    duration_b = 2
+    end_var_b = model.NewIntVar(0, horizon, 'end_b')
+    unused_interval_var_b = model.NewIntervalVar(start_var_b, duration_b,
+                                                 end_var_b, 'interval_b')
 
-  # a_after_b Boolean variable.
-  a_after_b = model.NewBoolVar('a_after_b')
-  model.Add(start_var_a >= end_var_b).OnlyEnforceIf(a_after_b)
-  model.Add(start_var_a < end_var_b).OnlyEnforceIf(a_after_b.Not())
+    # a_after_b Boolean variable.
+    a_after_b = model.NewBoolVar('a_after_b')
+    model.Add(start_var_a >= end_var_b).OnlyEnforceIf(a_after_b)
+    model.Add(start_var_a < end_var_b).OnlyEnforceIf(a_after_b.Not())
 
-  # b_after_a Boolean variable.
-  b_after_a = model.NewBoolVar('b_after_a')
-  model.Add(start_var_b >= end_var_a).OnlyEnforceIf(b_after_a)
-  model.Add(start_var_b < end_var_a).OnlyEnforceIf(b_after_a.Not())
+    # b_after_a Boolean variable.
+    b_after_a = model.NewBoolVar('b_after_a')
+    model.Add(start_var_b >= end_var_a).OnlyEnforceIf(b_after_a)
+    model.Add(start_var_b < end_var_a).OnlyEnforceIf(b_after_a.Not())
 
-  # Result Boolean variable.
-  a_overlaps_b = model.NewBoolVar('a_overlaps_b')
+    # Result Boolean variable.
+    a_overlaps_b = model.NewBoolVar('a_overlaps_b')
 
-  # Option a: using only clauses
-  model.AddBoolOr(a_after_b, b_after_a, a_overlaps_b)
-  model.AddImplication(a_after_b, a_overlaps_b.Not())
-  model.AddImplication(b_after_a, a_overlaps_b.Not())
+    # Option a: using only clauses
+    model.AddBoolOr(a_after_b, b_after_a, a_overlaps_b)
+    model.AddImplication(a_after_b, a_overlaps_b.Not())
+    model.AddImplication(b_after_a, a_overlaps_b.Not())
 
-  # Option b: using an exactly one constraint.
-  # model.AddExactlyOne(a_after_b, b_after_a, a_overlaps_b)
+    # Option b: using an exactly one constraint.
+    # model.AddExactlyOne(a_after_b, b_after_a, a_overlaps_b)
 
-  # Search for start values in increasing order for the two intervals.
-  model.AddDecisionStrategy([start_var_a, start_var_b], cp_model.CHOOSE_FIRST,
-                            cp_model.SELECT_MIN_VALUE)
+    # Search for start values in increasing order for the two intervals.
+    model.AddDecisionStrategy([start_var_a, start_var_b], cp_model.CHOOSE_FIRST,
+                              cp_model.SELECT_MIN_VALUE)
 
-  # Create a solver and solve with a fixed search.
-  solver = cp_model.CpSolver()
+    # Create a solver and solve with a fixed search.
+    solver = cp_model.CpSolver()
 
-  # Force the solver to follow the decision strategy exactly.
-  solver.parameters.search_branching = cp_model.FIXED_SEARCH
-  # Enumerate all solutions.
-  solver.parameters.enumerate_all_solutions = True
+    # Force the solver to follow the decision strategy exactly.
+    solver.parameters.search_branching = cp_model.FIXED_SEARCH
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
 
-  # Search and print out all solutions.
-  solution_printer = VarArraySolutionPrinter(
-      [start_var_a, start_var_b, a_overlaps_b])
-  solver.Solve(model, solution_printer)
+    # Search and print out all solutions.
+    solution_printer = VarArraySolutionPrinter(
+        [start_var_a, start_var_b, a_overlaps_b])
+    solver.Solve(model, solution_printer)
 
 
 OverlappingIntervals()

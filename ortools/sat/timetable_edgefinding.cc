@@ -298,7 +298,7 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
 
       // Enough energy to schedule max_task at its minimum start time?
       //
-      // TODO(user, fdid): In case of alternatives, for each fixed
+      // TODO(user): In case of alternatives, for each fixed
       // size/demand pair, we can compute a new_start and use the min of them.
       if (extra_energy_required_by_max_task <= available_energy) {
         // If the test below is true, we know the max_task cannot fully

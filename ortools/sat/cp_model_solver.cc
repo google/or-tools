@@ -33,6 +33,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
@@ -2422,7 +2423,7 @@ class FeasibilityPumpSolver : public SubSolver {
     deterministic_time_since_last_synchronize_ = 0.0;
   }
 
-  // TODO(user, fdid): Display feasibility pump statistics.
+  // TODO(user): Display feasibility pump statistics.
 
  private:
   SharedClasses* shared_;

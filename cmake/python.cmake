@@ -389,6 +389,7 @@ if(BUILD_TESTING)
     ${PROJECT_SOURCE_DIR}/ortools/init/python/version_test.py.in
     ${PROJECT_BINARY_DIR}/python/version_test.py
     @ONLY)
+
   # run the tests within the virtualenv
   add_test(NAME python_init_version_test
     COMMAND ${VENV_Python3_EXECUTABLE} ${PROJECT_BINARY_DIR}/python/version_test.py)

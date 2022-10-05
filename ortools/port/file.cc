@@ -27,6 +27,7 @@
 #include "absl/time/clock.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
 
 namespace operations_research {

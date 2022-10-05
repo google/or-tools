@@ -36,5 +36,6 @@ jobs:
     - name: Test Install
       run: make --directory=cmake ${DISTRO}_${LANG}_install_test
 
-# TODO(mizux): Add macOS + brew job
-# TODO(mizux): Add Windows + choco/vcpkg job
+# TODO(user): Add macOS + brew job
+# TODO(user): Add Windows + choco/vcpkg job
+
