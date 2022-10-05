@@ -469,7 +469,7 @@ check_cpp_pimpl: \
  rcpp_max_flow \
  rcpp_min_cost_flow
 
-.PHONY: test_cc_tests # Build and Run all C++ Tests (located in ortools/examples/tests)
+.PHONY: test_cc_tests # Build and Run all C++ Tests (located in examples/tests)
 test_cc_tests: \
  rcpp_lp_test \
  rcpp_bug_fz1 \
@@ -479,10 +479,10 @@ test_cc_tests: \
  rcpp_min_max_test
 #	$(MAKE) rcpp_issue173 # error: too long
 
-.PHONY: test_cc_contrib # Build and Run all C++ Contrib (located in ortools/examples/contrib)
+.PHONY: test_cc_contrib # Build and Run all C++ Contrib (located in examples/contrib)
 test_cc_contrib:
 
-.PHONY: test_cc_cpp # Build and Run all C++ Examples (located in ortools/examples/cpp)
+.PHONY: test_cc_cpp # Build and Run all C++ Examples (located in examples/cpp)
 test_cc_cpp: \
  rcpp_costas_array_sat \
  rcpp_cryptarithm_sat \

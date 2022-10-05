@@ -427,7 +427,7 @@ test_java_contrib: \
  rjava_Xkcd \
  rjava_YoungTableaux
 
-.PHONY: test_java_java # Build and Run all Java Examples (located in ortools/examples/java)
+.PHONY: test_java_java # Build and Run all Java Examples (located in examples/java)
 test_java_java: \
  rjava_CapacitatedVehicleRoutingProblemWithTimeWindows \
  rjava_FlowExample \

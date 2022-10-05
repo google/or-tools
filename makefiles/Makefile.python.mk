@@ -367,7 +367,7 @@ test_python_contrib: \
 #	$(MAKE) rpy_secret_santa # error: too long
 #	$(MAKE) rpy_word_square # Not working on window since it rely on /usr/share/dict/words
 
-.PHONY: test_python_python # Build and Run all Python Examples (located in ortools/examples/python)
+.PHONY: test_python_python # Build and Run all Python Examples (located in examples/python)
 test_python_python: \
  rpy_appointments \
  rpy_assignment2_sat \
