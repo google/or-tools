@@ -89,6 +89,7 @@ Here the list of supported solvers:
 * CPLEX\*
 * GLOP
 * GLPK\*
+* HiGHS\*
 * PDLP
 * SCIP
 * XPRESS\*
