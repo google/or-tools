@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if defined(USE_HIGHS)
+
 #include <atomic>
 #include <cstdint>
 #include <optional>
@@ -309,3 +311,4 @@ MPSolverInterface* BuildHighsInterface(MPSolver* const solver,
 }
 
 }  // namespace operations_research
+#endif  // #if defined(USE_HIGHS)
