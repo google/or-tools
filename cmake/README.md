@@ -32,8 +32,8 @@
 [windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml/badge.svg?branch=main
 [windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml
 
-Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++,
-Python, Java, .Net]: [![Status][docker_svg]][docker_link]
+Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x
+[C++, Python, Java, .Net]: [![Status][docker_svg]][docker_link]
 
 [docker_svg]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml/badge.svg?branch=main
 [docker_link]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml
@@ -102,23 +102,23 @@ configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
 compile few of them using the options below (see [CMake Options](#cmake-options)
 below).
 
-* ZLIB (`BUILD_ZLIB`),
-* Google Abseil-cpp (`BUILD_absl`),
-* Google Protobuf (`BUILD_Protobuf`),
-* COIN-OR solvers,
-  * COIN-OR CoinUtils (`BUILD_CoinUtils`),
-  * COIN-OR Osi (`BUILD_Osi`),
-  * COIN-OR Clp (`BUILD_Clp`),
-  * COIN-OR Cgl (`BUILD_Cgl`),
-  * COIN-OR Cbc (`BUILD_Cbc`),<br>
-  note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
-  by using `-DUSE_COINOR=OFF` (`ON` by default).
-* SCIP (`BUILD_SCIP`),<br>
-  note: You can disable the support of SCIP solver
-  by using `-DUSE_SCIP=OFF` (`ON` by default).<br>
-  warning: While OR-Tools ships with SCIP, please consult the
-  [SCIP license](https://scipopt.org/index.php#license) to ensure that you are
-  complying with it.
+*   ZLIB (`BUILD_ZLIB`),
+*   Google Abseil-cpp (`BUILD_absl`),
+*   Google Protobuf (`BUILD_Protobuf`),
+*   COIN-OR solvers,
+    *   COIN-OR CoinUtils (`BUILD_CoinUtils`),
+    *   COIN-OR Osi (`BUILD_Osi`),
+    *   COIN-OR Clp (`BUILD_Clp`),
+    *   COIN-OR Cgl (`BUILD_Cgl`),
+    *   COIN-OR Cbc (`BUILD_Cbc`),<br>
+    note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
+    by using `-DUSE_COINOR=OFF` (`ON` by default).
+*   SCIP (`BUILD_SCIP`),<br>
+    note: You can disable the support of SCIP solver
+    by using `-DUSE_SCIP=OFF` (`ON` by default).<br>
+    warning: While OR-Tools ships with SCIP, please consult the
+    [SCIP license](https://scipopt.org/index.php#license) to ensure that you are
+    complying with it.
 
 OR-Tools can also optionally (disabled by default i.e. `OFF`) be compiled with
 support for the following third-party solvers:
