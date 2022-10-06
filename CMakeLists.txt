@@ -211,7 +211,7 @@ endif()
 
 ## HiGHS
 # see: https://github.com/ERGO-Code/HiGHS
-CMAKE_DEPENDENT_OPTION(USE_HIGHS "Use the HiGHS solver" ON "BUILD_CXX" OFF)
+CMAKE_DEPENDENT_OPTION(USE_HIGHS "Use the HiGHS solver" OFF "BUILD_CXX" OFF)
 message(STATUS "HiGHS support: ${USE_HIGHS}")
 if(USE_HIGHS)
   CMAKE_DEPENDENT_OPTION(BUILD_HIGHS "Build the HiGHS dependency Library" OFF
