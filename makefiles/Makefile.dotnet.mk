@@ -382,14 +382,16 @@ rdotnet_StopAfterNSolutionsSampleSat
 .PHONY: check_dotnet
 check_dotnet: \
  test_dotnet_algorithms_samples \
- test_dotnet_constraint_solver_samples \
  test_dotnet_graph_samples \
+ test_dotnet_constraint_solver_samples \
  test_dotnet_linear_solver_samples \
- test_dotnet_sat_samples \
+ test_dotnet_sat_samples
 
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test and ortools/<cmp>/csharp)
 test_dotnet_tests: \
 	rdotnet_InitTests \
+	rdotnet_KnapsackSolverTests \
+	rdotnet_FlowTests \
 	rdotnet_LinearSolverTests \
 	rdotnet_ConstraintSolverTests \
 	rdotnet_RoutingSolverTests \

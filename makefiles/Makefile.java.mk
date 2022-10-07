@@ -374,9 +374,9 @@ test_java_tests: \
  rjava_ModelBuilderTest \
  rjava_ConstraintSolverTest \
  rjava_RoutingSolverTest \
- rjava_LinearExprTest \
  rjava_CpModelTest \
  rjava_CpSolverTest \
+ rjava_LinearExprTest \
  rjava_SatSolverTest
 
 .PHONY: test_java_contrib # Build and Run all Java Contrib (located in examples/contrib)
