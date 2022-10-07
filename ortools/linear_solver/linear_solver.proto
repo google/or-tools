@@ -25,7 +25,6 @@
 //
 // Check ./linear_solver.h and Wikipedia for more detail:
 //   http://en.wikipedia.org/wiki/Linear_programming
-//
 
 syntax = "proto2";
 

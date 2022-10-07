@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // This .i file exposes the linear programming and integer programming
+// solver. See the C++/Python codelab: .
 //
 // The python API is enriched by custom code defined here, making it
 // extremely intuitive, like:

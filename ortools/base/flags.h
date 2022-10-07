@@ -21,7 +21,7 @@
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // These flags should not be used in C++ code to access logging library
-// configuration knobs. Use interfaces defined in ortools/base/globals.h
+// configuration knobs. Use interfaces defined in absl/log/globals.h
 // instead. It is still ok to use these flags on a command line.
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
