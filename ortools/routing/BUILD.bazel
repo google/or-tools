@@ -1,0 +1,293 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "simple_graph",
+    srcs = ["simple_graph.cc"],
+    hdrs = ["simple_graph.h"],
+    deps = [
+        "@com_google_absl//absl/hash",
+    ],
+)
+
+cc_test(
+    name = "simple_graph_test",
+    size = "small",
+    srcs = ["simple_graph_test.cc"],
+    deps = [
+        ":simple_graph",
+        "@com_google_absl//absl/hash:hash_testing",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "solomon_parser",
+    srcs = ["solomon_parser.cc"],
+    hdrs = ["solomon_parser.h"],
+    deps = [
+        ":simple_graph",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:numbers",
+        "//ortools/base:path",
+        "//ortools/base:zipfile",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "solomon_parser_test",
+    size = "small",
+    srcs = ["solomon_parser_test.cc"],
+    data = ["//ortools/routing/testdata:solomon.zip"],
+    deps = [
+        ":solomon_parser",
+        "//ortools/base",
+        "//ortools/base:file",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "carp_parser",
+    srcs = ["carp_parser.cc"],
+    hdrs = ["carp_parser.h"],
+    deps = [
+        ":simple_graph",
+        "//ortools/base",
+        "//ortools/base:linked_hash_map",
+        "//ortools/base:numbers",
+        "//ortools/util:filelineiter",
+    ],
+)
+
+cc_test(
+    name = "carp_parser_test",
+    size = "small",
+    srcs = ["carp_parser_test.cc"],
+    data = [
+        "//ortools/routing/testdata:carp_gdb19.dat",
+        "//ortools/routing/testdata:carp_gdb19_diferente_deposito.dat",
+        "//ortools/routing/testdata:carp_gdb19_incorrecta_lista_aristas_req.dat",
+        "//ortools/routing/testdata:carp_gdb19_incorrecto_arinoreq.dat",
+        "//ortools/routing/testdata:carp_gdb19_incorrecto_arireq.dat",
+        "//ortools/routing/testdata:carp_gdb19_incorrecto_capacidad.dat",
+        "//ortools/routing/testdata:carp_gdb19_incorrecto_coste.dat",
+        "//ortools/routing/testdata:carp_gdb19_incorrecto_deposito.dat",
+        "//ortools/routing/testdata:carp_gdb19_incorrecto_tipo.dat",
+        "//ortools/routing/testdata:carp_gdb19_incorrecto_vehiculos.dat",
+        "//ortools/routing/testdata:carp_gdb19_incorrecto_vertices.dat",
+        "//ortools/routing/testdata:carp_gdb19_mixed_arcs.dat",
+        "//ortools/routing/testdata:carp_gdb19_no_arista_req.dat",
+    ],
+    deps = [
+        ":carp_parser",
+        "//ortools/base:mock_log",
+        "//ortools/base:path",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/hash:hash_testing",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "nearp_parser",
+    srcs = ["nearp_parser.cc"],
+    hdrs = ["nearp_parser.h"],
+    deps = [
+        ":simple_graph",
+        "//ortools/base",
+        "//ortools/base:linked_hash_map",
+        "//ortools/base:numbers",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/hash",
+    ],
+)
+
+cc_test(
+    name = "nearp_parser_test",
+    size = "small",
+    srcs = ["nearp_parser_test.cc"],
+    data = [
+        "//ortools/routing/testdata:nearp_BHW1.dat",
+        "//ortools/routing/testdata:nearp_toy.dat",
+    ],
+    deps = [
+        ":nearp_parser",
+        "//ortools/base:file",
+        "//ortools/base:mock_log",
+        "//ortools/base:path",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/hash:hash_testing",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "pdtsp_parser",
+    srcs = ["pdtsp_parser.cc"],
+    hdrs = ["pdtsp_parser.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:gzipfile",
+        "//ortools/base:mathutil",
+        "//ortools/base:numbers",
+        "//ortools/base:path",
+        "//ortools/base:strtoint",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "pdtsp_parser_test",
+    size = "small",
+    srcs = ["pdtsp_parser_test.cc"],
+    data = [
+        "//ortools/routing/testdata:pdtsp_prob10b.txt",
+        "//ortools/routing/testdata:pdtsp_prob10b.txt.gz",
+    ],
+    deps = [
+        ":pdtsp_parser",
+        "//ortools/base",
+        "//ortools/base:path",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "tsplib_parser",
+    srcs = ["tsplib_parser.cc"],
+    hdrs = ["tsplib_parser.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":simple_graph",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:mathutil",
+        "//ortools/base:numbers",
+        "//ortools/base:path",
+        "//ortools/base:strtoint",
+        "//ortools/base:zipfile",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_re2//:re2",
+    ],
+)
+
+cc_test(
+    name = "tsplib_parser_test",
+    size = "small",
+    timeout = "moderate",
+    srcs = ["tsplib_parser_test.cc"],
+    data = [
+        #"@com_google_ortools_data//TSPLIB95:ALL_atsp.tar",
+        #"@com_google_ortools_data//TSPLIB95:ALL_hcp.tar",
+        #"@com_google_ortools_data//TSPLIB95:ALL_sop.tar",
+        #"@com_google_ortools_data//TSPLIB95:ALL_tsp.tar.gz",
+        #"@com_google_ortools_data//TSPLIB95:ALL_tsp.zip",
+        #"@com_google_ortools_data//TSPLIB95:ALL_vrp.tar",
+        #"@com_google_ortools_data//TSPLIB95:ALL_vrp.zip",
+        "//ortools/routing/testdata:tsplib_Kytojoki_33.vrp",
+    ],
+    deps = [
+        ":tsplib_parser",
+        "//ortools/base",
+        "//ortools/base:filesystem",
+        "//ortools/base:memfile",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "tsptw_parser",
+    srcs = ["tsptw_parser.cc"],
+    hdrs = ["tsptw_parser.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":simple_graph",
+        "//ortools/base",
+        "//ortools/base:mathutil",
+        "//ortools/base:numbers",
+        "//ortools/base:path",
+        "//ortools/base:strtoint",
+        "//ortools/base:zipfile",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "tsptw_parser_test",
+    size = "small",
+    srcs = ["tsptw_parser_test.cc"],
+    data = [
+        #"//ortools/util/testdata:n20w20.001.txt",
+        #"//ortools/util/testdata:n20w20.002.txt",
+        #"//ortools/util/testdata:rc201.0",
+    ],
+    deps = [
+        ":tsptw_parser",
+        "//ortools/base",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "solution_serializer",
+    srcs = ["solution_serializer.cc"],
+    hdrs = ["solution_serializer.h"],
+    deps = [
+        ":simple_graph",
+        "//ortools/base",
+        "//ortools/base:file",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_test(
+    name = "solution_serializer_test",
+    size = "small",
+    srcs = ["solution_serializer_test.cc"],
+    deps = [
+        ":solution_serializer",
+        "//ortools/base",
+        "//ortools/base:mutable_memfile",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "cvrptw_lib",
+    srcs = ["cvrptw_lib.cc"],
+    hdrs = ["cvrptw_lib.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:routing",
+        "//ortools/constraint_solver:routing_flags",
+        "//ortools/util:random_engine",
+    ],
+)
