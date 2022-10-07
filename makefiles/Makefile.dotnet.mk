@@ -231,9 +231,6 @@ $(foreach example,$(DOTNET_EXAMPLES),$(eval $(call dotnet-example-target,$(examp
 
 # Tests
 define dotnet-test-target =
-$(TEMP_DOTNET_DIR)/$1: | $(TEMP_DOTNET_DIR)
-	-$(MKDIR) $(TEMP_DOTNET_DIR)$S$1
-
 $(TEMP_DOTNET_DIR)/$1/%: \
  $(SRC_DIR)/ortools/$1/csharp/%.cs \
  | $(TEMP_DOTNET_DIR)/$1

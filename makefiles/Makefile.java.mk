@@ -231,9 +231,6 @@ $(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-target,$(example))
 
 # Tests
 define java-test-target =
-$(TEMP_JAVA_DIR)/$1: | $(TEMP_JAVA_DIR)
-	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1
-
 $(TEMP_JAVA_DIR)/$1/%: \
  $(SRC_DIR)/ortools/$1/java/%.java \
  | $(TEMP_JAVA_DIR)/$1
