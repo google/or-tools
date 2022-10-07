@@ -33,10 +33,8 @@ public class RabbitsPheasants {
    * seeing?
    */
   private static void solve(boolean traceSearch) {
-    ConstraintSolverParameters parameters = ConstraintSolverParameters.newBuilder()
-                                                .mergeFrom(Solver.defaultSolverParameters())
-                                                .setTraceSearch(traceSearch)
-                                                .build();
+    ConstraintSolverParameters parameters =
+        Solver.defaultSolverParameters().toBuilder().setTraceSearch(traceSearch).build();
     Solver solver = new Solver("RabbitsPheasants", parameters);
     IntVar rabbits = solver.makeIntVar(0, 100, "rabbits");
     IntVar pheasants = solver.makeIntVar(0, 100, "pheasants");
