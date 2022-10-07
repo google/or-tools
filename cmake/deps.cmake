@@ -52,6 +52,7 @@ set(ABSL_DEPS
   absl::str_format
   absl::strings
   absl::synchronization
+  absl::time
   absl::any
   )
 
