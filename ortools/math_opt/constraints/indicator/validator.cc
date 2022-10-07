@@ -35,11 +35,11 @@ absl::Status ValidateConstraint(const IndicatorConstraintProto& constraint,
   RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(constraint.expression()), /*options=*/
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
-      << "expression of implicated constraint in indicator constraint";
+      << "expression of implied constraint in indicator constraint";
   for (const int64_t var_id : constraint.expression().ids()) {
     if (!variable_universe.HasId(var_id)) {
       return util::InvalidArgumentErrorBuilder()
-             << "Invalid variable id in implicated constraint in indicator "
+             << "Invalid variable id in implied constraint in indicator "
                 "constraint: "
              << var_id;
     }

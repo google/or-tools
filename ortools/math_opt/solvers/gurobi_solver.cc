@@ -44,6 +44,7 @@
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
@@ -1570,7 +1571,7 @@ absl::Status GurobiSolver::AddNewIndicatorConstraints(
                                 IndicatorConstraintProto>& constraints) {
   for (const auto& [id, constraint] : constraints) {
     if (!constraint.has_indicator_id()) {
-      gtl::InsertOrDie(&indicator_constraints_map_, id, kUnspecifiedConstraint);
+      gtl::InsertOrDie(&indicator_constraints_map_, id, std::nullopt);
       continue;
     }
     const int num_terms = constraint.expression().ids_size();
@@ -1614,7 +1615,10 @@ absl::Status GurobiSolver::AddNewIndicatorConstraints(
         /*binvar=*/variables_map_.at(constraint.indicator_id()), /*binval=*/1,
         /*ind=*/grb_ids, /*val=*/constraint.expression().values(),
         /*sense=*/sense, /*rhs=*/rhs));
-    gtl::InsertOrDie(&indicator_constraints_map_, id, num_gurobi_gen_cons_);
+    gtl::InsertOrDie(&indicator_constraints_map_, id,
+                     IndicatorConstraintData{
+                         .constraint_index = num_gurobi_gen_cons_,
+                         .indicator_variable_id = constraint.indicator_id()});
     ++num_gurobi_gen_cons_;
     // Deleting the indicator variable, but not the associated indicator
     // constraint, will lead to a Gurobi error.
@@ -1994,10 +1998,12 @@ void GurobiSolver::UpdateGurobiIndices(const DeletedIndices& deleted_indices) {
   if (!deleted_indices.general_constraints.empty()) {
     const std::vector<GurobiGeneralConstraintIndex> old_to_new = IndexUpdateMap(
         num_gurobi_gen_cons_, deleted_indices.general_constraints);
-    for (auto& [_, grb_index] : indicator_constraints_map_) {
-      if (grb_index == kUnspecifiedConstraint) {
+    for (auto& [_, indicator_data] : indicator_constraints_map_) {
+      if (!indicator_data.has_value()) {
         continue;
       }
+      GurobiGeneralConstraintIndex& grb_index =
+          indicator_data->constraint_index;
       grb_index = old_to_new[grb_index];
       CHECK_NE(grb_index, kDeletedIndex);
     }
@@ -2157,8 +2163,9 @@ absl::StatusOr<bool> GurobiSolver::Update(
     // Otherwise the constraint is not actually registered with Gurobi.
     const auto it = indicator_constraints_map_.find(id);
     CHECK(it != indicator_constraints_map_.end()) << "id: " << id;
-    if (it->second != kUnspecifiedConstraint) {
-      deleted_indices.general_constraints.push_back(it->second);
+    if (it->second.has_value()) {
+      deleted_indices.general_constraints.push_back(
+          it->second->constraint_index);
     }
     indicator_constraints_map_.erase(it);
   }
@@ -2292,6 +2299,33 @@ absl::StatusOr<InvertedBounds> GurobiSolver::ListInvertedBounds() const {
   return inverted_bounds;
 }
 
+absl::StatusOr<InvalidIndicators> GurobiSolver::ListInvalidIndicators() const {
+  InvalidIndicators invalid_indicators;
+  for (const auto& [constraint_id, indicator_data] :
+       indicator_constraints_map_) {
+    if (!indicator_data.has_value()) {
+      continue;
+    }
+    const int64_t indicator_id = indicator_data->indicator_variable_id;
+    const GurobiVariableIndex variable_index = variables_map_.at(indicator_id);
+    ASSIGN_OR_RETURN(const double var_lb, gurobi_->GetDoubleAttrElement(
+                                              GRB_DBL_ATTR_LB, variable_index));
+    ASSIGN_OR_RETURN(const double var_ub, gurobi_->GetDoubleAttrElement(
+                                              GRB_DBL_ATTR_UB, variable_index));
+    ASSIGN_OR_RETURN(
+        const char var_type,
+        gurobi_->GetCharAttrElement(GRB_CHAR_ATTR_VTYPE, variable_index));
+    if (!(var_type == GRB_BINARY ||
+          (var_type == GRB_INTEGER && var_lb >= 0.0 && var_ub <= 1.0))) {
+      invalid_indicators.invalid_indicators.push_back(
+          {.variable = indicator_id, .constraint = constraint_id});
+    }
+  }
+  // Above code may have inserted ids in non-stable order.
+  invalid_indicators.Sort();
+  return invalid_indicators;
+}
+
 absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
@@ -2372,6 +2406,15 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
                      ListInvertedBounds());
     RETURN_IF_ERROR(inverted_bounds.ToStatus());
+  }
+
+  // Gurobi will silently impose that indicator variables are binary even if not
+  // so specified by the user in the model. We return an error here if this is
+  // the case to be consistent across solvers.
+  {
+    ASSIGN_OR_RETURN(const InvalidIndicators invalid_indicators,
+                     ListInvalidIndicators());
+    RETURN_IF_ERROR(invalid_indicators.ToStatus());
   }
 
   RETURN_IF_ERROR(gurobi_->Optimize(grb_cb));

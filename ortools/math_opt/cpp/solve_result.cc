@@ -34,6 +34,7 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/status_macros.h"
 
 namespace operations_research {
@@ -279,8 +280,10 @@ absl::StatusOr<SolveStats> SolveStats::FromProto(
 
 std::ostream& operator<<(std::ostream& ostr, const SolveStats& solve_stats) {
   ostr << "{solve_time: " << solve_stats.solve_time;
-  ostr << ", best_primal_bound: " << solve_stats.best_primal_bound;
-  ostr << ", best_dual_bound: " << solve_stats.best_dual_bound;
+  ostr << ", best_primal_bound: "
+       << RoundTripDoubleFormat(solve_stats.best_primal_bound);
+  ostr << ", best_dual_bound: "
+       << RoundTripDoubleFormat(solve_stats.best_dual_bound);
   ostr << ", problem_status: " << solve_stats.problem_status;
   ostr << ", simplex_iterations: " << solve_stats.simplex_iterations;
   ostr << ", barrier_iterations: " << solve_stats.barrier_iterations;

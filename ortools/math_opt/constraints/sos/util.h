@@ -21,6 +21,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 
 namespace operations_research::math_opt::internal {
 
@@ -50,9 +51,9 @@ std::string SosConstraintToString(const SosConstraint constraint,
   ostr << "{" << absl::StrJoin(expressions, ", ", absl::StreamFormatter())
        << "} is " << sos_type_name;
   if (constraint.has_weights()) {
-    std::vector<double> weights(num_expressions);
+    std::vector<std::string> weights(num_expressions);
     for (int i = 0; i < num_expressions; ++i) {
-      weights[i] = constraint.weight(i);
+      weights[i] = RoundTripDoubleFormat::ToString(constraint.weight(i));
     }
     ostr << " with weights {" << absl::StrJoin(weights, ", ") << "}";
   }

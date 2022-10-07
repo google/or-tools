@@ -19,10 +19,11 @@
 #define OR_TOOLS_MATH_OPT_CONSTRAINTS_QUADRATIC_QUADRATIC_CONSTRAINT_H_
 
 #include <cstdint>
-#include <ostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/check.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
@@ -30,7 +31,6 @@
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
-#include "ortools/math_opt/storage/model_storage_types.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 #include "ortools/math_opt/storage/sparse_matrix.h"
 
@@ -74,6 +74,9 @@ class QuadraticConstraint {
 
   BoundedQuadraticExpression AsBoundedQuadraticExpression() const;
 
+  // Returns a detailed string description of the contents of the constraint
+  // (not its name, use `<<` for that instead).
+  inline std::string ToString() const;
   friend inline bool operator==(const QuadraticConstraint& lhs,
                                 const QuadraticConstraint& rhs);
   friend inline bool operator!=(const QuadraticConstraint& lhs,
@@ -120,7 +123,7 @@ absl::string_view QuadraticConstraint::name() const {
   if (storage_->has_constraint(id_)) {
     return storage_->constraint_data(id_).name;
   }
-  return kDeletedConstraintDefaultName;
+  return kDeletedConstraintDefaultDescription;
 }
 
 bool QuadraticConstraint::is_linear_coefficient_nonzero(
@@ -151,6 +154,15 @@ double QuadraticConstraint::quadratic_coefficient(
 
 std::vector<Variable> QuadraticConstraint::NonzeroVariables() const {
   return AtomicConstraintNonzeroVariables(*storage_, id_);
+}
+
+std::string QuadraticConstraint::ToString() const {
+  if (!storage()->has_constraint(id_)) {
+    return std::string(kDeletedConstraintDefaultDescription);
+  }
+  std::stringstream str;
+  str << AsBoundedQuadraticExpression();
+  return str.str();
 }
 
 bool operator==(const QuadraticConstraint& lhs,

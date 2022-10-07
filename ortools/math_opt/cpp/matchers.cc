@@ -255,13 +255,44 @@ Matcher<IdMap<K, double>> IsNearlySubsetOf(IdMap<K, double> expected,
 ////////////////////////////////////////////////////////////////////////////////
 
 testing::Matcher<LinearExpression> IsIdentical(LinearExpression expected) {
+  return LinearExpressionIsNear(expected, 0.0);
+}
+
+testing::Matcher<LinearExpression> LinearExpressionIsNear(
+    const LinearExpression expected, const double tolerance) {
   CHECK(!std::isnan(expected.offset())) << "Illegal NaN-valued offset";
   return AllOf(
       Property("storage", &LinearExpression::storage, Eq(expected.storage())),
       Property("offset", &LinearExpression::offset,
-               testing::Eq(expected.offset())),
+               testing::DoubleNear(expected.offset(), tolerance)),
       Property("terms", &LinearExpression::terms,
-               IsNear(expected.terms(), /*tolerance=*/0)));
+               IsNear(expected.terms(), tolerance)));
+}
+
+namespace {
+testing::Matcher<BoundedLinearExpression> IsNearForSign(
+    const BoundedLinearExpression& expected, const double tolerance) {
+  return AllOf(Property("upper_bound_minus_offset",
+                        &BoundedLinearExpression::upper_bound_minus_offset,
+                        testing::DoubleNear(expected.upper_bound_minus_offset(),
+                                            tolerance)),
+               Property("lower_bound_minus_offset",
+                        &BoundedLinearExpression::lower_bound_minus_offset,
+                        testing::DoubleNear(expected.lower_bound_minus_offset(),
+                                            tolerance)),
+               Field("expression", &BoundedLinearExpression::expression,
+                     Property("terms", &LinearExpression::terms,
+                              IsNear(expected.expression.terms(), tolerance))));
+}
+}  // namespace
+
+testing::Matcher<BoundedLinearExpression> IsNearlyEquivalent(
+    const BoundedLinearExpression& expected, const double tolerance) {
+  const BoundedLinearExpression expected_negation(
+      -expected.expression, /*lower_bound=*/-expected.upper_bound,
+      /*upper_bound=*/-expected.lower_bound);
+  return AnyOf(IsNearForSign(expected, tolerance),
+               IsNearForSign(expected_negation, tolerance));
 }
 
 testing::Matcher<QuadraticExpression> IsIdentical(

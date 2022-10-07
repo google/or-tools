@@ -167,8 +167,8 @@ message IndicatorConstraintProto {
   //   * VariablesProto.integers[indicator_id] = true,
   //   * VariablesProto.lower_bounds[indicator_id] >= 0,
   //   * VariablesProto.upper_bounds[indicator_id] <= 1.
-  // These conditions are not validated by MathOpt. If not satisfied, the solver
-  // may elect to implicitly add them, or to reject the model.
+  // These conditions are not validated by MathOpt, but if not satisfied will
+  // lead to the solver returning an error upon solving.
   optional int64 indicator_id = 1;
 
   // Must be a valid linear expression with respect to the containing model:
@@ -248,7 +248,6 @@ message ModelProto {
   map<int64, SosConstraintProto> sos2_constraints = 8;
 
   // Indicator constraints in the model, which enforce that, if a binary
-  // "indicator variable" is set to one, then an "implicated constraint" must
-  // hold.
+  // "indicator variable" is set to one, then an "implied constraint" must hold.
   map<int64, IndicatorConstraintProto> indicator_constraints = 9;
 }

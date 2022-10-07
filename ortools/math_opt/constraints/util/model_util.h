@@ -25,9 +25,9 @@
 
 namespace operations_research::math_opt {
 
-// A default name to use for streaming a constraint that has been deleted from
-// its associated model.
-constexpr absl::string_view kDeletedConstraintDefaultName =
+// A default way to describe a constraint that has been deleted from its
+// associated model.
+constexpr absl::string_view kDeletedConstraintDefaultDescription =
     "[constraint deleted from model]";
 
 // Converts data from "raw ID" format to a LinearExpression, in the C++ API,

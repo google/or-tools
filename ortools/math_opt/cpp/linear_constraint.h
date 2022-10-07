@@ -18,16 +18,21 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
 #define OR_TOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <ostream>
+#include <sstream>
 #include <string>
+#include <utility>
 
-#include "ortools/base/logging.h"
+#include "absl/strings/string_view.h"
+#include "ortools/base/check.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/id_map.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/model_storage_types.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -48,12 +53,18 @@ class LinearConstraint {
 
   inline double lower_bound() const;
   inline double upper_bound() const;
-  inline const std::string& name() const;
+  inline absl::string_view name() const;
 
   inline bool is_coefficient_nonzero(Variable variable) const;
 
   // Returns 0.0 if the variable is not used in the constraint.
   inline double coefficient(Variable variable) const;
+
+  inline BoundedLinearExpression AsBoundedLinearExpression() const;
+
+  // Returns a detailed string description of the contents of the constraint
+  // (not its name, use `<<` for that instead).
+  inline std::string ToString() const;
 
   friend inline bool operator==(const LinearConstraint& lhs,
                                 const LinearConstraint& rhs);
@@ -97,8 +108,11 @@ double LinearConstraint::upper_bound() const {
   return storage_->linear_constraint_upper_bound(id_);
 }
 
-const std::string& LinearConstraint::name() const {
-  return storage_->linear_constraint_name(id_);
+absl::string_view LinearConstraint::name() const {
+  if (storage()->has_linear_constraint(id_)) {
+    return storage_->linear_constraint_name(id_);
+  }
+  return kDeletedConstraintDefaultDescription;
 }
 
 bool LinearConstraint::is_coefficient_nonzero(const Variable variable) const {
@@ -112,6 +126,27 @@ double LinearConstraint::coefficient(const Variable variable) const {
   CHECK_EQ(variable.storage(), storage_)
       << internal::kObjectsFromOtherModelStorage;
   return storage_->linear_constraint_coefficient(id_, variable.typed_id());
+}
+
+BoundedLinearExpression LinearConstraint::AsBoundedLinearExpression() const {
+  LinearExpression terms;
+  for (const VariableId var :
+       storage()->variables_in_linear_constraint(typed_id())) {
+    terms += Variable(storage(), var) *
+             storage()->linear_constraint_coefficient(typed_id(), var);
+  }
+  return storage()->linear_constraint_lower_bound(typed_id()) <=
+         std::move(terms) <=
+         storage()->linear_constraint_upper_bound(typed_id());
+}
+
+std::string LinearConstraint::ToString() const {
+  if (!storage()->has_linear_constraint(id_)) {
+    return std::string(kDeletedConstraintDefaultDescription);
+  }
+  std::stringstream str;
+  str << AsBoundedLinearExpression();
+  return str.str();
 }
 
 bool operator==(const LinearConstraint& lhs, const LinearConstraint& rhs) {
@@ -131,7 +166,7 @@ H AbslHashValue(H h, const LinearConstraint& linear_constraint) {
 std::ostream& operator<<(std::ostream& ostr,
                          const LinearConstraint& linear_constraint) {
   // TODO(b/170992529): handle quoting of invalid characters in the name.
-  const std::string& name = linear_constraint.name();
+  const absl::string_view name = linear_constraint.name();
   if (name.empty()) {
     ostr << "__lin_con#" << linear_constraint.id() << "__";
   } else {

@@ -18,12 +18,20 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/model_exporter.h"
 #include "ortools/lp_data/mps_reader.h"
 #include "ortools/math_opt/io/proto_converter.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/util/file_util.h"
 
 namespace operations_research::math_opt {
+
+absl::StatusOr<std::string> ModelProtoToMps(const ModelProto& model) {
+  ASSIGN_OR_RETURN(const MPModelProto mp_model_proto,
+                   MathOptModelToMPModelProto(model));
+  return ExportModelAsMpsFormat(mp_model_proto,
+                                {.show_unused_variables = true});
+}
 
 absl::StatusOr<ModelProto> ReadMpsFile(const absl::string_view filename) {
   glop::MPSReader mps_reader;

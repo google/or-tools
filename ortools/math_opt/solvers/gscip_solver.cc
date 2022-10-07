@@ -49,6 +49,7 @@
 #include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/gscip/gscip_parameters.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
@@ -336,19 +337,39 @@ absl::Status GScipSolver::AddVariables(
   return absl::OkStatus();
 }
 
-absl::Status GScipSolver::UpdateVariables(
+absl::StatusOr<bool> GScipSolver::UpdateVariables(
     const VariableUpdatesProto& variable_updates) {
+  for (const auto [id, is_integer] : MakeView(variable_updates.integers())) {
+    // We intentionally update vartype first to ensure the checks below against
+    // binary variables are against the up-to-date model.
+    SCIP_VAR* const var = variables_.at(id);
+    if (gscip_->VarType(var) == GScipVarType::kBinary) {
+      // We reject bound updates on binary variables as they can lead to
+      // crashes, or unexpected round-trip values if the vartype changes.
+      return false;
+    }
+    RETURN_IF_ERROR(
+        gscip_->SetVarType(var, GScipVarTypeFromIsInteger(is_integer)));
+  }
   for (const auto [id, lb] : MakeView(variable_updates.lower_bounds())) {
-    RETURN_IF_ERROR(gscip_->SetLb(variables_.at(id), lb));
+    SCIP_VAR* const var = variables_.at(id);
+    if (gscip_->VarType(var) == GScipVarType::kBinary) {
+      // We reject bound updates on binary variables as they can lead to
+      // crashes, or unexpected round-trip values if the vartype changes.
+      return false;
+    }
+    RETURN_IF_ERROR(gscip_->SetLb(var, lb));
   }
   for (const auto [id, ub] : MakeView(variable_updates.upper_bounds())) {
-    RETURN_IF_ERROR(gscip_->SetUb(variables_.at(id), ub));
+    SCIP_VAR* const var = variables_.at(id);
+    if (gscip_->VarType(var) == GScipVarType::kBinary) {
+      // We reject bound updates on binary variables as they can lead to
+      // crashes, or unexpected round-trip values if the vartype changes.
+      return false;
+    }
+    RETURN_IF_ERROR(gscip_->SetUb(var, ub));
   }
-  for (const auto [id, is_integer] : MakeView(variable_updates.integers())) {
-    RETURN_IF_ERROR(gscip_->SetVarType(variables_.at(id),
-                                       GScipVarTypeFromIsInteger(is_integer)));
-  }
-  return absl::OkStatus();
+  return true;
 }
 
 // SCIP does not natively support quadratic objectives, so we formulate them
@@ -482,11 +503,12 @@ absl::Status GScipSolver::AddIndicatorConstraints(
         indicator_constraints) {
   for (const auto& [id, constraint] : indicator_constraints) {
     if (!constraint.has_indicator_id()) {
-      gtl::InsertOrDie(&indicator_constraints_, id, nullptr);
+      gtl::InsertOrDie(&indicator_constraints_, id, std::nullopt);
       continue;
     }
+    SCIP_VAR* const indicator_var = variables_.at(constraint.indicator_id());
     GScipIndicatorConstraint data{
-        .indicator_variable = variables_.at(constraint.indicator_id()),
+        .indicator_variable = indicator_var,
         .negate_indicator = false,
     };
     const double lb = constraint.lower_bound();
@@ -494,11 +516,11 @@ absl::Status GScipSolver::AddIndicatorConstraints(
     if (lb > -kInf && ub < kInf) {
       return util::InvalidArgumentErrorBuilder()
              << "gSCIP does not support indicator constraints with ranged "
-                "implicated constraints; bounds are: "
+                "implied constraints; bounds are: "
              << lb << " <= ... <= " << ub;
     }
-    // SCIP only supports implicated constraints of the form ax <= b, so we
-    // must formulate any constraints of the form cx >= d as -cx <= -d.
+    // SCIP only supports implied constraints of the form ax <= b, so we must
+    // formulate any constraints of the form cx >= d as -cx <= -d.
     double scaling;
     if (ub < kInf) {
       data.upper_bound = ub;
@@ -518,7 +540,8 @@ absl::Status GScipSolver::AddIndicatorConstraints(
     }
     ASSIGN_OR_RETURN(SCIP_CONS* const scip_con,
                      gscip_->AddIndicatorConstraint(data, constraint.name()));
-    gtl::InsertOrDie(&indicator_constraints_, id, scip_con);
+    gtl::InsertOrDie(&indicator_constraints_, id,
+                     std::make_pair(scip_con, constraint.indicator_id()));
   }
   return absl::OkStatus();
 }
@@ -1062,6 +1085,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
 
   // SCIP returns "infeasible" when the model contain invalid bounds.
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
+  RETURN_IF_ERROR(ListInvalidIndicators().ToStatus());
 
   ASSIGN_OR_RETURN(GScipResult gscip_result,
                    gscip_->Solve(gscip_parameters,
@@ -1120,6 +1144,24 @@ InvertedBounds GScipSolver::ListInvertedBounds() const {
   return inverted_bounds;
 }
 
+InvalidIndicators GScipSolver::ListInvalidIndicators() const {
+  InvalidIndicators invalid_indicators;
+  for (const auto& [constraint_id, gscip_data] : indicator_constraints_) {
+    if (!gscip_data.has_value()) {
+      continue;
+    }
+    const auto [gscip_constraint, indicator_id] = *gscip_data;
+    SCIP_VAR* const indicator_var = variables_.at(indicator_id);
+    if (gscip_->VarType(indicator_var) == GScipVarType::kContinuous ||
+        gscip_->Lb(indicator_var) < 0.0 || gscip_->Ub(indicator_var) > 1.0) {
+      invalid_indicators.invalid_indicators.push_back(
+          {.variable = indicator_id, .constraint = constraint_id});
+    }
+  }
+  invalid_indicators.Sort();
+  return invalid_indicators;
+}
+
 absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
   if (!gscip_
            ->CanSafeBulkDelete(
@@ -1169,7 +1211,10 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
     RETURN_IF_ERROR(gscip_->SetObjectiveOffset(
         model_update.objective_updates().offset_update()));
   }
-  RETURN_IF_ERROR(UpdateVariables(model_update.variable_updates()));
+  if (const auto response = UpdateVariables(model_update.variable_updates());
+      !response.ok() || !(*response)) {
+    return response;
+  }
   const absl::flat_hash_map<int64_t, double> linear_objective_updates =
       SparseDoubleVectorAsMap(
           model_update.objective_updates().linear_coefficients());
@@ -1257,11 +1302,14 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
   // Indicator constraint updates.
   for (const int64_t constraint_id :
        model_update.indicator_constraint_updates().deleted_constraint_ids()) {
-    SCIP_CONS* const gscip_constraint =
+    const auto gscip_data =
         indicator_constraints_.extract(constraint_id).mapped();
-    if (gscip_constraint != nullptr) {
-      RETURN_IF_ERROR(gscip_->DeleteConstraint(gscip_constraint));
+    if (!gscip_data.has_value()) {
+      continue;
     }
+    SCIP_CONS* const gscip_constraint = gscip_data->first;
+    CHECK_NE(gscip_constraint, nullptr);
+    RETURN_IF_ERROR(gscip_->DeleteConstraint(gscip_constraint));
   }
   RETURN_IF_ERROR(AddIndicatorConstraints(
       model_update.indicator_constraint_updates().new_constraints()));

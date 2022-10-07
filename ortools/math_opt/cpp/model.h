@@ -344,9 +344,6 @@ class Model {
 
   std::vector<Variable> RowNonzeros(LinearConstraint constraint) const;
 
-  BoundedLinearExpression AsBoundedLinearExpression(
-      LinearConstraint constraint) const;
-
   // Returns all the existing (created and not deleted) linear constraints in
   // the model in an arbitrary order.
   std::vector<LinearConstraint> LinearConstraints() const;
@@ -536,7 +533,7 @@ class Model {
   //////////////////////////////////////////////////////////////////////////////
 
   // Adds an indicator constraint to the model: If `indicator_variable == 1`,
-  // then `implicated_constraint` must hold. Otherwise it need not be satisfied.
+  // then `implied_constraint` must hold. Otherwise it need not be satisfied.
   //
   // The `indicator_variable` is expected to be a binary variable in the model.
   // If this is not the case, the solver may elect to either implicitly add the
@@ -550,13 +547,13 @@ class Model {
   //   model.AddIndicatorConstraint(y, x >= 2);
   IndicatorConstraint AddIndicatorConstraint(
       Variable indicator_variable,
-      const BoundedLinearExpression& implicated_constraint,
+      const BoundedLinearExpression& implied_constraint,
       absl::string_view name = {});
 
   // Removes an indicator constraint from the model.
   //
   // It is an error to use any reference to this indicator constraint after this
-  // operation. Runs in O(#terms in implicated constraint).
+  // operation. Runs in O(#terms in implied constraint).
   inline void DeleteIndicatorConstraint(IndicatorConstraint constraint);
 
   // The number of indicator constraints in the model.

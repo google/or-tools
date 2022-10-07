@@ -117,21 +117,6 @@ std::vector<Variable> Model::RowNonzeros(
   return result;
 }
 
-BoundedLinearExpression Model::AsBoundedLinearExpression(
-    const LinearConstraint constraint) const {
-  CheckModel(constraint.storage());
-  LinearExpression terms;
-  for (const VariableId var :
-       storage()->variables_in_linear_constraint(constraint.typed_id())) {
-    terms +=
-        Variable(storage(), var) *
-        storage()->linear_constraint_coefficient(constraint.typed_id(), var);
-  }
-  return storage()->linear_constraint_lower_bound(constraint.typed_id()) <=
-         std::move(terms) <=
-         storage()->linear_constraint_upper_bound(constraint.typed_id());
-}
-
 std::vector<LinearConstraint> Model::LinearConstraints() const {
   std::vector<LinearConstraint> result;
   result.reserve(storage()->num_linear_constraints());
@@ -246,8 +231,8 @@ std::ostream& operator<<(std::ostream& ostr, const Model& model) {
 
   ostr << " Linear constraints:\n";
   for (const LinearConstraint constraint : model.SortedLinearConstraints()) {
-    ostr << "  " << constraint << ": "
-         << model.AsBoundedLinearExpression(constraint) << "\n";
+    ostr << "  " << constraint << ": " << constraint.AsBoundedLinearExpression()
+         << "\n";
   }
 
   if (model.num_quadratic_constraints() > 0) {
@@ -295,13 +280,13 @@ std::ostream& operator<<(std::ostream& ostr, const Model& model) {
     if (v.lower_bound() == -kInf) {
       ostr << "(-∞";
     } else {
-      ostr << "[" << v.lower_bound();
+      ostr << "[" << RoundTripDoubleFormat(v.lower_bound());
     }
     ostr << ", ";
     if (v.upper_bound() == kInf) {
       ostr << "+∞)";
     } else {
-      ostr << v.upper_bound() << "]";
+      ostr << RoundTripDoubleFormat(v.upper_bound()) << "]";
     }
     ostr << "\n";
   }
@@ -385,17 +370,17 @@ Sos2Constraint Model::AddSos2Constraint(
 
 IndicatorConstraint Model::AddIndicatorConstraint(
     const Variable indicator_variable,
-    const BoundedLinearExpression& implicated_constraint,
+    const BoundedLinearExpression& implied_constraint,
     const absl::string_view name) {
   CheckModel(indicator_variable.storage());
-  CheckOptionalModel(implicated_constraint.expression.storage());
+  CheckOptionalModel(implied_constraint.expression.storage());
   // We ignore the offset while unpacking here; instead, we account for it below
   // by using the `{lower,upper}_bound_minus_offset` member functions.
-  auto [expr, _] = FromLinearExpression(implicated_constraint.expression);
+  auto [expr, _] = FromLinearExpression(implied_constraint.expression);
   const IndicatorConstraintId id =
       storage()->AddAtomicConstraint(IndicatorConstraintData{
-          .lower_bound = implicated_constraint.lower_bound_minus_offset(),
-          .upper_bound = implicated_constraint.upper_bound_minus_offset(),
+          .lower_bound = implied_constraint.lower_bound_minus_offset(),
+          .upper_bound = implied_constraint.upper_bound_minus_offset(),
           .linear_terms = std::move(expr),
           .indicator = indicator_variable.typed_id(),
           .name = std::string(name),

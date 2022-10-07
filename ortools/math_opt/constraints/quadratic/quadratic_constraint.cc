@@ -18,7 +18,6 @@
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
-#include "ortools/math_opt/storage/model_storage_types.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 #include "ortools/math_opt/storage/sparse_matrix.h"
 

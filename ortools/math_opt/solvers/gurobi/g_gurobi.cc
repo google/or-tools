@@ -600,6 +600,35 @@ absl::Status Gurobi::SetCharAttrList(const char* const name,
                                      const_cast<char*>(new_values.data())));
 }
 
+absl::StatusOr<double> Gurobi::GetDoubleAttrElement(const char* const name,
+                                                    const int element) const {
+  double value;
+  RETURN_IF_ERROR(
+      ToStatus(GRBgetdblattrelement(gurobi_model_, name, element, &value)));
+  return value;
+}
+
+absl::Status Gurobi::SetDoubleAttrElement(const char* const name, int element,
+                                          double new_value) {
+  return ToStatus(
+      GRBsetdblattrelement(gurobi_model_, name, element, new_value));
+}
+
+absl::StatusOr<char> Gurobi::GetCharAttrElement(const char* const name,
+                                                const int element) const {
+  char value;
+  RETURN_IF_ERROR(
+      ToStatus(GRBgetcharattrelement(gurobi_model_, name, element, &value)));
+  return value;
+}
+
+absl::Status Gurobi::SetCharAttrElement(const char* const name,
+                                        const int element,
+                                        const char new_value) {
+  return ToStatus(
+      GRBsetcharattrelement(gurobi_model_, name, element, new_value));
+}
+
 absl::Status Gurobi::SetParam(const char* const name,
                               const std::string& value) {
   return ToStatus(GRBsetparam(model_env_, name, value.c_str()));

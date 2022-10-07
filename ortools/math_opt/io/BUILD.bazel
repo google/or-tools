@@ -45,6 +45,7 @@ cc_library(
     deps = [
         ":proto_converter",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_exporter",
         "//ortools/lp_data:mps_reader",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/util:file_util",

@@ -116,6 +116,7 @@ cc_library(
         "//ortools/base:intops",
         "//ortools/base:map_util",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/util:fp_roundtrip_conv",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
@@ -129,7 +130,9 @@ cc_library(
         ":variable_and_expressions",
         "//ortools/base",
         "//ortools/base:intops",
+        "//ortools/math_opt/constraints/util:model_util",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
     ],
 )
 
@@ -177,6 +180,7 @@ cc_library(
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/port:proto_utils",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:status_macros",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/status:statusor",
@@ -402,4 +406,5 @@ cc_library(
 cc_library(
     name = "formatters",
     hdrs = ["formatters.h"],
+    deps = ["//ortools/util:fp_roundtrip_conv"],
 )

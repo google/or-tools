@@ -18,6 +18,8 @@
 #include <iostream>
 #include <ostream>
 
+#include "ortools/util/fp_roundtrip_conv.h"
+
 namespace operations_research::math_opt {
 
 // Streaming formatter for a coefficient of a linear/quadratic term, along with
@@ -41,7 +43,7 @@ inline std::ostream& operator<<(std::ostream& out,
     } else if (coeff == -1.0) {
       out << "-";
     } else {
-      out << coeff << "*";
+      out << RoundTripDoubleFormat(coeff) << "*";
     }
   } else {
     if (coeff == 1.0) {
@@ -51,9 +53,9 @@ inline std::ostream& operator<<(std::ostream& out,
     } else if (std::isnan(coeff)) {
       out << " + nan*";
     } else if (coeff >= 0) {
-      out << " + " << coeff << "*";
+      out << " + " << RoundTripDoubleFormat(coeff) << "*";
     } else {
-      out << " - " << -coeff << "*";
+      out << " - " << RoundTripDoubleFormat(-coeff) << "*";
     }
   }
   return out;
@@ -71,15 +73,15 @@ inline std::ostream& operator<<(std::ostream& out,
                                 const ConstantFormatter formatter) {
   const double constant = formatter.constant;
   if (formatter.is_first) {
-    out << constant;
+    out << RoundTripDoubleFormat(constant);
   } else if (constant == 0) {
     // Do nothing.
   } else if (std::isnan(constant)) {
     out << " + nan";
   } else if (constant > 0) {
-    out << " + " << constant;
+    out << " + " << RoundTripDoubleFormat(constant);
   } else {
-    out << " - " << -constant;
+    out << " - " << RoundTripDoubleFormat(-constant);
   }
   return out;
 }

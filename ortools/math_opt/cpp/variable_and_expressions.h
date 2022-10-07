@@ -103,6 +103,7 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/id_map.h"     // IWYU pragma: export
@@ -137,7 +138,7 @@ class Variable {
   inline double lower_bound() const;
   inline double upper_bound() const;
   inline bool is_integer() const;
-  inline const std::string& name() const;
+  inline absl::string_view name() const;
 
   template <typename H>
   friend H AbslHashValue(H h, const Variable& variable);
@@ -1261,8 +1262,11 @@ double Variable::upper_bound() const {
 
 bool Variable::is_integer() const { return storage_->is_variable_integer(id_); }
 
-const std::string& Variable::name() const {
-  return storage_->variable_name(id_);
+absl::string_view Variable::name() const {
+  if (storage()->has_variable(id_)) {
+    return storage_->variable_name(id_);
+  }
+  return "[variable deleted from model]";
 }
 
 template <typename H>
@@ -1272,7 +1276,7 @@ H AbslHashValue(H h, const Variable& variable) {
 
 std::ostream& operator<<(std::ostream& ostr, const Variable& variable) {
   // TODO(b/170992529): handle quoting of invalid characters in the name.
-  const std::string& name = variable.name();
+  const absl::string_view name = variable.name();
   if (name.empty()) {
     ostr << "__var#" << variable.id() << "__";
   } else {

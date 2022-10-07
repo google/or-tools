@@ -109,7 +109,7 @@ absl::string_view Sos2Constraint::name() const {
   if (storage_->has_constraint(id_)) {
     return storage_->constraint_data(id_).name();
   }
-  return kDeletedConstraintDefaultName;
+  return kDeletedConstraintDefaultDescription;
 }
 
 std::vector<Variable> Sos2Constraint::NonzeroVariables() const {
@@ -144,7 +144,7 @@ std::string Sos2Constraint::ToString() const {
   if (storage_->has_constraint(id_)) {
     return internal::SosConstraintToString(*this, "SOS2");
   }
-  return std::string(kDeletedConstraintDefaultName);
+  return std::string(kDeletedConstraintDefaultDescription);
 }
 
 Sos2Constraint::Sos2Constraint(const ModelStorage* const storage,

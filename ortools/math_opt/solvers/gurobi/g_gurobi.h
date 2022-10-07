@@ -502,6 +502,15 @@ class Gurobi {
   absl::Status SetCharAttrList(const char* name, absl::Span<const int> ind,
                                absl::Span<const char> new_values);
 
+  absl::StatusOr<double> GetDoubleAttrElement(const char* name,
+                                              int element) const;
+  absl::Status SetDoubleAttrElement(const char* name, int element,
+                                    double new_value);
+
+  absl::StatusOr<char> GetCharAttrElement(const char* name, int element) const;
+  absl::Status SetCharAttrElement(const char* name, int element,
+                                  char new_value);
+
   //////////////////////////////////////////////////////////////////////////////
   // Parameters
   //////////////////////////////////////////////////////////////////////////////

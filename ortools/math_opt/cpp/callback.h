@@ -186,6 +186,9 @@ struct CallbackRegistration {
 //
 // The information available depends on the current event.
 struct CallbackData {
+  // Users will typically not need this function other than for testing.
+  CallbackData() = default;
+
   // Users will typically not need this function.
   // Will CHECK fail if proto is not valid.
   CallbackData(const ModelStorage* storage, const CallbackDataProto& proto);

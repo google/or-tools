@@ -22,6 +22,12 @@
 
 namespace operations_research::math_opt {
 
+// Returns the model in MPS format.
+//
+// The RemoveNames() function can be used on the model to remove names if they
+// should not be exported.
+absl::StatusOr<std::string> ModelProtoToMps(const ModelProto& model);
+
 // Reads an MPS file and converts it to a ModelProto (like MpsToModelProto
 // above, but takes a file name instead of the file contents and reads the file.
 //

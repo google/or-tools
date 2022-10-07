@@ -30,6 +30,7 @@
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -126,6 +127,15 @@ class GurobiSolver : public SolverInterface {
     GurobiSosConstraintIndex constraint_index = kUnspecifiedConstraint;
     std::vector<GurobiVariableIndex> slack_variables;
     std::vector<GurobiLinearConstraintIndex> slack_constraints;
+  };
+
+  struct IndicatorConstraintData {
+    // The Gurobi-numbered general constraint ID (Gurobi ids are shared among
+    // all general constraint types).
+    GurobiGeneralConstraintIndex constraint_index;
+    // The MathOpt-numbered indicator variable ID. Used for reporting invalid
+    // indicator variables.
+    int64_t indicator_variable_id;
   };
 
   struct SolutionClaims {
@@ -276,6 +286,10 @@ class GurobiSolver : public SolverInterface {
   // Returns the ids of variables and linear constraints with inverted bounds.
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
 
+  // Returns the ids of indicator constraint/variables that are invalid because
+  // the indicator is not a binary variable.
+  absl::StatusOr<InvalidIndicators> ListInvalidIndicators() const;
+
   const std::unique_ptr<Gurobi> gurobi_;
 
   // Note that we use linked_hash_map for the indices of the gurobi_model_
@@ -303,12 +317,12 @@ class GurobiSolver : public SolverInterface {
   // SOS constraint (Gurobi ids are shared between SOS1 and SOS2).
   absl::flat_hash_map<Sos2ConstraintId, SosConstraintData>
       sos2_constraints_map_;
-  // Internal correspondence from indicator constraint proto IDs to
-  // Gurobi-numbered general constraints (Gurobi ids are shared among all
-  // general constraint types). Indicator constraints with unset indicator IDs
-  // will not be added to the Gurobi model; their corresponding value in this
-  // map will be kUnspecifiedConstraint.
-  absl::flat_hash_map<IndicatorConstraintId, GurobiGeneralConstraintIndex>
+  // Internal correspondence from indicator constraint proto IDs to indicator
+  // constraint data. If unset, the values indicate that the indicator variable
+  // is unset; since Gurobi does not support this, we simply do not add the
+  // constraint to the model.
+  absl::flat_hash_map<IndicatorConstraintId,
+                      std::optional<IndicatorConstraintData>>
       indicator_constraints_map_;
 
   // Fields to track the number of Gurobi variables and constraints. These

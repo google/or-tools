@@ -187,3 +187,14 @@ cc_library(
         "@com_google_absl//absl/types:span",
     ],
 )
+cc_library(
+    name = "invalid_indicators",
+    srcs = ["invalid_indicators.cc"],
+    hdrs = ["invalid_indicators.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)

@@ -157,7 +157,7 @@ testing::Matcher<IdMap<K, double>> IsNearlySubsetOf(
     const double tolerance = kMatcherDefaultTolerance);
 
 ////////////////////////////////////////////////////////////////////////////////
-// Matchers for LinearExpression and QuadraticExpression
+// Matchers for various Variable expressions (e.g. LinearExpression)
 ////////////////////////////////////////////////////////////////////////////////
 
 // Checks that the expressions are structurally identical (i.e., internal maps
@@ -165,6 +165,20 @@ testing::Matcher<IdMap<K, double>> IsNearlySubsetOf(
 // will CHECK-fail if expected contains any NaN values, and any NaN values in
 // the expression compared against will result in the matcher failing.
 testing::Matcher<LinearExpression> IsIdentical(LinearExpression expected);
+
+testing::Matcher<LinearExpression> LinearExpressionIsNear(
+    LinearExpression expected, double tolerance = kMatcherDefaultTolerance);
+
+// Checks that the bounded linear expression is equivalent to expected, where
+// equivalence is maintained by:
+//  * adding alpha to the lower bound, the linear expression and upper bound
+//  * multiplying the lower bound, linear expression, by -1 (and flipping the
+//    inequalities).
+// Note that, as implemented, we do not allow for arbitrary multiplicative
+// rescalings (this makes additive tolerance complicated).
+testing::Matcher<BoundedLinearExpression> IsNearlyEquivalent(
+    const BoundedLinearExpression& expected,
+    double tolerance = kMatcherDefaultTolerance);
 
 // Checks that the expressions are structurally identical (i.e., internal maps
 // have the same keys and storage, coefficients are exactly equal). This factory

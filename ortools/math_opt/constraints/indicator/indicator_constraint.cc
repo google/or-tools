@@ -25,7 +25,7 @@
 
 namespace operations_research::math_opt {
 
-BoundedLinearExpression IndicatorConstraint::ImplicatedConstraint() const {
+BoundedLinearExpression IndicatorConstraint::ImpliedConstraint() const {
   const IndicatorConstraintData& data = storage()->constraint_data(id_);
   LinearExpression expr = ToLinearExpression(*storage_, data.linear_terms, 0.0);
   return data.lower_bound <= std::move(expr) <= data.upper_bound;
@@ -33,7 +33,7 @@ BoundedLinearExpression IndicatorConstraint::ImplicatedConstraint() const {
 
 std::string IndicatorConstraint::ToString() const {
   if (!storage()->has_constraint(id_)) {
-    return std::string(kDeletedConstraintDefaultName);
+    return std::string(kDeletedConstraintDefaultDescription);
   }
   const IndicatorConstraintData& data = storage()->constraint_data(id_);
   std::stringstream str;
@@ -42,7 +42,7 @@ std::string IndicatorConstraint::ToString() const {
   } else {
     str << "[unset indicator variable]";
   }
-  str << " ⇒ " << ImplicatedConstraint();
+  str << " ⇒ " << ImpliedConstraint();
   return str.str();
 }
 

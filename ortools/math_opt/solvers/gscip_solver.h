@@ -31,6 +31,7 @@
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -125,8 +126,10 @@ class GScipSolver : public SolverInterface {
                             const absl::flat_hash_map<int64_t, double>&
                                 linear_objective_coefficients);
 
-  // Update existing variables' parameters.
-  absl::Status UpdateVariables(const VariableUpdatesProto& variable_updates);
+  // Update existing variables' parameters. Returns false if the update cannot
+  // be performed (namely, if attempting to update bounds on a binary variable).
+  absl::StatusOr<bool> UpdateVariables(
+      const VariableUpdatesProto& variable_updates);
 
   absl::Status AddQuadraticObjectiveTerms(
       const SparseDoubleMatrixProto& new_qp_terms, bool maximize);
@@ -182,14 +185,20 @@ class GScipSolver : public SolverInterface {
   // Returns the ids of variables and linear constraints with inverted bounds.
   InvertedBounds ListInvertedBounds() const;
 
+  // Returns the indicator constraints with non-binary indicator variables.
+  InvalidIndicators ListInvalidIndicators() const;
+
   const std::unique_ptr<GScip> gscip_;
   InterruptEventHandler interrupt_event_handler_;
   absl::flat_hash_map<int64_t, SCIP_VAR*> variables_;
   bool has_quadratic_objective_ = false;
   absl::flat_hash_map<int64_t, SCIP_CONS*> linear_constraints_;
   absl::flat_hash_map<int64_t, SCIP_CONS*> quadratic_constraints_;
-  // NOTE: Values may be null, occurs when indicator variables are unset.
-  absl::flat_hash_map<int64_t, SCIP_CONS*> indicator_constraints_;
+  // Values, if unset, correspond to indicator constraints with unset indicator
+  // variables. If set, tracks the constraint pointer and indicator variable ID.
+  // The constraint pointer must be non-null.
+  absl::flat_hash_map<int64_t, std::optional<std::pair<SCIP_CONS*, int64_t>>>
+      indicator_constraints_;
   absl::flat_hash_map<int64_t, std::pair<SCIP_CONS*, AuxiliaryStructureHandler>>
       sos1_constraints_;
   absl::flat_hash_map<int64_t, std::pair<SCIP_CONS*, AuxiliaryStructureHandler>>

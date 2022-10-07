@@ -51,7 +51,7 @@ class IndicatorConstraint {
   // Returns nullopt if the indicator variable is unset (this is a valid state,
   // in which the constraint is functionally ignored).
   inline std::optional<Variable> indicator_variable() const;
-  BoundedLinearExpression ImplicatedConstraint() const;
+  BoundedLinearExpression ImpliedConstraint() const;
 
   // Returns all variables that appear in the indicator constraint with a
   // nonzero coefficient. Order is not defined.
@@ -99,7 +99,7 @@ absl::string_view IndicatorConstraint::name() const {
   if (storage_->has_constraint(id_)) {
     return storage_->constraint_data(id_).name;
   }
-  return kDeletedConstraintDefaultName;
+  return kDeletedConstraintDefaultDescription;
 }
 
 std::optional<Variable> IndicatorConstraint::indicator_variable() const {

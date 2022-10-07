@@ -51,6 +51,7 @@ cc_library(
     hdrs = ["util.h"],
     deps = [
         "//ortools/math_opt/cpp:variable_and_expressions",
+        "//ortools/util:fp_roundtrip_conv",
         "@com_google_absl//absl/strings",
     ],
 )

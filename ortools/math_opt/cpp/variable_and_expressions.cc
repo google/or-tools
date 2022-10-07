@@ -23,7 +23,8 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/math_opt/cpp/formatters.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/formatters.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -97,7 +98,6 @@ double LinearExpression::EvaluateWithDefaultZero(
 std::ostream& operator<<(std::ostream& ostr,
                          const LinearExpression& expression) {
   // TODO(b/169415597): improve linear expression format:
-  //  - use bijective formatting in base10 of the double factors.
   //  - make sure to quote the variable name so that we support:
   //    * variable names contains +, -, ...
   //    * variable names resembling anonymous variable names.
@@ -117,18 +117,17 @@ std::ostream& operator<<(std::ostream& ostr,
 
 std::ostream& operator<<(std::ostream& ostr,
                          const BoundedLinearExpression& bounded_expression) {
-  // TODO(b/170991498): use bijective conversion from double to base-10 string
-  // to make sure we can reproduce bugs.
   const double lb = bounded_expression.lower_bound;
   const double ub = bounded_expression.upper_bound;
   if (lb == ub) {
-    ostr << bounded_expression.expression << " = " << lb;
+    ostr << bounded_expression.expression << " = " << RoundTripDoubleFormat(lb);
   } else if (lb == -kInf) {
-    ostr << bounded_expression.expression << " ≤ " << ub;
+    ostr << bounded_expression.expression << " ≤ " << RoundTripDoubleFormat(ub);
   } else if (ub == kInf) {
-    ostr << bounded_expression.expression << " ≥ " << lb;
+    ostr << bounded_expression.expression << " ≥ " << RoundTripDoubleFormat(lb);
   } else {
-    ostr << lb << " ≤ " << bounded_expression.expression << " ≤ " << ub;
+    ostr << RoundTripDoubleFormat(lb) << " ≤ " << bounded_expression.expression
+         << " ≤ " << RoundTripDoubleFormat(ub);
   }
   return ostr;
 }
@@ -204,18 +203,17 @@ std::ostream& operator<<(std::ostream& ostr, const QuadraticExpression& expr) {
 
 std::ostream& operator<<(std::ostream& ostr,
                          const BoundedQuadraticExpression& bounded_expression) {
-  // TODO(b/170991498): use bijective conversion from double to base-10 string
-  // to make sure we can reproduce bugs.
   const double lb = bounded_expression.lower_bound;
   const double ub = bounded_expression.upper_bound;
   if (lb == ub) {
-    ostr << bounded_expression.expression << " = " << lb;
+    ostr << bounded_expression.expression << " = " << RoundTripDoubleFormat(lb);
   } else if (lb == -kInf) {
-    ostr << bounded_expression.expression << " ≤ " << ub;
+    ostr << bounded_expression.expression << " ≤ " << RoundTripDoubleFormat(ub);
   } else if (ub == kInf) {
-    ostr << bounded_expression.expression << " ≥ " << lb;
+    ostr << bounded_expression.expression << " ≥ " << RoundTripDoubleFormat(lb);
   } else {
-    ostr << lb << " ≤ " << bounded_expression.expression << " ≤ " << ub;
+    ostr << RoundTripDoubleFormat(lb) << " ≤ " << bounded_expression.expression
+         << " ≤ " << RoundTripDoubleFormat(ub);
   }
   return ostr;
 }
