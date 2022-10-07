@@ -32,8 +32,8 @@
 [windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml/badge.svg?branch=main
 [windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml
 
-Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x
-[C++, Python, Java, .Net]: [![Status][docker_svg]][docker_link]
+Dockers \[Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu\]x
+\[C++, Python, Java, .Net\]: [![Status][docker_svg]][docker_link]
 
 [docker_svg]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml/badge.svg?branch=main
 [docker_link]: https://github.com/google/or-tools/actions/workflows/cmake_docker.yml
@@ -112,11 +112,11 @@ below).
     *   COIN-OR Clp (`BUILD_Clp`),
     *   COIN-OR Cgl (`BUILD_Cgl`),
     *   COIN-OR Cbc (`BUILD_Cbc`),<br>
-    note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
-    by using `-DUSE_COINOR=OFF` (`ON` by default).
+        note: You can disable the support of COIN-OR solvers
+        (i.e. Cbc and Clp solver) by using `-DUSE_COINOR=OFF` (`ON` by default).
 *   HIGHS (`BUILD_HIGHS`),<br>
-    note: You can disable the support of HiGHS solver
-    by using `-DUSE_HIGHS=OFF` (`ON` by default).
+    note: You must enable the support of HiGHS solver
+    by using `-DUSE_HIGHS=ON` (`OFF` by default).
 *   SCIP (`BUILD_SCIP`),<br>
     note: You can disable the support of SCIP solver
     by using `-DUSE_SCIP=OFF` (`ON` by default).<br>
