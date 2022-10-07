@@ -24,12 +24,10 @@ from absl import flags
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_integer('problem', 2, 'Problem id to solve.')
-flags.DEFINE_bool('break_symmetries', True,
-                     'Break symmetries between equivalent orders.')
-flags.DEFINE_string(
+_PROBLEM = flags.DEFINE_integer('problem', 2, 'Problem id to solve.')
+_BREAK_SYMMETRIES = flags.DEFINE_boolean(
+    'break_symmetries', True, 'Break symmetries between equivalent orders.')
+_SOLVER = flags.DEFINE_string(
     'solver', 'mip_column', 'Method used to solve: sat, sat_table, sat_column, '
     'mip_column.')
 
@@ -737,15 +735,16 @@ def steel_mill_slab_with_mip_column_generation(problem):
         print('No solution')
 
 
-def main(_=None):
-    if FLAGS.solver == 'sat':
-        steel_mill_slab(FLAGS.problem, FLAGS.break_symmetries)
-    elif FLAGS.solver == 'sat_table':
-        steel_mill_slab_with_valid_slabs(FLAGS.problem, FLAGS.break_symmetries)
-    elif FLAGS.solver == 'sat_column':
-        steel_mill_slab_with_column_generation(FLAGS.problem)
+def main(_):
+    if _SOLVER.value == 'sat':
+        steel_mill_slab(_PROBLEM.value, _BREAK_SYMMETRIES.value)
+    elif _SOLVER.value == 'sat_table':
+        steel_mill_slab_with_valid_slabs(_PROBLEM.value,
+                                         _BREAK_SYMMETRIES.value)
+    elif _SOLVER.value == 'sat_column':
+        steel_mill_slab_with_column_generation(_PROBLEM.value)
     else:  # 'mip_column'
-        steel_mill_slab_with_mip_column_generation(FLAGS.problem)
+        steel_mill_slab_with_mip_column_generation(_PROBLEM.value)
 
 
 if __name__ == '__main__':

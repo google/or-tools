@@ -35,15 +35,12 @@ from absl import flags
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string('input', '', 'Input file to parse and solve.')
-flags.DEFINE_string('params', '', 'Sat solver parameters.')
-flags.DEFINE_string('output_proto', '',
-                    'Output file to write the cp_model proto to.')
-flags.DEFINE_string('model', 'scheduling',
-                    'Model used: boolean, scheduling, greedy')
-
+_INPUT = flags.DEFINE_string('input', '', 'Input file to parse and solve.')
+_PARAMS = flags.DEFINE_string('params', '', 'Sat solver parameters.')
+_OUTPUT_PROTO = flags.DEFINE_string(
+    'output_proto', '', 'Output file to write the cp_model proto to.')
+_MODEL = flags.DEFINE_string('model', 'boolean',
+                             'Model used: boolean, scheduling, greedy')
 # pytype: disable=wrong-arg-types
 
 

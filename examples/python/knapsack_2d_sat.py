@@ -28,14 +28,13 @@ from google.protobuf import text_format
 
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string('output_proto', '',
-                    'Output file to write the cp_model proto to.')
-flags.DEFINE_string('params', 'num_search_workers:16,log_search_progress:true',
-                    'Sat solver parameters.')
-flags.DEFINE_string('model', 'rotation',
-                    '\'duplicate\' or \'rotation\' or \'optional\'')
+_OUTPUT_PROTO = flags.DEFINE_string(
+    'output_proto', '', 'Output file to write the cp_model proto to.')
+_PARAMS = flags.DEFINE_string('params',
+                              'num_search_workers:16,log_search_progress:true',
+                              'Sat solver parameters.')
+_MODEL = flags.DEFINE_string('model', 'rotation',
+                             '\'duplicate\' or \'rotation\' or \'optional\'')
 
 
 def build_data():
@@ -130,15 +129,15 @@ def solve_with_duplicate_items(data, max_height, max_width):
     model.Maximize(cp_model.LinearExpr.WeightedSum(is_used, item_values))
 
     # Output proto to file.
-    if FLAGS.output_proto:
-        print('Writing proto to %s' % FLAGS.output_proto)
-        with open(FLAGS.output_proto, 'w') as text_file:
+    if _OUTPUT_PROTO.value:
+        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
 
     status = solver.Solve(model)
 
@@ -220,15 +219,15 @@ def solve_with_duplicate_optional_items(data, max_height, max_width):
     model.Maximize(cp_model.LinearExpr.WeightedSum(is_used, item_values))
 
     # Output proto to file.
-    if FLAGS.output_proto:
-        print('Writing proto to %s' % FLAGS.output_proto)
-        with open(FLAGS.output_proto, 'w') as text_file:
+    if _OUTPUT_PROTO.value:
+        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
 
     status = solver.Solve(model)
 
@@ -333,15 +332,15 @@ def solve_with_rotations(data, max_height, max_width):
     model.Maximize(cp_model.LinearExpr.WeightedSum(is_used, item_values))
 
     # Output proto to file.
-    if FLAGS.output_proto:
-        print('Writing proto to %s' % FLAGS.output_proto)
-        with open(FLAGS.output_proto, 'w') as text_file:
+    if _OUTPUT_PROTO.value:
+        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
 
     status = solver.Solve(model)
 
@@ -360,19 +359,15 @@ def solve_with_rotations(data, max_height, max_width):
         print(data)
 
 
-def solve_knapsack(model):
+def main(_):
     """Solve the problem with all models."""
     data, max_height, max_width = build_data()
-    if model == 'duplicate':
+    if _MODEL.value == 'duplicate':
         solve_with_duplicate_items(data, max_height, max_width)
-    elif model == 'optional':
+    elif _MODEL.value == 'optional':
         solve_with_duplicate_optional_items(data, max_height, max_width)
     else:
         solve_with_rotations(data, max_height, max_width)
-
-
-def main(_=None):
-    solve_knapsack(FLAGS.model)
 
 
 if __name__ == '__main__':

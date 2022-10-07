@@ -31,13 +31,13 @@ from absl import flags
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string('output_proto', '',
-                    'Output file to write the cp_model proto to.')
-flags.DEFINE_string('params', 'num_search_workers:16,log_search_progress:true',
-                    'Sat solver parameters.')
-flags.DEFINE_integer('instance', 1, 'Instance to select (1, 2, 3).', 1, 3)
+_OUTPUT_PROTO = flags.DEFINE_string(
+    'output_proto', '', 'Output file to write the cp_model proto to.')
+_PARAMS = flags.DEFINE_string('params',
+                              'num_search_workers:8,log_search_progress:true',
+                              'Sat solver parameters.')
+_INSTANCE = flags.DEFINE_integer('instance', 1, 'Instance to select (1, 2, 3).',
+                                 1, 3)
 
 SAMPLE_SHIFTS_SMALL = [
     #
@@ -1688,11 +1688,11 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
       The objective value of the model.
   """
     shifts = None
-    if FLAGS.instance == 1:
+    if _INSTANCE.value == 1:
         shifts = SAMPLE_SHIFTS_SMALL
-    elif FLAGS.instance == 2:
+    elif _INSTANCE.value == 2:
         shifts = SAMPLE_SHIFTS_MEDIUM
-    elif FLAGS.instance == 3:
+    elif _INSTANCE.value == 3:
         shifts = SAMPLE_SHIFTS_LARGE
 
     num_shifts = len(shifts)
@@ -1933,15 +1933,15 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
         model.Minimize(
             cp_model.LinearExpr.WeightedSum(delay_literals, delay_weights))
 
-    if not minimize_drivers and FLAGS.output_proto:
-        print('Writing proto to %s' % FLAGS.output_proto)
-        with open(FLAGS.output_proto, 'w') as text_file:
+    if not minimize_drivers and _OUTPUT_PROTO.value:
+        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
 
     status = solver.Solve(model)
 
@@ -1978,7 +1978,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
     return int(solver.ObjectiveValue())
 
 
-def solve_bus_driver_scheduling():
+def main(_):
     """Optimize the bus driver allocation in two passes."""
     print('----------- first pass: minimize the number of drivers')
     num_drivers = bus_driver_scheduling(True, -1)
@@ -1987,10 +1987,6 @@ def solve_bus_driver_scheduling():
     else:
         print('----------- second pass: minimize the sum of working times')
         bus_driver_scheduling(False, num_drivers)
-
-
-def main(_=None):
-    solve_bus_driver_scheduling()
 
 
 if __name__ == '__main__':

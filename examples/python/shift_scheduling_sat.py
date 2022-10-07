@@ -19,12 +19,10 @@ from absl import flags
 from ortools.sat.python import cp_model
 from google.protobuf import text_format
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string('output_proto', '',
-                    'Output file to write the cp_model proto to.')
-flags.DEFINE_string('params', 'max_time_in_seconds:10.0',
-                    'Sat solver parameters.')
+_OUTPUT_PROTO = flags.DEFINE_string(
+    'output_proto', '', 'Output file to write the cp_model proto to.')
+_PARAMS = flags.DEFINE_string('params', 'max_time_in_seconds:10.0',
+                              'Sat solver parameters.')
 
 
 def negated_bounded_span(works, start, length):
@@ -421,7 +419,7 @@ def solve_shift_scheduling(params, output_proto):
 
 
 def main(_):
-    solve_shift_scheduling(FLAGS.params, FLAGS.output_proto)
+    solve_shift_scheduling(_PARAMS.value, _OUTPUT_PROTO.value)
 
 
 if __name__ == '__main__':

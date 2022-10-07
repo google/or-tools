@@ -28,7 +28,7 @@ from ortools.sat.python import visualization
 from ortools.sat.python import cp_model
 
 
-def main(_=None):
+def main(_):
     """Solves the gate scheduling problem."""
     model = cp_model.CpModel()
 

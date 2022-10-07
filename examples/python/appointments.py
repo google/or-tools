@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # [START program]
 """Appointment selection.
 
@@ -29,11 +30,12 @@ from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 # [END import]
 
-FLAGS = flags.FLAGS
-flags.DEFINE_integer('load_min', 480, 'Minimum load in minutes.')
-flags.DEFINE_integer('load_max', 540, 'Maximum load in minutes.')
-flags.DEFINE_integer('commute_time', 30, 'Commute time in minutes.')
-flags.DEFINE_integer('num_workers', 98, 'Maximum number of workers.')
+_LOAD_MIN = flags.DEFINE_integer('load_min', 480, 'Minimum load in minutes.')
+_LOAD_MAX = flags.DEFINE_integer('load_max', 540, 'Maximum load in minutes.')
+_COMMUTE_TIME = flags.DEFINE_integer('commute_time', 30,
+                                     'Commute time in minutes.')
+_NUM_WORKERS = flags.DEFINE_integer('num_workers', 98,
+                                    'Maximum number of workers.')
 
 
 class AllSolutionCollector(cp_model.CpSolverSolutionCallback):
@@ -118,7 +120,7 @@ def AggregateItemCollectionsOptimally(item_collections, max_num_collections,
   """
     solver = pywraplp.Solver.CreateSolver('SCIP')
     if not solver:
-      return []
+        return []
     n = len(ideal_item_ratios)
     num_distinct_collections = len(item_collections)
     max_num_items_per_collection = 0
@@ -191,13 +193,13 @@ def GetOptimalSchedule(demand):
     The same output type as EnumerateAllKnapsacksWithRepetition.
   """
     combinations = EnumerateAllKnapsacksWithRepetition(
-        [a[2] + FLAGS.commute_time for a in demand], FLAGS.load_min,
-        FLAGS.load_max)
+        [a[2] + _COMMUTE_TIME.value for a in demand], _LOAD_MIN.value,
+        _LOAD_MAX.value)
     print(('Found %d possible day schedules ' % len(combinations) +
            '(i.e. combination of appointments filling up one worker\'s day)'))
 
     selection = AggregateItemCollectionsOptimally(
-        combinations, FLAGS.num_workers, [a[0] / 100.0 for a in demand])
+        combinations, _NUM_WORKERS.value, [a[0] / 100.0 for a in demand])
     output = []
     for i in range(len(selection)):
         if selection[i] != 0:
@@ -208,16 +210,16 @@ def GetOptimalSchedule(demand):
     return output
 
 
-def solve_appointments(_):
+def main(_):
     demand = [(45.0, 'Type1', 90), (30.0, 'Type2', 120), (25.0, 'Type3', 180)]
     print('*** input problem ***')
     print('Appointments: ')
     for a in demand:
         print('   %.2f%% of %s : %d min' % (a[0], a[1], a[2]))
-    print('Commute time = %d' % FLAGS.commute_time)
+    print('Commute time = %d' % _COMMUTE_TIME.value)
     print('Acceptable duration of a work day = [%d..%d]' %
-          (FLAGS.load_min, FLAGS.load_max))
-    print('%d workers' % FLAGS.num_workers)
+          (_LOAD_MIN.value, _LOAD_MAX.value))
+    print('%d workers' % _NUM_WORKERS.value)
     selection = GetOptimalSchedule(demand)
     print()
     installed = 0
@@ -239,15 +241,17 @@ def solve_appointments(_):
     print()
     print('%d installations planned' % installed)
     for a in demand:
-      name = a[1]
-      per_type = installed_per_type[name]
-      if installed != 0:
-        print(f'   {per_type} ({per_type * 100.0 / installed}%) installations of type {name} planned')
-      else:
-        print(f'   {per_type} installations of type {name} planned')
+        name = a[1]
+        per_type = installed_per_type[name]
+        if installed != 0:
+            print(
+                f'   {per_type} ({per_type * 100.0 / installed}%) installations of type {name} planned'
+            )
+        else:
+            print(f'   {per_type} installations of type {name} planned')
     # [END print_solution]
 
 
 if __name__ == '__main__':
-    app.run(solve_appointments)
+    app.run(main)
 # [END program]
