@@ -336,7 +336,7 @@ include(dotnet)
 
 # Since samples mix all languages we must parse them once we have included all
 # <language>.cmake files
-foreach(SAMPLES IN ITEMS algorithms graph glop constraint_solver linear_solver sat)
+foreach(SAMPLES IN ITEMS algorithms graph glop constraint_solver linear_solver pdlp sat)
   add_subdirectory(ortools/${SAMPLES}/samples)
 endforeach()
 
