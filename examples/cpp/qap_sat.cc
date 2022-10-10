@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <limits>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/flags/flag.h"
@@ -30,40 +30,31 @@ ABSL_FLAG(std::string, params, "", "Specific params to use with CP-SAT.");
 
 namespace operations_research {
 namespace sat {
-namespace {
 
-// place_vars[f][l] contains the binary variable that decides whether to put
-// factory f in location l.
-std::vector<std::vector<BoolVar>> CreatePlaceVars(int n,
-                                                  CpModelBuilder& cp_model) {
-  const BoolVar false_literal = cp_model.FalseVar();
+void SolveQap() {
+  LOG(INFO) << "Reading QAP problem from '" << absl::GetFlag(FLAGS_input)
+            << "'.";
+  QapProblem qap = ReadQapProblemOrDie(absl::GetFlag(FLAGS_input));
+  const int n = qap.weights.size();
+
+  CpModelBuilder cp_model;
+
+  // Create placement variables.
+  // place_vars[f][l] contains the binary variable that decides whether to put
+  // factory f in location l.
   std::vector<std::vector<BoolVar>> place_vars;
   place_vars.resize(n);
   for (int f = 0; f < n; ++f) {
-    place_vars[f].assign(n, false_literal);
-  }
-
-  for (int f = 0; f < n; ++f) {
+    place_vars[f].resize(n);
     for (int l = 0; l < n; ++l) {
       place_vars[f][l] =
           cp_model.NewBoolVar().WithName(absl::StrCat("place_", f, "_", l));
     }
   }
-  return place_vars;
-}
-
-void CreatePlacementConstraints(
-    const std::vector<std::vector<BoolVar>>& place_vars,
-    CpModelBuilder& cp_model) {
-  const int n = place_vars.size();
 
   // Place each factory exactly once.
   for (int f = 0; f < n; ++f) {
-    std::vector<BoolVar> tmp;
-    for (int l = 0; l < n; ++l) {
-      tmp.push_back(place_vars[f][l]);
-    }
-    cp_model.AddExactlyOne(tmp);
+    cp_model.AddExactlyOne(place_vars[f]);
   }
 
   // Occupy each location exactly once.
@@ -74,13 +65,9 @@ void CreatePlacementConstraints(
     }
     cp_model.AddExactlyOne(tmp);
   }
-}
 
-void CreateObjective(const QapProblem& qap,
-                     const std::vector<std::vector<BoolVar>>& place_vars,
-                     CpModelBuilder& cp_model) {
-  const int n = place_vars.size();
-
+  // Create objective.
+  absl::flat_hash_map<std::tuple<int, int, int, int>, BoolVar> cache;
   LinearExpr objective;
   for (int f1 = 0; f1 < n; ++f1) {
     for (int f2 = 0; f2 < n; ++f2) {
@@ -91,9 +78,19 @@ void CreateObjective(const QapProblem& qap,
           if (l1 == l2) continue;
           if (qap.distances[l1][l2] == 0) continue;
 
-          BoolVar product = cp_model.NewBoolVar();
-          cp_model.AddMultiplicationEquality(product, place_vars[f1][l1],
-                                             place_vars[f2][l2]);
+          const std::tuple<int, int, int, int> key =
+              f1 < f2 ? std::make_tuple(f1, f2, l1, l2)
+                      : std::make_tuple(f2, f1, l2, l1);
+          BoolVar product;
+          const auto it = cache.find(key);
+          if (it == cache.end()) {
+            product = cp_model.NewBoolVar();
+            cp_model.AddMultiplicationEquality(product, place_vars[f1][l1],
+                                               place_vars[f2][l2]);
+            cache[key] = product;
+          } else {
+            product = it->second;
+          }
 
           objective += product * qap.weights[f1][f2] * qap.distances[l1][l2];
         }
@@ -108,20 +105,6 @@ void CreateObjective(const QapProblem& qap,
   }
 
   cp_model.Minimize(objective);
-}
-
-}  // namespace
-
-void SolveQap() {
-  LOG(INFO) << "Reading QAP problem from '" << absl::GetFlag(FLAGS_input)
-            << "'.";
-  QapProblem qap = ReadQapProblemOrDie(absl::GetFlag(FLAGS_input));
-  const int n = qap.weights.size();
-
-  CpModelBuilder cp_model;
-  std::vector<std::vector<BoolVar>> place_vars = CreatePlaceVars(n, cp_model);
-  CreatePlacementConstraints(place_vars, cp_model);
-  CreateObjective(qap, place_vars, cp_model);
 
   // Setup parameters.
   SatParameters parameters;

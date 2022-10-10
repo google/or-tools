@@ -434,7 +434,6 @@ cc_binary(
     ],
 )
 
-
 cc_binary(
     name = "qap_sat",
     srcs = ["qap_sat.cc"],

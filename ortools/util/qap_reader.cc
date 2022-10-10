@@ -30,7 +30,8 @@ QapProblem ReadQapProblemOrDie(const std::string& filepath) {
 
   int n = 0;
   int k = 0;
-  for (const std::string& line : FileLines(filepath)) {
+  for (const std::string& line :
+       FileLines(filepath, FileLineIterator::REMOVE_LINEFEED)) {
     const std::vector<std::string> tokens =
         absl::StrSplit(line, ' ', absl::SkipEmpty());
     if (tokens.empty()) continue;
@@ -49,7 +50,7 @@ QapProblem ReadQapProblemOrDie(const std::string& filepath) {
         const int i = (k - 1) / n;
         const int j = (k - 1) % n;
         int64_t v = 0.0;
-        CHECK(absl::SimpleAtoi(token, &v));
+        CHECK(absl::SimpleAtoi(token, &v)) << "'" << token << "'";
         qap_problem.weights[i][j] = v;
         ++k;
       }
