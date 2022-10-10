@@ -434,6 +434,20 @@ cc_binary(
     ],
 )
 
+
+cc_binary(
+    name = "qap_sat",
+    srcs = ["qap_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:qap_reader",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_binary(
     name = "random_tsp",
     srcs = ["random_tsp.cc"],
