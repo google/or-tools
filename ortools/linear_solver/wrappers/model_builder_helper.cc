@@ -326,15 +326,9 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
     }
 #endif  // defined(USE_SCIP)
 #if defined(USE_HIGHS)
-    case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING: {
-      const auto temp = HighsSolveProto(request, true);
-      if (temp.ok()) {
-        response_ = std::move(temp.value());
-      }
-      break;
-    }
+    case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::HIGHS_LINEAR_PROGRAMMING: {
-      const auto temp = HighsSolveProto(request, false);
+      const auto temp = HighsSolveProto(request);
       if (temp.ok()) {
         response_ = std::move(temp.value());
       }

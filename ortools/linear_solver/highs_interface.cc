@@ -134,14 +134,13 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   MPModelProto model_proto;
   solver_->ExportModelToProto(&model_proto);
   MPModelRequest request;
-  // *request.mutable_model() = std::move(model_proto);
-  // if (!google::protobuf::TextFormat::PrintToString(
-  //         parameters_, request.mutable_solver_specific_parameters())) {
-  //   LOG(QFATAL) << "Error converting parameters to text format: "
-  //               << parameters_.DebugString();
-  // }
-  absl::StatusOr<MPSolutionResponse> response =
-      HighsSolveProto(request, /*relax_integer_variables=*/!solve_as_a_mip_);
+  *request.mutable_model() = std::move(model_proto);
+  request.set_solver_type(solve_as_a_mip_
+                              ? MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING
+                              : MPModelRequest::HIGHS_LINEAR_PROGRAMMING);
+
+  // Set parameters.
+  absl::StatusOr<MPSolutionResponse> response = HighsSolveProto(request);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with Highs: " << response.status();
@@ -172,8 +171,7 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
 std::optional<MPSolutionResponse> HighsInterface::DirectlySolveProto(
     const MPModelRequest& request, std::atomic<bool>* interrupt) {
   if (interrupt) return std::nullopt;
-  absl::StatusOr<MPSolutionResponse> response =
-      HighsSolveProto(request, /*relax_integer_variables=*/false);
+  absl::StatusOr<MPSolutionResponse> response = HighsSolveProto(request);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with Highs: " << response.status();
@@ -305,10 +303,9 @@ void HighsInterface::NonIncrementalChange() {
 }
 
 // Register PDLP in the global linear solver factory.
-MPSolverInterface* BuildHighsInterface(MPSolver* const solver,
-                                       bool solve_as_a_mip) {
-  return new HighsInterface(solver, solve_as_a_mip);
+MPSolverInterface* BuildHighsInterface(bool mip, MPSolver* const solver) {
+  return new HighsInterface(solver, mip);
 }
 
 }  // namespace operations_research
-#endif  // #if defined(USE_HIGHS)
+#endif  //  #if defined(USE_HIGHS)

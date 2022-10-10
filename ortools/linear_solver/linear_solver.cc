@@ -374,7 +374,7 @@ extern MPSolverInterface* BuildCBCInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
 #endif
 #if defined(USE_HIGHS)
-extern MPSolverInterface* BuildHIGHSInterface(bool mip, MPSolver* const solver);
+extern MPSolverInterface* BuildHighsInterface(bool mip, MPSolver* const solver);
 #endif
 extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
@@ -405,6 +405,14 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
       return BuildPdlpInterface(solver);
     case MPSolver::SAT_INTEGER_PROGRAMMING:
       return BuildSatInterface(solver);
+#if defined(USE_CLP) || defined(USE_CBC)
+    case MPSolver::CLP_LINEAR_PROGRAMMING:
+      return BuildCLPInterface(solver);
+#endif
+#if defined(USE_CBC)
+    case MPSolver::CBC_MIXED_INTEGER_PROGRAMMING:
+      return BuildCBCInterface(solver);
+#endif
 #if defined(USE_GLPK)
     case MPSolver::GLPK_LINEAR_PROGRAMMING:
       return BuildGLPKInterface(false, solver);
@@ -413,17 +421,9 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
 #endif
 #if defined(USE_HIGHS)
     case MPSolver::HIGHS_LINEAR_PROGRAMMING:
-      return BuildHIGHSInterface(false, solver);
+      return BuildHighsInterface(false, solver);
     case MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING:
-      return BuildHIGHSInterface(true, solver);
-#endif
-#if defined(USE_CLP) || defined(USE_CBC)
-    case MPSolver::CLP_LINEAR_PROGRAMMING:
-      return BuildCLPInterface(solver);
-#endif
-#if defined(USE_CBC)
-    case MPSolver::CBC_MIXED_INTEGER_PROGRAMMING:
-      return BuildCBCInterface(solver);
+      return BuildHighsInterface(true, solver);
 #endif
 #if defined(USE_SCIP)
     case MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING:
@@ -492,6 +492,12 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     return true;
   }
 #endif
+#ifdef USE_HIGHS
+  if (problem_type == HIGHS_MIXED_INTEGER_PROGRAMMING ||
+      problem_type == HIGHS_LINEAR_PROGRAMMING) {
+    return true;
+  }
+#endif
   if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
   if (problem_type == SAT_INTEGER_PROGRAMMING) return true;
   if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
@@ -515,12 +521,6 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #ifdef USE_CPLEX
   if (problem_type == CPLEX_LINEAR_PROGRAMMING ||
       problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) {
-    return true;
-  }
-#endif
-#ifdef USE_HIGHS
-  if (problem_type == HIGHS_MIXED_INTEGER_PROGRAMMING ||
-      problem_type == HIGHS_LINEAR_PROGRAMMING) {
     return true;
   }
 #endif
