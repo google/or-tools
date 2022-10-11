@@ -131,7 +131,11 @@ static const char kUsageStr[] =
 
 int main(int argc, char** argv) {
   InitGoogle(kUsageStr, &argc, &argv, /*remove_flags=*/true);
-  CHECK(!absl::GetFlag(FLAGS_input).empty()) << "--input is required";
+
+  if (!absl::GetFlag(FLAGS_input).empty())) {
+    LOG(INFO) << "--input is required";
+    return EXIT_SUCCESS;
+  }
 
   operations_research::sat::SolveQap();
   return EXIT_SUCCESS;
