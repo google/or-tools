@@ -195,8 +195,10 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
     int rev_size;          // The size of the non-fixed terms.
     IntegerValue rev_rhs;  // The current rhs, updated on fixed terms.
   };
+  #if !defined(_MSC_VER)
   static_assert(sizeof(ConstraintInfo) == 24,
                 "ERROR_ConstraintInfo_is_not_well_compacted");
+  #endif
 
   absl::Span<IntegerValue> GetCoeffs(const ConstraintInfo& info);
   absl::Span<IntegerVariable> GetVariables(const ConstraintInfo& info);
