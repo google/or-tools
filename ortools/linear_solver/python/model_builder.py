@@ -926,7 +926,7 @@ class ModelSolver(object):
 
     def enable_output(self, enabled):
         """Controls the solver backend logs."""
-        self.__solve_helper.EnableOutput(enabled)
+        self.__solve_helper.enable_output(enabled)
 
     def solve(self, model):
         """Solves a problem and passes each solution to the callback if not null."""
