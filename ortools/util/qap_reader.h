@@ -34,6 +34,9 @@ struct QapProblem {
   // `distances[i][j]` is the distance from location i to location j.
   std::vector<std::vector<int64_t>> distances;
 
+  // Best known solution (-1 if not defined).
+  int64_t best_known_solution = -1;
+
   // For testing.
   bool operator==(const QapProblem& q) const {
     return weights == q.weights && distances == q.distances;

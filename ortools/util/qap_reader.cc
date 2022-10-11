@@ -19,6 +19,7 @@
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "ortools/base/check.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research {
@@ -36,13 +37,17 @@ QapProblem ReadQapProblemOrDie(const std::string& filepath) {
         absl::StrSplit(line, ' ', absl::SkipEmpty());
     if (tokens.empty()) continue;
     if (k == 0) {
-      CHECK_EQ(tokens.size(), 1);
+      CHECK_GE(tokens.size(), 1);
+      CHECK_LE(tokens.size(), 2);
       CHECK(absl::SimpleAtoi(tokens[0], &n));
       qap_problem.weights.resize(n);
       qap_problem.distances.resize(n);
       for (int j = 0; j < n; ++j) {
         qap_problem.weights[j].assign(n, std::numeric_limits<int64_t>::max());
         qap_problem.distances[j].assign(n, std::numeric_limits<int64_t>::max());
+      }
+      if (tokens.size() == 2) {
+        CHECK(absl::SimpleAtoi(tokens[1], &qap_problem.best_known_solution));
       }
       ++k;
     } else if (k <= n * n) {
