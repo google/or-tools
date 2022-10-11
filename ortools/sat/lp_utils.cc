@@ -110,6 +110,10 @@ std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
   std::vector<double> var_scaling(num_variables, 1.0);
   for (int i = 0; i < num_variables; ++i) {
     if (mp_model->variable(i).is_integer()) continue;
+    if (max_bound == std::numeric_limits<double>::infinity()) {
+      var_scaling[i] = scaling;
+      continue;
+    }
     const double lb = mp_model->variable(i).lower_bound();
     const double ub = mp_model->variable(i).upper_bound();
     const double magnitude = std::max(std::abs(lb), std::abs(ub));
@@ -1098,10 +1102,6 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
           VLOG(1) << "Cannot convert constraint: " << ct.ShortDebugString();
           return false;
         }
-        if (ct.enforcement_literal_size() > 1) {
-          VLOG(1) << "Cannot convert constraint: " << ct.ShortDebugString();
-          return false;
-        }
 
         // Compute min/max activity.
         int64_t min_activity = 0;
@@ -1147,31 +1147,39 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
           MPConstraintProto* high_out_ct = output->add_constraint();
           high_out_ct->set_lower_bound(
               -std::numeric_limits<double>::infinity());
-          if (RefIsPositive(ct.enforcement_literal(0))) {
-            high_out_ct->add_var_index(ct.enforcement_literal(0));
-            high_out_ct->add_coefficient(max_activity - ct.linear().domain(1));
-            high_out_ct->set_upper_bound(max_activity);
-          } else {
-            // 1 - enf.
-            high_out_ct->add_var_index(PositiveRef(ct.enforcement_literal(0)));
-            high_out_ct->add_coefficient(ct.linear().domain(1) - max_activity);
-            high_out_ct->set_upper_bound(ct.linear().domain(1));
+          int64_t ub = ct.linear().domain(1);
+          const int64_t coeff = max_activity - ct.linear().domain(1);
+          for (const int lit : ct.enforcement_literal()) {
+            if (RefIsPositive(ct.enforcement_literal(0))) {
+              // term <= ub + coeff * (1 - enf);
+              high_out_ct->add_var_index(lit);
+              high_out_ct->add_coefficient(coeff);
+              ub += coeff;
+            } else {
+              high_out_ct->add_var_index(PositiveRef(lit));
+              high_out_ct->add_coefficient(-coeff);
+            }
           }
+          high_out_ct->set_upper_bound(ub);
           out_cts.push_back(high_out_ct);
         }
         if (ct.linear().domain(0) > min_activity) {
           MPConstraintProto* low_out_ct = output->add_constraint();
           low_out_ct->set_upper_bound(std::numeric_limits<double>::infinity());
-          if (RefIsPositive(ct.enforcement_literal(0))) {
-            low_out_ct->add_var_index(ct.enforcement_literal(0));
-            low_out_ct->add_coefficient(min_activity - ct.linear().domain(0));
-            low_out_ct->set_lower_bound(min_activity);
-          } else {
-            // 1 - enf.
-            low_out_ct->add_var_index(PositiveRef(ct.enforcement_literal(0)));
-            low_out_ct->add_coefficient(ct.linear().domain(0) - min_activity);
-            low_out_ct->set_lower_bound(ct.linear().domain(0));
+          int64_t lb = ct.linear().domain(0);
+          int64_t coeff = min_activity - ct.linear().domain(0);
+          for (const int lit : ct.enforcement_literal()) {
+            if (RefIsPositive(lit)) {
+              // term >= lb + coeff * (1 - enf)
+              low_out_ct->add_var_index(lit);
+              low_out_ct->add_coefficient(coeff);
+              lb += coeff;
+            } else {
+              low_out_ct->add_var_index(PositiveRef(lit));
+              low_out_ct->add_coefficient(-coeff);
+            }
           }
+          low_out_ct->set_lower_bound(lb);
           out_cts.push_back(low_out_ct);
         }
         for (MPConstraintProto* out_ct : out_cts) {

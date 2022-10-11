@@ -132,12 +132,6 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
                                       Model* model,
                                       LinearRelaxation* relaxation);
 
-void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
-                             LinearRelaxation* relaxation);
-
-void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
-                            LinearRelaxation* relaxation);
-
 // Adds linearization of no overlap constraints.
 // It adds an energetic equation linking the duration of all potential tasks to
 // the actual span of the no overlap constraint.
@@ -162,14 +156,19 @@ void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
 void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation);
 
+// Routing relaxation and cut generators.
+
+void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
+                             LinearRelaxation* relaxation);
+
+void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
+                            LinearRelaxation* relaxation);
+
 void AddCircuitCutGenerator(const ConstraintProto& ct, Model* m,
                             LinearRelaxation* relaxation);
 
 void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation);
-
-void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
-                                LinearRelaxation* relaxation);
 
 // Scheduling relaxations and cut generators.
 
@@ -192,6 +191,9 @@ void AddCumulativeCutGenerator(const AffineExpression& capacity,
 void AddNoOverlapCutGenerator(SchedulingConstraintHelper* helper,
                               const std::optional<AffineExpression>& makespan,
                               Model* m, LinearRelaxation* relaxation);
+
+void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
+                                LinearRelaxation* relaxation);
 
 // Adds linearization of different types of constraints.
 void TryToLinearizeConstraint(const CpModelProto& model_proto,

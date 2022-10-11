@@ -644,29 +644,33 @@ namespace {
 
 // This is used to detect if two linear constraint are equivalent if the literal
 // ref is mapped to another value.
-ConstraintProto CopyLinearWithSpecialBoolean(const ConstraintProto& ct,
-                                             int ref) {
+//
+// Important: we assume output is only used by this function.
+void CopyLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
+                                  ConstraintProto* output) {
   DCHECK_EQ(ct.constraint_case(), ConstraintProto::kLinear);
-
-  ConstraintProto copy;
 
   // Deal with enforcement.
   bool in_enforcement = false;
+  output->clear_enforcement_literal();
   for (const int literal : ct.enforcement_literal()) {
     if (literal == NegatedRef(ref)) {
       in_enforcement = true;
       continue;
     }
-    copy.add_enforcement_literal(literal);
+    output->add_enforcement_literal(literal);
   }
   if (in_enforcement) {
     // We add a sentinel at the end
-    copy.add_enforcement_literal(std::numeric_limits<int32_t>::max());
+    output->add_enforcement_literal(std::numeric_limits<int32_t>::max());
   }
 
   // Deal with linear part.
   int64_t coeff = 0;
   int64_t offset = 0;
+  auto* new_lin = output->mutable_linear();
+  new_lin->clear_vars();
+  new_lin->clear_coeffs();
   for (int i = 0; i < ct.linear().vars().size(); ++i) {
     const int v = ct.linear().vars(i);
     const int64_t c = ct.linear().coeffs(i);
@@ -677,19 +681,17 @@ ConstraintProto CopyLinearWithSpecialBoolean(const ConstraintProto& ct,
       offset += c;
       coeff -= c;
     } else {
-      copy.mutable_linear()->add_vars(v);
-      copy.mutable_linear()->add_coeffs(c);
+      new_lin->add_vars(v);
+      new_lin->add_coeffs(c);
     }
   }
   if (coeff != 0) {
-    copy.mutable_linear()->add_vars(std::numeric_limits<int32_t>::max());
-    copy.mutable_linear()->add_coeffs(coeff);
+    new_lin->add_vars(std::numeric_limits<int32_t>::max());
+    new_lin->add_coeffs(coeff);
   }
   FillDomainInProto(
-      ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-offset)),
-      copy.mutable_linear());
+      ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-offset)), new_lin);
   CHECK(in_enforcement || coeff != 0);
-  return copy;
 }
 
 }  // namespace
@@ -770,6 +772,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   // a few situation.
   //
   // TODO(user): Cover all the cases.
+  int64_t work_done = 0;
+  const int64_t work_limit = static_cast<int64_t>(1e9);
   std::vector<bool> processed(num_vars, false);
   for (IntegerVariable var(0); var < num_locks_.size(); ++var) {
     const int ref = VarDomination::IntegerVariableToRef(var);
@@ -877,10 +881,17 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       // near-duplicate of another.
       //
       // TODO(user): We can generalize to non-linear constraint.
+      //
+      // TODO(user): Because this can be in num_var ^ 2 in some bad cases where
+      // each variable is only blocked by a long constraint, we impose a work
+      // limit. Improve?
       if (ct.constraint_case() == ConstraintProto::kLinear &&
-          context->CanBeUsedAsLiteral(ref)) {
-        copy = CopyLinearWithSpecialBoolean(ct, ref);
-        s = copy.SerializeAsString();
+          context->CanBeUsedAsLiteral(ref) && work_done < work_limit) {
+        // TODO(user): This is probably slower than hashing directly the
+        // constraint ourselve.
+        work_done += ct.linear().vars().size();
+        CopyLinearWithSpecialBoolean(ct, ref, &copy);
+        copy.SerializeToString(&s);
         const uint64_t hash = absl::Hash<std::string>()(s);
         const auto [it, inserted] =
             equiv_modified_constraints.insert({hash, {ct_index, ref}});
@@ -890,7 +901,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           CHECK_NE(other_c_with_same_hash, ct_index);
           const auto& other_ct =
               context->working_model->constraints(other_c_with_same_hash);
-          copy = CopyLinearWithSpecialBoolean(other_ct, other_ref);
+          CopyLinearWithSpecialBoolean(other_ct, other_ref, &copy);
           if (s == copy.SerializeAsString()) {
             // We have a true equality. The two ref can be made equivalent.
             if (!processed[PositiveRef(other_ref)]) {

@@ -2724,6 +2724,10 @@ bool RhsCanBeFixedToMax(int64_t coeff, const Domain& var_domain,
 // TODO(user): merge code with the fully included case.
 // TODO(user): Similarly amo and bool_or intersection or amo and enforcement
 // literals can be presolved.
+//
+// TODO(user): To compute upper bound or lower bound on the activity, we can
+// transform the equation to only positive coeff, and then only amo with
+// matching literal (we can take a subset) are relevant.
 void CpModelPresolver::DetectAndProcessAtMostOneInLinear(int ct_index,
                                                          ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return;
@@ -2868,11 +2872,20 @@ void CpModelPresolver::DetectAndProcessAtMostOneInLinear(int ct_index,
 
     intersection_domain = intersection_domain.AdditionWith(
         Domain(base_value + min_delta, base_value + max_delta));
-    if (reachable.AdditionWith(intersection_domain).IsIncludedIn(rhs)) {
+    const Domain activity = reachable.AdditionWith(intersection_domain);
+    if (activity.IsIncludedIn(rhs)) {
       context_->UpdateRuleStats(
           absl::StrCat("linear + amo: trivial linear constraint. level ",
                        num_passes + 1, "."));
       ct->Clear();
+      context_->UpdateConstraintVariableUsage(ct_index);
+      return;
+    }
+    if (activity.IntersectionWith(rhs).IsEmpty()) {
+      context_->UpdateRuleStats(
+          absl::StrCat("linear + amo: infeasible linear constraint. level ",
+                       num_passes + 1, "."));
+      (void)MarkConstraintAsFalse(ct);
       context_->UpdateConstraintVariableUsage(ct_index);
       return;
     }
@@ -2943,9 +2956,22 @@ void CpModelPresolver::DetectAndProcessAtMostOneInLinear(int ct_index,
     }
   }
 
-  // Note(user): If we linearize the constraint back, we will have worse
+  // TODO(user): If we linearize the constraint back, we will have worse
   // coefficients except if we take into account the at most one again in order
-  // to use tighter bounds on the linear expression.
+  // to use tighter bounds on the linear expression. Two options here.
+  // Either we factor out the code and recompute the info during linearization
+  // (easier) or we store it in the proto (harder to enforce consistency across
+  // the board). In any case, the refactorization needed for option 1 is good to
+  // do anyway, and we should be able to reach a more efficient algo in common
+  // case where n at_most_one are disjoint and cover many of the variables here
+  // for instance.
+  //
+  // TODO(user): Can we go one step further, and in the presence of the
+  // implication graph (eventually simplified), can we compute max bound on a
+  // weighted sum of literals? This is like compute fast bound for weighted
+  // 2-sat, or more classically maximum independent set. We can restrict the
+  // problem to the sub-part touching this constraint. Maybe some relaxed DP or
+  // MDBD approach can be fast. Or something like we do here.
   if (!new_enforcement.empty()) {
     context_->UpdateRuleStats("linear + amo: extracted enforcement literal.");
     temp_set_.clear();
@@ -6654,7 +6680,8 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
 bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
                                            absl::flat_hash_set<int>* tmp_set,
                                            bool* remove_subset,
-                                           bool* remove_superset) {
+                                           bool* remove_superset,
+                                           bool* stop_processing_superset) {
   ConstraintProto* subset_ct =
       context_->working_model->mutable_constraints(subset_c);
   ConstraintProto* superset_ct =
@@ -6766,11 +6793,18 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
     }
 
     reachable = reachable.AdditionWith(Domain(min_sum, max_sum));
-    if (reachable.IsIncludedIn(ReadDomainFromProto(superset_ct->linear()))) {
+    const Domain superset_rhs = ReadDomainFromProto(superset_ct->linear());
+    if (reachable.IsIncludedIn(superset_rhs)) {
       // The constraint is trivial !
       context_->UpdateRuleStats("setppc: removed trivial linear constraint");
       *remove_superset = true;
       return true;
+    }
+    if (reachable.IntersectionWith(superset_rhs).IsEmpty()) {
+      // TODO(user): constraint might become bool_or.
+      context_->UpdateRuleStats("setppc: removed infeasible linear constraint");
+      *stop_processing_superset = true;
+      return MarkConstraintAsFalse(superset_ct);
     }
 
     // We reuse the normal linear constraint code to propagate domains of
@@ -6919,12 +6953,13 @@ void CpModelPresolver::ProcessSetPPC() {
     ++num_inclusions;
     bool remove_subset = false;
     bool remove_superset = false;
+    bool stop_processing_superset = false;
     const int subset_c = relevant_constraints[subset];
     const int superset_c = relevant_constraints[superset];
     detector.IncreaseWorkDone(storage[subset].size());
     detector.IncreaseWorkDone(storage[superset].size());
     if (!ProcessSetPPCSubset(subset_c, superset_c, &tmp_set, &remove_subset,
-                             &remove_superset)) {
+                             &remove_superset, &stop_processing_superset)) {
       detector.Stop();
       return;
     }
@@ -6935,6 +6970,10 @@ void CpModelPresolver::ProcessSetPPC() {
     }
     if (remove_superset) {
       context_->working_model->mutable_constraints(superset_c)->Clear();
+      context_->UpdateConstraintVariableUsage(superset_c);
+      detector.StopProcessingCurrentSuperset();
+    }
+    if (stop_processing_superset) {
       context_->UpdateConstraintVariableUsage(superset_c);
       detector.StopProcessingCurrentSuperset();
     }

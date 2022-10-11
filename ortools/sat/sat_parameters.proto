@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 225
+// NEXT TAG: 226
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -1211,6 +1211,11 @@ message SatParameters {
   // By default, we don't do any variable scaling and rely on the MIP model to
   // specify continuous variable domain with the wanted precision.
   optional double mip_var_scaling = 125 [default = 1.0];
+
+  // If this is false, then mip_var_scaling is only applied to variables with
+  // "small" domain. If it is true, we scale all floating point variable
+  // independenlty of their domain.
+  optional bool mip_scale_large_domain = 225 [default = false];
 
   // If true, some continuous variable might be automatically scaled. For now,
   // this is only the case where we detect that a variable is actually an

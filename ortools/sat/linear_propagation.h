@@ -16,6 +16,7 @@
 
 #include <deque>
 #include <functional>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -51,6 +52,11 @@ class CustomFifoQueue {
   // Reorder the given element to match their given order. They must all be in
   // the queue.
   void Reorder(absl::Span<const int> order);
+  void ReorderDense(absl::Span<const int> order);
+
+  // Sorts the given elements by their current position from the top.
+  // Elements should all be in the queue.
+  void SortByPos(absl::Span<int> elements);
 
  private:
   // The queue is stored in [left_, right_) with eventual wrap around % size.
@@ -63,14 +69,25 @@ class CustomFifoQueue {
   int right_ = 0;
 
   std::vector<int> tmp_positions_;
+  std::vector<int> tmp_order_;
 };
 
+// An enforced constraint can be in one of these 4 states.
+// Note that we rely on the integer encoding to take 2 bits for optimization.
+enum EnforcementStatus {
+  // One enforcement literal is false.
+  IS_FALSE = 0,
+  // More than two literals are unassigned.
+  CANNOT_PROPAGATE = 1,
+  // All enforcement literals are true but one.
+  CAN_PROPAGATE = 2,
+  // All enforcement literals are true.
+  IS_ENFORCED = 3,
+};
+
+std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e);
+
 // This is meant as an helper to deal with enforcement for any constraint.
-//
-// TODO(user): Right now if a constraint is false, but more than one literal are
-// unassigned, we don't remember this fact and propagate an enforcement literal
-// to false as soon as possible. The constraint will only be woken up when all
-// enforcement literal are true or one of its var bounds changes.
 class EnforcementPropagator : SatPropagator {
  public:
   explicit EnforcementPropagator(Model* model);
@@ -79,37 +96,37 @@ class EnforcementPropagator : SatPropagator {
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
 
-  // Adds a new constraint to the class and returns the constraint id.
+  // Adds a new constraint to the class and register a callback that will
+  // be called on status change. Note that we also call the callback with the
+  // initial status if different from CANNOT_PROPAGATE when added.
   //
-  // Note that we accept empty enforcement list so that client code can be used
-  // regardless of the presence of enforcement or not. A negative id means the
-  // constraint is never enforced, and should be ignored.
-  EnforcementId Register(absl::Span<const Literal> enforcement);
-
-  // Note that the callback should just mark a constraint for future
-  // propagation, not propagate anything.
-  void CallWhenEnforced(EnforcementId id, std::function<void()> callback);
-
-  // Returns true iff the constraint with given id is currently enforced.
-  bool IsEnforced(EnforcementId id) const;
+  // It is better to not call this for empty enforcement list, but you can. A
+  // negative id means the level zero status will never change, and only the
+  // first call to callback() should be necessary, we don't save it.
+  EnforcementId Register(
+      absl::Span<const Literal> enforcement,
+      std::function<void(EnforcementStatus)> callback = nullptr);
 
   // Add the enforcement reason to the given vector.
   void AddEnforcementReason(EnforcementId id,
                             std::vector<Literal>* reason) const;
 
-  // Returns true if IsEnforced(id) or if all literal are true but one.
-  // This is currently in O(enforcement_size);
-  bool CanPropagateWhenFalse(EnforcementId id) const;
-
   // Try to propagate when the enforced constraint is not satisfiable.
-  // This is currently in O(enforcement_size);
+  // This is currently in O(enforcement_size).
   ABSL_MUST_USE_RESULT bool PropagateWhenFalse(
       EnforcementId id, absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason);
 
+  EnforcementStatus Status(EnforcementId id) const { return statuses_[id]; }
+
  private:
+  absl::Span<Literal> GetSpan(EnforcementId id);
   absl::Span<const Literal> GetSpan(EnforcementId id) const;
-  LiteralIndex NewLiteralToWatchOrEnforced(EnforcementId id);
+  void ChangeStatus(EnforcementId id, EnforcementStatus new_status);
+
+  // Returns kNoLiteralIndex if nothing need to change or a new literal to
+  // watch. This also calls the registered callback.
+  LiteralIndex ProcessIdOnTrue(Literal watched, EnforcementId id);
 
   // External classes.
   const Trail& trail_;
@@ -123,16 +140,20 @@ class EnforcementPropagator : SatPropagator {
   absl::StrongVector<EnforcementId, int> starts_;
   std::vector<Literal> buffer_;
 
-  std::vector<EnforcementId> enforced_;
-  absl::StrongVector<EnforcementId, bool> is_enforced_;
-  absl::StrongVector<EnforcementId, std::function<void()>> callbacks_;
-  int rev_num_enforced_ = 0;
+  absl::StrongVector<EnforcementId, EnforcementStatus> statuses_;
+  absl::StrongVector<EnforcementId, std::function<void(EnforcementStatus)>>
+      callbacks_;
+
+  // Used to restore status and call callback on untrail.
+  std::vector<std::pair<EnforcementId, EnforcementStatus>> untrail_stack_;
+  int rev_stack_size_ = 0;
   int64_t rev_stamp_ = 0;
 
-  // Each enforcement list with given id will have ONE "literal -> id" here.
+  // We use a two watcher scheme.
   absl::StrongVector<LiteralIndex, absl::InlinedVector<EnforcementId, 6>>
-      one_watcher_;
+      watcher_;
 
+  std::vector<Literal> temp_literals_;
   std::vector<Literal> temp_reason_;
 };
 
@@ -157,14 +178,25 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
                      IntegerValue upper_bound);
 
  private:
+  // We try to pack the struct as much as possible. Using a maximum size of
+  // 1 << 29 should be okay since we split long constraint anyway. Technically
+  // we could use int16_t or even int8_t if we wanted, but we just need to make
+  // sure we do split ALL constraints, not just the one from the initial mode.
+  //
+  // TODO(user): We could also move some less often used fields out. like
+  // initial size and enf_id that are only needed when we push something.
   struct ConstraintInfo {
+    unsigned int enf_status : 2;
+    bool all_coeffs_are_one : 1;
+    unsigned int initial_size : 29;  // Const. The size including all terms.
+
     EnforcementId enf_id;  // Const. The id in enforcement_propagator_.
     int start;             // Const. The start of the constraint in the buffers.
-    int initial_size;      // Const. The size including all terms.
-
     int rev_size;          // The size of the non-fixed terms.
     IntegerValue rev_rhs;  // The current rhs, updated on fixed terms.
   };
+  static_assert(sizeof(ConstraintInfo) == 24,
+                "ERROR_ConstraintInfo_is_not_well_compacted");
 
   absl::Span<IntegerValue> GetCoeffs(const ConstraintInfo& info);
   absl::Span<IntegerVariable> GetVariables(const ConstraintInfo& info);
@@ -172,8 +204,7 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   // Returns false on conflict.
   ABSL_MUST_USE_RESULT bool PropagateOneConstraint(int id);
   ABSL_MUST_USE_RESULT bool ReportConflictingCycle();
-  ABSL_MUST_USE_RESULT bool DisassembleSubtreeAndAddToQueue(int root_id,
-                                                            int num_pushed);
+  ABSL_MUST_USE_RESULT bool DisassembleSubtree(int root_id, int num_pushed);
 
   void ClearPropagatedBy();
   void CanonicalizeConstraint(int id);
@@ -205,8 +236,12 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   std::vector<ConstraintInfo> infos_;
 
   // Buffer of the constraints data.
+  //
+  // TODO(user): A lot of constrains have all their coeffs at one, we could
+  // exploit this.
   std::vector<IntegerVariable> variables_buffer_;
   std::vector<IntegerValue> coeffs_buffer_;
+  std::vector<IntegerValue> buffer_of_ones_;
 
   // Filled by PropagateOneConstraint().
   std::vector<IntegerValue> max_variations_;
@@ -219,6 +254,9 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   // Queue of constraint to propagate.
   std::vector<bool> in_queue_;
   CustomFifoQueue propagation_queue_;
+
+  int rev_at_false_size_ = 0;
+  std::vector<int> in_queue_and_at_false_;
 
   // Watchers.
   absl::StrongVector<IntegerVariable, bool> is_watched_;
@@ -241,7 +279,7 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   std::vector<std::pair<int, IntegerVariable>> disassemble_branch_;
   std::vector<std::pair<IntegerVariable, IntegerValue>> disassemble_candidates_;
   std::vector<int> tmp_to_reorder_;
-  SparseBitset<int> disassemble_scanned_ids_;
+  SparseBitset<int> disassemble_to_reorder_;
   std::vector<int> disassemble_reverse_topo_order_;
 
   // Staging queue.
@@ -263,8 +301,10 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   int64_t num_simple_cycles_ = 0;
   int64_t num_complex_cycles_ = 0;
   int64_t num_scanned_ = 0;
-  int64_t num_explored_constraints_ = 0;
+  int64_t num_explored_in_disassemble_ = 0;
+  int64_t num_reordered_ = 0;
   int64_t num_bool_aborts_ = 0;
+  int64_t num_ignored_ = 0;
 };
 
 }  // namespace sat

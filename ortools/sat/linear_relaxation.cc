@@ -39,6 +39,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/routing_cuts.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -597,6 +598,46 @@ void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
     CHECK(zero_node_balance_lc.AddLiteralTerm(outgoing_arc, IntegerValue(-1)));
   }
   relaxation->linear_constraints.push_back(zero_node_balance_lc.Build());
+}
+
+void AddCircuitCutGenerator(const ConstraintProto& ct, Model* m,
+                            LinearRelaxation* relaxation) {
+  std::vector<int> tails(ct.circuit().tails().begin(),
+                         ct.circuit().tails().end());
+  std::vector<int> heads(ct.circuit().heads().begin(),
+                         ct.circuit().heads().end());
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  std::vector<Literal> literals = mapping->Literals(ct.circuit().literals());
+  const int num_nodes = ReindexArcs(&tails, &heads);
+
+  relaxation->cut_generators.push_back(CreateStronglyConnectedGraphCutGenerator(
+      num_nodes, tails, heads, literals, m));
+}
+
+void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
+                           LinearRelaxation* relaxation) {
+  std::vector<int> tails(ct.routes().tails().begin(),
+                         ct.routes().tails().end());
+  std::vector<int> heads(ct.routes().heads().begin(),
+                         ct.routes().heads().end());
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  std::vector<Literal> literals = mapping->Literals(ct.routes().literals());
+
+  int num_nodes = 0;
+  for (int i = 0; i < ct.routes().tails_size(); ++i) {
+    num_nodes = std::max(num_nodes, 1 + ct.routes().tails(i));
+    num_nodes = std::max(num_nodes, 1 + ct.routes().heads(i));
+  }
+  if (ct.routes().demands().empty() || ct.routes().capacity() == 0) {
+    relaxation->cut_generators.push_back(
+        CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads,
+                                                 literals, m));
+  } else {
+    const std::vector<int64_t> demands(ct.routes().demands().begin(),
+                                       ct.routes().demands().end());
+    relaxation->cut_generators.push_back(CreateCVRPCutGenerator(
+        num_nodes, tails, heads, literals, demands, ct.routes().capacity(), m));
+  }
 }
 
 // Scan the intervals of a cumulative/no_overlap constraint, and its capacity (1
@@ -1225,46 +1266,6 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
 }
 
 // Cut generators.
-
-void AddCircuitCutGenerator(const ConstraintProto& ct, Model* m,
-                            LinearRelaxation* relaxation) {
-  std::vector<int> tails(ct.circuit().tails().begin(),
-                         ct.circuit().tails().end());
-  std::vector<int> heads(ct.circuit().heads().begin(),
-                         ct.circuit().heads().end());
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
-  std::vector<Literal> literals = mapping->Literals(ct.circuit().literals());
-  const int num_nodes = ReindexArcs(&tails, &heads);
-
-  relaxation->cut_generators.push_back(CreateStronglyConnectedGraphCutGenerator(
-      num_nodes, tails, heads, literals, m));
-}
-
-void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
-                           LinearRelaxation* relaxation) {
-  std::vector<int> tails(ct.routes().tails().begin(),
-                         ct.routes().tails().end());
-  std::vector<int> heads(ct.routes().heads().begin(),
-                         ct.routes().heads().end());
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
-  std::vector<Literal> literals = mapping->Literals(ct.routes().literals());
-
-  int num_nodes = 0;
-  for (int i = 0; i < ct.routes().tails_size(); ++i) {
-    num_nodes = std::max(num_nodes, 1 + ct.routes().tails(i));
-    num_nodes = std::max(num_nodes, 1 + ct.routes().heads(i));
-  }
-  if (ct.routes().demands().empty() || ct.routes().capacity() == 0) {
-    relaxation->cut_generators.push_back(
-        CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads,
-                                                 literals, m));
-  } else {
-    const std::vector<int64_t> demands(ct.routes().demands().begin(),
-                                       ct.routes().demands().end());
-    relaxation->cut_generators.push_back(CreateCVRPCutGenerator(
-        num_nodes, tails, heads, literals, demands, ct.routes().capacity(), m));
-  }
-}
 
 void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
                             Model* m, LinearRelaxation* relaxation) {

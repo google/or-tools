@@ -217,7 +217,8 @@ class CpModelPresolver {
   // setppc constraints included in each other.
   bool ProcessSetPPCSubset(int subset_c, int superset_c,
                            absl::flat_hash_set<int>* tmp_set,
-                           bool* remove_subset, bool* remove_superset);
+                           bool* remove_subset, bool* remove_superset,
+                           bool* stop_processing_superset);
 
   // Run SAT specific presolve code.
   void PresolvePureSatPart();

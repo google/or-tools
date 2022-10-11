@@ -15,6 +15,8 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,6 +28,7 @@ void CustomFifoQueue::IncreaseSize(int n) {
   CHECK_GE(n, pos_.size());
   CHECK_LE(left_, right_);
   pos_.resize(n, -1);
+  tmp_positions_.resize(n, 0);
 
   // We need 1 more space since we can add at most n element.
   queue_.resize(n + 1, 0);
@@ -53,23 +56,94 @@ void CustomFifoQueue::Push(int id) {
 void CustomFifoQueue::Reorder(absl::Span<const int> order) {
   if (order.size() <= 1) return;
 
-  tmp_positions_.clear();
-  for (const int id : order) {
-    const int p = pos_[id];
-    DCHECK_GE(p, 0);
-    tmp_positions_.push_back(p >= left_ ? p : p + queue_.size());
+  const int capacity = queue_.size();
+  const int size = left_ < right_ ? right_ - left_ : left_ + capacity - right_;
+  if (order.size() > size / 8) {
+    return ReorderDense(order);
   }
-  std::sort(tmp_positions_.begin(), tmp_positions_.end());
-  DCHECK(std::unique(tmp_positions_.begin(), tmp_positions_.end()) ==
-         tmp_positions_.end());
 
   int index = 0;
   for (const int id : order) {
+    const int p = pos_[id];
+    DCHECK_GE(p, 0);
+    tmp_positions_[index++] = p >= left_ ? p : p + capacity;
+  }
+  std::sort(&tmp_positions_[0], &tmp_positions_[index]);
+  DCHECK(std::unique(&tmp_positions_[0], &tmp_positions_[index]) ==
+         &tmp_positions_[index]);
+
+  index = 0;
+  for (const int id : order) {
     int p = tmp_positions_[index++];
-    if (p >= queue_.size()) p -= queue_.size();
+    if (p >= capacity) p -= capacity;
     pos_[id] = p;
     queue_[p] = id;
   }
+}
+
+void CustomFifoQueue::ReorderDense(absl::Span<const int> order) {
+  for (const int id : order) {
+    DCHECK_GE(pos_[id], 0);
+    queue_[pos_[id]] = -1;
+  }
+  int order_index = 0;
+  if (left_ <= right_) {
+    for (int i = left_; i < right_; ++i) {
+      if (queue_[i] == -1) {
+        queue_[i] = order[order_index++];
+        pos_[queue_[i]] = i;
+      }
+    }
+  } else {
+    const int size = queue_.size();
+    for (int i = left_; i < size; ++i) {
+      if (queue_[i] == -1) {
+        queue_[i] = order[order_index++];
+        pos_[queue_[i]] = i;
+      }
+    }
+    for (int i = 0; i < left_; ++i) {
+      if (queue_[i] == -1) {
+        queue_[i] = order[order_index++];
+        pos_[queue_[i]] = i;
+      }
+    }
+  }
+  DCHECK_EQ(order_index, order.size());
+}
+
+void CustomFifoQueue::SortByPos(absl::Span<int> elements) {
+  std::sort(elements.begin(), elements.end(),
+            [this](const int id1, const int id2) {
+              const int p1 = pos_[id1];
+              const int p2 = pos_[id2];
+              if (p1 >= left_) {
+                if (p2 >= left_) return p1 < p2;
+                return true;
+              } else {
+                // p1 < left_.
+                if (p2 < left_) return p1 < p2;
+                return false;
+              }
+            });
+}
+
+std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e) {
+  switch (e) {
+    case EnforcementStatus::IS_FALSE:
+      os << "IS_FALSE";
+      break;
+    case EnforcementStatus::CANNOT_PROPAGATE:
+      os << "CANNOT_PROPAGATE";
+      break;
+    case EnforcementStatus::CAN_PROPAGATE:
+      os << "CAN_PROPAGATE";
+      break;
+    case EnforcementStatus::IS_ENFORCED:
+      os << "IS_ENFORCED";
+      break;
+  }
+  return os;
 }
 
 EnforcementPropagator::EnforcementPropagator(Model* model)
@@ -82,49 +156,49 @@ EnforcementPropagator::EnforcementPropagator(Model* model)
   // depends on IntegerTrail.
   model->GetOrCreate<SatSolver>()->AddPropagator(this);
 
-  // The special id of zero is used for all enforced constraint at level zero.
+  // Sentinel - also start of next Register().
   starts_.push_back(0);
-  is_enforced_.push_back(true);
-  callbacks_.push_back(nullptr);
-
-  starts_.push_back(0);  // Sentinel - also start of next Register().
 }
 
 bool EnforcementPropagator::Propagate(Trail* /*trail*/) {
-  rev_int_repository_->SaveStateWithStamp(&rev_num_enforced_, &rev_stamp_);
+  rev_int_repository_->SaveStateWithStamp(&rev_stack_size_, &rev_stamp_);
   while (propagation_trail_index_ < trail_.Index()) {
     const Literal literal = trail_[propagation_trail_index_++];
-    if (literal.Index() >= static_cast<int>(one_watcher_.size())) continue;
+    if (literal.Index() >= static_cast<int>(watcher_.size())) continue;
 
     int new_size = 0;
-    auto& watch_list = one_watcher_[literal.Index()];
+    auto& watch_list = watcher_[literal.Index()];
     for (const EnforcementId id : watch_list) {
-      const LiteralIndex index = NewLiteralToWatchOrEnforced(id);
+      const LiteralIndex index = ProcessIdOnTrue(literal, id);
       if (index == kNoLiteralIndex) {
-        // The constraint is now enforced, keep current watched literal.
-        CHECK(!is_enforced_[id]);
-        is_enforced_[id] = true;
-        enforced_.push_back(id);
+        // We keep the same watcher.
         watch_list[new_size++] = id;
-        if (callbacks_[id] != nullptr) callbacks_[id]();
       } else {
-        // Change one watcher.
+        // Change the watcher.
         CHECK_NE(index, literal.Index());
-        one_watcher_[index].push_back(id);
+        watcher_[index].push_back(id);
       }
     }
     watch_list.resize(new_size);
+
+    // We also mark some constraint false.
+    for (const EnforcementId id : watcher_[literal.NegatedIndex()]) {
+      ChangeStatus(id, EnforcementStatus::IS_FALSE);
+    }
   }
-  rev_num_enforced_ = static_cast<int>(enforced_.size());
+  rev_stack_size_ = static_cast<int>(untrail_stack_.size());
   return true;
 }
 
 void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
-  // Simply unmark constraint no longer enforced.
-  for (int i = rev_num_enforced_; i < enforced_.size(); ++i) {
-    is_enforced_[enforced_[i]] = false;
+  // Simply revert the status change.
+  const int size = static_cast<int>(untrail_stack_.size());
+  for (int i = size - 1; i >= rev_stack_size_; --i) {
+    const auto [id, status] = untrail_stack_[i];
+    statuses_[id] = status;
+    if (callbacks_[id] != nullptr) callbacks_[id](status);
   }
-  enforced_.resize(rev_num_enforced_);
+  untrail_stack_.resize(rev_stack_size_);
   propagation_trail_index_ = trail_index;
 }
 
@@ -134,64 +208,56 @@ void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
 // regardless of the presence of enforcement or not. A negative id means the
 // constraint is never enforced, and should be ignored.
 EnforcementId EnforcementPropagator::Register(
-    absl::Span<const Literal> enforcement) {
+    absl::Span<const Literal> enforcement,
+    std::function<void(EnforcementStatus)> callback) {
   CHECK_EQ(trail_.CurrentDecisionLevel(), 0);
   int num_true = 0;
   int num_false = 0;
+  temp_literals_.clear();
   for (const Literal l : enforcement) {
-    if (l.Index() >= static_cast<int>(one_watcher_.size())) {
-      // Make sure we always have enough room for the watcher.
-      one_watcher_.resize(l.Index() + 1);
+    // Make sure we always have enough room for the literal and its negation.
+    const int size = std::max(l.Index().value(), l.NegatedIndex().value()) + 1;
+    if (size > static_cast<int>(watcher_.size())) {
+      watcher_.resize(size);
     }
-    if (assignment_.LiteralIsTrue(l)) ++num_true;
-    if (assignment_.LiteralIsFalse(l)) ++num_false;
+    if (assignment_.LiteralIsTrue(l)) {
+      ++num_true;
+      continue;
+    }
+    if (assignment_.LiteralIsFalse(l)) {
+      ++num_false;
+      continue;
+    }
+    temp_literals_.push_back(l);
   }
+  gtl::STLSortAndRemoveDuplicates(&temp_literals_);
 
   // Return special indices if never/always enforced.
-  if (num_false > 0) return EnforcementId(-1);
-  if (num_true == enforcement.size()) return EnforcementId(0);
+  if (num_false > 0) {
+    if (callback != nullptr) callback(EnforcementStatus::IS_FALSE);
+    return EnforcementId(-1);
+  }
+  if (num_true == enforcement.size()) {
+    if (callback != nullptr) callback(EnforcementStatus::IS_ENFORCED);
+    return EnforcementId(-1);
+  }
 
-  const EnforcementId id(is_enforced_.size());
-  is_enforced_.push_back(false);
-  callbacks_.push_back(nullptr);
+  const EnforcementId id(static_cast<int>(callbacks_.size()));
+  callbacks_.push_back(std::move(callback));
 
-  // TODO(user): No need to store literal fixed at level zero.
-  // But then we could also filter the list as we fix stuff.
-  buffer_.insert(buffer_.end(), enforcement.begin(), enforcement.end());
+  CHECK(!temp_literals_.empty());
+  buffer_.insert(buffer_.end(), temp_literals_.begin(), temp_literals_.end());
   starts_.push_back(buffer_.size());  // Sentinel.
+  statuses_.push_back(EnforcementStatus::CANNOT_PROPAGATE);
 
-  for (const Literal l : enforcement) {
-    if (!assignment_.LiteralIsAssigned(l)) {
-      one_watcher_[l.Index()].push_back(id);
-      break;
-    }
+  if (temp_literals_.size() == 1) {
+    watcher_[temp_literals_[0].Index()].push_back(id);
+    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
+  } else {
+    watcher_[temp_literals_[0].Index()].push_back(id);
+    watcher_[temp_literals_[1].Index()].push_back(id);
   }
-
   return id;
-}
-
-// Note that the callback should just mark a constraint for future
-// propagation, not propagate anything.
-void EnforcementPropagator::CallWhenEnforced(EnforcementId id,
-                                             std::function<void()> callback) {
-  // Id zero is always enforced, no need to register anything
-  if (id == 0) return;
-  callbacks_[id] = std::move(callback);
-}
-
-// Returns true iff the constraint with given id is currently enforced.
-bool EnforcementPropagator::IsEnforced(EnforcementId id) const {
-  if (propagation_trail_index_ == trail_.Index()) return is_enforced_[id];
-
-  // TODO(user): In some corner case, when LinearPropagator pushes a literal
-  // we don't repropagate this right away. Maybe we should just simplify this
-  // class and just pay the O(num_enforcement_literal) cost.
-  //
-  // For now we pay the cost to catch bugs.
-  for (const Literal l : GetSpan(id)) {
-    if (!assignment_.LiteralIsTrue(l)) return false;
-  }
-  return true;
 }
 
 // Add the enforcement reason to the given vector.
@@ -200,19 +266,6 @@ void EnforcementPropagator::AddEnforcementReason(
   for (const Literal l : GetSpan(id)) {
     reason->push_back(l.Negated());
   }
-}
-
-// Returns true if IsEnforced(id) or if all literal are true but one.
-// This is currently in O(enforcement_size);
-bool EnforcementPropagator::CanPropagateWhenFalse(EnforcementId id) const {
-  if (id == 0) return true;
-  int num_true = 0;
-  const auto span = GetSpan(id);
-  for (const Literal l : span) {
-    if (assignment_.LiteralIsFalse(l)) return false;
-    if (assignment_.LiteralIsTrue(l)) ++num_true;
-  }
-  return num_true + 1 >= span.size();
 }
 
 // Try to propagate when the enforced constraint is not satisfiable.
@@ -243,22 +296,78 @@ bool EnforcementPropagator::PropagateWhenFalse(
   return true;
 }
 
-absl::Span<const Literal> EnforcementPropagator::GetSpan(
-    EnforcementId id) const {
+absl::Span<Literal> EnforcementPropagator::GetSpan(EnforcementId id) {
+  if (id < 0) return {};
   DCHECK_LE(id + 1, starts_.size());
   const int size = starts_[id + 1] - starts_[id];
-  if (size == 0) return {};
+  DCHECK_NE(size, 0);
   return absl::MakeSpan(&buffer_[starts_[id]], size);
 }
 
-LiteralIndex EnforcementPropagator::NewLiteralToWatchOrEnforced(
-    EnforcementId id) {
-  // TODO(user): We could do some reordering to speed this up.
-  for (const Literal l : GetSpan(id)) {
-    if (assignment_.LiteralIsTrue(l)) continue;
-    return l.Index();
+absl::Span<const Literal> EnforcementPropagator::GetSpan(
+    EnforcementId id) const {
+  if (id < 0) return {};
+  DCHECK_LE(id + 1, starts_.size());
+  const int size = starts_[id + 1] - starts_[id];
+  DCHECK_NE(size, 0);
+  return absl::MakeSpan(&buffer_[starts_[id]], size);
+}
+
+LiteralIndex EnforcementPropagator::ProcessIdOnTrue(Literal watched,
+                                                    EnforcementId id) {
+  const EnforcementStatus status = statuses_[id];
+  if (status == EnforcementStatus::IS_FALSE) return kNoLiteralIndex;
+
+  const auto span = GetSpan(id);
+  if (span.size() == 1) {
+    CHECK_EQ(status, EnforcementStatus::CAN_PROPAGATE);
+    ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
+    return kNoLiteralIndex;
   }
-  return kNoLiteralIndex;
+
+  const int watched_pos = (span[0] == watched) ? 0 : 1;
+  CHECK_EQ(span[watched_pos], watched);
+  if (assignment_.LiteralIsFalse(span[watched_pos ^ 1])) {
+    ChangeStatus(id, EnforcementStatus::IS_FALSE);
+    return kNoLiteralIndex;
+  }
+
+  for (int i = 2; i < span.size(); ++i) {
+    const Literal l = span[i];
+    if (assignment_.LiteralIsFalse(l)) {
+      ChangeStatus(id, EnforcementStatus::IS_FALSE);
+      return kNoLiteralIndex;
+    }
+    if (!assignment_.LiteralIsAssigned(l)) {
+      // Replace the watched literal. Note that if the other watched literal is
+      // true, it should be processed afterwards. We do not change the status
+      std::swap(span[watched_pos], span[i]);
+      return span[watched_pos].Index();
+    }
+  }
+
+  // All literal with index > 1 are true. Two case.
+  if (assignment_.LiteralIsTrue(span[watched_pos ^ 1])) {
+    // All literals are true.
+    ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
+    return kNoLiteralIndex;
+  } else {
+    // The other watched literal is the last unassigned
+    CHECK_EQ(status, EnforcementStatus::CANNOT_PROPAGATE);
+    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
+    return kNoLiteralIndex;
+  }
+}
+
+void EnforcementPropagator::ChangeStatus(EnforcementId id,
+                                         EnforcementStatus new_status) {
+  const EnforcementStatus old_status = statuses_[id];
+  if (old_status == new_status) return;
+  if (trail_.CurrentDecisionLevel() != 0) {
+    untrail_stack_.push_back({id, old_status});
+  }
+  statuses_[id] = new_status;
+  if (callbacks_[id] != nullptr) callbacks_[id](new_status);
 }
 
 LinearPropagator::LinearPropagator(Model* model)
@@ -293,9 +402,11 @@ LinearPropagator::~LinearPropagator() {
   stats.push_back({"linear_propag/num_complex_cycles", num_complex_cycles_});
   stats.push_back({"linear_propag/num_scanned", num_scanned_});
   stats.push_back({"linear_propag/num_extra_scan", num_extra_scans_});
-  stats.push_back(
-      {"linear_propag/num_explored_in_disassemble", num_explored_constraints_});
+  stats.push_back({"linear_propag/num_explored_in_disassemble",
+                   num_explored_in_disassemble_});
   stats.push_back({"linear_propag/num_bool_aborts", num_bool_aborts_});
+  stats.push_back({"linear_propag/num_ignored", num_ignored_});
+  stats.push_back({"linear_propag/num_reordered", num_reordered_});
   shared_stats_->AddStats(stats);
 }
 
@@ -307,6 +418,13 @@ void LinearPropagator::SetLevel(int level) {
     while (!propagation_queue_.empty()) {
       in_queue_[propagation_queue_.Pop()] = false;
     }
+    for (int i = rev_at_false_size_; i < in_queue_and_at_false_.size(); ++i) {
+      in_queue_[in_queue_and_at_false_[i]] = false;
+    }
+    in_queue_and_at_false_.resize(rev_at_false_size_);
+  } else if (level > previous_level_) {
+    rev_at_false_size_ = in_queue_and_at_false_.size();
+    rev_int_repository_->SaveState(&rev_at_false_size_);
   }
   previous_level_ = level;
 
@@ -364,16 +482,24 @@ void LinearPropagator::AddConstraint(
     absl::Span<const IntegerVariable> vars,
     absl::Span<const IntegerValue> coeffs, IntegerValue upper_bound) {
   if (vars.empty()) return;
-  const EnforcementId enf_id =
-      enforcement_propagator_->Register(enforcement_literals);
-  if (enf_id < 0) return;  // Nothing to do.
+  for (const Literal l : enforcement_literals) {
+    if (trail_->Assignment().LiteralIsFalse(l)) return;
+  }
+
+  // Make sure max_variations_ is of correct size.
+  // Note that we also have a hard limit of 1 << 29 on the size.
+  CHECK_LT(vars.size(), 1 << 29);
+  if (vars.size() > max_variations_.size()) {
+    max_variations_.resize(vars.size(), 0);
+    buffer_of_ones_.resize(vars.size(), IntegerValue(1));
+  }
 
   // Initialize constraint data.
   CHECK_EQ(vars.size(), coeffs.size());
   const int id = infos_.size();
   {
     ConstraintInfo info;
-    info.enf_id = enf_id;
+    info.all_coeffs_are_one = false;
     info.start = variables_buffer_.size();
     info.initial_size = vars.size();
     info.rev_rhs = upper_bound;
@@ -386,16 +512,43 @@ void LinearPropagator::AddConstraint(
   coeffs_buffer_.insert(coeffs_buffer_.end(), coeffs.begin(), coeffs.end());
   CanonicalizeConstraint(id);
 
-  enforcement_propagator_->CallWhenEnforced(enf_id, [this, id]() {
-    AddToQueueIfNeeded(id);
-    watcher_->CallOnNextPropagate(watcher_id_);
-  });
+  bool all_at_one = true;
+  for (const IntegerValue coeff : GetCoeffs(infos_.back())) {
+    if (coeff != 1) {
+      all_at_one = false;
+      break;
+    }
+  }
+  if (all_at_one) {
+    // TODO(user): we still waste the space in coeffs_buffer_ so that the
+    // start are aligned with the variables_buffer_.
+    infos_.back().all_coeffs_are_one = true;
+  }
 
   // Initialize watchers.
   // Initialy we want everything to be propagated at least once.
   in_queue_.push_back(false);
   propagation_queue_.IncreaseSize(in_queue_.size());
-  AddToQueueIfNeeded(id);
+
+  if (!enforcement_literals.empty()) {
+    infos_.back().enf_status = EnforcementStatus::CANNOT_PROPAGATE;
+    infos_.back().enf_id = enforcement_propagator_->Register(
+        enforcement_literals, [this, id](EnforcementStatus status) {
+          infos_[id].enf_status = status;
+          // TODO(user): With some care, when we cannot propagate or the
+          // constraint is not enforced, we could live in_queue_[] at true but
+          // not put the constraint in the queue.
+          if (status == EnforcementStatus::CAN_PROPAGATE ||
+              status == EnforcementStatus::IS_ENFORCED) {
+            AddToQueueIfNeeded(id);
+            watcher_->CallOnNextPropagate(watcher_id_);
+          }
+        });
+  } else {
+    AddToQueueIfNeeded(id);
+    infos_.back().enf_id = -1;
+    infos_.back().enf_status = EnforcementStatus::IS_ENFORCED;
+  }
 
   for (const IntegerVariable var : GetVariables(infos_[id])) {
     // Transposed graph to know which constraint to wake up.
@@ -424,8 +577,12 @@ void LinearPropagator::AddConstraint(
 
 absl::Span<IntegerValue> LinearPropagator::GetCoeffs(
     const ConstraintInfo& info) {
+  if (info.all_coeffs_are_one) {
+    return absl::MakeSpan(&buffer_of_ones_[0], info.initial_size);
+  }
   return absl::MakeSpan(&coeffs_buffer_[info.start], info.initial_size);
 }
+
 absl::Span<IntegerVariable> LinearPropagator::GetVariables(
     const ConstraintInfo& info) {
   return absl::MakeSpan(&variables_buffer_[info.start], info.initial_size);
@@ -443,8 +600,11 @@ void LinearPropagator::CanonicalizeConstraint(int id) {
   }
 }
 
+// TODO(user): template everything for the case info.all_coeffs_are_one ?
 bool LinearPropagator::PropagateOneConstraint(int id) {
-  if (VLOG_IS_ON(1)) {
+  // This is here for development purpose, it is a bit too slow to check by
+  // default though, even VLOG_IS_ON(1) so we disable it.
+  if (/* DISABLES CODE */ (false)) {
     ++num_scanned_;
     if (id_scanned_at_least_once_[id]) {
       ++num_extra_scans_;
@@ -454,21 +614,26 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   }
 
   // Skip constraint not enforced or that cannot propagate if false.
-  //
-  // TODO(user): this can be expensive, in most situation we have a single
-  // literal, so the only bad case if a constraint is fixed to false.
   ConstraintInfo& info = infos_[id];
-  if (!enforcement_propagator_->CanPropagateWhenFalse(info.enf_id)) {
+  if (info.enf_status == EnforcementStatus::IS_FALSE ||
+      info.enf_status == EnforcementStatus::CANNOT_PROPAGATE) {
+    DCHECK(!in_queue_[id]);
+    if (info.enf_status == EnforcementStatus::IS_FALSE) {
+      // We mark this constraint as in the queue but will never inspect it
+      // again until we backtrack over this time.
+      in_queue_[id] = true;
+      in_queue_and_at_false_.push_back(id);
+    }
+    ++num_ignored_;
     return true;
   }
 
   // Compute the slack and max_variations_ of each variables.
   // We also filter out fixed variables in a reversible way.
   IntegerValue implied_lb(0);
-  auto coeffs = GetCoeffs(info);
   auto vars = GetVariables(info);
+  auto coeffs = GetCoeffs(info);
   IntegerValue max_variation(0);
-  max_variations_.resize(info.rev_size);
   bool first_change = true;
   time_limit_->AdvanceDeterministicTime(static_cast<double>(info.rev_size) *
                                         1e-9);
@@ -499,6 +664,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   const IntegerValue slack = info.rev_rhs - implied_lb;
 
   // Negative slack means the constraint is false.
+  if (max_variation <= slack) return true;
   if (slack < 0) {
     // Fill integer reason.
     integer_reason_.clear();
@@ -520,9 +686,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   }
 
   // We can only propagate more if all the enforcement literals are true.
-  // We also do a quick check to see if any variable can be pushed.
-  if (max_variation <= slack) return true;
-  if (!enforcement_propagator_->IsEnforced(info.enf_id)) return true;
+  if (info.enf_status != EnforcementStatus::IS_ENFORCED) return true;
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
@@ -583,6 +747,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
       AddWatchedToQueue(next_var);
     } else if (actual_ub == new_ub) {
       SetPropagatedBy(next_var, id);
+      AddWatchedToQueue(next_var);
 
       // We reorder them first.
       std::swap(vars[i], vars[num_pushed]);
@@ -593,7 +758,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
     // Explore the subtree and detect cycles greedily.
     // Also postpone some propagation.
     if (num_pushed > 0) {
-      if (!DisassembleSubtreeAndAddToQueue(id, num_pushed)) {
+      if (!DisassembleSubtree(id, num_pushed)) {
         return false;
       }
     }
@@ -620,8 +785,7 @@ std::string LinearPropagator::ConstraintDebugString(int id) {
   const IntegerValue original_rhs = info.rev_rhs + rhs_correction;
   absl::StrAppend(&result, " <= ", original_rhs.value(),
                   " slack=", original_rhs.value() - implied_lb.value());
-  absl::StrAppend(&result,
-                  " enf=", enforcement_propagator_->IsEnforced(info.enf_id));
+  absl::StrAppend(&result, " enf=", info.enf_status);
   return result;
 }
 
@@ -683,6 +847,29 @@ bool LinearPropagator::ReportConflictingCycle() {
                   return a.var < b.var;
                 });
 
+      // Relax the linear reason if everything fit on an int64_t.
+      const absl::int128 limit{std::numeric_limits<int64_t>::max()};
+      const absl::int128 slack = implied_lb - rhs_sum;
+      if (slack > 1) {
+        reason_coeffs_.clear();
+        bool abort = false;
+        for (const IntegerLiteral i_lit : integer_reason_) {
+          absl::int128 c = map_sum.at(PositiveVariable(i_lit.var));
+          if (c < 0) c = -c;  // No std::abs() for int128.
+          if (c >= limit) {
+            abort = true;
+            break;
+          }
+          reason_coeffs_.push_back(static_cast<int64_t>(c));
+        }
+        if (!abort) {
+          const IntegerValue slack64(
+              static_cast<int64_t>(std::min(limit, slack)));
+          integer_trail_->RelaxLinearReason(slack64 - 1, reason_coeffs_,
+                                            &integer_reason_);
+        }
+      }
+
       ++num_simple_cycles_;
       VLOG(2) << "Simplified " << integer_reason_.size() << " slack "
               << implied_lb - rhs_sum;
@@ -730,9 +917,8 @@ bool LinearPropagator::ReportConflictingCycle() {
 //
 // TODO(user): If one of the var coeff is > previous slack we push an id again,
 // we can stop early with a conflict by propagating the ids in sequence.
-bool LinearPropagator::DisassembleSubtreeAndAddToQueue(int root_id,
-                                                       int num_pushed) {
-  disassemble_scanned_ids_.ClearAndResize(in_queue_.size());
+bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
+  disassemble_to_reorder_.ClearAndResize(in_queue_.size());
   disassemble_reverse_topo_order_.clear();
 
   // The variable was just pushed, we explore the set of variable that will
@@ -745,7 +931,6 @@ bool LinearPropagator::DisassembleSubtreeAndAddToQueue(int root_id,
   {
     const ConstraintInfo& info = infos_[root_id];
     auto vars = GetVariables(info);
-    disassemble_scanned_ids_.Set(root_id);
     for (int i = 0; i < num_pushed; ++i) {
       disassemble_queue_.push_back({root_id, NegationOf(vars[i])});
     }
@@ -768,10 +953,16 @@ bool LinearPropagator::DisassembleSubtreeAndAddToQueue(int root_id,
     time_limit_->AdvanceDeterministicTime(
         static_cast<double>(var_to_constraint_ids_[var].size()) * 1e-9);
     for (const int id : var_to_constraint_ids_[var]) {
-      // TODO(user): Check previous slack vs var coeff?
-      // TODO(user): Make sure there are none or detect cycle not going back to
-      // the root.
-      if (id == root_id) {
+      if (prev_id == root_id) {
+        // Root id was just propagated, so there is no need to reorder what
+        // it pushes.
+        DCHECK_NE(id, root_id);
+        if (disassemble_to_reorder_[id]) continue;
+        disassemble_to_reorder_.Set(id);
+      } else if (id == root_id) {
+        // TODO(user): Check previous slack vs var coeff?
+        // TODO(user): Make sure there are none or detect cycle not going back
+        // to the root.
         CHECK(!disassemble_branch_.empty());
 
         // This is a corner case in which there is actually no cycle.
@@ -805,11 +996,8 @@ bool LinearPropagator::DisassembleSubtreeAndAddToQueue(int root_id,
         }
       }
 
-      if (disassemble_scanned_ids_[id]) continue;
-      disassemble_scanned_ids_.Set(id);
-
-      AddToQueueIfNeeded(id);
       if (id_to_propagation_count_[id] == 0) continue;  // Didn't push.
+      disassemble_to_reorder_.Set(id);
 
       // The constraint pushed some variable. Identify which ones will be pushed
       // further. Disassemble the whole info since we are about to propagate
@@ -819,7 +1007,7 @@ bool LinearPropagator::DisassembleSubtreeAndAddToQueue(int root_id,
       auto vars = GetVariables(info);
       IntegerValue var_coeff(0);
       disassemble_candidates_.clear();
-      ++num_explored_constraints_;
+      ++num_explored_in_disassemble_;
       time_limit_->AdvanceDeterministicTime(static_cast<double>(info.rev_size) *
                                             1e-9);
       for (int i = 0; i < info.rev_size; ++i) {
@@ -849,35 +1037,48 @@ bool LinearPropagator::DisassembleSubtreeAndAddToQueue(int root_id,
     }
   }
 
-  // TODO(user): For the ids not in the topo order, we could try to keep their
-  // relative order as much as possible.
+  CHECK(!disassemble_to_reorder_[root_id]);
   tmp_to_reorder_.clear();
   std::reverse(disassemble_reverse_topo_order_.begin(),
                disassemble_reverse_topo_order_.end());  // !! not unique
   for (const int id : disassemble_reverse_topo_order_) {
-    if (!disassemble_scanned_ids_[id]) continue;
-    disassemble_scanned_ids_.Clear(id);
+    if (!disassemble_to_reorder_[id]) continue;
+    disassemble_to_reorder_.Clear(id);
+    AddToQueueIfNeeded(id);
     if (!propagation_queue_.Contains(id)) continue;
     tmp_to_reorder_.push_back(id);
   }
-  for (const int id : disassemble_scanned_ids_.PositionsSetAtLeastOnce()) {
-    if (!disassemble_scanned_ids_[id]) continue;
-    disassemble_scanned_ids_.Clear(id);
-    if (!propagation_queue_.Contains(id)) continue;
-    tmp_to_reorder_.push_back(id);
-  }
-  disassemble_scanned_ids_.NotifyAllClear();
 
-  // TODO(user): This is too slow since require sort and can touch many entries.
-  // Investigate alternatives.
+  // TODO(user): Reordering can be sloe since require sort and can touch many
+  // entries. Investigate alternatives. We could probably optimize this a bit
+  // more.
+  if (tmp_to_reorder_.empty()) return true;
+  const int important_size = static_cast<int>(tmp_to_reorder_.size());
+
+  for (const int id : disassemble_to_reorder_.PositionsSetAtLeastOnce()) {
+    if (!disassemble_to_reorder_[id]) continue;
+    disassemble_to_reorder_.Clear(id);
+    if (!propagation_queue_.Contains(id)) continue;
+    tmp_to_reorder_.push_back(id);
+  }
+  disassemble_to_reorder_.NotifyAllClear();
+
+  // We try to keep the same order as before for the elements not in the
+  // topological order.
+  propagation_queue_.SortByPos(
+      absl::MakeSpan(&tmp_to_reorder_[important_size],
+                     tmp_to_reorder_.size() - important_size));
+
+  num_reordered_ += tmp_to_reorder_.size();
   propagation_queue_.Reorder(tmp_to_reorder_);
   return true;
 }
 
 void LinearPropagator::AddToQueueIfNeeded(int id) {
-  if (in_queue_[id]) return;
   DCHECK_LT(id, in_queue_.size());
   DCHECK_LT(id, infos_.size());
+
+  if (in_queue_[id]) return;
   in_queue_[id] = true;
   propagation_queue_.Push(id);
 }

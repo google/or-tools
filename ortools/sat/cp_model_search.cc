@@ -580,7 +580,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
   // Our current set of strategies
   //
-  // TODO(user, fdid): Avoid launching two strategies if they are the same,
+  // TODO(user): Avoid launching two strategies if they are the same,
   // like if there is no lp, or everything is already linearized at level 1.
   std::vector<std::string> names;
 
@@ -703,14 +703,30 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
     int index = 1;
     while (result.size() < target) {
-      // TODO(user): This doesn't make sense if there is no fixed search.
-      SatParameters new_params = base_params;
-      new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-      new_params.set_randomize_search(true);
-      new_params.set_search_randomization_tolerance(index);
-      new_params.set_random_seed(base_params.random_seed() + result.size() + 1);
-      new_params.set_name(absl::StrCat("random_", index));
-      result.push_back(new_params);
+      if (index % 2 == 0) {
+        SatParameters new_params = base_params;
+        new_params.set_search_branching(
+            SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+        new_params.set_randomize_search(true);
+        new_params.set_search_randomization_tolerance(index);
+        new_params.set_random_seed(base_params.random_seed() + result.size() +
+                                   1);
+        new_params.set_name(absl::StrCat("random_quick_restart_", index));
+        result.push_back(new_params);
+      } else {
+        SatParameters new_params = base_params;
+        if (cp_model.search_strategy().empty()) {
+          new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        } else {
+          new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        }
+        new_params.set_randomize_search(true);
+        new_params.set_search_randomization_tolerance(index);
+        new_params.set_random_seed(base_params.random_seed() + result.size() +
+                                   1);
+        new_params.set_name(absl::StrCat("random_", index));
+        result.push_back(new_params);
+      }
       ++index;
     }
   }

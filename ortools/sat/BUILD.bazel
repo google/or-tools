@@ -1031,6 +1031,7 @@ cc_library(
         ":linear_constraint",
         ":linear_programming_constraint",
         ":model",
+        ":routing_cuts",
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":scheduling_constraints",
@@ -1123,6 +1124,21 @@ cc_library(
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:btree",
+    ],
+)
+
+cc_library(
+    name = "routing_cuts",
+    srcs = ["routing_cuts.cc"],
+    hdrs = ["routing_cuts.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cuts",
+        ":integer",
+        ":linear_constraint",
+        ":model",
+        "//ortools/base",
+        "//ortools/base:mathutil",
     ],
 )
 
