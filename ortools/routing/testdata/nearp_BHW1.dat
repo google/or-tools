@@ -1,0 +1,62 @@
+Name:		BHW1
+Optimal value:	-1
+#Vehicles:	-1
+Capacity:	5
+Depot Node:	1
+#Nodes:		12
+#Edges:		11
+#Arcs:		22
+#Required N:	7
+#Required E:	11
+#Required A:	11
+
+ReN.	DEMAND	S. COST
+N4	1	1
+N3	1	1
+N10	1	1
+N2	1	1
+N11	1	1
+N12	1	1
+N7	1	1
+
+ReE.	From N.	To N.	T. COST	DEMAND	S. COST
+E1	2	3	18	1	19
+E2	2	4	9	1	10
+E3	2	9	2	1	3
+E4	5	6	7	1	8
+E5	5	11	20	1	21
+E6	5	12	11	1	12
+E7	7	8	8	1	9
+E8	7	12	18	1	19
+E9	8	11	10	1	11
+E10	9	10	16	1	17
+E11	10	11	12	1	13
+
+EDGE	FROM N.	TO N.	T. COST
+
+ReA.	FROM N.	TO N.	T. COST	DEMAND	S. COST
+A1	1	2	13	1	14
+A2	1	4	17	1	18
+A3	1	7	19	1	20
+A4	1	10	19	1	20
+A5	1	12	4	1	5
+A6	3	4	20	1	21
+A7	5	3	5	1	6
+A8	7	6	4	1	5
+A9	12	6	3	1	4
+A10	8	10	3	1	4
+A11	9	11	14	1	15
+
+ARC	FROM N.	TO N.	T. COST
+NrA1	2	1	13
+NrA2	4	1	17
+NrA3	7	1	19
+NrA4	10	1	19
+NrA5	12	1	4
+NrA6	4	3	20
+NrA7	3	5	5
+NrA8	6	7	4
+NrA9	6	12	3
+NrA10	10	8	3
+NrA11	11	9	14
+the data is based on the CARP instance gdb1.						

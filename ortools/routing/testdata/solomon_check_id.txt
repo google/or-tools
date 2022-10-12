@@ -1,0 +1,13 @@
+TEST_INSTANCE_ONLY_ONE_SOLUTION
+
+VEHICLE
+NUMBER     CAPACITY
+  1          30
+
+CUSTOMER
+CUST NO.  XCOORD.   YCOORD.    DEMAND   READY TIME  DUE DATE   SERVICE   TIME
+
+    0      0         0          0          0       30         0
+    1      2         2         10          3        4         1
+    2      5         5         10          8        9         1
+    3      9         9         10         15       16         1
