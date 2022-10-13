@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_PRESOLVE_UTIL_H_
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -95,6 +96,99 @@ class DomainDeductions {
 // Currently the coefficient in the definition must be 1 or -1.
 bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition, ConstraintProto* ct);
+
+// Try to get more precise min/max activity of a linear constraints using
+// at most ones from the model. This is heuristic based but should be relatively
+// fast.
+//
+// TODO(user): Use better algorithm. The problem is the same as finding upper
+// bound to the classic problem: maximum-independent set in a graph. We also
+// only use at most ones, but we could use the more general binary implication
+// graph.
+class ActivityBoundHelper {
+ public:
+  ActivityBoundHelper() {}
+
+  // The at most one constraint must be added before linear constraint are
+  // processed. The functions below will still works, but do nothing more than
+  // compute trivial bounds.
+  void ClearAtMostOnes();
+  void AddAtMostOne(absl::Span<const int> amo);
+  void AddAllAtMostOnes(const CpModelProto& proto);
+
+  // Computes the max/min activity of a linear expression involving only
+  // Booleans.
+  //
+  // Accepts a list of (literal, coefficient). Note that all literal will be
+  // interpreted as referring to [0, 1] variables. We use the CpModelProto
+  // convention for negated literal index.
+  //
+  // If conditional is not nullptr, then conditional[i][0/1] will give the
+  // max activity if the literal at position i is false/true. This can be used
+  // to fix variables or extract enforcement literal.
+  //
+  // Important: We shouldn't have duplicates or a lit and NegatedRef(lit)
+  // appearing both.
+  //
+  // TODO(user): Indicate when the bounds are trivial (i.e. not intersection
+  // with any amo) so that we don't waste more time processing the result?
+  int64_t ComputeMaxActivity(
+      absl::Span<const std::pair<int, int64_t>> terms,
+      std::vector<std::array<int64_t, 2>>* conditional = nullptr) {
+    return ComputeActivity(/*compute_min=*/false, terms, conditional);
+  }
+  int64_t ComputeMinActivity(
+      absl::Span<const std::pair<int, int64_t>> terms,
+      std::vector<std::array<int64_t, 2>>* conditional = nullptr) {
+    return ComputeActivity(/*compute_min=*/true, terms, conditional);
+  }
+
+  // Computes relevant info to presolve a constraint with enforcement using
+  // at most one information.
+  //
+  // This returns false iff the enforcement list cannot be satisfied.
+  // It filters the enforcement list if some are consequences of other.
+  // It fills the given set with the literal that must be true due to the
+  // enforcement. Note that only literals or negated literal appearing in ref
+  // are filled.
+  bool PresolveEnforcement(absl::Span<const int> refs, ConstraintProto* ct,
+                           absl::flat_hash_set<int>* literals_at_true);
+
+ private:
+  DEFINE_STRONG_INDEX_TYPE(Index);
+  Index IndexFromLiteral(int ref) const {
+    return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
+  }
+
+  int64_t ComputeActivity(
+      bool compute_min, absl::Span<const std::pair<int, int64_t>> terms,
+      std::vector<std::array<int64_t, 2>>* conditional = nullptr);
+
+  void PartitionIntoAmo(absl::Span<const std::pair<int, int64_t>> terms);
+
+  // All coeff must be >= 0 here. Note that in practice, we shouldn't have
+  // zero coeff, but we still support it.
+  int64_t ComputeMaxActivityInternal(
+      absl::Span<const std::pair<int, int64_t>> terms,
+      std::vector<std::array<int64_t, 2>>* conditional = nullptr);
+
+  // We use an unique index by at most one, and just stores for each literal
+  // the at most one to which it belong.
+  int num_at_most_ones_ = 0;
+  absl::StrongVector<Index, std::vector<int>> amo_indices_;
+
+  std::vector<std::pair<int, int64_t>> tmp_terms_;
+  std::vector<std::pair<int64_t, int>> to_sort_;
+
+  // We partition the set of term into disjoint at most one.
+  absl::flat_hash_map<int, int> used_amo_to_dense_index_;
+  absl::flat_hash_map<int, int64_t> amo_sums_;
+  std::vector<int> partition_;
+  std::vector<int64_t> max_by_partition_;
+  std::vector<int64_t> second_max_by_partition_;
+
+  absl::flat_hash_set<int> triggered_amo_;
+};
 
 }  // namespace sat
 }  // namespace operations_research

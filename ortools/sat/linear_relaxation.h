@@ -22,6 +22,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/presolve_util.h"
 
 namespace operations_research {
 namespace sat {
@@ -127,10 +128,13 @@ void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
 // -inf <= (Sum Negated(ei) * (ub - implied_ub)) + ax <= ub
 // Where implied_lb and implied_ub are trivial lower and upper bounds of the
 // constraint.
-void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
-                                      bool linearize_enforced_constraints,
-                                      Model* model,
-                                      LinearRelaxation* relaxation);
+void AppendLinearConstraintRelaxation(
+    const ConstraintProto& ct, bool linearize_enforced_constraints,
+    Model* model, LinearRelaxation* relaxation,
+    ActivityBoundHelper* activity_helper = nullptr);
+
+void AppendSquareRelaxation(const ConstraintProto& ct, Model* m,
+                            LinearRelaxation* relaxation);
 
 // Adds linearization of no overlap constraints.
 // It adds an energetic equation linking the duration of all potential tasks to
@@ -149,6 +153,9 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
 // Cut generators.
 void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
                             Model* m, LinearRelaxation* relaxation);
+
+void AddSquareCutGenerator(const ConstraintProto& ct, int linearization_level,
+                           Model* m, LinearRelaxation* relaxation);
 
 void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
                             LinearRelaxation* relaxation);
@@ -199,7 +206,8 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               const ConstraintProto& ct,
                               int linearization_level, Model* model,
-                              LinearRelaxation* relaxation);
+                              LinearRelaxation* relaxation,
+                              ActivityBoundHelper* helper = nullptr);
 
 // Builds the linear relaxation of a CpModelProto.
 LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,

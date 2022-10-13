@@ -989,6 +989,30 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
   return result;
 }
 
+LinearConstraint ComputeHyperplanAboveSquare(AffineExpression x,
+                                             AffineExpression square,
+                                             IntegerValue x_lb,
+                                             IntegerValue x_ub, Model* model) {
+  const IntegerValue above_slope = x_ub + x_lb;
+  LinearConstraintBuilder above_hyperplan(model, kMinIntegerValue,
+                                          -x_lb * x_ub);
+  above_hyperplan.AddTerm(square, 1);
+  above_hyperplan.AddTerm(x, IntegerValue(-above_slope));
+  return above_hyperplan.Build();
+}
+
+LinearConstraint ComputeHyperplanBelowSquare(AffineExpression x,
+                                             AffineExpression square,
+                                             IntegerValue x_value,
+                                             Model* model) {
+  const IntegerValue below_slope = 2 * x_value + 1;
+  LinearConstraintBuilder below_hyperplan(model, -x_value - x_value * x_value,
+                                          kMaxIntegerValue);
+  below_hyperplan.AddTerm(square, 1);
+  below_hyperplan.AddTerm(x, -below_slope);
+  return below_hyperplan.Build();
+}
+
 CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
                                       int linearization_level, Model* model) {
   CutGenerator result;
@@ -1004,53 +1028,22 @@ CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
         if (trail->CurrentDecisionLevel() > 0 && linearization_level == 1) {
           return true;
         }
-        const int64_t x_ub = integer_trail->LevelZeroUpperBound(x).value();
-        const int64_t x_lb = integer_trail->LevelZeroLowerBound(x).value();
+        const IntegerValue x_ub = integer_trail->LevelZeroUpperBound(x);
+        const IntegerValue x_lb = integer_trail->LevelZeroLowerBound(x);
+        DCHECK_GE(x_lb, 0);
 
         if (x_lb == x_ub) return true;
 
         // Check for potential overflows.
         if (x_ub > (int64_t{1} << 31)) return true;
         DCHECK_GE(x_lb, 0);
+        manager->AddCut(ComputeHyperplanAboveSquare(x, y, x_lb, x_ub, model),
+                        "SquareUpper", lp_values);
 
-        const double y_lp_value = y.LpValue(lp_values);
-        const double x_lp_value = x.LpValue(lp_values);
-
-        // First cut: target should be below the line:
-        //     (x_lb, x_lb ^ 2) to (x_ub, x_ub ^ 2).
-        // The slope of that line is (ub^2 - lb^2) / (ub - lb) = ub + lb.
-        const int64_t y_lb = x_lb * x_lb;
-        const int64_t above_slope = x_ub + x_lb;
-        const double max_lp_y = y_lb + above_slope * (x_lp_value - x_lb);
-        if (y_lp_value >= max_lp_y + kMinCutViolation) {
-          // cut: y <= (x_lb + x_ub) * x - x_lb * x_ub
-          LinearConstraintBuilder above_cut(model, kMinIntegerValue,
-                                            IntegerValue(-x_lb * x_ub));
-          above_cut.AddTerm(y, IntegerValue(1));
-          above_cut.AddTerm(x, IntegerValue(-above_slope));
-          manager->AddCut(above_cut.Build(), "SquareUpper", lp_values);
-        }
-
-        // Second cut: target should be above all the lines
-        //     (value, value ^ 2) to (value + 1, (value + 1) ^ 2)
-        // The slope of that line is 2 * value + 1
-        //
-        // Note that we only add one of these cuts. The one for x_lp_value in
-        // [value, value + 1].
-        const int64_t x_floor = static_cast<int64_t>(std::floor(x_lp_value));
-        const int64_t below_slope = 2 * x_floor + 1;
-        const double min_lp_y =
-            below_slope * x_lp_value - x_floor - x_floor * x_floor;
-        if (min_lp_y >= y_lp_value + kMinCutViolation) {
-          // cut: y >= below_slope * (x - x_floor) + x_floor ^ 2
-          //    : y >= below_slope * x - x_floor ^ 2 - x_floor
-          LinearConstraintBuilder below_cut(
-              model, IntegerValue(-x_floor - x_floor * x_floor),
-              kMaxIntegerValue);
-          below_cut.AddTerm(y, IntegerValue(1));
-          below_cut.AddTerm(x, -IntegerValue(below_slope));
-          manager->AddCut(below_cut.Build(), "SquareLower", lp_values);
-        }
+        const IntegerValue x_floor =
+            static_cast<int64_t>(std::floor(x.LpValue(lp_values)));
+        manager->AddCut(ComputeHyperplanBelowSquare(x, y, x_floor, model),
+                        "SquareLower", lp_values);
         return true;
       };
 

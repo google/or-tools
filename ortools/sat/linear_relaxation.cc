@@ -39,6 +39,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/presolve_util.h"
 #include "ortools/sat/routing_cuts.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -335,49 +336,6 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
 }
 
 namespace {
-
-// Adds {enforcing_lits} => rhs_domain_min <= expr <= rhs_domain_max.
-// Requires expr offset to be 0.
-void AppendEnforcedLinearExpression(
-    const std::vector<Literal>& enforcing_literals,
-    const LinearExpression& expr, const IntegerValue rhs_domain_min,
-    const IntegerValue rhs_domain_max, const Model& model,
-    LinearRelaxation* relaxation) {
-  CHECK_EQ(expr.offset, IntegerValue(0));
-  const LinearExpression canonical_expr = CanonicalizeExpr(expr);
-  const IntegerTrail* integer_trail = model.Get<IntegerTrail>();
-  const IntegerValue min_expr_value = canonical_expr.Min(*integer_trail);
-
-  if (rhs_domain_min > min_expr_value) {
-    // And(ei) => terms >= rhs_domain_min
-    // <=> Sum_i (~ei * (rhs_domain_min - min_expr_value)) + terms >=
-    // rhs_domain_min
-    LinearConstraintBuilder lc(&model, rhs_domain_min, kMaxIntegerValue);
-    for (const Literal& literal : enforcing_literals) {
-      CHECK(lc.AddLiteralTerm(literal.Negated(),
-                              rhs_domain_min - min_expr_value));
-    }
-    for (int i = 0; i < canonical_expr.vars.size(); i++) {
-      lc.AddTerm(canonical_expr.vars[i], canonical_expr.coeffs[i]);
-    }
-    relaxation->linear_constraints.push_back(lc.Build());
-  }
-  const IntegerValue max_expr_value = canonical_expr.Max(*integer_trail);
-  if (rhs_domain_max < max_expr_value) {
-    // And(ei) => terms <= rhs_domain_max
-    // <=> Sum_i (~ei * (rhs_domain_max - max_expr_value)) + terms <=
-    // rhs_domain_max
-    LinearConstraintBuilder lc(&model, kMinIntegerValue, rhs_domain_max);
-    for (const Literal& literal : enforcing_literals) {
-      CHECK(lc.AddLiteralTerm(literal.Negated(),
-                              rhs_domain_max - max_expr_value));
-    }
-    for (int i = 0; i < canonical_expr.vars.size(); i++) {
-      lc.AddTerm(canonical_expr.vars[i], canonical_expr.coeffs[i]);
-    }
-    relaxation->linear_constraints.push_back(lc.Build());
-  }
-}
 
 bool AllLiteralsHaveViews(const IntegerEncoder& encoder,
                           const std::vector<Literal>& literals) {
@@ -1092,7 +1050,8 @@ void AppendLinMaxRelaxationPart2(
 void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
                                       bool linearize_enforced_constraints,
                                       Model* model,
-                                      LinearRelaxation* relaxation) {
+                                      LinearRelaxation* relaxation,
+                                      ActivityBoundHelper* activity_helper) {
   auto* mapping = model->Get<CpModelMapping>();
 
   // Note that we ignore the holes in the domain.
@@ -1134,22 +1093,75 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
   for (const int enforcement_ref : ct.enforcement_literal()) {
     enforcing_literals.push_back(mapping->Literal(enforcement_ref));
   }
-  LinearExpression expr;
-  expr.vars.reserve(ct.linear().vars_size());
-  expr.coeffs.reserve(ct.linear().vars_size());
+
+  // Compute min/max activity.
+  std::vector<std::pair<int, int64_t>> bool_terms;
+  IntegerValue min_activity(0);
+  IntegerValue max_activity(0);
+  const auto integer_trail = model->GetOrCreate<IntegerTrail>();
   for (int i = 0; i < ct.linear().vars_size(); i++) {
-    int ref = ct.linear().vars(i);
-    IntegerValue coeff(ct.linear().coeffs(i));
-    if (!RefIsPositive(ref)) {
-      ref = PositiveRef(ref);
-      coeff = -coeff;
-    }
+    const int ref = ct.linear().vars(i);
+    const IntegerValue coeff(ct.linear().coeffs(i));
     const IntegerVariable int_var = mapping->Integer(ref);
-    expr.vars.push_back(int_var);
-    expr.coeffs.push_back(coeff);
+
+    // Everything here should have a view.
+    CHECK_NE(int_var, kNoIntegerVariable);
+
+    const IntegerValue lb = integer_trail->LowerBound(int_var);
+    const IntegerValue ub = integer_trail->UpperBound(int_var);
+    if (lb == 0 && ub == 1 && activity_helper != nullptr) {
+      bool_terms.push_back({ref, coeff.value()});
+    } else {
+      if (coeff > 0) {
+        min_activity += coeff * lb;
+        max_activity += coeff * ub;
+      } else {
+        min_activity += coeff * ub;
+        max_activity += coeff * lb;
+      }
+    }
   }
-  AppendEnforcedLinearExpression(enforcing_literals, expr, rhs_domain_min,
-                                 rhs_domain_max, *model, relaxation);
+  if (activity_helper != nullptr) {
+    min_activity +=
+        IntegerValue(activity_helper->ComputeMinActivity(bool_terms));
+    max_activity +=
+        IntegerValue(activity_helper->ComputeMaxActivity(bool_terms));
+  }
+
+  if (rhs_domain_min > min_activity) {
+    // And(ei) => terms >= rhs_domain_min
+    // <=> Sum_i (~ei * (rhs_domain_min - min_activity)) + terms >=
+    // rhs_domain_min
+    LinearConstraintBuilder lc(model, rhs_domain_min, kMaxIntegerValue);
+    for (const Literal& literal : enforcing_literals) {
+      CHECK(
+          lc.AddLiteralTerm(literal.Negated(), rhs_domain_min - min_activity));
+    }
+    for (int i = 0; i < ct.linear().vars_size(); i++) {
+      const int ref = ct.linear().vars(i);
+      const IntegerValue coeff(ct.linear().coeffs(i));
+      const IntegerVariable int_var = mapping->Integer(ref);
+      lc.AddTerm(int_var, coeff);
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
+  }
+  if (rhs_domain_max < max_activity) {
+    // And(ei) => terms <= rhs_domain_max
+    // <=> Sum_i (~ei * (rhs_domain_max - max_activity)) + terms <=
+    // rhs_domain_max
+    LinearConstraintBuilder lc(model, kMinIntegerValue, rhs_domain_max);
+    for (const Literal& literal : enforcing_literals) {
+      CHECK(
+          lc.AddLiteralTerm(literal.Negated(), rhs_domain_max - max_activity));
+    }
+    for (int i = 0; i < ct.linear().vars_size(); i++) {
+      const int ref = ct.linear().vars(i);
+      const IntegerValue coeff(ct.linear().coeffs(i));
+      const IntegerVariable int_var = mapping->Integer(ref);
+      lc.AddTerm(int_var, coeff);
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
+  }
 }
 
 // Add a static and a dynamic linear relaxation of the CP constraint to the set
@@ -1166,7 +1178,8 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
 void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               const ConstraintProto& ct,
                               int linearization_level, Model* model,
-                              LinearRelaxation* relaxation) {
+                              LinearRelaxation* relaxation,
+                              ActivityBoundHelper* activity_helper) {
   CHECK_EQ(model->GetOrCreate<SatSolver>()->CurrentDecisionLevel(), 0);
   DCHECK_GT(linearization_level, 0);
 
@@ -1192,8 +1205,16 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       break;
     }
     case ConstraintProto::ConstraintCase::kIntProd: {
-      // No relaxation, just a cut generator .
-      AddIntProdCutGenerator(ct, linearization_level, model, relaxation);
+      const LinearArgumentProto& int_prod = ct.int_prod();
+      if (int_prod.exprs_size() == 2 &&
+          LinearExpressionProtosAreEqual(int_prod.exprs(0),
+                                         int_prod.exprs(1))) {
+        AppendSquareRelaxation(ct, model, relaxation);
+        AddSquareCutGenerator(ct, linearization_level, model, relaxation);
+      } else {
+        // No relaxation, just a cut generator .
+        AddIntProdCutGenerator(ct, linearization_level, model, relaxation);
+      }
       break;
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
@@ -1222,7 +1243,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     case ConstraintProto::ConstraintCase::kLinear: {
       AppendLinearConstraintRelaxation(
           ct, /*linearize_enforced_constraints=*/linearization_level > 1, model,
-          relaxation);
+          relaxation, activity_helper);
       break;
     }
     case ConstraintProto::ConstraintCase::kCircuit: {
@@ -1274,7 +1295,6 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
   auto* mapping = m->GetOrCreate<CpModelMapping>();
 
   // Constraint is z == x * y.
-
   AffineExpression z = mapping->Affine(ct.int_prod().target());
   AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
   AffineExpression y = mapping->Affine(ct.int_prod().exprs(1));
@@ -1285,37 +1305,89 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
   IntegerValue y_lb = integer_trail->LowerBound(y);
   IntegerValue y_ub = integer_trail->UpperBound(y);
 
-  if (x == y) {
-    // We currently only support variables with non-negative domains.
-    if (x_lb < 0 && x_ub > 0) return;
+  // We currently only support variables with non-negative domains.
+  if (x_lb < 0 && x_ub > 0) return;
+  if (y_lb < 0 && y_ub > 0) return;
 
-    // Change the sigh of x if its domain is non-positive.
-    if (x_ub <= 0) {
-      x = x.Negated();
-    }
-
-    relaxation->cut_generators.push_back(
-        CreateSquareCutGenerator(z, x, linearization_level, m));
-  } else {
-    // We currently only support variables with non-negative domains.
-    if (x_lb < 0 && x_ub > 0) return;
-    if (y_lb < 0 && y_ub > 0) return;
-
-    // Change signs to return to the case where all variables are a domain
-    // with non negative values only.
-    if (x_ub <= 0) {
-      x = x.Negated();
-      z = z.Negated();
-    }
-    if (y_ub <= 0) {
-      y = y.Negated();
-      z = z.Negated();
-    }
-
-    relaxation->cut_generators.push_back(
-        CreatePositiveMultiplicationCutGenerator(z, x, y, linearization_level,
-                                                 m));
+  // Change signs to return to the case where all variables are a domain
+  // with non negative values only.
+  if (x_ub <= 0) {
+    x = x.Negated();
+    z = z.Negated();
   }
+  if (y_ub <= 0) {
+    y = y.Negated();
+    z = z.Negated();
+  }
+
+  relaxation->cut_generators.push_back(CreatePositiveMultiplicationCutGenerator(
+      z, x, y, linearization_level, m));
+}
+
+void AppendSquareRelaxation(const ConstraintProto& ct, Model* m,
+                            LinearRelaxation* relaxation) {
+  if (HasEnforcementLiteral(ct)) return;
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
+
+  // Constraint is square == x * x.
+  AffineExpression square = mapping->Affine(ct.int_prod().target());
+  AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
+  IntegerValue x_lb = integer_trail->LowerBound(x);
+  IntegerValue x_ub = integer_trail->UpperBound(x);
+
+  if (x_lb == x_ub) return;
+
+  // We currently only support variables with non-negative domains.
+  if (x_lb < 0 && x_ub > 0) return;
+
+  // Change the sigh of x if its domain is non-positive.
+  if (x_ub <= 0) {
+    x = x.Negated();
+    const IntegerValue tmp = x_ub;
+    x_ub = -x_lb;
+    x_lb = -tmp;
+  }
+
+  // Check for potential overflows.
+  if (x_ub > (int64_t{1} << 31)) return;
+  DCHECK_GE(x_lb, 0);
+
+  relaxation->linear_constraints.push_back(
+      ComputeHyperplanAboveSquare(x, square, x_lb, x_ub, m));
+
+  relaxation->linear_constraints.push_back(
+      ComputeHyperplanBelowSquare(x, square, x_lb, m));
+  // TODO(user): We could add all or some below_hyperplans.
+  if (x_lb + 1 < x_ub) {
+    // The hyperplan will use x_ub - 1 and x_ub.
+    relaxation->linear_constraints.push_back(
+        ComputeHyperplanBelowSquare(x, square, x_ub - 1, m));
+  }
+}
+
+void AddSquareCutGenerator(const ConstraintProto& ct, int linearization_level,
+                           Model* m, LinearRelaxation* relaxation) {
+  if (HasEnforcementLiteral(ct)) return;
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
+
+  // Constraint is square == x * x.
+  const AffineExpression square = mapping->Affine(ct.int_prod().target());
+  AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
+  const IntegerValue x_lb = integer_trail->LowerBound(x);
+  const IntegerValue x_ub = integer_trail->UpperBound(x);
+
+  // We currently only support variables with non-negative domains.
+  if (x_lb < 0 && x_ub > 0) return;
+
+  // Change the sigh of x if its domain is non-positive.
+  if (x_ub <= 0) {
+    x = x.Negated();
+  }
+
+  relaxation->cut_generators.push_back(
+      CreateSquareCutGenerator(square, x, linearization_level, m));
 }
 
 void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
@@ -1557,12 +1629,18 @@ void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
 LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
                                          Model* m) {
   LinearRelaxation relaxation;
+  const SatParameters& params = *m->GetOrCreate<SatParameters>();
+
+  // Collect AtMostOne to compute better Big-M.
+  ActivityBoundHelper activity_bound_helper;
+  if (params.linearization_level() > 1) {
+    activity_bound_helper.AddAllAtMostOnes(model_proto);
+  }
 
   // Linearize the constraints.
-  const SatParameters& params = *m->GetOrCreate<SatParameters>();
   for (const auto& ct : model_proto.constraints()) {
     TryToLinearizeConstraint(model_proto, ct, params.linearization_level(), m,
-                             &relaxation);
+                             &relaxation, &activity_bound_helper);
   }
 
   // Linearize the encoding of variable that are fully encoded.

@@ -352,9 +352,11 @@ bool HittingSetOptimizer::ComputeInitialMpModel() {
   ExtractObjectiveVariables();
 
   // Linearize the constraints from the model.
+  ActivityBoundHelper activity_bound_helper;
+  activity_bound_helper.AddAllAtMostOnes(model_proto_);
   for (const auto& ct : model_proto_.constraints()) {
     TryToLinearizeConstraint(model_proto_, ct, /*linearization_level=*/2,
-                             model_, &relaxation_);
+                             model_, &relaxation_, &activity_bound_helper);
   }
 
   ExtractAdditionalVariables(ComputeAdditionalVariablesToExtract());

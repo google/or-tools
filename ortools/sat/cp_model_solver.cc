@@ -161,6 +161,9 @@ ABSL_FLAG(
     "we will interpret this as an internal solution which can be used for "
     "debugging. For instance we use it to identify wrong cuts/reasons.");
 
+ABSL_FLAG(bool, cp_model_ignore_objective, false,
+          "If true, ignore the objective.");
+
 namespace operations_research {
 namespace sat {
 
@@ -3375,6 +3378,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     VLOG(1) << "Model found infeasible during copy";
     // TODO(user): At this point, the model is trivial, but we could exit
     // early.
+  }
+
+  if (absl::GetFlag(FLAGS_cp_model_ignore_objective) &&
+      (context->working_model->has_objective() ||
+       context->working_model->has_floating_point_objective())) {
+    SOLVER_LOG(logger, "Ignoring objective");
+    context->working_model->clear_objective();
+    context->working_model->clear_floating_point_objective();
   }
 
   // Checks for hints early in case they are forced to be hard constraints.

@@ -1031,6 +1031,7 @@ cc_library(
         ":linear_constraint",
         ":linear_programming_constraint",
         ":model",
+	":presolve_util",
         ":routing_cuts",
         ":sat_base",
         ":sat_parameters_cc_proto",

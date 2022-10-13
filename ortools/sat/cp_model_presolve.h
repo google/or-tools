@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
 #define OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
 
+#include <array>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -160,7 +161,8 @@ class CpModelPresolver {
 
   // It can be interesting to know for a given linear constraint that a subset
   // of its variables are in at most one relation.
-  void DetectAndProcessAtMostOneInLinear(int ct_index, ConstraintProto* ct);
+  void DetectAndProcessAtMostOneInLinear(int ct_index, ConstraintProto* ct,
+                                         ActivityBoundHelper* helper);
 
   // If a constraint is of the form "a * expr_X + expr_Y" and expr_Y can only
   // take small values compared to a, depending on the bounds, the constraint
@@ -266,9 +268,9 @@ class CpModelPresolver {
   // Used by CanonicalizeLinearExpressionInternal().
   std::vector<std::pair<int, int64_t>> tmp_terms_;
 
-  // Cache for each variable the list of amo/exo constraint.
-  std::vector<bool> amo_is_cached_;
-  std::vector<std::vector<int>> amo_cache_;
+  // Used by DetectAndProcessAtMostOneInLinear().
+  std::vector<std::array<int64_t, 2>> conditional_mins_;
+  std::vector<std::array<int64_t, 2>> conditional_maxs_;
 
   // Used by ProcessSetPPCSubset() and DetectAndProcessAtMostOneInLinear() to
   // propagate linear with an at_most_one or exactly_one included inside.

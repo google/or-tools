@@ -14,6 +14,7 @@
 #include "ortools/sat/presolve_util.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <utility>
@@ -21,6 +22,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/meta/type_traits.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -223,6 +225,269 @@ bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
   FillDomainInProto(rhs.AdditionWith(offset), ct->mutable_linear());
 
   SortAndMergeTerms(&terms, ct->mutable_linear());
+  return true;
+}
+
+void ActivityBoundHelper::ClearAtMostOnes() {
+  num_at_most_ones_ = 0;
+  amo_indices_.clear();
+}
+
+void ActivityBoundHelper::AddAtMostOne(absl::Span<const int> amo) {
+  int num_skipped = 0;
+  const int complexity_limit = 50;
+  for (const int literal : amo) {
+    const Index i = IndexFromLiteral(literal);
+    if (i >= amo_indices_.size()) amo_indices_.resize(i + 1);
+    if (amo_indices_[i].size() >= complexity_limit) ++num_skipped;
+  }
+  if (num_skipped + 1 >= amo.size()) return;
+
+  // Add it.
+  const int unique_index = num_at_most_ones_++;
+  for (const int literal : amo) {
+    const Index i = IndexFromLiteral(literal);
+    if (amo_indices_[i].size() < complexity_limit) {
+      amo_indices_[i].push_back(unique_index);
+    }
+  }
+}
+
+// TODO(user): Add long ones first, or at least the ones of size 2 after.
+void ActivityBoundHelper::AddAllAtMostOnes(const CpModelProto& proto) {
+  for (const ConstraintProto& ct : proto.constraints()) {
+    const auto type = ct.constraint_case();
+    if (type == ConstraintProto::kAtMostOne) {
+      AddAtMostOne(ct.at_most_one().literals());
+    } else if (type == ConstraintProto::kExactlyOne) {
+      AddAtMostOne(ct.exactly_one().literals());
+    } else if (type == ConstraintProto::kBoolAnd) {
+      if (ct.enforcement_literal().size() == 1) {
+        const int a = ct.enforcement_literal(0);
+        for (const int b : ct.bool_and().literals()) {
+          // a => b same as amo(a, not(b)).
+          AddAtMostOne({a, NegatedRef(b)});
+        }
+      }
+    }
+  }
+}
+
+int64_t ActivityBoundHelper::ComputeActivity(
+    bool compute_min, absl::Span<const std::pair<int, int64_t>> terms,
+    std::vector<std::array<int64_t, 2>>* conditional) {
+  tmp_terms_.clear();
+  tmp_terms_.reserve(terms.size());
+  int64_t offset = 0;
+  for (auto [lit, coeff] : terms) {
+    if (compute_min) coeff = -coeff;  // Negate.
+    if (coeff >= 0) {
+      tmp_terms_.push_back({lit, coeff});
+    } else {
+      // l is the same as 1 - (1 - l)
+      tmp_terms_.push_back({NegatedRef(lit), -coeff});
+      offset += coeff;
+    }
+  }
+  const int64_t internal_result =
+      ComputeMaxActivityInternal(tmp_terms_, conditional);
+
+  // Correct everything.
+  if (conditional != nullptr) {
+    const int num_terms = terms.size();
+    for (int i = 0; i < num_terms; ++i) {
+      if (tmp_terms_[i].first != terms[i].first) {
+        // The true/false meaning is swapped
+        std::swap((*conditional)[i][0], (*conditional)[i][1]);
+      }
+      (*conditional)[i][0] += offset;
+      (*conditional)[i][1] += offset;
+      if (compute_min) {
+        (*conditional)[i][0] = -(*conditional)[i][0];
+        (*conditional)[i][1] = -(*conditional)[i][1];
+      }
+    }
+  }
+  if (compute_min) return -(offset + internal_result);
+  return offset + internal_result;
+}
+
+// Use trivial heuristic for now:
+// - Sort by decreasing coeff.
+// - If belong to a chosen part, use it.
+// - If not, choose biggest part left. TODO(user): compute sum of coeff in part?
+void ActivityBoundHelper::PartitionIntoAmo(
+    absl::Span<const std::pair<int, int64_t>> terms) {
+  amo_sums_.clear();
+
+  const int num_terms = terms.size();
+  to_sort_.clear();
+  to_sort_.reserve(num_terms);
+  for (int i = 0; i < num_terms; ++i) {
+    const Index index = IndexFromLiteral(terms[i].first);
+    const int64_t coeff = terms[i].second;
+    if (index < amo_indices_.size()) {
+      for (const int a : amo_indices_[index]) {
+        amo_sums_[a] += coeff;
+      }
+    }
+    to_sort_.push_back({terms[i].second, i});
+  }
+  std::sort(to_sort_.begin(), to_sort_.end(), std::greater<>());
+
+  int num_parts = 0;
+  partition_.resize(num_terms);
+  used_amo_to_dense_index_.clear();
+  for (int i = 0; i < num_terms; ++i) {
+    const int original_i = to_sort_[i].second;
+    const Index index = IndexFromLiteral(terms[original_i].first);
+    const int64_t coeff = terms[original_i].second;
+    int best = -1;
+    int64_t best_sum = 0;
+    bool done = false;
+    if (index < amo_indices_.size()) {
+      for (const int a : amo_indices_[index]) {
+        const auto it = used_amo_to_dense_index_.find(a);
+        if (it != used_amo_to_dense_index_.end()) {
+          partition_[original_i] = it->second;
+          done = true;
+          break;
+        }
+
+        const int64_t sum_left = amo_sums_[a];
+        amo_sums_[a] -= coeff;
+        if (sum_left > best_sum) {
+          best_sum = sum_left;
+          best = a;
+        }
+      }
+    }
+    if (done) continue;
+
+    // New element.
+    if (best == -1) {
+      partition_[original_i] = num_parts++;
+    } else {
+      used_amo_to_dense_index_[best] = num_parts;
+      partition_[original_i] = num_parts;
+      ++num_parts;
+    }
+  }
+  for (const int p : partition_) CHECK_LT(p, num_parts);
+  CHECK_LE(num_parts, num_terms);
+}
+
+int64_t ActivityBoundHelper::ComputeMaxActivityInternal(
+    absl::Span<const std::pair<int, int64_t>> terms,
+    std::vector<std::array<int64_t, 2>>* conditional) {
+  PartitionIntoAmo(terms);
+
+  // Compute the max coefficient in each partition.
+  const int num_terms = terms.size();
+  max_by_partition_.assign(num_terms, 0);
+  second_max_by_partition_.assign(num_terms, 0);
+  for (int i = 0; i < num_terms; ++i) {
+    const int p = partition_[i];
+    const int64_t coeff = terms[i].second;
+    if (coeff >= max_by_partition_[p]) {
+      second_max_by_partition_[p] = max_by_partition_[p];
+      max_by_partition_[p] = coeff;
+    } else if (coeff > second_max_by_partition_[p]) {
+      second_max_by_partition_[p] = coeff;
+    }
+  }
+
+  // Once we have this, we can compute bound.
+  int64_t max_activity = 0;
+  for (int p = 0; p < partition_.size(); ++p) {
+    max_activity += max_by_partition_[p];
+  }
+  if (conditional != nullptr) {
+    conditional->resize(num_terms);
+    for (int i = 0; i < num_terms; ++i) {
+      const int64_t coeff = terms[i].second;
+      const int p = partition_[i];
+      const int64_t max_used = max_by_partition_[p];
+
+      // We have two cases depending if coeff was the maximum in its part or
+      // not.
+      if (coeff == max_used) {
+        // Use the second max.
+        (*conditional)[i][0] =
+            max_activity - max_used + second_max_by_partition_[p];
+        (*conditional)[i][1] = max_activity;
+      } else {
+        // The max is still there, no change at 0 but change for 1.
+        (*conditional)[i][0] = max_activity;
+        (*conditional)[i][1] = max_activity - max_used + coeff;
+      }
+    }
+  }
+  return max_activity;
+}
+
+bool ActivityBoundHelper::PresolveEnforcement(
+    absl::Span<const int> refs, ConstraintProto* ct,
+    absl::flat_hash_set<int>* literals_at_true) {
+  if (ct->enforcement_literal().empty()) return true;
+
+  literals_at_true->clear();
+  triggered_amo_.clear();
+  int new_size = 0;
+  for (int i = 0; i < ct->enforcement_literal().size(); ++i) {
+    const int ref = ct->enforcement_literal(i);
+    if (literals_at_true->contains(ref)) continue;  // Duplicate.
+    if (literals_at_true->contains(NegatedRef(ref))) return false;  // False.
+    literals_at_true->insert(ref);
+
+    const Index index = IndexFromLiteral(ref);
+    if (index < amo_indices_.size()) {
+      for (const int a : amo_indices_[index]) {
+        // If some other literal is at one in this amo, literal must be false,
+        // and so the constraint cannot be enforced.
+        const auto [_, inserted] = triggered_amo_.insert(a);
+        if (!inserted) return false;
+      }
+    }
+
+    const Index negated_index = IndexFromLiteral(NegatedRef(ref));
+    if (negated_index < amo_indices_.size()) {
+      // If a previous enforcement literal implies this one, we can skip it.
+      bool skip = false;
+      for (const int a : amo_indices_[negated_index]) {
+        if (triggered_amo_.contains(a)) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
+    }
+
+    // Keep this enforcement.
+    ct->set_enforcement_literal(new_size++, ref);
+  }
+  ct->mutable_enforcement_literal()->Truncate(new_size);
+
+  for (const int ref : refs) {
+    // Skip already fixed.
+    if (literals_at_true->contains(ref)) continue;
+    if (literals_at_true->contains(NegatedRef(ref))) continue;
+    for (const int to_test : {ref, NegatedRef(ref)}) {
+      const Index index = IndexFromLiteral(to_test);
+      if (index < amo_indices_.size()) {
+        for (const int a : amo_indices_[index]) {
+          if (triggered_amo_.contains(a)) {
+            // If some other literal is at one in this amo,
+            // literal must be false.
+            if (literals_at_true->contains(to_test)) return false;
+            literals_at_true->insert(NegatedRef(to_test));
+            break;
+          }
+        }
+      }
+    }
+  }
+
   return true;
 }
 

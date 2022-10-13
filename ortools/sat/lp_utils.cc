@@ -1071,7 +1071,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
       case ConstraintProto::kAtMostOne: {
         MPConstraintProto* out = output->add_constraint();
         const int shift = AppendSumOfLiteral(ct.at_most_one().literals(), out);
-        out->set_lower_bound(-std::numeric_limits<double>::infinity());
+        out->set_lower_bound(-kInfinity);
         out->set_upper_bound(1 - shift);
         break;
       }
@@ -1079,7 +1079,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
         MPConstraintProto* out = output->add_constraint();
         const int shift = AppendSumOfLiteral(ct.bool_or().literals(), out);
         out->set_lower_bound(1 - shift);
-        out->set_upper_bound(std::numeric_limits<double>::infinity());
+        out->set_upper_bound(kInfinity);
         break;
       }
       case ConstraintProto::kBoolAnd: {
@@ -1092,7 +1092,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
           tmp_literals.push_back(ref);
           const int shift = AppendSumOfLiteral(tmp_literals, out);
           out->set_lower_bound(1 - shift);
-          out->set_upper_bound(std::numeric_limits<double>::infinity());
+          out->set_upper_bound(kInfinity);
           tmp_literals.pop_back();
         }
         break;
@@ -1126,12 +1126,12 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
           if (min_activity < ct.linear().domain(0)) {
             out_ct->set_lower_bound(ct.linear().domain(0));
           } else {
-            out_ct->set_lower_bound(-std::numeric_limits<double>::infinity());
+            out_ct->set_lower_bound(-kInfinity);
           }
           if (max_activity > ct.linear().domain(1)) {
             out_ct->set_upper_bound(ct.linear().domain(1));
           } else {
-            out_ct->set_lower_bound(std::numeric_limits<double>::infinity());
+            out_ct->set_upper_bound(kInfinity);
           }
           for (int i = 0; i < num_terms; ++i) {
             const int var = ct.linear().vars(i);
@@ -1145,8 +1145,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
         std::vector<MPConstraintProto*> out_cts;
         if (ct.linear().domain(1) < max_activity) {
           MPConstraintProto* high_out_ct = output->add_constraint();
-          high_out_ct->set_lower_bound(
-              -std::numeric_limits<double>::infinity());
+          high_out_ct->set_lower_bound(-kInfinity);
           int64_t ub = ct.linear().domain(1);
           const int64_t coeff = max_activity - ct.linear().domain(1);
           for (const int lit : ct.enforcement_literal()) {
@@ -1165,7 +1164,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
         }
         if (ct.linear().domain(0) > min_activity) {
           MPConstraintProto* low_out_ct = output->add_constraint();
-          low_out_ct->set_upper_bound(std::numeric_limits<double>::infinity());
+          low_out_ct->set_upper_bound(kInfinity);
           int64_t lb = ct.linear().domain(0);
           int64_t coeff = min_activity - ct.linear().domain(0);
           for (const int lit : ct.enforcement_literal()) {
