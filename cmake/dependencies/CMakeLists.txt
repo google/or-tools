@@ -330,3 +330,17 @@ if(MSVC)
 else()
   set(CMAKE_CXX_STANDARD 17)
 endif()
+
+###############
+##  TESTING  ##
+###############
+if(BUILD_TESTING)
+  if(BUILD_googletest)
+    FetchContent_Declare(
+      googletest
+      GIT_REPOSITORY https://github.com/google/googletest.git
+      GIT_TAG main)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+  endif()
+endif()
