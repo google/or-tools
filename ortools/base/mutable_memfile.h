@@ -11,17 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Basic integer type definitions for various platforms
-//
-#ifndef OR_TOOLS_BASE_BASICTYPES_H_
-#define OR_TOOLS_BASE_BASICTYPES_H_
+#ifndef OR_TOOLS_BASE_MUTABLE_MEMFILE_H_
+#define OR_TOOLS_BASE_MUTABLE_MEMFILE_H_
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
+#include <string>
+#include <string_view>
 
-// Argument type used in interfaces that can optionally take ownership
-// of a passed in argument.  If TAKE_OWNERSHIP is passed, the called
-// object takes ownership of the argument.  Otherwise it does not.
-enum Ownership { DO_NOT_TAKE_OWNERSHIP, TAKE_OWNERSHIP };
+class RegisteredMutableMemFile {
+ public:
+  RegisteredMutableMemFile(std::string_view filename) : filename_(filename) {}
 
-#endif  // OR_TOOLS_BASE_BASICTYPES_H_
+  ~RegisteredMutableMemFile() { std::remove(filename_.c_str()); }
+
+ private:
+  const std::string filename_;
+};
+
+#endif  // OR_TOOLS_BASE_MUTABLE_MEMFILE_H_

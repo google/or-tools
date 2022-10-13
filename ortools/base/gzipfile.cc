@@ -11,17 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Basic integer type definitions for various platforms
-//
-#ifndef OR_TOOLS_BASE_BASICTYPES_H_
-#define OR_TOOLS_BASE_BASICTYPES_H_
+// Files which read from and write to a gzip'ed files.
+// This could be optimized, most notably by eliminating copies in many
+// common cases.
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/gzipfile.h"
+
+#include "absl/strings/string_view.h"
+#include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 
-// Argument type used in interfaces that can optionally take ownership
-// of a passed in argument.  If TAKE_OWNERSHIP is passed, the called
-// object takes ownership of the argument.  Otherwise it does not.
-enum Ownership { DO_NOT_TAKE_OWNERSHIP, TAKE_OWNERSHIP };
-
-#endif  // OR_TOOLS_BASE_BASICTYPES_H_
+// public entry points
+File* GZipFileReader(const absl::string_view name, File* file,
+                     Ownership ownership, AppendedStreams appended_streams) {
+  // unimplemented
+  LOG(INFO) << "not implemented";
+  return nullptr;
+}

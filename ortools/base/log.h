@@ -525,9 +525,9 @@ GOOGLE_GLOG_DLL_DECL void MakeCheckOpValueString(std::ostream* os,
 namespace base {
 namespace internal {
 
-// If "s" is less than base_logging::INFO, returns base_logging::INFO.
-// If "s" is greater than base_logging::FATAL, returns
-// base_logging::ERROR.  Otherwise, returns "s".
+// If "s" is less than INFO, returns INFO.
+// If "s" is greater than FATAL, returns
+// ERROR.  Otherwise, returns "s".
 LogSeverity NormalizeSeverity(LogSeverity s);
 
 }  // namespace internal
@@ -604,7 +604,7 @@ DEFINE_CHECK_OP_IMPL(Check_GT, >)
 #define CHECK_OP_LOG(name, op, val1, val2, log) CHECK((val1)op(val2))
 #elif DCHECK_IS_ON()
 // In debug mode, avoid constructing CheckOpStrings if possible,
-// to reduce the overhead of CHECK statments by 2x.
+// to reduce the overhead of CHECK statements by 2x.
 // Real DCHECK-heavy tests have seen 1.5x speedups.
 
 // The meaning of "string" might be different between now and
@@ -1218,7 +1218,6 @@ GOOGLE_GLOG_DLL_DECL void FlushLogFiles(LogSeverity min_severity);
 // locking -- used for catastrophic failures.
 GOOGLE_GLOG_DLL_DECL void FlushLogFilesUnsafe(LogSeverity min_severity);
 
-//
 // Set the destination to which a particular severity level of log
 // messages is sent.  If base_filename is "", it means "don't log this
 // severity".  Thread-safe.
@@ -1226,7 +1225,6 @@ GOOGLE_GLOG_DLL_DECL void FlushLogFilesUnsafe(LogSeverity min_severity);
 GOOGLE_GLOG_DLL_DECL void SetLogDestination(LogSeverity severity,
                                             const char* base_filename);
 
-//
 // Set the basename of the symlink to the latest log file at a given
 // severity.  If symlink_basename is empty, do not make a symlink.  If
 // you don't call this function, the symlink basename is the
@@ -1235,7 +1233,16 @@ GOOGLE_GLOG_DLL_DECL void SetLogDestination(LogSeverity severity,
 GOOGLE_GLOG_DLL_DECL void SetLogSymlink(LogSeverity severity,
                                         const char* symlink_basename);
 
-//
+struct LogEntry {
+  const LogSeverity severity;
+  const std::string file_path;
+  const std::string message;
+
+  LogSeverity log_severity() const { return severity; }
+  const std::string& source_filename() const { return file_path; }
+  const std::string& text_message() const { return message; }
+};
+
 // Used to send logs to some other kind of destination
 // Users should subclass LogSink and override send to do whatever they want.
 // Implementations must be thread-safe because a shared instance will
@@ -1250,7 +1257,9 @@ class GOOGLE_GLOG_DLL_DECL LogSink {
   virtual void send(LogSeverity severity, const char* full_filename,
                     const char* base_filename, int line,
                     const struct ::tm* tm_time, const char* message,
-                    size_t message_len) = 0;
+                    size_t message_len) {}
+
+  virtual void Send(const LogEntry& entry) {}
 
   // Redefine this to implement waiting for
   // the sink's logging logic to complete.

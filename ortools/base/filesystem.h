@@ -11,17 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Basic integer type definitions for various platforms
-//
-#ifndef OR_TOOLS_BASE_BASICTYPES_H_
-#define OR_TOOLS_BASE_BASICTYPES_H_
+#ifndef OR_TOOLS_BASE_FILESYSTEM_H_
+#define OR_TOOLS_BASE_FILESYSTEM_H_
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
+#include <string>
+#include <string_view>
+#include <vector>
 
-// Argument type used in interfaces that can optionally take ownership
-// of a passed in argument.  If TAKE_OWNERSHIP is passed, the called
-// object takes ownership of the argument.  Otherwise it does not.
-enum Ownership { DO_NOT_TAKE_OWNERSHIP, TAKE_OWNERSHIP };
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
+#include "ortools/base/file.h"
 
-#endif  // OR_TOOLS_BASE_BASICTYPES_H_
+namespace file {
+
+absl::Status Match(std::string_view pattern, std::vector<std::string>* result,
+                   const file::Options& options);
+
+}  // namespace file
+
+#endif  // OR_TOOLS_BASE_FILESYSTEM_H_

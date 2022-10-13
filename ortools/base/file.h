@@ -117,7 +117,10 @@ class File {
 };
 
 namespace file {
-inline int Defaults() { return 0xBABA; }
+
+using Options = int;
+
+inline Options Defaults() { return 0xBABA; }
 
 // As of 2016-01, these methods can only be used with flags = file::Defaults().
 absl::Status Open(const absl::string_view& filename,
