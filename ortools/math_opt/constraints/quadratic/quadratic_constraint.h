@@ -77,6 +77,7 @@ class QuadraticConstraint {
   // Returns a detailed string description of the contents of the constraint
   // (not its name, use `<<` for that instead).
   inline std::string ToString() const;
+
   friend inline bool operator==(const QuadraticConstraint& lhs,
                                 const QuadraticConstraint& rhs);
   friend inline bool operator!=(const QuadraticConstraint& lhs,
