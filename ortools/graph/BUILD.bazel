@@ -73,6 +73,7 @@ cc_library(
     hdrs = ["io.h"],
     deps = [
         ":graph",
+        "//ortools/base:numbers",
         "//ortools/util:filelineiter",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",

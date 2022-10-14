@@ -26,7 +26,7 @@ namespace util {
 //
 // BeginEndWrapper<OutgoingArcIterator> Graph::OutgoingArcs(NodeInde node)
 //      const {
-//   return BeginEndRange(
+//   return BeginEndWrapper(
 //       OutgoingArcIterator(*this, node, /*at_end=*/false),
 //       OutgoingArcIterator(*this, node, /*at_end=*/true));
 // }
@@ -43,6 +43,7 @@ class BeginEndWrapper {
   BeginEndWrapper(Iterator begin, Iterator end) : begin_(begin), end_(end) {}
   Iterator begin() const { return begin_; }
   Iterator end() const { return end_; }
+  size_t size() const { return end_ - begin_; }
 
   bool empty() const { return begin() == end(); }
 
