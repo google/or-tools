@@ -53,8 +53,8 @@ void LocationContainer::AddRandomLocation(int64_t x_max, int64_t y_max) {
 
 void LocationContainer::AddRandomLocation(int64_t x_max, int64_t y_max,
                                           int duplicates) {
-  const int64_t x = randomizer_.Uniform(x_max + 1);
-  const int64_t y = randomizer_.Uniform(y_max + 1);
+  const int64_t x = absl::Uniform(randomizer_, 0, x_max + 1);
+  const int64_t y = absl::Uniform(randomizer_, 0, y_max + 1);
   for (int i = 0; i < duplicates; ++i) {
     AddLocation(x, y);
   }
@@ -123,8 +123,8 @@ void RandomDemand::Initialize() {
     if (order == depot_) {
       demand_[order] = 0;
     } else {
-      demand_[order] =
-          kDemandMin + randomizer.Uniform(kDemandMax - kDemandMin + 1);
+      demand_[order] = kDemandMin + absl::Uniform(randomizer, 0,
+                                                  kDemandMax - kDemandMin + 1);
     }
   }
 }
