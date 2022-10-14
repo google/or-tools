@@ -34,7 +34,7 @@
 // solver.Init(profits, weights, capacity);
 // bool is_solution_optimal = false;
 // std::unique_ptr<TimeLimit> time_limit =
-//     absl::make_unique<TimeLimit>(time_limit_seconds); // Set the time limit.
+//     std::make_unique<TimeLimit>(time_limit_seconds); // Set the time limit.
 // const double profit = solver.Solve(time_limit.get(), &is_solution_optimal);
 // const int number_of_items(profits.size());
 // for (int item_id(0); item_id < number_of_items; ++item_id) {
