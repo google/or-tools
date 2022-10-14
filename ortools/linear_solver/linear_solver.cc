@@ -524,6 +524,7 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     return true;
   }
 #endif
+
   return false;
 }
 

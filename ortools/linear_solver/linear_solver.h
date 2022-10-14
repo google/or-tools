@@ -215,7 +215,6 @@ class MPSolver {
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
     XPRESS_LINEAR_PROGRAMMING = 101,
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
-
     HIGHS_MIXED_INTEGER_PROGRAMMING = 16,
 
     // Boolean optimization problem (requires only integer variables and works

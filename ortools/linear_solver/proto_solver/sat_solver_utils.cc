@@ -27,7 +27,7 @@ namespace operations_research {
 
 #define ADD_LP_PREPROCESSOR(name) \
   names.push_back(#name);         \
-  lp_preprocessors.push_back(absl::make_unique<name>(&glop_params));
+  lp_preprocessors.push_back(std::make_unique<name>(&glop_params));
 
 glop::ProblemStatus ApplyMipPresolveSteps(
     const glop::GlopParameters& glop_params, MPModelProto* model,

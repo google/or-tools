@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -259,8 +260,11 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     }
   }
   if (params.mip_var_scaling() != 1.0) {
+    const double max_bound = params.mip_scale_large_domain()
+                                 ? std::numeric_limits<double>::infinity()
+                                 : params.mip_max_bound();
     const std::vector<double> other_scaling = sat::ScaleContinuousVariables(
-        params.mip_var_scaling(), params.mip_max_bound(), mp_model);
+        params.mip_var_scaling(), max_bound, mp_model);
     for (int i = 0; i < var_scaling.size(); ++i) {
       var_scaling[i] *= other_scaling[i];
     }
