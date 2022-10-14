@@ -93,10 +93,10 @@ class TimeDistribution;
 // Base class for a statistic that can be pretty-printed.
 class Stat {
  public:
-  explicit Stat(const std::string& name) : name_(name) {}
+  explicit Stat(absl::string_view name) : name_(name) {}
 
   // Also add this stat to the given group.
-  Stat(const std::string& name, StatsGroup* group);
+  Stat(absl::string_view name, StatsGroup* group);
   virtual ~Stat() {}
 
   // Only used for display purposes.
@@ -136,7 +136,7 @@ class StatsGroup {
     SORT_BY_NAME = 1,
   };
 
-  explicit StatsGroup(const std::string& name)
+  explicit StatsGroup(absl::string_view name)
       : name_(name), stats_(), time_distributions_() {}
   ~StatsGroup();
 
@@ -175,9 +175,9 @@ class StatsGroup {
 // the values are added to the sequence and in the way the stats are printed.
 class DistributionStat : public Stat {
  public:
-  explicit DistributionStat(const std::string& name);
+  explicit DistributionStat(absl::string_view name);
   DistributionStat() : DistributionStat("") {}
-  DistributionStat(const std::string& name, StatsGroup* group);
+  DistributionStat(absl::string_view name, StatsGroup* group);
   ~DistributionStat() override {}
   void Reset() override;
   bool WorthPrinting() const override { return num_ != 0; }
@@ -221,10 +221,10 @@ class DistributionStat : public Stat {
 // if the sum of times reaches 52 days for a 2GHz processor.
 class TimeDistribution : public DistributionStat {
  public:
-  explicit TimeDistribution(const std::string& name)
+  explicit TimeDistribution(absl::string_view name)
       : DistributionStat(name), timer_() {}
   TimeDistribution() : TimeDistribution("") {}
-  TimeDistribution(const std::string& name, StatsGroup* group)
+  TimeDistribution(absl::string_view name, StatsGroup* group)
       : DistributionStat(name, group), timer_() {}
   std::string ValueAsString() const override;
 
@@ -263,10 +263,9 @@ class TimeDistribution : public DistributionStat {
 // Statistic on the distribution of a sequence of ratios, displayed as %.
 class RatioDistribution : public DistributionStat {
  public:
-  explicit RatioDistribution(const std::string& name)
-      : DistributionStat(name) {}
+  explicit RatioDistribution(absl::string_view name) : DistributionStat(name) {}
   RatioDistribution() : RatioDistribution("") {}
-  RatioDistribution(const std::string& name, StatsGroup* group)
+  RatioDistribution(absl::string_view name, StatsGroup* group)
       : DistributionStat(name, group) {}
   std::string ValueAsString() const override;
   void Add(double value);
@@ -275,10 +274,10 @@ class RatioDistribution : public DistributionStat {
 // Statistic on the distribution of a sequence of doubles.
 class DoubleDistribution : public DistributionStat {
  public:
-  explicit DoubleDistribution(const std::string& name)
+  explicit DoubleDistribution(absl::string_view name)
       : DistributionStat(name) {}
   DoubleDistribution() : DoubleDistribution("") {}
-  DoubleDistribution(const std::string& name, StatsGroup* group)
+  DoubleDistribution(absl::string_view name, StatsGroup* group)
       : DistributionStat(name, group) {}
   std::string ValueAsString() const override;
   void Add(double value);
@@ -287,10 +286,10 @@ class DoubleDistribution : public DistributionStat {
 // Statistic on the distribution of a sequence of integers.
 class IntegerDistribution : public DistributionStat {
  public:
-  explicit IntegerDistribution(const std::string& name)
+  explicit IntegerDistribution(absl::string_view name)
       : DistributionStat(name) {}
   IntegerDistribution() : IntegerDistribution("") {}
-  IntegerDistribution(const std::string& name, StatsGroup* group)
+  IntegerDistribution(absl::string_view name, StatsGroup* group)
       : DistributionStat(name, group) {}
   std::string ValueAsString() const override;
   void Add(int64_t value);
@@ -360,7 +359,7 @@ class DisabledScopedTimeDistributionUpdater {
 //   sudo echo "0" > /proc/sys/kernel/kptr_restrict
 class EnabledScopedInstructionCounter {
  public:
-  explicit EnabledScopedInstructionCounter(const std::string& name,
+  explicit EnabledScopedInstructionCounter(absl::string_view name,
                                            TimeLimit* time_limit);
   EnabledScopedInstructionCounter(const EnabledScopedInstructionCounter&) =
       delete;
@@ -381,7 +380,7 @@ class EnabledScopedInstructionCounter {
 
 class DisabledScopedInstructionCounter {
  public:
-  explicit DisabledScopedInstructionCounter(const std::string& name) {}
+  explicit DisabledScopedInstructionCounter(absl::string_view) {}
   DisabledScopedInstructionCounter(const DisabledScopedInstructionCounter&) =
       delete;
   DisabledScopedInstructionCounter& operator=(

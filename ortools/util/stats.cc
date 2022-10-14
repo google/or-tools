@@ -42,7 +42,7 @@ std::string MemoryUsage() {
   }
 }
 
-Stat::Stat(const std::string& name, StatsGroup* group) : name_(name) {
+Stat::Stat(absl::string_view name, StatsGroup* group) : name_(name) {
   group->Register(this);
 }
 
@@ -123,7 +123,7 @@ TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
   return ref;
 }
 
-DistributionStat::DistributionStat(const std::string& name)
+DistributionStat::DistributionStat(absl::string_view name)
     : Stat(name),
       sum_(0.0),
       average_(0.0),
@@ -132,7 +132,7 @@ DistributionStat::DistributionStat(const std::string& name)
       max_(0.0),
       num_(0) {}
 
-DistributionStat::DistributionStat(const std::string& name, StatsGroup* group)
+DistributionStat::DistributionStat(absl::string_view name, StatsGroup* group)
     : Stat(name, group),
       sum_(0.0),
       average_(0.0),
@@ -240,7 +240,7 @@ std::string IntegerDistribution::ValueAsString() const {
 
 #ifdef HAS_PERF_SUBSYSTEM
 EnabledScopedInstructionCounter::EnabledScopedInstructionCounter(
-    const std::string& name, TimeLimit* time_limit)
+    absl::string_view name, TimeLimit* time_limit)
     : time_limit_(time_limit), name_(name) {
   starting_count_ =
       time_limit_ != nullptr ? time_limit_->ReadInstructionCounter() : 0;
