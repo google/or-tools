@@ -562,7 +562,7 @@ class RoutingModel {
   /// Quantities at a node are represented by "cumul" variables and the increase
   /// or decrease of quantities between nodes are represented by "transit"
   /// variables. These variables are linked as follows:
-  /// if j == next(i), cumul(j) = cumul(i) + transit(i) + slack(i)
+  /// if j == next(i), cumul(j) = cumul(i) + transit(i,j) + slack(i)
   /// where slack is a positive slack variable (can represent waiting times for
   /// a time dimension).
   /// Setting the value of fix_start_cumul_to_zero to true will force the
