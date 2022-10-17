@@ -306,78 +306,79 @@ test_dotnet_algorithms_samples: \
 
 .PHONY: test_dotnet_constraint_solver_samples # Build and Run all .Net CP Samples (located in ortools/constraint_solver/samples)
 test_dotnet_constraint_solver_samples: \
-	rdotnet_SimpleCpProgram \
-	rdotnet_SimpleRoutingProgram \
-	rdotnet_Tsp \
-	rdotnet_TspCities \
-	rdotnet_TspCircuitBoard \
-	rdotnet_TspDistanceMatrix \
-	rdotnet_Vrp \
-	rdotnet_VrpBreaks \
-	rdotnet_VrpCapacity \
-	rdotnet_VrpDropNodes \
-	rdotnet_VrpGlobalSpan \
-	rdotnet_VrpInitialRoutes \
-	rdotnet_VrpPickupDelivery \
-	rdotnet_VrpPickupDeliveryFifo \
-	rdotnet_VrpPickupDeliveryLifo \
-	rdotnet_VrpResources \
-	rdotnet_VrpStartsEnds \
-	rdotnet_VrpTimeWindows \
-	rdotnet_VrpWithTimeLimit
+ rdotnet_SimpleCpProgram \
+ rdotnet_SimpleRoutingProgram \
+ rdotnet_Tsp \
+ rdotnet_TspCities \
+ rdotnet_TspCircuitBoard \
+ rdotnet_TspDistanceMatrix \
+ rdotnet_Vrp \
+ rdotnet_VrpBreaks \
+ rdotnet_VrpCapacity \
+ rdotnet_VrpDropNodes \
+ rdotnet_VrpGlobalSpan \
+ rdotnet_VrpInitialRoutes \
+ rdotnet_VrpPickupDelivery \
+ rdotnet_VrpPickupDeliveryFifo \
+ rdotnet_VrpPickupDeliveryLifo \
+ rdotnet_VrpResources \
+ rdotnet_VrpStartsEnds \
+ rdotnet_VrpTimeWindows \
+ rdotnet_VrpWithTimeLimit
 
 .PHONY: test_dotnet_graph_samples # Build and Run all .Net LP Samples (located in ortools/graph/samples)
 test_dotnet_graph_samples: \
-	rdotnet_AssignmentLinearSumAssignment \
-	rdotnet_AssignmentMinFlow \
-	rdotnet_BalanceMinFlow \
-	rdotnet_SimpleMaxFlowProgram \
-	rdotnet_SimpleMinCostFlowProgram \
+ rdotnet_AssignmentLinearSumAssignment \
+ rdotnet_AssignmentMinFlow \
+ rdotnet_BalanceMinFlow \
+ rdotnet_SimpleMaxFlowProgram \
+ rdotnet_SimpleMinCostFlowProgram \
 
 .PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
 test_dotnet_linear_solver_samples: \
-	rdotnet_AssignmentMip \
-	rdotnet_BasicExample \
-	rdotnet_BinPackingMip \
-	rdotnet_LinearProgrammingExample \
-	rdotnet_MipVarArray \
-	rdotnet_MultipleKnapsackMip \
-	rdotnet_SimpleLpProgram \
-	rdotnet_SimpleMipProgram \
-	rdotnet_StiglerDiet
+ rdotnet_AssignmentMip \
+ rdotnet_BasicExample \
+ rdotnet_BinPackingMip \
+ rdotnet_LinearProgrammingExample \
+ rdotnet_MipVarArray \
+ rdotnet_MultipleKnapsackMip \
+ rdotnet_SimpleLpProgram \
+ rdotnet_SimpleMipProgram \
+ rdotnet_StiglerDiet
 
 .PHONY: test_dotnet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
 test_dotnet_sat_samples: \
-rdotnet_AssignmentGroupsSat \
-rdotnet_AssignmentSat \
-rdotnet_AssignmentTaskSizesSat \
-rdotnet_AssignmentTeamsSat \
-rdotnet_AssumptionsSampleSat \
-rdotnet_BinPackingProblemSat \
-rdotnet_BoolOrSampleSat \
-rdotnet_ChannelingSampleSat \
-rdotnet_CpIsFunSat \
-rdotnet_CpSatExample \
-rdotnet_EarlinessTardinessCostSampleSat \
-rdotnet_IntervalSampleSat \
-rdotnet_LiteralSampleSat \
-rdotnet_MinimalJobshopSat \
-rdotnet_MultipleKnapsackSat \
-rdotnet_NQueensSat \
-rdotnet_NoOverlapSampleSat \
-rdotnet_NursesSat \
-rdotnet_OptionalIntervalSampleSat \
-rdotnet_RabbitsAndPheasantsSat \
-rdotnet_RankingSampleSat \
-rdotnet_ReifiedSampleSat \
-rdotnet_ScheduleRequestsSat \
-rdotnet_SearchForAllSolutionsSampleSat \
-rdotnet_SimpleSatProgram \
-rdotnet_SolutionHintingSampleSat \
-rdotnet_SolveAndPrintIntermediateSolutionsSampleSat \
-rdotnet_SolveWithTimeLimitSampleSat \
-rdotnet_StepFunctionSampleSat \
-rdotnet_StopAfterNSolutionsSampleSat
+ rdotnet_AssignmentGroupsSat \
+ rdotnet_AssignmentSat \
+ rdotnet_AssignmentTaskSizesSat \
+ rdotnet_AssignmentTeamsSat \
+ rdotnet_AssumptionsSampleSat \
+ rdotnet_BinPackingProblemSat \
+ rdotnet_BoolOrSampleSat \
+ rdotnet_ChannelingSampleSat \
+ rdotnet_CpIsFunSat \
+ rdotnet_CpSatExample \
+ rdotnet_EarlinessTardinessCostSampleSat \
+ rdotnet_IntervalSampleSat \
+ rdotnet_LiteralSampleSat \
+ rdotnet_MinimalJobshopSat \
+ rdotnet_MultipleKnapsackSat \
+ rdotnet_NQueensSat \
+ rdotnet_NoOverlapSampleSat \
+ rdotnet_NonLinearSat \
+ rdotnet_NursesSat \
+ rdotnet_OptionalIntervalSampleSat \
+ rdotnet_RabbitsAndPheasantsSat \
+ rdotnet_RankingSampleSat \
+ rdotnet_ReifiedSampleSat \
+ rdotnet_ScheduleRequestsSat \
+ rdotnet_SearchForAllSolutionsSampleSat \
+ rdotnet_SimpleSatProgram \
+ rdotnet_SolutionHintingSampleSat \
+ rdotnet_SolveAndPrintIntermediateSolutionsSampleSat \
+ rdotnet_SolveWithTimeLimitSampleSat \
+ rdotnet_StepFunctionSampleSat \
+ rdotnet_StopAfterNSolutionsSampleSat
 
 .PHONY: check_dotnet
 check_dotnet: \
@@ -389,116 +390,116 @@ check_dotnet: \
 
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test and ortools/<cmp>/csharp)
 test_dotnet_tests: \
-	rdotnet_InitTests \
-	rdotnet_KnapsackSolverTests \
-	rdotnet_FlowTests \
-	rdotnet_LinearSolverTests \
-	rdotnet_ConstraintSolverTests \
-	rdotnet_RoutingSolverTests \
-	rdotnet_SatSolverTests \
-	rdotnet_issue18 \
-	rdotnet_issue22 \
-	rdotnet_issue33
+ rdotnet_InitTests \
+ rdotnet_KnapsackSolverTests \
+ rdotnet_FlowTests \
+ rdotnet_LinearSolverTests \
+ rdotnet_ConstraintSolverTests \
+ rdotnet_RoutingSolverTests \
+ rdotnet_SatSolverTests \
+ rdotnet_issue18 \
+ rdotnet_issue22 \
+ rdotnet_issue33
 
 .PHONY: test_dotnet_contrib # Build and Run all .Net Examples (located in examples/contrib)
 test_dotnet_contrib: \
-	rdotnet_3_jugs_regular \
-	rdotnet_a_puzzle \
-	rdotnet_a_round_of_golf \
-	rdotnet_all_interval \
-	rdotnet_alldifferent_except_0 \
-	rdotnet_assignment \
-	rdotnet_broken_weights \
-	rdotnet_bus_schedule \
-	rdotnet_circuit \
-	rdotnet_circuit2 \
-	rdotnet_coins3 \
-	rdotnet_combinatorial_auction2 \
-	rdotnet_contiguity_regular \
-	rdotnet_contiguity_transition \
-	rdotnet_costas_array \
-	rdotnet_covering_opl \
-	rdotnet_crew \
-	rdotnet_crossword \
-	rdotnet_crypta \
-	rdotnet_crypto \
-	rdotnet_csdiet \
-	rdotnet_curious_set_of_integers \
-	rdotnet_debruijn \
-	rdotnet_discrete_tomography \
-	rdotnet_divisible_by_9_through_1 \
-	rdotnet_dudeney \
-	rdotnet_einav_puzzle2 \
-	rdotnet_eq10 \
-	rdotnet_eq20 \
-	rdotnet_fill_a_pix \
-	rdotnet_furniture_moving \
-	rdotnet_futoshiki \
-	rdotnet_golomb_ruler \
-	rdotnet_grocery \
-	rdotnet_hidato_table \
-	rdotnet_just_forgotten \
-	rdotnet_kakuro \
-	rdotnet_kenken2 \
-	rdotnet_killer_sudoku \
-	rdotnet_labeled_dice \
-	rdotnet_langford \
-	rdotnet_least_diff \
-	rdotnet_lectures \
-	rdotnet_magic_sequence \
-	rdotnet_magic_square \
-	rdotnet_magic_square_and_cards \
-	rdotnet_map \
-	rdotnet_map2 \
-	rdotnet_marathon2 \
-	rdotnet_max_flow_taha \
-	rdotnet_max_flow_winston1 \
-	rdotnet_minesweeper \
-	rdotnet_mr_smith \
-	rdotnet_nqueens \
-	rdotnet_nurse_rostering_regular \
-	rdotnet_nurse_rostering_transition \
-	rdotnet_olympic \
-	rdotnet_organize_day \
-	rdotnet_p_median \
-	rdotnet_pandigital_numbers \
-	rdotnet_perfect_square_sequence \
-	rdotnet_photo_problem \
-	rdotnet_place_number_puzzle \
-	rdotnet_post_office_problem2 \
-	rdotnet_quasigroup_completion \
-	rdotnet_regex \
-	rdotnet_rogo2 \
-	rdotnet_scheduling_speakers \
-	rdotnet_secret_santa2 \
-	rdotnet_send_more_money \
-	rdotnet_send_more_money2 \
-	rdotnet_send_most_money \
-	rdotnet_seseman \
-	rdotnet_set_covering \
-	rdotnet_set_covering2 \
-	rdotnet_set_covering3 \
-	rdotnet_set_covering4 \
-	rdotnet_set_covering_deployment \
-	rdotnet_set_covering_skiena \
-	rdotnet_set_partition \
-	rdotnet_sicherman_dice \
-	rdotnet_ski_assignment \
-	rdotnet_stable_marriage \
-	rdotnet_strimko2 \
-	rdotnet_subset_sum \
-	rdotnet_sudoku \
-	rdotnet_survo_puzzle \
-	rdotnet_to_num \
-	rdotnet_traffic_lights \
-	rdotnet_volsay \
-	rdotnet_volsay2 \
-	rdotnet_volsay3 \
-	rdotnet_wedding_optimal_chart \
-	rdotnet_who_killed_agatha \
-	rdotnet_xkcd \
-	rdotnet_young_tableaux \
-	rdotnet_zebra
+ rdotnet_3_jugs_regular \
+ rdotnet_a_puzzle \
+ rdotnet_a_round_of_golf \
+ rdotnet_all_interval \
+ rdotnet_alldifferent_except_0 \
+ rdotnet_assignment \
+ rdotnet_broken_weights \
+ rdotnet_bus_schedule \
+ rdotnet_circuit \
+ rdotnet_circuit2 \
+ rdotnet_coins3 \
+ rdotnet_combinatorial_auction2 \
+ rdotnet_contiguity_regular \
+ rdotnet_contiguity_transition \
+ rdotnet_costas_array \
+ rdotnet_covering_opl \
+ rdotnet_crew \
+ rdotnet_crossword \
+ rdotnet_crypta \
+ rdotnet_crypto \
+ rdotnet_csdiet \
+ rdotnet_curious_set_of_integers \
+ rdotnet_debruijn \
+ rdotnet_discrete_tomography \
+ rdotnet_divisible_by_9_through_1 \
+ rdotnet_dudeney \
+ rdotnet_einav_puzzle2 \
+ rdotnet_eq10 \
+ rdotnet_eq20 \
+ rdotnet_fill_a_pix \
+ rdotnet_furniture_moving \
+ rdotnet_futoshiki \
+ rdotnet_golomb_ruler \
+ rdotnet_grocery \
+ rdotnet_hidato_table \
+ rdotnet_just_forgotten \
+ rdotnet_kakuro \
+ rdotnet_kenken2 \
+ rdotnet_killer_sudoku \
+ rdotnet_labeled_dice \
+ rdotnet_langford \
+ rdotnet_least_diff \
+ rdotnet_lectures \
+ rdotnet_magic_sequence \
+ rdotnet_magic_square \
+ rdotnet_magic_square_and_cards \
+ rdotnet_map \
+ rdotnet_map2 \
+ rdotnet_marathon2 \
+ rdotnet_max_flow_taha \
+ rdotnet_max_flow_winston1 \
+ rdotnet_minesweeper \
+ rdotnet_mr_smith \
+ rdotnet_nqueens \
+ rdotnet_nurse_rostering_regular \
+ rdotnet_nurse_rostering_transition \
+ rdotnet_olympic \
+ rdotnet_organize_day \
+ rdotnet_p_median \
+ rdotnet_pandigital_numbers \
+ rdotnet_perfect_square_sequence \
+ rdotnet_photo_problem \
+ rdotnet_place_number_puzzle \
+ rdotnet_post_office_problem2 \
+ rdotnet_quasigroup_completion \
+ rdotnet_regex \
+ rdotnet_rogo2 \
+ rdotnet_scheduling_speakers \
+ rdotnet_secret_santa2 \
+ rdotnet_send_more_money \
+ rdotnet_send_more_money2 \
+ rdotnet_send_most_money \
+ rdotnet_seseman \
+ rdotnet_set_covering \
+ rdotnet_set_covering2 \
+ rdotnet_set_covering3 \
+ rdotnet_set_covering4 \
+ rdotnet_set_covering_deployment \
+ rdotnet_set_covering_skiena \
+ rdotnet_set_partition \
+ rdotnet_sicherman_dice \
+ rdotnet_ski_assignment \
+ rdotnet_stable_marriage \
+ rdotnet_strimko2 \
+ rdotnet_subset_sum \
+ rdotnet_sudoku \
+ rdotnet_survo_puzzle \
+ rdotnet_to_num \
+ rdotnet_traffic_lights \
+ rdotnet_volsay \
+ rdotnet_volsay2 \
+ rdotnet_volsay3 \
+ rdotnet_wedding_optimal_chart \
+ rdotnet_who_killed_agatha \
+ rdotnet_xkcd \
+ rdotnet_young_tableaux \
+ rdotnet_zebra
 #	rdotnet_coins_grid ARGS="5 2" \
 #	rdotnet_nontransitive_dice \ # too long
 #	rdotnet_partition \ # too long
@@ -507,25 +508,25 @@ test_dotnet_contrib: \
 
 .PHONY: test_dotnet_dotnet # Build and Run all .Net Examples (located in examples/dotnet)
 test_dotnet_dotnet: \
-	rdotnet_BalanceGroupSat \
-	rdotnet_cscvrptw \
-	rdotnet_csflow \
-	rdotnet_csintegerprogramming \
-	rdotnet_csknapsack \
-	rdotnet_cslinearprogramming \
-	rdotnet_csls_api \
-	rdotnet_csrabbitspheasants \
-	rdotnet_cstsp \
-	rdotnet_furniture_moving_intervals \
-	rdotnet_organize_day_intervals \
-	rdotnet_techtalk_scheduling \
-	rdotnet_GateSchedulingSat \
-	rdotnet_JobshopFt06Sat \
-	rdotnet_JobshopSat \
-	rdotnet_NursesSat \
-	rdotnet_ShiftSchedulingSat \
-	rdotnet_SpeakerSchedulingSat \
-	rdotnet_TaskSchedulingSat
+ rdotnet_BalanceGroupSat \
+ rdotnet_cscvrptw \
+ rdotnet_csflow \
+ rdotnet_csintegerprogramming \
+ rdotnet_csknapsack \
+ rdotnet_cslinearprogramming \
+ rdotnet_csls_api \
+ rdotnet_csrabbitspheasants \
+ rdotnet_cstsp \
+ rdotnet_furniture_moving_intervals \
+ rdotnet_organize_day_intervals \
+ rdotnet_techtalk_scheduling \
+ rdotnet_GateSchedulingSat \
+ rdotnet_JobshopFt06Sat \
+ rdotnet_JobshopSat \
+ rdotnet_NursesSat \
+ rdotnet_ShiftSchedulingSat \
+ rdotnet_SpeakerSchedulingSat \
+ rdotnet_TaskSchedulingSat
 #	rdotnet_NetworkRoutingSat \
  ARGS="--clients=10 --backbones=5 --demands=10 --trafficMin=5 --trafficMax=10 --minClientDegree=2 --maxClientDegree=5 --minBackboneDegree=3 --maxBackboneDegree=5 --maxCapacity=20 --fixedChargeCost=10" \
 

@@ -433,20 +433,31 @@ test_cc_model_builder_samples: \
 
 .PHONY: test_cpp_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cpp_sat_samples: \
+ rcpp_assignment_groups_sat \
  rcpp_assignment_sat \
+ rcpp_assignment_task_sizes_sat \
+ rcpp_assignment_teams_sat \
  rcpp_assumptions_sample_sat \
  rcpp_binpacking_problem_sat \
  rcpp_bool_or_sample_sat \
  rcpp_channeling_sample_sat \
+ rcpp_copy_model_sample_sat \
  rcpp_cp_is_fun_sat \
+ rcpp_cp_sat_example \
  rcpp_earliness_tardiness_cost_sample_sat \
  rcpp_interval_sample_sat \
  rcpp_literal_sample_sat \
+ rcpp_minimal_jobshop_sat \
+ rcpp_multiple_knapsack_sat \
+ rcpp_non_linear_sat \
  rcpp_no_overlap_sample_sat \
+ rcpp_nqueens_sat \
+ rcpp_nurses_sat \
  rcpp_optional_interval_sample_sat \
  rcpp_rabbits_and_pheasants_sat \
  rcpp_ranking_sample_sat \
  rcpp_reified_sample_sat \
+ rcpp_schedule_requests_sat \
  rcpp_search_for_all_solutions_sample_sat \
  rcpp_simple_sat_program \
  rcpp_solution_hinting_sample_sat \

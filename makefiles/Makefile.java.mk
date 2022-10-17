@@ -332,25 +332,35 @@ test_java_model_builder_samples: \
 
 .PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
 test_java_sat_samples: \
+ rjava_AssignmentGroupsSat \
  rjava_AssignmentSat \
+ rjava_AssignmentTaskSizesSat \
+ rjava_AssignmentTeamsSat \
  rjava_AssumptionsSampleSat \
  rjava_BinPackingProblemSat \
  rjava_BoolOrSampleSat \
  rjava_ChannelingSampleSat \
  rjava_CpIsFunSat \
+ rjava_CpSatExample \
  rjava_EarlinessTardinessCostSampleSat \
  rjava_IntervalSampleSat \
  rjava_LiteralSampleSat \
+ rjava_MinimalJobshopSat \
+ rjava_MultipleKnapsackSat \
+ rjava_NQueensSat \
  rjava_NoOverlapSampleSat \
+ rjava_NonLinearSat \
+ rjava_NursesSat \
  rjava_OptionalIntervalSampleSat \
  rjava_RabbitsAndPheasantsSat \
  rjava_RankingSampleSat \
  rjava_ReifiedSampleSat \
+ rjava_ScheduleRequestsSat \
  rjava_SearchForAllSolutionsSampleSat \
  rjava_SimpleSatProgram \
+ rjava_SolutionHintingSampleSat \
  rjava_SolveAndPrintIntermediateSolutionsSampleSat \
  rjava_SolveWithTimeLimitSampleSat \
- rjava_SolutionHintingSampleSat \
  rjava_StepFunctionSampleSat \
  rjava_StopAfterNSolutionsSampleSat
 

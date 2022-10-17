@@ -178,25 +178,37 @@ test_python_model_builder_samples: \
 
 .PHONY: test_python_sat_samples # Run all Python Sat Samples (located in ortools/sat/samples)
 test_python_sat_samples: \
+ rpy_assignment_groups_sat \
  rpy_assignment_sat \
+ rpy_assignment_task_sizes_sat \
+ rpy_assignment_teams_sat \
  rpy_assumptions_sample_sat \
  rpy_binpacking_problem_sat \
  rpy_bool_or_sample_sat \
+ rpy_boolean_product_sample_sat \
  rpy_channeling_sample_sat \
+ rpy_copy_model_sample_sat \
  rpy_cp_is_fun_sat \
+ rpy_cp_sat_example \
  rpy_earliness_tardiness_cost_sample_sat \
  rpy_interval_sample_sat \
  rpy_literal_sample_sat \
  rpy_minimal_jobshop_sat \
+ rpy_multiple_knapsack_sat \
  rpy_no_overlap_sample_sat \
+ rpy_non_linear_sat \
  rpy_nqueens_sat \
  rpy_nurses_sat \
  rpy_optional_interval_sample_sat \
+ rpy_overlapping_intervals_sample_sat \
  rpy_rabbits_and_pheasants_sat \
  rpy_ranking_sample_sat \
  rpy_reified_sample_sat \
- rpy_simple_sat_program \
+ rpy_schedule_requests_sat \
+ rpy_scheduling_with_calendar_sample_sat \
  rpy_search_for_all_solutions_sample_sat \
+ rpy_simple_sat_program \
+ rpy_solution_hinting_sample_sat \
  rpy_solve_and_print_intermediate_solutions_sample_sat \
  rpy_solve_with_time_limit_sample_sat \
  rpy_step_function_sample_sat \
