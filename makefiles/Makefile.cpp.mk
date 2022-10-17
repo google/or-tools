@@ -419,6 +419,7 @@ test_cpp_constraint_solver_samples: \
  rcpp_vrp_pickup_delivery_fifo \
  rcpp_vrp_pickup_delivery_lifo \
  rcpp_vrp_resources \
+ rcpp_vrp_solution_callback \
  rcpp_vrp_starts_ends \
  rcpp_vrp_time_windows \
  rcpp_vrp_with_time_limit

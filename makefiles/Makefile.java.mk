@@ -304,6 +304,7 @@ test_java_constraint_solver_samples: \
  rjava_VrpPickupDeliveryFifo \
  rjava_VrpPickupDeliveryLifo \
  rjava_VrpResources \
+ rjava_VrpSolutionCallback \
  rjava_VrpStartsEnds \
  rjava_VrpTimeWindows \
  rjava_VrpWithTimeLimit

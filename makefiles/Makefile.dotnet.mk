@@ -325,6 +325,7 @@ test_dotnet_constraint_solver_samples: \
  rdotnet_VrpPickupDeliveryFifo \
  rdotnet_VrpPickupDeliveryLifo \
  rdotnet_VrpResources \
+ rdotnet_VrpSolutionCallback \
  rdotnet_VrpStartsEnds \
  rdotnet_VrpTimeWindows \
  rdotnet_VrpWithTimeLimit
