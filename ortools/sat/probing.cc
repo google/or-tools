@@ -45,6 +45,7 @@ Prober::Prober(Model* model)
       assignment_(model->GetOrCreate<SatSolver>()->Assignment()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
+      product_detector_(model->GetOrCreate<ProductDetector>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
@@ -83,6 +84,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     }
 
     implied_bounds_->ProcessIntegerTrail(decision);
+    product_detector_->ProcessTrailAtLevelOne();
     integer_trail_->AppendNewBounds(&new_integer_bounds_);
     for (int i = saved_index + 1; i < trail_.Index(); ++i) {
       const Literal l = trail_[i];

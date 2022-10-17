@@ -1075,8 +1075,8 @@ namespace {
 
 class ConstraintChecker {
  public:
-  explicit ConstraintChecker(const std::vector<int64_t>& variable_values)
-      : variable_values_(variable_values) {}
+  explicit ConstraintChecker(absl::Span<const int64_t> variable_values)
+      : variable_values_(variable_values.begin(), variable_values.end()) {}
 
   bool LiteralIsTrue(int l) const {
     if (l >= 0) return variable_values_[l] != 0;
@@ -1524,13 +1524,13 @@ class ConstraintChecker {
   }
 
  private:
-  std::vector<int64_t> variable_values_;
+  const std::vector<int64_t> variable_values_;
 };
 
 }  // namespace
 
 bool SolutionIsFeasible(const CpModelProto& model,
-                        const std::vector<int64_t>& variable_values,
+                        absl::Span<const int64_t> variable_values,
                         const CpModelProto* mapping_proto,
                         const std::vector<int>* postsolve_mapping) {
   if (variable_values.size() != model.variables_size()) {

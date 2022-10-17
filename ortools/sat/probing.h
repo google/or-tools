@@ -102,6 +102,7 @@ class Prober {
   const VariablesAssignment& assignment_;
   IntegerTrail* integer_trail_;
   ImpliedBounds* implied_bounds_;
+  ProductDetector* product_detector_;
   SatSolver* sat_solver_;
   TimeLimit* time_limit_;
   BinaryImplicationGraph* implication_graph_;

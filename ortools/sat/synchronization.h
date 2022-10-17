@@ -138,7 +138,8 @@ class SharedRelaxationSolutionRepository
   explicit SharedRelaxationSolutionRepository(int num_solutions_to_keep)
       : SharedSolutionRepository<int64_t>(num_solutions_to_keep) {}
 
-  void NewRelaxationSolution(const CpSolverResponse& response);
+  void NewRelaxationSolution(absl::Span<const int64_t> solution_values,
+                             IntegerValue inner_objective_value);
 };
 
 class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
@@ -291,12 +292,8 @@ class SharedResponseManager {
   // Reads the new solution from the response and update our state. For an
   // optimization problem, we only do something if the solution is strictly
   // improving.
-  //
-  // TODO(user): Only the following fields from response are accessed here, we
-  // might want a tighter API:
-  //  - solution_info
-  //  - solution
-  void NewSolution(const CpSolverResponse& response, Model* model);
+  void NewSolution(absl::Span<const int64_t> solution_values,
+                   const std::string& solution_info, Model* model = nullptr);
 
   // Changes the solution to reflect the fact that the "improving" problem is
   // infeasible. This means that if we have a solution, we have proven

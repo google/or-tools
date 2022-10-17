@@ -2483,6 +2483,15 @@ bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
 // This tries to decompose the constraint into coeff * part1 + part2 and show
 // that the value that part2 take is not important, thus the constraint can
 // only be transformed on a constraint on the first part.
+//
+// TODO(user): Improve !! we miss simple case like x + 47 y + 50 z >= 50
+// for positive variables. We should remove x, and ideally we should rewrite
+// this as y + 2z >= 2 if we can show that its relaxation is just better?
+// We should at least see that it is the same as 47y + 50 z >= 48.
+//
+// TODO(user): One easy algo is to first remove all enforcement term (even
+// non-Boolean one) before applying the algo here and then re-linearize the
+// non-Boolean terms.
 void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
     int c, ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return;
@@ -3282,7 +3291,7 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // Note that for now the default is false, and also there are problem calling
   // GetOrCreateVarValueEncoding() after expansion because we might have removed
   // the variable used in the encoding.
-  const bool only_booleans =
+  const bool only_extract_booleans =
       !context_->params().presolve_extract_integer_enforcement() ||
       context_->ModelIsExpanded();
 
@@ -3302,10 +3311,25 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
 
     const bool is_boolean = context_->CanBeUsedAsLiteral(ref);
     if (context_->IsFixed(ref) || coeff < threshold ||
-        (only_booleans && !is_boolean)) {
-      // We keep this term.
+        (only_extract_booleans && !is_boolean)) {
       mutable_arg->set_vars(new_size, mutable_arg->vars(i));
-      mutable_arg->set_coeffs(new_size, mutable_arg->coeffs(i));
+
+      // We keep this term but reduces its coeff.
+      // This is only for the case where only_extract_booleans == true.
+      if (coeff > threshold) {
+        context_->UpdateRuleStats("linear: coefficient strenghtening.");
+        if (lower_bounded) {
+          // coeff * (X - LB + LB) -> threshold * (X - LB) + coeff * LB
+          rhs_offset -= (coeff - threshold) * context_->MinOf(ref);
+        } else {
+          // coeff * (X - UB + UB) -> threshold * (X - UB) + coeff * UB
+          rhs_offset -= (coeff - threshold) * context_->MaxOf(ref);
+        }
+        mutable_arg->set_coeffs(new_size,
+                                arg.coeffs(i) > 0 ? threshold : -threshold);
+      } else {
+        mutable_arg->set_coeffs(new_size, arg.coeffs(i));
+      }
       ++new_size;
       continue;
     }

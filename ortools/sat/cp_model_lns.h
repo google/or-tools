@@ -334,10 +334,6 @@ class NeighborhoodGenerator {
   // Returns true if the neighborhood generator can generate a neighborhood.
   virtual bool ReadyToGenerate() const;
 
-  // Returns true if the neighborhood generator generates relaxation of the
-  // given problem.
-  virtual bool IsRelaxationGenerator() const { return false; }
-
   // Uses UCB1 algorithm to compute the score (Multi armed bandit problem).
   // Details are at
   // https://lilianweng.github.io/lil-log/2018/01/23/the-multi-armed-bandit-problem-and-its-solutions.html.
@@ -350,10 +346,6 @@ class NeighborhoodGenerator {
 
   // Adds solve data about one "solved" neighborhood.
   struct SolveData {
-    // Neighborhood Id. Used to identify the neighborhood by a generator.
-    // Currently only used by WeightedRandomRelaxationNeighborhoodGenerator.
-    int64_t neighborhood_id = 0;
-
     // The status of the sub-solve.
     CpSolverStatus status = CpSolverStatus::UNKNOWN;
 
@@ -379,22 +371,14 @@ class NeighborhoodGenerator {
     IntegerValue base_objective = IntegerValue(0);
     IntegerValue new_objective = IntegerValue(0);
 
-    // Bounds data is only used by relaxation neighborhoods.
-    IntegerValue initial_best_objective_bound = IntegerValue(0);
-    IntegerValue new_objective_bound = IntegerValue(0);
-
     // This is just used to construct a deterministic order for the updates.
     bool operator<(const SolveData& o) const {
       return std::tie(status, difficulty, deterministic_limit,
                       deterministic_time, initial_best_objective,
-                      base_objective, new_objective,
-                      initial_best_objective_bound, new_objective_bound,
-                      neighborhood_id) <
+                      base_objective, new_objective) <
              std::tie(o.status, o.difficulty, o.deterministic_limit,
                       o.deterministic_time, o.initial_best_objective,
-                      o.base_objective, o.new_objective,
-                      o.initial_best_objective_bound, o.new_objective_bound,
-                      o.neighborhood_id);
+                      o.base_objective, o.new_objective);
     }
   };
   void AddSolveData(SolveData data) {
@@ -688,60 +672,6 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
   const SharedRelaxationSolutionRepository* relaxation_solutions_;
   const SharedLPSolutionRepository* lp_solutions_;
   SharedIncompleteSolutionManager* incomplete_solutions_;
-};
-
-// Generates a relaxation of the original model by removing a consecutive span
-// of constraints starting at a random index. The number of constraints removed
-// is in sync with the difficulty passed to the generator.
-class ConsecutiveConstraintsRelaxationNeighborhoodGenerator
-    : public NeighborhoodGenerator {
- public:
-  explicit ConsecutiveConstraintsRelaxationNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
-      : NeighborhoodGenerator(name, helper) {}
-  Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
-
-  bool IsRelaxationGenerator() const override { return true; }
-  bool ReadyToGenerate() const override { return true; }
-};
-
-// Generates a relaxation of the original model by removing some constraints
-// randomly with a given weight for each constraint that controls the
-// probability of constraint getting removed. The number of constraints removed
-// is in sync with the difficulty passed to the generator. Higher weighted
-// constraints are more likely to get removed.
-class WeightedRandomRelaxationNeighborhoodGenerator
-    : public NeighborhoodGenerator {
- public:
-  WeightedRandomRelaxationNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name);
-
-  // Generates the neighborhood as described above. Also stores the removed
-  // constraints indices for adjusting the weights.
-  Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
-
-  bool IsRelaxationGenerator() const override { return true; }
-  bool ReadyToGenerate() const override { return true; }
-
- private:
-  // Adjusts the weights of the constraints removed to get the neighborhood
-  // based on the solve_data.
-  void AdditionalProcessingOnSynchronize(const SolveData& solve_data) override
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(generator_mutex_);
-
-  // Higher weighted constraints are more likely to get removed.
-  std::vector<double> constraint_weights_;
-  int num_removable_constraints_ = 0;
-
-  // Indices of the removed constraints per generated neighborhood.
-  absl::flat_hash_map<int64_t, std::vector<int>> removed_constraints_
-      ABSL_GUARDED_BY(generator_mutex_);
-
-  // TODO(user): Move this to parent class if other generators start using
-  // feedbacks.
-  int64_t next_available_id_ ABSL_GUARDED_BY(generator_mutex_) = 0;
 };
 
 }  // namespace sat

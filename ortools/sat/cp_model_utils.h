@@ -164,7 +164,7 @@ inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
 // This is the objective without offset and scaling. Call ScaleObjectiveValue()
 // to get the user facing objective.
 int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
-                              const CpSolverResponse& response);
+                              absl::Span<const int64_t> solution);
 
 // Returns true if a linear expression can be reduced to a single ref.
 bool ExpressionContainsSingleRef(const LinearExpressionProto& expr);

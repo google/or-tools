@@ -1119,10 +1119,6 @@ message SatParameters {
   }
   optional FPRoundingMethod fp_rounding = 165 [default = PROPAGATION_ASSISTED];
 
-  // Turns on a lns worker which solves relaxed version of the original problem
-  // by removing constraints from the problem in order to get better bounds.
-  optional bool use_relaxation_lns = 150 [default = false];
-
   // If true, registers more lns subsolvers with different parameters.
   optional bool diversify_lns_params = 137 [default = false];
 

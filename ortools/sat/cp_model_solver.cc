@@ -67,6 +67,7 @@
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/feasibility_pump.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/integer_search.h"
@@ -598,16 +599,14 @@ void LoadDebugSolution(const CpModelProto& model_proto, Model* model) {
 
   const IntegerVariable objective_var = objective_def->objective_var;
   const int64_t objective_value =
-      ComputeInnerObjective(model_proto.objective(), response);
+      ComputeInnerObjective(model_proto.objective(), response.solution());
   debug_solution[objective_var] = objective_value;
   debug_solution[NegationOf(objective_var)] = -objective_value;
 #endif  // __PORTABLE_PLATFORM__
 }
 
-void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
-                            CpSolverResponse* response) {
-  response->clear_solution();
-
+std::vector<int64_t> GetSolutionValues(const CpModelProto& model_proto,
+                                       const Model& model) {
   auto* mapping = model.Get<CpModelMapping>();
   auto* trail = model.Get<Trail>();
 
@@ -636,9 +635,7 @@ void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
     // TODO(user): Checks against initial model.
     CHECK(SolutionIsFeasible(model_proto, solution));
   }
-  for (const int64_t value : solution) {
-    response->add_solution(value);
-  }
+  return solution;
 }
 
 namespace {
@@ -1269,6 +1266,9 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   model->GetOrCreate<IntegerEncoder>()
       ->AddAllImplicationsBetweenAssociatedLiterals();
   if (!sat_solver->FinishPropagation()) return unsat();
+
+  model->GetOrCreate<ProductDetector>()->ProcessImplicationGraph(
+      model->GetOrCreate<BinaryImplicationGraph>());
 }
 
 void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
@@ -1522,10 +1522,9 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     const std::string solution_info = model->Name();
     const auto solution_observer = [&model_proto, model, solution_info,
                                     shared_response_manager]() {
-      CpSolverResponse response;
-      FillSolutionInResponse(model_proto, *model, &response);
-      response.set_solution_info(solution_info);
-      shared_response_manager->NewSolution(response, model);
+      const std::vector<int64_t> solution =
+          GetSolutionValues(model_proto, *model);
+      shared_response_manager->NewSolution(solution, solution_info, model);
     };
 
     const auto& objective = *model->GetOrCreate<ObjectiveDefinition>();
@@ -1557,10 +1556,9 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   const std::string& solution_info = model->Name();
   const auto solution_observer = [&model_proto, &model, &solution_info,
                                   &shared_response_manager]() {
-    CpSolverResponse response;
-    FillSolutionInResponse(model_proto, *model, &response);
-    response.set_solution_info(solution_info);
-    shared_response_manager->NewSolution(response, model);
+    const std::vector<int64_t> solution =
+        GetSolutionValues(model_proto, *model);
+    shared_response_manager->NewSolution(solution, solution_info, model);
   };
 
   // Reconfigure search heuristic if it was changed.
@@ -1694,10 +1692,10 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
 
   const std::string& solution_info = model->Name();
   if (status == SatSolver::Status::FEASIBLE) {
-    CpSolverResponse response;
-    FillSolutionInResponse(model_proto, *model, &response);
-    response.set_solution_info(absl::StrCat(solution_info, " [hint]"));
-    shared_response_manager->NewSolution(response, model);
+    const std::vector<int64_t> solution =
+        GetSolutionValues(model_proto, *model);
+    shared_response_manager->NewSolution(
+        solution, absl::StrCat(solution_info, " [hint]"), model);
 
     if (!model_proto.has_objective()) {
       if (parameters->enumerate_all_solutions()) {
@@ -1828,18 +1826,17 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
 
   const std::string& solution_info = model->Name();
   if (status == SatSolver::Status::FEASIBLE) {
-    CpSolverResponse response;
-    FillSolutionInResponse(model_proto, local_model, &response);
+    const std::vector<int64_t> solution =
+        GetSolutionValues(model_proto, local_model);
     if (DEBUG_MODE) {
-      CpSolverResponse updated_response;
-      FillSolutionInResponse(updated_model_proto, local_model,
-                             &updated_response);
+      const std::vector<int64_t> updated_solution =
+          GetSolutionValues(updated_model_proto, local_model);
       LOG(INFO) << "Found solution with repaired hint penalty = "
                 << ComputeInnerObjective(updated_model_proto.objective(),
-                                         updated_response);
+                                         updated_solution);
     }
-    response.set_solution_info(absl::StrCat(solution_info, " [repaired]"));
-    shared_response_manager->NewSolution(response, &local_model);
+    shared_response_manager->NewSolution(
+        solution, absl::StrCat(solution_info, " [repaired]"), &local_model);
   }
 }
 
@@ -2512,8 +2509,6 @@ class LnsSolver : public SubSolver {
 
       if (!neighborhood.is_generated) return;
 
-      data.neighborhood_id = neighborhood.id;
-
       const int64_t num_calls = std::max(int64_t{1}, generator_->num_calls());
       const double fully_solved_proportion =
           static_cast<double>(generator_->num_fully_solved_calls()) /
@@ -2522,7 +2517,7 @@ class LnsSolver : public SubSolver {
       if (!neighborhood.source_info.empty()) {
         absl::StrAppend(&source_info, "_", neighborhood.source_info);
       }
-      const std::string solution_info = absl::StrFormat(
+      const std::string lns_info = absl::StrFormat(
           "%s(d=%0.2f s=%i t=%0.2f p=%0.2f)", source_info, data.difficulty,
           task_id, data.deterministic_limit, fully_solved_proportion);
 
@@ -2534,7 +2529,7 @@ class LnsSolver : public SubSolver {
       local_params.set_symmetry_level(0);
       local_params.set_solution_pool_size(0);
 
-      Model local_model(solution_info);
+      Model local_model(lns_info);
       *(local_model.GetOrCreate<SatParameters>()) = local_params;
       TimeLimit* local_time_limit = local_model.GetOrCreate<TimeLimit>();
       local_time_limit->ResetLimitFromParameters(local_params);
@@ -2616,106 +2611,49 @@ class LnsSolver : public SubSolver {
         local_response_manager->SetResponseStatus(presolve_status);
       }
       CpSolverResponse local_response = local_response_manager->GetResponse();
+      const std::string solution_info = local_response.solution_info();
+      std::vector<int64_t> solution_values(local_response.solution().begin(),
+                                           local_response.solution().end());
 
+      data.status = local_response.status();
       // TODO(user): we actually do not need to postsolve if the solution is
       // not going to be used...
       if (local_params.cp_model_presolve() &&
-          (local_response.status() == CpSolverStatus::OPTIMAL ||
-           local_response.status() == CpSolverStatus::FEASIBLE)) {
-        std::vector<int64_t> solution(local_response.solution().begin(),
-                                      local_response.solution().end());
-        PostsolveResponseWrapper(local_params,
-                                 helper_->ModelProto().variables_size(),
-                                 mapping_proto, postsolve_mapping, &solution);
-        local_response.mutable_solution()->Assign(solution.begin(),
-                                                  solution.end());
+          (data.status == CpSolverStatus::OPTIMAL ||
+           data.status == CpSolverStatus::FEASIBLE)) {
+        PostsolveResponseWrapper(
+            local_params, helper_->ModelProto().variables_size(), mapping_proto,
+            postsolve_mapping, &solution_values);
+        local_response.mutable_solution()->Assign(solution_values.begin(),
+                                                  solution_values.end());
       }
 
-      data.status = local_response.status();
       data.deterministic_time = local_time_limit->GetElapsedDeterministicTime();
 
       bool new_solution = false;
       bool display_lns_info = VLOG_IS_ON(2);
-      if (generator_->IsRelaxationGenerator()) {
-        bool has_feasible_solution = false;
-        if (local_response.status() == CpSolverStatus::OPTIMAL ||
-            local_response.status() == CpSolverStatus::FEASIBLE) {
-          has_feasible_solution = true;
-        }
+      const std::vector<int64_t> solution(local_response.solution().begin(),
+                                          local_response.solution().end());
 
-        if (local_response.status() == CpSolverStatus::INFEASIBLE) {
-          shared_->response->NotifyThatImprovingProblemIsInfeasible(
-              local_response.solution_info());
-        }
-
-        if (shared_->model_proto->has_objective()) {
-          // TODO(user): This is not deterministic since it is updated without
-          // synchronization! So we shouldn't base the LNS score out of that.
-          const IntegerValue current_obj_lb =
-              shared_->response->GetInnerObjectiveLowerBound();
-
-          const IntegerValue local_obj_lb =
-              local_response_manager->GetInnerObjectiveLowerBound();
-
-          const double scaled_local_obj_bound = ScaleObjectiveValue(
-              lns_fragment.objective(), local_obj_lb.value());
-
-          // Update the bound.
-          const IntegerValue new_inner_obj_lb = IntegerValue(
-              std::ceil(UnscaleObjectiveValue(shared_->model_proto->objective(),
-                                              scaled_local_obj_bound) -
-                        1e-6));
-          data.new_objective_bound = new_inner_obj_lb;
-          data.initial_best_objective_bound = current_obj_lb;
-          if (new_inner_obj_lb > current_obj_lb) {
-            shared_->response->UpdateInnerObjectiveBounds(
-                solution_info, new_inner_obj_lb, kMaxIntegerValue);
+      if (!solution.empty()) {
+        // A solution that does not pass our validator indicates a bug. We
+        // abort and dump the problematic model to facilitate debugging.
+        //
+        // TODO(user): In a production environment, we should probably just
+        // ignore this fragment and continue.
+        const bool feasible =
+            SolutionIsFeasible(*shared_->model_proto, solution_values);
+        if (!feasible) {
+          if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
+            const std::string name =
+                absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                             debug_copy.name(), ".pb.txt");
+            LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
+            CHECK_OK(file::SetTextProto(name, debug_copy, file::Defaults()));
           }
-        }
-
-        // If we have a solution of the relaxed problem, we check if it is also
-        // a valid solution of the non-relaxed one.
-        if (has_feasible_solution) {
-          if (SolutionIsFeasible(
-                  *shared_->model_proto,
-                  std::vector<int64_t>(local_response.solution().begin(),
-                                       local_response.solution().end()))) {
-            shared_->response->NewSolution(local_response,
-                                           /*model=*/nullptr);
-
-            // Mark the solution optimal if the relaxation status is optimal.
-            if (local_response.status() == CpSolverStatus::OPTIMAL) {
-              shared_->response->NotifyThatImprovingProblemIsInfeasible(
-                  local_response.solution_info());
-              shared_->time_limit->Stop();
-            }
-          }
-          shared_->relaxation_solutions->NewRelaxationSolution(local_response);
-        }
-      } else {
-        const std::vector<int64_t> solution(local_response.solution().begin(),
-                                            local_response.solution().end());
-
-        if (!solution.empty()) {
-          // A solution that does not pass our validator indicates a bug. We
-          // abort and dump the problematic model to facilitate debugging.
-          //
-          // TODO(user): In a production environment, we should probably just
-          // ignore this fragment and continue.
-          const bool feasible =
-              SolutionIsFeasible(*shared_->model_proto, solution);
-          if (!feasible) {
-            if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
-              const std::string name =
-                  absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                               debug_copy.name(), ".pb.txt");
-              LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
-              CHECK_OK(file::SetTextProto(name, debug_copy, file::Defaults()));
-            }
-            LOG(FATAL) << "Infeasible LNS solution! " << solution_info
-                       << " solved with params "
-                       << local_params.ShortDebugString();
-          }
+          LOG(FATAL) << "Infeasible LNS solution! " << solution_info
+                     << " solved with params "
+                     << local_params.ShortDebugString();
         }
 
         // Special case if we solved a part of the full problem!
@@ -2729,41 +2667,42 @@ class LnsSolver : public SubSolver {
         // - It should be fine if all our generator are fully or not at
         //   all included in the variable we are fixing. So we can relax the
         //   test here. Try on z26.mps or spot5_1401.fzn.
-        if (local_response.status() == CpSolverStatus::OPTIMAL &&
-            !shared_->model_proto->has_symmetry() && !solution.empty() &&
+        if (data.status == CpSolverStatus::OPTIMAL &&
+            !shared_->model_proto->has_symmetry() && !solution_values.empty() &&
             neighborhood.is_simple &&
             !neighborhood.variables_that_can_be_fixed_to_local_optimum
                  .empty()) {
           display_lns_info = true;
           shared_->bounds->FixVariablesFromPartialSolution(
-              solution,
+              solution_values,
               neighborhood.variables_that_can_be_fixed_to_local_optimum);
         }
 
         // Finish to fill the SolveData now that the local solve is done.
         data.new_objective = data.base_objective;
-        if (local_response.status() == CpSolverStatus::OPTIMAL ||
-            local_response.status() == CpSolverStatus::FEASIBLE) {
+        if (data.status == CpSolverStatus::OPTIMAL ||
+            data.status == CpSolverStatus::FEASIBLE) {
           data.new_objective = IntegerValue(ComputeInnerObjective(
-              shared_->model_proto->objective(), local_response));
+              shared_->model_proto->objective(), solution_values));
         }
 
         // Report any feasible solution we have. Optimization: We don't do that
         // if we just recovered the base solution.
-        if (local_response.status() == CpSolverStatus::OPTIMAL ||
-            local_response.status() == CpSolverStatus::FEASIBLE) {
+        if (data.status == CpSolverStatus::OPTIMAL ||
+            data.status == CpSolverStatus::FEASIBLE) {
           const std::vector<int64_t> base_solution(
               base_response.solution().begin(), base_response.solution().end());
-          if (solution != base_solution) {
+          if (solution_values != base_solution) {
             new_solution = true;
-            shared_->response->NewSolution(local_response, /*model=*/nullptr);
+            shared_->response->NewSolution(solution_values, solution_info,
+                                           /*model=*/nullptr);
           }
         }
         if (!neighborhood.is_reduced &&
-            (local_response.status() == CpSolverStatus::OPTIMAL ||
-             local_response.status() == CpSolverStatus::INFEASIBLE)) {
+            (data.status == CpSolverStatus::OPTIMAL ||
+             data.status == CpSolverStatus::INFEASIBLE)) {
           shared_->response->NotifyThatImprovingProblemIsInfeasible(
-              local_response.solution_info());
+              solution_info);
           shared_->time_limit->Stop();
         }
       }
@@ -2777,11 +2716,11 @@ class LnsSolver : public SubSolver {
           const double base_obj = ScaleObjectiveValue(
               shared_->model_proto->objective(),
               ComputeInnerObjective(shared_->model_proto->objective(),
-                                    base_response));
+                                    base_response.solution()));
           const double new_obj = ScaleObjectiveValue(
               shared_->model_proto->objective(),
               ComputeInnerObjective(shared_->model_proto->objective(),
-                                    local_response));
+                                    solution_values));
           absl::StrAppend(&s, " [new_sol:", base_obj, " -> ", new_obj, "]");
         }
         if (neighborhood.is_simple) {
@@ -2831,13 +2770,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
   std::unique_ptr<SharedRelaxationSolutionRepository>
       shared_relaxation_solutions;
-  if (params.use_relaxation_lns()) {
-    shared_relaxation_solutions =
-        std::make_unique<SharedRelaxationSolutionRepository>(
-            /*num_solutions_to_keep=*/10);
-    global_model->Register<SharedRelaxationSolutionRepository>(
-        shared_relaxation_solutions.get());
-  }
 
   auto shared_lp_solutions = std::make_unique<SharedLPSolutionRepository>(
       /*num_solutions_to_keep=*/10);
@@ -3039,19 +2971,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
               helper, /*respons_manager=*/nullptr, shared.relaxation_solutions,
               shared.lp_solutions, shared.incomplete_solutions,
               absl::StrCat("rens_lns_", local_params.name())),
-          local_params, helper, &shared));
-    }
-
-    if (params.use_relaxation_lns()) {
-      subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<
-              ConsecutiveConstraintsRelaxationNeighborhoodGenerator>(
-              helper, absl::StrCat("rnd_rel_lns_", local_params.name())),
-          local_params, helper, &shared));
-
-      subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<WeightedRandomRelaxationNeighborhoodGenerator>(
-              helper, absl::StrCat("wgt_rel_lns_", local_params.name())),
           local_params, helper, &shared));
     }
   }

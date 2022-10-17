@@ -693,8 +693,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     // worker for them.
     int target = base_params.num_workers();
     if (!base_params.interleave_search() &&
-        (base_params.use_rins_lns() || base_params.use_relaxation_lns() ||
-         base_params.use_feasibility_pump())) {
+        (base_params.use_rins_lns() || base_params.use_feasibility_pump())) {
       target = std::max(1, base_params.num_workers() - 1);
     }
     if (!base_params.interleave_search() && result.size() > target) {

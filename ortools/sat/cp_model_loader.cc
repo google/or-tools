@@ -383,6 +383,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   // if some of the literal view used in the LP are created later, but that
   // should be fixable via calls to implied_bounds->NotifyNewIntegerView().
   auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
+  auto* detector = m->GetOrCreate<ProductDetector>();
 
   // Detection of literal equivalent to (i_var >= bound). We also collect
   // all the half-refied part and we will sort the vector for detection of the
@@ -468,6 +469,10 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     {
       const Domain inter = domain.IntersectionWith(domain_if_enforced);
       if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
+        if (inter.Min() == 0) {
+          detector->ProcessConditionalZero(enforcement_literal,
+                                           mapping->Integer(var));
+        }
         var_to_equalities[var].push_back(
             {&ct, enforcement_literal, inter.Min(), true});
         if (domain.Contains(inter.Min())) {
@@ -869,6 +874,9 @@ void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
   m->Add(ClauseConstraint(literals));
+  if (literals.size() == 3) {
+    m->GetOrCreate<ProductDetector>()->ProcessTernaryClause(literals);
+  }
 }
 
 void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
@@ -894,7 +902,11 @@ void LoadAtMostOneConstraint(const ConstraintProto& ct, Model* m) {
 void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
-  m->Add(ExactlyOneConstraint(mapping->Literals(ct.exactly_one().literals())));
+  const auto& literals = mapping->Literals(ct.exactly_one().literals());
+  m->Add(ExactlyOneConstraint(literals));
+  if (literals.size() == 3) {
+    m->GetOrCreate<ProductDetector>()->ProcessTernaryExactlyOne(literals);
+  }
 }
 
 void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m) {
@@ -975,6 +987,18 @@ void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
   }
 }
 
+bool IsPartOfProductEncoding(const ConstraintProto& ct) {
+  if (ct.enforcement_literal().size() != 1) return false;
+  if (ct.linear().vars().size() > 2) return false;
+  if (ct.linear().domain().size() != 2) return false;
+  if (ct.linear().domain(0) != 0) return false;
+  if (ct.linear().domain(1) != 0) return false;
+  for (const int64_t coeff : ct.linear().coeffs()) {
+    if (std::abs(coeff) != 1) return false;
+  }
+  return true;
+}
+
 }  // namespace
 
 void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
@@ -993,6 +1017,23 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
     }
     return;
+  }
+
+  if (IsPartOfProductEncoding(ct)) {
+    const Literal l = mapping->Literal(ct.enforcement_literal(0));
+    auto* detector = m->GetOrCreate<ProductDetector>();
+    if (ct.linear().vars().size() == 1) {
+      // TODO(user): Actually this should never be called since we process
+      // linear1 in ExtractEncoding().
+      detector->ProcessConditionalZero(l,
+                                       mapping->Integer(ct.linear().vars(0)));
+    } else if (ct.linear().vars().size() == 2) {
+      const IntegerVariable x = mapping->Integer(ct.linear().vars(0));
+      const IntegerVariable y = mapping->Integer(ct.linear().vars(1));
+      detector->ProcessConditionalEquality(
+          l, x,
+          ct.linear().coeffs(0) == ct.linear().coeffs(1) ? NegationOf(y) : y);
+    }
   }
 
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();

@@ -64,21 +64,22 @@ namespace operations_research {
 namespace sat {
 
 void SharedRelaxationSolutionRepository::NewRelaxationSolution(
-    const CpSolverResponse& response) {
+    absl::Span<const int64_t> solution_values,
+    IntegerValue inner_objective_value) {
   // Note that the Add() method already applies mutex lock. So we don't need it
   // here.
-  if (response.solution().empty()) return;
+  if (solution_values.empty()) return;
 
   // Add this solution to the pool.
   SharedSolutionRepository<int64_t>::Solution solution;
-  solution.variable_values.assign(response.solution().begin(),
-                                  response.solution().end());
+  solution.variable_values.assign(solution_values.begin(),
+                                  solution_values.end());
   // For now we use the negated lower bound as the "internal objective" to
   // prefer solution with an higher bound.
   //
   // Note: If the model doesn't have objective, the best_objective_bound is set
   // to default value 0.
-  solution.rank = -response.best_objective_bound();
+  solution.rank = -inner_objective_value.value();
 
   Add(solution);
 }
@@ -507,28 +508,29 @@ void SharedResponseManager::FillObjectiveValuesInBestResponse() {
   best_response_.set_gap_integral(gap_integral_);
 }
 
-void SharedResponseManager::NewSolution(const CpSolverResponse& response,
-                                        Model* model) {
+void SharedResponseManager::NewSolution(
+    absl::Span<const int64_t> solution_values, const std::string& solution_info,
+    Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
 
   // Special case if the user asked to keep solutions in the pool.
   if (objective_or_null_ == nullptr && parameters_.enumerate_all_solutions() &&
       parameters_.fill_additional_solutions_in_response()) {
     SharedSolutionRepository<int64_t>::Solution solution;
-    solution.variable_values.assign(response.solution().begin(),
-                                    response.solution().end());
+    solution.variable_values.assign(solution_values.begin(),
+                                    solution_values.end());
     solutions_.Add(solution);
   }
 
   if (objective_or_null_ != nullptr) {
     const int64_t objective_value =
-        ComputeInnerObjective(*objective_or_null_, response);
+        ComputeInnerObjective(*objective_or_null_, solution_values);
 
     // Add this solution to the pool, even if it is not improving.
-    if (!response.solution().empty()) {
+    if (!solution_values.empty()) {
       SharedSolutionRepository<int64_t>::Solution solution;
-      solution.variable_values.assign(response.solution().begin(),
-                                      response.solution().end());
+      solution.variable_values.assign(solution_values.begin(),
+                                      solution_values.end());
       solution.rank = objective_value;
       solutions_.Add(solution);
     }
@@ -563,8 +565,9 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
     best_response_.set_status(CpSolverStatus::FEASIBLE);
   }
 
-  best_response_.set_solution_info(response.solution_info());
-  *best_response_.mutable_solution() = response.solution();
+  best_response_.set_solution_info(solution_info);
+  best_response_.mutable_solution()->Assign(solution_values.begin(),
+                                            solution_values.end());
 
   // Mark model as OPTIMAL if the inner bound crossed.
   if (objective_or_null_ != nullptr &&
@@ -574,12 +577,13 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 
   // Logging.
   ++num_solutions_;
+  // TODO(user): Remove this code and the need for model in this function.
   if (logger_->LoggingIsEnabled()) {
-    std::string solution_info = response.solution_info();
+    std::string solution_message = solution_info;
     if (model != nullptr) {
       const int64_t num_bool = model->Get<Trail>()->NumVariables();
       const int64_t num_fixed = model->Get<SatSolver>()->NumFixedVariables();
-      absl::StrAppend(&solution_info, " fixed_bools:", num_fixed, "/",
+      absl::StrAppend(&solution_message, " fixed_bools:", num_fixed, "/",
                       num_bool);
     }
 
@@ -592,13 +596,14 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
       if (obj.scaling_factor() < 0) {
         std::swap(lb, ub);
       }
-      RegisterSolutionFound(solution_info);
+      RegisterSolutionFound(solution_message);
       SOLVER_LOG(logger_, ProgressMessage(absl::StrCat(num_solutions_),
                                           wall_timer_.Get(), best, lb, ub,
-                                          solution_info));
+                                          solution_message));
     } else {
-      SOLVER_LOG(logger_, SatProgressMessage(absl::StrCat(num_solutions_),
-                                             wall_timer_.Get(), solution_info));
+      SOLVER_LOG(logger_,
+                 SatProgressMessage(absl::StrCat(num_solutions_),
+                                    wall_timer_.Get(), solution_message));
     }
   }
 

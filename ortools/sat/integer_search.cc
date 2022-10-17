@@ -791,6 +791,7 @@ IntegerSearchHelper::IntegerSearchHelper(Model* model)
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
+      product_detector_(model->GetOrCreate<ProductDetector>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       pseudo_costs_(model->GetOrCreate<PseudoCosts>()) {
   // This is needed for recording the pseudo-costs.
@@ -907,6 +908,7 @@ bool IntegerSearchHelper::TakeDecision(Literal decision) {
   // This is "almost free", so we might as well do it.
   if (old_level == 0 && sat_solver_->CurrentDecisionLevel() == 1) {
     implied_bounds_->ProcessIntegerTrail(decision);
+    product_detector_->ProcessTrailAtLevelOne();
   }
 
   // Update the pseudo costs.

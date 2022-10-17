@@ -16,6 +16,8 @@
 #include <stdint.h>
 
 #include <algorithm>
+#include <array>
+#include <bitset>
 #include <limits>
 #include <optional>
 #include <string>
@@ -41,10 +43,14 @@ namespace sat {
 
 // Just display some global statistics on destruction.
 ImpliedBounds::~ImpliedBounds() {
-  VLOG(1) << num_deductions_ << " enqueued deductions.";
-  VLOG(1) << bounds_.size() << " implied bounds stored.";
-  VLOG(1) << num_enqueued_in_var_to_bounds_
-          << " implied bounds with view stored.";
+  if (!VLOG_IS_ON(1)) return;
+  if (shared_stats_ == nullptr) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"implied_bound/num_deductions", num_deductions_});
+  stats.push_back({"implied_bound/num_stored", bounds_.size()});
+  stats.push_back(
+      {"implied_bound/num_stored_with_view", num_enqueued_in_var_to_bounds_});
+  shared_stats_->AddStats(stats);
 }
 
 void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
@@ -124,7 +130,7 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
       level_zero_lower_bounds_[var] = deduction;
       new_level_zero_bounds_.Set(var);
 
-      VLOG(1) << "Deduction old: "
+      VLOG(2) << "Deduction old: "
               << IntegerLiteral::GreaterOrEqual(
                      var, integer_trail_->LevelZeroLowerBound(var))
               << " new: " << IntegerLiteral::GreaterOrEqual(var, deduction);
@@ -339,7 +345,7 @@ std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
   const std::vector<ValueLiteralPair>& right_enc =
       integer_encoder->FullDomainEncoding(right.var);
   if (left_enc.size() != 2 || right_enc.size() != 2) {
-    VLOG(3) << "encodings are not fully propagated";
+    VLOG(2) << "encodings are not fully propagated";
     return terms;
   }
 
@@ -426,7 +432,7 @@ std::vector<LiteralValueValue> TryToDecomposeProduct(
   }
 
   if (compatible_keys.size() > 1) {
-    VLOG(1) << "More than one exactly_one involved in the encoding of the two "
+    VLOG(3) << "More than one exactly_one involved in the encoding of the two "
                "variables";
   }
 
@@ -513,6 +519,249 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
   }
   builder->AddConstant(min_coefficient);
   return true;
+}
+
+ProductDetector::ProductDetector(Model* model)
+    : enabled_(model->GetOrCreate<SatParameters>()->linearization_level() > 1),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+
+ProductDetector::~ProductDetector() {
+  if (!VLOG_IS_ON(1)) return;
+  if (shared_stats_ == nullptr) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back(
+      {"product_detector/num_processed_binary", num_processed_binary_});
+  stats.push_back(
+      {"product_detector/num_processed_exactly_one", num_processed_exo_});
+  stats.push_back(
+      {"product_detector/num_processed_ternary", num_processed_ternary_});
+  stats.push_back({"product_detector/num_trail_updates", num_trail_updates_});
+  stats.push_back({"product_detector/num_products", num_products_});
+  stats.push_back({"product_detector/num_conditional_equalities",
+                   num_conditional_equalities_});
+  stats.push_back(
+      {"product_detector/num_conditional_zeros", num_conditional_zeros_});
+  stats.push_back({"product_detector/num_int_products", num_int_products_});
+  shared_stats_->AddStats(stats);
+}
+
+void ProductDetector::ProcessTernaryClause(
+    absl::Span<const Literal> ternary_clause) {
+  if (!enabled_) return;
+  if (ternary_clause.size() != 3) return;
+  ++num_processed_ternary_;
+  candidates_[GetKey(ternary_clause[0].Index(), ternary_clause[1].Index())]
+      .push_back(ternary_clause[2].Index());
+  candidates_[GetKey(ternary_clause[0].Index(), ternary_clause[2].Index())]
+      .push_back(ternary_clause[1].Index());
+  candidates_[GetKey(ternary_clause[1].Index(), ternary_clause[2].Index())]
+      .push_back(ternary_clause[0].Index());
+
+  // We mark the literal of the ternary clause as seen.
+  // Only a => b with a seen need to be looked at.
+  for (const Literal l : ternary_clause) {
+    if (l.Index() >= seen_.size()) seen_.resize(l.Index() + 1);
+    seen_[l.Index()] = true;
+  }
+}
+
+void ProductDetector::ProcessTernaryExactlyOne(
+    absl::Span<const Literal> ternary_exo) {
+  if (!enabled_) return;
+  if (ternary_exo.size() != 3) return;
+  ++num_processed_exo_;
+  ProcessNewProduct(ternary_exo[0].Index(), ternary_exo[1].NegatedIndex(),
+                    ternary_exo[2].NegatedIndex());
+  ProcessNewProduct(ternary_exo[1].Index(), ternary_exo[0].NegatedIndex(),
+                    ternary_exo[2].NegatedIndex());
+  ProcessNewProduct(ternary_exo[2].Index(), ternary_exo[0].NegatedIndex(),
+                    ternary_exo[1].NegatedIndex());
+}
+
+// TODO(user): As product are discovered, we could remove entries from our
+// hash maps!
+void ProductDetector::ProcessBinaryClause(
+    absl::Span<const Literal> binary_clause) {
+  if (!enabled_) return;
+  if (binary_clause.size() != 2) return;
+  ++num_processed_binary_;
+  const std::array<LiteralIndex, 2> key =
+      GetKey(binary_clause[0].NegatedIndex(), binary_clause[1].NegatedIndex());
+  std::array<LiteralIndex, 3> ternary;
+  for (const LiteralIndex l : candidates_[key]) {
+    ternary[0] = key[0];
+    ternary[1] = key[1];
+    ternary[2] = l;
+    std::sort(ternary.begin(), ternary.end());
+    const int l_index = ternary[0] == l ? 0 : ternary[1] == l ? 1 : 2;
+    std::bitset<3>& bs = detector_[ternary];
+    if (bs[l_index]) continue;
+    bs[l_index] = true;
+    if (bs[0] && bs[1] && l_index != 2) {
+      ProcessNewProduct(ternary[2], Literal(ternary[0]).NegatedIndex(),
+                        Literal(ternary[1]).NegatedIndex());
+    }
+    if (bs[0] && bs[2] && l_index != 1) {
+      ProcessNewProduct(ternary[1], Literal(ternary[0]).NegatedIndex(),
+                        Literal(ternary[2]).NegatedIndex());
+    }
+    if (bs[1] && bs[2] && l_index != 0) {
+      ProcessNewProduct(ternary[0], Literal(ternary[1]).NegatedIndex(),
+                        Literal(ternary[2]).NegatedIndex());
+    }
+  }
+}
+
+void ProductDetector::ProcessImplicationGraph(BinaryImplicationGraph* graph) {
+  if (!enabled_) return;
+  for (LiteralIndex a(0); a < seen_.size(); ++a) {
+    if (!seen_[a]) continue;
+    if (trail_->Assignment().LiteralIsAssigned(Literal(a))) continue;
+    const Literal not_a = Literal(a).Negated();
+    for (const Literal b : graph->DirectImplications(Literal(a))) {
+      ProcessBinaryClause({not_a, b});  // a => b;
+    }
+  }
+}
+
+void ProductDetector::ProcessTrailAtLevelOne() {
+  if (!enabled_) return;
+  if (trail_->CurrentDecisionLevel() != 1) return;
+  ++num_trail_updates_;
+
+  const SatSolver::Decision decision = sat_solver_->Decisions()[0];
+  if (decision.literal.Index() >= seen_.size() ||
+      !seen_[decision.literal.Index()]) {
+    return;
+  }
+  const Literal not_a = decision.literal.Negated();
+  const int current_index = trail_->Index();
+  for (int i = decision.trail_index + 1; i < current_index; ++i) {
+    const Literal b = (*trail_)[i];
+    ProcessBinaryClause({not_a, b});
+  }
+}
+
+LiteralIndex ProductDetector::GetProduct(Literal a, Literal b) const {
+  const auto it = products_.find(GetKey(a.Index(), b.Index()));
+  if (it == products_.end()) return kNoLiteralIndex;
+  return it->second;
+}
+
+std::array<LiteralIndex, 2> ProductDetector::GetKey(LiteralIndex a,
+                                                    LiteralIndex b) const {
+  std::array<LiteralIndex, 2> key{a, b};
+  if (key[0] > key[1]) std::swap(key[0], key[1]);
+  return key;
+}
+
+void ProductDetector::ProcessNewProduct(LiteralIndex p, LiteralIndex a,
+                                        LiteralIndex b) {
+  // If many literal correspond to the same product, we just keep one.
+  ++num_products_;
+  products_[GetKey(a, b)] = p;
+
+  // This is used by ProductIsLinearizable().
+  has_product_.insert(
+      GetKey(Literal(a).IsPositive() ? a : Literal(a).NegatedIndex(),
+             Literal(b).IsPositive() ? b : Literal(b).NegatedIndex()));
+}
+
+bool ProductDetector::ProductIsLinearizable(IntegerVariable a,
+                                            IntegerVariable b) const {
+  if (a == b) return true;
+  if (a == NegationOf(b)) return true;
+
+  // Otherwise, we need both a and b to be expressible as linear expression
+  // involving Booleans whose product is also expressible.
+  if (integer_trail_->InitialVariableDomain(a).Size() != 2) return false;
+  if (integer_trail_->InitialVariableDomain(b).Size() != 2) return false;
+
+  const LiteralIndex la =
+      integer_encoder_->GetAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+          a, integer_trail_->LevelZeroUpperBound(a)));
+  if (la == kNoLiteralIndex) return false;
+
+  const LiteralIndex lb =
+      integer_encoder_->GetAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+          b, integer_trail_->LevelZeroUpperBound(b)));
+  if (lb == kNoLiteralIndex) return false;
+
+  // Any product involving la/not(la) * lb/not(lb) can be used.
+  return has_product_.contains(
+      GetKey(Literal(la).IsPositive() ? la : Literal(la).NegatedIndex(),
+             Literal(lb).IsPositive() ? lb : Literal(lb).NegatedIndex()));
+}
+
+IntegerVariable ProductDetector::GetProduct(Literal a,
+                                            IntegerVariable b) const {
+  const auto it = int_products_.find({a.Index(), PositiveVariable(b)});
+  if (it == int_products_.end()) return kNoIntegerVariable;
+  return VariableIsPositive(b) ? it->second : NegationOf(it->second);
+}
+
+void ProductDetector::ProcessNewProduct(IntegerVariable p, Literal l,
+                                        IntegerVariable x) {
+  if (!VariableIsPositive(x)) {
+    x = NegationOf(x);
+    p = NegationOf(p);
+  }
+
+  // We only store one product if there are many.
+  ++num_int_products_;
+  int_products_[{l.Index(), x}] = p;
+}
+
+void ProductDetector::ProcessConditionalEquality(Literal l, IntegerVariable x,
+                                                 IntegerVariable y) {
+  ++num_conditional_equalities_;
+  if (x == y) return;
+
+  // We process both possibilities (product = x or product = y).
+  for (int i = 0; i < 2; ++i) {
+    if (!VariableIsPositive(x)) {
+      x = NegationOf(x);
+      y = NegationOf(y);
+    }
+    bool seen = false;
+
+    // TODO(user): Linear scan can be bad if b => X = many other variables.
+    // Hopefully this will not be common.
+    std::vector<IntegerVariable>& others =
+        conditional_equalities_[{l.Index(), x}];
+    for (const IntegerVariable o : others) {
+      if (o == y) {
+        seen = true;
+        break;
+      }
+    }
+
+    if (!seen) {
+      others.push_back(y);
+      if (conditional_zeros_.contains({l.NegatedIndex(), x})) {
+        ProcessNewProduct(/*p=*/x, l, y);
+      }
+    }
+    std::swap(x, y);
+  }
+}
+
+void ProductDetector::ProcessConditionalZero(Literal l, IntegerVariable p) {
+  ++num_conditional_zeros_;
+  p = PositiveVariable(p);
+  auto [_, inserted] = conditional_zeros_.insert({l.Index(), p});
+  if (inserted) {
+    const auto it = conditional_equalities_.find({l.NegatedIndex(), p});
+    if (it != conditional_equalities_.end()) {
+      for (const IntegerVariable x : it->second) {
+        ProcessNewProduct(p, l.Negated(), x);
+      }
+    }
+  }
 }
 
 }  // namespace sat

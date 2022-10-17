@@ -273,6 +273,7 @@ class IntegerSearchHelper {
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   ImpliedBounds* implied_bounds_;
+  ProductDetector* product_detector_;
   TimeLimit* time_limit_;
   PseudoCosts* pseudo_costs_;
   IntegerVariable objective_var_ = kNoIntegerVariable;

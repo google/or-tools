@@ -63,7 +63,7 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
 // The last two arguments are optional and help debugging a failing constraint
 // due to presolve.
 bool SolutionIsFeasible(const CpModelProto& model,
-                        const std::vector<int64_t>& variable_values,
+                        absl::Span<const int64_t> variable_values,
                         const CpModelProto* mapping_proto = nullptr,
                         const std::vector<int>* postsolve_mapping = nullptr);
 
