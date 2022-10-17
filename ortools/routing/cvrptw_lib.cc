@@ -22,7 +22,6 @@
 #include <utility>
 
 #include "absl/container/btree_set.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/routing.h"

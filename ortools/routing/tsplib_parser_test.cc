@@ -13,6 +13,7 @@
 
 #include "ortools/routing/tsplib_parser.h"
 
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <vector>
@@ -443,7 +444,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
               }
             }
             data += "EOF";
-            static const char kMMFileName[] = "/memfile/dummy.tsp";
+            const std::string kMMFileName{std::tmpnam(nullptr)};
             RegisteredMemFile registered(kMMFileName, data);
             TspLibParser parser;
             EXPECT_TRUE(parser.LoadFile(kMMFileName));
@@ -466,7 +467,7 @@ TEST(TspLibParserTest, ParseHCPEdgeList) {
       " 3    1\n"
       " 2    1\n"
       "-1\nEOF";
-  static const char kMMFileName[] = "/memfile/dummy.hcp";
+  const std::string kMMFileName{std::tmpnam(nullptr)};
   RegisteredMemFile registered(kMMFileName, kData);
   TspLibParser parser;
   EXPECT_TRUE(parser.LoadFile(kMMFileName));
@@ -488,7 +489,7 @@ TEST(TspLibParserTest, ParseHCPAdjList) {
       "EDGE_DATA_SECTION\n"
       " 3    1     2    -1\n"
       "-1\nEOF";
-  static const char kMMFileName[] = "/memfile/dummy.hcp";
+  const std::string kMMFileName{std::tmpnam(nullptr)};
   RegisteredMemFile registered(kMMFileName, kData);
   TspLibParser parser;
   EXPECT_TRUE(parser.LoadFile(kMMFileName));

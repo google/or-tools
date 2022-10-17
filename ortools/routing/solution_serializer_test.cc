@@ -13,6 +13,7 @@
 
 #include "ortools/routing/solution_serializer.h"
 
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -157,7 +158,7 @@ TEST(RoutingSolutionSerializerTest, SolutionToTsplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, SolutionToTsplibFile) {
-  std::string file_name = "/mmemfile/sol_tsplib";
+  const std::string file_name{std::tmpnam(nullptr)};
   RegisteredMutableMemFile registered(file_name);
 
   const std::vector<std::vector<int64_t>> solution_vector{{0, 1, 2, 3, 0},
@@ -250,7 +251,7 @@ TEST(RoutingSolutionSerializerTest, SolutionToCvrplibDepot1Dimacs) {
 }
 
 TEST(RoutingSolutionSerializerTest, SolutionToCvrplibFile) {
-  std::string file_name = "/mmemfile/sol_cvrplib";
+  const std::string file_name{std::tmpnam(nullptr)};
   RegisteredMutableMemFile registered(file_name);
 
   const std::vector<std::vector<int64_t>> solution_vector{{0, 1, 2, 3, 0},
@@ -410,7 +411,7 @@ TEST(RoutingSolutionSerializerTest, CarpSolutionToCarplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, CarpSolutionToCarplibFile) {
-  std::string file_name = "/mmemfile/sol_carp_carplib";
+  const std::string file_name{std::tmpnam(nullptr)};
   RegisteredMutableMemFile registered(file_name);
 
   RoutingSolution solution = MakeTestArcRoutingInstance();
@@ -453,7 +454,7 @@ TEST(RoutingSolutionSerializerTest, NearpSolutionToCarplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, NearpSolutionToCarplibFile) {
-  std::string file_name = "/mmemfile/sol_nearp_carplib";
+  const std::string file_name{std::tmpnam(nullptr)};
   RegisteredMutableMemFile registered(file_name);
 
   RoutingSolution solution = MakeTestEdgeNodeArcRoutingInstance();
@@ -492,7 +493,7 @@ TEST(RoutingSolutionSerializerTest, CarpSolutionToNearplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, CarpSolutionToNearplibFile) {
-  std::string file_name = "/mmemfile/sol_carp_nearplib";
+  const std::string file_name{std::tmpnam(nullptr)};
   RegisteredMutableMemFile registered(file_name);
 
   RoutingSolution solution = MakeTestArcRoutingInstance();
@@ -540,7 +541,7 @@ TEST(RoutingSolutionSerializerTest, NearpSolutionToNearplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, NearpSolutionToNearplibFile) {
-  std::string file_name = "/mmemfile/sol_nearp_nearplib";
+  const std::string file_name{std::tmpnam(nullptr)};
   RegisteredMutableMemFile registered(file_name);
 
   RoutingSolution solution = MakeTestEdgeNodeArcRoutingInstance();
