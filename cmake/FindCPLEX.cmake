@@ -74,8 +74,12 @@ if(CPLEX_FOUND AND NOT TARGET CPLEX::CPLEX)
   target_include_directories(CPLEX::CPLEX SYSTEM INTERFACE "${CPLEX_ROOT}/cplex/include")
 
   if(APPLE) # be aware that `UNIX` is `TRUE` on OS X, so this check must be first
-    set_target_properties(CPLEX::CPLEX PROPERTIES
-      IMPORTED_LOCATION "${CPLEX_ROOT}/cplex/lib/x86-64_osx/static_pic/libcplex.a")
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
+      message(FATAL_ERROR "CPLEX do not support Apple M1, can't find a suitable static library")
+    else()
+      set_target_properties(CPLEX::CPLEX PROPERTIES
+        IMPORTED_LOCATION "${CPLEX_ROOT}/cplex/lib/x86-64_osx/static_pic/libcplex.a")
+    endif()
   elseif(UNIX)
     set_target_properties(CPLEX::CPLEX PROPERTIES
       IMPORTED_LOCATION "${CPLEX_ROOT}/cplex/lib/x86-64_linux/static_pic/libcplex.a")
