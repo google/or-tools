@@ -162,30 +162,39 @@ File* OpenOrDie(const absl::string_view& filename,
 
 absl::Status GetContents(const absl::string_view& filename, std::string* output,
                          int flags) {
-  if (flags == Defaults()) {
-    File* file = File::Open(filename, "r");
-    if (file != nullptr) {
-      const int64_t size = file->Size();
-      if (file->ReadToString(output, size) == size) return absl::OkStatus();
-#if defined(_MSC_VER)
-      // On windows, binary files needs to be opened with the "rb" flags.
-      file->Close();
-      // Retry in binary mode.
-      File* file = File::Open(filename, "rb");
-      const int64_t b_size = file->Size();
-      if (file->ReadToString(output, b_size) == b_size) return absl::OkStatus();
-#endif  // _MSC_VER
-    }
+  File* file;
+  auto status = file::Open(filename, "r", &file, flags);
+  if (!status.ok()) return status;
+
+  const int64_t size = file->Size();
+  if (file->ReadToString(output, size) == size) {
+    status.Update(file->Close(flags));
+    return status;
   }
-  return absl::Status(absl::StatusCode::kInvalidArgument,
-                      absl::StrCat("Could not read '", filename, "'"));
+#if defined(_MSC_VER)
+  // On windows, binary files needs to be opened with the "rb" flags.
+  file->Close();
+  // Retry in binary mode.
+  status = file::Open(filename, "rb", &file, flags);
+  if (!status.ok()) return status;
+
+  const int64_t b_size = file->Size();
+  if (file->ReadToString(output, b_size) == b_size) {
+    status.Update(file->Close(flags));
+    return status;
+  }
+#endif  // _MSC_VER
+
+  file->Close(flags);  // Even if ReadToString() fails!
+  return absl::Status(
+      absl::StatusCode::kInvalidArgument,
+      absl::StrCat("Could not read from '", filename, "'."));
 }
 
 absl::Status WriteString(File* file, const absl::string_view& contents,
                          int flags) {
   if (flags == Defaults() && file != nullptr &&
-      file->Write(contents.data(), contents.size()) == contents.size() &&
-      file->Close()) {
+      file->Write(contents.data(), contents.size()) == contents.size()) {
     return absl::OkStatus();
   }
   return absl::Status(
@@ -195,7 +204,12 @@ absl::Status WriteString(File* file, const absl::string_view& contents,
 
 absl::Status SetContents(const absl::string_view& filename,
                          const absl::string_view& contents, int flags) {
-  return WriteString(File::Open(filename, "w"), contents, flags);
+  File* file;
+  auto status = file::Open(filename, "w", &file, flags);
+  if (!status.ok()) return status;
+  status = file::WriteString(file, contents, flags);
+  status.Update(file->Close(flags));  // Even if WriteString() fails!
+  return status;
 }
 
 bool ReadFileToString(const absl::string_view& file_name, std::string* output) {
