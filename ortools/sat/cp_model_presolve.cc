@@ -2593,6 +2593,7 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
     }
 
     if (max_error == 0) break;  // Last term.
+
     if ((!use_ub ||
          max_error <= PositiveRemainder(rhs_ub, IntegerValue(gcd))) &&
         (!use_lb ||
@@ -2601,7 +2602,6 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
       // can be ignored.
       int64_t shift_lb = 0;
       int64_t shift_ub = 0;
-      int64_t local_max_variation = 0;
       context_->UpdateRuleStats("linear: simplify using partial gcd");
       LinearConstraintProto* mutable_linear = ct->mutable_linear();
 
@@ -2612,7 +2612,6 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
         if (m < e.magnitude) continue;
         shift_lb += lbs[i] * m;
         shift_ub += ubs[i] * m;
-        local_max_variation += m * (ubs[i] - lbs[i]);
         mutable_linear->add_vars(vars[i]);
         mutable_linear->add_coeffs(coeffs[i]);
       }
@@ -3215,12 +3214,14 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   int64_t min_sum = 0;
   int64_t max_sum = 0;
   int64_t max_coeff_magnitude = 0;
+  int64_t min_coeff_magnitude = std::numeric_limits<int64_t>::max();
   for (int i = 0; i < num_vars; ++i) {
     const int ref = arg.vars(i);
     const int64_t coeff = arg.coeffs(i);
     const int64_t term_a = coeff * context_->MinOf(ref);
     const int64_t term_b = coeff * context_->MaxOf(ref);
     max_coeff_magnitude = std::max(max_coeff_magnitude, std::abs(coeff));
+    min_coeff_magnitude = std::min(min_coeff_magnitude, std::abs(coeff));
     min_sum += std::min(term_a, term_b);
     max_sum += std::max(term_a, term_b);
   }
@@ -3235,7 +3236,10 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   const int64_t ub_threshold = domain[domain.size() - 2] - min_sum;
   const int64_t lb_threshold = max_sum - domain[1];
   const Domain rhs_domain = ReadDomainFromProto(ct->linear());
-  if (max_coeff_magnitude < std::max(ub_threshold, lb_threshold)) return;
+  if (max_coeff_magnitude + min_coeff_magnitude <
+      std::max(ub_threshold, lb_threshold)) {
+    return;
+  }
 
   // We need the constraint to be only bounded on one side in order to extract
   // enforcement literal.
@@ -3258,6 +3262,9 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   const bool upper_bounded = max_sum > rhs_domain.Max();
   if (!lower_bounded && !upper_bounded) return;
   if (lower_bounded && upper_bounded) {
+    // Lets not split except if we extract enforcement.
+    if (max_coeff_magnitude < std::max(ub_threshold, lb_threshold)) return;
+
     context_->UpdateRuleStats("linear: split boxed constraint");
     ConstraintProto* new_ct1 = context_->working_model->add_constraints();
     *new_ct1 = *ct;
@@ -3285,6 +3292,15 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // satisfied when the variable move away from its bound. Note that as we
   // remove coefficient, the threshold do not change!
   const int64_t threshold = lower_bounded ? ub_threshold : lb_threshold;
+
+  // All coeffs in [second_threshold, threshold) can be reduced to
+  // second_threshold.
+  //
+  // TODO(user): If 2 * min_coeff_magnitude >= bound, then the constraint can
+  // be completely rewriten to 2 * (enforcement_part) + sum var >= 2 which is
+  // what happen eventually when bound is even, but not if it is odd currently.
+  const int64_t second_threshold = std::max(CeilOfRatio(threshold, int64_t{2}),
+                                            threshold - min_coeff_magnitude);
 
   // Do we only extract Booleans?
   //
@@ -3314,22 +3330,31 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
         (only_extract_booleans && !is_boolean)) {
       mutable_arg->set_vars(new_size, mutable_arg->vars(i));
 
-      // We keep this term but reduces its coeff.
-      // This is only for the case where only_extract_booleans == true.
+      int64_t new_magnitude = std::abs(arg.coeffs(i));
       if (coeff > threshold) {
+        // We keep this term but reduces its coeff.
+        // This is only for the case where only_extract_booleans == true.
+        new_magnitude = threshold;
         context_->UpdateRuleStats("linear: coefficient strenghtening.");
-        if (lower_bounded) {
-          // coeff * (X - LB + LB) -> threshold * (X - LB) + coeff * LB
-          rhs_offset -= (coeff - threshold) * context_->MinOf(ref);
-        } else {
-          // coeff * (X - UB + UB) -> threshold * (X - UB) + coeff * UB
-          rhs_offset -= (coeff - threshold) * context_->MaxOf(ref);
-        }
-        mutable_arg->set_coeffs(new_size,
-                                arg.coeffs(i) > 0 ? threshold : -threshold);
-      } else {
-        mutable_arg->set_coeffs(new_size, arg.coeffs(i));
+      } else if (coeff > second_threshold && coeff < threshold) {
+        // This cover the special case where one big + on small is enough
+        // to satisfy the constraint, we can reduce the big.
+        new_magnitude = second_threshold;
+        context_->UpdateRuleStats(
+            "linear: advanced coefficient strenghtening.");
       }
+      if (coeff != new_magnitude) {
+        if (lower_bounded) {
+          // coeff * (X - LB + LB) -> new_magnitude * (X - LB) + coeff * LB
+          rhs_offset -= (coeff - new_magnitude) * context_->MinOf(ref);
+        } else {
+          // coeff * (X - UB + UB) -> new_magnitude * (X - UB) + coeff * UB
+          rhs_offset -= (coeff - new_magnitude) * context_->MaxOf(ref);
+        }
+      }
+
+      mutable_arg->set_coeffs(
+          new_size, arg.coeffs(i) > 0 ? new_magnitude : -new_magnitude);
       ++new_size;
       continue;
     }
