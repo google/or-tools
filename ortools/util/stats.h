@@ -78,6 +78,7 @@
 #include "ortools/util/time_limit.h"
 #endif  // HAS_PERF_SUBSYSTEM
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/timer.h"
 
