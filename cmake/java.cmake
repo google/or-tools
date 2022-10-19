@@ -309,7 +309,7 @@ file(GLOB_RECURSE java_files RELATIVE ${PROJECT_SOURCE_DIR}/ortools/java
 set(JAVA_SRCS)
 foreach(JAVA_FILE IN LISTS java_files)
   #message(STATUS "java: ${JAVA_FILE}")
-  set(JAVA_OUT ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/${JAVA_FILE})
+  set(JAVA_OUT ${JAVA_PROJECT_DIR}/src/main/java/${JAVA_FILE})
   #message(STATUS "java out: ${JAVA_OUT}")
   add_custom_command(
     OUTPUT ${JAVA_OUT}
