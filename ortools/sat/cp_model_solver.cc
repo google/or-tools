@@ -1045,14 +1045,20 @@ void RegisterObjectiveBestBoundExport(
     SharedResponseManager* shared_response_manager, Model* model) {
   auto* integer_trail = model->Get<IntegerTrail>();
   const auto broadcast_objective_lower_bound =
-      [objective_var, integer_trail, shared_response_manager,
-       model](const std::vector<IntegerVariable>& unused) {
-        shared_response_manager->UpdateInnerObjectiveBounds(
-            model->Name(), integer_trail->LevelZeroLowerBound(objective_var),
-            integer_trail->LevelZeroUpperBound(objective_var));
-        // If we are not in interleave_search we synchronize right away.
-        if (!model->Get<SatParameters>()->interleave_search()) {
-          shared_response_manager->Synchronize();
+      [objective_var, integer_trail, shared_response_manager, model,
+       best_obj_lb =
+           kMinIntegerValue](const std::vector<IntegerVariable>&) mutable {
+        const IntegerValue objective_lb =
+            integer_trail->LevelZeroLowerBound(objective_var);
+        if (objective_lb > best_obj_lb) {
+          best_obj_lb = objective_lb;
+          shared_response_manager->UpdateInnerObjectiveBounds(
+              model->Name(), objective_lb,
+              integer_trail->LevelZeroUpperBound(objective_var));
+          // If we are not in interleave_search we synchronize right away.
+          if (!model->Get<SatParameters>()->interleave_search()) {
+            shared_response_manager->Synchronize();
+          }
         }
       };
   model->GetOrCreate<GenericLiteralWatcher>()
@@ -1521,10 +1527,16 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     // SolveLoadedCpModel().
     const std::string solution_info = model->Name();
     const auto solution_observer = [&model_proto, model, solution_info,
-                                    shared_response_manager]() {
+                                    shared_response_manager,
+                                    best_obj_ub = kMaxIntegerValue]() mutable {
       const std::vector<int64_t> solution =
           GetSolutionValues(model_proto, *model);
-      shared_response_manager->NewSolution(solution, solution_info, model);
+      const IntegerValue obj_ub =
+          ComputeInnerObjective(model_proto.objective(), solution);
+      if (obj_ub < best_obj_ub) {
+        best_obj_ub = obj_ub;
+        shared_response_manager->NewSolution(solution, solution_info, model);
+      }
     };
 
     const auto& objective = *model->GetOrCreate<ObjectiveDefinition>();
@@ -1554,11 +1566,21 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   if (shared_response_manager->ProblemIsSolved()) return;
 
   const std::string& solution_info = model->Name();
-  const auto solution_observer = [&model_proto, &model, &solution_info,
-                                  &shared_response_manager]() {
+  auto solution_observer = [&model_proto, model, solution_info,
+                            shared_response_manager,
+                            best_obj_ub = kMaxIntegerValue]() mutable {
     const std::vector<int64_t> solution =
         GetSolutionValues(model_proto, *model);
-    shared_response_manager->NewSolution(solution, solution_info, model);
+    if (model_proto.has_objective()) {
+      const IntegerValue obj_ub =
+          ComputeInnerObjective(model_proto.objective(), solution);
+      if (obj_ub < best_obj_ub) {
+        best_obj_ub = obj_ub;
+        shared_response_manager->NewSolution(solution, solution_info, model);
+      }
+    } else {
+      shared_response_manager->NewSolution(solution, solution_info, model);
+    }
   };
 
   // Reconfigure search heuristic if it was changed.
@@ -2994,9 +3016,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       }
     }
     SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger,
-               absl::StrFormat("Starting Search at %.2fs with %i workers.",
-                               shared.wall_timer->Get(), params.num_workers()));
+    SOLVER_LOG(logger, absl::StrFormat(
+                           "Starting %s search at %.2fs with %i workers.",
+                           params.interleave_search() ? "deterministic" : "",
+                           shared.wall_timer->Get(), params.num_workers()));
     SOLVER_LOG(logger, full_subsolver_index, " full subsolvers: [",
                absl::StrJoin(names.begin(),
                              names.begin() + full_subsolver_index, ", "),
@@ -3009,8 +3032,15 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
   // Launch the main search loop.
   if (params.interleave_search()) {
-    DeterministicLoop(subsolvers, params.num_workers(),
-                      params.interleave_batch_size());
+    int batch_size = params.interleave_batch_size();
+    if (batch_size == 0) {
+      batch_size = params.num_workers() == 1 ? 1 : params.num_workers() * 3;
+      SOLVER_LOG(
+          logger,
+          "Setting number of tasks in each batch of interleaved search to ",
+          batch_size);
+    }
+    DeterministicLoop(subsolvers, params.num_workers(), batch_size);
   } else {
     NonDeterministicLoop(subsolvers, params.num_workers());
   }
@@ -3232,17 +3262,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   const bool always_synchronize =
       !params.interleave_search() || params.num_workers() <= 1;
   shared_response_manager->SetSynchronizationMode(always_synchronize);
-
-  // Set up the batch size in interleave mode.
-  if (params.interleave_search() && params.interleave_batch_size() == 0) {
-    const int batch_size =
-        params.num_workers() == 1 ? 1 : params.num_workers() * 5;
-    SOLVER_LOG(
-        logger,
-        "Setting number of tasks in each batch of interleaved search to ",
-        batch_size);
-    model->GetOrCreate<SatParameters>()->set_interleave_batch_size(batch_size);
-  }
 
   // Special case for pure-sat problem.
   // TODO(user): improve the normal presolver to do the same thing.

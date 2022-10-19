@@ -2509,6 +2509,7 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
   struct Entry {
     int64_t magnitude;
     int64_t max_variation;
+    int index;
   };
   std::vector<Entry> entries;
   std::vector<int> vars;
@@ -2544,7 +2545,7 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
     ubs.push_back(ub);
     coeffs.push_back(coeff);
     magnitudes.push_back(magnitude);
-    entries.push_back({magnitude, magnitude * (ub - lb)});
+    entries.push_back({magnitude, magnitude * (ub - lb), i});
     max_variation += entries.back().max_variation;
   }
 
@@ -2568,60 +2569,106 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
   // No point doing more work for constraint with all coeff at +/-1.
   if (max_magnitude <= 1) return;
 
+  // TODO(user): All the lb/ub_feasible/infeasible class are updated in
+  // exactly the same way. Find a more efficient algo?
+  if (use_lb) {
+    lb_feasible_.Reset(rhs_lb.value());
+    lb_infeasible_.Reset(rhs.Min() - lb_sum - 1);
+  }
+  if (use_ub) {
+    ub_feasible_.Reset(rhs_ub.value());
+    ub_infeasible_.Reset(ub_sum - rhs.Max() - 1);
+  }
+
   // Process entries by decreasing magnitude. Update max_error to correspond
   // only to the sum of the not yet processed terms.
-  //
-  // TODO(user): we could use partial dynamic programming to also compute
-  // the maximum reachable value instead of just relying on gcds.
   uint64_t gcd = 0;
   int64_t max_error = max_variation;
-  std::sort(entries.begin(), entries.end(),
-            [](const Entry& a, Entry& b) { return a.magnitude > b.magnitude; });
+  std::stable_sort(
+      entries.begin(), entries.end(),
+      [](const Entry& a, const Entry& b) { return a.magnitude > b.magnitude; });
   std::vector<int64_t> divisors;
-  for (const Entry& e : entries) {
+  int64_t range = 0;
+  for (int i = 0; i < entries.size(); ++i) {
+    const Entry& e = entries[i];
     gcd = MathUtil::GCD64(gcd, e.magnitude);
     max_error -= e.max_variation;
-    if (e.magnitude == 1) break;  // No point continuing, and gcd == 1.
+
+    // We regroup all term with the same coefficient into one.
+    //
+    // TODO(user): I am not sure there is no possible simplification across two
+    // term with the same coeff, but it should be rare if it ever happens.
+    range += e.max_variation / e.magnitude;
+    if (i + 1 < entries.size() && e.magnitude == entries[i + 1].magnitude) {
+      continue;
+    }
+    const int64_t saved_range = range;
+    range = 0;
 
     if ((!use_ub ||
          max_error <= PositiveRemainder(rhs_ub, IntegerValue(e.magnitude))) &&
         (!use_lb ||
          max_error <= PositiveRemainder(rhs_lb, IntegerValue(e.magnitude)))) {
-      if (divisors.empty() || e.magnitude != divisors.back()) {
-        divisors.push_back(e.magnitude);
+      divisors.push_back(e.magnitude);
+    }
+
+    bool simplify_lb = false;
+    if (use_lb) {
+      lb_feasible_.AddMultiples(e.magnitude, saved_range);
+      lb_infeasible_.AddMultiples(e.magnitude, saved_range);
+
+      // For a <= constraint, the max_feasible + error is still feasible.
+      if (lb_feasible_.CurrentMax() + max_error <= lb_feasible_.Bound()) {
+        simplify_lb = true;
       }
+      // For a <= constraint describing the infeasible set, the max_infeasible +
+      // error is still infeasible.
+      if (lb_infeasible_.CurrentMax() + max_error <= lb_infeasible_.Bound()) {
+        simplify_lb = true;
+      }
+    } else {
+      simplify_lb = true;
+    }
+    bool simplify_ub = false;
+    if (use_ub) {
+      ub_feasible_.AddMultiples(e.magnitude, saved_range);
+      ub_infeasible_.AddMultiples(e.magnitude, saved_range);
+      if (ub_feasible_.CurrentMax() + max_error <= ub_feasible_.Bound()) {
+        simplify_ub = true;
+      }
+      if (ub_infeasible_.CurrentMax() + max_error <= ub_infeasible_.Bound()) {
+        simplify_ub = true;
+      }
+    } else {
+      simplify_ub = true;
     }
 
     if (max_error == 0) break;  // Last term.
-
-    if ((!use_ub ||
-         max_error <= PositiveRemainder(rhs_ub, IntegerValue(gcd))) &&
-        (!use_lb ||
-         max_error <= PositiveRemainder(rhs_lb, IntegerValue(gcd)))) {
-      // We have a simplification using gcd * part1 + part2, we know that part2
-      // can be ignored.
-      int64_t shift_lb = 0;
-      int64_t shift_ub = 0;
-      context_->UpdateRuleStats("linear: simplify using partial gcd");
+    if (simplify_lb && simplify_ub) {
+      // We have a simplification since the second part can be ignored.
+      context_->UpdateRuleStats("linear: remove irrelevant part");
       LinearConstraintProto* mutable_linear = ct->mutable_linear();
-
       mutable_linear->clear_vars();
       mutable_linear->clear_coeffs();
-      for (int i = 0; i < magnitudes.size(); ++i) {
-        const int64_t m = magnitudes[i];
-        if (m < e.magnitude) continue;
-        shift_lb += lbs[i] * m;
-        shift_ub += ubs[i] * m;
-        mutable_linear->add_vars(vars[i]);
-        mutable_linear->add_coeffs(coeffs[i]);
+      int64_t shift_lb = 0;
+      int64_t shift_ub = 0;
+      for (int j = 0; j <= i; ++j) {
+        const int index = entries[j].index;
+        const int64_t m = magnitudes[index];
+        shift_lb += lbs[index] * m;
+        shift_ub += ubs[index] * m;
+        mutable_linear->add_vars(vars[index]);
+        mutable_linear->add_coeffs(coeffs[index]);
       }
 
       // The constraint become:
       //   sum ci (X - lb) <= rhs_ub
       //   sum ci (ub - X) <= rhs_lb
       //   sum ci ub - rhs_lb <= sum ci X <= rhs_ub + sum ci lb.
-      int64_t new_rhs_lb = use_lb ? shift_ub - rhs_lb.value() : shift_lb;
-      int64_t new_rhs_ub = use_ub ? shift_lb + rhs_ub.value() : shift_ub;
+      const int64_t new_rhs_lb =
+          use_lb ? shift_ub - lb_feasible_.CurrentMax() : shift_lb;
+      const int64_t new_rhs_ub =
+          use_ub ? shift_lb + ub_feasible_.CurrentMax() : shift_ub;
       FillDomainInProto(Domain(new_rhs_lb, new_rhs_ub), mutable_linear);
       DivideLinearByGcd(ct);
       context_->UpdateConstraintVariableUsage(c);
@@ -2636,6 +2683,18 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
       context_->UpdateConstraintVariableUsage(c);
     }
     return;
+  }
+
+  // We didn't remove any irrelevant part, but we might be able to tighten
+  // the constraint bound.
+  if ((use_lb && lb_feasible_.CurrentMax() < lb_feasible_.Bound()) ||
+      (use_ub && ub_feasible_.CurrentMax() < ub_feasible_.Bound())) {
+    context_->UpdateRuleStats("linear: reduce rhs with DP");
+    const int64_t new_rhs_lb =
+        use_lb ? ub_sum - lb_feasible_.CurrentMax() : lb_sum;
+    const int64_t new_rhs_ub =
+        use_ub ? lb_sum + ub_feasible_.CurrentMax() : ub_sum;
+    FillDomainInProto(Domain(new_rhs_lb, new_rhs_ub), ct->mutable_linear());
   }
 
   // Limit the number of "divisor" we try for approximate gcd.
@@ -3192,6 +3251,56 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
   return false;
 }
 
+// The constraint from its lower value is sum positive_coeff * X <= threshold.
+// If from_lower_bound is false, then it is the constraint from its upper value.
+void CpModelPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
+                                                   int64_t min_magnitude,
+                                                   int64_t threshold,
+                                                   ConstraintProto* ct) {
+  const LinearConstraintProto& arg = ct->linear();
+  const int num_vars = arg.vars_size();
+  const int64_t second_threshold = threshold - min_magnitude;
+  int64_t rhs_offset = 0;
+  for (int i = 0; i < num_vars; ++i) {
+    int ref = arg.vars(i);
+    int64_t coeff = arg.coeffs(i);
+    if (coeff < 0) {
+      ref = NegatedRef(ref);
+      coeff = -coeff;
+    }
+
+    if (coeff > threshold) {
+      if (ct->enforcement_literal().empty()) {
+        // Shifted variable must be zero.
+        context_->UpdateRuleStats("linear: fix variable to its bound.");
+        CHECK(context_->IntersectDomainWith(
+            ref, Domain(from_lower_bound ? context_->MinOf(ref)
+                                         : context_->MaxOf(ref))));
+      }
+
+      // TODO(user): What to do with the coeff if there is enforcement?
+      continue;
+    }
+    if (coeff > second_threshold && coeff < threshold) {
+      context_->UpdateRuleStats(
+          "linear: coefficient strengthening by increasing it.");
+      if (from_lower_bound) {
+        // coeff * (X - LB + LB) -> threshold * (X - LB) + coeff * LB
+        rhs_offset -= (coeff - threshold) * context_->MinOf(ref);
+      } else {
+        // coeff * (X - UB + UB) -> threshold * (X - UB) + coeff * UB
+        rhs_offset -= (coeff - threshold) * context_->MaxOf(ref);
+      }
+      ct->mutable_linear()->set_coeffs(
+          i, arg.coeffs(i) > 0 ? threshold : -threshold);
+    }
+  }
+  if (rhs_offset != 0) {
+    FillDomainInProto(ReadDomainFromProto(arg).AdditionWith(Domain(rhs_offset)),
+                      ct->mutable_linear());
+  }
+}
+
 // Identify Boolean variable that makes the constraint always true when set to
 // true or false. Moves such literal to the constraint enforcement literals
 // list.
@@ -3225,6 +3334,7 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
     min_sum += std::min(term_a, term_b);
     max_sum += std::max(term_a, term_b);
   }
+  if (max_coeff_magnitude == 1) return;
 
   // We can only extract enforcement literals if the maximum coefficient
   // magnitude is large enough. Note that we handle complex domain.
@@ -3238,6 +3348,23 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   const Domain rhs_domain = ReadDomainFromProto(ct->linear());
   if (max_coeff_magnitude + min_coeff_magnitude <
       std::max(ub_threshold, lb_threshold)) {
+    // We also have other kind of coefficient strengthening.
+    // In something like 3x + 5y <= 6, the coefficient 5 can be changed to 6.
+    if (domain.size() == 2 && min_coeff_magnitude > 1) {
+      const int64_t rhs_min = domain[0];
+      const int64_t rhs_max = domain[1];
+      if (min_sum >= rhs_min &&
+          max_coeff_magnitude + min_coeff_magnitude > rhs_max - min_sum) {
+        LowerThanCoeffStrengthening(/*from_lower_bound=*/true,
+                                    min_coeff_magnitude, rhs_max - min_sum, ct);
+      }
+      if (max_sum <= rhs_max &&
+          max_coeff_magnitude + min_coeff_magnitude > max_sum - rhs_min) {
+        LowerThanCoeffStrengthening(/*from_lower_bound=*/false,
+                                    min_coeff_magnitude, max_sum - rhs_min, ct);
+      }
+    }
+
     return;
   }
 
@@ -3254,10 +3381,6 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // not be the most efficient, but it simplify the presolve code by not having
   // to do anything special to trigger a new presolving of these constraints.
   // Try to improve if this becomes a problem.
-  //
-  // TODO(user): At the end of the presolve we should probably remerge any
-  // identical linear constraints. That also cover the corner cases where
-  // constraints are just redundant...
   const bool lower_bounded = min_sum < rhs_domain.Min();
   const bool upper_bounded = max_sum > rhs_domain.Max();
   if (!lower_bounded && !upper_bounded) return;
@@ -3325,6 +3448,8 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
       coeff = -coeff;
     }
 
+    // TODO(user): If the encoding Boolean already exist, we could extract
+    // the non-Boolean enforcement term.
     const bool is_boolean = context_->CanBeUsedAsLiteral(ref);
     if (context_->IsFixed(ref) || coeff < threshold ||
         (only_extract_booleans && !is_boolean)) {

@@ -233,6 +233,8 @@ class CpModelPresolver {
 
   void ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
                                                      ConstraintProto* ct);
+  void LowerThanCoeffStrengthening(bool from_lower_bound, int64_t min_magnitude,
+                                   int64_t threshold, ConstraintProto* ct);
 
   // Extracts cliques from bool_and and small at_most_one constraints and
   // transforms them into maximal cliques.
@@ -277,6 +279,12 @@ class CpModelPresolver {
   absl::flat_hash_map<int, int> temp_map_;
   absl::flat_hash_set<int> temp_set_;
   ConstraintProto temp_ct_;
+
+  // Use by TryToReduceCoefficientsOfLinearConstraint().
+  MaxBoundedSubsetSum lb_feasible_;
+  MaxBoundedSubsetSum lb_infeasible_;
+  MaxBoundedSubsetSum ub_feasible_;
+  MaxBoundedSubsetSum ub_infeasible_;
 };
 
 // This helper class perform copy with simplification from a model and a

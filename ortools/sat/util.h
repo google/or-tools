@@ -191,9 +191,6 @@ int MoveOneUnprocessedLiteralLast(
 // become too important.
 //
 // Precondition: Both bound and all added values must be >= 0.
-//
-// TODO(user): Compute gcd of all value so we can return a better bound for
-// large sets?
 class MaxBoundedSubsetSum {
  public:
   MaxBoundedSubsetSum() { Reset(0); }
@@ -207,7 +204,12 @@ class MaxBoundedSubsetSum {
   void Add(int64_t value);
 
   // Add a choice of values to the base set for which subset sums will be taken.
+  // Note that even if this doesn't include zero, not taking any choices will
+  // also be an option.
   void AddChoices(absl::Span<const int64_t> choices);
+
+  // Adds [0, coeff, 2 * coeff, ... max_value * coeff].
+  void AddMultiples(int64_t coeff, int64_t max_value);
 
   // Returns an upper bound (inclusive) on the maximum sum <= bound_.
   // This might return bound_ if we aborted the computation.
@@ -216,8 +218,12 @@ class MaxBoundedSubsetSum {
   int64_t Bound() const { return bound_; }
 
  private:
+  // This assumes filtered values.
+  void AddChoicesInternal(absl::Span<const int64_t> values);
+
   static constexpr int kMaxComplexityPerAdd = 50;
 
+  int64_t gcd_;
   int64_t bound_;
   int64_t current_max_;
   std::vector<int64_t> sums_;

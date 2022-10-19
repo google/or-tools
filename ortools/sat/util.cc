@@ -405,24 +405,83 @@ void CompressTuples(absl::Span<const int64_t> domain_sizes,
 
 void MaxBoundedSubsetSum::Reset(int64_t bound) {
   DCHECK_GE(bound, 0);
+  gcd_ = 0;
   sums_ = {0};
+  expanded_sums_.clear();
   current_max_ = 0;
   bound_ = bound;
 }
 
 void MaxBoundedSubsetSum::Add(int64_t value) {
-  DCHECK_GE(value, 0);
+  if (value == 0) return;
+  if (value > bound_) return;
+  gcd_ = std::gcd(gcd_, value);
+  AddChoicesInternal({value});
+}
+
+void MaxBoundedSubsetSum::AddChoices(absl::Span<const int64_t> choices) {
+  if (DEBUG_MODE) {
+    for (const int64_t c : choices) {
+      DCHECK_GE(c, 0);
+    }
+  }
 
   // The max is already reachable or we aborted.
   if (current_max_ == bound_) return;
-  if (value > bound_) return;  // Can be ignored.
 
+  // Filter out zero and values greater than bound_.
+  filtered_values_.clear();
+  for (const int64_t c : choices) {
+    if (c == 0 || c > bound_) continue;
+    filtered_values_.push_back(c);
+    gcd_ = std::gcd(gcd_, c);
+  }
+  if (filtered_values_.empty()) return;
+
+  // So we can abort early in the AddChoicesInternal() inner loops.
+  std::sort(filtered_values_.begin(), filtered_values_.end());
+  AddChoicesInternal(filtered_values_);
+}
+
+void MaxBoundedSubsetSum::AddMultiples(int64_t coeff, int64_t max_value) {
+  DCHECK_GE(coeff, 0);
+  DCHECK_GE(max_value, 0);
+
+  if (coeff == 0 || max_value == 0) return;
+  if (coeff > bound_) return;
+  if (current_max_ == bound_) return;
+  gcd_ = std::gcd(gcd_, coeff);
+
+  const int64_t num_values = std::min(max_value, FloorOfRatio(bound_, coeff));
+  if (num_values > 10) {
+    // We only keep GCD in this case.
+    sums_.clear();
+    expanded_sums_.clear();
+    current_max_ = FloorOfRatio(bound_, gcd_) * gcd_;
+    return;
+  }
+
+  filtered_values_.clear();
+  for (int multiple = 1; multiple <= num_values; ++multiple) {
+    const int64_t v = multiple * coeff;
+    if (v == bound_) {
+      current_max_ = bound_;
+      return;
+    }
+    filtered_values_.push_back(v);
+  }
+  AddChoicesInternal(filtered_values_);
+}
+
+void MaxBoundedSubsetSum::AddChoicesInternal(absl::Span<const int64_t> values) {
   // Mode 1: vector of all possible sums (with duplicates).
   if (!sums_.empty() && sums_.size() <= kMaxComplexityPerAdd) {
     const int old_size = sums_.size();
     for (int i = 0; i < old_size; ++i) {
-      const int64_t s = sums_[i] + value;
-      if (s <= bound_) {
+      for (const int64_t value : values) {
+        const int64_t s = sums_[i] + value;
+        if (s > bound_) break;
+
         sums_.push_back(s);
         current_max_ = std::max(current_max_, s);
         if (current_max_ == bound_) return;  // Abort
@@ -442,84 +501,28 @@ void MaxBoundedSubsetSum::Add(int64_t value) {
     }
 
     // The reverse order is important to not add the current value twice.
-    for (int i = bound_ - value; i >= 0; --i) {
-      if (expanded_sums_[i]) {
-        expanded_sums_[i + value] = true;
-        current_max_ = std::max(current_max_, i + value);
-      }
-    }
-    return;
-  }
+    if (!expanded_sums_.empty()) {
+      for (int64_t i = bound_ - 1; i >= 0; --i) {
+        if (!expanded_sums_[i]) continue;
+        for (const int64_t value : values) {
+          if (i + value > bound_) break;
 
-  // Abort.
-  current_max_ = bound_;
-}
-
-void MaxBoundedSubsetSum::AddChoices(absl::Span<const int64_t> choices) {
-  if (DEBUG_MODE) {
-    for (const int64_t c : choices) {
-      DCHECK_GE(c, 0);
-    }
-  }
-
-  // The max is already reachable or we aborted.
-  if (current_max_ == bound_) return;
-
-  // Filter out zero and values greater than bound_.
-  filtered_values_.clear();
-  for (const int64_t c : choices) {
-    if (c == 0 || c > bound_) continue;
-    filtered_values_.push_back(c);
-  }
-  if (filtered_values_.empty()) return;
-  if (filtered_values_.size() == 1) {
-    Add(filtered_values_[0]);
-    return;
-  }
-
-  // Mode 1: vector of all possible sums (with duplicates).
-  if (!sums_.empty() && sums_.size() <= kMaxComplexityPerAdd) {
-    const int old_size = sums_.size();
-    for (int i = 0; i < old_size; ++i) {
-      for (const int64_t value : filtered_values_) {
-        const int64_t s = sums_[i] + value;
-        if (s <= bound_) {
-          sums_.push_back(s);
-          current_max_ = std::max(current_max_, s);
+          expanded_sums_[i + value] = true;
+          current_max_ = std::max(current_max_, i + value);
           if (current_max_ == bound_) return;  // Abort
         }
       }
+      return;
     }
-    return;
   }
 
-  // Mode 2: bitset of all possible sums.
-  if (bound_ <= kMaxComplexityPerAdd) {
-    if (!sums_.empty()) {
-      expanded_sums_.assign(bound_ + 1, false);
-      for (const int64_t s : sums_) {
-        expanded_sums_[s] = true;
-      }
-      sums_.clear();
-    }
-
-    // The reverse order is important to not add the current value twice.
-    for (int64_t i = bound_ - 1; i >= 0; --i) {
-      if (expanded_sums_[i]) {
-        for (const int64_t value : filtered_values_) {
-          if (i + value <= bound_) {
-            expanded_sums_[i + value] = true;
-            current_max_ = std::max(current_max_, i + value);
-            if (current_max_ == bound_) return;  // Abort
-          }
-        }
-      }
-    }
-    return;
+  // Fall back to gcd_.
+  DCHECK_NE(gcd_, 0);
+  if (gcd_ == 1) {
+    current_max_ = bound_;
+  } else {
+    current_max_ = FloorOfRatio(bound_, gcd_) * gcd_;
   }
-
-  // Abort.
-  current_max_ = bound_;
 }
 
 BasicKnapsackSolver::Result BasicKnapsackSolver::Solve(

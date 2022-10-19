@@ -380,7 +380,7 @@ SatSolver::Status LbTreeSearch::Search(
     // If the search has not just been restarted (in which case nodes_ would be
     // empty), and if we are at level zero (either naturally, or if the
     // backtrack level was set to zero in the above code), let's run a different
-    // heuristic to decide whether to retart the search from scratch or not.
+    // heuristic to decide whether to restart the search from scratch or not.
     //
     // We ignore small search trees.
     if (sat_solver_->CurrentDecisionLevel() == 0 && num_nodes_in_tree_ > 50) {

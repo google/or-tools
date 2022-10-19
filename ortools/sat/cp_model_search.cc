@@ -660,6 +660,10 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
         continue;
       }
       if (name == "less_encoding") continue;
+      // TODO(user): Enable lb_tree_search in deterministic mode.
+      if (params.optimize_with_lb_tree_search() && params.interleave_search()) {
+        continue;
+      }
     } else {
       if (params.optimize_with_lb_tree_search()) continue;
       if (params.optimize_with_core()) continue;
