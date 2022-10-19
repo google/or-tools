@@ -208,6 +208,7 @@ $(TEMP_CPP_DIR)/$1/%: \
 	-$(MKDIR) $(TEMP_CPP_DIR)$S$1$S$$*
 
 $(TEMP_CPP_DIR)/$1/%/CMakeLists.txt: \
+ $(SRC_DIR)/ortools/$1/samples/%.cc \
  ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in \
  | $(TEMP_CPP_DIR)/$1/%
 	$(COPY) ortools$Scpp$SCMakeLists.txt.in $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
@@ -227,6 +228,7 @@ $(TEMP_CPP_DIR)/$1/%/%.cc: \
 
 rcpp_%: \
  cpp \
+ $(SRC_DIR)/ortools/$1/samples/%.cc \
  $(TEMP_CPP_DIR)/$1/%/CMakeLists.txt \
  $(TEMP_CPP_DIR)/$1/%/%.cc \
  FORCE
@@ -254,10 +256,15 @@ define cpp-example-target =
 $(TEMP_CPP_DIR)/$1: | $(TEMP_CPP_DIR)
 	-$(MKDIR) $(TEMP_CPP_DIR)$S$1
 
-$(TEMP_CPP_DIR)/$1/%: $(SRC_DIR)/examples/$1/%.cc | $(TEMP_CPP_DIR)/$1
+$(TEMP_CPP_DIR)/$1/%: \
+ $(SRC_DIR)/examples/$1/%.cc \
+ | $(TEMP_CPP_DIR)/$1
 	-$(MKDIR) $(TEMP_CPP_DIR)$S$1$S$$*
 
-$(TEMP_CPP_DIR)/$1/%/CMakeLists.txt: ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in | $(TEMP_CPP_DIR)/$1/%
+$(TEMP_CPP_DIR)/$1/%/CMakeLists.txt: \
+ $(SRC_DIR)/examples/$1/%.cc \
+ ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in \
+ | $(TEMP_CPP_DIR)/$1/%
 	$(COPY) ortools$Scpp$SCMakeLists.txt.in $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
 	$(SED) -i -e 's/@CPP_NAME@/$$*/' \
  $(TEMP_CPP_DIR)$S$1$S$$*$SCMakeLists.txt
@@ -275,6 +282,7 @@ $(TEMP_CPP_DIR)/$1/%/%.cc: \
 
 rcpp_%: \
  cpp \
+ $(SRC_DIR)/examples/$1/%.cc \
  $(TEMP_CPP_DIR)/$1/%/CMakeLists.txt \
  $(TEMP_CPP_DIR)/$1/%/%.cc \
  FORCE
@@ -304,8 +312,8 @@ $(TEMP_CPP_DIR)/tests: | $(TEMP_CPP_DIR)
 	-$(MKDIR) $(TEMP_CPP_DIR)$Stests
 
 $(TEMP_CPP_DIR)/tests/%: \
-	$(SRC_DIR)/examples/tests/%.cc \
-	| $(TEMP_CPP_DIR)/tests
+ $(SRC_DIR)/examples/tests/%.cc \
+ | $(TEMP_CPP_DIR)/tests
 	-$(MKDIR) $(TEMP_CPP_DIR)$Stests$S$*
 
 $(TEMP_CPP_DIR)/tests/%/CMakeLists.txt: ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in | $(TEMP_CPP_DIR)/tests/%
@@ -326,6 +334,7 @@ $(TEMP_CPP_DIR)/tests/%/%.cc: \
 
 rcpp_%: \
  cpp \
+ $(SRC_DIR)/examples/tests/%.cc \
  $(TEMP_CPP_DIR)/tests/%/CMakeLists.txt \
  $(TEMP_CPP_DIR)/tests/%/%.cc \
  FORCE

@@ -143,6 +143,7 @@ $(TEMP_DOTNET_DIR)/$1/%/%.cs: \
 
 rdotnet_%: \
  dotnet \
+ $(SRC_DIR)/ortools/$1/samples/%.cs \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
@@ -212,6 +213,7 @@ $(TEMP_DOTNET_DIR)/$1/%/%.cs: \
 
 rdotnet_%: \
  dotnet \
+ $(SRC_DIR)/examples/$1/%.cs \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
@@ -280,6 +282,7 @@ $(TEMP_DOTNET_DIR)/$1/%/%.cs: \
 
 rdotnet_%: \
  dotnet \
+ $(SRC_DIR)/ortools/$1/csharp/%.cs \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE

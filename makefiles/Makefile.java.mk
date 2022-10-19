@@ -168,6 +168,7 @@ $(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java: \
 
 rjava_%: \
  java \
+ $(SRC_DIR)/ortools/$1/samples/%.java \
  $(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java \
  FORCE
@@ -219,6 +220,7 @@ $(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java: \
 
 rjava_%: \
  java \
+ $(SRC_DIR)/examples/$1/%.java \
  $(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java \
  FORCE
@@ -265,6 +267,7 @@ $(TEMP_JAVA_DIR)/$1/%/$(JAVA_TEST_DIR)/%.java: \
 
 rjava_%: \
  java \
+ $(SRC_DIR)/ortools/$1/java/%.java \
  $(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $(TEMP_JAVA_DIR)/$1/%/$(JAVA_TEST_DIR)/%.java \
  FORCE
