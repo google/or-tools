@@ -18,6 +18,9 @@ syntax = "proto2";
 
 package operations_research.pdlp;
 
+option java_package = "com.google.ortools.pdlp";
+option java_multiple_files = true;
+
 import "ortools/pdlp/solvers.proto";
 
 // Easy-to-compute statistics for the quadratic program.
