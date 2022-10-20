@@ -1846,7 +1846,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   }
   // Add soft span cost.
   if (optimize_costs && dimension_->HasSoftSpanUpperBounds()) {
-    SimpleBoundCosts::BoundCost bound_cost =
+    BoundCost bound_cost =
         dimension_->GetSoftSpanUpperBoundForVehicle(vehicle);
     if (bound_cost.bound < std::numeric_limits<int64_t>::max() &&
         bound_cost.cost > 0) {

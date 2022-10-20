@@ -167,6 +167,12 @@ using System.Collections.Generic;
 %unignore TypeRegulationsChecker;
 %ignore TypeRegulationsChecker::CheckVehicle;
 
+// SimpleBoundCosts
+%unignore BoundCost;
+%unignore SimpleBoundCosts;
+%rename("GetBoundCost") SimpleBoundCosts::bound_cost;
+%rename("GetSize") SimpleBoundCosts::Size;
+
 }  // namespace operations_research
 
 %rename("GetStatus") operations_research::RoutingModel::status;

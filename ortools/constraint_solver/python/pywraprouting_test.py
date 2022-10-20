@@ -722,5 +722,78 @@ class TestRoutingModel(unittest.TestCase):
                     count += 1
 
 
+class TestBoundCost(unittest.TestCase):
+
+    def testCtor(self):
+        bound_cost = pywrapcp.BoundCost()
+        self.assertIsNotNone(bound_cost)
+        self.assertEqual(0, bound_cost.bound)
+        self.assertEqual(0, bound_cost.cost)
+
+        bound_cost = pywrapcp.BoundCost(bound=97, cost=43)
+        self.assertIsNotNone(bound_cost)
+        self.assertEqual(97, bound_cost.bound)
+        self.assertEqual(43, bound_cost.cost)
+
+
+class TestRoutingDimension(unittest.TestCase):
+
+    def testCtor(self):
+        manager = pywrapcp.RoutingIndexManager(31, 7, 3)
+        self.assertIsNotNone(manager)
+        model = pywrapcp.RoutingModel(manager)
+        self.assertIsNotNone(model)
+        transit_idx = model.RegisterTransitCallback(
+            partial(TransitDistance, manager))
+        self.assertTrue(
+            model.AddDimension(transit_idx, 90, 90, True, 'distance'))
+        model.GetDimensionOrDie('distance')
+
+    def testSoftSpanUpperBound(self):
+        manager = pywrapcp.RoutingIndexManager(31, 7, 3)
+        self.assertIsNotNone(manager)
+        model = pywrapcp.RoutingModel(manager)
+        self.assertIsNotNone(model)
+        transit_idx = model.RegisterTransitCallback(
+            partial(TransitDistance, manager))
+        self.assertTrue(
+            model.AddDimension(transit_idx, 100, 100, True, 'distance'))
+        dimension = model.GetDimensionOrDie('distance')
+
+        bound_cost = pywrapcp.BoundCost(bound=97, cost=43)
+        self.assertIsNotNone(bound_cost)
+        self.assertFalse(dimension.HasSoftSpanUpperBounds())
+        for v in range(manager.GetNumberOfVehicles()):
+            dimension.SetSoftSpanUpperBoundForVehicle(bound_cost, v)
+            bc = dimension.GetSoftSpanUpperBoundForVehicle(v)
+            self.assertIsNotNone(bc)
+            self.assertEqual(97, bc.bound)
+            self.assertEqual(43, bc.cost)
+        self.assertTrue(dimension.HasSoftSpanUpperBounds())
+
+    def testQuadraticCostSoftSpanUpperBound(self):
+        manager = pywrapcp.RoutingIndexManager(31, 7, 3)
+        self.assertIsNotNone(manager)
+        model = pywrapcp.RoutingModel(manager)
+        self.assertIsNotNone(model)
+        transit_idx = model.RegisterTransitCallback(
+            partial(TransitDistance, manager))
+        self.assertTrue(
+            model.AddDimension(transit_idx, 100, 100, True, 'distance'))
+        dimension = model.GetDimensionOrDie('distance')
+
+        bound_cost = pywrapcp.BoundCost(bound=97, cost=43)
+        self.assertIsNotNone(bound_cost)
+        self.assertFalse(dimension.HasQuadraticCostSoftSpanUpperBounds())
+        for v in range(manager.GetNumberOfVehicles()):
+            dimension.SetQuadraticCostSoftSpanUpperBoundForVehicle(
+                bound_cost, v)
+            bc = dimension.GetQuadraticCostSoftSpanUpperBoundForVehicle(v)
+            self.assertIsNotNone(bc)
+            self.assertEqual(97, bc.bound)
+            self.assertEqual(43, bc.cost)
+        self.assertTrue(dimension.HasQuadraticCostSoftSpanUpperBounds())
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

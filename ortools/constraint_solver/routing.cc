@@ -2810,7 +2810,7 @@ void RoutingModel::CloseModelWithParameters(
       if (dimension->HasSoftSpanUpperBounds()) {
         for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
           if (spans[vehicle]) continue;
-          const SimpleBoundCosts::BoundCost bound_cost =
+          const BoundCost bound_cost =
               dimension->GetSoftSpanUpperBoundForVehicle(vehicle);
           if (bound_cost.cost == 0) continue;
           spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);
@@ -2819,7 +2819,7 @@ void RoutingModel::CloseModelWithParameters(
       if (dimension->HasQuadraticCostSoftSpanUpperBounds()) {
         for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
           if (spans[vehicle]) continue;
-          const SimpleBoundCosts::BoundCost bound_cost =
+          const BoundCost bound_cost =
               dimension->GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
           if (bound_cost.cost == 0) continue;
           spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);

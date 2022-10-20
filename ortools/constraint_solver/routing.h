@@ -2655,7 +2655,7 @@ class TypeRegulationsConstraint : public Constraint {
   TypeRequirementChecker requirement_checker_;
   std::vector<Demon*> vehicle_demons_;
 };
-#if !defined SWIG
+
 /// A structure meant to store soft bounds and associated violation constants.
 /// It is 'Simple' because it has one BoundCost per element,
 /// in contrast to 'Multiple'. Design notes:
@@ -2668,12 +2668,15 @@ class TypeRegulationsConstraint : public Constraint {
 ///   because the structure will be accessed through pointers, moreover having
 ///   to type bound_cost reminds the user of the order if they do a copy
 ///   assignment of the element.
+
+// Can't be nested in SimpleBoundCosts since SWIG doesn't support nested class...
+struct BoundCost {
+  int64_t bound;
+  int64_t cost;
+  BoundCost(int64_t bound = 0, int64_t cost = 0): bound(bound), cost(cost) {}
+};
 class SimpleBoundCosts {
  public:
-  struct BoundCost {
-    int64_t bound;
-    int64_t cost;
-  };
   SimpleBoundCosts(int num_bounds, BoundCost default_bound_cost)
       : bound_costs_(num_bounds, default_bound_cost) {}
   BoundCost& bound_cost(int element) { return bound_costs_[element]; }
@@ -2685,7 +2688,6 @@ class SimpleBoundCosts {
  private:
   std::vector<BoundCost> bound_costs_;
 };
-#endif  // !defined SWIG
 
 /// Dimensions represent quantities accumulated at nodes along the routes. They
 /// represent quantities such as weights or volumes carried along the route, or
@@ -3057,21 +3059,21 @@ class RoutingDimension {
     DCHECK_GE(local_optimizer_offset_for_vehicle_[vehicle], 0);
     return local_optimizer_offset_for_vehicle_[vehicle];
   }
-#if !defined SWIG
+
   /// If the span of vehicle on this dimension is larger than bound,
   /// the cost will be increased by cost * (span - bound).
-  void SetSoftSpanUpperBoundForVehicle(SimpleBoundCosts::BoundCost bound_cost,
+  void SetSoftSpanUpperBoundForVehicle(BoundCost bound_cost,
                                        int vehicle) {
     if (!HasSoftSpanUpperBounds()) {
       vehicle_soft_span_upper_bound_ = std::make_unique<SimpleBoundCosts>(
-          model_->vehicles(), SimpleBoundCosts::BoundCost{kint64max, 0});
+          model_->vehicles(), BoundCost{kint64max, 0});
     }
     vehicle_soft_span_upper_bound_->bound_cost(vehicle) = bound_cost;
   }
   bool HasSoftSpanUpperBounds() const {
     return vehicle_soft_span_upper_bound_ != nullptr;
   }
-  SimpleBoundCosts::BoundCost GetSoftSpanUpperBoundForVehicle(
+  BoundCost GetSoftSpanUpperBoundForVehicle(
       int vehicle) const {
     DCHECK(HasSoftSpanUpperBounds());
     return vehicle_soft_span_upper_bound_->bound_cost(vehicle);
@@ -3079,11 +3081,11 @@ class RoutingDimension {
   /// If the span of vehicle on this dimension is larger than bound,
   /// the cost will be increased by cost * (span - bound)^2.
   void SetQuadraticCostSoftSpanUpperBoundForVehicle(
-      SimpleBoundCosts::BoundCost bound_cost, int vehicle) {
+      BoundCost bound_cost, int vehicle) {
     if (!HasQuadraticCostSoftSpanUpperBounds()) {
       vehicle_quadratic_cost_soft_span_upper_bound_ =
           std::make_unique<SimpleBoundCosts>(
-              model_->vehicles(), SimpleBoundCosts::BoundCost{kint64max, 0});
+              model_->vehicles(), BoundCost{kint64max, 0});
     }
     vehicle_quadratic_cost_soft_span_upper_bound_->bound_cost(vehicle) =
         bound_cost;
@@ -3091,12 +3093,11 @@ class RoutingDimension {
   bool HasQuadraticCostSoftSpanUpperBounds() const {
     return vehicle_quadratic_cost_soft_span_upper_bound_ != nullptr;
   }
-  SimpleBoundCosts::BoundCost GetQuadraticCostSoftSpanUpperBoundForVehicle(
+  BoundCost GetQuadraticCostSoftSpanUpperBoundForVehicle(
       int vehicle) const {
     DCHECK(HasQuadraticCostSoftSpanUpperBounds());
     return vehicle_quadratic_cost_soft_span_upper_bound_->bound_cost(vehicle);
   }
-#endif  /// !defined SWIG
 
  private:
   struct SoftBound {

@@ -88,6 +88,14 @@ enum OptionalBoolean {
   BOOL_FALSE = 2,
   BOOL_TRUE = 3,
 };
+
+// SimpleBoundCosts
+%unignore BoundCost;
+
+%unignore SimpleBoundCosts;
+%unignore SimpleBoundCosts::bound_cost;
+%rename("size") SimpleBoundCosts::Size;
+
 }  // namespace operations_research
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.

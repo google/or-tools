@@ -15,17 +15,17 @@ package com.google.ortools.constraintsolver;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.auto.value.AutoValue;
 import com.google.ortools.Loader;
-import com.google.ortools.constraintsolver.RoutingModelParameters;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.ArrayList;
 import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -689,5 +689,89 @@ public final class RoutingSolverTest {
     assertThat(nexts).isNotEmpty();
     IntVar[] vehicleVars = model.vehicleVars();
     assertThat(vehicleVars).isNotEmpty();
+  }
+
+  @Test
+  public void testBoundCost_Ctor() {
+    // Create Routing Index Manager
+    BoundCost boundCost = new BoundCost();
+    assertNotNull(boundCost);
+    assertEquals(0, boundCost.getBound());
+    assertEquals(0, boundCost.getCost());
+
+    boundCost = new BoundCost(97 /*bound*/, 101 /*cost*/);
+    assertNotNull(boundCost);
+    assertEquals(97, boundCost.getBound());
+    assertEquals(101, boundCost.getCost());
+  }
+
+  @Test
+  public void testRoutingDimension_Ctor() {
+    final RoutingIndexManager manager = new RoutingIndexManager(31, 7, 3);
+    assertNotNull(manager);
+    final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
+    final int transitIndex = model.registerTransitCallback((long fromIndex, long toIndex) -> {
+      final int fromNode = manager.indexToNode(fromIndex);
+      final int toNode = manager.indexToNode(toIndex);
+      return (long) Math.abs(toNode - fromNode);
+    });
+    assertTrue(model.addDimension(transitIndex, 100, 100, true, "Dimension"));
+    final RoutingDimension dimension = model.getMutableDimension("Dimension");
+  }
+
+  @Test
+  public void testRoutingDimension_SoftSpanUpperBound() {
+    final RoutingIndexManager manager = new RoutingIndexManager(31, 7, 3);
+    assertNotNull(manager);
+    final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
+    final int transitIndex = model.registerTransitCallback((long fromIndex, long toIndex) -> {
+      final int fromNode = manager.indexToNode(fromIndex);
+      final int toNode = manager.indexToNode(toIndex);
+      return (long) Math.abs(toNode - fromNode);
+    });
+    assertTrue(model.addDimension(transitIndex, 100, 100, true, "Dimension"));
+    final RoutingDimension dimension = model.getMutableDimension("Dimension");
+
+    final BoundCost boundCost = new BoundCost(97 /*bound*/, 101 /*cost*/);
+    assertNotNull(boundCost);
+    assertFalse(dimension.hasSoftSpanUpperBounds());
+    for (int v : IntStream.range(0, manager.getNumberOfVehicles()).toArray()) {
+      dimension.setSoftSpanUpperBoundForVehicle(boundCost, v);
+      final BoundCost bc = dimension.getSoftSpanUpperBoundForVehicle(v);
+      assertNotNull(bc);
+      assertEquals(97, bc.getBound());
+      assertEquals(101, bc.getCost());
+    }
+    assertTrue(dimension.hasSoftSpanUpperBounds());
+  }
+
+  @Test
+  public void testRoutingDimension_QuadraticCostSoftSpanUpperBound() {
+    final RoutingIndexManager manager = new RoutingIndexManager(31, 7, 3);
+    assertNotNull(manager);
+    final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
+    final int transitIndex = model.registerTransitCallback((long fromIndex, long toIndex) -> {
+      final int fromNode = manager.indexToNode(fromIndex);
+      final int toNode = manager.indexToNode(toIndex);
+      return (long) Math.abs(toNode - fromNode);
+    });
+    assertTrue(model.addDimension(transitIndex, 100, 100, true, "Dimension"));
+    final RoutingDimension dimension = model.getMutableDimension("Dimension");
+
+    final BoundCost boundCost = new BoundCost(97 /*bound*/, 101 /*cost*/);
+    assertNotNull(boundCost);
+    assertFalse(dimension.hasQuadraticCostSoftSpanUpperBounds());
+    for (int v : IntStream.range(0, manager.getNumberOfVehicles()).toArray()) {
+      dimension.setQuadraticCostSoftSpanUpperBoundForVehicle(boundCost, v);
+      final BoundCost bc = dimension.getQuadraticCostSoftSpanUpperBoundForVehicle(v);
+      assertNotNull(bc);
+      assertEquals(97, bc.getBound());
+      assertEquals(101, bc.getCost());
+    }
+    assertTrue(dimension.hasQuadraticCostSoftSpanUpperBounds());
+
   }
 }

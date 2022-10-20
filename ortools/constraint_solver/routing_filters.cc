@@ -1473,7 +1473,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
                              CapSub(span_lower_bound, total_transit)));
         }
         if (FilterSoftSpanCost()) {
-          const SimpleBoundCosts::BoundCost bound_cost =
+          const BoundCost bound_cost =
               dimension_.GetSoftSpanUpperBoundForVehicle(vehicle);
           if (bound_cost.bound < span_lower_bound) {
             const int64_t violation =
@@ -1483,7 +1483,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
           }
         }
         if (FilterSoftSpanQuadraticCost()) {
-          const SimpleBoundCosts::BoundCost bound_cost =
+          const BoundCost bound_cost =
               dimension_.GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
           if (bound_cost.bound < span_lower_bound) {
             const int64_t violation =
@@ -1676,7 +1676,7 @@ bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
           CapProd(vehicle_span_cost_coefficients_[vehicle], min_total_slack));
       const int64_t span_lower_bound = CapAdd(total_transit, min_total_slack);
       if (FilterSoftSpanCost()) {
-        const SimpleBoundCosts::BoundCost bound_cost =
+        const BoundCost bound_cost =
             dimension_.GetSoftSpanUpperBoundForVehicle(vehicle);
         if (bound_cost.bound < span_lower_bound) {
           const int64_t violation = CapSub(span_lower_bound, bound_cost.bound);
@@ -1685,7 +1685,7 @@ bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
         }
       }
       if (FilterSoftSpanQuadraticCost()) {
-        const SimpleBoundCosts::BoundCost bound_cost =
+        const BoundCost bound_cost =
             dimension_.GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
         if (bound_cost.bound < span_lower_bound) {
           const int64_t violation = CapSub(span_lower_bound, bound_cost.bound);
