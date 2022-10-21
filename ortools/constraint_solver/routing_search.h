@@ -26,6 +26,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -833,15 +834,11 @@ class GlobalCheapestInsertionFilteredHeuristic
   template <typename T>
   bool StopSearchAndCleanup(AdjustablePriorityQueue<T>* priority_queue) {
     if (!StopSearch()) return false;
-    ClearAllocator<T>();
+    if constexpr (std::is_same_v<T, PairEntry>) {
+      pair_entry_allocator_.Clear();
+    }
     priority_queue->Clear();
     return true;
-  }
-  template <typename T>
-  void ClearAllocator() {}
-  template <>
-  void ClearAllocator<PairEntry>() {
-    pair_entry_allocator_.Clear();
   }
 
   GlobalCheapestInsertionParameters gci_params_;
