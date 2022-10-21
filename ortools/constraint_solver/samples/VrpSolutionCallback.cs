@@ -83,36 +83,38 @@ public class VrpSolutionCallback
     // [END solution_callback_printer]
 
     // [START solution_callback]
-    class SolutionCallback {
-      public long[] objectives;
-      private RoutingIndexManager routingManager;
-      private RoutingModel routingModel;
-      private long maxSolution;
-      private long counter;
+    class SolutionCallback
+    {
+        public long[] objectives;
+        private RoutingIndexManager routingManager;
+        private RoutingModel routingModel;
+        private long maxSolution;
+        private long counter;
 
-      public SolutionCallback(
-          ref RoutingIndexManager manager,
-          ref RoutingModel routing,
-          in long limit)
-      {
-        routingManager = manager;
-        routingModel = routing;;
-        maxSolution = limit;
-        counter = 0;
-        objectives = new long[maxSolution];
-      }
+        public SolutionCallback(ref RoutingIndexManager manager, ref RoutingModel routing, in long limit)
+        {
+            routingManager = manager;
+            routingModel = routing;
+            ;
+            maxSolution = limit;
+            counter = 0;
+            objectives = new long[maxSolution];
+        }
 
-      public void Run() {
-        long objective = routingModel.CostVar().Value();
-        if(counter == 0 || objective < objectives[counter-1]) {
-          objectives[counter] = objective;
-          printSolution(ref routingManager, ref routingModel);
-          counter++;
+        public void Run()
+        {
+            long objective = routingModel.CostVar().Value();
+            if (counter == 0 || objective < objectives[counter - 1])
+            {
+                objectives[counter] = objective;
+                printSolution(ref routingManager, ref routingModel);
+                counter++;
+            }
+            if (counter >= maxSolution)
+            {
+                routingModel.solver().FinishCurrentSearch();
+            }
         }
-        if(counter >= maxSolution) {
-          routingModel.solver().FinishCurrentSearch();
-        }
-      }
     };
     // [END solution_callback]
 
@@ -136,15 +138,15 @@ public class VrpSolutionCallback
 
         // Create and register a transit callback.
         // [START transit_callback]
-        int transitCallbackIndex = routingModel.RegisterTransitCallback(
-            (long fromIndex, long toIndex) =>
-            {
-                // Convert from routing variable Index to
-                // distance matrix NodeIndex.
-                var fromNode = routingManager.IndexToNode(fromIndex);
-                var toNode = routingManager.IndexToNode(toIndex);
-                return data.DistanceMatrix[fromNode, toNode];
-            });
+        int transitCallbackIndex =
+            routingModel.RegisterTransitCallback((long fromIndex, long toIndex) =>
+                                                 {
+                                                     // Convert from routing variable Index to
+                                                     // distance matrix NodeIndex.
+                                                     var fromNode = routingManager.IndexToNode(fromIndex);
+                                                     var toNode = routingManager.IndexToNode(toIndex);
+                                                     return data.DistanceMatrix[fromNode, toNode];
+                                                 });
         // [END transit_callback]
 
         // Define cost of each arc.
@@ -154,19 +156,19 @@ public class VrpSolutionCallback
 
         // Add Distance constraint.
         // [START distance_constraint]
-        routingModel.AddDimension(
-            transitCallbackIndex,
-            0, // no slack
-            3000, // vehicle maximum travel distance
-            true, // start cumul to zero
-            "Distance");
+        routingModel.AddDimension(transitCallbackIndex,
+                                  0,    // no slack
+                                  3000, // vehicle maximum travel distance
+                                  true, // start cumul to zero
+                                  "Distance");
         RoutingDimension distanceDimension = routingModel.GetMutableDimension("Distance");
         distanceDimension.SetGlobalSpanCostCoefficient(100);
         // [END distance_constraint]
 
         // Attach a solution callback.
         // [START attach_callback]
-        SolutionCallback solutionCallback = new SolutionCallback(ref routingManager, ref routingModel, /*max_solution=*/15);
+        SolutionCallback solutionCallback =
+            new SolutionCallback(ref routingManager, ref routingModel, /*max_solution=*/15);
         routingModel.AddAtSolutionCallback(solutionCallback.Run);
         // [END attach_callback]
 
@@ -186,7 +188,7 @@ public class VrpSolutionCallback
 
         // Print solution on console.
         // [START print_solution]
-        if(solution != null)
+        if (solution != null)
         {
             Console.WriteLine($"Best objective: {solutionCallback.objectives[^1]}");
         }

@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -73,13 +74,13 @@ struct DataModel {
 //! @param[in] routing_manager Index manager used.
 //! @param[in] routing_model Routing solver used.
 // [START solution_callback_printer]
-void print_solution(
-    const RoutingIndexManager& routing_manager,
-    const RoutingModel& routing_model) {
+void print_solution(const RoutingIndexManager& routing_manager,
+                    const RoutingModel& routing_model) {
   LOG(INFO) << "################";
   LOG(INFO) << "Solution objective: " << routing_model.CostVar()->Value();
   int64_t total_distance{0};
-  for (int vehicle_id = 0; vehicle_id < routing_manager.num_vehicles(); ++vehicle_id) {
+  for (int vehicle_id = 0; vehicle_id < routing_manager.num_vehicles();
+       ++vehicle_id) {
     int64_t index = routing_model.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
     int64_t route_distance{0};
@@ -88,8 +89,8 @@ void print_solution(
       route << " " << routing_manager.IndexToNode(index).value() << " ->";
       int64_t previous_index = index;
       index = routing_model.NextVar(index)->Value();
-      route_distance += routing_model.GetArcCostForVehicle(previous_index, index,
-                                                     int64_t{vehicle_id});
+      route_distance += routing_model.GetArcCostForVehicle(
+          previous_index, index, int64_t{vehicle_id});
     }
     LOG(INFO) << route.str() << routing_manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << route_distance << "m";
@@ -105,32 +106,30 @@ struct SolutionCallback {
   const RoutingModel& routing_model;
   const int64_t max_solution;
 
-  SolutionCallback(
-      const RoutingIndexManager& manager,
-      const RoutingModel& model,
-      const int64_t max_solution):
-    routing_manager(manager),
-    routing_model(model),
-    max_solution(max_solution) {
-      objectives.reserve(max_solution);
-    };
+  SolutionCallback(const RoutingIndexManager& manager,
+                   const RoutingModel& model, const int64_t max_solution)
+      : routing_manager(manager),
+        routing_model(model),
+        max_solution(max_solution) {
+    objectives.reserve(max_solution);
+  }
   ~SolutionCallback() = default;
 
   void Run() {
     int64_t objective = routing_model.CostVar()->Value();
-    if(objectives.empty() || objective < objectives.back()) {
+    if (objectives.empty() || objective < objectives.back()) {
       objectives.push_back(objective);
       print_solution(routing_manager, routing_model);
       counter++;
     }
-    if(counter >= max_solution) {
+    if (counter >= max_solution) {
       routing_model.solver()->FinishCurrentSearch();
     }
   }
 
   std::vector<int64_t> objectives = {};
 
-  private:
+ private:
   int64_t counter = 0;
 };
 // [END solution_callback]
@@ -143,8 +142,8 @@ void VrpSolutionCallback() {
 
   // Create Routing Index Manager.
   // [START index_manager]
-  RoutingIndexManager routing_manager(data.distance_matrix.size(), data.num_vehicles,
-                              data.depot);
+  RoutingIndexManager routing_manager(data.distance_matrix.size(),
+                                      data.num_vehicles, data.depot);
   // [END index_manager]
 
   // Create Routing Model.
@@ -155,7 +154,8 @@ void VrpSolutionCallback() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing_model.RegisterTransitCallback(
-      [&data, &routing_manager](int64_t from_index, int64_t to_index) -> int64_t {
+      [&data, &routing_manager](int64_t from_index,
+                                int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
         auto from_node = routing_manager.IndexToNode(from_index).value();
         auto to_node = routing_manager.IndexToNode(to_index).value();
@@ -170,19 +170,21 @@ void VrpSolutionCallback() {
 
   // Add Distance constraint.
   // [START distance_constraint]
-  routing_model.AddDimension(
-      transit_callback_index,
-      0, // no slack
-      3000, // vehicle maximum travel distance
-      true,  // start cumul to zero
-      "Distance");
-  routing_model.GetMutableDimension("Distance")->SetGlobalSpanCostCoefficient(100);
+  routing_model.AddDimension(transit_callback_index,
+                             0,     // no slack
+                             3000,  // vehicle maximum travel distance
+                             true,  // start cumul to zero
+                             "Distance");
+  routing_model.GetMutableDimension("Distance")
+      ->SetGlobalSpanCostCoefficient(100);
   // [END distance_constraint]
 
   // Attach a solution callback.
   // [START attach_callback]
-  SolutionCallback solution_callback{routing_manager, routing_model, /*max_solution=*/15};
-  routing_model.AddAtSolutionCallback(std::bind(&SolutionCallback::Run, &solution_callback));
+  SolutionCallback solution_callback{routing_manager, routing_model,
+                                     /*max_solution=*/15};
+  routing_model.AddAtSolutionCallback(
+      std::bind(&SolutionCallback::Run, &solution_callback));
   // [END attach_callback]
 
   // Setting first solution heuristic.
@@ -197,13 +199,15 @@ void VrpSolutionCallback() {
 
   // Solve the problem.
   // [START solve]
-  const Assignment* solution = routing_model.SolveWithParameters(search_parameters);
+  const Assignment* solution =
+      routing_model.SolveWithParameters(search_parameters);
   // [END solve]
 
   // Print solution on console.
   // [START print_solution]
   if (solution != nullptr) {
-    LOG(INFO) << "Best objectives: " << std::to_string(solution_callback.objectives.back());
+    LOG(INFO) << "Best objectives: "
+              << std::to_string(solution_callback.objectives.back());
   } else {
     LOG(INFO) << "No solution found.";
   }
@@ -211,7 +215,7 @@ void VrpSolutionCallback() {
 }
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::VrpSolutionCallback();
   return EXIT_SUCCESS;
 }

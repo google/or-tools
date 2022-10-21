@@ -110,9 +110,8 @@ def create_data_model():
 
 
 # [START solution_callback_printer]
-def print_solution(
-        routing_manager: pywrapcp.RoutingIndexManager,
-        routing_model: pywrapcp.RoutingModel):
+def print_solution(routing_manager: pywrapcp.RoutingIndexManager,
+                   routing_model: pywrapcp.RoutingModel):
     """Prints solution on console."""
     print('################')
     print(f'Solution objective: {routing_model.CostVar().Value()}')
@@ -134,31 +133,27 @@ def print_solution(
     print(f'Total Distance of all routes: {total_distance}m')
 # [END solution_callback_printer]
 
-# [START solution_callback]
-def create_routing_monitor(
-        routing_manager: pywrapcp.RoutingIndexManager,
-        routing_model: pywrapcp.RoutingModel,
-        max_solution: int) -> callable:
-    class RoutingMonitor:
-        def __init__(self,
-                     manager: pywrapcp.RoutingIndexManager,
-                     model: pywrapcp.RoutingModel,
-                     limit: int):
-            self._routing_manager = manager
-            self._routing_model = model
-            self._counter = 0
-            self._counter_limit = limit
-            self.objectives = []
 
-        def __call__(self):
-            objective = int(self._routing_model.CostVar().Value())
-            if not self.objectives or objective < self.objectives[-1]:
-              self.objectives.append(objective)
-              print_solution(self._routing_manager, self._routing_model)
-              self._counter += 1
-            if self._counter > self._counter_limit:
-                self._routing_model.solver().FinishCurrentSearch()
-    return RoutingMonitor(routing_manager, routing_model, max_solution)
+# [START solution_callback]
+class SolutionCallback:
+    """Create a solution callback."""
+
+    def __init__(self, manager: pywrapcp.RoutingIndexManager,
+                 model: pywrapcp.RoutingModel, limit: int):
+        self._routing_manager = manager
+        self._routing_model = model
+        self._counter = 0
+        self._counter_limit = limit
+        self.objectives = []
+
+    def __call__(self):
+        objective = int(self._routing_model.CostVar().Value())
+        if not self.objectives or objective < self.objectives[-1]:
+            self.objectives.append(objective)
+            print_solution(self._routing_manager, self._routing_model)
+            self._counter += 1
+        if self._counter > self._counter_limit:
+            self._routing_model.solver().FinishCurrentSearch()
 # [END solution_callback]
 
 
@@ -171,13 +166,15 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
-                                           data['num_vehicles'], data['depot'])
+    routing_manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
+                                                   data['num_vehicles'],
+                                                   data['depot'])
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing_model = pywrapcp.RoutingModel(manager)
+    routing_model = pywrapcp.RoutingModel(routing_manager)
+
     # [END routing_model]
 
     # Create and register a transit callback.
@@ -185,11 +182,12 @@ def main():
     def distance_callback(from_index, to_index):
         """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        from_node = routing_manager.IndexToNode(from_index)
+        to_node = routing_manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]
 
-    transit_callback_index = routing_model.RegisterTransitCallback(distance_callback)
+    transit_callback_index = routing_model.RegisterTransitCallback(
+        distance_callback)
     # [END transit_callback]
 
     # Define cost of each arc.
@@ -212,8 +210,8 @@ def main():
 
     # Attach a solution callback.
     # [START attach_callback]
-    routing_monitor = create_routing_monitor(manager, routing_model, max_solution=15)
-    routing_model.AddAtSolutionCallback(routing_monitor)
+    solution_callback = SolutionCallback(routing_manager, routing_model, 15)
+    routing_model.AddAtSolutionCallback(solution_callback)
     # [END attach_callback]
 
     # Setting first solution heuristic.
@@ -234,7 +232,7 @@ def main():
     # Print solution on console.
     # [START print_solution]
     if solution:
-        print(f'Best objective: {routing_monitor.objectives[-1]}')
+        print(f'Best objective: {solution_callback.objectives[-1]}')
     else:
         print('No solution found !')
     # [END print_solution]

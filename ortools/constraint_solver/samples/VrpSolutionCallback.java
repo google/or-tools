@@ -27,8 +27,8 @@ import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP.*/
-public class VrpSolutionCallback {
+/** Minimal VRP. */
+public final class VrpSolutionCallback {
   private static final Logger logger = Logger.getLogger(VrpSolutionCallback.class.getName());
 
   // [START data_model]
@@ -93,10 +93,7 @@ public class VrpSolutionCallback {
     private int counter;
 
     public SolutionCallback(
-        final RoutingIndexManager manager,
-        final RoutingModel routing,
-        int limit)
-    {
+        final RoutingIndexManager manager, final RoutingModel routing, int limit) {
       routingManager = manager;
       routingModel = routing;
       maxSolution = limit;
@@ -107,19 +104,19 @@ public class VrpSolutionCallback {
     @Override
     public void run() {
       long objective = routingModel.costVar().value();
-      if(counter == 0 || objective < objectives[counter-1]) {
+      if (counter == 0 || objective < objectives[counter - 1]) {
         objectives[counter] = objective;
         printSolution(routingManager, routingModel);
         counter++;
       }
-      if(counter >= maxSolution) {
+      if (counter >= maxSolution) {
         routingModel.solver().finishCurrentSearch();
       }
     }
   };
   // [END solution_callback]
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
@@ -155,8 +152,7 @@ public class VrpSolutionCallback {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routingModel.addDimension(
-        transitCallbackIndex,
+    routingModel.addDimension(transitCallbackIndex,
         0, // no slack
         3000, // vehicle maximum travel distance
         true, // start cumul to zero
@@ -167,7 +163,8 @@ public class VrpSolutionCallback {
 
     // Attach a solution callback.
     // [START attach_callback]
-    final SolutionCallback solutionCallback = new SolutionCallback(routingManager, routingModel, 15);
+    final SolutionCallback solutionCallback =
+        new SolutionCallback(routingManager, routingModel, 15);
     routingModel.addAtSolutionCallback(solutionCallback);
     // [END attach_callback]
 
@@ -189,12 +186,15 @@ public class VrpSolutionCallback {
 
     // Print solution on console.
     // [START print_solution]
-    if(solution != null) {
-      logger.info("Best objective: " + solutionCallback.objectives[solutionCallback.objectives.length - 1]);
+    if (solution != null) {
+      logger.info(
+          "Best objective: " + solutionCallback.objectives[solutionCallback.objectives.length - 1]);
     } else {
       logger.info("No solution found !");
     }
     // [END print_solution]
   }
+
+  private VrpSolutionCallback() {}
 }
 // [END program]
