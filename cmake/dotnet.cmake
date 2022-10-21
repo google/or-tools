@@ -131,7 +131,10 @@ foreach(PROTO_FILE IN LISTS proto_dotnet_files)
     VERBATIM)
   list(APPEND PROTO_DOTNETS ${PROTO_DOTNET})
 endforeach()
-add_custom_target(Dotnet${PROJECT_NAME}_proto DEPENDS ${PROTO_DOTNETS} ${PROJECT_NAMESPACE}::ortools)
+add_custom_target(Dotnet${PROJECT_NAME}_proto
+  DEPENDS
+    ${PROTO_DOTNETS}
+    ${PROJECT_NAMESPACE}::ortools)
 
 # Create the native library
 add_library(google-ortools-native SHARED "")
@@ -361,6 +364,8 @@ add_custom_command(
   DEPENDS
     ${PROJECT_BINARY_DIR}/dotnet/or-tools.snk
     ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj
+    Dotnet${PROJECT_NAME}_proto
+    ${DOTNET_NATIVE_PROJECT_DIR}/timestamp
     dotnet_native_package
   BYPRODUCTS
     ${DOTNET_PROJECT_DIR}/bin
