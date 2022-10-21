@@ -562,7 +562,7 @@ class RoutingModel {
   /// Quantities at a node are represented by "cumul" variables and the increase
   /// or decrease of quantities between nodes are represented by "transit"
   /// variables. These variables are linked as follows:
-  /// if j == next(i), cumul(j) = cumul(i) + transit(i,j) + slack(i)
+  /// if j == next(i), cumul(j) = cumul(i) + transit(i, j) + slack(i)
   /// where slack is a positive slack variable (can represent waiting times for
   /// a time dimension).
   /// Setting the value of fix_start_cumul_to_zero to true will force the
@@ -1599,10 +1599,11 @@ class RoutingModel {
   /// constraints and/or modify search algorithms.
   Solver* solver() const { return solver_.get(); }
 
-  /// Returns true if the search limit has been crossed.
-  bool CheckLimit() {
+  /// Returns true if the search limit has been crossed with the given time
+  /// offset.
+  bool CheckLimit(absl::Duration offset = absl::ZeroDuration()) {
     DCHECK(limit_ != nullptr);
-    return limit_->Check();
+    return limit_->CheckWithOffset(offset);
   }
 
   /// Returns the time left in the search limit.
@@ -1610,6 +1611,9 @@ class RoutingModel {
     DCHECK(limit_ != nullptr);
     return limit_->AbsoluteSolverDeadline() - solver_->Now();
   }
+
+  /// Returns the time buffer to safely return a solution.
+  absl::Duration TimeBuffer() const { return time_buffer_; }
 
   /// Sizes and indices
   /// Returns the number of nodes in the model.
@@ -1945,6 +1949,14 @@ class RoutingModel {
                                        : vehicle_vars_,
                                    vehicle_start_class_callback_, arg));
   }
+  template <class T, class Arg1, class MoveableArg2>
+  LocalSearchOperator* CreateOperator(const Arg1& arg1, MoveableArg2 arg2) {
+    return solver_->RevAlloc(
+        new T(nexts_,
+              CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
+                                                  : vehicle_vars_,
+              vehicle_start_class_callback_, arg1, std::move(arg2)));
+  }
   template <class T>
   LocalSearchOperator* CreatePairOperator() {
     return CreateOperator<T>(pickup_delivery_pairs_);
@@ -1983,6 +1995,11 @@ class RoutingModel {
       const RoutingSearchParameters& search_parameters) const;
   IntVarFilteredDecisionBuilder* GetFilteredFirstSolutionDecisionBuilderOrNull(
       const RoutingSearchParameters& parameters) const;
+#ifndef SWIG
+  template <typename Heuristic, typename... Args>
+  IntVarFilteredDecisionBuilder* CreateIntVarFilteredDecisionBuilder(
+      const Args&... args);
+#endif
   LocalSearchPhaseParameters* CreateLocalSearchParameters(
       const RoutingSearchParameters& search_parameters);
   DecisionBuilder* CreateLocalSearchDecisionBuilder(
@@ -2234,6 +2251,7 @@ class RoutingModel {
   RegularLimit* ls_limit_ = nullptr;
   RegularLimit* lns_limit_ = nullptr;
   RegularLimit* first_solution_lns_limit_ = nullptr;
+  absl::Duration time_buffer_;
 
   typedef std::pair<int64_t, int64_t> CacheKey;
   typedef absl::flat_hash_map<CacheKey, int64_t> TransitCallbackCache;

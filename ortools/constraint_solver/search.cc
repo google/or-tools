@@ -3082,10 +3082,21 @@ Metaheuristic::Metaheuristic(Solver* const solver, bool maximize,
       maximize_(maximize) {}
 
 bool Metaheuristic::AtSolution() {
-  current_ = objective_->Value();
+  // In case the objective is not bound, stick to conservative bounds. For that
+  // reason Value() should not be called directly.
   if (maximize_) {
+    if (!objective_->Bound()) {
+      VLOG(2) << "Objective not bound: " << objective_->DebugString()
+              << ". Taking domain min.";
+    }
+    current_ = objective_->Min();
     best_ = std::max(current_, best_);
   } else {
+    if (!objective_->Bound()) {
+      VLOG(2) << "Objective not bound: " << objective_->DebugString()
+              << ". Taking domain max.";
+    }
+    current_ = objective_->Max();
     best_ = std::min(current_, best_);
   }
   return true;
@@ -3195,6 +3206,7 @@ TabuSearch::TabuSearch(Solver* const s, bool maximize, IntVar* objective,
 void TabuSearch::EnterSearch() {
   Metaheuristic::EnterSearch();
   found_initial_solution_ = false;
+  stamp_ = 0;
 }
 
 void TabuSearch::ApplyDecision(Decision* const d) {
@@ -3972,6 +3984,7 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch<P> {
   int64_t PenalizedValue(int64_t i, int64_t j, int64_t k) const;
 
   std::function<int64_t(int64_t, int64_t, int64_t)> objective_function_;
+  std::vector<int> secondary_values_;
 };
 
 template <typename P>
@@ -3982,17 +3995,21 @@ TernaryGuidedLocalSearch<P>::TernaryGuidedLocalSearch(
     const std::vector<IntVar*>& secondary_vars, double penalty_factor)
     : GuidedLocalSearch<P>(solver, objective, maximize, step, vars,
                            penalty_factor),
-      objective_function_(std::move(objective_function)) {
+      objective_function_(std::move(objective_function)),
+      secondary_values_(this->NumPrimaryVars(), -1) {
   this->AddVars(secondary_vars);
 }
 
 template <typename P>
 IntExpr* TernaryGuidedLocalSearch<P>::MakeElementPenalty(int index) {
-  return this->solver()->MakeElement(
+  Solver* const solver = this->solver();
+  IntVar* var = solver->MakeIntVar(0, kint64max);
+  solver->AddConstraint(solver->MakeLightElement(
       [this, index](int64_t j, int64_t k) {
         return PenalizedValue(index, j, k);
       },
-      this->GetVar(index), this->GetVar(this->NumPrimaryVars() + index));
+      var, this->GetVar(index), this->GetVar(this->NumPrimaryVars() + index)));
+  return var;
 }
 
 template <typename P>
@@ -4015,18 +4032,22 @@ int64_t TernaryGuidedLocalSearch<P>::Evaluate(const Assignment* delta,
   int64_t penalty = current_penalty;
   const Assignment::IntContainer& container = delta->IntVarContainer();
   // Collect values for each secondary variable, matching them with their
-  // corresponding primary variable.
-  std::vector<int> secondary_values(this->NumPrimaryVars(), -1);
-  for (int i = 0; i < container.Size(); ++i) {
-    const IntVarElement& new_element = container.Element(i);
-    if (!new_element.Activated()) continue;
+  // corresponding primary variable. Making sure all secondary values are -1 if
+  // unset.
+  for (const IntVarElement& new_element : container.elements()) {
     const int index = this->GetLocalIndexFromVar(new_element.Var());
-    if (index != -1 && index >= this->NumPrimaryVars()) {  // secondary variable
-      secondary_values[index - this->NumPrimaryVars()] = new_element.Value();
+    if (index != -1 && index < this->NumPrimaryVars()) {  // primary variable
+      secondary_values_[index] = -1;
     }
   }
-  for (int i = 0; i < container.Size(); ++i) {
-    const IntVarElement& new_element = container.Element(i);
+  for (const IntVarElement& new_element : container.elements()) {
+    const int index = this->GetLocalIndexFromVar(new_element.Var());
+    if (!new_element.Activated()) continue;
+    if (index != -1 && index >= this->NumPrimaryVars()) {  // secondary variable
+      secondary_values_[index - this->NumPrimaryVars()] = new_element.Value();
+    }
+  }
+  for (const IntVarElement& new_element : container.elements()) {
     const int index = this->GetLocalIndexFromVar(new_element.Var());
     // Only process primary variables.
     if (index == -1 || index >= this->NumPrimaryVars()) {
@@ -4034,9 +4055,9 @@ int64_t TernaryGuidedLocalSearch<P>::Evaluate(const Assignment* delta,
     }
     penalty = CapSub(penalty, this->penalized_values_.Get(index));
     // Performed and active.
-    if (new_element.Activated() && secondary_values[index] != -1) {
+    if (new_element.Activated() && secondary_values_[index] != -1) {
       const int64_t new_penalty =
-          PenalizedValue(index, new_element.Value(), secondary_values[index]);
+          PenalizedValue(index, new_element.Value(), secondary_values_[index]);
       penalty = CapAdd(penalty, new_penalty);
       if (incremental) {
         this->penalized_values_.Set(index, new_penalty);
@@ -4187,11 +4208,11 @@ RegularLimit* RegularLimit::MakeIdenticalClone() const {
                       smart_time_check_);
 }
 
-bool RegularLimit::Check() {
+bool RegularLimit::CheckWithOffset(absl::Duration offset) {
   Solver* const s = solver();
   // Warning limits might be kint64max, do not move the offset to the rhs
   return s->branches() - branches_offset_ >= branches_ ||
-         s->failures() - failures_offset_ >= failures_ || CheckTime() ||
+         s->failures() - failures_offset_ >= failures_ || CheckTime(offset) ||
          s->solutions() - solutions_offset_ >= solutions_;
 }
 
@@ -4267,7 +4288,9 @@ void RegularLimit::Accept(ModelVisitor* const visitor) const {
   visitor->EndVisitExtension(ModelVisitor::kObjectiveExtension);
 }
 
-bool RegularLimit::CheckTime() { return TimeElapsed() >= duration_limit(); }
+bool RegularLimit::CheckTime(absl::Duration offset) {
+  return TimeElapsed() >= duration_limit() - offset;
+}
 
 absl::Duration RegularLimit::TimeElapsed() {
   const int64_t kMaxSkip = 100;
@@ -4407,7 +4430,7 @@ SearchLimit* ImprovementSearchLimit::MakeClone() const {
       improvement_rate_coefficient_, improvement_rate_solutions_distance_);
 }
 
-bool ImprovementSearchLimit::Check() {
+bool ImprovementSearchLimit::CheckWithOffset(absl::Duration offset) {
   if (!objective_updated_) {
     return false;
   }
@@ -4495,11 +4518,11 @@ class ORLimit : public SearchLimit {
         << "not the other.";
   }
 
-  bool Check() override {
+  bool CheckWithOffset(absl::Duration offset) override {
     // Check being non-const, there may be side effects. So we always call both
     // checks.
-    const bool check_1 = limit_1_->Check();
-    const bool check_2 = limit_2_->Check();
+    const bool check_1 = limit_1_->CheckWithOffset(offset);
+    const bool check_2 = limit_2_->CheckWithOffset(offset);
     return check_1 || check_2;
   }
 
@@ -4553,7 +4576,7 @@ namespace {
 class CustomLimit : public SearchLimit {
  public:
   CustomLimit(Solver* const s, std::function<bool()> limiter);
-  bool Check() override;
+  bool CheckWithOffset(absl::Duration offset) override;
   void Init() override;
   void Copy(const SearchLimit* const limit) override;
   SearchLimit* MakeClone() const override;
@@ -4565,7 +4588,8 @@ class CustomLimit : public SearchLimit {
 CustomLimit::CustomLimit(Solver* const s, std::function<bool()> limiter)
     : SearchLimit(s), limiter_(std::move(limiter)) {}
 
-bool CustomLimit::Check() {
+bool CustomLimit::CheckWithOffset(absl::Duration offset) {
+  // TODO(user): Consider the offset in limiter_.
   if (limiter_) return limiter_();
   return false;
 }

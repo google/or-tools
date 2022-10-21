@@ -1773,17 +1773,18 @@ class LocalSearchFilterManager : public BaseObject {
   struct FilterEvent {
     LocalSearchFilter* filter;
     FilterEventType event_type;
+    int priority;
   };
 
   std::string DebugString() const override {
     return "LocalSearchFilterManager";
   }
-  // Builds a manager that calls filter methods using an explicit ordering.
+  // Builds a manager that calls filter methods ordered by increasing priority.
+  // Note that some filters might appear only once, if their Relax() or Accept()
+  // are trivial.
   explicit LocalSearchFilterManager(std::vector<FilterEvent> filter_events);
   // Builds a manager that calls filter methods using the following ordering:
   // first Relax() in vector order, then Accept() in vector order.
-  // Note that some filters might appear only once, if their Relax() or Accept()
-  // are trivial.
   explicit LocalSearchFilterManager(std::vector<LocalSearchFilter*> filters);
 
   // Calls Revert() of filters, in reverse order of Relax events.
@@ -1800,15 +1801,17 @@ class LocalSearchFilterManager : public BaseObject {
   int64_t GetAcceptedObjectiveValue() const { return accepted_value_; }
 
  private:
-  void InitializeForcedEvents();
+  // Finds the last event (incremental -itself- or not) with the same priority
+  // as the last incremental event.
+  void FindIncrementalEventEnd();
 
-  std::vector<FilterEvent> filter_events_;
+  std::vector<FilterEvent> events_;
   int last_event_called_ = -1;
   // If a filter is incremental, its Relax() and Accept() must be called for
-  // every candidate, even if a previous Accept() rejected it.
-  // To ensure that those filters have consistent inputs, all intermediate
-  // Relax events are also triggered. All those events are called 'forced'.
-  std::vector<int> next_forced_events_;
+  // every candidate, even if the Accept() of a prior filter rejected it.
+  // To ensure that those incremental filters have consistent inputs, all
+  // intermediate events with Relax() must also be called.
+  int incremental_events_end_ = 0;
   int64_t synchronized_value_;
   int64_t accepted_value_;
 };

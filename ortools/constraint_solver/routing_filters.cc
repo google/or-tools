@@ -2150,9 +2150,9 @@ void AppendDimensionCumulFilters(
     bool filter_light_weight_unary_dimensions,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters) {
   const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
-  // NOTE: We first sort the dimensions by increasing complexity of filtering:
+  // Filter priority depth increases with complexity of filtering.
   // - Dimensions without any cumul-related costs or constraints will have a
-  //   ChainCumulFilter.
+  //   ChainCumulFilter, lowest priority depth.
   // - Dimensions with cumul costs or constraints, but no global span cost
   //   and/or precedences will have a PathCumulFilter.
   // - Dimensions with a global span cost coefficient and/or precedences will
@@ -2165,7 +2165,6 @@ void AppendDimensionCumulFilters(
   std::vector<bool> use_cumul_bounds_propagator_filter(num_dimensions);
   std::vector<bool> use_global_lp_filter(num_dimensions);
   std::vector<bool> use_resource_assignment_filter(num_dimensions);
-  std::vector<int> filtering_difficulty(num_dimensions);
   for (int d = 0; d < num_dimensions; d++) {
     const RoutingDimension& dimension = *dimensions[d];
     const bool has_cumul_cost = DimensionHasCumulCost(dimension);
@@ -2191,21 +2190,9 @@ void AppendDimensionCumulFilters(
 
     use_resource_assignment_filter[d] =
         has_dimension_optimizers && num_dimension_resource_groups > 0;
-
-    filtering_difficulty[d] =
-        8 * use_global_lp_filter[d] + 4 * use_resource_assignment_filter[d] +
-        2 * use_cumul_bounds_propagator_filter[d] + use_path_cumul_filter[d];
   }
 
-  std::vector<int> sorted_dimension_indices(num_dimensions);
-  std::iota(sorted_dimension_indices.begin(), sorted_dimension_indices.end(),
-            0);
-  std::sort(sorted_dimension_indices.begin(), sorted_dimension_indices.end(),
-            [&filtering_difficulty](int d1, int d2) {
-              return filtering_difficulty[d1] < filtering_difficulty[d2];
-            });
-
-  for (const int d : sorted_dimension_indices) {
+  for (int d = 0; d < num_dimensions; d++) {
     const RoutingDimension& dimension = *dimensions[d];
     const RoutingModel& model = *dimension.model();
     // NOTE: We always add the [Chain|Path]CumulFilter to filter each route's
@@ -2219,26 +2206,28 @@ void AppendDimensionCumulFilters(
           {MakePathCumulFilter(dimension, /*propagate_own_objective_value*/
                                !use_global_lp && !filter_resource_assignment,
                                filter_objective_cost, has_dimension_optimizers),
-           kAccept});
+           kAccept, /*priority*/ 0});
     } else if (filter_light_weight_unary_dimensions ||
                dimension.GetUnaryTransitEvaluator(0) == nullptr) {
       filters->push_back(
           {model.solver()->RevAlloc(new ChainCumulFilter(model, dimension)),
-           kAccept});
+           kAccept, /*priority*/ 0});
     }
 
     if (use_cumul_bounds_propagator_filter[d]) {
       DCHECK(!use_global_lp);
       DCHECK(!filter_resource_assignment);
-      filters->push_back({MakeCumulBoundsPropagatorFilter(dimension), kAccept});
+      filters->push_back({MakeCumulBoundsPropagatorFilter(dimension), kAccept,
+                          /*priority*/ 1});
     }
 
     if (filter_resource_assignment) {
       filters->push_back({MakeResourceAssignmentFilter(
-          model.GetMutableLocalCumulLPOptimizer(dimension),
-          model.GetMutableLocalCumulMPOptimizer(dimension),
-          /*propagate_own_objective_value*/ !use_global_lp,
-          filter_objective_cost)});
+                              model.GetMutableLocalCumulLPOptimizer(dimension),
+                              model.GetMutableLocalCumulMPOptimizer(dimension),
+                              /*propagate_own_objective_value*/ !use_global_lp,
+                              filter_objective_cost),
+                          kAccept, /*priority*/ 2});
     }
 
     if (use_global_lp) {
@@ -2246,7 +2235,7 @@ void AppendDimensionCumulFilters(
                               model.GetMutableGlobalCumulLPOptimizer(dimension),
                               model.GetMutableGlobalCumulMPOptimizer(dimension),
                               filter_objective_cost),
-                          kAccept});
+                          kAccept, /*priority*/ 3});
     }
   }
 }

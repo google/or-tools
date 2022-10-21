@@ -89,7 +89,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
       use_make_chain_inactive: BOOL_TRUE
       use_swap_active: BOOL_TRUE
       use_extended_swap_active: BOOL_FALSE
-      use_node_pair_swap_active: BOOL_TRUE
+      use_node_pair_swap_active: BOOL_FALSE
       use_path_lns: BOOL_FALSE
       use_full_path_lns: BOOL_FALSE
       use_tsp_lns: BOOL_FALSE

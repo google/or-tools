@@ -2731,7 +2731,7 @@ class PathStateFilter : public LocalSearchFilter {
   // Selection-based algorithm in O(n^2), to use for small change sets.
   void MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm();
   // From changed_paths_ and changed_arcs_, fill chains_ and paths_.
-  // Generic algorithm in O(sort(n)+n), to use for larger change sets.
+  // Generic algorithm in O(std::sort(n)+n), to use for larger change sets.
   void MakeChainsFromChangedPathsAndArcsWithGenericAlgorithm();
 
   const std::unique_ptr<PathState> path_state_;
@@ -3940,17 +3940,17 @@ LocalSearchStatistics Solver::GetLocalSearchStatistics() const {
   return LocalSearchStatistics();
 }
 
-void LocalSearchFilterManager::InitializeForcedEvents() {
-  const int num_events = filter_events_.size();
-  int next_forced_event = num_events;
-  next_forced_events_.resize(num_events);
-  for (int i = num_events - 1; i >= 0; --i) {
-    next_forced_events_[i] = next_forced_event;
-    if (filter_events_[i].filter->IsIncremental() ||
-        (filter_events_[i].event_type == FilterEventType::kRelax &&
-         next_forced_event != num_events)) {
-      next_forced_event = i;
+void LocalSearchFilterManager::FindIncrementalEventEnd() {
+  const int num_events = events_.size();
+  incremental_events_end_ = num_events;
+  int last_priority = -1;
+  for (int e = num_events - 1; e >= 0; --e) {
+    const auto& [filter, event_type, priority] = events_[e];
+    if (priority != last_priority) {
+      incremental_events_end_ = e + 1;
+      last_priority = priority;
     }
+    if (filter->IsIncremental()) break;
   }
 }
 
@@ -3958,29 +3958,34 @@ LocalSearchFilterManager::LocalSearchFilterManager(
     std::vector<LocalSearchFilter*> filters)
     : synchronized_value_(std::numeric_limits<int64_t>::min()),
       accepted_value_(std::numeric_limits<int64_t>::min()) {
-  filter_events_.reserve(2 * filters.size());
+  events_.reserve(2 * filters.size());
+  int priority = 0;
   for (LocalSearchFilter* filter : filters) {
-    filter_events_.push_back({filter, FilterEventType::kRelax});
+    events_.push_back({filter, FilterEventType::kRelax, priority++});
   }
   for (LocalSearchFilter* filter : filters) {
-    filter_events_.push_back({filter, FilterEventType::kAccept});
+    events_.push_back({filter, FilterEventType::kAccept, priority++});
   }
-  InitializeForcedEvents();
+  FindIncrementalEventEnd();
 }
 
 LocalSearchFilterManager::LocalSearchFilterManager(
     std::vector<FilterEvent> filter_events)
-    : filter_events_(std::move(filter_events)),
+    : events_(std::move(filter_events)),
       synchronized_value_(std::numeric_limits<int64_t>::min()),
       accepted_value_(std::numeric_limits<int64_t>::min()) {
-  InitializeForcedEvents();
+  std::sort(events_.begin(), events_.end(),
+            [](const FilterEvent& e1, const FilterEvent& e2) {
+              return e1.priority < e2.priority;
+            });
+  FindIncrementalEventEnd();
 }
 
 // Filters' Revert() must be called in the reverse order in which their
 // Relax() was called.
 void LocalSearchFilterManager::Revert() {
-  for (int i = last_event_called_; i >= 0; --i) {
-    auto [filter, event_type] = filter_events_[i];
+  for (int e = last_event_called_; e >= 0; --e) {
+    const auto [filter, event_type, _priority] = events_[e];
     if (event_type == FilterEventType::kRelax) filter->Revert();
   }
   last_event_called_ = -1;
@@ -3996,24 +4001,41 @@ bool LocalSearchFilterManager::Accept(LocalSearchMonitor* const monitor,
                                       int64_t objective_max) {
   Revert();
   accepted_value_ = 0;
-  bool ok = true;
-  const int num_events = filter_events_.size();
-  for (int i = 0; i < num_events;) {
-    last_event_called_ = i;
-    auto [filter, event_type] = filter_events_[last_event_called_];
+  bool feasible = true;
+  bool reordered = false;
+  int events_end = events_.size();
+  for (int e = 0; e < events_end; ++e) {
+    last_event_called_ = e;
+    const auto [filter, event_type, priority] = events_[e];
     switch (event_type) {
       case FilterEventType::kAccept: {
+        if (!feasible && !filter->IsIncremental()) continue;
         if (monitor != nullptr) monitor->BeginFiltering(filter);
         const bool accept = filter->Accept(
             delta, deltadelta, CapSub(objective_min, accepted_value_),
             CapSub(objective_max, accepted_value_));
-        ok &= accept;
+        feasible &= accept;
         if (monitor != nullptr) monitor->EndFiltering(filter, !accept);
-        if (ok) {
+        if (feasible) {
           accepted_value_ =
               CapAdd(accepted_value_, filter->GetAcceptedObjectiveValue());
           // TODO(user): handle objective min.
-          ok = accepted_value_ <= objective_max;
+          feasible = accepted_value_ <= objective_max;
+        }
+        if (!feasible) {
+          events_end = incremental_events_end_;
+          if (!reordered) {
+            // Bump up rejected event, together with its kRelax event,
+            // unless it is already first in its priority layer.
+            reordered = true;
+            int to_move = e - 1;
+            if (to_move >= 0 && events_[to_move].filter == filter) --to_move;
+            if (to_move >= 0 && events_[to_move].priority == priority) {
+              std::rotate(events_.begin() + to_move,
+                          events_.begin() + to_move + 1,
+                          events_.begin() + e + 1);
+            }
+          }
         }
         break;
       }
@@ -4024,14 +4046,8 @@ bool LocalSearchFilterManager::Accept(LocalSearchMonitor* const monitor,
       default:
         LOG(FATAL) << "Unknown filter event type.";
     }
-    // If the candidate is rejected, forced events must still be called.
-    if (ok) {
-      ++i;
-    } else {
-      i = next_forced_events_[i];
-    }
   }
-  return ok;
+  return feasible;
 }
 
 void LocalSearchFilterManager::Synchronize(const Assignment* assignment,
@@ -4041,7 +4057,7 @@ void LocalSearchFilterManager::Synchronize(const Assignment* assignment,
   // so they can show the partial solution as a change from the empty solution.
   const bool reset_to_assignment = delta == nullptr || delta->Empty();
   // Relax in the forward direction.
-  for (auto [filter, event_type] : filter_events_) {
+  for (auto [filter, event_type, unused_priority] : events_) {
     switch (event_type) {
       case FilterEventType::kAccept: {
         break;
@@ -4062,7 +4078,7 @@ void LocalSearchFilterManager::Synchronize(const Assignment* assignment,
   // Synchronize/Commit backwards, so filters can read changes from their
   // dependencies before those are synchronized/committed.
   synchronized_value_ = 0;
-  for (auto [filter, event_type] : ::gtl::reversed_view(filter_events_)) {
+  for (auto [filter, event_type, _priority] : ::gtl::reversed_view(events_)) {
     switch (event_type) {
       case FilterEventType::kAccept: {
         filter->Synchronize(assignment, delta);

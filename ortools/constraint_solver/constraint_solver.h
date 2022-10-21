@@ -4369,7 +4369,10 @@ class SearchLimit : public SearchMonitor {
   /// value of true indicates that we have indeed crossed the limit. In
   /// that case, this method will not be called again and the remaining
   /// search will be discarded.
-  virtual bool Check() = 0;
+  bool Check() { return CheckWithOffset(absl::ZeroDuration()); }
+  /// Same as Check() but adds the 'offset' value to the current time when time
+  /// is considered in the limit.
+  virtual bool CheckWithOffset(absl::Duration offset) = 0;
 
   /// This method is called when the search limit is initialized.
   virtual void Init() = 0;
@@ -4409,7 +4412,7 @@ class RegularLimit : public SearchLimit {
   void Copy(const SearchLimit* const limit) override;
   SearchLimit* MakeClone() const override;
   RegularLimit* MakeIdenticalClone() const;
-  bool Check() override;
+  bool CheckWithOffset(absl::Duration offset) override;
   void Init() override;
   void ExitSearch() override;
   void UpdateLimits(absl::Duration time, int64_t branches, int64_t failures,
@@ -4435,7 +4438,7 @@ class RegularLimit : public SearchLimit {
   void Accept(ModelVisitor* const visitor) const override;
 
  private:
-  bool CheckTime();
+  bool CheckTime(absl::Duration offset);
   absl::Duration TimeElapsed();
   static int64_t GetPercent(int64_t value, int64_t offset, int64_t total) {
     return (total > 0 && total < kint64max) ? 100 * (value - offset) / total
@@ -4483,7 +4486,7 @@ class ImprovementSearchLimit : public SearchLimit {
   ~ImprovementSearchLimit() override;
   void Copy(const SearchLimit* const limit) override;
   SearchLimit* MakeClone() const override;
-  bool Check() override;
+  bool CheckWithOffset(absl::Duration offset) override;
   bool AtSolution() override;
   void Init() override;
   void Install() override;
