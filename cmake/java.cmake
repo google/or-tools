@@ -332,6 +332,7 @@ add_custom_command(
     ${JAVA_PROJECT_DIR}/pom.xml
     ${JAVA_SRCS}
     Java${PROJECT_NAME}_proto
+    ${JAVA_NATIVE_PROJECT_DIR}/timestamp
     java_native_package
   BYPRODUCTS
     ${JAVA_PROJECT_DIR}/target
