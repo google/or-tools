@@ -171,7 +171,10 @@ foreach(PROTO_FILE IN LISTS proto_py_files)
     VERBATIM)
   list(APPEND PROTO_PYS ${PROTO_PY})
 endforeach()
-add_custom_target(Py${PROJECT_NAME}_proto DEPENDS ${PROTO_PYS} ${PROJECT_NAMESPACE}::ortools)
+add_custom_target(Py${PROJECT_NAME}_proto
+  DEPENDS
+    ${PROTO_PYS}
+    ${PROJECT_NAMESPACE}::ortools)
 
 ###################
 ##  Python Test  ##
