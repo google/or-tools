@@ -74,8 +74,8 @@ def cover_rectangle(num_squares):
         model.Add(x_starts[i] <= x_starts[i + 1]).OnlyEnforceIf(same)
 
     # Symmetry breaking 2: first square in one quadrant.
-    model.Add(x_starts[0] < 36)
-    model.Add(y_starts[0] < 19)
+    model.Add(x_starts[0] < (size_x + 1)// 2)
+    model.Add(y_starts[0] < (size_y + 1) // 2)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
