@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Fill a 72x37 rectangle by a minimum number of non-overlapping squares."""
+"""Fill a 60x50 rectangle by a minimum number of non-overlapping squares."""
 
 
 from ortools.sat.python import cp_model
@@ -18,8 +18,8 @@ from ortools.sat.python import cp_model
 
 def cover_rectangle(num_squares):
     """Try to fill the rectangle with a given number of squares."""
-    size_x = 72
-    size_y = 37
+    size_x = 60
+    size_y = 50
 
     model = cp_model.CpModel()
 
@@ -99,10 +99,10 @@ def cover_rectangle(num_squares):
 
         for line in range(size_y):
             print(' '.join(display[line]))
-    return status == cp_model.FEASIBLE
+    return status == cp_model.OPTIMAL
 
 
-for num in range(1, 15):
-    print('Trying with size =', num)
-    if cover_rectangle(num):
+for num_squares in range(1, 15):
+    print('Trying with size =', num_squares)
+    if cover_rectangle(num_squares):
         break
