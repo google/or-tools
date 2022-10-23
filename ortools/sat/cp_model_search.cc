@@ -260,9 +260,7 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
           return entry.value > threshold;
         };
         // Remove all values above tolerance.
-        active_refs.erase(std::remove_if(active_refs.begin(), active_refs.end(),
-                                         is_above_tolerance),
-                          active_refs.end());
+        std::erase_if(active_refs, is_above_tolerance);
         const int winner = absl::Uniform<int>(*random, 0, active_refs.size());
         candidate = active_refs[winner].ref;
       }

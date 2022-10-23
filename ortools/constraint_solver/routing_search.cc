@@ -109,11 +109,9 @@ void VehicleTypeCurator::Update(
     while (class_entry_it != class_entries.end()) {
       const int vehicle_class = class_entry_it->vehicle_class;
       std::vector<int>& vehicles = vehicles_per_vehicle_class_[vehicle_class];
-      vehicles.erase(std::remove_if(vehicles.begin(), vehicles.end(),
-                                    [&remove_vehicle](int vehicle) {
-                                      return remove_vehicle(vehicle);
-                                    }),
-                     vehicles.end());
+      std::erase_if(vehicles, [&remove_vehicle](int vehicle) {
+        return remove_vehicle(vehicle);
+      });
       if (vehicles.empty()) {
         class_entry_it = class_entries.erase(class_entry_it);
       } else {

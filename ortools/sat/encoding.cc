@@ -491,9 +491,7 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
   }
 
   // Remove the empty nodes.
-  nodes->erase(std::remove_if(nodes->begin(), nodes->end(),
-                              [](EncodingNode* a) { return a->HasNoWeight(); }),
-               nodes->end());
+  std::erase_if(*nodes, [](EncodingNode* a) { return a->HasNoWeight(); });
 
   // Sort the nodes.
   switch (solver->parameters().max_sat_assumption_order()) {
