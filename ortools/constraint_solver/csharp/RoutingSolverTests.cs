@@ -26,8 +26,10 @@ public class RoutingSolverTest
     {
         // Create Routing Index Manager
         RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
         // Create Routing Model.
         RoutingModel routing = new RoutingModel(manager);
+        Assert.NotNull(routing);
         // Create a distance callback.
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
                                                                    {
@@ -57,8 +59,10 @@ public class RoutingSolverTest
     {
         // Create Routing Index Manager
         RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
         // Create Routing Model.
         RoutingModel routing = new RoutingModel(manager);
+        Assert.NotNull(routing);
         // Create a distance callback.
         long[][] matrix = new long[][] {
             new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
@@ -81,8 +85,10 @@ public class RoutingSolverTest
     {
         // Create Routing Index Manager
         RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
         // Create Routing Model.
         RoutingModel routing = new RoutingModel(manager);
+        Assert.NotNull(routing);
         // Create a distance callback.
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
                                                                    {
@@ -107,8 +113,10 @@ public class RoutingSolverTest
     {
         // Create Routing Index Manager
         RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
         // Create Routing Model.
         RoutingModel routing = new RoutingModel(manager);
+        Assert.NotNull(routing);
         // Create a distance callback.
         long[][] matrix = new long[][] {
             new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
@@ -133,8 +141,10 @@ public class RoutingSolverTest
     {
         // Create Routing Index Manager
         RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
         // Create Routing Model.
         RoutingModel routing = new RoutingModel(manager);
+        Assert.NotNull(routing);
         // Create a distance callback.
         long[] vector = { 1, 1, 1, 1, 1 };
         int transitCallbackIndex = routing.RegisterUnaryTransitVector(vector);
@@ -154,8 +164,10 @@ public class RoutingSolverTest
     {
         // Create Routing Index Manager
         RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
         // Create Routing Model.
         RoutingModel routing = new RoutingModel(manager);
+        Assert.NotNull(routing);
         // Create a distance callback.
         int transitCallbackIndex = routing.RegisterUnaryTransitCallback((long fromIndex) =>
                                                                         {
@@ -181,8 +193,10 @@ public class RoutingSolverTest
     {
         // Create Routing Index Manager
         RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
         // Create Routing Model.
         RoutingModel routing = new RoutingModel(manager);
+        Assert.NotNull(routing);
         // Create a distance callback.
         long[] vector = new long[] { 1, 1, 1, 1, 1 };
         IntBoolPair result = routing.AddVectorDimension(vector,
