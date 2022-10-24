@@ -150,14 +150,18 @@ public final class RoutingSolverTest {
   public void testRoutingModelParameters() {
     final RoutingModelParameters parameters = main.defaultRoutingModelParameters();
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager, parameters);
+    assertNotNull(model);
     assertEquals(1, model.vehicles());
   }
 
   @Test
   public void testRoutingModel_solveWithParameters() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final RoutingSearchParameters parameters = main.defaultRoutingSearchParameters();
     final LongBinaryOperator callback = createManhattanCostCallback(manager);
     final int cost = model.registerTransitCallback(callback);
@@ -174,7 +178,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_costsAndSolve() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(5, model.nodes());
     final LongBinaryOperator callback = createManhattanCostCallback(manager);
     final int cost = model.registerTransitCallback(callback);
@@ -191,7 +197,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_matrixTransitOwnership() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(5, model.nodes());
     final long[][] matrix = {
         {0, 1, 3, 3, 1},
@@ -214,7 +222,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_transitCallbackOwnership() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(5, model.nodes());
     final int cost = model.registerTransitCallback(createManhattanCostCallback(manager));
     System.gc(); // model should keep alive the callback
@@ -230,7 +240,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_lambdaTransitCallbackOwnership() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(5, model.nodes());
     final int cost = model.registerTransitCallback((long fromIndex, long toIndex) -> {
       final int fromNode = manager.indexToNode(fromIndex);
@@ -250,7 +262,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_unaryTransitVectorOwnership() {
     final RoutingIndexManager manager = new RoutingIndexManager(10, 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(10, model.nodes());
     final long[] vector = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     final int cost = model.registerUnaryTransitVector(vector);
@@ -267,7 +281,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_unaryTransitCallbackOwnership() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(5, model.nodes());
     final int cost = model.registerUnaryTransitCallback(createUnaryCostCallback(manager));
     System.gc(); // model should keep alive the callback
@@ -283,7 +299,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_lambdaUnaryTransitCallbackOwnership() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(5, model.nodes());
     final int cost = model.registerUnaryTransitCallback((long fromIndex) -> {
       final int fromNode = manager.indexToNode(fromIndex);
@@ -303,7 +321,9 @@ public final class RoutingSolverTest {
   public void testRoutingModel_routesToAssignment() {
     final int vehicles = coordinates.size() - 1;
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), vehicles, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     model.closeModel();
     long[][] routes = new long[vehicles][];
     for (int i = 0; i < vehicles; ++i) {
@@ -322,7 +342,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_addDisjunction() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final LongBinaryOperator callback = createManhattanCostCallback(manager);
     final int cost = model.registerTransitCallback(callback);
     model.setArcCostEvaluatorOfAllVehicles(cost);
@@ -345,7 +367,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_addConstantDimension() {
     final RoutingIndexManager manager = new RoutingIndexManager(10, 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(10, model.nodes());
     final IntBoolPair pair = model.addConstantDimension(1,
         /*capacity=*/100,
@@ -371,7 +395,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_addVectorDimension() {
     final RoutingIndexManager manager = new RoutingIndexManager(10, 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(10, model.nodes());
     final long[] vector = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     final IntBoolPair pair = model.addVectorDimension(vector,
@@ -398,7 +424,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_addMatrixDimension() {
     final RoutingIndexManager manager = new RoutingIndexManager(5, 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     assertEquals(5, model.nodes());
     final long[][] matrix = {
         {0, 1, 3, 3, 1},
@@ -431,7 +459,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_addDimension() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final LongBinaryOperator manhattanCostCallback = createManhattanCostCallback(manager);
     final int cost = model.registerTransitCallback(manhattanCostCallback);
     model.setArcCostEvaluatorOfAllVehicles(cost);
@@ -484,7 +514,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_dimensionVehicleSpanCost() {
     final RoutingIndexManager manager = new RoutingIndexManager(2, 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final LongBinaryOperator callback = createReturnOneCallback();
     assertTrue(
         model.addDimension(model.registerTransitCallback(callback), 1000, 1000, true, "time"));
@@ -503,7 +535,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_dimensionGlobalSpanCost() {
     final RoutingIndexManager manager = new RoutingIndexManager(3, 2, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final LongBinaryOperator callback = createReturnOneCallback();
     assertTrue(
         model.addDimension(model.registerTransitCallback(callback), 1000, 1000, false, "time"));
@@ -525,7 +559,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_cumulVarSoftUpperBound() {
     final RoutingIndexManager manager = new RoutingIndexManager(2, 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final LongBinaryOperator callback = createReturnOneCallback();
     assertTrue(
         model.addDimension(model.registerTransitCallback(callback), 1000, 1000, false, "time"));
@@ -540,7 +576,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_addDimensionWithVehicleCapacity() {
     final RoutingIndexManager manager = new RoutingIndexManager(1, 3, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final LongBinaryOperator callback = createReturnOneCallback();
     final long[] capacity = {5, 6, 7};
     model.addDimensionWithVehicleCapacity(
@@ -560,7 +598,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_addDimensionWithVehicleTransits() {
     final RoutingIndexManager manager = new RoutingIndexManager(1, 3, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final LongBinaryOperator[] callbacks = new LongBinaryOperator[3];
     int[] transits = new int[3];
     for (int i = 0; i < 3; ++i) {
@@ -586,7 +626,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_addDimensionWithVehicleTransitAndCapacity() {
     final RoutingIndexManager manager = new RoutingIndexManager(1, 3, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final LongBinaryOperator[] callbacks = new LongBinaryOperator[3];
     final int[] transits = new int[3];
     for (int i = 0; i < 3; ++i) {
@@ -614,7 +656,9 @@ public final class RoutingSolverTest {
   @Test
   public void testRoutingModel_intVarVectorGetter() {
     final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+    assertNotNull(manager);
     final RoutingModel model = new RoutingModel(manager);
+    assertNotNull(model);
     final LongBinaryOperator manhattanCostCallback = createManhattanCostCallback(manager);
     final int cost = model.registerTransitCallback(manhattanCostCallback);
     model.setArcCostEvaluatorOfAllVehicles(cost);
