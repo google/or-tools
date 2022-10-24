@@ -126,7 +126,7 @@ void Tsp() {
 
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::Tsp();
   return EXIT_SUCCESS;
 }

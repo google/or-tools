@@ -198,7 +198,7 @@ void VrpBreaks() {
 }
 }  // namespace operations_research
 
-int main(int /*argc*/, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::VrpBreaks();
   return EXIT_SUCCESS;
 }

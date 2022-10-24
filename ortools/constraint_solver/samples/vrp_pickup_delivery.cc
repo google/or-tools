@@ -195,7 +195,7 @@ void VrpGlobalSpan() {
 }
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::VrpGlobalSpan();
   return EXIT_SUCCESS;
 }

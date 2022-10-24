@@ -772,6 +772,5 @@ public final class RoutingSolverTest {
       assertEquals(101, bc.getCost());
     }
     assertTrue(dimension.hasQuadraticCostSoftSpanUpperBounds());
-
   }
 }

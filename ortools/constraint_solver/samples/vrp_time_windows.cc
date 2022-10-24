@@ -192,7 +192,7 @@ void VrpTimeWindows() {
 }
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::VrpTimeWindows();
   return EXIT_SUCCESS;
 }

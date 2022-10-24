@@ -171,7 +171,7 @@ void VrpStartsEnds() {
 }
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::VrpStartsEnds();
   return EXIT_SUCCESS;
 }
