@@ -15,9 +15,9 @@
 # [START program]
 """From Taha 'Introduction to Operations Research', example 6.4-2."""
 # [START import]
-from ortools.graph.python import max_flow
-
 import numpy as np
+
+from ortools.graph.python import max_flow
 # [END import]
 
 

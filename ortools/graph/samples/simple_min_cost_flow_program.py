@@ -15,9 +15,9 @@
 # [START program]
 """From Bradley, Hax and Maganti, 'Applied Mathematical Programming', figure 8.1."""
 # [START import]
-from ortools.graph.python import min_cost_flow
-
 import numpy as np
+
+from ortools.graph.python import min_cost_flow
 # [END import]
 
 

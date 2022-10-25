@@ -15,9 +15,9 @@
 # [START program]
 """Solve assignment problem using linear assignment solver."""
 # [START import]
-from ortools.graph.python import linear_sum_assignment
-
 import numpy as np
+
+from ortools.graph.python import linear_sum_assignment
 # [END import]
 
 
@@ -35,8 +35,10 @@ def main():
         [45, 110, 95, 115],
     ])
 
-    # Let's transform this into 3 parallel vectors (start_nodes, end_nodes, arc_costs)
-    end_nodes_unraveled, start_nodes_unraveled = np.meshgrid(np.arange(costs.shape[1]),np.arange(costs.shape[0]))
+    # Let's transform this into 3 parallel vectors (start_nodes, end_nodes,
+    # arc_costs)
+    end_nodes_unraveled, start_nodes_unraveled = np.meshgrid(
+        np.arange(costs.shape[1]), np.arange(costs.shape[0]))
     start_nodes = start_nodes_unraveled.ravel()
     end_nodes = end_nodes_unraveled.ravel()
     arc_costs = costs.ravel()
