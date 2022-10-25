@@ -280,7 +280,7 @@ ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator* random) {
       result.push_back(row.multipliers);
     }
   }
-  VLOG(1) << "#candidates: " << result.size() << " / " << rows_.size();
+  VLOG(2) << "#candidates: " << result.size() << " / " << rows_.size();
   return result;
 }
 

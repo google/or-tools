@@ -68,6 +68,8 @@ class SharedSolutionRepository {
 
     std::vector<ValueType> variable_values;
 
+    std::string info;
+
     // Number of time this was returned by GetRandomBiasedSolution(). We use
     // this information during the selection process.
     //
@@ -171,12 +173,16 @@ class SharedIncompleteSolutionManager {
   mutable absl::Mutex mutex_;
 };
 
-// Used by SharedResponseManager::SetStatsFromModel() to extract statistic to
-// put in a CpSolverResponse. The callbacks registered here are supposed to only
-// modify the statistic fields, nothing else.
+// Used by FillSolveStatsInResponse() to extract statistic to put in a
+// CpSolverResponse. The callbacks registered here are supposed to only modify
+// the statistic fields, nothing else.
 struct CpSolverResponseStatisticCallbacks {
   std::vector<std::function<void(CpSolverResponse*)>> callbacks;
 };
+
+// Get the solve statistics from the associated model classes and fills the
+// response with them.
+void FillSolveStatsInResponse(Model* model, CpSolverResponse* response);
 
 // Manages the global best response kept by the solver. This class is
 // responsible for logging the progress of the solutions and bounds as they are
@@ -202,13 +208,10 @@ class SharedResponseManager {
   // Returns the current solver response. That is the best known response at the
   // time of the call with the best feasible solution and objective bounds.
   //
-  // Note that the solver statistics correspond to the last time a better
-  // solution was found or SetStatsFromModel() was called.
-  //
-  // If full response is true, we will do more postprocessing by calling all the
+  // We will do more postprocessing by calling all the
   // AddFinalSolutionPostprocessor() postprocesors. Note that the response given
   // to the AddSolutionCallback() will not call them.
-  CpSolverResponse GetResponse(bool full_response = true);
+  CpSolverResponse GetResponse();
 
   // These will be called in REVERSE order on any feasible solution returned
   // to the user.
@@ -307,12 +310,6 @@ class SharedResponseManager {
   // make the problem infeasible.
   void AddUnsatCore(const std::vector<int>& core);
 
-  // Sets the statistics in the response to the one of the solver inside the
-  // given in-memory model. This does nothing if the model is nullptr.
-  //
-  // TODO(user): Also support merging statistics together.
-  void SetStatsFromModel(Model* model);
-
   // Returns true if we found the optimal solution or the problem was proven
   // infeasible. Note that if the gap limit is reached, we will also report
   // OPTIMAL and consider the problem solved.
@@ -341,22 +338,11 @@ class SharedResponseManager {
                           absl::Time* last_logging_time);
   bool LoggingIsEnabled() const { return logger_->LoggingIsEnabled(); }
 
-  // TODO(user): Remove.
-  CpSolverResponse* MutableResponse() {
-    absl::MutexLock mutex_lock(&mutex_);
-    return &best_response_;
-  }
-
-  // Specific functions to override the best response.
-  void SetResponseInvalidStatus(const std::string& message);
-  void SetResponseStatus(CpSolverStatus status);
-  void SetInfeasibleStatusWithAssumptions(absl::Span<const int> refs);
+  void AppendResponseToBeMerged(const CpSolverResponse& response);
 
  private:
   void TestGapLimitsIfNeeded() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void FillObjectiveValuesInBestResponse()
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void SetStatsFromModelInternal(Model* model)
+  void FillObjectiveValuesInResponse(CpSolverResponse* response) const
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void UpdateGapIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
@@ -366,7 +352,9 @@ class SharedResponseManager {
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   // Generates a response for callbacks and GetResponse().
-  CpSolverResponse GetResponseInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  CpSolverResponse GetResponseInternal(
+      absl::Span<const int64_t> variable_values,
+      const std::string& solution_info) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const SatParameters& parameters_;
   const WallTimer& wall_timer_;
@@ -379,7 +367,8 @@ class SharedResponseManager {
   double absolute_gap_limit_ ABSL_GUARDED_BY(mutex_) = 0.0;
   double relative_gap_limit_ ABSL_GUARDED_BY(mutex_) = 0.0;
 
-  CpSolverResponse best_response_ ABSL_GUARDED_BY(mutex_);
+  CpSolverStatus best_status_ ABSL_GUARDED_BY(mutex_) = CpSolverStatus::UNKNOWN;
+  std::vector<int> unsat_cores_ ABSL_GUARDED_BY(mutex_);
   SharedSolutionRepository<int64_t> solutions_ ABSL_GUARDED_BY(mutex_);
 
   int num_solutions_ ABSL_GUARDED_BY(mutex_) = 0;
@@ -422,6 +411,7 @@ class SharedResponseManager {
       ABSL_GUARDED_BY(mutex_);
 
   SolverLogger* logger_;
+  std::vector<CpSolverResponse> subsolver_responses_ ABSL_GUARDED_BY(mutex_);
 };
 
 // This class manages a pool of lower and upper bounds on a set of variables in
@@ -433,8 +423,7 @@ class SharedBoundsManager {
   // Reports a set of locally improved variable bounds to the shared bounds
   // manager. The manager will compare these bounds changes against its
   // global state, and incorporate the improving ones.
-  void ReportPotentialNewBounds(const CpModelProto& model_proto,
-                                const std::string& worker_name,
+  void ReportPotentialNewBounds(const std::string& worker_name,
                                 const std::vector<int>& variables,
                                 const std::vector<int64_t>& new_lower_bounds,
                                 const std::vector<int64_t>& new_upper_bounds);

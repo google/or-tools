@@ -198,6 +198,9 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
 
   // Register our local rev int repository.
   integer_trail_->RegisterReversibleClass(&rc_rev_int_repository_);
+
+  integer_rounding_cut_helper_.SetSharedStatistics(
+      model->GetOrCreate<SharedStatistics>());
 }
 
 void LinearProgrammingConstraint::AddLinearConstraint(
@@ -767,105 +770,120 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
         expanded_lp_solution_, flow_cover_cut_helper_.Info());
   }
 
-  // Unlike for the knapsack cuts, it might not be always beneficial to
-  // process the implied bounds even though it seems to be better in average.
-  //
-  // TODO(user): Perform more experiments, in particular with which bound we use
-  // and if we complement or not before the MIR rounding. Other solvers seems
-  // to try different complementation strategies in a "potprocessing" and we
-  // don't. Try this too.
-  //
-  // TODO(user): substitute_only_inner_variables = true is really helpful on
-  // some instance like "mtest4ma.mps". We should probably have a dedicated
-  // heuristic depending on the type of cut we do below.
-  const bool substitute_only_inner_variables = absl::Bernoulli(*random_, 0.5);
-  tmp_ib_slack_infos_.clear();
-  implied_bounds_processor_.ProcessUpperBoundedConstraintWithSlackCreation(
-      substitute_only_inner_variables, first_new_var, expanded_lp_solution_,
-      &cut_, &tmp_ib_slack_infos_);
-  DCHECK(implied_bounds_processor_.DebugSlack(first_new_var, copy_in_debug,
-                                              cut_, tmp_ib_slack_infos_));
+  // TODO(user): for TrySimpleKnapsack() and IntegerRoundingCut() the implied
+  // bounds heuristic is not the same. Clean this up.
+  saved_cut_ = cut_;
+  for (int heuristic = 0; heuristic < 2; ++heuristic) {
+    if (heuristic > 0) cut_ = saved_cut_;
 
-  // Fills data for IntegerRoundingCut().
-  //
-  // Note(user): we use the current bound here, so the reasonement will only
-  // produce locally valid cut if we call this at a non-root node. We could
-  // use the level zero bounds if we wanted to generate a globally valid cut
-  // at another level. For now this is only called at level zero anyway.
-  tmp_lp_values_.clear();
-  tmp_var_lbs_.clear();
-  tmp_var_ubs_.clear();
-  for (const IntegerVariable var : cut_.vars) {
-    if (var >= first_new_var) {
-      CHECK(VariableIsPositive(var));
-      const auto& info =
-          tmp_ib_slack_infos_[(var.value() - first_new_var.value()) / 2];
-      tmp_lp_values_.push_back(info.lp_value);
-      tmp_var_lbs_.push_back(info.lb);
-      tmp_var_ubs_.push_back(info.ub);
-    } else {
-      tmp_lp_values_.push_back(expanded_lp_solution_[var]);
-      tmp_var_lbs_.push_back(integer_trail_->LevelZeroLowerBound(var));
-      tmp_var_ubs_.push_back(integer_trail_->LevelZeroUpperBound(var));
+    // Unlike for the knapsack cuts, it might not be always beneficial to
+    // process the implied bounds even though it seems to be better in average.
+    //
+    // TODO(user): Perform more experiments, in particular with which bound we
+    // use and if we complement or not before the MIR rounding. Other solvers
+    // seems to try different complementation strategies in a "postprocessing"
+    // and we don't. Try this too.
+    //
+    // TODO(user): substitute_only_inner_variables = true is really helpful on
+    // some instance like "mtest4ma.mps". We should probably have a dedicated
+    // heuristic depending on the type of cut we do below.
+    tmp_ib_slack_infos_.clear();
+    if (heuristic > 0) {
+      const bool substitute_only_inner_variables =
+          absl::Bernoulli(*random_, 0.5);
+      MakeAllCoefficientsPositive(&cut_);
+      implied_bounds_processor_.ProcessUpperBoundedConstraintWithSlackCreation(
+          substitute_only_inner_variables, first_new_var, expanded_lp_solution_,
+          &cut_, &tmp_ib_slack_infos_);
+      DCHECK(implied_bounds_processor_.DebugSlack(first_new_var, copy_in_debug,
+                                                  cut_, tmp_ib_slack_infos_));
+
+      // No need to recompute the same thing if we didn't do any substitution.
+      if (tmp_ib_slack_infos_.empty()) break;
     }
-  }
 
-  // Add slack.
-  // definition: integer_lp_[row] + slack_row == bound;
-  const IntegerVariable first_slack(
-      first_new_var + IntegerVariable(2 * tmp_ib_slack_infos_.size()));
-  tmp_slack_rows_.clear();
-  tmp_slack_bounds_.clear();
-  for (const auto& pair : integer_multipliers) {
-    const RowIndex row = pair.first;
-    const IntegerValue coeff = pair.second;
-    const auto status = simplex_.GetConstraintStatus(row);
-    if (status == glop::ConstraintStatus::FIXED_VALUE) continue;
-
-    tmp_lp_values_.push_back(0.0);
-    cut_.vars.push_back(first_slack +
-                        2 * IntegerVariable(tmp_slack_rows_.size()));
-    tmp_slack_rows_.push_back(row);
-    cut_.coeffs.push_back(coeff);
-
-    const IntegerValue diff(
-        CapSub(integer_lp_[row].ub.value(), integer_lp_[row].lb.value()));
-    if (coeff > 0) {
-      tmp_slack_bounds_.push_back(integer_lp_[row].ub);
-      tmp_var_lbs_.push_back(IntegerValue(0));
-      tmp_var_ubs_.push_back(diff);
-    } else {
-      tmp_slack_bounds_.push_back(integer_lp_[row].lb);
-      tmp_var_lbs_.push_back(-diff);
-      tmp_var_ubs_.push_back(IntegerValue(0));
+    // Fills data for IntegerRoundingCut().
+    //
+    // Note(user): we use the current bound here, so the reasonement will only
+    // produce locally valid cut if we call this at a non-root node. We could
+    // use the level zero bounds if we wanted to generate a globally valid cut
+    // at another level. For now this is only called at level zero anyway.
+    tmp_lp_values_.clear();
+    tmp_var_lbs_.clear();
+    tmp_var_ubs_.clear();
+    for (const IntegerVariable var : cut_.vars) {
+      if (var >= first_new_var) {
+        CHECK(VariableIsPositive(var));
+        const auto& info =
+            tmp_ib_slack_infos_[(var.value() - first_new_var.value()) / 2];
+        tmp_lp_values_.push_back(info.lp_value);
+        tmp_var_lbs_.push_back(info.lb);
+        tmp_var_ubs_.push_back(info.ub);
+      } else {
+        tmp_lp_values_.push_back(expanded_lp_solution_[var]);
+        tmp_var_lbs_.push_back(integer_trail_->LevelZeroLowerBound(var));
+        tmp_var_ubs_.push_back(integer_trail_->LevelZeroUpperBound(var));
+      }
     }
-  }
 
-  // Try cover approach to find cut.
-  {
-    if (cover_cut_helper_.TrySimpleKnapsack(cut_, tmp_lp_values_, tmp_var_lbs_,
-                                            tmp_var_ubs_)) {
+    // Add slack.
+    // definition: integer_lp_[row] + slack_row == bound;
+    const IntegerVariable first_slack(
+        first_new_var + IntegerVariable(2 * tmp_ib_slack_infos_.size()));
+    tmp_slack_rows_.clear();
+    tmp_slack_bounds_.clear();
+    for (const auto& pair : integer_multipliers) {
+      const RowIndex row = pair.first;
+      const IntegerValue coeff = pair.second;
+      const auto status = simplex_.GetConstraintStatus(row);
+      if (status == glop::ConstraintStatus::FIXED_VALUE) continue;
+
+      tmp_lp_values_.push_back(0.0);
+      cut_.vars.push_back(first_slack +
+                          2 * IntegerVariable(tmp_slack_rows_.size()));
+      tmp_slack_rows_.push_back(row);
+      cut_.coeffs.push_back(coeff);
+
+      const IntegerValue diff(
+          CapSub(integer_lp_[row].ub.value(), integer_lp_[row].lb.value()));
+      if (coeff > 0) {
+        tmp_slack_bounds_.push_back(integer_lp_[row].ub);
+        tmp_var_lbs_.push_back(IntegerValue(0));
+        tmp_var_ubs_.push_back(diff);
+      } else {
+        tmp_slack_bounds_.push_back(integer_lp_[row].lb);
+        tmp_var_lbs_.push_back(-diff);
+        tmp_var_ubs_.push_back(IntegerValue(0));
+      }
+    }
+
+    // Try cover approach to find cut.
+    // We always use IB substitution with positive coeff here.
+    {
+      if (cover_cut_helper_.TrySimpleKnapsack(cut_, tmp_lp_values_,
+                                              tmp_var_lbs_, tmp_var_ubs_)) {
+        at_least_one_added |= PostprocessAndAddCut(
+            absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_new_var,
+            first_slack, tmp_ib_slack_infos_, cover_cut_helper_.mutable_cut());
+        at_least_one_added |= PostprocessAndAddCut(
+            absl::StrCat(name, "_K2"), "", first_new_var, first_slack,
+            tmp_ib_slack_infos_, cover_cut_helper_.mutable_alt_cut());
+      }
+    }
+
+    // Try integer rounding heuristic to find cut.
+    {
+      RoundingOptions options;
+      options.max_scaling = parameters_.max_integer_rounding_scaling();
+      integer_rounding_cut_helper_.ComputeCut(
+          options, tmp_lp_values_, tmp_var_lbs_, tmp_var_ubs_,
+          &implied_bounds_processor_, &cut_);
       at_least_one_added |= PostprocessAndAddCut(
-          absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_new_var,
-          first_slack, tmp_ib_slack_infos_, cover_cut_helper_.mutable_cut());
-      at_least_one_added |= PostprocessAndAddCut(
-          absl::StrCat(name, "_K2"), "", first_new_var, first_slack,
-          tmp_ib_slack_infos_, cover_cut_helper_.mutable_alt_cut());
+          name,
+          absl::StrCat("num_lifted_booleans=",
+                       integer_rounding_cut_helper_.NumLiftedBooleans()),
+          first_new_var, first_slack, tmp_ib_slack_infos_, &cut_);
     }
-  }
-
-  // Try integer rounding heuristic to find cut.
-  {
-    RoundingOptions options;
-    options.max_scaling = parameters_.max_integer_rounding_scaling();
-    integer_rounding_cut_helper_.ComputeCut(options, tmp_lp_values_,
-                                            tmp_var_lbs_, tmp_var_ubs_,
-                                            &implied_bounds_processor_, &cut_);
-    at_least_one_added |= PostprocessAndAddCut(
-        name,
-        absl::StrCat("num_lifted_booleans=",
-                     integer_rounding_cut_helper_.NumLiftedBooleans()),
-        first_new_var, first_slack, tmp_ib_slack_infos_, &cut_);
   }
   return at_least_one_added;
 }
@@ -2506,13 +2524,13 @@ std::string LinearProgrammingConstraint::Statistics() const {
   std::string result = "LP statistics:\n";
   absl::StrAppend(&result, "  final dimension: ", DimensionString(), "\n");
   absl::StrAppend(&result, "  total number of simplex iterations: ",
-                  total_num_simplex_iterations_, "\n");
+                  FormatCounter(total_num_simplex_iterations_), "\n");
   absl::StrAppend(&result, "  num solves: \n");
   for (int i = 0; i < num_solves_by_status_.size(); ++i) {
     if (num_solves_by_status_[i] == 0) continue;
     absl::StrAppend(&result, "    - #",
                     glop::GetProblemStatusString(glop::ProblemStatus(i)), ": ",
-                    num_solves_by_status_[i], "\n");
+                    FormatCounter(num_solves_by_status_[i]), "\n");
   }
   absl::StrAppend(&result, constraint_manager_.Statistics());
   return result;

@@ -30,6 +30,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -78,6 +79,10 @@ class ImpliedBoundsProcessor {
       const absl::StrongVector<IntegerVariable, double>& lp_values);
 
   // Processes and updates the given cut.
+  //
+  // Note that we always look for implied bound under the variable as they
+  // appear. One can change coefficient sign and a variable to its negation to
+  // try the other way around.
   void ProcessUpperBoundedConstraint(
       const absl::StrongVector<IntegerVariable, double>& lp_values,
       LinearConstraint* cut);
@@ -125,6 +130,11 @@ class ImpliedBoundsProcessor {
     bool is_positive;
     IntegerValue bound_diff;
     IntegerVariable bool_var = kNoIntegerVariable;
+
+    std::string DebugString() const {
+      return absl::StrCat("var - lb == ", bound_diff.value(), " * bool(",
+                          bool_lp_value, ") + slack(", slack_lp_value, ").");
+    }
   };
   BestImpliedBoundInfo GetCachedImpliedBoundInfo(IntegerVariable var) const;
 
@@ -286,7 +296,7 @@ class FlowCoverCutHelper {
 // it could be nice to try to generate a cut using different values of
 // max_scaling.
 IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
-                        IntegerValue max_t);
+                        IntegerValue max_t, IntegerValue rhs);
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue t,
     IntegerValue max_scaling);
@@ -325,6 +335,8 @@ struct RoundingOptions {
 };
 class IntegerRoundingCutHelper {
  public:
+  ~IntegerRoundingCutHelper();
+
   void ComputeCut(RoundingOptions options, const std::vector<double>& lp_values,
                   const std::vector<IntegerValue>& lower_bounds,
                   const std::vector<IntegerValue>& upper_bounds,
@@ -334,7 +346,11 @@ class IntegerRoundingCutHelper {
   // ComputeCut() call. Useful for investigation.
   int NumLiftedBooleans() const { return num_lifted_booleans_; }
 
+  void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
+
  private:
+  SharedStatistics* shared_stats_ = nullptr;
+
   // The helper is just here to reuse the memory for these vectors.
   std::vector<int> relevant_indices_;
   std::vector<double> relevant_lp_values_;
@@ -347,8 +363,16 @@ class IntegerRoundingCutHelper {
   std::vector<IntegerValue> rs_;
   std::vector<IntegerValue> best_rs_;
 
+  std::vector<std::pair<double, int>> to_sort_;
+
   int num_lifted_booleans_ = 0;
   std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
+
+  // Overall stats.
+  int64_t total_num_pos_lifts_ = 0;
+  int64_t total_num_neg_lifts_ = 0;
+  int64_t total_num_post_complements_ = 0;
+  int64_t total_num_overflow_abort_ = 0;
 };
 
 // Helper to find knapsack cover cuts.

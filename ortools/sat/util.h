@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <deque>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "ortools/base/logging.h"
@@ -38,6 +39,9 @@
 
 namespace operations_research {
 namespace sat {
+
+// Prints a positive number with separators for easier reading (ex: 1'348'065).
+std::string FormatCounter(int64_t num);
 
 // Returns a in [0, m) such that a * x = 1 modulo m.
 // If gcd(x, m) != 1, there is no inverse, and it returns 0.

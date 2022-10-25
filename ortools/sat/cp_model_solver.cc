@@ -935,7 +935,7 @@ void RegisterVariableBoundsLevelZeroExport(
 
         if (!model_variables.empty()) {
           shared_bounds_manager->ReportPotentialNewBounds(
-              model_proto, model->Name(), model_variables, new_lower_bounds,
+              model->Name(), model_variables, new_lower_bounds,
               new_upper_bounds);
 
           // Clear for next call.
@@ -1655,7 +1655,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
         status = model->Mutable<CoreBasedOptimizer>()->Optimize();
       }
     } else {
-      // TODO(user): This parameter break the splitting in chunk of a Solve().
+      // TODO(user): This parameter breaks the splitting in chunk of a Solve().
       // It should probably be moved into another SubSolver altogether.
       if (parameters.binary_search_num_conflicts() >= 0) {
         RestrictObjectiveDomainWithBinarySearch(objective_var,
@@ -1674,10 +1674,6 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
           solution_info);
     }
   }
-
-  // TODO(user): Remove from here when we split in chunk. We just want to
-  // do that at the end.
-  shared_response_manager->SetStatsFromModel(model);
 }
 
 // Try to find a solution by following the hint and using a low conflict limit.
@@ -1736,7 +1732,6 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
               {}, {})) {
         shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
             absl::StrCat(solution_info, " [hint]"));
-        shared_response_manager->SetStatsFromModel(model);
         return;
       }
     }
@@ -2204,6 +2199,12 @@ class FullProblemSolver : public SubSolver {
         shared->global_model->GetOrCreate<SharedStatistics>());
   }
 
+  ~FullProblemSolver() override {
+    CpSolverResponse response;
+    FillSolveStatsInResponse(local_model_.get(), &response);
+    shared_->response->AppendResponseToBeMerged(response);
+  }
+
   bool TaskIsAvailable() override {
     if (shared_->SearchIsDone()) return false;
 
@@ -2211,7 +2212,7 @@ class FullProblemSolver : public SubSolver {
     return previous_task_is_completed_;
   }
 
-  std::function<void()> GenerateTask(int64_t task_id) override {
+  std::function<void()> GenerateTask(int64_t /*task_id*/) override {
     {
       absl::MutexLock mutex_lock(&mutex_);
       previous_task_is_completed_ = false;
@@ -2316,22 +2317,37 @@ class FullProblemSolver : public SubSolver {
     // TODO(user): Revisit this case.
     if (local_model_ == nullptr) return std::string();
 
-    const auto& lps =
-        *local_model_->GetOrCreate<LinearProgrammingConstraintCollection>();
-    std::string lp_stats;
-    if (!lps.empty() &&
-        local_model_->GetOrCreate<SatParameters>()->linearization_level() >=
-            2) {
-      for (const auto* lp : lps) {
-        const std::string raw_statistics = lp->Statistics();
-        const std::vector<absl::string_view> lines =
-            absl::StrSplit(raw_statistics, '\n', absl::SkipEmpty());
-        for (const absl::string_view& line : lines) {
-          absl::StrAppend(&lp_stats, "     ", line, "\n");
-        }
+    // Padding.
+    const std::string p4(4, ' ');
+    const std::string p6(6, ' ');
+
+    std::string s;
+    CpSolverResponse r;
+    FillSolveStatsInResponse(local_model_.get(), &r);
+    absl::StrAppend(&s, p4, "Search statistics:\n");
+    absl::StrAppend(&s, p6, "booleans: ", FormatCounter(r.num_booleans()),
+                    "\n");
+    absl::StrAppend(&s, p6, "conflicts: ", FormatCounter(r.num_conflicts()),
+                    "\n");
+    absl::StrAppend(&s, p6, "branches: ", FormatCounter(r.num_branches()),
+                    "\n");
+    absl::StrAppend(&s, p6, "binary_propagations: ",
+                    FormatCounter(r.num_binary_propagations()), "\n");
+    absl::StrAppend(&s, p6, "integer_propagations: ",
+                    FormatCounter(r.num_integer_propagations()), "\n");
+    absl::StrAppend(&s, p6, "restarts: ", FormatCounter(r.num_restarts()),
+                    "\n");
+
+    for (const auto* lp :
+         *local_model_->GetOrCreate<LinearProgrammingConstraintCollection>()) {
+      const std::string raw_statistics = lp->Statistics();
+      const std::vector<absl::string_view> lines =
+          absl::StrSplit(raw_statistics, '\n', absl::SkipEmpty());
+      for (const absl::string_view& line : lines) {
+        absl::StrAppend(&s, p4, line, "\n");
       }
     }
-    return lp_stats;
+    return s;
   }
 
  private:
@@ -2392,7 +2408,7 @@ class FeasibilityPumpSolver : public SubSolver {
     return previous_task_is_completed_;
   }
 
-  std::function<void()> GenerateTask(int64_t task_id) override {
+  std::function<void()> GenerateTask(int64_t /*task_id*/) override {
     return [this]() {
       {
         absl::MutexLock mutex_lock(&mutex_);
@@ -2549,7 +2565,7 @@ class LnsSolver : public SubSolver {
       local_params.set_log_search_progress(false);
       local_params.set_cp_model_probing_level(0);
       local_params.set_symmetry_level(0);
-      local_params.set_solution_pool_size(0);
+      local_params.set_solution_pool_size(1);  // Keep the best solution found.
 
       Model local_model(lns_info);
       *(local_model.GetOrCreate<SatParameters>()) = local_params;
@@ -2624,15 +2640,18 @@ class LnsSolver : public SubSolver {
       auto* local_response_manager =
           local_model.GetOrCreate<SharedResponseManager>();
       local_response_manager->InitializeObjective(lns_fragment);
+      local_response_manager->SetSynchronizationMode(true);
 
+      CpSolverResponse local_response;
       if (presolve_status == CpSolverStatus::UNKNOWN) {
         LoadCpModel(lns_fragment, &local_model);
         QuickSolveWithHint(lns_fragment, &local_model);
         SolveLoadedCpModel(lns_fragment, &local_model);
+        local_response = local_response_manager->GetResponse();
       } else {
-        local_response_manager->SetResponseStatus(presolve_status);
+        local_response = local_response_manager->GetResponse();
+        local_response.set_status(presolve_status);
       }
-      CpSolverResponse local_response = local_response_manager->GetResponse();
       const std::string solution_info = local_response.solution_info();
       std::vector<int64_t> solution_values(local_response.solution().begin(),
                                            local_response.solution().end());
@@ -3072,6 +3091,11 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       shared.clauses->LogStatistics(logger);
     }
   }
+
+  // We delete manually as windows release vectors in the opposite order.
+  for (int i = 0; i < subsolvers.size(); ++i) {
+    subsolvers[i].reset();
+  }
 }
 
 #endif  // __PORTABLE_PLATFORM__
@@ -3198,7 +3222,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // TODO(user): We currently reuse the MODEL_INVALID status even though it
       // is not the best name for this. Maybe we can add a PARAMETERS_INVALID
       // when it become needed. Or rename to INVALID_INPUT ?
-      shared_response_manager->SetResponseInvalidStatus(error);
+      CpSolverResponse status_response;
+      status_response.set_status(CpSolverStatus::MODEL_INVALID);
+      status_response.set_solution_info(error);
+      FillSolveStatsInResponse(model, &status_response);
+      shared_response_manager->AppendResponseToBeMerged(status_response);
       return shared_response_manager->GetResponse();
     }
   }
@@ -3250,7 +3278,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     const std::string error = ValidateInputCpModel(params, model_proto);
     if (!error.empty()) {
       SOLVER_LOG(logger, "Invalid model: ", error);
-      shared_response_manager->SetResponseInvalidStatus(error);
+      CpSolverResponse status_response;
+      status_response.set_status(CpSolverStatus::MODEL_INVALID);
+      status_response.set_solution_info(error);
+      FillSolveStatsInResponse(model, &status_response);
+      shared_response_manager->AppendResponseToBeMerged(status_response);
       return shared_response_manager->GetResponse();
     }
   }
@@ -3291,14 +3323,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     if (is_pure_sat) {
       // TODO(user): All this duplication will go away when we are fast enough
       // on pure-sat model with the CpModel presolve...
-      // TODO(user): Last usage of MutableResponse(). Maybe just use
-      // NewSolution().
-      *shared_response_manager->MutableResponse() =
+      CpSolverResponse final_response =
           SolvePureSatModel(model_proto, wall_timer, model, logger);
       if (params.fill_tightened_domains_in_response()) {
-        *shared_response_manager->MutableResponse()
-             ->mutable_tightened_variables() = model_proto.variables();
+        *final_response.mutable_tightened_variables() = model_proto.variables();
       }
+      shared_response_manager->AppendResponseToBeMerged(final_response);
       return shared_response_manager->GetResponse();
     }
   }
@@ -3477,7 +3507,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     context->InitializeNewDomains();
     for (const int ref : model_proto.assumptions()) {
       if (!context->SetLiteralToTrue(ref)) {
-        shared_response_manager->SetInfeasibleStatusWithAssumptions({ref});
+        CpSolverResponse status_response;
+        status_response.set_status(CpSolverStatus::INFEASIBLE);
+        status_response.clear_sufficient_assumptions_for_infeasibility();
+        status_response.add_sufficient_assumptions_for_infeasibility(ref);
+        FillSolveStatsInResponse(model, &status_response);
+        shared_response_manager->AppendResponseToBeMerged(status_response);
         return shared_response_manager->GetResponse();
       }
     }
@@ -3489,7 +3524,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       PresolveCpModel(context.get(), &postsolve_mapping);
   if (presolve_status != CpSolverStatus::UNKNOWN) {
     SOLVER_LOG(logger, "Problem closed by presolve.");
-    shared_response_manager->SetResponseStatus(presolve_status);
+    CpSolverResponse status_response;
+    status_response.set_status(presolve_status);
+    FillSolveStatsInResponse(model, &status_response);
+    shared_response_manager->AppendResponseToBeMerged(status_response);
     return shared_response_manager->GetResponse();
   }
 
@@ -3637,14 +3675,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         "\nPresolvedNumConstraints: ", new_cp_model_proto.constraints().size(),
         "\nPresolvedNumTerms: ", num_terms);
 
-    shared_response_manager->SetStatsFromModel(model);
+    CpSolverResponse status_response;
+    FillSolveStatsInResponse(model, &status_response);
+    shared_response_manager->AppendResponseToBeMerged(status_response);
     return shared_response_manager->GetResponse();
   }
 
   // Make sure everything stops when we have a first solution if requested.
   if (params.stop_after_first_solution()) {
     shared_response_manager->AddSolutionCallback(
-        [shared_time_limit](const CpSolverResponse& response) {
+        [shared_time_limit](const CpSolverResponse&) {
           shared_time_limit->Stop();
         });
   }
@@ -3684,6 +3724,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       QuickSolveWithHint(new_cp_model_proto, &local_model);
     }
     SolveLoadedCpModel(new_cp_model_proto, &local_model);
+    // Export statistics.
+    CpSolverResponse status_response;
+    FillSolveStatsInResponse(&local_model, &status_response);
+    shared_response_manager->AppendResponseToBeMerged(status_response);
 
     // Sequential logging of LP statistics.
     if (logger->LoggingIsEnabled()) {

@@ -353,7 +353,7 @@ struct PbConstraintsEnqueueHelper {
   }
 
   // The propagator id of PbConstraints.
-  int propagator_id;
+  int propagator_id = 0;
 
   // A temporary vector to store the last conflict.
   std::vector<Literal> conflict;

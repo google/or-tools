@@ -20,6 +20,7 @@
 #include <deque>
 #include <limits>
 #include <numeric>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -44,16 +45,18 @@
 namespace operations_research {
 namespace sat {
 
-namespace {
-// This will be optimized into one division. I tested that in other places:
-//
-// Note that I am not 100% sure we need the indirection for the optimization
-// to kick in though, but this seemed safer given our weird r[i ^ 1] inputs.
-void QuotientAndRemainder(int64_t a, int64_t b, int64_t& q, int64_t& r) {
-  q = a / b;
-  r = a % b;
+std::string FormatCounter(int64_t num) {
+  std::string s = absl::StrCat(num);
+  std::string out;
+  const int size = s.size();
+  for (int i = 0; i < size; ++i) {
+    if (i > 0 && (size - i) % 3 == 0) {
+      out.push_back('\'');
+    }
+    out.push_back(s[i]);
+  }
+  return out;
 }
-}  // namespace
 
 void RandomizeDecisionHeuristic(absl::BitGenRef random,
                                 SatParameters* parameters) {
@@ -80,6 +83,19 @@ void RandomizeDecisionHeuristic(absl::BitGenRef random,
   parameters->set_random_branches_ratio(absl::Bernoulli(random, 0.5) ? 0.01
                                                                      : 0.0);
 }
+
+namespace {
+
+// This will be optimized into one division. I tested that in other places:
+//
+// Note that I am not 100% sure we need the indirection for the optimization
+// to kick in though, but this seemed safer given our weird r[i ^ 1] inputs.
+void QuotientAndRemainder(int64_t a, int64_t b, int64_t& q, int64_t& r) {
+  q = a / b;
+  r = a % b;
+}
+
+}  // namespace
 
 // Using the extended Euclidian algo, we find a and b such that a x + b m = gcd.
 // https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm

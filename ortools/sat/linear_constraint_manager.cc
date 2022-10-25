@@ -59,33 +59,33 @@ size_t ComputeHashOfTerms(const LinearConstraint& ct) {
 
 std::string LinearConstraintManager::Statistics() const {
   std::string result;
-  absl::StrAppend(&result, "  managed constraints: ", constraint_infos_.size(),
-                  "\n");
+  absl::StrAppend(&result, "  managed constraints: ",
+                  FormatCounter(constraint_infos_.size()), "\n");
   if (num_merged_constraints_ > 0) {
-    absl::StrAppend(&result, "  merged constraints: ", num_merged_constraints_,
-                    "\n");
+    absl::StrAppend(&result, "  merged constraints: ",
+                    FormatCounter(num_merged_constraints_), "\n");
   }
   if (num_shortened_constraints_ > 0) {
-    absl::StrAppend(
-        &result, "  shortened constraints: ", num_shortened_constraints_, "\n");
+    absl::StrAppend(&result, "  shortened constraints: ",
+                    FormatCounter(num_shortened_constraints_), "\n");
   }
   if (num_split_constraints_ > 0) {
-    absl::StrAppend(&result, "  split constraints: ", num_split_constraints_,
-                    "\n");
+    absl::StrAppend(&result, "  split constraints: ",
+                    FormatCounter(num_split_constraints_), "\n");
   }
   if (num_coeff_strenghtening_ > 0) {
-    absl::StrAppend(&result,
-                    "  coefficient strenghtenings: ", num_coeff_strenghtening_,
-                    "\n");
+    absl::StrAppend(&result, "  coefficient strenghtenings: ",
+                    FormatCounter(num_coeff_strenghtening_), "\n");
   }
   if (num_simplifications_ > 0) {
-    absl::StrAppend(&result, "  num simplifications: ", num_simplifications_,
-                    "\n");
+    absl::StrAppend(&result, "  num simplifications: ",
+                    FormatCounter(num_simplifications_), "\n");
   }
-  absl::StrAppend(&result, "  total cuts added: ", num_cuts_, " (out of ",
-                  num_add_cut_calls_, " calls)\n");
+  absl::StrAppend(&result, "  total cuts added: ", FormatCounter(num_cuts_),
+                  " (out of ", FormatCounter(num_add_cut_calls_), " calls)\n");
   for (const auto& entry : type_to_num_cuts_) {
-    absl::StrAppend(&result, "    - '", entry.first, "': ", entry.second, "\n");
+    absl::StrAppend(&result, "    - '", entry.first,
+                    "': ", FormatCounter(entry.second), "\n");
   }
   if (!result.empty()) result.pop_back();  // Remove last \n.
   return result;

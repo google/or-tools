@@ -34,13 +34,15 @@ namespace sat {
 
 // Returns the smallest factor f such that f * abs(x) is integer modulo the
 // given tolerance relative to f (we use f * tolerance). It is only looking
-// for f smaller than the given limit. Returns zero if no such factor exist.
+// for f smaller than the given limit. Returns zero if no such factor exist
+// below the limit. The limit must be at most 2^62.
 //
 // The complexity is a lot less than O(limit), but it is possible that we might
 // miss the smallest such factor if the tolerance used is too low. This is
 // because we only rely on the best rational approximations of x with increasing
 // denominator.
-int FindRationalFactor(double x, int limit = 1e4, double tolerance = 1e-6);
+int64_t FindRationalFactor(double x, int64_t limit = 1e4,
+                           double tolerance = 1e-6);
 
 // Given a linear expression Sum_i c_i * X_i with each X_i in [lb_i, ub_i],
 // this returns a scaling factor f such that

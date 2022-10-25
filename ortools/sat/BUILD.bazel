@@ -814,7 +814,7 @@ cc_library(
         ":linear_constraint",
         ":model",
         ":sat_base",
-	":synchronization",
+        ":synchronization",
         "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",

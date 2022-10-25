@@ -425,6 +425,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   FlowCoverCutHelper flow_cover_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
   LinearConstraint cut_;
+  LinearConstraint saved_cut_;
   LinearConstraint tmp_constraint_;
 
   ScatteredIntegerVector tmp_scattered_vector_;

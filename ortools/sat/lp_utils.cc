@@ -124,23 +124,31 @@ std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
   return var_scaling;
 }
 
-// This uses the best rational approximation of x via continuous fractions. It
-// is probably not the best implementation, but according to the unit test, it
-// seems to do the job.
-int FindRationalFactor(double x, int limit, double tolerance) {
+// This uses the best rational approximation of x via continuous fractions.
+// It is probably not the best implementation, but according to the unit test,
+// it seems to do the job.
+int64_t FindRationalFactor(double x, int64_t limit, double tolerance) {
   const double initial_x = x;
   x = std::abs(x);
   x -= std::floor(x);
-  int q = 1;
-  int prev_q = 0;
-  while (q < limit) {
-    if (std::abs(q * initial_x - std::round(q * initial_x)) < q * tolerance) {
-      return q;
+  int64_t current_q = 1;
+  int64_t prev_q = 0;
+  while (current_q < limit) {
+    const double q = static_cast<double>(current_q);
+    const double qx = q * initial_x;
+    const double qtolerance = q * tolerance;
+    if (std::abs(qx - std::round(qx)) < qtolerance) {
+      return current_q;
     }
     x = 1 / x;
-    const int new_q = prev_q + static_cast<int>(std::floor(x)) * q;
-    prev_q = q;
-    q = new_q;
+    const double floored_x = std::floor(x);
+    if (floored_x >= static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      return 0;
+    }
+    const int64_t new_q =
+        CapAdd(prev_q, CapProd(static_cast<int64_t>(floored_x), current_q));
+    prev_q = current_q;
+    current_q = new_q;
     x -= std::floor(x);
   }
   return 0;
