@@ -2867,6 +2867,9 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
     if (refactorize) continue;
 
     if (step_length == kInfinity || step_length == -kInfinity) {
+      // On a validated input, we shouldn't have a length of -infinity even
+      // though it can be slightly negative in some settings.
+      DCHECK_NE(step_length, -kInfinity);
       if (!basis_factorization_.IsRefactorized() ||
           !reduced_costs_.AreReducedCostsPrecise()) {
         VLOG(1) << "Infinite step length, double checking...";
@@ -2878,7 +2881,6 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
         VLOG(1) << "Unbounded feasibility problem !?";
         problem_status_ = ProblemStatus::ABNORMAL;
       } else {
-        VLOG(1) << "Unbounded problem.";
         problem_status_ = ProblemStatus::PRIMAL_UNBOUNDED;
         solution_primal_ray_.AssignToZero(num_cols_);
         for (RowIndex row(0); row < num_rows_; ++row) {
@@ -2886,7 +2888,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
           solution_primal_ray_[col] = -direction_[row];
         }
         solution_primal_ray_[entering_col] = 1.0;
-        if (step_length == -kInfinity) {
+        if (reduced_cost > 0.0) {
           ChangeSign(&solution_primal_ray_);
         }
       }

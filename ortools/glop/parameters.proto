@@ -30,8 +30,8 @@ message GlopParameters {
   // Supported algorithms for scaling:
   // EQUILIBRATION - progressive scaling by row and column norms until the
   // marginal difference passes below a threshold.
-  // LINEAR_PROGRAM - finding optimal scale factors using
-  // a linear program in the log scale.
+  // LINEAR_PROGRAM - EXPERIMENTAL: finding optimal scale factors using a linear
+  // program in the log scale.
   enum ScalingAlgorithm {
     DEFAULT = 0;
     EQUILIBRATION = 1;
