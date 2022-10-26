@@ -249,7 +249,7 @@ else
 endif
 endef
 
-CPP_SAMPLES := algorithms graph glop constraint_solver linear_solver math_opt model_builder routing sat
+CPP_SAMPLES := algorithms graph glop constraint_solver linear_solver math_opt model_builder pdlp routing sat
 $(foreach sample,$(CPP_SAMPLES),$(eval $(call cpp-sample-target,$(sample))))
 
 # Examples
@@ -441,6 +441,9 @@ test_cpp_linear_solver_samples: \
 .PHONY: test_cc_model_builder_samples # Build and Run all C++ CP Samples (located in ortools/model_builder/samples)
 test_cc_model_builder_samples: \
 
+.PHONY: test_cpp_pdlp_samples # Build and Run all C++ CP Samples (located in ortools/model_builder/samples)
+test_cpp_pdlp_samples: \
+ rcpp_simple_pdlp_program
 
 .PHONY: test_cpp_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cpp_sat_samples: \
@@ -484,6 +487,7 @@ check_cpp_pimpl: \
  test_cpp_constraint_solver_samples \
  test_cpp_linear_solver_samples \
  test_cpp_model_builder_samples \
+ test_cpp_pdlp_samples \
  test_cpp_sat_samples \
  \
  rcpp_linear_programming \
