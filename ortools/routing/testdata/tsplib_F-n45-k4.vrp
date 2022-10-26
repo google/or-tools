@@ -1,5 +1,5 @@
 NAME : F-n45-k4
-COMMENT : (Fisher: problem 10, Min no of trucks: 4, Best value: 728)
+COMMENT : (Fisher: problem 10, Min no of trucks: 4, Best value: 724)
 TYPE : CVRP
 DIMENSION : 45
 EDGE_WEIGHT_TYPE : EUC_2D
