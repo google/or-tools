@@ -12,6 +12,8 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/rounding_modes_benchmark.cc")
+
 set(NAME ${PROJECT_NAME}_util)
 
 # Will be merge in libortools.so
