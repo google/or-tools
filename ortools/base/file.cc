@@ -186,9 +186,8 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
 #endif  // _MSC_VER
 
   file->Close(flags);  // Even if ReadToString() fails!
-  return absl::Status(
-      absl::StatusCode::kInvalidArgument,
-      absl::StrCat("Could not read from '", filename, "'."));
+  return absl::Status(absl::StatusCode::kInvalidArgument,
+                      absl::StrCat("Could not read from '", filename, "'."));
 }
 
 absl::Status WriteString(File* file, const absl::string_view& contents,
