@@ -88,8 +88,7 @@ class TestRoutingIndexManager(unittest.TestCase):
         for i in range(manager.GetNumberOfVehicles()):
             self.assertEqual(i + 1,
                              manager.IndexToNode(manager.GetStartIndex(i)))
-            self.assertEqual(i + 4,
-                             manager.IndexToNode(manager.GetEndIndex(i)))
+            self.assertEqual(i + 4, manager.IndexToNode(manager.GetEndIndex(i)))
 
 
 class TestRoutingModel(unittest.TestCase):
@@ -403,8 +402,7 @@ class TestRoutingModel(unittest.TestCase):
             partial(TransitDistance, manager))
         model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
         # Add constant dimension
-        constant_id, success = model.AddConstantDimension(
-            1, 100, True, 'count')
+        constant_id, success = model.AddConstantDimension(1, 100, True, 'count')
         self.assertTrue(success)
         self.assertEqual(transit_idx + 1, constant_id)
         count_dimension = model.GetDimensionOrDie('count')
@@ -492,8 +490,7 @@ class TestRoutingModel(unittest.TestCase):
         index = model.Start(0)
         cumul = 0
         while not model.IsEnd(index):
-            self.assertEqual(cumul,
-                             assignment.Value(dimension.CumulVar(index)))
+            self.assertEqual(cumul, assignment.Value(dimension.CumulVar(index)))
             prev_index = index
             index = assignment.Value(model.NextVar(index))
             cumul += matrix[manager.IndexToNode(prev_index)][

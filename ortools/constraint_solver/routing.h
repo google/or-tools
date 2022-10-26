@@ -2673,8 +2673,10 @@ class TypeRegulationsConstraint : public Constraint {
 struct BoundCost {
   int64_t bound;
   int64_t cost;
-  BoundCost(int64_t bound = 0, int64_t cost = 0): bound(bound), cost(cost) {}
+  BoundCost(): bound(0), cost(0) {}
+  BoundCost(int64_t bound, int64_t cost): bound(bound), cost(cost) {}
 };
+
 class SimpleBoundCosts {
  public:
   SimpleBoundCosts(int num_bounds, BoundCost default_bound_cost)

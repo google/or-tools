@@ -252,15 +252,12 @@ import java.util.function.LongBinaryOperator;
 %rename (getCumulVarSoftUpperBoundCoefficient) RoutingDimension::GetCumulVarSoftUpperBoundCoefficient;
 %rename (getGlobalSpanCostCoefficient) RoutingDimension::global_span_cost_coefficient;
 %rename (getLocalOptimizerOffsetForVehicle) RoutingDimension::GetLocalOptimizerOffsetForVehicle;
-
 %rename (setSoftSpanUpperBoundForVehicle) RoutingDimension::SetSoftSpanUpperBoundForVehicle;
 %rename (hasSoftSpanUpperBounds) RoutingDimension::HasSoftSpanUpperBounds;
 %rename (getSoftSpanUpperBoundForVehicle) RoutingDimension::GetSoftSpanUpperBoundForVehicle;
-
 %rename (setQuadraticCostSoftSpanUpperBoundForVehicle) RoutingDimension::SetQuadraticCostSoftSpanUpperBoundForVehicle;
 %rename (hasQuadraticCostSoftSpanUpperBounds) RoutingDimension::HasQuadraticCostSoftSpanUpperBounds;
 %rename (getQuadraticCostSoftSpanUpperBoundForVehicle) RoutingDimension::GetQuadraticCostSoftSpanUpperBoundForVehicle;
-
 %rename (getGroupDelay) RoutingDimension::GetGroupDelay;
 %rename (getNodeVisitTransitsOfVehicle) RoutingDimension::GetNodeVisitTransitsOfVehicle;
 %rename (getSpanCostCoefficientForVehicle) RoutingDimension::GetSpanCostCoefficientForVehicle;
