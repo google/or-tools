@@ -438,8 +438,8 @@ test_cpp_linear_solver_samples: \
  rcpp_simple_mip_program \
  rcpp_stigler_diet
 
-.PHONY: test_cc_model_builder_samples # Build and Run all C++ CP Samples (located in ortools/model_builder/samples)
-test_cc_model_builder_samples: \
+.PHONY: test_cpp_model_builder_samples # Build and Run all C++ CP Samples (located in ortools/model_builder/samples)
+test_cpp_model_builder_samples: \
 
 .PHONY: test_cpp_pdlp_samples # Build and Run all C++ CP Samples (located in ortools/model_builder/samples)
 test_cpp_pdlp_samples: \
