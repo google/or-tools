@@ -532,8 +532,12 @@ class Model {
   // IndicatorConstraint methods
   //////////////////////////////////////////////////////////////////////////////
 
-  // Adds an indicator constraint to the model: If `indicator_variable == 1`,
-  // then `implied_constraint` must hold. Otherwise it need not be satisfied.
+  // Adds an indicator constraint to the model.
+  //
+  // Assume for the moment that `activate_on_zero == false` (the default value).
+  //   * If `indicator_variable == 1`, then `implied_constraint` must  hold.
+  //   * If `indicator_variable == 0`, then `implied_constraint` need not hold.
+  // Alternatively, if `activate_on_zero = true`, flip the 1 and 0 above.
   //
   // The `indicator_variable` is expected to be a binary variable in the model.
   // If this is not the case, the solver may elect to either implicitly add the
@@ -543,12 +547,12 @@ class Model {
   //   Model model = ...;
   //   const Variable x = model.AddBinaryVariable("x");
   //   const Variable y = model.AddBinaryVariable("y");
-  //   model.AddIndicatorConstraint(x, y <= 0, "c");
-  //   model.AddIndicatorConstraint(y, x >= 2);
+  //   model.AddIndicatorConstraint(x, y <= 0);
+  //   model.AddIndicatorConstraint(y, x >= 2, true, "c");
   IndicatorConstraint AddIndicatorConstraint(
       Variable indicator_variable,
       const BoundedLinearExpression& implied_constraint,
-      absl::string_view name = {});
+      bool activate_on_zero = false, absl::string_view name = {});
 
   // Removes an indicator constraint from the model.
   //

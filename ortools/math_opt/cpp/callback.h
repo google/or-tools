@@ -187,7 +187,7 @@ struct CallbackRegistration {
 // The information available depends on the current event.
 struct CallbackData {
   // Users will typically not need this function other than for testing.
-  CallbackData() = default;
+  CallbackData(CallbackEvent event, absl::Duration runtime);
 
   // Users will typically not need this function.
   // Will CHECK fail if proto is not valid.

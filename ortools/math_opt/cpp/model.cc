@@ -371,7 +371,7 @@ Sos2Constraint Model::AddSos2Constraint(
 IndicatorConstraint Model::AddIndicatorConstraint(
     const Variable indicator_variable,
     const BoundedLinearExpression& implied_constraint,
-    const absl::string_view name) {
+    const bool activate_on_zero, const absl::string_view name) {
   CheckModel(indicator_variable.storage());
   CheckOptionalModel(implied_constraint.expression.storage());
   // We ignore the offset while unpacking here; instead, we account for it below
@@ -383,6 +383,7 @@ IndicatorConstraint Model::AddIndicatorConstraint(
           .upper_bound = implied_constraint.upper_bound_minus_offset(),
           .linear_terms = std::move(expr),
           .indicator = indicator_variable.typed_id(),
+          .activate_on_zero = activate_on_zero,
           .name = std::string(name),
       });
   return IndicatorConstraint(storage(), id);

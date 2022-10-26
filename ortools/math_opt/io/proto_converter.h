@@ -21,12 +21,12 @@
 namespace operations_research::math_opt {
 
 // Returns a ModelProto equivalent to the input linear_solver Model. The input
-// ModelProto must be valid, as checked by `FindErrorInMPModelProto`.
+// MPModelProto must be valid, as checked by `FindErrorInMPModelProto`.
 //
 // The linear_solver Model stores all general constraints (e.g., quadratic, SOS)
 // in a single repeated field, while ModelProto stores then in separate maps.
 // The output constraint maps will each be populated with consecutive indices
-// starting from 0 (in other words, the indices may change).
+// starting from 0 (hence the indices may change).
 absl::StatusOr<ModelProto> MPModelProtoToMathOptModel(
     const MPModelProto& model);
 

@@ -75,8 +75,9 @@ double LinearExpression::Evaluate(
         << internal::kObjectsFromOtherModelStorage;
   }
   double result = offset_;
-  for (const auto& [variable_id, coef] : terms_.raw_map()) {
-    result += coef * variable_values.raw_map().at(variable_id);
+  for (const auto& variable : terms_.SortedKeys()) {
+    result += terms_.raw_map().at(variable.typed_id()) *
+              variable_values.raw_map().at(variable.typed_id());
   }
   return result;
 }
@@ -88,9 +89,10 @@ double LinearExpression::EvaluateWithDefaultZero(
         << internal::kObjectsFromOtherModelStorage;
   }
   double result = offset_;
-  for (const auto& [variable_id, coef] : terms_.raw_map()) {
+  for (const auto& variable : terms_.SortedKeys()) {
     result +=
-        coef * gtl::FindWithDefault(variable_values.raw_map(), variable_id);
+        terms_.raw_map().at(variable.typed_id()) *
+        gtl::FindWithDefault(variable_values.raw_map(), variable.typed_id());
   }
   return result;
 }
@@ -139,12 +141,14 @@ double QuadraticExpression::Evaluate(
         << internal::kObjectsFromOtherModelStorage;
   }
   double result = offset();
-  for (const auto& [variable_id, coef] : linear_terms_.raw_map()) {
-    result += coef * variable_values.raw_map().at(variable_id);
+  for (const auto& variable : linear_terms_.SortedKeys()) {
+    result += linear_terms_.raw_map().at(variable.typed_id()) *
+              variable_values.raw_map().at(variable.typed_id());
   }
-  for (const auto& [variable_ids, coef] : quadratic_terms_.raw_map()) {
-    result += coef * variable_values.raw_map().at(variable_ids.first) *
-              variable_values.raw_map().at(variable_ids.second);
+  for (const auto& variables : quadratic_terms_.SortedKeys()) {
+    result += quadratic_terms_.raw_map().at(variables.typed_id()) *
+              variable_values.raw_map().at(variables.typed_id().first) *
+              variable_values.raw_map().at(variables.typed_id().second);
   }
   return result;
 }
@@ -156,15 +160,17 @@ double QuadraticExpression::EvaluateWithDefaultZero(
         << internal::kObjectsFromOtherModelStorage;
   }
   double result = offset();
-  for (const auto& [variable_id, coef] : linear_terms_.raw_map()) {
+  for (const auto& variable : linear_terms_.SortedKeys()) {
     result +=
-        coef * gtl::FindWithDefault(variable_values.raw_map(), variable_id);
+        linear_terms_.raw_map().at(variable.typed_id()) *
+        gtl::FindWithDefault(variable_values.raw_map(), variable.typed_id());
   }
-  for (const auto& [variable_ids, coef] : quadratic_terms_.raw_map()) {
-    result +=
-        coef *
-        gtl::FindWithDefault(variable_values.raw_map(), variable_ids.first) *
-        gtl::FindWithDefault(variable_values.raw_map(), variable_ids.second);
+  for (const auto& variables : quadratic_terms_.SortedKeys()) {
+    result += quadratic_terms_.raw_map().at(variables.typed_id()) *
+              gtl::FindWithDefault(variable_values.raw_map(),
+                                   variables.typed_id().first) *
+              gtl::FindWithDefault(variable_values.raw_map(),
+                                   variables.typed_id().second);
   }
   return result;
 }

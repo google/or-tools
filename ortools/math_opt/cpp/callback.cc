@@ -93,6 +93,10 @@ absl::Span<const CallbackEvent> Enum<CallbackEvent>::AllValues() {
   return absl::MakeConstSpan(kCallbackEventValues);
 }
 
+CallbackData::CallbackData(const CallbackEvent event,
+                           const absl::Duration runtime)
+    : event(event), runtime(runtime) {}
+
 CallbackData::CallbackData(const ModelStorage* storage,
                            const CallbackDataProto& proto)
     // iOS 11 does not support .value() hence we use operator* here and CHECK

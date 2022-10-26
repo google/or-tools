@@ -173,14 +173,11 @@ SosConstraintProto SosConstraintFromMPModelToMathOpt(
 absl::StatusOr<IndicatorConstraintProto>
 IndicatorConstraintFromMPModelToMathOpt(
     const MPIndicatorConstraint& in_constraint, const absl::string_view name) {
-  if (in_constraint.has_var_value() && in_constraint.var_value() == 0) {
-    return absl::InvalidArgumentError(
-        "MathOpt does not support indicator constraints where the "
-        "indicated value is 0");
-  }
   IndicatorConstraintProto out_constraint;
   out_constraint.set_name(std::string(name));
   out_constraint.set_indicator_id(in_constraint.var_index());
+  out_constraint.set_activate_on_zero(in_constraint.has_var_value() &&
+                                      in_constraint.var_value() == 0);
   out_constraint.set_lower_bound(in_constraint.constraint().lower_bound());
   out_constraint.set_upper_bound(in_constraint.constraint().upper_bound());
   LinearTermsFromMPModelToMathOpt(
@@ -495,7 +492,7 @@ absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
         *out_general_constraint.mutable_indicator_constraint();
     out_constraint.set_var_index(
         variable_id_to_mp_position[in_constraint.indicator_id()]);
-    out_constraint.set_var_value(1);
+    out_constraint.set_var_value(in_constraint.activate_on_zero() ? 0 : 1);
     out_constraint.mutable_constraint()->set_lower_bound(
         in_constraint.lower_bound());
     out_constraint.mutable_constraint()->set_upper_bound(

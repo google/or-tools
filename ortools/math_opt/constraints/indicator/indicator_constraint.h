@@ -51,6 +51,10 @@ class IndicatorConstraint {
   // Returns nullopt if the indicator variable is unset (this is a valid state,
   // in which the constraint is functionally ignored).
   inline std::optional<Variable> indicator_variable() const;
+
+  // The value the indicator variable takes to activate the implied constraint.
+  inline bool activate_on_zero() const;
+
   BoundedLinearExpression ImpliedConstraint() const;
 
   // Returns all variables that appear in the indicator constraint with a
@@ -109,6 +113,10 @@ std::optional<Variable> IndicatorConstraint::indicator_variable() const {
     return std::nullopt;
   }
   return Variable(storage_, *maybe_indicator);
+}
+
+bool IndicatorConstraint::activate_on_zero() const {
+  return storage_->constraint_data(id_).activate_on_zero;
 }
 
 std::vector<Variable> IndicatorConstraint::NonzeroVariables() const {

@@ -156,7 +156,7 @@ message SosConstraintProto {
 }
 
 // Data for representing a single indicator constraint of the form:
-//   Variable(indicator_id) = 1 --> expression sense rhs.
+//  Variable(indicator_id) = (activate_on_zero ? 0 : 1) --> expression sense rhs
 //
 // If a variable involved in this constraint is deleted, it is treated as if it
 // were set to zero. In particular, deleting the indicator variable means that
@@ -170,6 +170,11 @@ message IndicatorConstraintProto {
   // These conditions are not validated by MathOpt, but if not satisfied will
   // lead to the solver returning an error upon solving.
   optional int64 indicator_id = 1;
+
+  // If true, then if the indicator variable takes value 0, the implied
+  // constraint must hold. Otherwise, if the indicator variable takes value 1,
+  // then the implied constraint must hold.
+  bool activate_on_zero = 6;
 
   // Must be a valid linear expression with respect to the containing model:
   //   * All stated conditions on `SparseDoubleVectorProto`,

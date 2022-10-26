@@ -38,7 +38,8 @@ std::string IndicatorConstraint::ToString() const {
   const IndicatorConstraintData& data = storage()->constraint_data(id_);
   std::stringstream str;
   if (data.indicator.has_value()) {
-    str << Variable(storage_, *data.indicator) << " = 1";
+    str << Variable(storage_, *data.indicator)
+        << (data.activate_on_zero ? " = 0" : " = 1");
   } else {
     str << "[unset indicator variable]";
   }

@@ -69,8 +69,7 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
-constexpr SupportedProblemStructures kGlopSupportedStructures = {
-    .integer_variables = SupportType::kSupported};
+constexpr SupportedProblemStructures kGlopSupportedStructures = {};
 
 absl::string_view SafeName(const VariablesProto& variables, int index) {
   if (variables.names().empty()) {
@@ -335,13 +334,10 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
         break;
       case EMPHASIS_LOW:
       case EMPHASIS_MEDIUM:
-        result.set_use_scaling(true);
-        result.set_scaling_method(glop::GlopParameters::EQUILIBRATION);
-        break;
       case EMPHASIS_HIGH:
       case EMPHASIS_VERY_HIGH:
         result.set_use_scaling(true);
-        result.set_scaling_method(glop::GlopParameters::LINEAR_PROGRAM);
+        result.set_scaling_method(glop::GlopParameters::EQUILIBRATION);
         break;
       default:
         LOG(FATAL) << "Scaling emphasis: "

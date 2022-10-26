@@ -1612,7 +1612,8 @@ absl::Status GurobiSolver::AddNewIndicatorConstraints(
     }
     RETURN_IF_ERROR(gurobi_->AddIndicator(
         /*name=*/constraint.name(),
-        /*binvar=*/variables_map_.at(constraint.indicator_id()), /*binval=*/1,
+        /*binvar=*/variables_map_.at(constraint.indicator_id()),
+        /*binval=*/constraint.activate_on_zero() ? 0 : 1,
         /*ind=*/grb_ids, /*val=*/constraint.expression().values(),
         /*sense=*/sense, /*rhs=*/rhs));
     gtl::InsertOrDie(&indicator_constraints_map_, id,

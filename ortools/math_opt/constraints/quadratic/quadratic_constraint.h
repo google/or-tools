@@ -19,6 +19,7 @@
 #define OR_TOOLS_MATH_OPT_CONSTRAINTS_QUADRATIC_QUADRATIC_CONSTRAINT_H_
 
 #include <cstdint>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <vector>

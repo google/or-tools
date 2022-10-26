@@ -33,6 +33,7 @@ IndicatorConstraintData IndicatorConstraintData::FromProto(
   data.lower_bound = in_proto.lower_bound();
   data.upper_bound = in_proto.upper_bound();
   data.name = in_proto.name();
+  data.activate_on_zero = in_proto.activate_on_zero();
   if (in_proto.has_indicator_id()) {
     data.indicator = VariableId(in_proto.indicator_id());
   }
@@ -49,6 +50,7 @@ typename IndicatorConstraintData::ProtoType IndicatorConstraintData::Proto()
   constraint.set_lower_bound(lower_bound);
   constraint.set_upper_bound(upper_bound);
   constraint.set_name(name);
+  constraint.set_activate_on_zero(activate_on_zero);
   if (indicator.has_value()) {
     constraint.set_indicator_id(indicator->value());
   }

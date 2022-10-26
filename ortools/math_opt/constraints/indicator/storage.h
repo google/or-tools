@@ -48,6 +48,7 @@ struct IndicatorConstraintData {
   // The indicator variable may be unset, in which case the constraint is
   // ignored.
   std::optional<VariableId> indicator;
+  bool activate_on_zero = false;
   std::string name;
 };
 

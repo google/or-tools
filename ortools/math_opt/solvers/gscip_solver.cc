@@ -507,9 +507,12 @@ absl::Status GScipSolver::AddIndicatorConstraints(
       continue;
     }
     SCIP_VAR* const indicator_var = variables_.at(constraint.indicator_id());
+    // TODO(b/254860940): Properly handle the auxiliary variable that gSCIP may
+    // add if `activate_on_zero()` is true and the indicator constraint is
+    // deleted.
     GScipIndicatorConstraint data{
         .indicator_variable = indicator_var,
-        .negate_indicator = false,
+        .negate_indicator = constraint.activate_on_zero(),
     };
     const double lb = constraint.lower_bound();
     const double ub = constraint.upper_bound();
