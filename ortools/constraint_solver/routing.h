@@ -2445,7 +2445,7 @@ class GlobalVehicleBreaksConstraint : public Constraint {
           before_start_(before_start),
           after_start_(after_start) {}
     explicit TaskTranslator(IntervalVar* interval) : interval_(interval) {}
-    TaskTranslator() {}
+    TaskTranslator() = default;
 
     void SetStartMin(int64_t value) {
       if (start_ != nullptr) {
@@ -2502,7 +2502,7 @@ class GlobalVehicleBreaksConstraint : public Constraint {
 class TypeRegulationsChecker {
  public:
   explicit TypeRegulationsChecker(const RoutingModel& model);
-  virtual ~TypeRegulationsChecker() {}
+  virtual ~TypeRegulationsChecker() = default;
 
   bool CheckVehicle(int vehicle,
                     const std::function<int64_t(int64_t)>& next_accessor);
@@ -2563,7 +2563,7 @@ class TypeIncompatibilityChecker : public TypeRegulationsChecker {
  public:
   TypeIncompatibilityChecker(const RoutingModel& model,
                              bool check_hard_incompatibilities);
-  ~TypeIncompatibilityChecker() override {}
+  ~TypeIncompatibilityChecker() override = default;
 
  private:
   bool HasRegulationsToCheck() const override;
@@ -2579,7 +2579,7 @@ class TypeRequirementChecker : public TypeRegulationsChecker {
  public:
   explicit TypeRequirementChecker(const RoutingModel& model)
       : TypeRegulationsChecker(model) {}
-  ~TypeRequirementChecker() override {}
+  ~TypeRequirementChecker() override = default;
 
  private:
   bool HasRegulationsToCheck() const override;
@@ -2673,15 +2673,17 @@ class TypeRegulationsConstraint : public Constraint {
 struct BoundCost {
   int64_t bound;
   int64_t cost;
-  BoundCost(): bound(0), cost(0) {}
-  BoundCost(int64_t bound, int64_t cost): bound(bound), cost(cost) {}
+  BoundCost() : bound(0), cost(0) {}
+  BoundCost(int64_t bound, int64_t cost) : bound(bound), cost(cost) {}
 };
 
 class SimpleBoundCosts {
  public:
   SimpleBoundCosts(int num_bounds, BoundCost default_bound_cost)
       : bound_costs_(num_bounds, default_bound_cost) {}
+#ifndef SWIG
   BoundCost& bound_cost(int element) { return bound_costs_[element]; }
+#endif
   BoundCost bound_cost(int element) const { return bound_costs_[element]; }
   int Size() { return bound_costs_.size(); }
   SimpleBoundCosts(const SimpleBoundCosts&) = delete;
@@ -3064,8 +3066,7 @@ class RoutingDimension {
 
   /// If the span of vehicle on this dimension is larger than bound,
   /// the cost will be increased by cost * (span - bound).
-  void SetSoftSpanUpperBoundForVehicle(BoundCost bound_cost,
-                                       int vehicle) {
+  void SetSoftSpanUpperBoundForVehicle(BoundCost bound_cost, int vehicle) {
     if (!HasSoftSpanUpperBounds()) {
       vehicle_soft_span_upper_bound_ = std::make_unique<SimpleBoundCosts>(
           model_->vehicles(), BoundCost{kint64max, 0});
@@ -3075,19 +3076,18 @@ class RoutingDimension {
   bool HasSoftSpanUpperBounds() const {
     return vehicle_soft_span_upper_bound_ != nullptr;
   }
-  BoundCost GetSoftSpanUpperBoundForVehicle(
-      int vehicle) const {
+  BoundCost GetSoftSpanUpperBoundForVehicle(int vehicle) const {
     DCHECK(HasSoftSpanUpperBounds());
     return vehicle_soft_span_upper_bound_->bound_cost(vehicle);
   }
   /// If the span of vehicle on this dimension is larger than bound,
   /// the cost will be increased by cost * (span - bound)^2.
-  void SetQuadraticCostSoftSpanUpperBoundForVehicle(
-      BoundCost bound_cost, int vehicle) {
+  void SetQuadraticCostSoftSpanUpperBoundForVehicle(BoundCost bound_cost,
+                                                    int vehicle) {
     if (!HasQuadraticCostSoftSpanUpperBounds()) {
       vehicle_quadratic_cost_soft_span_upper_bound_ =
-          std::make_unique<SimpleBoundCosts>(
-              model_->vehicles(), BoundCost{kint64max, 0});
+          std::make_unique<SimpleBoundCosts>(model_->vehicles(),
+                                             BoundCost{kint64max, 0});
     }
     vehicle_quadratic_cost_soft_span_upper_bound_->bound_cost(vehicle) =
         bound_cost;
@@ -3095,8 +3095,7 @@ class RoutingDimension {
   bool HasQuadraticCostSoftSpanUpperBounds() const {
     return vehicle_quadratic_cost_soft_span_upper_bound_ != nullptr;
   }
-  BoundCost GetQuadraticCostSoftSpanUpperBoundForVehicle(
-      int vehicle) const {
+  BoundCost GetQuadraticCostSoftSpanUpperBoundForVehicle(int vehicle) const {
     DCHECK(HasQuadraticCostSoftSpanUpperBounds());
     return vehicle_quadratic_cost_soft_span_upper_bound_->bound_cost(vehicle);
   }
