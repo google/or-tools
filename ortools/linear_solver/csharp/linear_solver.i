@@ -166,6 +166,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 // Extend code.
 %unignore operations_research::MPSolver::ExportModelAsLpFormat(bool);
 %unignore operations_research::MPSolver::ExportModelAsMpsFormat(bool, bool);
+%unignore operations_research::MPSolver::Write;
 %unignore operations_research::MPSolver::SetHint(
     const std::vector<operations_research::MPVariable*>&,
     const std::vector<double>&);

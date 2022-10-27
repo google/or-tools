@@ -41,6 +41,10 @@ def RunLinearExampleNaturalLanguageAPI(optimization_problem_type):
     sum_of_vars = sum([x1, x2, x3])
     c2 = solver.Add(sum_of_vars <= 100.0, 'OtherConstraintName')
 
+    model_export_path = "model_" + optimization_problem_type + ".mps"
+    print("Writing problem to " + model_export_path)
+    solver.Write(model_export_path)
+
     SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2])
     # Print a linear expression's solution value.
     print('Sum of vars: %s = %s' % (sum_of_vars, sum_of_vars.solution_value()))

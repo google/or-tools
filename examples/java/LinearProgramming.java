@@ -66,6 +66,9 @@ public class LinearProgramming {
       String model = solver.exportModelAsLpFormat();
       System.out.println(model);
     }
+    String modelExportPath = "model_" + solverType + ".mps";
+    System.out.println("Writing problem to " + modelExportPath);
+    solver.write(modelExportPath);
 
     final MPSolver.ResultStatus resultStatus = solver.solve();
 

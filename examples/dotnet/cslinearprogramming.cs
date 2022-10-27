@@ -121,6 +121,9 @@ public class CsLinearProgramming
             string model = solver.ExportModelAsLpFormat(false);
             Console.WriteLine(model);
         }
+        string modelExportPath = "model_" + solverType + ".mps";
+        Console.WriteLine("Writing problem to " + modelExportPath);
+        solver.Write(modelExportPath);
 
         Solver.ResultStatus resultStatus = solver.Solve();
 
