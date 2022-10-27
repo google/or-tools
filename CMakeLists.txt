@@ -88,6 +88,10 @@ if(BUILD_SHARED_LIBS AND MSVC)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
+# Disable CTest targets
+set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
+include(CTest)
+
 # By default only build the C++ library.
 option(BUILD_CXX "Build C++ library" ON)
 message(STATUS "Build C++ library: ${BUILD_CXX}")
@@ -286,6 +290,10 @@ if(BUILD_PYTHON)
     "NOT BUILD_DEPS" ON)
   message(STATUS "Python: Build pybind11: ${BUILD_pybind11}")
 
+  CMAKE_DEPENDENT_OPTION(BUILD_VENV "Create Python venv in BINARY_DIR/python/venv" OFF
+    "NOT BUILD_TESTING" ON)
+  message(STATUS "Python: Create venv: ${BUILD_VENV}")
+
   option(VENV_USE_SYSTEM_SITE_PACKAGES "Python venv can use system site packages" OFF)
   message(STATUS "Python: Allow venv to use system site packages: ${VENV_USE_SYSTEM_SITE_PACKAGES}")
 
@@ -296,10 +304,6 @@ endif()
 # Build Needed dependencies
 add_subdirectory(cmake/dependencies dependencies)
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_BINARY_DIR}/dependencies/install)
-
-# Disable CTest targets
-set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
-include(CTest)
 
 # Basic type
 include(CMakePushCheckState)
