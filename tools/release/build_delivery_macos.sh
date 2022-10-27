@@ -200,9 +200,9 @@ function build_python() {
   command -v swig | xargs echo "swig: " | tee -a build.log
 
   if [[ ${PLATFORM} == "arm64" ]]; then
-    local -r PY=(3.8 3.9 3.10)
+    local -r PY=(3.8 3.9 3.10 3.11)
   else
-    local -r PY=(3.6 3.7 3.8 3.9 3.10)
+    local -r PY=(3.6 3.7 3.8 3.9 3.10 3.11)
   fi
 
   for i in "${PY[@]}"; do
