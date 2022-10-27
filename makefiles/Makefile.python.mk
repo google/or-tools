@@ -50,7 +50,7 @@ PYTHON_BUILD_PATH := $(BUILD_DIR)$Spython
 
 # OR Tools unique library.
 python:
-	$(MAKE) third_party BUILD_PYTHON=ON
+	$(MAKE) third_party BUILD_PYTHON=ON BUILD_VENV=ON
 	cmake --build $(BUILD_DIR) --target install --config $(BUILD_TYPE) -j $(JOBS) -v
 
 ifeq ($(PLATFORM),WIN64)
