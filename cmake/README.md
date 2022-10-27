@@ -187,9 +187,9 @@ cmake -S. -Bbuild -LH
 |:-------------|:--------------|:-----|
 | `CMAKE_BUILD_TYPE` | Release | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) |
 | `BUILD_CXX` | ON | Build C++ |
-| `BUILD_PYTHON` | OFF | Build Python wrapper and package |
-| `BUILD_JAVA` | OFF | Build Java wrapper and packages |
 | `BUILD_DOTNET` | OFF | Build .Net wrapper and packages |
+| `BUILD_JAVA` | OFF | Build Java wrapper and packages |
+| `BUILD_PYTHON` | OFF | Build Python wrapper and package |
 | `BUILD_FLATZINC` | ON\* | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
 | | | |
@@ -223,17 +223,21 @@ cmake -S. -Bbuild -LH
 | | | |
 | `BUILD_EXAMPLES`  | ON\* | Build all examples<br>Default to ON if `BUILD_DEPS=ON` |
 | `BUILD_CXX_EXAMPLES`  | ON\* | Build all C++ examples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
-| `BUILD_PYTHON_EXAMPLES`  | ON\* | Build all Python examples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF` |
-| `BUILD_JAVA_EXAMPLES`  | ON\* | Build all Java examples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
 | `BUILD_DOTNET_EXAMPLES`  | ON\* | Build all .Net examples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_JAVA_EXAMPLES`  | ON\* | Build all Java examples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_PYTHON_EXAMPLES`  | ON\* | Build all Python examples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF` |
 | | | |
-| `USE_DOTNET_CORE_31`  | ON | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` |
+| `USE_DOTNET_CORE_31`  | ON | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
 | `USE_DOTNET_6`  | ON | Enable .Net 6 LTS support<br>Only available if `BUILD_DOTNET=ON` |
+| `UNIVERSAL_DOTNET_PACKAGE`  | OFF | Build a multi platform package (i.e. `Google.OrTools` will depends on all runtime packages)<br>Only available if `BUILD_DOTNET=ON` |
 | | | |
-| `SKIP_GPG`  | OFF | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |
+| `SKIP_GPG`  | ON | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |
 | `UNIVERSAL_JAVA_PACKAGE`  | OFF | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON` |
 | `BUILD_FAT_JAR`  | OFF | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |
 | | | |
+| `BUILD_pybind11` | `BUILD_DEPS` | Static build the pybind11 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON` |
+| `BUILD_VENV` | `BUILD_TESTING` | Create python venv in BINARY_DIR/python/venv<br>**Forced** to ON if `BUILD_TESTING=ON`<br>Only available if `BUILD_PYTHON=ON` |
+| `VENV_USE_SYSTEM_SITE_PACKAGES` | OFF | Python venv can use system site package (e.g. py3-numpy on Alpine)<br>Only available if `BUILD_PYTHON=ON` |
 | `FETCH_PYTHON_DEPS`  | `BUILD_DEPS` | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON` |
 | | | |
 
