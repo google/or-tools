@@ -791,6 +791,52 @@ class TestRoutingDimension(unittest.TestCase):
             self.assertEqual(43, bc.cost)
         self.assertTrue(dimension.HasQuadraticCostSoftSpanUpperBounds())
 
+    def testAutomaticFirstSolutionStrategy_simple(self):
+        manager = pywrapcp.RoutingIndexManager(31, 7, 3)
+        self.assertIsNotNone(manager)
+        model = pywrapcp.RoutingModel(manager)
+        self.assertIsNotNone(model)
+        # Add cost function
+        transit_idx = model.RegisterTransitCallback(
+            partial(TransitDistance, manager))
+        model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
+        # Solve
+        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        self.assertIsNotNone(model.SolveWithParameters(search_parameters))
+        self.assertEqual(
+                routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC,
+                model.GetAutomaticFirstSolutionStrategy())
+
+    def testAutomaticFirstSolutionStrategy_pd(self):
+        manager = pywrapcp.RoutingIndexManager(31, 7, 0)
+        self.assertIsNotNone(manager)
+        model = pywrapcp.RoutingModel(manager)
+        self.assertIsNotNone(model)
+        # Add cost function
+        transit_idx = model.RegisterTransitCallback(
+            partial(TransitDistance, manager))
+        model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
+        self.assertTrue(
+            model.AddDimension(transit_idx, 0, 1000, True, 'distance'))
+        dst_dimension = model.GetDimensionOrDie('distance')
+        # Add few Pickup and Delivery
+        for request in [[2*i, 2*i+1] for i in range(1,15)]:
+            pickup_index = manager.NodeToIndex(request[0])
+            delivery_index = manager.NodeToIndex(request[1])
+            model.AddPickupAndDelivery(pickup_index, delivery_index)
+            model.solver().Add(
+                model.VehicleVar(pickup_index) == model.VehicleVar(
+                    delivery_index))
+            model.solver().Add(
+                dst_dimension.CumulVar(pickup_index) <=
+                dst_dimension.CumulVar(delivery_index))
+        # Solve
+        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        self.assertIsNotNone(model.SolveWithParameters(search_parameters))
+        self.assertEqual(
+                routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION,
+                model.GetAutomaticFirstSolutionStrategy())
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
