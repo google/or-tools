@@ -727,7 +727,7 @@ class TestBoundCost(unittest.TestCase):
         self.assertEqual(0, bound_cost.bound)
         self.assertEqual(0, bound_cost.cost)
 
-        bound_cost = pywrapcp.BoundCost(bound=97, cost=43)
+        bound_cost = pywrapcp.BoundCost(97, 43)
         self.assertIsNotNone(bound_cost)
         self.assertEqual(97, bound_cost.bound)
         self.assertEqual(43, bound_cost.cost)
@@ -757,7 +757,7 @@ class TestRoutingDimension(unittest.TestCase):
             model.AddDimension(transit_idx, 100, 100, True, 'distance'))
         dimension = model.GetDimensionOrDie('distance')
 
-        bound_cost = pywrapcp.BoundCost(bound=97, cost=43)
+        bound_cost = pywrapcp.BoundCost(97, 43)
         self.assertIsNotNone(bound_cost)
         self.assertFalse(dimension.HasSoftSpanUpperBounds())
         for v in range(manager.GetNumberOfVehicles()):
@@ -779,7 +779,7 @@ class TestRoutingDimension(unittest.TestCase):
             model.AddDimension(transit_idx, 100, 100, True, 'distance'))
         dimension = model.GetDimensionOrDie('distance')
 
-        bound_cost = pywrapcp.BoundCost(bound=97, cost=43)
+        bound_cost = pywrapcp.BoundCost(97, 43)
         self.assertIsNotNone(bound_cost)
         self.assertFalse(dimension.HasQuadraticCostSoftSpanUpperBounds())
         for v in range(manager.GetNumberOfVehicles()):
