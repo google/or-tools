@@ -206,7 +206,7 @@ class TestRoutingModel(unittest.TestCase):
         self.assertIsNotNone(manager)
         model = pywrapcp.RoutingModel(manager)
         self.assertIsNotNone(model)
-        vector = [i for i in range(10)]
+        vector = list(range(10))
         transit_idx = model.RegisterUnaryTransitVector(vector)
         self.assertEqual(1, transit_idx)
         model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
@@ -225,14 +225,13 @@ class TestRoutingModel(unittest.TestCase):
         transit_idx = model.RegisterTransitCallback(
             partial(TransitDistance, manager))
         model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
-        self.assertEqual(pywrapcp.RoutingModel.ROUTING_NOT_SOLVED,
-                         model.status())
+        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
         # Solve
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
         search_parameters.first_solution_strategy = (
             routing_enums_pb2.FirstSolutionStrategy.FIRST_UNBOUND_MIN_VALUE)
         assignment = model.SolveWithParameters(search_parameters)
-        self.assertEqual(pywrapcp.RoutingModel.ROUTING_SUCCESS, model.status())
+        self.assertEqual(model.ROUTING_SUCCESS, model.status())
         self.assertEqual(90, assignment.ObjectiveValue())
         # Inspect solution
         index = model.Start(0)
@@ -432,7 +431,7 @@ class TestRoutingModel(unittest.TestCase):
             partial(TransitDistance, manager))
         model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
         # Add vector dimension
-        values = [i for i in range(10)]
+        values = list(range(10))
         unary_transit_idx, success = model.AddVectorDimension(
             values,
             100,  # capacity
@@ -617,7 +616,9 @@ class TestRoutingModel(unittest.TestCase):
         parameters = pywrapcp.DefaultRoutingModelParameters()
         parameters.solver_parameters.profile_local_search = True
         manager = pywrapcp.RoutingIndexManager(10, 1, 0)
+        self.assertIsNotNone(manager)
         model = pywrapcp.RoutingModel(manager, parameters)
+        self.assertIsNotNone(model)
         model.Solve()
         profile = model.solver().LocalSearchProfile()
         print(profile)
@@ -718,6 +719,53 @@ class TestRoutingModel(unittest.TestCase):
                                      manager.IndexToNode(node))
                     count += 1
 
+    def testAutomaticFirstSolutionStrategy_simple(self):
+        manager = pywrapcp.RoutingIndexManager(31, 7, 3)
+        self.assertIsNotNone(manager)
+        model = pywrapcp.RoutingModel(manager)
+        self.assertIsNotNone(model)
+        # Add cost function
+        transit_idx = model.RegisterTransitCallback(
+            partial(TransitDistance, manager))
+        model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
+        # Solve
+        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        self.assertIsNotNone(model.SolveWithParameters(search_parameters))
+        self.assertEqual(
+            routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC,
+            model.GetAutomaticFirstSolutionStrategy())
+
+    def testAutomaticFirstSolutionStrategy_pd(self):
+        manager = pywrapcp.RoutingIndexManager(31, 7, 0)
+        self.assertIsNotNone(manager)
+        model = pywrapcp.RoutingModel(manager)
+        self.assertIsNotNone(model)
+        # Add cost function
+        transit_idx = model.RegisterTransitCallback(
+            partial(TransitDistance, manager))
+        model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
+        self.assertTrue(
+            model.AddDimension(transit_idx, 0, 1000, True, 'distance'))
+        dst_dimension = model.GetDimensionOrDie('distance')
+        # Add few Pickup and Delivery
+        for request in [[2 * i, 2 * i + 1] for i in range(1, 15)]:
+            print(request)
+            pickup_index = manager.NodeToIndex(request[0])
+            delivery_index = manager.NodeToIndex(request[1])
+            model.AddPickupAndDelivery(pickup_index, delivery_index)
+            model.solver().Add(
+                model.VehicleVar(pickup_index) == model.VehicleVar(
+                    delivery_index))
+            model.solver().Add(
+                dst_dimension.CumulVar(pickup_index) <= dst_dimension.CumulVar(
+                    delivery_index))
+        # Solve
+        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        self.assertIsNotNone(model.SolveWithParameters(search_parameters))
+        self.assertEqual(
+            routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION,
+            model.GetAutomaticFirstSolutionStrategy())
+
 
 class TestBoundCost(unittest.TestCase):
 
@@ -790,52 +838,6 @@ class TestRoutingDimension(unittest.TestCase):
             self.assertEqual(97, bc.bound)
             self.assertEqual(43, bc.cost)
         self.assertTrue(dimension.HasQuadraticCostSoftSpanUpperBounds())
-
-    def testAutomaticFirstSolutionStrategy_simple(self):
-        manager = pywrapcp.RoutingIndexManager(31, 7, 3)
-        self.assertIsNotNone(manager)
-        model = pywrapcp.RoutingModel(manager)
-        self.assertIsNotNone(model)
-        # Add cost function
-        transit_idx = model.RegisterTransitCallback(
-            partial(TransitDistance, manager))
-        model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
-        # Solve
-        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-        self.assertIsNotNone(model.SolveWithParameters(search_parameters))
-        self.assertEqual(
-                routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC,
-                model.GetAutomaticFirstSolutionStrategy())
-
-    def testAutomaticFirstSolutionStrategy_pd(self):
-        manager = pywrapcp.RoutingIndexManager(31, 7, 0)
-        self.assertIsNotNone(manager)
-        model = pywrapcp.RoutingModel(manager)
-        self.assertIsNotNone(model)
-        # Add cost function
-        transit_idx = model.RegisterTransitCallback(
-            partial(TransitDistance, manager))
-        model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
-        self.assertTrue(
-            model.AddDimension(transit_idx, 0, 1000, True, 'distance'))
-        dst_dimension = model.GetDimensionOrDie('distance')
-        # Add few Pickup and Delivery
-        for request in [[2*i, 2*i+1] for i in range(1,15)]:
-            pickup_index = manager.NodeToIndex(request[0])
-            delivery_index = manager.NodeToIndex(request[1])
-            model.AddPickupAndDelivery(pickup_index, delivery_index)
-            model.solver().Add(
-                model.VehicleVar(pickup_index) == model.VehicleVar(
-                    delivery_index))
-            model.solver().Add(
-                dst_dimension.CumulVar(pickup_index) <=
-                dst_dimension.CumulVar(delivery_index))
-        # Solve
-        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-        self.assertIsNotNone(model.SolveWithParameters(search_parameters))
-        self.assertEqual(
-                routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION,
-                model.GetAutomaticFirstSolutionStrategy())
 
 
 if __name__ == '__main__':
