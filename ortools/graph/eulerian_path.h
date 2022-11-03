@@ -44,7 +44,23 @@ bool IsEulerianGraph(const Graph& graph) {
       return false;
     }
   }
-  // TODO(user): Check graph connectivity.
+  std::vector<bool> is_visited(graph.num_nodes(), false);
+  auto dfs = [&](int from, const auto& dfs) -> void {
+    is_visited[from] = true;
+    for (const int arc : graph.OutgoingOrOppositeIncomingArcs(from)) {
+      int to = graph.Head(arc);
+      if (!is_visited[to]) {
+        dfs(to, dfs);
+      }
+    }
+  };
+  // Checking Graph Connectivity 
+  dfs(0, dfs);
+  for (int i = 0; i < graph.num_nodes(); i++) {
+    if (!is_visited[i]) {
+      return false;
+    }
+  }  
   return true;
 }
 
@@ -61,7 +77,23 @@ bool IsSemiEulerianGraph(const Graph& graph,
       odd_nodes->push_back(node);
     }
   }
-  // TODO(user): Check graph connectivity.
+  std::vector<bool> is_visited(graph.num_nodes(), false);
+  auto dfs = [&](int from, const auto& dfs) -> void {
+    is_visited[from] = true;
+    for (const int arc : graph.OutgoingOrOppositeIncomingArcs(from)) {
+      int to = graph.Head(arc);
+      if (!is_visited[to]) {
+        dfs(to, dfs);
+      }
+    }
+  };
+  // Checking Graph Connectivity 
+  dfs(0, dfs);
+  for (int i = 0; i < graph.num_nodes(); i++) {
+    if (!is_visited[i]) {
+      return false;
+    }
+  }  
   return odd_nodes->size() <= 2;
 }
 
