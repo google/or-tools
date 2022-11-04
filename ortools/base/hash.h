@@ -65,9 +65,7 @@ static inline void mix(uint64_t& a, uint64_t& b, uint64_t& c) {  // NOLINT
   c -= b;
   c ^= (b >> 22);
 }
-
 }  // namespace operations_research
-
 
 #endif  // SWIG
 
