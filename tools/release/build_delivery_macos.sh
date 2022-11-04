@@ -221,7 +221,7 @@ function build_python() {
     "python$i" -m pip install --upgrade --user wheel absl-py mypy-protobuf virtualenv
     command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
     protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
-    protoc-gen-mypy --version | grep "3\.2\.0"
+    protoc-gen-mypy --version | grep "3\.4\.0"
   done
 
   for i in "${PY[@]}"; do
