@@ -368,6 +368,8 @@ class SharedResponseManager {
   double relative_gap_limit_ ABSL_GUARDED_BY(mutex_) = 0.0;
 
   CpSolverStatus best_status_ ABSL_GUARDED_BY(mutex_) = CpSolverStatus::UNKNOWN;
+  CpSolverStatus synchronized_best_status_ ABSL_GUARDED_BY(mutex_) =
+      CpSolverStatus::UNKNOWN;
   std::vector<int> unsat_cores_ ABSL_GUARDED_BY(mutex_);
   SharedSolutionRepository<int64_t> solutions_ ABSL_GUARDED_BY(mutex_);
 

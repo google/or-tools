@@ -393,6 +393,7 @@ void SharedResponseManager::Synchronize() {
       IntegerValue(inner_objective_lower_bound_);
   synchronized_inner_objective_upper_bound_ =
       IntegerValue(inner_objective_upper_bound_);
+  synchronized_best_status_ = best_status_;
 }
 
 IntegerValue SharedResponseManager::SynchronizedInnerObjectiveLowerBound() {
@@ -693,8 +694,8 @@ void SharedResponseManager::NewSolution(
 
 bool SharedResponseManager::ProblemIsSolved() const {
   absl::MutexLock mutex_lock(&mutex_);
-  return best_status_ == CpSolverStatus::OPTIMAL ||
-         best_status_ == CpSolverStatus::INFEASIBLE;
+  return synchronized_best_status_ == CpSolverStatus::OPTIMAL ||
+         synchronized_best_status_ == CpSolverStatus::INFEASIBLE;
 }
 
 std::string ExtractSubSolverName(const std::string& improvement_info) {
