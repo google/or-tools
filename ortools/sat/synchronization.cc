@@ -160,9 +160,6 @@ void FillSolveStatsInResponse(Model* model, CpSolverResponse* response) {
   response->set_num_restarts(sat_solver->num_restarts());
   response->set_num_integer_propagations(
       integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
-  auto* time_limit = model->Get<TimeLimit>();
-  response->set_wall_time(time_limit->GetElapsedTime());
-  response->set_deterministic_time(time_limit->GetElapsedDeterministicTime());
 
   // TODO(user): find a way to clear all stats fields that might be set by
   // one of the callback.
@@ -465,17 +462,29 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
     result.mutable_sufficient_assumptions_for_infeasibility()->Assign(
         unsat_cores_.begin(), unsat_cores_.end());
   }
+  FillObjectiveValuesInResponse(&result);
+  result.set_solution_info(solution_info);
+
+  // Tricky: We copy the solution now for the case where MergeFrom() belows
+  // override it!
+  //
+  // TODO(user): Fix. This is messy, we should really just override stats not
+  // important things like solution or status with the MergeFrom() below.
   if (best_status_ == CpSolverStatus::FEASIBLE ||
       best_status_ == CpSolverStatus::OPTIMAL) {
     result.mutable_solution()->Assign(variable_values.begin(),
                                       variable_values.end());
   }
-  FillObjectiveValuesInResponse(&result);
-  result.set_solution_info(solution_info);
 
-  // We need to copy the response before we postsolve it.
+  // Note that we allow subsolver_responses_ to override the fields set above.
+  // That is the status, solution_info and objective values...
+  if (!subsolver_responses_.empty()) {
+    result.MergeFrom(subsolver_responses_.front());
+  }
+
   if (result.status() == CpSolverStatus::FEASIBLE ||
       result.status() == CpSolverStatus::OPTIMAL) {
+    // We need to copy the solution before we postsolve it.
     std::vector<int64_t> solution(result.solution().begin(),
                                   result.solution().end());
     for (int i = solution_postprocessors_.size(); --i >= 0;) {
@@ -483,6 +492,8 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
     }
     result.mutable_solution()->Assign(solution.begin(), solution.end());
   }
+
+  // Apply response postprocessor to set things like timing information.
   for (int i = postprocessors_.size(); --i >= 0;) {
     postprocessors_[i](&result);
   }
@@ -496,6 +507,7 @@ CpSolverResponse SharedResponseManager::GetResponse() {
           ? GetResponseInternal({}, "")
           : GetResponseInternal(solutions_.GetSolution(0).variable_values,
                                 solutions_.GetSolution(0).info);
+
   // If this is true, we postsolve and copy all of our solutions.
   if (parameters_.fill_additional_solutions_in_response()) {
     std::vector<int64_t> temp;
@@ -507,10 +519,6 @@ CpSolverResponse SharedResponseManager::GetResponse() {
       result.add_additional_solutions()->mutable_values()->Assign(temp.begin(),
                                                                   temp.end());
     }
-  }
-
-  if (!subsolver_responses_.empty()) {
-    result.MergeFrom(subsolver_responses_.front());
   }
 
   // final postprocessors will print out the final log. They must be called

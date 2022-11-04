@@ -48,10 +48,10 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/murmur.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/thorough_hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
@@ -1889,7 +1889,7 @@ void RoutingModel::ComputeVehicleClasses() {
                                                           << (index % CHAR_BIT);
       }
     }
-    vehicle_class.unvisitable_nodes_fprint = ThoroughHash(
+    vehicle_class.unvisitable_nodes_fprint = MurmurHash64(
         nodes_unvisitability_bitmask.get(), nodes_unvisitability_num_bytes);
     for (int rg_index = 0; rg_index < resource_groups_.size(); rg_index++) {
       if (resource_groups_[rg_index]->VehicleRequiresAResource(vehicle)) {

@@ -164,6 +164,7 @@ ABSL_FLAG(
 
 ABSL_FLAG(bool, cp_model_ignore_objective, false,
           "If true, ignore the objective.");
+ABSL_FLAG(bool, cp_model_fingerprint_model, true, "Fingerprint the model.");
 
 namespace operations_research {
 namespace sat {
@@ -337,13 +338,19 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   std::string result;
+  const std::string model_fingerprint_str =
+      (absl::GetFlag(FLAGS_cp_model_fingerprint_model))
+          ? absl::StrFormat(" (model_fingerprint: %#x)",
+                            FingerprintModel(model_proto))
+          : "";
+
   if (model_proto.has_objective() ||
       model_proto.has_floating_point_objective()) {
     absl::StrAppend(&result, "optimization model '", model_proto.name(),
-                    "':\n");
+                    "':", model_fingerprint_str, "\n");
   } else {
     absl::StrAppend(&result, "satisfaction model '", model_proto.name(),
-                    "':\n");
+                    "':", model_fingerprint_str, "\n");
   }
 
   for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
@@ -555,6 +562,10 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
   absl::StrAppend(&result,
                   "\ndeterministic_time: ", response.deterministic_time());
   absl::StrAppend(&result, "\ngap_integral: ", response.gap_integral());
+  if (!response.solution().empty()) {
+    absl::StrAppendFormat(&result, "\nsolution_fingerprint: %#x",
+                          FingerprintRepeatedField(response.solution()));
+  }
   absl::StrAppend(&result, "\n");
   return result;
 }
@@ -3509,7 +3520,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       if (!context->SetLiteralToTrue(ref)) {
         CpSolverResponse status_response;
         status_response.set_status(CpSolverStatus::INFEASIBLE);
-        status_response.clear_sufficient_assumptions_for_infeasibility();
         status_response.add_sufficient_assumptions_for_infeasibility(ref);
         FillSolveStatsInResponse(model, &status_response);
         shared_response_manager->AppendResponseToBeMerged(status_response);

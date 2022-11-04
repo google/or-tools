@@ -14,14 +14,14 @@
 #ifndef OR_TOOLS_BASE_MURMUR_H_
 #define OR_TOOLS_BASE_MURMUR_H_
 
-#include "ortools/base/thorough_hash.h"
+#include "ortools/base/hash.h"
 
 namespace util_hash {
 // In the or-tools project, MurmurHash64 is just a redirection towards
-// ThoroughHash. Ideally, it is meant to be using the murmurhash
-// algorithm described in http://murmurhash.googlepages.com.
+// fash_hash.
 inline uint64_t MurmurHash64(const char* buf, const size_t len) {
-  return ::operations_research::ThoroughHash(buf, len);
+  return operations_research::fasthash64(buf, len,
+                                         uint64_t{0xa5b85c5e198ed849});
 }
 }  // namespace util_hash
 

@@ -1157,7 +1157,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
           int64_t ub = ct.linear().domain(1);
           const int64_t coeff = max_activity - ct.linear().domain(1);
           for (const int lit : ct.enforcement_literal()) {
-            if (RefIsPositive(ct.enforcement_literal(0))) {
+            if (RefIsPositive(lit)) {
               // term <= ub + coeff * (1 - enf);
               high_out_ct->add_var_index(lit);
               high_out_ct->add_coefficient(coeff);

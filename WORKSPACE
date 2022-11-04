@@ -111,6 +111,23 @@ cc_library(
 """
 )
 
+# fast-hash has no Bazel build.
+new_git_repository(
+    name = "fast_hash",
+    branch = "master",
+    remote = "https://github.com/ztanml/fast-hash",
+    build_file_content =
+"""
+cc_library(
+    name = "fasthash",
+    srcs = ["fasthash.c"],
+    hdrs = ["fasthash.h"],
+    include_prefix = "fast_hash",
+    visibility = ['//visibility:public'],
+)
+"""
+)
+
 git_repository(
     name = "highs",
     branch = "bazel",

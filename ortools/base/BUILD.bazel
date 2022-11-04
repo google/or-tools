@@ -249,9 +249,11 @@ cc_library(
 
 cc_library(
     name = "hash",
+    srcs = [
+        "hash.cc",
+    ],
     hdrs = [
         "hash.h",
-        "thorough_hash.h",
     ],
     deps = [
         ":base",

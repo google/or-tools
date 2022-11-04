@@ -22,6 +22,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "google/protobuf/repeated_field.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -189,6 +191,31 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
 bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
                                     const LinearExpressionProto& b,
                                     int64_t b_scaling = 1);
+
+// T must be castable to uint64_t.
+template <class T>
+inline uint64_t FingerprintRepeatedField(
+    const google::protobuf::RepeatedField<T>& sequence,
+    uint64_t seed = uint64_t{0xa5b85c5e198ed849}) {
+  return fasthash64(reinterpret_cast<const char*>(sequence.data()),
+                    sequence.size() * sizeof(T), seed);
+}
+
+// T must be castable to uint64_t.
+template <class T>
+inline uint64_t FingerprintSingleField(const T& field,
+                                       uint64_t seed = uint64_t{
+                                           0xa5b85c5e198ed849}) {
+  return fasthash64(reinterpret_cast<const char*>(&field), sizeof(T), seed);
+}
+
+// Returns a stable fingerprint of a linear expression.
+uint64_t FingerprintExpression(const LinearExpressionProto& lin,
+                               uint64_t seed = uint64_t{0xa5b85c5e198ed849});
+
+// Returns a stable fingerprint of a model.
+uint64_t FingerprintModel(const CpModelProto& model,
+                          uint64_t seed = uint64_t{0xa5b85c5e198ed849});
 
 }  // namespace sat
 }  // namespace operations_research
