@@ -1889,7 +1889,7 @@ void RoutingModel::ComputeVehicleClasses() {
                                                           << (index % CHAR_BIT);
       }
     }
-    vehicle_class.unvisitable_nodes_fprint = MurmurHash64(
+    vehicle_class.unvisitable_nodes_fprint = util_hash::MurmurHash64(
         nodes_unvisitability_bitmask.get(), nodes_unvisitability_num_bytes);
     for (int rg_index = 0; rg_index < resource_groups_.size(); rg_index++) {
       if (resource_groups_[rg_index]->VehicleRequiresAResource(vehicle)) {
