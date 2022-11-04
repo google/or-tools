@@ -244,6 +244,13 @@ function build_python() {
     #echo "cmake test_python$i: DONE" | tee -a build.log
 
     cp "temp_python$i"/python/dist/*.whl export/
+    if [[ ${PLATFORM} == "arm64" ]]; then
+      pushd export
+      for i in *universal2.whl; do
+        mv "$i" "${i%universal2.whl}arm64.whl"
+      done
+      popd
+    fi
   done
 
   # Reset PATH
