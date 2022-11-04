@@ -44,8 +44,6 @@
 
 ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
 ABSL_FLAG(bool, all_solutions, false, "Search for all solutions.");
-ABSL_FLAG(int, num_solutions, 0,
-          "Maximum number of solution to search for, 0 means unspecified.");
 ABSL_FLAG(bool, free_search, false,
           "If false, the solver must follow the defined search."
           "If true, other search are allowed.");
@@ -70,7 +68,6 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
   char all_param[] = "--all_solutions";
   char free_param[] = "--free_search";
   char threads_param[] = "--threads";
-  char solutions_param[] = "--num_solutions";
   char logging_param[] = "--fz_logging";
   char statistics_param[] = "--statistics";
   char seed_param[] = "--fz_seed";
@@ -85,9 +82,6 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
     }
     if (strcmp((*argv)[i], "-p") == 0) {
       (*argv)[i] = threads_param;
-    }
-    if (strcmp((*argv)[i], "-n") == 0) {
-      (*argv)[i] = solutions_param;
     }
     if (strcmp((*argv)[i], "-l") == 0) {
       (*argv)[i] = logging_param;
@@ -210,13 +204,6 @@ int main(int argc, char** argv) {
   parameters.display_all_solutions = absl::GetFlag(FLAGS_all_solutions);
   parameters.use_free_search = absl::GetFlag(FLAGS_free_search);
   parameters.log_search_progress = absl::GetFlag(FLAGS_fz_logging);
-  if (absl::GetFlag(FLAGS_num_solutions) == 0) {
-    absl::SetFlag(&FLAGS_num_solutions,
-                  absl::GetFlag(FLAGS_all_solutions)
-                      ? std::numeric_limits<int32_t>::max()
-                      : 1);
-  }
-  parameters.max_number_of_solutions = absl::GetFlag(FLAGS_num_solutions);
   parameters.random_seed = absl::GetFlag(FLAGS_fz_seed);
   parameters.display_statistics = absl::GetFlag(FLAGS_statistics);
   parameters.number_of_threads = absl::GetFlag(FLAGS_threads);

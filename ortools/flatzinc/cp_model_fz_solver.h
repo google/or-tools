@@ -26,7 +26,6 @@ struct FlatzincSatParameters {
   bool use_free_search = false;
   bool log_search_progress = false;
   bool display_statistics = false;
-  int max_number_of_solutions = 1;
   int random_seed = 0;
   int number_of_threads = 0;
   double max_time_in_seconds = 0.0;
