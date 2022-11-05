@@ -1570,7 +1570,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
 // The final CpSolverResponse must be read from the shared_response_manager.
 //
 // TODO(user): This should be transformed so that it can be called many times
-// and resume from the last search state as if it wasn't interuped. That would
+// and resume from the last search state as if it wasn't interrupted. That would
 // allow use to easily interleave different heuristics in the same thread.
 void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
@@ -1595,7 +1595,9 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   };
 
   // Reconfigure search heuristic if it was changed.
-  ConfigureSearchHeuristics(model);
+  if (model->GetOrCreate<SearchHeuristics>()->fixed_search) {
+    ConfigureSearchHeuristics(model);
+  }
 
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
   SatSolver::Status status;
