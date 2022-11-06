@@ -275,7 +275,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
   if (gap <= absolute_gap_limit_) {
     SOLVER_LOG(logger_, "Absolute gap limit of ", absolute_gap_limit_,
                " reached.");
-    best_status_ = CpSolverStatus::OPTIMAL;
+    UpdateBestStatus(CpSolverStatus::OPTIMAL);
 
     // Note(user): Some code path in single-thread assumes that the problem
     // can only be solved when they have proven infeasibility and do not check
@@ -285,7 +285,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
   if (gap / std::max(1.0, std::abs(user_best)) < relative_gap_limit_) {
     SOLVER_LOG(logger_, "Relative gap limit of ", relative_gap_limit_,
                " reached.");
-    best_status_ = CpSolverStatus::OPTIMAL;
+    UpdateBestStatus(CpSolverStatus::OPTIMAL);
 
     // Same as above.
     shared_time_limit_->Stop();
@@ -323,9 +323,9 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
   if (inner_objective_lower_bound_ > inner_objective_upper_bound_) {
     if (best_status_ == CpSolverStatus::FEASIBLE ||
         best_status_ == CpSolverStatus::OPTIMAL) {
-      best_status_ = CpSolverStatus::OPTIMAL;
+      UpdateBestStatus(CpSolverStatus::OPTIMAL);
     } else {
-      best_status_ = CpSolverStatus::INFEASIBLE;
+      UpdateBestStatus(CpSolverStatus::INFEASIBLE);
     }
     if (update_integral_on_each_change_) UpdateGapIntegralInternal();
     SOLVER_LOG(logger_,
@@ -358,7 +358,7 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
       best_status_ == CpSolverStatus::OPTIMAL) {
     // We also use this status to indicate that we enumerated all solutions to
     // a feasible problem.
-    best_status_ = CpSolverStatus::OPTIMAL;
+    UpdateBestStatus(CpSolverStatus::OPTIMAL);
 
     // We just proved that the best solution cannot be improved uppon, so we
     // have a new lower bound.
@@ -366,7 +366,7 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     if (update_integral_on_each_change_) UpdateGapIntegralInternal();
   } else {
     CHECK_EQ(num_solutions_, 0);
-    best_status_ = CpSolverStatus::INFEASIBLE;
+    UpdateBestStatus(CpSolverStatus::INFEASIBLE);
   }
   SOLVER_LOG(logger_,
              SatProgressMessage("Done", wall_timer_.Get(), worker_info));
@@ -457,7 +457,7 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
     absl::Span<const int64_t> variable_values,
     const std::string& solution_info) {
   CpSolverResponse result;
-  result.set_status(best_status_);
+  result.set_status(synchronized_best_status_);
   if (!unsat_cores_.empty()) {
     DCHECK_EQ(best_status_, CpSolverStatus::INFEASIBLE);
     result.mutable_sufficient_assumptions_for_infeasibility()->Assign(
@@ -624,15 +624,15 @@ void SharedResponseManager::NewSolution(
   // Note that the objective will be filled by
   // FillObjectiveValuesInResponse().
   if (objective_or_null_ == nullptr && !parameters_.enumerate_all_solutions()) {
-    best_status_ = CpSolverStatus::OPTIMAL;
+    UpdateBestStatus(CpSolverStatus::OPTIMAL);
   } else {
-    best_status_ = CpSolverStatus::FEASIBLE;
+    UpdateBestStatus(CpSolverStatus::FEASIBLE);
   }
 
   // Mark model as OPTIMAL if the inner bound crossed.
   if (objective_or_null_ != nullptr &&
       inner_objective_lower_bound_ > inner_objective_upper_bound_) {
-    best_status_ = CpSolverStatus::OPTIMAL;
+    UpdateBestStatus(CpSolverStatus::OPTIMAL);
   }
 
   // Logging.
@@ -696,6 +696,13 @@ bool SharedResponseManager::ProblemIsSolved() const {
   absl::MutexLock mutex_lock(&mutex_);
   return synchronized_best_status_ == CpSolverStatus::OPTIMAL ||
          synchronized_best_status_ == CpSolverStatus::INFEASIBLE;
+}
+
+void SharedResponseManager::UpdateBestStatus(const CpSolverStatus& status) {
+  best_status_ = status;
+  if (always_synchronize_) {
+    synchronized_best_status_ = status;
+  }
 }
 
 std::string ExtractSubSolverName(const std::string& improvement_info) {

@@ -350,6 +350,8 @@ class SharedResponseManager {
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void RegisterObjectiveBoundImprovement(const std::string& improvement_info)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void UpdateBestStatus(const CpSolverStatus& status)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   // Generates a response for callbacks and GetResponse().
   CpSolverResponse GetResponseInternal(

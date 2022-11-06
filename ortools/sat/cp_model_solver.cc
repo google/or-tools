@@ -1595,9 +1595,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   };
 
   // Reconfigure search heuristic if it was changed.
-  if (model->GetOrCreate<SearchHeuristics>()->fixed_search) {
-    ConfigureSearchHeuristics(model);
-  }
+  ConfigureSearchHeuristics(model);
 
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
   SatSolver::Status status;
