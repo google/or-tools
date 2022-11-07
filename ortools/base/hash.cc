@@ -17,7 +17,7 @@ namespace operations_research {
 
 // This is a copy of the code from https://github.com/ztanml/fast-hash
 // We include it here for build simplicity.
-// 
+//
 // We have made 2 modification:
 //   - replace the #define with an inline method to fix compilation on windows.
 //   - rename mix into mix_internal and hide inside a unnamed namespace.
