@@ -17,15 +17,21 @@ namespace operations_research {
 
 // This is a copy of the code from https://github.com/ztanml/fast-hash
 // We include it here for build simplicity.
+// 
+// We have made 2 modification:
+//   - replace the #define with an inline method.
+//   - rename mix into fast_mix and hide inside a unnamed namespace.
 
+namespace {
 // Compression function for Merkle-Damgard construction.
 // This function is generated using the framework provided.
-#define mix(h)                    \
-  ({                              \
-    (h) ^= (h) >> 23;             \
-    (h) *= 0x2127599bf4325c37ULL; \
-    (h) ^= (h) >> 47;             \
-  })
+inline uint64_t fast_mix(uint64_t h) {
+  (h) ^= (h) >> 23;
+  (h) *= 0x2127599bf4325c37ULL;
+  (h) ^= (h) >> 47;
+  return h;
+}
+}  // namespace
 
 uint64_t fasthash64(const void* buf, size_t len, uint64_t seed) {
   const uint64_t m = 0x880355f21e6d1965ULL;
@@ -37,7 +43,7 @@ uint64_t fasthash64(const void* buf, size_t len, uint64_t seed) {
 
   while (pos != end) {
     v = *pos++;
-    h ^= mix(v);
+    h ^= fast_mix(v);
     h *= m;
   }
 
@@ -59,13 +65,13 @@ uint64_t fasthash64(const void* buf, size_t len, uint64_t seed) {
       v ^= (uint64_t)pos2[1] << 8;
     case 1:
       v ^= (uint64_t)pos2[0];
-      h ^= mix(v);
+      h ^= fast_mix(v);
       h *= m;
   }
 
-  return mix(h);
+  return fast_mix(h);
 }
 
-#undef mix
+#undef fast_mix
 
 }  // namespace operations_research
