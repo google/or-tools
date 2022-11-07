@@ -14,7 +14,7 @@
 set_property(SOURCE linear_solver.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE linear_solver.i PROPERTY SWIG_MODULE_NAME main)
 set_property(SOURCE linear_solver.i PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
 set_property(SOURCE linear_solver.i PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.linearsolver)
 swig_add_library(jnilinear_solver
