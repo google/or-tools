@@ -223,25 +223,7 @@ endif()
 #######################
 ##  DOTNET WRAPPERS  ##
 #######################
-# CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
-#get_target_property(FLAGS ${PROJECT_NAMESPACE}::ortools COMPILE_DEFINITIONS)
-set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
-if(USE_COINOR)
-  list(APPEND FLAGS "-DUSE_CBC" "-DUSE_CLP")
-endif()
-if(USE_GLPK)
-  list(APPEND FLAGS "-DUSE_GLPK")
-endif()
-if(USE_HIGHS)
-  list(APPEND FLAGS "-DUSE_HIGHS")
-endif()
-if(USE_PDLP)
-  list(APPEND FLAGS "-DUSE_PDLP")
-endif()
-if(USE_SCIP)
-  list(APPEND FLAGS "-DUSE_SCIP")
-endif()
-list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
+list(APPEND CMAKE_SWIG_FLAGS "-I${PROJECT_SOURCE_DIR}")
 
 # Swig wrap all libraries
 foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
