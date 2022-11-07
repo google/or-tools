@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <random>
 #include <set>
 #include <string>
 #include <utility>
@@ -26,7 +27,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/util/random_engine.h"
 
 namespace operations_research {
 
@@ -117,7 +117,7 @@ void RandomDemand::Initialize() {
   const int64_t kDemandMax = 5;
   const int64_t kDemandMin = 1;
   demand_ = std::make_unique<int64_t[]>(size_);
-  random_engine_t randomizer(GetSeed(use_deterministic_seed_));
+  std::mt19937 randomizer(GetSeed(use_deterministic_seed_));
   for (int order = 0; order < size_; ++order) {
     if (order == depot_) {
       demand_[order] = 0;

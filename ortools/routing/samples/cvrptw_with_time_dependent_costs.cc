@@ -34,7 +34,6 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/routing/cvrptw_lib.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/range_query_function.h"
 #include "ortools/util/step_function.h"
 
@@ -86,7 +85,7 @@ class PolyaUrn {
     CHECK_LT(red_balls_, all_balls_);
 
     const double return_value = static_cast<double>(red_balls_) / all_balls_;
-    red_balls_ += (generator_.Uniform(all_balls_) < red_balls_);
+    red_balls_ += (absl::Uniform(generator_, 0, all_balls_) < red_balls_);
     all_balls_ += 1;
 
     CHECK_LT(0, return_value);
@@ -97,7 +96,7 @@ class PolyaUrn {
  private:
   int red_balls_;
   int all_balls_;
-  random_engine_t generator_;
+  std::mt19937 generator_;
 };
 
 // Creates a random histogram over the interval [0, interval_end) using the urn.

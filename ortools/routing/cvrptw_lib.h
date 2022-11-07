@@ -19,10 +19,10 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <random>
 
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/util/random_engine.h"
 
 namespace operations_research {
 
@@ -68,7 +68,7 @@ class LocationContainer {
     int64_t y_;
   };
 
-  random_engine_t randomizer_;
+  std::mt19937 randomizer_;
   const int64_t speed_;
   absl::StrongVector<RoutingIndexManager::NodeIndex, Location> locations_;
 };

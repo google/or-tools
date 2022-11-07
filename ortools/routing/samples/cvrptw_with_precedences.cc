@@ -22,6 +22,7 @@
 // to be in meters and times in seconds.
 
 #include <cstdint>
+#include <random>
 #include <utility>
 #include <vector>
 
@@ -37,7 +38,6 @@
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/graph/graph_builder.h"
 #include "ortools/routing/cvrptw_lib.h"
-#include "ortools/util/random_engine.h"
 
 using operations_research::Assignment;
 using operations_research::DefaultRoutingSearchParameters;
@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
   RoutingDimension* time_dimension = routing.GetMutableDimension(kTime);
 
   // Adding time windows.
-  random_engine_t randomizer(
+  std::mt19937 randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   const int64_t kTWDuration = 5 * 3600;
   for (int order = 1; order < manager.num_nodes(); ++order) {
@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
     std::vector<std::pair<int, int>> precedences;
     GraphBuilder::RandomEdges(
         GraphBuilder::DISALLOW_ALL_CYCLES, absl::GetFlag(FLAGS_vrp_orders),
-        absl::GetFlag(FLAGS_vrp_precedences), &randomizer, &precedences);
+        absl::GetFlag(FLAGS_vrp_precedences), randomizer, &precedences);
 
     LOG(INFO) << "Adding precedences: ";
     for (const std::pair<int, int>& precedence : precedences) {
