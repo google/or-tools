@@ -147,6 +147,7 @@ Fractional PartialScalarProduct(const DenseRowOrColumn& u,
 Fractional SquaredNorm(const SparseColumn& v);
 Fractional SquaredNorm(const DenseColumn& column);
 Fractional SquaredNorm(const ColumnView& v);
+Fractional SquaredNorm(const ScatteredColumn& v);
 Fractional PreciseSquaredNorm(const SparseColumn& v);
 Fractional PreciseSquaredNorm(const DenseColumn& column);
 Fractional PreciseSquaredNorm(const ScatteredColumn& v);

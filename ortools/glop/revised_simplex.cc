@@ -2508,7 +2508,7 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
   // the basis anyway. So we should know that before hand which is currently
   // hard to do.
   Fractional pivot_from_update_row;
-  if (update_row_.IsComputed()) {
+  if (update_row_.IsComputedFor(leaving_row)) {
     pivot_from_update_row = update_row_.GetCoefficient(entering_col);
   } else {
     // We only need the left inverse and the update row position at the
@@ -3151,7 +3151,20 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       return Status::OK();
     }
 
+    update_row_.ComputeUnitRowLeftInverse(leaving_row);
+    if (!dual_edge_norms_.TestPrecision(leaving_row,
+                                        update_row_.GetUnitRowLeftInverse())) {
+      // We rechoose a potentially different leaving row. Note that if we choose
+      // the same, we shouldn't go back here since the norm will now pass the
+      // test.
+      const Fractional price = dual_pricing_vector_[leaving_row];
+      const DenseColumn& squared_norms = dual_edge_norms_.GetEdgeSquaredNorms();
+      dual_prices_.AddOrUpdate(leaving_row,
+                               Square(price) / squared_norms[leaving_row]);
+      continue;
+    }
     update_row_.ComputeUpdateRow(leaving_row);
+
     if (feasibility_phase) {
       GLOP_RETURN_IF_ERROR(entering_variable_.DualPhaseIChooseEnteringColumn(
           reduced_costs_.AreReducedCostsPrecise(), update_row_, cost_variation,
@@ -3179,12 +3192,8 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
         problem_status_ = ProblemStatus::DUAL_UNBOUNDED;
         solution_dual_ray_ =
             Transpose(update_row_.GetUnitRowLeftInverse().values);
-        update_row_.RecomputeFullUpdateRow(leaving_row);
-        solution_dual_ray_row_combination_.AssignToZero(num_cols_);
-        for (const ColIndex col : update_row_.GetNonZeroPositions()) {
-          solution_dual_ray_row_combination_[col] =
-              update_row_.GetCoefficient(col);
-        }
+        update_row_.ComputeFullUpdateRow(leaving_row,
+                                         &solution_dual_ray_row_combination_);
         if (cost_variation < 0) {
           ChangeSign(&solution_dual_ray_);
           ChangeSign(&solution_dual_ray_row_combination_);

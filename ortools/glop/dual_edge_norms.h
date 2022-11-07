@@ -76,6 +76,13 @@ class DualEdgeNorms {
   // Updates the norms if the columns of the basis where permuted.
   void UpdateDataOnBasisPermutation(const ColumnPermutation& col_perm);
 
+  // Computes exactly the norm of the given leaving row, and returns true if it
+  // is good enough compared to our current norm. In both case update the
+  // current norm with its precise version and decide if we should recompute
+  // norms on the next GetEdgeSquaredNorms().
+  bool TestPrecision(RowIndex leaving_row,
+                     const ScatteredRow& unit_row_left_inverse);
+
   // Updates the norms just before a basis pivot is applied:
   // - The column at leaving_row will leave the basis and the column at
   //   entering_col will enter it.

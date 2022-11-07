@@ -45,6 +45,17 @@ Fractional PreciseSquaredNorm(const SparseColumn& v) {
   return sum.Value();
 }
 
+Fractional SquaredNorm(const ScatteredColumn& v) {
+  if (v.ShouldUseDenseIteration()) {
+    return SquaredNorm(v.values);
+  }
+  Fractional sum(0.0);
+  for (const RowIndex row : v.non_zeros) {
+    sum += Square(v[row]);
+  }
+  return sum;
+}
+
 Fractional PreciseSquaredNorm(const ScatteredColumn& v) {
   if (v.ShouldUseDenseIteration()) {
     return PreciseSquaredNorm(v.values);

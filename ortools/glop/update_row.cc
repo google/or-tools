@@ -34,14 +34,14 @@ UpdateRow::UpdateRow(const CompactSparseMatrix& matrix,
       non_zero_position_list_(),
       non_zero_position_set_(),
       coefficient_(),
-      compute_update_row_(true),
       num_operations_(0),
       parameters_(),
       stats_() {}
 
 void UpdateRow::Invalidate() {
   SCOPED_TIME_STAT(&stats_);
-  compute_update_row_ = true;
+  left_inverse_computed_for_ = kInvalidRow;
+  update_row_computed_for_ = kInvalidRow;
 }
 
 const ScatteredRow& UpdateRow::GetUnitRowLeftInverse() const {
@@ -57,7 +57,10 @@ const ScatteredRow& UpdateRow::ComputeAndGetUnitRowLeftInverse(
 }
 
 void UpdateRow::ComputeUnitRowLeftInverse(RowIndex leaving_row) {
+  if (left_inverse_computed_for_ == leaving_row) return;
+  left_inverse_computed_for_ = leaving_row;
   SCOPED_TIME_STAT(&stats_);
+
   basis_factorization_.LeftSolveForUnitRow(RowToColIndex(leaving_row),
                                            &unit_row_left_inverse_);
 
@@ -71,8 +74,7 @@ void UpdateRow::ComputeUnitRowLeftInverse(RowIndex leaving_row) {
 }
 
 void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
-  if (!compute_update_row_ && update_row_computed_for_ == leaving_row) return;
-  compute_update_row_ = false;
+  if (update_row_computed_for_ == leaving_row) return;
   update_row_computed_for_ = leaving_row;
   ComputeUnitRowLeftInverse(leaving_row);
   SCOPED_TIME_STAT(&stats_);
@@ -109,6 +111,20 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
               transposed_matrix_.ColumnNumEntries(e.column());
         }
       }
+    }
+
+    // The case of size 1 happens often enough to deserve special code.
+    //
+    // TODO(user): The impact is not as high as I hopped though, so not too
+    // important.
+    if (unit_row_left_inverse_filtered_non_zeros_.size() == 1) {
+      ComputeUpdatesForSingleRow(
+          unit_row_left_inverse_filtered_non_zeros_.front());
+      num_operations_ += num_row_wise_entries.value();
+      IF_STATS_ENABLED(stats_.update_row_density.Add(
+          static_cast<double>(non_zero_position_list_.size()) /
+          static_cast<double>(matrix_.num_cols().value())));
+      return;
     }
 
     // Number of entries that ComputeUpdatesColumnWise() will need to look at.
@@ -237,27 +253,22 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
   }
 }
 
-// Note that we use the same algo as ComputeUpdatesColumnWise() here. The
-// others version might be faster, but this is called only once per solve, so
-// it shouldn't be too bad.
-void UpdateRow::RecomputeFullUpdateRow(RowIndex leaving_row) {
-  CHECK(!compute_update_row_);
+void UpdateRow::ComputeUpdatesForSingleRow(ColIndex row_as_col) {
   const ColIndex num_cols = matrix_.num_cols();
-  const Fractional drop_tolerance = parameters_.drop_tolerance();
   coefficient_.resize(num_cols, 0.0);
+
   non_zero_position_list_.clear();
+  const DenseBitRow& is_relevant = variables_info_.GetIsRelevantBitRow();
+  const Fractional drop_tolerance = parameters_.drop_tolerance();
+  const Fractional multiplier = unit_row_left_inverse_[row_as_col];
+  for (const EntryIndex i : transposed_matrix_.Column(row_as_col)) {
+    const ColIndex pos = RowToColIndex(transposed_matrix_.EntryRow(i));
+    if (!is_relevant[pos]) continue;
 
-  // Fills the only position at one in the basic columns.
-  coefficient_[basis_[leaving_row]] = 1.0;
-  non_zero_position_list_.push_back(basis_[leaving_row]);
-
-  // Fills the non-basic column.
-  for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
-    const Fractional coeff =
-        matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
-    if (std::abs(coeff) > drop_tolerance) {
-      non_zero_position_list_.push_back(col);
-      coefficient_[col] = coeff;
+    const Fractional v = multiplier * transposed_matrix_.EntryCoefficient(i);
+    if (std::abs(v) > drop_tolerance) {
+      coefficient_[pos] = v;
+      non_zero_position_list_.push_back(pos);
     }
   }
 }
@@ -273,6 +284,7 @@ void UpdateRow::ComputeUpdatesColumnWise() {
     // Coefficient of the column right inverse on the 'leaving_row'.
     const Fractional coeff =
         matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
+
     // Nothing to do if 'coeff' is (almost) zero which does happen due to
     // sparsity. Note that it shouldn't be too bad to use a non-zero drop
     // tolerance here because even if we introduce some precision issues, the
@@ -280,6 +292,30 @@ void UpdateRow::ComputeUpdatesColumnWise() {
     if (std::abs(coeff) > drop_tolerance) {
       non_zero_position_list_.push_back(col);
       coefficient_[col] = coeff;
+    }
+  }
+}
+
+// Note that we use the same algo as ComputeUpdatesColumnWise() here. The
+// others version might be faster, but this is called at most once per solve, so
+// it shouldn't be too bad.
+void UpdateRow::ComputeFullUpdateRow(RowIndex leaving_row,
+                                     DenseRow* output) const {
+  CHECK_EQ(leaving_row, left_inverse_computed_for_);
+
+  const ColIndex num_cols = matrix_.num_cols();
+  output->AssignToZero(num_cols);
+
+  // Fills the only position at one in the basic columns.
+  (*output)[basis_[leaving_row]] = 1.0;
+
+  // Fills the non-basic column.
+  const Fractional drop_tolerance = parameters_.drop_tolerance();
+  for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
+    const Fractional coeff =
+        matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
+    if (std::abs(coeff) > drop_tolerance) {
+      (*output)[col] = coeff;
     }
   }
 }
