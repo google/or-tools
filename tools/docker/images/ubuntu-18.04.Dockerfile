@@ -82,6 +82,7 @@ ENV OR_TOOLS_PATCH ${OR_TOOLS_PATCH:-9999}
 # Download sources
 # use SRC_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
+SHELL ["/bin/bash", "-c"]
 RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch --depth=1 https://github.com/google/or-tools \
 && [[ $(cd or-tools && git rev-parse --verify HEAD) == ${SRC_GIT_SHA1} ]]
 WORKDIR /root/or-tools

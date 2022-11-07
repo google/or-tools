@@ -37,7 +37,7 @@ RUN curl --location-trusted \
 && tar xvf swig-4.0.2.tar.gz \
 && rm swig-4.0.2.tar.gz \
 && cd swig-4.0.2 \
-&& ./configure --prefix=/usr \
+&& ./configure --prefix=/usr/local \
 && make -j 4 \
 && make install \
 && cd .. \
