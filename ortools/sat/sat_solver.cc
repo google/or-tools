@@ -1021,11 +1021,9 @@ void SatSolver::Backtrack(int target_level) {
   // Per the SatPropagator interface, this is needed before calling Untrail.
   trail_->SetDecisionLevel(target_level);
 
-  int target_trail_index = 0;
-  while (current_decision_level_ > target_level) {
-    --current_decision_level_;
-    target_trail_index = decisions_[current_decision_level_].trail_index;
-  }
+  current_decision_level_ = target_level;
+  const int target_trail_index =
+      decisions_[current_decision_level_].trail_index;
 
   Untrail(target_trail_index);
   last_decision_or_backtrack_trail_index_ = trail_->Index();

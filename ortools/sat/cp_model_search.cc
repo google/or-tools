@@ -654,6 +654,11 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
         params.search_branching() == SatParameters::FIXED_SEARCH) {
       continue;
     }
+    // TODO(user): Enable probing_search in deterministic mode.
+    // Currently it timeouts on small problems as the deterministic time limit
+    // never hits the sharding limit.
+    if (params.use_probing_search() && params.interleave_search()) continue;
+
     if (cp_model.has_objective()) {
       if (cp_model.objective().vars_size() <= 1 &&
           params.optimize_with_core()) {

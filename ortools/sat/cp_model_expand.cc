@@ -521,14 +521,14 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context) {
   const int target_ref = element.target();
   const Domain index_domain = context->DomainOf(index_ref);
 
-  BoolArgumentProto* bool_or =
-      context->working_model->add_constraints()->mutable_bool_or();
+  BoolArgumentProto* exactly_one =
+      context->working_model->add_constraints()->mutable_exactly_one();
 
   for (const int64_t v : index_domain.Values()) {
     const int var = element.vars(v);
     const Domain var_domain = context->DomainOf(var);
     const int index_lit = context->GetOrCreateVarValueEncoding(index_ref, v);
-    bool_or->add_literals(index_lit);
+    exactly_one->add_literals(index_lit);
 
     if (var_domain.IsFixed()) {
       context->AddImplyInDomain(index_lit, target_ref, var_domain);
