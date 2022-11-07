@@ -19,16 +19,16 @@ namespace operations_research {
 // We include it here for build simplicity.
 // 
 // We have made 2 modification:
-//   - replace the #define with an inline method.
-//   - rename mix into fast_mix and hide inside a unnamed namespace.
+//   - replace the #define with an inline method to fix compilation on windows.
+//   - rename mix into mix_internal and hide inside a unnamed namespace.
 
 namespace {
 // Compression function for Merkle-Damgard construction.
 // This function is generated using the framework provided.
-inline uint64_t fast_mix(uint64_t h) {
-  (h) ^= (h) >> 23;
-  (h) *= 0x2127599bf4325c37ULL;
-  (h) ^= (h) >> 47;
+inline uint64_t mix_internal(uint64_t h) {
+  h ^= h >> 23;
+  h *= 0x2127599bf4325c37ULL;
+  h ^= h >> 47;
   return h;
 }
 }  // namespace
@@ -43,7 +43,7 @@ uint64_t fasthash64(const void* buf, size_t len, uint64_t seed) {
 
   while (pos != end) {
     v = *pos++;
-    h ^= fast_mix(v);
+    h ^= mix_internal(v);
     h *= m;
   }
 
@@ -65,13 +65,11 @@ uint64_t fasthash64(const void* buf, size_t len, uint64_t seed) {
       v ^= (uint64_t)pos2[1] << 8;
     case 1:
       v ^= (uint64_t)pos2[0];
-      h ^= fast_mix(v);
+      h ^= mix_internal(v);
       h *= m;
   }
 
-  return fast_mix(h);
+  return mix_internal(h);
 }
-
-#undef fast_mix
 
 }  // namespace operations_research
