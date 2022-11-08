@@ -35,7 +35,7 @@ ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
 
 namespace operations_research {
 namespace {
-
+/*
 TEST(TspLibParserTest, LoadAllDataSets) {
   static const char* kArchives[] = {
       "operations_research_data/TSPLIB95/ALL_tsp.tar.gz",
@@ -294,7 +294,7 @@ TEST(TspLibParserTest, LoadAllDataSets) {
     }
   }
 }
-
+*/
 TEST(TspLibParserTest, GeneratedDataSets) {
   static const char kName[] = "GoogleTest";
   static const char* const kTypes[] = {"TSP", "CVRP"};
