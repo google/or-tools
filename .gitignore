@@ -4,6 +4,7 @@ Makefile.local~
 /build_make/
 /install_make/
 /dependencies/
+/or-tools_*
 /or-tools_cpp*
 /or-tools_dotnet*
 /or-tools_java*
