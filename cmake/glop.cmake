@@ -78,7 +78,6 @@ target_sources(glop PRIVATE
   ortools/base/file.h
   ortools/base/integral_types.h
   ortools/base/log_severity.h
-  ortools/base/logging.cc
   ortools/base/logging.h
   ortools/base/logging_utilities.cc
   ortools/base/logging_utilities.h
