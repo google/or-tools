@@ -278,6 +278,15 @@ class RevisedSimplex {
 
   enum class Phase { FEASIBILITY, OPTIMIZATION, PUSH };
 
+  enum class RefactorizationReason {
+    DEFAULT,
+    SMALL_PIVOT,
+    NORM,
+    RC,
+    VAR_VALUES,
+    FINAL_CHECK
+  };
+
   // Propagates parameters_ to all the other classes that need it.
   //
   // TODO(user): Maybe a better design is for them to have a reference to a
@@ -304,7 +313,8 @@ class RevisedSimplex {
   std::string SimpleVariableInfo(ColIndex col) const;
 
   // Displays a short string with the current iteration and objective value.
-  void DisplayIterationInfo(bool primal);
+  void DisplayIterationInfo(bool primal, RefactorizationReason reason =
+                                             RefactorizationReason::DEFAULT);
 
   // Displays the error bounds of the current solution.
   void DisplayErrors();
