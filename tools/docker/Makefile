@@ -535,7 +535,7 @@ export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz: $1_$2_$3_archive 
  -v `pwd`/export:/export \
  ${IMAGE}:$$< \
  "cp or-tools_*_v*.tar.gz /export/$1/$2"
-	cp export/$1/$2/or-tools_*_$3_v*.tar.gz $$@
+	cp export/$1/$2/or-tools_*_$3*_v*.tar.gz $$@
 
 .PHONY: clean_$1_$2_$3_export
 clean_$1_$2_$3_export:
