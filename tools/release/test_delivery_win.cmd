@@ -21,6 +21,8 @@ which.exe C:\python39-64\python.exe || exit 1
 echo C:\python39-64\python.exe: FOUND | tee.exe -a test.log
 which.exe C:\python310-64\python.exe || exit 1
 echo C:\python310-64\python.exe: FOUND | tee.exe -a test.log
+which.exe C:\python311-64\python.exe || exit 1
+echo C:\python311-64\python.exe: FOUND | tee.exe -a test.log
 
 set LOCAL_PATH=%PATH%
 
