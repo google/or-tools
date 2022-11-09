@@ -709,34 +709,32 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       result.resize(target);
     }
 
-    int index = 1;
+    int num_random = 0;
+    int num_random_qr = 0;
     while (result.size() < target) {
-      const int id = (index + 1) / 2;
-      if (index % 2 == 0) {
-        SatParameters new_params = base_params;
-        new_params.set_search_branching(
-            SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
-        new_params.set_randomize_search(true);
-        new_params.set_search_randomization_tolerance(index);
-        new_params.set_random_seed(base_params.random_seed() + result.size() +
-                                   1);
-        new_params.set_name(absl::StrCat("random_quick_restart_", id));
-        result.push_back(new_params);
-      } else {
-        SatParameters new_params = base_params;
+      SatParameters new_params = base_params;
+      if (num_random <= num_random_qr) {  // Random search.
         if (cp_model.search_strategy().empty()) {
           new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         } else {
           new_params.set_search_branching(SatParameters::FIXED_SEARCH);
         }
         new_params.set_randomize_search(true);
-        new_params.set_search_randomization_tolerance(index);
+        new_params.set_search_randomization_tolerance(++num_random);
         new_params.set_random_seed(base_params.random_seed() + result.size() +
                                    1);
-        new_params.set_name(absl::StrCat("random_", id));
-        result.push_back(new_params);
+        new_params.set_name(absl::StrCat("random_", num_random));
+      } else {  // Random quick restart.
+        new_params.set_search_branching(
+            SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+        new_params.set_randomize_search(true);
+        new_params.set_search_randomization_tolerance(++num_random_qr);
+        new_params.set_random_seed(base_params.random_seed() + result.size() +
+                                   1);
+        new_params.set_name(
+            absl::StrCat("random_quick_restart_", num_random_qr));
       }
-      ++index;
+      result.push_back(new_params);
     }
   }
 
