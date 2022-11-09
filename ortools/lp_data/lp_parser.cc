@@ -26,15 +26,13 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "absl/strings/strip.h"
-#include "ortools/base/case.h"
-#include "ortools/base/map_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/proto_utils.h"
+#if defined(USE_LP_PARSER)
 #include "re2/re2.h"
+#endif  // defined(USE_LP_PARSER)
 
 #if defined(USE_LP_PARSER)
-
 namespace operations_research {
 namespace glop {
 
