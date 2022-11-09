@@ -902,6 +902,9 @@ int SharedBoundsManager::NumBoundsExported(const std::string& worker_name) {
   return it->second;
 }
 
+SharedClausesManager::SharedClausesManager(bool always_synchronize)
+    : always_synchronize_(always_synchronize) {}
+
 int SharedClausesManager::RegisterNewId() {
   absl::MutexLock mutex_lock(&mutex_);
   const int id = id_to_last_processed_binary_clause_.size();
@@ -924,6 +927,7 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
   const auto [unused_it, inserted] = added_binary_clauses_set_.insert(p);
   if (inserted) {
     added_binary_clauses_.push_back(p);
+    if (always_synchronize_) ++last_visible_clause_;
     id_to_clauses_exported_[id]++;
     // Small optim. If the worker is already up to date with clauses to import,
     // we can mark this new clause as already seen.
@@ -939,9 +943,14 @@ void SharedClausesManager::GetUnseenBinaryClauses(
   new_clauses->clear();
   absl::MutexLock mutex_lock(&mutex_);
   const int last_binary_clause_seen = id_to_last_processed_binary_clause_[id];
+
+  // Protects against the optim that increase the last_binary_clause_seen in
+  // AddBinaryClause(). Checks is nothing needs to be done.
+  if (last_binary_clause_seen >= last_visible_clause_) return;
+
   new_clauses->assign(added_binary_clauses_.begin() + last_binary_clause_seen,
-                      added_binary_clauses_.end());
-  id_to_last_processed_binary_clause_[id] = added_binary_clauses_.size();
+                      added_binary_clauses_.begin() + last_visible_clause_);
+  id_to_last_processed_binary_clause_[id] = last_visible_clause_;
 }
 
 void SharedClausesManager::LogStatistics(SolverLogger* logger) {
@@ -958,6 +967,12 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
       SOLVER_LOG(logger, "  '", entry.first, "': ", entry.second);
     }
   }
+}
+
+void SharedClausesManager::Synchronize() {
+  absl::MutexLock mutex_lock(&mutex_);
+  last_visible_clause_ = added_binary_clauses_.size();
+  // TODO(user): We could cleanup added_binary_clauses_ periodically.
 }
 
 void SharedStatistics::AddStats(

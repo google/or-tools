@@ -711,6 +711,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
     int index = 1;
     while (result.size() < target) {
+      const int id = (index + 1) / 2;
       if (index % 2 == 0) {
         SatParameters new_params = base_params;
         new_params.set_search_branching(
@@ -719,7 +720,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
         new_params.set_search_randomization_tolerance(index);
         new_params.set_random_seed(base_params.random_seed() + result.size() +
                                    1);
-        new_params.set_name(absl::StrCat("random_quick_restart_", index));
+        new_params.set_name(absl::StrCat("random_quick_restart_", id));
         result.push_back(new_params);
       } else {
         SatParameters new_params = base_params;
@@ -732,7 +733,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
         new_params.set_search_randomization_tolerance(index);
         new_params.set_random_seed(base_params.random_seed() + result.size() +
                                    1);
-        new_params.set_name(absl::StrCat("random_", index));
+        new_params.set_name(absl::StrCat("random_", id));
         result.push_back(new_params);
       }
       ++index;

@@ -886,8 +886,8 @@ namespace {
 // Registers a callback that will export variables bounds fixed at level 0 of
 // the search. This should not be registered to a LNS search.
 void RegisterVariableBoundsLevelZeroExport(
-    const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
-    Model* model) {
+    const CpModelProto& /*model_proto*/,
+    SharedBoundsManager* shared_bounds_manager, Model* model) {
   CHECK(shared_bounds_manager != nullptr);
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
@@ -2840,17 +2840,25 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         shared_incomplete_solutions.get());
   }
 
+  // Set up synchronization mode in parallel.
+  const bool always_synchronize =
+      !params.interleave_search() || params.num_workers() <= 1;
+
   std::unique_ptr<SharedClausesManager> shared_clauses;
   if (params.share_binary_clauses()) {
-    shared_clauses = std::make_unique<SharedClausesManager>();
+    shared_clauses = std::make_unique<SharedClausesManager>(always_synchronize);
   }
+
+  SharedResponseManager* shared_response_manager =
+      global_model->GetOrCreate<SharedResponseManager>();
+  shared_response_manager->SetSynchronizationMode(always_synchronize);
 
   SharedClasses shared;
   shared.model_proto = &model_proto;
   shared.wall_timer = global_model->GetOrCreate<WallTimer>();
   shared.time_limit = global_model->GetOrCreate<ModelSharedTimeLimit>();
   shared.bounds = shared_bounds_manager.get();
-  shared.response = global_model->GetOrCreate<SharedResponseManager>();
+  shared.response = shared_response_manager;
   shared.relaxation_solutions = shared_relaxation_solutions.get();
   shared.lp_solutions = shared_lp_solutions.get();
   shared.incomplete_solutions = shared_incomplete_solutions.get();
@@ -2872,6 +2880,9 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     }
     if (shared.lp_solutions != nullptr) {
       shared.lp_solutions->Synchronize();
+    }
+    if (shared.clauses != nullptr) {
+      shared.clauses->Synchronize();
     }
   }));
 
@@ -3300,11 +3311,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Initial ", CpModelStats(model_proto));
-
-  // Set up synchronization mode in parallel.
-  const bool always_synchronize =
-      !params.interleave_search() || params.num_workers() <= 1;
-  shared_response_manager->SetSynchronizationMode(always_synchronize);
 
   // Special case for pure-sat problem.
   // TODO(user): improve the normal presolver to do the same thing.

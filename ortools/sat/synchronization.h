@@ -485,22 +485,29 @@ class SharedBoundsManager {
 //
 // It is thread-safe.
 //
-// Note that this uses literal as encoded in a cp_model.proto. The literals can
-// thus be negative numbers.
+// Note that this uses literal as encoded in a cp_model.proto. Thus, the
+// literals can be negative numbers.
 class SharedClausesManager {
  public:
+  explicit SharedClausesManager(bool always_synchronize);
   void AddBinaryClause(int id, int lit1, int lit2);
 
-  // Fills flat_clauses with
-  //   (lit1 of clause1, lit2 of clause1, lit1 of clause 2, lit2 of clause2 ...)
+  // Fills new_clauses with
+  //   {{lit1 of clause1, lit2 of clause1},
+  //    {lit1 of clause2, lit2 of clause2},
+  //     ...}
   void GetUnseenBinaryClauses(int id,
                               std::vector<std::pair<int, int>>* new_clauses);
 
+  // Ids are used to identify which worker is exporting/importing clauses.
   int RegisterNewId();
   void SetWorkerNameForId(int id, const std::string& worker_name);
 
   // Search statistics.
   void LogStatistics(SolverLogger* logger);
+
+  // Unlocks waiting binary clauses for workers if always_synchronize is false.
+  void Synchronize();
 
  private:
   absl::Mutex mutex_;
@@ -509,9 +516,10 @@ class SharedClausesManager {
       ABSL_GUARDED_BY(mutex_);
   std::vector<std::pair<int, int>> added_binary_clauses_
       ABSL_GUARDED_BY(mutex_);
-  std::vector<int64_t> id_to_last_processed_binary_clause_
-      ABSL_GUARDED_BY(mutex_);
+  std::vector<int> id_to_last_processed_binary_clause_ ABSL_GUARDED_BY(mutex_);
   std::vector<int64_t> id_to_clauses_exported_;
+  int last_visible_clause_ ABSL_GUARDED_BY(mutex_) = 0;
+  const bool always_synchronize_ = true;
 
   // Used for reporting statistics.
   absl::flat_hash_map<int, std::string> id_to_worker_name_;
@@ -520,7 +528,7 @@ class SharedClausesManager {
 // Simple class to add statistics by name and print them at the end.
 class SharedStatistics {
  public:
-  SharedStatistics() {}
+  SharedStatistics() = default;
 
   // Adds a bunch of stats, adding count for the same key together.
   void AddStats(absl::Span<const std::pair<std::string, int64_t>> stats);
