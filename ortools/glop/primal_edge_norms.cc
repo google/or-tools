@@ -75,15 +75,14 @@ const DenseRow& PrimalEdgeNorms::GetMatrixColumnNorms() {
   return matrix_column_norms_;
 }
 
-void PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
+bool PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
     ColIndex entering_col, const ScatteredColumn& direction) {
   if (!recompute_edge_squared_norms_) {
     SCOPED_TIME_STAT(&stats_);
     // Recompute the squared norm of the edge used during this
-    // iteration, i.e. the entering edge. Note the PreciseSquaredNorm()
-    // since it is a small price to pay for an increased precision.
+    // iteration, i.e. the entering edge.
     const Fractional old_squared_norm = edge_squared_norms_[entering_col];
-    const Fractional precise_squared_norm = 1.0 + PreciseSquaredNorm(direction);
+    const Fractional precise_squared_norm = 1.0 + SquaredNorm(direction);
     edge_squared_norms_[entering_col] = precise_squared_norm;
 
     const Fractional precise_norm = sqrt(precise_squared_norm);
@@ -97,7 +96,14 @@ void PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
       recompute_edge_squared_norms_ = true;
       for (bool* watcher : watchers_) *watcher = true;
     }
+
+    if (old_squared_norm < 0.25 * precise_squared_norm) {
+      VLOG(1) << "Imprecise norm, reprice. old=" << old_squared_norm
+              << " new=" << precise_squared_norm;
+      return false;
+    }
   }
+  return true;
 }
 
 void PrimalEdgeNorms::UpdateBeforeBasisPivot(ColIndex entering_col,

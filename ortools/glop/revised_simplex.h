@@ -281,6 +281,7 @@ class RevisedSimplex {
   enum class RefactorizationReason {
     DEFAULT,
     SMALL_PIVOT,
+    IMPRECISE_PIVOT,
     NORM,
     RC,
     VAR_VALUES,
@@ -681,6 +682,9 @@ class RevisedSimplex {
   // Vector of strings containing the names of variables.
   // Indexed by column number.
   StrictITIVector<ColIndex, std::string> variable_name_;
+
+  // Only used for logging. What triggered a refactorization.
+  RefactorizationReason last_refactorization_reason_;
 
   // Information about the solution computed by the last Solve().
   Fractional solution_objective_value_;

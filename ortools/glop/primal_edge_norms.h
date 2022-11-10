@@ -99,7 +99,10 @@ class PrimalEdgeNorms {
   // the precision is not good enough (see recompute_edges_norm_threshold in
   // GlopParameters). As a side effect, this replace the entering_col edge
   // norm with its precise version.
-  void TestEnteringEdgeNormPrecision(ColIndex entering_col,
+  //
+  // Returns false if the old norm is less that 0.25 the new one. We might want
+  // to change the leaving variable if this happens.
+  bool TestEnteringEdgeNormPrecision(ColIndex entering_col,
                                      const ScatteredColumn& direction);
 
   // Updates any internal data BEFORE the given simplex pivot is applied to B.

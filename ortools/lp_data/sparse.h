@@ -387,9 +387,24 @@ class CompactSparseMatrix {
   // Returns the scalar product of the given row vector with the column of index
   // col of this matrix. This function is declared in the .h for efficiency.
   Fractional ColumnScalarProduct(ColIndex col, const DenseRow& vector) const {
+    // We expand ourselves since we don't really care about the floating
+    // point order of operation.
+    const EntryIndex start = starts_[col];
+    const EntryIndex end = starts_[col + 1];
+    const int num_blocks = (end - start).value() / 4;
+    EntryIndex i(start);
     Fractional result = 0.0;
-    for (const EntryIndex i : Column(col)) {
+    for (int block = 0; block < num_blocks; ++block) {
+      result +=
+          EntryCoefficient(i) * vector[RowToColIndex(EntryRow(i))] +
+          EntryCoefficient(i + 1) * vector[RowToColIndex(EntryRow(i + 1))] +
+          EntryCoefficient(i + 2) * vector[RowToColIndex(EntryRow(i + 2))] +
+          EntryCoefficient(i + 3) * vector[RowToColIndex(EntryRow(i + 3))];
+      i += 4;
+    }
+    while (i < end) {
       result += EntryCoefficient(i) * vector[RowToColIndex(EntryRow(i))];
+      ++i;
     }
     return result;
   }

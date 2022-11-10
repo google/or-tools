@@ -2545,6 +2545,7 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
                  (1 + std::abs(pivot_from_direction))) {
     VLOG(1) << "Refactorizing: imprecise pivot " << pivot_from_direction
             << " diff = " << diff;
+    last_refactorization_reason_ = RefactorizationReason::IMPRECISE_PIVOT;
     GLOP_RETURN_IF_ERROR(basis_factorization_.ForceRefactorization());
   } else {
     GLOP_RETURN_IF_ERROR(
@@ -2736,6 +2737,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
   num_consecutive_degenerate_iterations_ = 0;
   bool refactorize = false;
+  last_refactorization_reason_ = RefactorizationReason::DEFAULT;
 
   // At this point, we are not sure the prices are always up to date, so
   // lets always reset them for the first iteration below.
@@ -2757,13 +2759,20 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
         ScopedTimeDistributionUpdater timer(&iteration_stats_.total));
 
     // Trigger a refactorization if one of the class we use request it.
-    if (reduced_costs_.NeedsBasisRefactorization()) refactorize = true;
-    if (primal_edge_norms_.NeedsBasisRefactorization()) refactorize = true;
+    if (!refactorize && reduced_costs_.NeedsBasisRefactorization()) {
+      last_refactorization_reason_ = RefactorizationReason::RC;
+      refactorize = true;
+    }
+    if (!refactorize && primal_edge_norms_.NeedsBasisRefactorization()) {
+      last_refactorization_reason_ = RefactorizationReason::NORM;
+      refactorize = true;
+    }
     GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
 
     if (basis_factorization_.IsRefactorized()) {
       CorrectErrorsOnVariableValues();
-      DisplayIterationInfo(/*primal=*/true);
+      DisplayIterationInfo(/*primal=*/true, last_refactorization_reason_);
+      last_refactorization_reason_ = RefactorizationReason::DEFAULT;
 
       if (phase_ == Phase::FEASIBILITY) {
         // Since the variable values may have been recomputed, we need to
@@ -2819,6 +2828,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
       VLOG(1) << "Optimal reached, double checking...";
       reduced_costs_.MakeReducedCostsPrecise();
       refactorize = true;
+      last_refactorization_reason_ = RefactorizationReason::FINAL_CHECK;
       continue;
     }
 
@@ -2827,9 +2837,14 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
     // Solve the system B.d = a with a the entering column.
     ComputeDirection(entering_col);
 
-    // This might trigger a recomputation on the next iteration, but we
-    // finish this one even if the price is imprecise.
-    primal_edge_norms_.TestEnteringEdgeNormPrecision(entering_col, direction_);
+    // This might trigger a recomputation on the next iteration. If it returns
+    // false, we will also try to see if there is not another more promising
+    // entering column.
+    if (!primal_edge_norms_.TestEnteringEdgeNormPrecision(entering_col,
+                                                          direction_)) {
+      primal_prices_.RecomputePriceAt(entering_col);
+      continue;
+    }
     const Fractional reduced_cost =
         reduced_costs_.TestEnteringReducedCostPrecision(entering_col,
                                                         direction_);
@@ -2868,7 +2883,10 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
           ChooseLeavingVariableRow(entering_col, reduced_cost, &refactorize,
                                    &leaving_row, &step_length, &target_bound));
     }
-    if (refactorize) continue;
+    if (refactorize) {
+      last_refactorization_reason_ = RefactorizationReason::SMALL_PIVOT;
+      continue;
+    }
 
     if (step_length == kInfinity || step_length == -kInfinity) {
       // On a validated input, we shouldn't have a length of -infinity even
@@ -2878,6 +2896,8 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
           !reduced_costs_.AreReducedCostsPrecise()) {
         VLOG(1) << "Infinite step length, double checking...";
         reduced_costs_.MakeReducedCostsPrecise();
+        refactorize = true;
+        last_refactorization_reason_ = RefactorizationReason::FINAL_CHECK;
         continue;
       }
       if (phase_ == Phase::FEASIBILITY) {
@@ -3024,7 +3044,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
   num_consecutive_degenerate_iterations_ = 0;
   bool refactorize = false;
-  RefactorizationReason reason = RefactorizationReason::DEFAULT;
+  last_refactorization_reason_ = RefactorizationReason::DEFAULT;
 
   bound_flip_candidates_.clear();
 
@@ -3046,12 +3066,12 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
     //
     // TODO(user): Estimate when variable values are imprecise and refactor too.
     const bool old_refactorize_value = refactorize;
-    if (reduced_costs_.NeedsBasisRefactorization()) {
-      if (!refactorize) reason = RefactorizationReason::RC;
+    if (!refactorize && reduced_costs_.NeedsBasisRefactorization()) {
+      last_refactorization_reason_ = RefactorizationReason::RC;
       refactorize = true;
     }
-    if (dual_edge_norms_.NeedsBasisRefactorization()) {
-      if (!refactorize) reason = RefactorizationReason::NORM;
+    if (!refactorize && dual_edge_norms_.NeedsBasisRefactorization()) {
+      last_refactorization_reason_ = RefactorizationReason::NORM;
       refactorize = true;
     }
     GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
@@ -3112,8 +3132,8 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
         }
       }
 
-      DisplayIterationInfo(/*primal=*/false, reason);
-      reason = RefactorizationReason::DEFAULT;
+      DisplayIterationInfo(/*primal=*/false, last_refactorization_reason_);
+      last_refactorization_reason_ = RefactorizationReason::DEFAULT;
     } else {
       // Updates from the previous iteration that can be skipped if we
       // recompute everything (see other case above).
@@ -3146,7 +3166,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
         reduced_costs_.ClearAndRemoveCostShifts();
         IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.refactorize));
         refactorize = true;
-        reason = RefactorizationReason::FINAL_CHECK;
+        last_refactorization_reason_ = RefactorizationReason::FINAL_CHECK;
         continue;
       }
       if (feasibility_phase) {
@@ -3202,7 +3222,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
         VLOG(1) << "No entering column. Double checking...";
         IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.refactorize));
         refactorize = true;
-        reason = RefactorizationReason::FINAL_CHECK;
+        last_refactorization_reason_ = RefactorizationReason::FINAL_CHECK;
         continue;
       }
       DCHECK(basis_factorization_.IsRefactorized());
@@ -3234,7 +3254,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       VLOG(1) << "Trying not to pivot by " << entering_coeff;
       IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.refactorize));
       refactorize = true;
-      reason = RefactorizationReason::SMALL_PIVOT;
+      last_refactorization_reason_ = RefactorizationReason::SMALL_PIVOT;
       continue;
     }
 
@@ -3253,7 +3273,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
                 << direction_infinity_norm_;
         IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.refactorize));
         refactorize = true;
-        reason = RefactorizationReason::SMALL_PIVOT;
+        last_refactorization_reason_ = RefactorizationReason::SMALL_PIVOT;
         continue;
       }
     }
@@ -3583,11 +3603,14 @@ void RevisedSimplex::DisplayIterationInfo(bool primal,
       case RefactorizationReason::SMALL_PIVOT:
         info = " [small pivot]";
         break;
+      case RefactorizationReason::IMPRECISE_PIVOT:
+        info = " [imprecise pivot]";
+        break;
       case RefactorizationReason::NORM:
-        info = " [norm]";
+        info = " [norms]";
         break;
       case RefactorizationReason::RC:
-        info = " [rc]";
+        info = " [reduced costs]";
         break;
       case RefactorizationReason::VAR_VALUES:
         info = " [var values]";

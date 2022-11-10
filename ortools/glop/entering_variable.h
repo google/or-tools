@@ -108,6 +108,7 @@ class EnteringVariable {
   // Store a column with its update coefficient and ratio.
   // This is used during the dual phase I & II ratio tests.
   struct ColWithRatio {
+    ColWithRatio() = default;
     ColWithRatio(ColIndex _col, Fractional reduced_cost, Fractional coeff_m)
         : col(_col), ratio(reduced_cost / coeff_m), coeff_magnitude(coeff_m) {}
 

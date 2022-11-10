@@ -60,6 +60,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
                                    ? parameters_.minimum_acceptable_pivot()
                                    : parameters_.ratio_test_zero_threshold();
 
+  Fractional variation_magnitude = std::abs(cost_variation) - threshold;
+
   // Harris ratio test. See below for more explanation. Here this is used to
   // prune the first pass by not enqueueing ColWithRatio for columns that have
   // a ratio greater than the current harris_ratio.
@@ -82,31 +84,37 @@ Status EnteringVariable::DualChooseEnteringColumn(
     const Fractional coeff = (cost_variation > 0.0) ? update_coefficient[col]
                                                     : -update_coefficient[col];
 
-    // In this case, at some point the reduced cost will be positive if not
-    // already, and the column will be dual-infeasible.
+    ColWithRatio entry;
     if (can_decrease.IsSet(col) && coeff > threshold) {
-      if (!is_boxed[col]) {
-        if (-reduced_costs[col] > harris_ratio * coeff) continue;
-        harris_ratio = std::min(
-            harris_ratio, (-reduced_costs[col] + harris_tolerance) / coeff);
-        harris_ratio = std::max(minimum_delta / coeff, harris_ratio);
-      }
-      breakpoints_.push_back(ColWithRatio(col, -reduced_costs[col], coeff));
+      // In this case, at some point the reduced cost will be positive if not
+      // already, and the column will be dual-infeasible.
+      if (-reduced_costs[col] > harris_ratio * coeff) continue;
+      entry = ColWithRatio(col, -reduced_costs[col], coeff);
+    } else if (can_increase.IsSet(col) && coeff < -threshold) {
+      // In this case, at some point the reduced cost will be negative if not
+      // already, and the column will be dual-infeasible.
+      if (reduced_costs[col] > harris_ratio * -coeff) continue;
+      entry = ColWithRatio(col, reduced_costs[col], -coeff);
+    } else {
       continue;
     }
 
-    // In this case, at some point the reduced cost will be negative if not
-    // already, and the column will be dual-infeasible.
-    if (can_increase.IsSet(col) && coeff < -threshold) {
-      if (!is_boxed[col]) {
-        if (reduced_costs[col] > harris_ratio * -coeff) continue;
-        harris_ratio = std::min(
-            harris_ratio, (reduced_costs[col] + harris_tolerance) / -coeff);
-        harris_ratio = std::max(minimum_delta / -coeff, harris_ratio);
+    const Fractional hr =
+        std::max(minimum_delta / entry.coeff_magnitude,
+                 entry.ratio + harris_tolerance / entry.coeff_magnitude);
+    if (hr < harris_ratio) {
+      if (is_boxed[col]) {
+        const Fractional delta =
+            variables_info_.GetBoundDifference(col) * entry.coeff_magnitude;
+        if (delta >= variation_magnitude) {
+          harris_ratio = hr;
+        }
+      } else {
+        harris_ratio = hr;
       }
-      breakpoints_.push_back(ColWithRatio(col, reduced_costs[col], -coeff));
-      continue;
     }
+
+    breakpoints_.push_back(entry);
   }
 
   // Process the breakpoints in priority order as suggested by Maros in
@@ -131,7 +139,6 @@ Status EnteringVariable::DualChooseEnteringColumn(
   bound_flip_candidates->clear();
   Fractional step = 0.0;
   Fractional best_coeff = -1.0;
-  Fractional variation_magnitude = std::abs(cost_variation);
   equivalent_entering_choices_.clear();
   while (!breakpoints_.empty()) {
     const ColWithRatio top = breakpoints_.front();
@@ -148,11 +155,11 @@ Status EnteringVariable::DualChooseEnteringColumn(
     //
     // Note that the actual flipping will be done afterwards by
     // MakeBoxedVariableDualFeasible() in revised_simplex.cc.
-    if (variation_magnitude > threshold) {
+    if (variation_magnitude > 0.0) {
       if (is_boxed[top.col]) {
         variation_magnitude -=
             variables_info_.GetBoundDifference(top.col) * top.coeff_magnitude;
-        if (variation_magnitude > threshold) {
+        if (variation_magnitude > 0.0) {
           bound_flip_candidates->push_back(top.col);
           std::pop_heap(breakpoints_.begin(), breakpoints_.end());
           breakpoints_.pop_back();
@@ -168,15 +175,15 @@ Status EnteringVariable::DualChooseEnteringColumn(
       // Update harris_ratio. Note that because we process ratio in order, the
       // harris ratio can only get smaller if the coeff_magnitude is bigger
       // than the one of the best coefficient.
-      harris_ratio = std::min(
-          harris_ratio, top.ratio + harris_tolerance / top.coeff_magnitude);
-
+      //
       // If the dual infeasibility is too high, the harris_ratio can be
-      // negative. In this case we set it to 0.0, allowing any infeasible
-      // position to enter the basis. This is quite important because its
-      // helps in the choice of a stable pivot.
-      harris_ratio =
-          std::max(harris_ratio, minimum_delta / top.coeff_magnitude);
+      // negative. To avoid this we always allow for a minimum step even if
+      // we push some already infeasible variable further away. This is quite
+      // important because its helps in the choice of a stable pivot.
+      harris_ratio = std::min(
+          harris_ratio,
+          std::max(minimum_delta / top.coeff_magnitude,
+                   top.ratio + harris_tolerance / top.coeff_magnitude));
 
       if (top.coeff_magnitude == best_coeff && top.ratio == step) {
         DCHECK_NE(*entering_col, kInvalidCol);
