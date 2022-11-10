@@ -147,7 +147,17 @@ void VrpInitialRoutes() {
   routing.GetMutableDimension("Distance")->SetGlobalSpanCostCoefficient(100);
   // [END distance_constraint]
 
-  // Get initial solution from routes.
+  // [START parameters]
+  RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
+  searchParameters.set_first_solution_strategy(FirstSolutionStrategy_Value_PATH_CHEAPEST_ARC);
+  searchParameters.set_local_search_metaheuristic(LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
+  searchParameters.mutable_time_limit()->set_seconds(5);
+  // When an initial solution is given for search, the model should be closed, 
+  // otherwise the solver will ignore the search parameters.
+  routing.CloseModelWithParameters(searchParameters);
+  // [END parameters]
+
+  // Get initial solution from routes after closing the model.
   // [START print_initial_solution]
   const Assignment* initial_solution =
       routing.ReadAssignmentFromRoutes(data.initial_routes, true);
@@ -155,16 +165,12 @@ void VrpInitialRoutes() {
   LOG(INFO) << "Initial solution: ";
   PrintSolution(data, manager, routing, *initial_solution);
   // [END print_initial_solution]
-  // Setting first solution heuristic.
-  // [START parameters]
-  RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
-  // [END parameters]
 
   // Solve from initial solution.
   // [START solve]
   const Assignment* solution = routing.SolveFromAssignmentWithParameters(
       initial_solution, searchParameters);
-  // [START solve]
+  // [END solve]
 
   // Print solution on console.
   // [START print_solution]
