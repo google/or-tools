@@ -16,6 +16,7 @@
 """Vehicles Routing Problem (VRP)."""
 
 # [START import]
+from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 # [END import]
 
@@ -181,17 +182,26 @@ def main():
     distance_dimension.SetGlobalSpanCostCoefficient(100)
     # [END distance_constraint]
 
+    # Set default search parameters.
+    # [START parameters]
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+    search_parameters.first_solution_strategy = (
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+    search_parameters.local_search_metaheuristic = (
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+    search_parameters.time_limit.FromSeconds(5)
+    # When an initial solution is given for search, the model should be closed, 
+    # otherwise the solver will ignore the search parameters.
+    routing.CloseModelWithParameters(search_parameters)
+    # [END parameters]
+
+    # Get initial solution from routes after closing the model.
     # [START print_initial_solution]
     initial_solution = routing.ReadAssignmentFromRoutes(data['initial_routes'],
                                                         True)
     print('Initial solution:')
     print_solution(data, manager, routing, initial_solution)
     # [END print_initial_solution]
-
-    # Set default search parameters.
-    # [START parameters]
-    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-    # [END parameters]
 
     # Solve the problem.
     # [START solve]
