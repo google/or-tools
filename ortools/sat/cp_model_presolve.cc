@@ -2881,7 +2881,7 @@ void CpModelPresolver::DetectAndProcessAtMostOneInLinear(
   }
 
   // Extract enforcement or fix literal.
-  // TODO(user): Do not use domain fonction, can be slow.
+  // TODO(user): Do not use domain function, can be slow.
   std::vector<int> new_enforcement;
   std::vector<int> must_be_true;
   for (int i = 0; i < tmp_terms_.size(); ++i) {
