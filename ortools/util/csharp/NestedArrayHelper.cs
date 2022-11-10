@@ -58,7 +58,7 @@ public static class NestedArrayHelper
         var result = new int[arr.GetLength(0)];
         for (var i = 0; i < arr.GetLength(0); i++)
         {
-            if (arr[i] is not null)
+            if (arr[i] != null)
                 result[i] = arr[i].Length;
         }
         return result;

@@ -33,15 +33,15 @@ public class CpSolver
     {
         // Setup search.
         CreateSolveWrapper();
-        if (string_parameters_ is not null)
+        if (string_parameters_ != null)
         {
             solve_wrapper_.SetStringParameters(string_parameters_);
         }
-        if (log_callback_ is not null)
+        if (log_callback_ != null)
         {
             solve_wrapper_.AddLogCallbackFromClass(log_callback_);
         }
-        if (cb is not null)
+        if (cb != null)
         {
             solve_wrapper_.AddSolutionCallback(cb);
         }
@@ -49,7 +49,7 @@ public class CpSolver
         response_ = solve_wrapper_.Solve(model.Model);
 
         // Cleanup search.
-        if (cb is not null)
+        if (cb != null)
         {
             solve_wrapper_.ClearSolutionCallback(cb);
         }
@@ -81,7 +81,7 @@ public class CpSolver
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void StopSearch()
     {
-        if (solve_wrapper_ is not null)
+        if (solve_wrapper_ != null)
         {
             solve_wrapper_.StopSearch();
         }
@@ -205,7 +205,7 @@ public class CpSolver
                 long value = index >= 0 ? response_.Solution[index] : -response_.Solution[-index - 1];
                 constant += coefficient * value;
                 break;
-            case NotBoolVar:
+            case NotBoolVar _:
                 throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
             default:
                 throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");

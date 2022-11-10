@@ -69,7 +69,7 @@ public class CpSolverSolutionCallback : SolutionCallback
                 long value = SolutionIntegerValue(index);
                 constant += coefficient * value;
                 break;
-            case NotBoolVar:
+            case NotBoolVar _:
                 throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
             default:
                 throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");

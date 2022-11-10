@@ -142,8 +142,8 @@ public class CpModel
     {
         long constant = FillLinearConstraint(expr, out var linear);
         linear.Domain.Capacity = 2;
-        linear.Domain.Add(lb is Int64.MinValue or Int64.MaxValue ? lb : lb - constant);
-        linear.Domain.Add(ub is Int64.MinValue or Int64.MaxValue ? ub : ub - constant);
+        linear.Domain.Add(lb == Int64.MinValue || lb == Int64.MaxValue ? lb : lb - constant);
+        linear.Domain.Add(ub == Int64.MinValue || lb == Int64.MaxValue ? ub : ub - constant);
 
         Constraint ct = new Constraint(model_);
         ct.Proto.Linear = linear;
@@ -162,7 +162,7 @@ public class CpModel
         linear.Domain.Capacity = array.Length;
         foreach (long value in array)
         {
-            linear.Domain.Add(value is Int64.MinValue or Int64.MaxValue ? value : value - constant);
+            linear.Domain.Add(value == Int64.MinValue || value == Int64.MaxValue ? value : value - constant);
         }
 
         Constraint ct = new Constraint(model_);
@@ -1012,7 +1012,7 @@ public class CpModel
     /** <summary>Returns whether the model contains an objective.</summary>*/
     bool HasObjective()
     {
-        return model_.Objective is not null || model_.FloatingPointObjective is not null;
+        return model_.Objective != null || model_.FloatingPointObjective != null;
     }
 
     // Search Decision.
