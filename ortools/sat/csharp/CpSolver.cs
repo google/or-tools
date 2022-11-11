@@ -211,10 +211,11 @@ public class CpSolver
                 throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");
             }
 
-            if (!terms_.TryDequeue(out var term))
+            if (terms_.Count == 0)
             {
                 break;
             }
+            var term = terms_.Dequeue();
             expr = term.expr;
             coefficient = term.coefficient;
         } while (true);

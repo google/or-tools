@@ -399,10 +399,11 @@ public class LinearExpr
                 throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");
             }
 
-            if (!terms.TryDequeue(out var term))
+            if (terms.Count == 0)
             {
                 break;
             }
+            var term = terms.Dequeue();
             expr = term.expr;
             coefficient = term.coefficient;
         } while (true);
