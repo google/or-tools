@@ -167,7 +167,7 @@ def main():
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 8
     solver.parameters.max_time_in_seconds = 15.0
-    #solver.parameters.log_search_progress = True
+    # solver.parameters.log_search_progress = True
 
     status = solver.Solve(model)
     if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:

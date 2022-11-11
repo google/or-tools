@@ -151,9 +151,9 @@ def main():
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
     # To benefit from the linearization of the circuit constraint.
-    solver.parameters.linearization_level = 2
     solver.parameters.max_time_in_seconds = 15.0
-    #solver.parameters.log_search_progress = True
+    solver.parameters.num_search_workers = 8
+    # solver.parameters.log_search_progress = True
 
     solver.Solve(model)
     #print(solver.ResponseStats())
