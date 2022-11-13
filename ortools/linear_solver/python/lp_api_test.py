@@ -20,7 +20,7 @@ def test_sum_no_brackets():
   Sum([x for x in range(10) if x % 2 == 0])
 
 text_model = """
-solver_type:CBC_MIXED_INTEGER_PROGRAMMING
+solver_type:GLOP_LINEAR_PROGRAMMING
 model <
   maximize:true
   variable < lower_bound:1 upper_bound:10 objective_coefficient:2 >
@@ -38,8 +38,7 @@ model <
 def test_proto():
   input_proto = linear_solver_pb2.MPModelRequest()
   text_format.Merge(text_model, input_proto)
-  solver = pywraplp.Solver('solveFromProto',
-                           pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+  solver = pywraplp.Solver.CreateSolver('glop')
   print(input_proto)
   # For now, create the model from the proto by parsing the proto
   solver.LoadModelFromProto(input_proto.model)
@@ -53,7 +52,7 @@ def test_proto():
 
 def main():
   test_sum_no_brackets()
-  #  test_proto()
+  test_proto()
 
 
 if __name__ == '__main__':

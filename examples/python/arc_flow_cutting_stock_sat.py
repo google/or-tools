@@ -203,8 +203,9 @@ def solve_cutting_stock_with_arc_flow_and_mip():
     item_coeffs = collections.defaultdict(list)
 
     start_time = time.time()
-    solver = pywraplp.Solver('Steel',
-                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('cbc')
+    if not solver:
+        return
 
     objective_vars = []
     objective_coeffs = []
