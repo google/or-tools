@@ -32,7 +32,7 @@
 #if defined(__wasm__) || defined(ANDROID) || defined(_MSC_VER)
 #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
 #endif
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
 #endif
 #if defined(__GNUC__) && !defined(__llvm__) && __GNUC__ < 11
