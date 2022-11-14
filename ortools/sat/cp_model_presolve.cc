@@ -4860,7 +4860,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     int new_size = 0;
     int num_zero_demand_removed = 0;
     int num_zero_size_removed = 0;
-    int num_incompatible_demands = 0;
+    int num_incompatible_intervals = 0;
     for (int i = 0; i < proto->intervals_size(); ++i) {
       if (context_->ConstraintIsInactive(proto->intervals(i))) continue;
 
@@ -4871,22 +4871,27 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         continue;
       }
 
-      if (context_->SizeMax(proto->intervals(i)) == 0) {
+      const int interval_index = proto->intervals(i);
+      if (context_->SizeMax(interval_index) == 0) {
         // Size 0 intervals cannot contribute to a cumulative.
         num_zero_size_removed++;
         continue;
       }
 
-      if (context_->MinOf(demand_expr) > capacity_max) {
-        if (context_->ConstraintIsOptional(proto->intervals(i))) {
+      const int64_t start_min = context_->StartMin(interval_index);
+      const int64_t end_max = context_->EndMax(interval_index);
+      if (start_min > end_max ||
+          (context_->SizeMin(interval_index) > 0 &&
+           context_->MinOf(demand_expr) > capacity_max)) {
+        if (context_->ConstraintIsOptional(interval_index)) {
           ConstraintProto* interval_ct =
-              context_->working_model->mutable_constraints(proto->intervals(i));
+              context_->working_model->mutable_constraints(interval_index);
           DCHECK_EQ(interval_ct->enforcement_literal_size(), 1);
           const int literal = interval_ct->enforcement_literal(0);
           if (!context_->SetLiteralToFalse(literal)) {
             return true;
           }
-          num_incompatible_demands++;
+          num_incompatible_intervals++;
           continue;
         } else {  // Interval is performed.
           return context_->NotifyThatModelIsUnsat(
@@ -4894,7 +4899,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         }
       }
 
-      proto->set_intervals(new_size, proto->intervals(i));
+      proto->set_intervals(new_size, interval_index);
       *proto->mutable_demands(new_size) = proto->demands(i);
       new_size++;
     }
@@ -4915,9 +4920,9 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       context_->UpdateRuleStats(
           "cumulative: removed intervals with a size of zero");
     }
-    if (num_incompatible_demands > 0) {
+    if (num_incompatible_intervals > 0) {
       context_->UpdateRuleStats(
-          "cumulative: removed intervals demands greater than the capacity");
+          "cumulative: removed intervals that can't be performed");
     }
   }
 
