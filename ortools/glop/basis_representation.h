@@ -296,6 +296,9 @@ class BasisFactorization {
   // solve and each factorization.
   double DeterministicTime() const;
 
+  // Returns the number of updates since last refactorization.
+  int NumUpdates() const { return num_updates_; }
+
  private:
   // Called by ForceRefactorization() or Refactorize() or Initialize().
   Status ComputeFactorization();

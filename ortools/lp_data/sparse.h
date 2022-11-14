@@ -388,23 +388,26 @@ class CompactSparseMatrix {
   // col of this matrix. This function is declared in the .h for efficiency.
   Fractional ColumnScalarProduct(ColIndex col, const DenseRow& vector) const {
     // We expand ourselves since we don't really care about the floating
-    // point order of operation.
-    const EntryIndex start = starts_[col];
+    // point order of operation and this seems faster.
+    EntryIndex i = starts_[col];
     const EntryIndex end = starts_[col + 1];
-    const int num_blocks = (end - start).value() / 4;
-    EntryIndex i(start);
+    const EntryIndex shifted_end = end - 3;
     Fractional result = 0.0;
-    for (int block = 0; block < num_blocks; ++block) {
-      result +=
-          EntryCoefficient(i) * vector[RowToColIndex(EntryRow(i))] +
-          EntryCoefficient(i + 1) * vector[RowToColIndex(EntryRow(i + 1))] +
-          EntryCoefficient(i + 2) * vector[RowToColIndex(EntryRow(i + 2))] +
-          EntryCoefficient(i + 3) * vector[RowToColIndex(EntryRow(i + 3))];
-      i += 4;
+    for (; i < shifted_end; i += 4) {
+      result += coefficients_[i] * vector[RowToColIndex(EntryRow(i))] +
+                coefficients_[i + 1] * vector[RowToColIndex(EntryRow(i + 1))] +
+                coefficients_[i + 2] * vector[RowToColIndex(EntryRow(i + 2))] +
+                coefficients_[i + 3] * vector[RowToColIndex(EntryRow(i + 3))];
     }
-    while (i < end) {
-      result += EntryCoefficient(i) * vector[RowToColIndex(EntryRow(i))];
-      ++i;
+    if (i < end) {
+      result += coefficients_[i] * vector[RowToColIndex(EntryRow(i))];
+      if (i + 1 < end) {
+        result += coefficients_[i + 1] * vector[RowToColIndex(EntryRow(i + 1))];
+        if (i + 2 < end) {
+          result +=
+              coefficients_[i + 2] * vector[RowToColIndex(EntryRow(i + 2))];
+        }
+      }
     }
     return result;
   }

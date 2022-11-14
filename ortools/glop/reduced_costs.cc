@@ -63,7 +63,7 @@ Fractional ReducedCosts::TestEnteringReducedCostPrecision(
   const Fractional old_reduced_cost = reduced_costs_[entering_col];
   const Fractional precise_reduced_cost =
       objective_[entering_col] + cost_perturbations_[entering_col] -
-      PreciseScalarProduct(basic_objective_, direction);
+      ScalarProduct(basic_objective_, direction);
 
   // Update the reduced cost of the entering variable with the precise version.
   reduced_costs_[entering_col] = precise_reduced_cost;

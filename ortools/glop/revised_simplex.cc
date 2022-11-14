@@ -2542,9 +2542,20 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
   const Fractional diff =
       std::abs(pivot_from_update_row - pivot_from_direction);
   if (diff > parameters_.refactorization_threshold() *
-                 (1 + std::abs(pivot_from_direction))) {
+                 (1.0 + std::min(std::abs(pivot_from_update_row),
+                                 std::abs(pivot_from_direction)))) {
     VLOG(1) << "Refactorizing: imprecise pivot " << pivot_from_direction
             << " diff = " << diff;
+    // TODO(user): We need to be careful when we modify parameter like this
+    // since it will not be reset until the next SetParameters() call.
+    if (basis_factorization_.NumUpdates() < 10) {
+      Fractional threshold = parameters_.lu_factorization_pivot_threshold();
+      threshold = std::min(threshold * 1.5, 0.9);
+      VLOG(1) << "Increasing LU pivot threshold " << threshold;
+      parameters_.set_lu_factorization_pivot_threshold(threshold);
+      basis_factorization_.SetParameters(parameters_);
+    }
+
     last_refactorization_reason_ = RefactorizationReason::IMPRECISE_PIVOT;
     GLOP_RETURN_IF_ERROR(basis_factorization_.ForceRefactorization());
   } else {

@@ -90,6 +90,20 @@ Fractional ScalarProduct(const DenseRowOrColumn& u, const SparseColumn& v) {
   return sum;
 }
 
+template <class DenseRowOrColumn>
+Fractional ScalarProduct(const DenseRowOrColumn& u, const ScatteredColumn& v) {
+  DCHECK_EQ(u.size().value(), v.values.size().value());
+  if (v.ShouldUseDenseIteration()) {
+    return ScalarProduct(u, v.values);
+  }
+  Fractional sum = 0.0;
+  for (const auto e : v) {
+    sum += (u[typename DenseRowOrColumn::IndexType(e.row().value())] *
+            e.coefficient());
+  }
+  return sum;
+}
+
 template <class DenseRowOrColumn, class DenseRowOrColumn2>
 Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
                                 const DenseRowOrColumn2& v) {
@@ -106,21 +120,6 @@ Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
                                 const SparseColumn& v) {
   KahanSum sum;
   for (const SparseColumn::Entry e : v) {
-    sum.Add(u[typename DenseRowOrColumn::IndexType(e.row().value())] *
-            e.coefficient());
-  }
-  return sum.Value();
-}
-
-template <class DenseRowOrColumn>
-Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
-                                const ScatteredColumn& v) {
-  DCHECK_EQ(u.size().value(), v.values.size().value());
-  if (v.ShouldUseDenseIteration()) {
-    return PreciseScalarProduct(u, v.values);
-  }
-  KahanSum sum;
-  for (const auto e : v) {
     sum.Add(u[typename DenseRowOrColumn::IndexType(e.row().value())] *
             e.coefficient());
   }
