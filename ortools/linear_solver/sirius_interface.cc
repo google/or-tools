@@ -1399,7 +1399,6 @@ namespace operations_research {
 	}
 
 	void SiriusInterface::Write(const std::string& filename) {
-		throw std::logic_error("SRSwritempsprob not fully implemented in sirius-solver");
 		if (sync_status_ == MUST_RELOAD) {
 			Reset();
 		}
