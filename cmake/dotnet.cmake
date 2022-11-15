@@ -76,6 +76,15 @@ message(STATUS ".Net C# language version: ${DOTNET_LANG}")
 # Targeted Framework Moniker
 # see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 # see: https://learn.microsoft.com/en-us/dotnet/standard/net-standard
+if(USE_DOTNET_48)
+  list(APPEND TFM "net48")
+endif()
+if(USE_DOTNET_STD_20)
+  list(APPEND TFM "netstandard2.0")
+endif()
+if(USE_DOTNET_STD_21)
+  list(APPEND TFM "netstandard2.1")
+endif()
 if(USE_DOTNET_CORE_31)
   list(APPEND TFM "netcoreapp3.1")
 endif()
