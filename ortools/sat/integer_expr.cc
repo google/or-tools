@@ -758,38 +758,33 @@ bool ProductPropagator::CanonicalizeCases() {
 // do not contains divisor in the domains of a or b. There is an algo in O(
 // smallest domain size between a or b).
 bool ProductPropagator::PropagateWhenAllNonNegative() {
-  const IntegerValue max_a = integer_trail_->UpperBound(a_);
-  const IntegerValue max_b = integer_trail_->UpperBound(b_);
-  const IntegerValue new_max(CapProd(max_a.value(), max_b.value()));
-  if (new_max < integer_trail_->UpperBound(p_)) {
-    if (!integer_trail_->SafeEnqueue(
-            p_.LowerOrEqual(new_max),
-            {integer_trail_->UpperBoundAsLiteral(a_),
-             integer_trail_->UpperBoundAsLiteral(b_), a_.GreaterOrEqual(0),
-             b_.GreaterOrEqual(0)})) {
-      return false;
+  {
+    const IntegerValue max_a = integer_trail_->UpperBound(a_);
+    const IntegerValue max_b = integer_trail_->UpperBound(b_);
+    const IntegerValue new_max(CapProd(max_a.value(), max_b.value()));
+    if (new_max < integer_trail_->UpperBound(p_)) {
+      if (!integer_trail_->SafeEnqueue(
+              p_.LowerOrEqual(new_max),
+              {integer_trail_->UpperBoundAsLiteral(a_),
+               integer_trail_->UpperBoundAsLiteral(b_), a_.GreaterOrEqual(0),
+               b_.GreaterOrEqual(0)})) {
+        return false;
+      }
     }
   }
 
-  const IntegerValue min_a = integer_trail_->LowerBound(a_);
-  const IntegerValue min_b = integer_trail_->LowerBound(b_);
-  const IntegerValue new_min(CapProd(min_a.value(), min_b.value()));
-  if (new_min > integer_trail_->LowerBound(p_)) {
-    if (!integer_trail_->SafeEnqueue(
-            p_.GreaterOrEqual(new_min),
-            {integer_trail_->LowerBoundAsLiteral(a_),
-             integer_trail_->LowerBoundAsLiteral(b_)})) {
-      return false;
+  {
+    const IntegerValue min_a = integer_trail_->LowerBound(a_);
+    const IntegerValue min_b = integer_trail_->LowerBound(b_);
+    const IntegerValue new_min(CapProd(min_a.value(), min_b.value()));
+    if (new_min > integer_trail_->LowerBound(p_)) {
+      if (!integer_trail_->SafeEnqueue(
+              p_.GreaterOrEqual(new_min),
+              {integer_trail_->LowerBoundAsLiteral(a_),
+               integer_trail_->LowerBoundAsLiteral(b_)})) {
+        return false;
+      }
     }
-  }
-
-  // Checks if a_ OR b_ has changed after propagating p_. In that case, abort,
-  // and wait for the next call to Propagate().
-  if (integer_trail_->LowerBound(a_) != min_a ||
-      integer_trail_->LowerBound(b_) != min_b ||
-      integer_trail_->UpperBound(a_) != max_a ||
-      integer_trail_->UpperBound(b_) != max_b) {
-    return true;
   }
 
   for (int i = 0; i < 2; ++i) {
@@ -800,14 +795,14 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
     const IntegerValue min_p = integer_trail_->LowerBound(p_);
     const IntegerValue max_p = integer_trail_->UpperBound(p_);
     const IntegerValue prod(CapProd(max_a.value(), min_b.value()));
-    if (prod > max_p) {
+    if (prod > max_p && min_b != 0) {
       if (!integer_trail_->SafeEnqueue(a.LowerOrEqual(FloorRatio(max_p, min_b)),
                                        {integer_trail_->LowerBoundAsLiteral(b),
                                         integer_trail_->UpperBoundAsLiteral(p_),
                                         p_.GreaterOrEqual(0)})) {
         return false;
       }
-    } else if (prod < min_p) {
+    } else if (prod < min_p && max_a != 0) {
       if (!integer_trail_->SafeEnqueue(
               b.GreaterOrEqual(CeilRatio(min_p, max_a)),
               {integer_trail_->UpperBoundAsLiteral(a),
