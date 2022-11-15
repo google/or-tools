@@ -57,14 +57,14 @@ int64_t GetProcessMemoryUsage() {
     if (fscanf(pf, "%u", &size) != 1) return 0;
   }
   fclose(pf);
-  return size * int64_t{1024};
+  return int64_t{1024} * size;
 }
 #elif defined(__FreeBSD__)                        // FreeBSD
 int64_t GetProcessMemoryUsage() {
   int who = RUSAGE_SELF;
   struct rusage rusage;
   getrusage(who, &rusage);
-  return (int64_t)(rusage.ru_maxrss * int64_t{1024});
+  return (int64_t)(int64_t{1024} * rusage.ru_maxrss);
 }
 #elif defined(_MSC_VER)                           // WINDOWS
 int64_t GetProcessMemoryUsage() {
