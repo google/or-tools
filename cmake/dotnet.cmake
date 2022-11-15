@@ -73,15 +73,27 @@ message(STATUS ".Net runtime project build path: ${DOTNET_NATIVE_PROJECT_DIR}")
 set(DOTNET_LANG "9.0")
 message(STATUS ".Net C# language version: ${DOTNET_LANG}")
 
+# Targeted Framework Moniker
 # see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
-if(USE_DOTNET_CORE_31 AND USE_DOTNET_6)
-  set(DOTNET_TFM "<TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>")
-elseif(USE_DOTNET_6)
-  set(DOTNET_TFM "<TargetFramework>net6.0</TargetFramework>")
-elseif(USE_DOTNET_CORE_31)
-  set(DOTNET_TFM "<TargetFramework>netcoreapp3.1</TargetFramework>")
-else()
+# see: https://learn.microsoft.com/en-us/dotnet/standard/net-standard
+if(USE_DOTNET_CORE_31)
+  list(APPEND TFM "netcoreapp3.1")
+endif()
+if(USE_DOTNET_6)
+  list(APPEND TFM "net6.0")
+endif()
+
+list(LENGTH TFM TFM_LENGTH)
+if(TFM_LENGTH EQUAL "0")
   message(FATAL_ERROR "No .Net SDK selected !")
+endif()
+
+string(JOIN ";" DOTNET_TFM ${TFM})
+message(STATUS ".Net TFM: ${DOTNET_TFM}")
+if(TFM_LENGTH GREATER "1")
+  string(CONCAT DOTNET_TFM "<TargetFrameworks>" "${DOTNET_TFM}" "</TargetFrameworks>")
+else()
+  string(CONCAT DOTNET_TFM "<TargetFramework>" "${DOTNET_TFM}" "</TargetFramework>")
 endif()
 
 set(DOTNET_PROJECT ${DOTNET_PACKAGE})
