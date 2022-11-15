@@ -108,6 +108,8 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$SSample.csproj.in \
  > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_LANG@/9.0/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
@@ -178,6 +180,8 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$SSample.csproj.in \
  > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_LANG@/9.0/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
@@ -245,6 +249,8 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
 	$(SED) -e "s/@DOTNET_PACKAGES_DIR@/..\/..\/..\/$(BUILD_DIR)\/dotnet\/packages/" \
  ortools$Sdotnet$STest.csproj.in \
  > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_LANG@/9.0/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
@@ -647,6 +653,8 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_LANG@/9.0/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
@@ -677,6 +685,8 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
 	$(SED) -i -e 's/@PROJECT_VERSION_PATCH@/$(OR_TOOLS_PATCH)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_LANG@/9.0/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj

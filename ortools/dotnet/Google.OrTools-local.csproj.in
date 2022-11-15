@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>@DOTNET_LANG@</LangVersion>
     @DOTNET_TFM@
     <RuntimeIdentifier>@RUNTIME_IDENTIFIER@</RuntimeIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
