@@ -795,7 +795,7 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
     const IntegerValue min_p = integer_trail_->LowerBound(p_);
     const IntegerValue max_p = integer_trail_->UpperBound(p_);
     const IntegerValue prod(CapProd(max_a.value(), min_b.value()));
-    if (prod > max_p && min_b != 0) {
+    if (prod > max_p) {
       if (!integer_trail_->SafeEnqueue(a.LowerOrEqual(FloorRatio(max_p, min_b)),
                                        {integer_trail_->LowerBoundAsLiteral(b),
                                         integer_trail_->UpperBoundAsLiteral(p_),

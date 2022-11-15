@@ -1743,19 +1743,30 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
               {}, {})) {
         shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
             absl::StrCat(solution_info, " [hint]"));
-        return;
       }
     }
+    return;
   }
 
   // This code is here to debug bad presolve during LNS that corrupt the hint.
   // Note that sometime the deterministic limit is hit before the hint can be
   // completed, so we don't report that has an error.
+  //
+  // Tricky: We can only test that if we don't already have a feasible solution
+  // like we do if the hint is complete.
   if (parameters->debug_crash_on_bad_hint() &&
+      shared_response_manager->SolutionsRepository().NumSolutions() == 0 &&
       !model->GetOrCreate<TimeLimit>()->LimitReached() &&
       status != SatSolver::Status::FEASIBLE) {
-    LOG(FATAL) << "QuickSolveWithHint() didn't find a feasible solution. "
-               << "The model name is '" << model_proto.name() << "'.";
+    LOG(FATAL) << "QuickSolveWithHint() didn't find a feasible solution."
+               << " The model name is '" << model_proto.name() << "'."
+               << " Status: " << status << ".";
+  }
+
+  if (status == SatSolver::INFEASIBLE) {
+    shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
+        absl::StrCat(solution_info, " [hint]"));
+    return;
   }
 }
 
@@ -2814,6 +2825,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
   CHECK(!params.enumerate_all_solutions())
       << "Enumerating all solutions in parallel is not supported.";
+  if (global_model->GetOrCreate<TimeLimit>()->LimitReached()) return;
 
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (params.share_level_zero_bounds()) {
@@ -3141,6 +3153,40 @@ void AddPostsolveClauses(const std::vector<int>& postsolve_mapping,
   postsolve->clauses.clear();
 }
 
+void TestSolutionHintForFeasibility(const CpModelProto& model_proto,
+                                    SolverLogger* logger,
+                                    SharedResponseManager* manager = nullptr) {
+  if (!model_proto.has_solution_hint()) return;
+
+  // TODO(user): If the hint specifies all non-fixed variables we could also
+  // do the check.
+  if (model_proto.solution_hint().vars_size() != model_proto.variables_size()) {
+    return;
+  }
+
+  std::vector<int64_t> solution(model_proto.variables_size(), 0);
+  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+    const int ref = model_proto.solution_hint().vars(i);
+    const int64_t value = model_proto.solution_hint().values(i);
+    solution[PositiveRef(ref)] = RefIsPositive(ref) ? value : -value;
+  }
+  if (SolutionIsFeasible(model_proto, solution)) {
+    if (manager != nullptr) {
+      // Add it to the pool right away! Note that we already have a log in this
+      // case, so we don't log anything more.
+      manager->NewSolution(solution, "complete_hint", nullptr);
+    } else {
+      SOLVER_LOG(logger, "The solution hint is complete and is feasible.");
+    }
+  } else {
+    // TODO(user): Change the code to make the solution checker more
+    // informative by returning a message instead of just VLOGing it.
+    SOLVER_LOG(logger,
+               "The solution hint is complete, but it is infeasible! we "
+               "will try to repair it.");
+  }
+}
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -3376,8 +3422,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Checks for hints early in case they are forced to be hard constraints.
   if (params.fix_variables_to_their_hinted_value() &&
       model_proto.has_solution_hint()) {
-    SOLVER_LOG(context->logger(), "Fixing ",
-               model_proto.solution_hint().vars().size(),
+    SOLVER_LOG(logger, "Fixing ", model_proto.solution_hint().vars().size(),
                " variables to their value in the solution hints.");
     for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
       const int var = model_proto.solution_hint().vars(i);
@@ -3390,10 +3435,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                          : var_proto.name();
 
         const Domain var_domain = ReadDomainFromProto(var_proto);
-        SOLVER_LOG(context->logger(),
-                   "Hint found infeasible when assigning variable '", var_name,
-                   "' with domain", var_domain.ToString(), " the value ",
-                   value);
+        SOLVER_LOG(logger, "Hint found infeasible when assigning variable '",
+                   var_name, "' with domain", var_domain.ToString(),
+                   " the value ", value);
         break;
       }
     }
@@ -3403,27 +3447,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // validation. Note that after the model has been validated, we are sure there
   // are do duplicate variables in the solution hint, so we can just check the
   // size.
-  //
-  // TODO(user): Also check if the hint specifies all non-fixed variables.
-  if (model_proto.has_solution_hint() && !context->ModelIsUnsat() &&
-      model_proto.solution_hint().vars().size() ==
-          model_proto.variables_size()) {
-    std::vector<int64_t> solution(model_proto.variables_size(), 0);
-    for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
-      const int ref = model_proto.solution_hint().vars(i);
-      const int64_t value = model_proto.solution_hint().values(i);
-      solution[PositiveRef(ref)] = RefIsPositive(ref) ? value : -value;
-    }
-    if (SolutionIsFeasible(model_proto, solution)) {
-      SOLVER_LOG(context->logger(),
-                 "The solution hint is complete and is feasible.");
-    } else {
-      // TODO(user): Change the code to make the solution checker more
-      // informative by returning a message instead of just VLOGing it.
-      SOLVER_LOG(context->logger(),
-                 "The solution hint is complete, but it is infeasible! we "
-                 "will try to repair it.");
-    }
+  if (!context->ModelIsUnsat()) {
+    TestSolutionHintForFeasibility(model_proto, logger);
   }
 
   // If the objective was a floating point one, do some postprocessing on the
@@ -3549,8 +3574,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Presolved ", CpModelStats(new_cp_model_proto));
-  SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Preloading model.");
 
   if (params.cp_model_presolve()) {
     shared_response_manager->AddSolutionPostprocessor(
@@ -3623,10 +3646,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Delete the context.
   context.reset(nullptr);
 
-  if (params.symmetry_level() > 1) {
-    DetectAndAddSymmetryToProto(params, &new_cp_model_proto, logger);
-  }
-
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
   if (!observers.empty()) {
     shared_response_manager->AddSolutionCallback(
@@ -3637,18 +3656,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         });
   }
 
-  // If specified, we load the initial objective domain right away in the
-  // response manager. Note that the presolve will always fill it with the
-  // trivial min/max value if the user left it empty. This avoids to display
-  // [-infinity, infinity] for the initial objective search space.
-  if (new_cp_model_proto.has_objective()) {
-    shared_response_manager->InitializeObjective(new_cp_model_proto);
-    shared_response_manager->SetGapLimitsFromParameters(params);
+  // Make sure everything stops when we have a first solution if requested.
+  if (params.stop_after_first_solution()) {
+    shared_response_manager->AddSolutionCallback(
+        [shared_time_limit](const CpSolverResponse&) {
+          shared_time_limit->Stop();
+        });
   }
-
-  // Start counting the primal integral from the current determistic time and
-  // initial objective domain gap that we just filled.
-  shared_response_manager->UpdateGapIntegral();
 
 #if !defined(__PORTABLE_PLATFORM__)
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
@@ -3697,12 +3711,42 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     return shared_response_manager->GetResponse();
   }
 
-  // Make sure everything stops when we have a first solution if requested.
-  if (params.stop_after_first_solution()) {
-    shared_response_manager->AddSolutionCallback(
-        [shared_time_limit](const CpSolverResponse&) {
-          shared_time_limit->Stop();
-        });
+  SOLVER_LOG(logger, "");
+  SOLVER_LOG(logger, "Preloading model.");
+
+  // If specified, we load the initial objective domain right away in the
+  // response manager. Note that the presolve will always fill it with the
+  // trivial min/max value if the user left it empty. This avoids to display
+  // [-infinity, infinity] for the initial objective search space.
+  if (new_cp_model_proto.has_objective()) {
+    shared_response_manager->InitializeObjective(new_cp_model_proto);
+    shared_response_manager->SetGapLimitsFromParameters(params);
+  }
+
+  // Start counting the primal integral from the current determistic time and
+  // initial objective domain gap that we just filled.
+  shared_response_manager->UpdateGapIntegral();
+
+  // Re-test a complete solution hint to see if it survived the presolve.
+  // If it is feasible, we load it right away.
+  //
+  // Tricky: when we enumerate all solutions, we cannot properly exclude the
+  // current solution if we didn't find it via full propagation, so we don't
+  // load it in this case.
+  //
+  // TODO(user): Even for an optimization, if we load the solution right away,
+  // we might not have the same behavior as the initial search that follow the
+  // hint will be infeasible, so the activities of the variables will be
+  // different.
+  if (!params.enumerate_all_solutions()) {
+    TestSolutionHintForFeasibility(new_cp_model_proto, logger,
+                                   shared_response_manager);
+  } else {
+    TestSolutionHintForFeasibility(new_cp_model_proto, logger, nullptr);
+  }
+
+  if (params.symmetry_level() > 1) {
+    DetectAndAddSymmetryToProto(params, &new_cp_model_proto, logger);
   }
 
 #if defined(__PORTABLE_PLATFORM__)
@@ -3712,7 +3756,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (params.num_workers() > 1 || params.interleave_search()) {
     SolveCpModelParallel(new_cp_model_proto, model);
 #endif  // __PORTABLE_PLATFORM__
-  } else {
+  } else if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
     SOLVER_LOG(logger, "");
     SOLVER_LOG(logger, absl::StrFormat("Starting to load the model at %.2fs",
                                        wall_timer->Get()));

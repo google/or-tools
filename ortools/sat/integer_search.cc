@@ -593,17 +593,30 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   };
 }
 
-// TODO(user): Avoid the quadratic algorithm!!
 std::function<BooleanOrIntegerLiteral()> FollowHint(
     const std::vector<BooleanOrIntegerVariable>& vars,
     const std::vector<IntegerValue>& values, Model* model) {
-  const Trail* trail = model->GetOrCreate<Trail>();
-  const IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [=] {  // copy
-    for (int i = 0; i < vars.size(); ++i) {
+  auto* trail = model->GetOrCreate<Trail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* rev_int_repo = model->GetOrCreate<RevIntRepository>();
+
+  // This is not ideal as we reserve an int for the full duration of the model
+  // even if we use this FollowHint() function just for a while. But it is
+  // an easy solution to not have reference to deleted memory in the
+  // RevIntRepository(). Note that once we backtrack, these reference will
+  // disapear.
+  int* rev_start_index = model->TakeOwnership(new int);
+  *rev_start_index = 0;
+
+  return [=]() {
+    rev_int_repo->SaveState(rev_start_index);
+    for (int i = *rev_start_index; i < vars.size(); ++i) {
       const IntegerValue value = values[i];
       if (vars[i].bool_var != kNoBooleanVariable) {
         if (trail->Assignment().VariableIsAssigned(vars[i].bool_var)) continue;
+
+        // If we retake a decision at this level, we will restart from i.
+        *rev_start_index = i;
         return BooleanOrIntegerLiteral(
             Literal(vars[i].bool_var, value == 1).Index());
       } else {
@@ -614,7 +627,11 @@ std::function<BooleanOrIntegerLiteral()> FollowHint(
         const IntegerVariable positive_var = PositiveVariable(integer_var);
         const IntegerLiteral decision = SplitAroundGivenValue(
             positive_var, positive_var != integer_var ? -value : value, model);
-        if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
+        if (decision.IsValid()) {
+          // If we retake a decision at this level, we will restart from i.
+          *rev_start_index = i;
+          return BooleanOrIntegerLiteral(decision);
+        }
 
         // If the value is outside the current possible domain, we skip it.
         continue;
