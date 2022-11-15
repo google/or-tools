@@ -3,7 +3,7 @@
     <OutputType>Library</OutputType>
     <LangVersion>@DOTNET_LANG@</LangVersion>
     @DOTNET_TFM@
-    <RuntimeIdentifier>@RUNTIME_IDENTIFIER@</RuntimeIdentifier>
+    <RuntimeIdentifier>@DOTNET_RID@</RuntimeIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>@DOTNET_PROJECT@</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
@@ -101,12 +101,12 @@
   <!-- Validate at least one runtime package has been generated -->
   <Target Name="ValidateRuntimePackage" BeforeTargets="GenerateNuspec">
     <ItemGroup>
-      <RuntimePackage Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.@RUNTIME_IDENTIFIER@.*.nupkg"/>
+      <RuntimePackage Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.@DOTNET_RID@.*.nupkg"/>
     </ItemGroup>
     <Message Importance="high" Text="------- $(OS)"/>
-    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.@RUNTIME_IDENTIFIER@: found" Condition="Exists('@(RuntimePackage)')"/>
-    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.@RUNTIME_IDENTIFIER@: not found" Condition="!Exists('@(RuntimePackage)')"/>
-    <Error Text="You must locally 'dotnet pack' the @DOTNET_PROJECT@.runtime.@RUNTIME_IDENTIFIER@ Project." Condition="!Exists('@(RuntimePackage)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.@DOTNET_RID@: found" Condition="Exists('@(RuntimePackage)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.@DOTNET_RID@: not found" Condition="!Exists('@(RuntimePackage)')"/>
+    <Error Text="You must locally 'dotnet pack' the @DOTNET_PROJECT@.runtime.@DOTNET_RID@ Project." Condition="!Exists('@(RuntimePackage)')"/>
   </Target>
 
   <!-- Copy all .proto file(s) -->
@@ -173,7 +173,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="@DOTNET_PROJECT@.runtime.@RUNTIME_IDENTIFIER@" Version="@PROJECT_VERSION@"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.@DOTNET_RID@" Version="@PROJECT_VERSION@"/>
   </ItemGroup>
 </Project>
 
