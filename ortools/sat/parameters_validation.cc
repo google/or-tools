@@ -84,7 +84,7 @@ std::string ValidateParameters(const SatParameters& params) {
   // validation. It is however not open sourced.
   TEST_IN_RANGE(mip_max_activity_exponent, 1, 62);
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
-  TEST_IN_RANGE(solution_pool_size, 0, std::numeric_limits<int32_t>::max());
+  TEST_IN_RANGE(solution_pool_size, 1, std::numeric_limits<int32_t>::max());
 
   if (params.enumerate_all_solutions() && params.num_search_workers() > 1) {
     return "Enumerating all solutions does not work in parallel";
@@ -100,6 +100,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(num_workers);
   TEST_NON_NEGATIVE(num_search_workers);
   TEST_NON_NEGATIVE(min_num_lns_workers);
+  TEST_NON_NEGATIVE(interleave_batch_size);
 
   return "";
 }
@@ -107,6 +108,7 @@ std::string ValidateParameters(const SatParameters& params) {
 #undef TEST_IN_RANGE
 #undef TEST_NON_NEGATIVE
 #undef TEST_NOT_NAN
+#undef TEST_IS_FINITE
 
 }  // namespace sat
 }  // namespace operations_research

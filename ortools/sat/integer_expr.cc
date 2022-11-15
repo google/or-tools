@@ -783,6 +783,15 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
     }
   }
 
+  // Checks if a_ OR b_ has changed after propagating p_. In that case, abort,
+  // and wait for the next call to Propagate().
+  if (integer_trail_->LowerBound(a_) != min_a ||
+      integer_trail_->LowerBound(b_) != min_b ||
+      integer_trail_->UpperBound(a_) != max_a ||
+      integer_trail_->UpperBound(b_) != max_b) {
+    return true;
+  }
+
   for (int i = 0; i < 2; ++i) {
     const AffineExpression a = i == 0 ? a_ : b_;
     const AffineExpression b = i == 0 ? b_ : a_;

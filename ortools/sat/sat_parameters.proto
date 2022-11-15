@@ -1086,6 +1086,7 @@ message SatParameters {
   optional bool use_lns_only = 101 [default = false];
 
   // Size of the top-n different solutions kept by the solver.
+  // This parameter must be > 0.
   // Currently this only impact the "base" solution chosen for a LNS fragment.
   optional int32 solution_pool_size = 193 [default = 3];
 
