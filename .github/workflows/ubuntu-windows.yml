@@ -15,10 +15,10 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }} shrd=${{ matrix.shared }} sirius=${{ matrix.sirius }} xprs=${{ matrix.xprs }} extras=${{ matrix.extras }} java=${{ matrix.java }} dotnet=${{ matrix.dotnet }} python=${{ matrix.python }}-${{ matrix.python-version }}
+    name: ${{ matrix.os }} shrd=${{ matrix.shared }} sirius=${{ matrix.sirius }} sirius-release-tag=${{ matrix.sirius-release-tag }} xprs=${{ matrix.xprs }} extras=${{ matrix.extras }} java=${{ matrix.java }} dotnet=${{ matrix.dotnet }} python=${{ matrix.python }}-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     env:
-      SIRIUS_RELEASE_TAG: antares-integration-v1.1
+      SIRIUS_RELEASE_TAG: ${{ matrix.sirius-release-tag }}
       XPRESSDIR: ${{ github.workspace }}/xpressmp813
       XPRESS: ${{ github.workspace }}/xpressmp813/bin
       XPRS_LIB_PATH: ${{ github.workspace }}/xpressmp813/lib
@@ -34,6 +34,8 @@ jobs:
         sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
+        sirius-release-tag: [antares-integration-v1.1]
+        build-examples: [OFF]
         # the matrix is a bit complicated because
         # we need static C++-libraries for both Windows and linux
         # Under windows we can only build ortools Python/Java/C# libraries using a STATIC build
@@ -90,6 +92,7 @@ jobs:
             dotnet: OFF
             xprs: OFF
             sirius: ON
+            sirius-release-tag: antares-integration-v1.1
             shared: OFF
             extras: OFF
             publish-or: ON
@@ -100,9 +103,34 @@ jobs:
             dotnet: OFF
             xprs: OFF
             sirius: ON
+            sirius-release-tag: antares-integration-v1.1
             shared: OFF
             extras: OFF
             publish-or: ON
+          - os: ubuntu-20.04
+            extras: OFF
+            python: OFF
+            python-version: '3.10'
+            publish-or: ON
+            shared: ON
+            dotnet: OFF
+            java: OFF
+            sirius: ON
+            sirius-release-tag: metrix-integration-v0.1
+            xprs: OFF
+            build-examples: ON
+          - os: ubuntu-20.04
+            extras: OFF
+            python: OFF
+            python-version: '3.10'
+            publish-or: ON
+            shared: ON
+            dotnet: OFF
+            java: OFF
+            sirius: ON
+            sirius-release-tag: metrix-integration-v0.1
+            xprs: ON
+            build-examples: ON
 
     steps:
       - name: set name variables
@@ -113,8 +141,10 @@ jobs:
           [ $SHARED == "ON" ] && WITH_SHARED="_shared" || WITH_SHARED="_static"
           XPRS=${{ matrix.xprs }}
           [ $XPRS == "ON" ] && WITH_XPRS="_xprs" || WITH_XPRS=""
+          SIRIUS_TAG=${{ matrix.sirius-release-tag }}
+          [ $SIRIUS_TAG == "metrix-integration-v0.1" ] && SIRIUS_BRANCH="-metrix" || SIRIUS_BRANCH=""
           SIRIUS=${{ matrix.sirius }}
-          [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
+          [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius$SIRIUS_BRANCH" || WITH_SIRIUS=""
           OS="_${{ matrix.os }}"
           APPENDIX="${OS}${WITH_SIRIUS}${WITH_XPRS}"
           echo "::set-output name=appendix::$APPENDIX"
@@ -195,7 +225,7 @@ jobs:
       - name: Configure OR-Tools
         shell: bash
         run: |
-          cmake -S . -B build -DPython3_ROOT_DIR="${{ env.pythonLocation }}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
+          cmake -S . -B build -DPython3_ROOT_DIR="${{ env.pythonLocation }}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=${{ matrix.build-examples }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DUSE_XPRESS=${{ matrix.xprs }} -DXPRESS_ROOT="${{ env.XPRESSDIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
 
       - name: Build OR-Tools Linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}

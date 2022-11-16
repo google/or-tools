@@ -1154,7 +1154,7 @@ MPSolver::BasisStatus XpressInterface::row_status(int constraint_index) const {
       int const rows = XPRSgetnumrows(mLp);
       unique_ptr<int[]> data(new int[rows]);
       mRstat.swap(data);
-      CHECK_STATUS(XPRSgetbasis(mLp, 0, mRstat.get()));
+      CHECK_STATUS(XPRSgetbasis(mLp, mRstat.get(), 0));
     }
   } else {
     mRstat = 0;
@@ -1180,7 +1180,7 @@ MPSolver::BasisStatus XpressInterface::column_status(int variable_index) const {
       int const cols = XPRSgetnumcols(mLp);
       unique_ptr<int[]> data(new int[cols]);
       mCstat.swap(data);
-      CHECK_STATUS(XPRSgetbasis(mLp, mCstat.get(), 0));
+      CHECK_STATUS(XPRSgetbasis(mLp, 0, mCstat.get()));
     }
   } else {
     mCstat = 0;
