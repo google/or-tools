@@ -852,9 +852,24 @@ void TriangularMatrix::TransposeUpperSolveInternal(DenseColumn* rhs) const {
     // the last entry in column col is stored contiguously just before the
     // first entry in column col+1.
     const EntryIndex i_end = starts_[col + 1];
-    for (; i < i_end; ++i) {
-      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
+    const EntryIndex shifted_end = i_end - 3;
+    for (; i < shifted_end; i += 4) {
+      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)] +
+             EntryCoefficient(i + 1) * (*rhs)[EntryRow(i + 1)] +
+             EntryCoefficient(i + 2) * (*rhs)[EntryRow(i + 2)] +
+             EntryCoefficient(i + 3) * (*rhs)[EntryRow(i + 3)];
     }
+    if (i < i_end) {
+      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
+      if (i + 1 < i_end) {
+        sum -= EntryCoefficient(i + 1) * (*rhs)[EntryRow(i + 1)];
+        if (i + 2 < i_end) {
+          sum -= EntryCoefficient(i + 2) * (*rhs)[EntryRow(i + 2)];
+        }
+      }
+      i = i_end;
+    }
+
     (*rhs)[ColToRowIndex(col)] =
         diagonal_of_ones ? sum : sum / diagonal_coefficients_[col];
   }
@@ -890,9 +905,24 @@ void TriangularMatrix::TransposeLowerSolveInternal(DenseColumn* rhs) const {
     // the last entry in column col is stored contiguously just before the
     // first entry in column col+1.
     const EntryIndex i_end = starts_[col];
-    for (; i >= i_end; --i) {
-      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
+    const EntryIndex shifted_end = i_end + 3;
+    for (; i >= shifted_end; i -= 4) {
+      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)] +
+             EntryCoefficient(i - 1) * (*rhs)[EntryRow(i - 1)] +
+             EntryCoefficient(i - 2) * (*rhs)[EntryRow(i - 2)] +
+             EntryCoefficient(i - 3) * (*rhs)[EntryRow(i - 3)];
     }
+    if (i >= i_end) {
+      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
+      if (i >= i_end + 1) {
+        sum -= EntryCoefficient(i - 1) * (*rhs)[EntryRow(i - 1)];
+        if (i >= i_end + 2) {
+          sum -= EntryCoefficient(i - 2) * (*rhs)[EntryRow(i - 2)];
+        }
+      }
+      i = i_end - 1;
+    }
+
     (*rhs)[ColToRowIndex(col)] =
         diagonal_of_ones ? sum : sum / diagonal_coefficients_[col];
   }
@@ -976,9 +1006,28 @@ void TriangularMatrix::TransposeHyperSparseSolveInternal(
   for (const RowIndex row : *non_zero_rows) {
     Fractional sum = (*rhs)[row];
     const ColIndex row_as_col = RowToColIndex(row);
-    for (const EntryIndex i : Column(row_as_col)) {
-      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
+
+    // Note that we do the loop in exactly the same way as
+    // in TransposeUpperSolveInternal().
+    EntryIndex i = starts_[row_as_col];
+    const EntryIndex i_end = starts_[row_as_col + 1];
+    const EntryIndex shifted_end = i_end - 3;
+    for (; i < shifted_end; i += 4) {
+      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)] +
+             EntryCoefficient(i + 1) * (*rhs)[EntryRow(i + 1)] +
+             EntryCoefficient(i + 2) * (*rhs)[EntryRow(i + 2)] +
+             EntryCoefficient(i + 3) * (*rhs)[EntryRow(i + 3)];
     }
+    if (i < i_end) {
+      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
+      if (i + 1 < i_end) {
+        sum -= EntryCoefficient(i + 1) * (*rhs)[EntryRow(i + 1)];
+        if (i + 2 < i_end) {
+          sum -= EntryCoefficient(i + 2) * (*rhs)[EntryRow(i + 2)];
+        }
+      }
+    }
+
     (*rhs)[row] =
         diagonal_of_ones ? sum : sum / diagonal_coefficients_[row_as_col];
     if (sum != 0.0) {
@@ -1009,13 +1058,27 @@ void TriangularMatrix::TransposeHyperSparseSolveWithReversedNonZerosInternal(
     Fractional sum = (*rhs)[row];
     const ColIndex row_as_col = RowToColIndex(row);
 
-    // We do the loops this way so that the floating point operations are
-    // exactly the same as the ones performed by TransposeLowerSolveInternal().
+    // We do the loop this way so that the floating point operations are exactly
+    // the same as the ones performed by TransposeLowerSolveInternal().
     EntryIndex i = starts_[row_as_col + 1] - 1;
     const EntryIndex i_end = starts_[row_as_col];
-    for (; i >= i_end; --i) {
-      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
+    const EntryIndex shifted_end = i_end + 3;
+    for (; i >= shifted_end; i -= 4) {
+      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)] +
+             EntryCoefficient(i - 1) * (*rhs)[EntryRow(i - 1)] +
+             EntryCoefficient(i - 2) * (*rhs)[EntryRow(i - 2)] +
+             EntryCoefficient(i - 3) * (*rhs)[EntryRow(i - 3)];
     }
+    if (i >= i_end) {
+      sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
+      if (i >= i_end + 1) {
+        sum -= EntryCoefficient(i - 1) * (*rhs)[EntryRow(i - 1)];
+        if (i >= i_end + 2) {
+          sum -= EntryCoefficient(i - 2) * (*rhs)[EntryRow(i - 2)];
+        }
+      }
+    }
+
     (*rhs)[row] =
         diagonal_of_ones ? sum : sum / diagonal_coefficients_[row_as_col];
     if (sum != 0.0) {
