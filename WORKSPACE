@@ -136,8 +136,8 @@ pip_install(
 
 git_repository(
     name = "pybind11_bazel",
-    commit = "72cbbf1fbc830e487e3012862b7b720001b70672",
-    patches = ["//patches:pybind11_bazel.patch"], # see pybind/pybind11_bazel#38
+    commit = "faf56fb3df11287f26dbc66fdedf60a2fc2c6631",
+    patches = ["//patches:pybind11_bazel.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/pybind/pybind11_bazel.git",
 )
