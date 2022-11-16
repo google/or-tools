@@ -659,13 +659,14 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
   const std::vector<std::string> kGurobiVersions = {
-      "952", "951", "950", "911", "910", "903", "902", "811", "801", "752"};
+      "1000", "952", "951", "950", "911", "910", "903", "902", "811", "801", "752"};
+  potential_paths.reserve(kGurobiVersions.size() * 3);
 
   // Look for libraries pointed by GUROBI_HOME first.
   const char* gurobi_home_from_env = getenv("GUROBI_HOME");
   if (gurobi_home_from_env != nullptr) {
     for (const std::string& version : kGurobiVersions) {
-      const std::string lib = version.substr(0, 2);
+      const std::string lib = version.substr(0, version.size() - 1);
 #if defined(_MSC_VER)  // Windows
       potential_paths.push_back(
           absl::StrCat(gurobi_home_from_env, "\\bin\\gurobi", lib, ".dll"));
@@ -686,9 +687,12 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 
   // Search for canonical places.
   for (const std::string& version : kGurobiVersions) {
-    const std::string lib = version.substr(0, 2);
+    const std::string lib = version.substr(0, version.size() - 1);
 #if defined(_MSC_VER)  // Windows
     potential_paths.push_back(absl::StrCat("C:\\Program Files\\gurobi", version,
+                                           "\\win64\\bin\\gurobi", lib,
+                                           ".dll"));
+    potential_paths.push_back(absl::StrCat("C:\\gurobi", version,
                                            "\\win64\\bin\\gurobi", lib,
                                            ".dll"));
 #elif defined(__APPLE__)  // OS X
@@ -711,6 +715,13 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
                << " You won't be able to use Gurobi.";
 #endif
   }
+
+#if defined(__GNUC__)   // path in linux64 gurobi/optimizer docker image.
+  for (const std::string& version : {"10.0.0", "9.5.2", "9.5.1", "9.5.0"}) {
+    potential_paths.push_back(
+        absl::StrCat("/opt/gurobi/linux64/lib/libgurobi.so.", version));
+  }
+#endif
   return potential_paths;
 }
 
