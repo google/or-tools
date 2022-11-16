@@ -777,6 +777,15 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
     const IntegerValue min_a = integer_trail_->LowerBound(a_);
     const IntegerValue min_b = integer_trail_->LowerBound(b_);
     const IntegerValue new_min(CapProd(min_a.value(), min_b.value()));
+
+    // The conflict test is needed because when new_min is large, we could
+    // have an overflow in p_.GreaterOrEqual(new_min);
+    if (new_min > integer_trail_->UpperBound(p_)) {
+      return integer_trail_->ReportConflict(
+          {integer_trail_->UpperBoundAsLiteral(p_),
+           integer_trail_->LowerBoundAsLiteral(a_),
+           integer_trail_->LowerBoundAsLiteral(b_)});
+    }
     if (new_min > integer_trail_->LowerBound(p_)) {
       if (!integer_trail_->SafeEnqueue(
               p_.GreaterOrEqual(new_min),

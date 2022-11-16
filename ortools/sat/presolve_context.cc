@@ -624,7 +624,7 @@ bool PresolveContext::ConstraintVariableUsageIsConsistent() {
     if (ct.constraint_case() == ConstraintProto::kLinear &&
         ct.linear().vars().size() == 1) {
       linear1_count[PositiveRef(ct.linear().vars(0))]++;
-      if (constraint_to_linear1_var_[c] != ct.linear().vars(0)) {
+      if (constraint_to_linear1_var_[c] != PositiveRef(ct.linear().vars(0))) {
         LOG(INFO) << "Wrong variables for linear1: \n"
                   << ProtobufDebugString(ct)
                   << " saved_var: " << constraint_to_linear1_var_[c];

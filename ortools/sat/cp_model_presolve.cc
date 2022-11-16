@@ -2669,6 +2669,11 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
           use_lb ? shift_ub - lb_feasible_.CurrentMax() : shift_lb;
       const int64_t new_rhs_ub =
           use_ub ? shift_lb + ub_feasible_.CurrentMax() : shift_ub;
+      if (new_rhs_lb > new_rhs_ub) {
+        (void)MarkConstraintAsFalse(ct);
+        context_->UpdateConstraintVariableUsage(c);
+        return;
+      }
       FillDomainInProto(Domain(new_rhs_lb, new_rhs_ub), mutable_linear);
       DivideLinearByGcd(ct);
       context_->UpdateConstraintVariableUsage(c);
@@ -2694,6 +2699,11 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
         use_lb ? ub_sum - lb_feasible_.CurrentMax() : lb_sum;
     const int64_t new_rhs_ub =
         use_ub ? lb_sum + ub_feasible_.CurrentMax() : ub_sum;
+    if (new_rhs_lb > new_rhs_ub) {
+      (void)MarkConstraintAsFalse(ct);
+      context_->UpdateConstraintVariableUsage(c);
+      return;
+    }
     FillDomainInProto(Domain(new_rhs_lb, new_rhs_ub), ct->mutable_linear());
   }
 
