@@ -45,11 +45,172 @@
 namespace operations_research {
 namespace sat {
 
+std::string CutTerm::DebugString() const {
+  return absl::StrCat("coeff= ", coeff.value(), " lp=", lp_value,
+                      " range=", bound_diff.value());
+}
+
+bool CutTerm::Complement(IntegerValue* rhs) {
+  // We replace coeff * X by coeff * (X - bound_diff + bound_diff)
+  // which gives -coeff * complement(X) + coeff * bound_diff;
+  if (!AddProductTo(-coeff, bound_diff, rhs)) return false;
+
+  // We keep the same expression variable.
+  for (int i = 0; i < expr_size; ++i) {
+    expr_coeffs[i] = -expr_coeffs[i];
+  }
+  expr_offset = bound_diff - expr_offset;
+
+  // Note that this is not involutive because of floating point error. Fix?
+  lp_value = ToDouble(bound_diff) - lp_value;
+  coeff = -coeff;
+  return true;
+}
+
+bool CutData::FillFromLinearConstraint(
+    const LinearConstraint& cut,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    IntegerTrail* integer_trail) {
+  rhs = cut.ub;
+  terms.clear();
+  const int num_terms = cut.vars.size();
+  for (int i = 0; i < num_terms; ++i) {
+    const IntegerVariable var = cut.vars[i];
+    const IntegerValue coeff = cut.coeffs[i];
+    const double lp_value = lp_values[cut.vars[i]];
+    const IntegerValue lb = integer_trail->LevelZeroLowerBound(var);
+    const IntegerValue ub = integer_trail->LevelZeroUpperBound(var);
+    const IntegerValue range = ub - lb;
+
+    // By default, we shift to lb.
+    // We can always complement later, but this might change what overflow.
+    //
+    // coeff * X = coeff * (X - shift) + coeff * shift.
+    if (!AddProductTo(-coeff, lb, &rhs)) return false;
+
+    // Skip fixed terms.
+    if (range == 0) continue;
+
+    // Append this term.
+    CutTerm term;
+    term.coeff = coeff;
+    term.lp_value = lp_value - ToDouble(lb);
+    term.bound_diff = range;
+    term.expr_size = 1;
+    term.expr_offset = -lb;
+    term.expr_vars[0] = var;
+    term.expr_coeffs[0] = IntegerValue(1);
+    terms.push_back(term);
+  }
+  return true;
+}
+
+void CutData::Canonicalize() {
+  num_relevant_entries = 0;
+  max_magnitude = IntTypeAbs(rhs);
+  for (int i = 0; i < terms.size(); ++i) {
+    CutTerm& entry = terms[i];
+    max_magnitude = std::max(max_magnitude, IntTypeAbs(entry.coeff));
+    if (entry.HasRelevantLpValue()) {
+      std::swap(terms[num_relevant_entries], entry);
+      ++num_relevant_entries;
+    }
+  }
+
+  // Sort by larger lp_value first.
+  std::sort(terms.begin(), terms.begin() + num_relevant_entries,
+            [](const CutTerm& a, const CutTerm& b) {
+              return a.lp_value > b.lp_value;
+            });
+}
+
+void CutDataBuilder::ClearIndices() {
+  num_merges_ = 0;
+  direct_index_.clear();
+  complemented_index_.clear();
+}
+
+void CutDataBuilder::RegisterAllBooleansTerms(const CutData& cut) {
+  ClearIndices();
+  const int size = cut.terms.size();
+  for (int i = 0; i < size; ++i) {
+    const CutTerm& term = cut.terms[i];
+    if (term.bound_diff != 1) continue;
+    if (term.expr_size != 1) continue;
+    if (term.expr_coeffs[0] > 0) {
+      direct_index_[term.expr_vars[0]] = i;
+    } else {
+      complemented_index_[term.expr_vars[0]] = i;
+    }
+  }
+}
+
+void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, CutData* cut) {
+  DCHECK_EQ(term.expr_size, 1);
+  const IntegerVariable var = term.expr_vars[0];
+  const int new_index = cut->terms.size();
+  const auto [it, inserted] =
+      term.expr_coeffs[0] > 0 ? direct_index_.insert({var, new_index})
+                              : complemented_index_.insert({var, new_index});
+  const int entry_index = it->second;
+  if (inserted) {
+    cut->terms.push_back(term);
+  } else {
+    ++num_merges_;
+    if (!AddProductTo(IntegerValue(1), term.coeff,
+                      &(cut->terms)[entry_index].coeff)) {
+      // If we cannot merge the term, we keep them separate.
+      // Produced cut will be less strong, but can still be used.
+      cut->terms.push_back(term);
+    }
+  }
+}
+
+bool CutDataBuilder::ConvertToLinearConstraint(const CutData& cut,
+                                               LinearConstraint* output) {
+  tmp_map_.clear();
+  IntegerValue new_rhs = cut.rhs;
+  for (const CutTerm& term : cut.terms) {
+    for (int i = 0; i < term.expr_size; ++i) {
+      if (!AddProductTo(term.coeff, term.expr_coeffs[i],
+                        &tmp_map_[term.expr_vars[i]])) {
+        return false;
+      }
+    }
+    if (!AddProductTo(-term.coeff, term.expr_offset, &new_rhs)) {
+      return false;
+    }
+  }
+
+  output->ClearTerms();
+  output->lb = kMinIntegerValue;
+  output->ub = new_rhs;
+  for (const auto [var, coeff] : tmp_map_) {
+    if (coeff == 0) continue;
+    output->vars.push_back(var);
+    output->coeffs.push_back(coeff);
+  }
+  DivideByGCD(output);
+  return true;
+}
+
 namespace {
 
 // Minimum amount of violation of the cut constraint by the solution. This
 // is needed to avoid numerical issues and adding cuts with minor effect.
 const double kMinCutViolation = 1e-4;
+
+IntegerValue CapProdI(IntegerValue a, IntegerValue b) {
+  return IntegerValue(CapProd(a.value(), b.value()));
+}
+
+IntegerValue CapSubI(IntegerValue a, IntegerValue b) {
+  return IntegerValue(CapSub(a.value(), b.value()));
+}
+
+bool ProdOverflow(IntegerValue t, IntegerValue value) {
+  return AtMinOrMaxInt64(CapProd(t.value(), value.value()));
+}
 
 }  // namespace
 
@@ -58,15 +219,17 @@ const double kMinCutViolation = 1e-4;
 // This is just a separate function as it is slightly faster to compute the
 // result only once.
 IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
-                        IntegerValue max_t, IntegerValue rhs) {
-  DCHECK_GE(max_t, 1);
-  IntegerValue new_max_t = max_t;
-  if (rhs != 0) {
-    new_max_t = std::min(new_max_t, kMaxIntegerValue / IntTypeAbs(rhs));
+                        IntegerValue max_magnitude) {
+  // Make sure that when we multiply the rhs or the coefficient by a factor t,
+  // we do not have an integer overflow. Note that the rhs should be counted
+  // in max_magnitude since we will apply f() on it.
+  IntegerValue max_t(std::numeric_limits<int64_t>::max());
+  if (max_magnitude != 0) {
+    max_t = max_t / max_magnitude;
   }
   return rhs_remainder == 0
-             ? new_max_t
-             : std::min(new_max_t, CeilRatio(divisor / 2, rhs_remainder));
+             ? max_t
+             : std::min(max_t, CeilRatio(divisor / 2, rhs_remainder));
 }
 
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
@@ -163,23 +326,77 @@ IntegerRoundingCutHelper::~IntegerRoundingCutHelper() {
   stats.push_back(
       {"rounding_cut/num_post_complements", total_num_post_complements_});
   stats.push_back({"rounding_cut/num_overflows", total_num_overflow_abort_});
+  stats.push_back({"rounding_cut/num_adjusts", total_num_coeff_adjust_});
+  stats.push_back({"rounding_cut/num_merges", total_num_merges_});
+  stats.push_back({"rounding_cut/num_bumps", total_num_bumps_});
+  stats.push_back(
+      {"rounding_cut/num_final_complements", total_num_final_complements_});
+  stats.push_back({"rounding_cut/num_dominating_f", total_num_dominating_f_});
   shared_stats_->AddStats(stats);
 }
 
-namespace {
+double IntegerRoundingCutHelper::GetScaledViolation(
+    IntegerValue divisor, IntegerValue max_scaling,
+    IntegerValue remainder_threshold, const CutData& cut) {
+  IntegerValue rhs = cut.rhs;
+  IntegerValue max_magnitude = cut.max_magnitude;
+  const IntegerValue initial_rhs_remainder = PositiveRemainder(rhs, divisor);
+  if (initial_rhs_remainder < remainder_threshold) return 0.0;
 
-double GetScaledViolation(
-    IntegerValue divisor, IntegerValue max_t, IntegerValue max_scaling,
-    const std::vector<IntegerValue>& coeffs,
-    const std::vector<std::pair<int, IntegerValue>>& adjusted_coeffs,
-    const std::vector<double>& lp_values, IntegerValue rhs) {
-  // Create the super-additive function f().
-  const IntegerValue rhs_remainder = rhs - FloorRatio(rhs, divisor) * divisor;
-  if (rhs_remainder == 0) return 0.0;
+  // We will adjust coefficient that are just under an exact multiple of
+  // divisor to an exact multiple. This is meant to get rid of small errors
+  // that appears due to rounding error in our exact computation of the
+  // initial constraint given to this class.
+  //
+  // Each adjustement will cause the initial_rhs_remainder to increase, and we
+  // do not want to increase it above divisor. Our threshold below guarantees
+  // this. Note that the higher the rhs_remainder becomes, the more the
+  // function f() has a chance to reduce the violation, so it is not always a
+  // good idea to use all the slack we have between initial_rhs_remainder and
+  // divisor.
+  //
+  // TODO(user): We could see if for a fixed function f, the increase is
+  // interesting?
+  // before: f(rhs) - f(coeff) * lp_value
+  // after: f(rhs + increase * bound_diff) - f(coeff + increase) * lp_value.
+  adjusted_coeffs_.clear();
+  const IntegerValue adjust_threshold =
+      (divisor - initial_rhs_remainder - 1) /
+      IntegerValue(std::max(1000, cut.num_relevant_entries));
+  if (adjust_threshold > 0) {
+    // Even before we finish the adjust, we can have a lower bound on the
+    // activily loss using this divisor, and so we can abort early. This is
+    // similar to what is done below.
+    double max_violation = ToDouble(initial_rhs_remainder);
+    for (int i = 0; i < cut.num_relevant_entries; ++i) {
+      const CutTerm& entry = cut.terms[i];
+      const IntegerValue remainder = PositiveRemainder(entry.coeff, divisor);
+      if (remainder == 0) continue;
+      if (remainder <= initial_rhs_remainder) {
+        // We do not know exactly f() yet, but it will always round to the
+        // floor of the division by divisor in this case.
+        max_violation -= ToDouble(remainder) * entry.lp_value;
+        if (max_violation <= 1e-3) return 0.0;
+        continue;
+      }
 
-  const auto f = GetSuperAdditiveRoundingFunction(
-      rhs_remainder, divisor, GetFactorT(rhs_remainder, divisor, max_t, rhs),
-      max_scaling);
+      // Adjust coeff of the form k * divisor - epsilon.
+      const IntegerValue adjust = divisor - remainder;
+      const IntegerValue prod = CapProdI(adjust, entry.bound_diff);
+      if (prod <= adjust_threshold) {
+        rhs += prod;
+        const IntegerValue new_coeff = entry.coeff + adjust;
+        adjusted_coeffs_.push_back({i, new_coeff});
+        max_magnitude = std::max(max_magnitude, IntTypeAbs(new_coeff));
+      }
+    }
+  }
+
+  max_magnitude = std::max(max_magnitude, IntTypeAbs(rhs));
+  const IntegerValue rhs_remainder = PositiveRemainder(rhs, divisor);
+  const IntegerValue t = GetFactorT(rhs_remainder, divisor, max_magnitude);
+  const auto f =
+      GetSuperAdditiveRoundingFunction(rhs_remainder, divisor, t, max_scaling);
 
   // As we round coefficients, we will compute the loss compared to the
   // current scaled constraint activity. As soon as this loss crosses the
@@ -189,8 +406,7 @@ double GetScaledViolation(
   // using our current best cut. Note that we also have to account the change
   // in slack due to the adjust code above.
   const double scaling = ToDouble(f(divisor)) / ToDouble(divisor);
-  const double threshold = scaling * ToDouble(rhs_remainder);
-  double loss = 0.0;
+  double max_violation = scaling * ToDouble(rhs_remainder);
 
   // Apply f() to the cut and compute the cut violation. Note that it is
   // okay to just look at the relevant indices since the other have a lp
@@ -198,43 +414,57 @@ double GetScaledViolation(
   // the max_magnitude might be off it should still be relevant enough.
   double violation = -ToDouble(f(rhs));
   double l2_norm = 0.0;
-  bool early_abort = false;
   int adjusted_coeffs_index = 0;
-  for (int i = 0; i < coeffs.size(); ++i) {
-    IntegerValue coeff = coeffs[i];
+  for (int i = 0; i < cut.num_relevant_entries; ++i) {
+    const CutTerm& entry = cut.terms[i];
 
     // Adjust coeff according to our previous computation if needed.
-    if (adjusted_coeffs_index < adjusted_coeffs.size() &&
-        adjusted_coeffs[adjusted_coeffs_index].first == i) {
-      coeff = adjusted_coeffs[adjusted_coeffs_index].second;
+    IntegerValue coeff = entry.coeff;
+    if (adjusted_coeffs_index < adjusted_coeffs_.size() &&
+        adjusted_coeffs_[adjusted_coeffs_index].first == i) {
+      coeff = adjusted_coeffs_[adjusted_coeffs_index].second;
       adjusted_coeffs_index++;
     }
 
     if (coeff == 0) continue;
     const IntegerValue new_coeff = f(coeff);
     const double new_coeff_double = ToDouble(new_coeff);
-    const double lp_value = lp_values[i];
+    const double lp_value = entry.lp_value;
 
+    // TODO(user): Shall we compute the norm after slack are substituted back?
+    // it might be widely different. Another reason why this might not be
+    // the best measure.
     l2_norm += new_coeff_double * new_coeff_double;
     violation += new_coeff_double * lp_value;
-    loss += (scaling * ToDouble(coeff) - new_coeff_double) * lp_value;
-    if (loss >= threshold) {
-      early_abort = true;
-      break;
-    }
+    max_violation -= (scaling * ToDouble(coeff) - new_coeff_double) * lp_value;
+    if (max_violation <= 1e-3) return 0.0;
   }
-  if (early_abort) return 0.0;
+  if (l2_norm == 0.0) return 0.0;
 
   // Here we scale by the L2 norm over the "relevant" positions. This seems
   // to work slighly better in practice.
+  //
+  // Note(user): The non-relevant position have an LP value of zero. If their
+  // coefficient is positive, it seems good not to take it into account in the
+  // norm since the larger this coeff is, the stronger the cut. If the coeff
+  // is negative though, a large coeff means a small increase from zero of the
+  // lp value will make the cut satisfied, so we might want to look at them.
   return violation / sqrt(l2_norm);
 }
 
-}  // namespace
+bool IntegerRoundingCutHelper::HasComplementedImpliedBound(
+    const CutTerm& entry, ImpliedBoundsProcessor* ib_processor) {
+  if (ib_processor == nullptr) return false;
+  if (entry.expr_size != 1) return false;
+  if (entry.bound_diff == 1) return false;
+  const ImpliedBoundsProcessor::BestImpliedBoundInfo info =
+      ib_processor->GetCachedImpliedBoundInfo(
+          entry.expr_coeffs[0] > 0 ? NegationOf(entry.expr_vars[0])
+                                   : entry.expr_vars[0]);
+  return info.bool_var != kNoIntegerVariable;
+}
 
-// TODO(user): This has been optimized a bit, but we can probably do even better
-// as it still takes around 25% percent of the run time when all the cuts are on
-// for the opm*mps.gz problems and others.
+// TODO(user): This is slow, 50% of run time on a2c1s1.pb.gz. Optimize!
 void IntegerRoundingCutHelper::ComputeCut(
     RoundingOptions options, const std::vector<double>& lp_values,
     const std::vector<IntegerValue>& lower_bounds,
@@ -248,318 +478,207 @@ void IntegerRoundingCutHelper::ComputeCut(
   CHECK_EQ(cut->coeffs.size(), size);
   CHECK_EQ(cut->lb, kMinIntegerValue);
 
-  // To optimize the computation of the best divisor below, we only need to
-  // look at the indices with a shifted lp value that is not close to zero.
-  //
-  // TODO(user): sort by decreasing lp_values so that our early abort test in
-  // the critical loop below has more chance of returning early? I tried but it
-  // didn't seems to change much though.
-  relevant_indices_.clear();
-  relevant_lp_values_.clear();
-  relevant_coeffs_.clear();
-  relevant_bound_diffs_.clear();
-  divisors_.clear();
-  adjusted_coeffs_.clear();
-
-  // Compute the maximum magnitude for non-fixed variables.
-  IntegerValue tmp(0);
-  for (int i = 0; i < size; ++i) {
-    if (lower_bounds[i] == upper_bounds[i]) continue;
-    const IntegerValue magnitude = IntTypeAbs(cut->coeffs[i]);
-    tmp = std::max(tmp, magnitude);
-  }
-  const IntegerValue max_magnitude = tmp;
-
   // Shift each variable using its lower/upper bound so that no variable can
   // change sign. We eventually do a change of variable to its negation so
   // that all variable are non-negative.
-  bool overflow = false;
-  change_sign_at_postprocessing_.assign(size, false);
+  best_cut_.rhs = cut->ub;
+  best_cut_.terms.clear();
+  bool all_booleans = true;
+  bool some_relevant_positions = false;
   for (int i = 0; i < size; ++i) {
     if (cut->coeffs[i] == 0) continue;
-    const IntegerValue magnitude = IntTypeAbs(cut->coeffs[i]);
 
     // We might change them below.
+    IntegerValue coeff = cut->coeffs[i];
     IntegerValue lb = lower_bounds[i];
-    double lp_value = lp_values[i];
 
     const IntegerValue ub = upper_bounds[i];
     const IntegerValue bound_diff =
         IntegerValue(CapSub(ub.value(), lb.value()));
 
     // Complement the variable so that it is always closer to its lb.
+    bool complement = false;
     {
-      const double lb_dist = std::abs(lp_value - ToDouble(lb));
-      const double ub_dist = std::abs(lp_value - ToDouble(ub));
+      const double lb_dist = std::abs(lp_values[i] - ToDouble(lb));
+      const double ub_dist = std::abs(lp_values[i] - ToDouble(ub));
       if (ub_dist < lb_dist) {
-        change_sign_at_postprocessing_[i] = true;
-        cut->coeffs[i] = -cut->coeffs[i];
-        lp_value = -lp_value;
+        complement = true;
+        coeff = -coeff;
         lb = -ub;
       }
     }
 
     // Always shift to lb.
     // coeff * X = coeff * (X - shift) + coeff * shift.
-    lp_value -= ToDouble(lb);
-    if (!AddProductTo(-cut->coeffs[i], lb, &cut->ub)) {
-      overflow = true;
-      break;
+    if (!AddProductTo(-coeff, lb, &best_cut_.rhs)) {
+      cut->Clear();
+      ++total_num_overflow_abort_;
+      return;
     }
 
     // Deal with fixed variable, no need to shift back in this case, we can
     // just remove the term.
-    if (bound_diff == 0) {
-      cut->coeffs[i] = IntegerValue(0);
-      lp_value = 0.0;
-    }
+    if (bound_diff == 0) continue;
 
-    if (std::abs(lp_value) > 1e-2) {
-      relevant_coeffs_.push_back(cut->coeffs[i]);
-      relevant_indices_.push_back(i);
-      relevant_lp_values_.push_back(lp_value);
-      relevant_bound_diffs_.push_back(bound_diff);
-      divisors_.push_back(magnitude);
+    CutTerm entry;
+    entry.expr_size = 1;
+    entry.expr_vars[0] = cut->vars[i];
+    entry.bound_diff = upper_bounds[i] - lower_bounds[i];
+    if (complement) {
+      // UB - X
+      entry.expr_coeffs[0] = -IntegerValue(1);
+      entry.expr_offset = upper_bounds[i];
+      entry.coeff = -cut->coeffs[i];
+      entry.lp_value = ToDouble(upper_bounds[i]) - lp_values[i];
+    } else {
+      // X - LB
+      entry.expr_coeffs[0] = IntegerValue(1);
+      entry.expr_offset = -lower_bounds[i];
+      entry.coeff = cut->coeffs[i];
+      entry.lp_value = lp_values[i] - ToDouble(lower_bounds[i]);
     }
+    if (entry.bound_diff != 1) all_booleans = false;
+    if (entry.HasRelevantLpValue()) some_relevant_positions = true;
+    best_cut_.terms.push_back(entry);
   }
+  cut->Clear();
 
   // TODO(user): Maybe this shouldn't be called on such constraint.
-  if (relevant_coeffs_.empty()) {
+  if (!some_relevant_positions) {
     VLOG(2) << "Issue, nothing to cut.";
-    cut->Clear();
     return;
   }
-  CHECK_NE(max_magnitude, 0);
+
+  // No need to process any implied bounds if only Booleans are involved.
+  if (all_booleans) ib_processor = nullptr;
 
   // Our heuristic will try to generate a few different cuts, and we will keep
   // the most violated one scaled by the l2 norm of the relevant position.
   //
   // TODO(user): Experiment for the best value of this initial violation
   // threshold. Note also that we use the l2 norm on the restricted position
-  // here. Maybe we should change that? On that note, the L2 norm usage seems a
-  // bit weird to me since it grows with the number of term in the cut. And
-  // often, we already have a good cut, and we make it stronger by adding extra
-  // terms that do not change its activity.
+  // here. Maybe we should change that? On that note, the L2 norm usage seems
+  // a bit weird to me since it grows with the number of term in the cut. And
+  // often, we already have a good cut, and we make it stronger by adding
+  // extra terms that do not change its activity.
   //
-  // The discussion above only concern the best_scaled_violation initial value.
-  // The remainder_threshold allows to not consider cuts for which the final
-  // efficacity is clearly lower than 1e-3 (it is a bound, so we could generate
-  // cuts with a lower efficacity than this).
-  double best_scaled_violation = 0.01;
-  const IntegerValue remainder_threshold(max_magnitude / 1000);
-
-  // Make sure that when we multiply the rhs or the coefficient by a factor t,
-  // we do not have an integer overflow. Actually, we need a bit more room
-  // because we might round down a value to the next multiple of
-  // max_magnitude.
+  // The discussion above only concern the best_scaled_violation initial
+  // value. The remainder_threshold allows to not consider cuts for which the
+  // final efficacity is clearly lower than 1e-3 (it is a bound, so we could
+  // generate cuts with a lower efficacity than this).
   //
-  // The cut->ub might have grown quite a bit with the bound substitution, so
-  // we need to include it too since we will apply the rounding function on it.
-  {
-    const IntegerValue m = std::max(max_magnitude, IntTypeAbs(cut->ub));
-    const IntegerValue overflow_threshold = kMaxIntegerValue / 2;
-    if (overflow || m >= overflow_threshold) {
-      VLOG(2) << "Issue, overflow.";
-      ++total_num_overflow_abort_;
-      cut->Clear();
-      return;
-    }
-    tmp = overflow_threshold / m;
+  // TODO(user): If the rhs is small and close to zero, we might want to
+  // consider different way of complementing the variables.
+  best_cut_.Canonicalize();
+  const IntegerValue remainder_threshold(
+      std::max(IntegerValue(1), best_cut_.max_magnitude / 1000));
+  if (best_cut_.rhs >= 0 && best_cut_.rhs < remainder_threshold) {
+    return;
   }
-  const IntegerValue max_t = tmp;
 
   // There is no point trying twice the same divisor or a divisor that is too
   // small. Note that we use a higher threshold than the remainder_threshold
-  // because we can boost the remainder thanks to our adjusting heuristic below
-  // and also because this allows to have cuts with a small range of
+  // because we can boost the remainder thanks to our adjusting heuristic
+  // below and also because this allows to have cuts with a small range of
   // coefficients.
-  //
-  // TODO(user): Note that the std::sort() is visible in some cpu profile.
-  {
-    int new_size = 0;
-    const IntegerValue divisor_threshold = max_magnitude / 10;
-    for (int i = 0; i < divisors_.size(); ++i) {
-      if (divisors_[i] <= divisor_threshold) continue;
-      divisors_[new_size++] = divisors_[i];
-    }
-    divisors_.resize(new_size);
+  divisors_.clear();
+  for (const CutTerm& entry : best_cut_.terms) {
+    // Note that because of the slacks, initial coeff are here too.
+    const IntegerValue magnitude = IntTypeAbs(entry.coeff);
+    if (magnitude <= remainder_threshold) continue;
+    divisors_.push_back(magnitude);
   }
+  if (divisors_.empty()) return;
   gtl::STLSortAndRemoveDuplicates(&divisors_, std::greater<IntegerValue>());
 
+  // Note that most of the time is spend here since we call this function on
+  // many linear equation, and just a few of them have a good enough scaled
+  // violation. We can spend more time afterwards to tune the cut.
+  //
   // TODO(user): Avoid quadratic algorithm? Note that we are quadratic in
-  // relevant_indices not the full cut->coeffs.size(), but this is still too
-  // much on some problems.
+  // relevant positions not the full cut size, but this is still too much on
+  // some problems.
   IntegerValue best_divisor(0);
+  double best_scaled_violation = 1e-3;
   for (const IntegerValue divisor : divisors_) {
-    // Skip if we don't have the potential to generate a good enough cut.
-    const IntegerValue initial_rhs_remainder =
-        cut->ub - FloorRatio(cut->ub, divisor) * divisor;
-    if (initial_rhs_remainder <= remainder_threshold) continue;
-
-    IntegerValue temp_ub = cut->ub;
-    adjusted_coeffs_.clear();
-
-    // We will adjust coefficient that are just under an exact multiple of
-    // divisor to an exact multiple. This is meant to get rid of small errors
-    // that appears due to rounding error in our exact computation of the
-    // initial constraint given to this class.
-    //
-    // Each adjustement will cause the initial_rhs_remainder to increase, and we
-    // do not want to increase it above divisor. Our threshold below guarantees
-    // this. Note that the higher the rhs_remainder becomes, the more the
-    // function f() has a chance to reduce the violation, so it is not always a
-    // good idea to use all the slack we have between initial_rhs_remainder and
-    // divisor.
-    //
-    // TODO(user): If possible, it might be better to complement these
-    // variables. Even if the adjusted lp_values end up larger, if we loose less
-    // when taking f(), then we will have a better violation.
-    const IntegerValue adjust_threshold =
-        (divisor - initial_rhs_remainder - 1) / IntegerValue(size);
-    if (adjust_threshold > 0) {
-      // Even before we finish the adjust, we can have a lower bound on the
-      // activily loss using this divisor, and so we can abort early. This is
-      // similar to what is done below in the function.
-      bool early_abort = false;
-      double loss_lb = 0.0;
-      const double threshold = ToDouble(initial_rhs_remainder);
-
-      for (int i = 0; i < relevant_coeffs_.size(); ++i) {
-        // Compute the difference of coeff with the next multiple of divisor.
-        const IntegerValue coeff = relevant_coeffs_[i];
-        const IntegerValue remainder =
-            CeilRatio(coeff, divisor) * divisor - coeff;
-
-        if (divisor - remainder <= initial_rhs_remainder) {
-          // We do not know exactly f() yet, but it will always round to the
-          // floor of the division by divisor in this case.
-          loss_lb += ToDouble(divisor - remainder) * relevant_lp_values_[i];
-          if (loss_lb >= threshold) {
-            early_abort = true;
-            break;
-          }
-        }
-
-        // Adjust coeff of the form k * divisor - epsilon.
-        const IntegerValue diff = relevant_bound_diffs_[i];
-        if (remainder > 0 && remainder <= adjust_threshold &&
-            CapProd(diff.value(), remainder.value()) <= adjust_threshold) {
-          temp_ub += remainder * diff;
-          adjusted_coeffs_.push_back({i, coeff + remainder});
-        }
-      }
-
-      if (early_abort) continue;
-    }
-
-    const double violation = GetScaledViolation(
-        divisor, max_t, options.max_scaling, relevant_coeffs_, adjusted_coeffs_,
-        relevant_lp_values_, temp_ub);
+    // Note that the function will abort right away if PositiveRemainder() is
+    // not good enough, so it is quick for bad divisor.
+    const double violation = GetScaledViolation(divisor, options.max_scaling,
+                                                remainder_threshold, best_cut_);
     if (violation > best_scaled_violation) {
       best_scaled_violation = violation;
+      best_adjusted_coeffs_ = adjusted_coeffs_;
+      best_divisor = divisor;
+    }
+  }
+  if (best_divisor == 0) return;
+
+  // Try best_divisor divided by small number.
+  for (int div = 2; div < 9; ++div) {
+    const IntegerValue divisor = best_divisor / IntegerValue(div);
+    if (divisor <= 1) continue;
+    const double violation = GetScaledViolation(divisor, options.max_scaling,
+                                                remainder_threshold, best_cut_);
+    if (violation > best_scaled_violation) {
+      best_scaled_violation = violation;
+      best_adjusted_coeffs_ = adjusted_coeffs_;
       best_divisor = divisor;
     }
   }
 
-  if (best_divisor == 0) {
-    *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
-    return;
-  }
+  // Re try complementation on the transformed cut.
+  for (CutTerm& entry : best_cut_.terms) {
+    if (!entry.HasRelevantLpValue()) break;
+    if (entry.coeff % best_divisor == 0) continue;
 
-  // Adjust coefficients.
-  //
-  // TODO(user): It might make sense to also adjust the one with a small LP
-  // value, but then the cut will be slighlty different than the one we computed
-  // above. Try with and without maybe?
-  const IntegerValue initial_rhs_remainder =
-      cut->ub - FloorRatio(cut->ub, best_divisor) * best_divisor;
-  const IntegerValue adjust_threshold =
-      (best_divisor - initial_rhs_remainder - 1) / IntegerValue(size);
-  if (adjust_threshold > 0) {
-    for (int i = 0; i < relevant_indices_.size(); ++i) {
-      const int index = relevant_indices_[i];
-      const IntegerValue diff = relevant_bound_diffs_[i];
-      if (diff > adjust_threshold) continue;
+    // Temporary try to complement this variable.
+    if (!entry.Complement(&best_cut_.rhs)) continue;
 
-      // Adjust coeff of the form k * best_divisor - epsilon.
-      const IntegerValue coeff = cut->coeffs[index];
-      const IntegerValue remainder =
-          CeilRatio(coeff, best_divisor) * best_divisor - coeff;
-      if (CapProd(diff.value(), remainder.value()) <= adjust_threshold) {
-        cut->ub += remainder * diff;
-        cut->coeffs[index] += remainder;
-        relevant_coeffs_[i] = cut->coeffs[index];
-      }
+    const double violation = GetScaledViolation(
+        best_divisor, options.max_scaling, remainder_threshold, best_cut_);
+    if (violation > best_scaled_violation) {
+      // keep the change.
+      ++total_num_post_complements_;
+      best_scaled_violation = violation;
+      best_adjusted_coeffs_ = adjusted_coeffs_;
+    } else {
+      // Restore.
+      entry.Complement(&best_cut_.rhs);
     }
   }
 
-  // Try to complement some variables to see if we can get a better cut.
-  {
-    to_sort_.clear();
-    for (int i = 0; i < relevant_indices_.size(); ++i) {
-      to_sort_.push_back(
-          {relevant_lp_values_[i] / ToDouble(relevant_bound_diffs_[i]), i});
-    }
-    std::sort(to_sort_.begin(), to_sort_.end(), std::greater<>());
-    adjusted_coeffs_.clear();
-    IntegerValue temp_ub = cut->ub;
-    for (const auto [score, i] : to_sort_) {
-      // Temporary try to complement this variable.
-      const IntegerValue bound_diff = relevant_bound_diffs_[i];
-      const IntegerValue coeff = relevant_coeffs_[i];
-      const double lp_value = relevant_lp_values_[i];
-
-      // We replace coeff * X by coeff * (X - bound_diff + bound_diff)
-      // which gives -coeff * complement(X) + coeff * bound_diff;
-      const IntegerValue saved_rhs = temp_ub;
-      if (!AddProductTo(-coeff, bound_diff, &temp_ub)) continue;
-      relevant_coeffs_[i] = -coeff;
-      relevant_lp_values_[i] = ToDouble(bound_diff) - lp_value;
-
-      const double violation = GetScaledViolation(
-          best_divisor, max_t, options.max_scaling, relevant_coeffs_,
-          adjusted_coeffs_, relevant_lp_values_, temp_ub);
-      if (violation > best_scaled_violation + 1e-2) {
-        // keep the change.
-        ++total_num_post_complements_;
-        best_scaled_violation = violation;
-        cut->ub = temp_ub;
-        const int index = relevant_indices_[i];
-        CHECK_EQ(relevant_coeffs_[i], -cut->coeffs[index]);
-        change_sign_at_postprocessing_[index] =
-            !change_sign_at_postprocessing_[index];
-        cut->coeffs[index] = -cut->coeffs[index];
-      } else {
-        // Restore.
-        temp_ub = saved_rhs;
-        relevant_coeffs_[i] = coeff;
-        relevant_lp_values_[i] = lp_value;
-      }
-    }
+  // Adjust coefficients as computed by the best GetScaledViolation().
+  for (const auto [index, new_coeff] : best_adjusted_coeffs_) {
+    ++total_num_coeff_adjust_;
+    CutTerm& entry = best_cut_.terms[index];
+    const IntegerValue remainder = new_coeff - entry.coeff;
+    CHECK_GT(remainder, 0);
+    entry.coeff = new_coeff;
+    best_cut_.rhs += remainder * entry.bound_diff;
+    best_cut_.max_magnitude =
+        std::max(best_cut_.max_magnitude, IntTypeAbs(new_coeff));
   }
+  best_cut_.max_magnitude = std::max(best_cut_.max_magnitude, best_cut_.rhs);
 
-  // Create the super-additive function f().
-  //
-  // TODO(user): Try out different rounding function and keep the best. We can
-  // change max_t and max_scaling. It might not be easy to choose which cut is
-  // the best, but we can at least know for sure if one dominate the other
-  // completely. That is, if for all coeff f(coeff)/f(divisor) is greater than
-  // or equal to the same value for another function f.
+  // Create the base super-additive function f().
   const IntegerValue rhs_remainder =
-      cut->ub - FloorRatio(cut->ub, best_divisor) * best_divisor;
+      PositiveRemainder(best_cut_.rhs, best_divisor);
   IntegerValue factor_t =
-      GetFactorT(rhs_remainder, best_divisor, max_t, cut->ub);
+      GetFactorT(rhs_remainder, best_divisor, best_cut_.max_magnitude);
   auto f = GetSuperAdditiveRoundingFunction(rhs_remainder, best_divisor,
                                             factor_t, options.max_scaling);
 
   // Look amongst all our possible function f() for one that dominate greedily
   // our current best one. Note that we prefer lower scaling factor since that
   // result in a cut with lower coefficients.
+  //
+  // We only look at relevant position and ignore the other. Not sure this is
+  // the best approach.
   remainders_.clear();
-  for (int i = 0; i < size; ++i) {
-    const IntegerValue coeff = cut->coeffs[i];
-    const IntegerValue r =
-        coeff - FloorRatio(coeff, best_divisor) * best_divisor;
+  for (const CutTerm& entry : best_cut_.terms) {
+    if (!entry.HasRelevantLpValue()) break;
+    const IntegerValue coeff = entry.coeff;
+    const IntegerValue r = PositiveRemainder(coeff, best_divisor);
     if (r > rhs_remainder) remainders_.push_back(r);
   }
   gtl::STLSortAndRemoveDuplicates(&remainders_);
@@ -575,7 +694,7 @@ void IntegerRoundingCutHelper::ComputeCut(
     // to abort quickly. I didn't see this code in the cpu profile so far.
     for (const IntegerValue t :
          {IntegerValue(1),
-          GetFactorT(rhs_remainder, best_divisor, max_t, cut->ub)}) {
+          GetFactorT(rhs_remainder, best_divisor, best_cut_.max_magnitude)}) {
       for (IntegerValue s(2); s <= options.max_scaling; ++s) {
         const auto g =
             GetSuperAdditiveRoundingFunction(rhs_remainder, best_divisor, t, s);
@@ -589,6 +708,7 @@ void IntegerRoundingCutHelper::ComputeCut(
           rs_.push_back(temp);
         }
         if (rs_.size() == best_rs_.size() && num_strictly_better > 0) {
+          ++total_num_dominating_f_;
           f = g;
           factor_t = t;
           best_rs_ = rs_;
@@ -598,127 +718,244 @@ void IntegerRoundingCutHelper::ComputeCut(
     }
   }
 
-  // Apply f() to the cut. We start by applying it to the rhs here.
-  // We also try to use implied bounds to derive a stronger cut here.
-  cut->ub = f(cut->ub);
-  tmp_terms_.clear();
-  num_lifted_booleans_ = 0;
-  for (int i = 0; i < size; ++i) {
-    const IntegerValue coeff = cut->coeffs[i];
-    if (coeff == 0) continue;
-    IntegerValue new_coeff = f(coeff);
+  // Use implied bounds to "lift" Booleans into the cut.
+  // This should lead to stronger cuts even if the norms migth be worse.
+  num_ib_used_ = 0;
+  if (ib_processor != nullptr) {
+    cut_builder_.RegisterAllBooleansTerms(best_cut_);
+    const int old_size = best_cut_.terms.size();
+    for (int i = 0; i < old_size; ++i) {
+      CutTerm& term = best_cut_.terms[i];
 
-    bool used = false;
-    if (ib_processor != nullptr && !used) {
-      IntegerVariable var = cut->vars[i];
-      if (change_sign_at_postprocessing_[i]) {
-        var = NegationOf(var);
-      }
-      const ImpliedBoundsProcessor::BestImpliedBoundInfo info =
-          ib_processor->GetCachedImpliedBoundInfo(var);
-      if (info.bool_var != kNoIntegerVariable &&
-          CapProd(CapProd(std::abs(coeff.value()), factor_t.value()),
-                  info.bound_diff.value()) !=
-              std::numeric_limits<int64_t>::max()) {
-        // Because X = bound_diff * B + S
-        // We can replace coeff * X by the expression before applying f:
-        //   = f(coeff * bound_diff) * B + f(coeff) * [X - bound_diff * B]
-        //   = f(coeff) * X + (f(coeff * bound_diff) - f(coeff) * bound_diff] B
-        // So we can "lift" B into the cut.
-        //
-        // Note that this lifting is really the same as if we used that implied
-        // bound before since in f(coeff * bound_diff) * B + f(coeff) * S, if we
-        // replace S by its value [X - bound_diff * B] we get the same result.
-        //
-        // Note(user): So the possible difference of implied bounds are the
-        // divisor used and the ub/lb chosen by the heuristic above.
-        const IntegerValue coeff_b =
-            f(coeff * info.bound_diff) - f(coeff) * info.bound_diff;
-        CHECK_GE(coeff_b, 0);
-        if (coeff_b > 0) {
-          used = true;
-          ++num_lifted_booleans_;
-          ++total_num_pos_lifts_;
+      // Try lower bounded direction for implied bound.
+      // This kind should always be beneficial if it exists:
+      //
+      // Because X = bound_diff * B + S
+      // We can replace coeff * X by the expression before applying f:
+      //   = f(coeff * bound_diff) * B + f(coeff) * [X - bound_diff * B]
+      //   = f(coeff) * X + (f(coeff * bound_diff) - f(coeff) * bound_diff] * B
+      // So we can "lift" B into the cut with a non-negative coefficient.
+      //
+      // Note that this lifting is really the same as if we used that implied
+      // bound before since in f(coeff * bound_diff) * B + f(coeff) * S, if we
+      // replace S by its value [X - bound_diff * B] we get the same result.
+      //
+      // TODO(user): Ignore if bound_diff == 1 ? But we can still merge B with
+      // another entry if it exists, so it can still be good in this case.
+      //
+      // TODO(user): Only do it if coeff_b > 0 ? But again we could still merge
+      // B with an existing Boolean for a better cut even if coeff_b == 0.
+      {
+        const ImpliedBoundsProcessor::BestImpliedBoundInfo info =
+            ib_processor->GetCachedImpliedBoundInfo(
+                term.expr_coeffs[0] > 0 ? term.expr_vars[0]
+                                        : NegationOf(term.expr_vars[0]));
+        if (info.bool_var != kNoIntegerVariable &&
+            !ProdOverflow(factor_t, CapProdI(term.coeff, info.bound_diff))) {
+          const IntegerValue coeff_b =
+              f(term.coeff * info.bound_diff) - f(term.coeff) * info.bound_diff;
+          CHECK_GE(coeff_b, 0);
+
+          // We have X = info.diff * Boolean + slack.
+          CutTerm bool_term;
+          bool_term.coeff = term.coeff * info.bound_diff;
+          bool_term.expr_size = 1;
+          bool_term.expr_vars[0] = info.bool_var;
+          bool_term.bound_diff = IntegerValue(1);
+          bool_term.lp_value = info.bool_lp_value;
           if (info.is_positive) {
-            tmp_terms_.push_back({info.bool_var, coeff_b});
+            bool_term.expr_coeffs[0] = IntegerValue(1);
+            bool_term.expr_offset = IntegerValue(0);
           } else {
-            tmp_terms_.push_back({info.bool_var, -coeff_b});
-            if (!AddProductTo(IntegerValue(-1), coeff_b, &cut->ub)) {
-              cut->Clear();
-              return;
-            }
+            bool_term.expr_coeffs[0] = IntegerValue(-1);
+            bool_term.expr_offset = IntegerValue(1);
           }
+
+          // Create slack.
+          // The expression is term.exp - bound_diff * bool_term
+          // The variable shouldn't be the same.
+          DCHECK_EQ(term.expr_size, 1);
+          DCHECK_EQ(bool_term.expr_size, 1);
+          DCHECK_NE(term.expr_vars[0], bool_term.expr_vars[0]);
+          CutTerm slack_term;
+          slack_term.expr_size = 2;
+          slack_term.expr_vars[0] = term.expr_vars[0];
+          slack_term.expr_coeffs[0] = term.expr_coeffs[0];
+          slack_term.expr_vars[1] = bool_term.expr_vars[0];
+          slack_term.expr_coeffs[1] =
+              -info.bound_diff * bool_term.expr_coeffs[0];
+          slack_term.expr_offset =
+              term.expr_offset - info.bound_diff * bool_term.expr_offset;
+
+          slack_term.lp_value = info.slack_lp_value;
+          slack_term.coeff = term.coeff;
+          slack_term.bound_diff = term.bound_diff;
+
+          ++num_ib_used_;
+          ++total_num_pos_lifts_;
+          term = slack_term;
+          cut_builder_.AddOrMergeTerm(bool_term, &best_cut_);
+          continue;
         }
       }
-    }
 
-    if (ib_processor != nullptr && !used) {
-      IntegerVariable var = cut->vars[i];
-      if (change_sign_at_postprocessing_[i]) {
-        var = NegationOf(var);
-      }
+      // Use the implied bound on (-X) if it is beneficial to do so.
+      // Like complementing, this is not always good.
+      //
+      // We have comp(X) = diff - X = diff * B + S
+      //               X = diff * (1 - B) - S.
+      // So if we applies f, we will get:
+      //    f(coeff * diff) * (1 - B) + f(-coeff) * S
+      // and substituing S = diff * (1 - B) - X, we get:
+      //    -f(-coeff) * X + [f(coeff * diff) + f(-coeff) * diff] (1 - B).
+      //
+      // TODO(user): Note that while the violation might be higher, if the slack
+      // becomes large this will result in a less powerfull cut. Shall we do
+      // that? It is a bit the same problematic with complementing.
+      //
+      // TODO(user): If the slack is close to zero, then this transformation
+      // will always increase the violation. So we could potentially do it in
+      // Before our divisor selection heuristic. But the norm of the final cut
+      // will increase too.
+      if (!HasComplementedImpliedBound(term, ib_processor)) continue;
       const ImpliedBoundsProcessor::BestImpliedBoundInfo info =
-          ib_processor->GetCachedImpliedBoundInfo(NegationOf(var));
-      if (info.bool_var != kNoIntegerVariable &&
-          info.bound_diff == upper_bounds[i] - lower_bounds[i] &&
-          CapProd(CapProd(std::abs(coeff.value()), factor_t.value()),
-                  info.bound_diff.value()) !=
-              std::numeric_limits<int64_t>::max()) {
-        // We have comp(X) = diff - X = diff * B + S
-        //               X = diff * (1 - B) - S.
-        // So if we applies f, we will get:
-        //    f(coeff * diff) * (1 - B) + f(-coeff) * S
-        // and substitung S = diff * (1 - B) - X, we get:
-        //    -f(-coeff) * X + [f(coeff * diff) + f(-coeff) * diff] (1 - B).
-        const IntegerValue coeff_b =
-            f(coeff * info.bound_diff) + f(-coeff) * info.bound_diff;
-        CHECK_LE(coeff_b, 0);
-        const double x_value = change_sign_at_postprocessing_[i]
-                                   ? ToDouble(upper_bounds[i]) - lp_values[i]
-                                   : lp_values[i] - ToDouble(lower_bounds[i]);
-        const double lp1 = ToDouble(f(coeff)) * x_value;
-        const double lp2 = -ToDouble(f(-coeff)) * x_value +
-                           ToDouble(coeff_b) * (1 - info.bool_lp_value);
-        if (lp2 > lp1 + 1e-2) {
-          used = true;
-          ++num_lifted_booleans_;
-          ++total_num_neg_lifts_;
-          new_coeff = -f(-coeff);
-          if (!info.is_positive) {  // Not that we invert the bool here.
-            tmp_terms_.push_back({info.bool_var, coeff_b});
-          } else {
-            tmp_terms_.push_back({info.bool_var, -coeff_b});
-            if (!AddProductTo(IntegerValue(-1), coeff_b, &cut->ub)) {
-              cut->Clear();
-              return;
-            }
-          }
-        }
+          ib_processor->GetCachedImpliedBoundInfo(
+              term.expr_coeffs[0] > 0 ? NegationOf(term.expr_vars[0])
+                                      : term.expr_vars[0]);
+      // We do not want overflow when computing f().
+      if (ProdOverflow(factor_t, CapProdI(term.coeff, info.bound_diff))) {
+        continue;
       }
-    }
 
-    // Add the term corresponding to new_coeff * X by removing the bound shifts
-    // so the constraint is expressed in the original variables.
-    if (new_coeff == 0) continue;
-    if (change_sign_at_postprocessing_[i]) {
-      if (!AddProductTo(new_coeff, -upper_bounds[i], &cut->ub)) {
-        cut->Clear();
-        return;
+      // We only consider IB that span the full range here.
+      if (info.bound_diff != term.bound_diff) continue;
+
+      // Note that -f(-coeff) >= f(coeff) but coeff_b <= 0.
+      const IntegerValue coeff_b =
+          f(term.coeff * info.bound_diff) + f(-term.coeff) * info.bound_diff;
+      CHECK_LE(coeff_b, 0);
+      const double lp1 = ToDouble(f(term.coeff)) * term.lp_value;
+      const double lp2 = -ToDouble(f(-term.coeff)) * term.lp_value +
+                         ToDouble(coeff_b) * (1 - info.bool_lp_value);
+      if (lp2 > lp1 + 1e-2) {
+        // Create the Boolean term for (1 - B) in X = diff * (1 - B) - S
+        // We reverse the is_positive meaning here since we have (1 - B).
+        CutTerm bool_term;
+        bool_term.coeff = info.bound_diff * term.coeff;
+        bool_term.expr_size = 1;
+        bool_term.expr_vars[0] = info.bool_var;
+        bool_term.bound_diff = IntegerValue(1);
+        bool_term.lp_value = 1.0 - info.bool_lp_value;
+        if (!info.is_positive) {
+          bool_term.expr_coeffs[0] = IntegerValue(1);
+          bool_term.expr_offset = IntegerValue(0);
+        } else {
+          bool_term.expr_coeffs[0] = IntegerValue(-1);
+          bool_term.expr_offset = IntegerValue(1);
+        }
+
+        // Create the slack term in X = diff * (1 - B) - S
+        CutTerm slack_term;
+        slack_term.coeff = -term.coeff;
+        slack_term.expr_size = 2;
+        slack_term.expr_vars[0] = term.expr_vars[0];
+        slack_term.expr_coeffs[0] = -term.expr_coeffs[0];
+        slack_term.expr_vars[1] = bool_term.expr_vars[0];
+        slack_term.expr_coeffs[1] = info.bound_diff * bool_term.expr_coeffs[0];
+        slack_term.expr_offset =
+            info.bound_diff * bool_term.expr_offset - term.expr_offset;
+        slack_term.lp_value = info.slack_lp_value;
+        slack_term.bound_diff = term.bound_diff;
+
+        // Commit the change.
+        ++num_ib_used_;
+        ++total_num_neg_lifts_;
+        term = slack_term;
+        cut_builder_.AddOrMergeTerm(bool_term, &best_cut_);
       }
-      tmp_terms_.push_back({cut->vars[i], -new_coeff});
-    } else {
-      if (!AddProductTo(new_coeff, lower_bounds[i], &cut->ub)) {
-        cut->Clear();
-        return;
-      }
-      tmp_terms_.push_back({cut->vars[i], new_coeff});
     }
+    total_num_merges_ = cut_builder_.NumMergesSinceLastClear();
   }
 
-  // Basic post-processing.
-  CleanTermsAndFillConstraint(&tmp_terms_, cut);
-  RemoveZeroTerms(cut);
-  DivideByGCD(cut);
+  // More complementation, but for the same f.
+  // If we can do that, it probably means our heuristics above are not great.
+  for (int i = 0; i < 3; ++i) {
+    const int64_t saved = total_num_final_complements_;
+    for (CutTerm& entry : best_cut_.terms) {
+      // Complementing an entry gives:
+      // [a * X <= b] -> [-a * (diff - X) <= b - a * diff]
+      //
+      // We will compare what happen when we apply f:
+      // [f(b) - f(a) * lp(X)] -> [f(b - a * diff) - f(-a) * (diff - lp(X))].
+      //
+      // If lp(X) is zero, then the transformation is always worse.
+      // Because f(b - a * diff) >= f(b) + f(-a) * diff by super-additivity.
+      //
+      // However the larger is X, the better it gets since at diff, we have
+      // f(b) >= f(b - a * diff) + f(a * diff) >= f(b - a * diff) + f(a) * diff.
+      //
+      // TODO(user): It is still unclear if we have a * X + b * (1 - X) <= rhs
+      // for a Boolean X, what is the best way to apply f and if we should merge
+      // the terms. If there is no other terms, best is probably
+      // f(rhs - a) * X + f(rhs - b) * (1 - X).
+      if (entry.coeff % best_divisor == 0) continue;
+      if (!entry.HasRelevantLpValue()) continue;
+
+      // Avoid potential overflow here.
+      const IntegerValue prod(CapProdI(entry.bound_diff, entry.coeff));
+      if (ProdOverflow(factor_t, prod)) continue;
+      if (ProdOverflow(factor_t, CapSubI(best_cut_.rhs, prod))) continue;
+
+      const double lp1 = ToDouble(f(best_cut_.rhs)) -
+                         ToDouble(f(entry.coeff)) * entry.lp_value;
+      const double lp2 = ToDouble(f(best_cut_.rhs - prod)) -
+                         ToDouble(f(-entry.coeff)) *
+                             (ToDouble(entry.bound_diff) - entry.lp_value);
+      if (lp2 + 1e-2 < lp1) {
+        if (!entry.Complement(&best_cut_.rhs)) continue;
+        ++total_num_final_complements_;
+      }
+    }
+    if (total_num_final_complements_ == saved) break;
+  }
+
+  // Apply f() to the best_cut_ with a potential improvement for one Boolean:
+  //
+  // If we have a Boolean X, and a cut: terms + a * X <= b;
+  // By setting X to true or false, we have two inequalities:
+  //   terms <= b      if X == 0
+  //   terms <= b - a  if X == 1
+  // We can apply f to both inequalities and recombine:
+  //   f(terms) <= f(b) * (1 - X) + f(b - a) * X
+  // Which change the final coeff of X from f(a) to [f(b) - f(b - a)].
+  // This can only improve the cut since f(b) >= f(b - a) + f(a)
+  //
+  // Note that we re-Canonicalize after our possible complementation so that the
+  // "improvement" is applied to larger lp_value first.
+  best_cut_.Canonicalize();
+  bool improved = false;
+  const IntegerValue rhs = best_cut_.rhs;
+  const IntegerValue f_rhs = f(best_cut_.rhs);
+  best_cut_.rhs = f_rhs;
+  for (CutTerm& entry : best_cut_.terms) {
+    const IntegerValue f_coeff = f(entry.coeff);
+    if (!improved && entry.bound_diff == 1 &&
+        !ProdOverflow(factor_t, CapSubI(rhs, entry.coeff))) {
+      const IntegerValue alternative = f_rhs - f(rhs - entry.coeff);
+      DCHECK_GE(alternative, f_coeff);
+      if (alternative > f_coeff) {
+        ++total_num_bumps_;
+        improved = true;
+        entry.coeff = alternative;
+        continue;
+      }
+    }
+    entry.coeff = f_coeff;
+  }
+
+  if (!cut_builder_.ConvertToLinearConstraint(best_cut_, cut)) {
+    ++total_num_overflow_abort_;
+  }
 }
 
 bool CoverCutHelper::TrySimpleKnapsack(

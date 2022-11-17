@@ -765,6 +765,7 @@ bool LinearConstraintManager::DebugCheckConstraint(
     activity += coeff * debug_solution[var];
   }
   if (activity > cut.ub || activity < cut.lb) {
+    LOG(INFO) << cut.DebugString();
     LOG(INFO) << "activity " << activity << " not in [" << cut.lb << ","
               << cut.ub << "]";
     return false;

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_CUTS_H_
 #define OR_TOOLS_SAT_CUTS_H_
 
+#include <array>
 #include <functional>
 #include <limits>
 #include <string>
@@ -51,6 +52,73 @@ struct CutGenerator {
       const absl::StrongVector<IntegerVariable, double>& lp_values,
       LinearConstraintManager* manager)>
       generate_cuts;
+};
+
+// To simplify cut generation code, we use a more complex data structure than
+// just a LinearConstraint to represent a cut with shifted/complemented variable
+// and implied bound substitution.
+struct CutTerm {
+  bool IsBoolean() const { return bound_diff == 1; }
+  bool HasRelevantLpValue() const { return lp_value > 1e-2; }
+
+  std::string DebugString() const;
+
+  // Returns false and do nothing if this would cause an overflow.
+  // Otherwise do the subtitution X -> (1 - X') and update the rhs.
+  bool Complement(IntegerValue* rhs);
+
+  // Each term is of the form coeff * X where X is a variable with given
+  // lp_value and with a domain in [0, bound_diff]. Note X is always >= 0.
+  double lp_value = 0.0;
+  IntegerValue coeff = IntegerValue(0);
+  IntegerValue bound_diff = IntegerValue(0);
+
+  // X = the given LinearExpression.
+  // We only support size 1 or 2 here which allow to inline the memory.
+  int expr_size = 0;
+  IntegerValue expr_offset = IntegerValue(0);
+  std::array<IntegerVariable, 2> expr_vars;
+  std::array<IntegerValue, 2> expr_coeffs;
+};
+
+// Our cut are always of the form linear_expression <= rhs.
+struct CutData {
+  // We need level zero bounds and LP relaxation values to fill a CutData.
+  // Returns false if we encounter any integer overflow.
+  bool FillFromLinearConstraint(
+      const LinearConstraint& cut,
+      const absl::StrongVector<IntegerVariable, double>& lp_values,
+      IntegerTrail* integer_trail);
+
+  IntegerValue rhs;
+  std::vector<CutTerm> terms;
+
+  // This sorts terms and fill both num_relevant_entries and max_magnitude.
+  void Canonicalize();
+  IntegerValue max_magnitude;
+  int num_relevant_entries;
+};
+
+// Stores temporaries used to build or manipulate a CutData.
+class CutDataBuilder {
+ public:
+  // These function allow to merges entries corresponding to the same variable
+  // and complementation. That is (X - lb) and (ub - X) are NOT merged and kept
+  // as separate terms. Note that we currently only merge Booleans since this
+  // is the only case we need.
+  void ClearIndices();
+  void RegisterAllBooleansTerms(const CutData& cut);
+  void AddOrMergeTerm(const CutTerm& term, CutData* cut);
+  int NumMergesSinceLastClear() const { return num_merges_; }
+
+  // Returns false if we encounter an integer overflow.
+  bool ConvertToLinearConstraint(const CutData& cut, LinearConstraint* output);
+
+ private:
+  int num_merges_ = 0;
+  absl::flat_hash_map<IntegerVariable, int> direct_index_;
+  absl::flat_hash_map<IntegerVariable, int> complemented_index_;
+  absl::btree_map<IntegerVariable, IntegerValue> tmp_map_;
 };
 
 // Given an upper-bounded linear relation (sum terms <= ub), this algorithm
@@ -296,7 +364,7 @@ class FlowCoverCutHelper {
 // it could be nice to try to generate a cut using different values of
 // max_scaling.
 IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
-                        IntegerValue max_t, IntegerValue rhs);
+                        IntegerValue max_magnitude);
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue t,
     IntegerValue max_scaling);
@@ -344,35 +412,42 @@ class IntegerRoundingCutHelper {
 
   // Returns the number of implied bound lifted Booleans in the last
   // ComputeCut() call. Useful for investigation.
-  int NumLiftedBooleans() const { return num_lifted_booleans_; }
+  int NumLiftedBooleans() const { return num_ib_used_; }
 
   void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
 
  private:
-  SharedStatistics* shared_stats_ = nullptr;
+  bool HasComplementedImpliedBound(const CutTerm& entry,
+                                   ImpliedBoundsProcessor* ib_processor);
+
+  double GetScaledViolation(IntegerValue divisor, IntegerValue max_scaling,
+                            IntegerValue remainder_threshold,
+                            const CutData& cut);
 
   // The helper is just here to reuse the memory for these vectors.
-  std::vector<int> relevant_indices_;
-  std::vector<double> relevant_lp_values_;
-  std::vector<IntegerValue> relevant_coeffs_;
-  std::vector<IntegerValue> relevant_bound_diffs_;
   std::vector<IntegerValue> divisors_;
-  std::vector<std::pair<int, IntegerValue>> adjusted_coeffs_;
   std::vector<IntegerValue> remainders_;
-  std::vector<bool> change_sign_at_postprocessing_;
   std::vector<IntegerValue> rs_;
   std::vector<IntegerValue> best_rs_;
 
-  std::vector<std::pair<double, int>> to_sort_;
+  int64_t num_ib_used_ = 0;
+  CutData best_cut_;
+  CutDataBuilder cut_builder_;
 
-  int num_lifted_booleans_ = 0;
-  std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
+  std::vector<std::pair<int, IntegerValue>> adjusted_coeffs_;
+  std::vector<std::pair<int, IntegerValue>> best_adjusted_coeffs_;
 
   // Overall stats.
+  SharedStatistics* shared_stats_ = nullptr;
+  int64_t total_num_dominating_f_ = 0;
   int64_t total_num_pos_lifts_ = 0;
   int64_t total_num_neg_lifts_ = 0;
   int64_t total_num_post_complements_ = 0;
   int64_t total_num_overflow_abort_ = 0;
+  int64_t total_num_coeff_adjust_ = 0;
+  int64_t total_num_merges_ = 0;
+  int64_t total_num_bumps_ = 0;
+  int64_t total_num_final_complements_ = 0;
 };
 
 // Helper to find knapsack cover cuts.
