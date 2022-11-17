@@ -194,8 +194,8 @@ struct IntegerLiteral {
   }
 
   bool IsValid() const { return var != kNoIntegerVariable; }
-  bool IsTrueLiteral() const { return var == kNoIntegerVariable && bound <= 0; }
-  bool IsFalseLiteral() const { return var == kNoIntegerVariable && bound > 0; }
+  bool IsAlwaysTrue() const { return var == kNoIntegerVariable && bound <= 0; }
+  bool IsAlwaysFalse() const { return var == kNoIntegerVariable && bound > 0; }
 
   // The negation of x >= bound is x <= bound - 1.
   IntegerLiteral Negated() const;
@@ -925,7 +925,8 @@ class IntegerTrail : public SatPropagator {
   std::vector<Literal> ReasonFor(IntegerLiteral literal) const;
 
   // Appends the reason for the given integer literals to the output and call
-  // STLSortAndRemoveDuplicates() on it.
+  // STLSortAndRemoveDuplicates() on it. This function accept "constant"
+  // literal.
   void MergeReasonInto(absl::Span<const IntegerLiteral> literals,
                        std::vector<Literal>* output) const;
 
@@ -1169,6 +1170,9 @@ class IntegerTrail : public SatPropagator {
 
   // Temporary data used by AppendNewBounds().
   mutable SparseBitset<IntegerVariable> tmp_marked_;
+
+  // Temporary data used by SafeEnqueue();
+  std::vector<IntegerLiteral> tmp_cleaned_reason_;
 
   // For EnqueueLiteral(), we store a special TrailEntry to recover the reason
   // lazily. This vector indicates the correspondence between a literal that

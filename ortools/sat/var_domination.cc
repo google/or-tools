@@ -27,6 +27,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -643,55 +644,51 @@ void DualBoundStrengthening::ProcessLinearConstraint(
 namespace {
 
 // This is used to detect if two linear constraint are equivalent if the literal
-// ref is mapped to another value.
-//
-// Important: we assume output is only used by this function.
-void CopyLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
-                                  ConstraintProto* output) {
+// ref is mapped to another value. We fill a vector that will only be equal
+// to another such vector if the two constraint differ only there.
+void TransformLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
+                                       std::vector<int64_t>* output) {
   DCHECK_EQ(ct.constraint_case(), ConstraintProto::kLinear);
+  output->clear();
 
   // Deal with enforcement.
-  bool in_enforcement = false;
-  output->clear_enforcement_literal();
-  for (const int literal : ct.enforcement_literal()) {
-    if (literal == NegatedRef(ref)) {
-      in_enforcement = true;
-      continue;
+  // We only detect NegatedRef() here.
+  if (!ct.enforcement_literal().empty()) {
+    output->push_back(ct.enforcement_literal().size());
+    for (const int literal : ct.enforcement_literal()) {
+      if (literal == NegatedRef(ref)) {
+        output->push_back(std::numeric_limits<int32_t>::max());  // Sentinel
+      } else {
+        output->push_back(literal);
+      }
     }
-    output->add_enforcement_literal(literal);
-  }
-  if (in_enforcement) {
-    // We add a sentinel at the end
-    output->add_enforcement_literal(std::numeric_limits<int32_t>::max());
   }
 
   // Deal with linear part.
-  int64_t coeff = 0;
+  // We look for both literal and not(literal) here.
   int64_t offset = 0;
-  auto* new_lin = output->mutable_linear();
-  new_lin->clear_vars();
-  new_lin->clear_coeffs();
+  output->push_back(ct.linear().vars().size());
   for (int i = 0; i < ct.linear().vars().size(); ++i) {
     const int v = ct.linear().vars(i);
     const int64_t c = ct.linear().coeffs(i);
     if (v == ref) {
-      coeff += c;
+      output->push_back(std::numeric_limits<int32_t>::max());  // Sentinel
+      output->push_back(c);
     } else if (v == NegatedRef(ref)) {
       // c * v = -c * (1 - v) + c
+      output->push_back(std::numeric_limits<int32_t>::max());  // Sentinel
+      output->push_back(-c);
       offset += c;
-      coeff -= c;
     } else {
-      new_lin->add_vars(v);
-      new_lin->add_coeffs(c);
+      output->push_back(v);
+      output->push_back(c);
     }
   }
-  if (coeff != 0) {
-    new_lin->add_vars(std::numeric_limits<int32_t>::max());
-    new_lin->add_coeffs(coeff);
+
+  // Domain.
+  for (const int64_t value : ct.linear().domain()) {
+    output->push_back(value - offset);
   }
-  FillDomainInProto(
-      ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-offset)), new_lin);
-  CHECK(in_enforcement || coeff != 0);
 }
 
 }  // namespace
@@ -700,6 +697,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   num_deleted_constraints_ = 0;
   const CpModelProto& cp_model = *context->working_model;
   const int num_vars = cp_model.variables_size();
+  int64_t num_fixed_vars = 0;
   for (int var = 0; var < num_vars; ++var) {
     if (context->IsFixed(var)) continue;
 
@@ -707,7 +705,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     const int64_t lb = context->MinOf(var);
     const int64_t ub_limit = std::max(lb, CanFreelyDecreaseUntil(var));
     if (ub_limit == lb) {
-      context->UpdateRuleStats("dual: fix variable");
+      ++num_fixed_vars;
       CHECK(context->IntersectDomainWith(var, Domain(lb)));
       continue;
     }
@@ -717,7 +715,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     const int64_t lb_limit =
         std::min(ub, -CanFreelyDecreaseUntil(NegatedRef(var)));
     if (lb_limit == ub) {
-      context->UpdateRuleStats("dual: fix variable");
+      ++num_fixed_vars;
       CHECK(context->IntersectDomainWith(var, Domain(ub)));
       continue;
     }
@@ -761,11 +759,15 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       CHECK(context->IntersectDomainWith(var, Domain(new_lb, new_ub)));
     }
   }
+  if (num_fixed_vars > 0) {
+    context->UpdateRuleStats("dual: fix variable", num_fixed_vars);
+  }
 
   // For detecting near-duplicate constraint that can be made equivalent.
   // hash -> (ct_index, modified ref).
   absl::flat_hash_map<uint64_t, std::pair<int, int>> equiv_modified_constraints;
-  ConstraintProto copy;
+  std::vector<int64_t> temp_data;
+  std::vector<int64_t> other_temp_data;
   std::string s;
 
   // If there is only one blocking constraint, we can simplify the problem in
@@ -775,6 +777,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   int64_t work_done = 0;
   const int64_t work_limit = static_cast<int64_t>(1e9);
   std::vector<bool> processed(num_vars, false);
+  int64_t num_bool_in_near_duplicate_ct = 0;
   for (IntegerVariable var(0); var < num_locks_.size(); ++var) {
     const int ref = VarDomination::IntegerVariableToRef(var);
     const int positive_ref = PositiveRef(ref);
@@ -887,12 +890,11 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       // limit. Improve?
       if (ct.constraint_case() == ConstraintProto::kLinear &&
           context->CanBeUsedAsLiteral(ref) && work_done < work_limit) {
-        // TODO(user): This is probably slower than hashing directly the
-        // constraint ourselve.
         work_done += ct.linear().vars().size();
-        CopyLinearWithSpecialBoolean(ct, ref, &copy);
-        copy.SerializeToString(&s);
-        const uint64_t hash = absl::Hash<std::string>()(s);
+        TransformLinearWithSpecialBoolean(ct, ref, &temp_data);
+        const uint64_t hash =
+            fasthash64(temp_data.data(), temp_data.size() * sizeof(int64_t),
+                       uint64_t{0xa5b85c5e198ed849});
         const auto [it, inserted] =
             equiv_modified_constraints.insert({hash, {ct_index, ref}});
         if (!inserted) {
@@ -901,12 +903,12 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           CHECK_NE(other_c_with_same_hash, ct_index);
           const auto& other_ct =
               context->working_model->constraints(other_c_with_same_hash);
-          CopyLinearWithSpecialBoolean(other_ct, other_ref, &copy);
-          if (s == copy.SerializeAsString()) {
+          TransformLinearWithSpecialBoolean(other_ct, other_ref,
+                                            &other_temp_data);
+          if (temp_data == other_temp_data) {
             // We have a true equality. The two ref can be made equivalent.
             if (!processed[PositiveRef(other_ref)]) {
-              context->UpdateRuleStats(
-                  "dual: equivalent Boolean in near-duplicate constraints");
+              ++num_bool_in_near_duplicate_ct;
               processed[PositiveRef(ref)] = true;
               processed[PositiveRef(other_ref)] = true;
               context->StoreBooleanEqualityRelation(ref, other_ref);
@@ -982,6 +984,12 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     processed[PositiveRef(b)] = true;
     context->StoreBooleanEqualityRelation(a, b);
     context->UpdateRuleStats("dual: enforced equivalence");
+  }
+
+  if (num_bool_in_near_duplicate_ct) {
+    context->UpdateRuleStats(
+        "dual: equivalent Boolean in near-duplicate constraints",
+        num_bool_in_near_duplicate_ct);
   }
 
   VLOG(2) << "Num deleted constraints: " << num_deleted_constraints_;

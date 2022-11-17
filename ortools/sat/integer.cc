@@ -1039,20 +1039,19 @@ std::string IntegerTrail::DebugString() {
 
 bool IntegerTrail::SafeEnqueue(
     IntegerLiteral i_lit, absl::Span<const IntegerLiteral> integer_reason) {
-  if (i_lit.IsTrueLiteral()) return true;
+  // Note that ReportConflict() deal correctly with constant literals.
+  if (i_lit.IsAlwaysTrue()) return true;
+  if (i_lit.IsAlwaysFalse()) return ReportConflict({}, integer_reason);
 
-  std::vector<IntegerLiteral> cleaned_reason;
+  // Most of our propagation code do not use "constant" literal, so to not
+  // have to test for them in Enqueue(), we clear them beforehand.
+  tmp_cleaned_reason_.clear();
   for (const IntegerLiteral lit : integer_reason) {
-    DCHECK(!lit.IsFalseLiteral());
-    if (lit.IsTrueLiteral()) continue;
-    cleaned_reason.push_back(lit);
+    DCHECK(!lit.IsAlwaysFalse());
+    if (lit.IsAlwaysTrue()) continue;
+    tmp_cleaned_reason_.push_back(lit);
   }
-
-  if (i_lit.IsFalseLiteral()) {
-    return ReportConflict({}, cleaned_reason);
-  } else {
-    return Enqueue(i_lit, {}, cleaned_reason);
-  }
+  return Enqueue(i_lit, {}, tmp_cleaned_reason_);
 }
 
 bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
@@ -1127,6 +1126,11 @@ bool IntegerTrail::ReasonIsValid(
     if (!assignment.LiteralIsFalse(lit)) return false;
   }
   for (const IntegerLiteral i_lit : integer_reason) {
+    if (i_lit.IsAlwaysTrue()) continue;
+    if (i_lit.IsAlwaysFalse()) {
+      LOG(INFO) << "Reason has a constant false literal!";
+      return false;
+    }
     if (i_lit.bound > vars_[i_lit.var].current_bound) {
       if (IsOptional(i_lit.var)) {
         const Literal is_ignored = IsIgnoredLiteral(i_lit.var);
@@ -1668,13 +1672,12 @@ std::vector<Literal> IntegerTrail::ReasonFor(IntegerLiteral literal) const {
   return reason;
 }
 
-// TODO(user): If this is called many time on the same variables, it could be
-// made faster by using some caching mecanism.
 void IntegerTrail::MergeReasonInto(absl::Span<const IntegerLiteral> literals,
                                    std::vector<Literal>* output) const {
   DCHECK(tmp_queue_.empty());
   const int num_vars = vars_.size();
   for (const IntegerLiteral& literal : literals) {
+    if (literal.IsAlwaysTrue()) continue;
     const int trail_index = FindLowestTrailIndexThatExplainBound(literal);
 
     // Any indices lower than that means that there is no reason needed.
@@ -1817,6 +1820,8 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
   }
 }
 
+// TODO(user): If this is called many time on the same variables, it could be
+// made faster by using some caching mecanism.
 absl::Span<const Literal> IntegerTrail::Reason(const Trail& trail,
                                                int trail_index) const {
   const int index = boolean_trail_index_to_integer_one_[trail_index];
