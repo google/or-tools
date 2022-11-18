@@ -86,14 +86,6 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
   TEST_IN_RANGE(solution_pool_size, 1, std::numeric_limits<int32_t>::max());
 
-  if (params.enumerate_all_solutions() && params.num_search_workers() > 1) {
-    return "Enumerating all solutions does not work in parallel";
-  }
-
-  if (params.enumerate_all_solutions() && params.interleave_search()) {
-    return "Enumerating all solutions does not work with interleaved search";
-  }
-
   TEST_NON_NEGATIVE(mip_wanted_precision);
   TEST_NON_NEGATIVE(max_time_in_seconds);
   TEST_NON_NEGATIVE(max_deterministic_time);
@@ -101,6 +93,19 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(num_search_workers);
   TEST_NON_NEGATIVE(min_num_lns_workers);
   TEST_NON_NEGATIVE(interleave_batch_size);
+
+  if (params.enumerate_all_solutions() &&
+      (params.num_search_workers() > 1 || params.num_workers() > 1)) {
+    return "Enumerating all solutions does not work in parallel";
+  }
+
+  if (params.num_search_workers() >= 1 && params.num_workers() >= 1) {
+    return "Do not specify both num_search_workers and num_workers";
+  }
+
+  if (params.enumerate_all_solutions() && params.interleave_search()) {
+    return "Enumerating all solutions does not work with interleaved search";
+  }
 
   return "";
 }

@@ -362,12 +362,16 @@ void AppendBoolOrRelaxation(const ConstraintProto& ct, Model* model,
 }
 
 void AppendBoolAndRelaxation(const ConstraintProto& ct, Model* model,
-                             LinearRelaxation* relaxation) {
+                             LinearRelaxation* relaxation,
+                             ActivityBoundHelper* activity_helper) {
+  if (!HasEnforcementLiteral(ct)) return;
+
   // TODO(user): These constraints can be many, and if they are not regrouped
   // in big at most ones, then they should probably only added lazily as cuts.
   // Regroup this with future clique-cut separation logic.
-  if (!HasEnforcementLiteral(ct)) return;
-
+  //
+  // Note that for the case with only one enforcement, what we do below is
+  // already done by the clique merging code.
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   if (ct.enforcement_literal().size() == 1) {
     const Literal enforcement = mapping->Literal(ct.enforcement_literal(0));
@@ -378,19 +382,52 @@ void AppendBoolAndRelaxation(const ConstraintProto& ct, Model* model,
     return;
   }
 
-  // Andi(e_i) => Andj(x_j)
-  // <=> num_rhs_terms <= Sum_j(x_j) + num_rhs_terms * Sum_i(~e_i)
-  int num_literals = ct.bool_and().literals_size();
-  LinearConstraintBuilder lc(model, IntegerValue(num_literals),
-                             kMaxIntegerValue);
-  for (const int ref : ct.bool_and().literals()) {
-    CHECK(lc.AddLiteralTerm(mapping->Literal(ref), IntegerValue(1)));
+  // If we have many_literals => many_fixed literal, it is important to
+  // try to use a tight big-M if we can. This is important on neos-957323.pb.gz
+  // for instance.
+  //
+  // We split the literal into disjoint AMO and we encode each with
+  //     sum Not(literals) <= sum Not(enforcement)
+  //
+  // Note that what we actually do is use the decomposition into at most one
+  // and add a constraint for each part rather than just adding the sum of them.
+  //
+  // TODO(user): More generally, do not miss the same structure if the bool_and
+  // was expanded into many clauses!
+  //
+  // TODO(user): It is not 100% clear that just not adding one constraint is
+  // worse. Relaxation is worse, but then we have less constraint.
+  LinearConstraintBuilder builder(model);
+  if (activity_helper != nullptr) {
+    std::vector<int> negated_lits;
+    for (const int ref : ct.bool_and().literals()) {
+      negated_lits.push_back(NegatedRef(ref));
+    }
+    for (absl::Span<const int> part :
+         activity_helper->PartitionLiteralsIntoAmo(negated_lits)) {
+      builder.Clear();
+      for (const int negated_ref : part) {
+        CHECK(builder.AddLiteralTerm(mapping->Literal(negated_ref)));
+      }
+      for (const int enforcement_ref : ct.enforcement_literal()) {
+        CHECK(builder.AddLiteralTerm(
+            mapping->Literal(NegatedRef(enforcement_ref)), IntegerValue(-1)));
+      }
+      relaxation->linear_constraints.push_back(
+          builder.BuildConstraint(kMinIntegerValue, IntegerValue(0)));
+    }
+  } else {
+    for (const int ref : ct.bool_and().literals()) {
+      builder.Clear();
+      CHECK(builder.AddLiteralTerm(mapping->Literal(NegatedRef(ref))));
+      for (const int enforcement_ref : ct.enforcement_literal()) {
+        CHECK(builder.AddLiteralTerm(
+            mapping->Literal(NegatedRef(enforcement_ref)), IntegerValue(-1)));
+      }
+      relaxation->linear_constraints.push_back(
+          builder.BuildConstraint(kMinIntegerValue, IntegerValue(0)));
+    }
   }
-  for (const int enforcement_ref : ct.enforcement_literal()) {
-    CHECK(lc.AddLiteralTerm(mapping->Literal(NegatedRef(enforcement_ref)),
-                            IntegerValue(num_literals)));
-  }
-  relaxation->linear_constraints.push_back(lc.Build());
 }
 
 void AppendAtMostOneRelaxation(const ConstraintProto& ct, Model* model,
@@ -1192,7 +1229,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
     case ConstraintProto::ConstraintCase::kBoolAnd: {
       if (linearization_level > 1) {
-        AppendBoolAndRelaxation(ct, model, relaxation);
+        AppendBoolAndRelaxation(ct, model, relaxation, activity_helper);
       }
       break;
     }

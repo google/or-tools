@@ -81,7 +81,8 @@ void AppendBoolOrRelaxation(const ConstraintProto& ct, Model* model,
                             LinearRelaxation* relaxation);
 
 void AppendBoolAndRelaxation(const ConstraintProto& ct, Model* model,
-                             LinearRelaxation* relaxation);
+                             LinearRelaxation* relaxation,
+                             ActivityBoundHelper* activity_helper = nullptr);
 
 void AppendAtMostOneRelaxation(const ConstraintProto& ct, Model* model,
                                LinearRelaxation* relaxation);

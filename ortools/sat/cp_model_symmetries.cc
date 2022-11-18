@@ -304,15 +304,12 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         break;
       }
       case ConstraintProto::kBoolAnd: {
-        // The other cases should be presolved before this is called.
-        // TODO(user): not 100% true, this happen on rmatr200-p5, Fix.
-        if (constraint.enforcement_literal_size() != 1) {
-          SOLVER_LOG(
-              logger,
-              "[Symmetry] BoolAnd with multiple enforcement literal are not "
-              "supported in symmetry code:",
-              constraint.ShortDebugString());
-          return nullptr;
+        if (constraint.enforcement_literal_size() > 1) {
+          CHECK_EQ(constraint_node, new_node(color));
+          for (const int ref : constraint.bool_and().literals()) {
+            graph->AddArc(get_literal_node(ref), constraint_node);
+          }
+          break;
         }
 
         CHECK_EQ(constraint.enforcement_literal_size(), 1);
@@ -409,7 +406,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     // Because all our constraint arcs are in the direction var_node to
     // constraint_node, we just use the reverse direction for the enforcement
     // part. This way we can reuse the same get_literal_node() function.
-    if (constraint.constraint_case() != ConstraintProto::kBoolAnd) {
+    if (constraint.constraint_case() != ConstraintProto::kBoolAnd ||
+        constraint.enforcement_literal().size() > 1) {
       for (const int ref : constraint.enforcement_literal()) {
         graph->AddArc(constraint_node, get_literal_node(ref));
       }

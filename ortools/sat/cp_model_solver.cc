@@ -188,6 +188,7 @@ std::string Summarize(const std::string& input) {
 std::string CpModelStats(const CpModelProto& model_proto) {
   absl::btree_map<std::string, int> num_constraints_by_name;
   absl::btree_map<std::string, int> num_reif_constraints_by_name;
+  absl::btree_map<std::string, int> num_multi_reif_constraints_by_name;
   absl::btree_map<std::string, int> name_to_num_literals;
   absl::btree_map<std::string, int> name_to_num_terms;
   absl::btree_map<std::string, int> name_to_num_complex_domain;
@@ -223,6 +224,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     num_constraints_by_name[name]++;
     if (!ct.enforcement_literal().empty()) {
       num_reif_constraints_by_name[name]++;
+      if (ct.enforcement_literal().size() > 1) {
+        num_multi_reif_constraints_by_name[name]++;
+      }
     }
 
     auto variable_is_fixed = [&model_proto](int ref) {
@@ -455,8 +459,16 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     const std::string& name = entry.first;
     constraints.push_back(absl::StrCat("#", name, ": ", entry.second));
     if (num_reif_constraints_by_name.contains(name)) {
-      absl::StrAppend(&constraints.back(),
-                      " (#enforced: ", num_reif_constraints_by_name[name], ")");
+      if (num_multi_reif_constraints_by_name.contains(name)) {
+        absl::StrAppend(&constraints.back(),
+                        " (#enforced: ", num_reif_constraints_by_name[name],
+                        " #multi: ", num_multi_reif_constraints_by_name[name],
+                        ")");
+      } else {
+        absl::StrAppend(&constraints.back(),
+                        " (#enforced: ", num_reif_constraints_by_name[name],
+                        ")");
+      }
     }
     if (name_to_num_literals.contains(name)) {
       absl::StrAppend(&constraints.back(),

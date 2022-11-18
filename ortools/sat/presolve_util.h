@@ -154,6 +154,11 @@ class ActivityBoundHelper {
   bool PresolveEnforcement(absl::Span<const int> refs, ConstraintProto* ct,
                            absl::flat_hash_set<int>* literals_at_true);
 
+  // partition the list of literals into disjoint at most ones. The returned
+  // spans are only valid until another function from this class is used.
+  std::vector<absl::Span<const int>> PartitionLiteralsIntoAmo(
+      absl::Span<const int> literals);
+
  private:
   DEFINE_STRONG_INDEX_TYPE(Index);
   Index IndexFromLiteral(int ref) const {
@@ -186,6 +191,12 @@ class ActivityBoundHelper {
   std::vector<int> partition_;
   std::vector<int64_t> max_by_partition_;
   std::vector<int64_t> second_max_by_partition_;
+
+  // Used by PartitionLiteralsIntoAmo().
+  std::vector<int> part_starts_;
+  std::vector<int> part_ends_;
+  std::vector<int> part_sizes_;
+  std::vector<int> reordered_literals_;
 
   absl::flat_hash_set<int> triggered_amo_;
 };

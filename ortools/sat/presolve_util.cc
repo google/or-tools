@@ -377,6 +377,79 @@ void ActivityBoundHelper::PartitionIntoAmo(
   CHECK_LE(num_parts, num_terms);
 }
 
+// Similar algo as above for this simpler case.
+std::vector<absl::Span<const int>>
+ActivityBoundHelper::PartitionLiteralsIntoAmo(absl::Span<const int> literals) {
+  amo_sums_.clear();
+  for (const int ref : literals) {
+    const Index index = IndexFromLiteral(ref);
+    if (index < amo_indices_.size()) {
+      for (const int a : amo_indices_[index]) {
+        amo_sums_[a] += 1;
+      }
+    }
+  }
+
+  int num_parts = 0;
+  const int num_literals = literals.size();
+  partition_.resize(num_literals);
+  used_amo_to_dense_index_.clear();
+  for (int i = 0; i < literals.size(); ++i) {
+    const Index index = IndexFromLiteral(literals[i]);
+    int best = -1;
+    int64_t best_sum = 0;
+    bool done = false;
+    if (index < amo_indices_.size()) {
+      for (const int a : amo_indices_[index]) {
+        const auto it = used_amo_to_dense_index_.find(a);
+        if (it != used_amo_to_dense_index_.end()) {
+          partition_[i] = it->second;
+          done = true;
+          break;
+        }
+
+        const int64_t sum_left = amo_sums_[a];
+        amo_sums_[a] -= 1;
+        if (sum_left > best_sum) {
+          best_sum = sum_left;
+          best = a;
+        }
+      }
+    }
+    if (done) continue;
+
+    // New element.
+    if (best != -1) {
+      used_amo_to_dense_index_[best] = num_parts;
+    }
+    partition_[i] = num_parts++;
+  }
+
+  // We have the partition, lets construct the spans now.
+  part_starts_.assign(num_parts, 0);
+  part_sizes_.assign(num_parts, 0);
+  part_ends_.assign(num_parts, 0);
+  for (int i = 0; i < num_literals; ++i) {
+    DCHECK_GE(partition_[i], 0);
+    DCHECK_LT(partition_[i], num_parts);
+    part_sizes_[partition_[i]]++;
+  }
+  for (int p = 1; p < num_parts; ++p) {
+    part_starts_[p] = part_ends_[p] = part_sizes_[p - 1] + part_starts_[p - 1];
+  }
+  reordered_literals_.resize(num_literals);
+  for (int i = 0; i < num_literals; ++i) {
+    const int p = partition_[i];
+    reordered_literals_[part_ends_[p]++] = literals[i];
+  }
+  std::vector<absl::Span<const int>> result;
+  for (int p = 0; p < num_parts; ++p) {
+    result.push_back(
+        absl::MakeSpan(&reordered_literals_[part_starts_[p]], part_sizes_[p]));
+  }
+  return result;
+}
+
 int64_t ActivityBoundHelper::ComputeMaxActivityInternal(
     absl::Span<const std::pair<int, int64_t>> terms,
     std::vector<std::array<int64_t, 2>>* conditional) {

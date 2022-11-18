@@ -190,7 +190,8 @@ class LinearConstraintBuilder {
 
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
-  ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff);
+  ABSL_MUST_USE_RESULT bool AddLiteralTerm(
+      Literal lit, IntegerValue coeff = IntegerValue(1));
 
   // Add an under linearization of the product of two affine expressions.
   // If at least one of them is fixed, then we add the exact product (which is

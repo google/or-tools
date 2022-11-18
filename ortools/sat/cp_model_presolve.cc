@@ -6128,6 +6128,16 @@ void CpModelPresolver::PresolvePureSatPart() {
     }
 
     if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
+      // We currently preserve these "complex" bool_and since their linear
+      // relaxation can be stronger than the part.
+      //
+      // TODO(user): Find a way to presolve that here but recover them later
+      // from their clause representation?
+      if (ct.enforcement_literal().size() > 1 &&
+          ct.bool_and().literals().size() > 1) {
+        continue;
+      }
+
       ++num_removed_constraints;
       std::vector<Literal> clause;
       for (const int ref : ct.enforcement_literal()) {
