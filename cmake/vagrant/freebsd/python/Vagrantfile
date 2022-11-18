@@ -103,7 +103,7 @@ Vagrant.configure("2") do |config|
   set -x
   export PATH=${HOME}/.local/bin:"$PATH"
   cd project
-  cmake -S. -Bbuild -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+  cmake -S. -Bbuild -DBUILD_PYTHON=ON -DVENV_USE_SYSTEM_SITE_PACKAGES=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
   SHELL
 
   config.vm.provision "build", type: "shell", inline:<<-SHELL
