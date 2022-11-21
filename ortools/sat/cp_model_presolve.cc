@@ -672,9 +672,27 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
 
+  const LinearExpressionProto& target = ct->lin_max().target();
+
+  // x = max(x, xi...) => forall i, x >= xi.
+  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+    if (LinearExpressionProtosAreEqual(expr, target)) {
+      for (const LinearExpressionProto& e : ct->lin_max().exprs()) {
+        if (LinearExpressionProtosAreEqual(e, target)) continue;
+        LinearConstraintProto* prec =
+            context_->working_model->add_constraints()->mutable_linear();
+        prec->add_domain(0);
+        prec->add_domain(std::numeric_limits<int64_t>::max());
+        AddLinearExpressionToLinearConstraint(target, 1, prec);
+        AddLinearExpressionToLinearConstraint(e, -1, prec);
+      }
+      context_->UpdateRuleStats("lin_max: x = max(x, ...)");
+      return RemoveConstraint(ct);
+    }
+  }
+
   // Compute the infered min/max of the target.
   // Update target domain (if it is not a complex expression).
-  const LinearExpressionProto& target = ct->lin_max().target();
   {
     int64_t infered_min = context_->MinOf(target);
     int64_t infered_max = std::numeric_limits<int64_t>::min();

@@ -1158,6 +1158,7 @@ bool IntegerTrail::ReasonIsValid(
       }
     }
     for (const IntegerLiteral i_lit : integer_reason) {
+      if (i_lit.IsAlwaysTrue()) continue;
       if (LevelZeroLowerBound(i_lit.var) < i_lit.bound) {
         num_literal_assigned_after_root_node++;
       }
