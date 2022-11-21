@@ -126,7 +126,7 @@ rm.exe -rf temp_dotnet
 echo DONE | tee.exe -a build.log
 
 echo Build dotnet: ... | tee.exe -a build.log
-cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON
+cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON -DUSE_DOTNET_46=ON
 cmake --build temp_dotnet --config Release -j8 -v
 echo DONE | tee.exe -a build.log
 REM make.exe test_dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
