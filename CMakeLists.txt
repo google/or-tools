@@ -257,6 +257,14 @@ if(BUILD_DOTNET)
   option(UNIVERSAL_DOTNET_PACKAGE "Build a .Net multi OS Package" OFF)
   message(STATUS ".Net: Create multiple os package: ${UNIVERSAL_DOTNET_PACKAGE}")
 
+  # Language Version
+  # see: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
+  set(DOTNET_LANG "9.0" CACHE STRING "Specify the C# language version (default \"9.0\")")
+  message(STATUS ".Net C# language version: ${DOTNET_LANG}")
+
+  set(DOTNET_SAMPLE_LANG "8.0" CACHE STRING "Specify the C# language version for samples (default \"8.0\")")
+  message(STATUS ".Net C# language version: ${DOTNET_SAMPLE_LANG}")
+
   option(USE_DOTNET_48 "Use .Net Framework 4.8 support" OFF)
   message(STATUS ".Net: Use .Net Framework 4.8 support: ${USE_DOTNET_48}")
 

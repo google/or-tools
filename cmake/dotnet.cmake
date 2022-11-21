@@ -68,11 +68,6 @@ message(STATUS ".Net runtime project: ${DOTNET_NATIVE_PROJECT}")
 set(DOTNET_NATIVE_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_NATIVE_PROJECT})
 message(STATUS ".Net runtime project build path: ${DOTNET_NATIVE_PROJECT_DIR}")
 
-# Language Version
-# see: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
-set(DOTNET_LANG "9.0")
-message(STATUS ".Net C# language version: ${DOTNET_LANG}")
-
 # Targeted Framework Moniker
 # see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 # see: https://learn.microsoft.com/en-us/dotnet/standard/net-standard
