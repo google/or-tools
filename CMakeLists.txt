@@ -265,6 +265,16 @@ if(BUILD_DOTNET)
   set(DOTNET_SAMPLE_LANG "8.0" CACHE STRING "Specify the C# language version for samples (default \"8.0\")")
   message(STATUS ".Net C# language version: ${DOTNET_SAMPLE_LANG}")
 
+  # Targeted Framework Moniker
+  # see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
+  # see: https://learn.microsoft.com/en-us/dotnet/standard/net-standard
+  option(USE_DOTNET_46 "Use .Net Framework 4.6 support" OFF)
+  message(STATUS ".Net: Use .Net Framework 4.6 support: ${USE_DOTNET_46}")
+  option(USE_DOTNET_461 "Use .Net Framework 4.6.1 support" OFF)
+  message(STATUS ".Net: Use .Net Framework 4.6.1 support: ${USE_DOTNET_461}")
+  option(USE_DOTNET_462 "Use .Net Framework 4.6.2 support" OFF)
+  message(STATUS ".Net: Use .Net Framework 4.6.2 support: ${USE_DOTNET_462}")
+
   option(USE_DOTNET_48 "Use .Net Framework 4.8 support" OFF)
   message(STATUS ".Net: Use .Net Framework 4.8 support: ${USE_DOTNET_48}")
 

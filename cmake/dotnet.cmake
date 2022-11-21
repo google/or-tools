@@ -71,6 +71,15 @@ message(STATUS ".Net runtime project build path: ${DOTNET_NATIVE_PROJECT_DIR}")
 # Targeted Framework Moniker
 # see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 # see: https://learn.microsoft.com/en-us/dotnet/standard/net-standard
+if(USE_DOTNET_46)
+  list(APPEND TFM "net46")
+endif()
+if(USE_DOTNET_461)
+  list(APPEND TFM "net461")
+endif()
+if(USE_DOTNET_462)
+  list(APPEND TFM "net462")
+endif()
 if(USE_DOTNET_48)
   list(APPEND TFM "net48")
 endif()
