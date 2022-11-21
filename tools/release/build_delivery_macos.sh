@@ -63,8 +63,10 @@ function build_dotnet() {
   fi
 
   cd "${ROOT_DIR}" || exit 2
+  echo "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
+  echo "check dotnet..."
   command -v dotnet
   command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 
@@ -74,6 +76,8 @@ function build_dotnet() {
   if [[ -x $(command -v openssl11) ]]; then
     OPENSSL_PRG=openssl11
   fi
+  echo "check ${OPENSSL_PRG}..."
+  command -v ${OPENSSL_PRG} | xargs echo "openssl: " | tee -a build.log
 
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
     -in "${RELEASE_DIR}/or-tools.snk.enc" \
@@ -107,6 +111,7 @@ function build_java() {
   fi
 
   cd "${ROOT_DIR}" || exit 2
+  echo "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
   # maven require JAVA_HOME
@@ -115,9 +120,13 @@ function build_java() {
     exit 1
   else
     echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
+    echo "check java..."
     command -v java | xargs echo "java: " | tee -a build.log
+    echo "check javac..."
     command -v javac | xargs echo "javac: " | tee -a build.log
+    echo "check jar..."
     command -v jar | xargs echo "jar: " | tee -a build.log
+    echo "check mvn..."
     command -v mvn | xargs echo "mvn: " | tee -a build.log
     echo "Check java version..."
     java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
@@ -132,7 +141,9 @@ function build_java() {
   if [[ -x $(command -v openssl11) ]]; then
     OPENSSL_PRG=openssl11
   fi
-  command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a build.log
+  echo "check ${OPENSSL_PRG}..."
+  command -v ${OPENSSL_PRG} | xargs echo "openssl: " | tee -a build.log
+  echo "check gpg..."
   command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a build.log
 
@@ -196,6 +207,7 @@ function build_python() {
   PATH_BCKP=${PATH}
 
   cd "${ROOT_DIR}" || exit 2
+  echo "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
 
@@ -214,11 +226,13 @@ function build_python() {
     export PATH="${HOME}/Library/Python/$i/bin:${PY_PATH}/bin:${PATH_BCKP}"
 
   # Check Python env
+    echo "check python3..."
     command -v python3 | xargs echo "python3: " | tee -a build.log
     command -v "python$i" | xargs echo "python$i: " | tee -a build.log
     "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
     "python$i" -m pip install --upgrade --user pip
     "python$i" -m pip install --upgrade --user wheel absl-py mypy-protobuf virtualenv
+    echo "check protoc-gen-mypy..."
     command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
     protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
     protoc-gen-mypy --version | grep "3\.4\.0"
