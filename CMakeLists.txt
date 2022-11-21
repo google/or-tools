@@ -268,9 +268,6 @@ if(BUILD_DOTNET)
   option(USE_DOTNET_48 "Use .Net Framework 4.8 support" OFF)
   message(STATUS ".Net: Use .Net Framework 4.8 support: ${USE_DOTNET_48}")
 
-  option(USE_DOTNET_STD_20 "Use .Net Standard 2.0 support" OFF)
-  message(STATUS ".Net: Use .Net Framework 2.0 support: ${USE_DOTNET_STD_20}")
-
   option(USE_DOTNET_STD_21 "Use .Net Standard 2.1 support" OFF)
   message(STATUS ".Net: Use .Net Framework 2.1 support: ${USE_DOTNET_STD_21}")
 
