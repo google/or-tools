@@ -289,7 +289,7 @@ for %%v in (6 7 8 9 10 11) do (
   echo DONE | tee.exe -a build.log
 
   REM echo Test Python 3.%%v pypi archive... | tee.exe -a build.log
-  REM cmake --build temp_python3%%v --config Release --taget RUN_TEST || exit 1
+  REM cmake --build temp_python3%%v --config Release --target RUN_TEST || exit 1
   REM echo DONE | tee.exe -a build.log
 
   for %%i in (temp_python3%%v\python\dist\*.whl) do (
