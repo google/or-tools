@@ -518,13 +518,17 @@ inline Fractional CompactSparseMatrix::ConstView::ColumnScalarProduct(
   int i = starts_[col.value()].value();
   const int end = starts_[col.value() + 1].value();
   const int shifted_end = end - 3;
-  Fractional result = 0.0;
+  Fractional result1 = 0.0;
+  Fractional result2 = 0.0;
+  Fractional result3 = 0.0;
+  Fractional result4 = 0.0;
   for (; i < shifted_end; i += 4) {
-    result += coefficients_[i] * vector[RowToColIndex(rows_[i])] +
-              coefficients_[i + 1] * vector[RowToColIndex(rows_[i + 1])] +
-              coefficients_[i + 2] * vector[RowToColIndex(rows_[i + 2])] +
-              coefficients_[i + 3] * vector[RowToColIndex(rows_[i + 3])];
+    result1 += coefficients_[i] * vector[RowToColIndex(rows_[i])];
+    result2 += coefficients_[i + 1] * vector[RowToColIndex(rows_[i + 1])];
+    result3 += coefficients_[i + 2] * vector[RowToColIndex(rows_[i + 2])];
+    result4 += coefficients_[i + 3] * vector[RowToColIndex(rows_[i + 3])];
   }
+  Fractional result = result1 + result2 + result3 + result4;
   if (i < end) {
     result += coefficients_[i] * vector[RowToColIndex(rows_[i])];
     if (i + 1 < end) {
