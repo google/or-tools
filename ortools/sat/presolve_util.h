@@ -21,6 +21,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
@@ -200,6 +202,54 @@ class ActivityBoundHelper {
 
   absl::flat_hash_set<int> triggered_amo_;
 };
+
+// Class to help detects clauses that differ on a single literal.
+class ClauseWithOneMissingHasher {
+ public:
+  explicit ClauseWithOneMissingHasher(absl::BitGenRef random)
+      : random_(random) {}
+
+  // We use the proto encoding of literals here.
+  void RegisterClause(int c, absl::Span<const int> clause);
+
+  // Get a hash of the clause with index c and literal ref removed.
+  // This assumes that ref was part of the clause. Work in O(1).
+  uint64_t HashWithout(int c, int ref) const {
+    return clause_to_hash_[c] ^ literal_to_hash_[IndexFromLiteral(ref)];
+  }
+
+ private:
+  DEFINE_STRONG_INDEX_TYPE(Index);
+  Index IndexFromLiteral(int ref) const {
+    return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
+  }
+
+  absl::BitGenRef random_;
+  absl::StrongVector<Index, uint64_t> literal_to_hash_;
+  std::vector<uint64_t> clause_to_hash_;
+};
+
+// Specific function. Returns true if the negation of all literals in clause
+// except literal is exactly equal to the literal of enforcement.
+//
+// We assumes that enforcement and negated(clause) are sorted lexicographically
+// Or negated(enforcement) and clause. Both option works. If not, we will only
+// return false more often. When we return true, the property is enforced.
+//
+// TODO(user): For the same complexity, we do not need to specify literal and
+// can recover it.
+inline bool ClauseIsEnforcementImpliesLiteral(absl::Span<const int> clause,
+                                              absl::Span<const int> enforcement,
+                                              int literal) {
+  if (clause.size() != enforcement.size() + 1) return false;
+  int j = 0;
+  for (int i = 0; i < clause.size(); ++i) {
+    if (clause[i] == literal) continue;
+    if (clause[i] != NegatedRef(enforcement[j])) return false;
+    ++j;
+  }
+  return true;
+}
 
 }  // namespace sat
 }  // namespace operations_research

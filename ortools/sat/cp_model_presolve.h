@@ -253,6 +253,19 @@ class CpModelPresolver {
 
   void MergeNoOverlapConstraints();
 
+  // Heuristic to merge clauses that differ in only one literal.
+  // The idea is to regroup a bunch of clauses into a single bool_and.
+  // This serves a bunch of purpose:
+  // - Smaller model.
+  // - Stronger dual reasoning since less locks.
+  // - If the negation of the rhs of the bool_and are in at most one, we will
+  //   have a stronger LP relaxation.
+  //
+  // TODO(user): If the merge procedure is successful we might want to develop
+  // a custom propagators for such bool_and. It should in theory be more
+  // efficient than the two watcher literal scheme for clauses. Investigate!
+  void MergeClauses();
+
   // Boths function are responsible for dealing with affine relations.
   // The second one returns false on UNSAT.
   void EncodeAllAffineRelations();

@@ -564,5 +564,21 @@ bool ActivityBoundHelper::PresolveEnforcement(
   return true;
 }
 
+void ClauseWithOneMissingHasher::RegisterClause(int c,
+                                                absl::Span<const int> clause) {
+  uint64_t hash = 0;
+  for (const int ref : clause) {
+    const Index index = IndexFromLiteral(ref);
+    while (index >= literal_to_hash_.size()) {
+      // We use random value for a literal hash.
+      literal_to_hash_.push_back(absl::Uniform<uint64_t>(random_));
+    }
+    hash ^= literal_to_hash_[index];
+  }
+
+  if (c >= clause_to_hash_.size()) clause_to_hash_.resize(c + 1, 0);
+  clause_to_hash_[c] = hash;
+}
+
 }  // namespace sat
 }  // namespace operations_research

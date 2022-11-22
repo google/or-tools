@@ -658,7 +658,8 @@ void IntegerRoundingCutHelper::ComputeCut(
     best_cut_.max_magnitude =
         std::max(best_cut_.max_magnitude, IntTypeAbs(new_coeff));
   }
-  best_cut_.max_magnitude = std::max(best_cut_.max_magnitude, best_cut_.rhs);
+  best_cut_.max_magnitude =
+      std::max(best_cut_.max_magnitude, IntTypeAbs(best_cut_.rhs));
 
   // Create the base super-additive function f().
   const IntegerValue rhs_remainder =

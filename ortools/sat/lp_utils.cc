@@ -270,7 +270,9 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
       const int var = ct->var_index(i);
       const double coeff = ct->coefficient(i);
       if (std::abs(coeff) * max_bounds[var] < threshold) {
-        largest_removed = std::max(largest_removed, std::abs(coeff));
+        if (max_bounds[var] != 0) {
+          largest_removed = std::max(largest_removed, std::abs(coeff));
+        }
         continue;
       }
       ct->set_var_index(new_size, var);
@@ -280,6 +282,23 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
     num_removed += size - new_size;
     ct->mutable_var_index()->Truncate(new_size);
     ct->mutable_coefficient()->Truncate(new_size);
+  }
+
+  // We also do the same for the objective coefficient.
+  if (num_variables > 0) {
+    const double threshold =
+        params.mip_wanted_precision() / static_cast<double>(num_variables);
+    for (int var = 0; var < num_variables; ++var) {
+      const double coeff = mp_model->variable(var).objective_coefficient();
+      if (coeff == 0.0) continue;
+      if (std::abs(coeff) * max_bounds[var] < threshold) {
+        ++num_removed;
+        if (max_bounds[var] != 0) {
+          largest_removed = std::max(largest_removed, std::abs(coeff));
+        }
+        mp_model->mutable_variable(var)->clear_objective_coefficient();
+      }
+    }
   }
 
   if (num_removed > 0) {

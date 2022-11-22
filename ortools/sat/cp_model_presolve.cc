@@ -6146,13 +6146,12 @@ void CpModelPresolver::PresolvePureSatPart() {
     }
 
     if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
-      // We currently preserve these "complex" bool_and since their linear
-      // relaxation can be stronger than the part.
-      //
-      // TODO(user): Find a way to presolve that here but recover them later
-      // from their clause representation?
-      if (ct.enforcement_literal().size() > 1 &&
-          ct.bool_and().literals().size() > 1) {
+      // We currently do not expand "complex" bool_and that would result
+      // in too many literals.
+      const int left_size = ct.enforcement_literal().size();
+      const int right_size = ct.bool_and().literals().size();
+      if (left_size > 1 && right_size > 1 &&
+          (left_size + 1) * right_size > 1000) {
         continue;
       }
 
@@ -9503,6 +9502,106 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
   }
 }
 
+// TODO(user): Use better heuristic where we look at at most one.
+void CpModelPresolver::MergeClauses() {
+  if (context_->ModelIsUnsat()) return;
+  ClauseWithOneMissingHasher hasher(*context_->random());
+
+  WallTimer wall_timer;
+  wall_timer.Start();
+  int64_t work_done = 0;
+  const int64_t work_limit = 1e8;
+
+  std::vector<int> to_clean;
+
+  int64_t num_collisions = 0;
+  int64_t num_merges = 0;
+  int64_t num_saved_literals = 0;
+
+  absl::flat_hash_map<uint64_t, std::pair<int, int>> detector_map;
+  const int num_constraints = context_->working_model->constraints_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+    if (ct->constraint_case() != ConstraintProto::kBoolOr) continue;
+
+    // Both of these test shouldn't happen, but we have them to be safe.
+    if (!ct->enforcement_literal().empty()) continue;
+    if (ct->bool_or().literals().size() <= 2) continue;
+
+    std::sort(ct->mutable_bool_or()->mutable_literals()->begin(),
+              ct->mutable_bool_or()->mutable_literals()->end());
+    hasher.RegisterClause(c, ct->bool_or().literals());
+
+    bool merged = false;
+    work_done += ct->bool_or().literals().size();
+    if (work_done > work_limit) break;
+    for (const int ref : ct->bool_or().literals()) {
+      const uint64_t hash = hasher.HashWithout(c, ref);
+      const auto it = detector_map.find(hash);
+      if (it != detector_map.end()) {
+        ++num_collisions;
+        const int base_c = it->second.first;
+        auto* and_ct = context_->working_model->mutable_constraints(base_c);
+        if (ClauseIsEnforcementImpliesLiteral(
+                ct->bool_or().literals(), and_ct->enforcement_literal(), ref)) {
+          ++num_merges;
+          num_saved_literals += ct->bool_or().literals().size() - 1;
+          merged = true;
+          and_ct->mutable_bool_and()->add_literals(ref);
+          ct->Clear();
+          context_->UpdateConstraintVariableUsage(c);
+          break;
+        }
+      }
+    }
+
+    if (!merged) {
+      // Stupid heuristic: take first literal.
+      const int ref = ct->bool_or().literals(0);
+      const uint64_t hash = hasher.HashWithout(c, ref);
+      const auto [_, inserted] = detector_map.insert({hash, {c, ref}});
+      if (inserted) {
+        to_clean.push_back(c);
+        context_->tmp_literals.clear();
+        for (const int lit : ct->bool_or().literals()) {
+          if (lit == ref) continue;
+          context_->tmp_literals.push_back(NegatedRef(lit));
+        }
+        ct->Clear();
+        ct->mutable_enforcement_literal()->Assign(
+            context_->tmp_literals.begin(), context_->tmp_literals.end());
+        ct->mutable_bool_and()->add_literals(ref);
+      }
+    }
+  }
+
+  // Retransform to bool_or bool_and with a single rhs.
+  for (const int c : to_clean) {
+    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+    if (ct->bool_and().literals().size() > 1) {
+      context_->UpdateConstraintVariableUsage(c);
+      continue;
+    }
+
+    // We have a single bool_and, lets transform it back to single bool_or.
+    context_->tmp_literals.clear();
+    context_->tmp_literals.push_back(ct->bool_and().literals(0));
+    for (const int ref : ct->enforcement_literal()) {
+      context_->tmp_literals.push_back(NegatedRef(ref));
+    }
+    ct->Clear();
+    ct->mutable_bool_or()->mutable_literals()->Assign(
+        context_->tmp_literals.begin(), context_->tmp_literals.end());
+  }
+
+  if (num_merges > 0) {
+    SOLVER_LOG(logger_, "[MergeClauses]", " #num_collisions=", num_collisions,
+               " #num_merges=", num_merges,
+               " #num_saved_literals=", num_saved_literals, " work=", work_done,
+               "/", work_limit, " time=", wall_timer.Get(), "s");
+  }
+}
+
 // =============================================================================
 // Public API.
 // =============================================================================
@@ -9709,6 +9808,13 @@ CpSolverStatus CpModelPresolver::Presolve() {
     DetectOverlappingColumns();
     ProcessSetPPC();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
+
+    // We do that after the duplicate, SAT and SetPPC constraints.
+    if (!context_->time_limit()->LimitReached()) {
+      // Merge clauses that differ in just one literal.
+      // Heuristic use at_most_one to try to tighten the initial LP Relaxation.
+      MergeClauses();
+    }
 
     // TODO(user): Decide where is the best place for this. Fow now we do it
     // after max clique to get all the bool_and converted to at most ones.
