@@ -95,20 +95,20 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
     // small entries (no complexity changes).
     const Fractional drop_tolerance = parameters_.drop_tolerance();
     unit_row_left_inverse_filtered_non_zeros_.clear();
+    const auto view = transposed_matrix_.view();
     if (unit_row_left_inverse_.non_zeros.empty()) {
       const ColIndex size = unit_row_left_inverse_.values.size();
       for (ColIndex col(0); col < size; ++col) {
         if (std::abs(unit_row_left_inverse_.values[col]) > drop_tolerance) {
           unit_row_left_inverse_filtered_non_zeros_.push_back(col);
-          num_row_wise_entries += transposed_matrix_.ColumnNumEntries(col);
+          num_row_wise_entries += view.ColumnNumEntries(col);
         }
       }
     } else {
       for (const auto e : unit_row_left_inverse_) {
         if (std::abs(e.coefficient()) > drop_tolerance) {
           unit_row_left_inverse_filtered_non_zeros_.push_back(e.column());
-          num_row_wise_entries +=
-              transposed_matrix_.ColumnNumEntries(e.column());
+          num_row_wise_entries += view.ColumnNumEntries(e.column());
         }
       }
     }
@@ -194,20 +194,21 @@ void UpdateRow::SetParameters(const GlopParameters& parameters) {
 // the same as, or greater than, the number of columns.
 void UpdateRow::ComputeUpdatesRowWise() {
   SCOPED_TIME_STAT(&stats_);
-  const ColIndex num_cols = matrix_.num_cols();
-  coefficient_.AssignToZero(num_cols);
+  coefficient_.AssignToZero(matrix_.num_cols());
+  const auto output_coeffs = coefficient_.view();
+  const auto view = transposed_matrix_.view();
   for (ColIndex col : unit_row_left_inverse_filtered_non_zeros_) {
     const Fractional multiplier = unit_row_left_inverse_[col];
-    for (const EntryIndex i : transposed_matrix_.Column(col)) {
-      const ColIndex pos = RowToColIndex(transposed_matrix_.EntryRow(i));
-      coefficient_[pos] += multiplier * transposed_matrix_.EntryCoefficient(i);
+    for (const EntryIndex i : view.Column(col)) {
+      const ColIndex pos = RowToColIndex(view.EntryRow(i));
+      output_coeffs[pos] += multiplier * view.EntryCoefficient(i);
     }
   }
 
   non_zero_position_list_.clear();
   const Fractional drop_tolerance = parameters_.drop_tolerance();
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
-    if (std::abs(coefficient_[col]) > drop_tolerance) {
+    if (std::abs(output_coeffs[col]) > drop_tolerance) {
       non_zero_position_list_.push_back(col);
     }
   }
@@ -220,20 +221,23 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
   const ColIndex num_cols = matrix_.num_cols();
   non_zero_position_set_.ClearAndResize(num_cols);
   coefficient_.resize(num_cols, 0.0);
+
+  const auto output_coeffs = coefficient_.view();
+  const auto view = transposed_matrix_.view();
   for (ColIndex col : unit_row_left_inverse_filtered_non_zeros_) {
     const Fractional multiplier = unit_row_left_inverse_[col];
-    for (const EntryIndex i : transposed_matrix_.Column(col)) {
-      const ColIndex pos = RowToColIndex(transposed_matrix_.EntryRow(i));
-      const Fractional v = multiplier * transposed_matrix_.EntryCoefficient(i);
+    for (const EntryIndex i : view.Column(col)) {
+      const ColIndex pos = RowToColIndex(view.EntryRow(i));
+      const Fractional v = multiplier * view.EntryCoefficient(i);
       if (!non_zero_position_set_.IsSet(pos)) {
         // Note that we could create the non_zero_position_list_ here, but we
         // prefer to keep the non-zero positions sorted, so using the bitset is
         // a good alernative. Of course if the solution is really really sparse,
         // then sorting non_zero_position_list_ will be faster.
-        coefficient_[pos] = v;
+        output_coeffs[pos] = v;
         non_zero_position_set_.Set(pos);
       } else {
-        coefficient_[pos] += v;
+        output_coeffs[pos] += v;
       }
     }
   }
@@ -247,27 +251,28 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
     // non-zero coefficients contiguously in a vector is better than keeping
     // them as they are. Note however that we will iterate only twice on the
     // update row coefficients during an iteration.
-    if (std::abs(coefficient_[col]) > drop_tolerance) {
+    if (std::abs(output_coeffs[col]) > drop_tolerance) {
       non_zero_position_list_.push_back(col);
     }
   }
 }
 
 void UpdateRow::ComputeUpdatesForSingleRow(ColIndex row_as_col) {
-  const ColIndex num_cols = matrix_.num_cols();
-  coefficient_.resize(num_cols, 0.0);
-
+  coefficient_.resize(matrix_.num_cols(), 0.0);
   non_zero_position_list_.clear();
+
   const DenseBitRow& is_relevant = variables_info_.GetIsRelevantBitRow();
   const Fractional drop_tolerance = parameters_.drop_tolerance();
   const Fractional multiplier = unit_row_left_inverse_[row_as_col];
-  for (const EntryIndex i : transposed_matrix_.Column(row_as_col)) {
-    const ColIndex pos = RowToColIndex(transposed_matrix_.EntryRow(i));
+  const auto output_coeffs = coefficient_.view();
+  const auto view = transposed_matrix_.view();
+  for (const EntryIndex i : view.Column(row_as_col)) {
+    const ColIndex pos = RowToColIndex(view.EntryRow(i));
     if (!is_relevant[pos]) continue;
 
-    const Fractional v = multiplier * transposed_matrix_.EntryCoefficient(i);
+    const Fractional v = multiplier * view.EntryCoefficient(i);
     if (std::abs(v) > drop_tolerance) {
-      coefficient_[pos] = v;
+      output_coeffs[pos] = v;
       non_zero_position_list_.push_back(pos);
     }
   }
@@ -276,14 +281,17 @@ void UpdateRow::ComputeUpdatesForSingleRow(ColIndex row_as_col) {
 void UpdateRow::ComputeUpdatesColumnWise() {
   SCOPED_TIME_STAT(&stats_);
 
-  const ColIndex num_cols = matrix_.num_cols();
-  const Fractional drop_tolerance = parameters_.drop_tolerance();
-  coefficient_.resize(num_cols, 0.0);
+  coefficient_.resize(matrix_.num_cols(), 0.0);
   non_zero_position_list_.clear();
+
+  const Fractional drop_tolerance = parameters_.drop_tolerance();
+  const auto output_coeffs = coefficient_.view();
+  const auto view = matrix_.view();
+  const auto unit_row_left_inverse = unit_row_left_inverse_.values.const_view();
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
     // Coefficient of the column right inverse on the 'leaving_row'.
     const Fractional coeff =
-        matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
+        view.ColumnScalarProduct(col, unit_row_left_inverse);
 
     // Nothing to do if 'coeff' is (almost) zero which does happen due to
     // sparsity. Note that it shouldn't be too bad to use a non-zero drop
@@ -291,7 +299,7 @@ void UpdateRow::ComputeUpdatesColumnWise() {
     // quantities updated by this update row will eventually be recomputed.
     if (std::abs(coeff) > drop_tolerance) {
       non_zero_position_list_.push_back(col);
-      coefficient_[col] = coeff;
+      output_coeffs[col] = coeff;
     }
   }
 }
@@ -311,9 +319,11 @@ void UpdateRow::ComputeFullUpdateRow(RowIndex leaving_row,
 
   // Fills the non-basic column.
   const Fractional drop_tolerance = parameters_.drop_tolerance();
+  const auto view = matrix_.view();
+  const auto unit_row_left_inverse = unit_row_left_inverse_.values.const_view();
   for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
     const Fractional coeff =
-        matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
+        view.ColumnScalarProduct(col, unit_row_left_inverse);
     if (std::abs(coeff) > drop_tolerance) {
       (*output)[col] = coeff;
     }

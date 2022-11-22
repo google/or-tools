@@ -38,8 +38,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
     Fractional cost_variation, std::vector<ColIndex>* bound_flip_candidates,
     ColIndex* entering_col) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
-  const DenseRow& update_coefficient = update_row.GetCoefficients();
-  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
+  const auto update_coefficients = update_row.GetCoefficients().const_view();
+  const auto reduced_costs = reduced_costs_->GetReducedCosts().const_view();
   SCOPED_TIME_STAT(&stats_);
 
   breakpoints_.clear();
@@ -81,8 +81,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
     // We will add ratio * coeff to this column with a ratio positive or zero.
     // cost_variation makes sure the leaving variable will be dual-feasible
     // (its update coeff is sign(cost_variation) * 1.0).
-    const Fractional coeff = (cost_variation > 0.0) ? update_coefficient[col]
-                                                    : -update_coefficient[col];
+    const Fractional coeff = (cost_variation > 0.0) ? update_coefficients[col]
+                                                    : -update_coefficients[col];
 
     ColWithRatio entry;
     if (can_decrease.IsSet(col) && coeff > threshold) {
@@ -225,10 +225,10 @@ Status EnteringVariable::DualChooseEnteringColumn(
     // returned bound_flip_candidates vector.
     for (int i = bound_flip_candidates->size() - 1; i >= 0; --i) {
       const ColIndex col = (*bound_flip_candidates)[i];
-      if (std::abs(update_coefficient[col]) < pivot_limit) continue;
+      if (std::abs(update_coefficients[col]) < pivot_limit) continue;
 
       VLOG(1) << "Used bound flip to avoid bad pivot. Before: " << best_coeff
-              << " now: " << std::abs(update_coefficient[col]);
+              << " now: " << std::abs(update_coefficients[col]);
       *entering_col = col;
       break;
     }
@@ -241,8 +241,8 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     bool nothing_to_recompute, const UpdateRow& update_row,
     Fractional cost_variation, ColIndex* entering_col) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
-  const DenseRow& update_coefficient = update_row.GetCoefficients();
-  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
+  const auto update_coefficients = update_row.GetCoefficients().const_view();
+  const auto reduced_costs = reduced_costs_->GetReducedCosts().const_view();
   SCOPED_TIME_STAT(&stats_);
 
   // List of breakpoints where a variable change from feasibility to
@@ -273,7 +273,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     DCHECK_NE(variable_type[col], VariableType::FIXED_VARIABLE);
 
     // Skip if the coeff is too small to be a numerically stable pivot.
-    if (std::abs(update_coefficient[col]) < threshold) continue;
+    if (std::abs(update_coefficients[col]) < threshold) continue;
 
     // We will add ratio * coeff to this column. cost_variation makes sure
     // the leaving variable will be dual-feasible (its update coeff is
@@ -281,8 +281,8 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     //
     // TODO(user): This is the same in DualChooseEnteringColumn(), remove
     // duplication?
-    const Fractional coeff = (cost_variation > 0.0) ? update_coefficient[col]
-                                                    : -update_coefficient[col];
+    const Fractional coeff = (cost_variation > 0.0) ? update_coefficients[col]
+                                                    : -update_coefficients[col];
 
     // Only proceed if there is a transition, note that if reduced_costs[col]
     // is close to zero, then the variable is counted as dual-feasible.

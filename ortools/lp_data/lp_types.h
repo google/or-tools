@@ -21,6 +21,7 @@
 #include <limits>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "ortools/base/basictypes.h"
@@ -250,6 +251,33 @@ inline std::ostream& operator<<(std::ostream& os, ConstraintStatus status) {
 // Returns the ConstraintStatus corresponding to a given VariableStatus.
 ConstraintStatus VariableToConstraintStatus(VariableStatus status);
 
+// A span of `T`, indexed by a strict int type `IntType`. Intended to be passed
+// by value. See b/259677543.
+template <typename IntType, typename T>
+class StrictITISpan {
+ public:
+  using IndexType = IntType;
+  using reference = T&;
+  using value_type = T;
+
+  StrictITISpan(T* data, IntType size) : data_(data), size_(size) {}
+
+  reference operator[](IntType i) const {
+    return data_[static_cast<size_t>(i.value())];
+  }
+
+  IntType size() const { return size_; }
+
+  // TODO(user): This should probably be a strictly typed iterator too, but
+  // `StrongVector::begin()` already suffers from this problem.
+  auto begin() const { return data_; }
+  auto end() const { return data_ + static_cast<size_t>(size_.value()); }
+
+ private:
+  T* const data_;
+  const IntType size_;
+};
+
 // Wrapper around an ITIVector to allow (and enforce) creation/resize/assign
 // to use the index type for the size.
 //
@@ -260,6 +288,9 @@ class StrictITIVector : public absl::StrongVector<IntType, T> {
  public:
   typedef IntType IndexType;
   typedef absl::StrongVector<IntType, T> ParentType;
+  using View = StrictITISpan<IntType, T>;
+  using ConstView = StrictITISpan<IntType, const T>;
+
 // This allows for brace initialization, which is really useful in tests.
 // It is not 'explicit' by design, so one can do vector = {...};
 #if !defined(__ANDROID__) && (!defined(_MSC_VER) || (_MSC_VER >= 1800))
@@ -283,6 +314,10 @@ class StrictITIVector : public absl::StrongVector<IntType, T> {
   IntType size() const { return IntType(ParentType::size()); }
 
   IntType capacity() const { return IntType(ParentType::capacity()); }
+
+  View view() { return View(ParentType::data(), size()); }
+  ConstView const_view() const { return ConstView(ParentType::data(), size()); }
+  ConstView view() const { return const_view(); }
 
   // Since calls to resize() must use a default value, we introduce a new
   // function for convenience to reduce the size of a vector.

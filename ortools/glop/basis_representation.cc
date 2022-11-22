@@ -272,9 +272,10 @@ Status BasisFactorization::MiddleProductFormUpdate(
   // Initialize scratchpad_ with the right update vector.
   DCHECK(IsAllZero(scratchpad_));
   scratchpad_.resize(right_storage_.num_rows(), 0.0);
-  for (const EntryIndex i : right_storage_.Column(right_index)) {
-    const RowIndex row = right_storage_.EntryRow(i);
-    scratchpad_[row] = right_storage_.EntryCoefficient(i);
+  const auto view = right_storage_.view();
+  for (const EntryIndex i : view.Column(right_index)) {
+    const RowIndex row = view.EntryRow(i);
+    scratchpad_[row] = view.EntryCoefficient(i);
     scratchpad_non_zeros_.push_back(row);
   }
   // Subtract the column of U from scratchpad_.

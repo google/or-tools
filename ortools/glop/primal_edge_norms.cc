@@ -225,16 +225,20 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
 
   int stat_lower_bounded_norms = 0;
   const Fractional factor = 2.0 / pivot;
+  const auto view = compact_matrix_.view();
+  auto output = edge_squared_norms_.view();
+  const auto direction_left_inverse =
+      direction_left_inverse_.values.const_view();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     const Fractional coeff = update_row.GetCoefficient(col);
-    const Fractional scalar_product = compact_matrix_.ColumnScalarProduct(
-        col, direction_left_inverse_.values);
-    num_operations_ += compact_matrix_.column(col).num_entries().value();
+    const Fractional scalar_product =
+        view.ColumnScalarProduct(col, direction_left_inverse);
+    num_operations_ += view.ColumnNumEntries(col).value();
 
     // Update the edge squared norm of this column. Note that the update
     // formula used is important to maximize the precision. See an explanation
     // in the dual context in Koberstein's PhD thesis, section 8.2.2.1.
-    edge_squared_norms_[col] +=
+    output[col] +=
         coeff * (coeff * leaving_squared_norm + factor * scalar_product);
 
     // Make sure it doesn't go under a known lower bound (TODO(user): ref?).
@@ -243,12 +247,12 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
     // slightly faster, but may introduce numerical issues. More generally,
     // this test is only needed in a few cases, so is it worth it?
     const Fractional lower_bound = 1.0 + Square(coeff / pivot);
-    if (edge_squared_norms_[col] < lower_bound) {
-      edge_squared_norms_[col] = lower_bound;
+    if (output[col] < lower_bound) {
+      output[col] = lower_bound;
       ++stat_lower_bounded_norms;
     }
   }
-  edge_squared_norms_[leaving_col] = leaving_squared_norm;
+  output[leaving_col] = leaving_squared_norm;
   stats_.lower_bounded_norms.Add(stat_lower_bounded_norms);
 }
 
