@@ -9748,6 +9748,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // We re-do a canonicalization with the final linear expression.
   if (context_->working_model->has_objective()) {
     ExpandObjective();
+    if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
     // We re-do a canonicalization with the final linear expression.
     if (!context_->CanonicalizeObjective()) {
