@@ -283,7 +283,7 @@ function build_archive() {
   # Clean archive
   cd "${ROOT_DIR}" || exit 2
   echo "Check Make version..."
-  make --version 2>&1 | head -n 1 | grep "\b4\.3"
+  make --version 2>&1 | head -n 1 | grep "\b4\.4"
   echo "Check Sed version..."
   sed --version 2>&1 | head -n 1 | grep "GNU sed.*\b4"
 
