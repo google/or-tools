@@ -190,7 +190,7 @@ def main():
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
     search_parameters.time_limit.FromSeconds(5)
-    # When an initial solution is given for search, the model will be closed with the default 
+    # When an initial solution is given for search, the model will be closed with the default
     # search parameters unless it is explicitly closed with the custom search parameters.
     routing.CloseModelWithParameters(search_parameters)
     # [END parameters]

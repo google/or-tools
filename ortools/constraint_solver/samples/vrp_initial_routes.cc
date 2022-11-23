@@ -153,7 +153,7 @@ void VrpInitialRoutes() {
   searchParameters.set_first_solution_strategy(FirstSolutionStrategy_Value_PATH_CHEAPEST_ARC);
   searchParameters.set_local_search_metaheuristic(LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
   searchParameters.mutable_time_limit()->set_seconds(5);
-  // When an initial solution is given for search, the model will be closed with the default  
+  // When an initial solution is given for search, the model will be closed with the default
   // search parameters unless it is explicitly closed with the custom search parameters.
   routing.CloseModelWithParameters(searchParameters);
   // [END parameters]
