@@ -147,13 +147,14 @@ void VrpInitialRoutes() {
   routing.GetMutableDimension("Distance")->SetGlobalSpanCostCoefficient(100);
   // [END distance_constraint]
 
+  // Close model with the custom search parameters
   // [START parameters]
   RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
   searchParameters.set_first_solution_strategy(FirstSolutionStrategy_Value_PATH_CHEAPEST_ARC);
   searchParameters.set_local_search_metaheuristic(LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
   searchParameters.mutable_time_limit()->set_seconds(5);
-  // When an initial solution is given for search, the model should be closed, 
-  // otherwise the solver will ignore the search parameters.
+  // When an initial solution is given for search, the model will be closed with the default  
+  // search parameters unless it is explicitly closed with the custom search parameters.
   routing.CloseModelWithParameters(searchParameters);
   // [END parameters]
 
