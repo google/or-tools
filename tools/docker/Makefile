@@ -465,6 +465,7 @@ $(foreach platform,${PLATFORMS},$(eval $(call build_platform,${platform})))
 
 # List language dependent stages
 LANGS := cpp dotnet java python
+LANGS_EXPORT := cpp dotnet java
 LANG_STAGES := build archive
 
 define build_lang_stage =
@@ -548,7 +549,7 @@ define export_distro =
 $$(foreach lang,${LANGS},$$(eval $$(call export_archive,$1,$2,$${lang})))
 
 .PHONY: $1_$2_export
-$1_$2_export: $(addprefix $1_$2_, $(addsuffix _export, ${LANGS}))
+$1_$2_export: $(addprefix $1_$2_, $(addsuffix _export, ${LANGS_EXPORT}))
 
 .PHONY: clean_$1_$2_export
 clean_$1_$2_export: $(addprefix clean_$1_$2_, $(addsuffix _export, ${LANGS}))
@@ -591,7 +592,7 @@ build_targets := $(addprefix $1_, ${STAGES} export) \
 $${build_targets}: $1_%: $(addprefix $1_, $(addsuffix _%, ${DISTROS}))
 
 .PHONY: $1_export
-$1_export: $1_cpp_export $1_dotnet_export $1_java_export $1_python_export
+$1_export: $1_cpp_export $1_dotnet_export $1_java_export #$1_python_export
 
 clean_targets := $(addprefix clean_$1_, ${STAGES} export) \
  $(addprefix clean_$1_cpp_, ${LANG_STAGES} export) \
@@ -696,8 +697,12 @@ clean: \
 
 .PHONY: distclean
 distclean: clean
-	-docker container rm -f $$(docker container ls -f status=exited -q)
-	-docker image rm -f $$(docker image ls --all -q)
+	-docker container ls -a
+	-docker container prune -f
+	-docker image ls -a
+	-docker image prune -a -f
+	-docker system df
+	-docker system prune -a -f
 	-rm -rf export
 
 ##########################
