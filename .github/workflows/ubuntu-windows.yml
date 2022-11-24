@@ -267,7 +267,7 @@ jobs:
         id: or-install
         shell: bash
         run: |
-          find build/install/bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
+          find build/install/bin -type f ! \( -name 'protoc*' -o -name 'scip*' -o -name 'fz*' \) -delete
           cd build
           ARCHIVE_NAME="ortools_cxx${{ steps.names.outputs.appendix_with_shared }}.zip"
           ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
