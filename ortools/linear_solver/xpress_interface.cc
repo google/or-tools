@@ -39,6 +39,24 @@ extern "C" {
 #define STRINGIFY2(X) #X
 #define STRINGIFY(X) STRINGIFY2(X)
 
+extern "C" {
+  static void
+  cbmessage(XPRSprob, void *cbdata, char const *msg, int msglen, int msgtype)
+  {
+    std::ostream *os = reinterpret_cast<std::ostream *>(cbdata);
+    if (msgtype < 0)
+      *os << std::flush;
+    else if (msg && msglen) {
+      switch (msgtype) {
+      case 1: /* info */ *os << msg << std::endl; break;
+      case 2: /* unused */ break;
+      case 3: /* warn */ *os << msg << std::endl; break;
+      case 4: /* error */ *os << msg << std::endl; break;
+      }
+    }
+  }
+}
+
 void printError(const XPRSprob& mLp, int line) {
   char errmsg[512];
   XPRSgetlasterror(mLp, errmsg);
@@ -1401,6 +1419,8 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   // Set log level.
   XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, quiet() ? 0 : 1);
+  if (!quiet())
+    XPRSaddcbmessage(mLp, cbmessage, &std::cout, 0);
   // Set parameters.
   // NOTE: We must invoke SetSolverSpecificParametersAsString() _first_.
   //       Its current implementation invokes ReadParameterFile() which in
@@ -1580,6 +1600,8 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
         break;
     }
   }
+
+  XPRSremovecbmessage(mLp, 0, 0);
 
   sync_status_ = SOLUTION_SYNCHRONIZED;
   return result_status_;
