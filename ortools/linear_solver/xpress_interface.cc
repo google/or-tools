@@ -1268,7 +1268,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
     // In Xpress, a time limit should usually have a negative sign. With a
     // positive sign, the solver will only stop when a solution has been found.
-    CHECK_STATUS(XPRSsetdblcontrol(mLp, XPRS_MAXTIME,
+    CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_MAXTIME,
                                    -1.0 * solver_->time_limit_in_secs()));
   }
 
