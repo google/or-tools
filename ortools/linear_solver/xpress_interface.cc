@@ -1427,11 +1427,10 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
                                    -1.0 * solver_->time_limit_in_secs()));
   }
 
-  // Solve.
-  // Do not CHECK_STATUS here since some errors (for example CPXERR_NO_MEMORY)
-  // still allow us to query useful information.
   timer.Restart();
-
+  // Solve.
+  // Do not CHECK_STATUS here since some errors still allow us to query useful
+  // information.
   int xpressstat = 0;
   if (mMip) {
     if (this->maximize_)
@@ -1448,6 +1447,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   }
 
   // Disable screen output right after solve
+  XPRSremovecbmessage(mLp, 0, 0);
   XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, 0);
 
   if (status) {
@@ -1590,8 +1590,6 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
         break;
     }
   }
-
-  XPRSremovecbmessage(mLp, 0, 0);
 
   sync_status_ = SOLUTION_SYNCHRONIZED;
   return result_status_;
