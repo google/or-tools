@@ -19,6 +19,10 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <sstream>
+#include <istream>
+#include <fstream>
+#include <cctype>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
@@ -183,6 +187,8 @@ class XpressInterface : public MPSolverInterface {
     return 0.0;
   }
 
+  virtual bool SetSolverSpecificParametersAsString(const std::string& parameters);
+
  protected:
   // Set all parameters in the underlying solver.
   virtual void SetParameters(MPSolverParameters const& param);
@@ -209,6 +215,9 @@ class XpressInterface : public MPSolverInterface {
 
   // Transform XPRESS basis status to MPSolver basis status.
   static MPSolver::BasisStatus xformBasisStatus(int xpress_basis_status);
+
+  bool readParameter(std::string const &name, std::string const &value);
+  bool readParameters(std::istream &is, char sep);
 
  private:
   XPRSprob mLp;
@@ -1204,14 +1213,155 @@ void XpressInterface::SetLpAlgorithm(int value) {
   }
 }
 
+bool XpressInterface::readParameter(std::string const &name, std::string const &value)
+{
+  if (!value.size()) {
+    LOG(DFATAL) << "Empty value for parameter '" << name << "' in "
+                << SolverVersion();
+    return false;
+  }
+  int id, type;
+  if (XPRSgetcontrolinfo(mLp, name.c_str(), &id, &type) ||
+      type == XPRS_TYPE_NOTDEFINED)
+  {
+    LOG(DFATAL) << "Unknown parameter '" << name << "' in "
+                << SolverVersion();
+    return false;
+  }
+  std::stringstream v(value);
+  switch (type) {
+  case XPRS_TYPE_INT:
+  {
+    int i;
+    v >> i;
+    if (!v.eof()) {
+      LOG(DFATAL) << "Failed to parse value '" << value
+                  << "' for int parameter '" << name << "' in "
+                  << SolverVersion();
+      return false;
+    }
+    if (XPRSsetintcontrol(mLp, id, i)) {
+      LOG(DFATAL) << "Failed to set int parameter '" << name
+                  << "' to " << value << " (" << i << ") in "
+                  << SolverVersion();
+      return false;
+    }
+  }
+  break;
+  case XPRS_TYPE_INT64:
+  {
+    XPRSint64 i;
+    v >> i;
+    if (!v.eof()) {
+      LOG(DFATAL) << "Failed to parse value '" << value
+                  << "' for int64 parameter '" << name << "' in "
+                  << SolverVersion();
+      return false;
+    }
+    if (XPRSsetintcontrol64(mLp, id, i)) {
+      LOG(DFATAL) << "Failed to set int64 parameter '" << name
+                  << "' to " << value << " (" << i << ") in "
+                  << SolverVersion();
+      return false;
+    }
+  }
+  break;
+  case XPRS_TYPE_DOUBLE:
+  {
+    double d;
+    v >> d;
+    if (!v.eof()) {
+      LOG(DFATAL) << "Failed to parse value '" << value
+                  << "' for dbl parameter '" << name << "' in "
+                  << SolverVersion();
+      return false;
+    }
+    if (XPRSsetdblcontrol(mLp, id, d)) {
+      LOG(DFATAL) << "Failed to set double parameter '" << name
+                  << "' to " << value << " (" << d << ") in "
+                  << SolverVersion();
+      return false;
+    }
+  }
+  break;
+  default:
+    LOG(DFATAL) << "Unsupported parameter type " << type
+                << " for parameter '" << name << "' in "
+                << SolverVersion();
+    return false;
+  }
+
+  return true;
+}
+
+bool XpressInterface::readParameters(std::istream &is, char sep) {
+  // - parameters must be specified as NAME=VALUE
+  // - settings must be separated by sep
+  // - any whitespace is ignored
+  // - string parameters are not supported
+
+  std::string name(""), value("");
+  bool inValue = false;
+
+  while (is) {
+    int c = is.get();
+    if (is.eof())
+      break;
+    if (c == '=') {
+      if (inValue) {
+        LOG(DFATAL) << "Failed to parse parameters in " << SolverVersion();
+        return false;
+      }
+      inValue = true;
+    }
+    else if (c == sep) {
+      // End of parameter setting
+      if (name.size() == 0 && value.size() == 0) {
+        // Ok to have empty "lines".
+        continue;
+      }
+      if (!readParameter(name, value))
+        return false;
+
+      // Reset for parsing the next parameter setting.
+      name = "";
+      value = "";
+      inValue = false;
+    }
+    else if (std::isspace(c)) {
+      continue;
+    }
+    else if (inValue) {
+      value += (char)c;
+    }
+    else {
+      name += (char)c;
+    }
+  }
+  if (inValue)
+    return readParameter(name, value);
+
+  return true;
+}
+
 bool XpressInterface::ReadParameterFile(std::string const& filename) {
   // Return true on success and false on error.
-  LOG(DFATAL) << "ReadParameterFile not implemented for XPRESS interface";
-  return false;
+  std::ifstream s(filename);
+  if ( !s )
+    return false;
+  return readParameters(s, '\n');
 }
 
 std::string XpressInterface::ValidFileExtensionForParameterFile() const {
   return ".prm";
+}
+
+bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& parameters) {
+  if (parameters.empty()) {
+    return true;
+  }
+  std::stringstream s(parameters);
+  return readParameters(s, ';');
 }
 
 MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
