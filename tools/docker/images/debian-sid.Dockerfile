@@ -51,6 +51,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 ##  OR-TOOLS  ##
 ################
 FROM env AS devel
+ENV DISTRIBUTION=debian-sid
+
 WORKDIR /root
 # Copy the snk key
 COPY or-tools.snk /root/or-tools.snk
