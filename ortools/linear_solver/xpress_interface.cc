@@ -81,7 +81,7 @@ enum XPRS_BASIS_STATUS {
 
 // In case we need to return a double but don't have a value for that
 // we just return a NaN.
-#if !defined(CPX_NAN)
+#if !defined(XPRS_NAN)
 #define XPRS_NAN std::numeric_limits<double>::quiet_NaN()
 #endif
 
