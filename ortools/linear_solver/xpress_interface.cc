@@ -382,16 +382,11 @@ std::string XpressInterface::SolverVersion() const {
   int version = 0;
   CHECK_STATUS(XPRSgetintcontrol(mLp, XPRS_VERSION, &version));
 
-  int const major = version / 1000000;
-  version -= major * 1000000;
-  int const release = version / 10000;
-  version -= release * 10000;
-  int const mod = version / 100;
-  version -= mod * 100;
-  int const fix = version;
+  int const major = version / 100;
+  version -= major * 100;
+  int const release = version;
 
-  return absl::StrFormat("XPRESS library version %d.%02d.%02d.%02d", major,
-                         release, mod, fix);
+  return absl::StrFormat("XPRESS library version %d.%02d", major, release);
 }
 
 // ------ Model modifications and extraction -----
