@@ -522,22 +522,14 @@ void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
   } else if (lb > XPRS_MINUSINFINITY && ub < XPRS_PLUSINFINITY) {
     // Both bounds are finite -> this is a ranged constraint
     // The value of a ranged constraint is allowed to be in
-    //   [ rhs[i], rhs[i]+rngval[i] ]
-    // see also the reference documentation for XPRSnewrows()
-    if (ub < lb) {
-      // The bounds for the constraint are contradictory. XPRESS models
-      // a range constraint l <= ax <= u as
-      //    ax = l + v
-      // where v is an auxiliary variable the range of which is controlled
-      // by l and u: if l < u then v in [0, u-l]
-      //             else          v in [u-l, 0]
-      // (the range is specified as the rngval[] argument to XPRSnewrows).
-      // Thus XPRESS cannot represent range constraints with contradictory
-      // bounds and we must error out here.
-      CHECK_STATUS(-1);
+    //   [ rhs-rngval, rhs ]
+    // Xpress does not support contradictory bounds. Instead the sign on
+    // rndval is always ignored.
+    if ( lb > ub ) {
+      LOG(DFATAL) << "XPRESS does not support contradictory bounds on range constraints! [" << lb << ", " << ub << "] will be converted to " << ub << ", " << (ub - std::abs(ub - lb)) << "]";
     }
     rhs = ub;
-    range = ub - lb;
+    range = std::abs(ub - lb); // This happens implicitly by XPRSaddrows() and XPRSloadlp()
     sense = 'R';
   } else if (ub < XPRS_PLUSINFINITY || (std::abs(ub) == XPRS_PLUSINFINITY &&
                                         std::abs(lb) > XPRS_PLUSINFINITY)) {
@@ -555,21 +547,17 @@ void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
     // Lower and upper bound are both infinite.
     // This is used for example in .mps files to specify alternate
     // objective functions.
-    // Note that the case lb==ub was already handled above, so we just
-    // pick the bound with larger magnitude and create a constraint for it.
-    // Note that we replace the infinite bound by XPRS_PLUSINFINITY since
-    // bounds with larger magnitude may cause other XPRESS functions to
-    // fail (for example the export to LP files).
+    // A free row is denoted by sense 'N' and we can specify arbitrary
+    // right-hand sides since they are ignored anyway. We just pick the
+    // bound with smaller absolute value.
     DCHECK_GT(std::abs(lb), XPRS_PLUSINFINITY);
     DCHECK_GT(std::abs(ub), XPRS_PLUSINFINITY);
-    if (std::abs(lb) > std::abs(ub)) {
-      rhs = (lb < 0) ? -XPRS_PLUSINFINITY : XPRS_PLUSINFINITY;
-      sense = 'G';
-    } else {
-      rhs = (ub < 0) ? -XPRS_PLUSINFINITY : XPRS_PLUSINFINITY;
-      sense = 'L';
-    }
+    if (std::abs(lb) < std::abs(ub))
+      rhs = lb;
+    else
+      rhs = ub;
     range = 0.0;
+    sense = 'N';
   }
 }
 
@@ -593,9 +581,18 @@ void XpressInterface::SetConstraintBounds(int index, double lb, double ub) {
       char sense;
       double range, rhs;
       MakeRhs(lb, ub, rhs, sense, range);
-      CHECK_STATUS(XPRSchgrhs(mLp, 1, &index, &lb));
-      CHECK_STATUS(XPRSchgrowtype(mLp, 1, &index, &sense));
-      CHECK_STATUS(XPRSchgrhsrange(mLp, 1, &index, &range));
+      if (sense == 'R') {
+        // Rather than doing the complicated analysis required for
+        // XPRSchgrhsrange(), we first convert the row into an 'L' row
+        // with defined rhs and then change the range value.
+        CHECK_STATUS(XPRSchgrowtype(mLp, 1, &index, "L"));
+        CHECK_STATUS(XPRSchgrhs(mLp, 1, &index, &rhs));
+        CHECK_STATUS(XPRSchgrhsrange(mLp, 1, &index, &range));
+      }
+      else {
+        CHECK_STATUS(XPRSchgrowtype(mLp, 1, &index, &sense));
+        CHECK_STATUS(XPRSchgrhs(mLp, 1, &index, &rhs));
+      }
     } else {
       // Constraint is not yet extracted. It is sufficient to mark the
       // modeling object as "out of sync"
@@ -1055,8 +1052,6 @@ void XpressInterface::ExtractNewConstraints() {
       unique_ptr<double[]> rhs(new double[chunk]);
       unique_ptr<char const*[]> name(new char const*[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
-      unique_ptr<int[]> rngind(new int[chunk]);
-      bool haveRanges = false;
 
       // Loop over the new constraints, collecting rows for up to
       // CHUNK constraints into the arrays so that adding constraints
@@ -1065,6 +1060,7 @@ void XpressInterface::ExtractNewConstraints() {
         // Collect up to CHUNK constraints into the arrays.
         int nextRow = 0;
         int nextNz = 0;
+        bool haveRanges = false;
         for (/* nothing */; c < newCons && nextRow < chunk; ++c, ++nextRow) {
           MPConstraint const* const ct = solver_->constraints_[offset + c];
 
@@ -1079,7 +1075,6 @@ void XpressInterface::ExtractNewConstraints() {
           MakeRhs(ct->lb(), ct->ub(), rhs[nextRow], sense[nextRow],
                   rngval[nextRow]);
           haveRanges = haveRanges || (rngval[nextRow] != 0.0);
-          rngind[nextRow] = offset + c;
 
           // Setup left-hand side of constraint.
           rmatbeg[nextRow] = nextNz;
@@ -1100,12 +1095,8 @@ void XpressInterface::ExtractNewConstraints() {
         }
         if (nextRow > 0) {
           CHECK_STATUS(XPRSaddrows(mLp, nextRow, nextNz, sense.get(), rhs.get(),
-                                   rngval.get(), rmatbeg.get(), rmatind.get(),
-                                   rmatval.get()));
-          if (haveRanges) {
-            CHECK_STATUS(
-                XPRSchgrhsrange(mLp, nextRow, rngind.get(), rngval.get()));
-          }
+                                   haveRanges ? rngval.get() : 0,
+                                   rmatbeg.get(), rmatind.get(), rmatval.get()));
         }
       }
     } catch (...) {
