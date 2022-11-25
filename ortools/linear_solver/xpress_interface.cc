@@ -67,13 +67,13 @@ void printError(const XPRSprob& mLp, int line) {
 
 int XPRSgetnumcols(const XPRSprob& mLp) {
   int nCols = 0;
-  XPRSgetintattrib(mLp, XPRS_COLS, &nCols);
+  XPRSgetintattrib(mLp, XPRS_ORIGINALCOLS, &nCols);
   return nCols;
 }
 
 int XPRSgetnumrows(const XPRSprob& mLp) {
   int nRows = 0;
-  XPRSgetintattrib(mLp, XPRS_ROWS, &nRows);
+  XPRSgetintattrib(mLp, XPRS_ORIGINALROWS, &nRows);
   return nRows;
 }
 
