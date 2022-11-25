@@ -1406,9 +1406,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   // Extract the model to be solved.
   // If we don't support incremental extraction and the low-level modeling
-  // is out of sync then we have to re-extract everything. Note that this
-  // will lose MIP starts or advanced basis information from a previous
-  // solve.
+  // is out of sync then we have to re-extract everything.
   if (!supportIncrementalExtraction && sync_status_ == MUST_RELOAD) Reset();
   ExtractModel();
   VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
@@ -1418,10 +1416,6 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   if (!quiet())
     XPRSaddcbmessage(mLp, cbmessage, &std::cout, 0);
   // Set parameters.
-  // NOTE: We must invoke SetSolverSpecificParametersAsString() _first_.
-  //       Its current implementation invokes ReadParameterFile() which in
-  //       turn invokes XPRSreadcopyparam(). The latter will _overwrite_
-  //       all current parameter settings in the environment.
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
   SetParameters(param);
