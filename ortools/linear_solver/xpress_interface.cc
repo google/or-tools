@@ -206,6 +206,11 @@ class XpressInterface : public MPSolverInterface {
   }
 
   virtual bool SetSolverSpecificParametersAsString(const std::string& parameters);
+  virtual bool InterruptSolve() {
+    if (mLp)
+      XPRSinterrupt(mLp, XPRS_STOP_USER);
+    return true;
+  }
 
  protected:
   // Set all parameters in the underlying solver.
