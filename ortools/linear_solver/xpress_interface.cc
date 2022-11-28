@@ -1416,8 +1416,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   ExtractModel();
   VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
 
-  // Set log level.
-  XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, quiet() ? 0 : 1);
+  // Enable log output.
   if (!quiet())
     XPRSaddcbmessage(mLp, cbmessage, &std::cout, 0);
   // Set parameters.
@@ -1453,7 +1452,6 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   // Disable screen output right after solve
   XPRSremovecbmessage(mLp, cbmessage, 0);
-  XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, 0);
 
   if (status) {
     VLOG(1) << absl::StrFormat("Failed to optimize MIP. Error %d", status);
