@@ -76,6 +76,8 @@ function build_dotnet() {
   if [[ -x $(command -v openssl11) ]]; then
     OPENSSL_PRG=openssl11
   fi
+  echo "check ${OPENSSL_PRG}..."
+  command -v ${OPENSSL_PRG} | xargs echo "openssl: " | tee -a build.log
 
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
     -in "${RELEASE_DIR}/or-tools.snk.enc" \
