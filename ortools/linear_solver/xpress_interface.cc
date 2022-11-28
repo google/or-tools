@@ -40,7 +40,7 @@ extern "C" {
 #define STRINGIFY(X) STRINGIFY2(X)
 
 extern "C" {
-  static void
+  static void XPRS_CC
   cbmessage(XPRSprob, void *cbdata, char const *msg, int msglen, int msgtype)
   {
     std::ostream *os = reinterpret_cast<std::ostream *>(cbdata);
