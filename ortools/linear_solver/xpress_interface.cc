@@ -1299,6 +1299,8 @@ bool XpressInterface::readParameter(std::string const &name, std::string const &
   }
   break;
   default:
+    // Note that string parameters are not supported at the moment since
+    // we don't want to deal with potential encoding or escaping issues.
     LOG(DFATAL) << "Unsupported parameter type " << type
                 << " for parameter '" << name << "' in "
                 << SolverVersion();
