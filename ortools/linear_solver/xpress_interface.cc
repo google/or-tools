@@ -1336,7 +1336,10 @@ bool XpressInterface::readParameters(std::istream &is, char sep) {
         // Ok to have empty "lines".
         continue;
       }
-      if (!readParameter(name, value))
+      else if (name.size() == 0) {
+        LOG(DFATAL) << "Parameter setting without name in " << SolverVersion();
+      }
+      else if (!readParameter(name, value))
         return false;
 
       // Reset for parsing the next parameter setting.
