@@ -1452,7 +1452,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   }
 
   // Disable screen output right after solve
-  XPRSremovecbmessage(mLp, 0, 0);
+  XPRSremovecbmessage(mLp, cbmessage, 0);
   XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, 0);
 
   if (status) {
