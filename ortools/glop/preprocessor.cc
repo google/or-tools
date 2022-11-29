@@ -2683,6 +2683,9 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
   const Fractional cst_lower_bound = lp->constraint_lower_bounds()[e.row];
   const Fractional cst_upper_bound = lp->constraint_upper_bounds()[e.row];
   if (cst_lower_bound == cst_upper_bound) return true;
+  if (cst_lower_bound == -kInfinity && cst_upper_bound == kInfinity) {
+    return false;
+  }
 
   // To be efficient, we only process a row once and cache the domain that an
   // "artificial" extra variable x with coefficient 1.0 could take while still
@@ -2763,11 +2766,11 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
     }
 
     if (status_ == ProblemStatus::INFEASIBLE_OR_UNBOUNDED) {
-      DCHECK_EQ(ub, kInfinity);
       VLOG(1) << "Problem ProblemStatus::INFEASIBLE_OR_UNBOUNDED, singleton "
                  "variable "
               << e.col << " has a cost (for minimization) of " << cost
               << " and is unbounded towards kInfinity.";
+      DCHECK_EQ(ub, kInfinity);
       return false;
     }
 
