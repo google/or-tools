@@ -14,13 +14,20 @@
 
 set -euxo pipefail
 
+local -r PLATFORM=$(uname -m)
+
 # Check all prerequisite
 # cc
 command -v cmake | xargs echo "cmake: " | tee test.log
 command -v make | xargs echo "make: " | tee -a test.log
 command -v swig | xargs echo "swig: " | tee -a test.log
 # python
-PY=(3.6 3.7 3.8 3.9 3.10 3.11)
+if [[ ${PLATFORM} == "arm64" ]]; then
+  local -r PY=(3.8 3.9 3.10 3.11)
+else
+  local -r PY=(3.7 3.8 3.9 3.10 3.11)
+fi
+
 for i in "${PY[@]}"; do
   command -v "python$i" | xargs echo "python$i: " | tee -a test.log
 done

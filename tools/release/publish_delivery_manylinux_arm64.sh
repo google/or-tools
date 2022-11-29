@@ -58,20 +58,27 @@ function publish_delivery() {
   assert_defined ORTOOLS_SHA1
   assert_defined ORTOOLS_TOKEN
   assert_defined ORTOOLS_DELIVERY
+  assert_defined DOCKERFILE
+  assert_defined ORTOOLS_IMG
 
   # Clean
-  docker image rm -f ortools:linux_delivery 2>/dev/null
+  echo -n "Remove previous docker images..." | tee -a "${ROOT_DIR}/publish.log"
+  docker image rm -f "${ORTOOLS_IMG}":"publish_${ORTOOLS_DELIVERY}" 2>/dev/null
+  echo "DONE" | tee -a "${ROOT_DIR}/publish.log"
 
   cd "${RELEASE_DIR}" || exit 2
 
-  # Build delivery
-  docker build --tag ortools/linux_delivery:"publish_${ORTOOLS_DELIVERY}" \
+  # Publish delivery
+  echo -n "Build ${ORTOOLS_IMG}:publish_${ORTOOLS_DELIVERY}..." | tee -a "${ROOT_DIR}/publish.log"
+  docker buildx build \
+    --tag "${ORTOOLS_IMG}":"publish_${ORTOOLS_DELIVERY}" \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
     --build-arg ORTOOLS_TOKEN="${ORTOOLS_TOKEN}" \
     --build-arg ORTOOLS_DELIVERY="${ORTOOLS_DELIVERY}" \
     --target=publish \
-    -f Dockerfile .
+    -f "${DOCKERFILE}" .
+  echo "DONE" | tee -a "${ROOT_DIR}/publish.log"
 }
 
 # Java publish
@@ -95,18 +102,23 @@ function main() {
 
   assert_defined ORTOOLS_TOKEN
   echo "ORTOOLS_TOKEN: FOUND" | tee publish.log
-  make print-OR_TOOLS_VERSION | tee -a publish.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
-  echo "ROOT_DIR: '${ROOT_DIR}'"
+  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a publish.log
 
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'"
+  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a publish.log
+
+  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  local -r DOCKERFILE="arm64.Dockerfile"
+  local -r ORTOOLS_IMG="ortools/manylinux_delivery_arm64"
+  local -r PLATFORM=$(uname -m)
 
-  mkdir -p export
+  mkdir -p "${ROOT_DIR}/export"
+
   case ${1} in
     java|python)
       "publish_$1"
