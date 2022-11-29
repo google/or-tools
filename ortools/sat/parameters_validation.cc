@@ -63,6 +63,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(relative_gap_limit);
   TEST_IS_FINITE(log_frequency_in_seconds);
   TEST_IS_FINITE(model_reduction_log_frequency_in_seconds);
+  TEST_IS_FINITE(probing_deterministic_time_limit);
   TEST_IS_FINITE(presolve_probing_deterministic_time_limit);
   TEST_IS_FINITE(propagation_loop_detection_factor);
   TEST_IS_FINITE(merge_no_overlap_work_limit);
@@ -93,6 +94,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(num_search_workers);
   TEST_NON_NEGATIVE(min_num_lns_workers);
   TEST_NON_NEGATIVE(interleave_batch_size);
+  TEST_NON_NEGATIVE(probing_deterministic_time_limit);
+  TEST_NON_NEGATIVE(presolve_probing_deterministic_time_limit);
 
   if (params.enumerate_all_solutions() &&
       (params.num_search_workers() > 1 || params.num_workers() > 1)) {

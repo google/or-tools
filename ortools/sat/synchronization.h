@@ -340,6 +340,10 @@ class SharedResponseManager {
 
   void AppendResponseToBeMerged(const CpSolverResponse& response);
 
+  std::atomic<bool>* first_solution_solvers_should_stop() {
+    return &first_solution_solvers_should_stop_;
+  }
+
  private:
   void TestGapLimitsIfNeeded() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void FillObjectiveValuesInResponse(CpSolverResponse* response) const
@@ -416,6 +420,8 @@ class SharedResponseManager {
 
   SolverLogger* logger_;
   std::vector<CpSolverResponse> subsolver_responses_ ABSL_GUARDED_BY(mutex_);
+
+  std::atomic<bool> first_solution_solvers_should_stop_;
 };
 
 // This class manages a pool of lower and upper bounds on a set of variables in

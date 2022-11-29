@@ -17,6 +17,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/flags/flag.h"
@@ -101,24 +102,31 @@ void DeterministicLoop(
 
   int64_t task_id = 0;
   std::vector<int64_t> num_generated_tasks(subsolvers.size(), 0);
+  std::vector<std::function<void()>> to_run;
+  to_run.reserve(batch_size);
   while (true) {
     SynchronizeAll(subsolvers);
 
-    // TODO(user): We could reuse the same ThreadPool as long as we wait for all
-    // the task in a batch to finish before scheduling new ones. Not sure how
-    // to easily do that, so for now we just recreate the pool for each batch.
-    ThreadPool pool("DeterministicLoop", num_threads);
-    pool.StartWorkers();
-
-    int num_in_batch = 0;
+    // We first generate all task to run in this batch.
+    // Note that we can't start the task right away since if a task finish
+    // before we schedule everything, we will not be deterministic.
     for (int t = 0; t < batch_size; ++t) {
       const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
       if (best == -1) break;
-      ++num_in_batch;
       num_generated_tasks[best]++;
-      pool.Schedule(subsolvers[best]->GenerateTask(task_id++));
+      to_run.push_back(subsolvers[best]->GenerateTask(task_id++));
     }
-    if (num_in_batch == 0) break;
+    if (to_run.empty()) break;
+
+    // TODO(user): We could reuse the same ThreadPool as long as we wait for all
+    // the task in a batch to finish before scheduling new ones. Not sure how
+    // to easily do that, so for now we just recreate the pool for each to_run.
+    ThreadPool pool("DeterministicLoop", num_threads);
+    pool.StartWorkers();
+    for (auto& f : to_run) {
+      pool.Schedule(std::move(f));
+    }
+    to_run.clear();
   }
 }
 

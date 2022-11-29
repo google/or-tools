@@ -140,7 +140,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
  public:
   typedef glop::RowIndex ConstraintIndex;
 
-  explicit LinearProgrammingConstraint(Model* model);
+  // Each linear programming constraint works on a fixed set of variables.
+  // We expect the set of variable to be sorted in increasing order.
+  LinearProgrammingConstraint(Model* model,
+                              absl::Span<const IntegerVariable> vars);
 
   // Add a new linear constraint to this LP.
   void AddLinearConstraint(const LinearConstraint& ct);
@@ -362,9 +365,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Returns the variable value on the same scale as the CP variable value.
   glop::Fractional GetVariableValueAtCpScale(glop::ColIndex var);
 
-  // Gets or creates an LP variable that mirrors a CP variable.
+  // Gets an LP variable that mirrors a CP variable.
   // The variable should be a positive reference.
-  glop::ColIndex GetOrCreateMirrorVariable(IntegerVariable positive_variable);
+  glop::ColIndex GetMirrorVariable(IntegerVariable positive_variable);
 
   // This must be called on an OPTIMAL LP and will update the data for
   // LPReducedCostAverageDecision().
@@ -451,7 +454,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // they can be used as vector indices.
   //
   // TODO(user): This should be absl::StrongVector<glop::ColIndex,
-  // IntegerVariable>.
+  // IntegerVariable> Except if we have too many LinearProgrammingConstraint.
   std::vector<IntegerVariable> integer_variables_;
   absl::flat_hash_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
 

@@ -173,7 +173,8 @@ ScatteredIntegerVector::GetTerms() {
 
 // TODO(user): make SatParameters singleton too, otherwise changing them after
 // a constraint was added will have no effect on this class.
-LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
+LinearProgrammingConstraint::LinearProgrammingConstraint(
+    Model* model, absl::Span<const IntegerVariable> vars)
     : constraint_manager_(model),
       parameters_(*(model->GetOrCreate<SatParameters>())),
       model_(model),
@@ -201,44 +202,41 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
 
   integer_rounding_cut_helper_.SetSharedStatistics(
       model->GetOrCreate<SharedStatistics>());
+
+  // Initialize the IntegerVariable -> ColIndex mapping.
+  CHECK(std::is_sorted(vars.begin(), vars.end()));
+
+  integer_variables_.assign(vars.begin(), vars.end());
+  ColIndex col{0};
+  for (const IntegerVariable positive_variable : vars) {
+    CHECK(VariableIsPositive(positive_variable));
+    implied_bounds_processor_.AddLpVariable(positive_variable);
+    (*dispatcher_)[positive_variable] = this;
+    mirror_lp_variable_[positive_variable] = col;
+
+    ++col;
+  }
+  lp_solution_.assign(vars.size(), std::numeric_limits<double>::infinity());
+  lp_reduced_cost_.assign(vars.size(), 0.0);
+
+  if (!vars.empty()) {
+    const int max_index = NegationOf(vars.back()).value();
+    if (max_index >= expanded_lp_solution_.size()) {
+      expanded_lp_solution_.assign(max_index + 1, 0.0);
+    }
+  }
 }
 
 void LinearProgrammingConstraint::AddLinearConstraint(
     const LinearConstraint& ct) {
   DCHECK(!lp_constraint_is_registered_);
   constraint_manager_.Add(ct);
-
-  // We still create the mirror variable right away though.
-  //
-  // TODO(user): clean this up? Note that it is important that the variable
-  // in lp_data_ never changes though, so we can restart from the current
-  // lp solution and be incremental (even if the constraints changed).
-  for (const IntegerVariable var : ct.vars) {
-    GetOrCreateMirrorVariable(PositiveVariable(var));
-  }
 }
 
-glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
+glop::ColIndex LinearProgrammingConstraint::GetMirrorVariable(
     IntegerVariable positive_variable) {
   DCHECK(VariableIsPositive(positive_variable));
-  const auto it = mirror_lp_variable_.find(positive_variable);
-  if (it == mirror_lp_variable_.end()) {
-    const glop::ColIndex col(integer_variables_.size());
-    implied_bounds_processor_.AddLpVariable(positive_variable);
-    mirror_lp_variable_[positive_variable] = col;
-    integer_variables_.push_back(positive_variable);
-    lp_solution_.push_back(std::numeric_limits<double>::infinity());
-    lp_reduced_cost_.push_back(0.0);
-    (*dispatcher_)[positive_variable] = this;
-
-    const int index = std::max(positive_variable.value(),
-                               NegationOf(positive_variable).value());
-    if (index >= expanded_lp_solution_.size()) {
-      expanded_lp_solution_.resize(index + 1, 0.0);
-    }
-    return col;
-  }
-  return it->second;
+  return mirror_lp_variable_.at(positive_variable);
 }
 
 void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
@@ -249,7 +247,7 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
   if (ivar != pos_var) coeff = -coeff;
 
   constraint_manager_.SetObjectiveCoefficient(pos_var, coeff);
-  const glop::ColIndex col = GetOrCreateMirrorVariable(pos_var);
+  const glop::ColIndex col = GetMirrorVariable(pos_var);
   integer_objective_.push_back({col, coeff});
   objective_infinity_norm_ =
       std::max(objective_infinity_norm_, IntTypeAbs(coeff));
@@ -292,21 +290,18 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     if (ct.ub < kMaxIntegerValue) {
       infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.ub));
     }
+    new_ct.terms.reserve(size);
     for (int i = 0; i < size; ++i) {
       // We only use positive variable inside this class.
-      IntegerVariable var = ct.vars[i];
-      IntegerValue coeff = ct.coeffs[i];
-      if (!VariableIsPositive(var)) {
-        var = NegationOf(var);
-        coeff = -coeff;
-      }
+      const IntegerVariable var = ct.vars[i];
+      const IntegerValue coeff = ct.coeffs[i];
       infinity_norm = std::max(infinity_norm, IntTypeAbs(coeff));
-      new_ct.terms.push_back({GetOrCreateMirrorVariable(var), coeff});
+      new_ct.terms.push_back({GetMirrorVariable(var), coeff});
     }
     infinity_norms_.push_back(infinity_norm);
 
     // Important to keep lp_data_ "clean".
-    std::sort(new_ct.terms.begin(), new_ct.terms.end());
+    DCHECK(std::is_sorted(new_ct.terms.begin(), new_ct.terms.end()));
   }
 
   // Copy the integer_lp_ into lp_data_.
@@ -448,7 +443,7 @@ bool LinearProgrammingConstraint::BranchOnVar(IntegerVariable positive_var) {
   // This will try to branch in both direction around the LP value of the
   // given variable and push any deduction done this way.
 
-  const glop::ColIndex lp_var = GetOrCreateMirrorVariable(positive_var);
+  const glop::ColIndex lp_var = GetMirrorVariable(positive_var);
   const double current_lb = ToDouble(integer_trail_->LowerBound(positive_var));
   const double current_ub = ToDouble(integer_trail_->UpperBound(positive_var));
   const double factor = scaler_.VariableScalingFactor(lp_var);
@@ -592,9 +587,6 @@ void LinearProgrammingConstraint::SetLevel(int level) {
 }
 
 void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
-  for (const IntegerVariable var : generator.vars) {
-    GetOrCreateMirrorVariable(VariableIsPositive(var) ? var : NegationOf(var));
-  }
   cut_generators_.push_back(std::move(generator));
 }
 
@@ -757,6 +749,8 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   if (DEBUG_MODE) {
     copy_in_debug = cut_;
   }
+
+  // TODO(user): Do coeff strengthening before cuting.
 
   // Try single node flow cover cut.
   //
@@ -1481,7 +1475,7 @@ bool LinearProgrammingConstraint::Propagate() {
 
   // TODO(user): It seems the time we loose by not stopping early might be worth
   // it because we end up with a better explanation at optimality.
-  glop::GlopParameters parameters = simplex_.GetParameters();
+  glop::GlopParameters glop_params = simplex_.GetParameters();
   if (/* DISABLES CODE */ (false) && objective_is_defined_) {
     // We put a limit on the dual objective since there is no point increasing
     // it past our current objective upper-bound (we will already fail as soon
@@ -1490,7 +1484,7 @@ bool LinearProgrammingConstraint::Propagate() {
     //
     // Note that we use a bigger epsilon here to be sure that if we abort
     // because of this, we will report a conflict.
-    parameters.set_objective_upper_limit(
+    glop_params.set_objective_upper_limit(
         static_cast<double>(integer_trail_->UpperBound(objective_cp_).value() +
                             100.0 * kCpEpsilon));
   }
@@ -1499,19 +1493,17 @@ bool LinearProgrammingConstraint::Propagate() {
   // that because we are "incremental", even if we don't solve it this time we
   // will make progress towards a solve in the lower node of the tree search.
   if (trail_->CurrentDecisionLevel() == 0) {
-    // TODO(user): Dynamically change the iteration limit for root node as
-    // well.
-    parameters.set_max_number_of_iterations(2000);
+    glop_params.set_max_number_of_iterations(parameters_.root_lp_iterations());
   } else {
-    parameters.set_max_number_of_iterations(next_simplex_iter_);
+    glop_params.set_max_number_of_iterations(next_simplex_iter_);
   }
   if (parameters_.use_exact_lp_reason()) {
-    parameters.set_change_status_to_imprecise(false);
-    parameters.set_primal_feasibility_tolerance(1e-7);
-    parameters.set_dual_feasibility_tolerance(1e-7);
+    glop_params.set_change_status_to_imprecise(false);
+    glop_params.set_primal_feasibility_tolerance(1e-7);
+    glop_params.set_dual_feasibility_tolerance(1e-7);
   }
 
-  simplex_.SetParameters(parameters);
+  simplex_.SetParameters(glop_params);
   simplex_.NotifyThatMatrixIsUnchangedForNextSolve();
   if (!SolveLp()) return true;
 

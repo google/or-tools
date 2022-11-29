@@ -2909,7 +2909,7 @@ void CpModelPresolver::DetectAndProcessAtMostOneInLinear(
   }
 
   // Extract enforcement or fix literal.
-  // TODO(user): Do not use domain function, can be slow.
+  // TODO(user): Do not use domain fonction, can be slow.
   std::vector<int> new_enforcement;
   std::vector<int> must_be_true;
   for (int i = 0; i < tmp_terms_.size(); ++i) {
@@ -4593,6 +4593,68 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
     }
   }
 
+  // Check for duplicate intervals.
+  std::vector<int> intervals(proto->intervals().begin(),
+                             proto->intervals().end());
+  absl::flat_hash_set<int> duplicate_intervals;
+  std::sort(intervals.begin(), intervals.end());
+  for (int i = 0; i + 1 < intervals.size(); ++i) {
+    const int index = intervals[i];
+    if (index == intervals[i + 1]) {
+      if (!duplicate_intervals.insert(index).second) continue;
+      ConstraintProto* interval_ct =
+          context_->working_model->mutable_constraints(index);
+      if (context_->SizeMin(index) > 0) {
+        if (!MarkConstraintAsFalse(interval_ct)) {
+          return false;
+        }
+        context_->UpdateRuleStats(
+            "no_overlap: remove duplicate non zero-sized intervals");
+      } else if (!context_->ConstraintIsOptional(index)) {
+        const LinearExpressionProto& size_expr = interval_ct->interval().size();
+        bool size_modified = false;
+        if (!context_->IntersectDomainWith(size_expr, Domain(0),
+                                           &size_modified)) {
+          return false;
+        }
+        if (size_modified) {
+          context_->UpdateRuleStats(
+              "no_overlap: zero size of non-optional duplicate intervals");
+          changed = true;
+        }
+      }
+    }
+  }
+
+  if (!duplicate_intervals.empty()) {
+    // Filter removed duplicate intervals intervals.
+    const int initial_num_intervals = proto->intervals_size();
+    int new_size = 0;
+
+    for (int i = 0; i < initial_num_intervals; ++i) {
+      const int interval_index = proto->intervals(i);
+      if (context_->ConstraintIsInactive(interval_index)) continue;
+
+      proto->set_intervals(new_size++, interval_index);
+    }
+
+    if (new_size < initial_num_intervals) {
+      proto->mutable_intervals()->Truncate(new_size);
+      changed = true;
+    }
+  }
+
+  // Recompute duplicate intervals.
+  intervals.assign(proto->intervals().begin(), proto->intervals().end());
+  duplicate_intervals.clear();
+  std::sort(intervals.begin(), intervals.end());
+  for (int i = 0; i + 1 < intervals.size(); ++i) {
+    const int index = intervals[i];
+    if (index == intervals[i + 1]) {
+      duplicate_intervals.insert(index);
+    }
+  }
+
   // Split constraints in disjoint sets.
   if (proto->intervals_size() > 1) {
     std::vector<IndexedInterval> indexed_intervals;
@@ -4607,7 +4669,10 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
 
     if (components.size() > 1) {
       for (const std::vector<int>& intervals : components) {
-        if (intervals.size() <= 1) continue;
+        if (intervals.size() <= 1 &&
+            !duplicate_intervals.contains(intervals.front())) {
+          continue;
+        }
 
         NoOverlapConstraintProto* new_no_overlap =
             context_->working_model->add_constraints()->mutable_no_overlap();
@@ -4615,6 +4680,10 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
         // compile in or-tools.
         for (const int i : intervals) {
           new_no_overlap->add_intervals(i);
+          // If duplicate, add it twice (no need to add more than that).
+          if (duplicate_intervals.contains(i)) {
+            new_no_overlap->add_intervals(i);
+          }
         }
       }
       context_->UpdateNewConstraintsVariableUsage();
@@ -6009,7 +6078,8 @@ void CpModelPresolver::Probe() {
     });
   }
 
-  prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
+  prober->ProbeBooleanVariables(
+      context_->params().probing_deterministic_time_limit());
   context_->time_limit()->AdvanceDeterministicTime(
       model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
   if (work_done > 0) {
@@ -6083,9 +6153,9 @@ void CpModelPresolver::PresolvePureSatPart() {
     params.set_presolve_blocked_clause(false);
   }
 
-  // TODO(user): BVA takes time_exprs and do not seems to help on the minizinc
-  // benchmarks. That said, it was useful on pure sat problems, so we may
-  // want to enable it.
+  // TODO(user): BVA takes time and does not seems to help on the minizinc
+  // benchmarks. That said, it was useful on pure sat problems, so we may want
+  // to enable it. Note that it is related to our MergeClauses().
   params.set_presolve_use_bva(false);
   sat_presolver.SetParameters(params);
 
@@ -9502,7 +9572,13 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
   }
 }
 
-// TODO(user): Use better heuristic where we look at at most one.
+// TODO(user): Use better heuristic?
+//
+// TODO(user): This is similar to what Bounded variable addition (BVA) does.
+// By adding a new variable, enforcement => literals becomes
+// enforcement => x => literals, and we have one clause + #literals implication
+// instead of #literals clauses. What BVA does in addition is to use the same
+// x for other enforcement list if the rhs literals are shared.
 void CpModelPresolver::MergeClauses() {
   if (context_->ModelIsUnsat()) return;
   ClauseWithOneMissingHasher hasher(*context_->random());
@@ -9518,10 +9594,67 @@ void CpModelPresolver::MergeClauses() {
   int64_t num_merges = 0;
   int64_t num_saved_literals = 0;
 
-  absl::flat_hash_map<uint64_t, std::pair<int, int>> detector_map;
+  // Keep a map from negation of enforcement_literal => bool_and ct index.
+  absl::flat_hash_map<uint64_t, int> bool_and_map;
+
+  // First loop over the constraint:
+  // - Register already existing bool_and.
+  // - score at_most_ones literals.
+  // - Record bool_or.
+  const int num_variables = context_->working_model->variables_size();
+  std::vector<int> bool_or_indices;
+  std::vector<int64_t> literal_score(2 * num_variables, 0);
+  const auto get_index = [](int ref) {
+    return 2 * PositiveRef(ref) + (RefIsPositive(ref) ? 0 : 1);
+  };
+
   const int num_constraints = context_->working_model->constraints_size();
   for (int c = 0; c < num_constraints; ++c) {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+    if (ct->constraint_case() == ConstraintProto::kBoolAnd) {
+      if (ct->enforcement_literal().size() > 1) {
+        // We need to sort the negated literals.
+        std::sort(ct->mutable_enforcement_literal()->begin(),
+                  ct->mutable_enforcement_literal()->end(),
+                  std::greater<int>());
+        const auto [it, inserted] = bool_and_map.insert(
+            {hasher.HashOfNegatedLiterals(ct->enforcement_literal()), c});
+        if (inserted) {
+          to_clean.push_back(c);
+        } else {
+          // See if this is a true duplicate. If yes, merge rhs.
+          ConstraintProto* other_ct =
+              context_->working_model->mutable_constraints(it->second);
+          const absl::Span<const int> s1(ct->enforcement_literal());
+          const absl::Span<const int> s2(other_ct->enforcement_literal());
+          if (s1 == s2) {
+            context_->UpdateRuleStats(
+                "bool_and: merged constraints with same enforcement");
+            other_ct->mutable_bool_and()->mutable_literals()->Add(
+                ct->bool_and().literals().begin(),
+                ct->bool_and().literals().end());
+            ct->Clear();
+            context_->UpdateConstraintVariableUsage(c);
+          }
+        }
+      }
+      continue;
+    }
+    if (ct->constraint_case() == ConstraintProto::kAtMostOne) {
+      const int size = ct->at_most_one().literals().size();
+      for (const int ref : ct->at_most_one().literals()) {
+        literal_score[get_index(ref)] += size;
+      }
+      continue;
+    }
+    if (ct->constraint_case() == ConstraintProto::kExactlyOne) {
+      const int size = ct->exactly_one().literals().size();
+      for (const int ref : ct->exactly_one().literals()) {
+        literal_score[get_index(ref)] += size;
+      }
+      continue;
+    }
+
     if (ct->constraint_case() != ConstraintProto::kBoolOr) continue;
 
     // Both of these test shouldn't happen, but we have them to be safe.
@@ -9531,16 +9664,21 @@ void CpModelPresolver::MergeClauses() {
     std::sort(ct->mutable_bool_or()->mutable_literals()->begin(),
               ct->mutable_bool_or()->mutable_literals()->end());
     hasher.RegisterClause(c, ct->bool_or().literals());
+    bool_or_indices.push_back(c);
+  }
+
+  for (const int c : bool_or_indices) {
+    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
 
     bool merged = false;
     work_done += ct->bool_or().literals().size();
     if (work_done > work_limit) break;
     for (const int ref : ct->bool_or().literals()) {
       const uint64_t hash = hasher.HashWithout(c, ref);
-      const auto it = detector_map.find(hash);
-      if (it != detector_map.end()) {
+      const auto it = bool_and_map.find(hash);
+      if (it != bool_and_map.end()) {
         ++num_collisions;
-        const int base_c = it->second.first;
+        const int base_c = it->second;
         auto* and_ct = context_->working_model->mutable_constraints(base_c);
         if (ClauseIsEnforcementImpliesLiteral(
                 ct->bool_or().literals(), and_ct->enforcement_literal(), ref)) {
@@ -9556,21 +9694,30 @@ void CpModelPresolver::MergeClauses() {
     }
 
     if (!merged) {
-      // Stupid heuristic: take first literal.
-      const int ref = ct->bool_or().literals(0);
-      const uint64_t hash = hasher.HashWithout(c, ref);
-      const auto [_, inserted] = detector_map.insert({hash, {c, ref}});
+      // heuristic: take first literal whose negation has highest score.
+      int best_ref = ct->bool_or().literals(0);
+      int64_t best_score = literal_score[get_index(NegatedRef(best_ref))];
+      for (const int ref : ct->bool_or().literals()) {
+        const int64_t score = literal_score[get_index(NegatedRef(ref))];
+        if (score > best_score) {
+          best_ref = ref;
+          best_score = score;
+        }
+      }
+
+      const uint64_t hash = hasher.HashWithout(c, best_ref);
+      const auto [_, inserted] = bool_and_map.insert({hash, c});
       if (inserted) {
         to_clean.push_back(c);
         context_->tmp_literals.clear();
         for (const int lit : ct->bool_or().literals()) {
-          if (lit == ref) continue;
+          if (lit == best_ref) continue;
           context_->tmp_literals.push_back(NegatedRef(lit));
         }
         ct->Clear();
         ct->mutable_enforcement_literal()->Assign(
             context_->tmp_literals.begin(), context_->tmp_literals.end());
-        ct->mutable_bool_and()->add_literals(ref);
+        ct->mutable_bool_and()->add_literals(best_ref);
       }
     }
   }

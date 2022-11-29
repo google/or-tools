@@ -1265,15 +1265,21 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
         // if x or y are fixed, the McCormick equations are exact.
         if (x_lb == x_ub || y_lb == y_ub) return true;
 
-        // TODO(user): Compute a better bound (int_max / 4 ?).
-        constexpr int64_t kMaxSafeInteger = (int64_t{1} << 53) - 1;
-
         // Check for overflow with the product of expression bounds and the
         // product of one expression bound times the constant part of the other
         // expression.
         const int64_t x_max_amp = std::max(std::abs(x_lb), std::abs(x_ub));
         const int64_t y_max_amp = std::max(std::abs(y_lb), std::abs(y_ub));
-        if (CapProd(x_max_amp, y_max_amp) > kMaxSafeInteger) return true;
+        constexpr int64_t kMaxSafeInteger = (int64_t{1} << 53) - 1;
+        if (CapProd(y_max_amp, x_max_amp) > kMaxSafeInteger) return true;
+        if (CapProd(y_max_amp, std::abs(x.constant.value())) >
+            kMaxSafeInteger) {
+          return true;
+        }
+        if (CapProd(x_max_amp, std::abs(y.constant.value())) >
+            kMaxSafeInteger) {
+          return true;
+        }
 
         const double x_lp_value = x.LpValue(lp_values);
         const double y_lp_value = y.LpValue(lp_values);
@@ -1289,10 +1295,6 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
                                      int64_t rhs) {
           if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff >=
               rhs + kMinCutViolation) {
-            // Checks for overflows.
-            if (CapProd(x_max_amp, std::abs(x_coeff)) > kMaxSafeInteger) return;
-            if (CapProd(y_max_amp, std::abs(y_coeff)) > kMaxSafeInteger) return;
-
             LinearConstraintBuilder cut(model, /*lb=*/kMinIntegerValue,
                                         /*ub=*/IntegerValue(rhs));
             cut.AddTerm(z, IntegerValue(-1));
@@ -1307,10 +1309,6 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
                                      int64_t rhs) {
           if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff <=
               rhs - kMinCutViolation) {
-            // Checks for overflow.
-            if (CapProd(x_max_amp, std::abs(x_coeff)) > kMaxSafeInteger) return;
-            if (CapProd(y_max_amp, std::abs(y_coeff)) > kMaxSafeInteger) return;
-
             LinearConstraintBuilder cut(model, /*lb=*/IntegerValue(rhs),
                                         /*ub=*/kMaxIntegerValue);
             cut.AddTerm(z, IntegerValue(-1));

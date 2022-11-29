@@ -62,7 +62,7 @@ namespace sat {
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
     CpModelProto const* model_proto, SatParameters const* parameters,
     SharedResponseManager* shared_response, SharedBoundsManager* shared_bounds)
-    : SubSolver(""),
+    : SubSolver("neighborhood_helper", HELPER),
       parameters_(*parameters),
       model_proto_(*model_proto),
       shared_bounds_(shared_bounds),

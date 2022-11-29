@@ -86,7 +86,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
 
 // For debugging fixed-search: display information about the named variables
 // domain before taking each decision. Note that we copy the instrumented
-// stategy so it doesn't have to outlive the returned functions like the other
+// strategy so it doesn't have to outlive the returned functions like the other
 // arguments.
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
@@ -99,6 +99,12 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
 // like LNS that do not consume a full worker and can always be interleaved.
 std::vector<SatParameters> GetDiverseSetOfParameters(
     const SatParameters& base_params, const CpModelProto& cp_model);
+
+// Returns a vector of num_params_to_generate set of parameters to specify
+// solvers specialized to find a initial solution.
+std::vector<SatParameters> GetFirstSolutionParams(
+    const SatParameters& base_params, const CpModelProto& cp_model,
+    int num_params_to_generate);
 
 }  // namespace sat
 }  // namespace operations_research

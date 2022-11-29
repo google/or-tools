@@ -580,5 +580,19 @@ void ClauseWithOneMissingHasher::RegisterClause(int c,
   clause_to_hash_[c] = hash;
 }
 
+uint64_t ClauseWithOneMissingHasher::HashOfNegatedLiterals(
+    absl::Span<const int> literals) {
+  uint64_t hash = 0;
+  for (const int ref : literals) {
+    const Index index = IndexFromLiteral(NegatedRef(ref));
+    while (index >= literal_to_hash_.size()) {
+      // We use random value for a literal hash.
+      literal_to_hash_.push_back(absl::Uniform<uint64_t>(random_));
+    }
+    hash ^= literal_to_hash_[index];
+  }
+  return hash;
+}
+
 }  // namespace sat
 }  // namespace operations_research

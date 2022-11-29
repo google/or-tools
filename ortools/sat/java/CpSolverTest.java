@@ -64,6 +64,7 @@ public final class CpSolverTest {
 
   @Test
   public void testCpSolver_solve() throws Exception {
+    System.out.println("testCpSolver_solve");
     final CpModel model = new CpModel();
     assertNotNull(model);
     // Creates the variables.
@@ -87,6 +88,7 @@ public final class CpSolverTest {
 
   @Test
   public void testCpSolver_invalidModel() throws Exception {
+    System.out.println("testCpSolver_invalidModel");
     final CpModel model = new CpModel();
     assertNotNull(model);
     // Creates the variables.
@@ -108,6 +110,7 @@ public final class CpSolverTest {
 
   @Test
   public void testCpSolver_hinting() throws Exception {
+    System.out.println("testCpSolver_hinting");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newIntVar(0, 5, "x");
@@ -132,6 +135,7 @@ public final class CpSolverTest {
 
   @Test
   public void testCpSolver_booleanValue() throws Exception {
+    System.out.println("testCpSolver_booleanValue");
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -149,6 +153,7 @@ public final class CpSolverTest {
 
   @Test
   public void testCpSolver_searchAllSolutions() throws Exception {
+    System.out.println("testCpSolver_searchAllSolutions");
     final CpModel model = new CpModel();
     assertNotNull(model);
     // Creates the variables.
@@ -162,8 +167,9 @@ public final class CpSolverTest {
     // Creates a solver and solves the model.
     final CpSolver solver = new CpSolver();
     assertNotNull(solver);
+    solver.getParameters().setEnumerateAllSolutions(true);
     final SolutionCounter cb = new SolutionCounter();
-    solver.searchAllSolutions(model, cb);
+    solver.solve(model, cb);
 
     assertThat(cb.getSolutionCount()).isEqualTo(18);
     assertThat(solver.numBranches()).isGreaterThan(0L);
@@ -171,6 +177,7 @@ public final class CpSolverTest {
 
   @Test
   public void testCpSolver_objectiveValue() throws Exception {
+    System.out.println("testCpSolver_objectiveValue");
     final CpModel model = new CpModel();
     assertNotNull(model);
     // Creates the variables.
@@ -197,6 +204,7 @@ public final class CpSolverTest {
 
   @Test
   public void testCpModel_crashPresolve() throws Exception {
+    System.out.println("testCpModel_crashPresolve");
     final CpModel model = new CpModel();
     assertNotNull(model);
     // Create decision variables
@@ -224,6 +232,7 @@ public final class CpSolverTest {
 
   @Test
   public void testCpSolver_customLog() throws Exception {
+    System.out.println("testCpSolver_customLog");
     final CpModel model = new CpModel();
     assertNotNull(model);
     // Creates the variables.
@@ -252,6 +261,7 @@ public final class CpSolverTest {
 
   @Test
   public void testCpSolver_customLogMultiThread() {
+    System.out.println("testCpSolver_customLogMultiThread");
     final CpModel model = new CpModel();
     assertNotNull(model);
     // Creates the variables.
@@ -281,13 +291,15 @@ public final class CpSolverTest {
 
   @Test
   public void issue3108() {
+    System.out.println("issue3108");
     final CpModel model = new CpModel();
     final IntVar var1 = model.newIntVar(0, 1, "CONTROLLABLE__C1[0]");
     final IntVar var2 = model.newIntVar(0, 1, "CONTROLLABLE__C1[1]");
     capacityConstraint(model, new IntVar[] {var1, var2}, new long[] {0L, 1L},
         new long[][] {new long[] {1L, 1L}}, new long[][] {new long[] {1L, 1L}});
+    var unused = model.exportToFile("/tmp/issue3108.pb.txt");
     final CpSolver solver = new CpSolver();
-    solver.getParameters().setLogSearchProgress(false);
+    solver.getParameters().setLogSearchProgress(true);
     solver.getParameters().setCpModelProbingLevel(0);
     solver.getParameters().setNumSearchWorkers(4);
     solver.getParameters().setMaxTimeInSeconds(1);

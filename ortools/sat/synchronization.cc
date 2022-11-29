@@ -394,6 +394,9 @@ void SharedResponseManager::Synchronize() {
   synchronized_inner_objective_upper_bound_ =
       IntegerValue(inner_objective_upper_bound_);
   synchronized_best_status_ = best_status_;
+  if (solutions_.NumSolutions() > 0) {
+    first_solution_solvers_should_stop_ = true;
+  }
 }
 
 IntegerValue SharedResponseManager::SynchronizedInnerObjectiveLowerBound() {
@@ -619,6 +622,7 @@ void SharedResponseManager::NewSolution(
   // should do it from here.
   if (always_synchronize_) {
     solutions_.Synchronize();
+    first_solution_solvers_should_stop_ = true;
   }
 
   // Note that the objective will be filled by

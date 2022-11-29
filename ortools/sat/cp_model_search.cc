@@ -488,6 +488,10 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       new_params.set_use_hard_precedences_in_cumulative(true);
     }
 
+    // We want to spend more time on the LP here.
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+
     // We do not want to change the objective_var lb from outside as it gives
     // better result to only use locally derived reason in that algo.
     new_params.set_share_objective_bounds(false);
@@ -659,12 +663,17 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     // never hits the sharding limit.
     if (params.use_probing_search() && params.interleave_search()) continue;
 
-    if (cp_model.has_objective()) {
-      if (cp_model.objective().vars_size() <= 1 &&
+    // In the corner case of empty variable, lets not schedule the probing as
+    // it currently just loop forever instead of returning right away.
+    if (params.use_probing_search() && cp_model.variables().empty()) continue;
+
+    if (cp_model.has_objective() && !cp_model.objective().vars().empty()) {
+      if (cp_model.objective().vars().size() == 1 &&
           params.optimize_with_core()) {
         continue;
       }
       if (name == "less_encoding") continue;
+
       // TODO(user): Enable lb_tree_search in deterministic mode.
       if (params.optimize_with_lb_tree_search() && params.interleave_search()) {
         continue;
@@ -687,7 +696,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     result.push_back(params);
   }
 
-  if (cp_model.has_objective()) {
+  if (cp_model.has_objective() && !cp_model.objective().vars().empty()) {
     // If there is an objective, the extra workers will use LNS.
     // Make sure we have at least min_num_lns_workers() of them.
     const int target = std::max(
@@ -696,48 +705,64 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       result.resize(target);
     }
   } else {
-    // If there is no objective, we complete with randomized fixed search.
-    //
-    // If strategies that do not require a full worker are present, leave one
-    // worker for them.
+    // If strategies that do not require a full worker are present, leave a
+    // few workers for them.
+    const bool need_extra_workers =
+        !base_params.interleave_search() &&
+        (base_params.use_rins_lns() || base_params.use_feasibility_pump());
     int target = base_params.num_workers();
-    if (!base_params.interleave_search() &&
-        (base_params.use_rins_lns() || base_params.use_feasibility_pump())) {
-      target = std::max(1, base_params.num_workers() - 1);
+    if (need_extra_workers && target > 4) {
+      if (target <= 8) {
+        target -= 1;
+      } else if (target == 9) {
+        target -= 2;
+      } else {
+        target -= 3;
+      }
     }
     if (!base_params.interleave_search() && result.size() > target) {
       result.resize(target);
     }
-
-    int num_random = 0;
-    int num_random_qr = 0;
-    while (result.size() < target) {
-      SatParameters new_params = base_params;
-      if (num_random <= num_random_qr) {  // Random search.
-        if (cp_model.search_strategy().empty()) {
-          new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        } else {
-          new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-        }
-        new_params.set_randomize_search(true);
-        new_params.set_search_randomization_tolerance(++num_random);
-        new_params.set_random_seed(base_params.random_seed() + result.size() +
-                                   1);
-        new_params.set_name(absl::StrCat("random_", num_random));
-      } else {  // Random quick restart.
-        new_params.set_search_branching(
-            SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
-        new_params.set_randomize_search(true);
-        new_params.set_search_randomization_tolerance(++num_random_qr);
-        new_params.set_random_seed(base_params.random_seed() + result.size() +
-                                   1);
-        new_params.set_name(
-            absl::StrCat("random_quick_restart_", num_random_qr));
-      }
-      result.push_back(new_params);
-    }
   }
+  return result;
+}
 
+std::vector<SatParameters> GetFirstSolutionParams(
+    const SatParameters& base_params, const CpModelProto& cp_model,
+    int num_params_to_generate) {
+  std::vector<SatParameters> result;
+  if (num_params_to_generate <= 0) return result;
+  int num_random = 0;
+  int num_random_qr = 0;
+  while (result.size() < num_params_to_generate) {
+    SatParameters new_params = base_params;
+    const int base_seed = base_params.random_seed();
+    if (num_random <= num_random_qr) {  // Random search.
+      // Alternate between automatic search and fixed search (if defined).
+      //
+      // TODO(user): Maybe alternate between more search types.
+      // TODO(user): Check the randomization tolerance.
+      if (cp_model.search_strategy().empty() && num_random % 2 == 0) {
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      } else {
+        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+      }
+      new_params.set_randomize_search(true);
+      new_params.set_search_randomization_tolerance(num_random + 1);
+      new_params.set_random_seed(base_seed - 2 * num_random - 1);
+      new_params.set_name(absl::StrCat("random_", num_random));
+      num_random++;
+    } else {  // Random quick restart.
+      new_params.set_search_branching(
+          SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+      new_params.set_randomize_search(true);
+      new_params.set_search_randomization_tolerance(num_random_qr + 1);
+      new_params.set_random_seed(base_seed - 2 * num_random_qr - 2);
+      new_params.set_name(absl::StrCat("random_quick_restart_", num_random_qr));
+      num_random_qr++;
+    }
+    result.push_back(new_params);
+  }
   return result;
 }
 

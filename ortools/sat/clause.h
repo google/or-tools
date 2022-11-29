@@ -504,6 +504,10 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // Returns false if this creates a conflict. Currently this can only happens
   // if there is duplicate literal already assigned to true in this constraint.
+  //
+  // TODO(user): Our algorithm could generalize easily to at_most_ones + a list
+  // of literals that will be false if one of the literal in the amo is at one.
+  // It is a way to merge common list of implications.
   ABSL_MUST_USE_RESULT bool AddAtMostOne(absl::Span<const Literal> at_most_one);
 
   // Uses the binary implication graph to minimize the given conflict by

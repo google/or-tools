@@ -212,11 +212,14 @@ class ClauseWithOneMissingHasher {
   // We use the proto encoding of literals here.
   void RegisterClause(int c, absl::Span<const int> clause);
 
-  // Get a hash of the clause with index c and literal ref removed.
+  // Returns a hash of the clause with index c and literal ref removed.
   // This assumes that ref was part of the clause. Work in O(1).
   uint64_t HashWithout(int c, int ref) const {
     return clause_to_hash_[c] ^ literal_to_hash_[IndexFromLiteral(ref)];
   }
+
+  // Returns a hash of the negation of all the given literals.
+  uint64_t HashOfNegatedLiterals(absl::Span<const int> literals);
 
  private:
   DEFINE_STRONG_INDEX_TYPE(Index);
