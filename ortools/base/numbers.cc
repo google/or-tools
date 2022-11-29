@@ -16,6 +16,8 @@
 
 #include "ortools/base/numbers.h"
 
+#include <errno.h>  // for errno
+
 #include <cfloat>
 #include <cstdint>
 #include <cstdlib>
