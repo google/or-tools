@@ -421,7 +421,7 @@ class SharedResponseManager {
   SolverLogger* logger_;
   std::vector<CpSolverResponse> subsolver_responses_ ABSL_GUARDED_BY(mutex_);
 
-  std::atomic<bool> first_solution_solvers_should_stop_;
+  std::atomic<bool> first_solution_solvers_should_stop_ = false;
 };
 
 // This class manages a pool of lower and upper bounds on a set of variables in
