@@ -46,7 +46,7 @@ extern "C" {
     std::ostream *os = reinterpret_cast<std::ostream *>(cbdata);
     if (msgtype < 0)
       *os << std::flush;
-    else if (msg && msglen) {
+    else if (msglen > 0 || msg) { // Empty lines have msglen=0, msg!=NULL
       switch (msgtype) {
       case 1: /* info */ *os << msg << std::endl; break;
       case 2: /* unused */ break;
