@@ -283,7 +283,7 @@ file(GENERATE
 #  WORKING_DIRECTORY python)
 
 configure_file(
-  ${PROJECT_SOURCE_DIR}/tools/README.pypi.txt
+  ${PROJECT_SOURCE_DIR}/ortools/python/README.pypi.txt
   ${PROJECT_BINARY_DIR}/python/README.txt
   COPYONLY)
 

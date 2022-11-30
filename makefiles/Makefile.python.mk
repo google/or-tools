@@ -455,8 +455,8 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools: | $(PYPI_ARCHIVE_TEMP_DIR)
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools: | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools
 
-$(PYPI_ARCHIVE_TEMP_DIR)/ortools/README.txt: tools/README.pypi.txt | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
-	$(COPY) tools$SREADME.pypi.txt $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$SREADME.txt
+$(PYPI_ARCHIVE_TEMP_DIR)/ortools/README.txt: ortools/python/README.pypi.txt | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
+	$(COPY) ortools$Spython$SREADME.pypi.txt $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$SREADME.txt
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/LICENSE: LICENSE | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
 	$(COPY) LICENSE $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
