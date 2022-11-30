@@ -82,9 +82,14 @@ which.exe java | tee.exe -a publish.log
 which.exe mvn || exit 1
 which.exe mvn | tee.exe -a publish.log
 
-echo make publish_java_runtime: ... | tee.exe -a publish.log
-make.exe publish_java_runtime WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-echo make publish_java_runtime: DONE | tee.exe -a publish.log
+which.exe gpg || exit 1
+which.exe gpg | tee.exe -a build.log
+which.exe openssl || exit 1
+which.exe openssl | tee.exe -a build.log
+
+echo Publish native Java... | tee.exe -a publish.log
+cmake --build temp_java --config Release --target java_native_deploy -v
+echo Publish native Java...DONE | tee.exe -a publish.log
 exit /B 0
 
 :PUBLISH_PYTHON
