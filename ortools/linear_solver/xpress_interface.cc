@@ -550,8 +550,8 @@ void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
     // A free row is denoted by sense 'N' and we can specify arbitrary
     // right-hand sides since they are ignored anyway. We just pick the
     // bound with smaller absolute value.
-    DCHECK_GT(std::abs(lb), XPRS_PLUSINFINITY);
-    DCHECK_GT(std::abs(ub), XPRS_PLUSINFINITY);
+    DCHECK_GE(std::abs(lb), XPRS_PLUSINFINITY);
+    DCHECK_GE(std::abs(ub), XPRS_PLUSINFINITY);
     if (std::abs(lb) < std::abs(ub))
       rhs = lb;
     else
