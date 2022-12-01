@@ -34,7 +34,7 @@ jobs:
         sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
-        sirius-release-tag: [antares-integration-v1.1]
+        sirius-release-tag: [antares-integration-v1.2]
         build-examples: [OFF]
         # the matrix is a bit complicated because
         # we need static C++-libraries for both Windows and linux
@@ -92,7 +92,7 @@ jobs:
             dotnet: OFF
             xprs: OFF
             sirius: ON
-            sirius-release-tag: antares-integration-v1.1
+            sirius-release-tag: antares-integration-v1.2
             shared: OFF
             extras: OFF
             publish-or: ON
@@ -103,7 +103,7 @@ jobs:
             dotnet: OFF
             xprs: OFF
             sirius: ON
-            sirius-release-tag: antares-integration-v1.1
+            sirius-release-tag: antares-integration-v1.2
             shared: OFF
             extras: OFF
             publish-or: ON
