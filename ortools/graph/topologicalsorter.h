@@ -106,11 +106,17 @@ absl::StatusOr<std::vector<int>> FindCycleInGraph(const AdjacencyLists& adj);
 // FastTopologicalSort().
 
 // Returns true if the graph was a DAG, and outputs the topological order in
-// "topological_order". Returns false if the graph is cyclic.
+// "topological_order". Returns false if the graph is cyclic, and outputs the
+// detected cycle in "cycle".
 template <typename T>
 ABSL_MUST_USE_RESULT bool TopologicalSort(
     const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
     std::vector<T>* topological_order);
+// Override of the above that outputs the detected cycle.
+template <typename T>
+ABSL_MUST_USE_RESULT bool TopologicalSort(
+    const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
+    std::vector<T>* topological_order, std::vector<T>* cycle);
 // OrDie() variant of the above.
 template <typename T>
 std::vector<T> TopologicalSortOrDie(const std::vector<T>& nodes,
@@ -123,6 +129,12 @@ template <typename T>
 ABSL_MUST_USE_RESULT bool StableTopologicalSort(
     const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
     std::vector<T>* topological_order);
+// Override of the above that outputs the detected cycle.
+template <typename T>
+ABSL_MUST_USE_RESULT bool StableTopologicalSort(
+    const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
+    std::vector<T>* topological_order, std::vector<T>* cycle);
+// OrDie() variant of the above.
 template <typename T>
 std::vector<T> StableTopologicalSortOrDie(
     const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs);
@@ -458,13 +470,13 @@ ABSL_MUST_USE_RESULT bool DenseIntTopologicalSortImpl(
 template <typename T, bool stable_sort = false>
 ABSL_MUST_USE_RESULT bool TopologicalSortImpl(
     const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
-    std::vector<T>* topological_order) {
+    std::vector<T>* topological_order, std::vector<T>* cycle) {
   TopologicalSorter<T, stable_sort> sorter;
   for (const T& node : nodes) {
     sorter.AddNode(node);
   }
   return RunTopologicalSorter<T, decltype(sorter)>(&sorter, arcs,
-                                                   topological_order, nullptr);
+                                                   topological_order, cycle);
 }
 
 // Now, the OrDie() versions, which directly return the topological order.
@@ -515,15 +527,33 @@ template <typename T>
 bool TopologicalSort(const std::vector<T>& nodes,
                      const std::vector<std::pair<T, T>>& arcs,
                      std::vector<T>* topological_order) {
-  return internal::TopologicalSortImpl<T, false>(nodes, arcs,
-                                                 topological_order);
+  return internal::TopologicalSortImpl<T, false>(nodes, arcs, topological_order,
+                                                 nullptr);
+}
+
+template <typename T>
+bool TopologicalSort(const std::vector<T>& nodes,
+                     const std::vector<std::pair<T, T>>& arcs,
+                     std::vector<T>* topological_order, std::vector<T>* cycle) {
+  return internal::TopologicalSortImpl<T, false>(nodes, arcs, topological_order,
+                                                 cycle);
 }
 
 template <typename T>
 bool StableTopologicalSort(const std::vector<T>& nodes,
                            const std::vector<std::pair<T, T>>& arcs,
                            std::vector<T>* topological_order) {
-  return internal::TopologicalSortImpl<T, true>(nodes, arcs, topological_order);
+  return internal::TopologicalSortImpl<T, true>(nodes, arcs, topological_order,
+                                                nullptr);
+}
+
+template <typename T>
+bool StableTopologicalSort(const std::vector<T>& nodes,
+                           const std::vector<std::pair<T, T>>& arcs,
+                           std::vector<T>* topological_order,
+                           std::vector<T>* cycle) {
+  return internal::TopologicalSortImpl<T, true>(nodes, arcs, topological_order,
+                                                cycle);
 }
 
 inline std::vector<int> DenseIntTopologicalSortOrDie(
