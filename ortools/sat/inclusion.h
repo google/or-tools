@@ -48,6 +48,19 @@ class CompactVectorVector {
     return index;
   }
 
+  // Same as Add() but for sat::Literal or any type from which we can get
+  // indices.
+  template <typename L>
+  int AddLiterals(const std::vector<L>& data) {
+    const int index = size();
+    starts_.push_back(buffer_.size());
+    sizes_.push_back(data.size());
+    for (const L literal : data) {
+      buffer_.push_back(literal.Index().value());
+    }
+    return index;
+  }
+
   // Warning: this is only valid until the next clear() or Add() call.
   absl::Span<const T> operator[](int index) const {
     DCHECK_GE(index, 0);

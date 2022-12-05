@@ -161,6 +161,9 @@ class ActivityBoundHelper {
   std::vector<absl::Span<const int>> PartitionLiteralsIntoAmo(
       absl::Span<const int> literals);
 
+  // Returns true iff the given literal are in at most one relationship.
+  bool IsAmo(absl::Span<const int> literals);
+
  private:
   DEFINE_STRONG_INDEX_TYPE(Index);
   Index IndexFromLiteral(int ref) const {

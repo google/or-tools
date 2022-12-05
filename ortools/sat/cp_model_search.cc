@@ -411,6 +411,22 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
   };
 }
 
+namespace {
+
+// This generates a valid random seed (base_seed + delta) without overflow.
+// We assume |delta| is small.
+int ValidSumSeed(int base_seed, int delta) {
+  CHECK_GE(delta, 0);
+  int64_t result = int64_t{base_seed} + int64_t{delta};
+  const int64_t int32max = int64_t{std::numeric_limits<int>::max()};
+  while (result > int32max) {
+    result -= int32max;
+  }
+  return static_cast<int>(result);
+}
+
+}  // namespace
+
 // Note: in flatzinc setting, we know we always have a fixed search defined.
 //
 // Things to try:
@@ -692,7 +708,8 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     // TODO(user): Find a better randomization for the seed so that changing
     // random_seed() has more impact?
     params.set_name(name);
-    params.set_random_seed(base_params.random_seed() + result.size() + 1);
+    params.set_random_seed(
+        ValidSumSeed(base_params.random_seed(), result.size() + 1));
     result.push_back(params);
   }
 
@@ -749,7 +766,7 @@ std::vector<SatParameters> GetFirstSolutionParams(
       }
       new_params.set_randomize_search(true);
       new_params.set_search_randomization_tolerance(num_random + 1);
-      new_params.set_random_seed(base_seed - 2 * num_random - 1);
+      new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random + 1));
       new_params.set_name(absl::StrCat("random_", num_random));
       num_random++;
     } else {  // Random quick restart.
@@ -757,7 +774,7 @@ std::vector<SatParameters> GetFirstSolutionParams(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
       new_params.set_randomize_search(true);
       new_params.set_search_randomization_tolerance(num_random_qr + 1);
-      new_params.set_random_seed(base_seed - 2 * num_random_qr - 2);
+      new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random_qr));
       new_params.set_name(absl::StrCat("random_quick_restart_", num_random_qr));
       num_random_qr++;
     }

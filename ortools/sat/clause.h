@@ -841,6 +841,18 @@ class BinaryImplicationGraph : public SatPropagator {
   DISALLOW_COPY_AND_ASSIGN(BinaryImplicationGraph);
 };
 
+extern template std::vector<Literal>
+BinaryImplicationGraph::ExpandAtMostOneWithWeight<true>(
+    const absl::Span<const Literal> at_most_one,
+    const absl::StrongVector<LiteralIndex, bool>& can_be_included,
+    const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
+
+extern template std::vector<Literal>
+BinaryImplicationGraph::ExpandAtMostOneWithWeight<false>(
+    const absl::Span<const Literal> at_most_one,
+    const absl::StrongVector<LiteralIndex, bool>& can_be_included,
+    const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
+
 }  // namespace sat
 }  // namespace operations_research
 

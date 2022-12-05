@@ -215,6 +215,9 @@ class CpModelPresolver {
   // We detect inclusion of these constraint which allows a few simplifications.
   void ProcessSetPPC();
 
+  // Detect if one constraints has a subset of enforcement of another.
+  void DetectIncludedEnforcement();
+
   // Removes dominated constraints or fixes some variables for given pair of
   // setppc constraints included in each other.
   bool ProcessSetPPCSubset(int subset_c, int superset_c,

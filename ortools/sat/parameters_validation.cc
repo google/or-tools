@@ -14,7 +14,9 @@
 #include "ortools/sat/parameters_validation.h"
 
 #include <string>
+#include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -102,6 +104,12 @@ std::string ValidateParameters(const SatParameters& params) {
     return "Enumerating all solutions does not work in parallel";
   }
 
+  if (params.enumerate_all_solutions() &&
+      (!params.subsolvers().empty() || !params.extra_subsolvers().empty() ||
+       !params.ignore_subsolvers().empty())) {
+    return "Enumerating all solutions does not work with custom subsolvers";
+  }
+
   if (params.num_search_workers() >= 1 && params.num_workers() >= 1) {
     return "Do not specify both num_search_workers and num_workers";
   }
@@ -110,6 +118,52 @@ std::string ValidateParameters(const SatParameters& params) {
     return "Enumerating all solutions does not work with interleaved search";
   }
 
+  absl::flat_hash_set<std::string> valid_subsolvers({
+      "auto",
+      "core_default_lp",
+      "core_max_lp",
+      "core_or_no_lp",
+      "core",
+      "default_lp",
+      "default",
+      "fixed",
+      "lb_tree_search",
+      "less_encoding",
+      "max_hs",
+      "max_lp",
+      "no_lp",
+      "probing_max_lp",
+      "probing_no_lp",
+      "probing",
+      "quick_restart_max_lp",
+      "quick_restart_no_lp",
+      "quick_restart",
+      "reduced_costs",
+  });
+  for (const SatParameters& new_subsolver : params.subsolver_params()) {
+    if (new_subsolver.name().empty()) {
+      return "New subsolver parameter defined without a name";
+    }
+    valid_subsolvers.insert(new_subsolver.name());
+  }
+
+  for (const std::string& subsolver : params.subsolvers()) {
+    if (!valid_subsolvers.contains(subsolver)) {
+      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+    }
+  }
+
+  for (const std::string& subsolver : params.extra_subsolvers()) {
+    if (!valid_subsolvers.contains(subsolver)) {
+      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+    }
+  }
+
+  for (const std::string& subsolver : params.ignore_subsolvers()) {
+    if (!valid_subsolvers.contains(subsolver)) {
+      return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
+    }
+  }
   return "";
 }
 

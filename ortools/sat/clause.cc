@@ -35,6 +35,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/drat_proof_handler.h"
+#include "ortools/sat/inclusion.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/bitset.h"
@@ -1519,32 +1520,22 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
 
 namespace {
 
-bool IntersectionIsEmpty(const std::vector<int>& a, const std::vector<int>& b) {
+int ElementInIntersectionOrMinusOne(const std::vector<int>& a,
+                                    const std::vector<int>& b) {
   DCHECK(std::is_sorted(a.begin(), a.end()));
   DCHECK(std::is_sorted(b.begin(), b.end()));
   int i = 0;
   int j = 0;
   for (; i < a.size() && j < b.size();) {
-    if (a[i] == b[j]) return false;
+    if (a[i] == b[j]) return a[i];
     if (a[i] < b[j]) {
       ++i;
     } else {
       ++j;
     }
   }
-  return true;
+  return -1;
 }
-
-// Used by TransformIntoMaxCliques().
-struct VectorHash {
-  std::size_t operator()(const std::vector<Literal>& at_most_one) const {
-    size_t hash = 0;
-    for (Literal literal : at_most_one) {
-      hash = util_hash::Hash(literal.Index().value(), hash);
-    }
-    return hash;
-  }
-};
 
 }  // namespace
 
@@ -1559,7 +1550,13 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   int num_removed = 0;
   int num_added = 0;
 
-  absl::flat_hash_set<std::vector<Literal>, VectorHash> max_cliques;
+  // Data to detect inclusion of base amo into extend amo.
+  std::vector<int> detector_clique_index;
+  CompactVectorVector<int> storage;
+  InclusionDetector detector(storage);
+  detector.SetWorkLimit(1e9);
+
+  std::vector<int> dense_index_to_index;
   absl::StrongVector<LiteralIndex, std::vector<int>> max_cliques_containing(
       implications_.size());
 
@@ -1567,24 +1564,16 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   // But we want the output order to be stable.
   std::vector<std::pair<int, int>> index_size_vector;
   index_size_vector.reserve(at_most_ones->size());
-  for (int i = 0; i < at_most_ones->size(); ++i) {
-    index_size_vector.push_back({i, (*at_most_ones)[i].size()});
-  }
-  std::stable_sort(
-      index_size_vector.begin(), index_size_vector.end(),
-      [](const std::pair<int, int> a, const std::pair<int, int>& b) {
-        return a.second > b.second;
-      });
-  for (const auto& [index, old_size] : index_size_vector) {
+  for (int index = 0; index < at_most_ones->size(); ++index) {
     std::vector<Literal>& clique = (*at_most_ones)[index];
-    if (time_limit_->LimitReached()) break;
+    if (clique.size() <= 1) continue;
 
-    // Remap the clique to only use representative.
-    //
     // Note(user): Because we always use literal with the smallest variable
     // indices as representative, this make sure that if possible, we express
     // the clique in term of user provided variable (that are always created
     // first).
+    //
+    // Remap the clique to only use representative.
     for (Literal& ref : clique) {
       DCHECK_LT(ref.Index(), representative_of_.size());
       const LiteralIndex rep = representative_of_[ref.Index()];
@@ -1592,37 +1581,98 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
       ref = Literal(rep);
     }
 
+    // We skip anything that can be presolved further as the code below do
+    // not handle duplicate well.
+    //
+    // TODO(user): Shall we presolve it here?
+    bool skip = false;
+    std::sort(clique.begin(), clique.end());
+    for (int i = 1; i < clique.size(); ++i) {
+      if (clique[i] == clique[i - 1] || clique[i] == clique[i - i].Negated()) {
+        skip = true;
+        break;
+      }
+    }
+    if (skip) continue;
+
+    index_size_vector.push_back({index, clique.size()});
+  }
+  std::stable_sort(
+      index_size_vector.begin(), index_size_vector.end(),
+      [](const std::pair<int, int> a, const std::pair<int, int>& b) {
+        return a.second > b.second;
+      });
+
+  absl::flat_hash_set<int> cannot_be_removed;
+  std::vector<bool> was_extended(at_most_ones->size(), false);
+  for (const auto& [index, old_size] : index_size_vector) {
+    std::vector<Literal>& clique = (*at_most_ones)[index];
+    if (time_limit_->LimitReached()) break;
+
     // Special case for clique of size 2, we don't expand them if they
     // are included in an already added clique.
-    //
-    // TODO(user): the second condition means the literal must be false!
-    if (old_size == 2 && clique[0] != clique[1]) {
-      if (!IntersectionIsEmpty(max_cliques_containing[clique[0].Index()],
-                               max_cliques_containing[clique[1].Index()])) {
+    if (clique.size() == 2) {
+      CHECK_NE(clique[0], clique[1]);
+      const int dense_index = ElementInIntersectionOrMinusOne(
+          max_cliques_containing[clique[0].Index()],
+          max_cliques_containing[clique[1].Index()]);
+      if (dense_index >= 0) {
+        const int superset_index = dense_index_to_index[dense_index];
+        if (was_extended[superset_index])
+          cannot_be_removed.insert(superset_index);
         ++num_removed;
         clique.clear();
         continue;
       }
     }
 
+    // Save the non-extended version as possible subset.
+    // TODO(user): Detect on the fly is superset already exist.
+    detector_clique_index.push_back(index);
+    detector.AddPotentialSubset(storage.AddLiterals(clique));
+
     // We only expand the clique as long as we didn't spend too much time.
     if (work_done_in_mark_descendants_ < max_num_explored_nodes) {
       clique = ExpandAtMostOne(clique, max_num_explored_nodes);
     }
-    std::sort(clique.begin(), clique.end());
-    if (!max_cliques.emplace(clique).second) {
-      ++num_removed;
-      clique.clear();
-      continue;
+
+    // Save the extended version as possible superset.
+    detector_clique_index.push_back(index);
+    detector.AddPotentialSuperset(storage.AddLiterals(clique));
+
+    // Also index clique for size 2 quick lookup.
+    const int dense_index = dense_index_to_index.size();
+    dense_index_to_index.push_back(index);
+    for (const Literal l : clique) {
+      max_cliques_containing[l.Index()].push_back(dense_index);
     }
 
-    const int clique_index = max_cliques.size();
-    for (const Literal l : clique) {
-      max_cliques_containing[l.Index()].push_back(clique_index);
+    if (clique.size() > old_size) {
+      was_extended[index] = true;
+      ++num_extended;
     }
-    if (clique.size() > old_size) ++num_extended;
     ++num_added;
   }
+
+  // Remove clique (before extension) that are included in an extended one.
+  absl::flat_hash_set<int> cannot_be_superset;
+  detector.DetectInclusions([&](int subset, int superset) {
+    const int subset_index = detector_clique_index[subset];
+    const int superset_index = detector_clique_index[superset];
+    if (subset_index == superset_index) return;
+
+    // Abort if one was already deleted.
+    if ((*at_most_ones)[subset_index].empty()) return;
+    if ((*at_most_ones)[superset_index].empty()) return;
+
+    // If an extended clique already cover a deleted one, we cannot try to
+    // remove it by looking at its non-extended version.
+    if (cannot_be_removed.contains(subset_index)) return;
+
+    ++num_removed;
+    (*at_most_ones)[subset_index].clear();
+    if (was_extended[superset_index]) cannot_be_removed.insert(superset_index);
+  });
 
   if (num_extended > 0 || num_removed > 0 || num_added > 0) {
     VLOG(1) << "Clique Extended: " << num_extended

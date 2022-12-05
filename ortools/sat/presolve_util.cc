@@ -450,6 +450,20 @@ ActivityBoundHelper::PartitionLiteralsIntoAmo(absl::Span<const int> literals) {
   return result;
 }
 
+bool ActivityBoundHelper::IsAmo(absl::Span<const int> literals) {
+  amo_sums_.clear();
+  for (int i = 0; i < literals.size(); ++i) {
+    bool has_max_size = false;
+    const Index index = IndexFromLiteral(literals[i]);
+    if (index >= amo_indices_.size()) return false;
+    for (const int a : amo_indices_[index]) {
+      if (amo_sums_[a]++ == i) has_max_size = true;
+    }
+    if (!has_max_size) return false;
+  }
+  return true;
+}
+
 int64_t ActivityBoundHelper::ComputeMaxActivityInternal(
     absl::Span<const std::pair<int, int64_t>> terms,
     std::vector<std::array<int64_t, 2>>* conditional) {
@@ -513,19 +527,13 @@ bool ActivityBoundHelper::PresolveEnforcement(
     if (literals_at_true->contains(NegatedRef(ref))) return false;  // False.
     literals_at_true->insert(ref);
 
-    const Index index = IndexFromLiteral(ref);
-    if (index < amo_indices_.size()) {
-      for (const int a : amo_indices_[index]) {
-        // If some other literal is at one in this amo, literal must be false,
-        // and so the constraint cannot be enforced.
-        const auto [_, inserted] = triggered_amo_.insert(a);
-        if (!inserted) return false;
-      }
-    }
-
+    // If a previous enforcement literal implies this one, we can skip it.
+    //
+    // Tricky: We need to do that before appending the amo containing ref in
+    // case an amo contains both ref and not(ref).
+    // TODO(user): Ideally these amo should not be added to this class.
     const Index negated_index = IndexFromLiteral(NegatedRef(ref));
     if (negated_index < amo_indices_.size()) {
-      // If a previous enforcement literal implies this one, we can skip it.
       bool skip = false;
       for (const int a : amo_indices_[negated_index]) {
         if (triggered_amo_.contains(a)) {
@@ -534,6 +542,16 @@ bool ActivityBoundHelper::PresolveEnforcement(
         }
       }
       if (skip) continue;
+    }
+
+    const Index index = IndexFromLiteral(ref);
+    if (index < amo_indices_.size()) {
+      for (const int a : amo_indices_[index]) {
+        // If some other literal is at one in this amo, literal must be false,
+        // and so the constraint cannot be enforced.
+        const auto [_, inserted] = triggered_amo_.insert(a);
+        if (!inserted) return false;
+      }
     }
 
     // Keep this enforcement.

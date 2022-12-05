@@ -158,6 +158,7 @@ cc_library(
     deps = [
         ":sat_parameters_cc_proto",
         "//ortools/base",
+        "@com_google_absl//absl/container:flat_hash_set",
     ],
 )
 
@@ -570,6 +571,7 @@ cc_library(
     hdrs = ["clause.h"],
     deps = [
         ":drat_proof_handler",
+        ":inclusion",
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",
@@ -831,6 +833,7 @@ cc_library(
     hdrs = ["inclusion.h"],
     deps = [
         "//ortools/base",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
