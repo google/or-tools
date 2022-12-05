@@ -309,7 +309,8 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<EnergyEvent> events, IntegerValue capacity,
-    AffineExpression makespan, Model* model, LinearConstraintManager* manager) {
+    AffineExpression makespan, TimeLimit* time_limit, Model* model,
+    LinearConstraintManager* manager) {
   // Checks the precondition of the code.
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   DCHECK(integer_trail->IsFixed(capacity));
@@ -393,6 +394,9 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
   const double makespan_lp = makespan.LpValue(lp_values);
   const double makespan_min_lp = ToDouble(makespan_min);
   for (int i = 0; i + 1 < num_time_points; ++i) {
+    // Checks the time limit if the problem is too big.
+    if (events.size() > 50 && time_limit->LimitReached()) return;
+
     const IntegerValue window_start = time_points[i];
     // After max_end_min, all tasks can fit before window_start.
     if (window_start >= max_end_min) break;
@@ -511,7 +515,7 @@ void GenerateCumulativeEnergeticCuts(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<EnergyEvent> events, const AffineExpression capacity,
-    Model* model, LinearConstraintManager* manager) {
+    TimeLimit* time_limit, Model* model, LinearConstraintManager* manager) {
   double max_possible_energy_lp = 0.0;
   for (const EnergyEvent& event : events) {
     max_possible_energy_lp += event.linearized_energy_lp_value;
@@ -547,6 +551,9 @@ void GenerateCumulativeEnergeticCuts(
   const int num_time_points = time_points.size();
 
   for (int i = 0; i + 1 < num_time_points; ++i) {
+    // Checks the time limit if the problem is too big.
+    if (events.size() > 50 && time_limit->LimitReached()) return;
+
     const IntegerValue window_start = time_points[i];
     // After max_end_min, all tasks can fit before window_start.
     if (window_start >= max_end_min) break;
@@ -640,11 +647,12 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
 
   result.generate_cuts =
-      [makespan, capacity, demands_helper, helper, integer_trail, model](
-          const absl::StrongVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) {
+      [makespan, capacity, demands_helper, helper, integer_trail, time_limit,
+       model](const absl::StrongVector<IntegerVariable, double>& lp_values,
+              LinearConstraintManager* manager) {
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         demands_helper->CacheAllEnergyValues();
 
@@ -673,12 +681,12 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
         if (makespan.has_value() && integer_trail->IsFixed(capacity)) {
           GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
               "CumulativeEnergyM", lp_values, events,
-              integer_trail->FixedValue(capacity), makespan.value(), model,
-              manager);
+              integer_trail->FixedValue(capacity), makespan.value(), time_limit,
+              model, manager);
 
         } else {
           GenerateCumulativeEnergeticCuts("CumulativeEnergy", lp_values, events,
-                                          capacity, model, manager);
+                                          capacity, time_limit, model, manager);
         }
         return true;
       };
@@ -693,9 +701,10 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
   result.only_run_at_level_zero = true;
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
 
   result.generate_cuts =
-      [makespan, helper, model](
+      [makespan, helper, time_limit, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
@@ -720,11 +729,12 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
         if (makespan.has_value()) {
           GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
               "NoOverlapEnergyM", lp_values, events,
-              /*capacity=*/IntegerValue(1), makespan.value(), model, manager);
+              /*capacity=*/IntegerValue(1), makespan.value(), time_limit, model,
+              manager);
         } else {
           GenerateCumulativeEnergeticCuts("NoOverlapEnergy", lp_values, events,
-                                          /*capacity=*/IntegerValue(1), model,
-                                          manager);
+                                          /*capacity=*/IntegerValue(1),
+                                          time_limit, model, manager);
         }
         return true;
       };
