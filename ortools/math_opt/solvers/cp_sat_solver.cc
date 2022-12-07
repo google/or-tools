@@ -13,6 +13,7 @@
 
 #include "ortools/math_opt/solvers/cp_sat_solver.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdint>
@@ -160,7 +161,10 @@ std::vector<std::string> SetSolveParameters(
           parameters.solution_limit()));
     }
   }
-
+  if (parameters.has_solution_pool_size()) {
+    sat_parameters.set_solution_pool_size(parameters.solution_pool_size());
+    sat_parameters.set_fill_additional_solutions_in_response(true);
+  }
   if (parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
     warnings.push_back(
         absl::StrCat("Setting the LP Algorithm (was set to ",
@@ -427,28 +431,30 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
   std::function<void(const MPSolution&)> solution_callback;
   absl::Status callback_error = absl::OkStatus();
   if (events.contains(CALLBACK_EVENT_MIP_SOLUTION)) {
-    solution_callback = [this, &cb, &callback_error, &local_interrupter,
-                         &model_parameters](const MPSolution& mp_solution) {
-      if (!callback_error.ok()) {
-        // A previous callback failed.
-        return;
-      }
-      CallbackDataProto cb_data;
-      cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
-      *cb_data.mutable_primal_solution_vector() =
-          ExtractSolution(mp_solution.variable_value(), model_parameters);
-      const absl::StatusOr<CallbackResultProto> cb_result = cb(cb_data);
-      if (!cb_result.ok()) {
-        callback_error = cb_result.status();
-        // Note: we will be returning a status error, we do not need to worry
-        // about interpreting this as TERMINATION_REASON_INTERRUPTED.
-        local_interrupter.Interrupt();
-      } else if (cb_result->terminate()) {
-        local_interrupter.Interrupt();
-      }
-      // Note cb_result.cuts and cb_result.suggested solutions are not
-      // supported by CP-SAT and we have validated they are empty.
-    };
+    solution_callback =
+        [this, &cb, &callback_error, &local_interrupter,
+         &callback_registration](const MPSolution& mp_solution) {
+          if (!callback_error.ok()) {
+            // A previous callback failed.
+            return;
+          }
+          CallbackDataProto cb_data;
+          cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
+          *cb_data.mutable_primal_solution_vector() =
+              ExtractSolution(mp_solution.variable_value(),
+                              callback_registration.mip_solution_filter());
+          const absl::StatusOr<CallbackResultProto> cb_result = cb(cb_data);
+          if (!cb_result.ok()) {
+            callback_error = cb_result.status();
+            // Note: we will be returning a status error, we do not need to
+            // worry about interpreting this as TERMINATION_REASON_INTERRUPTED.
+            local_interrupter.Interrupt();
+          } else if (cb_result->terminate()) {
+            local_interrupter.Interrupt();
+          }
+          // Note cb_result.cuts and cb_result.suggested solutions are not
+          // supported by CP-SAT and we have validated they are empty.
+        };
   }
 
   // CP-SAT returns "infeasible" for inverted bounds.
@@ -465,14 +471,26 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
                              /*used_cutoff=*/used_cutoff, response));
   *result.mutable_solve_stats() = std::move(solve_stats);
   *result.mutable_termination() = std::move(termination);
+  const SparseVectorFilterProto& var_values_filter =
+      model_parameters.variable_values_filter();
+  auto add_solution =
+      [this, &result, &var_values_filter](
+          const google::protobuf::RepeatedField<double>& variable_values,
+          double objective) {
+        PrimalSolutionProto& solution =
+            *result.add_solutions()->mutable_primal_solution();
+        *solution.mutable_variable_values() =
+            ExtractSolution(variable_values, var_values_filter);
+        solution.set_objective_value(objective);
+        solution.set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
+      };
   if (response.status() == MPSOLVER_OPTIMAL ||
       response.status() == MPSOLVER_FEASIBLE) {
-    PrimalSolutionProto& solution =
-        *result.add_solutions()->mutable_primal_solution();
-    *solution.mutable_variable_values() =
-        ExtractSolution(response.variable_value(), model_parameters);
-    solution.set_objective_value(response.objective_value());
-    solution.set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
+    add_solution(response.variable_value(), response.objective_value());
+    for (const MPSolution& extra_solution : response.additional_solutions()) {
+      add_solution(extra_solution.variable_value(),
+                   extra_solution.objective_value());
+    }
   }
 
   CHECK_OK(util_time::EncodeGoogleApiProto(
@@ -494,13 +512,12 @@ CpSatSolver::CpSatSolver(MPModelProto cp_sat_model,
 
 SparseDoubleVectorProto CpSatSolver::ExtractSolution(
     const absl::Span<const double> cp_sat_variable_values,
-    const ModelSolveParametersProto& model_parameters) const {
+    const SparseVectorFilterProto& filter) const {
   // Pre-condition: we assume one-to-one correspondence of input variables to
   // solution's variables.
   CHECK_EQ(cp_sat_variable_values.size(), variable_ids_.size());
 
-  SparseVectorFilterPredicate predicate(
-      model_parameters.variable_values_filter());
+  SparseVectorFilterPredicate predicate(filter);
   SparseDoubleVectorProto result;
   for (int i = 0; i < variable_ids_.size(); ++i) {
     const int64_t id = variable_ids_[i];

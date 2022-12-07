@@ -13,9 +13,8 @@
 
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 
-#include <stdint.h>
-
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <string>
 
@@ -144,10 +143,21 @@ absl::Status ModelIsSupported(const ModelProto& model,
       }
     }
   }
+  if (const SupportType support = support_menu.multi_objectives;
+      support != SupportType::kSupported) {
+    if (!model.auxiliary_objectives().empty()) {
+      return error_status("multi objectives", support);
+    }
+  }
   if (const SupportType support = support_menu.quadratic_objectives;
       support != SupportType::kSupported) {
     if (!model.objective().quadratic_coefficients().row_ids().empty()) {
       return error_status("quadratic objectives", support);
+    }
+    for (const auto& [_, objective] : model.auxiliary_objectives()) {
+      if (!objective.quadratic_coefficients().row_ids().empty()) {
+        return error_status("quadratic objectives", support);
+      }
     }
   }
   if (const SupportType support = support_menu.quadratic_constraints;
@@ -192,12 +202,33 @@ bool UpdateIsSupported(const ModelUpdateProto& update,
       }
     }
   }
+  if (support_menu.multi_objectives != SupportType::kSupported) {
+    if (!update.auxiliary_objectives_updates()
+             .deleted_objective_ids()
+             .empty() ||
+        !update.auxiliary_objectives_updates().new_objectives().empty() ||
+        !update.auxiliary_objectives_updates().objective_updates().empty()) {
+      return false;
+    }
+  }
   if (support_menu.quadratic_objectives != SupportType::kSupported) {
     if (!update.objective_updates()
              .quadratic_coefficients()
              .row_ids()
              .empty()) {
       return false;
+    }
+    for (const auto& [_, new_objective] :
+         update.auxiliary_objectives_updates().new_objectives()) {
+      if (!new_objective.quadratic_coefficients().row_ids().empty()) {
+        return false;
+      }
+    }
+    for (const auto& [_, objective_update] :
+         update.auxiliary_objectives_updates().objective_updates()) {
+      if (!objective_update.quadratic_coefficients().row_ids().empty()) {
+        return false;
+      }
     }
   }
   // Duck-types that the proto parameter contains fields named `new_constraints`

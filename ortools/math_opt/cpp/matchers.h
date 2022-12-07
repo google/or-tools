@@ -427,7 +427,7 @@ testing::Matcher<SolveResult> IsConsistentWith(
 ////////////////////////////////////////////////////////////////////////////////
 
 // Actual UpdateResult.did_update is true.
-testing::Matcher<IncrementalSolver::UpdateResult> DidUpdate();
+testing::Matcher<UpdateResult> DidUpdate();
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation details

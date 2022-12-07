@@ -134,6 +134,8 @@ struct ModelSummary {
   absl::Status Update(const ModelUpdateProto& model_update);
 
   IdNameBiMap variables;
+  std::string primary_objective_name;
+  IdNameBiMap auxiliary_objectives;
   IdNameBiMap linear_constraints;
   IdNameBiMap quadratic_constraints;
   IdNameBiMap sos1_constraints;
@@ -233,14 +235,14 @@ namespace internal {
 // CheckIdsRangeAndStrictlyIncreasing from ids_validator.h, find a way to share
 // the code.
 // NOTE: This function is only exposed in the header because we need
-//       UpdateBiMapFromMappedConstraints here for testing purposes.
+//       UpdateBiMapFromMappedData here for testing purposes.
 absl::Status CheckIdsRangeAndStrictlyIncreasing2(absl::Span<const int64_t> ids);
 
 // NOTE: This is only exposed in the header for testing purposes.
-template <typename ConstraintDataProto>
-absl::Status UpdateBiMapFromMappedConstraints(
+template <typename DataProto>
+absl::Status UpdateBiMapFromMappedData(
     const absl::Span<const int64_t> deleted_ids,
-    const google::protobuf::Map<int64_t, ConstraintDataProto>& proto_map,
+    const google::protobuf::Map<int64_t, DataProto>& proto_map,
     IdNameBiMap& bimap) {
   RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
       << "invalid deleted ids";

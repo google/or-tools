@@ -304,6 +304,29 @@ absl::Status Gurobi::AddQpTerms(const absl::Span<const int> qrow,
 
 absl::Status Gurobi::DelQ() { return ToStatus(GRBdelq(gurobi_model_)); }
 
+absl::Status Gurobi::SetNthObjective(const int index, const int priority,
+                                     const double weight, const double abs_tol,
+                                     const double rel_tol,
+                                     const std::string& name,
+                                     const double constant,
+                                     const absl::Span<const int> lind,
+                                     const absl::Span<const double> lval) {
+  const int numlnz = static_cast<int>(lind.size());
+  CHECK_EQ(lval.size(), numlnz);
+  return ToStatus(GRBsetobjectiven(
+      /*model=*/gurobi_model_,
+      /*index=*/index,
+      /*priority=*/priority,
+      /*weight=*/weight,
+      /*abstol=*/abs_tol,
+      /*reltol=*/rel_tol,
+      /*name=*/const_cast<char*>(name.c_str()),
+      /*constant=*/constant,
+      /*lnz=*/numlnz,
+      /*lind=*/const_cast<int*>(lind.data()),
+      /*lval=*/const_cast<double*>(lval.data())));
+}
+
 absl::Status Gurobi::AddQConstr(const absl::Span<const int> lind,
                                 const absl::Span<const double> lval,
                                 const absl::Span<const int> qrow,

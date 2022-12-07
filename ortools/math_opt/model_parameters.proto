@@ -30,12 +30,26 @@ option java_multiple_files = true;
 // (all values specified) or a partial solution (only some values specified). In
 // addition, a full solution does not need to be feasible. The solver may try to
 // complete a partial solution or to repair a full solution that is infeasible.
+//
+// Most MIP solvers can accept a hint, and typically only use variable_values
+// (which can be incomplete). Some LP solvers (e.g. PDLP) can accept a hint as
+// well, and typically need both a complete primal and dual solution. For
+// simplex based solvers, providing an initial basis is generally preferred when
+// both options are supported.
 message SolutionHintProto {
   // A possibly partial assignment of values to the primal variables of the
   // problem. The solver-independent requirements for this sub-message are:
   //  * variable_values.ids are elements of VariablesProto.ids.
   //  * variable_values.values must all be finite.
   SparseDoubleVectorProto variable_values = 1;
+
+  // A (potentially partial) assignment of values to the linear constraints of
+  // the problem.
+  //
+  //  Requirements:
+  //   * dual_values.ids are elements of LinearConstraintsProto.ids.
+  //   * dual_values.values must all be finite.
+  SparseDoubleVectorProto dual_values = 2;
 }
 
 // TODO(b/183628247): follow naming convention in fields below.

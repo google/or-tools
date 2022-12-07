@@ -1127,6 +1127,10 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
 
       // glp_interior() does not support being called with an empty model and
       // returns GLP_EFAIL. Thus we use placeholders in that case.
+      //
+      // TODO(b/259557110): the emptiness is tested by glp_interior() *after*
+      // some pre-processing (including removing fixed variables). The current
+      // IsEmpty() is thus not good enough to deal with all cases.
       if (IsEmpty(problem_)) {
         get_prim_stat = OptStatus;
         get_dual_stat = OptStatus;
@@ -1580,10 +1584,6 @@ absl::StatusOr<bool> GlpkSolver::Update(const ModelUpdateProto& model_update) {
     return false;
   }
 
-  // TODO(b/187027049): GLPK should not support modifying the model from another
-  // thread (the allocation depends on the per-thread environment). We should
-  // unit test that and see what is the actual behavior. If GLPK itself does not
-  // provide its own assertion we should add one here.
   {
     const std::vector<int> sorted_deleted_cols = DeleteRowsOrCols(
         problem_, variables_, model_update.deleted_variable_ids());

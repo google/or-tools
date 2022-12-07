@@ -17,10 +17,10 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_SOLUTION_H_
 #define OR_TOOLS_MATH_OPT_CPP_SOLUTION_H_
 
-#include <cstdint>
 #include <optional>
 
-#include "absl/types/optional.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ortools/math_opt/cpp/basis_status.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
@@ -218,7 +218,14 @@ struct Basis {
   static absl::StatusOr<Basis> FromProto(const ModelStorage* model,
                                          const BasisProto& basis_proto);
 
-  // Returns the proto equivalent of this.
+  // Returns a failure if the referenced variables don't belong to the input
+  // expected_storage (which must not be nullptr).
+  absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
+
+  // Returns the proto equivalent of this object.
+  //
+  // The caller should use CheckModelStorage() as this function does not check
+  // internal consistency of the referenced variables and constraints.
   BasisProto Proto() const;
 
   LinearConstraintMap<BasisStatus> constraint_status;

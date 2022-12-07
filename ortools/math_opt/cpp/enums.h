@@ -85,7 +85,7 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
 
 namespace operations_research::math_opt {
 

@@ -51,8 +51,13 @@ message PrimalSolutionProto {
   //  * variable_values.values must all be finite.
   SparseDoubleVectorProto variable_values = 1;
 
-  // Objective value as computed by the underlying solver.
+  // Objective value as computed by the underlying solver. Cannot be infinite or
+  // NaN.
   double objective_value = 2;
+
+  // Auxiliary objective values as computed by the underlying solver. Keys must
+  // be valid auxiliary objective IDs. Values cannot be infinite or NaN.
+  map<int64, double> auxiliary_objective_values = 4;
 
   // Feasibility status of the solution according to the underlying solver.
   SolutionStatusProto feasibility_status = 3;

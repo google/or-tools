@@ -19,7 +19,6 @@
 #define OR_TOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
 
 #include <cstdint>
-#include <ostream>
 #include <sstream>
 #include <string>
 #include <utility>

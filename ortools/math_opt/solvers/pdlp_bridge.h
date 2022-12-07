@@ -15,6 +15,7 @@
 #define OR_TOOLS_MATH_OPT_SOLVERS_PDLP_BRIDGE_H_
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include "Eigen/Core"
@@ -22,7 +23,9 @@
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/model.pb.h"
+#include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/pdlp/primal_dual_hybrid_gradient.h"
 #include "ortools/pdlp/quadratic_program.h"
 
 namespace operations_research {
@@ -63,6 +66,8 @@ class PdlpBridge {
   absl::StatusOr<SparseDoubleVectorProto> ReducedCostsToProto(
       const Eigen::VectorXd& reduced_costs,
       const SparseVectorFilterProto& variable_filter) const;
+  pdlp::PrimalAndDualSolution SolutionHintToWarmStart(
+      const SolutionHintProto& solution_hint) const;
 
  private:
   pdlp::QuadraticProgram pdlp_lp_;

@@ -58,6 +58,7 @@
 namespace operations_research {
 namespace math_opt {
 
+using pdlp::PrimalAndDualSolution;
 using pdlp::PrimalDualHybridGradientParams;
 using pdlp::SolverResult;
 
@@ -161,8 +162,13 @@ absl::StatusOr<TerminationProto> ConvertReason(
           absl::StrCat("Invalid problem sent to PDLP solver "
                        "(TERMINATION_REASON_INVALID_PROBLEM): ",
                        pdlp_detail));
-      // Indicates that an invalid value for the parameters was detected.
+    case pdlp::TERMINATION_REASON_INVALID_INITIAL_SOLUTION:
+      return absl::InvalidArgumentError(
+          absl::StrCat("PDLP solution hint invalid "
+                       "(TERMINATION_REASON_INVALID_INITIAL_SOLUTION): ",
+                       pdlp_detail));
     case pdlp::TERMINATION_REASON_INVALID_PARAMETER:
+      // Indicates that an invalid value for the parameters was detected.
       return absl::InvalidArgumentError(absl::StrCat(
           "PDLP parameters invalid (TERMINATION_REASON_INVALID_PARAMETER): ",
           pdlp_detail));
@@ -358,8 +364,14 @@ absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
   const ScopedSolveInterrupterCallback set_interrupt(
       interrupter, [&]() { interrupt = true; });
 
-  const SolverResult pdlp_result =
-      PrimalDualHybridGradient(pdlp_bridge_.pdlp_lp(), pdlp_params, &interrupt);
+  std::optional<PrimalAndDualSolution> initial_solution;
+  if (!model_parameters.solution_hints().empty()) {
+    initial_solution = pdlp_bridge_.SolutionHintToWarmStart(
+        model_parameters.solution_hints(0));
+  }
+
+  const SolverResult pdlp_result = PrimalDualHybridGradient(
+      pdlp_bridge_.pdlp_lp(), pdlp_params, initial_solution, &interrupt);
   return MakeSolveResult(pdlp_result, model_parameters);
 }
 

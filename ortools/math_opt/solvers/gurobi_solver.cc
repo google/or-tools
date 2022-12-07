@@ -223,6 +223,14 @@ GurobiParametersProto MergeParameters(
     parameter->set_value(absl::StrCat(random_seed));
   }
 
+  if (solve_parameters.has_solution_pool_size()) {
+    GurobiParametersProto::Parameter* const solution_pool_size =
+        merged_parameters.add_parameters();
+    solution_pool_size->set_name(GRB_INT_PAR_POOLSOLUTIONS);
+    solution_pool_size->set_value(
+        absl::StrCat(solve_parameters.solution_pool_size()));
+  }
+
   if (solve_parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
     GurobiParametersProto::Parameter* const parameter =
         merged_parameters.add_parameters();

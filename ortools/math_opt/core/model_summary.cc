@@ -27,9 +27,11 @@
 #include "absl/types/span.h"
 #include "ortools/base/check.h"
 #include "ortools/base/linked_hash_map.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
+#include "ortools/util/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -117,6 +119,7 @@ absl::Status IdNameBiMap::BulkUpdate(
 
 ModelSummary::ModelSummary(const bool check_names)
     : variables(check_names),
+      auxiliary_objectives(check_names),
       linear_constraints(check_names),
       quadratic_constraints(check_names),
       sos1_constraints(check_names),
@@ -129,19 +132,30 @@ absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
   RETURN_IF_ERROR(summary.variables.BulkUpdate({}, model.variables().ids(),
                                                model.variables().names()))
       << "ModelProto.variables are invalid";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
+      {}, model.auxiliary_objectives(), summary.auxiliary_objectives))
+      << "ModelProto.auxiliary_objectives are invalid";
+  {
+    const std::string& objective_name = model.objective().name();
+    if (summary.auxiliary_objectives.HasName(objective_name)) {
+      return util::InvalidArgumentErrorBuilder()
+             << "duplicate objective name: " << objective_name;
+    }
+    summary.primary_objective_name = objective_name;
+  }
   RETURN_IF_ERROR(summary.linear_constraints.BulkUpdate(
       {}, model.linear_constraints().ids(), model.linear_constraints().names()))
       << "ModelProto.linear_constraints are invalid";
-  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       {}, model.quadratic_constraints(), summary.quadratic_constraints))
       << "ModelProto.quadratic_constraints are invalid";
-  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       {}, model.sos1_constraints(), summary.sos1_constraints))
       << "ModelProto.sos1_constraints are invalid";
-  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       {}, model.sos2_constraints(), summary.sos2_constraints))
       << "ModelProto.sos2_constraints are invalid";
-  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       {}, model.indicator_constraints(), summary.indicator_constraints))
       << "ModelProto.indicator_constraints are invalid";
   return summary;
@@ -152,27 +166,36 @@ absl::Status ModelSummary::Update(const ModelUpdateProto& model_update) {
                                        model_update.new_variables().ids(),
                                        model_update.new_variables().names()))
       << "invalid variables";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
+      model_update.auxiliary_objectives_updates().deleted_objective_ids(),
+      model_update.auxiliary_objectives_updates().new_objectives(),
+      auxiliary_objectives))
+      << "invalid auxiliary objectives";
+  if (auxiliary_objectives.HasName(primary_objective_name)) {
+    return util::InvalidArgumentErrorBuilder()
+           << "duplicate objective name: " << primary_objective_name;
+  }
   RETURN_IF_ERROR(linear_constraints.BulkUpdate(
       model_update.deleted_linear_constraint_ids(),
       model_update.new_linear_constraints().ids(),
       model_update.new_linear_constraints().names()))
       << "invalid linear constraints";
-  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       model_update.quadratic_constraint_updates().deleted_constraint_ids(),
       model_update.quadratic_constraint_updates().new_constraints(),
       quadratic_constraints))
       << "invalid quadratic constraints";
-  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       model_update.sos1_constraint_updates().deleted_constraint_ids(),
       model_update.sos1_constraint_updates().new_constraints(),
       sos1_constraints))
       << "invalid sos1 constraints";
-  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       model_update.sos2_constraint_updates().deleted_constraint_ids(),
       model_update.sos2_constraint_updates().new_constraints(),
       sos2_constraints))
       << "invalid sos2 constraints";
-  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedConstraints(
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       model_update.indicator_constraint_updates().deleted_constraint_ids(),
       model_update.indicator_constraint_updates().new_constraints(),
       indicator_constraints))

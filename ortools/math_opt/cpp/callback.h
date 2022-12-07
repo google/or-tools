@@ -75,6 +75,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/math_opt/callback.pb.h"
@@ -146,12 +147,15 @@ MATH_OPT_DEFINE_ENUM(CallbackEvent, CALLBACK_EVENT_UNSPECIFIED);
 //   * what information the callback needs,
 //   * how the callback might alter the solve process.
 struct CallbackRegistration {
-  // Will CHECK fail if referenced variables are not from the same model.
-  CallbackRegistrationProto Proto() const;
+  // Returns a failure if the referenced variables don't belong to the input
+  // expected_storage (which must not be nullptr).
+  absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
 
-  // Returns the model referenced variables, or null if no variables are
-  // referenced. Will CHECK fail if variables are not from the same model.
-  const ModelStorage* storage() const;
+  // Returns the proto equivalent of this object.
+  //
+  // The caller should use CheckModelStorage() as this function does not check
+  // internal consistency of the referenced variables.
+  CallbackRegistrationProto Proto() const;
 
   // The events the solver should invoke the callback at.
   //
@@ -250,14 +254,15 @@ struct CallbackResult {
     new_constraints.push_back({std::move(linear_constraint), true});
   }
 
-  // Will CHECK fail if referenced variables are not from the same model.
-  CallbackResultProto Proto() const;
+  // Returns a failure if the referenced variables don't belong to the input
+  // expected_storage (which must not be nullptr).
+  absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
 
-  // Returns the model referenced variables, or null if no variables are
-  // referenced. Will CHECK fail if variables are not from the same model.
+  // Returns the proto equivalent of this object.
   //
-  // Runs in O(num constraints + num suggested solutions).
-  const ModelStorage* storage() const;
+  // The caller should use CheckModelStorage() as this function does not check
+  // internal consistency of the referenced variables.
+  CallbackResultProto Proto() const;
 
   // Stop the solve process and return early. Can be called from any event.
   bool terminate = false;

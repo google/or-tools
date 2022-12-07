@@ -29,6 +29,7 @@
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
+#include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/pdlp/quadratic_program.h"
 
@@ -58,6 +59,20 @@ absl::StatusOr<SparseDoubleVectorProto> ExtractSolution(
     }
   }
   return result;
+}
+
+// We are implicitly assuming that all missing IDs have correspoding value 0.
+Eigen::VectorXd EncodeSolution(
+    const SparseDoubleVectorProto& values,
+    const absl::flat_hash_map<int64_t, int64_t>& id_to_pdlp_index,
+    const double scale) {
+  Eigen::VectorXd pdlp_vector(Eigen::VectorXd::Zero(id_to_pdlp_index.size()));
+  const int num_values = values.values_size();
+  for (int k = 0; k < num_values; ++k) {
+    const int64_t index = id_to_pdlp_index.at(values.ids(k));
+    pdlp_vector[index] = values.values(k) / scale;
+  }
+  return pdlp_vector;
 }
 
 }  // namespace
@@ -189,6 +204,18 @@ absl::StatusOr<SparseDoubleVectorProto> PdlpBridge::ReducedCostsToProto(
     const SparseVectorFilterProto& variable_filter) const {
   return ExtractSolution(reduced_costs, pdlp_index_to_var_id_, variable_filter,
                          /*scale=*/pdlp_lp_.objective_scaling_factor);
+}
+
+pdlp::PrimalAndDualSolution PdlpBridge::SolutionHintToWarmStart(
+    const SolutionHintProto& solution_hint) const {
+  // We are implicitly assuming that all missing IDs have correspoding value 0.
+  pdlp::PrimalAndDualSolution result;
+  result.primal_solution = EncodeSolution(solution_hint.variable_values(),
+                                          var_id_to_pdlp_index_, /*scale=*/1.0);
+  result.dual_solution =
+      EncodeSolution(solution_hint.dual_values(), lin_con_id_to_pdlp_index_,
+                     /*scale=*/pdlp_lp_.objective_scaling_factor);
+  return result;
 }
 
 }  // namespace math_opt

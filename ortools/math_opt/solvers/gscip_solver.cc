@@ -330,6 +330,15 @@ absl::Status GScipSolver::AddVariables(
             GScipVarTypeFromIsInteger(variables.integers(i)),
             SafeName(variables, i)));
     if (inverted_bounds) {
+      const double ub = variables.upper_bounds(i);
+      if (gscip_->VarType(v) == GScipVarType::kBinary && ub != 0.0 &&
+          ub != 1.0) {
+        // gSCIP (and SCIP actually) upgrades the variable type to kBinary if
+        // the bounds passed to AddVariable() are both in {0.0, 1.0}. Changing
+        // the bounds then raises an assertion in SCIP if the bounds is not in
+        // {0.0, 1.0}.
+        RETURN_IF_ERROR(gscip_->SetVarType(v, GScipVarType::kInteger));
+      }
       RETURN_IF_ERROR(gscip_->SetUb(v, variables.upper_bounds(i)));
     }
     gtl::InsertOrDie(&variables_, id, v);
@@ -587,7 +596,10 @@ GScipSolver::ProcessSosProto(const SosConstraintProto& sos_constraint) {
   GScipSOSData data;
   AuxiliaryStructureHandler handler;
   for (const LinearExpressionProto& expr : sos_constraint.expressions()) {
-    if (expr.ids_size() == 1 && expr.coefficients(0) == 1.0) {
+    // If the expression is equivalent to 1 * some_variable, there is no need to
+    // add a slack variable.
+    if (expr.ids_size() == 1 && expr.coefficients(0) == 1.0 &&
+        expr.offset() == 0.0) {
       data.variables.push_back(variables_.at(expr.ids(0)));
     } else {
       ASSIGN_OR_RETURN((const auto [slack_var, slack_constr]),
@@ -702,6 +714,19 @@ absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
   if (solve_parameters.has_solution_limit()) {
     (*result.mutable_int_params())["limits/solutions"] =
         solve_parameters.solution_limit();
+  }
+
+  if (solve_parameters.has_solution_pool_size()) {
+    result.set_num_solutions(solve_parameters.solution_pool_size());
+    // We must set limits/maxsol (the internal solution pool) and
+    // limits/maxorigsol (the number solutions to attempt to transform back to
+    // the user.
+    //
+    // NOTE: As of SCIP 8, limits/maxsol defaults to 100.
+    (*result.mutable_int_params())["limits/maxsol"] =
+        std::max(100, solve_parameters.solution_pool_size());
+    (*result.mutable_int_params())["limits/maxorigsol"] =
+        solve_parameters.solution_pool_size();
   }
 
   // GScip has also GScipSetOutputEnabled() but this changes the log

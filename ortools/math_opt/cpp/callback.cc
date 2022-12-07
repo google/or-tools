@@ -37,33 +37,6 @@
 
 namespace operations_research {
 namespace math_opt {
-namespace {
-
-// Container must be an iterable on some type T where
-//   const ModelStorage* T::storage() const
-// is defined.
-//
-// CHECKs that the non-null model storages are the same, and returns the unique
-// non-null model storage if it exists, otherwise null.
-template <typename Container>
-const ModelStorage* ConsistentModelStorage(
-    const Container& model_items,
-    const ModelStorage* const init_model = nullptr) {
-  const ModelStorage* result = init_model;
-  for (const auto& item : model_items) {
-    const ModelStorage* const storage = item.storage();
-    if (storage != nullptr) {
-      if (result == nullptr) {
-        result = storage;
-      } else {
-        CHECK_EQ(storage, result) << internal::kObjectsFromOtherModelStorage;
-      }
-    }
-  }
-  return result;
-}
-
-}  // namespace
 
 std::optional<absl::string_view> Enum<CallbackEvent>::ToOptString(
     CallbackEvent value) {
@@ -116,15 +89,20 @@ CallbackData::CallbackData(const ModelStorage* storage,
   runtime = *maybe_time;
 }
 
-const ModelStorage* CallbackRegistration::storage() const {
-  return internal::ConsistentModelStorage(
-      {mip_node_filter.storage(), mip_solution_filter.storage()});
+absl::Status CallbackRegistration::CheckModelStorage(
+    const ModelStorage* const expected_storage) const {
+  RETURN_IF_ERROR(
+      internal::CheckModelStorage(/*storage=*/mip_node_filter.storage(),
+                                  /*expected_storage=*/expected_storage))
+      << "invalid mip_node_filter";
+  RETURN_IF_ERROR(
+      internal::CheckModelStorage(/*storage=*/mip_solution_filter.storage(),
+                                  /*expected_storage=*/expected_storage))
+      << "invalid mip_solution_filter";
+  return absl::OkStatus();
 }
 
 CallbackRegistrationProto CallbackRegistration::Proto() const {
-  // Ensure that the underlying ModelStorage is consistent (or CHECK fail).
-  storage();
-
   CallbackRegistrationProto result;
   for (const CallbackEvent event : events) {
     result.add_request_registration(EnumToProto(event));
@@ -138,15 +116,23 @@ CallbackRegistrationProto CallbackRegistration::Proto() const {
   return result;
 }
 
-const ModelStorage* CallbackResult::storage() const {
-  const ModelStorage* result = ConsistentModelStorage(new_constraints);
-  return ConsistentModelStorage(suggested_solutions, result);
+absl::Status CallbackResult::CheckModelStorage(
+    const ModelStorage* const expected_storage) const {
+  for (const GeneratedLinearConstraint& constraint : new_constraints) {
+    RETURN_IF_ERROR(
+        internal::CheckModelStorage(/*storage=*/constraint.storage(),
+                                    /*expected_storage=*/expected_storage))
+        << "invalid new_constraints";
+  }
+  for (const VariableMap<double>& solution : suggested_solutions) {
+    RETURN_IF_ERROR(internal::CheckModelStorage(
+        /*storage=*/solution.storage(), /*expected_storage=*/expected_storage))
+        << "invalid suggested_solutions";
+  }
+  return absl::OkStatus();
 }
 
 CallbackResultProto CallbackResult::Proto() const {
-  // Ensure that the underlying ModelStorage is consistent (or CHECK fail).
-  storage();
-
   CallbackResultProto result;
   result.set_terminate(terminate);
   for (const VariableMap<double>& solution : suggested_solutions) {

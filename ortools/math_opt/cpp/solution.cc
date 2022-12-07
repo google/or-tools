@@ -176,6 +176,19 @@ absl::StatusOr<Basis> Basis::FromProto(const ModelStorage* model,
   return basis;
 }
 
+absl::Status Basis::CheckModelStorage(
+    const ModelStorage* const expected_storage) const {
+  RETURN_IF_ERROR(
+      internal::CheckModelStorage(/*storage=*/variable_status.storage(),
+                                  /*expected_storage=*/expected_storage))
+      << "invalid variable_status";
+  RETURN_IF_ERROR(
+      internal::CheckModelStorage(/*storage=*/constraint_status.storage(),
+                                  /*expected_storage=*/expected_storage))
+      << "invalid constraint_status";
+  return absl::OkStatus();
+}
+
 BasisProto Basis::Proto() const {
   BasisProto result;
   *result.mutable_constraint_status() =

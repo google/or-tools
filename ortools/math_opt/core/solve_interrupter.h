@@ -84,7 +84,7 @@ class SolveInterrupter {
   void RemoveInterruptionCallback(CallbackId id);
 
  private:
-  // This atomic must never be reset to true!
+  // This atomic must never be reset to false!
   //
   // The mutex_ should be held when setting it to true.
   std::atomic<bool> interrupted_ = false;
@@ -121,6 +121,11 @@ class ScopedSolveInterrupterCallback {
   ScopedSolveInterrupterCallback(SolveInterrupter* interrupter,
                                  SolveInterrupter::Callback callback);
 
+  ScopedSolveInterrupterCallback(const ScopedSolveInterrupterCallback&) =
+      delete;
+  ScopedSolveInterrupterCallback& operator=(
+      const ScopedSolveInterrupterCallback&) = delete;
+
   // Removes the callback if necessary.
   ~ScopedSolveInterrupterCallback();
 
@@ -128,6 +133,9 @@ class ScopedSolveInterrupterCallback {
   // by a previous call or if a null interrupter was passed to the constructor,
   // this function has no effect.
   void RemoveCallbackIfNecessary();
+
+  // Returns the optional interrupter.
+  SolveInterrupter* interrupter() const { return interrupter_; }
 
  private:
   // Optional interrupter.

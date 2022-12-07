@@ -20,7 +20,6 @@ import "google/protobuf/duration.proto";
 import "ortools/gscip/gscip.proto";
 import "ortools/math_opt/solution.proto";
 
-
 option java_package = "com.google.ortools.mathopt";
 option java_multiple_files = true;
 

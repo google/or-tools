@@ -21,6 +21,7 @@
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/concurrent_calls_guard.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -137,8 +138,9 @@ class Solver {
   Solver(std::unique_ptr<SolverInterface> underlying_solver,
          ModelSummary model_summary);
 
-  // Mutex used to ensure that Solve() and Update() are not called concurrently.
-  absl::Mutex mutex_;
+  // Tracker used to ensure that Solve() and Update() are not called
+  // concurrently.
+  ConcurrentCallsGuard::Tracker concurrent_calls_tracker_;
 
   // Can be nullptr only if fatal_failure_occurred_ is true (but the contrary is
   // not true). This happens when Update() returns false.
@@ -148,6 +150,8 @@ class Solver {
 
   // Set to true if a previous call to Solve() or Update() returned a failing
   // status (or if Update() returned false).
+  //
+  // This is guarded by concurrent_calls_tracker_.
   bool fatal_failure_occurred_ = false;
 };
 

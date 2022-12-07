@@ -213,6 +213,9 @@ SolveParametersProto SolveParameters::Proto() const {
   if (absolute_gap_tolerance.has_value()) {
     result.set_absolute_gap_tolerance(*absolute_gap_tolerance);
   }
+  if (solution_pool_size.has_value()) {
+    result.set_solution_pool_size(*solution_pool_size);
+  }
   result.set_lp_algorithm(EnumToProto(lp_algorithm));
   result.set_presolve(EnumToProto(presolve));
   result.set_cuts(EnumToProto(cuts));
@@ -265,6 +268,9 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   }
   if (proto.has_relative_gap_tolerance()) {
     result.relative_gap_tolerance = proto.relative_gap_tolerance();
+  }
+  if (proto.has_solution_pool_size()) {
+    result.solution_pool_size = proto.solution_pool_size();
   }
   result.lp_algorithm = EnumFromProto(proto.lp_algorithm());
   result.presolve = EnumFromProto(proto.presolve());

@@ -23,6 +23,7 @@
 #include <optional>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/map_filter.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/solution.h"
@@ -33,7 +34,7 @@
 namespace operations_research {
 namespace math_opt {
 
-// Parameters to control a single solve that that are specific to the input
+// Parameters to control a single solve that are specific to the input
 // model (see SolveParametersProto for model independent parameters).
 struct ModelSolveParameters {
   // Returns the parameters that empty DualSolution and DualRay, only keep the
@@ -90,6 +91,8 @@ struct ModelSolveParameters {
   // expected to be valid.
   std::optional<Basis> initial_basis;
 
+  // A solution hint. It can be partial and does not need to be feasible; see
+  // solution_hints for details.
   struct SolutionHint {
     VariableMap<double> variable_values;
   };
@@ -106,17 +109,14 @@ struct ModelSolveParameters {
   // consist of finite priorities for primal variables in the model.
   VariableMap<int32_t> branching_priorities;
 
-  // Returns the model of filtered keys. It returns a non-null value if and only
-  // if one of the filters have a set and non empty filtered_keys().
-  //
-  // Asserts (using CHECK) that all variables and linear constraints referenced
-  // by the filters are in the same model.
-  const ModelStorage* storage() const;
+  // Returns a failure if the referenced variables don't belong to the input
+  // expected_storage (which must not be nullptr).
+  absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
 
-  // Returns a new proto corresponding to these parameters.
+  // Returns the proto equivalent of this object.
   //
-  // Asserts (using CHECK) that all variables and linear constraints referenced
-  // by the filters are in the same model.
+  // The caller should use CheckModelStorage() as this function does not check
+  // internal consistency of the referenced variables and constraints.
   ModelSolveParametersProto Proto() const;
 };
 

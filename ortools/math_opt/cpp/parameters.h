@@ -309,6 +309,16 @@ struct SolveParameters {
   // See also absolute_gap_tolerance.
   std::optional<double> relative_gap_tolerance;
 
+  // Maintain up to `solution_pool_size` solutions while searching. The solution
+  // pool generally has two functions:
+  //  (1) For solvers that can return more than one solution, this limits how
+  //      many solutions will be returned.
+  //  (2) Some solvers may run heuristics using solutions from the solution
+  //      pool, so changing this value may affect the algorithm's path.
+  // To force the solver to fill the solution pool, e.g. with the n best
+  // solutions, requires further, solver specific configuration.
+  std::optional<int32_t> solution_pool_size;
+
   // The algorithm for solving a linear program. If nullopt, use the solver
   // default algorithm.
   //

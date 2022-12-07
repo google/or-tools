@@ -367,8 +367,9 @@ struct SolveResult {
   // Returns the proto equivalent of this.
   //
   // Note that the proto uses a oneof for solver specific output. This method
-  // will fail if multiple solver specific outputs are set. TODO(b/231134639):
-  // investigate removing the oneof from the proto.
+  // will fail if multiple solver specific outputs are set.
+  //
+  // TODO(b/231134639): investigate removing the oneof from the proto.
   absl::StatusOr<SolveResultProto> Proto() const;
 
   absl::Duration solve_time() const { return solve_stats.solve_time; }

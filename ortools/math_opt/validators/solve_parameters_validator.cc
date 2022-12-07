@@ -15,11 +15,11 @@
 
 #include <cmath>
 #include <string>
-#include <type_traits>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
@@ -28,6 +28,22 @@
 
 namespace operations_research {
 namespace math_opt {
+namespace {
+
+// Returns an error if the input value is not one of the possible values of the
+// enum. The parameter_name is the name of the SolveParametersProto field
+// holding the value.
+absl::Status ValidateEmphasisProtoParameter(
+    const EmphasisProto value, const absl::string_view field_name) {
+  if (!EmphasisProto_IsValid(value)) {
+    return util::InvalidArgumentErrorBuilder()
+           << "Unknown enum value for SolverParameters." << field_name << " = "
+           << value;
+  }
+  return absl::OkStatus();
+}
+
+}  // namespace
 
 absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
   {
@@ -75,8 +91,11 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
            << " should be positive.";
   }
 
-  if (std::isnan(parameters.cutoff_limit())) {
-    return absl::InvalidArgumentError("SolveParameters.cutoff_limit was NaN");
+  if (!std::isfinite(parameters.cutoff_limit())) {
+    return util::InvalidArgumentErrorBuilder()
+           << "SolveParameters.cutoff_limit should be finite (and not NaN) but "
+              "was: "
+           << parameters.cutoff_limit();
   }
   if (std::isnan(parameters.objective_limit())) {
     return absl::InvalidArgumentError(
@@ -86,7 +105,26 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
     return absl::InvalidArgumentError(
         "SolveParameters.best_bound_limit was NaN");
   }
-
+  if (parameters.has_solution_pool_size() &&
+      parameters.solution_pool_size() <= 0) {
+    return util::InvalidArgumentErrorBuilder()
+           << "SolveParameters.solution_pool_size must be positive if set, but "
+              "was set to: "
+           << parameters.solution_pool_size();
+  }
+  if (!LPAlgorithmProto_IsValid(parameters.lp_algorithm())) {
+    return util::InvalidArgumentErrorBuilder()
+           << "Unknown enum value for SolverParameters.lp_algorithm = "
+           << parameters.lp_algorithm();
+  }
+#define VALIDATE_EMPHASIS(property) \
+  RETURN_IF_ERROR(                  \
+      ValidateEmphasisProtoParameter(parameters.property(), #property))
+  VALIDATE_EMPHASIS(presolve);
+  VALIDATE_EMPHASIS(cuts);
+  VALIDATE_EMPHASIS(heuristics);
+  VALIDATE_EMPHASIS(scaling);
+#undef VALIDATE_EMPHASIS
   return absl::OkStatus();
 }
 

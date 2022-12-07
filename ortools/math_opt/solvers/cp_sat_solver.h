@@ -56,7 +56,7 @@ class CpSatSolver : public SolverInterface {
   // Extract the solution from CP-SAT's response.
   SparseDoubleVectorProto ExtractSolution(
       absl::Span<const double> cp_sat_variable_values,
-      const ModelSolveParametersProto& model_parameters) const;
+      const SparseVectorFilterProto& filter) const;
 
   // Returns the ids of variables and linear constraints with inverted bounds.
   InvertedBounds ListInvertedBounds() const;

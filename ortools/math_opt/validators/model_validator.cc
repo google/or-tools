@@ -14,10 +14,12 @@
 #include "ortools/math_opt/validators/model_validator.h"
 
 #include <cstdint>
+#include <limits>
 #include <utility>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/constraints/indicator/validator.h"
 #include "ortools/math_opt/constraints/quadratic/validator.h"
@@ -97,6 +99,12 @@ absl::Status ObjectiveValid(const ObjectiveProto& objective,
   RETURN_IF_ERROR(SparseMatrixIdsAreKnown(objective.quadratic_coefficients(),
                                           variable_ids, variable_ids))
       << "Objective.quadratic_coefficients invalid";
+  if (const int64_t priority = objective.priority(); priority < 0) {
+    return util::InvalidArgumentErrorBuilder()
+           << "expected Objective.priority to be nonnegative but found "
+              "priority: "
+           << priority;
+  }
   return absl::OkStatus();
 }
 
@@ -122,6 +130,34 @@ absl::Status ObjectiveUpdatesValid(
   RETURN_IF_ERROR(SparseMatrixIdsAreKnown(
       objective_updates.quadratic_coefficients(), variable_ids, variable_ids))
       << "quadratic_coefficients invalid";
+  if (objective_updates.has_priority_update()) {
+    const int64_t priority = objective_updates.priority_update();
+    if (priority < 0) {
+      return util::InvalidArgumentErrorBuilder()
+             << "expected Objective.priority to be nonnegative but found "
+                "priority: "
+             << priority;
+    }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status AuxiliaryObjectivesUpdatesValid(
+    const AuxiliaryObjectivesUpdatesProto& objectives,
+    const IdNameBiMap& variable_ids, const IdNameBiMap& objective_ids) {
+  for (const auto& [id, new_objective] : objectives.new_objectives()) {
+    RETURN_IF_ERROR(ObjectiveValid(new_objective, variable_ids))
+        << "bad new auxiliary objective with id: " << id;
+  }
+  for (const auto& [id, objective_update] : objectives.objective_updates()) {
+    if (!objective_ids.HasId(id)) {
+      return util::InvalidArgumentErrorBuilder()
+             << "objective update on auxiliary objective not present in model "
+                "with id: "
+             << id;
+    }
+    RETURN_IF_ERROR(ObjectiveUpdatesValid(objective_update, variable_ids));
+  }
   return absl::OkStatus();
 }
 
@@ -196,6 +232,11 @@ absl::StatusOr<ModelSummary> ValidateModel(const ModelProto& model,
       << "ModelProto.variables are invalid.";
   RETURN_IF_ERROR(ObjectiveValid(model.objective(), model_summary.variables))
       << "ModelProto.objective is invalid";
+  for (const auto& [id, objective] : model.auxiliary_objectives()) {
+    RETURN_IF_ERROR(ObjectiveValid(objective, model_summary.variables))
+        << "ModelProto.auxiliary_objectives is invalid with objective id: "
+        << id;
+  }
   RETURN_IF_ERROR(LinearConstraintsValid(model.linear_constraints()))
       << "ModelProto.linear_constraints are invalid";
   RETURN_IF_ERROR(SparseMatrixValid(model.linear_constraint_matrix()))
@@ -238,6 +279,13 @@ absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
   RETURN_IF_ERROR(VariableUpdatesValid(model_update.variable_updates(),
                                        model_summary.variables, old_var_id_ub))
       << "ModelUpdateProto.variable_updates invalid";
+  RETURN_IF_ERROR(ObjectiveUpdatesValid(model_update.objective_updates(),
+                                        model_summary.variables))
+      << "ModelUpdateProto.objective_update invalid";
+  RETURN_IF_ERROR(AuxiliaryObjectivesUpdatesValid(
+      model_update.auxiliary_objectives_updates(), model_summary.variables,
+      model_summary.auxiliary_objectives))
+      << "ModelUpdateProto.auxiliary_objectives_updates invalid";
   RETURN_IF_ERROR(LinearConstraintUpdatesValid(
       model_update.linear_constraint_updates(),
       model_summary.linear_constraints, old_lin_con_id_ub))
@@ -246,9 +294,6 @@ absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
       << "ModelUpdateProto.new_variables invalid";
   RETURN_IF_ERROR(LinearConstraintsValid(model_update.new_linear_constraints()))
       << "ModelUpdateProto.new_linear_constraints invalid";
-  RETURN_IF_ERROR(ObjectiveUpdatesValid(model_update.objective_updates(),
-                                        model_summary.variables))
-      << "ModelUpdateProto.objective_update invalid";
   RETURN_IF_ERROR(
       SparseMatrixValid(model_update.linear_constraint_matrix_updates()))
       << "ModelUpdateProto.linear_constraint_matrix_updates invalid";

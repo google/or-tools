@@ -131,6 +131,7 @@ enum class SupportType {
 
 struct SupportedProblemStructures {
   SupportType integer_variables = SupportType::kNotSupported;
+  SupportType multi_objectives = SupportType::kNotSupported;
   SupportType quadratic_objectives = SupportType::kNotSupported;
   SupportType quadratic_constraints = SupportType::kNotSupported;
   SupportType sos1_constraints = SupportType::kNotSupported;

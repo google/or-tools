@@ -20,8 +20,9 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/logging.h"
+#include "absl/synchronization/mutex.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver.h"
@@ -44,42 +45,43 @@ Solver::InitArgs ToSolverInitArgs(const SolverInitArguments& arguments) {
   return solver_init_args;
 }
 
-// Asserts (with CHECK) that the input pointer is either nullptr or that it
-// points to the same model storage as storage_.
-void CheckModelStorage(const ModelStorage* const storage,
-                       const ModelStorage* const expected_storage) {
-  if (storage != nullptr) {
-    CHECK_EQ(storage, expected_storage)
-        << internal::kObjectsFromOtherModelStorage;
-  }
-}
-
 absl::StatusOr<SolveResult> CallSolve(
     Solver& solver, const ModelStorage* const expected_storage,
     const SolveArguments& arguments) {
-  CheckModelStorage(/*storage=*/arguments.model_parameters.storage(),
-                    /*expected_storage=*/expected_storage);
-  CheckModelStorage(/*storage=*/arguments.callback_registration.storage(),
-                    /*expected_storage=*/expected_storage);
-
-  if (arguments.callback == nullptr) {
-    CHECK(arguments.callback_registration.events.empty())
-        << "No callback was provided to run, but callback events were "
-           "registered.";
-  }
+  RETURN_IF_ERROR(arguments.CheckModelStorageAndCallback(expected_storage));
 
   Solver::Callback cb = nullptr;
+  absl::Mutex mutex;
+  absl::Status cb_status;  // Guarded by `mutex`.
   if (arguments.callback != nullptr) {
     cb = [&](const CallbackDataProto& callback_data_proto) {
       const CallbackData data(expected_storage, callback_data_proto);
+      // TODO(b/249995436): offer a way for user-callback to return a Status as
+      // well and somehow label it as "user error" (annotation + payload?).
       const CallbackResult result = arguments.callback(data);
-      CheckModelStorage(/*storage=*/result.storage(),
-                        /*expected_storage=*/expected_storage);
+
+      if (const absl::Status status =
+              result.CheckModelStorage(expected_storage);
+          !status.ok()) {
+        // Note that we use util::StatusBuilder() here as util::Annotate() is
+        // not available in open-source code.
+        util::StatusBuilder builder(status);
+        builder << "invalid CallbackResult returned by user callback";
+
+        const absl::MutexLock lock(&mutex);
+        cb_status.Update(builder);
+
+        // Trigger early termination of the solve.
+        CallbackResultProto result_proto;
+        result_proto.set_terminate(true);
+        return result_proto;
+      }
+
       return result.Proto();
     };
   }
   ASSIGN_OR_RETURN(
-      SolveResultProto solve_result,
+      const SolveResultProto solve_result,
       solver.Solve(
           {.parameters = arguments.parameters.Proto(),
            .model_parameters = arguments.model_parameters.Proto(),
@@ -87,6 +89,10 @@ absl::StatusOr<SolveResult> CallSolve(
            .callback_registration = arguments.callback_registration.Proto(),
            .user_cb = std::move(cb),
            .interrupter = arguments.interrupter}));
+
+  const absl::MutexLock lock(&mutex);
+  RETURN_IF_ERROR(cb_status);
+
   return SolveResult::FromProto(expected_storage, solve_result);
 }
 
@@ -135,7 +141,7 @@ absl::StatusOr<SolveResult> IncrementalSolver::Solve(
   return SolveWithoutUpdate(arguments);
 }
 
-absl::StatusOr<IncrementalSolver::UpdateResult> IncrementalSolver::Update() {
+absl::StatusOr<UpdateResult> IncrementalSolver::Update() {
   ASSIGN_OR_RETURN(std::optional<ModelUpdateProto> model_update,
                    update_tracker_->ExportModelUpdate());
   if (!model_update) {

@@ -27,16 +27,24 @@
 namespace operations_research {
 namespace math_opt {
 namespace {
+
 absl::Status ValidateSolutionHint(const SolutionHintProto& solution_hint,
                                   const ModelSummary& model_summary) {
-  const auto vector_view = MakeView(solution_hint.variable_values());
   RETURN_IF_ERROR(CheckIdsAndValues(
-      vector_view,
+      MakeView(solution_hint.variable_values()),
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
-      << "Invalid solution_hint";
-  RETURN_IF_ERROR(CheckIdsSubset(solution_hint.variable_values().ids(),
-                                 model_summary.variables, "solution_hint ids",
-                                 "model IDs"));
+      << "Invalid solution_hint.variable_values";
+  RETURN_IF_ERROR(CheckIdsSubset(
+      solution_hint.variable_values().ids(), model_summary.variables,
+      "solution_hint.variable_values ids", "model variable ids"));
+
+  RETURN_IF_ERROR(CheckIdsAndValues(
+      MakeView(solution_hint.dual_values()),
+      {.allow_positive_infinity = false, .allow_negative_infinity = false}))
+      << "Invalid solution_hint.dual_values";
+  RETURN_IF_ERROR(CheckIdsSubset(
+      solution_hint.dual_values().ids(), model_summary.linear_constraints,
+      "solution_hint.dual_values ids", "model linear constraint ids"));
 
   return absl::OkStatus();
 }

@@ -58,7 +58,7 @@ message ObjectiveUpdatesProto {
   // Not set indicates not change, otherwise the new offset.
   optional double offset_update = 2;
 
-  // Updates ModelProto.objective.linear_coefficients.
+  // Updates ObjectiveProto.linear_coefficients.
   //
   // Requirements:
   //  * linear_coefficients.ids must be variable ids, either existing one (from
@@ -70,7 +70,7 @@ message ObjectiveUpdatesProto {
   //    value should only be used for existing variables.
   SparseDoubleVectorProto linear_coefficients = 3;
 
-  // Updates ModelProto.objective.quadratic_coefficients
+  // Updates ObjectiveProto.quadratic_coefficients
   //
   // Requirements in addition to those on SparseDoubleMatrixProto messages:
   //  * Each element of quadratic_coefficients.row_ids and each element of
@@ -87,6 +87,33 @@ message ObjectiveUpdatesProto {
   //    from the quadratic objective. This value should only be used for
   //    existing quadratic terms appearing in the objective.
   SparseDoubleMatrixProto quadratic_coefficients = 4;
+
+  // Not set indicates no change, otherwise the new priority. If set, the value
+  // must be nonnegative. Furthermore, each objective priority must be distinct
+  // at solve time; this condition is not validated at the proto level, so
+  // models may temporarily have objectives with the same priority.
+  optional int64 priority_update = 5;
+}
+
+// Updates the auxiliary objectives of a Model, both for existing and new
+// variables. Auxiliary objectives can be deleted, added, or modified in place.
+message AuxiliaryObjectivesUpdatesProto {
+  // Removes auxiliary objectives from the model.
+  //
+  // Each value must be in [0, max(int64)). Values must be in strictly
+  // increasing order. Applies only to existing auxiliary objective IDs that
+  // have not yet been deleted.
+  repeated int64 deleted_objective_ids = 1;
+
+  // Add new auxiliary objectives to the model. All keys must be in
+  // [0, max(int64)), and must be greater than any ids used in the initial model
+  //  and previous updates. All nonempty names should be distinct from existing
+  // names for the primary and other auxiliary objectives.
+  map<int64, ObjectiveProto> new_objectives = 2;
+
+  // Updates existing auxiliary objectives in the model. All key IDs must be
+  // existing in the model and not included in `deleted_objective_ids`.
+  map<int64, ObjectiveUpdatesProto> objective_updates = 3;
 }
 
 // Updates to existing linear constraints in a ModelProto.
@@ -194,8 +221,11 @@ message ModelUpdateProto {
   // updates. All nonempty names should be distinct from existing names.
   LinearConstraintsProto new_linear_constraints = 6;
 
-  // Updates the objective, both for existing and new variables.
+  // Updates the primary objective, both for existing and new variables.
   ObjectiveUpdatesProto objective_updates = 7;
+
+  // Updates the auxiliary objectives, both for existing and new variables.
+  AuxiliaryObjectivesUpdatesProto auxiliary_objectives_updates = 13;
 
   // Updates the linear constraint matrix, both for existing and new
   // variables/linear constraints.

@@ -17,11 +17,10 @@
 #include "absl/status/status.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model_parameters.pb.h"
+#include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
 namespace math_opt {
-
-class SparseVectorFilterProto;
 
 absl::Status ValidateSparseVectorFilter(const SparseVectorFilterProto& v,
                                         const IdNameBiMap& valid_ids);

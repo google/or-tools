@@ -69,6 +69,17 @@ message ObjectiveProto {
   //  * Elements of quadratic_coefficients.coefficients can be zero, but this
   //    just wastes space.
   SparseDoubleMatrixProto quadratic_coefficients = 4;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // ModelProto.objectives and AuxiliaryObjectivesUpdatesProto.new_objectives.
+  string name = 5;
+
+  // For multi-objective problems, the priority of this objective relative to
+  // the others (lower is more important). This value must be nonnegative.
+  // Furthermore, each objective priority in the model must be distinct at solve
+  // time. This condition is not validated at the proto level, so models may
+  // temporarily have objectives with the same priority.
+  int64 priority = 6;
 }
 
 // As used below, we define "#linear constraints" =
@@ -198,7 +209,8 @@ message IndicatorConstraintProto {
 //
 // MathOpt supports:
 //   - Continuous and integer decision variables with optional finite bounds.
-//   - Linear and quadratic objectives, either minimized or maximized.
+//   - Linear and quadratic objectives (single or multiple objectives), either
+//   minimized or maximized.
 //   - A number of constraints types, including:
 //     * Linear constraints
 //     * Quadratic constraints
@@ -211,7 +223,16 @@ message IndicatorConstraintProto {
 message ModelProto {
   string name = 1;
   VariablesProto variables = 2;
+
+  // The primary objective in the model.
   ObjectiveProto objective = 3;
+
+  // Auxiliary objectives for use in multi-objective models.
+  //
+  // Map key IDs must be in [0, max(int64)). Each priority, and each nonempty
+  // name, must be unique and also distinct from the primary `objective`.
+  map<int64, ObjectiveProto> auxiliary_objectives = 10;
+
   LinearConstraintsProto linear_constraints = 4;
 
   // The variable coefficients for the linear constraints.

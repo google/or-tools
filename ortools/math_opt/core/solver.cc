@@ -31,6 +31,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/concurrent_calls_guard.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
 #include "ortools/math_opt/core/solver_debug.h"
@@ -60,68 +61,6 @@ absl::Status ToInternalError(const absl::Status original) {
 
   return absl::InternalError(original.message());
 }
-
-// RAII class that is used to return an error when concurrent calls to some
-// functions are made.
-//
-// Usage:
-//
-//   // Calling f() and/or g() concurrently will return an error.
-//   class A {
-//    public:
-//     absl::StatusOr<...> f() {
-//       ASSIGN_OR_RETURN(const auto guard,
-//                        ConcurrentCallsGuard::TryAcquire(mutex_));
-//       ...
-//     }
-//
-//     absl::StatusOr<...> g() {
-//       ASSIGN_OR_RETURN(const auto guard,
-//                        ConcurrentCallsGuard::TryAcquire(mutex_));
-//       ...
-//     }
-
-//    private:
-//     absl::Mutex mutex_;
-//   };
-//
-class ConcurrentCallsGuard {
- public:
-  // Returns an errors status when concurrent calls are made, or a guard that
-  // must only be kept on stack during the execution of the call.
-  static absl::StatusOr<ConcurrentCallsGuard> TryAcquire(absl::Mutex& mutex)
-      ABSL_NO_THREAD_SAFETY_ANALYSIS {
-    // ABSL_NO_THREAD_SAFETY_ANALYSIS is needed since the analyser is confused
-    // by TryLock. See b/34113867, b/16712284.
-
-    if (!mutex.TryLock()) {
-      return absl::InvalidArgumentError("concurrent calls are forbidden");
-    }
-    return ConcurrentCallsGuard(mutex);
-  }
-
-  ConcurrentCallsGuard(const ConcurrentCallsGuard&) = delete;
-  ConcurrentCallsGuard& operator=(const ConcurrentCallsGuard&) = delete;
-  ConcurrentCallsGuard& operator=(ConcurrentCallsGuard&&) = delete;
-
-  ConcurrentCallsGuard(ConcurrentCallsGuard&& other)
-      : mutex_(std::exchange(other.mutex_, nullptr)) {}
-
-  // Release the guard.
-  ~ConcurrentCallsGuard() {
-    if (mutex_ != nullptr) {
-      mutex_->Unlock();
-    }
-  }
-
- private:
-  explicit ConcurrentCallsGuard(absl::Mutex& mutex) : mutex_(&mutex) {
-    mutex_->AssertHeld();
-  }
-
-  // Reset to nullptr when the class is moved by the move constructor.
-  absl::Mutex* mutex_;
-};
 
 // Returns the Status returned by Solve() & Update() when called after a
 // previous call to one of them failed.
@@ -165,7 +104,8 @@ absl::StatusOr<std::unique_ptr<Solver>> Solver::New(
 }
 
 absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
-  ASSIGN_OR_RETURN(const auto guard, ConcurrentCallsGuard::TryAcquire(mutex_));
+  ASSIGN_OR_RETURN(const auto guard,
+                   ConcurrentCallsGuard::TryAcquire(concurrent_calls_tracker_));
 
   if (fatal_failure_occurred_) {
     return PreviousFatalFailureOccurred();
@@ -219,7 +159,8 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
 }
 
 absl::StatusOr<bool> Solver::Update(const ModelUpdateProto& model_update) {
-  ASSIGN_OR_RETURN(const auto guard, ConcurrentCallsGuard::TryAcquire(mutex_));
+  ASSIGN_OR_RETURN(const auto guard,
+                   ConcurrentCallsGuard::TryAcquire(concurrent_calls_tracker_));
 
   if (fatal_failure_occurred_) {
     return PreviousFatalFailureOccurred();

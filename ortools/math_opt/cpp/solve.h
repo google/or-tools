@@ -25,8 +25,6 @@
 #define OR_TOOLS_MATH_OPT_CPP_SOLVE_H_
 
 #include <memory>
-#include <optional>
-#include <utility>
 
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/core/solver.h"
@@ -35,6 +33,8 @@
 #include "ortools/math_opt/cpp/solve_arguments.h"        // IWYU pragma: export
 #include "ortools/math_opt/cpp/solve_result.h"           // IWYU pragma: export
 #include "ortools/math_opt/cpp/solver_init_arguments.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/update_result.h"          // IWYU pragma: export
+#include "ortools/math_opt/cpp/update_tracker.h"         // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"              // IWYU pragma: export
 #include "ortools/math_opt/storage/model_storage.h"
 
@@ -43,9 +43,10 @@ namespace math_opt {
 
 // Solves the input model.
 //
-// A Status error will be returned if there is an unexpected failure in an
-// underlying solver or for some internal math_opt errors. Otherwise, check
-// SolveResult::termination.reason to see if an optimal solution was found.
+// A Status error will be returned if the inputs are invalid or there is an
+// unexpected failure in an underlying solver or for some internal math_opt
+// errors. Otherwise, check SolveResult::termination.reason to see if an optimal
+// solution was found.
 //
 // Memory model: the returned SolveResult owns its own memory (for solutions,
 // solve stats, etc.), EXPECT for a pointer back to the model. As a result:
@@ -53,10 +54,6 @@ namespace math_opt {
 //  * Avoid unnecessarily copying SolveResult,
 //  * The result is generally accessible after mutating the model, but some care
 //    is needed if variables or linear constraints are added or deleted.
-//
-// Asserts (using CHECK) that the inputs solve_args.model_parameters and
-// solve_args.callback_registration only contain variables and constraints from
-// the input model.
 //
 // Thread-safety: this method is safe to call concurrently on the same Model.
 //
@@ -124,20 +121,6 @@ absl::StatusOr<SolveResult> Solve(const Model& model, SolverType solver_type,
 // SolverType::kXxx documentation for details.
 class IncrementalSolver {
  public:
-  struct UpdateResult {
-    UpdateResult(const bool did_update, std::optional<ModelUpdateProto> update)
-        : did_update(did_update), update(std::move(update)) {}
-
-    // True if the solver has been successfully updated or if no update was
-    // necessary (in which case `update` will be nullopt). False if the solver
-    // had to be recreated.
-    bool did_update;
-
-    // The update that was attempted on the solver. Can be nullopt when no
-    // update was needed (the model was not changed).
-    std::optional<ModelUpdateProto> update;
-  };
-
   // Creates a new incremental solve for the given model. It may returns an
   // error if the parameters are invalid (for example if the selected solver is
   // not linked in the binary).
@@ -152,9 +135,10 @@ class IncrementalSolver {
 
   // Updates the underlying solver with latest model changes and runs the solve.
   //
-  // A Status error will be returned if there is an unexpected failure in an
-  // underlying solver or for some internal math_opt errors. Otherwise, check
-  // SolveResult::termination.reason to see if an optimal solution was found.
+  // A Status error will be returned if inputs are invalid or there is an
+  // unexpected failure in an underlying solver or for some internal math_opt
+  // errors. Otherwise, check SolveResult::termination.reason to see if an
+  // optimal solution was found.
   //
   // Memory model: the returned SolveResult owns its own memory (for solutions,
   // solve stats, etc.), EXPECT for a pointer back to the model. As a result:
@@ -162,10 +146,6 @@ class IncrementalSolver {
   //  * Avoid unnecessarily copying SolveResult,
   //  * The result is generally accessible after mutating this, but some care
   //    is needed if variables or linear constraints are added or deleted.
-  //
-  // Asserts (using CHECK) that the inputs arguments.model_parameters and
-  // arguments.callback_registration only contain variables and constraints from
-  // the input model.
   //
   // See callback.h for documentation on arguments.callback and
   // arguments.callback_registration.

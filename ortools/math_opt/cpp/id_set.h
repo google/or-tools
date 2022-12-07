@@ -22,7 +22,7 @@
 #include <utility>
 
 #include "absl/container/flat_hash_set.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
 #include "ortools/math_opt/core/arrow_operator_proxy.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/storage/model_storage.h"

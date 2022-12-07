@@ -40,10 +40,8 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_KEY_TYPES_H_
 #define OR_TOOLS_MATH_OPT_CPP_KEY_TYPES_H_
 
-#include <initializer_list>
-
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
@@ -59,21 +57,25 @@ inline constexpr absl::string_view kKeyHasNullModelStorage =
 inline constexpr absl::string_view kObjectsFromOtherModelStorage =
     "The input objects belongs to another model.";
 
-// CHECKs that the non-null models the same, and returns the unique non-null
-// model storage if it exists, otherwise null.
-inline const ModelStorage* ConsistentModelStorage(
-    std::initializer_list<const ModelStorage*> storages) {
-  const ModelStorage* result = nullptr;
-  for (const ModelStorage* const storage : storages) {
-    if (storage != nullptr) {
-      if (result == nullptr) {
-        result = storage;
-      } else {
-        CHECK_EQ(storage, result) << internal::kObjectsFromOtherModelStorage;
-      }
-    }
+// The Status message to use when an input KeyType is from an unexpected
+// storage().
+inline constexpr absl::string_view kInputFromInvalidModelStorage =
+    "the input does not belong to the same model";
+
+// Returns a failure when the input pointer is not nullptr and points to a
+// different model storage than expected_storage (which must not be nullptr).
+//
+// Failure message is kInputFromInvalidModelStorage.
+inline absl::Status CheckModelStorage(
+    const ModelStorage* const storage,
+    const ModelStorage* const expected_storage) {
+  if (expected_storage == nullptr) {
+    return absl::InternalError("expected_storage is nullptr");
   }
-  return result;
+  if (storage != nullptr && storage != expected_storage) {
+    return absl::InvalidArgumentError(internal::kInputFromInvalidModelStorage);
+  }
+  return absl::OkStatus();
 }
 
 }  // namespace internal

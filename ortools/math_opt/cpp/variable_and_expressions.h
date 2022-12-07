@@ -99,16 +99,17 @@
 #include <limits>
 #include <ostream>
 #include <string>
-#include <type_traits>
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/check.h"
+#include "ortools/base/log.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/id_map.h"     // IWYU pragma: export
 #include "ortools/math_opt/cpp/key_types.h"  // IWYU pragma: export
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/model_storage_types.h"
 
 namespace operations_research {
 namespace math_opt {

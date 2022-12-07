@@ -44,6 +44,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/parameters_validation.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/math_opt/callback.pb.h"
@@ -131,6 +132,16 @@ absl::StatusOr<TerminationProto> BuildTermination(
   }
   LOG(FATAL) << "Unimplemented GLOP termination reason: "
              << glop::GetProblemStatusString(status);
+}
+
+// Returns an InvalidArgumentError if the provided parameters are invalid.
+absl::Status ValidateGlopParameters(const glop::GlopParameters& parameters) {
+  const std::string error = glop::ValidateParameters(parameters);
+  if (!error.empty()) {
+    return util::InvalidArgumentErrorBuilder()
+           << "invalid GlopParameters: " << error;
+  }
+  return absl::OkStatus();
 }
 
 }  // namespace
@@ -269,13 +280,17 @@ void GlopSolver::UpdateLinearConstraintBounds(
 }
 
 absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
-    const SolveParametersProto& solver_parameters,
+    const SolveParametersProto& solve_parameters,
     const bool setting_initial_basis, const bool has_message_callback) {
-  glop::GlopParameters result = solver_parameters.glop();
+  // Validate first the user specific Glop parameters.
+  RETURN_IF_ERROR(ValidateGlopParameters(solve_parameters.glop()))
+      << "invalid SolveParametersProto.glop value";
+
+  glop::GlopParameters result = solve_parameters.glop();
   std::vector<std::string> warnings;
-  if (!result.has_max_time_in_seconds() && solver_parameters.has_time_limit()) {
+  if (!result.has_max_time_in_seconds() && solve_parameters.has_time_limit()) {
     const absl::Duration time_limit =
-        util_time::DecodeGoogleApiProto(solver_parameters.time_limit()).value();
+        util_time::DecodeGoogleApiProto(solve_parameters.time_limit()).value();
     result.set_max_time_in_seconds(absl::ToDoubleSeconds(time_limit));
   }
   if (has_message_callback) {
@@ -290,25 +305,25 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
     // problem.
     result.set_log_to_stdout(false);
   } else if (!result.has_log_search_progress()) {
-    result.set_log_search_progress(solver_parameters.enable_output());
+    result.set_log_search_progress(solve_parameters.enable_output());
   }
-  if (!result.has_num_omp_threads() && solver_parameters.has_threads()) {
-    result.set_num_omp_threads(solver_parameters.threads());
+  if (!result.has_num_omp_threads() && solve_parameters.has_threads()) {
+    result.set_num_omp_threads(solve_parameters.threads());
   }
-  if (!result.has_random_seed() && solver_parameters.has_random_seed()) {
-    const int random_seed = std::max(0, solver_parameters.random_seed());
+  if (!result.has_random_seed() && solve_parameters.has_random_seed()) {
+    const int random_seed = std::max(0, solve_parameters.random_seed());
     result.set_random_seed(random_seed);
   }
   if (!result.has_max_number_of_iterations() &&
-      solver_parameters.iteration_limit()) {
-    result.set_max_number_of_iterations(solver_parameters.iteration_limit());
+      solve_parameters.iteration_limit()) {
+    result.set_max_number_of_iterations(solve_parameters.iteration_limit());
   }
-  if (solver_parameters.has_node_limit()) {
+  if (solve_parameters.has_node_limit()) {
     warnings.emplace_back("GLOP does snot support 'node_limit' parameter");
   }
   if (!result.has_use_dual_simplex() &&
-      solver_parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
-    switch (solver_parameters.lp_algorithm()) {
+      solve_parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
+    switch (solve_parameters.lp_algorithm()) {
       case LP_ALGORITHM_PRIMAL_SIMPLEX:
         result.set_use_dual_simplex(false);
         break;
@@ -322,13 +337,13 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
         break;
       default:
         LOG(FATAL) << "LPAlgorithm: "
-                   << ProtoEnumToString(solver_parameters.lp_algorithm())
+                   << ProtoEnumToString(solve_parameters.lp_algorithm())
                    << " unknown, error setting GLOP parameters";
     }
   }
   if (!result.has_use_scaling() && !result.has_scaling_method() &&
-      solver_parameters.scaling() != EMPHASIS_UNSPECIFIED) {
-    switch (solver_parameters.scaling()) {
+      solve_parameters.scaling() != EMPHASIS_UNSPECIFIED) {
+    switch (solve_parameters.scaling()) {
       case EMPHASIS_OFF:
         result.set_use_scaling(false);
         break;
@@ -341,15 +356,15 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
         break;
       default:
         LOG(FATAL) << "Scaling emphasis: "
-                   << ProtoEnumToString(solver_parameters.scaling())
+                   << ProtoEnumToString(solve_parameters.scaling())
                    << " unknown, error setting GLOP parameters";
     }
   }
   if (setting_initial_basis) {
     result.set_use_preprocessing(false);
   } else if (!result.has_use_preprocessing() &&
-             solver_parameters.presolve() != EMPHASIS_UNSPECIFIED) {
-    switch (solver_parameters.presolve()) {
+             solve_parameters.presolve() != EMPHASIS_UNSPECIFIED) {
+    switch (solve_parameters.presolve()) {
       case EMPHASIS_OFF:
         result.set_use_preprocessing(false);
         break;
@@ -361,36 +376,45 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
         break;
       default:
         LOG(FATAL) << "Presolve emphasis: "
-                   << ProtoEnumToString(solver_parameters.presolve())
+                   << ProtoEnumToString(solve_parameters.presolve())
                    << " unknown, error setting GLOP parameters";
     }
   }
-  if (solver_parameters.cuts() != EMPHASIS_UNSPECIFIED) {
+  if (solve_parameters.cuts() != EMPHASIS_UNSPECIFIED) {
     warnings.push_back(absl::StrCat(
         "GLOP does not support 'cuts' parameters, but cuts was set to: ",
-        ProtoEnumToString(solver_parameters.cuts())));
+        ProtoEnumToString(solve_parameters.cuts())));
   }
-  if (solver_parameters.heuristics() != EMPHASIS_UNSPECIFIED) {
+  if (solve_parameters.heuristics() != EMPHASIS_UNSPECIFIED) {
     warnings.push_back(
         absl::StrCat("GLOP does not support 'heuristics' parameter, but "
                      "heuristics was set to: ",
-                     ProtoEnumToString(solver_parameters.heuristics())));
+                     ProtoEnumToString(solve_parameters.heuristics())));
   }
-  if (solver_parameters.has_cutoff_limit()) {
+  if (solve_parameters.has_cutoff_limit()) {
     warnings.push_back("GLOP does not support 'cutoff_limit' parameter");
   }
-  if (solver_parameters.has_objective_limit()) {
+  if (solve_parameters.has_objective_limit()) {
     warnings.push_back("GLOP does not support 'objective_limit' parameter");
   }
-  if (solver_parameters.has_best_bound_limit()) {
+  if (solve_parameters.has_best_bound_limit()) {
     warnings.push_back("GLOP does not support 'best_bound_limit' parameter");
   }
-  if (solver_parameters.has_solution_limit()) {
+  if (solve_parameters.has_solution_limit()) {
     warnings.push_back("GLOP does not support 'solution_limit' parameter");
   }
   if (!warnings.empty()) {
     return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
   }
+
+  // Validate the result of the merge. If the parameters are not valid, this is
+  // an internal error from MathOpt as user specified Glop parameters have been
+  // validated at the beginning of this function. Thus the invalid values are
+  // values translated from solve_parameters and this code should not produce
+  // invalid parameters.
+  RETURN_IF_ERROR(ValidateGlopParameters(result))
+      << "invalid GlopParameters generated from SolveParametersProto";
+
   return result;
 }
 

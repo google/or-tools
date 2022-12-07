@@ -835,9 +835,8 @@ Matcher<SolveResult> IsConsistentWith(
 // Rarely used
 ////////////////////////////////////////////////////////////////////////////////
 
-Matcher<IncrementalSolver::UpdateResult> DidUpdate() {
-  return ::testing::Field("did_update",
-                          &IncrementalSolver::UpdateResult::did_update,
+Matcher<UpdateResult> DidUpdate() {
+  return ::testing::Field("did_update", &UpdateResult::did_update,
                           ::testing::IsTrue());
 }
 

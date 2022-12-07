@@ -359,6 +359,18 @@ class Gurobi {
   // Deletes all quadratic objective coefficients.
   absl::Status DelQ();
 
+  // Calls GRBsetobjectiven().
+  //
+  // Sets the n-th objective in a multi-objective model.
+  //
+  // Requirement:
+  //  * lind and lval must be of equal length.
+  absl::Status SetNthObjective(int index, int priority, double weight,
+                               double abs_tol, double rel_tol,
+                               const std::string& name, double constant,
+                               absl::Span<const int> lind,
+                               absl::Span<const double> lval);
+
   // Calls GRBaddqconstr().
   //
   // Requirements:

@@ -20,6 +20,7 @@
 #include <utility>
 
 #include "google/protobuf/message.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/solution.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
@@ -45,17 +46,34 @@ ModelSolveParameters ModelSolveParameters::OnlySomePrimalVariables(
   return OnlySomePrimalVariables<std::initializer_list<Variable>>(variables);
 }
 
-const ModelStorage* ModelSolveParameters::storage() const {
-  return internal::ConsistentModelStorage({variable_values_filter.storage(),
-                                           dual_values_filter.storage(),
-                                           reduced_costs_filter.storage()});
+absl::Status ModelSolveParameters::CheckModelStorage(
+    const ModelStorage* const expected_storage) const {
+  for (const SolutionHint& hint : solution_hints) {
+    RETURN_IF_ERROR(internal::CheckModelStorage(
+        /*storage=*/hint.variable_values.storage(),
+        /*expected_storage=*/expected_storage))
+        << "invalid solution_hints";
+  }
+  if (initial_basis.has_value()) {
+    RETURN_IF_ERROR(initial_basis->CheckModelStorage(expected_storage))
+        << "invalid initial_basis";
+  }
+  RETURN_IF_ERROR(
+      internal::CheckModelStorage(/*storage=*/variable_values_filter.storage(),
+                                  /*expected_storage=*/expected_storage))
+      << "invalid variable_values_filter";
+  RETURN_IF_ERROR(
+      internal::CheckModelStorage(/*storage=*/dual_values_filter.storage(),
+                                  /*expected_storage=*/expected_storage))
+      << "invalid dual_values_filter";
+  RETURN_IF_ERROR(
+      internal::CheckModelStorage(/*storage=*/reduced_costs_filter.storage(),
+                                  /*expected_storage=*/expected_storage))
+      << "invalid reduced_costs_filter";
+  return absl::OkStatus();
 }
 
 ModelSolveParametersProto ModelSolveParameters::Proto() const {
-  // We call storage() here for its side effect of asserting that all filters
-  // use variables and linear constraints use the same model.
-  storage();
-
   ModelSolveParametersProto ret;
   *ret.mutable_variable_values_filter() = variable_values_filter.Proto();
   *ret.mutable_dual_values_filter() = dual_values_filter.Proto();
