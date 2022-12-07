@@ -1599,10 +1599,10 @@ class MPSolverInterface {
   // underlying solver (possibly because interrupt != nullptr), in which case
   // the user should fall back to using MPSolver.
   virtual absl::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request,
+      const MPModelRequest& /* request */,
       // `interrupt` is non-const because the internal
       // solver may set it to true itself, in some cases.
-      std::atomic<bool>* interrupt) {
+      std::atomic<bool>* /* interrupt */) {
     return absl::nullopt;
   }
 
@@ -1631,7 +1631,7 @@ class MPSolverInterface {
 
   // Adds an indicator constraint. Returns true if the feature is supported by
   // the underlying solver.
-  virtual bool AddIndicatorConstraint(MPConstraint* const ct) {
+  virtual bool AddIndicatorConstraint(MPConstraint* const /* ct */) {
     LOG(ERROR) << "Solver doesn't support indicator constraints.";
     return false;
   }
@@ -1657,7 +1657,7 @@ class MPSolverInterface {
   // Clears the objective from all its terms.
   virtual void ClearObjective() = 0;
 
-  virtual void BranchingPriorityChangedForVariable(int var_index) {}
+  virtual void BranchingPriorityChangedForVariable(int /* var_index */) {}
   // ------ Query statistics on the solution and the solve ------
   // Returns the number of simplex iterations. The problem must be discrete,
   // otherwise it crashes, or returns kUnknownNumberOfIterations in NDEBUG mode.
@@ -1740,8 +1740,8 @@ class MPSolverInterface {
 
   // See MPSolver::SetStartingLpBasis().
   virtual void SetStartingLpBasis(
-      const std::vector<MPSolver::BasisStatus>& variable_statuses,
-      const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
+      const std::vector<MPSolver::BasisStatus>& /* variable_statuses */,
+      const std::vector<MPSolver::BasisStatus>& /* constraint_statuses */) {
     LOG(FATAL) << "Not supported by this solver.";
   }
 
@@ -1750,16 +1750,16 @@ class MPSolverInterface {
   // Sometimes, converting to MPSolver::BasisStatus leads to a loss of information
   // For that reason, we give the possibiity to recover the "raw" basis
   virtual void SetStartingLpBasisInt(
-      const std::vector<int>& variable_statuses,
-      const std::vector<int>& constraint_statuses) {
+      const std::vector<int>& /* variable_statuses */,
+      const std::vector<int>& /* constraint_statuses */) {
     LOG(FATAL) << "Not supported by this solver.";
   }
 
   // See MPSolver::SetStartingLpBasis().
   // Do not convert to MPSolver::BasisStatus, use integers
   virtual void GetFinalLpBasisInt(
-      std::vector<int>& variable_statuses,
-      std::vector<int>& constraint_statuses) {
+      std::vector<int>& /* variable_statuses */,
+      std::vector<int>& /* constraint_statuses */) {
     LOG(FATAL) << "Not supported by this solver.";
   }
 
@@ -1769,7 +1769,7 @@ class MPSolverInterface {
   virtual bool NextSolution() { return false; }
 
   // See MPSolver::SetCallback() for details.
-  virtual void SetCallback(MPCallback* mp_callback) {
+  virtual void SetCallback(MPCallback* /* mp_callback */) {
     LOG(FATAL) << "Callbacks not supported for this solver.";
   }
 

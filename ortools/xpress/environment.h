@@ -22,7 +22,6 @@
 
 extern "C" {
 typedef struct XPRSobject_s* XPRSobject;
-typedef void (*XPRSfunctionptr)(void);
 typedef struct xo_prob_struct* XPRSprob;
 typedef struct XPRSmipsolpool_s* XPRSmipsolpool;
 typedef struct xo_NameList* XPRSnamelist;
@@ -33,7 +32,6 @@ typedef struct PoolCut* XPRScut;
 
 namespace operations_research {
 
-#define XPRS_MAXBANNERLENGTH 1000
 void printXpressBanner(bool error);
 
 bool initXpressEnv(bool verbose = true, int xpress_oem_license_key = 0);
