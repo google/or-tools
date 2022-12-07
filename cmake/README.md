@@ -206,13 +206,18 @@ cmake -S. -Bbuild -LH
 | `BUILD_Clp`  | OFF\* | Static build the Clp library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Cgl`  | OFF\* | Static build the Cgl library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| | | |
 | `USE_GLPK`   | OFF\* | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_GLPK` | OFF\* | Static build the GLPK libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
+| | | |
 | `USE_HIGHS`  | ON\* | Enable HIGHS support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_HIGHS` | OFF\* | Static build the HiGHS libraries<br>**Forced** to ON if `USE_HIGHS=ON` **and** `BUILD_DEPS=ON` |
+| | | |
 | `USE_SCIP`   | ON\*  | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
 | `BUILD_SCIP` | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
+| | | |
 | `USE_CPLEX`  | OFF | Enable CPLEX support |
+| | | |
 | `USE_XPRESS` | OFF | Enable XPRESS support |
 | | | |
 | `BUILD_SAMPLES`  | ON\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
@@ -236,8 +241,8 @@ cmake -S. -Bbuild -LH
 | `BUILD_FAT_JAR`  | OFF | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |
 | | | |
 | `BUILD_pybind11` | `BUILD_DEPS` | Static build the pybind11 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON` |
-| `BUILD_VENV` | `BUILD_TESTING` | Create python venv in BINARY_DIR/python/venv<br>**Forced** to ON if `BUILD_TESTING=ON`<br>Only available if `BUILD_PYTHON=ON` |
-| `VENV_USE_SYSTEM_SITE_PACKAGES` | OFF | Python venv can use system site package (e.g. py3-numpy on Alpine)<br>Only available if `BUILD_PYTHON=ON` |
+| `BUILD_VENV` | `BUILD_TESTING` | Create python venv in `BINARY_DIR/python/venv`<br>**Forced** to ON if `BUILD_TESTING=ON`<br>Only available if `BUILD_PYTHON=ON` |
+| `VENV_USE_SYSTEM_SITE_PACKAGES` | OFF | Python venv can use system site package (e.g. `py3-numpy` on Alpine)<br>Only available if `BUILD_PYTHON=ON` |
 | `FETCH_PYTHON_DEPS`  | `BUILD_DEPS` | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON` |
 | | | |
 
