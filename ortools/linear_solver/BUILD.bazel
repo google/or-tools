@@ -16,11 +16,6 @@ config_setting(
 )
 
 config_setting(
-    name = "with_xpress",
-    values = {"define": "USE_XPRESS="},
-)
-
-config_setting(
     name = "with_cbc",
     values = {"define": "USE_CBC="},
 )
@@ -67,6 +62,7 @@ cc_library(
         "scip_callback.cc",
         "scip_interface.cc",
         "scip_proto_solver.cc",
+        "xpress_interface.cc"
     ] + select({
         ":with_cbc": ["cbc_interface.cc"],
         "//conditions:default": [],
@@ -75,9 +71,6 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":with_cplex": ["cplex_interface.cc"],
-        "//conditions:default": [],
-    }) + select({
-        ":with_xpress": ["xpress_interface.cc"],
         "//conditions:default": [],
     }) + select({
         ":with_glpk": ["glpk_interface.cc"],
@@ -127,6 +120,7 @@ cc_library(
         "//ortools/sat:lp_utils",
         "//ortools/util:fp_utils",
         "//ortools/util:lazy_mutable_copy",
+        "//ortools/xpress:environment"
     ] + select({
         ":with_glpk": ["@glpk//:glpk"],
         "//conditions:default": [],

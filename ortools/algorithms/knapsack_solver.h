@@ -171,14 +171,12 @@ class KnapsackSolver {
     KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = 6,
 #endif  // USE_SCIP
 
-#if defined(USE_XPRESS)
     /** XPRESS based solver
      *
      * This solver can deal with both large number of items and several
      * dimensions. This solver is based on Integer Programming solver XPRESS.
      */
     KNAPSACK_MULTIDIMENSION_XPRESS_MIP_SOLVER = 7,
-#endif
 
 #if defined(USE_CPLEX)
     /** CPLEX based solver

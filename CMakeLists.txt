@@ -190,9 +190,6 @@ endif()
 option(USE_CPLEX "Use the CPLEX solver" OFF)
 message(STATUS "CPLEX support: ${USE_CPLEX}")
 
-option(USE_XPRESS "Use the XPRESS solver" OFF)
-message(STATUS "XPRESS support: ${USE_XPRESS}")
-
 option(USE_SIRIUS "Build and use SIRIUS interface" OFF)
 message(STATUS "SIRIUS support: ${USE_SIRIUS}")
 

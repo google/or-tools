@@ -378,10 +378,8 @@ extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
-#if defined(USE_XPRESS)
 extern MPSolverInterface* BuildXpressInterface(bool mip,
                                                MPSolver* const solver);
-#endif
 #if defined(USE_SIRIUS)
 extern MPSolverInterface* BuildSiriusInterface(bool mip, MPSolver* const solver);
 #endif
@@ -424,12 +422,10 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
     case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
       return BuildCplexInterface(true, solver);
 #endif
-#if defined(USE_XPRESS)
     case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
       return BuildXpressInterface(true, solver);
     case MPSolver::XPRESS_LINEAR_PROGRAMMING:
       return BuildXpressInterface(false, solver);
-#endif
 #if defined(USE_SIRIUS)
 	case MPSolver::SIRIUS_LINEAR_PROGRAMMING:
 		return BuildSiriusInterface(false, solver);
@@ -471,6 +467,7 @@ MPSolver::MPSolver(const std::string& name,
 MPSolver::~MPSolver() { Clear(); }
 
 extern bool GurobiIsCorrectlyInstalled();
+extern bool XpressIsCorrectlyInstalled();
 
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
@@ -496,12 +493,10 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #ifdef USE_CBC
   if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
 #endif
-#ifdef USE_XPRESS
   if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
       problem_type == XPRESS_LINEAR_PROGRAMMING) {
-    return true;
+    return XpressIsCorrectlyInstalled();
   }
-#endif
 #ifdef USE_SIRIUS
   if (problem_type == SIRIUS_MIXED_INTEGER_PROGRAMMING) return true;
   if (problem_type == SIRIUS_LINEAR_PROGRAMMING) return true;

@@ -621,13 +621,10 @@ int main(int argc, char** argv) {
     found = true;
   }
 #endif  // USE_GLOP
-#if defined(USE_XPRESS)
   if (absl::GetFlag(FLAGS_colgen_solver) == "xpress") {
     solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
-    // solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
     found = true;
   }
-#endif
 #if defined(USE_CPLEX)
   if (absl::GetFlag(FLAGS_colgen_solver) == "cplex") {
     solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;

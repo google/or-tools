@@ -13,8 +13,6 @@
 
 // Initial version of this code was provided by RTE
 
-#if defined(USE_XPRESS)
-
 #include <algorithm>
 #include <clocale>
 #include <limits>
@@ -26,15 +24,21 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
-
-extern "C" {
-#include "xprs.h"
-}
+#include "ortools/xpress/environment.h"
 
 #define XPRS_INTEGER 'I'
 #define XPRS_CONTINUOUS 'C'
-#define STRINGIFY2(X) #X
-#define STRINGIFY(X) STRINGIFY2(X)
+
+// The argument to this macro is the invocation of a XPRS function that
+// returns a status. If the function returns non-zero the macro aborts
+// the program with an appropriate error message.
+#define CHECK_STATUS(s)    \
+  do {                     \
+    int const status_ = s; \
+    CHECK_EQ(0, status_);  \
+  } while (0)
+
+namespace operations_research {
 
 void printError(const XPRSprob& mLp, int line) {
   char errmsg[512];
@@ -99,17 +103,6 @@ enum XPRS_BASIS_STATUS {
 #if !defined(CPX_NAN)
 #define XPRS_NAN std::numeric_limits<double>::quiet_NaN()
 #endif
-
-// The argument to this macro is the invocation of a XPRS function that
-// returns a status. If the function returns non-zero the macro aborts
-// the program with an appropriate error message.
-#define CHECK_STATUS(s)    \
-  do {                     \
-    int const status_ = s; \
-    CHECK_EQ(0, status_);  \
-  } while (0)
-
-namespace operations_research {
 
 using std::unique_ptr;
 
@@ -288,103 +281,6 @@ class XpressInterface : public MPSolverInterface {
 static MPSolver::BasisStatus xformBasisStatus(int xpress_basis_status);
 // Transform MPSolver basis status to XPRESS status
 static int convertToXpressBasisStatus(MPSolver::BasisStatus mpsolver_basis_status);
-
-/** init XPRESS environment */
-int init_xpress_env(int xpress_oem_license_key = 0) {
-  int code;
-
-  const char* xpress_from_env = getenv("XPRESS");
-  std::string xpresspath;
-
-  if (xpress_from_env == nullptr) {
-#if defined(XPRESS_PATH)
-    std::string path(STRINGIFY(XPRESS_PATH));
-    LOG(WARNING)
-        << "Environment variable XPRESS undefined. Trying compile path "
-        << "'" << path << "'";
-#if defined(_MSC_VER)
-    // need to remove the enclosing '\"' from the string itself.
-    path.erase(std::remove(path.begin(), path.end(), '\"'), path.end());
-    xpresspath = path + "\\bin";
-#else   // _MSC_VER
-    xpresspath = path + "/bin";
-#endif  // _MSC_VER
-#else
-    LOG(WARNING)
-        << "XpressInterface Error : Environment variable XPRESS undefined.\n";
-    return -1;
-#endif
-  } else {
-    xpresspath = xpress_from_env;
-  }
-
-  /** if not an OEM key */
-  if (xpress_oem_license_key == 0) {
-    LOG(WARNING) << "XpressInterface : Initialising xpress-MP with parameter "
-                 << xpresspath << std::endl;
-
-    code = XPRSinit(xpresspath.c_str());
-
-    if (!code) {
-      /** XPRSbanner informs about Xpress version, options and error messages */
-      char banner[1000];
-      XPRSgetbanner(banner);
-
-      LOG(WARNING) << "XpressInterface : Xpress banner :\n"
-                   << banner << std::endl;
-      return 0;
-    } else {
-      char errmsg[256];
-      XPRSgetlicerrmsg(errmsg, 256);
-
-      LOG(ERROR) << "XpressInterface : License error : " << errmsg << std::endl;
-      LOG(ERROR) << "XpressInterface : XPRSinit returned code : " << code << "\n";
-
-      char banner[1000];
-      XPRSgetbanner(banner);
-
-      LOG(ERROR) << "XpressInterface : Xpress banner :\n" << banner << "\n";
-      return -1;
-    }
-  } else {
-    /** if OEM key */
-    LOG(WARNING) << "XpressInterface : Initialising xpress-MP with OEM key "
-                 << xpress_oem_license_key << "\n";
-
-    int nvalue = 0;
-    int ierr;
-    char slicmsg[256] = "";
-    char errmsg[256];
-
-    XPRSlicense(&nvalue, slicmsg);
-    VLOG(0) << "XpressInterface : First message from XPRSLicense : " << slicmsg
-            << "\n";
-
-    nvalue = xpress_oem_license_key - ((nvalue * nvalue) / 19);
-    ierr = XPRSlicense(&nvalue, slicmsg);
-
-    VLOG(0) << "XpressInterface : Second message from XPRSLicense : " << slicmsg
-            << "\n";
-    if (ierr == 16) {
-      VLOG(0) << "XpressInterface : Optimizer development software detected\n";
-    } else if (ierr != 0) {
-      /** get the license error message */
-      XPRSgetlicerrmsg(errmsg, 256);
-
-      LOG(ERROR) << "XpressInterface : " << errmsg << "\n";
-      return -1;
-    }
-
-    code = XPRSinit(NULL);
-
-    if (!code) {
-      return 0;
-    } else {
-      LOG(ERROR) << "XPRSinit returned code : " << code << "\n";
-      return -1;
-    }
-  }
-}
 
 static std::map<std::string, int>& getMapStringControls()
 {
@@ -745,9 +641,9 @@ XpressInterface::XpressInterface(MPSolver* const solver, bool mip)
       mapIntegerControls_(getMapIntControls()),
       mapInteger64Controls_(getMapInt64Controls())
 {
-  int status = init_xpress_env();
-  CHECK_STATUS(status);
-  status = XPRScreateprob(&mLp);
+  bool correctlyLoaded = initXpressEnv();
+  CHECK(correctlyLoaded);
+  int status = XPRScreateprob(&mLp);
   CHECK_STATUS(status);
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
   int nReturn=XPRSsetcbmessage(mLp, optimizermsg, (void*) this);
@@ -1982,8 +1878,6 @@ bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& par
 	return true;
 }
 
-}  // namespace operations_research
-
 /**********************************************************************************\
 * Name:         optimizermsg                                                           *
 * Purpose:      Display Optimizer error messages and warnings.                         *
@@ -2014,5 +1908,4 @@ void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char *sMsg, int nLen,
 	}
 }
 
-
-#endif  // #if defined(USE_XPRESS)
+}  // namespace operations_research

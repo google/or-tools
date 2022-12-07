@@ -35,14 +35,6 @@ endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
 endif()
-if(USE_XPRESS)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_XPRESS")
-  if(MSVC)
-    list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "XPRESS_PATH=\"${XPRESS_ROOT}\"")
-  else()
-    list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "XPRESS_PATH=${XPRESS_ROOT}")
-  endif()
-endif()
 if(USE_SIRIUS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SIRIUS")
 endif()
@@ -132,7 +124,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   $<$<BOOL:${USE_SCIP}>:libscip>
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
-  $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   $<$<BOOL:${USE_SIRIUS}>:sirius_solver>
   Threads::Threads)
 if(WIN32)
@@ -230,7 +221,8 @@ foreach(SUBPROJECT IN ITEMS
  port
  sat
  scheduling
- util)
+ util
+ xpress)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
   target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)
@@ -266,11 +258,6 @@ install(DIRECTORY ${PROJECT_BINARY_DIR}/ortools
   FILES_MATCHING
   PATTERN "*.pb.h"
   PATTERN CMakeFiles EXCLUDE)
-
-if(USE_XPRESS)
-  install(FILES cmake/FindXPRESS.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/XPRESS)
-endif()
 
 include(CMakePackageConfigHelpers)
 string (TOUPPER "${PROJECT_NAME}" PACKAGE_PREFIX)

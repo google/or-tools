@@ -49,18 +49,6 @@ if(@USE_SCIP@)
   endif()
 endif()
 
-if(@USE_XPRESS@)
-  if(NOT XPRESS_FOUND AND NOT TARGET XPRESS::XPRESS)
-    set(CMAKE_MODULE_PATH_OLD__ ${CMAKE_MODULE_PATH})
-    unset(CMAKE_MODULE_PATH)
-    list(APPEND CMAKE_MODULE_PATH
-      ${PACKAGE_PREFIX_DIR}/lib/cmake/XPRESS
-      ${PACKAGE_PREFIX_DIR}/lib64/cmake/XPRESS)
-    find_dependency(XPRESS REQUIRED)
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH_OLD__})
-  endif()
-endif()
-
 if(@USE_SIRIUS@)
   if(POLICY CMP0074)
 	  cmake_policy(SET CMP0074 NEW)

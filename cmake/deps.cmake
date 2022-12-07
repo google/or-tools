@@ -99,10 +99,6 @@ if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
 endif()
 
-if(USE_XPRESS)
-  find_package(XPRESS REQUIRED)
-endif()
-
 if (USE_SIRIUS)
   if(POLICY CMP0074)
 	  cmake_policy(SET CMP0074 NEW)

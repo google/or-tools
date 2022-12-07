@@ -91,12 +91,11 @@ below).
   by using `-DUSE_COINOR=OFF` (`ON` by default).
 
 OR-Tools can also optionally (disabled by default) be compiled with support for
-the following third-party proprietary solvers:
+the following third-party proprietary solver:
 
-* CPLEX (`USE_CPLEX`),
-* XPRESS (`USE_XPRESS`)
+* CPLEX (`USE_CPLEX`)
 
-**warning: Since these solvers require license and are proprietary, we can't
+**warning: Since this solver requires license and is proprietary, we can't
 test it on public CI and support can be broken.**
 
 ### Enabling CPLEX Support
@@ -110,14 +109,6 @@ option at configure time.
 For ease of migration from legacy `make third_party` builds, CMake will also
 read the CPLEX installation path from the `UNIX_CPLEX_DIR` environment variable,
 if defined.
-
-### Enabling XPRESS Support
-
-To enable XPRESS support, configure with `-DUSE_XPRESS=ON` and
-`-DXPRESS_ROOT=/absolute/path/to/XPRESS/root/dir`, replacing
-`/absolute/path/to/XPRESS/root/dir` with the path to your XPRESS installation.
-`XPRESS_ROOT` can also be defined as an environment variable rather than an
-option at configure time.
 
 <a name="options"></a>
 
@@ -170,7 +161,6 @@ cmake -S. -Bbuild -LH
 | `BUILD_Cgl`  | OFF\* | Static build the Cgl library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
 | `USE_CPLEX`  | OFF | Enable CPLEX support |
-| `USE_XPRESS`  | OFF | Enable XPRESS support |
 | | | |
 | `BUILD_SAMPLES`  | OFF\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
 | `BUILD_CXX_SAMPLES`  | ON\* | Build all C++ samples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
