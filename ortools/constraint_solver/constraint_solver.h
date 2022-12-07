@@ -1048,6 +1048,12 @@ class Solver {
   /// The fail_stamp() is incremented after each backtrack.
   uint64_t fail_stamp() const;
 
+  /// Sets the current context of the search.
+  void set_context(const std::string& context) { context_ = context; }
+
+  /// Gets the current context of the search.
+  const std::string& context() const { return context_; }
+
   /// The direction of optimization, getter and setter.
   OptimizationDirection optimization_direction() const {
     return optimization_direction_;
@@ -3185,6 +3191,7 @@ class Solver {
   int64_t neighbors_;
   int64_t filtered_neighbors_;
   int64_t accepted_neighbors_;
+  std::string context_;
   OptimizationDirection optimization_direction_;
   std::unique_ptr<ClockTimer> timer_;
   std::vector<Search*> searches_;

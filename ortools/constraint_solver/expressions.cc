@@ -2837,7 +2837,7 @@ int64_t PlusCstDomainIntVar::Min() const {
 }
 
 void PlusCstDomainIntVar::SetMin(int64_t m) {
-  domain_int_var()->DomainIntVar::SetMin(m - cst_);
+  domain_int_var()->DomainIntVar::SetMin(CapSub(m, cst_));
 }
 
 int64_t PlusCstDomainIntVar::Max() const {
@@ -2845,7 +2845,7 @@ int64_t PlusCstDomainIntVar::Max() const {
 }
 
 void PlusCstDomainIntVar::SetMax(int64_t m) {
-  domain_int_var()->DomainIntVar::SetMax(m - cst_);
+  domain_int_var()->DomainIntVar::SetMax(CapSub(m, cst_));
 }
 
 void PlusCstDomainIntVar::SetRange(int64_t l, int64_t u) {
@@ -3587,6 +3587,8 @@ class PlusIntExpr : public BaseIntExpr {
 
   void SetMin(int64_t m) override {
     if (m > left_->Min() + right_->Min()) {
+      // Catching potential overflow.
+      if (m > right_->Max() + left_->Max()) solver()->Fail();
       left_->SetMin(m - right_->Max());
       right_->SetMin(m - left_->Max());
     }
@@ -3598,10 +3600,14 @@ class PlusIntExpr : public BaseIntExpr {
     const int64_t left_max = left_->Max();
     const int64_t right_max = right_->Max();
     if (l > left_min + right_min) {
+      // Catching potential overflow.
+      if (l > right_max + left_max) solver()->Fail();
       left_->SetMin(l - right_max);
       right_->SetMin(l - left_max);
     }
     if (u < left_max + right_max) {
+      // Catching potential overflow.
+      if (u < right_min + left_min) solver()->Fail();
       left_->SetMax(u - right_min);
       right_->SetMax(u - left_min);
     }
@@ -3611,6 +3617,8 @@ class PlusIntExpr : public BaseIntExpr {
 
   void SetMax(int64_t m) override {
     if (m < left_->Max() + right_->Max()) {
+      // Catching potential overflow.
+      if (m < right_->Min() + left_->Min()) solver()->Fail();
       left_->SetMax(m - right_->Min());
       right_->SetMax(m - left_->Min());
     }
@@ -4235,12 +4243,13 @@ void SetGenGenMinExpr(IntExpr* const left, IntExpr* const right, int64_t m) {
   if (m > std::max(CapProd(lmin, rmin), CapProd(lmax, rmax))) {
     left->solver()->Fail();
   }
-  if (m > lmin * rmin) {  // Must be positive section * positive section.
+  if (m >
+      CapProd(lmin, rmin)) {  // Must be positive section * positive section.
     left->SetMin(PosIntDivUp(m, rmax));
     right->SetMin(PosIntDivUp(m, lmax));
   } else if (m > CapProd(lmax, rmax)) {  // Negative section * negative section.
-    left->SetMax(-PosIntDivUp(m, -rmin));
-    right->SetMax(-PosIntDivUp(m, -lmin));
+    left->SetMax(CapOpp(PosIntDivUp(m, CapOpp(rmin))));
+    right->SetMax(CapOpp(PosIntDivUp(m, CapOpp(lmin))));
   }
 }
 
@@ -6805,7 +6814,7 @@ IntExpr* Solver::MakeProd(IntExpr* const expr, int64_t value) {
       coefficient = value;
     }
     if (m_expr->Bound()) {
-      return MakeIntConst(coefficient * m_expr->Min());
+      return MakeIntConst(CapProd(coefficient, m_expr->Min()));
     } else if (coefficient == 1) {
       return m_expr;
     } else if (coefficient == -1) {

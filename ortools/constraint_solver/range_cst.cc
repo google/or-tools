@@ -150,7 +150,9 @@ void RangeLess::Post() {
 }
 
 void RangeLess::InitialPropagate() {
+  if (right_->Max() == kint64min) solver()->Fail();
   left_->SetMax(right_->Max() - 1);
+  if (left_->Min() == kint64max) solver()->Fail();
   right_->SetMin(left_->Min() + 1);
   if (left_->Max() < right_->Min()) {
     demon_->inhibit(solver());

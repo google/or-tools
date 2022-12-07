@@ -339,6 +339,9 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
     return ct.value();
   }
   void SetCoefficient(int ct, int index, double coefficient) override {
+    // Necessary to keep the model clean
+    // (cf. glop::LinearProgram::NotifyThatColumnsAreClean).
+    if (coefficient == 0.0) return;
     linear_program_.SetCoefficient(glop::RowIndex(ct), glop::ColIndex(index),
                                    coefficient);
   }

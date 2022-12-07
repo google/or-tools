@@ -2315,7 +2315,8 @@ void Solver::EndSearch() {
       ExportProfilingOverview(file_name);
     }
     if (parameters_.print_local_search_profile()) {
-      LOG(INFO) << LocalSearchProfile();
+      const std::string profile = LocalSearchProfile();
+      if (!profile.empty()) LOG(INFO) << profile;
     }
   } else {  // We clean the nested Search.
     delete search;
@@ -3287,6 +3288,7 @@ ProfiledDecisionBuilder::ProfiledDecisionBuilder(DecisionBuilder* db)
 
 Decision* ProfiledDecisionBuilder::Next(Solver* const solver) {
   timer_.Start();
+  solver->set_context(name());
   // In case db_->Next() fails, gathering the running time on backtrack.
   solver->AddBacktrackAction(
       [this](Solver* solver) {
@@ -3294,6 +3296,7 @@ Decision* ProfiledDecisionBuilder::Next(Solver* const solver) {
           timer_.Stop();
           seconds_ += timer_.Get();
         }
+        solver->set_context("");
       },
       true);
   Decision* const decision = db_->Next(solver);

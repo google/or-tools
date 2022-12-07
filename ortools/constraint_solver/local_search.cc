@@ -19,6 +19,7 @@
 #include <map>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <set>
 #include <string>
@@ -3361,77 +3362,46 @@ void IntVarLocalSearchFilter::SynchronizeOnAssignment(
 // - Solver::GE -> total_cost >= objective_min.
 // - Solver::EQ -> the conjunction of LE and GE.
 namespace {
+template <typename Filter>
 class SumObjectiveFilter : public IntVarLocalSearchFilter {
  public:
-  SumObjectiveFilter(const std::vector<IntVar*>& vars,
-                     Solver::LocalSearchFilterBound filter_enum)
+  SumObjectiveFilter(const std::vector<IntVar*>& vars, Filter filter)
       : IntVarLocalSearchFilter(vars),
         primary_vars_size_(vars.size()),
-        synchronized_costs_(new int64_t[vars.size()]),
-        delta_costs_(new int64_t[vars.size()]),
-        filter_enum_(filter_enum),
+        synchronized_costs_(vars.size()),
+        delta_costs_(vars.size()),
+        filter_(std::move(filter)),
         synchronized_sum_(std::numeric_limits<int64_t>::min()),
         delta_sum_(std::numeric_limits<int64_t>::min()),
-        incremental_(false) {
-    for (int i = 0; i < vars.size(); ++i) {
-      synchronized_costs_[i] = 0;
-      delta_costs_[i] = 0;
-    }
-  }
-  ~SumObjectiveFilter() override {
-    delete[] synchronized_costs_;
-    delete[] delta_costs_;
-  }
+        incremental_(false) {}
+  ~SumObjectiveFilter() override {}
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
               int64_t objective_min, int64_t objective_max) override {
-    if (delta == nullptr) {
-      return false;
-    }
+    if (delta == nullptr) return false;
     if (deltadelta->Empty()) {
       if (incremental_) {
         for (int i = 0; i < primary_vars_size_; ++i) {
           delta_costs_[i] = synchronized_costs_[i];
         }
-        delta_sum_ = synchronized_sum_;
       }
       incremental_ = false;
-      delta_sum_ = CapAdd(synchronized_sum_,
-                          CostOfChanges(delta, synchronized_costs_, false));
+      delta_sum_ = CapAdd(synchronized_sum_, CostOfChanges(delta, false));
     } else {
       if (incremental_) {
-        delta_sum_ =
-            CapAdd(delta_sum_, CostOfChanges(deltadelta, delta_costs_, true));
+        delta_sum_ = CapAdd(delta_sum_, CostOfChanges(deltadelta, true));
       } else {
-        delta_sum_ = CapAdd(synchronized_sum_,
-                            CostOfChanges(delta, synchronized_costs_, true));
+        delta_sum_ = CapAdd(synchronized_sum_, CostOfChanges(delta, true));
       }
       incremental_ = true;
     }
-    switch (filter_enum_) {
-      case Solver::LE: {
-        return delta_sum_ <= objective_max;
-      }
-      case Solver::GE: {
-        return delta_sum_ >= objective_min;
-      }
-      case Solver::EQ: {
-        return objective_min <= delta_sum_ && delta_sum_ <= objective_max;
-      }
-      default: {
-        LOG(ERROR) << "Unknown local search filter enum value";
-        return false;
-      }
-    }
+    return filter_(delta_sum_, objective_min, objective_max);
   }
   // If the variable is synchronized, returns its associated cost, otherwise
   // returns 0.
   virtual int64_t CostOfSynchronizedVariable(int64_t index) = 0;
-  // If the variable is bound, fills new_cost with the cost associated to the
-  // variable's valuation in container, and returns true. Otherwise, fills
-  // new_cost with 0, and returns false.
-  virtual bool FillCostOfBoundDeltaVariable(
-      const Assignment::IntContainer& container, int index,
-      int* container_index, int64_t* new_cost) = 0;
+  // Returns the cost of applying changes to the current solution.
+  virtual int64_t CostOfChanges(const Assignment* changes,
+                                bool incremental) = 0;
   bool IsIncremental() const override { return true; }
 
   std::string DebugString() const override { return "SumObjectiveFilter"; }
@@ -3443,9 +3413,9 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
 
  protected:
   const int primary_vars_size_;
-  int64_t* const synchronized_costs_;
-  int64_t* const delta_costs_;
-  Solver::LocalSearchFilterBound filter_enum_;
+  std::vector<int64_t> synchronized_costs_;
+  std::vector<int64_t> delta_costs_;
+  Filter filter_;
   int64_t synchronized_sum_;
   int64_t delta_sum_;
   bool incremental_;
@@ -3462,37 +3432,14 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
     delta_sum_ = synchronized_sum_;
     incremental_ = false;
   }
-  int64_t CostOfChanges(const Assignment* changes,
-                        const int64_t* const old_costs,
-                        bool cache_delta_values) {
-    int64_t total_cost = 0;
-    const Assignment::IntContainer& container = changes->IntVarContainer();
-    const int size = container.Size();
-    for (int i = 0; i < size; ++i) {
-      const IntVarElement& new_element = container.Element(i);
-      IntVar* const var = new_element.Var();
-      int64_t index = -1;
-      if (FindIndex(var, &index) && index < primary_vars_size_) {
-        total_cost = CapSub(total_cost, old_costs[index]);
-        int64_t new_cost = 0LL;
-        if (FillCostOfBoundDeltaVariable(container, index, &i, &new_cost)) {
-          total_cost = CapAdd(total_cost, new_cost);
-        }
-        if (cache_delta_values) {
-          delta_costs_[index] = new_cost;
-        }
-      }
-    }
-    return total_cost;
-  }
 };
 
-class BinaryObjectiveFilter : public SumObjectiveFilter {
+template <typename Filter>
+class BinaryObjectiveFilter : public SumObjectiveFilter<Filter> {
  public:
   BinaryObjectiveFilter(const std::vector<IntVar*>& vars,
-                        Solver::IndexEvaluator2 value_evaluator,
-                        Solver::LocalSearchFilterBound filter_enum)
-      : SumObjectiveFilter(vars, filter_enum),
+                        Solver::IndexEvaluator2 value_evaluator, Filter filter)
+      : SumObjectiveFilter<Filter>(vars, std::move(filter)),
         value_evaluator_(std::move(value_evaluator)) {}
   ~BinaryObjectiveFilter() override {}
   int64_t CostOfSynchronizedVariable(int64_t index) override {
@@ -3500,35 +3447,42 @@ class BinaryObjectiveFilter : public SumObjectiveFilter {
                ? value_evaluator_(index, IntVarLocalSearchFilter::Value(index))
                : 0;
   }
-  bool FillCostOfBoundDeltaVariable(const Assignment::IntContainer& container,
-                                    int index, int* container_index,
-                                    int64_t* new_cost) override {
-    const IntVarElement& element = container.Element(*container_index);
-    if (element.Activated()) {
-      *new_cost = value_evaluator_(index, element.Value());
-      return true;
+  int64_t CostOfChanges(const Assignment* changes, bool incremental) override {
+    int64_t total_cost = 0;
+    const Assignment::IntContainer& container = changes->IntVarContainer();
+    for (const IntVarElement& new_element : container.elements()) {
+      IntVar* const var = new_element.Var();
+      int64_t index = -1;
+      if (this->FindIndex(var, &index)) {
+        total_cost = CapSub(total_cost, this->delta_costs_[index]);
+        int64_t new_cost = 0LL;
+        if (new_element.Activated()) {
+          new_cost = value_evaluator_(index, new_element.Value());
+        } else if (var->Bound()) {
+          new_cost = value_evaluator_(index, var->Min());
+        }
+        total_cost = CapAdd(total_cost, new_cost);
+        if (incremental) {
+          this->delta_costs_[index] = new_cost;
+        }
+      }
     }
-    const IntVar* var = element.Var();
-    if (var->Bound()) {
-      *new_cost = value_evaluator_(index, var->Min());
-      return true;
-    }
-    *new_cost = 0;
-    return false;
+    return total_cost;
   }
 
  private:
   Solver::IndexEvaluator2 value_evaluator_;
 };
 
-class TernaryObjectiveFilter : public SumObjectiveFilter {
+template <typename Filter>
+class TernaryObjectiveFilter : public SumObjectiveFilter<Filter> {
  public:
   TernaryObjectiveFilter(const std::vector<IntVar*>& vars,
                          const std::vector<IntVar*>& secondary_vars,
-                         Solver::IndexEvaluator3 value_evaluator,
-                         Solver::LocalSearchFilterBound filter_enum)
-      : SumObjectiveFilter(vars, filter_enum),
+                         Solver::IndexEvaluator3 value_evaluator, Filter filter)
+      : SumObjectiveFilter<Filter>(vars, std::move(filter)),
         secondary_vars_offset_(vars.size()),
+        secondary_values_(vars.size(), -1),
         value_evaluator_(std::move(value_evaluator)) {
     IntVarLocalSearchFilter::AddVars(secondary_vars);
     CHECK_GE(IntVarLocalSearchFilter::Size(), 0);
@@ -3542,39 +3496,59 @@ class TernaryObjectiveFilter : public SumObjectiveFilter {
                                       index + secondary_vars_offset_))
                : 0;
   }
-  bool FillCostOfBoundDeltaVariable(const Assignment::IntContainer& container,
-                                    int index, int* container_index,
-                                    int64_t* new_cost) override {
-    DCHECK_LT(index, secondary_vars_offset_);
-    *new_cost = 0LL;
-    const IntVarElement& element = container.Element(*container_index);
-    const IntVar* secondary_var =
-        IntVarLocalSearchFilter::Var(index + secondary_vars_offset_);
-    if (element.Activated()) {
-      const int64_t value = element.Value();
-      int hint_index = *container_index + 1;
-      if (hint_index < container.Size() &&
-          secondary_var == container.Element(hint_index).Var()) {
-        *new_cost = value_evaluator_(index, value,
-                                     container.Element(hint_index).Value());
-        *container_index = hint_index;
-      } else {
-        *new_cost = value_evaluator_(index, value,
-                                     container.Element(secondary_var).Value());
+  int64_t CostOfChanges(const Assignment* changes, bool incremental) override {
+    int64_t total_cost = 0;
+    const Assignment::IntContainer& container = changes->IntVarContainer();
+    for (const IntVarElement& new_element : container.elements()) {
+      IntVar* const var = new_element.Var();
+      int64_t index = -1;
+      if (this->FindIndex(var, &index) && index < secondary_vars_offset_) {
+        secondary_values_[index] = -1;
       }
-      return true;
     }
-    const IntVar* var = element.Var();
-    if (var->Bound() && secondary_var->Bound()) {
-      *new_cost = value_evaluator_(index, var->Min(), secondary_var->Min());
-      return true;
+    // Primary variable indices range from 0 to secondary_vars_offset_ - 1,
+    // matching secondary indices from secondary_vars_offset_ to
+    // 2 * secondary_vars_offset_ - 1.
+    const int max_secondary_index = 2 * secondary_vars_offset_;
+    for (const IntVarElement& new_element : container.elements()) {
+      IntVar* const var = new_element.Var();
+      int64_t index = -1;
+      if (new_element.Activated() && this->FindIndex(var, &index) &&
+          index >= secondary_vars_offset_ &&
+          // Only consider secondary_variables linked to primary ones.
+          index < max_secondary_index) {
+        secondary_values_[index - secondary_vars_offset_] = new_element.Value();
+      }
     }
-    *new_cost = 0;
-    return false;
+    for (const IntVarElement& new_element : container.elements()) {
+      IntVar* const var = new_element.Var();
+      int64_t index = -1;
+      if (this->FindIndex(var, &index) && index < secondary_vars_offset_) {
+        total_cost = CapSub(total_cost, this->delta_costs_[index]);
+        int64_t new_cost = 0LL;
+        if (new_element.Activated()) {
+          new_cost = value_evaluator_(index, new_element.Value(),
+                                      secondary_values_[index]);
+        } else if (var->Bound() &&
+                   IntVarLocalSearchFilter::Var(index + secondary_vars_offset_)
+                       ->Bound()) {
+          new_cost = value_evaluator_(
+              index, var->Min(),
+              IntVarLocalSearchFilter::Var(index + secondary_vars_offset_)
+                  ->Min());
+        }
+        total_cost = CapAdd(total_cost, new_cost);
+        if (incremental) {
+          this->delta_costs_[index] = new_cost;
+        }
+      }
+    }
+    return total_cost;
   }
 
  private:
   int secondary_vars_offset_;
+  std::vector<int64_t> secondary_values_;
   Solver::IndexEvaluator3 value_evaluator_;
 };
 }  // namespace
@@ -3582,16 +3556,66 @@ class TernaryObjectiveFilter : public SumObjectiveFilter {
 IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
     const std::vector<IntVar*>& vars, Solver::IndexEvaluator2 values,
     Solver::LocalSearchFilterBound filter_enum) {
-  return RevAlloc(
-      new BinaryObjectiveFilter(vars, std::move(values), filter_enum));
+  switch (filter_enum) {
+    case Solver::LE: {
+      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+        return value <= max_value;
+      };
+      return RevAlloc(new BinaryObjectiveFilter<decltype(filter)>(
+          vars, std::move(values), std::move(filter)));
+    }
+    case Solver::GE: {
+      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+        return value >= min_value;
+      };
+      return RevAlloc(new BinaryObjectiveFilter<decltype(filter)>(
+          vars, std::move(values), std::move(filter)));
+    }
+    case Solver::EQ: {
+      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+        return min_value <= value && value <= max_value;
+      };
+      return RevAlloc(new BinaryObjectiveFilter<decltype(filter)>(
+          vars, std::move(values), std::move(filter)));
+    }
+    default: {
+      LOG(ERROR) << "Unknown local search filter enum value";
+      return nullptr;
+    }
+  }
 }
 
 IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, Solver::IndexEvaluator3 values,
     Solver::LocalSearchFilterBound filter_enum) {
-  return RevAlloc(new TernaryObjectiveFilter(vars, secondary_vars,
-                                             std::move(values), filter_enum));
+  switch (filter_enum) {
+    case Solver::LE: {
+      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+        return value <= max_value;
+      };
+      return RevAlloc(new TernaryObjectiveFilter<decltype(filter)>(
+          vars, secondary_vars, std::move(values), std::move(filter)));
+    }
+    case Solver::GE: {
+      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+        return value >= min_value;
+      };
+      return RevAlloc(new TernaryObjectiveFilter<decltype(filter)>(
+          vars, secondary_vars, std::move(values), std::move(filter)));
+    }
+    case Solver::EQ: {
+      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+        return min_value <= value && value <= max_value;
+      };
+      return RevAlloc(new TernaryObjectiveFilter<decltype(filter)>(
+          vars, secondary_vars, std::move(values), std::move(filter)));
+    }
+    default: {
+      LOG(ERROR) << "Unknown local search filter enum value";
+      return nullptr;
+    }
+  }
 }
 
 LocalSearchVariable LocalSearchState::AddVariable(int64_t initial_min,
@@ -3690,16 +3714,16 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       UpdateTime();
     }
   }
-  LocalSearchStatistics ExportToLocalSearchStatistics() const {
-    LocalSearchStatistics statistics_proto;
+  template <typename Callback>
+  void ParseFirstSolutionStatistics(const Callback& callback) const {
     for (ProfiledDecisionBuilder* db : profiled_decision_builders_) {
       if (db->seconds() == 0) continue;
-      LocalSearchStatistics::FirstSolutionStatistics* const
-          first_solution_statistics =
-              statistics_proto.add_first_solution_statistics();
-      first_solution_statistics->set_strategy(db->name());
-      first_solution_statistics->set_duration_seconds(db->seconds());
+      callback(db->name(), db->seconds());
     }
+  }
+
+  template <typename Callback>
+  void ParseLocalSearchOperatorStatistics(const Callback& callback) const {
     std::vector<const LocalSearchOperator*> operators;
     for (const auto& stat : operator_stats_) {
       operators.push_back(stat.first);
@@ -3712,39 +3736,75 @@ class LocalSearchProfiler : public LocalSearchMonitor {
         });
     for (const LocalSearchOperator* const op : operators) {
       const OperatorStats& stats = gtl::FindOrDie(operator_stats_, op);
+      callback(op->DebugString(), stats.neighbors, stats.filtered_neighbors,
+               stats.accepted_neighbors, stats.seconds);
+    }
+  }
+
+  template <typename Callback>
+  void ParseLocalSearchFilterStatistics(const Callback& callback) const {
+    absl::flat_hash_map<std::string, std::vector<const LocalSearchFilter*>>
+        filters_per_context;
+    for (const auto& stat : filter_stats_) {
+      filters_per_context[stat.second.context].push_back(stat.first);
+    }
+    for (auto& [context, filters] : filters_per_context) {
+      std::sort(filters.begin(), filters.end(),
+                [this](const LocalSearchFilter* filter1,
+                       const LocalSearchFilter* filter2) {
+                  return gtl::FindOrDie(filter_stats_, filter1).calls >
+                         gtl::FindOrDie(filter_stats_, filter2).calls;
+                });
+      for (const LocalSearchFilter* const filter : filters) {
+        const FilterStats& stats = gtl::FindOrDie(filter_stats_, filter);
+        callback(context, filter->DebugString(), stats.calls, stats.rejects,
+                 stats.seconds);
+      }
+    }
+  }
+  LocalSearchStatistics ExportToLocalSearchStatistics() const {
+    LocalSearchStatistics statistics_proto;
+    ParseFirstSolutionStatistics(
+        [&statistics_proto](const std::string& name, double duration_seconds) {
+          LocalSearchStatistics::FirstSolutionStatistics* const
+              first_solution_statistics =
+                  statistics_proto.add_first_solution_statistics();
+          first_solution_statistics->set_strategy(name);
+          first_solution_statistics->set_duration_seconds(duration_seconds);
+        });
+    ParseLocalSearchOperatorStatistics([&statistics_proto](
+                                           const std::string& name,
+                                           int64_t num_neighbors,
+                                           int64_t num_filtered_neighbors,
+                                           int64_t num_accepted_neighbors,
+                                           double duration_seconds) {
       LocalSearchStatistics::LocalSearchOperatorStatistics* const
           local_search_operator_statistics =
               statistics_proto.add_local_search_operator_statistics();
-      local_search_operator_statistics->set_local_search_operator(
-          op->DebugString());
-      local_search_operator_statistics->set_num_neighbors(stats.neighbors);
+      local_search_operator_statistics->set_local_search_operator(name);
+      local_search_operator_statistics->set_num_neighbors(num_neighbors);
       local_search_operator_statistics->set_num_filtered_neighbors(
-          stats.filtered_neighbors);
+          num_filtered_neighbors);
       local_search_operator_statistics->set_num_accepted_neighbors(
-          stats.accepted_neighbors);
-      local_search_operator_statistics->set_duration_seconds(stats.seconds);
-    }
-    std::vector<const LocalSearchFilter*> filters;
-    for (const auto& stat : filter_stats_) {
-      filters.push_back(stat.first);
-    }
-    std::sort(filters.begin(), filters.end(),
-              [this](const LocalSearchFilter* filter1,
-                     const LocalSearchFilter* filter2) {
-                return gtl::FindOrDie(filter_stats_, filter1).calls >
-                       gtl::FindOrDie(filter_stats_, filter2).calls;
-              });
-    for (const LocalSearchFilter* const filter : filters) {
-      const FilterStats& stats = gtl::FindOrDie(filter_stats_, filter);
+          num_accepted_neighbors);
+      local_search_operator_statistics->set_duration_seconds(duration_seconds);
+    });
+    ParseLocalSearchFilterStatistics([&statistics_proto](
+                                         const std::string& context,
+                                         const std::string& name,
+                                         int64_t num_calls, int64_t num_rejects,
+                                         double duration_seconds) {
       LocalSearchStatistics::LocalSearchFilterStatistics* const
           local_search_filter_statistics =
               statistics_proto.add_local_search_filter_statistics();
-      local_search_filter_statistics->set_local_search_filter(
-          filter->DebugString());
-      local_search_filter_statistics->set_num_calls(stats.calls);
-      local_search_filter_statistics->set_num_rejects(stats.rejects);
-      local_search_filter_statistics->set_duration_seconds(stats.seconds);
-    }
+      local_search_filter_statistics->set_local_search_filter(name);
+      local_search_filter_statistics->set_num_calls(num_calls);
+      local_search_filter_statistics->set_num_rejects(num_rejects);
+      local_search_filter_statistics->set_duration_seconds(duration_seconds);
+      local_search_filter_statistics->set_num_rejects_per_second(
+          num_rejects / duration_seconds);
+      local_search_filter_statistics->set_context(context);
+    });
     statistics_proto.set_total_num_neighbors(solver()->neighbors());
     statistics_proto.set_total_num_filtered_neighbors(
         solver()->filtered_neighbors());
@@ -3753,74 +3813,103 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     return statistics_proto;
   }
   std::string PrintOverview() const {
+    std::string overview;
     size_t max_name_size = 0;
-    std::vector<const LocalSearchOperator*> operators;
-    for (const auto& stat : operator_stats_) {
-      operators.push_back(stat.first);
-      max_name_size =
-          std::max(max_name_size, stat.first->DebugString().length());
-    }
-    std::sort(
-        operators.begin(), operators.end(),
-        [this](const LocalSearchOperator* op1, const LocalSearchOperator* op2) {
-          return gtl::FindOrDie(operator_stats_, op1).neighbors >
-                 gtl::FindOrDie(operator_stats_, op2).neighbors;
+    ParseFirstSolutionStatistics(
+        [&max_name_size](const std::string& name, double duration_seconds) {
+          max_name_size = std::max(max_name_size, name.length());
         });
-    std::string overview = "Local search operator statistics:\n";
-    absl::StrAppendFormat(&overview,
-                          "%*s | Neighbors | Filtered | Accepted | Time (s)\n",
-                          max_name_size, "");
-    OperatorStats total_stats;
-    for (const LocalSearchOperator* const op : operators) {
-      const OperatorStats& stats = gtl::FindOrDie(operator_stats_, op);
-      const std::string& name = op->DebugString();
-      absl::StrAppendFormat(&overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n",
-                            max_name_size, name, stats.neighbors,
-                            stats.filtered_neighbors, stats.accepted_neighbors,
-                            stats.seconds);
-      total_stats.neighbors += stats.neighbors;
-      total_stats.filtered_neighbors += stats.filtered_neighbors;
-      total_stats.accepted_neighbors += stats.accepted_neighbors;
-      total_stats.seconds += stats.seconds;
+    if (max_name_size > 0) {
+      absl::StrAppendFormat(&overview,
+                            "First solution statistics:\n%*s | Time (s)\n",
+                            max_name_size, "");
+      ParseFirstSolutionStatistics(
+          [&overview, max_name_size](const std::string& name,
+                                     double duration_seconds) {
+            absl::StrAppendFormat(&overview, "%*s | %7.2g\n", max_name_size,
+                                  name, duration_seconds);
+          });
     }
-    absl::StrAppendFormat(&overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n",
-                          max_name_size, "Total", total_stats.neighbors,
-                          total_stats.filtered_neighbors,
-                          total_stats.accepted_neighbors, total_stats.seconds);
     max_name_size = 0;
-    std::vector<const LocalSearchFilter*> filters;
-    for (const auto& stat : filter_stats_) {
-      filters.push_back(stat.first);
-      max_name_size =
-          std::max(max_name_size, stat.first->DebugString().length());
+    ParseLocalSearchOperatorStatistics(
+        [&max_name_size](const std::string& name, int64_t num_neighbors,
+                         int64_t num_filtered_neighbors,
+                         int64_t num_accepted_neighbors,
+                         double duration_seconds) {
+          max_name_size = std::max(max_name_size, name.length());
+        });
+    if (max_name_size > 0) {
+      absl::StrAppendFormat(
+          &overview,
+          "Local search operator statistics:\n%*s | Neighbors | Filtered "
+          "| Accepted | Time (s)\n",
+          max_name_size, "");
+      OperatorStats total_stats;
+      ParseLocalSearchOperatorStatistics(
+          [&overview, &total_stats, max_name_size](
+              const std::string& name, int64_t num_neighbors,
+              int64_t num_filtered_neighbors, int64_t num_accepted_neighbors,
+              double duration_seconds) {
+            absl::StrAppendFormat(
+                &overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n", max_name_size,
+                name, num_neighbors, num_filtered_neighbors,
+                num_accepted_neighbors, duration_seconds);
+            total_stats.neighbors += num_neighbors;
+            total_stats.filtered_neighbors += num_filtered_neighbors;
+            total_stats.accepted_neighbors += num_accepted_neighbors;
+            total_stats.seconds += duration_seconds;
+          });
+      absl::StrAppendFormat(
+          &overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n", max_name_size,
+          "Total", total_stats.neighbors, total_stats.filtered_neighbors,
+          total_stats.accepted_neighbors, total_stats.seconds);
     }
-    std::sort(filters.begin(), filters.end(),
-              [this](const LocalSearchFilter* filter1,
-                     const LocalSearchFilter* filter2) {
-                return gtl::FindOrDie(filter_stats_, filter1).calls >
-                       gtl::FindOrDie(filter_stats_, filter2).calls;
-              });
-    absl::StrAppendFormat(&overview,
-                          "Local search filter statistics:\n%*s |     Calls |  "
-                          " Rejects | Time (s) "
-                          "| Rejects/s\n",
-                          max_name_size, "");
-    FilterStats total_filter_stats;
-    for (const LocalSearchFilter* const filter : filters) {
-      const FilterStats& stats = gtl::FindOrDie(filter_stats_, filter);
-      const std::string& name = filter->DebugString();
-      absl::StrAppendFormat(&overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n",
-                            max_name_size, name, stats.calls, stats.rejects,
-                            stats.seconds, stats.rejects / stats.seconds);
-      total_filter_stats.calls += stats.calls;
-      total_filter_stats.rejects += stats.rejects;
-      total_filter_stats.seconds += stats.seconds;
+    max_name_size = 0;
+    ParseLocalSearchFilterStatistics(
+        [&max_name_size](const std::string& context, const std::string& name,
+                         int64_t num_calls, int64_t num_rejects,
+                         double duration_seconds) {
+          max_name_size = std::max(max_name_size, name.length());
+        });
+    if (max_name_size > 0) {
+      std::optional<std::string> filter_context;
+      FilterStats total_filter_stats;
+      ParseLocalSearchFilterStatistics(
+          [&overview, &filter_context, &total_filter_stats, max_name_size](
+              const std::string& context, const std::string& name,
+              int64_t num_calls, int64_t num_rejects, double duration_seconds) {
+            if (!filter_context.has_value() ||
+                filter_context.value() != context) {
+              if (filter_context.has_value()) {
+                absl::StrAppendFormat(
+                    &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n",
+                    max_name_size, "Total", total_filter_stats.calls,
+                    total_filter_stats.rejects, total_filter_stats.seconds,
+                    total_filter_stats.rejects / total_filter_stats.seconds);
+                total_filter_stats = {};
+              }
+              filter_context = context;
+              absl::StrAppendFormat(
+                  &overview,
+                  "Local search filter statistics%s:\n%*s |     Calls |  "
+                  " Rejects | Time (s) | Rejects/s\n",
+                  context.empty() ? "" : " (" + context + ")", max_name_size,
+                  "");
+            }
+            absl::StrAppendFormat(
+                &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n",
+                max_name_size, name, num_calls, num_rejects, duration_seconds,
+                num_rejects / duration_seconds);
+            total_filter_stats.calls += num_calls;
+            total_filter_stats.rejects += num_rejects;
+            total_filter_stats.seconds += duration_seconds;
+          });
+      absl::StrAppendFormat(
+          &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n", max_name_size,
+          "Total", total_filter_stats.calls, total_filter_stats.rejects,
+          total_filter_stats.seconds,
+          total_filter_stats.rejects / total_filter_stats.seconds);
     }
-    absl::StrAppendFormat(
-        &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n", max_name_size,
-        "Total", total_filter_stats.calls, total_filter_stats.rejects,
-        total_filter_stats.seconds,
-        total_filter_stats.rejects / total_filter_stats.seconds);
     return overview;
   }
   void BeginOperatorStart() override {}
@@ -3853,7 +3942,9 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     }
   }
   void BeginFiltering(const LocalSearchFilter* filter) override {
-    filter_stats_[filter].calls++;
+    FilterStats& filter_stats = filter_stats_[filter];
+    filter_stats.calls++;
+    filter_stats.context = solver()->context();
     filter_timer_.Start();
   }
   void EndFiltering(const LocalSearchFilter* filter, bool reject) override {
@@ -3890,6 +3981,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     int64_t calls = 0;
     int64_t rejects = 0;
     double seconds = 0;
+    std::string context;
   };
   WallTimer timer_;
   WallTimer filter_timer_;

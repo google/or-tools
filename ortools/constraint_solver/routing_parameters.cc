@@ -66,7 +66,8 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
     cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization:
         false
     cheapest_insertion_add_unperformed_entries: false
-    local_cheapest_insertion_evaluate_pickup_delivery_costs_independently: true
+    local_cheapest_insertion_pickup_delivery_strategy:
+        BEST_PICKUP_THEN_BEST_DELIVERY
     local_search_operators {
       use_relocate: BOOL_TRUE
       use_relocate_pair: BOOL_TRUE

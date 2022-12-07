@@ -106,12 +106,26 @@ message RoutingSearchParameters {
   // the GlobalCheapestInsertion heuristic.
   bool cheapest_insertion_add_unperformed_entries = 40;
 
-  // Whether or not to insert pickup/delivery pairs greedily in the
-  // LocalCheapestInsertion heuristic. If true, the insertion position of a
-  // pickup is evaluated independently of its delivery. If false, insertion
-  // positions of both a pickup and its delivery are evaluated together.
-  bool local_cheapest_insertion_evaluate_pickup_delivery_costs_independently =
-      49;
+  // In insertion-based heuristics, describes what positions must be considered
+  // when inserting a pickup/delivery pair, and in what order they are
+  // considered.
+  enum PairInsertionStrategy {
+    // Let the solver decide the set of positions and its ordering.
+    AUTOMATIC = 0;
+    // Consider all positions, by increasing (cost(pickup), cost(delivery)).
+    BEST_PICKUP_THEN_BEST_DELIVERY = 1;
+    // Consider all positions, by increasing by cost(pickup) + cost(delivery).
+    BEST_PICKUP_DELIVERY_PAIR = 2;
+    // Only consider insertion positions that are compatible with the multitour
+    // property, meaning a series of pickups may only start when the vehicle
+    // is not carrying any delivery. This setting is designed to explore much
+    // less possibilities than the full BEST_PICKUP_DELIVERY_PAIR.
+    // Order by increasing by cost(pickup) + cost(delivery).
+    BEST_PICKUP_DELIVERY_PAIR_MULTITOUR = 3;
+  }
+  // Choice of insertion strategy for pickup/delivery pairs,
+  // used in local cheapest insertion, both first solution heuristic and LNS.
+  PairInsertionStrategy local_cheapest_insertion_pickup_delivery_strategy = 49;
 
   // If true use minimum matching instead of minimal matching in the
   // Christofides algorithm.

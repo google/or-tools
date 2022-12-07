@@ -26,6 +26,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <set>
 #include <string>
 #include <tuple>
@@ -744,6 +745,98 @@ void RoutingModel::SetSweepArranger(SweepArranger* sweep_arranger) {
 
 SweepArranger* RoutingModel::sweep_arranger() const {
   return sweep_arranger_.get();
+}
+
+void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
+    const RoutingModel& routing_model, int num_neighbors) {
+  // TODO(user): consider checking search limits.
+  const int size = routing_model.Size();
+  node_index_to_neighbors_by_cost_class_.clear();
+  if (num_neighbors >= size) {
+    all_nodes_.resize(routing_model.Size());
+    std::iota(all_nodes_.begin(), all_nodes_.end(), 0);
+    return;
+  }
+  node_index_to_neighbors_by_cost_class_.resize(size);
+
+  const int num_cost_classes = routing_model.GetCostClassesCount();
+  for (int node_index = 0; node_index < size; node_index++) {
+    node_index_to_neighbors_by_cost_class_[node_index].resize(num_cost_classes);
+    for (int cc = 0; cc < num_cost_classes; cc++) {
+      node_index_to_neighbors_by_cost_class_[node_index][cc] =
+          std::make_unique<SparseBitset<int>>(size);
+    }
+  }
+
+  std::vector<std::pair</*cost*/ int64_t, /*node*/ int>> cost_nodes;
+  cost_nodes.reserve(size);
+  for (int node_index = 0; node_index < size; ++node_index) {
+    DCHECK(!routing_model.IsEnd(node_index));
+    if (routing_model.IsStart(node_index)) {
+      // For vehicle starts, we consider all nodes.
+      continue;
+    }
+
+    // TODO(user): Use the model's IndexNeighborFinder when available.
+    for (int cost_class = 0; cost_class < num_cost_classes; cost_class++) {
+      if (!routing_model.HasVehicleWithCostClassIndex(
+              RoutingCostClassIndex(cost_class))) {
+        // No vehicle with this cost class, avoid unnecessary computations.
+        continue;
+      }
+      cost_nodes.clear();
+      for (int after_node = 0; after_node < size; ++after_node) {
+        if (after_node != node_index && !routing_model.IsStart(after_node)) {
+          cost_nodes.push_back(
+              std::make_pair(routing_model.GetArcCostForClass(
+                                 node_index, after_node, cost_class),
+                             after_node));
+        }
+      }
+      std::nth_element(cost_nodes.begin(),
+                       cost_nodes.begin() + num_neighbors - 1,
+                       cost_nodes.end());
+      cost_nodes.resize(num_neighbors);
+
+      auto& node_neighbors =
+          node_index_to_neighbors_by_cost_class_[node_index][cost_class];
+      for (const auto& costed_node : cost_nodes) {
+        const int neighbor = costed_node.second;
+        node_neighbors->Set(neighbor);
+
+        // Add reverse neighborhood.
+        DCHECK(!routing_model.IsEnd(neighbor) &&
+               !routing_model.IsStart(neighbor));
+        node_index_to_neighbors_by_cost_class_[neighbor][cost_class]->Set(
+            node_index);
+      }
+      // Add all vehicle starts as neighbors to this node and vice-versa.
+      // TODO(user): Consider keeping vehicle start/ends out of neighbors, to
+      // prune arcs going from node to start for instance.
+      for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
+        const int vehicle_start = routing_model.Start(vehicle);
+        node_neighbors->Set(vehicle_start);
+        node_index_to_neighbors_by_cost_class_[vehicle_start][cost_class]->Set(
+            node_index);
+      }
+    }
+  }
+}
+
+const RoutingModel::NodeNeighborsByCostClass*
+RoutingModel::GetOrCreateNodeNeighborsByCostClass(int num_neighbors) {
+  std::unique_ptr<NodeNeighborsByCostClass>* node_neighbors_by_cost_class_ptr =
+      gtl::FindOrNull(node_neighbors_by_cost_class_per_size_, num_neighbors);
+  if (node_neighbors_by_cost_class_ptr != nullptr) {
+    return node_neighbors_by_cost_class_ptr->get();
+  }
+  std::unique_ptr<NodeNeighborsByCostClass>& node_neighbors_by_cost_class =
+      node_neighbors_by_cost_class_per_size_
+          .insert(std::make_pair(num_neighbors,
+                                 std::make_unique<NodeNeighborsByCostClass>()))
+          .first->second;
+  node_neighbors_by_cost_class->ComputeNeighbors(*this, num_neighbors);
+  return node_neighbors_by_cost_class.get();
 }
 
 namespace {
@@ -4689,7 +4782,8 @@ void RoutingModel::CreateNeighborhoodOperators(
       [this, &parameters]() {
         return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
             this, [this]() { return CheckLimit(time_buffer_); },
-            absl::bind_front(&RoutingModel::GetArcCostForVehicle, this), true,
+            absl::bind_front(&RoutingModel::GetArcCostForVehicle, this),
+            parameters.local_cheapest_insertion_pickup_delivery_strategy(),
             GetOrCreateLocalSearchFilterManager(
                 parameters,
                 {/*filter_objective=*/false, /*filter_with_cp_solver=*/false}));
@@ -5497,9 +5591,8 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   }
 
   // Local cheapest insertion
-  const bool evaluate_pickup_delivery_costs_independently =
-      search_parameters
-          .local_cheapest_insertion_evaluate_pickup_delivery_costs_independently();  // NOLINT
+  const RoutingSearchParameters::PairInsertionStrategy lci_pair_strategy =
+      search_parameters.local_cheapest_insertion_pickup_delivery_strategy();
   first_solution_filtered_decision_builders_
       [FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION] =
           CreateIntVarFilteredDecisionBuilder<
@@ -5507,7 +5600,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
               [this](int64_t i, int64_t j, int64_t vehicle) {
                 return GetArcCostForVehicle(i, j, vehicle);
               },
-              evaluate_pickup_delivery_costs_independently,
+              lci_pair_strategy,
               GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/false,
                                       /*filter_with_cp_solver=*/false}));
@@ -5517,7 +5610,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
           [this](int64_t i, int64_t j, int64_t vehicle) {
             return GetArcCostForVehicle(i, j, vehicle);
           },
-          evaluate_pickup_delivery_costs_independently,
+          lci_pair_strategy,
           GetOrCreateLocalSearchFilterManager(
               search_parameters, {/*filter_objective=*/false,
                                   /*filter_with_cp_solver=*/true}));
@@ -5535,7 +5628,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
           CreateIntVarFilteredDecisionBuilder<
               LocalCheapestInsertionFilteredHeuristic>(
               /*evaluator=*/nullptr,
-              /*evaluate_pickup_delivery_costs_independently=*/false,
+              RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR,
               GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/true,
                                       /*filter_with_cp_solver=*/false}));
@@ -5543,7 +5636,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
       CreateIntVarFilteredDecisionBuilder<
           LocalCheapestInsertionFilteredHeuristic>(
           /*evaluator=*/nullptr,
-          /*evaluate_pickup_delivery_costs_independently=*/false,
+          RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR,
           GetOrCreateLocalSearchFilterManager(
               search_parameters, {/*filter_objective=*/true,
                                   /*filter_with_cp_solver=*/true}));

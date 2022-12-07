@@ -1244,7 +1244,7 @@ class RoutingModel {
   /// In practice, this assignment locks partial routes of the problem. This
   /// can be used in the context of locking the parts of the routes which have
   /// already been driven in online routing problems.
-  const Assignment* const PreAssignment() const { return preassignment_; }
+  const Assignment* PreAssignment() const { return preassignment_; }
   Assignment* MutablePreAssignment() { return preassignment_; }
   /// Writes the current solution to a file containing an AssignmentProto.
   /// Returns false if the file cannot be opened or if there is no current
@@ -1401,6 +1401,32 @@ class RoutingModel {
   /// Returns the sweep arranger to be used by routing heuristics.
   SweepArranger* sweep_arranger() const;
 #endif
+  class NodeNeighborsByCostClass {
+   public:
+    NodeNeighborsByCostClass() = default;
+
+    /// Computes num_neighbors neighbors of all nodes for every cost class in
+    /// routing_model.
+    void ComputeNeighbors(const RoutingModel& routing_model, int num_neighbors);
+    /// Returns the neighbors of the given node for the given cost_class.
+    const std::vector<int>& GetNeighborsOfNodeForCostClass(
+        int cost_class, int node_index) const {
+      return all_nodes_.empty() ? node_index_to_neighbors_by_cost_class_
+                                      [node_index][cost_class]
+                                          ->PositionsSetAtLeastOnce()
+                                : all_nodes_;
+    }
+
+   private:
+    std::vector<std::vector<std::unique_ptr<SparseBitset<int>>>>
+        node_index_to_neighbors_by_cost_class_;
+    std::vector<int> all_nodes_;
+  };
+
+  /// Returns num_neighbors neighbors of all nodes for every cost class. The
+  /// result is cached and is computed once.
+  const NodeNeighborsByCostClass* GetOrCreateNodeNeighborsByCostClass(
+      int num_neighbors);
   /// Adds a custom local search filter to the list of filters used to speed up
   /// local search by pruning unfeasible variable assignments.
   /// Calling this method after the routing model has been closed (CloseModel()
@@ -2232,6 +2258,8 @@ class RoutingModel {
   absl::flat_hash_map<FilterOptions, LocalSearchFilterManager*>
       local_search_filter_managers_;
   std::vector<LocalSearchFilterManager::FilterEvent> extra_filters_;
+  absl::flat_hash_map<int, std::unique_ptr<NodeNeighborsByCostClass>>
+      node_neighbors_by_cost_class_per_size_;
 #ifndef SWIG
   struct VarTarget {
     VarTarget(IntVar* v, int64_t t) : var(v), target(t) {}
