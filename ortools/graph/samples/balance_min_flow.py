@@ -70,7 +70,6 @@ def main():
 
     # [START print_solution]
     if status == smcf.OPTIMAL:
-        smcf.solve()
         print('Total cost = ', smcf.optimal_cost())
         print()
         for arc in range(smcf.num_arcs()):

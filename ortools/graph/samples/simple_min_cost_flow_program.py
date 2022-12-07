@@ -47,7 +47,7 @@ def main():
         start_nodes, end_nodes, capacities, unit_costs)
 
     # Add supply for each nodes.
-    smcf.set_nodes_supply(np.arange(0, len(supplies)), supplies)
+    smcf.set_nodes_supplies(np.arange(0, len(supplies)), supplies)
     # [END constraints]
 
     # [START solve]

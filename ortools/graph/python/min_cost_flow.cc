@@ -32,7 +32,7 @@ PYBIND11_MODULE(min_cost_flow, m) {
       pybind11::vectorize(&SimpleMinCostFlow::AddArcWithCapacityAndUnitCost));
   smcf.def("set_node_supply", &SimpleMinCostFlow::SetNodeSupply, arg("node"),
            arg("supply"));
-  smcf.def("set_nodes_supply",
+  smcf.def("set_nodes_supplies",
            pybind11::vectorize(&SimpleMinCostFlow::SetNodeSupply));
   smcf.def("num_nodes", &SimpleMinCostFlow::NumNodes);
   smcf.def("num_arcs", &SimpleMinCostFlow::NumArcs);
