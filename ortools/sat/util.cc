@@ -97,7 +97,8 @@ void QuotientAndRemainder(int64_t a, int64_t b, int64_t& q, int64_t& r) {
 
 }  // namespace
 
-// Using the extended Euclidian algo, we find a and b such that a x + b m = gcd(x, m).
+// Using the extended Euclidian algo, we find a and b such that
+//     a x + b m = gcd(x, m)
 // https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 int64_t ModularInverse(int64_t x, int64_t m) {
   DCHECK_GE(x, 0);

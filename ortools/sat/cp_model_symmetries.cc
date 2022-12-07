@@ -494,6 +494,14 @@ void FindCpModelSymmetries(
              " nodes and ", graph->num_arcs(), " arcs.");
   if (graph->num_nodes() == 0) return;
 
+  if (params.symmetry_level() < 3 && graph->num_nodes() > 1e6 &&
+      graph->num_arcs() > 1e6) {
+    SOLVER_LOG(logger,
+               "[Symmetry] Graph too large. Skipping. You can use "
+               "symmetry_level:3 or more to force it.");
+    return;
+  }
+
   GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/false);
   std::vector<int> factorized_automorphism_group_size;
   std::unique_ptr<TimeLimit> time_limit =

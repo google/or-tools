@@ -376,7 +376,7 @@ public final class CpSolverTest {
     // Cumulative score
     for (int i = 0; i < numResources; i++) {
       final IntVar max = model.newIntVar(0, maxCapacities[i], "");
-      model.addCumulative(max).addDemands(tasksIntervals, updatedDemands[i]).getBuilder();
+      model.addCumulative(max).addDemands(tasksIntervals, updatedDemands[i]);
       model.minimize(max);
     }
   }

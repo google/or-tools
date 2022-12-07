@@ -256,6 +256,10 @@ class CpModelPresolver {
 
   void MergeNoOverlapConstraints();
 
+  // Try to identify many linear constraints that share a common linear
+  // expression.
+  void FindBigLinearOverlap();
+
   // Heuristic to merge clauses that differ in only one literal.
   // The idea is to regroup a bunch of clauses into a single bool_and.
   // This serves a bunch of purpose:

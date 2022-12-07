@@ -783,6 +783,9 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     const int positive_ref = PositiveRef(ref);
     if (processed[positive_ref]) continue;
     if (context->IsFixed(positive_ref)) continue;
+    if (context->VariableIsNotUsedAnymore(positive_ref)) continue;
+    if (context->VariableWasRemoved(positive_ref)) continue;
+
     if (num_locks_[var] != 1) continue;
     if (locking_ct_index_[var] == -1) {
       context->UpdateRuleStats(
@@ -1278,6 +1281,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
                                                                  0);
   absl::StrongVector<IntegerVariable, bool> in_constraints(num_vars * 2, false);
 
+  absl::flat_hash_set<std::pair<int, int>> implications;
   const int num_constraints = cp_model.constraints_size();
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = cp_model.constraints(c);
@@ -1288,6 +1292,8 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
       if (context->IsFixed(a)) continue;
       for (const int b : ct.bool_and().literals()) {
         if (context->IsFixed(b)) continue;
+        implications.insert({a, b});
+        implications.insert({NegatedRef(b), NegatedRef(a)});
 
         // If (a--, b--) is valid, we can always set a to false.
         for (const IntegerVariable ivar :
@@ -1484,7 +1490,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
   // For any dominance relation still left (i.e. between non-fixed vars), if
   // the variable are Boolean and X is dominated by Y, we can add
-  // (X == 1) => (Y = 1). But, as soon as we do that, we break some symmetry
+  // (X = 1) => (Y = 1). But, as soon as we do that, we break some symmetry
   // and cannot add any incompatible relations.
   //
   // EX: It is possible that X dominate Y and Y dominate X if they are both
@@ -1496,12 +1502,15 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   // implications?
   //
   // TODO(user): generalize to non Booleans?
-  // TODO(user): We always keep adding the same relations. Do that only once!
+  // TODO(user): We always keep adding the same relations. Investigate?
+  // it seems pure SAT presolve remove them.
   int num_added = 0;
   absl::StrongVector<IntegerVariable, bool> increase_is_forbidden(2 * num_vars,
                                                                   false);
   for (int positive_ref = 0; positive_ref < num_vars; ++positive_ref) {
     if (context->IsFixed(positive_ref)) continue;
+    if (context->VariableIsNotUsedAnymore(positive_ref)) continue;
+    if (context->VariableWasRemoved(positive_ref)) continue;
     if (!context->CanBeUsedAsLiteral(positive_ref)) continue;
     for (const int ref : {positive_ref, NegatedRef(positive_ref)}) {
       const IntegerVariable var = VarDomination::RefToIntegerVariable(ref);
@@ -1511,7 +1520,11 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         if (increase_is_forbidden[dom]) continue;
         const int dom_ref = VarDomination::IntegerVariableToRef(dom);
         if (context->IsFixed(dom_ref)) continue;
+        if (context->VariableIsNotUsedAnymore(dom_ref)) continue;
+        if (context->VariableWasRemoved(dom_ref)) continue;
         if (!context->CanBeUsedAsLiteral(dom_ref)) continue;
+        if (implications.contains({ref, dom_ref})) continue;
+
         ++num_added;
         context->AddImplication(ref, dom_ref);
 

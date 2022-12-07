@@ -503,12 +503,15 @@ bool PresolveContext::ConstraintIsOptional(int ct_ref) const {
 }
 
 void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
-  // We only count if we are going to display it.
+  // Hack: we don't want to count TODO rules as this is used to decide if
+  // we loop again.
+  const bool is_todo = name.size() >= 4 && name.substr(0, 4) == "TODO";
+  if (!is_todo) num_presolve_operations += num_times;
+
   if (logger_->LoggingIsEnabled()) {
-    VLOG(2) << num_presolve_operations << " : " << name;
+    VLOG(is_todo ? 3 : 2) << num_presolve_operations << " : " << name;
     stats_by_rule_name_[name] += num_times;
   }
-  num_presolve_operations += num_times;
 }
 
 void PresolveContext::UpdateLinear1Usage(const ConstraintProto& ct, int c) {
