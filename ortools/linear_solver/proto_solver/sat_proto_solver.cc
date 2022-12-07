@@ -13,6 +13,7 @@
 
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -24,6 +25,7 @@
 #include <vector>
 
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/linear_solver/proto_solver/sat_solver_utils.h"
@@ -386,14 +388,37 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   // Copy and postsolve any additional solutions.
   //
   // TODO(user): Remove the postsolve hack of copying to a response.
-  for (int i = 0; i < cp_response.additional_solutions().size(); ++i) {
+  for (const sat::CpSolverSolution& additional_solution :
+       cp_response.additional_solutions()) {
+    if (absl::MakeConstSpan(additional_solution.values()) ==
+        absl::MakeConstSpan(cp_response.solution())) {
+      continue;
+    }
+    double obj = cp_model.floating_point_objective().offset();
+    for (int i = 0; i < cp_model.floating_point_objective().vars_size(); ++i) {
+      const int32_t var = cp_model.floating_point_objective().vars(i);
+      const double obj_coef = cp_model.floating_point_objective().coeffs(i);
+      obj += additional_solution.values(var) * obj_coef;
+    }
+    // If the scaling factor is unset/zero, it is assumed to be one.
+    if (cp_model.objective().scaling_factor() != 0.0) {
+      obj *= cp_model.objective().scaling_factor();
+    }
     sat::CpSolverResponse temp;
-    *temp.mutable_solution() = cp_response.additional_solutions(i).values();
-    MPSolution post_solved_solution = post_solve(temp);
-    *(response.add_additional_solutions()->mutable_variable_value()) =
-        std::move(*post_solved_solution.mutable_variable_value());
+    *temp.mutable_solution() = additional_solution.values();
+    temp.set_objective_value(obj);
+    *response.add_additional_solutions() = post_solve(temp);
   }
-
+  const bool is_maximize = request.model().maximize();
+  std::sort(response.mutable_additional_solutions()->pointer_begin(),
+            response.mutable_additional_solutions()->pointer_end(),
+            [is_maximize](const MPSolution* left, const MPSolution* right) {
+              if (is_maximize) {
+                return left->objective_value() > right->objective_value();
+              } else {
+                return left->objective_value() < right->objective_value();
+              }
+            });
   return response;
 }
 
