@@ -1336,6 +1336,9 @@ SatSolver::Status ContinuousProber::ShaveLiteral(Literal literal) {
     num_bounds_shaved_++;
   }
 
+  // Important: we want to reset the solver right away, as we check for
+  // fixed variable in the main loop!
+  if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
   return status;
 }
 

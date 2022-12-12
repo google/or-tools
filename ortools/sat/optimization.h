@@ -257,6 +257,41 @@ class CoreBasedOptimizer {
   bool stop_ = false;
 };
 
+// This class will scan the objective up from its minimal value to increase the
+// objective lower bound.
+//
+// TODO(user): Implement an acceleration schema in the LB improvements.
+class ObjectiveLowerBoundScanner {
+ public:
+  ObjectiveLowerBoundScanner(
+      IntegerVariable objective_var,
+      const std::function<void()>& feasible_solution_observer, Model* model);
+
+  // Tries to shave the lower bound of the objective.
+  // It returns:
+  //   - SatSolver::INFEASIBLE if the search is done. If the solution observer
+  //     was called this actually means optimal, otherwise it means there is no
+  //     solution and it is a true infeasibility.
+  //   - SatSolver::LIMIT_REACHED if the limit stored in the model is reached.
+  SatSolver::Status ShaveObjectiveLowerBound();
+
+ private:
+  // Model object.
+  Model* model_;
+  SatSolver* sat_solver_;
+  TimeLimit* time_limit_;
+  IntegerTrail* integer_trail_;
+  IntegerEncoder* encoder_;
+  const SatParameters parameters_;
+  LevelZeroCallbackHelper* level_zero_callbacks_;
+  SharedResponseManager* shared_response_manager_;
+  const IntegerVariable objective_var_;
+  const std::function<void()> feasible_solution_observer_;
+
+  // Current state of the scan.
+  int iteration_ = 0;
+};
+
 }  // namespace sat
 }  // namespace operations_research
 

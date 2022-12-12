@@ -576,8 +576,10 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
                   "\ndeterministic_time: ", response.deterministic_time());
   absl::StrAppend(&result, "\ngap_integral: ", response.gap_integral());
   if (!response.solution().empty()) {
-    absl::StrAppendFormat(&result, "\nsolution_fingerprint: %#x",
-                          FingerprintRepeatedField(response.solution()));
+    absl::StrAppendFormat(
+        &result, "\nsolution_fingerprint: %#x",
+        FingerprintRepeatedField(response.solution(),
+                                 uint64_t{0xa5b85c5e198ed849}));
   }
   absl::StrAppend(&result, "\n");
   return result;
@@ -1691,6 +1693,10 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
       } else {
         status = model->Mutable<CoreBasedOptimizer>()->Optimize();
       }
+    } else if (parameters.use_objective_lb_search()) {
+      ObjectiveLowerBoundScanner obj_lb_scanner(objective_var,
+                                                solution_observer, model);
+      status = obj_lb_scanner.ShaveObjectiveLowerBound();
     } else {
       // TODO(user): This parameter breaks the splitting in chunk of a Solve().
       // It should probably be moved into another SubSolver altogether.
@@ -2397,8 +2403,16 @@ class FullProblemSolver : public SubSolver {
     absl::StrAppend(&s, p6, "restarts: ", FormatCounter(r.num_restarts()),
                     "\n");
 
-    for (const auto* lp :
-         *local_model_->GetOrCreate<LinearProgrammingConstraintCollection>()) {
+    const auto& lps =
+        *local_model_->GetOrCreate<LinearProgrammingConstraintCollection>();
+    int num_displayed = 0;
+    for (const auto* lp : lps) {
+      if (num_displayed++ > 6) {
+        absl::StrAppend(&s, p4, "Skipping other LPs...\n");
+        absl::StrAppend(&s, p6, "- ", lps.size(), " total independent LPs.\n");
+        break;
+      }
+
       const std::string raw_statistics = lp->Statistics();
       const std::vector<absl::string_view> lines =
           absl::StrSplit(raw_statistics, '\n', absl::SkipEmpty());
@@ -2759,15 +2773,23 @@ class LnsSolver : public SubSolver {
 
         // Special case if we solved a part of the full problem!
         //
-        // TODO(user): This do not seem to work if they are symmetries loaded
-        // into SAT. For now we just disable this if there is any symmetry.
-        // See for instance spot5_1401.fzn. Be smarter about that:
-        // - If there are connected compo in the initial model, we should only
-        //   compute generator that do not cross component? or are component
-        //   interchange useful? probably not.
-        // - It should be fine if all our generator are fully or not at
-        //   all included in the variable we are fixing. So we can relax the
-        //   test here. Try on z26.mps or spot5_1401.fzn.
+        // TODO(user): This do not work if they are symmetries loaded into SAT.
+        // For now we just disable this if there is any symmetry. See for
+        // instance spot5_1401.fzn. Be smarter about that.
+        //
+        // The issue is that as we fix level zero variables from a partial
+        // solution, the symmetry propagator could wrongly fix other variables
+        // since it assumes that if we could infer such fixing, then we could
+        // do the same in any symmetric situation.
+        //
+        // Note sure how to address that, we could disable symmetries if there
+        // is a lot of connected components. Or use a different mechanism than
+        // just fixing variables. Or remove symmetry on the fly?
+        //
+        // TODO(user): At least enable it if there is no Boolean symmetries
+        // since we currently do not use the other ones past the presolve.
+        //
+        // TODO(user): We could however fix it in the LNS Helper!
         if (data.status == CpSolverStatus::OPTIMAL &&
             !shared_->model_proto->has_symmetry() && !solution_values.empty() &&
             neighborhood.is_simple &&

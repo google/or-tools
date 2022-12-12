@@ -72,6 +72,21 @@
 namespace operations_research {
 namespace sat {
 
+namespace {
+
+// TODO(user): Just make sure this invariant is enforced in all our linear
+// constraint after copy, and simplify the code!
+bool LinearConstraintIsClean(const LinearConstraintProto& linear) {
+  const int num_vars = linear.vars().size();
+  for (int i = 0; i < num_vars; ++i) {
+    if (!RefIsPositive(linear.vars(i))) return false;
+    if (linear.coeffs(i) == 0) return false;
+  }
+  return true;
+}
+
+}  // namespace
+
 bool CpModelPresolver::RemoveConstraint(ConstraintProto* ct) {
   ct->Clear();
   return true;
@@ -2177,48 +2192,67 @@ bool CpModelPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
   }
 
   // Detect encoding.
-  if (ct->enforcement_literal_size() != 1 ||
-      (ct->linear().coeffs(0) != 1 && ct->linear().coeffs(0) == -1)) {
+  if (ct->enforcement_literal_size() != 1) return false;
+
+  // If we already have an encoding literal, this constraint is really
+  // an implication.
+  const int lit = ct->enforcement_literal(0);
+  const int var = ct->linear().vars(0);
+  const Domain var_domain = context_->DomainOf(var);
+  const Domain rhs = ReadDomainFromProto(ct->linear())
+                         .InverseMultiplicationBy(ct->linear().coeffs(0))
+                         .IntersectionWith(var_domain);
+  if (rhs.IsEmpty()) {
+    context_->UpdateRuleStats("linear1: infeasible");
+    return MarkConstraintAsFalse(ct);
+  }
+  if (rhs == var_domain) {
+    context_->UpdateRuleStats("linear1: always true");
+    return RemoveConstraint(ct);
+  }
+
+  if (rhs.IsFixed()) {
+    const int64_t value = rhs.FixedValue();
+    int encoding_lit;
+    if (context_->HasVarValueEncoding(var, value, &encoding_lit)) {
+      if (lit == encoding_lit) return false;
+      context_->AddImplication(lit, encoding_lit);
+      context_->UpdateNewConstraintsVariableUsage();
+      ct->Clear();
+      context_->UpdateRuleStats("linear1: transformed to implication");
+      return true;
+    } else {
+      if (context_->StoreLiteralImpliesVarEqValue(lit, var, value)) {
+        // The domain is not actually modified, but we want to rescan the
+        // constraints linked to this variable.
+        context_->modified_domains.Set(var);
+      }
+      context_->UpdateNewConstraintsVariableUsage();
+    }
     return false;
   }
 
-  // Currently, we only use encoding during expansion, so when it is done,
-  // there is no need to updates the maps.
-  if (context_->ModelIsExpanded()) return false;
-
-  const int literal = ct->enforcement_literal(0);
-  const LinearConstraintProto& linear = ct->linear();
-  const int ref = linear.vars(0);
-  const int var = PositiveRef(ref);
-  const int64_t coeff =
-      RefIsPositive(ref) ? ct->linear().coeffs(0) : -ct->linear().coeffs(0);
-
-  if (linear.domain_size() == 2 && linear.domain(0) == linear.domain(1)) {
-    const int64_t value = RefIsPositive(ref) ? linear.domain(0) * coeff
-                                             : -linear.domain(0) * coeff;
-    if (!context_->DomainOf(var).Contains(value)) {
-      if (!context_->SetLiteralToFalse(literal)) return false;
-    } else if (context_->StoreLiteralImpliesVarEqValue(literal, var, value)) {
-      // The domain is not actually modified, but we want to rescan the
-      // constraints linked to this variable. See TODO below.
-      context_->modified_domains.Set(var);
-    }
-  } else {
-    const Domain complement = context_->DomainOf(ref).IntersectionWith(
-        ReadDomainFromProto(linear).Complement());
-    if (complement.Size() != 1) return false;
-    const int64_t value = RefIsPositive(ref) ? complement.Min() * coeff
-                                             : -complement.Min() * coeff;
-    if (context_->StoreLiteralImpliesVarNEqValue(literal, var, value)) {
-      // The domain is not actually modified, but we want to rescan the
-      // constraints linked to this variable. See TODO below.
-      context_->modified_domains.Set(var);
+  const Domain complement = rhs.Complement().IntersectionWith(var_domain);
+  if (complement.IsFixed()) {
+    const int64_t value = complement.FixedValue();
+    int encoding_lit;
+    if (context_->HasVarValueEncoding(var, value, &encoding_lit)) {
+      if (NegatedRef(lit) == encoding_lit) return false;
+      context_->AddImplication(lit, NegatedRef(encoding_lit));
+      context_->UpdateNewConstraintsVariableUsage();
+      ct->Clear();
+      context_->UpdateRuleStats("linear1: transformed to implication");
+      return true;
+    } else {
+      if (context_->StoreLiteralImpliesVarNEqValue(lit, var, value)) {
+        // The domain is not actually modified, but we want to rescan the
+        // constraints linked to this variable.
+        context_->modified_domains.Set(var);
+      }
+      context_->UpdateNewConstraintsVariableUsage();
     }
   }
 
-  // TODO(user): if we have l1 <=> x == value && l2 => x == value, we
-  //     could rewrite the second constraint into l2 => l1.
-  context_->UpdateNewConstraintsVariableUsage();
   return false;
 }
 
@@ -5577,6 +5611,14 @@ bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
     const int ref = proto.literals(i);
     const int tail = proto.tails(i);
     const int head = proto.heads(i);
+
+    if (tail >= has_incoming_or_outgoing_arcs.size()) {
+      has_incoming_or_outgoing_arcs.resize(tail + 1, false);
+    }
+    if (head >= has_incoming_or_outgoing_arcs.size()) {
+      has_incoming_or_outgoing_arcs.resize(head + 1, false);
+    }
+
     if (context_->LiteralIsFalse(ref)) {
       context_->UpdateRuleStats("routes: removed false arcs");
       continue;
@@ -5585,12 +5627,6 @@ bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
     proto.set_tails(new_size, tail);
     proto.set_heads(new_size, head);
     ++new_size;
-    if (tail >= has_incoming_or_outgoing_arcs.size()) {
-      has_incoming_or_outgoing_arcs.resize(tail + 1, false);
-    }
-    if (head >= has_incoming_or_outgoing_arcs.size()) {
-      has_incoming_or_outgoing_arcs.resize(head + 1, false);
-    }
     has_incoming_or_outgoing_arcs[tail] = true;
     has_incoming_or_outgoing_arcs[head] = true;
   }
@@ -5603,13 +5639,6 @@ bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
         "routes: graph with nodes and no arcs");
   }
 
-  if (new_size < num_arcs) {
-    proto.mutable_literals()->Truncate(new_size);
-    proto.mutable_tails()->Truncate(new_size);
-    proto.mutable_heads()->Truncate(new_size);
-    return true;
-  }
-
   // if a node misses an incomping or outgoing arc, the model is trivially
   // infeasible.
   for (int n = 0; n < has_incoming_or_outgoing_arcs.size(); ++n) {
@@ -5617,6 +5646,13 @@ bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
       return context_->NotifyThatModelIsUnsat(absl::StrCat(
           "routes: node ", n, " misses incoming or outgoing arcs"));
     }
+  }
+
+  if (new_size < num_arcs) {
+    proto.mutable_literals()->Truncate(new_size);
+    proto.mutable_tails()->Truncate(new_size);
+    proto.mutable_heads()->Truncate(new_size);
+    return true;
   }
 
   return false;
@@ -7964,33 +8000,18 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     // TODO(user): We can deal with enforced constraints in some situation.
     if (!ct.enforcement_literal().empty()) continue;
 
-    Domain implied(0);
-    const LinearConstraintProto& lin = ct.linear();
-    bool abort = false;
-    int64_t min_activity = 0;
-    int64_t max_activity = 0;
-    for (int i = 0; i < lin.vars().size(); ++i) {
-      const int var = lin.vars(i);
-      const int64_t coeff = lin.coeffs(i);
-      if (!RefIsPositive(var) || coeff == 0) {
-        // This shouldn't happen except in potential corner cases were the
-        // constraints were not canonicalized before this point. We just skip
-        // such constraint.
-        abort = true;
-        break;
-      }
-      if (coeff > 0) {
-        min_activity += coeff * context_->MinOf(var);
-        max_activity += coeff * context_->MaxOf(var);
-      } else {
-        min_activity += coeff * context_->MaxOf(var);
-        max_activity += coeff * context_->MinOf(var);
-      }
+    if (!LinearConstraintIsClean(ct.linear())) {
+      // This shouldn't happen except in potential corner cases were the
+      // constraints were not canonicalized before this point. We just skip
+      // such constraint.
+      continue;
     }
-    if (abort) continue;
 
     DCHECK_LT(c, context_->ConstraintToVarsGraph().size());
     detector.AddPotentialSet(c);
+
+    const auto [min_activity, max_activity] =
+        context_->ComputeMinMaxActivity(ct.linear());
     cached_expr_domain[c] = Domain(min_activity, max_activity);
   }
 
@@ -8899,7 +8920,7 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
         context_->working_model->constraints(c);
     context_->mapping_model
         ->mutable_constraints(context_->mapping_model->constraints().size() - 1)
-        ->set_name("here");
+        ->set_name("removable enforcement literal");
     context_->working_model->mutable_constraints(c)->Clear();
     context_->UpdateConstraintVariableUsage(c);
   }
@@ -9144,11 +9165,14 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
       break;
     }
     if (!RefIsPositive(ct.linear().vars(0))) coeff *= 1;
-    const Domain rhs =
-        ReadDomainFromProto(ct.linear()).InverseMultiplicationBy(coeff);
+    const int var = PositiveRef(ct.linear().vars(0));
+    const Domain var_domain = context_->DomainOf(var);
+    const Domain rhs = ReadDomainFromProto(ct.linear())
+                           .InverseMultiplicationBy(coeff)
+                           .IntersectionWith(var_domain);
 
     if (rhs.IsFixed()) {
-      if (!context_->DomainOf(var).Contains(rhs.FixedValue())) {
+      if (!var_domain.Contains(rhs.FixedValue())) {
         if (!context_->SetLiteralToFalse(ct.enforcement_literal(0))) {
           return;
         }
@@ -9158,15 +9182,14 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
             ct.enforcement_literal(0));
       }
     } else {
-      const Domain complement =
-          context_->DomainOf(var).IntersectionWith(rhs.Complement());
+      const Domain complement = var_domain.IntersectionWith(rhs.Complement());
       if (complement.IsEmpty()) {
         // TODO(user): This should be dealt with elsewhere.
         abort = true;
         break;
       }
       if (complement.IsFixed()) {
-        if (context_->DomainOf(var).Contains(complement.FixedValue())) {
+        if (var_domain.Contains(complement.FixedValue())) {
           values_set.insert(complement.FixedValue());
           value_to_not_equal_literals[complement.FixedValue()].push_back(
               ct.enforcement_literal(0));
@@ -9975,25 +9998,45 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
   non_fixed_variables_.clear();
   non_fixed_coefficients_.clear();
   int64_t offset = 0;
+  int64_t min_activity = 0;
+  int64_t max_activity = 0;
   for (int i = 0; i < ct.linear().vars_size(); ++i) {
     const int ref = ct.linear().vars(i);
     const int64_t coeff = ct.linear().coeffs(i);
+    if (coeff == 0) continue;
     if (context_->IsFixed(ref)) {
       offset += coeff * context_->MinOf(ref);
       skipped_non_zero_++;
+      continue;
+    }
+
+    if (coeff > 0) {
+      min_activity += coeff * context_->MinOf(ref);
+      max_activity += coeff * context_->MaxOf(ref);
     } else {
+      min_activity += coeff * context_->MaxOf(ref);
+      max_activity += coeff * context_->MinOf(ref);
+    }
+
+    // Make sure we never have negative ref in a linear constraint.
+    if (RefIsPositive(ref)) {
       non_fixed_variables_.push_back(ref);
       non_fixed_coefficients_.push_back(coeff);
+    } else {
+      non_fixed_variables_.push_back(NegatedRef(ref));
+      non_fixed_coefficients_.push_back(-coeff);
     }
   }
 
-  const Domain new_domain =
+  const Domain implied(min_activity, max_activity);
+  const Domain new_rhs =
       ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-offset));
-  if (non_fixed_variables_.empty()) {
-    // Trivial constraint.
-    if (new_domain.Contains(0)) return true;
 
-    // Constraint is false.
+  // Trivial constraint?
+  if (implied.IsIncludedIn(new_rhs)) return true;
+
+  // Constraint is false?
+  if (implied.IntersectionWith(new_rhs).IsEmpty()) {
     if (ct.enforcement_literal().empty()) return false;
     temp_literals_.clear();
     for (const int literal : ct.enforcement_literal()) {
@@ -10010,8 +10053,6 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
     return !temp_literals_.empty();
   }
 
-  // TODO(user): Compute domain and avoid copying constraint that are always
-  // true.
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   CopyEnforcementLiterals(ct, new_ct);
   LinearConstraintProto* linear = new_ct->mutable_linear();
@@ -10019,7 +10060,7 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
                               non_fixed_variables_.end());
   linear->mutable_coeffs()->Add(non_fixed_coefficients_.begin(),
                                 non_fixed_coefficients_.end());
-  FillDomainInProto(new_domain, linear);
+  FillDomainInProto(new_rhs, linear);
   return true;
 }
 

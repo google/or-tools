@@ -845,7 +845,7 @@ SatSolver::Status SolveWithRandomParameters(
         ProtobufShortDebugString(parameters)));
   }
 
-  // Retore the initial parameter (with an updated time limit).
+  // Restore the initial parameter (with an updated time limit).
   parameters = initial_parameters;
   parameters.set_max_time_in_seconds(time_limit.GetTimeLeft());
   solver->SetParameters(parameters);
@@ -2115,6 +2115,91 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
     // found in case the solve is split in "chunk".
     if (result == SatSolver::LIMIT_REACHED) return result;
   }
+}
+
+ObjectiveLowerBoundScanner::ObjectiveLowerBoundScanner(
+    IntegerVariable objective_var,
+    const std::function<void()>& feasible_solution_observer, Model* model)
+    : model_(model),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      encoder_(model->GetOrCreate<IntegerEncoder>()),
+      parameters_(*(model->GetOrCreate<SatParameters>())),
+      level_zero_callbacks_(model->GetOrCreate<LevelZeroCallbackHelper>()),
+      shared_response_manager_(model->Mutable<SharedResponseManager>()),
+      objective_var_(objective_var),
+      feasible_solution_observer_(feasible_solution_observer) {}
+
+SatSolver::Status ObjectiveLowerBoundScanner::ShaveObjectiveLowerBound() {
+  while (!time_limit_->LimitReached()) {
+    if (time_limit_->LimitReached()) {
+      return SatSolver::LIMIT_REACHED;
+    }
+
+    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+    for (const auto& cb : level_zero_callbacks_->callbacks) {
+      if (!cb()) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return SatSolver::INFEASIBLE;
+      }
+    }
+
+    const IntegerValue lb = integer_trail_->LowerBound(objective_var_);
+    const IntegerValue ub = integer_trail_->UpperBound(objective_var_);
+    VLOG(2) << "   lb = " << lb << ", ub = " << ub;
+
+    const Literal assumption = encoder_->GetOrCreateAssociatedLiteral(
+        IntegerLiteral::LowerOrEqual(objective_var_, lb));
+    const SatSolver::Status status =
+        ResetAndSolveIntegerProblem({assumption}, model_);
+
+    switch (status) {
+      case SatSolver::INFEASIBLE: {
+        return SatSolver::INFEASIBLE;
+      }
+      case SatSolver::ASSUMPTIONS_UNSAT: {
+        shared_response_manager_->UpdateInnerObjectiveBounds(
+            absl::StrCat(model_->Name(), " #iteration=", iteration_), lb + 1,
+            ub);
+        // Update the objective lower bound.
+        const IntegerValue new_lb = integer_trail_->LowerBound(objective_var_);
+        sat_solver_->Backtrack(0);
+        if (!integer_trail_->Enqueue(
+                IntegerLiteral::GreaterOrEqual(objective_var_,
+                                               std::max(new_lb, lb + 1)),
+                {}, {})) {
+          return SatSolver::INFEASIBLE;
+        }
+        break;
+      }
+      case SatSolver::FEASIBLE: {
+        if (feasible_solution_observer_ != nullptr) {
+          feasible_solution_observer_();
+        }
+
+        // The objective is the current lower bound of the objective_var.
+        const IntegerValue objective_value =
+            integer_trail_->LowerBound(objective_var_);
+
+        // We have a solution, restrict the objective upper bound to only look
+        // for better ones now.
+        sat_solver_->Backtrack(0);
+        if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(
+                                         objective_var_, objective_value - 1),
+                                     {}, {})) {
+          return SatSolver::INFEASIBLE;
+        }
+        break;
+      }
+      case SatSolver::LIMIT_REACHED: {
+        return SatSolver::LIMIT_REACHED;
+      }
+    }
+    iteration_++;
+  }
+
+  return SatSolver::LIMIT_REACHED;
 }
 
 }  // namespace sat

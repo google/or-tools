@@ -108,7 +108,7 @@ class CutDataBuilder {
   // is the only case we need.
   void ClearIndices();
   void RegisterAllBooleansTerms(const CutData& cut);
-  void AddOrMergeTerm(const CutTerm& term, CutData* cut);
+  void AddOrMergeTerm(const CutTerm& term, IntegerValue t, CutData* cut);
   int NumMergesSinceLastClear() const { return num_merges_; }
 
   // Returns false if we encounter an integer overflow.

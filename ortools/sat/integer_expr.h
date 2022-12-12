@@ -699,6 +699,15 @@ inline void LoadConditionalLinearConstraint(
   }
 }
 
+inline void AddConditionalAffinePrecedence(
+    const std::vector<Literal>& enforcement_literals, AffineExpression left,
+    AffineExpression right, Model* model) {
+  LinearConstraintBuilder builder(model, kMinIntegerValue, 0);
+  builder.AddTerm(left, 1);
+  builder.AddTerm(right, -1);
+  LoadConditionalLinearConstraint(enforcement_literals, builder.Build(), model);
+}
+
 // Weighted sum == constant reified.
 // TODO(user): Simplify if the constant is at the edge of the possible values.
 template <typename VectorInt>

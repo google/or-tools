@@ -145,7 +145,8 @@ void CutDataBuilder::RegisterAllBooleansTerms(const CutData& cut) {
   }
 }
 
-void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, CutData* cut) {
+void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, IntegerValue t,
+                                    CutData* cut) {
   DCHECK_EQ(term.expr_size, 1);
   const IntegerVariable var = term.expr_vars[0];
   const int new_index = cut->terms.size();
@@ -156,12 +157,20 @@ void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, CutData* cut) {
   if (inserted) {
     cut->terms.push_back(term);
   } else {
-    ++num_merges_;
-    if (!AddProductTo(IntegerValue(1), term.coeff,
-                      &(cut->terms)[entry_index].coeff)) {
+    // We can only merge the term if term.coeff + old_coeff do not overflow and
+    // if t * new_coeff do not overflow.
+    //
+    // If we cannot merge the term, we will keep them separate. The produced cut
+    // will be less strong, but can still be used.
+    const int64_t new_coeff =
+        CapAdd(cut->terms[entry_index].coeff.value(), term.coeff.value());
+    const int64_t overflow_check = CapProd(t.value(), new_coeff);
+    if (AtMinOrMaxInt64(new_coeff) || AtMinOrMaxInt64(overflow_check)) {
       // If we cannot merge the term, we keep them separate.
-      // Produced cut will be less strong, but can still be used.
       cut->terms.push_back(term);
+    } else {
+      ++num_merges_;
+      cut->terms[entry_index].coeff = IntegerValue(new_coeff);
     }
   }
 }
@@ -795,7 +804,7 @@ void IntegerRoundingCutHelper::ComputeCut(
           ++num_ib_used_;
           ++total_num_pos_lifts_;
           term = slack_term;
-          cut_builder_.AddOrMergeTerm(bool_term, &best_cut_);
+          cut_builder_.AddOrMergeTerm(bool_term, factor_t, &best_cut_);
           continue;
         }
       }
@@ -872,7 +881,7 @@ void IntegerRoundingCutHelper::ComputeCut(
         ++num_ib_used_;
         ++total_num_neg_lifts_;
         term = slack_term;
-        cut_builder_.AddOrMergeTerm(bool_term, &best_cut_);
+        cut_builder_.AddOrMergeTerm(bool_term, factor_t, &best_cut_);
       }
     }
     total_num_merges_ = cut_builder_.NumMergesSinceLastClear();

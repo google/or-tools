@@ -1030,15 +1030,41 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
   }
   if (model.has_objective()) {
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
-    if (!after_presolve) {
-      // TODO(user): Instead we could check that under these factors the
-      // objective domain still fit on an int64_t.
-      if (model.objective().integer_scaling_factor() != 0 ||
-          model.objective().integer_before_offset() != 0 ||
-          model.objective().integer_after_offset() != 0) {
+
+    if (model.objective().integer_scaling_factor() != 0 ||
+        model.objective().integer_before_offset() != 0 ||
+        model.objective().integer_after_offset() != 0) {
+      // If any of these fields are set, the domain must be set.
+      if (model.objective().domain().empty()) {
+        return absl::StrCat(
+            "Objective integer scaling or offset is set without an objective "
+            "domain.");
+      }
+
+      // Check that we can transform any value in the objective domain without
+      // overflow. We only check the bounds which is enough.
+      bool overflow = false;
+      for (const int64_t v : model.objective().domain()) {
+        int64_t t = CapAdd(v, model.objective().integer_before_offset());
+        if (AtMinOrMaxInt64(t)) {
+          overflow = true;
+          break;
+        }
+        t = CapProd(t, model.objective().integer_scaling_factor());
+        if (AtMinOrMaxInt64(t)) {
+          overflow = true;
+          break;
+        }
+        t = CapAdd(t, model.objective().integer_after_offset());
+        if (AtMinOrMaxInt64(t)) {
+          overflow = true;
+          break;
+        }
+      }
+      if (overflow) {
         return absl::StrCat(
             "Internal fields related to the postsolve of the integer objective "
-            "are set in the input objective proto: ",
+            "are causing a potential integer overflow: ",
             ProtobufShortDebugString(model.objective()));
       }
     }

@@ -21,6 +21,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
@@ -36,11 +37,11 @@ namespace operations_research {
 namespace sat {
 
 std::function<void(Model*)> Disjunctive(
-    const std::vector<IntervalVariable>& vars) {
+    const std::vector<IntervalVariable>& intervals) {
   return [=](Model* model) {
     bool is_all_different = true;
     IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-    for (const IntervalVariable var : vars) {
+    for (const IntervalVariable var : intervals) {
       if (repository->IsOptional(var) || repository->MinSize(var) != 1 ||
           repository->MaxSize(var) != 1) {
         is_all_different = false;
@@ -49,8 +50,8 @@ std::function<void(Model*)> Disjunctive(
     }
     if (is_all_different) {
       std::vector<AffineExpression> starts;
-      starts.reserve(vars.size());
-      for (const IntervalVariable interval : vars) {
+      starts.reserve(intervals.size());
+      for (const IntervalVariable interval : intervals) {
         starts.push_back(repository->Start(interval));
       }
       model->Add(AllDifferentOnBounds(starts));
@@ -59,20 +60,20 @@ std::function<void(Model*)> Disjunctive(
 
     auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
     const auto& sat_parameters = *model->GetOrCreate<SatParameters>();
-    if (vars.size() > 2 && sat_parameters.use_combined_no_overlap()) {
-      model->GetOrCreate<CombinedDisjunctive<true>>()->AddNoOverlap(vars);
-      model->GetOrCreate<CombinedDisjunctive<false>>()->AddNoOverlap(vars);
+    if (intervals.size() > 2 && sat_parameters.use_combined_no_overlap()) {
+      model->GetOrCreate<CombinedDisjunctive<true>>()->AddNoOverlap(intervals);
+      model->GetOrCreate<CombinedDisjunctive<false>>()->AddNoOverlap(intervals);
       return;
     }
 
     SchedulingConstraintHelper* helper =
-        new SchedulingConstraintHelper(vars, model);
+        new SchedulingConstraintHelper(intervals, model);
     model->TakeOwnership(helper);
 
     // Experiments to use the timetable only to propagate the disjunctive.
     if (/*DISABLES_CODE*/ (false)) {
       const AffineExpression one(IntegerValue(1));
-      std::vector<AffineExpression> demands(vars.size(), one);
+      std::vector<AffineExpression> demands(intervals.size(), one);
       SchedulingDemandHelper* demands_helper = model->TakeOwnership(
           new SchedulingDemandHelper(demands, helper, model));
 
@@ -83,7 +84,7 @@ std::function<void(Model*)> Disjunctive(
       return;
     }
 
-    if (vars.size() == 2) {
+    if (intervals.size() == 2) {
       DisjunctiveWithTwoItems* propagator = new DisjunctiveWithTwoItems(helper);
       propagator->RegisterWith(watcher);
       model->TakeOwnership(propagator);
@@ -138,35 +139,76 @@ std::function<void(Model*)> Disjunctive(
   };
 }
 
-std::function<void(Model*)> DisjunctiveWithBooleanPrecedencesOnly(
-    const std::vector<IntervalVariable>& vars) {
-  return [=](Model* model) {
-    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-    IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    for (int i = 0; i < vars.size(); ++i) {
-      for (int j = 0; j < i; ++j) {
+void AddDisjunctiveWithBooleanPrecedencesOnly(
+    const std::vector<IntervalVariable>& intervals, Model* model) {
+  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
+  std::vector<Literal> enforcement_literals;
+  for (int i = 1; i < intervals.size(); ++i) {
+    enforcement_literals.clear();
+    const AffineExpression start_i = repository->Start(intervals[i]);
+    const AffineExpression end_i = repository->End(intervals[i]);
+    if (repository->IsOptional(intervals[i])) {
+      enforcement_literals.push_back(repository->PresenceLiteral(intervals[i]));
+    }
+    const int enforcement_literals_size = enforcement_literals.size();
+
+    for (int j = 0; j < i; ++j) {
+      enforcement_literals.resize(enforcement_literals_size);
+      const AffineExpression start_j = repository->Start(intervals[j]);
+      const AffineExpression end_j = repository->End(intervals[j]);
+      if (repository->IsOptional(intervals[j])) {
+        enforcement_literals.push_back(
+            repository->PresenceLiteral(intervals[j]));
+      }
+
+      DCHECK_LE(enforcement_literals.size(), 2);
+
+      if (integer_trail->UpperBound(start_i) <
+          integer_trail->LowerBound(end_j)) {
+        // task_i is always before task_j.
+        AddConditionalAffinePrecedence(enforcement_literals, end_i, start_j,
+                                       model);
+      } else if (integer_trail->UpperBound(start_j) <
+                 integer_trail->LowerBound(end_i)) {
+        // task_j is always before task_i.
+        AddConditionalAffinePrecedence(enforcement_literals, end_j, start_i,
+                                       model);
+      } else {
         const BooleanVariable boolean_var = sat_solver->NewBooleanVariable();
         const Literal i_before_j = Literal(boolean_var, true);
-        const Literal j_before_i = i_before_j.Negated();
-        precedences->AddConditionalPrecedence(repository->EndVar(vars[i]),
-                                              repository->StartVar(vars[j]),
-                                              i_before_j);
-        precedences->AddConditionalPrecedence(repository->EndVar(vars[j]),
-                                              repository->StartVar(vars[i]),
-                                              j_before_i);
+        enforcement_literals.push_back(i_before_j);
+        AddConditionalAffinePrecedence(enforcement_literals, end_i, start_j,
+                                       model);
+        DCHECK_LE(enforcement_literals.size(), 3);
+        enforcement_literals.pop_back();
+        enforcement_literals.push_back(i_before_j.Negated());
+        AddConditionalAffinePrecedence(enforcement_literals, end_j, start_i,
+                                       model);
+        DCHECK_LE(enforcement_literals.size(), 3);
+        enforcement_literals.pop_back();
+
+        // Force the value of boolean_var in case the precedence is not
+        // active. This avoids duplicate solutions when enumerating all
+        // possible solutions.
+        if (repository->IsOptional(intervals[i])) {
+          model->Add(Implication(
+              repository->PresenceLiteral(intervals[i]).Negated(), i_before_j));
+        }
+        if (repository->IsOptional(intervals[j])) {
+          model->Add(Implication(
+              repository->PresenceLiteral(intervals[j]).Negated(), i_before_j));
+        }
       }
     }
-  };
+  }
 }
 
-std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
-    const std::vector<IntervalVariable>& vars) {
-  return [=](Model* model) {
-    model->Add(DisjunctiveWithBooleanPrecedencesOnly(vars));
-    model->Add(Disjunctive(vars));
-  };
+void AddDisjunctiveWithBooleanPrecedences(
+    const std::vector<IntervalVariable>& intervals, Model* model) {
+  AddDisjunctiveWithBooleanPrecedencesOnly(intervals, model);
+  model->Add(Disjunctive(intervals));
 }
 
 void TaskSet::AddEntry(const Entry& e) {

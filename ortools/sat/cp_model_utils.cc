@@ -719,16 +719,18 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
 
   // Fingerprint the objective.
   if (model.has_objective()) {
-    fp = FingerprintRepeatedField(model.objective().vars());
-    fp = FingerprintRepeatedField(model.objective().coeffs());
-    fp = FingerprintSingleField(model.objective().offset());
-    fp = FingerprintSingleField(model.objective().scaling_factor());
-    fp = FingerprintRepeatedField(model.objective().domain());
+    fp = FingerprintRepeatedField(model.objective().vars(), fp);
+    fp = FingerprintRepeatedField(model.objective().coeffs(), fp);
+    fp = FingerprintSingleField(model.objective().offset(), fp);
+    fp = FingerprintSingleField(model.objective().scaling_factor(), fp);
+    fp = FingerprintRepeatedField(model.objective().domain(), fp);
   } else if (model.has_floating_point_objective()) {
-    fp = FingerprintRepeatedField(model.floating_point_objective().vars());
-    fp = FingerprintRepeatedField(model.floating_point_objective().coeffs());
-    fp = FingerprintSingleField(model.floating_point_objective().offset());
-    fp = FingerprintSingleField(model.floating_point_objective().maximize());
+    fp = FingerprintRepeatedField(model.floating_point_objective().vars(), fp);
+    fp =
+        FingerprintRepeatedField(model.floating_point_objective().coeffs(), fp);
+    fp = FingerprintSingleField(model.floating_point_objective().offset(), fp);
+    fp =
+        FingerprintSingleField(model.floating_point_objective().maximize(), fp);
   }
 
   if (model.has_solution_hint()) {

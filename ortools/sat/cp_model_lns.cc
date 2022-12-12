@@ -989,23 +989,27 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
       const Domain domain = ReadDomainFromProto(current_var);
       const int64_t base_value = base_solution.solution(i);
 
-      // It seems better to always start from a feasible point, so if the base
-      // solution is no longer valid under the new up to date bound, we make
-      // sure to relax the domain so that it is.
-      if (!domain.Contains(base_value)) {
-        // TODO(user): this can happen when variables_to_fix.contains(i). But we
-        // should probably never consider as "active" such variable in the first
-        // place.
-        //
-        // TODO(user): This might lead to incompatibility when the base solution
-        // is not compatible with variable we fixed in a connected component! so
-        // maybe it is not great to do that. Initial investigation didn't see
-        // a big change. More work needed.
-        FillDomainInProto(domain.UnionWith(Domain(base_solution.solution(i))),
-                          new_var);
-      } else if (variables_to_fix.contains(i)) {
-        new_var->add_domain(base_value);
-        new_var->add_domain(base_value);
+      if (variables_to_fix.contains(i)) {
+        if (domain.Contains(base_value)) {
+          new_var->add_domain(base_value);
+          new_var->add_domain(base_value);
+        } else {
+          // If under the updated domain, the base solution is no longer valid,
+          // We should probably regenerate this neighborhood. But for now we
+          // just do a best effort and take the closest value.
+          int64_t closest_value = domain.Min();
+          int64_t closest_dist = std::abs(closest_value - base_value);
+          for (const ClosedInterval interval : domain) {
+            for (const int64_t value : {interval.start, interval.end}) {
+              const int64_t dist = std::abs(value - base_value);
+              if (dist < closest_dist) {
+                closest_value = value;
+                closest_dist = dist;
+              }
+            }
+          }
+          FillDomainInProto(Domain(closest_value, closest_value), new_var);
+        }
       } else {
         FillDomainInProto(domain, new_var);
       }
@@ -1271,13 +1275,11 @@ Neighborhood RelaxRandomConstraintsGenerator::Generate(
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
 }
 
+// Note that even if difficulty means full neighborhood, we go through the
+// generation process to never get out of a connected components.
 Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  if (helper_.DifficultyMeansFullNeighborhood(difficulty)) {
-    return helper_.FullNeighborhood();
-  }
-
   const int num_model_vars = helper_.ModelProto().variables_size();
   std::vector<bool> visited_variables_set(num_model_vars, false);
   std::vector<int> relaxed_variables;
@@ -1335,15 +1337,17 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
       if (relaxed_variables.size() >= target_size) break;
     }
   }
+
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
 }
 
+// Note that even if difficulty means full neighborhood, we go through the
+// generation process to never get out of a connected components.
 Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
   const int num_model_constraints = helper_.ModelProto().constraints_size();
-  if (num_model_constraints == 0 ||
-      helper_.DifficultyMeansFullNeighborhood(difficulty)) {
+  if (num_model_constraints == 0) {
     return helper_.FullNeighborhood();
   }
 
@@ -1401,6 +1405,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
       }
     }
   }
+
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
 }
 

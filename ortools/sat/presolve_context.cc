@@ -1379,6 +1379,7 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
   const absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[ref];
   const auto it = var_map.find(value);
   if (it != var_map.end()) {
+    if (VariableWasRemoved(it->second.Get(this))) return false;
     if (literal != nullptr) {
       *literal = it->second.Get(this);
     }

@@ -911,6 +911,7 @@ cc_library(
     deps = [
         ":all_different",
         ":integer",
+        ":integer_expr",
         ":intervals",
         ":model",
         ":precedences",

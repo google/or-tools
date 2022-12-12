@@ -877,6 +877,83 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         context->UpdateRuleStats("TODO dual: add implied bound");
       }
 
+      // We can make enf equivalent to the constraint instead of just =>. This
+      // seems useful since internally we always use fully reified encoding.
+      if (ct.constraint_case() == ConstraintProto::kLinear &&
+          ct.linear().vars().size() == 1 &&
+          ct.enforcement_literal().size() == 1 &&
+          ct.enforcement_literal(0) == NegatedRef(ref)) {
+        const int var = ct.linear().vars(0);
+        const Domain var_domain = context->DomainOf(var);
+        const Domain rhs = ReadDomainFromProto(ct.linear())
+                               .InverseMultiplicationBy(ct.linear().coeffs(0))
+                               .IntersectionWith(var_domain);
+        if (rhs.IsEmpty()) {
+          context->UpdateRuleStats("linear1: infeasible");
+          if (!context->SetLiteralToFalse(ct.enforcement_literal(0))) {
+            return false;
+          }
+          processed[PositiveRef(ref)] = true;
+          processed[PositiveRef(var)] = true;
+          context->working_model->mutable_constraints(ct_index)->Clear();
+          context->UpdateConstraintVariableUsage(ct_index);
+          continue;
+        }
+        if (rhs == var_domain) {
+          context->UpdateRuleStats("linear1: always true");
+          processed[PositiveRef(ref)] = true;
+          processed[PositiveRef(var)] = true;
+          context->working_model->mutable_constraints(ct_index)->Clear();
+          context->UpdateConstraintVariableUsage(ct_index);
+          continue;
+        }
+
+        const Domain complement = rhs.Complement().IntersectionWith(var_domain);
+        if (rhs.IsFixed() || complement.IsFixed()) {
+          context->UpdateRuleStats("dual: make encoding equiv");
+          const int64_t value =
+              rhs.IsFixed() ? rhs.FixedValue() : complement.FixedValue();
+          int encoding_lit;
+          if (context->HasVarValueEncoding(var, value, &encoding_lit)) {
+            // If it is different, we have an equivalence now, and we can
+            // remove the constraint.
+            if (rhs.IsFixed()) {
+              if (encoding_lit == NegatedRef(ref)) continue;
+              context->StoreBooleanEqualityRelation(encoding_lit,
+                                                    NegatedRef(ref));
+            } else {
+              if (encoding_lit == ref) continue;
+              context->StoreBooleanEqualityRelation(encoding_lit, ref);
+            }
+            context->working_model->mutable_constraints(ct_index)->Clear();
+            context->UpdateConstraintVariableUsage(ct_index);
+            processed[PositiveRef(ref)] = true;
+            processed[PositiveRef(var)] = true;
+            processed[PositiveRef(encoding_lit)] = true;
+            continue;
+          }
+
+          processed[PositiveRef(ref)] = true;
+          processed[PositiveRef(var)] = true;
+          ConstraintProto* new_ct = context->working_model->add_constraints();
+          new_ct->add_enforcement_literal(ref);
+          new_ct->mutable_linear()->add_vars(var);
+          new_ct->mutable_linear()->add_coeffs(1);
+          FillDomainInProto(complement, new_ct->mutable_linear());
+          context->UpdateNewConstraintsVariableUsage();
+
+          if (rhs.IsFixed()) {
+            context->StoreLiteralImpliesVarEqValue(NegatedRef(ref), var, value);
+            context->StoreLiteralImpliesVarNEqValue(ref, var, value);
+          } else if (complement.IsFixed()) {
+            context->StoreLiteralImpliesVarNEqValue(NegatedRef(ref), var,
+                                                    value);
+            context->StoreLiteralImpliesVarEqValue(ref, var, value);
+          }
+          continue;
+        }
+      }
+
       // If We have two Booleans with a blocking constraint that differ just
       // on them, we can make the Boolean equivalent. This is because they
       // will be forced to their bad value only if it is needed for that
@@ -929,13 +1006,11 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
       // Other potential cases?
       if (!ct.enforcement_literal().empty()) {
-        // We can make enf equivalent to the constraint instead of just =>.
-        // This might also be useful for encoding if vars(0) is not a literal.
         if (ct.constraint_case() == ConstraintProto::kLinear &&
-            ct.linear().vars().size() == 1 && ct.linear().coeffs(0) == 1 &&
+            ct.linear().vars().size() == 1 &&
             ct.enforcement_literal().size() == 1 &&
             ct.enforcement_literal(0) == NegatedRef(ref)) {
-          context->UpdateRuleStats("TODO dual: make encoding equiv?");
+          context->UpdateRuleStats("TODO dual: make linear1 equiv");
         } else {
           context->UpdateRuleStats(
               "TODO dual: only one blocking enforced constraint?");
@@ -999,26 +1074,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   return true;
 }
 
-namespace {
-
-// TODO(user): Maybe we should avoid recomputing that here.
-template <typename LinearExprProto>
-void FillMinMaxActivity(const PresolveContext& context,
-                        const LinearExprProto& proto, int64_t* min_activity,
-                        int64_t* max_activity) {
-  *min_activity = 0;
-  *max_activity = 0;
-  const int num_vars = proto.vars().size();
-  for (int i = 0; i < num_vars; ++i) {
-    const int64_t a = proto.coeffs(i) * context.MinOf(proto.vars(i));
-    const int64_t b = proto.coeffs(i) * context.MaxOf(proto.vars(i));
-    *min_activity += std::min(a, b);
-    *max_activity += std::max(a, b);
-  }
-}
-
-}  // namespace
-
 void DetectDominanceRelations(
     const PresolveContext& context, VarDomination* var_domination,
     DualBoundStrengthening* dual_bound_strengthening) {
@@ -1026,9 +1081,6 @@ void DetectDominanceRelations(
   const int num_vars = cp_model.variables().size();
   var_domination->Reset(num_vars);
   dual_bound_strengthening->Reset(num_vars);
-
-  int64_t min_activity = std::numeric_limits<int64_t>::min();
-  int64_t max_activity = std::numeric_limits<int64_t>::max();
 
   for (int var = 0; var < num_vars; ++var) {
     // Ignore variables that have been substitued already or are unused.
@@ -1121,8 +1173,9 @@ void DetectDominanceRelations(
                                                   /*coeffs=*/{});
           break;
         case ConstraintProto::kLinear: {
-          FillMinMaxActivity(context, ct.linear(), &min_activity,
-                             &max_activity);
+          // TODO(user): Maybe we should avoid recomputing that here.
+          const auto [min_activity, max_activity] =
+              context.ComputeMinMaxActivity(ct.linear());
           if (phase == 0) {
             dual_bound_strengthening->ProcessLinearConstraint(
                 false, context, ct.linear(), min_activity, max_activity, c);
@@ -1174,8 +1227,8 @@ void DetectDominanceRelations(
       if (phase == 0) {
         context.WriteObjectiveToProto();
       }
-      FillMinMaxActivity(context, cp_model.objective(), &min_activity,
-                         &max_activity);
+      const auto [min_activity, max_activity] =
+          context.ComputeMinMaxActivity(cp_model.objective());
       const auto& domain = cp_model.objective().domain();
       if (phase == 0 && !domain.empty()) {
         dual_bound_strengthening->ProcessLinearConstraint(

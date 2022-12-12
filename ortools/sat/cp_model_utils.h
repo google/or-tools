@@ -195,23 +195,19 @@ bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
 // T must be castable to uint64_t.
 template <class T>
 inline uint64_t FingerprintRepeatedField(
-    const google::protobuf::RepeatedField<T>& sequence,
-    uint64_t seed = uint64_t{0xa5b85c5e198ed849}) {
+    const google::protobuf::RepeatedField<T>& sequence, uint64_t seed) {
   return fasthash64(reinterpret_cast<const char*>(sequence.data()),
                     sequence.size() * sizeof(T), seed);
 }
 
 // T must be castable to uint64_t.
 template <class T>
-inline uint64_t FingerprintSingleField(const T& field,
-                                       uint64_t seed = uint64_t{
-                                           0xa5b85c5e198ed849}) {
+inline uint64_t FingerprintSingleField(const T& field, uint64_t seed) {
   return fasthash64(reinterpret_cast<const char*>(&field), sizeof(T), seed);
 }
 
 // Returns a stable fingerprint of a linear expression.
-uint64_t FingerprintExpression(const LinearExpressionProto& lin,
-                               uint64_t seed = uint64_t{0xa5b85c5e198ed849});
+uint64_t FingerprintExpression(const LinearExpressionProto& lin, uint64_t seed);
 
 // Returns a stable fingerprint of a model.
 uint64_t FingerprintModel(const CpModelProto& model,

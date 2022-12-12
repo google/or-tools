@@ -138,6 +138,29 @@ class PresolveContext {
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
 
+  // Accepts any proto with two parallel vector .vars() and .coeffs(), like
+  // LinearConstraintProto or ObjectiveProto or LinearExpressionProto but beware
+  // that this ignore any offset.
+  template <typename ProtoWithVarsAndCoeffs>
+  std::pair<int64_t, int64_t> ComputeMinMaxActivity(
+      const ProtoWithVarsAndCoeffs& proto) const {
+    int64_t min_activity = 0;
+    int64_t max_activity = 0;
+    const int num_vars = proto.vars().size();
+    for (int i = 0; i < num_vars; ++i) {
+      const int var = proto.vars(i);
+      const int64_t coeff = proto.coeffs(i);
+      if (coeff > 0) {
+        min_activity += coeff * MinOf(var);
+        max_activity += coeff * MaxOf(var);
+      } else {
+        min_activity += coeff * MaxOf(var);
+        max_activity += coeff * MinOf(var);
+      }
+    }
+    return {min_activity, max_activity};
+  }
+
   // This methods only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
 

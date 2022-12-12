@@ -516,6 +516,25 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
   {
     SatParameters new_params = base_params;
+    new_params.set_linearization_level(1);
+    new_params.set_use_objective_lb_search(true);
+    if (base_params.use_dual_scheduling_heuristics()) {
+      new_params.set_use_overload_checker_in_cumulative(true);
+      new_params.set_use_timetable_edge_finding_in_cumulative(true);
+      new_params.set_use_hard_precedences_in_cumulative(true);
+      new_params.set_exploit_all_precedences(true);
+    }
+    strategies["objective_lb_search"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["objective_lb_search_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    strategies["objective_lb_search_max_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
     if (base_params.use_dual_scheduling_heuristics()) {
@@ -620,6 +639,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back("quick_restart");
     names.push_back("quick_restart_no_lp");
     names.push_back("lb_tree_search");
+    names.push_back("objective_lb_search");
     names.push_back("probing");
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
     if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
@@ -684,19 +704,33 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (params.use_probing_search() && cp_model.variables().empty()) continue;
 
     if (cp_model.has_objective() && !cp_model.objective().vars().empty()) {
+      // Disable core search if only 1 term in the objective.
       if (cp_model.objective().vars().size() == 1 &&
           params.optimize_with_core()) {
         continue;
       }
+
+      // Disable objective_lb_search if core is active and num_workers <= 16.
+      if (params.use_objective_lb_search() &&
+          cp_model.objective().vars().size() > 1 &&  // core is active
+          base_params.num_workers() <= 16) {
+        continue;
+      }
+
       if (name == "less_encoding") continue;
 
+      // Disable subsolvers that do not implement the determistic mode.
+      //
       // TODO(user): Enable lb_tree_search in deterministic mode.
-      if (params.optimize_with_lb_tree_search() && params.interleave_search()) {
+      if (params.optimize_with_lb_tree_search() &&
+          (params.interleave_search() || params.use_objective_lb_search())) {
         continue;
       }
     } else {
+      // Remove subsolvers that require an objective.
       if (params.optimize_with_lb_tree_search()) continue;
       if (params.optimize_with_core()) continue;
+      if (params.use_objective_lb_search()) continue;
       if (params.search_branching() == SatParameters::LP_SEARCH) continue;
       if (params.search_branching() == SatParameters::PSEUDO_COST_SEARCH) {
         continue;
