@@ -578,8 +578,7 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
   if (!response.solution().empty()) {
     absl::StrAppendFormat(
         &result, "\nsolution_fingerprint: %#x",
-        FingerprintRepeatedField(response.solution(),
-                                 uint64_t{0xa5b85c5e198ed849}));
+        FingerprintRepeatedField(response.solution(), kDefaultFingerprintSeed));
   }
   absl::StrAppend(&result, "\n");
   return result;
@@ -1693,10 +1692,6 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
       } else {
         status = model->Mutable<CoreBasedOptimizer>()->Optimize();
       }
-    } else if (parameters.use_objective_lb_search()) {
-      ObjectiveLowerBoundScanner obj_lb_scanner(objective_var,
-                                                solution_observer, model);
-      status = obj_lb_scanner.ShaveObjectiveLowerBound();
     } else {
       // TODO(user): This parameter breaks the splitting in chunk of a Solve().
       // It should probably be moved into another SubSolver altogether.

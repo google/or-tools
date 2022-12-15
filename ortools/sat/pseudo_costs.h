@@ -60,22 +60,21 @@ class PseudoCosts {
     return pseudo_costs_[var].NumRecords();
   }
 
+  // Returns extracted information to update pseudo costs from the given
+  // branching decision.
+  std::vector<VariableBoundChange> GetBoundChanges(Literal decision);
+
  private:
   // Updates the cost of a given variable.
   void UpdateCostForVar(IntegerVariable var, double new_cost);
 
   // Reference of integer trail to access the current bounds of variables.
-  const IntegerTrail& integer_trail_;
-
   const SatParameters& parameters_;
+  IntegerTrail* integer_trail_;
+  IntegerEncoder* encoder_;
 
   absl::StrongVector<IntegerVariable, IncrementalAverage> pseudo_costs_;
 };
-
-// Returns extracted information to update pseudo costs from the given
-// branching decision.
-std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
-    LiteralIndex decision, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

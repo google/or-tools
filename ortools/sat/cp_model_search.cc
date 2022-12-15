@@ -641,6 +641,12 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back("lb_tree_search");
     names.push_back("objective_lb_search");
     names.push_back("probing");
+    if (base_params.num_workers() >= 20) {
+      names.push_back("probing_max_lp");
+    }
+    if (base_params.num_workers() >= 24) {
+      names.push_back("objective_lb_search_max_lp");
+    }
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
     if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
 #endif  // !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)

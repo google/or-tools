@@ -727,6 +727,9 @@ message SatParameters {
   // Create one literal for each disjunction of two pairs of tasks. This slows
   // down the solve time, but improves the lower bound of the objective in the
   // makespan case.
+  //
+  // Do not use if you have many tasks in one of your disjunctive since this
+  // creates O(#tasks^2) extra Booleans.
   optional bool create_precedence_literals_in_disjunctive_constraint = 229
       [default = false];
 

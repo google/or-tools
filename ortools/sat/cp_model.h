@@ -505,6 +505,17 @@ class IntervalVar {
 
 std::ostream& operator<<(std::ostream& os, const IntervalVar& var);
 
+// -- ABSL HASHING SUPPORT -----------------------------------------------------
+template <typename H>
+H AbslHashValue(H h, const IntVar& i) {
+  return H::combine(std::move(h), i.index());
+}
+
+template <typename H>
+H AbslHashValue(H h, const IntervalVar& i) {
+  return H::combine(std::move(h), i.index());
+}
+
 /**
  * A constraint.
  *

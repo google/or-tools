@@ -24,6 +24,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "ortools/base/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -340,6 +341,31 @@ std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model) {
   };
 }
 
+// TODO(user): Do we need a mechanism to reduce the range of possible gaps
+// when nothing gets proven? This could be a parameter or some adaptative code.
+std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
+  auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
+  const IntegerVariable obj_var = objective_definition->objective_var;
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* random = model->GetOrCreate<ModelRandomGenerator>();
+
+  return [obj_var, integer_trail, sat_solver, random]() {
+    BooleanOrIntegerLiteral result;
+    const int level = sat_solver->CurrentDecisionLevel();
+    if (level > 0 || obj_var == kNoIntegerVariable) return result;
+
+    const IntegerValue obj_lb = integer_trail->LowerBound(obj_var);
+    const IntegerValue obj_ub = integer_trail->UpperBound(obj_var);
+    const IntegerValue mid = (obj_ub - obj_lb) / 2;
+    const IntegerValue new_ub =
+        obj_lb + absl::LogUniform<int64_t>(*random, 0, mid.value());
+
+    result.integer_literal = IntegerLiteral::LowerOrEqual(obj_var, new_ub);
+    return result;
+  };
+}
+
 std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
   auto* objective = model->Get<ObjectiveDefinition>();
   const bool has_objective =
@@ -354,7 +380,7 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
     const IntegerVariable chosen_var = pseudo_costs->GetBestDecisionVar();
     if (chosen_var == kNoIntegerVariable) return BooleanOrIntegerLiteral();
 
-    // TODO(user): This will be overidden by the value decision heuristic in
+    // TODO(user): This will be overridden by the value decision heuristic in
     // almost all cases.
     return BooleanOrIntegerLiteral(
         GreaterOrEqualToMiddleValue(chosen_var, integer_trail));
@@ -604,7 +630,7 @@ std::function<BooleanOrIntegerLiteral()> FollowHint(
   // even if we use this FollowHint() function just for a while. But it is
   // an easy solution to not have reference to deleted memory in the
   // RevIntRepository(). Note that once we backtrack, these reference will
-  // disapear.
+  // disappear.
   int* rev_start_index = model->TakeOwnership(new int);
   *rev_start_index = 0;
 
@@ -688,7 +714,12 @@ void ConfigureSearchHeuristics(Model* model) {
       decision_policy =
           SequentialSearch({decision_policy, heuristics.fixed_search});
       decision_policy = IntegerValueSelectionHeuristic(decision_policy, model);
-      heuristics.decision_policies = {decision_policy};
+      if (parameters.use_objective_lb_search()) {
+        heuristics.decision_policies = {
+            SequentialSearch({ShaveObjectiveLb(model), decision_policy})};
+      } else {
+        heuristics.decision_policies = {decision_policy};
+      }
       heuristics.restart_policies = {SatSolverRestartPolicy(model)};
       return;
     }
@@ -803,11 +834,13 @@ std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
 }
 
 IntegerSearchHelper::IntegerSearchHelper(Model* model)
-    : model_(model),
+    : parameters_(*model->GetOrCreate<SatParameters>()),
+      model_(model),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
+      prober_(model->GetOrCreate<Prober>()),
       product_detector_(model->GetOrCreate<ProductDetector>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       pseudo_costs_(model->GetOrCreate<PseudoCosts>()) {
@@ -842,7 +875,7 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
       }
     }
 
-    if (model_->GetOrCreate<SatParameters>()->use_sat_inprocessing() &&
+    if (parameters_.use_sat_inprocessing() &&
         !model_->GetOrCreate<Inprocessing>()->InprocessingRound()) {
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
@@ -905,7 +938,7 @@ LiteralIndex IntegerSearchHelper::GetDecision(
 bool IntegerSearchHelper::TakeDecision(Literal decision) {
   // Record the changelist and objective bounds for updating pseudo costs.
   const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
-      GetBoundChanges(decision.Index(), model_);
+      pseudo_costs_->GetBoundChanges(decision);
   IntegerValue old_obj_lb = kMinIntegerValue;
   IntegerValue old_obj_ub = kMaxIntegerValue;
   if (objective_var_ != kNoIntegerVariable) {
@@ -942,71 +975,56 @@ bool IntegerSearchHelper::TakeDecision(Literal decision) {
   return sat_solver_->ReapplyAssumptionsIfNeeded();
 }
 
-SatSolver::Status SolveIntegerProblem(Model* model) {
-  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
-  if (time_limit->LimitReached()) return SatSolver::LIMIT_REACHED;
+SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
+  if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
 
-  SearchHeuristics& heuristics = *model->GetOrCreate<SearchHeuristics>();
+  SearchHeuristics& heuristics = *model_->GetOrCreate<SearchHeuristics>();
   const int num_policies = heuristics.decision_policies.size();
   CHECK_NE(num_policies, 0);
   CHECK_EQ(num_policies, heuristics.restart_policies.size());
 
-  auto* helper = model->GetOrCreate<IntegerSearchHelper>();
-
-  // This is needed for recording the pseudo-costs.
-  IntegerVariable objective_var = kNoIntegerVariable;
-  {
-    const ObjectiveDefinition* objective = model->Get<ObjectiveDefinition>();
-    if (objective != nullptr) objective_var = objective->objective_var;
-  }
-
   // Note that it is important to do the level-zero propagation if it wasn't
   // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
   // the solver is in a "propagated" state.
-  SatSolver* const sat_solver = model->GetOrCreate<SatSolver>();
-
+  //
   // TODO(user): We have the issue that at level zero. calling the propagation
   // loop more than once can propagate more! This is because we call the LP
   // again and again on each level zero propagation. This is causing some
   // CHECKs() to fail in multithread (rarely) because when we associate new
   // literals to integer ones, Propagate() is indirectly called. Not sure yet
   // how to fix.
-  if (!sat_solver->FinishPropagation()) return sat_solver->UnsatStatus();
-
-  auto* prober = model->GetOrCreate<Prober>();
-
-  const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
+  if (!sat_solver_->FinishPropagation()) return sat_solver_->UnsatStatus();
 
   // Main search loop.
-  const int64_t old_num_conflicts = sat_solver->num_failures();
-  const int64_t conflict_limit = sat_parameters.max_number_of_conflicts();
+  const int64_t old_num_conflicts = sat_solver_->num_failures();
+  const int64_t conflict_limit = parameters_.max_number_of_conflicts();
   int64_t num_decisions_since_last_lp_record_ = 0;
   int64_t num_decisions_without_probing = 0;
-  while (!time_limit->LimitReached() &&
-         (sat_solver->num_failures() - old_num_conflicts < conflict_limit)) {
+  while (!time_limit_->LimitReached() &&
+         (sat_solver_->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
     if (heuristics.restart_policies[heuristics.policy_index]()) {
-      if (!sat_solver->RestoreSolverToAssumptionLevel()) {
-        return sat_solver->UnsatStatus();
+      if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
+        return sat_solver_->UnsatStatus();
       }
       heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
     }
 
-    if (!helper->BeforeTakingDecision()) return sat_solver->UnsatStatus();
+    if (!BeforeTakingDecision()) return sat_solver_->UnsatStatus();
 
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
       if (heuristics.next_decision_override != nullptr) {
         // Note that to properly count the num_times, we do not want to move
         // this function, but actually call that copy.
-        decision = helper->GetDecision(heuristics.next_decision_override);
+        decision = GetDecision(heuristics.next_decision_override);
         if (decision == kNoLiteralIndex) {
           heuristics.next_decision_override = nullptr;
         }
       }
       if (decision == kNoLiteralIndex) {
-        decision = helper->GetDecision(
-            heuristics.decision_policies[heuristics.policy_index]);
+        decision =
+            GetDecision(heuristics.decision_policies[heuristics.policy_index]);
       }
 
       // Probing?
@@ -1014,19 +1032,19 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       // TODO(user): Be smarter about what variables we probe, we can
       // also do more than one.
       if (decision != kNoLiteralIndex &&
-          sat_solver->CurrentDecisionLevel() == 0 &&
-          sat_parameters.probing_period_at_root() > 0 &&
+          sat_solver_->CurrentDecisionLevel() == 0 &&
+          parameters_.probing_period_at_root() > 0 &&
           ++num_decisions_without_probing >=
-              sat_parameters.probing_period_at_root()) {
+              parameters_.probing_period_at_root()) {
         num_decisions_without_probing = 0;
-        if (!prober->ProbeOneVariable(Literal(decision).Variable())) {
+        if (!prober_->ProbeOneVariable(Literal(decision).Variable())) {
           return SatSolver::INFEASIBLE;
         }
-        DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
+        DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
 
         // We need to check after the probing that the literal is not fixed,
         // otherwise we just go to the next decision.
-        if (sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
+        if (sat_solver_->Assignment().LiteralIsAssigned(Literal(decision))) {
           continue;
         }
       }
@@ -1040,7 +1058,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     // all variables are fixed, there is no guarantee that the propagation
     // responsible for testing the validity of the solution was run to
     // completion. So we cannot report a feasible solution.
-    if (time_limit->LimitReached()) return SatSolver::LIMIT_REACHED;
+    if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (decision == kNoLiteralIndex) {
       // Save the current polarity of all Booleans in the solution. It will be
       // followed for the next SAT decisions. This is known to be a good policy
@@ -1050,9 +1068,9 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       // This idea is kind of "well known", see for instance the "LinSBPS"
       // submission to the maxSAT 2018 competition by Emir Demirovic and Peter
       // Stuckey where they show it is a good idea and provide more references.
-      if (model->GetOrCreate<SatParameters>()->use_optimization_hints()) {
-        auto* sat_decision = model->GetOrCreate<SatDecisionPolicy>();
-        const auto& trail = *model->GetOrCreate<Trail>();
+      if (parameters_.use_optimization_hints()) {
+        auto* sat_decision = model_->GetOrCreate<SatDecisionPolicy>();
+        const auto& trail = *model_->GetOrCreate<Trail>();
         for (int i = 0; i < trail.Index(); ++i) {
           sat_decision->SetAssignmentPreference(trail[i], 0.0);
         }
@@ -1060,8 +1078,8 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       return SatSolver::FEASIBLE;
     }
 
-    if (!helper->TakeDecision(Literal(decision))) {
-      return sat_solver->UnsatStatus();
+    if (!TakeDecision(Literal(decision))) {
+      return sat_solver_->UnsatStatus();
     }
 
     // In multi-thread, we really only want to save the LP relaxation for thread
@@ -1076,14 +1094,14 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     // change. Avoid adding solution that are too deep in the tree (most
     // variable fixed). Also use a callback rather than having this here, we
     // don't want this file to depend on cp_model.proto.
-    if (model->Get<SharedLPSolutionRepository>() != nullptr &&
-        sat_parameters.linearization_level() >= 2) {
+    if (model_->Get<SharedLPSolutionRepository>() != nullptr &&
+        parameters_.linearization_level() >= 2) {
       num_decisions_since_last_lp_record_++;
       if (num_decisions_since_last_lp_record_ >= 100) {
         // NOTE: We can actually record LP solutions more frequently. However
         // this process is time consuming and workers waste a lot of time doing
         // this. To avoid this we don't record solutions after each decision.
-        RecordLPRelaxationValues(model);
+        RecordLPRelaxationValues(model_);
         num_decisions_since_last_lp_record_ = 0;
       }
     }
@@ -1109,7 +1127,7 @@ SatSolver::Status ResetAndSolveIntegerProblem(
   if (!solver->ResetWithGivenAssumptions(assumptions)) {
     return solver->UnsatStatus();
   }
-  return SolveIntegerProblem(model);
+  return model->GetOrCreate<IntegerSearchHelper>()->SolveIntegerProblem();
 }
 
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
@@ -1331,6 +1349,7 @@ SatSolver::Status ContinuousProber::ShaveLiteral(Literal literal) {
   const SatSolver::Status status =
       ResetAndSolveIntegerProblem({literal}, model_);
   time_limit_->ChangeDeterministicLimit(original_dtime_limit);
+  if (ReportStatus(status)) return status;
 
   if (status == SatSolver::ASSUMPTIONS_UNSAT) {
     num_bounds_shaved_++;

@@ -192,6 +192,9 @@ bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
                                     const LinearExpressionProto& b,
                                     int64_t b_scaling = 1);
 
+// Default seed for fingerprints.
+constexpr uint64_t kDefaultFingerprintSeed = 0xa5b85c5e198ed849;
+
 // T must be castable to uint64_t.
 template <class T>
 inline uint64_t FingerprintRepeatedField(
@@ -211,7 +214,7 @@ uint64_t FingerprintExpression(const LinearExpressionProto& lin, uint64_t seed);
 
 // Returns a stable fingerprint of a model.
 uint64_t FingerprintModel(const CpModelProto& model,
-                          uint64_t seed = uint64_t{0xa5b85c5e198ed849});
+                          uint64_t seed = kDefaultFingerprintSeed);
 
 }  // namespace sat
 }  // namespace operations_research

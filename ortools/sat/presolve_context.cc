@@ -1742,11 +1742,9 @@ bool PresolveContext::AddToObjectiveOffset(int64_t delta) {
 
 bool PresolveContext::SubstituteVariableInObjective(
     int var_in_equality, int64_t coeff_in_equality,
-    const ConstraintProto& equality, std::vector<int>* new_vars_in_objective) {
+    const ConstraintProto& equality) {
   CHECK(equality.enforcement_literal().empty());
   CHECK(RefIsPositive(var_in_equality));
-
-  if (new_vars_in_objective != nullptr) new_vars_in_objective->clear();
 
   // We can only "easily" substitute if the objective coefficient is a multiple
   // of the one in the constraint.
@@ -1796,9 +1794,6 @@ bool PresolveContext::SubstituteVariableInObjective(
     if (var == var_in_equality) continue;
 
     int64_t& map_ref = objective_map_[var];
-    if (map_ref == 0 && new_vars_in_objective != nullptr) {
-      new_vars_in_objective->push_back(var);
-    }
     map_ref -= coeff * multiplier;
 
     if (map_ref == 0) {

@@ -246,6 +246,9 @@ class CpModelPresolver {
   // Converts bool_or and at_most_one of size 2 to bool_and.
   void ExtractBoolAnd();
 
+  // Try to reformulate the objective in term of "base" variables. This is
+  // mainly useful for core based approach where having more terms in the
+  // objective (but with a same trivial lower bound) should help.
   void ExpandObjective();
 
   void ProcessVariableOnlyUsedInEncoding(int var);

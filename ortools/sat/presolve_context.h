@@ -439,10 +439,6 @@ class PresolveContext {
   // objective, remove it from the objective by transferring its cost to other
   // variables in the equality.
   //
-  // If new_vars_in_objective is not nullptr, it will be filled with "new"
-  // variables that where not in the objective before and are after
-  // substitution.
-  //
   // Returns false, if the substitution cannot be done. This is the case if the
   // model become UNSAT or if doing it will result in an objective that do not
   // satisfy our overflow preconditions. Note that this can only happen if the
@@ -450,8 +446,7 @@ class PresolveContext {
   // the implied domain from the equality).
   ABSL_MUST_USE_RESULT bool SubstituteVariableInObjective(
       int var_in_equality, int64_t coeff_in_equality,
-      const ConstraintProto& equality,
-      std::vector<int>* new_vars_in_objective = nullptr);
+      const ConstraintProto& equality);
 
   // Objective getters.
   const Domain& ObjectiveDomain() const { return objective_domain_; }

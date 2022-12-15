@@ -110,17 +110,6 @@ struct LevelZeroCallbackHelper {
   std::vector<std::function<bool()>> callbacks;
 };
 
-// Tries to find a feasible solution to the current model.
-//
-// This function continues from the current state of the solver and loop until
-// all variables are instantiated (i.e. the next decision is kNoLiteralIndex) or
-// a search limit is reached. It uses the heuristic from the SearchHeuristics
-// class in the model to decide when to restart and what next decision to take.
-//
-// Each time a restart happen, this increment the policy index modulo the number
-// of heuristics to act as a portfolio search.
-SatSolver::Status SolveIntegerProblem(Model* model);
-
 // Resets the solver to the given assumptions before calling
 // SolveIntegerProblem().
 SatSolver::Status ResetAndSolveIntegerProblem(
@@ -267,12 +256,26 @@ class IntegerSearchHelper {
   // Returns false if the model is UNSAT.
   bool TakeDecision(Literal decision);
 
+  // Tries to find a feasible solution to the current model.
+  //
+  // This function continues from the current state of the solver and loop until
+  // all variables are instantiated (i.e. the next decision is kNoLiteralIndex)
+  // or a search limit is reached. It uses the heuristic from the
+  // SearchHeuristics class in the model to decide when to restart and what next
+  // decision to take.
+  //
+  // Each time a restart happen, this increment the policy index modulo the
+  // number of heuristics to act as a portfolio search.
+  SatSolver::Status SolveIntegerProblem();
+
  private:
+  const SatParameters& parameters_;
   Model* model_;
   SatSolver* sat_solver_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   ImpliedBounds* implied_bounds_;
+  Prober* prober_;
   ProductDetector* product_detector_;
   TimeLimit* time_limit_;
   PseudoCosts* pseudo_costs_;

@@ -40,6 +40,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
+#include "ortools/graph/topologicalsorter.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -1899,8 +1900,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       // TODO(user): We have an issue if objective coeff is not one, because
       // the RecomputeSingletonObjectiveDomain() do not properly put holes
       // in the objective domain, which might cause an issue. Note that this
-      // presolve rule is actually almost never applied on the miplib. It is
-      // also a bit redundant with ExpandObjective().
+      // presolve rule is actually almost never applied on the miplib.
       if (std::abs(objective_coeff) != 1) continue;
 
       // We do not do that if the domain of rhs becomes too complex.
@@ -1913,7 +1913,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
 
       // Special case: If the objective was a single variable, we can transfer
       // the domain of var to the objective, and just completely remove this
-      // equality constraint like it is done in ExpandObjective().
+      // equality constraint.
       //
       // TODO(user): Maybe if var has a complex domain, we might not want to
       // substitute it?
@@ -6643,41 +6643,50 @@ void CpModelPresolver::PresolvePureSatPart() {
                  context_->mapping_model);
 }
 
-// TODO(user): The idea behind this was that it is better to have an objective
-// as spreaded as possible. However on some problems this have the opposite
-// effect. Like on a triangular matrix where each expansion reduced the size
-// of the objective by one. Investigate and fix?
+// Expand the objective expression in some easy cases.
+//
+// The ideas is to look at all the "tight" equality constraints. These should
+// give a topological order on the variable in which we can perform
+// substitution.
+//
+// Basically, we will only use constraints of the form X' = sum ci * Xi' with ci
+// > 0 and the variable X' being shifted version >= 0. Note that if there is a
+// cycle with these constraints, all variables involved must be equal to each
+// other and likely zero. Otherwise, we can express everything in terms of the
+// leaves.
+//
+// This assumes we are more or less at the propagation fix point, even if we
+// try to address cases where we are not.
 void CpModelPresolver::ExpandObjective() {
   if (context_->ModelIsUnsat()) return;
+  WallTimer wall_timer;
+  wall_timer.Start();
 
-  // The objective is already loaded in the context, but we re-canonicalize
-  // it with the latest information.
-  if (!context_->CanonicalizeObjective()) {
-    (void)context_->NotifyThatModelIsUnsat();
-    return;
-  }
-
-  if (context_->time_limit()->LimitReached()) {
-    context_->WriteObjectiveToProto();
-    return;
-  }
-
-  // If the objective is a single variable, then we can usually remove this
-  // variable if it is only used in one linear equality constraint and we do
-  // just one expansion. This is because the domain of the variable will be
-  // transferred to our objective_domain.
-  int unique_expanded_constraint = -1;
-  const bool objective_was_a_single_variable =
-      context_->ObjectiveMap().size() == 1;
-
-  // To avoid a bad complexity, we need to compute the number of relevant
-  // constraints for each variables.
   const int num_variables = context_->working_model->variables_size();
   const int num_constraints = context_->working_model->constraints_size();
-  absl::flat_hash_set<int> relevant_constraints;
-  std::vector<int> var_to_num_relevant_constraints(num_variables, 0);
-  for (int ct_index = 0; ct_index < num_constraints; ++ct_index) {
-    const ConstraintProto& ct = context_->working_model->constraints(ct_index);
+
+  // We consider two types of shifted variables (X - LB(X)) and (UB(X) - X).
+  const auto get_index = [](int var, bool to_lb) {
+    return 2 * var + (to_lb ? 0 : 1);
+  };
+  const int num_nodes = 2 * num_variables;
+  std::vector<std::vector<int>> index_graph(num_nodes);
+
+  // TODO(user): instead compute how much each constraint can be further
+  // expanded?
+  std::vector<int> index_to_best_c(num_nodes, -1);
+
+  // Lets see first if there are "tight" constraint and for which variables.
+  // We stop processing constraint if we have too many entries.
+  int num_entries = 0;
+  int num_propagations = 0;
+  int num_tight_variables = 0;
+  int num_tight_constraints = 0;
+  const int kNumEntriesThreshold = 1e8;
+  for (int c = 0; c < num_constraints; ++c) {
+    if (num_entries > kNumEntriesThreshold) break;
+
+    const ConstraintProto& ct = context_->working_model->constraints(c);
     // Skip everything that is not a linear equality constraint.
     if (!ct.enforcement_literal().empty() ||
         ct.constraint_case() != ConstraintProto::kLinear ||
@@ -6686,202 +6695,185 @@ void CpModelPresolver::ExpandObjective() {
       continue;
     }
 
-    relevant_constraints.insert(ct_index);
+    // Let see for which variable is it "tight". We need a coeff of 1, and that
+    // the implied bounds match exactly.
+    const auto [min_activity, max_activity] =
+        context_->ComputeMinMaxActivity(ct.linear());
+
+    bool is_tight = false;
+    const int64_t rhs = ct.linear().domain(0);
     const int num_terms = ct.linear().vars_size();
     for (int i = 0; i < num_terms; ++i) {
-      var_to_num_relevant_constraints[PositiveRef(ct.linear().vars(i))]++;
-    }
-  }
+      const int var = ct.linear().vars(i);
+      const int64_t coeff = ct.linear().coeffs(i);
+      if (std::abs(coeff) != 1) continue;
+      if (num_entries > kNumEntriesThreshold) break;
 
-  absl::btree_set<int> var_to_process;
-  for (const auto entry : context_->ObjectiveMap()) {
-    const int var = entry.first;
-    CHECK(RefIsPositive(var));
-    if (var_to_num_relevant_constraints[var] != 0) {
-      var_to_process.insert(var);
-    }
-  }
+      const int index = get_index(var, coeff > 0);
 
-  // We currently never expand a variable more than once.
-  int num_expansions = 0;
-  int last_expanded_objective_var;
-  absl::flat_hash_set<int> processed_vars;
-  std::vector<int> new_vars_in_objective;
-  while (!relevant_constraints.empty()) {
-    // Find a not yet expanded var.
-    int objective_var = -1;
-    while (!var_to_process.empty()) {
-      const int var = *var_to_process.begin();
-      CHECK(!processed_vars.contains(var));
-      if (var_to_num_relevant_constraints[var] == 0) {
-        processed_vars.insert(var);
-        var_to_process.erase(var);
-        continue;
-      }
-      if (!context_->ObjectiveMap().contains(var)) {
-        // We do not mark it as processed in case it re-appear later.
-        var_to_process.erase(var);
-        continue;
-      }
-      objective_var = var;
-      break;
-    }
+      const int64_t var_range = context_->MaxOf(var) - context_->MinOf(var);
+      const int64_t implied_shifted_ub = rhs - min_activity;
+      if (implied_shifted_ub <= var_range) {
+        if (implied_shifted_ub < var_range) ++num_propagations;
+        is_tight = true;
+        ++num_tight_variables;
 
-    if (objective_var == -1) break;
-    CHECK(RefIsPositive(objective_var));
-    processed_vars.insert(objective_var);
-    var_to_process.erase(objective_var);
+        const int neg_index = index ^ 1;
+        const int old_c = index_to_best_c[neg_index];
+        if (old_c == -1 ||
+            num_terms > context_->working_model->constraints(old_c)
+                            .linear()
+                            .vars()
+                            .size()) {
+          index_to_best_c[neg_index] = c;
+        }
 
-    int expanded_linear_index = -1;
-    int64_t objective_coeff_in_expanded_constraint;
-    int64_t size_of_expanded_constraint = 0;
-    const auto& non_deterministic_list =
-        context_->VarToConstraints(objective_var);
-    std::vector<int> constraints_with_objective(non_deterministic_list.begin(),
-                                                non_deterministic_list.end());
-    std::sort(constraints_with_objective.begin(),
-              constraints_with_objective.end());
-    for (const int ct_index : constraints_with_objective) {
-      if (relevant_constraints.count(ct_index) == 0) continue;
-      const ConstraintProto& ct =
-          context_->working_model->constraints(ct_index);
-
-      // This constraint is relevant now, but it will never be later because
-      // it will contain the objective_var which is already processed!
-      relevant_constraints.erase(ct_index);
-      const int num_terms = ct.linear().vars_size();
-      for (int i = 0; i < num_terms; ++i) {
-        var_to_num_relevant_constraints[PositiveRef(ct.linear().vars(i))]--;
-      }
-
-      // Find the coefficient of objective_var in this constraint, and perform
-      // various checks.
-      //
-      // TODO(user): This can crash the program if for some reason the linear
-      // constraint was not canonicalized and contains the objective variable
-      // twice. Currently this can only happen if the time limit was reached
-      // before all constraints where processed, but because we abort at the
-      // beginning of the function when this is the case we should be safe.
-      // However, it might be more robust to just handle this case properly.
-      bool is_present = false;
-      int64_t objective_coeff;
-      Domain implied = ReadDomainFromProto(ct.linear());
-      for (int i = 0; i < num_terms; ++i) {
-        const int ref = ct.linear().vars(i);
-        const int64_t coeff = ct.linear().coeffs(i);
-        if (PositiveRef(ref) == objective_var) {
-          CHECK(!is_present) << "Duplicate variables not supported.";
-          is_present = true;
-          objective_coeff = (ref == objective_var) ? coeff : -coeff;
-        } else {
-          // This is not possible since we only consider relevant constraints.
-          CHECK(!processed_vars.contains(PositiveRef(ref)));
-          implied = implied
-                        .AdditionWith(
-                            context_->DomainOf(ref).ContinuousMultiplicationBy(
-                                -coeff))
-                        .RelaxIfTooComplex();
+        for (int j = 0; j < num_terms; ++j) {
+          if (j == i) continue;
+          const int other_index =
+              get_index(ct.linear().vars(j), ct.linear().coeffs(j) > 0);
+          ++num_entries;
+          index_graph[neg_index].push_back(other_index);
         }
       }
-      CHECK(is_present);
+      const int64_t implied_shifted_lb = max_activity - rhs;
+      if (implied_shifted_lb <= var_range) {
+        if (implied_shifted_lb < var_range) ++num_propagations;
+        is_tight = true;
+        ++num_tight_variables;
 
-      // Important: We will only use equation where the implied lb on the
-      // objective var is tight. This is important for core based search, see
-      // for instance vpphard where without this the core do not solve it.
-      implied = implied.InverseMultiplicationBy(objective_coeff);
-      if (context_->ObjectiveCoeff(objective_var) > 0) {
-        if (implied.Min() < context_->MinOf(objective_var)) continue;
-      } else {
-        if (implied.Max() > context_->MaxOf(objective_var)) continue;
-      }
+        const int old_c = index_to_best_c[index];
+        if (old_c == -1 ||
+            num_terms > context_->working_model->constraints(old_c)
+                            .linear()
+                            .vars()
+                            .size()) {
+          index_to_best_c[index] = c;
+        }
 
-      // We use the longest equality we can find.
-      //
-      // TODO(user): Deal with objective_coeff with a magnitude greater than
-      // 1? This will only be possible if we change the objective coeff type
-      // to double.
-      if (std::abs(objective_coeff) == 1 &&
-          num_terms > size_of_expanded_constraint) {
-        expanded_linear_index = ct_index;
-        size_of_expanded_constraint = num_terms;
-        objective_coeff_in_expanded_constraint = objective_coeff;
+        for (int j = 0; j < num_terms; ++j) {
+          if (j == i) continue;
+          const int other_index =
+              get_index(ct.linear().vars(j), ct.linear().coeffs(j) < 0);
+          ++num_entries;
+          index_graph[index].push_back(other_index);
+        }
       }
     }
+    if (is_tight) ++num_tight_constraints;
+  }
 
-    if (expanded_linear_index != -1) {
-      // Update the objective map. Note that the division is possible because
-      // currently we only expand with coeff with a magnitude of 1.
-      CHECK_EQ(std::abs(objective_coeff_in_expanded_constraint), 1);
+  // Note(user): We assume the fixed point was already reached by the linear
+  // presolve, so we don't add extra code here for that. But we still abort if
+  // some are left to cover corner cases were linear a still not propagated.
+  if (num_propagations > 0) {
+    context_->UpdateRuleStats("TODO objective: propagation possible!");
+    return;
+  }
+
+  // In most cases, we should have no cycle and thus a topo order.
+  //
+  // In case there is a cycle, then all member of a strongly connected component
+  // must be equivalent, this is because from X to Y, if we follow the chain we
+  // will have X = non_negative_sum + Y and Y = non_negative_sum + X.
+  //
+  // Moreover, many shifted variables will need to be zero once we start to have
+  // equivalence.
+  //
+  // TODO(user): Make the fixing to zero? or at least when this happen redo
+  // a presolve pass?
+  //
+  // TODO(user): Densify index to only look at variable that can be substituted
+  // further.
+  const auto result = util::graph::FastTopologicalSort(index_graph);
+  if (!result.ok()) {
+    std::vector<std::vector<int>> components;
+    FindStronglyConnectedComponents(static_cast<int>(index_graph.size()),
+                                    index_graph, &components);
+    for (const std::vector<int>& compo : components) {
+      if (compo.size() == 1) continue;
+
+      const int rep_var = compo[0] / 2;
+      const bool rep_to_lp = (compo[0] % 2) == 0;
+      for (int i = 1; i < compo.size(); ++i) {
+        const int var = compo[i] / 2;
+        const bool to_lb = (compo[i] % 2) == 0;
+
+        // (rep - rep_lb)/(rep_ub - rep) == (var - var_lb)/(ub - var_ub)
+        // +/- rep = +/- var + offset.
+        const int64_t rep_coeff = rep_to_lp ? 1 : -1;
+        const int64_t var_coeff = to_lb ? 1 : -1;
+        const int64_t offset =
+            (to_lb ? -context_->MinOf(var) : context_->MaxOf(var)) -
+            (rep_to_lp ? -context_->MinOf(rep_var) : context_->MaxOf(rep_var));
+        if (!context_->StoreAffineRelation(rep_var, var, rep_coeff * var_coeff,
+                                           rep_coeff * offset)) {
+          return;
+        }
+      }
+      context_->UpdateRuleStats("objective: detected equivalence",
+                                compo.size() - 1);
+    }
+    return;
+  }
+
+  // The objective is already loaded in the context, but we re-canonicalize
+  // it with the latest information.
+  if (!context_->CanonicalizeObjective()) {
+    (void)context_->NotifyThatModelIsUnsat();
+    return;
+  }
+
+  // If the removed variable is now unique, we could remove it if it is implied
+  // free. But this should already be done by RemoveSingletonInLinear(), so we
+  // don't redo it here.
+  int num_expands = 0;
+  int num_issues = 0;
+  for (const int index : *result) {
+    if (index_graph[index].empty()) continue;
+
+    const int var = index / 2;
+    const int64_t obj_coeff = context_->ObjectiveCoeff(var);
+    if (obj_coeff == 0) continue;
+
+    const bool to_lb = (index % 2) == 0;
+    if (obj_coeff > 0 == to_lb) {
       const ConstraintProto& ct =
-          context_->working_model->constraints(expanded_linear_index);
+          context_->working_model->constraints(index_to_best_c[index]);
+
+      int64_t objective_coeff_in_expanded_constraint = 0;
+      const int num_terms = ct.linear().vars().size();
+      for (int i = 0; i < num_terms; ++i) {
+        if (ct.linear().vars(i) == var) {
+          objective_coeff_in_expanded_constraint = ct.linear().coeffs(i);
+          break;
+        }
+      }
+      if (objective_coeff_in_expanded_constraint == 0) {
+        ++num_issues;
+        continue;
+      }
+
       if (!context_->SubstituteVariableInObjective(
-              objective_var, objective_coeff_in_expanded_constraint, ct,
-              &new_vars_in_objective)) {
+              var, objective_coeff_in_expanded_constraint, ct)) {
         if (context_->ModelIsUnsat()) return;
+        ++num_issues;
         continue;
       }
 
-      context_->UpdateRuleStats("objective: expanded objective constraint.");
-
-      // Add not yet processed new variables.
-      for (const int var : new_vars_in_objective) {
-        if (!processed_vars.contains(var)) var_to_process.insert(var);
-      }
-
-      // If the objective variable wasn't used in other constraints and it can
-      // be reconstructed whatever the value of the other variables, we can
-      // remove the constraint.
-      //
-      // TODO(user): It should be possible to refactor the code so this is
-      // automatically done by the linear constraint singleton presolve rule.
-      if (context_->VarToConstraints(objective_var).size() == 1 &&
-          !context_->keep_all_feasible_solutions) {
-        // Compute implied domain on objective_var.
-        Domain implied_domain = ReadDomainFromProto(ct.linear());
-        for (int i = 0; i < size_of_expanded_constraint; ++i) {
-          const int ref = ct.linear().vars(i);
-          if (PositiveRef(ref) == objective_var) continue;
-          implied_domain =
-              implied_domain
-                  .AdditionWith(context_->DomainOf(ref).MultiplicationBy(
-                      -ct.linear().coeffs(i)))
-                  .RelaxIfTooComplex();
-        }
-        implied_domain = implied_domain.InverseMultiplicationBy(
-            objective_coeff_in_expanded_constraint);
-
-        // Remove the constraint if the implied domain is included in the
-        // domain of the objective_var term.
-        if (implied_domain.IsIncludedIn(context_->DomainOf(objective_var))) {
-          context_->MarkVariableAsRemoved(objective_var);
-          context_->UpdateRuleStats("objective: removed objective constraint.");
-          *(context_->mapping_model->add_constraints()) = ct;
-          context_->working_model->mutable_constraints(expanded_linear_index)
-              ->Clear();
-          context_->UpdateConstraintVariableUsage(expanded_linear_index);
-        } else {
-          unique_expanded_constraint = expanded_linear_index;
-        }
-      }
-
-      ++num_expansions;
-      last_expanded_objective_var = objective_var;
+      ++num_expands;
     }
   }
 
-  // Special case: If we just did one expansion of a single variable, then we
-  // can remove the expanded constraints if the objective wasn't used elsewhere.
-  if (num_expansions == 1 && objective_was_a_single_variable &&
-      unique_expanded_constraint != -1) {
-    context_->UpdateRuleStats(
-        "objective: removed unique objective constraint.");
-    ConstraintProto* mutable_ct = context_->working_model->mutable_constraints(
-        unique_expanded_constraint);
-    *(context_->mapping_model->add_constraints()) = *mutable_ct;
-    mutable_ct->Clear();
-    context_->MarkVariableAsRemoved(last_expanded_objective_var);
-    context_->UpdateConstraintVariableUsage(unique_expanded_constraint);
+  if (num_expands > 0) {
+    context_->UpdateRuleStats("objective: expanded via tight equality",
+                              num_expands);
   }
+  SOLVER_LOG(
+      logger_, "[ExpandObjective]", " #propagations=", num_propagations,
+      " #entries=", num_entries, " #tight_variables=", num_tight_variables,
+      " #tight_constraints=", num_tight_constraints, " #expands=", num_expands,
+      " #issues=", num_issues, " time=", wall_timer.Get(), "s");
 }
 
 void CpModelPresolver::MergeNoOverlapConstraints() {
@@ -9170,8 +9162,12 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     const Domain rhs = ReadDomainFromProto(ct.linear())
                            .InverseMultiplicationBy(coeff)
                            .IntersectionWith(var_domain);
-
-    if (rhs.IsFixed()) {
+    if (rhs.IsEmpty()) {
+      if (!context_->SetLiteralToFalse(ct.enforcement_literal(0))) {
+        return;
+      }
+      return;
+    } else if (rhs.IsFixed()) {
       if (!var_domain.Contains(rhs.FixedValue())) {
         if (!context_->SetLiteralToFalse(ct.enforcement_literal(0))) {
           return;
