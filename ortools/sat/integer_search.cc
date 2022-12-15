@@ -794,8 +794,10 @@ void ConfigureSearchHeuristics(Model* model) {
         return;
       }
       heuristics.decision_policies = CompleteHeuristics(
-          lp_heuristics, SequentialSearch({SatSolverHeuristic(model),
-                                           heuristics.fixed_search}));
+          lp_heuristics, IntegerValueSelectionHeuristic(
+                             SequentialSearch({SatSolverHeuristic(model),
+                                               heuristics.fixed_search}),
+                             model));
       heuristics.restart_policies.assign(heuristics.decision_policies.size(),
                                          SatSolverRestartPolicy(model));
       return;

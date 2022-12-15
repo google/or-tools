@@ -868,6 +868,49 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
                orbitope.size(), " x ", orbitope[0].size());
   }
 
+  // HACK for flatzinc wordpress* problem.
+  //
+  // If we have a large orbitope, with one objective term by column, we break
+  // the symmetry by ordering the objective terms. This usually increase
+  // drastically the objective lower bounds we can discover.
+  //
+  // TODO(user): generalize somehow. See if we can exploit this in
+  // lb_tree_search directly. We also have a lot more structure than just the
+  // objective can be ordered. Like if the objective is a max, we can still do
+  // that.
+  //
+  // TODO(user): Actually the constraint we add is really just breaking the
+  // orbitope symmetry on one line. But this line being the objective is key. We
+  // can also explicitly look for a full permutation group of the objective
+  // terms directly instead of finding the largest orbitope first.
+  if (!orbitope.empty() && context->working_model->has_objective()) {
+    const int num_objective_terms = context->ObjectiveMap().size();
+    if (orbitope[0].size() == num_objective_terms) {
+      int num_in_column = 0;
+      for (const std::vector<int>& row : orbitope) {
+        if (context->ObjectiveMap().contains(row[0])) ++num_in_column;
+      }
+      if (num_in_column == 1) {
+        context->WriteObjectiveToProto();
+        const auto& obj = context->working_model->objective();
+        CHECK_EQ(num_objective_terms, obj.vars().size());
+        for (int i = 1; i < num_objective_terms; ++i) {
+          auto* new_ct =
+              context->working_model->add_constraints()->mutable_linear();
+          new_ct->add_vars(obj.vars(i - 1));
+          new_ct->add_vars(obj.vars(i));
+          new_ct->add_coeffs(1);
+          new_ct->add_coeffs(-1);
+          new_ct->add_domain(0);
+          new_ct->add_domain(std::numeric_limits<int64_t>::max());
+        }
+        context->UpdateNewConstraintsVariableUsage();
+        context->UpdateRuleStats("symmetry: objective is one orbitope row.");
+        return true;
+      }
+    }
+  }
+
   // Supper simple heuristic to use the orbitope or not.
   //
   // In an orbitope with an at most one on each row, we can fix the upper right

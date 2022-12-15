@@ -10532,6 +10532,23 @@ CpSolverStatus CpModelPresolver::Presolve() {
       ExpandCpModel(context_);
       if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
+      // TODO(user): Make sure we can't have duplicate in these constraint.
+      // These are due to ExpandCpModel() were we create such constraint with
+      // duplicate. The problem is that some code assumes these are presolved
+      // before being called.
+      const int num_constraints = context_->working_model->constraints().size();
+      for (int c = 0; c < num_constraints; ++c) {
+        ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+        const auto type = ct->constraint_case();
+        if (type == ConstraintProto::kAtMostOne ||
+            type == ConstraintProto::kExactlyOne) {
+          if (PresolveOneConstraint(c)) {
+            context_->UpdateConstraintVariableUsage(c);
+          }
+          if (context_->ModelIsUnsat()) return InfeasibleStatus();
+        }
+      }
+
       // We need to re-evaluate the degree because some presolve rule only
       // run after expansion.
       const int num_vars = context_->working_model->variables().size();
@@ -10542,6 +10559,21 @@ CpSolverStatus CpModelPresolver::Presolve() {
       }
     }
     DCHECK(context_->ConstraintVariableUsageIsConsistent());
+
+    // We run the symmetry before more complex presolve rules as many of them
+    // are heuristic based and might break the symmetry present in the original
+    // problems. This happens for example on the flatzinc wordpress problem.
+    //
+    // TODO(user): Decide where is the best place for this.
+    //
+    // TODO(user): try not to break symmetry in our clique extension or other
+    // more advanced presolve rule? Ideally we could even exploit them. But in
+    // this case, it is still good to compute them early.
+    if (context_->params().symmetry_level() > 0 && !context_->ModelIsUnsat() &&
+        !context_->time_limit()->LimitReached() &&
+        !context_->keep_all_feasible_solutions) {
+      DetectAndExploitSymmetriesInPresolve(context_);
+    }
 
     // Runs SAT specific presolve on the pure-SAT part of the problem.
     // Note that because this can only remove/fix variable not used in the other
@@ -10596,14 +10628,6 @@ CpSolverStatus CpModelPresolver::Presolve() {
       // Heuristic use at_most_one to try to tighten the initial LP Relaxation.
       MergeClauses();
       if (/*DISABLES CODE*/ (false)) DetectIncludedEnforcement();
-    }
-
-    // TODO(user): Decide where is the best place for this. Fow now we do it
-    // after max clique to get all the bool_and converted to at most ones.
-    if (context_->params().symmetry_level() > 0 && !context_->ModelIsUnsat() &&
-        !context_->time_limit()->LimitReached() &&
-        !context_->keep_all_feasible_solutions) {
-      DetectAndExploitSymmetriesInPresolve(context_);
     }
 
     // The TransformIntoMaxCliques() call above transform all bool and into
