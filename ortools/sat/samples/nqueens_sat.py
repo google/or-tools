@@ -62,7 +62,8 @@ def main(board_size):
 
     # Creates the variables.
     # [START variables]
-    # The array index is the column, and the value is the row.
+    # There are `board_size` number of variables, one for a queen in each column
+    # of the board. The value of each variable is the row that the queen is in.
     queens = [
         model.NewIntVar(0, board_size - 1, 'x%i' % i) for i in range(board_size)
     ]
@@ -72,9 +73,6 @@ def main(board_size):
     # [START constraints]
     # All rows must be different.
     model.AddAllDifferent(queens)
-
-    # All columns must be different because the indices of queens are all
-    # different.
 
     # No two queens can be on the same diagonal.
     model.AddAllDifferent(queens[i] + i for i in range(board_size))

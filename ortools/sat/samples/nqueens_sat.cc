@@ -40,6 +40,8 @@ void NQueensSat(const int board_size) {
   // [END model]
 
   // [START variables]
+  // There are `board_size` number of variables, one for a queen in each column
+  // of the board. The value of each variable is the row that the queen is in.
   std::vector<IntVar> queens;
   queens.reserve(board_size);
   Domain range(0, board_size - 1);
@@ -54,8 +56,7 @@ void NQueensSat(const int board_size) {
   // The following sets the constraint that all queens are in different rows.
   cp_model.AddAllDifferent(queens);
 
-  // All columns must be different because the indices of queens are all
-  // different. No two queens can be on the same diagonal.
+  // No two queens can be on the same diagonal.
   std::vector<LinearExpr> diag_1;
   diag_1.reserve(board_size);
   std::vector<LinearExpr> diag_2;

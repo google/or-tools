@@ -68,6 +68,8 @@ public final class NQueensSat {
 
     // [START variables]
     int boardSize = 8;
+    // There are `BoardSize` number of variables, one for a queen in each column of the board. The
+    // value of each variable is the row that the queen is in.
     IntVar[] queens = new IntVar[boardSize];
     for (int i = 0; i < boardSize; ++i) {
       queens[i] = model.newIntVar(0, boardSize - 1, "x" + i);
@@ -79,7 +81,6 @@ public final class NQueensSat {
     // All rows must be different.
     model.addAllDifferent(queens);
 
-    // All columns must be different because the indices of queens are all different.
     // No two queens can be on the same diagonal.
     LinearExpr[] diag1 = new LinearExpr[boardSize];
     LinearExpr[] diag2 = new LinearExpr[boardSize];
