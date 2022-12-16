@@ -17,9 +17,11 @@
 
 #include <cmath>
 #include <cstdint>
+#include <random>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/random/distributions.h"
 #include "gtest/gtest.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
