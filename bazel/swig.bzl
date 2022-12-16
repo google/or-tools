@@ -74,7 +74,7 @@ _py_wrap_cc = rule(
         "_swig": attr.label(
             default = Label("@swig//:swig"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_swiglib": attr.label(
             default = Label("@swig//:templates"),
