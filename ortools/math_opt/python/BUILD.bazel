@@ -27,19 +27,28 @@ py_library(
         ":compute_infeasible_subsystem_result",
         ":errors",
         ":expressions",
-        ":hash_model_storage",
+        ":indicator_constraints",
         ":init_arguments",
+        ":linear_constraints",
         ":message_callback",
         ":model",
         ":model_parameters",
-        ":model_storage",
+        ":objectives",
         ":parameters",
+        ":quadratic_constraints",
         ":result",
         ":solution",
         ":solve",
         ":solver_resources",
         ":sparse_containers",
+        ":variables",
     ],
+)
+
+py_library(
+    name = "from_model",
+    srcs = ["from_model.py"],
+    deps = ["//ortools/math_opt/python/elemental"],
 )
 
 py_library(
@@ -67,11 +76,29 @@ py_library(
     name = "model",
     srcs = ["model.py"],
     deps = [
-        ":hash_model_storage",
-        ":model_storage",
-        requirement("immutabledict"),
+        ":from_model",
+        ":indicator_constraints",
+        ":linear_constraints",
+        ":normalized_inequality",
+        ":objectives",
+        ":quadratic_constraints",
+        ":variables",
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
+        "//ortools/math_opt/elemental/python:cpp_elemental",
+        "//ortools/math_opt/elemental/python:enums",
+        "//ortools/math_opt/python/elemental",
+    ],
+)
+
+py_library(
+    name = "linear_constraints",
+    srcs = ["linear_constraints.py"],
+    deps = [
+        ":from_model",
+        ":variables",
+        "//ortools/math_opt/elemental/python:enums",
+        "//ortools/math_opt/python/elemental",
     ],
 )
 
@@ -79,7 +106,10 @@ py_library(
     name = "sparse_containers",
     srcs = ["sparse_containers.py"],
     deps = [
+        ":linear_constraints",
         ":model",
+        ":quadratic_constraints",
+        ":variables",
         "//ortools/math_opt:sparse_containers_py_pb2",
     ],
 )
@@ -88,9 +118,35 @@ py_library(
     name = "solution",
     srcs = ["solution.py"],
     deps = [
+        ":linear_constraints",
         ":model",
+        ":objectives",
+        ":quadratic_constraints",
         ":sparse_containers",
+        ":variables",
         "//ortools/math_opt:solution_py_pb2",
+    ],
+)
+
+py_library(
+    name = "quadratic_constraints",
+    srcs = ["quadratic_constraints.py"],
+    deps = [
+        ":from_model",
+        ":variables",
+        "//ortools/math_opt/elemental/python:enums",
+        "//ortools/math_opt/python/elemental",
+    ],
+)
+
+py_library(
+    name = "indicator_constraints",
+    srcs = ["indicator_constraints.py"],
+    deps = [
+        ":from_model",
+        ":variables",
+        "//ortools/math_opt/elemental/python:enums",
+        "//ortools/math_opt/python/elemental",
     ],
 )
 
@@ -98,11 +154,24 @@ py_library(
     name = "result",
     srcs = ["result.py"],
     deps = [
+        ":linear_constraints",
         ":model",
         ":solution",
+        ":variables",
         "//ortools/gscip:gscip_proto_py_pb2",
         "//ortools/math_opt:result_py_pb2",
         "//ortools/math_opt/solvers:osqp_py_pb2",
+    ],
+)
+
+py_library(
+    name = "objectives",
+    srcs = ["objectives.py"],
+    deps = [
+        ":from_model",
+        ":variables",
+        "//ortools/math_opt/elemental/python:enums",
+        "//ortools/math_opt/python/elemental",
     ],
 )
 
@@ -126,9 +195,12 @@ py_library(
     name = "model_parameters",
     srcs = ["model_parameters.py"],
     deps = [
+        ":linear_constraints",
         ":model",
+        ":objectives",
         ":solution",
         ":sparse_containers",
+        ":variables",
         "//ortools/math_opt:model_parameters_py_pb2",
     ],
 )
@@ -138,7 +210,9 @@ py_library(
     srcs = ["callback.py"],
     deps = [
         ":model",
+        ":normalized_inequality",
         ":sparse_containers",
+        ":variables",
         "//ortools/math_opt:callback_py_pb2",
     ],
 )
@@ -147,8 +221,10 @@ py_library(
     name = "compute_infeasible_subsystem_result",
     srcs = ["compute_infeasible_subsystem_result.py"],
     deps = [
+        ":linear_constraints",
         ":model",
         ":result",
+        ":variables",
         requirement("immutabledict"),
         "//ortools/math_opt:infeasible_subsystem_py_pb2",
     ],
@@ -176,7 +252,6 @@ py_library(
 py_library(
     name = "message_callback",
     srcs = ["message_callback.py"],
-    srcs_version = "PY3",
     deps = [requirement("absl-py")],
 )
 
@@ -184,6 +259,32 @@ py_library(
     name = "statistics",
     srcs = ["statistics.py"],
     deps = [":model"],
+)
+
+py_library(
+    name = "bounded_expressions",
+    srcs = ["bounded_expressions.py"],
+)
+
+py_library(
+    name = "variables",
+    srcs = ["variables.py"],
+    deps = [
+        ":bounded_expressions",
+        ":from_model",
+        requirement("immutabledict"),
+        "//ortools/math_opt/elemental/python:enums",
+        "//ortools/math_opt/python/elemental",
+    ],
+)
+
+py_library(
+    name = "normalized_inequality",
+    srcs = ["normalized_inequality.py"],
+    deps = [
+        ":bounded_expressions",
+        ":variables",
+    ],
 )
 
 py_library(
@@ -197,7 +298,7 @@ py_library(
     name = "expressions",
     srcs = ["expressions.py"],
     deps = [
-        ":model",
+        ":variables",
     ],
 )
 

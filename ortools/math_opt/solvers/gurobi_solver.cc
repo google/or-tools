@@ -29,6 +29,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
@@ -42,7 +43,6 @@
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
@@ -941,7 +941,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
                                best_primal_bound, best_dual_bound));
 
   ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
-  return std::move(result);
+  return result;
 }
 
 absl::StatusOr<bool> GurobiSolver::AnyElementInIIS(

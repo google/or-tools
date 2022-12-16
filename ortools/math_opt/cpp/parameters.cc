@@ -13,7 +13,6 @@
 
 #include "ortools/math_opt/cpp/parameters.h"
 
-#include <cstdint>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -86,7 +85,7 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
     case SolverType::kSantorini:
       return "santorini";
     case SolverType::kXpress:
-        return "xpress";
+      return "xpress";
   }
   return std::nullopt;
 }
@@ -96,7 +95,7 @@ absl::Span<const SolverType> Enum<SolverType>::AllValues() {
       SolverType::kGscip,     SolverType::kGurobi, SolverType::kGlop,
       SolverType::kCpSat,     SolverType::kPdlp,   SolverType::kGlpk,
       SolverType::kEcos,      SolverType::kScs,    SolverType::kHighs,
-      SolverType::kSantorini,
+      SolverType::kSantorini, SolverType::kXpress,
   };
   return absl::MakeConstSpan(kSolverTypeValues);
 }

@@ -13,9 +13,9 @@
 
 #include "ortools/math_opt/validators/termination_validator.h"
 
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/result.pb.h"

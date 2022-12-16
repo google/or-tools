@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_MATH_OPT_CORE_INVALID_INDICATORS_H_
 #define OR_TOOLS_MATH_OPT_CORE_INVALID_INDICATORS_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 

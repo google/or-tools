@@ -18,10 +18,11 @@ cc_library(
     srcs = ["indicator_constraint.cc"],
     hdrs = ["indicator_constraint.h"],
     deps = [
-        "//ortools/base:intops",
         "//ortools/math_opt/constraints/util:model_util",
         "//ortools/math_opt/cpp:variable_and_expressions",
+        "//ortools/math_opt/elemental:elements",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_item",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -51,6 +52,7 @@ cc_library(
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:sorted",
+        "//ortools/math_opt/elemental:elements",
         "//ortools/math_opt/storage:atomic_constraint_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "@abseil-cpp//absl/container:flat_hash_set",

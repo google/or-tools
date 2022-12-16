@@ -144,7 +144,7 @@ MATH_OPT_DEFINE_ENUM(CallbackEvent, CALLBACK_EVENT_UNSPECIFIED);
 struct CallbackRegistration {
   // Returns a failure if the referenced variables don't belong to the input
   // expected_storage (which must not be nullptr).
-  absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
+  absl::Status CheckModelStorage(ModelStorageCPtr expected_storage) const;
 
   // Returns the proto equivalent of this object.
   //
@@ -189,7 +189,7 @@ struct CallbackData {
 
   // Users will typically not need this function.
   // Will CHECK fail if proto is not valid.
-  CallbackData(const ModelStorage* storage, const CallbackDataProto& proto);
+  CallbackData(ModelStorageCPtr storage, const CallbackDataProto& proto);
 
   // The current state of the underlying solver.
   CallbackEvent event;
@@ -229,7 +229,7 @@ struct CallbackResult {
     BoundedLinearExpression linear_constraint;
     bool is_lazy = false;
 
-    const ModelStorage* storage() const {
+    NullableModelStorageCPtr storage() const {
       return linear_constraint.expression.storage();
     }
   };
@@ -249,7 +249,7 @@ struct CallbackResult {
 
   // Returns a failure if the referenced variables don't belong to the input
   // expected_storage (which must not be nullptr).
-  absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
+  absl::Status CheckModelStorage(ModelStorageCPtr expected_storage) const;
 
   // Returns the proto equivalent of this object.
   //
@@ -257,7 +257,17 @@ struct CallbackResult {
   // internal consistency of the referenced variables.
   CallbackResultProto Proto() const;
 
-  // Stop the solve process and return early. Can be called from any event.
+  // When true it tells the solver to interrupt the solve as soon as possible.
+  //
+  // It can be set from any event. This is equivalent to using a
+  // SolveInterrupter and triggering it from the callback.
+  //
+  // Some solvers don't support interruption, in that case this is simply
+  // ignored and the solve terminates as usual. On top of that solvers may not
+  // immediately stop the solve. Thus the user should expect the callback to
+  // still be called after they set `terminate` to true in a previous
+  // call. Returning with `terminate` false after having previously returned
+  // true won't cancel the interruption.
   bool terminate = false;
 
   // The user cuts and lazy constraints added. Prefer AddUserCut() and

@@ -15,9 +15,10 @@
 from absl.testing import absltest
 from ortools.math_opt.python import expressions
 from ortools.math_opt.python import model
+from ortools.math_opt.python import variables
 
 
-def _type_check_linear_sum(x: model.LinearSum) -> None:
+def _type_check_linear_sum(x: variables.LinearSum) -> None:
     """Does nothing at runtime, forces the type checker to run on x."""
     del x  # Unused.
 
@@ -31,16 +32,16 @@ class FastSumTest(absltest.TestCase):
         z = 4
         result = expressions.fast_sum([x, y, z])
         _type_check_linear_sum(result)
-        self.assertIsInstance(result, model.LinearSum)
-        result_expr = model.as_flat_linear_expression(result)
+        self.assertIsInstance(result, variables.LinearSum)
+        result_expr = variables.as_flat_linear_expression(result)
         self.assertEqual(result_expr.offset, 4.0)
         self.assertDictEqual(dict(result_expr.terms), {x: 1.0, y: 1.0})
 
     def test_numbers(self) -> None:
         result = expressions.fast_sum([2.0, 4.0])
         _type_check_linear_sum(result)
-        self.assertIsInstance(result, model.LinearSum)
-        result_expr = model.as_flat_linear_expression(result)
+        self.assertIsInstance(result, variables.LinearSum)
+        result_expr = variables.as_flat_linear_expression(result)
         self.assertEqual(result_expr.offset, 6.0)
         self.assertEmpty(result_expr.terms)
 
@@ -49,8 +50,8 @@ class FastSumTest(absltest.TestCase):
         x = mod.add_binary_variable()
         result = expressions.fast_sum([2.0, 3.0 * x])
         _type_check_linear_sum(result)
-        self.assertIsInstance(result, model.LinearSum)
-        result_expr = model.as_flat_linear_expression(result)
+        self.assertIsInstance(result, variables.LinearSum)
+        result_expr = variables.as_flat_linear_expression(result)
         self.assertEqual(result_expr.offset, 2.0)
         self.assertDictEqual(dict(result_expr.terms), {x: 3.0})
 
@@ -58,24 +59,26 @@ class FastSumTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable()
         result = expressions.fast_sum([2.0, 3.0 * x * x, x])
-        self.assertIsInstance(result, model.QuadraticSum)
-        result_expr = model.as_flat_quadratic_expression(result)
+        self.assertIsInstance(result, variables.QuadraticSum)
+        result_expr = variables.as_flat_quadratic_expression(result)
         self.assertEqual(result_expr.offset, 2.0)
         self.assertDictEqual(dict(result_expr.linear_terms), {x: 1.0})
         self.assertDictEqual(
-            dict(result_expr.quadratic_terms), {model.QuadraticTermKey(x, x): 3.0}
+            dict(result_expr.quadratic_terms),
+            {variables.QuadraticTermKey(x, x): 3.0},
         )
 
     def test_all_quad(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable()
         result = expressions.fast_sum([3.0 * x * x, x * x])
-        self.assertIsInstance(result, model.QuadraticSum)
-        result_expr = model.as_flat_quadratic_expression(result)
+        self.assertIsInstance(result, variables.QuadraticSum)
+        result_expr = variables.as_flat_quadratic_expression(result)
         self.assertEqual(result_expr.offset, 0.0)
         self.assertEmpty(result_expr.linear_terms)
         self.assertDictEqual(
-            dict(result_expr.quadratic_terms), {model.QuadraticTermKey(x, x): 4.0}
+            dict(result_expr.quadratic_terms),
+            {variables.QuadraticTermKey(x, x): 4.0},
         )
 
 

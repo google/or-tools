@@ -47,6 +47,7 @@ setup(
         'numpy >= 1.13.3',
         'pandas >= 2.0.0',
         'protobuf >= 6.30.2,<6.31',
+        'typing-extensions >= 4.13.1',
         'immutabledict >= 3.0.0',
     ],
     package_data={
@@ -91,11 +92,19 @@ setup(
             '*.pyi'
         ],
         '@PYTHON_PROJECT@.math_opt':['*.pyi'],
+        '@PYTHON_PROJECT@.math_opt.python':['*.pyi'],
         '@PYTHON_PROJECT@.math_opt.core.python':[
-            '$<TARGET_FILE_NAME:math_opt_pybind11>',
+            '$<TARGET_FILE_NAME:math_opt_core_pybind11>',
             '*.pyi'
         ],
-        '@PYTHON_PROJECT@.math_opt.python':['*.pyi'],
+        '@PYTHON_PROJECT@.math_opt.elemental.python':[
+            '$<TARGET_FILE_NAME:math_opt_elemental_pybind11>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.math_opt.io.python':[
+            '$<TARGET_FILE_NAME:math_opt_io_pybind11>',
+            '*.pyi'
+        ],
         '@PYTHON_PROJECT@.math_opt.solvers':['*.pyi'],
         '@PYTHON_PROJECT@.service.v1':['*.pyi'],
         '@PYTHON_PROJECT@.service.v1.mathopt':['*.pyi'],

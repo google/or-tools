@@ -24,7 +24,9 @@ cc_library(
         "//ortools/math_opt/cpp:variable_and_expressions",
         "//ortools/math_opt/storage:linear_expression_data",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_item",
         "//ortools/math_opt/storage:sparse_coefficient_map",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -57,6 +59,7 @@ cc_library(
         "//ortools/math_opt/cpp:variable_and_expressions",
         "//ortools/math_opt/storage:linear_expression_data",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_item",
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "@abseil-cpp//absl/strings",
     ],

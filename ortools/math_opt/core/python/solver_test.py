@@ -17,7 +17,7 @@ import threading
 from typing import Callable, Optional, Sequence
 from absl.testing import absltest
 from absl.testing import parameterized
-from pybind11_abseil.status import StatusNotOk
+from pybind11_abseil import status
 from ortools.math_opt import callback_pb2
 from ortools.math_opt import model_parameters_pb2
 from ortools.math_opt import model_pb2
@@ -116,7 +116,7 @@ class PybindSolverTest(parameterized.TestCase):
             with self.assertRaisesRegex(RuntimeError, "id 7 not found"):
                 _solve_model(model, use_solver_class=use_solver_class)
         else:
-            with self.assertRaisesRegex(StatusNotOk, "id 7 not found"):
+            with self.assertRaisesRegex(status.StatusNotOk, "id 7 not found"):
                 _solve_model(model, use_solver_class=use_solver_class)
 
     @parameterized.named_parameters(

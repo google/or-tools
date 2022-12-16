@@ -106,11 +106,13 @@ enum SolverTypeProto {
   // returned).
   SOLVER_TYPE_SANTORINI = 11;
 
+  reserved 12;
+
   // Fico XPRESS solver (third party).
   //
   // Supports LP, MIP, and nonconvex integer quadratic problems.
   // A fast option, but has special licensing.
-  SOLVER_TYPE_XPRESS = 12;
+  SOLVER_TYPE_XPRESS = 13;
 }
 
 // Selects an algorithm for solving linear programs.
@@ -173,6 +175,7 @@ message StrictnessProto {
 // instantiated.
 message SolverInitializerProto {
   GurobiInitializerProto gurobi = 1;
+  reserved 2;
 }
 
 // Parameters to control a single solve.

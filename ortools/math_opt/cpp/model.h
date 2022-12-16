@@ -23,6 +23,7 @@
 #include <ostream>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -136,7 +137,7 @@ class Model {
   // This constructor is used when loading a model, for example from a
   // ModelProto or an MPS file. Note that in those cases the FromModelProto()
   // should be used.
-  explicit Model(std::unique_ptr<ModelStorage> storage);
+  explicit Model(absl::Nonnull<std::unique_ptr<ModelStorage>> storage);
 
   Model(const Model&) = delete;
   Model& operator=(const Model&) = delete;
@@ -158,7 +159,7 @@ class Model {
   //   * in an arbitrary order using Variables() and LinearConstraints().
   //
   // Note that the returned model does not have any update tracker.
-  std::unique_ptr<Model> Clone(
+  absl::Nonnull<std::unique_ptr<Model>> Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline absl::string_view name() const;
@@ -893,13 +894,13 @@ class Model {
   //
   // This API is for internal use only and regular users should have no need for
   // it.
-  const ModelStorage* storage() const { return storage_.get(); }
+  ModelStorageCPtr storage() const { return storage_.get(); }
 
   // Returns a pointer to the underlying model storage.
   //
   // This API is for internal use only and regular users should have no need for
   // it.
-  ModelStorage* storage() { return storage_.get(); }
+  ModelStoragePtr storage() { return storage_.get(); }
 
   // Prints the objective, the constraints and the variables of the model over
   // several lines in a human-readable way. Includes a new line at the end of
@@ -911,12 +912,12 @@ class Model {
   // points to the same model as storage_.
   //
   // Use CheckModel() when nullptr is not a valid value.
-  inline void CheckOptionalModel(const ModelStorage* other_storage) const;
+  inline void CheckOptionalModel(NullableModelStorageCPtr other_storage) const;
 
   // Asserts (with CHECK) that the input pointer is the same as storage_.
   //
   // Use CheckOptionalModel() if nullptr is a valid value too.
-  inline void CheckModel(const ModelStorage* other_storage) const;
+  inline void CheckModel(ModelStorageCPtr other_storage) const;
 
   // Don't use storage_ directly; prefer to use storage() so that const member
   // functions don't have modifying access to the underlying storage.
@@ -924,7 +925,7 @@ class Model {
   // We use a shared_ptr here so that the UpdateTracker class can have a
   // weak_ptr on the ModelStorage. This let it have a destructor that don't
   // crash when called after the destruction of the associated Model.
-  const std::shared_ptr<ModelStorage> storage_;
+  const absl::Nonnull<std::shared_ptr<ModelStorage>> storage_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -973,7 +974,7 @@ int64_t Model::next_variable_id() const {
 }
 
 bool Model::has_variable(const int64_t id) const {
-  return has_variable(VariableId(id));
+  return id < 0 ? false : has_variable(VariableId(id));
 }
 
 bool Model::has_variable(const VariableId id) const {
@@ -1074,7 +1075,7 @@ int64_t Model::next_linear_constraint_id() const {
 }
 
 bool Model::has_linear_constraint(const int64_t id) const {
-  return has_linear_constraint(LinearConstraintId(id));
+  return id < 0 ? false : has_linear_constraint(LinearConstraintId(id));
 }
 
 bool Model::has_linear_constraint(const LinearConstraintId id) const {
@@ -1082,6 +1083,7 @@ bool Model::has_linear_constraint(const LinearConstraintId id) const {
 }
 
 LinearConstraint Model::linear_constraint(const int64_t id) const {
+  CHECK_GE(id, 0) << "negative linear constraint id: " << id;
   return linear_constraint(LinearConstraintId(id));
 }
 
@@ -1176,7 +1178,7 @@ int64_t Model::next_quadratic_constraint_id() const {
 }
 
 bool Model::has_quadratic_constraint(const int64_t id) const {
-  return has_quadratic_constraint(QuadraticConstraintId(id));
+  return id < 0 ? false : has_quadratic_constraint(QuadraticConstraintId(id));
 }
 
 bool Model::has_quadratic_constraint(const QuadraticConstraintId id) const {
@@ -1184,6 +1186,7 @@ bool Model::has_quadratic_constraint(const QuadraticConstraintId id) const {
 }
 
 QuadraticConstraint Model::quadratic_constraint(const int64_t id) const {
+  CHECK_GE(id, 0) << "negative quadratic constraint id: " << id;
   return quadratic_constraint(QuadraticConstraintId(id));
 }
 
@@ -1219,7 +1222,9 @@ int64_t Model::next_second_order_cone_constraint_id() const {
 }
 
 bool Model::has_second_order_cone_constraint(const int64_t id) const {
-  return has_second_order_cone_constraint(SecondOrderConeConstraintId(id));
+  return id < 0 ? false
+                : has_second_order_cone_constraint(
+                      SecondOrderConeConstraintId(id));
 }
 
 bool Model::has_second_order_cone_constraint(
@@ -1265,7 +1270,7 @@ int64_t Model::next_sos1_constraint_id() const {
 }
 
 bool Model::has_sos1_constraint(const int64_t id) const {
-  return has_sos1_constraint(Sos1ConstraintId(id));
+  return id < 0 ? false : has_sos1_constraint(Sos1ConstraintId(id));
 }
 
 bool Model::has_sos1_constraint(const Sos1ConstraintId id) const {
@@ -1306,7 +1311,7 @@ int64_t Model::next_sos2_constraint_id() const {
 }
 
 bool Model::has_sos2_constraint(const int64_t id) const {
-  return has_sos2_constraint(Sos2ConstraintId(id));
+  return id < 0 ? false : has_sos2_constraint(Sos2ConstraintId(id));
 }
 
 bool Model::has_sos2_constraint(const Sos2ConstraintId id) const {
@@ -1347,7 +1352,7 @@ int64_t Model::next_indicator_constraint_id() const {
 }
 
 bool Model::has_indicator_constraint(const int64_t id) const {
-  return has_indicator_constraint(IndicatorConstraintId(id));
+  return id < 0 ? false : has_indicator_constraint(IndicatorConstraintId(id));
 }
 
 bool Model::has_indicator_constraint(const IndicatorConstraintId id) const {
@@ -1555,7 +1560,7 @@ int64_t Model::next_auxiliary_objective_id() const {
 }
 
 bool Model::has_auxiliary_objective(const int64_t id) const {
-  return has_auxiliary_objective(AuxiliaryObjectiveId(id));
+  return id < 0 ? false : has_auxiliary_objective(AuxiliaryObjectiveId(id));
 }
 
 bool Model::has_auxiliary_objective(const AuxiliaryObjectiveId id) const {
@@ -1563,6 +1568,7 @@ bool Model::has_auxiliary_objective(const AuxiliaryObjectiveId id) const {
 }
 
 Objective Model::auxiliary_objective(const int64_t id) const {
+  CHECK_GE(id, 0) << "negative auxiliary objective id: " << id;
   return auxiliary_objective(AuxiliaryObjectiveId(id));
 }
 
@@ -1618,14 +1624,15 @@ void Model::set_is_maximize(const Objective objective, const bool is_maximize) {
   storage()->set_is_maximize(objective.typed_id(), is_maximize);
 }
 
-void Model::CheckOptionalModel(const ModelStorage* const other_storage) const {
+void Model::CheckOptionalModel(
+    const NullableModelStorageCPtr other_storage) const {
   if (other_storage != nullptr) {
     CHECK_EQ(other_storage, storage())
         << internal::kObjectsFromOtherModelStorage;
   }
 }
 
-void Model::CheckModel(const ModelStorage* const other_storage) const {
+void Model::CheckModel(const ModelStorageCPtr other_storage) const {
   CHECK_EQ(other_storage, storage()) << internal::kObjectsFromOtherModelStorage;
 }
 

@@ -17,6 +17,7 @@ from typing import Dict, List, Union
 
 from absl.testing import absltest
 from ortools.math_opt.core.python import solver as core_solver
+from ortools.math_opt.python import linear_constraints
 from ortools.math_opt.python import message_callback
 from ortools.math_opt.python import model
 from ortools.math_opt.python import model_parameters
@@ -24,9 +25,11 @@ from ortools.math_opt.python import parameters
 from ortools.math_opt.python import result
 from ortools.math_opt.python import solve
 from ortools.math_opt.python import sparse_containers
+from ortools.math_opt.python import variables
 
 VarOrConstraintDict = Union[
-    Dict[model.Variable, float], Dict[model.LinearConstraint, float]
+    Dict[variables.Variable, float],
+    Dict[linear_constraints.LinearConstraint, float],
 ]
 
 # This string appears in the logs if and only if SCIP is doing an incremental
@@ -131,6 +134,29 @@ class SolveTest(absltest.TestCase):
             _list_is_near(expected1, dual_vec) or _list_is_near(expected2, dual_vec),
             msg=f"dual_vec is {dual_vec}; expected {expected1} or {expected2}",
         )
+
+    def test_indicator(self) -> None:
+        # min  2 * x + y + 10 z
+        # s.t. if not z then x + y >= 6
+        #      x, y >= 0
+        #      z binary
+        #
+        # Optimal solution is (x, y, z) = (0, 6, 0), objective value 6.
+        mod = model.Model()
+        x = mod.add_variable(lb=0)
+        y = mod.add_variable(lb=0)
+        z = mod.add_binary_variable()
+        mod.add_indicator_constraint(
+            indicator=z, activate_on_zero=True, implied_constraint=x + y >= 6.0
+        )
+        mod.minimize(2 * x + y + 10 * z)
+
+        res = solve.solve(mod, parameters.SolverType.GSCIP)
+        self.assertEqual(res.termination.reason, result.TerminationReason.OPTIMAL)
+        self.assertAlmostEqual(res.objective_value(), 6.0, delta=1e-5)
+        self.assertAlmostEqual(res.variable_values(x), 0.0, delta=1e-5)
+        self.assertAlmostEqual(res.variable_values(y), 6.0, delta=1e-5)
+        self.assertAlmostEqual(res.variable_values(z), 0.0, delta=1e-5)
 
     def test_filters(self) -> None:
         mod = model.Model(name="test_model")

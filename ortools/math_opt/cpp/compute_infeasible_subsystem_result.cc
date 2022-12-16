@@ -76,7 +76,7 @@ template <typename K>
 absl::Status BoundsMapProtoToCpp(
     const google::protobuf::Map<int64_t, ModelSubsetProto::Bounds>& source,
     absl::flat_hash_map<K, ModelSubset::Bounds>& target,
-    const ModelStorage* const model,
+    const ModelStorageCPtr model,
     bool (ModelStorage::* const contains_strong_id)(typename K::IdType id)
         const,
     const absl::string_view object_name) {
@@ -95,7 +95,7 @@ absl::Status BoundsMapProtoToCpp(
 template <typename K>
 absl::Status RepeatedIdsProtoToCpp(
     const google::protobuf::RepeatedField<int64_t>& source,
-    absl::flat_hash_set<K>& target, const ModelStorage* const model,
+    absl::flat_hash_set<K>& target, const ModelStorageCPtr model,
     bool (ModelStorage::* const contains_strong_id)(typename K::IdType id)
         const,
     const absl::string_view object_name) {
@@ -134,7 +134,7 @@ google::protobuf::RepeatedField<int64_t> RepeatedIdsCppToProto(
 }  // namespace
 
 absl::StatusOr<ModelSubset> ModelSubset::FromProto(
-    const ModelStorage* const model, const ModelSubsetProto& proto) {
+    const ModelStorageCPtr model, const ModelSubsetProto& proto) {
   ModelSubset model_subset;
   RETURN_IF_ERROR(BoundsMapProtoToCpp(proto.variable_bounds(),
                                       model_subset.variable_bounds, model,
@@ -184,7 +184,7 @@ ModelSubsetProto ModelSubset::Proto() const {
 }
 
 absl::Status ModelSubset::CheckModelStorage(
-    const ModelStorage* const expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   const auto validate_map_keys =
       [expected_storage](const auto& map,
                          const absl::string_view name) -> absl::Status {
@@ -348,7 +348,7 @@ std::ostream& operator<<(std::ostream& out, const ModelSubset& model_subset) {
 
 absl::StatusOr<ComputeInfeasibleSubsystemResult>
 ComputeInfeasibleSubsystemResult::FromProto(
-    const ModelStorage* const model,
+    const ModelStorageCPtr model,
     const ComputeInfeasibleSubsystemResultProto& result_proto) {
   ComputeInfeasibleSubsystemResult result;
   const std::optional<FeasibilityStatus> feasibility =
@@ -383,7 +383,7 @@ ComputeInfeasibleSubsystemResultProto ComputeInfeasibleSubsystemResult::Proto()
 }
 
 absl::Status ComputeInfeasibleSubsystemResult::CheckModelStorage(
-    const ModelStorage* const expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   return infeasible_subsystem.CheckModelStorage(expected_storage);
 }
 

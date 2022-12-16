@@ -20,23 +20,18 @@
 #include <cstdint>
 #include <optional>
 
-#include "absl/strings/string_view.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/elemental/elements.h"  // IWYU pragma: export
 
 namespace operations_research::math_opt {
 
-DEFINE_STRONG_INT_TYPE(VariableId, int64_t);
-DEFINE_STRONG_INT_TYPE(AuxiliaryObjectiveId, int64_t);
 // nullopt denotes the primary objective.
 using ObjectiveId = std::optional<AuxiliaryObjectiveId>;
 constexpr ObjectiveId kPrimaryObjectiveId =
     std::nullopt;  // NOLINT: Used by dependencies
-DEFINE_STRONG_INT_TYPE(LinearConstraintId, int64_t);
-DEFINE_STRONG_INT_TYPE(QuadraticConstraintId, int64_t);
 DEFINE_STRONG_INT_TYPE(SecondOrderConeConstraintId, int64_t);
 DEFINE_STRONG_INT_TYPE(Sos1ConstraintId, int64_t);
 DEFINE_STRONG_INT_TYPE(Sos2ConstraintId, int64_t);
-DEFINE_STRONG_INT_TYPE(IndicatorConstraintId, int64_t);
 DEFINE_STRONG_INT_TYPE(UpdateTrackerId, int64_t);
 
 }  // namespace operations_research::math_opt

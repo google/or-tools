@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import math
-from typing import Any, List, NamedTuple, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from ortools.math_opt.python import bounded_expressions
 from ortools.math_opt.python import model
+from ortools.math_opt.python import variables
 
 _LINEAR_TYPES = (
     "Variable",
@@ -36,15 +38,15 @@ _QUADRATIC_TYPES = (
 )
 
 
-class BoundedExprTest(absltest.TestCase):
+class BoundedLinearExprTest(absltest.TestCase):
 
     def test_eq_float(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = x + 2 * y + 1.0 == 2.0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.lower_bound, 2.0)
@@ -56,8 +58,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = (x + 2 * y + 1.0).__eq__(2.0)
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.lower_bound, 2.0)
@@ -68,8 +70,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = x + 2 * y + 1.0 == 3 * y - 2.0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 3.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: -1.0})
         self.assertEqual(bounded_expr.lower_bound, 0.0)
@@ -77,8 +79,10 @@ class BoundedExprTest(absltest.TestCase):
 
         # Check Variable.__eq__ calls LinearBase.__eq__ when appropriate.
         bounded_expr_var_on_lhs = x == 3 * y - 2.0
-        self.assertIsInstance(bounded_expr_var_on_lhs, model.BoundedLinearExpression)
-        flat_expr_var_on_lhs = model.as_flat_linear_expression(
+        self.assertIsInstance(
+            bounded_expr_var_on_lhs, bounded_expressions.BoundedExpression
+        )
+        flat_expr_var_on_lhs = variables.as_flat_linear_expression(
             bounded_expr_var_on_lhs.expression
         )
         self.assertEqual(flat_expr_var_on_lhs.offset, 2.0)
@@ -87,8 +91,10 @@ class BoundedExprTest(absltest.TestCase):
         self.assertEqual(bounded_expr_var_on_lhs.upper_bound, 0.0)
 
         bounded_expr_var_on_rhs = 3 * y - 2.0 == x
-        self.assertIsInstance(bounded_expr_var_on_rhs, model.BoundedLinearExpression)
-        flat_expr_var_on_rhs = model.as_flat_linear_expression(
+        self.assertIsInstance(
+            bounded_expr_var_on_rhs, bounded_expressions.BoundedExpression
+        )
+        flat_expr_var_on_rhs = variables.as_flat_linear_expression(
             bounded_expr_var_on_rhs.expression
         )
         self.assertEqual(flat_expr_var_on_rhs.offset, -2.0)
@@ -102,8 +108,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = (x + 2 * y + 1.0).__eq__(3 * y - 2.0)
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 3.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: -1.0})
         self.assertEqual(bounded_expr.lower_bound, 0.0)
@@ -111,8 +117,10 @@ class BoundedExprTest(absltest.TestCase):
 
         # Check Variable.__eq__ calls LinearBase.__eq__ when appropriate.
         bounded_expr_var_on_lhs = x.__eq__(3 * y - 2.0)
-        self.assertIsInstance(bounded_expr_var_on_lhs, model.BoundedLinearExpression)
-        flat_expr_var_on_lhs = model.as_flat_linear_expression(
+        self.assertIsInstance(
+            bounded_expr_var_on_lhs, bounded_expressions.BoundedExpression
+        )
+        flat_expr_var_on_lhs = variables.as_flat_linear_expression(
             bounded_expr_var_on_lhs.expression
         )
         self.assertEqual(flat_expr_var_on_lhs.offset, 2.0)
@@ -121,8 +129,10 @@ class BoundedExprTest(absltest.TestCase):
         self.assertEqual(bounded_expr_var_on_lhs.upper_bound, 0.0)
 
         bounded_expr_var_on_rhs = (3 * y - 2.0).__eq__(x)
-        self.assertIsInstance(bounded_expr_var_on_rhs, model.BoundedLinearExpression)
-        flat_expr_var_on_rhs = model.as_flat_linear_expression(
+        self.assertIsInstance(
+            bounded_expr_var_on_rhs, bounded_expressions.BoundedExpression
+        )
+        flat_expr_var_on_rhs = variables.as_flat_linear_expression(
             bounded_expr_var_on_rhs.expression
         )
         self.assertEqual(flat_expr_var_on_rhs.offset, -2.0)
@@ -136,7 +146,7 @@ class BoundedExprTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         also_x = x
         bounded_expr = x == y
-        self.assertIsInstance(bounded_expr, model.VarEqVar)
+        self.assertIsInstance(bounded_expr, variables.VarEqVar)
         self.assertEqual(bounded_expr.first_variable, x)
         self.assertEqual(bounded_expr.second_variable, y)
 
@@ -157,7 +167,7 @@ class BoundedExprTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         also_x = x
         bounded_expr = x.__eq__(y)
-        self.assertIsInstance(bounded_expr, model.VarEqVar)
+        self.assertIsInstance(bounded_expr, variables.VarEqVar)
         self.assertEqual(bounded_expr.first_variable, x)
         self.assertEqual(bounded_expr.second_variable, y)
 
@@ -203,7 +213,7 @@ class BoundedExprTest(absltest.TestCase):
     # Mock Variable.__hash__ to have a collision in the dictionary lookup so that
     # a correct behavior of x == y is needed to recover the values. For instance,
     # if VarEqVar.__bool__ always returned True, this test would fail.
-    @mock.patch.object(model.Variable, "__hash__")
+    @mock.patch.object(variables.Variable, "__hash__")
     def test_var_dict(self, fixed_hash: mock.MagicMock) -> None:
         fixed_hash.return_value = 111
         mod = model.Model()
@@ -220,8 +230,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = x + 2 * y + 1.0 <= 2.0
-        self.assertIsInstance(bounded_expr, model.UpperBoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.UpperBoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.upper_bound, 2.0)
@@ -231,8 +241,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = 2.0 >= x + 2 * y + 1.0
-        self.assertIsInstance(bounded_expr, model.UpperBoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.UpperBoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.upper_bound, 2.0)
@@ -242,8 +252,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = x + 2 * y + 1.0 >= 2.0
-        self.assertIsInstance(bounded_expr, model.LowerBoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.LowerBoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.lower_bound, 2.0)
@@ -253,8 +263,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = 2.0 <= x + 2 * y + 1.0
-        self.assertIsInstance(bounded_expr, model.LowerBoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.LowerBoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.lower_bound, 2.0)
@@ -264,8 +274,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = (0.0 <= x + 2 * y + 1.0) <= 2.0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.upper_bound, 2.0)
@@ -276,8 +286,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = 2.0 >= (x + 2 * y + 1.0 >= 0)
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.upper_bound, 2.0)
@@ -288,8 +298,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = 0.0 <= (x + 2 * y + 1.0 <= 2.0)
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.upper_bound, 2.0)
@@ -300,8 +310,8 @@ class BoundedExprTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = (2.0 >= x + 2 * y + 1.0) >= 0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0})
         self.assertEqual(bounded_expr.upper_bound, 2.0)
@@ -313,8 +323,8 @@ class BoundedExprTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         z = mod.add_binary_variable(name="z")
         bounded_expr = x + 3 * y + 2.0 <= y - 4.0 * z + 1.0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0, z: 4.0})
         self.assertEqual(bounded_expr.lower_bound, -math.inf)
@@ -326,15 +336,15 @@ class BoundedExprTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         z = mod.add_binary_variable(name="z")
         bounded_expr = x + 3 * y + 2.0 >= y - 4.0 * z + 1.0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
-        flat_expr = model.as_flat_linear_expression(bounded_expr.expression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
+        flat_expr = variables.as_flat_linear_expression(bounded_expr.expression)
         self.assertEqual(flat_expr.offset, 1.0)
         self.assertDictEqual(dict(flat_expr.terms), {x: 1.0, y: 2.0, z: 4.0})
         self.assertEqual(bounded_expr.lower_bound, 0.0)
         self.assertEqual(bounded_expr.upper_bound, math.inf)
 
 
-class BoundedExprErrorTest(absltest.TestCase):
+class BoundedLinearExprErrorTest(absltest.TestCase):
 
     def test_ne(self) -> None:
         mod = model.Model()
@@ -390,7 +400,7 @@ class BoundedExprErrorTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         self.assertIsInstance(
-            0.0 <= x + 2 * y + 1.0, model.LowerBoundedLinearExpression
+            0.0 <= x + 2 * y + 1.0, bounded_expressions.LowerBoundedExpression
         )
         with self.assertRaisesRegex(
             TypeError,
@@ -403,7 +413,7 @@ class BoundedExprErrorTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         self.assertIsInstance(
-            2.0 >= x + 2 * y + 1.0, model.UpperBoundedLinearExpression
+            2.0 >= x + 2 * y + 1.0, bounded_expressions.UpperBoundedExpression
         )
         with self.assertRaisesRegex(
             TypeError,
@@ -415,7 +425,9 @@ class BoundedExprErrorTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        self.assertIsInstance(x <= x + 2 * y + 1.0, model.BoundedLinearExpression)
+        self.assertIsInstance(
+            x <= x + 2 * y + 1.0, bounded_expressions.BoundedExpression
+        )
         with self.assertRaisesRegex(
             TypeError,
             "__bool__ is unsupported.*\n.*two-sided or ranged linear inequality.*",
@@ -426,7 +438,9 @@ class BoundedExprErrorTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        self.assertIsInstance(x >= x + 2 * y + 1.0, model.BoundedLinearExpression)
+        self.assertIsInstance(
+            x >= x + 2 * y + 1.0, bounded_expressions.BoundedExpression
+        )
         with self.assertRaisesRegex(
             TypeError,
             "__bool__ is unsupported.*\n.*two-sided or ranged linear inequality",
@@ -439,7 +453,9 @@ class BoundedExprErrorTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         rhs_expr = 2.0 + x
         lower_bounded_expr = 0.0 <= x + 2 * y + 1.0
-        self.assertIsInstance(lower_bounded_expr, model.LowerBoundedLinearExpression)
+        self.assertIsInstance(
+            lower_bounded_expr, bounded_expressions.LowerBoundedExpression
+        )
         # pylint: disable=pointless-statement
         with self.assertRaisesWithLiteralMatch(
             TypeError,
@@ -456,7 +472,9 @@ class BoundedExprErrorTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         rhs_expr = 2.0 + x
         lower_bounded_expr = 0.0 <= x + 2 * y + 1.0
-        self.assertIsInstance(lower_bounded_expr, model.LowerBoundedLinearExpression)
+        self.assertIsInstance(
+            lower_bounded_expr, bounded_expressions.LowerBoundedExpression
+        )
         # pylint: disable=pointless-statement
         with self.assertRaisesWithLiteralMatch(
             TypeError,
@@ -471,7 +489,9 @@ class BoundedExprErrorTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         lower_bounded_expr = 0.0 <= x + 2 * y + 1.0
-        self.assertIsInstance(lower_bounded_expr, model.LowerBoundedLinearExpression)
+        self.assertIsInstance(
+            lower_bounded_expr, bounded_expressions.LowerBoundedExpression
+        )
         # pylint: disable=pointless-statement
         with self.assertRaisesWithLiteralMatch(
             TypeError,
@@ -487,7 +507,9 @@ class BoundedExprErrorTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         rhs_expr = 1.0 + x
         upper_bounded_expr = 2.0 >= x + 2 * y + 1.0
-        self.assertIsInstance(upper_bounded_expr, model.UpperBoundedLinearExpression)
+        self.assertIsInstance(
+            upper_bounded_expr, bounded_expressions.UpperBoundedExpression
+        )
         # pylint: disable=pointless-statement
         with self.assertRaisesWithLiteralMatch(
             TypeError,
@@ -504,7 +526,9 @@ class BoundedExprErrorTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         rhs_expr = 1.0 + x
         upper_bounded_expr = 2.0 >= x + 2 * y + 1.0
-        self.assertIsInstance(upper_bounded_expr, model.UpperBoundedLinearExpression)
+        self.assertIsInstance(
+            upper_bounded_expr, bounded_expressions.UpperBoundedExpression
+        )
         # pylint: disable=pointless-statement
         with self.assertRaisesWithLiteralMatch(
             TypeError,
@@ -519,7 +543,9 @@ class BoundedExprErrorTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         upper_bounded_expr = 2.0 >= x + 2 * y + 1.0
-        self.assertIsInstance(upper_bounded_expr, model.UpperBoundedLinearExpression)
+        self.assertIsInstance(
+            upper_bounded_expr, bounded_expressions.UpperBoundedExpression
+        )
         # pylint: disable=pointless-statement
         with self.assertRaisesWithLiteralMatch(
             TypeError,
@@ -535,7 +561,7 @@ class BoundedExprErrorTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         rhs_expr = 1.0 + x
         bounded_expr = (0.0 <= x + 2 * y + 1.0) <= 2.0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
         # pylint: disable=pointless-statement
         with self.assertRaisesRegex(
             TypeError,
@@ -549,7 +575,7 @@ class BoundedExprErrorTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = (0.0 <= x + 2 * y + 1.0) <= 2.0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
         # pylint: disable=pointless-statement
         with self.assertRaisesWithLiteralMatch(
             TypeError,
@@ -565,7 +591,7 @@ class BoundedExprErrorTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         rhs_expr = 1.0 + x
         bounded_expr = (0.0 <= x + 2 * y + 1.0) <= 2.0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
         # pylint: disable=pointless-statement
         with self.assertRaisesRegex(
             TypeError,
@@ -579,7 +605,7 @@ class BoundedExprErrorTest(absltest.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         bounded_expr = (0.0 <= x + 2 * y + 1.0) <= 2.0
-        self.assertIsInstance(bounded_expr, model.BoundedLinearExpression)
+        self.assertIsInstance(bounded_expr, bounded_expressions.BoundedExpression)
         # pylint: disable=pointless-statement
         with self.assertRaisesWithLiteralMatch(
             TypeError,
@@ -590,43 +616,241 @@ class BoundedExprErrorTest(absltest.TestCase):
         # pylint: enable=pointless-statement
 
 
-class BoundedExprStrAndReprTest(absltest.TestCase):
+def _assert_any_bounded_quad_equals(
+    test_case: absltest.TestCase,
+    actual: variables.BoundedQuadraticTypes,
+    *,
+    lb: float = -math.inf,
+    ub: float = math.inf,
+    offset: float = 0.0,
+    lin: Optional[Dict[variables.Variable, float]] = None,
+    quad: Optional[Dict[Tuple[variables.Variable, variables.Variable], float]] = None,
+) -> None:
+    test_case.assertIsInstance(actual.expression, variables.QuadraticBase)
+    lin = lin or {}
+    quad = quad or {}
+    test_case.assertEqual(actual.lower_bound, lb)
+    test_case.assertEqual(actual.upper_bound, ub)
+    actual_quad = variables.as_flat_quadratic_expression(actual.expression)
+    test_case.assertEqual(actual_quad.offset, offset)
+    test_case.assertDictEqual(dict(actual_quad.linear_terms), lin)
+    actual_quad_terms = {
+        (key.first_var, key.second_var): coef
+        for (key, coef) in actual_quad.quadratic_terms.items()
+    }
+    test_case.assertDictEqual(actual_quad_terms, quad)
 
-    def test_upper_bounded_expr(self) -> None:
-        mod = model.Model()
-        x = mod.add_binary_variable(name="x")
-        y = mod.add_binary_variable(name="y")
-        bounded_expr = x + 2 * y + 1.0 <= 4.0
-        self.assertEqual(
-            repr(bounded_expr),
-            f'LinearSum((LinearSum((<Variable id: 0, name: {"x"!r}>,'
-            f' LinearTerm(<Variable id: 1, name: {"y"!r}>, 2))), 1.0)) <= 4.0',
-        )
-        self.assertEqual(str(bounded_expr), "1.0 + 1.0 * x + 2.0 * y <= 4.0")
 
-    def test_lower_bounded_expr(self) -> None:
-        mod = model.Model()
-        x = mod.add_binary_variable(name="x")
-        y = mod.add_binary_variable(name="y")
-        bounded_expr = x + 2 * y + 1.0 >= 2.0
-        self.assertEqual(
-            repr(bounded_expr),
-            f'LinearSum((LinearSum((<Variable id: 0, name: {"x"!r}>,'
-            f' LinearTerm(<Variable id: 1, name: {"y"!r}>, 2))), 1.0)) >= 2.0',
-        )
-        self.assertEqual(str(bounded_expr), "1.0 + 1.0 * x + 2.0 * y >= 2.0")
+# TODO(b/73944659): We do not want to accept bool, but pytype cannot do the
+# correct inference on 3 == x * x.
+def _assert_bounded_quad_equals(
+    test_case: absltest.TestCase,
+    actual: Union[variables.BoundedQuadraticExpression, bool],
+    *,
+    lb: float = -math.inf,
+    ub: float = math.inf,
+    offset: float = 0.0,
+    lin: Optional[Dict[variables.Variable, float]] = None,
+    quad: Optional[Dict[Tuple[variables.Variable, variables.Variable], float]] = None,
+) -> None:
+    test_case.assertIsInstance(actual, bounded_expressions.BoundedExpression)
+    _assert_any_bounded_quad_equals(
+        test_case, actual, lb=lb, ub=ub, offset=offset, lin=lin, quad=quad
+    )
 
-    def test_bounded_expr(self) -> None:
+
+# TODO(b/73944659): We do not want to accept bool, but pytype cannot do the
+# correct inference on 3 <= x * x.
+def _assert_lower_bounded_quad_equals(
+    test_case: absltest.TestCase,
+    actual: Union[bool, variables.LowerBoundedQuadraticExpression],
+    *,
+    lb: float = -math.inf,
+    offset: float = 0.0,
+    lin: Optional[Dict[variables.Variable, float]] = None,
+    quad: Optional[Dict[Tuple[variables.Variable, variables.Variable], float]] = None,
+) -> None:
+    test_case.assertIsInstance(actual, bounded_expressions.LowerBoundedExpression)
+    _assert_any_bounded_quad_equals(
+        test_case, actual, lb=lb, ub=math.inf, offset=offset, lin=lin, quad=quad
+    )
+
+
+# TODO(b/73944659): We do not want to accept bool, but pytype cannot do the
+# correct inference on 3 >= x * x.
+def _assert_upper_bounded_quad_equals(
+    test_case: absltest.TestCase,
+    actual: Union[bool, variables.UpperBoundedQuadraticExpression],
+    *,
+    ub: float = math.inf,
+    offset: float = 0.0,
+    lin: Optional[Dict[variables.Variable, float]] = None,
+    quad: Optional[Dict[Tuple[variables.Variable, variables.Variable], float]] = None,
+) -> None:
+    test_case.assertIsInstance(actual, bounded_expressions.UpperBoundedExpression)
+    _assert_any_bounded_quad_equals(
+        test_case, actual, lb=-math.inf, ub=ub, offset=offset, lin=lin, quad=quad
+    )
+
+
+class BoundedQuadraticExpressionTest(absltest.TestCase):
+    """Tests the creation of bounded quadratic expressions by operators."""
+
+    def test_quad_eq_float(self) -> None:
         mod = model.Model()
-        x = mod.add_binary_variable(name="x")
-        y = mod.add_binary_variable(name="y")
-        bounded_expr = (2.0 <= x + 2 * y + 1.0) <= 4.0
-        self.assertEqual(
-            repr(bounded_expr),
-            f'2.0 <= LinearSum((LinearSum((<Variable id: 0, name: {"x"!r}>,'
-            f' LinearTerm(<Variable id: 1, name: {"y"!r}>, 2))), 1.0)) <= 4.0',
+        x = mod.add_variable()
+        bounded = 5.0 * x * x == 3.0
+        _assert_bounded_quad_equals(self, bounded, lb=3.0, ub=3.0, quad={(x, x): 5.0})
+
+    def test_float_eq_quad(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = 3.0 == 5.0 * x * x
+        _assert_bounded_quad_equals(self, bounded, lb=3.0, ub=3.0, quad={(x, x): 5.0})
+
+    def test_quad_eq_lin(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = 5.0 * x * x == x
+        _assert_bounded_quad_equals(
+            self, bounded, lb=0.0, ub=0.0, lin={x: -1.0}, quad={(x, x): 5.0}
         )
-        self.assertEqual(str(bounded_expr), "2.0 <= 1.0 + 1.0 * x + 2.0 * y <= 4.0")
+
+    def test_lin_eq_quad(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = x == 5.0 * x * x
+        _assert_bounded_quad_equals(
+            self, bounded, lb=0.0, ub=0.0, lin={x: -1.0}, quad={(x, x): 5.0}
+        )
+
+    def test_quad_eq_str_raises_error(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        with self.assertRaisesRegex(TypeError, "==.*str"):
+            5.0 * x * x == "hello"  # pylint: disable=pointless-statement
+
+    def test_quad_ne_raises_error(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        with self.assertRaisesRegex(TypeError, "!= constraints"):
+            x * x != 1.0  # pylint: disable=pointless-statement
+
+    def test_quad_le_float(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = 5.0 * x * x <= 3.0
+        _assert_upper_bounded_quad_equals(self, bounded, ub=3.0, quad={(x, x): 5.0})
+
+    def test_float_ge_quad(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = 3.0 >= 5.0 * x * x
+        _assert_upper_bounded_quad_equals(self, bounded, ub=3.0, quad={(x, x): 5.0})
+
+    def test_quad_le_lin(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = 5.0 * x * x <= x + 2.0
+        _assert_bounded_quad_equals(
+            self, bounded, ub=0.0, quad={(x, x): 5.0}, lin={x: -1}, offset=-2.0
+        )
+
+    def test_lin_ge_quad(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = x + 2.0 >= 5.0 * x * x
+        _assert_bounded_quad_equals(
+            self, bounded, ub=0.0, quad={(x, x): 5.0}, lin={x: -1}, offset=-2.0
+        )
+
+    def test_quad_le_str_raises_error(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        with self.assertRaisesRegex(TypeError, "<=.*str"):
+            5.0 * x * x <= "test"  # pylint: disable=pointless-statement
+
+    def test_quad_ge_float(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = 5.0 * x * x >= 3.0
+        _assert_lower_bounded_quad_equals(self, bounded, lb=3.0, quad={(x, x): 5.0})
+
+    def test_float_le_quad(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = 3.0 <= 5.0 * x * x
+        _assert_lower_bounded_quad_equals(self, bounded, lb=3.0, quad={(x, x): 5.0})
+
+    def test_quad_ge_lin(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = 5.0 * x * x >= x + 2.0
+        _assert_bounded_quad_equals(
+            self, bounded, lb=0.0, quad={(x, x): 5.0}, lin={x: -1}, offset=-2.0
+        )
+
+    def test_lin_le_quad(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = x + 2.0 <= 5.0 * x * x
+        _assert_bounded_quad_equals(
+            self, bounded, lb=0.0, quad={(x, x): 5.0}, lin={x: -1}, offset=-2.0
+        )
+
+    def test_quad_ge_str_raises_error(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        with self.assertRaisesRegex(TypeError, ">=.*str"):
+            5.0 * x * x >= "test"  # pylint: disable=pointless-statement
+
+    def test_ge_twice(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = (1.0 <= 5.0 * x * x) <= 2.0
+        _assert_bounded_quad_equals(
+            self,
+            bounded,
+            lb=1.0,
+            ub=2.0,
+            quad={(x, x): 5.0},
+        )
+
+    def test_ge_twice_fails_when_ambiguous(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        with self.assertRaisesRegex(TypeError, "'BoundedExpression' and 'float'"):
+            (x <= 5.0 * x * x) <= 2.0  # pylint: disable=pointless-statement
+
+    def test_no_quad_ge_bounded_expr(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        with self.assertRaisesRegex(TypeError, r"\(a <= b\) <= c"):
+            x * x >= (x == 5.0)  # pylint: disable=pointless-statement
+
+    def test_le_twice(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        bounded = 1.0 <= (5.0 * x * x <= 2.0)
+        _assert_bounded_quad_equals(
+            self,
+            bounded,
+            lb=1.0,
+            ub=2.0,
+            quad={(x, x): 5.0},
+        )
+
+    def test_le_twice_fails_when_ambiguous(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        with self.assertRaisesRegex(TypeError, "'BoundedExpression' and 'float'"):
+            (x >= 5.0 * x * x) >= 2.0  # pylint: disable=pointless-statement
+
+    def test_no_quad_le_bounded_expr(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        with self.assertRaisesRegex(TypeError, r"\(a <= b\) <= c"):
+            x * x <= (x == 5.0)  # pylint: disable=pointless-statement
 
 
 # TODO(b/216492143): change __str__ to match C++ implementation in cl/421649402.
@@ -680,13 +904,13 @@ class LinearStrAndReprTest(parameterized.TestCase):
         )
         self.assertEqual(str(num_times_var_sum), "6.0 + 2.0 * x + 2.0 * y")
         self.assertEqual(
-            repr(model.as_flat_linear_expression(num_times_var_sum)),
+            repr(variables.as_flat_linear_expression(num_times_var_sum)),
             f'LinearExpression(6.0, {"{"!s}'
             f'<Variable id: 0, name: {"x"!r}>: 2.0, '
             f'<Variable id: 1, name: {"y"!r}>: 2.0{"}"!s})',
         )
         self.assertEqual(
-            str(model.as_flat_linear_expression(num_times_var_sum)),
+            str(variables.as_flat_linear_expression(num_times_var_sum)),
             "6.0 + 2.0 * x + 2.0 * y",
         )
 
@@ -700,7 +924,7 @@ class LinearStrAndReprTest(parameterized.TestCase):
         mod = model.Model()
         x = [mod.add_binary_variable(name=f"x{i}") for i in range(3)]
 
-        linear_sum = model.LinearSum(i * x[i] for i in range(3))
+        linear_sum = variables.LinearSum(i * x[i] for i in range(3))
         self.assertEqual(
             repr(linear_sum),
             "LinearSum(("
@@ -777,14 +1001,14 @@ class QuadraticStrAndReprTest(parameterized.TestCase):
         )
         self.assertEqual(str(num_times_term_sum), "6.0 + 2.0 * y + 2.0 * x * x")
         self.assertEqual(
-            repr(model.as_flat_quadratic_expression(num_times_term_sum)),
+            repr(variables.as_flat_quadratic_expression(num_times_term_sum)),
             f'QuadraticExpression(6.0, {"{"!s}'
             f'<Variable id: 1, name: {"y"!r}>: 2.0{"}"!s}, '
             f'{"{"!s}QuadraticTermKey(<Variable id: 0, name: {"x"!r}>, '
             f'<Variable id: 0, name: {"x"!r}>): 2.0{"}"!s})',
         )
         self.assertEqual(
-            str(model.as_flat_quadratic_expression(num_times_term_sum)),
+            str(variables.as_flat_quadratic_expression(num_times_term_sum)),
             "6.0 + 2.0 * y + 2.0 * x * x",
         )
 
@@ -808,7 +1032,7 @@ class QuadraticStrAndReprTest(parameterized.TestCase):
         mod = model.Model()
         x = [mod.add_binary_variable(name=f"x{i}") for i in range(3)]
 
-        quadratic_sum = model.QuadraticSum(i * x[i] * x[i] for i in range(3))
+        quadratic_sum = variables.QuadraticSum(i * x[i] * x[i] for i in range(3))
         self.assertEqual(
             repr(quadratic_sum),
             "QuadraticSum(("
@@ -876,27 +1100,27 @@ class LinearNumberOpTests(parameterized.TestCase):
         y = mod.add_binary_variable(name="y")
         if linear_type == "Variable":
             linear = x
-            expected_type = model.LinearTerm
+            expected_type = variables.LinearTerm
             expected_offset = 0
             expected_terms = {x: constant}
         elif linear_type == "LinearTerm":
-            linear = model.LinearTerm(x, 2)
-            expected_type = model.LinearTerm
+            linear = variables.LinearTerm(x, 2)
+            expected_type = variables.LinearTerm
             expected_offset = 0
             expected_terms = {x: 2 * constant}
         elif linear_type == "LinearExpression":
-            linear = model.LinearExpression(x - 2 * y + 3)
-            expected_type = model.LinearProduct
+            linear = variables.LinearExpression(x - 2 * y + 3)
+            expected_type = variables.LinearProduct
             expected_offset = 3 * constant
             expected_terms = {x: constant, y: -2 * constant}
         elif linear_type == "LinearSum":
-            linear = model.LinearSum((x, -2 * y, 3))
-            expected_type = model.LinearProduct
+            linear = variables.LinearSum((x, -2 * y, 3))
+            expected_type = variables.LinearProduct
             expected_offset = 3 * constant
             expected_terms = {x: constant, y: -2 * constant}
         elif linear_type == "LinearProduct":
-            linear = model.LinearProduct(2, x)
-            expected_type = model.LinearProduct
+            linear = variables.LinearProduct(2, x)
+            expected_type = variables.LinearProduct
             expected_offset = 0
             expected_terms = {x: 2 * constant}
         else:
@@ -904,7 +1128,7 @@ class LinearNumberOpTests(parameterized.TestCase):
 
         # Check __mul__ and __rmul__
         s = linear * constant if linear_first else constant * linear
-        e = model.as_flat_linear_expression(s)
+        e = variables.as_flat_linear_expression(s)
         self.assertIsInstance(s, expected_type)
         self.assertEqual(e.offset, expected_offset)
         self.assertDictEqual(dict(e.terms), expected_terms)
@@ -916,7 +1140,7 @@ class LinearNumberOpTests(parameterized.TestCase):
         else:
             expr = constant
             expr *= linear
-        e_inplace = model.as_flat_linear_expression(expr)
+        e_inplace = variables.as_flat_linear_expression(expr)
         self.assertIsInstance(expr, expected_type)
         self.assertEqual(e_inplace.offset, expected_offset)
         self.assertDictEqual(dict(e_inplace.terms), expected_terms)
@@ -933,27 +1157,27 @@ class LinearNumberOpTests(parameterized.TestCase):
         y = mod.add_binary_variable(name="y")
         if linear_type == "Variable":
             linear = x
-            expected_type = model.LinearTerm
+            expected_type = variables.LinearTerm
             expected_offset = 0
             expected_terms = {x: 1 / constant}
         elif linear_type == "LinearTerm":
-            linear = model.LinearTerm(x, 2)
-            expected_type = model.LinearTerm
+            linear = variables.LinearTerm(x, 2)
+            expected_type = variables.LinearTerm
             expected_offset = 0
             expected_terms = {x: 2 / constant}
         elif linear_type == "LinearExpression":
-            linear = model.LinearExpression(x - 2 * y + 3)
-            expected_type = model.LinearProduct
+            linear = variables.LinearExpression(x - 2 * y + 3)
+            expected_type = variables.LinearProduct
             expected_offset = 3 / constant
             expected_terms = {x: 1 / constant, y: -2 / constant}
         elif linear_type == "LinearSum":
-            linear = model.LinearSum((x, -2 * y, 3))
-            expected_type = model.LinearProduct
+            linear = variables.LinearSum((x, -2 * y, 3))
+            expected_type = variables.LinearProduct
             expected_offset = 3 / constant
             expected_terms = {x: 1 / constant, y: -2 / constant}
         elif linear_type == "LinearProduct":
-            linear = model.LinearProduct(2, x)
-            expected_type = model.LinearProduct
+            linear = variables.LinearProduct(2, x)
+            expected_type = variables.LinearProduct
             expected_offset = 0
             expected_terms = {x: 2 / constant}
         else:
@@ -962,7 +1186,7 @@ class LinearNumberOpTests(parameterized.TestCase):
         # Check __truediv__
         if linear_first:
             s = linear / constant
-            e = model.as_flat_linear_expression(s)
+            e = variables.as_flat_linear_expression(s)
             self.assertIsInstance(s, expected_type)
             self.assertEqual(e.offset, expected_offset)
             self.assertDictEqual(dict(e.terms), expected_terms)
@@ -977,7 +1201,7 @@ class LinearNumberOpTests(parameterized.TestCase):
         # Also check __itruediv__
         if linear_first:
             linear /= constant
-            e_inplace = model.as_flat_linear_expression(linear)
+            e_inplace = variables.as_flat_linear_expression(linear)
             self.assertIsInstance(linear, expected_type)
             self.assertEqual(e_inplace.offset, expected_offset)
             self.assertDictEqual(dict(e_inplace.terms), expected_terms)
@@ -1005,19 +1229,19 @@ class LinearNumberOpTests(parameterized.TestCase):
             expected_offset = constant
             expected_terms = {x: 1}
         elif linear_type == "LinearTerm":
-            linear = model.LinearTerm(x, 2)
+            linear = variables.LinearTerm(x, 2)
             expected_offset = constant
             expected_terms = {x: 2}
         elif linear_type == "LinearExpression":
-            linear = model.LinearExpression(x - 2 * y + 1)
+            linear = variables.LinearExpression(x - 2 * y + 1)
             expected_offset = constant + 1
             expected_terms = {x: 1, y: -2}
         elif linear_type == "LinearSum":
-            linear = model.LinearSum((x, -2 * y, 1))
+            linear = variables.LinearSum((x, -2 * y, 1))
             expected_offset = constant + 1
             expected_terms = {x: 1, y: -2}
         elif linear_type == "LinearProduct":
-            linear = model.LinearProduct(2, x)
+            linear = variables.LinearProduct(2, x)
             expected_offset = constant
             expected_terms = {x: 2}
         else:
@@ -1025,8 +1249,8 @@ class LinearNumberOpTests(parameterized.TestCase):
 
         # Check __add__ and __radd__
         s = linear + constant if linear_first else constant + linear
-        e = model.as_flat_linear_expression(s)
-        self.assertIsInstance(s, model.LinearSum)
+        e = variables.as_flat_linear_expression(s)
+        self.assertIsInstance(s, variables.LinearSum)
         self.assertEqual(e.offset, expected_offset)
         self.assertDictEqual(dict(e.terms), expected_terms)
 
@@ -1037,8 +1261,8 @@ class LinearNumberOpTests(parameterized.TestCase):
         else:
             expr = constant
             expr += linear
-        e_inplace = model.as_flat_linear_expression(expr)
-        self.assertIsInstance(expr, model.LinearSum)
+        e_inplace = variables.as_flat_linear_expression(expr)
+        self.assertIsInstance(expr, variables.LinearSum)
         self.assertEqual(e_inplace.offset, expected_offset)
         self.assertDictEqual(dict(e_inplace.terms), expected_terms)
 
@@ -1058,19 +1282,19 @@ class LinearNumberOpTests(parameterized.TestCase):
             expected_offset = -sign * constant
             expected_terms = {x: sign}
         elif linear_type == "LinearTerm":
-            linear = model.LinearTerm(x, 2)
+            linear = variables.LinearTerm(x, 2)
             expected_offset = -sign * constant
             expected_terms = {x: sign * 2}
         elif linear_type == "LinearExpression":
-            linear = model.LinearExpression(x - 2 * y + 3)
+            linear = variables.LinearExpression(x - 2 * y + 3)
             expected_offset = -sign * constant + 3 * sign
             expected_terms = {x: sign, y: -sign * 2}
         elif linear_type == "LinearSum":
-            linear = model.LinearSum((x, -2 * y, 3))
+            linear = variables.LinearSum((x, -2 * y, 3))
             expected_offset = -sign * constant + 3 * sign
             expected_terms = {x: sign, y: -sign * 2}
         elif linear_type == "LinearProduct":
-            linear = model.LinearProduct(2, x)
+            linear = variables.LinearProduct(2, x)
             expected_offset = -sign * constant
             expected_terms = {x: sign * 2}
         else:
@@ -1078,16 +1302,16 @@ class LinearNumberOpTests(parameterized.TestCase):
 
         # Check __sub__ and __rsub__
         s = linear - constant if linear_first else constant - linear
-        e = model.as_flat_linear_expression(s)
-        self.assertIsInstance(s, model.LinearSum)
+        e = variables.as_flat_linear_expression(s)
+        self.assertIsInstance(s, variables.LinearSum)
         self.assertEqual(e.offset, expected_offset)
         self.assertDictEqual(dict(e.terms), expected_terms)
 
         # Also check __isub__
         if linear_first:
             linear -= constant
-            e_inplace = model.as_flat_linear_expression(linear)
-            self.assertIsInstance(linear, model.LinearSum)
+            e_inplace = variables.as_flat_linear_expression(linear)
+            self.assertIsInstance(linear, variables.LinearSum)
             self.assertEqual(e_inplace.offset, expected_offset)
             self.assertDictEqual(dict(e_inplace.terms), expected_terms)
 
@@ -1098,15 +1322,15 @@ class QuadraticTermKey(absltest.TestCase):
     # so that a correct behavior of term1 == term2 is needed to recover the
     # values. For instance, if QuadraticTermKey.__eq__ only compared equality of
     # the first variables in the keys, this test would fail.
-    @mock.patch.object(model.QuadraticTermKey, "__hash__")
+    @mock.patch.object(variables.QuadraticTermKey, "__hash__")
     def test_var_dict(self, fixed_hash: mock.MagicMock) -> None:
         fixed_hash.return_value = 111
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
         var_dict = {xx: 1, xy: 2, yy: 3}
         self.assertEqual(xx.__hash__(), 111)
         self.assertEqual(xy.__hash__(), 111)
@@ -1158,36 +1382,36 @@ class QuadraticNumberOpTests(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
         if quadratic_type == "QuadraticTerm":
-            quadratic = model.QuadraticTerm(xy, 2)
-            expected_type = model.QuadraticTerm
+            quadratic = variables.QuadraticTerm(xy, 2)
+            expected_type = variables.QuadraticTerm
             expected_offset = 0
             expected_linear_terms = {}
             expected_quadratic_terms = {xy: 2 * constant}
         elif quadratic_type == "QuadraticExpression":
-            quadratic = model.QuadraticExpression(x * x - 2 * x * y - x + 3)
-            expected_type = model.QuadraticProduct
+            quadratic = variables.QuadraticExpression(x * x - 2 * x * y - x + 3)
+            expected_type = variables.QuadraticProduct
             expected_offset = 3 * constant
             expected_linear_terms = {x: -constant}
             expected_quadratic_terms = {xx: constant, xy: -2 * constant}
         elif quadratic_type == "QuadraticSum":
-            quadratic = model.QuadraticSum((x, -2 * y, 3, y * y))
-            expected_type = model.QuadraticProduct
+            quadratic = variables.QuadraticSum((x, -2 * y, 3, y * y))
+            expected_type = variables.QuadraticProduct
             expected_offset = 3 * constant
             expected_linear_terms = {x: constant, y: -2 * constant}
             expected_quadratic_terms = {yy: constant}
         elif quadratic_type == "LinearLinearProduct":
-            quadratic = model.LinearLinearProduct(x + y + 1, x + 1)
-            expected_type = model.QuadraticProduct
+            quadratic = variables.LinearLinearProduct(x + y + 1, x + 1)
+            expected_type = variables.QuadraticProduct
             expected_offset = constant
             expected_linear_terms = {x: 2 * constant, y: constant}
             expected_quadratic_terms = {xx: constant, xy: constant}
         elif quadratic_type == "QuadraticProduct":
-            quadratic = model.QuadraticProduct(2, x * x)
-            expected_type = model.QuadraticProduct
+            quadratic = variables.QuadraticProduct(2, x * x)
+            expected_type = variables.QuadraticProduct
             expected_offset = 0.0
             expected_linear_terms = {}
             expected_quadratic_terms = {xx: 2 * constant}
@@ -1196,7 +1420,7 @@ class QuadraticNumberOpTests(parameterized.TestCase):
 
         # Check __mul__ and __rmul__
         s = quadratic * constant if quadratic_first else constant * quadratic
-        e = model.as_flat_quadratic_expression(s)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertIsInstance(s, expected_type)
         self.assertEqual(e.offset, expected_offset)
         self.assertDictEqual(dict(e.linear_terms), expected_linear_terms)
@@ -1209,7 +1433,7 @@ class QuadraticNumberOpTests(parameterized.TestCase):
         else:
             expr = constant
             expr *= quadratic
-        e_inplace = model.as_flat_quadratic_expression(expr)
+        e_inplace = variables.as_flat_quadratic_expression(expr)
         self.assertIsInstance(expr, expected_type)
         self.assertEqual(e_inplace.offset, expected_offset)
         self.assertDictEqual(dict(e_inplace.linear_terms), expected_linear_terms)
@@ -1224,36 +1448,36 @@ class QuadraticNumberOpTests(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
         if quadratic_type == "QuadraticTerm":
-            quadratic = model.QuadraticTerm(xy, 2)
-            expected_type = model.QuadraticTerm
+            quadratic = variables.QuadraticTerm(xy, 2)
+            expected_type = variables.QuadraticTerm
             expected_offset = 0
             expected_linear_terms = {}
             expected_quadratic_terms = {xy: 2 / constant}
         elif quadratic_type == "QuadraticExpression":
-            quadratic = model.QuadraticExpression(x * x - 2 * x * y - x + 3)
-            expected_type = model.QuadraticProduct
+            quadratic = variables.QuadraticExpression(x * x - 2 * x * y - x + 3)
+            expected_type = variables.QuadraticProduct
             expected_offset = 3 / constant
             expected_linear_terms = {x: -1 / constant}
             expected_quadratic_terms = {xx: 1 / constant, xy: -2 / constant}
         elif quadratic_type == "QuadraticSum":
-            quadratic = model.QuadraticSum((x, -2 * y, 3, y * y))
-            expected_type = model.QuadraticProduct
+            quadratic = variables.QuadraticSum((x, -2 * y, 3, y * y))
+            expected_type = variables.QuadraticProduct
             expected_offset = 3 / constant
             expected_linear_terms = {x: 1 / constant, y: -2 / constant}
             expected_quadratic_terms = {yy: 1 / constant}
         elif quadratic_type == "LinearLinearProduct":
-            quadratic = model.LinearLinearProduct(x + y + 1, x + 1)
-            expected_type = model.QuadraticProduct
+            quadratic = variables.LinearLinearProduct(x + y + 1, x + 1)
+            expected_type = variables.QuadraticProduct
             expected_offset = 1 / constant
             expected_linear_terms = {x: 2 / constant, y: 1 / constant}
             expected_quadratic_terms = {xx: 1 / constant, xy: 1 / constant}
         elif quadratic_type == "QuadraticProduct":
-            quadratic = model.QuadraticProduct(2, x * x)
-            expected_type = model.QuadraticProduct
+            quadratic = variables.QuadraticProduct(2, x * x)
+            expected_type = variables.QuadraticProduct
             expected_offset = 0.0
             expected_linear_terms = {}
             expected_quadratic_terms = {xx: 2 / constant}
@@ -1263,7 +1487,7 @@ class QuadraticNumberOpTests(parameterized.TestCase):
         # Check __truediv__
         if quadratic_first:
             s = quadratic / constant
-            e = model.as_flat_quadratic_expression(s)
+            e = variables.as_flat_quadratic_expression(s)
             self.assertIsInstance(s, expected_type)
             self.assertEqual(e.offset, expected_offset)
             self.assertDictEqual(dict(e.linear_terms), expected_linear_terms)
@@ -1279,7 +1503,7 @@ class QuadraticNumberOpTests(parameterized.TestCase):
         # Also check __itruediv__
         if quadratic_first:
             quadratic /= constant
-            e_inplace = model.as_flat_quadratic_expression(quadratic)
+            e_inplace = variables.as_flat_quadratic_expression(quadratic)
             self.assertIsInstance(quadratic, expected_type)
             self.assertEqual(e_inplace.offset, expected_offset)
             self.assertDictEqual(dict(e_inplace.linear_terms), expected_linear_terms)
@@ -1304,31 +1528,31 @@ class QuadraticNumberOpTests(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
         if quadratic_type == "QuadraticTerm":
-            quadratic = model.QuadraticTerm(xy, 2)
+            quadratic = variables.QuadraticTerm(xy, 2)
             expected_offset = constant
             expected_linear_terms = {}
             expected_quadratic_terms = {xy: 2}
         elif quadratic_type == "QuadraticExpression":
-            quadratic = model.QuadraticExpression(x * x - 2 * x * y - x + 3)
+            quadratic = variables.QuadraticExpression(x * x - 2 * x * y - x + 3)
             expected_offset = 3 + constant
             expected_linear_terms = {x: -1}
             expected_quadratic_terms = {xx: 1, xy: -2}
         elif quadratic_type == "QuadraticSum":
-            quadratic = model.QuadraticSum((x, -2 * y, 3, y * y))
+            quadratic = variables.QuadraticSum((x, -2 * y, 3, y * y))
             expected_offset = 3 + constant
             expected_linear_terms = {x: 1, y: -2}
             expected_quadratic_terms = {yy: 1}
         elif quadratic_type == "LinearLinearProduct":
-            quadratic = model.LinearLinearProduct(x + y + 1, x + 1)
+            quadratic = variables.LinearLinearProduct(x + y + 1, x + 1)
             expected_offset = 1 + constant
             expected_linear_terms = {x: 2, y: 1}
             expected_quadratic_terms = {xx: 1, xy: 1}
         elif quadratic_type == "QuadraticProduct":
-            quadratic = model.QuadraticProduct(2, x * x)
+            quadratic = variables.QuadraticProduct(2, x * x)
             expected_offset = constant
             expected_linear_terms = {}
             expected_quadratic_terms = {xx: 2}
@@ -1337,8 +1561,8 @@ class QuadraticNumberOpTests(parameterized.TestCase):
 
         # Check __add__ and __radd__
         s = quadratic + constant if quadratic_first else constant + quadratic
-        e = model.as_flat_quadratic_expression(s)
-        self.assertIsInstance(s, model.QuadraticSum)
+        e = variables.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.QuadraticSum)
         self.assertEqual(e.offset, expected_offset)
         self.assertDictEqual(dict(e.linear_terms), expected_linear_terms)
         self.assertDictEqual(dict(e.quadratic_terms), expected_quadratic_terms)
@@ -1350,8 +1574,8 @@ class QuadraticNumberOpTests(parameterized.TestCase):
         else:
             expr = constant
             expr += quadratic
-        e_inplace = model.as_flat_quadratic_expression(expr)
-        self.assertIsInstance(expr, model.QuadraticSum)
+        e_inplace = variables.as_flat_quadratic_expression(expr)
+        self.assertIsInstance(expr, variables.QuadraticSum)
         self.assertEqual(e_inplace.offset, expected_offset)
         self.assertDictEqual(dict(e_inplace.linear_terms), expected_linear_terms)
         self.assertDictEqual(dict(e_inplace.quadratic_terms), expected_quadratic_terms)
@@ -1365,32 +1589,32 @@ class QuadraticNumberOpTests(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
         sign = 1 if quadratic_first else -1
         if quadratic_type == "QuadraticTerm":
-            quadratic = model.QuadraticTerm(xy, 2)
+            quadratic = variables.QuadraticTerm(xy, 2)
             expected_offset = -sign * constant
             expected_linear_terms = {}
             expected_quadratic_terms = {xy: sign * 2}
         elif quadratic_type == "QuadraticExpression":
-            quadratic = model.QuadraticExpression(x * x - 2 * x * y - x + 3)
+            quadratic = variables.QuadraticExpression(x * x - 2 * x * y - x + 3)
             expected_offset = sign * 3 - sign * constant
             expected_linear_terms = {x: sign * (-1)}
             expected_quadratic_terms = {xx: sign * 1, xy: sign * (-2)}
         elif quadratic_type == "QuadraticSum":
-            quadratic = model.QuadraticSum((x, -2 * y, 3, y * y))
+            quadratic = variables.QuadraticSum((x, -2 * y, 3, y * y))
             expected_offset = sign * 3 - sign * constant
             expected_linear_terms = {x: sign * 1, y: sign * (-2)}
             expected_quadratic_terms = {yy: sign}
         elif quadratic_type == "LinearLinearProduct":
-            quadratic = model.LinearLinearProduct(x + y + 1, x + 1)
+            quadratic = variables.LinearLinearProduct(x + y + 1, x + 1)
             expected_offset = sign * 1 - sign * constant
             expected_linear_terms = {x: sign * 2, y: sign * 1}
             expected_quadratic_terms = {xx: sign, xy: sign}
         elif quadratic_type == "QuadraticProduct":
-            quadratic = model.QuadraticProduct(2, x * x)
+            quadratic = variables.QuadraticProduct(2, x * x)
             expected_offset = -sign * constant
             expected_linear_terms = {}
             expected_quadratic_terms = {xx: sign * 2}
@@ -1399,8 +1623,8 @@ class QuadraticNumberOpTests(parameterized.TestCase):
 
         # Check __sub__ and __rsub__
         s = quadratic - constant if quadratic_first else constant - quadratic
-        e = model.as_flat_quadratic_expression(s)
-        self.assertIsInstance(s, model.QuadraticSum)
+        e = variables.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.QuadraticSum)
         self.assertEqual(e.offset, expected_offset)
         self.assertDictEqual(dict(e.linear_terms), expected_linear_terms)
         self.assertDictEqual(dict(e.quadratic_terms), expected_quadratic_terms)
@@ -1408,8 +1632,8 @@ class QuadraticNumberOpTests(parameterized.TestCase):
         # Also check __isub__
         if quadratic_first:
             quadratic -= constant
-            e_inplace = model.as_flat_quadratic_expression(quadratic)
-            self.assertIsInstance(quadratic, model.QuadraticSum)
+            e_inplace = variables.as_flat_quadratic_expression(quadratic)
+            self.assertIsInstance(quadratic, variables.QuadraticSum)
             self.assertEqual(e_inplace.offset, expected_offset)
             self.assertDictEqual(dict(e_inplace.linear_terms), expected_linear_terms)
             self.assertDictEqual(
@@ -1462,20 +1686,20 @@ class LinearLinearAddSubTest(parameterized.TestCase):
             first_linear = x
             x_coefficient += 1
         elif lhs_type == "LinearTerm":
-            first_linear = model.LinearTerm(x, 2)
+            first_linear = variables.LinearTerm(x, 2)
             x_coefficient += 2
         elif lhs_type == "LinearExpression":
-            first_linear = model.LinearExpression(x - 2 * y + 1)
+            first_linear = variables.LinearExpression(x - 2 * y + 1)
             x_coefficient += 1
             y_coefficient += -2
             expected_offset += 1
         elif lhs_type == "LinearSum":
-            first_linear = model.LinearSum((x, -2 * y, 1))
+            first_linear = variables.LinearSum((x, -2 * y, 1))
             x_coefficient += 1
             y_coefficient += -2
             expected_offset += 1
         elif lhs_type == "LinearProduct":
-            first_linear = model.LinearProduct(2, x)
+            first_linear = variables.LinearProduct(2, x)
             x_coefficient += 2
         else:
             raise AssertionError(f"unknown linear type: {lhs_type!r}")
@@ -1485,28 +1709,28 @@ class LinearLinearAddSubTest(parameterized.TestCase):
             second_linear = y
             y_coefficient += sign * 1
         elif rhs_type == "LinearTerm":
-            second_linear = model.LinearTerm(y, 2)
+            second_linear = variables.LinearTerm(y, 2)
             y_coefficient += sign * 2
         elif rhs_type == "LinearExpression":
-            second_linear = model.LinearExpression(y - 2 * x + 1)
+            second_linear = variables.LinearExpression(y - 2 * x + 1)
             x_coefficient += sign * (-2)
             y_coefficient += sign * 1
             expected_offset += sign * 1
         elif rhs_type == "LinearSum":
-            second_linear = model.LinearSum((y, -2 * x, 1))
+            second_linear = variables.LinearSum((y, -2 * x, 1))
             x_coefficient += sign * (-2)
             y_coefficient += sign * 1
             expected_offset += sign * 1
         elif rhs_type == "LinearProduct":
-            second_linear = model.LinearProduct(2, y)
+            second_linear = variables.LinearProduct(2, y)
             y_coefficient += sign * 2
         else:
             raise AssertionError(f"unknown linear type: {rhs_type!r}")
 
         # Check __add__ and __sub__
         s = first_linear - second_linear if subtract else first_linear + second_linear
-        e = model.as_flat_linear_expression(s)
-        self.assertIsInstance(s, model.LinearSum)
+        e = variables.as_flat_linear_expression(s)
+        self.assertIsInstance(s, variables.LinearSum)
         self.assertEqual(e.offset, expected_offset)
         self.assertDictEqual(dict(e.terms), {x: x_coefficient, y: y_coefficient})
 
@@ -1515,8 +1739,8 @@ class LinearLinearAddSubTest(parameterized.TestCase):
             first_linear -= second_linear
         else:
             first_linear += second_linear
-        e_inplace = model.as_flat_linear_expression(first_linear)
-        self.assertIsInstance(first_linear, model.LinearSum)
+        e_inplace = variables.as_flat_linear_expression(first_linear)
+        self.assertIsInstance(first_linear, variables.LinearSum)
         self.assertEqual(e_inplace.offset, expected_offset)
         self.assertDictEqual(
             dict(e_inplace.terms), {x: x_coefficient, y: y_coefficient}
@@ -1572,9 +1796,9 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
         x_coefficient = 0
         y_coefficient = 0
         xx_coefficient = 0
@@ -1587,26 +1811,26 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
             first_linear_or_quadratic = x
             x_coefficient += 1
         elif lhs_type == "LinearTerm":
-            first_linear_or_quadratic = model.LinearTerm(x, 2)
+            first_linear_or_quadratic = variables.LinearTerm(x, 2)
             x_coefficient += 2
         elif lhs_type == "LinearExpression":
-            first_linear_or_quadratic = model.LinearExpression(x - 2 * y + 1)
+            first_linear_or_quadratic = variables.LinearExpression(x - 2 * y + 1)
             x_coefficient += 1
             y_coefficient += -2
             expected_offset += 1
         elif lhs_type == "LinearSum":
-            first_linear_or_quadratic = model.LinearSum((x, -2 * y, 1))
+            first_linear_or_quadratic = variables.LinearSum((x, -2 * y, 1))
             x_coefficient += 1
             y_coefficient += -2
             expected_offset += 1
         elif lhs_type == "LinearProduct":
-            first_linear_or_quadratic = model.LinearProduct(2, x)
+            first_linear_or_quadratic = variables.LinearProduct(2, x)
             x_coefficient += 2
         elif lhs_type == "QuadraticTerm":
-            first_linear_or_quadratic = model.QuadraticTerm(xx, 2)
+            first_linear_or_quadratic = variables.QuadraticTerm(xx, 2)
             xx_coefficient += 2
         elif lhs_type == "QuadraticExpression":
-            first_linear_or_quadratic = model.QuadraticExpression(
+            first_linear_or_quadratic = variables.QuadraticExpression(
                 x - 2 * y + 1 + 3 * x * x - 4 * x * y
             )
             x_coefficient += 1
@@ -1615,7 +1839,7 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
             xx_coefficient += 3
             xy_coefficient += -4
         elif lhs_type == "QuadraticSum":
-            first_linear_or_quadratic = model.QuadraticSum(
+            first_linear_or_quadratic = variables.QuadraticSum(
                 (x, -2 * y, 1, y * y, -2 * x * y)
             )
             x_coefficient += 1
@@ -1624,11 +1848,11 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
             yy_coefficient += 1
             xy_coefficient += -2
         elif lhs_type == "LinearLinearProduct":
-            first_linear_or_quadratic = model.LinearLinearProduct(y, x + y)
+            first_linear_or_quadratic = variables.LinearLinearProduct(y, x + y)
             yy_coefficient += 1
             xy_coefficient += 1
         elif lhs_type == "QuadraticProduct":
-            first_linear_or_quadratic = model.QuadraticProduct(2, y * (x + y))
+            first_linear_or_quadratic = variables.QuadraticProduct(2, y * (x + y))
             yy_coefficient += 2
             xy_coefficient += 2
         else:
@@ -1639,26 +1863,26 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
             second_linear_or_quadratic = y
             y_coefficient += 1 * sign
         elif rhs_type == "LinearTerm":
-            second_linear_or_quadratic = model.LinearTerm(y, 2)
+            second_linear_or_quadratic = variables.LinearTerm(y, 2)
             y_coefficient += 2 * sign
         elif rhs_type == "LinearExpression":
-            second_linear_or_quadratic = model.LinearExpression(y - 2 * x + 1)
+            second_linear_or_quadratic = variables.LinearExpression(y - 2 * x + 1)
             x_coefficient += -2 * sign
             y_coefficient += 1 * sign
             expected_offset += 1 * sign
         elif rhs_type == "LinearSum":
-            second_linear_or_quadratic = model.LinearSum((y, -2 * x, 1))
+            second_linear_or_quadratic = variables.LinearSum((y, -2 * x, 1))
             x_coefficient += -2 * sign
             y_coefficient += 1 * sign
             expected_offset += 1 * sign
         elif rhs_type == "LinearProduct":
-            second_linear_or_quadratic = model.LinearProduct(2, y)
+            second_linear_or_quadratic = variables.LinearProduct(2, y)
             y_coefficient += 2 * sign
         elif rhs_type == "QuadraticTerm":
-            second_linear_or_quadratic = model.QuadraticTerm(xy, 5)
+            second_linear_or_quadratic = variables.QuadraticTerm(xy, 5)
             xy_coefficient += 5 * sign
         elif rhs_type == "QuadraticExpression":
-            second_linear_or_quadratic = model.QuadraticExpression(
+            second_linear_or_quadratic = variables.QuadraticExpression(
                 x - 2 * y + 1 + 3 * x * y - 4 * y * y
             )
             x_coefficient += 1 * sign
@@ -1667,7 +1891,7 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
             xy_coefficient += 3 * sign
             yy_coefficient += -4 * sign
         elif rhs_type == "QuadraticSum":
-            second_linear_or_quadratic = model.QuadraticSum(
+            second_linear_or_quadratic = variables.QuadraticSum(
                 (x, -2 * y, 1, y * x, -2 * x * x)
             )
             x_coefficient += 1 * sign
@@ -1676,11 +1900,11 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
             xy_coefficient += 1 * sign
             xx_coefficient += -2 * sign
         elif rhs_type == "LinearLinearProduct":
-            second_linear_or_quadratic = model.LinearLinearProduct(x, x + y)
+            second_linear_or_quadratic = variables.LinearLinearProduct(x, x + y)
             xx_coefficient += sign
             xy_coefficient += sign
         elif rhs_type == "QuadraticProduct":
-            second_linear_or_quadratic = model.QuadraticProduct(2, x * (x + y))
+            second_linear_or_quadratic = variables.QuadraticProduct(2, x * (x + y))
             xx_coefficient += 2 * sign
             xy_coefficient += 2 * sign
         else:
@@ -1692,7 +1916,7 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
             if subtract
             else first_linear_or_quadratic + second_linear_or_quadratic
         )
-        e = model.as_flat_quadratic_expression(s)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(e.offset, expected_offset)
         self.assertDictEqualWithZeroDefault(
             dict(e.linear_terms), {x: x_coefficient, y: y_coefficient}
@@ -1707,7 +1931,7 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
             first_linear_or_quadratic -= second_linear_or_quadratic
         else:
             first_linear_or_quadratic += second_linear_or_quadratic
-        e_inplace = model.as_flat_quadratic_expression(first_linear_or_quadratic)
+        e_inplace = variables.as_flat_quadratic_expression(first_linear_or_quadratic)
         self.assertEqual(e_inplace.offset, expected_offset)
         self.assertDictEqualWithZeroDefault(
             dict(e_inplace.linear_terms), {x: x_coefficient, y: y_coefficient}
@@ -1737,13 +1961,13 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xy = model.QuadraticTermKey(x, y)
+        xy = variables.QuadraticTermKey(x, y)
         if x_first:
             s = x * y
         else:
             s = y * x
-        self.assertIsInstance(s, model.QuadraticTerm)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.QuadraticTerm)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault({xy: 1.0}, dict(e.quadratic_terms))
         self.assertDictEqualWithZeroDefault({}, dict(e.linear_terms))
         self.assertEqual(0.0, e.offset)
@@ -1753,13 +1977,13 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xy = model.QuadraticTermKey(x, y)
+        xy = variables.QuadraticTermKey(x, y)
         if var_first:
-            s = model.LinearTerm(x, 2) * model.LinearTerm(y, 3)
+            s = variables.LinearTerm(x, 2) * variables.LinearTerm(y, 3)
         else:
-            s = model.LinearTerm(x, 3) * model.LinearTerm(y, 2)
-        self.assertIsInstance(s, model.QuadraticTerm)
-        e = model.as_flat_quadratic_expression(s)
+            s = variables.LinearTerm(x, 3) * variables.LinearTerm(y, 2)
+        self.assertIsInstance(s, variables.QuadraticTerm)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault({xy: 6.0}, dict(e.quadratic_terms))
         self.assertDictEqualWithZeroDefault({}, dict(e.linear_terms))
         self.assertEqual(0.0, e.offset)
@@ -1769,17 +1993,17 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
-        expr1 = model.LinearExpression(x - 2 * y + 3)
-        expr2 = model.LinearExpression(-x + y + 1)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
+        expr1 = variables.LinearExpression(x - 2 * y + 3)
+        expr2 = variables.LinearExpression(-x + y + 1)
         if expr1_first:
             s = expr1 * expr2
         else:
             s = expr2 * expr1
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {
                 xx: -1.0,
@@ -1796,17 +2020,17 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
-        sum1 = model.LinearSum((x, -2 * y, 3))
-        sum2 = model.LinearSum((-x, y, 1))
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
+        sum1 = variables.LinearSum((x, -2 * y, 3))
+        sum2 = variables.LinearSum((-x, y, 1))
         if sum1_first:
             s = sum1 * sum2
         else:
             s = sum2 * sum1
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {
                 xx: -1.0,
@@ -1823,16 +2047,16 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        prod1 = model.LinearProduct(2.0, x)
-        prod2 = model.LinearProduct(3.0, x + 2 * y - 1)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        prod1 = variables.LinearProduct(2.0, x)
+        prod2 = variables.LinearProduct(3.0, x + 2 * y - 1)
         if prod1_first:
             s = prod1 * prod2
         else:
             s = prod2 * prod1
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {
                 xx: 6.0,
@@ -1848,14 +2072,14 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xy = model.QuadraticTermKey(x, y)
-        term = model.LinearTerm(y, 2)
+        xy = variables.QuadraticTermKey(x, y)
+        term = variables.LinearTerm(y, 2)
         if var_first:
             s = x * term
         else:
             s = term * x
-        self.assertIsInstance(s, model.QuadraticTerm)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.QuadraticTerm)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault({xy: 2.0}, dict(e.quadratic_terms))
         self.assertDictEqualWithZeroDefault({}, dict(e.linear_terms))
         self.assertEqual(0.0, e.offset)
@@ -1865,15 +2089,15 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        expr = model.LinearExpression(x - 2 * y + 3)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        expr = variables.LinearExpression(x - 2 * y + 3)
         if var_first:
             s = x * expr
         else:
             s = expr * x
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {xx: 1.0, xy: -2.0}, dict(e.quadratic_terms)
         )
@@ -1885,15 +2109,15 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        linear_sum = model.LinearSum((x, -2 * y, 3))
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        linear_sum = variables.LinearSum((x, -2 * y, 3))
         if var_first:
             s = x * linear_sum
         else:
             s = linear_sum * x
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {xx: 1.0, xy: -2.0}, dict(e.quadratic_terms)
         )
@@ -1905,14 +2129,14 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xy = model.QuadraticTermKey(x, y)
-        expr = model.LinearProduct(2.0, y)
+        xy = variables.QuadraticTermKey(x, y)
+        expr = variables.LinearProduct(2.0, y)
         if var_first:
             s = x * expr
         else:
             s = expr * x
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault({xy: 2.0}, dict(e.quadratic_terms))
         self.assertDictEqualWithZeroDefault({}, dict(e.linear_terms))
         self.assertEqual(0.0, e.offset)
@@ -1922,16 +2146,16 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        term = model.LinearTerm(x, 2)
-        expr = model.LinearExpression(x - 2 * y + 3)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        term = variables.LinearTerm(x, 2)
+        expr = variables.LinearExpression(x - 2 * y + 3)
         if term_first:
             s = term * expr
         else:
             s = expr * term
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {xx: 2.0, xy: -4.0}, dict(e.quadratic_terms)
         )
@@ -1943,16 +2167,16 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        term = model.LinearTerm(x, 2)
-        linear_sum = model.LinearSum((x, -2 * y, 3))
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        term = variables.LinearTerm(x, 2)
+        linear_sum = variables.LinearSum((x, -2 * y, 3))
         if term_first:
             s = term * linear_sum
         else:
             s = linear_sum * term
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {xx: 2.0, xy: -4.0}, dict(e.quadratic_terms)
         )
@@ -1964,15 +2188,15 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xy = model.QuadraticTermKey(x, y)
-        term = model.LinearTerm(x, 2)
-        prod = model.LinearProduct(2.0, y)
+        xy = variables.QuadraticTermKey(x, y)
+        term = variables.LinearTerm(x, 2)
+        prod = variables.LinearProduct(2.0, y)
         if term_first:
             s = term * prod
         else:
             s = prod * term
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault({xy: 4.0}, dict(e.quadratic_terms))
         self.assertDictEqualWithZeroDefault({}, dict(e.linear_terms))
         self.assertEqual(0.0, e.offset)
@@ -1982,17 +2206,17 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
-        expr = model.LinearExpression(-x + y + 1)
-        linear_sum = model.LinearSum((x, -2 * y, 3))
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
+        expr = variables.LinearExpression(-x + y + 1)
+        linear_sum = variables.LinearSum((x, -2 * y, 3))
         if expr_first:
             s = expr * linear_sum
         else:
             s = linear_sum * expr
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {
                 xx: -1.0,
@@ -2009,16 +2233,16 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
-        expr = model.LinearExpression(-x + y + 1)
-        prod = model.LinearProduct(2.0, y)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
+        expr = variables.LinearExpression(-x + y + 1)
+        prod = variables.LinearProduct(2.0, y)
         if expr_first:
             s = expr * prod
         else:
             s = prod * expr
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {xy: -2.0, yy: 2.0}, dict(e.quadratic_terms)
         )
@@ -2030,16 +2254,16 @@ class LinearLinearMulTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
-        linear_sum = model.LinearSum((-x, y, 1))
-        prod = model.LinearProduct(2.0, y)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
+        linear_sum = variables.LinearSum((-x, y, 1))
+        prod = variables.LinearProduct(2.0, y)
         if sum_first:
             s = linear_sum * prod
         else:
             s = prod * linear_sum
-        self.assertIsInstance(s, model.LinearLinearProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.LinearLinearProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertDictEqualWithZeroDefault(
             {xy: -2.0, yy: 2.0}, dict(e.quadratic_terms)
         )
@@ -2054,18 +2278,18 @@ class NegateTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         s = -x
-        self.assertIsInstance(s, model.LinearTerm)
-        e = model.as_flat_linear_expression(s)
+        self.assertIsInstance(s, variables.LinearTerm)
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(0, e.offset)
         self.assertDictEqual({x: -1}, dict(e.terms))
 
     def test_negate_linear_term(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        term = model.LinearTerm(x, 0.5)
+        term = variables.LinearTerm(x, 0.5)
         s = -term
-        self.assertIsInstance(s, model.LinearTerm)
-        e = model.as_flat_linear_expression(s)
+        self.assertIsInstance(s, variables.LinearTerm)
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(0, e.offset)
         self.assertDictEqual({x: -0.5}, dict(e.terms))
 
@@ -2073,10 +2297,10 @@ class NegateTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        expression = model.LinearExpression(y - 2 * x + 1)
+        expression = variables.LinearExpression(y - 2 * x + 1)
         s = -expression
-        self.assertIsInstance(s, model.LinearProduct)
-        e = model.as_flat_linear_expression(s)
+        self.assertIsInstance(s, variables.LinearProduct)
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(-1, e.offset)
         self.assertDictEqual({x: 2, y: -1}, dict(e.terms))
 
@@ -2084,31 +2308,31 @@ class NegateTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        expression = model.LinearSum((y, -2 * x, 1))
+        expression = variables.LinearSum((y, -2 * x, 1))
         s = -expression
-        self.assertIsInstance(s, model.LinearProduct)
-        e = model.as_flat_linear_expression(s)
+        self.assertIsInstance(s, variables.LinearProduct)
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(-1, e.offset)
         self.assertDictEqual({x: 2, y: -1}, dict(e.terms))
 
     def test_negate_ast_product(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        ast_product = model.LinearProduct(0.5, x)
+        ast_product = variables.LinearProduct(0.5, x)
         s = -ast_product
-        self.assertIsInstance(s, model.LinearProduct)
-        e = model.as_flat_linear_expression(s)
+        self.assertIsInstance(s, variables.LinearProduct)
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(0, e.offset)
         self.assertDictEqual({x: -0.5}, dict(e.terms))
 
     def test_negate_quadratic_term(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        xx = model.QuadraticTermKey(x, x)
-        term = model.QuadraticTerm(xx, 0.5)
+        xx = variables.QuadraticTermKey(x, x)
+        term = variables.QuadraticTerm(xx, 0.5)
         s = -term
-        self.assertIsInstance(s, model.QuadraticTerm)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.QuadraticTerm)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(0, e.offset)
         self.assertDictEqual({}, dict(e.linear_terms))
         self.assertDictEqual({xx: -0.5}, dict(e.quadratic_terms))
@@ -2117,11 +2341,11 @@ class NegateTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        xy = model.QuadraticTermKey(x, y)
-        expression = model.QuadraticExpression(y - 2 * x + 1 + x * y)
+        xy = variables.QuadraticTermKey(x, y)
+        expression = variables.QuadraticExpression(y - 2 * x + 1 + x * y)
         s = -expression
-        self.assertIsInstance(s, model.QuadraticProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.QuadraticProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(-1, e.offset)
         self.assertDictEqual({x: 2, y: -1}, dict(e.linear_terms))
         self.assertDictEqual({xy: -1}, dict(e.quadratic_terms))
@@ -2130,11 +2354,11 @@ class NegateTest(parameterized.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        yy = model.QuadraticTermKey(y, y)
-        expression = model.QuadraticSum((y, -2 * x, 1, -y * y))
+        yy = variables.QuadraticTermKey(y, y)
+        expression = variables.QuadraticSum((y, -2 * x, 1, -y * y))
         s = -expression
-        self.assertIsInstance(s, model.QuadraticProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.QuadraticProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(-1, e.offset)
         self.assertDictEqual({x: 2, y: -1}, dict(e.linear_terms))
         self.assertDictEqual({yy: 1}, dict(e.quadratic_terms))
@@ -2142,11 +2366,11 @@ class NegateTest(parameterized.TestCase):
     def test_negate_linear_linear_product(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        xx = model.QuadraticTermKey(x, x)
-        ast_product = model.LinearLinearProduct(x, x + 1)
+        xx = variables.QuadraticTermKey(x, x)
+        ast_product = variables.LinearLinearProduct(x, x + 1)
         s = -ast_product
-        self.assertIsInstance(s, model.QuadraticProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.QuadraticProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(0, e.offset)
         self.assertDictEqual({x: -1}, dict(e.linear_terms))
         self.assertDictEqual({xx: -1}, dict(e.quadratic_terms))
@@ -2154,11 +2378,11 @@ class NegateTest(parameterized.TestCase):
     def test_negate_quadratic_product(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        xx = model.QuadraticTermKey(x, x)
-        ast_product = model.QuadraticProduct(0.5, x + x * x)
+        xx = variables.QuadraticTermKey(x, x)
+        ast_product = variables.QuadraticProduct(0.5, x + x * x)
         s = -ast_product
-        self.assertIsInstance(s, model.QuadraticProduct)
-        e = model.as_flat_quadratic_expression(s)
+        self.assertIsInstance(s, variables.QuadraticProduct)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(0, e.offset)
         self.assertDictEqual({x: -0.5}, dict(e.linear_terms))
         self.assertDictEqual({xx: -0.5}, dict(e.quadratic_terms))
@@ -2210,31 +2434,31 @@ def all_unsupported_division_operand_params() -> (
 
 def get_linear_or_quadratic_for_unsupported_operand_test(
     type_string: str,
-) -> Union[model.LinearBase, model.QuadraticBase, complex]:
+) -> Union[variables.LinearBase, variables.QuadraticBase, complex]:
     mod_ = model.Model()
     x = mod_.add_binary_variable(name="x")
     y = mod_.add_binary_variable(name="y")
-    xy = model.QuadraticTermKey(x, y)
+    xy = variables.QuadraticTermKey(x, y)
     if type_string == "Variable":
         return x
     elif type_string == "LinearTerm":
-        return model.LinearTerm(x, 2)
+        return variables.LinearTerm(x, 2)
     elif type_string == "LinearExpression":
-        return model.LinearExpression(x - 2 * y + 3)
+        return variables.LinearExpression(x - 2 * y + 3)
     elif type_string == "LinearSum":
-        return model.LinearSum((x, -2 * y, 3))
+        return variables.LinearSum((x, -2 * y, 3))
     elif type_string == "LinearProduct":
-        return model.LinearProduct(2, x)
+        return variables.LinearProduct(2, x)
     elif type_string == "QuadraticTerm":
-        return model.QuadraticTerm(xy, 5)
+        return variables.QuadraticTerm(xy, 5)
     elif type_string == "QuadraticExpression":
-        return model.QuadraticExpression(x - 2 * y + 1 + 3 * x * y - 4 * y * y)
+        return variables.QuadraticExpression(x - 2 * y + 1 + 3 * x * y - 4 * y * y)
     elif type_string == "QuadraticSum":
-        return model.QuadraticSum((x, -2 * y, 1, y * x, -2 * x * x))
+        return variables.QuadraticSum((x, -2 * y, 1, y * x, -2 * x * x))
     elif type_string == "LinearLinearProduct":
-        return model.LinearLinearProduct(x, x + y)
+        return variables.LinearLinearProduct(x, x + y)
     elif type_string == "QuadraticProduct":
-        return model.QuadraticProduct(2, x * (x + y))
+        return variables.QuadraticProduct(2, x * (x + y))
     elif type_string == "complex":
         return 6j
     else:
@@ -2400,7 +2624,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
     def test_linear_sum_not_tuple(self):
         # pytype: disable=wrong-arg-types
         with self.assertRaisesRegex(TypeError, "object is not iterable"):
-            model.LinearSum(2.0)
+            variables.LinearSum(2.0)
         # pytype: enable=wrong-arg-types
 
     def test_linear_sum_not_linear_in_tuple(self):
@@ -2408,19 +2632,19 @@ class UnsupportedInitializationTest(parameterized.TestCase):
         x = mod.add_binary_variable(name="x")
         # pytype: disable=wrong-arg-types
         with self.assertRaisesRegex(TypeError, "unsupported type in iterable argument"):
-            model.LinearSum((2.0, x * x))
+            variables.LinearSum((2.0, x * x))
         # pytype: enable=wrong-arg-types
 
     def test_quadratic_sum_not_tuple(self):
         # pytype: disable=wrong-arg-types
         with self.assertRaisesRegex(TypeError, "object is not iterable"):
-            model.QuadraticSum(2.0)
+            variables.QuadraticSum(2.0)
         # pytype: enable=wrong-arg-types
 
     def test_quadratic_sum_not_linear_in_tuple(self):
         # pytype: disable=wrong-arg-types
         with self.assertRaisesRegex(TypeError, "unsupported type in iterable argument"):
-            model.QuadraticSum((2.0, "string"))
+            variables.QuadraticSum((2.0, "string"))
         # pytype: enable=wrong-arg-types
 
     def test_linear_product_not_scalar(self):
@@ -2430,7 +2654,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
         with self.assertRaisesRegex(
             TypeError, "unsupported type for scalar argument in LinearProduct"
         ):
-            model.LinearProduct(x, x)
+            variables.LinearProduct(x, x)
         # pytype: enable=wrong-arg-types
 
     def test_linear_product_not_linear(self):
@@ -2438,7 +2662,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
         with self.assertRaisesRegex(
             TypeError, "unsupported type for linear argument in LinearProduct"
         ):
-            model.LinearProduct(2.0, "string")
+            variables.LinearProduct(2.0, "string")
         # pytype: enable=wrong-arg-types
 
     def test_quadratic_product_not_scalar(self):
@@ -2448,7 +2672,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
         with self.assertRaisesRegex(
             TypeError, "unsupported type for scalar argument in QuadraticProduct"
         ):
-            model.QuadraticProduct(x, x)
+            variables.QuadraticProduct(x, x)
         # pytype: enable=wrong-arg-types
 
     def test_quadratic_product_not_quadratic(self):
@@ -2456,7 +2680,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
         with self.assertRaisesRegex(
             TypeError, "unsupported type for linear argument in QuadraticProduct"
         ):
-            model.QuadraticProduct(2.0, "string")
+            variables.QuadraticProduct(2.0, "string")
         # pytype: enable=wrong-arg-types
 
     def test_linear_linear_product_first_not_linear(self):
@@ -2467,7 +2691,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
             TypeError,
             "unsupported type for first_linear argument in LinearLinearProduct",
         ):
-            model.LinearLinearProduct("string", x)
+            variables.LinearLinearProduct("string", x)
         # pytype: enable=wrong-arg-types
 
     def test_linear_linear_product_second_not_linear(self):
@@ -2478,7 +2702,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
             TypeError,
             "unsupported type for second_linear argument in LinearLinearProduct",
         ):
-            model.LinearLinearProduct(x, "string")
+            variables.LinearLinearProduct(x, "string")
         # pytype: enable=wrong-arg-types
 
 
@@ -2494,8 +2718,8 @@ class SumTest(parameterized.TestCase):
         if python_sum:
             s = sum(array) + 8.0
         else:
-            s = model.LinearSum(array) + 8.0
-        e = model.as_flat_linear_expression(s)
+            s = variables.LinearSum(array) + 8.0
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(8.0, e.offset)
         self.assertDictEqual({x: 3, y: 1, z: 1}, dict(e.terms))
 
@@ -2508,8 +2732,8 @@ class SumTest(parameterized.TestCase):
         if python_sum:
             s = sum(array) + 8.0
         else:
-            s = model.LinearSum(array) + 8.0
-        e = model.as_flat_linear_expression(s)
+            s = variables.LinearSum(array) + 8.0
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(9.0, e.offset)
         self.assertDictEqual({x: 3.25, y: 0.5, z: 1}, dict(e.terms))
 
@@ -2518,14 +2742,14 @@ class SumTest(parameterized.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         z = mod.add_binary_variable(name="z")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
         array = [1.25 * x, z, x, x, y, -0.5 * y, 1.0, 2.5 * x * x, -x * y]
         if python_sum:
             s = sum(array) + 8.0
         else:
-            s = model.QuadraticSum(array) + 8.0
-        e = model.as_flat_quadratic_expression(s)
+            s = variables.QuadraticSum(array) + 8.0
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(9.0, e.offset)
         self.assertDictEqual({x: 3.25, y: 0.5, z: 1}, dict(e.linear_terms))
         self.assertDictEqual({xx: 2.5, xy: -1}, dict(e.quadratic_terms))
@@ -2539,8 +2763,8 @@ class SumTest(parameterized.TestCase):
         if python_sum:
             s = sum(array) + 8.0
         else:
-            s = model.LinearSum(array) + 8.0
-        e = model.as_flat_linear_expression(s)
+            s = variables.LinearSum(array) + 8.0
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(9.0, e.offset)
         self.assertDictEqual({x: 3.25, y: 0.5, z: 1}, dict(e.terms))
 
@@ -2549,8 +2773,8 @@ class SumTest(parameterized.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         z = mod.add_binary_variable(name="z")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
         array = [
             1.25 * x + z,
             x,
@@ -2562,16 +2786,16 @@ class SumTest(parameterized.TestCase):
         if python_sum:
             s = sum(array) + 8.0
         else:
-            s = model.QuadraticSum(array) + 8.0
-        e = model.as_flat_quadratic_expression(s)
+            s = variables.QuadraticSum(array) + 8.0
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(9.0, e.offset)
         self.assertDictEqual({x: 3.25, y: 0.5, z: 1}, dict(e.linear_terms))
         self.assertDictEqual(
             {
                 xx: 2.5,
                 xy: -1,
-                model.QuadraticTermKey(x, z): 1.0,
-                model.QuadraticTermKey(y, z): 1,
+                variables.QuadraticTermKey(x, z): 1.0,
+                variables.QuadraticTermKey(y, z): 1,
             },
             dict(e.quadratic_terms),
         )
@@ -2582,8 +2806,8 @@ class SumTest(parameterized.TestCase):
         if python_sum:
             s = sum(x[i] for i in range(3)) + 8.0
         else:
-            s = model.LinearSum(x[i] for i in range(3)) + 8.0
-        e = model.as_flat_linear_expression(s)
+            s = variables.LinearSum(x[i] for i in range(3)) + 8.0
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(8.0, e.offset)
         self.assertDictEqual({x[0]: 1, x[1]: 1, x[2]: 1}, dict(e.terms))
 
@@ -2593,8 +2817,8 @@ class SumTest(parameterized.TestCase):
         if python_sum:
             s = sum(i * x[i] for i in range(3)) + 8.0
         else:
-            s = model.LinearSum(i * x[i] for i in range(3)) + 8.0
-        e = model.as_flat_linear_expression(s)
+            s = variables.LinearSum(i * x[i] for i in range(3)) + 8.0
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(8.0, e.offset)
         self.assertDictEqual({x[0]: 0, x[1]: 1, x[2]: 2}, dict(e.terms))
 
@@ -2604,15 +2828,15 @@ class SumTest(parameterized.TestCase):
         if python_sum:
             s = sum(i * x[i] * x[i + 1] for i in range(3)) + 8.0
         else:
-            s = model.QuadraticSum(i * x[i] * x[i + 1] for i in range(3)) + 8.0
-        e = model.as_flat_quadratic_expression(s)
+            s = variables.QuadraticSum(i * x[i] * x[i + 1] for i in range(3)) + 8.0
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(8.0, e.offset)
         self.assertDictEqual({}, dict(e.linear_terms))
         self.assertDictEqual(
             {
-                model.QuadraticTermKey(x[0], x[1]): 0,
-                model.QuadraticTermKey(x[1], x[2]): 1,
-                model.QuadraticTermKey(x[2], x[3]): 2,
+                variables.QuadraticTermKey(x[0], x[1]): 0,
+                variables.QuadraticTermKey(x[1], x[2]): 1,
+                variables.QuadraticTermKey(x[2], x[3]): 2,
             },
             dict(e.quadratic_terms),
         )
@@ -2623,8 +2847,8 @@ class SumTest(parameterized.TestCase):
         if python_sum:
             s = sum(2 * x[i] - x[i + 1] + 1.5 for i in range(2)) + 8.0
         else:
-            s = model.LinearSum(2 * x[i] - x[i + 1] + 1.5 for i in range(2)) + 8.0
-        e = model.as_flat_linear_expression(s)
+            s = variables.LinearSum(2 * x[i] - x[i + 1] + 1.5 for i in range(2)) + 8.0
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(11.0, e.offset)
         self.assertDictEqual({x[0]: 2, x[1]: 1, x[2]: -1}, dict(e.terms))
 
@@ -2635,18 +2859,18 @@ class SumTest(parameterized.TestCase):
             s = sum(2 * x[i] - x[i + 1] + 1.5 + x[i] * x[i + 1] for i in range(2)) + 8.0
         else:
             s = (
-                model.QuadraticSum(
+                variables.QuadraticSum(
                     2 * x[i] - x[i + 1] + 1.5 + x[i] * x[i + 1] for i in range(2)
                 )
                 + 8.0
             )
-        e = model.as_flat_quadratic_expression(s)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(11.0, e.offset)
         self.assertDictEqual({x[0]: 2, x[1]: 1, x[2]: -1}, dict(e.linear_terms))
         self.assertDictEqual(
             {
-                model.QuadraticTermKey(x[0], x[1]): 1,
-                model.QuadraticTermKey(x[1], x[2]): 1,
+                variables.QuadraticTermKey(x[0], x[1]): 1,
+                variables.QuadraticTermKey(x[1], x[2]): 1,
             },
             dict(e.quadratic_terms),
         )
@@ -2671,7 +2895,7 @@ class AstTest(parameterized.TestCase):
         y = mod.add_binary_variable(name="y")
         z = mod.add_binary_variable(name="z")
         s = (6 * (3 * x + y + 3) + 6 * z + 12) / 3 + y + 7 + (x + y) * 2.0 - z * 3.0
-        e = model.as_flat_linear_expression(s)
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(6 * 3 / 3 + 12 / 3 + 7, e.offset)
         self.assertDictEqualWithZeroDefault(
             {x: 8, y: 3 + 6 / 3, z: 6 / 3 - 3}, dict(e.terms)
@@ -2682,9 +2906,9 @@ class AstTest(parameterized.TestCase):
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         z = mod.add_binary_variable(name="z")
-        xx = model.QuadraticTermKey(x, x)
-        xy = model.QuadraticTermKey(x, y)
-        yy = model.QuadraticTermKey(y, y)
+        xx = variables.QuadraticTermKey(x, x)
+        xy = variables.QuadraticTermKey(x, y)
+        yy = variables.QuadraticTermKey(y, y)
         s = (
             (6 * (3 * x + y + 3) * x + 6 * z + 12) / 3
             + y * y
@@ -2692,7 +2916,7 @@ class AstTest(parameterized.TestCase):
             + (x - y) * (x + y) * 2.0
             - z * 3.0
         )
-        e = model.as_flat_quadratic_expression(s)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(12 / 3 + 7, e.offset)
         self.assertDictEqualWithZeroDefault({x: 6, z: 6 / 3 - 3}, dict(e.linear_terms))
         self.assertDictEqualWithZeroDefault(
@@ -2707,12 +2931,13 @@ class AstTest(parameterized.TestCase):
         s = (
             (2 * (z + y) + 2 * y) / 2
             + sum(
-                x[i] + 0.5 * model.LinearSum([4 * x[1] - 2 * x[0], 2 * x[2], 2.5, -0.5])
+                x[i]
+                + 0.5 * variables.LinearSum([4 * x[1] - 2 * x[0], 2 * x[2], 2.5, -0.5])
                 for i in range(3)
             )
-            - model.LinearSum([x[3], x[4]])
+            - variables.LinearSum([x[3], x[4]])
         )
-        e = model.as_flat_linear_expression(s)
+        e = variables.as_flat_linear_expression(s)
         self.assertEqual(3.0, e.offset)
         self.assertDictEqualWithZeroDefault(
             {x[0]: -2, x[1]: 7, x[2]: 4, x[3]: -1, x[4]: -1, y: 2, z: 1},
@@ -2724,16 +2949,16 @@ class AstTest(parameterized.TestCase):
         x = [mod.add_binary_variable(name=f"x[{i}]") for i in range(3)]
         y = mod.add_binary_variable(name="y")
         z = mod.add_binary_variable(name="z")
-        yy = model.QuadraticTermKey(y, y)
-        zz = model.QuadraticTermKey(z, z)
+        yy = variables.QuadraticTermKey(y, y)
+        zz = variables.QuadraticTermKey(z, z)
         s = (
             1
             + y * y
             + z
-            + sum(x[i] + x[i] * model.LinearSum([y, z]) for i in range(3))
-            - model.QuadraticSum([y, z * z])
+            + sum(x[i] + x[i] * variables.LinearSum([y, z]) for i in range(3))
+            - variables.QuadraticSum([y, z * z])
         )
-        e = model.as_flat_quadratic_expression(s)
+        e = variables.as_flat_quadratic_expression(s)
         self.assertEqual(1.0, e.offset)
         self.assertDictEqualWithZeroDefault(
             {x[0]: 1, x[1]: 1, x[2]: 1, y: -1, z: 1}, dict(e.linear_terms)
@@ -2742,12 +2967,12 @@ class AstTest(parameterized.TestCase):
             {
                 yy: 1,
                 zz: -1,
-                model.QuadraticTermKey(x[0], y): 1,
-                model.QuadraticTermKey(x[1], y): 1,
-                model.QuadraticTermKey(x[2], y): 1,
-                model.QuadraticTermKey(x[0], z): 1,
-                model.QuadraticTermKey(x[1], z): 1,
-                model.QuadraticTermKey(x[2], z): 1,
+                variables.QuadraticTermKey(x[0], y): 1,
+                variables.QuadraticTermKey(x[1], y): 1,
+                variables.QuadraticTermKey(x[2], y): 1,
+                variables.QuadraticTermKey(x[0], z): 1,
+                variables.QuadraticTermKey(x[1], z): 1,
+                variables.QuadraticTermKey(x[2], z): 1,
             },
             dict(e.quadratic_terms),
         )
@@ -2758,7 +2983,7 @@ class AstTest(parameterized.TestCase):
 class LinearExpressionTest(absltest.TestCase):
 
     def test_init_to_zero(self) -> None:
-        expression = model.LinearExpression()
+        expression = variables.LinearExpression()
         self.assertEqual(expression.offset, 0.0)
         self.assertEmpty(expression.terms)
 
@@ -2766,7 +2991,7 @@ class LinearExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        expression = model.LinearExpression(y - 2 * x + 1)
+        expression = variables.LinearExpression(y - 2 * x + 1)
         with self.assertRaisesRegex(TypeError, "does not support item assignment"):
             expression.terms[x] += 1  # pytype: disable=unsupported-operands
 
@@ -2774,11 +2999,11 @@ class LinearExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        expression = model.LinearExpression(y - 2 * x + 1)
-        self.assertIs(expression, model.as_flat_linear_expression(expression))
+        expression = variables.LinearExpression(y - 2 * x + 1)
+        self.assertIs(expression, variables.as_flat_linear_expression(expression))
 
     def test_number_as_flat_linear_expression(self) -> None:
-        expression = model.LinearExpression(2.0)
+        expression = variables.LinearExpression(2.0)
         self.assertDictEqual(dict(expression.terms), {})
         self.assertEqual(expression.offset, 2.0)
 
@@ -2786,7 +3011,7 @@ class LinearExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_variable()
         y = mod.add_variable()
-        expression = model.LinearExpression(3 * x + y + 2.0)
+        expression = variables.LinearExpression(3 * x + y + 2.0)
         self.assertEqual(expression.evaluate({x: 4.0, y: 3.0}), 17.0)
 
 
@@ -2798,8 +3023,8 @@ class QuadraticExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        yy = model.QuadraticTermKey(y, y)
-        expression = model.QuadraticExpression(y * y - 2 * x + 1)
+        yy = variables.QuadraticTermKey(y, y)
+        expression = variables.QuadraticExpression(y * y - 2 * x + 1)
         with self.assertRaisesRegex(TypeError, "does not support item assignment"):
             expression.linear_terms[x] += 1  # pytype: disable=unsupported-operands
         with self.assertRaisesRegex(TypeError, "does not support item assignment"):
@@ -2809,11 +3034,11 @@ class QuadraticExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
-        expression = model.QuadraticExpression(y * y - 2 * x + 1)
-        self.assertIs(expression, model.as_flat_quadratic_expression(expression))
+        expression = variables.QuadraticExpression(y * y - 2 * x + 1)
+        self.assertIs(expression, variables.as_flat_quadratic_expression(expression))
 
     def test_number_as_flat_quadratic_expression(self) -> None:
-        expression = model.QuadraticExpression(2.0)
+        expression = variables.QuadraticExpression(2.0)
         self.assertDictEqual(dict(expression.linear_terms), {})
         self.assertDictEqual(dict(expression.quadratic_terms), {})
         self.assertEqual(expression.offset, 2.0)
@@ -2822,7 +3047,7 @@ class QuadraticExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_variable()
         y = mod.add_variable()
-        expression = model.QuadraticExpression(x * x + 2 * x * y + 4 * y + 2.0)
+        expression = variables.QuadraticExpression(x * x + 2 * x * y + 4 * y + 2.0)
         # 16 + 24 + 12 + 2 = 54
         self.assertEqual(expression.evaluate({x: 4.0, y: 3.0}), 54.0)
 

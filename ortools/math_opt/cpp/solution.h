@@ -67,8 +67,7 @@ struct PrimalSolution {
   //  * VariableValuesFromProto(primal_solution_proto.variable_values) fails.
   //  * the feasibility_status is not specified.
   static absl::StatusOr<PrimalSolution> FromProto(
-      const ModelStorage* model,
-      const PrimalSolutionProto& primal_solution_proto);
+      ModelStorageCPtr model, const PrimalSolutionProto& primal_solution_proto);
 
   // Returns the proto equivalent of this.
   PrimalSolutionProto Proto() const;
@@ -112,7 +111,7 @@ struct PrimalRay {
   // Returns an error when
   // VariableValuesFromProto(primal_ray_proto.variable_values) fails.
   static absl::StatusOr<PrimalRay> FromProto(
-      const ModelStorage* model, const PrimalRayProto& primal_ray_proto);
+      ModelStorageCPtr model, const PrimalRayProto& primal_ray_proto);
 
   // Returns the proto equivalent of this.
   PrimalRayProto Proto() const;
@@ -139,7 +138,7 @@ struct DualSolution {
   //  * LinearConstraintValuesFromProto(dual_solution_proto.dual_values) fails.
   //  * dual_solution_proto.feasibility_status is not specified.
   static absl::StatusOr<DualSolution> FromProto(
-      const ModelStorage* model, const DualSolutionProto& dual_solution_proto);
+      ModelStorageCPtr model, const DualSolutionProto& dual_solution_proto);
 
   // Returns the proto equivalent of this.
   DualSolutionProto Proto() const;
@@ -179,7 +178,7 @@ struct DualRay {
   // Returns an error when either of:
   //  * VariableValuesFromProto(dual_ray_proto.reduced_costs) fails.
   //  * LinearConstraintValuesFromProto(dual_ray_proto.dual_values) fails.
-  static absl::StatusOr<DualRay> FromProto(const ModelStorage* model,
+  static absl::StatusOr<DualRay> FromProto(ModelStorageCPtr model,
                                            const DualRayProto& dual_ray_proto);
 
   // Returns the proto equivalent of this.
@@ -218,12 +217,12 @@ struct Basis {
   // Returns an error if:
   //  * VariableBasisFromProto(basis_proto.variable_status) fails.
   //  * LinearConstraintBasisFromProto(basis_proto.constraint_status) fails.
-  static absl::StatusOr<Basis> FromProto(const ModelStorage* model,
+  static absl::StatusOr<Basis> FromProto(ModelStorageCPtr model,
                                          const BasisProto& basis_proto);
 
   // Returns a failure if the referenced variables don't belong to the input
   // expected_storage (which must not be nullptr).
-  absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
+  absl::Status CheckModelStorage(ModelStorageCPtr expected_storage) const;
 
   // Returns the proto equivalent of this object.
   //
@@ -262,7 +261,7 @@ struct Solution {
   // Returns an error if FromProto() fails on any field that is not std::nullopt
   // (see the static FromProto() functions for each field type for details).
   static absl::StatusOr<Solution> FromProto(
-      const ModelStorage* model, const SolutionProto& solution_proto);
+      ModelStorageCPtr model, const SolutionProto& solution_proto);
 
   // Returns the proto equivalent of this.
   SolutionProto Proto() const;
