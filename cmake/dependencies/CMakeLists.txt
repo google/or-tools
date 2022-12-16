@@ -228,8 +228,8 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
-    GIT_TAG        "v801"
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v801.patch"
+    GIT_TAG        "v803"
+    #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v803.patch"
   )
   FetchContent_MakeAvailable(scip)
   set(LPI_GLOP_SRC ${scip_SOURCE_DIR}/src/lpi/lpi_glop.cpp PARENT_SCOPE)
