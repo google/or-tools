@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "ortools/math_opt/elemental/elements.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/storage/atomic_constraint_storage.h"
@@ -36,6 +37,9 @@ struct QuadraticConstraintData {
   using ProtoType = QuadraticConstraintProto;
   using UpdatesProtoType = QuadraticConstraintUpdatesProto;
 
+  static constexpr ElementType kElementType = ElementType::kQuadraticConstraint;
+  static constexpr bool kSupportsElemental = true;
+
   // The `in_proto` must be in a valid state; see the inline comments on
   // `QuadraticConstraintProto` for details.
   static QuadraticConstraintData FromProto(const ProtoType& in_proto);
@@ -53,6 +57,8 @@ struct QuadraticConstraintData {
 template <>
 struct AtomicConstraintTraits<QuadraticConstraintId> {
   using ConstraintData = QuadraticConstraintData;
+  static constexpr ElementType kElementType = ElementType::kQuadraticConstraint;
+  static constexpr bool kSupportsElemental = true;
 };
 
 }  // namespace operations_research::math_opt

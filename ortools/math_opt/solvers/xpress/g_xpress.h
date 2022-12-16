@@ -32,6 +32,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/xpress/environment.h"
 
@@ -43,8 +44,8 @@ class Xpress {
 
   // Creates a new Xpress
   static absl::StatusOr<std::unique_ptr<Xpress>> New(
-      const std::string& model_name);
-  absl::Status SetProbName(const std::string& name);
+      absl::string_view model_name);
+  absl::Status SetProbName(absl::string_view name);
 
   ~Xpress();
 

@@ -25,6 +25,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
@@ -871,7 +872,7 @@ std::vector<TerminationReason> CompatibleReasons(
 }
 
 Matcher<std::vector<Solution>> CheckSolutions(
-    const std::vector<Solution>& expected_solutions,
+    absl::Span<const Solution> expected_solutions,
     const SolveResultMatcherOptions& options) {
   if (options.first_solution_only && !expected_solutions.empty()) {
     return FirstElementIs(

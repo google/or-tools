@@ -88,7 +88,7 @@ struct SolveArguments {
   // to the input expected_storage (which must not be nullptr). Also returns a
   // failure if callback events are registered but no callback is provided.
   absl::Status CheckModelStorageAndCallback(
-      const ModelStorage* expected_storage) const;
+      ModelStorageCPtr expected_storage) const;
 };
 
 }  // namespace operations_research::math_opt

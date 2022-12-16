@@ -102,7 +102,7 @@ class IncrementalSolverImpl : public IncrementalSolver {
       BaseSolverFactory solver_factory, SolverType solver_type,
       bool remove_names, std::shared_ptr<SolveInterrupter> local_canceller,
       std::unique_ptr<const ScopedSolveInterrupterCallback> user_canceller_cb,
-      const ModelStorage* expected_storage,
+      ModelStorageCPtr expected_storage,
       std::unique_ptr<UpdateTracker> update_tracker,
       std::unique_ptr<BaseSolver> solver);
 
@@ -114,7 +114,7 @@ class IncrementalSolverImpl : public IncrementalSolver {
   // can be destroyed after local_canceller_ without risk.
   std::shared_ptr<SolveInterrupter> local_canceller_;
   std::unique_ptr<const ScopedSolveInterrupterCallback> user_canceller_cb_;
-  const ModelStorage* const expected_storage_;
+  const ModelStorageCPtr expected_storage_;
   const std::unique_ptr<UpdateTracker> update_tracker_;
   std::unique_ptr<BaseSolver> solver_;
 };

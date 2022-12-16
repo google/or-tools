@@ -31,18 +31,18 @@ LinearExpression Objective::AsLinearExpression() const {
       << "The objective function contains quadratic terms and cannot be "
          "represented as a LinearExpression";
   LinearExpression objective = offset();
-  for (const auto [raw_var_id, coeff] : storage_->linear_objective(id_)) {
-    objective += coeff * Variable(storage_, raw_var_id);
+  for (const auto [raw_var_id, coeff] : storage()->linear_objective(id_)) {
+    objective += coeff * Variable(storage(), raw_var_id);
   }
   return objective;
 }
 
 QuadraticExpression Objective::AsQuadraticExpression() const {
   QuadraticExpression result = offset();
-  for (const auto& [v, coef] : storage_->linear_objective(id_)) {
+  for (const auto& [v, coef] : storage()->linear_objective(id_)) {
     result += coef * Variable(storage(), v);
   }
-  for (const auto& [v1, v2, coef] : storage_->quadratic_objective_terms(id_)) {
+  for (const auto& [v1, v2, coef] : storage()->quadratic_objective_terms(id_)) {
     result +=
         QuadraticTerm(Variable(storage(), v1), Variable(storage(), v2), coef);
   }

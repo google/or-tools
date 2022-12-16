@@ -36,7 +36,8 @@ namespace operations_research::math_opt {
 LinearConstraintId LinearConstraintStorage::Add(const double lower_bound,
                                                 const double upper_bound,
                                                 const absl::string_view name) {
-  const LinearConstraintId id = next_id_++;
+  const LinearConstraintId id = next_id_;
+  ++next_id_;
   Data& lin_con_data = linear_constraints_[id];
   lin_con_data.lower_bound = lower_bound;
   lin_con_data.upper_bound = upper_bound;

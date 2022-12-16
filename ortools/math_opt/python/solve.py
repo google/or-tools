@@ -95,7 +95,7 @@ def solve(
         )
     except StatusNotOk as e:
         raise _status_not_ok_to_exception(e) from None
-    return result.parse_solve_result(proto_result, opt_model)
+    return result.parse_solve_result(proto_result, opt_model, validate=False)
 
 
 def compute_infeasible_subsystem(
@@ -257,7 +257,7 @@ class IncrementalSolver:
             )
         except StatusNotOk as e:
             raise _status_not_ok_to_exception(e) from None
-        return result.parse_solve_result(result_proto, self._model)
+        return result.parse_solve_result(result_proto, self._model, validate=False)
 
     def close(self) -> None:
         """Closes this solver, freeing all its resources.

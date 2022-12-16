@@ -103,7 +103,11 @@ class RemoteHttpSolveTest(absltest.TestCase):
         )
 
         remote_solve_result, messages = remote_http_solve.remote_http_solve(
-            mod, mathopt.SolverType.GSCIP, api_key=_MOCK_API_KEY
+            mod,
+            mathopt.SolverType.GSCIP,
+            params=mathopt.SolveParameters(enable_output=True),
+            api_key=_MOCK_API_KEY,
+            resources=mathopt.SolverResources(ram=1024 * 1024 * 1024),
         )
 
         self.assertGreaterEqual(len(remote_solve_result.solutions), 1)

@@ -134,6 +134,7 @@ class GeneratedLinearConstraintTest(
 
         gen_con = callback.GeneratedConstraint()
         gen_con.terms = {x: 2.0, z: 4.0}
+        gen_con.lower_bound = -math.inf
         gen_con.upper_bound = 5.0
         gen_con.is_lazy = True
 
@@ -245,7 +246,7 @@ class CallbackResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase
             "unsupported operand.*\n.*two or more non-constant linear expressions",
         ):
             result.add_lazy_constraint(x <= (y <= z))
-        with self.assertRaisesRegex(ValueError, "lb cannot be specified.*"):
+        with self.assertRaisesRegex(AssertionError, "lb cannot be specified.*"):
             result.add_user_cut(x + y == 1, lb=1)
 
     def testToProtoEmpty(self) -> None:

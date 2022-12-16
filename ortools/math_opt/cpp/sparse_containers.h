@@ -42,7 +42,7 @@ namespace operations_research::math_opt {
 //
 // Note that the values of vars_proto.values are not checked (it may have NaNs).
 absl::StatusOr<VariableMap<double>> VariableValuesFromProto(
-    const ModelStorage* model, const SparseDoubleVectorProto& vars_proto);
+    ModelStorageCPtr model, const SparseDoubleVectorProto& vars_proto);
 
 // Returns the VariableMap<int32_t> equivalent to `vars_proto`.
 //
@@ -52,7 +52,7 @@ absl::StatusOr<VariableMap<double>> VariableValuesFromProto(
 //  * vars_proto.ids has elements that are variables in `model` (this implies
 //    that each id is in [0, max(int64_t))).
 absl::StatusOr<VariableMap<int32_t>> VariableValuesFromProto(
-    const ModelStorage* model, const SparseInt32VectorProto& vars_proto);
+    ModelStorageCPtr model, const SparseInt32VectorProto& vars_proto);
 
 // Returns the proto equivalent of variable_values.
 SparseDoubleVectorProto VariableValuesToProto(
@@ -67,7 +67,7 @@ SparseDoubleVectorProto VariableValuesToProto(
 // Note that the values of `aux_obj_proto` are not checked (it may have NaNs).
 absl::StatusOr<absl::flat_hash_map<Objective, double>>
 AuxiliaryObjectiveValuesFromProto(
-    const ModelStorage* model,
+    ModelStorageCPtr model,
     const google::protobuf::Map<int64_t, double>& aux_obj_proto);
 
 // Returns the proto equivalent of auxiliary_obj_values.
@@ -88,7 +88,7 @@ google::protobuf::Map<int64_t, double> AuxiliaryObjectiveValuesToProto(
 // Note that the values of lin_cons_proto.values are not checked (it may have
 // NaNs).
 absl::StatusOr<LinearConstraintMap<double>> LinearConstraintValuesFromProto(
-    const ModelStorage* model, const SparseDoubleVectorProto& lin_cons_proto);
+    ModelStorageCPtr model, const SparseDoubleVectorProto& lin_cons_proto);
 
 // Returns the proto equivalent of linear_constraint_values.
 SparseDoubleVectorProto LinearConstraintValuesToProto(
@@ -107,7 +107,7 @@ SparseDoubleVectorProto LinearConstraintValuesToProto(
 // NaNs).
 absl::StatusOr<absl::flat_hash_map<QuadraticConstraint, double>>
 QuadraticConstraintValuesFromProto(
-    const ModelStorage* model, const SparseDoubleVectorProto& quad_cons_proto);
+    ModelStorageCPtr model, const SparseDoubleVectorProto& quad_cons_proto);
 
 // Returns the proto equivalent of quadratic_constraint_values.
 SparseDoubleVectorProto QuadraticConstraintValuesToProto(
@@ -123,7 +123,7 @@ SparseDoubleVectorProto QuadraticConstraintValuesToProto(
 //    that each id is in [0, max(int64_t))).
 //  * basis_proto.values does not contain UNSPECIFIED and has valid enum values.
 absl::StatusOr<VariableMap<BasisStatus>> VariableBasisFromProto(
-    const ModelStorage* model, const SparseBasisStatusVector& basis_proto);
+    ModelStorageCPtr model, const SparseBasisStatusVector& basis_proto);
 
 // Returns the proto equivalent of basis_values.
 SparseBasisStatusVector VariableBasisToProto(
@@ -138,7 +138,7 @@ SparseBasisStatusVector VariableBasisToProto(
 //    implies that each id is in [0, max(int64_t))).
 //  * basis_proto.values does not contain UNSPECIFIED and has valid enum values.
 absl::StatusOr<LinearConstraintMap<BasisStatus>> LinearConstraintBasisFromProto(
-    const ModelStorage* model, const SparseBasisStatusVector& basis_proto);
+    ModelStorageCPtr model, const SparseBasisStatusVector& basis_proto);
 
 // Returns the proto equivalent of basis_values.
 SparseBasisStatusVector LinearConstraintBasisToProto(

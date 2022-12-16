@@ -40,9 +40,10 @@
 namespace operations_research::math_opt::internal {
 namespace {
 
-absl::StatusOr<SolveResult> CallSolve(
-    BaseSolver& solver, const ModelStorage* const expected_storage,
-    const SolveArguments& arguments, SolveInterrupter& local_canceller) {
+absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
+                                      const ModelStorageCPtr expected_storage,
+                                      const SolveArguments& arguments,
+                                      SolveInterrupter& local_canceller) {
   RETURN_IF_ERROR(arguments.CheckModelStorageAndCallback(expected_storage));
 
   BaseSolver::Callback cb = nullptr;
@@ -104,7 +105,7 @@ absl::StatusOr<SolveResult> CallSolve(
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResult> CallComputeInfeasibleSubsystem(
-    BaseSolver& solver, const ModelStorage* const expected_storage,
+    BaseSolver& solver, const ModelStorageCPtr expected_storage,
     const ComputeInfeasibleSubsystemArguments& arguments,
     SolveInterrupter& local_canceller) {
   ASSIGN_OR_RETURN(
@@ -180,7 +181,7 @@ IncrementalSolverImpl::IncrementalSolverImpl(
     BaseSolverFactory solver_factory, SolverType solver_type,
     const bool remove_names, std::shared_ptr<SolveInterrupter> local_canceller,
     std::unique_ptr<const ScopedSolveInterrupterCallback> user_canceller_cb,
-    const ModelStorage* const expected_storage,
+    const ModelStorageCPtr expected_storage,
     std::unique_ptr<UpdateTracker> update_tracker,
     std::unique_ptr<BaseSolver> solver)
     : solver_factory_(std::move(solver_factory)),

@@ -16,6 +16,7 @@ from ortools.service.v1.mathopt import model_pb2 as api_model_pb2
 from ortools.service.v1.mathopt import parameters_pb2 as api_parameters_pb2
 from ortools.service.v1.mathopt import result_pb2 as api_result_pb2
 from ortools.service.v1.mathopt import solution_pb2 as api_solution_pb2
+from ortools.service.v1.mathopt import solver_resources_pb2 as api_solver_resources_pb2
 from ortools.service.v1.mathopt import (
     sparse_containers_pb2 as api_sparse_containers_pb2,
 )
@@ -35,10 +36,13 @@ def _simple_request() -> rpc_pb2.SolveRequest:
     x = mod.add_binary_variable(name="x")
     y = mod.add_binary_variable(name="y")
     mod.maximize(x - y)
-    params = mathopt.SolveParameters()
+    resources = mathopt.SolverResources(cpu=2.0, ram=1024 * 1024 * 1024)
+    params = mathopt.SolveParameters(threads=2)
+
     request = rpc_pb2.SolveRequest(
         solver_type=parameters_pb2.SOLVER_TYPE_GSCIP,
         model=mod.export_model(),
+        resources=resources.to_proto(),
         parameters=params.to_proto(),
     )
     return request
@@ -67,6 +71,10 @@ class ProtoConverterTest(absltest.TestCase, compare.Proto2Assertions):
                     ),
                 ),
             ),
+            resources=api_solver_resources_pb2.SolverResourcesProto(
+                cpu=2.0, ram=1024 * 1024 * 1024
+            ),
+            parameters=api_parameters_pb2.SolveParametersProto(threads=2),
         )
 
         self.assertProto2Equal(proto_converter.convert_request(request), expected)
