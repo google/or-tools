@@ -1147,6 +1147,87 @@ class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         self.assert_protos_equiv(r.to_proto(), r_proto)
         self.assertEqual(result.parse_solve_result(r_proto, mod), r)
 
+    def test_solution_validation(self) -> None:
+        mod = model.Model(name="test_model")
+        proto = result_pb2.SolveResultProto(
+            termination=result_pb2.TerminationProto(
+                reason=result_pb2.TERMINATION_REASON_OPTIMAL,
+                problem_status=result_pb2.ProblemStatusProto(
+                    primal_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
+                    dual_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
+                ),
+            ),
+            solutions=[
+                solution_pb2.SolutionProto(
+                    primal_solution=solution_pb2.PrimalSolutionProto(
+                        variable_values=sparse_containers_pb2.SparseDoubleVectorProto(
+                            ids=[2], values=[4.0]
+                        ),
+                        feasibility_status=solution_pb2.SOLUTION_STATUS_FEASIBLE,
+                    )
+                )
+            ],
+        )
+        res = result.parse_solve_result(proto, mod, validate=False)
+        bad_var = mod.get_variable(2, validate=False)
+        self.assertLen(res.solutions, 1)
+        # TODO: b/215588365 - make a local variable so pytype is happy
+        primal = res.solutions[0].primal_solution
+        self.assertIsNotNone(primal)
+        self.assertDictEqual(primal.variable_values, {bad_var: 4.0})
+        with self.assertRaises(KeyError):
+            result.parse_solve_result(proto, mod, validate=True)
+
+    def test_primal_ray_validation(self) -> None:
+        mod = model.Model(name="test_model")
+        proto = result_pb2.SolveResultProto(
+            termination=result_pb2.TerminationProto(
+                reason=result_pb2.TERMINATION_REASON_UNBOUNDED,
+                problem_status=result_pb2.ProblemStatusProto(
+                    primal_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
+                    dual_status=result_pb2.FEASIBILITY_STATUS_INFEASIBLE,
+                ),
+            ),
+            primal_rays=[
+                solution_pb2.PrimalRayProto(
+                    variable_values=sparse_containers_pb2.SparseDoubleVectorProto(
+                        ids=[2], values=[4.0]
+                    )
+                )
+            ],
+        )
+        res = result.parse_solve_result(proto, mod, validate=False)
+        bad_var = mod.get_variable(2, validate=False)
+        self.assertLen(res.primal_rays, 1)
+        self.assertDictEqual(res.primal_rays[0].variable_values, {bad_var: 4.0})
+        with self.assertRaises(KeyError):
+            result.parse_solve_result(proto, mod, validate=True)
+
+    def test_dual_ray_validation(self) -> None:
+        mod = model.Model(name="test_model")
+        proto = result_pb2.SolveResultProto(
+            termination=result_pb2.TerminationProto(
+                reason=result_pb2.TERMINATION_REASON_INFEASIBLE,
+                problem_status=result_pb2.ProblemStatusProto(
+                    primal_status=result_pb2.FEASIBILITY_STATUS_INFEASIBLE,
+                    dual_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
+                ),
+            ),
+            dual_rays=[
+                solution_pb2.DualRayProto(
+                    reduced_costs=sparse_containers_pb2.SparseDoubleVectorProto(
+                        ids=[2], values=[4.0]
+                    )
+                )
+            ],
+        )
+        res = result.parse_solve_result(proto, mod, validate=False)
+        bad_var = mod.get_variable(2, validate=False)
+        self.assertLen(res.dual_rays, 1)
+        self.assertDictEqual(res.dual_rays[0].reduced_costs, {bad_var: 4.0})
+        with self.assertRaises(KeyError):
+            result.parse_solve_result(proto, mod, validate=True)
+
 
 if __name__ == "__main__":
     absltest.main()

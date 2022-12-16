@@ -11,29 +11,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pybind11_add_module(math_opt_pybind11 MODULE solver.cc)
-set_target_properties(math_opt_pybind11 PROPERTIES
+pybind11_add_module(math_opt_core_pybind11 MODULE solver.cc)
+set_target_properties(math_opt_core_pybind11 PROPERTIES
   LIBRARY_OUTPUT_NAME "solver")
 
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
-  set_target_properties(math_opt_pybind11 PROPERTIES
+  set_target_properties(math_opt_core_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH
       "@loader_path;@loader_path/../../../../${PYTHON_PROJECT}/.libs;@loader_path/../../../../pybind11_abseil")
 elseif(UNIX)
-  set_target_properties(math_opt_pybind11 PROPERTIES
+  set_target_properties(math_opt_core_pybind11 PROPERTIES
     INSTALL_RPATH
     "$ORIGIN:$ORIGIN/../../../../${PYTHON_PROJECT}/.libs:$ORIGIN/../../../../pybind11_abseil")
 endif()
 
-target_link_libraries(math_opt_pybind11 PRIVATE
+target_link_libraries(math_opt_core_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
   pybind11_abseil::absl_casters
   pybind11_abseil::status_casters
   pybind11_native_proto_caster
   protobuf::libprotobuf)
-add_library(${PROJECT_NAMESPACE}::math_opt_pybind11 ALIAS math_opt_pybind11)
+add_library(${PROJECT_NAMESPACE}::math_opt_core_pybind11 ALIAS math_opt_core_pybind11)
 
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")

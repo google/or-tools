@@ -25,14 +25,16 @@
 //
 // A key type K must match the following requirements:
 //   - K::IdType is a value type used for indices.
-//   - K has a constructor K(const ModelStorage*, K::IdType).
+//   - K has a constructor K(ModelStorageCPtr, K::IdType).
 //   - K is a value-semantic type.
 //   - K has a function with signature `K::IdType K::typed_id() const`.
-//   - K has a function with signature `const ModelStorage* K::storage() const`.
-//     It must return a non-null pointer.
+//   - K has a function with signature `ModelStorageCPtr K::storage() const`.
 //   - K::IdType is a valid key for absl::flat_hash_map or absl::flat_hash_set
 //     (supports hash and ==).
 //   - the is_key_type_v<> below should include them.
+// TODO(b/396580721): Those requirements are those of `ModelStorageElement`.
+// Once we've migrated most key types to `ModelStorageElement`, we should be
+// able to simplify this code.
 #ifndef OR_TOOLS_MATH_OPT_CPP_KEY_TYPES_H_
 #define OR_TOOLS_MATH_OPT_CPP_KEY_TYPES_H_
 
@@ -45,6 +47,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/model_storage_item.h"
 
 namespace operations_research::math_opt {
 
@@ -70,11 +73,9 @@ class Objective;
 // the values in the hash map are in the math_opt namespace.
 template <typename T>
 constexpr inline bool is_key_type_v =
-    (std::is_same_v<T, Variable> || std::is_same_v<T, LinearConstraint> ||
-     std::is_same_v<T, QuadraticConstraint> ||
+    (is_model_storage_element<T>::value ||
      std::is_same_v<T, SecondOrderConeConstraint> ||
      std::is_same_v<T, Sos1Constraint> || std::is_same_v<T, Sos2Constraint> ||
-     std::is_same_v<T, IndicatorConstraint> ||
      std::is_same_v<T, QuadraticTermKey> || std::is_same_v<T, Objective>);
 
 // Returns the keys of the map sorted by their (storage(), type_id()).
@@ -162,12 +163,12 @@ inline constexpr absl::string_view kInputFromInvalidModelStorage =
     "the input does not belong to the same model";
 
 // Returns a failure when the input pointer is not nullptr and points to a
-// different model storage than expected_storage (which must not be nullptr).
+// different model storage than expected_storage.
 //
 // Failure message is kInputFromInvalidModelStorage.
-inline absl::Status CheckModelStorage(
-    const ModelStorage* const storage,
-    const ModelStorage* const expected_storage) {
+inline absl::Status CheckModelStorage(const NullableModelStorageCPtr storage,
+                                      const ModelStorageCPtr expected_storage) {
+  // This is not allowed by the contract, but let's be safe.
   if (expected_storage == nullptr) {
     return absl::InternalError("expected_storage is nullptr");
   }

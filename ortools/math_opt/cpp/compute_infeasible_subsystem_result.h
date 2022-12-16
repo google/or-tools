@@ -64,7 +64,7 @@ struct ModelSubset {
   //
   // Returns an error when `model` does not contain a variable or constraint
   // associated with an index present in `proto`.
-  static absl::StatusOr<ModelSubset> FromProto(const ModelStorage* model,
+  static absl::StatusOr<ModelSubset> FromProto(ModelStorageCPtr model,
                                                const ModelSubsetProto& proto);
 
   // Returns the proto equivalent of this object.
@@ -74,8 +74,8 @@ struct ModelSubset {
   ModelSubsetProto Proto() const;
 
   // Returns a failure if the `Variable` and Constraints contained in the fields
-  // do not belong to the input expected_storage (which must not be nullptr).
-  absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
+  // do not belong to the input expected_storage.
+  absl::Status CheckModelStorage(ModelStorageCPtr expected_storage) const;
 
   // True if this object corresponds to the empty subset.
   bool empty() const;
@@ -105,7 +105,7 @@ struct ComputeInfeasibleSubsystemResult {
   //     index present in `proto.infeasible_subsystem`.
   //   * ValidateComputeInfeasibleSubsystemResultNoModel(result_proto) fails.
   static absl::StatusOr<ComputeInfeasibleSubsystemResult> FromProto(
-      const ModelStorage* model,
+      ModelStorageCPtr model,
       const ComputeInfeasibleSubsystemResultProto& result_proto);
 
   // Returns the proto equivalent of this object.
@@ -116,8 +116,8 @@ struct ComputeInfeasibleSubsystemResult {
   ComputeInfeasibleSubsystemResultProto Proto() const;
 
   // Returns a failure if this object contains references to a model other than
-  // `expected_storage` (which must not be nullptr).
-  absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
+  // `expected_storage`.
+  absl::Status CheckModelStorage(ModelStorageCPtr expected_storage) const;
 
   // The primal feasibility status of the model, as determined by the solver.
   FeasibilityStatus feasibility = FeasibilityStatus::kUndetermined;

@@ -58,7 +58,7 @@ ModelSolveParameters ModelSolveParameters::OnlySomePrimalVariables(
 }
 
 absl::Status ModelSolveParameters::CheckModelStorage(
-    const ModelStorage* const expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   for (const SolutionHint& hint : solution_hints) {
     RETURN_IF_ERROR(hint.CheckModelStorage(expected_storage))
         << "invalid hint in solution_hints";
@@ -100,7 +100,7 @@ absl::Status ModelSolveParameters::CheckModelStorage(
 }
 
 absl::Status ModelSolveParameters::SolutionHint::CheckModelStorage(
-    const ModelStorage* expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   for (const auto& [v, _] : variable_values) {
     RETURN_IF_ERROR(internal::CheckModelStorage(
         /*storage=*/v.storage(),

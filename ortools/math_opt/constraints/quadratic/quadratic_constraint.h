@@ -18,19 +18,18 @@
 #ifndef OR_TOOLS_MATH_OPT_CONSTRAINTS_QUADRATIC_QUADRATIC_CONSTRAINT_H_
 #define OR_TOOLS_MATH_OPT_CONSTRAINTS_QUADRATIC_QUADRATIC_CONSTRAINT_H_
 
-#include <cstdint>
-#include <ostream>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
+#include "ortools/math_opt/elemental/elements.h"
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/model_storage_item.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 #include "ortools/math_opt/storage/sparse_matrix.h"
 
@@ -38,20 +37,11 @@ namespace operations_research::math_opt {
 
 // A value type that references a quadratic constraint from ModelStorage.
 // Usually this type is passed by copy.
-//
-// This type implements https://abseil.io/docs/cpp/guides/hash.
-class QuadraticConstraint {
+class QuadraticConstraint final
+    : public ModelStorageElement<ElementType::kQuadraticConstraint,
+                                 QuadraticConstraint> {
  public:
-  // The typed integer used for ids.
-  using IdType = QuadraticConstraintId;
-
-  inline QuadraticConstraint(const ModelStorage* storage,
-                             QuadraticConstraintId id);
-
-  inline int64_t id() const;
-
-  inline QuadraticConstraintId typed_id() const;
-  inline const ModelStorage* storage() const;
+  using ModelStorageElement::ModelStorageElement;
 
   inline double lower_bound() const;
   inline double upper_bound() const;
@@ -89,47 +79,23 @@ class QuadraticConstraint {
   // Returns a detailed string description of the contents of the constraint
   // (not its name, use `<<` for that instead).
   inline std::string ToString() const;
-
-  friend inline bool operator==(const QuadraticConstraint& lhs,
-                                const QuadraticConstraint& rhs);
-  friend inline bool operator!=(const QuadraticConstraint& lhs,
-                                const QuadraticConstraint& rhs);
-  template <typename H>
-  friend H AbslHashValue(H h, const QuadraticConstraint& quadratic_constraint);
-  friend std::ostream& operator<<(
-      std::ostream& ostr, const QuadraticConstraint& quadratic_constraint);
-
- private:
-  const ModelStorage* storage_;
-  QuadraticConstraintId id_;
 };
-
-// Streams the name of the constraint, as registered upon constraint creation,
-// or a short default if none was provided.
-inline std::ostream& operator<<(std::ostream& ostr,
-                                const QuadraticConstraint& constraint);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Inline function implementations
 ////////////////////////////////////////////////////////////////////////////////
 
-int64_t QuadraticConstraint::id() const { return id_.value(); }
-
-QuadraticConstraintId QuadraticConstraint::typed_id() const { return id_; }
-
-const ModelStorage* QuadraticConstraint::storage() const { return storage_; }
-
 double QuadraticConstraint::lower_bound() const {
-  return storage_->constraint_data(id_).lower_bound;
+  return storage()->constraint_data(typed_id()).lower_bound;
 }
 
 double QuadraticConstraint::upper_bound() const {
-  return storage_->constraint_data(id_).upper_bound;
+  return storage()->constraint_data(typed_id()).upper_bound;
 }
 
 absl::string_view QuadraticConstraint::name() const {
-  if (storage_->has_constraint(id_)) {
-    return storage_->constraint_data(id_).name;
+  if (storage()->has_constraint(typed_id())) {
+    return storage()->constraint_data(typed_id()).name;
   }
   return kDeletedConstraintDefaultDescription;
 }
@@ -145,65 +111,37 @@ bool QuadraticConstraint::is_quadratic_coefficient_nonzero(
 }
 
 double QuadraticConstraint::linear_coefficient(const Variable variable) const {
-  CHECK_EQ(variable.storage(), storage_)
+  CHECK_EQ(variable.storage(), storage())
       << internal::kObjectsFromOtherModelStorage;
-  return storage_->constraint_data(id_).linear_terms.get(variable.typed_id());
+  return storage()
+      ->constraint_data(typed_id())
+      .linear_terms.get(variable.typed_id());
 }
 
 double QuadraticConstraint::quadratic_coefficient(
     const Variable first_variable, const Variable second_variable) const {
-  CHECK_EQ(first_variable.storage(), storage_)
+  CHECK_EQ(first_variable.storage(), storage())
       << internal::kObjectsFromOtherModelStorage;
-  CHECK_EQ(second_variable.storage(), storage_)
+  CHECK_EQ(second_variable.storage(), storage())
       << internal::kObjectsFromOtherModelStorage;
-  return storage_->constraint_data(id_).quadratic_terms.get(
-      first_variable.typed_id(), second_variable.typed_id());
+  return storage()
+      ->constraint_data(typed_id())
+      .quadratic_terms.get(first_variable.typed_id(),
+                           second_variable.typed_id());
 }
 
 std::vector<Variable> QuadraticConstraint::NonzeroVariables() const {
-  return AtomicConstraintNonzeroVariables(*storage_, id_);
+  return AtomicConstraintNonzeroVariables(*storage(), typed_id());
 }
 
 std::string QuadraticConstraint::ToString() const {
-  if (!storage()->has_constraint(id_)) {
+  if (!storage()->has_constraint(typed_id())) {
     return std::string(kDeletedConstraintDefaultDescription);
   }
   std::stringstream str;
   str << AsBoundedQuadraticExpression();
   return str.str();
 }
-
-bool operator==(const QuadraticConstraint& lhs,
-                const QuadraticConstraint& rhs) {
-  return lhs.id_ == rhs.id_ && lhs.storage_ == rhs.storage_;
-}
-
-bool operator!=(const QuadraticConstraint& lhs,
-                const QuadraticConstraint& rhs) {
-  return !(lhs == rhs);
-}
-
-template <typename H>
-H AbslHashValue(H h, const QuadraticConstraint& quadratic_constraint) {
-  return H::combine(std::move(h), quadratic_constraint.id_.value(),
-                    quadratic_constraint.storage_);
-}
-
-std::ostream& operator<<(std::ostream& ostr,
-                         const QuadraticConstraint& constraint) {
-  // TODO(b/170992529): handle quoting of invalid characters in the name.
-  const absl::string_view name = constraint.name();
-  if (name.empty()) {
-    ostr << "__quad_con#" << constraint.id() << "__";
-  } else {
-    ostr << name;
-  }
-  return ostr;
-}
-
-QuadraticConstraint::QuadraticConstraint(const ModelStorage* const storage,
-                                         const QuadraticConstraintId id)
-    : storage_(storage), id_(id) {}
 
 }  // namespace operations_research::math_opt
 

@@ -14,6 +14,8 @@
 load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -558,6 +560,9 @@ py_proto_library(
     deps = [":osqp_proto"],
 )
 
+# Highs has a large number of asan failures that are easy to trigger. Further, our version of Highs
+# is very out of date, some (but not all) of these have already been fixed. For use in google3, we
+# generally do not recommend Highs, and if it is used, we would recommend using a subprocess solver.
 cc_library(
     name = "highs_solver",
     srcs = [
@@ -604,6 +609,8 @@ cc_test(
     srcs = ["highs_solver_test.cc"],
     flaky = 1,
     shard_count = 10,
+    # See note above ":highs_solver" rule.
+    tags = ["nosan"],
     deps = [
         ":highs_cc_proto",
         ":highs_solver",

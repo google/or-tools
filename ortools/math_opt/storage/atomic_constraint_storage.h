@@ -188,7 +188,8 @@ typename AtomicConstraintStorage<ConstraintData>::IdType
 AtomicConstraintStorage<ConstraintData>::AddConstraint(
     ConstraintData constraint) {
   const std::vector<VariableId> vars = constraint.RelatedVariables();
-  const IdType id = next_id_++;
+  const IdType id = next_id_;
+  ++next_id_;
   CHECK(constraint_data_.insert({id, std::move(constraint)}).second);
   for (const VariableId v : vars) {
     constraints_by_variable_[v].insert(id);

@@ -16,26 +16,26 @@
 import typing
 from typing import Iterable, Mapping, Union
 
-from ortools.math_opt.python import model
+from ortools.math_opt.python import variables
 
 
 @typing.overload
-def fast_sum(summands: Iterable[model.LinearTypes]) -> model.LinearSum: ...
+def fast_sum(summands: Iterable[variables.LinearTypes]) -> variables.LinearSum: ...
 
 
 @typing.overload
 def fast_sum(
-    summands: Iterable[model.QuadraticTypes],
-) -> Union[model.LinearSum, model.QuadraticSum]: ...
+    summands: Iterable[variables.QuadraticTypes],
+) -> Union[variables.LinearSum, variables.QuadraticSum]: ...
 
 
 # TODO(b/312200030): There is a pytype bug so that for the code:
 #   m = mathopt.Model()
 #   x = m.Variable()
 #   s = expressions.fast_sum([x*x, 4.0])
-# pytype picks the wrong overload and thinks s has type model.LinearSum, rather
-# than Union[model.LinearSum, model.QuadraticSum]. Once the bug is fixed,
-# confirm that the overloads actually work.
+# pytype picks the wrong overload and thinks s has type variables.LinearSum,
+# rather than Union[variables.LinearSum, variables.QuadraticSum]. Once the bug
+# is fixed, confirm that the overloads actually work.
 def fast_sum(summands):
     """Sums the elements of summand into a linear or quadratic expression.
 
@@ -57,14 +57,14 @@ def fast_sum(summands):
     """
     summands_tuple = tuple(summands)
     for s in summands_tuple:
-        if isinstance(s, model.QuadraticBase):
-            return model.QuadraticSum(summands_tuple)
-    return model.LinearSum(summands_tuple)
+        if isinstance(s, variables.QuadraticBase):
+            return variables.QuadraticSum(summands_tuple)
+    return variables.LinearSum(summands_tuple)
 
 
 def evaluate_expression(
-    expression: model.QuadraticTypes,
-    variable_values: Mapping[model.Variable, float],
+    expression: variables.QuadraticTypes,
+    variable_values: Mapping[variables.Variable, float],
 ) -> float:
     """Evaluates a linear or quadratic expression for given variable values.
 
@@ -78,6 +78,8 @@ def evaluate_expression(
     Returns:
       The value of the expression when replacing variables by their value.
     """
-    if isinstance(expression, model.QuadraticBase):
-        return model.as_flat_quadratic_expression(expression).evaluate(variable_values)
-    return model.as_flat_linear_expression(expression).evaluate(variable_values)
+    if isinstance(expression, variables.QuadraticBase):
+        return variables.as_flat_quadratic_expression(expression).evaluate(
+            variable_values
+        )
+    return variables.as_flat_linear_expression(expression).evaluate(variable_values)

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_MATH_OPT_IO_LP_LP_MODEL_H_
 #define OR_TOOLS_MATH_OPT_IO_LP_LP_MODEL_H_
 
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>

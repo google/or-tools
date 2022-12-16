@@ -14,6 +14,18 @@
 #ifndef OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
 #define OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
 
+#ifdef MATHOPT_STORAGE_V2
+
+#include "ortools/math_opt/storage/model_storage_v2.h"
+
+namespace operations_research::math_opt {
+
+using ModelStorage = ModelStorageV2;
+
+}  // namespace operations_research::math_opt
+
+#else
+
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -22,6 +34,7 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -164,8 +177,8 @@ class ModelStorage {
   // considered invalid when solving.
   //
   // See ApplyUpdateProto() for dealing with subsequent updates.
-  static absl::StatusOr<std::unique_ptr<ModelStorage> > FromModelProto(
-      const ModelProto& model_proto);
+  static absl::StatusOr<absl::Nonnull<std::unique_ptr<ModelStorage> > >
+  FromModelProto(const ModelProto& model_proto);
 
   // Creates an empty minimization problem.
   inline explicit ModelStorage(absl::string_view model_name = "",
@@ -179,7 +192,7 @@ class ModelStorage {
   // reused any id of variable/constraint that was deleted in the original.
   //
   // Note that the returned model does not have any update tracker.
-  std::unique_ptr<ModelStorage> Clone(
+  absl::Nonnull<std::unique_ptr<ModelStorage> > Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline const std::string& name() const { return copyable_data_.name; }
@@ -1291,5 +1304,18 @@ constexpr typename AtomicConstraintStorage<IndicatorConstraintData>::Diff
 
 }  // namespace math_opt
 }  // namespace operations_research
+
+#endif
+
+namespace operations_research::math_opt {
+
+// Aliases for non-nullable and nullable pointers to a `ModelStorage`.
+// We should mostly be using the former, but in some cases we need the latter.
+using ModelStoragePtr = absl::Nonnull<ModelStorage*>;
+using NullableModelStoragePtr = absl::Nullable<ModelStorage*>;
+using ModelStorageCPtr = absl::Nonnull<const ModelStorage*>;
+using NullableModelStorageCPtr = absl::Nullable<const ModelStorage*>;
+
+}  // namespace operations_research::math_opt
 
 #endif  // OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
