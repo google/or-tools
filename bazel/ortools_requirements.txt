@@ -63,8 +63,10 @@ svgwrite==1.4.3
     # via -r bazel/ortools_requirements.in
 types-protobuf==4.24.0.0
     # via mypy-protobuf
-typing-extensions==4.8.0
-    # via mypy
+typing-extensions==4.13.1
+    # via
+    #   -r bazel/ortools_requirements.in
+    #   mypy
 tzdata==2023.3
     # via pandas
 urllib3==2.2.2

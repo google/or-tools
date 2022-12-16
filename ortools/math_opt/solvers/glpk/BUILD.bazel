@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 # Code specific to GLPK used in glpk_solver.cc.
 package(default_visibility = ["//ortools/math_opt/solvers:__subpackages__"])
 

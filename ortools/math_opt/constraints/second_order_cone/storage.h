@@ -34,6 +34,7 @@ struct SecondOrderConeConstraintData {
   using IdType = SecondOrderConeConstraintId;
   using ProtoType = SecondOrderConeConstraintProto;
   using UpdatesProtoType = SecondOrderConeConstraintUpdatesProto;
+  static constexpr bool kSupportsElemental = false;
 
   // The `in_proto` must be in a valid state; see the inline comments on
   // `SecondOrderConeConstraintProto` for details.
@@ -50,6 +51,7 @@ struct SecondOrderConeConstraintData {
 template <>
 struct AtomicConstraintTraits<SecondOrderConeConstraintId> {
   using ConstraintData = SecondOrderConeConstraintData;
+  static constexpr bool kSupportsElemental = false;
 };
 
 }  // namespace operations_research::math_opt

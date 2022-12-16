@@ -43,6 +43,7 @@ class SosConstraintData {
   using IdType = ConstraintId;
   using ProtoType = SosConstraintProto;
   using UpdatesProtoType = SosConstraintUpdatesProto;
+  static constexpr bool kSupportsElemental = false;
 
   static_assert(
       std::disjunction_v<std::is_same<ConstraintId, Sos1ConstraintId>,
@@ -101,11 +102,13 @@ using Sos2ConstraintData = internal::SosConstraintData<Sos2ConstraintId>;
 template <>
 struct AtomicConstraintTraits<Sos1ConstraintId> {
   using ConstraintData = Sos1ConstraintData;
+  static constexpr bool kSupportsElemental = false;
 };
 
 template <>
 struct AtomicConstraintTraits<Sos2ConstraintId> {
   using ConstraintData = Sos2ConstraintData;
+  static constexpr bool kSupportsElemental = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

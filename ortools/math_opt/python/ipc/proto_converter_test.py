@@ -16,10 +16,10 @@ from ortools.service.v1.mathopt import model_pb2 as api_model_pb2
 from ortools.service.v1.mathopt import parameters_pb2 as api_parameters_pb2
 from ortools.service.v1.mathopt import result_pb2 as api_result_pb2
 from ortools.service.v1.mathopt import solution_pb2 as api_solution_pb2
+from ortools.service.v1.mathopt import solver_resources_pb2 as api_solver_resources_pb2
 from ortools.service.v1.mathopt import (
     sparse_containers_pb2 as api_sparse_containers_pb2,
 )
-from google3.net.proto2.contrib.pyutil import compare
 from absl.testing import absltest
 from ortools.math_opt import parameters_pb2
 from ortools.math_opt import result_pb2
@@ -28,6 +28,7 @@ from ortools.math_opt import solution_pb2
 from ortools.math_opt import sparse_containers_pb2
 from ortools.math_opt.python import mathopt
 from ortools.math_opt.python.ipc import proto_converter
+from ortools.math_opt.python.testing import compare_proto
 
 
 def _simple_request() -> rpc_pb2.SolveRequest:
@@ -35,16 +36,19 @@ def _simple_request() -> rpc_pb2.SolveRequest:
     x = mod.add_binary_variable(name="x")
     y = mod.add_binary_variable(name="y")
     mod.maximize(x - y)
-    params = mathopt.SolveParameters()
+    resources = mathopt.SolverResources(cpu=2.0, ram=1024 * 1024 * 1024)
+    params = mathopt.SolveParameters(threads=2)
+
     request = rpc_pb2.SolveRequest(
         solver_type=parameters_pb2.SOLVER_TYPE_GSCIP,
         model=mod.export_model(),
+        resources=resources.to_proto(),
         parameters=params.to_proto(),
     )
     return request
 
 
-class ProtoConverterTest(absltest.TestCase, compare.Proto2Assertions):
+class ProtoConverterTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
     def test_convert_request(self):
         request = _simple_request()
@@ -67,9 +71,13 @@ class ProtoConverterTest(absltest.TestCase, compare.Proto2Assertions):
                     ),
                 ),
             ),
+            resources=api_solver_resources_pb2.SolverResourcesProto(
+                cpu=2.0, ram=1024 * 1024 * 1024
+            ),
+            parameters=api_parameters_pb2.SolveParametersProto(threads=2),
         )
 
-        self.assertProto2Equal(proto_converter.convert_request(request), expected)
+        self.assert_protos_equal(proto_converter.convert_request(request), expected)
 
     def test_initializer_is_not_supported(self):
         request = _simple_request()
@@ -127,7 +135,7 @@ class ProtoConverterTest(absltest.TestCase, compare.Proto2Assertions):
             )
         )
 
-        self.assertProto2Equal(
+        self.assert_protos_equal(
             proto_converter.convert_response(api_response), expected_response
         )
 

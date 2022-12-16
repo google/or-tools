@@ -25,7 +25,7 @@
 namespace operations_research::math_opt {
 
 absl::Status SolveArguments::CheckModelStorageAndCallback(
-    const ModelStorage* const expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   RETURN_IF_ERROR(model_parameters.CheckModelStorage(expected_storage))
       << "invalid model_parameters";
   RETURN_IF_ERROR(callback_registration.CheckModelStorage(expected_storage))

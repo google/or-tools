@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
+
+from google.protobuf import duration_pb2
 from absl.testing import absltest
 from ortools.math_opt import model_parameters_pb2
 from ortools.math_opt import solution_pb2
@@ -39,11 +42,34 @@ class ModelParametersTest(compare_proto.MathOptProtoAssertions, absltest.TestCas
         self.assertDictEqual(hint_round_trip.variable_values, hint.variable_values)
         self.assertDictEqual(hint_round_trip.dual_values, hint.dual_values)
 
+    def test_objective_parameters_empty_round_trip(self) -> None:
+        params = model_parameters.ObjectiveParameters()
+        proto = model_parameters_pb2.ObjectiveParametersProto()
+        self.assert_protos_equiv(params.to_proto(), proto)
+        self.assertEqual(model_parameters.parse_objective_parameters(proto), params)
+
+    def test_objective_parameters_full_round_trip(self) -> None:
+        params = model_parameters.ObjectiveParameters(
+            objective_degradation_absolute_tolerance=4.1,
+            objective_degradation_relative_tolerance=4.2,
+            time_limit=datetime.timedelta(minutes=1),
+        )
+        proto = model_parameters_pb2.ObjectiveParametersProto(
+            objective_degradation_absolute_tolerance=4.1,
+            objective_degradation_relative_tolerance=4.2,
+            time_limit=duration_pb2.Duration(seconds=60),
+        )
+        self.assert_protos_equiv(params.to_proto(), proto)
+        self.assertEqual(model_parameters.parse_objective_parameters(proto), params)
+
     def test_model_parameters_to_proto_no_basis(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
         y = mod.add_binary_variable(name="y")
         c = mod.add_linear_constraint(lb=0.0, ub=1.0, name="c")
+        # Ensure q and c have different ids.
+        mod.add_quadratic_constraint()
+        q = mod.add_quadratic_constraint(name="q")
         params = model_parameters.ModelSolveParameters()
         params.variable_values_filter = sparse_containers.SparseVectorFilter(
             filtered_items=(y,)
@@ -53,6 +79,9 @@ class ModelParametersTest(compare_proto.MathOptProtoAssertions, absltest.TestCas
         )
         params.dual_values_filter = sparse_containers.SparseVectorFilter(
             filtered_items=(c,)
+        )
+        params.quadratic_dual_values_filter = sparse_containers.SparseVectorFilter(
+            filtered_items=(q,)
         )
         params.solution_hints.append(
             model_parameters.SolutionHint(
@@ -73,6 +102,9 @@ class ModelParametersTest(compare_proto.MathOptProtoAssertions, absltest.TestCas
             ),
             dual_values_filter=sparse_containers_pb2.SparseVectorFilterProto(
                 filter_by_ids=True, filtered_ids=(0,)
+            ),
+            quadratic_dual_values_filter=sparse_containers_pb2.SparseVectorFilterProto(
+                filter_by_ids=True, filtered_ids=(1,)
             ),
             branching_priorities=sparse_containers_pb2.SparseInt32VectorProto(
                 ids=[1], values=[2]
@@ -101,6 +133,53 @@ class ModelParametersTest(compare_proto.MathOptProtoAssertions, absltest.TestCas
             solution_pb2.BASIS_STATUS_AT_UPPER_BOUND
         )
         self.assert_protos_equiv(expected, actual)
+
+    def test_model_parameters_to_proto_with_objective_params(self) -> None:
+        mod = model.Model()
+        aux1 = mod.add_auxiliary_objective(priority=1)
+        mod.add_auxiliary_objective(priority=2)
+        aux3 = mod.add_auxiliary_objective(priority=3)
+
+        def make_param(abs_tol: float) -> model_parameters.ObjectiveParameters:
+            return model_parameters.ObjectiveParameters(
+                objective_degradation_absolute_tolerance=abs_tol
+            )
+
+        def make_proto_param(
+            abs_tol: float,
+        ) -> model_parameters_pb2.ObjectiveParametersProto:
+            return model_parameters_pb2.ObjectiveParametersProto(
+                objective_degradation_absolute_tolerance=abs_tol
+            )
+
+        model_params = model_parameters.ModelSolveParameters(
+            objective_parameters={
+                mod.objective: make_param(0.1),
+                aux1: make_param(0.2),
+                aux3: make_param(0.3),
+            }
+        )
+        expected = model_parameters_pb2.ModelSolveParametersProto(
+            primary_objective_parameters=make_proto_param(0.1),
+            auxiliary_objective_parameters={
+                0: make_proto_param(0.2),
+                2: make_proto_param(0.3),
+            },
+        )
+        self.assert_protos_equiv(model_params.to_proto(), expected)
+
+    def test_model_parameters_to_proto_with_lazy_constraints(self) -> None:
+        mod = model.Model()
+        c0 = mod.add_linear_constraint()
+        mod.add_linear_constraint()
+        c2 = mod.add_linear_constraint()
+        model_params = model_parameters.ModelSolveParameters(
+            lazy_linear_constraints={c0, c2}
+        )
+        expected = model_parameters_pb2.ModelSolveParametersProto(
+            lazy_linear_constraint_ids=[0, 2]
+        )
+        self.assert_protos_equiv(model_params.to_proto(), expected)
 
 
 if __name__ == "__main__":

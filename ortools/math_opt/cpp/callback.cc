@@ -70,7 +70,7 @@ CallbackData::CallbackData(const CallbackEvent event,
                            const absl::Duration runtime)
     : event(event), runtime(runtime) {}
 
-CallbackData::CallbackData(const ModelStorage* storage,
+CallbackData::CallbackData(const ModelStorageCPtr storage,
                            const CallbackDataProto& proto)
     // iOS 11 does not support .value() hence we use operator* here and CHECK
     // below that we have a value.
@@ -90,7 +90,7 @@ CallbackData::CallbackData(const ModelStorage* storage,
 }
 
 absl::Status CallbackRegistration::CheckModelStorage(
-    const ModelStorage* const expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   RETURN_IF_ERROR(mip_node_filter.CheckModelStorage(expected_storage))
       << "invalid mip_node_filter";
   RETURN_IF_ERROR(mip_solution_filter.CheckModelStorage(expected_storage))
@@ -113,7 +113,7 @@ CallbackRegistrationProto CallbackRegistration::Proto() const {
 }
 
 absl::Status CallbackResult::CheckModelStorage(
-    const ModelStorage* const expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   for (const GeneratedLinearConstraint& constraint : new_constraints) {
     RETURN_IF_ERROR(
         internal::CheckModelStorage(/*storage=*/constraint.storage(),

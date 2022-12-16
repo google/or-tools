@@ -26,7 +26,7 @@ namespace operations_research::math_opt {
 BoundedQuadraticExpression QuadraticConstraint::AsBoundedQuadraticExpression()
     const {
   QuadraticExpression expression;
-  const QuadraticConstraintData& data = storage()->constraint_data(id_);
+  const QuadraticConstraintData& data = storage()->constraint_data(typed_id());
   for (const auto [var, coeff] : data.linear_terms.terms()) {
     expression += coeff * Variable(storage(), var);
   }

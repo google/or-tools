@@ -18,16 +18,22 @@ Analogous to sparse_containers.proto, with bidirectional conversion.
 from typing import Dict, FrozenSet, Generic, Iterable, Mapping, Optional, Set, TypeVar
 
 from ortools.math_opt import sparse_containers_pb2
+from ortools.math_opt.python import linear_constraints
 from ortools.math_opt.python import model
+from ortools.math_opt.python import quadratic_constraints
+from ortools.math_opt.python import variables
 
 
 VarOrConstraintType = TypeVar(
-    "VarOrConstraintType", model.Variable, model.LinearConstraint
+    "VarOrConstraintType",
+    variables.Variable,
+    linear_constraints.LinearConstraint,
+    quadratic_constraints.QuadraticConstraint,
 )
 
 
 def to_sparse_double_vector_proto(
-    terms: Mapping[VarOrConstraintType, float]
+    terms: Mapping[VarOrConstraintType, float],
 ) -> sparse_containers_pb2.SparseDoubleVectorProto:
     """Converts a sparse vector from proto to dict representation."""
     result = sparse_containers_pb2.SparseDoubleVectorProto()
@@ -41,7 +47,7 @@ def to_sparse_double_vector_proto(
 
 
 def to_sparse_int32_vector_proto(
-    terms: Mapping[VarOrConstraintType, int]
+    terms: Mapping[VarOrConstraintType, int],
 ) -> sparse_containers_pb2.SparseInt32VectorProto:
     """Converts a sparse vector from proto to dict representation."""
     result = sparse_containers_pb2.SparseInt32VectorProto()
@@ -55,22 +61,42 @@ def to_sparse_int32_vector_proto(
 
 
 def parse_variable_map(
-    proto: sparse_containers_pb2.SparseDoubleVectorProto, mod: model.Model
-) -> Dict[model.Variable, float]:
+    proto: sparse_containers_pb2.SparseDoubleVectorProto,
+    mod: model.Model,
+    validate: bool = True,
+) -> Dict[variables.Variable, float]:
     """Converts a sparse vector of variables from proto to dict representation."""
     result = {}
     for index, var_id in enumerate(proto.ids):
-        result[mod.get_variable(var_id)] = proto.values[index]
+        result[mod.get_variable(var_id, validate=validate)] = proto.values[index]
     return result
 
 
 def parse_linear_constraint_map(
-    proto: sparse_containers_pb2.SparseDoubleVectorProto, mod: model.Model
-) -> Dict[model.LinearConstraint, float]:
+    proto: sparse_containers_pb2.SparseDoubleVectorProto,
+    mod: model.Model,
+    validate: bool = True,
+) -> Dict[linear_constraints.LinearConstraint, float]:
     """Converts a sparse vector of linear constraints from proto to dict representation."""
     result = {}
     for index, lin_con_id in enumerate(proto.ids):
-        result[mod.get_linear_constraint(lin_con_id)] = proto.values[index]
+        result[mod.get_linear_constraint(lin_con_id, validate=validate)] = proto.values[
+            index
+        ]
+    return result
+
+
+def parse_quadratic_constraint_map(
+    proto: sparse_containers_pb2.SparseDoubleVectorProto,
+    mod: model.Model,
+    validate: bool = True,
+) -> Dict[quadratic_constraints.QuadraticConstraint, float]:
+    """Converts a sparse vector of quadratic constraints from proto to dict representation."""
+    result = {}
+    for index, quad_con_id in enumerate(proto.ids):
+        result[mod.get_quadratic_constraint(quad_con_id, validate=validate)] = (
+            proto.values[index]
+        )
     return result
 
 
@@ -110,7 +136,7 @@ class SparseVectorFilter(Generic[VarOrConstraintType]):
             self._filtered_items
         )  # pytype: disable=bad-return-type  # attribute-variable-annotations
 
-    def to_proto(self):
+    def to_proto(self) -> sparse_containers_pb2.SparseVectorFilterProto:
         """Returns an equivalent proto representation."""
         result = sparse_containers_pb2.SparseVectorFilterProto()
         result.skip_zero_values = self._skip_zero_values
@@ -120,5 +146,8 @@ class SparseVectorFilter(Generic[VarOrConstraintType]):
         return result
 
 
-VariableFilter = SparseVectorFilter[model.Variable]
-LinearConstraintFilter = SparseVectorFilter[model.LinearConstraint]
+VariableFilter = SparseVectorFilter[variables.Variable]
+LinearConstraintFilter = SparseVectorFilter[linear_constraints.LinearConstraint]
+QuadraticConstraintFilter = SparseVectorFilter[
+    quadratic_constraints.QuadraticConstraint
+]

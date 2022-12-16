@@ -536,7 +536,7 @@ TerminationProto UpgradedTerminationProtoForStatsMigration(
 
 }  // namespace
 absl::StatusOr<SolveResult> SolveResult::FromProto(
-    const ModelStorage* model, const SolveResultProto& solve_result_proto) {
+    const ModelStorageCPtr model, const SolveResultProto& solve_result_proto) {
   OR_ASSIGN_OR_RETURN3(
       auto termination,
       Termination::FromProto(

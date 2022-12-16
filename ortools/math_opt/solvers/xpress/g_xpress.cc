@@ -25,6 +25,7 @@
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
@@ -58,7 +59,7 @@ Xpress::Xpress(XPRSprob& model) : xpress_model_(ABSL_DIE_IF_NULL(model)) {
   initIntControlDefaults();
 }
 
-absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(const std::string&) {
+absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(absl::string_view) {
   bool correctlyLoaded = initXpressEnv();
   CHECK(correctlyLoaded);
   XPRSprob model;
@@ -67,8 +68,8 @@ absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(const std::string&) {
   return absl::WrapUnique(new Xpress(model));
 }
 
-absl::Status Xpress::SetProbName(const std::string& name) {
-  std::string truncated = name;
+absl::Status Xpress::SetProbName(absl::string_view name) {
+  std::string truncated(name);
   auto maxLength = GetIntAttr(XPRS_MAXPROBNAMELENGTH);
   if (truncated.length() > maxLength.value_or(INT_MAX)) {
     truncated = truncated.substr(0, maxLength.value_or(INT_MAX));
