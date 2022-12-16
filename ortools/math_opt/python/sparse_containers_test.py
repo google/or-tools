@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
+import dataclasses
+from typing import Dict, Generic, Protocol, TypeVar, Union
+
 from absl.testing import absltest
+from absl.testing import parameterized
 from ortools.math_opt import sparse_containers_pb2
+from ortools.math_opt.python import linear_constraints
 from ortools.math_opt.python import model
+from ortools.math_opt.python import quadratic_constraints
 from ortools.math_opt.python import sparse_containers
+from ortools.math_opt.python import variables
 from ortools.math_opt.python.testing import compare_proto
 
 
@@ -50,12 +58,67 @@ class SparseDoubleVectorTest(compare_proto.MathOptProtoAssertions, absltest.Test
             ),
         )
 
-    def test_parse_var_map(self) -> None:
-        mod = model.Model(name="test_model")
-        x = mod.add_binary_variable(name="x")
-        mod.add_binary_variable(name="y")
-        z = mod.add_binary_variable(name="z")
-        actual = sparse_containers.parse_variable_map(
+
+T = TypeVar("T")
+
+
+# We cannot use Callable here because we need to support a named argument.
+class ParseMap(Protocol, Generic[T]):
+
+    def __call__(
+        self,
+        vec: sparse_containers_pb2.SparseDoubleVectorProto,
+        mod: model.Model,
+        *,
+        validate: bool = True,
+    ) -> Dict[T, float]: ...
+
+
+@dataclasses.dataclass(frozen=True)
+class ParseMapAdapater(Generic[T]):
+    add_element: Callable[[model.Model], T]
+    get_element_no_validate: Callable[[model.Model, int], T]
+    parse_map: ParseMap[T]
+
+
+_VAR_ADAPTER = ParseMapAdapater(
+    model.Model.add_variable,
+    lambda mod, id: mod.get_variable(id, validate=False),
+    sparse_containers.parse_variable_map,
+)
+_LIN_CON_ADAPTER = ParseMapAdapater(
+    model.Model.add_linear_constraint,
+    lambda mod, id: mod.get_linear_constraint(id, validate=False),
+    sparse_containers.parse_linear_constraint_map,
+)
+_QUAD_CON_ADAPTER = ParseMapAdapater(
+    model.Model.add_quadratic_constraint,
+    lambda mod, id: mod.get_quadratic_constraint(id, validate=False),
+    sparse_containers.parse_quadratic_constraint_map,
+)
+
+_ADAPTERS = Union[
+    ParseMapAdapater[variables.Variable],
+    ParseMapAdapater[linear_constraints.LinearConstraint],
+    ParseMapAdapater[quadratic_constraints.QuadraticConstraint],
+]
+
+
+@parameterized.named_parameters(
+    ("variable", _VAR_ADAPTER),
+    ("linear_constraint", _LIN_CON_ADAPTER),
+    ("quadratic_constraint", _QUAD_CON_ADAPTER),
+)
+class ParseVariableMapTest(
+    compare_proto.MathOptProtoAssertions, parameterized.TestCase
+):
+
+    def test_parse_map(self, adapter: _ADAPTERS) -> None:
+        mod = model.Model()
+        x = adapter.add_element(mod)
+        adapter.add_element(mod)
+        z = adapter.add_element(mod)
+        actual = adapter.parse_map(
             sparse_containers_pb2.SparseDoubleVectorProto(
                 ids=[0, 2], values=[1.0, 4.0]
             ),
@@ -63,38 +126,21 @@ class SparseDoubleVectorTest(compare_proto.MathOptProtoAssertions, absltest.Test
         )
         self.assertDictEqual(actual, {x: 1.0, z: 4.0})
 
-    def test_parse_var_map_empty(self) -> None:
-        mod = model.Model(name="test_model")
-        mod.add_binary_variable(name="x")
-        mod.add_binary_variable(name="y")
-        mod.add_binary_variable(name="z")
-        actual = sparse_containers.parse_variable_map(
-            sparse_containers_pb2.SparseDoubleVectorProto(), mod
-        )
+    def test_parse_map_empty(self, adapter: _ADAPTERS) -> None:
+        mod = model.Model()
+        adapter.add_element(mod)
+        adapter.add_element(mod)
+        actual = adapter.parse_map(sparse_containers_pb2.SparseDoubleVectorProto(), mod)
         self.assertDictEqual(actual, {})
 
-    def test_parse_lin_con_map(self) -> None:
-        mod = model.Model(name="test_model")
-        mod.add_linear_constraint(lb=0.0, ub=1.0, name="c")
-        d = mod.add_linear_constraint(lb=0.0, ub=1.0, name="d")
-        e = mod.add_linear_constraint(lb=0.0, ub=1.0, name="e")
-        actual = sparse_containers.parse_linear_constraint_map(
-            sparse_containers_pb2.SparseDoubleVectorProto(
-                ids=[1, 2], values=[5.0, 4.0]
-            ),
-            mod,
-        )
-        self.assertDictEqual(actual, {d: 5.0, e: 4.0})
-
-    def test_parse_lin_con_map_empty(self) -> None:
-        mod = model.Model(name="test_model")
-        mod.add_linear_constraint(lb=0.0, ub=1.0, name="c")
-        mod.add_linear_constraint(lb=0.0, ub=1.0, name="d")
-        mod.add_linear_constraint(lb=0.0, ub=1.0, name="e")
-        actual = sparse_containers.parse_linear_constraint_map(
-            sparse_containers_pb2.SparseDoubleVectorProto(), mod
-        )
-        self.assertDictEqual(actual, {})
+    def test_parse_var_map_bad_var(self, adapter: _ADAPTERS) -> None:
+        mod = model.Model()
+        bad_proto = sparse_containers_pb2.SparseDoubleVectorProto(ids=[2], values=[4.0])
+        actual = adapter.parse_map(bad_proto, mod, validate=False)
+        bad_elem = adapter.get_element_no_validate(mod, 2)
+        self.assertDictEqual(actual, {bad_elem: 4.0})
+        with self.assertRaises(KeyError):
+            adapter.parse_map(bad_proto, mod, validate=True)
 
 
 class SparseInt32VectorTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):

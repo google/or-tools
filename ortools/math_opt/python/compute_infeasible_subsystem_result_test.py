@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for compute_infeasible_subsystem_result.py."""
-
 from absl.testing import absltest
 from ortools.math_opt import infeasible_subsystem_pb2
 from ortools.math_opt.python import compute_infeasible_subsystem_result

@@ -17,8 +17,12 @@ import enum
 from typing import Dict, Optional, TypeVar
 
 from ortools.math_opt import solution_pb2
+from ortools.math_opt.python import linear_constraints
 from ortools.math_opt.python import model
+from ortools.math_opt.python import objectives
+from ortools.math_opt.python import quadratic_constraints
 from ortools.math_opt.python import sparse_containers
+from ortools.math_opt.python import variables
 
 
 @enum.unique
@@ -95,14 +99,20 @@ class PrimalSolution:
       variable_values: The value assigned for each Variable in the model.
       objective_value: The value of the objective value at this solution. This
         value may not be always populated.
+      auxiliary_objective_values: Set only for multi objective problems, the
+        objective value for each auxiliary objective, as computed by the solver.
+        This value will not always be populated.
       feasibility_status: The feasibility of the solution as claimed by the
         solver.
     """
 
-    variable_values: Dict[model.Variable, float] = dataclasses.field(
+    variable_values: Dict[variables.Variable, float] = dataclasses.field(
         default_factory=dict
     )
     objective_value: float = 0.0
+    auxiliary_objective_values: Dict[objectives.AuxiliaryObjective, float] = (
+        dataclasses.field(default_factory=dict)
+    )
     feasibility_status: SolutionStatus = SolutionStatus.UNDETERMINED
 
     def to_proto(self) -> solution_pb2.PrimalSolutionProto:
@@ -112,18 +122,29 @@ class PrimalSolution:
                 self.variable_values
             ),
             objective_value=self.objective_value,
+            auxiliary_objective_values={
+                obj.id: obj_value
+                for obj, obj_value in self.auxiliary_objective_values.items()
+            },
             feasibility_status=self.feasibility_status.value,
         )
 
 
 def parse_primal_solution(
-    proto: solution_pb2.PrimalSolutionProto, mod: model.Model
+    proto: solution_pb2.PrimalSolutionProto,
+    mod: model.Model,
+    *,
+    validate: bool = True,
 ) -> PrimalSolution:
     """Returns an equivalent PrimalSolution from the input proto."""
     result = PrimalSolution()
     result.objective_value = proto.objective_value
+    for aux_id, obj_value in proto.auxiliary_objective_values.items():
+        result.auxiliary_objective_values[
+            mod.get_auxiliary_objective(aux_id, validate=validate)
+        ] = obj_value
     result.variable_values = sparse_containers.parse_variable_map(
-        proto.variable_values, mod
+        proto.variable_values, mod, validate=validate
     )
     status_proto = proto.feasibility_status
     if status_proto == solution_pb2.SOLUTION_STATUS_UNSPECIFIED:
@@ -160,7 +181,7 @@ class PrimalRay:
       variable_values: The value assigned for each Variable in the model.
     """
 
-    variable_values: Dict[model.Variable, float] = dataclasses.field(
+    variable_values: Dict[variables.Variable, float] = dataclasses.field(
         default_factory=dict
     )
 
@@ -173,11 +194,16 @@ class PrimalRay:
         )
 
 
-def parse_primal_ray(proto: solution_pb2.PrimalRayProto, mod: model.Model) -> PrimalRay:
+def parse_primal_ray(
+    proto: solution_pb2.PrimalRayProto,
+    mod: model.Model,
+    *,
+    validate: bool = True,
+) -> PrimalRay:
     """Returns an equivalent PrimalRay from the input proto."""
     result = PrimalRay()
     result.variable_values = sparse_containers.parse_variable_map(
-        proto.variable_values, mod
+        proto.variable_values, mod, validate=validate
     )
     return result
 
@@ -201,6 +227,8 @@ class DualSolution:
 
     Attributes:
       dual_values: The value assigned for each LinearConstraint in the model.
+      quadratic_dual_values: The value assigned for each QuadraticConstraint in
+        the model.
       reduced_costs: The value assigned for each Variable in the model.
       objective_value: The value of the dual objective value at this solution.
         This value may not be always populated.
@@ -208,10 +236,15 @@ class DualSolution:
         solver.
     """
 
-    dual_values: Dict[model.LinearConstraint, float] = dataclasses.field(
+    dual_values: Dict[linear_constraints.LinearConstraint, float] = dataclasses.field(
         default_factory=dict
     )
-    reduced_costs: Dict[model.Variable, float] = dataclasses.field(default_factory=dict)
+    quadratic_dual_values: Dict[quadratic_constraints.QuadraticConstraint, float] = (
+        dataclasses.field(default_factory=dict)
+    )
+    reduced_costs: Dict[variables.Variable, float] = dataclasses.field(
+        default_factory=dict
+    )
     objective_value: Optional[float] = None
     feasibility_status: SolutionStatus = SolutionStatus.UNDETERMINED
 
@@ -224,13 +257,19 @@ class DualSolution:
             reduced_costs=sparse_containers.to_sparse_double_vector_proto(
                 self.reduced_costs
             ),
+            quadratic_dual_values=sparse_containers.to_sparse_double_vector_proto(
+                self.quadratic_dual_values
+            ),
             objective_value=self.objective_value,
             feasibility_status=self.feasibility_status.value,
         )
 
 
 def parse_dual_solution(
-    proto: solution_pb2.DualSolutionProto, mod: model.Model
+    proto: solution_pb2.DualSolutionProto,
+    mod: model.Model,
+    *,
+    validate: bool = True,
 ) -> DualSolution:
     """Returns an equivalent DualSolution from the input proto."""
     result = DualSolution()
@@ -238,10 +277,13 @@ def parse_dual_solution(
         proto.objective_value if proto.HasField("objective_value") else None
     )
     result.dual_values = sparse_containers.parse_linear_constraint_map(
-        proto.dual_values, mod
+        proto.dual_values, mod, validate=validate
+    )
+    result.quadratic_dual_values = sparse_containers.parse_quadratic_constraint_map(
+        proto.quadratic_dual_values, mod, validate=validate
     )
     result.reduced_costs = sparse_containers.parse_variable_map(
-        proto.reduced_costs, mod
+        proto.reduced_costs, mod, validate=validate
     )
     status_proto = proto.feasibility_status
     if status_proto == solution_pb2.SOLUTION_STATUS_UNSPECIFIED:
@@ -281,10 +323,12 @@ class DualRay:
       reduced_costs: The value assigned for each Variable in the model.
     """
 
-    dual_values: Dict[model.LinearConstraint, float] = dataclasses.field(
+    dual_values: Dict[linear_constraints.LinearConstraint, float] = dataclasses.field(
         default_factory=dict
     )
-    reduced_costs: Dict[model.Variable, float] = dataclasses.field(default_factory=dict)
+    reduced_costs: Dict[variables.Variable, float] = dataclasses.field(
+        default_factory=dict
+    )
 
     def to_proto(self) -> solution_pb2.DualRayProto:
         """Returns an equivalent proto to this PrimalRay."""
@@ -298,14 +342,16 @@ class DualRay:
         )
 
 
-def parse_dual_ray(proto: solution_pb2.DualRayProto, mod: model.Model) -> DualRay:
+def parse_dual_ray(
+    proto: solution_pb2.DualRayProto, mod: model.Model, *, validate: bool = True
+) -> DualRay:
     """Returns an equivalent DualRay from the input proto."""
     result = DualRay()
     result.dual_values = sparse_containers.parse_linear_constraint_map(
-        proto.dual_values, mod
+        proto.dual_values, mod, validate=validate
     )
     result.reduced_costs = sparse_containers.parse_variable_map(
-        proto.reduced_costs, mod
+        proto.reduced_costs, mod, validate=validate
     )
     return result
 
@@ -358,11 +404,11 @@ class Basis:
         details see go/mathopt-basis-advanced#dualfeasibility.
     """
 
-    variable_status: Dict[model.Variable, BasisStatus] = dataclasses.field(
+    variable_status: Dict[variables.Variable, BasisStatus] = dataclasses.field(
         default_factory=dict
     )
-    constraint_status: Dict[model.LinearConstraint, BasisStatus] = dataclasses.field(
-        default_factory=dict
+    constraint_status: Dict[linear_constraints.LinearConstraint, BasisStatus] = (
+        dataclasses.field(default_factory=dict)
     )
     basic_dual_feasibility: Optional[SolutionStatus] = None
 
@@ -379,20 +425,24 @@ class Basis:
         )
 
 
-def parse_basis(proto: solution_pb2.BasisProto, mod: model.Model) -> Basis:
+def parse_basis(
+    proto: solution_pb2.BasisProto, mod: model.Model, *, validate: bool = True
+) -> Basis:
     """Returns an equivalent Basis to the input proto."""
     result = Basis()
     for index, vid in enumerate(proto.variable_status.ids):
         status_proto = proto.variable_status.values[index]
         if status_proto == solution_pb2.BASIS_STATUS_UNSPECIFIED:
             raise ValueError("Variable basis status should not be UNSPECIFIED")
-        result.variable_status[mod.get_variable(vid)] = BasisStatus(status_proto)
+        result.variable_status[mod.get_variable(vid, validate=validate)] = BasisStatus(
+            status_proto
+        )
     for index, cid in enumerate(proto.constraint_status.ids):
         status_proto = proto.constraint_status.values[index]
         if status_proto == solution_pb2.BASIS_STATUS_UNSPECIFIED:
             raise ValueError("Constraint basis status should not be UNSPECIFIED")
-        result.constraint_status[mod.get_linear_constraint(cid)] = BasisStatus(
-            status_proto
+        result.constraint_status[mod.get_linear_constraint(cid, validate=validate)] = (
+            BasisStatus(status_proto)
         )
     result.basic_dual_feasibility = parse_optional_solution_status(
         proto.basic_dual_feasibility
@@ -400,11 +450,11 @@ def parse_basis(proto: solution_pb2.BasisProto, mod: model.Model) -> Basis:
     return result
 
 
-T = TypeVar("T", model.Variable, model.LinearConstraint)
+T = TypeVar("T", variables.Variable, linear_constraints.LinearConstraint)
 
 
 def _to_sparse_basis_status_vector_proto(
-    terms: Dict[T, BasisStatus]
+    terms: Dict[T, BasisStatus],
 ) -> solution_pb2.SparseBasisStatusVector:
     """Converts a basis vector from a python Dict to a protocol buffer."""
     result = solution_pb2.SparseBasisStatusVector()
@@ -443,12 +493,25 @@ class Solution:
         )
 
 
-def parse_solution(proto: solution_pb2.SolutionProto, mod: model.Model) -> Solution:
+def parse_solution(
+    proto: solution_pb2.SolutionProto,
+    mod: model.Model,
+    *,
+    validate: bool = True,
+) -> Solution:
     """Returns a Solution equivalent to the input proto."""
     result = Solution()
     if proto.HasField("primal_solution"):
-        result.primal_solution = parse_primal_solution(proto.primal_solution, mod)
+        result.primal_solution = parse_primal_solution(
+            proto.primal_solution, mod, validate=validate
+        )
     if proto.HasField("dual_solution"):
-        result.dual_solution = parse_dual_solution(proto.dual_solution, mod)
-    result.basis = parse_basis(proto.basis, mod) if proto.HasField("basis") else None
+        result.dual_solution = parse_dual_solution(
+            proto.dual_solution, mod, validate=validate
+        )
+    result.basis = (
+        parse_basis(proto.basis, mod, validate=validate)
+        if proto.HasField("basis")
+        else None
+    )
     return result

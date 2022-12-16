@@ -20,7 +20,9 @@ from typing import Dict, List, Mapping, Optional, Set, Union
 
 from ortools.math_opt import callback_pb2
 from ortools.math_opt.python import model
+from ortools.math_opt.python import normalized_inequality
 from ortools.math_opt.python import sparse_containers
+from ortools.math_opt.python import variables
 
 
 @enum.unique
@@ -85,7 +87,7 @@ class CallbackData:
     """
 
     event: Event = Event.UNSPECIFIED
-    solution: Optional[Dict[model.Variable, float]] = None
+    solution: Optional[Dict[variables.Variable, float]] = None
     messages: List[str] = dataclasses.field(default_factory=list)
     runtime: datetime.timedelta = datetime.timedelta()
     presolve_stats: PresolveStats = dataclasses.field(default_factory=PresolveStats)
@@ -197,7 +199,7 @@ class GeneratedConstraint:
         LP relaxation without cutting of integer solutions).
     """
 
-    terms: Mapping[model.Variable, float] = dataclasses.field(default_factory=dict)
+    terms: Mapping[variables.Variable, float] = dataclasses.field(default_factory=dict)
     lower_bound: float = -math.inf
     upper_bound: float = math.inf
     is_lazy: bool = False
@@ -221,8 +223,18 @@ class CallbackResult:
     """The value returned by a solve callback (produced by the user).
 
     Attributes:
-      terminate: Stop the solve process and return early. Can be called from any
-        event.
+      terminate: When true it tells the solver to interrupt the solve as soon as
+        possible.
+
+        It can be set from any event. This is equivalent to using a
+        SolveInterrupter and triggering it from the callback.
+
+        Some solvers don't support interruption, in that case this is simply
+        ignored and the solve terminates as usual. On top of that solvers may not
+        immediately stop the solve. Thus the user should expect the callback to
+        still be called after they set `terminate` to true in a previous
+        call. Returning with `terminate` false after having previously returned
+        true won't cancel the interruption.
       generated_constraints: Constraints to add to the model. For details, see
         GeneratedConstraint documentation.
       suggested_solutions: A list of solutions (or partially defined solutions) to
@@ -235,17 +247,17 @@ class CallbackResult:
     generated_constraints: List[GeneratedConstraint] = dataclasses.field(
         default_factory=list
     )
-    suggested_solutions: List[Mapping[model.Variable, float]] = dataclasses.field(
+    suggested_solutions: List[Mapping[variables.Variable, float]] = dataclasses.field(
         default_factory=list
     )
 
     def add_generated_constraint(
         self,
-        bounded_expr: Optional[Union[bool, model.BoundedLinearTypes]] = None,
+        bounded_expr: Optional[Union[bool, variables.BoundedLinearTypes]] = None,
         *,
         lb: Optional[float] = None,
         ub: Optional[float] = None,
-        expr: Optional[model.LinearTypes] = None,
+        expr: Optional[variables.LinearTypes] = None,
         is_lazy: bool,
     ) -> None:
         """Adds a linear constraint to the list of generated constraints.
@@ -296,25 +308,25 @@ class CallbackResult:
           expr: The constraint's linear expression if bounded_expr is omitted.
           is_lazy: Whether the constraint is lazy or not.
         """
-        normalized_inequality = model.as_normalized_linear_inequality(
+        norm_ineq = normalized_inequality.as_normalized_linear_inequality(
             bounded_expr, lb=lb, ub=ub, expr=expr
         )
         self.generated_constraints.append(
             GeneratedConstraint(
-                lower_bound=normalized_inequality.lb,
-                terms=normalized_inequality.coefficients,
-                upper_bound=normalized_inequality.ub,
+                lower_bound=norm_ineq.lb,
+                terms=norm_ineq.coefficients,
+                upper_bound=norm_ineq.ub,
                 is_lazy=is_lazy,
             )
         )
 
     def add_lazy_constraint(
         self,
-        bounded_expr: Optional[Union[bool, model.BoundedLinearTypes]] = None,
+        bounded_expr: Optional[Union[bool, variables.BoundedLinearTypes]] = None,
         *,
         lb: Optional[float] = None,
         ub: Optional[float] = None,
-        expr: Optional[model.LinearTypes] = None,
+        expr: Optional[variables.LinearTypes] = None,
     ) -> None:
         """Shortcut for add_generated_constraint(..., is_lazy=True).."""
         self.add_generated_constraint(
@@ -323,11 +335,11 @@ class CallbackResult:
 
     def add_user_cut(
         self,
-        bounded_expr: Optional[Union[bool, model.BoundedLinearTypes]] = None,
+        bounded_expr: Optional[Union[bool, variables.BoundedLinearTypes]] = None,
         *,
         lb: Optional[float] = None,
         ub: Optional[float] = None,
-        expr: Optional[model.LinearTypes] = None,
+        expr: Optional[variables.LinearTypes] = None,
     ) -> None:
         """Shortcut for add_generated_constraint(..., is_lazy=False)."""
         self.add_generated_constraint(

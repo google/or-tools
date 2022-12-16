@@ -518,7 +518,7 @@ struct SolveResult {
   // validation, or not rely on the strong guarantees of ValidateResult()
   // and just treat SolveResult as a simple struct.
   static absl::StatusOr<SolveResult> FromProto(
-      const ModelStorage* model, const SolveResultProto& solve_result_proto);
+      ModelStorageCPtr model, const SolveResultProto& solve_result_proto);
 
   // Returns the proto equivalent of this.
   //

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_MATH_OPT_CORE_INVERTED_BOUNDS_H_
 #define OR_TOOLS_MATH_OPT_CORE_INVERTED_BOUNDS_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 

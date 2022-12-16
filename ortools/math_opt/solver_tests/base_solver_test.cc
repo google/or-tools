@@ -15,8 +15,8 @@
 
 #include <optional>
 
+#include "absl/log/log.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research {
@@ -51,7 +51,6 @@ bool ActivatePrimalRay(const SolverType solver_type, SolveParameters& params) {
     case SolverType::kHighs:
       return false;
     case SolverType::kXpress:
-      // TODO: support XPRESS
       return false;
     default:
       LOG(FATAL)
@@ -86,7 +85,6 @@ bool ActivateDualRay(const SolverType solver_type, SolveParameters& params) {
     case SolverType::kHighs:
       return false;
     case SolverType::kXpress:
-      // TODO: support XPRESS
       return false;
     default:
       LOG(FATAL)

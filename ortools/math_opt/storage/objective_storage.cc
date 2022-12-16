@@ -65,7 +65,8 @@ ObjectiveProto ObjectiveStorage::ObjectiveData::Proto() const {
 
 AuxiliaryObjectiveId ObjectiveStorage::AddAuxiliaryObjective(
     const int64_t priority, const absl::string_view name) {
-  const AuxiliaryObjectiveId id = next_id_++;
+  const AuxiliaryObjectiveId id = next_id_;
+  ++next_id_;
   CHECK(!auxiliary_objectives_.contains(id));
   {
     ObjectiveData& data = auxiliary_objectives_[id];

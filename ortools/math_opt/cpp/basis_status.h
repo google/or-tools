@@ -18,9 +18,7 @@
 #define OR_TOOLS_MATH_OPT_CPP_BASIS_STATUS_H_
 
 #include <cstdint>
-#include <optional>
 
-#include "absl/types/span.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/solution.pb.h"
 

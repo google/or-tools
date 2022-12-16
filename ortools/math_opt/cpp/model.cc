@@ -22,7 +22,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
@@ -53,7 +55,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 
 absl::StatusOr<std::unique_ptr<Model>> Model::FromModelProto(
     const ModelProto& model_proto) {
-  ASSIGN_OR_RETURN(std::unique_ptr<ModelStorage> storage,
+  ASSIGN_OR_RETURN(absl::Nonnull<std::unique_ptr<ModelStorage>> storage,
                    ModelStorage::FromModelProto(model_proto));
   return std::make_unique<Model>(std::move(storage));
 }
@@ -61,10 +63,10 @@ absl::StatusOr<std::unique_ptr<Model>> Model::FromModelProto(
 Model::Model(const absl::string_view name)
     : storage_(std::make_shared<ModelStorage>(name)) {}
 
-Model::Model(std::unique_ptr<ModelStorage> storage)
-    : storage_(std::move(storage)) {}
+Model::Model(absl::Nonnull<std::unique_ptr<ModelStorage>> storage)
+    : storage_(ABSL_DIE_IF_NULL(std::move(storage))) {}
 
-std::unique_ptr<Model> Model::Clone(
+absl::Nonnull<std::unique_ptr<Model>> Model::Clone(
     const std::optional<absl::string_view> new_name) const {
   return std::make_unique<Model>(storage_->Clone(new_name));
 }

@@ -18,10 +18,10 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/sparse_containers.h"
@@ -57,7 +57,7 @@ absl::Span<const SolutionStatus> Enum<SolutionStatus>::AllValues() {
 }
 
 absl::StatusOr<PrimalSolution> PrimalSolution::FromProto(
-    const ModelStorage* model,
+    const ModelStorageCPtr model,
     const PrimalSolutionProto& primal_solution_proto) {
   PrimalSolution primal_solution;
   OR_ASSIGN_OR_RETURN3(
@@ -104,7 +104,7 @@ double PrimalSolution::get_objective_value(const Objective objective) const {
 }
 
 absl::StatusOr<PrimalRay> PrimalRay::FromProto(
-    const ModelStorage* model, const PrimalRayProto& primal_ray_proto) {
+    const ModelStorageCPtr model, const PrimalRayProto& primal_ray_proto) {
   PrimalRay result;
   OR_ASSIGN_OR_RETURN3(
       result.variable_values,
@@ -120,7 +120,8 @@ PrimalRayProto PrimalRay::Proto() const {
 }
 
 absl::StatusOr<DualSolution> DualSolution::FromProto(
-    const ModelStorage* model, const DualSolutionProto& dual_solution_proto) {
+    const ModelStorageCPtr model,
+    const DualSolutionProto& dual_solution_proto) {
   DualSolution dual_solution;
   OR_ASSIGN_OR_RETURN3(
       dual_solution.dual_values,
@@ -159,7 +160,7 @@ DualSolutionProto DualSolution::Proto() const {
   return result;
 }
 
-absl::StatusOr<DualRay> DualRay::FromProto(const ModelStorage* model,
+absl::StatusOr<DualRay> DualRay::FromProto(const ModelStorageCPtr model,
                                            const DualRayProto& dual_ray_proto) {
   DualRay result;
   OR_ASSIGN_OR_RETURN3(
@@ -180,7 +181,7 @@ DualRayProto DualRay::Proto() const {
   return result;
 }
 
-absl::StatusOr<Basis> Basis::FromProto(const ModelStorage* model,
+absl::StatusOr<Basis> Basis::FromProto(const ModelStorageCPtr model,
                                        const BasisProto& basis_proto) {
   Basis basis;
   OR_ASSIGN_OR_RETURN3(
@@ -197,7 +198,7 @@ absl::StatusOr<Basis> Basis::FromProto(const ModelStorage* model,
 }
 
 absl::Status Basis::CheckModelStorage(
-    const ModelStorage* const expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   for (const auto& [v, _] : variable_status) {
     RETURN_IF_ERROR(
         internal::CheckModelStorage(/*storage=*/v.storage(),
@@ -223,7 +224,7 @@ BasisProto Basis::Proto() const {
 }
 
 absl::StatusOr<Solution> Solution::FromProto(
-    const ModelStorage* model, const SolutionProto& solution_proto) {
+    const ModelStorageCPtr model, const SolutionProto& solution_proto) {
   Solution solution;
   if (solution_proto.has_primal_solution()) {
     OR_ASSIGN_OR_RETURN3(

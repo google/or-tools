@@ -61,7 +61,7 @@ absl::Status IsSupported(const MPModelProto& model) {
 
 bool AnyVarNamed(const MPModelProto& model) {
   for (const MPVariableProto& var : model.variable()) {
-    if (var.name().length() > 0) {
+    if (!var.name().empty()) {
       return true;
     }
   }
@@ -70,7 +70,7 @@ bool AnyVarNamed(const MPModelProto& model) {
 
 bool AnyConstraintNamed(const MPModelProto& model) {
   for (const MPConstraintProto& constraint : model.constraint()) {
-    if (constraint.name().length() > 0) {
+    if (!constraint.name().empty()) {
       return true;
     }
   }

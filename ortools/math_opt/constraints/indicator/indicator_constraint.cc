@@ -18,8 +18,6 @@
 #include <string>
 #include <utility>
 
-#include "absl/strings/string_view.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
@@ -27,22 +25,22 @@
 namespace operations_research::math_opt {
 
 BoundedLinearExpression IndicatorConstraint::ImpliedConstraint() const {
-  const IndicatorConstraintData& data = storage()->constraint_data(id_);
+  const IndicatorConstraintData& data = storage()->constraint_data(typed_id());
   // NOTE: The following makes a copy of `data.linear_terms`. This can be made
   // more efficient if the need arises.
   LinearExpression expr = ToLinearExpression(
-      *storage_, {.coeffs = data.linear_terms, .offset = 0.0});
+      *storage(), {.coeffs = data.linear_terms, .offset = 0.0});
   return data.lower_bound <= std::move(expr) <= data.upper_bound;
 }
 
 std::string IndicatorConstraint::ToString() const {
-  if (!storage()->has_constraint(id_)) {
+  if (!storage()->has_constraint(typed_id())) {
     return std::string(kDeletedConstraintDefaultDescription);
   }
-  const IndicatorConstraintData& data = storage()->constraint_data(id_);
+  const IndicatorConstraintData& data = storage()->constraint_data(typed_id());
   std::stringstream str;
   if (data.indicator.has_value()) {
-    str << Variable(storage_, *data.indicator)
+    str << Variable(storage(), *data.indicator)
         << (data.activate_on_zero ? " = 0" : " = 1");
   } else {
     str << "[unset indicator variable]";

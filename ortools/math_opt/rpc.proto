@@ -78,7 +78,6 @@ message SolveRequest {
 
   // Hints on resources requested for the solve.
   SolverResourcesProto resources = 6;
-
   SolverInitializerProto initializer = 3;
 
   // Parameters to control a single solve. The enable_output parameter is

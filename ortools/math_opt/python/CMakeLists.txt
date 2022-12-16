@@ -15,7 +15,6 @@ if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/solve_gurobi_test.py") # need gurobi
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/solve_test.py") # need OSQP
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/normalize_test.py") # need google3 stuff
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/callback_test") # segfault
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/mathopt_test") # import test fail
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)

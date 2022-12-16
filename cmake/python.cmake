@@ -298,6 +298,8 @@ endforeach()
 
 if(BUILD_MATH_OPT)
   add_subdirectory(ortools/math_opt/core/python)
+  add_subdirectory(ortools/math_opt/elemental/python)
+  add_subdirectory(ortools/math_opt/io/python)
   add_subdirectory(ortools/math_opt/python)
 endif()
 
@@ -331,7 +333,12 @@ if(BUILD_MATH_OPT)
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/python/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/elemental/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/elemental/python/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/io/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/io/python/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/elemental/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/ipc/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/testing/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/solvers/__init__.py CONTENT "")
@@ -366,27 +373,42 @@ file(COPY
   ortools/linear_solver/python/model_builder_numbers.py
   DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver/python)
 if(BUILD_MATH_OPT)
+  configure_file(
+    ortools/math_opt/elemental/python/enums.py.in
+    ${PYTHON_PROJECT_DIR}/math_opt/elemental/python/enums.py
+    COPYONLY)
   file(COPY
+    ortools/math_opt/python/bounded_expressions.py
     ortools/math_opt/python/callback.py
     ortools/math_opt/python/compute_infeasible_subsystem_result.py
     ortools/math_opt/python/errors.py
     ortools/math_opt/python/expressions.py
+    ortools/math_opt/python/from_model.py
     ortools/math_opt/python/hash_model_storage.py
+    ortools/math_opt/python/indicator_constraints.py
     ortools/math_opt/python/init_arguments.py
+    ortools/math_opt/python/linear_constraints.py
     ortools/math_opt/python/mathopt.py
     ortools/math_opt/python/message_callback.py
     ortools/math_opt/python/model.py
     ortools/math_opt/python/model_parameters.py
     ortools/math_opt/python/model_storage.py
+    ortools/math_opt/python/normalized_inequality.py
     ortools/math_opt/python/normalize.py
+    ortools/math_opt/python/objectives.py
     ortools/math_opt/python/parameters.py
+    ortools/math_opt/python/quadratic_constraints.py
     ortools/math_opt/python/result.py
     ortools/math_opt/python/solution.py
     ortools/math_opt/python/solve.py
     ortools/math_opt/python/solver_resources.py
     ortools/math_opt/python/sparse_containers.py
     ortools/math_opt/python/statistics.py
+    ortools/math_opt/python/variables.py
     DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python)
+  file(COPY
+    ortools/math_opt/python/elemental/elemental.py
+    DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python/elemental)
   file(COPY
     ortools/math_opt/python/ipc/proto_converter.py
     ortools/math_opt/python/ipc/remote_http_solve.py
@@ -663,7 +685,13 @@ add_custom_command(
    $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
   COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<BOOL:${BUILD_MATH_OPT}>,copy,true>
-   $<TARGET_FILE:math_opt_pybind11> ${PYTHON_PROJECT}/math_opt/core/python
+   $<TARGET_FILE:math_opt_core_pybind11> ${PYTHON_PROJECT}/math_opt/core/python
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<BOOL:${BUILD_MATH_OPT}>,copy,true>
+   $<TARGET_FILE:math_opt_elemental_pybind11> ${PYTHON_PROJECT}/math_opt/elemental/python
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<BOOL:${BUILD_MATH_OPT}>,copy,true>
+   $<TARGET_FILE:math_opt_io_pybind11> ${PYTHON_PROJECT}/math_opt/io/python
   COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<BOOL:${BUILD_MATH_OPT}>,copy,true>
    $<TARGET_FILE:status_py_extension_stub> ${PYTHON_PROJECT}/../pybind11_abseil
@@ -697,7 +725,9 @@ add_custom_command(
     routing_pybind11
     pywraplp
     model_builder_helper_pybind11
-    math_opt_pybind11
+    $<$<BOOL:${BUILD_MATH_OPT}>:math_opt_core_pybind11>
+    $<$<BOOL:${BUILD_MATH_OPT}>:math_opt_elemental_pybind11>
+    $<$<BOOL:${BUILD_MATH_OPT}>:math_opt_io_pybind11>
     $<TARGET_NAME_IF_EXISTS:pdlp_pybind11>
     cp_model_helper_pybind11
     rcpsp_pybind11
@@ -760,6 +790,10 @@ search_python_module(
 search_python_module(
   NAME wheel
   PACKAGE wheel)
+search_python_module(
+  NAME typing_extensions
+  PACKAGE typing-extensions
+  NO_VERSION)
 
 add_custom_command(
   OUTPUT python/dist_timestamp

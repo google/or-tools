@@ -25,10 +25,10 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/model_storage_item.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
 
 namespace operations_research::math_opt {
@@ -40,15 +40,15 @@ constexpr absl::string_view kDeletedObjectiveDefaultDescription =
 // ModelStorage. Usually this type is passed by copy.
 //
 // This type implements https://abseil.io/docs/cpp/guides/hash.
-class Objective {
+class Objective final : public ModelStorageItem {
  public:
   // The type used for ids.
   using IdType = AuxiliaryObjectiveId;
 
   // Returns an object that refers to the primary objective of the model.
-  inline static Objective Primary(const ModelStorage* storage);
+  inline static Objective Primary(ModelStorageCPtr storage);
   // Returns an object that refers to an auxiliary objective of the model.
-  inline static Objective Auxiliary(const ModelStorage* storage,
+  inline static Objective Auxiliary(ModelStorageCPtr storage,
                                     AuxiliaryObjectiveId id);
 
   // Returns the raw integer ID associated with the objective: nullopt for the
@@ -57,8 +57,6 @@ class Objective {
   // Returns the strong int ID associated with the objective: nullopt for the
   // primary objective, an AuxiliaryObjectiveId for an auxiliary objective.
   inline ObjectiveId typed_id() const;
-  // Returns a const-pointer to the underlying storage object for the model.
-  inline const ModelStorage* storage() const;
 
   // Returns true if the ID corresponds to the primary objective, and false if
   // it is an auxiliary objective.
@@ -113,9 +111,8 @@ class Objective {
                                   const Objective& objective);
 
  private:
-  inline Objective(const ModelStorage* storage, ObjectiveId id);
+  inline Objective(ModelStorageCPtr storage, ObjectiveId id);
 
-  const ModelStorage* storage_;
   ObjectiveId id_;
 };
 
@@ -139,68 +136,66 @@ std::optional<int64_t> Objective::id() const {
 
 ObjectiveId Objective::typed_id() const { return id_; }
 
-const ModelStorage* Objective::storage() const { return storage_; }
-
 bool Objective::is_primary() const { return id_ == kPrimaryObjectiveId; }
 
 int64_t Objective::priority() const {
-  return storage_->objective_priority(id_);
+  return storage()->objective_priority(id_);
 }
 
-bool Objective::maximize() const { return storage_->is_maximize(id_); }
+bool Objective::maximize() const { return storage()->is_maximize(id_); }
 
 absl::string_view Objective::name() const {
-  if (is_primary() || storage_->has_auxiliary_objective(*id_)) {
-    return storage_->objective_name(id_);
+  if (is_primary() || storage()->has_auxiliary_objective(*id_)) {
+    return storage()->objective_name(id_);
   }
   return kDeletedObjectiveDefaultDescription;
 }
 
-double Objective::offset() const { return storage_->objective_offset(id_); }
+double Objective::offset() const { return storage()->objective_offset(id_); }
 
 int64_t Objective::num_quadratic_terms() const {
-  return storage_->num_quadratic_objective_terms(id_);
+  return storage()->num_quadratic_objective_terms(id_);
 }
 
 int64_t Objective::num_linear_terms() const {
-  return storage_->num_linear_objective_terms(id_);
+  return storage()->num_linear_objective_terms(id_);
 }
 
 double Objective::coefficient(const Variable variable) const {
-  CHECK_EQ(variable.storage(), storage_)
+  CHECK_EQ(variable.storage(), storage())
       << internal::kObjectsFromOtherModelStorage;
-  return storage_->linear_objective_coefficient(id_, variable.typed_id());
+  return storage()->linear_objective_coefficient(id_, variable.typed_id());
 }
 
 double Objective::coefficient(const Variable first_variable,
                               const Variable second_variable) const {
-  CHECK_EQ(first_variable.storage(), storage_)
+  CHECK_EQ(first_variable.storage(), storage())
       << internal::kObjectsFromOtherModelStorage;
-  CHECK_EQ(second_variable.storage(), storage_)
+  CHECK_EQ(second_variable.storage(), storage())
       << internal::kObjectsFromOtherModelStorage;
-  return storage_->quadratic_objective_coefficient(
+  return storage()->quadratic_objective_coefficient(
       id_, first_variable.typed_id(), second_variable.typed_id());
 }
 
 bool Objective::is_coefficient_nonzero(const Variable variable) const {
-  CHECK_EQ(variable.storage(), storage_)
+  CHECK_EQ(variable.storage(), storage())
       << internal::kObjectsFromOtherModelStorage;
-  return storage_->is_linear_objective_coefficient_nonzero(id_,
-                                                           variable.typed_id());
+  return storage()->is_linear_objective_coefficient_nonzero(
+      id_, variable.typed_id());
 }
 
 bool Objective::is_coefficient_nonzero(const Variable first_variable,
                                        const Variable second_variable) const {
-  CHECK_EQ(first_variable.storage(), storage_)
+  CHECK_EQ(first_variable.storage(), storage())
       << internal::kObjectsFromOtherModelStorage;
-  CHECK_EQ(second_variable.storage(), storage_)
+  CHECK_EQ(second_variable.storage(), storage())
       << internal::kObjectsFromOtherModelStorage;
-  return storage_->is_quadratic_objective_coefficient_nonzero(
+  return storage()->is_quadratic_objective_coefficient_nonzero(
       id_, first_variable.typed_id(), second_variable.typed_id());
 }
 
 bool operator==(const Objective& lhs, const Objective& rhs) {
-  return lhs.id_ == rhs.id_ && lhs.storage_ == rhs.storage_;
+  return lhs.id_ == rhs.id_ && lhs.storage() == rhs.storage();
 }
 
 bool operator!=(const Objective& lhs, const Objective& rhs) {
@@ -209,17 +204,17 @@ bool operator!=(const Objective& lhs, const Objective& rhs) {
 
 template <typename H>
 H AbslHashValue(H h, const Objective& objective) {
-  return H::combine(std::move(h), objective.id_, objective.storage_);
+  return H::combine(std::move(h), objective.id_, objective.storage());
 }
 
-Objective::Objective(const ModelStorage* const storage, const ObjectiveId id)
-    : storage_(storage), id_(id) {}
+Objective::Objective(const ModelStorageCPtr storage, const ObjectiveId id)
+    : ModelStorageItem(storage), id_(id) {}
 
-Objective Objective::Primary(const ModelStorage* const storage) {
+Objective Objective::Primary(const ModelStorageCPtr storage) {
   return Objective(storage, kPrimaryObjectiveId);
 }
 
-Objective Objective::Auxiliary(const ModelStorage* const storage,
+Objective Objective::Auxiliary(const ModelStorageCPtr storage,
                                const AuxiliaryObjectiveId id) {
   return Objective(storage, id);
 }

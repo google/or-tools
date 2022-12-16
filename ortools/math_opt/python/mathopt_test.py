@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for mathopt."""
 import inspect
 import types
 import typing
@@ -21,19 +20,22 @@ from typing import Any, List, Set, Tuple
 from absl.testing import absltest
 from ortools.math_opt.python import callback
 from ortools.math_opt.python import expressions
-from ortools.math_opt.python import hash_model_storage
+from ortools.math_opt.python import indicator_constraints
 from ortools.math_opt.python import init_arguments
+from ortools.math_opt.python import linear_constraints
 from ortools.math_opt.python import mathopt
 from ortools.math_opt.python import message_callback
 from ortools.math_opt.python import model
 from ortools.math_opt.python import model_parameters
-from ortools.math_opt.python import model_storage
+from ortools.math_opt.python import objectives
 from ortools.math_opt.python import parameters
+from ortools.math_opt.python import quadratic_constraints
 from ortools.math_opt.python import result
 from ortools.math_opt.python import solution
 from ortools.math_opt.python import solve
 from ortools.math_opt.python import solver_resources
 from ortools.math_opt.python import sparse_containers
+from ortools.math_opt.python import variables
 
 # This list does not contain some modules intentionally:
 #
@@ -45,26 +47,32 @@ from ortools.math_opt.python import sparse_containers
 #   would make sense to replace the top-level functions by member functions on
 #   the Model.
 #
+# - `from_model`: this is an implementation detail, not part of the public API.
+#
 _MODULES_TO_CHECK: List[types.ModuleType] = [
     callback,
     expressions,
-    hash_model_storage,
+    indicator_constraints,
     init_arguments,
+    linear_constraints,
     message_callback,
     model,
     model_parameters,
-    model_storage,
+    objectives,
     parameters,
+    quadratic_constraints,
     result,
     sparse_containers,
     solution,
     solve,
     solver_resources,
+    variables,
 ]
 
 # Some symbols are not meant to be exported; we exclude them here.
 _EXCLUDED_SYMBOLS: Set[Tuple[types.ModuleType, str]] = {
     (solution, "T"),
+    (objectives, "PrimaryObjective"),
 }
 
 _TYPING_PUBLIC_CONTENT = [
