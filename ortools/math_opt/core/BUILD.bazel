@@ -57,6 +57,7 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/util:status_macros",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/status",
