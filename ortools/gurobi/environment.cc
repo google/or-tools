@@ -220,15 +220,6 @@ std::function<GRBmodel*(GRBmodel* model)> GRBpresolvemodel = nullptr;
 std::function<GRBmodel*(GRBmodel* model)> GRBiismodel = nullptr;
 std::function<GRBmodel*(GRBmodel* model)> GRBfeasibility = nullptr;
 std::function<GRBmodel*(GRBmodel* model)> GRBlinearizemodel = nullptr;
-std::function<int(GRBenv** envP, const char* logfilename,
-                  void*(GUROBI_STDCALL* malloccb)(MALLOCCB_ARGS),
-                  void*(GUROBI_STDCALL* calloccb)(CALLOCCB_ARGS),
-                  void*(GUROBI_STDCALL* realloccb)(REALLOCCB_ARGS),
-                  void(GUROBI_STDCALL* freecb)(FREECB_ARGS),
-                  int(GUROBI_STDCALL* threadcreatecb)(THREADCREATECB_ARGS),
-                  void(GUROBI_STDCALL* threadjoincb)(THREADJOINCB_ARGS),
-                  void* syscbusrdata)>
-    GRBloadenvsyscb = nullptr;
 std::function<int(GRBenv* env, const char* filename, GRBmodel** modelP)>
     GRBreadmodel = nullptr;
 std::function<int(GRBmodel* model, const char* filename)> GRBread = nullptr;
@@ -396,24 +387,6 @@ std::function<int(GRBenv** envP, const char* logfilename, int apitype,
                   int major, int minor, int tech,
                   int(GUROBI_STDCALL* cb)(CB_ARGS), void* usrdata)>
     GRBloadenvadv = nullptr;
-std::function<int(GRBenv** envP, const char* logfilename,
-                  const char* computeservers, int port, const char* password,
-                  int priority, double timeout)>
-    GRBloadclientenv = nullptr;
-std::function<int(GRBenv** envP, const char* logfilename,
-                  const char* computeservers, int port, const char* password,
-                  int priority, double timeout, int apitype, int major,
-                  int minor, int tech, int(GUROBI_STDCALL* cb)(CB_ARGS),
-                  void* usrdata)>
-    GRBloadclientenvadv = nullptr;
-std::function<int(GRBenv** envP, const char* logfilename, const char* accessID,
-                  const char* secretKey, const char* pool)>
-    GRBloadcloudenv = nullptr;
-std::function<int(GRBenv** envP, const char* logfilename, const char* accessID,
-                  const char* secretKey, const char* pool, int apitype,
-                  int major, int minor, int tech,
-                  int(GUROBI_STDCALL* cb)(CB_ARGS), void* usrdata)>
-    GRBloadcloudenvadv = nullptr;
 std::function<GRBenv*(GRBmodel* model)> GRBgetenv = nullptr;
 std::function<GRBenv*(GRBmodel* model, int num)> GRBgetconcurrentenv = nullptr;
 std::function<void(GRBmodel* model)> GRBdiscardconcurrentenvs = nullptr;
@@ -540,7 +513,6 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBiismodel, "GRBiismodel");
   gurobi_dynamic_library->GetFunction(&GRBfeasibility, "GRBfeasibility");
   gurobi_dynamic_library->GetFunction(&GRBlinearizemodel, "GRBlinearizemodel");
-  gurobi_dynamic_library->GetFunction(&GRBloadenvsyscb, "GRBloadenvsyscb");
   gurobi_dynamic_library->GetFunction(&GRBreadmodel, "GRBreadmodel");
   gurobi_dynamic_library->GetFunction(&GRBread, "GRBread");
   gurobi_dynamic_library->GetFunction(&GRBwrite, "GRBwrite");
@@ -629,12 +601,6 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBgetattrname, "GRBgetattrname");
   gurobi_dynamic_library->GetFunction(&GRBloadenv, "GRBloadenv");
   gurobi_dynamic_library->GetFunction(&GRBloadenvadv, "GRBloadenvadv");
-  gurobi_dynamic_library->GetFunction(&GRBloadclientenv, "GRBloadclientenv");
-  gurobi_dynamic_library->GetFunction(&GRBloadclientenvadv,
-                                      "GRBloadclientenvadv");
-  gurobi_dynamic_library->GetFunction(&GRBloadcloudenv, "GRBloadcloudenv");
-  gurobi_dynamic_library->GetFunction(&GRBloadcloudenvadv,
-                                      "GRBloadcloudenvadv");
   gurobi_dynamic_library->GetFunction(&GRBgetenv, "GRBgetenv");
   gurobi_dynamic_library->GetFunction(&GRBgetconcurrentenv,
                                       "GRBgetconcurrentenv");

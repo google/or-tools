@@ -404,7 +404,6 @@ extern std::function<GRBmodel *(GRBmodel *model)> GRBlinearizemodel;
 #define FREECB_ARGS void *ptr, void *syscbusrdata
 #define THREADCREATECB_ARGS void **threadP, void (*start_routine)(void *), void *arg, void *syscbusrdata
 #define THREADJOINCB_ARGS void *thread, void *syscbusrdata
-extern std::function<int(GRBenv **envP, const char *logfilename,void * (GUROBI_STDCALL *malloccb)(MALLOCCB_ARGS),void * (GUROBI_STDCALL *calloccb)(CALLOCCB_ARGS),void * (GUROBI_STDCALL *realloccb)(REALLOCCB_ARGS),void (GUROBI_STDCALL *freecb)(FREECB_ARGS),int (GUROBI_STDCALL *threadcreatecb)(THREADCREATECB_ARGS),void (GUROBI_STDCALL *threadjoincb)(THREADJOINCB_ARGS),void *syscbusrdata)> GRBloadenvsyscb;
 extern std::function<int(GRBenv *env, const char *filename, GRBmodel **modelP)> GRBreadmodel;
 extern std::function<int(GRBmodel *model, const char *filename)> GRBread;
 extern std::function<int(GRBmodel *model, const char *filename)> GRBwrite;
@@ -658,10 +657,6 @@ extern std::function<int(GRBmodel *model)> GRBgetnumattributes;
 extern std::function<int(GRBmodel *model, int i, char **attrnameP)> GRBgetattrname;
 extern std::function<int(GRBenv **envP, const char *logfilename)> GRBloadenv;
 extern std::function<int(GRBenv **envP, const char *logfilename,int apitype, int major, int minor, int tech,int (GUROBI_STDCALL *cb)(CB_ARGS), void *usrdata)> GRBloadenvadv;
-extern std::function<int(GRBenv **envP, const char *logfilename,const char *computeservers, int port, const char *password,int priority, double timeout)> GRBloadclientenv;
-extern std::function<int(GRBenv **envP, const char *logfilename,const char *computeservers, int port,const char *password, int priority, double timeout,int apitype, int major, int minor, int tech,int (GUROBI_STDCALL *cb)(CB_ARGS), void *usrdata)> GRBloadclientenvadv;
-extern std::function<int(GRBenv **envP, const char *logfilename,const char *accessID, const char *secretKey,const char *pool)> GRBloadcloudenv;
-extern std::function<int(GRBenv **envP, const char *logfilename,const char *accessID, const char *secretKey,const char *pool, int apitype, int major,int minor, int tech,int (GUROBI_STDCALL *cb)(CB_ARGS), void *usrdata)> GRBloadcloudenvadv;
 extern std::function<GRBenv *(GRBmodel *model)> GRBgetenv;
 extern std::function<GRBenv *(GRBmodel *model, int num)> GRBgetconcurrentenv;
 extern std::function<void(GRBmodel *model)> GRBdiscardconcurrentenvs;
