@@ -50,95 +50,94 @@ RoutingModelParameters DefaultRoutingModelParameters() {
 
 namespace {
 RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
-  static constexpr char kSearchParameters[] = R"pb(
-    first_solution_strategy: AUTOMATIC
-    use_unfiltered_first_solution_strategy: false
-    savings_neighbors_ratio: 1
-    savings_max_memory_usage_bytes: 6e9
-    savings_add_reverse_arcs: false
-    savings_arc_coefficient: 1
-    savings_parallel_routes: false
-    cheapest_insertion_farthest_seeds_ratio: 0
-    cheapest_insertion_first_solution_neighbors_ratio: 1
-    cheapest_insertion_first_solution_min_neighbors: 1
-    cheapest_insertion_ls_operator_neighbors_ratio: 1
-    cheapest_insertion_ls_operator_min_neighbors: 1
-    cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization:
-        false
-    cheapest_insertion_add_unperformed_entries: false
-    local_cheapest_insertion_pickup_delivery_strategy:
-        BEST_PICKUP_THEN_BEST_DELIVERY
-    local_search_operators {
-      use_relocate: BOOL_TRUE
-      use_relocate_pair: BOOL_TRUE
-      use_light_relocate_pair: BOOL_TRUE
-      use_relocate_subtrip: BOOL_TRUE
-      use_relocate_neighbors: BOOL_FALSE
-      use_exchange: BOOL_TRUE
-      use_exchange_pair: BOOL_TRUE
-      use_exchange_subtrip: BOOL_TRUE
-      use_cross: BOOL_TRUE
-      use_cross_exchange: BOOL_FALSE
-      use_relocate_expensive_chain: BOOL_TRUE
-      use_two_opt: BOOL_TRUE
-      use_or_opt: BOOL_TRUE
-      use_lin_kernighan: BOOL_TRUE
-      use_tsp_opt: BOOL_FALSE
-      use_make_active: BOOL_TRUE
-      use_relocate_and_make_active: BOOL_FALSE  # costly if true by default
-      use_make_inactive: BOOL_TRUE
-      use_make_chain_inactive: BOOL_TRUE
-      use_swap_active: BOOL_TRUE
-      use_extended_swap_active: BOOL_FALSE
-      use_node_pair_swap_active: BOOL_FALSE
-      use_path_lns: BOOL_FALSE
-      use_full_path_lns: BOOL_FALSE
-      use_tsp_lns: BOOL_FALSE
-      use_inactive_lns: BOOL_FALSE
-      use_global_cheapest_insertion_path_lns: BOOL_TRUE
-      use_local_cheapest_insertion_path_lns: BOOL_TRUE
-      use_relocate_path_global_cheapest_insertion_insert_unperformed: BOOL_TRUE
-      use_global_cheapest_insertion_expensive_chain_lns: BOOL_FALSE
-      use_local_cheapest_insertion_expensive_chain_lns: BOOL_FALSE
-      use_global_cheapest_insertion_close_nodes_lns: BOOL_FALSE
-      use_local_cheapest_insertion_close_nodes_lns: BOOL_FALSE
-    }
-    use_multi_armed_bandit_concatenate_operators: false
-    multi_armed_bandit_compound_operator_memory_coefficient: 0.04
-    multi_armed_bandit_compound_operator_exploration_coefficient: 1e12
-    relocate_expensive_chain_num_arcs_to_consider: 4
-    heuristic_expensive_chain_lns_num_arcs_to_consider: 4
-    heuristic_close_nodes_lns_num_nodes: 5
-    local_search_metaheuristic: AUTOMATIC
-    guided_local_search_lambda_coefficient: 0.1
-    use_depth_first_search: false
-    use_cp: BOOL_TRUE
-    use_cp_sat: BOOL_FALSE
-    use_generalized_cp_sat: BOOL_FALSE
-    sat_parameters { linearization_level: 2 num_search_workers: 1 }
-    continuous_scheduling_solver: SCHEDULING_GLOP
-    mixed_integer_scheduling_solver: SCHEDULING_CP_SAT
-    disable_scheduling_beware_this_may_degrade_performance: false
-    optimization_step: 0.0
-    number_of_solutions_to_collect: 1
-    # No global time_limit by default.
-    solution_limit: 0x7fffffffffffffff               # kint64max
-    lns_time_limit: { seconds: 0 nanos: 100000000 }  # 0.1s
-    use_full_propagation: false
-    log_search: false
-    log_cost_scaling_factor: 1.0
-    log_cost_offset: 0.0
-  )pb";
-  RoutingSearchParameters parameters;
-  using TextFormat = google::protobuf::TextFormat;
-  if (!TextFormat::ParseFromString(kSearchParameters, &parameters)) {
-    LOG(DFATAL) << "Unsupported default search parameters: "
-                << kSearchParameters;
-  }
-  const std::string error = FindErrorInRoutingSearchParameters(parameters);
+  RoutingSearchParameters p;
+  p.set_first_solution_strategy(FirstSolutionStrategy::AUTOMATIC);
+  p.set_use_unfiltered_first_solution_strategy(false);
+  p.set_savings_neighbors_ratio(1);
+  p.set_savings_max_memory_usage_bytes(6e9);
+  p.set_savings_add_reverse_arcs(false);
+  p.set_savings_arc_coefficient(1);
+  p.set_savings_parallel_routes(false);
+  p.set_cheapest_insertion_farthest_seeds_ratio(0);
+  p.set_cheapest_insertion_first_solution_neighbors_ratio(1);
+  p.set_cheapest_insertion_first_solution_min_neighbors(1);
+  p.set_cheapest_insertion_ls_operator_neighbors_ratio(1);
+  p.set_cheapest_insertion_ls_operator_min_neighbors(1);
+  p.set_cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization(  // NOLINT
+      false);
+  p.set_cheapest_insertion_add_unperformed_entries(false);
+  p.set_local_cheapest_insertion_pickup_delivery_strategy(
+      RoutingSearchParameters::BEST_PICKUP_THEN_BEST_DELIVERY);
+  RoutingSearchParameters::LocalSearchNeighborhoodOperators* o =
+      p.mutable_local_search_operators();
+  o->set_use_relocate(BOOL_TRUE);
+  o->set_use_relocate_pair(BOOL_TRUE);
+  o->set_use_light_relocate_pair(BOOL_TRUE);
+  o->set_use_relocate_subtrip(BOOL_TRUE);
+  o->set_use_relocate_neighbors(BOOL_FALSE);
+  o->set_use_exchange(BOOL_TRUE);
+  o->set_use_exchange_pair(BOOL_TRUE);
+  o->set_use_exchange_subtrip(BOOL_TRUE);
+  o->set_use_cross(BOOL_TRUE);
+  o->set_use_cross_exchange(BOOL_FALSE);
+  o->set_use_relocate_expensive_chain(BOOL_TRUE);
+  o->set_use_two_opt(BOOL_TRUE);
+  o->set_use_or_opt(BOOL_TRUE);
+  o->set_use_lin_kernighan(BOOL_TRUE);
+  o->set_use_tsp_opt(BOOL_FALSE);
+  o->set_use_make_active(BOOL_TRUE);
+  o->set_use_relocate_and_make_active(BOOL_FALSE);  // costly if true by default
+  o->set_use_make_inactive(BOOL_TRUE);
+  o->set_use_make_chain_inactive(BOOL_TRUE);
+  o->set_use_swap_active(BOOL_TRUE);
+  o->set_use_extended_swap_active(BOOL_FALSE);
+  o->set_use_node_pair_swap_active(BOOL_FALSE);
+  o->set_use_path_lns(BOOL_FALSE);
+  o->set_use_full_path_lns(BOOL_FALSE);
+  o->set_use_tsp_lns(BOOL_FALSE);
+  o->set_use_inactive_lns(BOOL_FALSE);
+  o->set_use_global_cheapest_insertion_path_lns(BOOL_TRUE);
+  o->set_use_local_cheapest_insertion_path_lns(BOOL_TRUE);
+  o->set_use_relocate_path_global_cheapest_insertion_insert_unperformed(
+      BOOL_TRUE);
+  o->set_use_global_cheapest_insertion_expensive_chain_lns(BOOL_FALSE);
+  o->set_use_local_cheapest_insertion_expensive_chain_lns(BOOL_FALSE);
+  o->set_use_global_cheapest_insertion_close_nodes_lns(BOOL_FALSE);
+  o->set_use_local_cheapest_insertion_close_nodes_lns(BOOL_FALSE);
+  p.set_use_multi_armed_bandit_concatenate_operators(false);
+  p.set_multi_armed_bandit_compound_operator_memory_coefficient(0.04);
+  p.set_multi_armed_bandit_compound_operator_exploration_coefficient(1e12);
+  p.set_relocate_expensive_chain_num_arcs_to_consider(4);
+  p.set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
+  p.set_heuristic_close_nodes_lns_num_nodes(5);
+  p.set_local_search_metaheuristic(LocalSearchMetaheuristic::AUTOMATIC);
+  p.set_guided_local_search_lambda_coefficient(0.1);
+  p.set_guided_local_search_reset_penalties_on_new_best_solution(false);
+  p.set_use_depth_first_search(false);
+  p.set_use_cp(BOOL_TRUE);
+  p.set_use_cp_sat(BOOL_FALSE);
+  p.set_use_generalized_cp_sat(BOOL_FALSE);
+  p.mutable_sat_parameters()->set_linearization_level(2);
+  p.mutable_sat_parameters()->set_num_search_workers(1);
+  p.set_fallback_to_cp_sat_size_threshold(20);
+  p.set_continuous_scheduling_solver(RoutingSearchParameters::SCHEDULING_GLOP);
+  p.set_mixed_integer_scheduling_solver(
+      RoutingSearchParameters::SCHEDULING_CP_SAT);
+  p.set_disable_scheduling_beware_this_may_degrade_performance(false);
+  p.set_optimization_step(0.0);
+  p.set_number_of_solutions_to_collect(1);
+  // No global time_limit by default.
+  p.set_solution_limit(kint64max);
+  p.mutable_lns_time_limit()->set_nanos(100000000);  // 0.1s.
+  p.set_use_full_propagation(false);
+  p.set_log_search(false);
+  p.set_log_cost_scaling_factor(1.0);
+  p.set_log_cost_offset(0.0);
+
+  const std::string error = FindErrorInRoutingSearchParameters(p);
   LOG_IF(DFATAL, !error.empty())
       << "The default search parameters aren't valid: " << error;
-  return parameters;
+  return p;
 }
 }  // namespace
 
@@ -170,7 +169,9 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
   std::vector<std::string> errors;
 
   // Check that all local search operators are set to either BOOL_TRUE or
-  // BOOL_FALSE (and not BOOL_UNSPECIFIED).
+  // BOOL_FALSE (and not BOOL_UNSPECIFIED). Do that only in non-portable mode,
+  // since it needs proto reflection etc.
+#if !defined(__ANDROID__) && !defined(__wasm__)
   {
     using Reflection = google::protobuf::Reflection;
     using Descriptor = google::protobuf::Descriptor;
@@ -200,6 +201,7 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
       }
     }
   }
+#endif  // !__ANDROID__ && !__wasm__
   if (const double ratio = search_parameters.savings_neighbors_ratio();
       std::isnan(ratio) || ratio <= 0 || ratio > 1) {
     errors.emplace_back(StrCat("Invalid savings_neighbors_ratio: ", ratio));

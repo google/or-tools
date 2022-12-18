@@ -35,7 +35,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 51
+// Next ID: 53
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -430,6 +430,9 @@ message RoutingSearchParameters {
   // Lambda coefficient used to penalize arc costs when GUIDED_LOCAL_SEARCH is
   // used. Must be positive.
   double guided_local_search_lambda_coefficient = 5;
+  // Whether to reset penalties when a new best solution is found. The effect is
+  // that a greedy descent is started before the next penalization phase.
+  bool guided_local_search_reset_penalties_on_new_best_solution = 51;
 
   // --- Search control ---
   //
@@ -453,6 +456,9 @@ message RoutingSearchParameters {
   // If use_cp_sat or use_generalized_cp_sat is true, contains the SAT algorithm
   // parameters which will be used.
   sat.SatParameters sat_parameters = 48;
+  // If model.Size() is less than the threshold and that no solution has been
+  // found, attempt a pass with CP-SAT.
+  int32 fallback_to_cp_sat_size_threshold = 52;
   // Underlying solver to use in dimension scheduling, respectively for
   // continuous and mixed models.
   enum SchedulingSolver {

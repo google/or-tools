@@ -251,6 +251,10 @@ class RoutingModel {
     ROUTING_NOT_SOLVED,
     /// Problem solved successfully after calling RoutingModel::Solve().
     ROUTING_SUCCESS,
+    /// Problem solved successfully after calling RoutingModel::Solve(), except
+    /// that a local optimum has not been reached. Leaving more time would allow
+    /// improving the solution.
+    ROUTING_PARTIAL_SUCCESS_LOCAL_OPTIMUM_NOT_REACHED,
     /// No solution found to the problem after calling RoutingModel::Solve().
     ROUTING_FAIL,
     /// Time limit reached before finding a solution with RoutingModel::Solve().
@@ -2242,6 +2246,9 @@ class RoutingModel {
       FirstSolutionStrategy::UNSET;
   std::vector<LocalSearchOperator*> local_search_operators_;
   std::vector<SearchMonitor*> monitors_;
+  bool local_optimum_reached_ = false;
+  // Best lower bound found during the search.
+  int64_t objective_lower_bound_ = kint64min;
   SolutionCollector* collect_assignments_ = nullptr;
   SolutionCollector* collect_one_assignment_ = nullptr;
   SolutionCollector* optimized_dimensions_assignment_collector_ = nullptr;
@@ -2696,8 +2703,6 @@ class TypeRegulationsConstraint : public Constraint {
 ///   because the structure will be accessed through pointers, moreover having
 ///   to type bound_cost reminds the user of the order if they do a copy
 ///   assignment of the element.
-
-// Can't be nested in SimpleBoundCosts since SWIG doesn't support nested class...
 struct BoundCost {
   int64_t bound;
   int64_t cost;

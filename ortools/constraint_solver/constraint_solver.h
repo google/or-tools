@@ -2259,16 +2259,15 @@ class Solver {
 
   /// Creates a Guided Local Search monitor.
   /// Description here: http://en.wikipedia.org/wiki/Guided_Local_Search
-  SearchMonitor* MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
-                                       IndexEvaluator2 objective_function,
-                                       int64_t step,
-                                       const std::vector<IntVar*>& vars,
-                                       double penalty_factor);
   SearchMonitor* MakeGuidedLocalSearch(
-      bool maximize, IntVar* const objective,
-      IndexEvaluator3 objective_function, int64_t step,
-      const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars, double penalty_factor);
+      bool maximize, IntVar* objective, IndexEvaluator2 objective_function,
+      int64_t step, const std::vector<IntVar*>& vars, double penalty_factor,
+      bool reset_penalties_on_new_best_solution = false);
+  SearchMonitor* MakeGuidedLocalSearch(
+      bool maximize, IntVar* objective, IndexEvaluator3 objective_function,
+      int64_t step, const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+      bool reset_penalties_on_new_best_solution = false);
 
   /// This search monitor will restart the search periodically.
   /// At the iteration n, it will restart after scale_factor * Luby(n) failures

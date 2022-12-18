@@ -3449,6 +3449,8 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
   for (const Assignment* assignment : assignments) {
     if (assignment != nullptr) first_solution_assignments.push_back(assignment);
   }
+  local_optimum_reached_ = false;
+  objective_lower_bound_ = kint64min;
   if (parameters.use_cp() == BOOL_TRUE) {
     if (first_solution_assignments.empty()) {
       bool solution_found = false;
@@ -3460,6 +3462,7 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
                       solution_pool.back()->ObjectiveValue(), start_time_ms);
         }
         solution_found = true;
+        local_optimum_reached_ = true;
       }
       if (!solution_found) {
         // Build trivial solutions to which we can come back too in case the
@@ -3471,6 +3474,7 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
           LogSolution(parameters, "All Unperformed Solution",
                       solution_pool.back()->ObjectiveValue(), start_time_ms);
         }
+        local_optimum_reached_ = false;
         if (update_time_limits()) {
           solver_->Solve(solve_db_, monitors_);
         }
@@ -3488,7 +3492,10 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
   }
 
   if (parameters.use_cp_sat() == BOOL_TRUE ||
-      parameters.use_generalized_cp_sat() == BOOL_TRUE) {
+      parameters.use_generalized_cp_sat() == BOOL_TRUE ||
+      (parameters.fallback_to_cp_sat_size_threshold() >= Size() &&
+       collect_assignments_->solution_count() == 0 && solution_pool.empty())) {
+    VLOG(1) << "Solving with CP-SAT";
     const int solution_count = collect_assignments_->solution_count();
     Assignment* const cp_solution =
         solution_count >= 1 ? collect_assignments_->solution(solution_count - 1)
@@ -3499,24 +3506,35 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
         parameters.log_search()) {
       LogSolution(parameters, "SAT", solution_pool.back()->ObjectiveValue(),
                   start_time_ms);
+      local_optimum_reached_ = true;
     }
   }
-
+  VLOG(1) << "Objective lower bound: " << objective_lower_bound_;
   const absl::Duration elapsed_time =
       absl::Milliseconds(solver_->wall_time() - start_time_ms);
   const int solution_count = collect_assignments_->solution_count();
   if (solution_count >= 1 || !solution_pool.empty()) {
-    status_ = ROUTING_SUCCESS;
+    status_ = local_optimum_reached_
+                  ? ROUTING_SUCCESS
+                  : ROUTING_PARTIAL_SUCCESS_LOCAL_OPTIMUM_NOT_REACHED;
     if (solutions != nullptr) {
+      int64_t min_objective_value = kint64max;
       for (int i = 0; i < solution_count; ++i) {
         solutions->push_back(
             solver_->MakeAssignment(collect_assignments_->solution(i)));
+        min_objective_value =
+            std::min(min_objective_value, solutions->back()->ObjectiveValue());
       }
       for (const auto& solution : solution_pool) {
         if (solutions->empty() ||
             solution->ObjectiveValue() < solutions->back()->ObjectiveValue()) {
           solutions->push_back(solver_->MakeAssignment(solution.get()));
         }
+        min_objective_value =
+            std::min(min_objective_value, solutions->back()->ObjectiveValue());
+      }
+      if (min_objective_value <= objective_lower_bound_) {
+        status_ = ROUTING_SUCCESS;
       }
       return solutions->back();
     }
@@ -3528,6 +3546,9 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
           solution->ObjectiveValue() < best_assignment->ObjectiveValue()) {
         best_assignment = solution.get();
       }
+    }
+    if (best_assignment->ObjectiveValue() <= objective_lower_bound_) {
+      status_ = ROUTING_SUCCESS;
     }
     return solver_->MakeAssignment(best_assignment);
   } else {
@@ -5879,7 +5900,9 @@ void RoutingModel::SetupMetaheuristics(
             false, cost_,
             [this](int64_t i, int64_t j) { return GetHomogeneousCost(i, j); },
             optimization_step, nexts_,
-            search_parameters.guided_local_search_lambda_coefficient());
+            search_parameters.guided_local_search_lambda_coefficient(),
+            search_parameters
+                .guided_local_search_reset_penalties_on_new_best_solution());
       } else {
         optimize = solver_->MakeGuidedLocalSearch(
             false, cost_,
@@ -5887,7 +5910,9 @@ void RoutingModel::SetupMetaheuristics(
               return GetArcCostForVehicle(i, j, k);
             },
             optimization_step, nexts_, vehicle_vars_,
-            search_parameters.guided_local_search_lambda_coefficient());
+            search_parameters.guided_local_search_lambda_coefficient(),
+            search_parameters
+                .guided_local_search_reset_penalties_on_new_best_solution());
       }
       break;
     case LocalSearchMetaheuristic::SIMULATED_ANNEALING:
@@ -5983,9 +6008,57 @@ void RoutingModel::SetupImprovementLimit(
   }
 }
 
+namespace {
+
+template <typename EndInitialPropagationCallback, typename LocalOptimumCallback>
+class LocalOptimumWatcher : public SearchMonitor {
+ public:
+  LocalOptimumWatcher(
+      Solver* solver,
+      EndInitialPropagationCallback end_initial_propagation_callback,
+      LocalOptimumCallback local_optimum_callback)
+      : SearchMonitor(solver),
+        end_initial_propagation_callback_(
+            std::move(end_initial_propagation_callback)),
+        local_optimum_callback_(std::move(local_optimum_callback)) {}
+  void Install() override {
+    ListenToEvent(Solver::MonitorEvent::kEndInitialPropagation);
+    ListenToEvent(Solver::MonitorEvent::kLocalOptimum);
+  }
+  void EndInitialPropagation() override { end_initial_propagation_callback_(); }
+  bool LocalOptimum() override {
+    local_optimum_callback_();
+    return SearchMonitor::LocalOptimum();
+  }
+
+ private:
+  EndInitialPropagationCallback end_initial_propagation_callback_;
+  LocalOptimumCallback local_optimum_callback_;
+};
+
+template <typename EndInitialPropagationCallback, typename LocalOptimumCallback>
+SearchMonitor* MakeLocalOptimumWatcher(
+    Solver* solver,
+    EndInitialPropagationCallback end_initial_propagation_callback,
+    LocalOptimumCallback local_optimum_callback) {
+  return solver->RevAlloc(new LocalOptimumWatcher<EndInitialPropagationCallback,
+                                                  LocalOptimumCallback>(
+      solver, std::move(end_initial_propagation_callback),
+      std::move(local_optimum_callback)));
+}
+
+}  // namespace
+
 void RoutingModel::SetupSearchMonitors(
     const RoutingSearchParameters& search_parameters) {
   monitors_.push_back(GetOrCreateLimit());
+  monitors_.push_back(MakeLocalOptimumWatcher(
+      solver(),
+      [this]() {
+        objective_lower_bound_ =
+            std::max(objective_lower_bound_, CostVar()->Min());
+      },
+      [this]() { local_optimum_reached_ = true; }));
   SetupImprovementLimit(search_parameters);
   SetupMetaheuristics(search_parameters);
   SetupAssignmentCollector(search_parameters);

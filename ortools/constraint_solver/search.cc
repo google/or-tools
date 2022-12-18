@@ -3592,7 +3592,8 @@ class GuidedLocalSearch : public Metaheuristic {
  public:
   GuidedLocalSearch(Solver* const s, IntVar* objective, bool maximize,
                     int64_t step, const std::vector<IntVar*>& vars,
-                    double penalty_factor);
+                    double penalty_factor,
+                    bool reset_penalties_on_new_best_solution);
   ~GuidedLocalSearch() override {}
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void ApplyDecision(Decision* d) override;
@@ -3670,6 +3671,7 @@ class GuidedLocalSearch : public Metaheuristic {
                ? var_index_to_local_index_[var_index]
                : -1;
   }
+  void ResetPenalties();
 
   IntVar* penalized_objective_;
   Assignment::IntContainer assignment_;
@@ -3681,13 +3683,14 @@ class GuidedLocalSearch : public Metaheuristic {
   P penalties_;
   DirtyArray<int64_t> penalized_values_;
   bool incremental_;
+  const bool reset_penalties_on_new_best_solution_;
 };
 
 template <typename P>
-GuidedLocalSearch<P>::GuidedLocalSearch(Solver* const s, IntVar* objective,
-                                        bool maximize, int64_t step,
-                                        const std::vector<IntVar*>& vars,
-                                        double penalty_factor)
+GuidedLocalSearch<P>::GuidedLocalSearch(
+    Solver* const s, IntVar* objective, bool maximize, int64_t step,
+    const std::vector<IntVar*>& vars, double penalty_factor,
+    bool reset_penalties_on_new_best_solution)
     : Metaheuristic(s, maximize, objective, step),
       penalized_objective_(nullptr),
       assignment_penalized_value_(0),
@@ -3696,7 +3699,9 @@ GuidedLocalSearch<P>::GuidedLocalSearch(Solver* const s, IntVar* objective,
       penalty_factor_(penalty_factor),
       penalties_(vars.size()),
       penalized_values_(vars.size()),
-      incremental_(false) {
+      incremental_(false),
+      reset_penalties_on_new_best_solution_(
+          reset_penalties_on_new_best_solution) {
   AddVars(vars);
 }
 
@@ -3779,12 +3784,32 @@ void GuidedLocalSearch<P>::ApplyDecision(Decision* const d) {
 }
 
 template <typename P>
+void GuidedLocalSearch<P>::ResetPenalties() {
+  assignment_penalized_value_ = 0;
+  old_penalized_value_ = 0;
+  penalized_values_.SetAll(0);
+  penalized_values_.Commit();
+  penalties_.Reset();
+}
+
+template <typename P>
 bool GuidedLocalSearch<P>::AtSolution() {
+  const int64_t old_best = best_;
   if (!Metaheuristic::AtSolution()) {
     return false;
   }
-  if (penalized_objective_ != nullptr) {  // In case no move has been found
-    current_ = CapAdd(current_, penalized_objective_->Value());
+  if (penalized_objective_ != nullptr) {
+    // If the value of the best solution has changed (aka a new best solution
+    // has been found), triggering a reset on the penalties to start fresh.
+    // The immediate consequence is a greedy dive towards a local minimum,
+    // followed by a new penalization phase.
+    if (reset_penalties_on_new_best_solution_ && old_best != best_) {
+      ResetPenalties();
+      DCHECK_EQ(current_, best_);
+    } else {
+      // A penalized move has been found.
+      current_ = CapAdd(current_, penalized_objective_->Value());
+    }
   }
   assignment_.Store();
   return true;
@@ -3794,11 +3819,7 @@ template <typename P>
 void GuidedLocalSearch<P>::EnterSearch() {
   Metaheuristic::EnterSearch();
   penalized_objective_ = nullptr;
-  assignment_penalized_value_ = 0;
-  old_penalized_value_ = 0;
-  penalized_values_.SetAll(0);
-  penalized_values_.Commit();
-  penalties_.Reset();
+  ResetPenalties();
 }
 
 // GLS filtering; compute the penalized value corresponding to the delta and
@@ -3889,7 +3910,7 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch<P> {
       Solver* const solver, IntVar* const objective,
       std::function<int64_t(int64_t, int64_t)> objective_function,
       bool maximize, int64_t step, const std::vector<IntVar*>& vars,
-      double penalty_factor);
+      double penalty_factor, bool reset_penalties_on_new_best_solution);
   ~BinaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
   int64_t AssignmentElementPenalty(int index) const override;
@@ -3906,9 +3927,11 @@ template <typename P>
 BinaryGuidedLocalSearch<P>::BinaryGuidedLocalSearch(
     Solver* const solver, IntVar* const objective,
     std::function<int64_t(int64_t, int64_t)> objective_function, bool maximize,
-    int64_t step, const std::vector<IntVar*>& vars, double penalty_factor)
+    int64_t step, const std::vector<IntVar*>& vars, double penalty_factor,
+    bool reset_penalties_on_new_best_solution)
     : GuidedLocalSearch<P>(solver, objective, maximize, step, vars,
-                           penalty_factor),
+                           penalty_factor,
+                           reset_penalties_on_new_best_solution),
       objective_function_(std::move(objective_function)) {}
 
 template <typename P>
@@ -3972,7 +3995,8 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch<P> {
       Solver* const solver, IntVar* const objective,
       std::function<int64_t(int64_t, int64_t, int64_t)> objective_function,
       bool maximize, int64_t step, const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars, double penalty_factor);
+      const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+      bool reset_penalties_on_new_best_solution);
   ~TernaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
   int64_t AssignmentElementPenalty(int index) const override;
@@ -3992,9 +4016,11 @@ TernaryGuidedLocalSearch<P>::TernaryGuidedLocalSearch(
     Solver* const solver, IntVar* const objective,
     std::function<int64_t(int64_t, int64_t, int64_t)> objective_function,
     bool maximize, int64_t step, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars, double penalty_factor)
+    const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+    bool reset_penalties_on_new_best_solution)
     : GuidedLocalSearch<P>(solver, objective, maximize, step, vars,
-                           penalty_factor),
+                           penalty_factor,
+                           reset_penalties_on_new_best_solution),
       objective_function_(std::move(objective_function)),
       secondary_values_(this->NumPrimaryVars(), -1) {
   this->AddVars(secondary_vars);
@@ -4087,16 +4113,17 @@ int64_t TernaryGuidedLocalSearch<P>::PenalizedValue(int64_t i, int64_t j,
 SearchMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize, IntVar* const objective,
     Solver::IndexEvaluator2 objective_function, int64_t step,
-    const std::vector<IntVar*>& vars, double penalty_factor) {
+    const std::vector<IntVar*>& vars, double penalty_factor,
+    bool reset_penalties_on_new_best_solution) {
   if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
     return RevAlloc(new BinaryGuidedLocalSearch<GuidedLocalSearchPenaltiesMap>(
         this, objective, std::move(objective_function), maximize, step, vars,
-        penalty_factor));
+        penalty_factor, reset_penalties_on_new_best_solution));
   } else {
     return RevAlloc(
         new BinaryGuidedLocalSearch<GuidedLocalSearchPenaltiesTable>(
             this, objective, std::move(objective_function), maximize, step,
-            vars, penalty_factor));
+            vars, penalty_factor, reset_penalties_on_new_best_solution));
   }
 }
 
@@ -4104,16 +4131,18 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize, IntVar* const objective,
     Solver::IndexEvaluator3 objective_function, int64_t step,
     const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars, double penalty_factor) {
+    const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+    bool reset_penalties_on_new_best_solution) {
   if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
     return RevAlloc(new TernaryGuidedLocalSearch<GuidedLocalSearchPenaltiesMap>(
         this, objective, std::move(objective_function), maximize, step, vars,
-        secondary_vars, penalty_factor));
+        secondary_vars, penalty_factor, reset_penalties_on_new_best_solution));
   } else {
     return RevAlloc(
         new TernaryGuidedLocalSearch<GuidedLocalSearchPenaltiesTable>(
             this, objective, std::move(objective_function), maximize, step,
-            vars, secondary_vars, penalty_factor));
+            vars, secondary_vars, penalty_factor,
+            reset_penalties_on_new_best_solution));
   }
 }
 
