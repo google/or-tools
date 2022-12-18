@@ -14,9 +14,10 @@
 #ifndef OR_TOOLS_GUROBI_ENVIRONMENT_H_
 #define OR_TOOLS_GUROBI_ENVIRONMENT_H_
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/dynamic_library.h"
 #include "ortools/base/logging.h"
 
@@ -699,6 +700,7 @@ extern std::function<void(int *majorP, int *minorP, int *technicalP)> GRBversion
 #define GRB_BATCH_ABORTED 3
 #define GRB_BATCH_FAILED 4
 #define GRB_BATCH_COMPLETED 5
+
 
 }  // namespace operations_research
 
