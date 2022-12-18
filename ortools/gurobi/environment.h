@@ -21,13 +21,6 @@
 #include "ortools/base/dynamic_library.h"
 #include "ortools/base/logging.h"
 
-
-#if defined(_MSC_VER)
-#define GUROBI_STDCALL __stdcall
-#else
-#define GUROBI_STDCALL
-#endif
-
 extern "C" {
 typedef struct _GRBmodel GRBmodel;
 typedef struct _GRBenv GRBenv;
@@ -37,6 +30,13 @@ typedef struct _GRBsvec {
   double* val;
 } GRBsvec;
 
+#if defined(_MSC_VER)
+#define GUROBI_STDCALL __stdcall
+#else
+#define GUROBI_STDCALL
+#endif
+
+// See http://www.gurobi.com/products/licensing-pricing/isv-program.
 int GUROBI_STDCALL GRBisqp(GRBenv**, const char*, const char*, const char*, int,
                            const char*);
 }
