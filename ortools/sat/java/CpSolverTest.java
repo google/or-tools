@@ -297,7 +297,7 @@ public final class CpSolverTest {
     final IntVar var2 = model.newIntVar(0, 1, "CONTROLLABLE__C1[1]");
     capacityConstraint(model, new IntVar[] {var1, var2}, new long[] {0L, 1L},
         new long[][] {new long[] {1L, 1L}}, new long[][] {new long[] {1L, 1L}});
-    var unused = model.exportToFile("/tmp/issue3108.pb.txt");
+    boolean unused = model.exportToFile("/tmp/issue3108.pb.txt");
     final CpSolver solver = new CpSolver();
     solver.getParameters().setLogSearchProgress(true);
     solver.getParameters().setCpModelProbingLevel(0);
