@@ -401,3 +401,13 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
     ],
 )
+
+cc_library(
+    name = "parameters_validation",
+    srcs = ["parameters_validation.cc"],
+    hdrs = ["parameters_validation.h"],
+    deps = [
+        ":parameters_cc_proto",
+        "@com_google_absl//absl/strings",
+    ],
+)
