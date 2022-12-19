@@ -54,7 +54,6 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:linked_hash_map",
-        "//ortools/util:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/util:status_macros",
