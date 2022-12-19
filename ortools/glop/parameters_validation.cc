@@ -33,6 +33,11 @@ namespace operations_research::glop {
     return absl::StrCat("Parameters '", #name, "' must be non-negative"); \
   }
 
+#define TEST_INTEGER_NON_NEGATIVE(name)                                   \
+  if (params.name() < 0) {                                                \
+    return absl::StrCat("Parameters '", #name, "' must be non-negative"); \
+  }
+
 #define TEST_FINITE_AND_NON_NEGATIVE(name)                                \
   if (!std::isfinite(params.name())) {                                    \
     return absl::StrCat("parameter '", #name, "' is NaN or not finite");  \
@@ -42,40 +47,40 @@ namespace operations_research::glop {
   }
 
 std::string ValidateParameters(const GlopParameters& params) {
-  TEST_FINITE_AND_NON_NEGATIVE(refactorization_threshold);
-  TEST_FINITE_AND_NON_NEGATIVE(recompute_reduced_costs_threshold);
-  TEST_FINITE_AND_NON_NEGATIVE(recompute_edges_norm_threshold);
-  TEST_FINITE_AND_NON_NEGATIVE(primal_feasibility_tolerance);
-  TEST_FINITE_AND_NON_NEGATIVE(dual_feasibility_tolerance);
-  TEST_FINITE_AND_NON_NEGATIVE(ratio_test_zero_threshold);
-  TEST_FINITE_AND_NON_NEGATIVE(harris_tolerance_ratio);
-  TEST_FINITE_AND_NON_NEGATIVE(small_pivot_threshold);
-  TEST_FINITE_AND_NON_NEGATIVE(minimum_acceptable_pivot);
+  TEST_FINITE_AND_NON_NEGATIVE(degenerate_ministep_factor);
   TEST_FINITE_AND_NON_NEGATIVE(drop_tolerance);
+  TEST_FINITE_AND_NON_NEGATIVE(dual_feasibility_tolerance);
+  TEST_FINITE_AND_NON_NEGATIVE(dual_small_pivot_threshold);
   TEST_FINITE_AND_NON_NEGATIVE(dualizer_threshold);
-  TEST_FINITE_AND_NON_NEGATIVE(solution_feasibility_tolerance);
-  TEST_FINITE_AND_NON_NEGATIVE(max_number_of_reoptimizations);
+  TEST_FINITE_AND_NON_NEGATIVE(harris_tolerance_ratio);
   TEST_FINITE_AND_NON_NEGATIVE(lu_factorization_pivot_threshold);
   TEST_FINITE_AND_NON_NEGATIVE(markowitz_singularity_threshold);
-  TEST_FINITE_AND_NON_NEGATIVE(dual_small_pivot_threshold);
+  TEST_FINITE_AND_NON_NEGATIVE(max_number_of_reoptimizations);
+  TEST_FINITE_AND_NON_NEGATIVE(minimum_acceptable_pivot);
   TEST_FINITE_AND_NON_NEGATIVE(preprocessor_zero_tolerance);
-  TEST_FINITE_AND_NON_NEGATIVE(degenerate_ministep_factor);
+  TEST_FINITE_AND_NON_NEGATIVE(primal_feasibility_tolerance);
+  TEST_FINITE_AND_NON_NEGATIVE(ratio_test_zero_threshold);
+  TEST_FINITE_AND_NON_NEGATIVE(recompute_edges_norm_threshold);
+  TEST_FINITE_AND_NON_NEGATIVE(recompute_reduced_costs_threshold);
+  TEST_FINITE_AND_NON_NEGATIVE(refactorization_threshold);
   TEST_FINITE_AND_NON_NEGATIVE(relative_cost_perturbation);
   TEST_FINITE_AND_NON_NEGATIVE(relative_max_cost_perturbation);
+  TEST_FINITE_AND_NON_NEGATIVE(small_pivot_threshold);
+  TEST_FINITE_AND_NON_NEGATIVE(solution_feasibility_tolerance);
 
   TEST_NOT_NAN(objective_lower_limit);
   TEST_NOT_NAN(objective_upper_limit);
 
-  TEST_NON_NEGATIVE(max_time_in_seconds);
-  TEST_NON_NEGATIVE(max_deterministic_time);
-  TEST_NON_NEGATIVE(initial_condition_number_threshold);
   TEST_NON_NEGATIVE(crossover_bound_snapping_distance);
+  TEST_NON_NEGATIVE(initial_condition_number_threshold);
+  TEST_NON_NEGATIVE(max_deterministic_time);
+  TEST_NON_NEGATIVE(max_time_in_seconds);
   TEST_NON_NEGATIVE(max_valid_magnitude);
 
-  TEST_FINITE_AND_NON_NEGATIVE(basis_refactorization_period);
-  TEST_FINITE_AND_NON_NEGATIVE(random_seed);
-  TEST_FINITE_AND_NON_NEGATIVE(num_omp_threads);
-  TEST_FINITE_AND_NON_NEGATIVE(devex_weights_reset_period);
+  TEST_INTEGER_NON_NEGATIVE(basis_refactorization_period);
+  TEST_INTEGER_NON_NEGATIVE(devex_weights_reset_period);
+  TEST_INTEGER_NON_NEGATIVE(num_omp_threads);
+  TEST_INTEGER_NON_NEGATIVE(random_seed);
 
   if (params.markowitz_zlatev_parameter() < 1) {
     return "markowitz_zlatev_parameter must be >= 1";
@@ -84,8 +89,10 @@ std::string ValidateParameters(const GlopParameters& params) {
   return "";
 }
 
-#undef TEST_NOT_NAN
-#undef TEST_NON_NEGATIVE
 #undef TEST_FINITE_AND_NON_NEGATIVE
+#undef TEST_INTEGER_NON_NEGATIVE
+#undef TEST_NON_NEGATIVE
+#undef TEST_NOT_NAN
 
 }  // namespace operations_research::glop
+
