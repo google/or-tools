@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     container: 'centos:centos7'
     env:
-      SIRIUS_RELEASE_TAG: antares-integration-v1.0
+      SIRIUS_RELEASE_TAG: antares-integration-v1.3
       XPRESS_INSTALL_DIR: xpressmp813/
       SIRIUS_INSTALL_DIR: sirius_install/
     strategy:
