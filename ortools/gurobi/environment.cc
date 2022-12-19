@@ -44,6 +44,7 @@ bool GurobiIsCorrectlyInstalled() {
 // See the comment at the top of the script.
 
 // This is the 'define' section.
+std::function<int(GRBenv**, const char*, const char*, const char*, int, const char*)> GRBisqp = nullptr;
 std::function<int(GRBmodel *model, const char *attrname)> GRBisattravailable = nullptr;
 std::function<int(GRBmodel *model, const char *attrname, int *valueP)> GRBgetintattr = nullptr;
 std::function<int(GRBmodel *model, const char *attrname, int newvalue)> GRBsetintattr = nullptr;
@@ -121,6 +122,7 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   // See the comment at the top of the script.
 
   // This is the 'assign' section.
+  gurobi_dynamic_library->GetFunction(&GRBisqp, "GRBisqp");
   gurobi_dynamic_library->GetFunction(&GRBisattravailable, "GRBisattravailable");
   gurobi_dynamic_library->GetFunction(&GRBgetintattr, "GRBgetintattr");
   gurobi_dynamic_library->GetFunction(&GRBsetintattr, "GRBsetintattr");

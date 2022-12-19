@@ -29,17 +29,13 @@ typedef struct _GRBsvec {
   int* ind;
   double* val;
 } GRBsvec;
+} 
 
 #if defined(_MSC_VER)
 #define GUROBI_STDCALL __stdcall
 #else
 #define GUROBI_STDCALL
 #endif
-
-// See http://www.gurobi.com/products/licensing-pricing/isv-program.
-int GUROBI_STDCALL GRBisqp(GRBenv**, const char*, const char*, const char*, int,
-                           const char*);
-}
 
 namespace operations_research {
 
@@ -123,6 +119,7 @@ absl::Status LoadGurobiDynamicLibrary(std::vector<std::string> potential_paths);
 #define GRB_MAX_CONCURRENT 64
 #define CB_ARGS GRBmodel *model, void *cbdata, int where, void *usrdata
 #define LOGCB_ARGS char *msg, void *logdata
+extern std::function<int(GRBenv**, const char*, const char*, const char*, int, const char*)> GRBisqp;
 extern std::function<int(GRBmodel *model, const char *attrname)> GRBisattravailable;
 extern std::function<int(GRBmodel *model, const char *attrname, int *valueP)> GRBgetintattr;
 extern std::function<int(GRBmodel *model, const char *attrname, int newvalue)> GRBsetintattr;
