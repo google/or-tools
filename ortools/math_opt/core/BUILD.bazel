@@ -98,6 +98,7 @@ cc_library(
     srcs = ["solver.cc"],
     hdrs = ["solver.h"],
     deps = [
+        ":concurrent_calls_guard",
         ":model_summary",
         ":non_streamable_solver_init_arguments",
         ":solve_interrupter",
@@ -198,5 +199,19 @@ cc_library(
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "concurrent_calls_guard",
+    srcs = ["concurrent_calls_guard.cc"],
+    hdrs = ["concurrent_calls_guard.h"],
+    deps = [
+        "//ortools/base:check",
+        "@com_google_absl//absl/base:core_headers",
+        #"@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/synchronization",
     ],
 )
