@@ -161,6 +161,7 @@ cc_library(
         "//ortools/base:strong_vector",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
+        "//ortools/glop:parameters_validation",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/math_opt:callback_cc_proto",
