@@ -112,7 +112,7 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
 LPSolver::LPSolver() : num_solves_(0) {}
 
 std::string LPSolver::GlopVersion() {
-  return absl::StrCat("Glop ", OrToolsVersionString());
+  return absl::StrCat("Glop v", OrToolsVersionString());
 }
 
 void LPSolver::SetParameters(const GlopParameters& parameters) {
