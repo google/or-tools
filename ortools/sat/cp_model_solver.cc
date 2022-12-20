@@ -169,6 +169,11 @@ ABSL_FLAG(bool, cp_model_fingerprint_model, true, "Fingerprint the model.");
 namespace operations_research {
 namespace sat {
 
+std::string CpSatSolverVersion() {
+  return absl::StrCat("CP-SAT solver v", OrToolsMajorVersion(), ".",
+                      OrToolsMinorVersion(), ".", OrToolsPatchVersion());
+}
+
 namespace {
 
 // Makes the string fit in one line by cutting it in the middle if necessary.
@@ -3440,8 +3445,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #endif  // __PORTABLE_PLATFORM__
 
   SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Starting CP-SAT solver v", OrToolsMajorVersion(), ".",
-             OrToolsMinorVersion(), ".", OrToolsPatchVersion());
+  SOLVER_LOG(logger, "Starting ", CpSatSolverVersion());
   SOLVER_LOG(logger, "Parameters: ", params.ShortDebugString());
 
   // Update params.num_workers() if the old field was used.

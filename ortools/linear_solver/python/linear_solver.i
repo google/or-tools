@@ -258,6 +258,7 @@ PY_CONVERT(MPVariable);
 // Strip the "MP" prefix from the exposed classes.
 %rename (Solver) operations_research::MPSolver;
 %rename (Solver) operations_research::MPSolver::MPSolver;
+%unignore operations_research::MPSolver::SolverVersion;
 %rename (Constraint) operations_research::MPConstraint;
 %rename (Variable) operations_research::MPVariable;
 %rename (Objective) operations_research::MPObjective;

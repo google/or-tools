@@ -70,6 +70,9 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
 // you should always use this function to set the specific parameters.
 std::string EncodeSatParametersAsString(const sat::SatParameters& parameters);
 
+// Returns a string that describes the version of the CP-SAT solver.
+std::string SatSolverVersion();
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_

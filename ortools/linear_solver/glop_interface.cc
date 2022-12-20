@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/glop/lp_solver.h"
@@ -29,7 +28,6 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/time_limit.h"
-
 namespace operations_research {
 
 namespace {}  // Anonymous namespace
@@ -262,8 +260,7 @@ bool GLOPInterface::IsLP() const { return true; }
 bool GLOPInterface::IsMIP() const { return false; }
 
 std::string GLOPInterface::SolverVersion() const {
-  // TODO(user): Decide how to version glop. Add a GetVersion() to LPSolver.
-  return "Glop-0.0";
+  return glop::LPSolver::GlopVersion();
 }
 
 void* GLOPInterface::underlying_solver() { return &lp_solver_; }

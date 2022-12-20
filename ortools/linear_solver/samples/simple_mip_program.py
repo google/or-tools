@@ -21,7 +21,7 @@ from ortools.linear_solver import pywraplp
 def main():
     # [START solver]
     # Create the mip solver with the SCIP backend.
-    solver = pywraplp.Solver.CreateSolver('SCIP')
+    solver = pywraplp.Solver.CreateSolver('SAT')
     if not solver:
         return
     # [END solver]
@@ -51,6 +51,7 @@ def main():
     # [END objective]
 
     # [START solve]
+    print(f'Solving with {solver.SolverVersion()}')
     status = solver.Solve()
     # [END solve]
 

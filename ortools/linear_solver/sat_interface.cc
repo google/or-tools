@@ -21,7 +21,6 @@
 #include "absl/base/attributes.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -29,18 +28,8 @@
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/lp_utils.h"
-#include "ortools/sat/model.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
-
-#if defined(PROTOBUF_INTERNAL_IMPL)
-using google::protobuf::Message;
-#else
-using google::protobuf::Message;
-#endif
 
 class SatInterface : public MPSolverInterface {
  public:
@@ -254,9 +243,7 @@ bool SatInterface::IsContinuous() const { return false; }
 bool SatInterface::IsLP() const { return false; }
 bool SatInterface::IsMIP() const { return true; }
 
-std::string SatInterface::SolverVersion() const {
-  return "SAT Based MIP Solver";
-}
+std::string SatInterface::SolverVersion() const { return SatSolverVersion(); }
 
 void* SatInterface::underlying_solver() { return nullptr; }
 

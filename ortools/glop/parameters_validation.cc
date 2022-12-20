@@ -20,9 +20,19 @@
 
 namespace operations_research::glop {
 
-#define TEST_NOT_NAN(name)                                 \
-  if (std::isnan(params.name())) {                         \
-    return absl::StrCat("parameter '", #name, "' is NaN"); \
+#define TEST_FINITE_AND_NON_NEGATIVE(name)                                \
+  if (!std::isfinite(params.name())) {                                    \
+    return absl::StrCat("parameter '", #name, "' is NaN or not finite");  \
+  }                                                                       \
+  if (params.name() < 0) {                                                \
+    return absl::StrCat("Parameters '", #name, "' must be non-negative"); \
+  }
+
+// We need an integer version of the test as std::isnan can fail to compile
+// on windows platforms when passed integer values.
+#define TEST_INTEGER_NON_NEGATIVE(name)                                   \
+  if (params.name() < 0) {                                                \
+    return absl::StrCat("Parameters '", #name, "' must be non-negative"); \
   }
 
 #define TEST_NON_NEGATIVE(name)                                           \
@@ -33,17 +43,9 @@ namespace operations_research::glop {
     return absl::StrCat("Parameters '", #name, "' must be non-negative"); \
   }
 
-#define TEST_INTEGER_NON_NEGATIVE(name)                                   \
-  if (params.name() < 0) {                                                \
-    return absl::StrCat("Parameters '", #name, "' must be non-negative"); \
-  }
-
-#define TEST_FINITE_AND_NON_NEGATIVE(name)                                \
-  if (!std::isfinite(params.name())) {                                    \
-    return absl::StrCat("parameter '", #name, "' is NaN or not finite");  \
-  }                                                                       \
-  if (params.name() < 0) {                                                \
-    return absl::StrCat("Parameters '", #name, "' must be non-negative"); \
+#define TEST_NOT_NAN(name)                                 \
+  if (std::isnan(params.name())) {                         \
+    return absl::StrCat("parameter '", #name, "' is NaN"); \
   }
 
 std::string ValidateParameters(const GlopParameters& params) {
@@ -89,10 +91,9 @@ std::string ValidateParameters(const GlopParameters& params) {
   return "";
 }
 
-#undef TEST_FINITE_AND_NON_NEGATIVE
+#undef TEST_NOT_NAN
 #undef TEST_INTEGER_NON_NEGATIVE
 #undef TEST_NON_NEGATIVE
-#undef TEST_NOT_NAN
+#undef TEST_FINITE_AND_NON_NEGATIVE
 
 }  // namespace operations_research::glop
-

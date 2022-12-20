@@ -51,6 +51,7 @@ def main():
     # [END objective]
 
     # [START solve]
+    print(f'Solving with {solver.SolverVersion()}')
     status = solver.Solve()
     # [END solve]
 

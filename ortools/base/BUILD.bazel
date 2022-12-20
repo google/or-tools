@@ -40,9 +40,9 @@ cc_library(
         "version.h",
     ],
     copts = [
-        "-DOR_TOOLS_MAJOR=9999",
-        "-DOR_TOOLS_MINOR=0",
-        "-DOR_TOOLS_PATCH=0",
+        "-DOR_TOOLS_MAJOR=9",
+        "-DOR_TOOLS_MINOR=5",
+        "-DOR_TOOLS_PATCH=9999",
     ],
     deps = [
         ":basictypes",

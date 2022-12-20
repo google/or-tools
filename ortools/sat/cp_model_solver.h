@@ -26,6 +26,9 @@
 namespace operations_research {
 namespace sat {
 
+/// Returns a string that describes the version of the solver.
+std::string CpSatSolverVersion();
+
 /// Solves the given CpModelProto and returns an instance of CpSolverResponse.
 CpSolverResponse Solve(const CpModelProto& model_proto);
 

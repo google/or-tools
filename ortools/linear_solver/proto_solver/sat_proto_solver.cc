@@ -435,4 +435,6 @@ std::string EncodeSatParametersAsString(const sat::SatParameters& parameters) {
   return ProtobufShortDebugString(parameters);
 }
 
+std::string SatSolverVersion() { return sat::CpSatSolverVersion(); }
+
 }  // namespace operations_research

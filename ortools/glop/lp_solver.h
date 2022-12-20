@@ -15,9 +15,10 @@
 #define OR_TOOLS_GLOP_LP_SOLVER_H_
 
 #include <memory>
+#include <string>
 
 #include "ortools/glop/parameters.pb.h"
-#include "ortools/glop/preprocessor.h"
+#include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/logging.h"
@@ -36,6 +37,9 @@ class LPSolver {
   void SetParameters(const GlopParameters& parameters);
   const GlopParameters& GetParameters() const;
   GlopParameters* GetMutableParameters();
+
+  // Returns a string that describes the version of the solver.
+  static std::string GlopVersion();
 
   // Solves the given linear program and returns the solve status. See the
   // ProblemStatus documentation for a description of the different values.
@@ -61,7 +65,7 @@ class LPSolver {
   // Puts the solver in a clean state.
   //
   // Calling Solve() for the first time, or calling Clear() then Solve() on the
-  // same problem is guaranted to be deterministic and to always give the same
+  // same problem is guaranteed to be deterministic and to always give the same
   // result, assuming that no time limit was specified.
   void Clear();
 

@@ -373,7 +373,7 @@ message GlopParameters {
   // That is, the variable values are unchanged for the primal simplex or the
   // reduced cost are unchanged for the dual simplex. However, instead of doing
   // a step of length zero, it seems to be better on degenerate problems to do a
-  // small positive step. This is what is recommanded in the EXPAND procedure
+  // small positive step. This is what is recommended in the EXPAND procedure
   // described in:
   // P. E. Gill, W. Murray, M. A. Saunders, and M. H. Wright. "A practical anti-
   // cycling procedure for linearly constrained optimization".
