@@ -385,6 +385,7 @@ cc_library(
     copts = SAFE_FP_CODE,
     deps = [
         ":parameters_cc_proto",
+        ":preprocessor",
         ":revised_simplex",
         ":status",
         "//ortools/base",
