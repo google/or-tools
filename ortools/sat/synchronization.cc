@@ -685,13 +685,18 @@ void SharedResponseManager::NewSolution(
 #if !defined(__PORTABLE_PLATFORM__)
   // We protect solution dumping with log_updates as LNS subsolvers share
   // another solution manager, and we do not want to dump those.
-  if (absl::GetFlag(FLAGS_cp_model_dump_solutions)) {
-    // TODO(user): duplicate GetResponseInternal() with the above code.
+  if (logger_->LoggingIsEnabled() &&
+      absl::GetFlag(FLAGS_cp_model_dump_solutions)) {
     const std::string file =
         absl::StrCat(dump_prefix_, "solution_", num_solutions_, ".pb.txt");
     LOG(INFO) << "Dumping solution to '" << file << "'.";
-    CpSolverResponse copy = GetResponseInternal(solution_values, solution_info);
-    CHECK_OK(file::SetTextProto(file, copy, file::Defaults()));
+
+    // Note that here we only want to dump the non-postsolved solution.
+    // This is only used for debugging.
+    CpSolverResponse response;
+    response.mutable_solution()->Assign(solution_values.begin(),
+                                        solution_values.end());
+    CHECK_OK(file::SetTextProto(file, response, file::Defaults()));
   }
 #endif  // __PORTABLE_PLATFORM__
 }

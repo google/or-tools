@@ -444,14 +444,15 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
 
       // TODO(user): This heuristic can make this code quite slow because
       // all the untrailed variable will cause a priority queue update.
-      const int64_t num_bumps = num_bumps_[var];
-      double new_rate = 0.0;
-      if (num_bumps > 0) {
-        DCHECK_GT(num_conflicts, 0);
-        num_bumps_[var] = 0;
-        new_rate = static_cast<double>(num_bumps) / num_conflicts;
+      if (num_conflicts > 0) {
+        const int64_t num_bumps = num_bumps_[var];
+        double new_rate = 0.0;
+        if (num_bumps > 0) {
+          num_bumps_[var] = 0;
+          new_rate = static_cast<double>(num_bumps) / num_conflicts;
+        }
+        activities_[var] = alpha * new_rate + (1 - alpha) * activities_[var];
       }
-      activities_[var] = alpha * new_rate + (1 - alpha) * activities_[var];
       if (var_ordering_is_initialized_) PqInsertOrUpdate(var);
     }
     if (num_conflicts > 0) {
