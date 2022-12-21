@@ -212,6 +212,20 @@ class SchoolSchedulingSatSolver():
             print(f'Total working hours for {subject}: {hours}h')
 
 
+    def print_school_schedule(self):
+        print('School:')
+        for slt_idx, slot in enumerate(self._problem.time_slots):
+            tmp = f'{slot}:'
+            for lvl_idx, level in enumerate(self._problem.levels):
+                for sec_idx, section in enumerate(self._problem.sections):
+                    for sub_idx, subject in enumerate(self._problem.subjects):
+                        for tch_idx, teacher in enumerate(self._problem.teachers):
+                            key = (lvl_idx, sec_idx, sub_idx, tch_idx, slt_idx)
+                            if self._solver.BooleanValue(self._assignment[key]):
+                                tmp += f' {level}-{section}:({subject},{teacher})'
+            print(tmp)
+
+
     def solve(self):
         print('Solving')
         # Create Solver
@@ -230,6 +244,9 @@ class SchoolSchedulingSatSolver():
             for level_idx in self._all_levels:
                 for section_idx in self._all_sections:
                     self.print_class_schedule(level_idx, section_idx)
+
+            print('\n# School')
+            self.print_school_schedule()
 
         print('Branches: ', self._solver.NumBranches())
         print('Conflicts: ', self._solver.NumConflicts())
@@ -281,44 +298,44 @@ def main():
 
     ## Teachers
     TEACHERS = { # name, max_work_hours
-        'Mario': 18,
+        'Mario': 14,
         'Elvis': 12,
-        'Donald': 12,
-        'Ian': 18,
+        'Harry': 12,
+        'Ian': 14,
     }
     # Subject -> List of teachers who can teach it
     SPECIALTIES = {
         'English': ['Elvis', 'Ian'],
         'Math': ['Mario', 'Ian'],
-        'History': ['Donald', 'Ian'],
+        'History': ['Harry', 'Ian'],
     }
 
     ## Schedule
     TIME_SLOTS = {
-        ('Monday', '08:00-09:30'): 1.5,
-        ('Monday', '09:45-11:15'): 1.5,
-        ('Monday', '11:30-12:30'): 1,
-        ('Monday', '13:30-15:30'): 2,
-        ('Monday', '15:45-17:15'): 1.5,
-        ('Tuesday', '08:00-09:30'): 1.5,
-        ('Tuesday', '09:45-11:15'): 1.5,
-        ('Tuesday', '11:30-12:30'): 1,
-        ('Tuesday', '13:30-15:30'): 2,
-        ('Tuesday', '15:45-17:15'): 1.5,
-        ('Wednesday', '08:00-09:30'): 1.5,
-        ('Wednesday', '09:45-11:15'): 1.5,
-        ('Wednesday', '11:30-12:30'): 1,
-        ('Thursday', '08:00-09:30'): 1.5,
-        ('Thursday', '09:45-11:15'): 1.5,
-        ('Thursday', '11:30-12:30'): 1,
-        ('Thursday', '13:30-15:30'): 2,
-        ('Thursday', '15:45-17:15'): 1.5,
-        ('Friday', '08:00-09:30'): 1.5,
-        ('Friday', '09:45-11:15'): 1.5,
-        ('Friday', '11:30-12:30'): 1,
-        ('Friday', '13:30-15:30'): 2,
-        ('Friday', '15:45-17:15'): 1.5,
-    }
+            'Monday:08:00-09:30': 1.5,
+            'Monday:09:45-11:15': 1.5,
+            'Monday:11:30-12:30': 1,
+            'Monday:13:30-15:30': 2,
+            'Monday:15:45-17:15': 1.5,
+            'Tuesday:08:00-09:30': 1.5,
+            'Tuesday:09:45-11:15': 1.5,
+            'Tuesday:11:30-12:30': 1,
+            'Tuesday:13:30-15:30': 2,
+            'Tuesday:15:45-17:15': 1.5,
+            'Wednesday:08:00-09:30': 1.5,
+            'Wednesday:09:45-11:15': 1.5,
+            'Wednesday:11:30-12:30': 1,
+            'Thursday:08:00-09:30': 1.5,
+            'Thursday:09:45-11:15': 1.5,
+            'Thursday:11:30-12:30': 1,
+            'Thursday:13:30-15:30': 2,
+            'Thursday:15:45-17:15': 1.5,
+            'Friday:08:00-09:30': 1.5,
+            'Friday:09:45-11:15': 1.5,
+            'Friday:11:30-12:30': 1,
+            'Friday:13:30-15:30': 2,
+            'Friday:15:45-17:15': 1.5,
+            }
 
     problem = SchoolSchedulingProblem(LEVELS, SECTIONS, SUBJECTS, CURRICULUM,
                                       TEACHERS, SPECIALTIES, TIME_SLOTS)
