@@ -46,7 +46,8 @@ double ConvertVectorBinPackingProblem(const vbp::VectorBinPackingProblem& input,
   for (int i = 0; i < num_items; ++i) {
     shapes[i].assign(input.item(i).resource_usage().begin(),
                      input.item(i).resource_usage().end());
-    demands[i] = input.item(i).num_copies();
+    demands[i] =
+        input.item(i).num_copies() + input.item(i).num_optional_copies();
   }
   for (int i = 0; i < num_dims; ++i) {
     capacities[i] = input.resource_capacity(i);
@@ -87,7 +88,7 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     max_num_bins = max_bins;
   } else {
     for (const auto& item : problem.item()) {
-      max_num_bins += item.num_copies();
+      max_num_bins += item.num_copies() + item.num_optional_copies();
     }
   }
   const int num_types = problem.item_size();
@@ -98,6 +99,7 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
 
   MPSolver solver("VectorBinPacking", solver_type);
   CHECK_OK(solver.SetNumThreads(num_threads));
+  MPObjective* const objective = solver.MutableObjective();
 
   for (int v = 0; v < graph.arcs.size(); ++v) {
     const ArcFlowGraph::Arc& arc = graph.arcs[v];
@@ -113,9 +115,14 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
 
   // Per item demand constraint.
   for (int i = 0; i < num_types; ++i) {
-    MPConstraint* const ct = solver.MakeRowConstraint(
-        problem.item(i).num_copies(), problem.item(i).num_copies());
+    const vbp::Item& item = problem.item(i);
+    int max_copies = item.num_copies() + item.num_optional_copies();
+    MPConstraint* const ct =
+        solver.MakeRowConstraint(item.num_copies(), max_copies);
+    objective->SetOffset(max_copies * item.penalty_per_missing_copy() +
+                         objective->offset());
     for (MPVariable* const var : item_to_vars[i]) {
+      objective->SetCoefficient(var, -item.penalty_per_missing_copy());
       ct->SetCoefficient(var, 1.0);
     }
   }
@@ -131,13 +138,16 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     }
   }
 
-  MPVariable* const obj_var = solver.MakeIntVar(0, max_num_bins, "obj_var");
+  MPVariable* const num_bins_var =
+      solver.MakeIntVar(0, max_num_bins, "num_bins_var");
+  objective->SetCoefficient(
+      num_bins_var, problem.has_cost_per_bin() ? problem.cost_per_bin() : 1.0);
   {  // Source.
     MPConstraint* const ct = solver.MakeRowConstraint(0.0, 0.0);
+    ct->SetCoefficient(num_bins_var, 1.0);
     for (MPVariable* const var : outgoing_vars[/*source*/ 0]) {
-      ct->SetCoefficient(var, 1.0);
+      ct->SetCoefficient(var, -1.0);
     }
-    ct->SetCoefficient(obj_var, -1.0);
   }
 
   {  // Sink.
@@ -146,11 +156,8 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     for (MPVariable* const var : incoming_vars[sink_node]) {
       ct->SetCoefficient(var, 1.0);
     }
-    ct->SetCoefficient(obj_var, -1.0);
+    ct->SetCoefficient(num_bins_var, -1.0);
   }
-
-  MPObjective* const objective = solver.MutableObjective();
-  objective->SetCoefficient(obj_var, 1.0);
 
   if (!absl::GetFlag(FLAGS_arc_flow_dump_model).empty()) {
     MPModelProto output_model;
@@ -207,23 +214,25 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
       auto& [next, count, item] = node_to_next_count_item[node].back();
       CHECK_NE(next, -1);
       CHECK_GT(count, 0);
+      // Copy next and item before popping.
+      const NextItem result{next, item};
       if (--count == 0) {
         node_to_next_count_item[node].pop_back();
       }
-      return NextItem({next, item});
+      return result;
     };
 
+    VLOG(1) << "Packing used " << num_bins_var->solution_value()
+            << " total bins";
     const int start_node = 0;
     const int end_node = graph.nodes.size() - 1;
     while (!node_to_next_count_item[start_node].empty()) {
       absl::btree_map<int, int> item_count;
       int current = start_node;
       while (current != end_node) {
-        const auto& [next, item] = pop_next_item(current);
+        const auto [next, item] = pop_next_item(current);
         if (item != -1) {
           item_count[item]++;
-        } else {
-          CHECK_EQ(next, end_node);
         }
         current = next;
       }
@@ -232,6 +241,10 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
         bin->add_item_indices(item);
         bin->add_item_copies(count);
       }
+    }
+    CHECK_EQ(solution.bins_size(), std::round(num_bins_var->solution_value()));
+    for (const auto& next_counts : node_to_next_count_item) {
+      CHECK(next_counts.empty());
     }
   }
 

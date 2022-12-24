@@ -23,9 +23,10 @@
 //     copies for each item.
 //
 // The goal is either:
-// - optimization: minimizing the number of bins needed to fit all items, or
-// - feasibility: checking if all items can be packed using at most a given
-//   number of bins.
+// - optimization: minimizing a weighted sum of the number of bins used, plus a
+//                 weighted sum of skipped items; or
+// - feasibility: checking if all required items can be packed using at most a
+//   given number of bins.
 //
 // In both cases we must ensure that for each bin and each resource, the sum of
 // sizes of each assigned item is less than the capacity of the resource of the
@@ -51,13 +52,24 @@ message Item {
   // VectorBinPackingProblem.
   repeated int64 resource_usage = 2;
 
-  // Number of identical copies of this item.
+  // Number of identical copies of this item that must be packed into some bin.
   int32 num_copies = 3;
+
+  // The number of extra copies which may be skipped for a penalty.
+  // Currently only supported by the ArcFlow solver (arc_flow_solver.h), other
+  // solvers ignore this field.
+  int32 num_optional_copies = 5;
 
   // An optional upper bound on how many copies of the same item are allowed in
   // a single bin, regardless of resource utilization. A value of 0 is
   // interpreted as no limit.
   int32 max_number_of_copies_per_bin = 4;
+
+  // Minimize the total cost of bins plus this penalty for each optional copy
+  // not placed in any bin.
+  // Currently only supported by the ArcFlow solver (arc_flow_solver.h), other
+  // solvers ignore this field.
+  double penalty_per_missing_copy = 6;
 }
 
 message VectorBinPackingProblem {
@@ -76,8 +88,15 @@ message VectorBinPackingProblem {
   repeated Item item = 4;
 
   // The maximum number of bins available. A value of 0 is interpreted as no
-  // limit. Nonzero values are used to encode feasibility problems.
+  // limit. Nonzero values may be used to encode feasibility problems.
   int32 max_bins = 5;
+
+  // If specified, tries to maximize the value of packed items minus the cost
+  // per bin used. A missing value is treated as 1.
+  // Currently only supported by the ArcFlow solver
+  // (ortools/packing/arc_flow_solver.h), other solvers
+  // ignore this field.
+  optional double cost_per_bin = 6;
 }
 
 // Describe one filled bin in the solution.
@@ -114,6 +133,7 @@ message VectorBinPackingSolution {
   VectorBinPackingSolveStatus status = 3;
 
   // Objective value.
+  // The total cost of bins used plus the penalty for any skipped items.
   double objective_value = 4;
 
   // Solve time in seconds.
