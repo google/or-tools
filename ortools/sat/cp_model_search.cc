@@ -166,6 +166,14 @@ bool ModelHasSchedulingConstraints(const CpModelProto& cp_model_proto) {
   return false;
 }
 
+void AddDualSchedulingHeuristics(SatParameters& new_params) {
+  new_params.set_exploit_all_precedences(true);
+  new_params.set_use_hard_precedences_in_cumulative(true);
+  new_params.set_use_overload_checker_in_cumulative(true);
+  new_params.set_use_strong_propagation_in_disjunctive(true);
+  new_params.set_use_timetable_edge_finding_in_cumulative(true);
+}
+
 }  // namespace
 
 const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
@@ -499,9 +507,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_optimize_with_lb_tree_search(true);
     new_params.set_linearization_level(2);
     if (base_params.use_dual_scheduling_heuristics()) {
-      new_params.set_use_overload_checker_in_cumulative(true);
-      new_params.set_use_timetable_edge_finding_in_cumulative(true);
-      new_params.set_use_hard_precedences_in_cumulative(true);
+      AddDualSchedulingHeuristics(new_params);
     }
 
     // We want to spend more time on the LP here.
@@ -519,10 +525,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_linearization_level(1);
     new_params.set_use_objective_lb_search(true);
     if (base_params.use_dual_scheduling_heuristics()) {
-      new_params.set_use_overload_checker_in_cumulative(true);
-      new_params.set_use_timetable_edge_finding_in_cumulative(true);
-      new_params.set_use_hard_precedences_in_cumulative(true);
-      new_params.set_exploit_all_precedences(true);
+      AddDualSchedulingHeuristics(new_params);
     }
     strategies["objective_lb_search"] = new_params;
 
@@ -538,9 +541,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
     if (base_params.use_dual_scheduling_heuristics()) {
-      new_params.set_use_overload_checker_in_cumulative(true);
-      new_params.set_use_timetable_edge_finding_in_cumulative(true);
-      new_params.set_use_hard_precedences_in_cumulative(true);
+      AddDualSchedulingHeuristics(new_params);
     }
     strategies["probing"] = new_params;
 
@@ -580,10 +581,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_linearization_level(2);
     new_params.set_search_branching(SatParameters::LP_SEARCH);
     if (base_params.use_dual_scheduling_heuristics()) {
-      new_params.set_use_overload_checker_in_cumulative(true);
-      new_params.set_use_timetable_edge_finding_in_cumulative(true);
-      new_params.set_use_hard_precedences_in_cumulative(true);
-      new_params.set_exploit_all_precedences(true);
+      AddDualSchedulingHeuristics(new_params);
     }
     strategies["reduced_costs"] = new_params;
   }

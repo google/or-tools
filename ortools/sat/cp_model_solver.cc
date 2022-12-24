@@ -170,8 +170,7 @@ namespace operations_research {
 namespace sat {
 
 std::string CpSatSolverVersion() {
-  return absl::StrCat("CP-SAT solver v", OrToolsMajorVersion(), ".",
-                      OrToolsMinorVersion(), ".", OrToolsPatchVersion());
+  return absl::StrCat("CP-SAT solver v", OrToolsVersionString());
 }
 
 namespace {
