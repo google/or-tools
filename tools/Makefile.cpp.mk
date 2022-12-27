@@ -87,7 +87,7 @@ build: $(SOURCE) examples/$(SOURCE_NAME)/CMakeLists.txt
  cmake \
  -S. -Bbuild \
  -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
- -DCMAKE_PREFIX_PATH=$(shell pwd)
+ -DCMAKE_PREFIX_PATH=$(CURDIR)
 	cd examples$S$(SOURCE_NAME) && \
  cmake \
  --build build \
