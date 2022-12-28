@@ -19,9 +19,6 @@
 #include <functional>
 #include <string>
 
-#include "absl/status/status.h"
-#include "absl/strings/match.h"
-#include "ortools/base/file.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"

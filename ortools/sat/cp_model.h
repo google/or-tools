@@ -1094,6 +1094,9 @@ class CpModelBuilder {
   const CpModelProto& Proto() const { return cp_model_; }
   CpModelProto* MutableProto() { return &cp_model_; }
 
+  /// Export the model to file.
+  bool ExportToFile(const std::string& filename) const;
+
   /// Replaces the current model with the one from the given proto.
   void CopyFrom(const CpModelProto& model_proto);
 

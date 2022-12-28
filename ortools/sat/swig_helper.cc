@@ -157,11 +157,7 @@ operations_research::Domain CpSatHelper::VariableDomain(
 bool CpSatHelper::WriteModelToFile(
     const operations_research::sat::CpModelProto& model_proto,
     const std::string& filename) {
-  if (absl::EndsWith(filename, "txt")) {
-    return file::SetTextProto(filename, model_proto, file::Defaults()).ok();
-  } else {
-    return file::SetBinaryProto(filename, model_proto, file::Defaults()).ok();
-  }
+      return WriteModelProtoToFile(model_proto, filename);
 }
 
 }  // namespace sat

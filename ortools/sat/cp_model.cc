@@ -1344,6 +1344,10 @@ IntervalVar CpModelBuilder::GetIntervalVarFromProtoIndex(int index) {
   return IntervalVar(index, this);
 }
 
+bool CpModelBuilder::ExportToFile(const std::string& filename) const {
+  return WriteModelProtoToFile(cp_model_, filename);
+}
+
 int64_t SolutionIntegerValue(const CpSolverResponse& r,
                              const LinearExpr& expr) {
   int64_t result = expr.constant();
