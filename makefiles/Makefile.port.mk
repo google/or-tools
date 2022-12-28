@@ -26,7 +26,7 @@ endif
 
 # Unix specific part.
 ifneq ($(PLATFORM),WIN64)
-  OR_TOOLS_TOP ?= $(shell pwd)
+  OR_TOOLS_TOP ?= $(CURDIR)
   OS = $(shell uname -s)
   CPU = $(shell uname -m)
   PYTHON_VERSION ?= $(shell python3 -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")

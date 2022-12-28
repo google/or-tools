@@ -1,4 +1,4 @@
-OR_TOOLS_TOP=$(shell pwd)/../../..
+OR_TOOLS_TOP=$(CURDIR)/../../..
 include $(OR_TOOLS_TOP)/Makefile
 
 tsp.$O: tsp.cc $(OR_TOOLS_TOP)/src/constraint_solver/routing.h
