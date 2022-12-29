@@ -104,6 +104,12 @@ public class Loader {
   public static synchronized void loadNativeLibraries() {
     if (!loaded) {
       try {
+        System.loadLibrary("jniortools");
+        return;
+      } catch (UnsatisfiedLinkError exception) {
+        // Do nothing.
+      }
+      try {
         URI resourceURI = getNativeResourceURI();
         Path tempPath = unpackNativeResources(resourceURI);
         // Load the native library

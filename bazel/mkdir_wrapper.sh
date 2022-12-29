@@ -1,9 +1,11 @@
-# Copyright 2010-2022 Google LLC
+#!/usr/bin/env bash
+# Copyright 2021 The Cross-Media Measurement Authors
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -11,15 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:public"])
 
-cc_library(
-    name = "init",
-    hdrs = ["init.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/gurobi:environment",
-        "//ortools/sat:cp_model_solver",
-        "@com_google_absl//absl/flags:flag",
-    ],
-)
+# Wrapper which creates the directory specified as $1, then executing the
+# command in $2 with the remaining arguments.
+#
+# This is to work around https://github.com/bazelbuild/bazel/issues/6393
+
+readonly directory="$1"
+readonly command="$2"
+shift 2
+
+mkdir -p "${directory}"
+exec "${command}" "$@"

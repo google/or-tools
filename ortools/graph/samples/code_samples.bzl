@@ -85,3 +85,19 @@ def code_sample_py(name):
 def code_sample_cc_py(name):
     code_sample_cc(name = name)
     code_sample_py(name = name)
+
+def code_sample_java(name):
+    native.java_binary(
+        name = name + "_java",
+        srcs = [name + ".java"],
+        main_class = "com.google.ortools.graph.samples." + name,
+        data = [
+            "//ortools/java/com/google/ortools:libjniortools.so",
+            "//ortools/java/com/google/ortools:libjniortools.dylib",
+            "//ortools/java/com/google/ortools:jniortools.dll",
+        ],
+        deps = [
+            "//ortools/graph/java:graph",
+            "//ortools/java/com/google/ortools:Loader"
+        ],
+    )  

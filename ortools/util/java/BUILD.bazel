@@ -1,0 +1,7 @@
+filegroup(
+    name = "vector_swig",
+    srcs = [
+        "vector.i",
+    ],
+    visibility = ["//visibility:public"],
+)

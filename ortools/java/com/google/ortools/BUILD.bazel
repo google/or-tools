@@ -1,0 +1,42 @@
+# Utilities to load native libraries in java or-tools.
+java_library(
+    name = "Loader",
+    srcs = ["Loader.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@maven//:net_java_dev_jna_jna",
+    ],
+)
+
+cc_binary(
+    name = "libjniortools.so",
+    deps = [
+        "//ortools/algorithms/java:knapsacksolver_cc",
+        "//ortools/graph/java:graph_cc",
+        "//ortools/init/java:init_cc",
+    ],
+    linkshared = True,
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "libjniortools.dylib",
+    deps = [
+        "//ortools/algorithms/java:knapsacksolver_cc",
+        "//ortools/graph/java:graph_cc",
+        "//ortools/init/java:init_cc",
+    ],
+    linkshared = True,
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "jniortools.dll",
+    deps = [
+        "//ortools/algorithms/java:knapsacksolver_cc",
+        "//ortools/graph/java:graph_cc",
+        "//ortools/init/java:init_cc",
+    ],
+    linkshared = True,
+    visibility = ["//visibility:public"],
+)

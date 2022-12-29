@@ -31,3 +31,19 @@ def code_sample_cc(name):
             "//ortools/algorithms:knapsack_solver_lib",
         ],
     )
+
+def code_sample_java(name):
+    native.java_binary(
+        name = name + "_java",
+        srcs = [name + ".java"],
+        main_class = "com.google.ortools.algorithms.samples." + name,
+        data = [
+            "//ortools/java/com/google/ortools:libjniortools.so",
+            "//ortools/java/com/google/ortools:libjniortools.dylib",
+            "//ortools/java/com/google/ortools:jniortools.dll",
+        ],
+        deps = [
+            "//ortools/algorithms/java:knapsacksolver",
+            "//ortools/java/com/google/ortools:Loader"
+        ],
+    )    

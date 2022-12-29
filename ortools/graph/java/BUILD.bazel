@@ -1,0 +1,19 @@
+# Description: java wrapping of the C++ code at ../
+
+load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
+
+ortools_java_wrap_cc(
+    name = "graph",
+    src = "graph.i",
+    package = "com.google.ortools.graph",
+    module = "graph",
+    swig_includes = [
+        "//ortools/base:base_swig",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/graph:assignment",
+        "//ortools/graph:min_cost_flow",
+        "//ortools/graph:max_flow",
+    ],
+)

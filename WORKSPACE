@@ -151,3 +151,24 @@ new_git_repository(
 
 load("@pybind11_bazel//:python_configure.bzl", "python_configure")
 python_configure(name = "local_config_python", python_version = "3")
+
+new_git_repository(
+    name = "swig",
+    build_file = "//bazel:swig.BUILD",
+    tag = "v4.0.2",
+    remote = "https://github.com/swig/swig.git",
+)
+
+# Java support
+load("@rules_jvm_external//:defs.bzl", "maven_install")
+
+maven_install(
+    artifacts = [
+        "net.java.dev.jna:jna:aar:5.8.0"
+    ],
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+)
+
+

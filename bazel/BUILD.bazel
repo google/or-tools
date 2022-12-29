@@ -24,3 +24,9 @@ exports_files([
     "archive_helper.bzl",
     "python_deps.txt",
 ])
+
+sh_binary(
+    name = "mkdir_wrapper",
+    srcs = ["mkdir_wrapper.sh"],
+    visibility = ["//visibility:public"],
+)
