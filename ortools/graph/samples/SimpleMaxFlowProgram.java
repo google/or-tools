@@ -21,7 +21,6 @@ import com.google.ortools.graph.MaxFlow;
 /** Minimal MaxFlow program. */
 public final class SimpleMaxFlowProgram {
   public static void main(String[] args) throws Exception {
-    System.loadLibrary("jniortools");
     Loader.loadNativeLibraries();
     // [START solver]
     // Instantiate a SimpleMaxFlow solver.
