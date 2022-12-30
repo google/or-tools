@@ -32,6 +32,7 @@ def _java_wrap_cc_impl(ctx):
     name = ctx.attr.name
     src = ctx.file.src
     outfile = ctx.outputs.outfile
+    outhdr = ctx.outputs.outhdr
 
     header_sets = []  # depsets of Files
     include_path_sets = []  # depsets of strings
@@ -64,9 +65,12 @@ def _java_wrap_cc_impl(ctx):
     for include_path in depset(transitive = include_path_sets).to_list():
         swig_args.add("-I" + include_path)
     swig_args.add(src.path)
+    generated_c_files = [outfile]
+    if ctx.attr.use_directors:
+        generated_c_files.append(outhdr)
 
     ctx.actions.run(
-        outputs = [outfile, java_files_dir],
+        outputs = generated_c_files + [java_files_dir],
         inputs = depset([src] + ctx.files.swig_includes, transitive = header_sets),
         executable = ctx.executable._mkdir_wrapper,
         arguments = [swig_args],
@@ -93,6 +97,9 @@ It's expected that the `swig` binary exists in the host's path.
             doc = "C++ dependencies.",
             providers = [CcInfo],
         ),
+        "java_deps": attr.label_list(
+            doc = "Java dependencies.",
+        ),
         "package": attr.string(
             doc = "Package for generated Java.",
             mandatory = True,
@@ -101,6 +108,9 @@ It's expected that the `swig` binary exists in the host's path.
         "outfile": attr.output(
             doc = "Generated C++ output file.",
             mandatory = True,
+        ),
+        "outhdr": attr.output(
+            doc = "Generated C++ header output file.",
         ),
         "srcjar": attr.output(
             doc = "Generated Java source jar.",
@@ -120,6 +130,7 @@ It's expected that the `swig` binary exists in the host's path.
             allow_files = True,
         ),
         "swig_opt": attr.string(doc = "Optional Swig opt."),
+        "use_directors": attr.bool(doc = "use directors")
     },
 )
 
@@ -128,8 +139,10 @@ def ortools_java_wrap_cc(
         src,
         package,
         deps = [],
+        java_deps = [],
         swig_opt = '',
         swig_includes = [],
+        use_directors = False,
         module = None,
         visibility = None,
         **kwargs):
@@ -142,8 +155,11 @@ def ortools_java_wrap_cc(
         src: single .swig source file.
         package: package of generated Java files.
         deps: C++ deps.
-        defines: C++ defines.
+        java_deps: Java deps.
         module: optional name of Swig module.
+        swig_opt: optional defines passed to the swig command.
+        swig_includes: list of swig files included by the current swig file.
+        use_directors: Boolean flag.
 
     Generated targets:
         {name}: java_library
@@ -153,6 +169,7 @@ def ortools_java_wrap_cc(
     wrapper_name = "_" + name + "_wrapper"
     cc_name = name + "_cc"
     outfile = name + ".cc"
+    outhdr = name + ".h"
     srcjar = name + ".srcjar"
 
     _java_wrap_cc(
@@ -160,11 +177,13 @@ def ortools_java_wrap_cc(
         src = src,
         package = package,
         outfile = outfile,
+        outhdr = outhdr if use_directors else None,
         srcjar = srcjar,
         deps = deps,
         swig_opt = swig_opt,
         module = module,
         swig_includes = swig_includes,
+        use_directors = use_directors,
         visibility = ["//visibility:private"],
         **kwargs
     )
@@ -172,6 +191,7 @@ def ortools_java_wrap_cc(
     native.cc_library(
         name = cc_name,
         srcs = [outfile],
+        hdrs = [outhdr] if use_directors else [],
         deps = deps + ["@bazel_tools//tools/jdk:jni"],
         alwayslink = True,
         visibility = visibility,
@@ -181,6 +201,7 @@ def ortools_java_wrap_cc(
     native.java_library(
         name = name,
         srcs = [srcjar],
+        deps = java_deps,
         runtime_deps = [
             "//ortools/java/com/google/ortools:libjniortools.so",
             "//ortools/java/com/google/ortools:libjniortools.dylib",

@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(":code_samples.bzl", "code_sample_cc_py", "code_sample_py")
+load(":code_samples.bzl", "code_sample_cc_py", "code_sample_py", "code_sample_java")
 
 code_sample_cc_py(name = "assignment_sat")
 
@@ -80,3 +80,65 @@ code_sample_cc_py(name = "step_function_sample_sat")
 code_sample_cc_py(name = "solve_with_time_limit_sample_sat")
 
 code_sample_cc_py(name = "stop_after_n_solutions_sample_sat")
+
+code_sample_java(name = "AssignmentGroupsSat")
+
+code_sample_java(name = "AssignmentSat")
+
+code_sample_java(name = "AssignmentTaskSizesSat")
+
+code_sample_java(name = "AssignmentTeamsSat")
+
+code_sample_java(name = "AssumptionsSampleSat")
+
+code_sample_java(name = "BinPackingProblemSat")
+
+code_sample_java(name = "BoolOrSampleSat")
+
+code_sample_java(name = "ChannelingSampleSat")
+
+code_sample_java(name = "CpIsFunSat")
+
+code_sample_java(name = "CpSatExample")
+
+code_sample_java(name = "EarlinessTardinessCostSampleSat")
+
+code_sample_java(name = "IntervalSampleSat")
+
+code_sample_java(name = "LiteralSampleSat")
+
+code_sample_java(name = "MinimalJobshopSat")
+
+code_sample_java(name = "MultipleKnapsackSat")
+
+code_sample_java(name = "NQueensSat")
+
+code_sample_java(name = "NoOverlapSampleSat")
+
+code_sample_java(name = "NonLinearSat")
+
+code_sample_java(name = "NursesSat")
+
+code_sample_java(name = "OptionalIntervalSampleSat")
+
+code_sample_java(name = "RabbitsAndPheasantsSat")
+
+code_sample_java(name = "RankingSampleSat")
+
+code_sample_java(name = "ReifiedSampleSat")
+
+code_sample_java(name = "ScheduleRequestsSat")
+
+code_sample_java(name = "SearchForAllSolutionsSampleSat")
+
+code_sample_java(name = "SimpleSatProgram")
+
+code_sample_java(name = "SolutionHintingSampleSat")
+
+code_sample_java(name = "SolveAndPrintIntermediateSolutionsSampleSat")
+
+code_sample_java(name = "SolveWithTimeLimitSampleSat")
+
+code_sample_java(name = "StepFunctionSampleSat")
+
+code_sample_java(name = "StopAfterNSolutionsSampleSat")

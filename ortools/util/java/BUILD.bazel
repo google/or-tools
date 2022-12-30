@@ -1,7 +1,41 @@
+# Description: java wrapping of the code in ../
+
+load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
+
 filegroup(
     name = "vector_swig",
     srcs = [
         "vector.i",
     ],
     visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "proto_swig",
+    srcs = [
+        "proto.i",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "sorted_interval_list_swig",
+    srcs = [
+        "sorted_interval_list.i",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+ortools_java_wrap_cc(
+    name = "sorted_interval_list",
+    src = "sorted_interval_list.i",
+    package = "com.google.ortools.util",
+    swig_includes = [
+        "//ortools/base:base_swig",
+        ":vector_swig",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/util:sorted_interval_list",
+    ],
 )

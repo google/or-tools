@@ -73,3 +73,23 @@ def code_sample_py(name):
 def code_sample_cc_py(name):
     code_sample_cc(name = name)
     code_sample_py(name = name)
+
+def code_sample_java(name):
+    native.java_binary(
+        name = name + "_java",
+        srcs = [name + ".java"],
+        main_class = "com.google.ortools.sat.samples." + name,
+        data = [
+            "//ortools/java/com/google/ortools:libjniortools.so",
+            "//ortools/java/com/google/ortools:libjniortools.dylib",
+            "//ortools/java/com/google/ortools:jniortools.dll",
+        ],
+        deps = [
+            "//ortools/sat/java:sat",
+            "//ortools/java/com/google/ortools:Loader",
+            "//ortools/java/com/google/ortools/sat:sat",
+            "//ortools/sat:cp_model_java_proto",
+            "//ortools/sat:sat_parameters_java_proto",
+            "//ortools/util/java:sorted_interval_list",
+        ],
+    )   

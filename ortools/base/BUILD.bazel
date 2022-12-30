@@ -598,3 +598,8 @@ cc_library(
         "@zlib",
     ],
 )
+
+cc_library(
+    name = "jniutil",
+    hdrs = ["jniutil.h"],
+)
