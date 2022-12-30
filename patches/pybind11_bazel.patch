@@ -1,3 +1,15 @@
+diff --git a/pybind11.BUILD b/pybind11.BUILD
+index 15590aa..989dfdf 100644
+--- a/pybind11.BUILD
++++ b/pybind11.BUILD
+@@ -21,6 +21,7 @@ OPTIONS = select({
+ INCLUDES = [
+     "include/pybind11/*.h",
+     "include/pybind11/detail/*.h",
++    "include/pybind11/eigen/*.h",
+ ]
+ 
+ EXCLUDES = [
 diff --git a/build_defs.bzl b/build_defs.bzl
 index 1e55548..6763bc6 100644
 --- a/build_defs.bzl
