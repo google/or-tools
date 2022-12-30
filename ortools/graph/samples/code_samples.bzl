@@ -101,3 +101,13 @@ def code_sample_java(name):
             "//ortools/java/com/google/ortools:Loader"
         ],
     )
+
+    native.sh_test(
+        name = name + "_java_test",
+        size = "small",
+        srcs = ["code_samples_java_test.sh"],
+        args = [name],
+        data = [
+            ":" + name + "_java",
+        ],
+    )

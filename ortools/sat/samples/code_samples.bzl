@@ -94,7 +94,6 @@ def code_sample_java(name):
         ],
     )
 
-
     native.sh_test(
         name = name + "_java_test",
         size = "small",
