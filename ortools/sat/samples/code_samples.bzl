@@ -92,4 +92,15 @@ def code_sample_java(name):
             "//ortools/sat:sat_parameters_java_proto",
             "//ortools/util/java:sorted_interval_list",
         ],
-    )   
+    )
+
+
+    native.sh_test(
+        name = name + "_java_test",
+        size = "small",
+        srcs = ["code_samples_java_test.sh"],
+        args = [name],
+        data = [
+            ":" + name + "_java",
+        ],
+    )      
