@@ -13,6 +13,7 @@ cc_binary(
     deps = [
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
+        "//ortools/linear_solver/java:modelbuilder_cc",
         "//ortools/init/java:init_cc",
     ],
     linkshared = True,
@@ -24,6 +25,7 @@ cc_binary(
     deps = [
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
+        "//ortools/linear_solver/java:modelbuilder_cc",
         "//ortools/init/java:init_cc",
     ],
     linkshared = True,
@@ -35,6 +37,7 @@ cc_binary(
     deps = [
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
+        "//ortools/linear_solver/java:modelbuilder_cc",
         "//ortools/init/java:init_cc",
     ],
     linkshared = True,

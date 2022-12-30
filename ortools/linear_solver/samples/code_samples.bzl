@@ -67,3 +67,20 @@ def code_sample_py(name):
         python_version = "PY3",
         srcs_version = "PY3",
     )
+
+def code_sample_java(name):
+    native.java_binary(
+        name = name + "_java",
+        srcs = [name + ".java"],
+        main_class = "com.google.ortools.linearsolver.samples." + name,
+        data = [
+            "//ortools/java/com/google/ortools:libjniortools.so",
+            "//ortools/java/com/google/ortools:libjniortools.dylib",
+            "//ortools/java/com/google/ortools:jniortools.dll",
+        ],
+        deps = [
+            "//ortools/linear_solver/java:modelbuilder",
+            "//ortools/java/com/google/ortools/modelbuilder",
+            "//ortools/java/com/google/ortools:Loader"
+        ],
+    )

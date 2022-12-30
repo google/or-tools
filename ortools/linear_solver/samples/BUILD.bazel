@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(":code_samples.bzl", "code_sample_cc", "code_sample_py")
+load(":code_samples.bzl", "code_sample_cc", "code_sample_py", "code_sample_java")
 
 # Linear Solver
 code_sample_cc(name = "assignment_mip")
@@ -35,6 +35,10 @@ code_sample_cc(name = "simple_mip_program")
 code_sample_cc(name = "stigler_diet")
 
 # Model Builder
+
+code_sample_java(name = "SimpleLpProgramMb")
+
+code_sample_java(name = "SimpleMipProgramMb")
 
 code_sample_py(name = "assignment_mb")
 

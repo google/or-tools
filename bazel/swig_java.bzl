@@ -56,6 +56,8 @@ def _java_wrap_cc_impl(ctx):
     swig_args.add("-java")
     swig_args.add("-package", ctx.attr.package)
     swig_args.add_all("-outdir", [java_files_dir], expand_directories = False)
+    if ctx.attr.swig_opt:
+        swig_args.add(ctx.attr.swig_opt)
     swig_args.add("-o", outfile)
     if ctx.attr.module:
         swig_args.add("-module", ctx.attr.module)
@@ -114,8 +116,10 @@ It's expected that the `swig` binary exists in the host's path.
             cfg = "exec",
         ),
         "swig_includes": attr.label_list(
+            doc = "SWIG includes.",
             allow_files = True,
         ),
+        "swig_opt": attr.string(doc = "Optional Swig opt."),
     },
 )
 
@@ -124,6 +128,7 @@ def ortools_java_wrap_cc(
         src,
         package,
         deps = [],
+        swig_opt = '',
         swig_includes = [],
         module = None,
         visibility = None,
@@ -137,6 +142,7 @@ def ortools_java_wrap_cc(
         src: single .swig source file.
         package: package of generated Java files.
         deps: C++ deps.
+        defines: C++ defines.
         module: optional name of Swig module.
 
     Generated targets:
@@ -156,6 +162,7 @@ def ortools_java_wrap_cc(
         outfile = outfile,
         srcjar = srcjar,
         deps = deps,
+        swig_opt = swig_opt,
         module = module,
         swig_includes = swig_includes,
         visibility = ["//visibility:private"],

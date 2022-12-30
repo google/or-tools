@@ -33,6 +33,7 @@ cc_library(
         "-DUSE_HIGHS",
         "-DUSE_PDLP",
         "-DUSE_SCIP",
+        "-DUSE_LP_PARSER",
     ],
     visibility = ["//visibility:public"],
     deps = [
