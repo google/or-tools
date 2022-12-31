@@ -50,7 +50,11 @@ def _java_wrap_cc_impl(ctx):
 
     java_files_dir = ctx.actions.declare_directory("java_files")
 
+    swig_base_path = ctx.executable._swig.dirname
+
     swig_args = ctx.actions.args()
+    swig_args.add("-I" + swig_base_path + "/swig.runfiles/swig/Lib/java")
+    swig_args.add("-I" + swig_base_path + "/swig.runfiles/swig/Lib")
     swig_args.add("-c++")
     swig_args.add("-java")
     swig_args.add("-package", ctx.attr.package)
@@ -119,7 +123,7 @@ It's expected that the `swig` binary exists in the host's path.
             providers = [java_common.JavaRuntimeInfo],
         ),
         "_swig": attr.label(
-            default = Label("//bazel:run_swig"),
+            default = Label("@swig//:swig"),
             executable = True,
             cfg = "exec",
         ),
@@ -127,6 +131,7 @@ It's expected that the `swig` binary exists in the host's path.
             doc = "SWIG includes.",
             allow_files = True,
         ),
+        "data": attr.label_list(allow_files = True),
         "swig_opt": attr.string(doc = "Optional Swig opt."),
         "use_directors": attr.bool(doc = "use directors")
     },
@@ -182,6 +187,7 @@ def ortools_java_wrap_cc(
         module = module,
         swig_includes = swig_includes,
         use_directors = use_directors,
+        data = ["@swig//:templates"],
         visibility = ["//visibility:private"],
         **kwargs
     )
