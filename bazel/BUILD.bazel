@@ -14,10 +14,13 @@
 exports_files([
     "gtest.BUILD",
     "glpk.BUILD",
+    "pcre2.BUILD",
+    "pcre2.patch",
     "re2.patch",
-    "swig.BUILD",
     "scip.BUILD",
     "scip.patch",
+    "swig.BUILD",
+    "swig.patch",
     "bliss.BUILD",
     "bliss-0.73.patch",
     #    "zlib.BUILD",
@@ -26,7 +29,7 @@ exports_files([
 ])
 
 sh_binary(
-    name = "mkdir_wrapper",
-    srcs = ["mkdir_wrapper.sh"],
+    name = "run_swig",
+    srcs = ["run_swig.sh"],
     visibility = ["//visibility:public"],
 )

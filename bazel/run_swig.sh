@@ -19,9 +19,4 @@
 #
 # This is to work around https://github.com/bazelbuild/bazel/issues/6393
 
-readonly directory="$1"
-readonly command="$2"
-shift 2
-
-mkdir -p "${directory}"
-exec "${command}" "$@"
+exec swig "$@"

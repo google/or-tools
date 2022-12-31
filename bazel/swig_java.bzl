@@ -51,8 +51,6 @@ def _java_wrap_cc_impl(ctx):
     java_files_dir = ctx.actions.declare_directory("java_files")
 
     swig_args = ctx.actions.args()
-    swig_args.add_all([java_files_dir], expand_directories = False)
-    swig_args.add("swig")
     swig_args.add("-c++")
     swig_args.add("-java")
     swig_args.add("-package", ctx.attr.package)
@@ -72,7 +70,7 @@ def _java_wrap_cc_impl(ctx):
     ctx.actions.run(
         outputs = generated_c_files + [java_files_dir],
         inputs = depset([src] + ctx.files.swig_includes, transitive = header_sets),
-        executable = ctx.executable._mkdir_wrapper,
+        executable = ctx.executable._swig,
         arguments = [swig_args],
         mnemonic = "SwigCompile",
     )
@@ -120,8 +118,8 @@ It's expected that the `swig` binary exists in the host's path.
             default = Label("@bazel_tools//tools/jdk:current_java_runtime"),
             providers = [java_common.JavaRuntimeInfo],
         ),
-        "_mkdir_wrapper": attr.label(
-            default = Label("//bazel:mkdir_wrapper"),
+        "_swig": attr.label(
+            default = Label("//bazel:run_swig"),
             executable = True,
             cfg = "exec",
         ),
