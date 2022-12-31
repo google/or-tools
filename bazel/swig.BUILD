@@ -2,6 +2,12 @@ licenses(["restricted"])  # GPLv3
 
 exports_files(["LICENSE"])
 
+config_setting(
+    name = "on_windows",
+    constraint_values = ["@platforms//os:windows"],
+)
+
+
 cc_binary(
     name = "swig",
     srcs = [
@@ -95,7 +101,7 @@ cc_binary(
         "Source/Modules/php.cxx",
     ],
     copts = ["$(STACK_FRAME_UNLIMITED)"] + select({
-        ":x64_windows_msvc": [],
+        "on_windows": [],
         "//conditions:default": [
             "-Wno-parentheses",
             "-Wno-unused-variable",
@@ -146,9 +152,4 @@ genrule(
           "#define SWIG_LIB_WIN_UNIX \"\"\n" +
           "#define SWIG_PLATFORM \"bazel4lyfe\"\n" +
           "EOF",
-)
-
-config_setting(
-    name = "x64_windows_msvc",
-    values = {"cpu": "x64_windows_msvc"},
 )
