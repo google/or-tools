@@ -152,42 +152,7 @@ new_git_repository(
 load("@pybind11_bazel//:python_configure.bzl", "python_configure")
 python_configure(name = "local_config_python", python_version = "3")
 
-# pcre source code repository
-http_archive(
-    name = "pcre2",
-    build_file_content = """\
-cc_library(
-    name = 'pcre',
-    srcs = glob(['pcre32*.c']),
-    hdrs = ["pcre_chartables.c"] + glob(['*.h', 'pcre_*.c']),
-    copts = [
-        "-DLINK_SIZE=4",
-        "-DNEWLINE",
-        "-DPOSIX_MALLOC_THRESHOLD=10",
-        "-DPARENS_NEST_LIMIT=250",
-        "-DMATCH_LIMIT=10000000",
-        "-DMATCH_LIMIT_RECURSION=10000000",
-        "-DMAX_NAME_SIZE=32",
-        "-DMAX_NAME_COUNT=10000",
-    ],
-    includes = ['.'],
-    visibility = ['//visibility:public'],
-)
-
-genrule(
-    name = "chartables",
-    srcs = ["pcre_chartables.c.dist"],
-    outs = ["pcre_chartables.c"],
-    cmd = "cp $< $@",
-)
-""",
-    strip_prefix = "pcre-8.43",
-    urls = [
-        "https://mirror.bazel.build/ftp.pcre.org/pub/pcre/pcre-8.43.tar.gz",
-        "https://ftp.pcre.org/pub/pcre/pcre-8.43.tar.gz",
-    ],
-    sha256 = "0b8e7465dc5e98c757cc3650a20a7843ee4c3edf50aaf60bb33fd879690d2c73",
-)
+# Swig support
 
 # pcre source code repository
 http_archive(
@@ -201,24 +166,17 @@ http_archive(
     sha256 = "c33b418e3b936ee3153de2c61cc638e7e4fe3156022a5c77d0711bcbb9d64f1f",
 )
 
-http_archive(
-    name = "rules_m4",
-    sha256 = "b0309baacfd1b736ed82dc2bb27b0ec38455a31a3d5d20f8d05e831ebeef1a8e",
-    urls = ["https://github.com/jmillikin/rules_m4/releases/download/v0.2.2/rules_m4-v0.2.2.tar.xz"],
-)
-
-load("@rules_m4//m4:m4.bzl", "m4_register_toolchains")
-m4_register_toolchains()
-
-http_archive(
-    name = "rules_bison",
-    urls = ["https://github.com/jmillikin/rules_bison/releases/download/v0.2.1/rules_bison-v0.2.1.tar.xz"],
-    sha256 = "9577455967bfcf52f9167274063ebb74696cb0fd576e4226e14ed23c5d67a693",
-)
-
-load("@rules_bison//bison:bison.bzl", "bison_register_toolchains")
-bison_register_toolchains()
-
+# generate Patch:
+#   Checkout swig
+#   cd Source/CParse && bison -d -o parser.c parser.y
+#   ./autogen.sh
+#   ./configure
+#   make Lib/swigwarn.swg
+#   edit .gitignore and remove parser.h, parser.c, and swigwarn.swg
+#   git add Source/CParse/parser.h Source/CParse/parser.c Lib/swigwarn.swg
+#   git diff --staged Lib Source/CParse > <path to>swig.patch
+# Edit swig.BUILD:
+#   edit version
 new_git_repository(
     name = "swig",
     build_file = "//bazel:swig.BUILD",
