@@ -40,7 +40,7 @@ config_setting(
 SAFE_FP_CODE = select({
     "on_linux": ["-fno-fast-math"],
     "on_macos": [],  # no_fast_math is the default.
-    "on_windows": [],  # /fp:precise is the default.
+    "on_windows": ["/fp:precise"],
     "//conditions:default": [],
 })
 
