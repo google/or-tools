@@ -7,7 +7,6 @@ config_setting(
     constraint_values = ["@platforms//os:windows"],
 )
 
-
 cc_binary(
     name = "swig",
     srcs = [
