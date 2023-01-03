@@ -28,6 +28,7 @@
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 
 namespace operations_research {
 
@@ -243,7 +244,9 @@ bool SatInterface::IsContinuous() const { return false; }
 bool SatInterface::IsLP() const { return false; }
 bool SatInterface::IsMIP() const { return true; }
 
-std::string SatInterface::SolverVersion() const { return SatSolverVersion(); }
+std::string SatInterface::SolverVersion() const {
+  return sat::CpSatSolverVersion();
+}
 
 void* SatInterface::underlying_solver() { return nullptr; }
 
