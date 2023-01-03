@@ -106,7 +106,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // SubSolver interface.
   bool TaskIsAvailable() override { return false; }
-  std::function<void()> GenerateTask(int64_t task_id) override { return {}; }
+  std::function<void()> GenerateTask(int64_t /*task_id*/) override {
+    return {};
+  }
   void Synchronize() override;
 
   // Returns the LNS fragment where the given variables are fixed to the value
@@ -157,6 +159,13 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   int NumActiveVariables() const {
     absl::ReaderMutexLock lock(&graph_mutex_);
     return active_variables_.size();
+  }
+
+  std::vector<int> ActiveObjectiveVariables() const {
+    std::vector<int> result;
+    absl::ReaderMutexLock lock(&graph_mutex_);
+    result = active_objective_variables_;
+    return result;
   }
 
   bool DifficultyMeansFullNeighborhood(double difficulty) const {
@@ -300,6 +309,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   std::vector<bool> active_variables_set_ ABSL_GUARDED_BY(graph_mutex_);
   std::vector<int> active_variables_ ABSL_GUARDED_BY(graph_mutex_);
 
+  // The list of non constant variables appearing in the objective.
+  std::vector<int> active_objective_variables_ ABSL_GUARDED_BY(graph_mutex_);
+
   mutable absl::Mutex domain_mutex_;
 
   // Used to display periodic info to the log.
@@ -424,11 +436,6 @@ class NeighborhoodGenerator {
   }
 
  protected:
-  // Triggered with each call to Synchronize() for each recently added
-  // SolveData. This is meant to be used for processing feedbacks by specific
-  // neighborhood generators to adjust the neighborhood generation process.
-  virtual void AdditionalProcessingOnSynchronize(const SolveData& solve_data) {}
-
   const std::string name_;
   const NeighborhoodGeneratorHelper& helper_;
   mutable absl::Mutex generator_mutex_;
@@ -501,6 +508,16 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit ConstraintGraphNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
+// Pick a random subset of objective terms.
+class RelaxObjectiveVariablesGenerator : public NeighborhoodGenerator {
+ public:
+  explicit RelaxObjectiveVariablesGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,

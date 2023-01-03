@@ -274,6 +274,14 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     }
   }
 
+  active_objective_variables_.clear();
+  for (const int var : model_proto_.objective().vars()) {
+    DCHECK(RefIsPositive(var));
+    if (active_variables_set_[var]) {
+      active_objective_variables_.push_back(var);
+    }
+  }
+
   // Compute connected components.
   // Note that fixed variable are just ignored.
   DenseConnectedComponentsFinder union_find;
@@ -1145,7 +1153,6 @@ void NeighborhoodGenerator::Synchronize() {
   int num_not_fully_solved_in_batch = 0;
 
   for (const SolveData& data : solve_data_) {
-    AdditionalProcessingOnSynchronize(data);
     ++num_calls_;
 
     // INFEASIBLE or OPTIMAL means that we "fully solved" the local problem.
@@ -1407,6 +1414,15 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   }
 
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
+}
+
+Neighborhood RelaxObjectiveVariablesGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  std::vector<int> fixed_variables = helper_.ActiveObjectiveVariables();
+  GetRandomSubset(1.0 - difficulty, &fixed_variables, random);
+  return helper_.FixGivenVariables(
+      initial_solution, {fixed_variables.begin(), fixed_variables.end()});
 }
 
 namespace {

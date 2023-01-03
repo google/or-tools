@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 231
+// NEXT TAG: 232
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -727,10 +727,8 @@ message SatParameters {
   // Create one literal for each disjunction of two pairs of tasks. This slows
   // down the solve time, but improves the lower bound of the objective in the
   // makespan case. This will be triggered if the number of intervals is less or
-  // equal than the parameter.
-  //
-  // Do not use if you have many tasks in one of your disjunctive since this
-  // creates O(#tasks^2) extra Booleans.
+  // equal than the parameter and if use_strong_propagation_in_disjunctive is
+  // true.
   optional int32 max_size_to_create_precedence_literals_in_disjunctive = 229
       [default = 60];
 
@@ -1146,6 +1144,11 @@ message SatParameters {
     PROPAGATION_ASSISTED = 2;
   }
   optional FPRoundingMethod fp_rounding = 165 [default = PROPAGATION_ASSISTED];
+
+  // Adds the objective_lns worker if the objective contains more than the given
+  // number of variables. We use a int32max default value to effectively disable
+  // this lns worker by default.
+  optional int32 objective_lns_min_size = 231 [default = 2147483647];
 
   // If true, registers more lns subsolvers with different parameters.
   optional bool diversify_lns_params = 137 [default = false];

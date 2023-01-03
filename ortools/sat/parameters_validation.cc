@@ -34,6 +34,11 @@ namespace sat {
     return absl::StrCat("Parameters ", #name, " must be non-negative"); \
   }
 
+#define TEST_POSITIVE(name)                                         \
+  if (params.name() <= 0) {                                         \
+    return absl::StrCat("Parameters ", #name, " must be positive"); \
+  }
+
 #define TEST_NOT_NAN(name)                                 \
   if (std::isnan(params.name())) {                         \
     return absl::StrCat("parameter '", #name, "' is NaN"); \
@@ -88,6 +93,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(mip_max_activity_exponent, 1, 62);
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
   TEST_IN_RANGE(solution_pool_size, 1, std::numeric_limits<int32_t>::max());
+
+  TEST_POSITIVE(glucose_decay_increment_period);
 
   TEST_NON_NEGATIVE(mip_wanted_precision);
   TEST_NON_NEGATIVE(max_time_in_seconds);
@@ -171,6 +178,7 @@ std::string ValidateParameters(const SatParameters& params) {
 }
 
 #undef TEST_IN_RANGE
+#undef TEST_POSITIVE
 #undef TEST_NON_NEGATIVE
 #undef TEST_NOT_NAN
 #undef TEST_IS_FINITE

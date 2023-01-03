@@ -3094,6 +3094,19 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             helper, absl::StrCat("graph_cst_lns_", local_params.name())),
         local_params, helper, &shared));
 
+    // Create the rnd_obj_lns worker if the number of terms in the objective is
+    // big enough, and it is no more than half the number of variables in the
+    // model.
+    if (model_proto.objective().vars().size() >=
+            params.objective_lns_min_size() &&
+        model_proto.objective().vars_size() >=
+            model_proto.objective().vars().size() * 2) {
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RelaxObjectiveVariablesGenerator>(
+              helper, absl::StrCat("rnd_obj_lns_", local_params.name())),
+          local_params, helper, &shared));
+    }
+
     // TODO(user): If we have a model with scheduling + routing. We create
     // a lot of LNS generators. Investigate if we can reduce this number.
     if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||

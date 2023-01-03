@@ -176,6 +176,7 @@ void AddDisjunctiveWithBooleanPrecedencesOnly(
         AddConditionalAffinePrecedence(enforcement_literals, end_j, start_i,
                                        model);
       } else {
+        // TODO(user): Cache boolean_var.
         const BooleanVariable boolean_var = sat_solver->NewBooleanVariable();
         const Literal i_before_j = Literal(boolean_var, true);
         enforcement_literals.push_back(i_before_j);
