@@ -989,6 +989,7 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
   GLOG_MSVC_PUSH_DISABLE_WARNING(4275)
   class GOOGLE_GLOG_DLL_DECL LogStream : public std::ostream {
     GLOG_MSVC_POP_WARNING()
+
    public:
     LogStream(char* buf, int len, int ctr)
         : std::ostream(nullptr), streambuf_(buf, len), ctr_(ctr), self_(this) {

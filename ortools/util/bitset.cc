@@ -27,7 +27,8 @@ namespace operations_research {
   uint##size##_t BitCountRange##size(const uint##size##_t* const bits,        \
                                      uint##size##_t start,                    \
                                      uint##size##_t end) {                    \
-    if (end - start > absl::GetFlag(FLAGS_bitset_small_bitset_count)) {       \
+    if (static_cast<int##size##_t>(end - start) >                             \
+        absl::GetFlag(FLAGS_bitset_small_bitset_count)) {                     \
       const int offset_start = BitOffset##size(start);                        \
       const int pos_start = BitPos##size(start);                              \
       const int offset_end = BitOffset##size(end);                            \

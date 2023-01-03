@@ -130,7 +130,8 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
           static_cast<int64_t>(std::round(ldexp(min_term, factor_exponent)));
       sum_max +=
           static_cast<int64_t>(std::round(ldexp(max_term, factor_exponent)));
-      if (sum_min > max_absolute_sum || sum_max > max_absolute_sum) {
+      if (sum_min > static_cast<uint64_t>(max_absolute_sum) ||
+          sum_max > static_cast<uint64_t>(max_absolute_sum)) {
         factor_exponent--;
         recompute_sum = true;
       }
@@ -155,7 +156,8 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
         sum_max +=
             static_cast<int64_t>(std::round(ldexp(max_term, factor_exponent)));
       }
-      if (sum_min > max_absolute_sum || sum_max > max_absolute_sum) {
+      if (sum_min > static_cast<uint64_t>(max_absolute_sum) ||
+          sum_max > static_cast<uint64_t>(max_absolute_sum)) {
         factor_exponent--;
       } else {
         recompute_sum = false;
@@ -200,7 +202,8 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
 int64_t ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
                                    double scaling_factor) {
   int64_t gcd = 0;
-  for (int i = 0; i < x.size() && gcd != 1; ++i) {
+  const int size = static_cast<int>(x.size());
+  for (int i = 0; i < size && gcd != 1; ++i) {
     int64_t value = std::abs(std::round(x[i] * scaling_factor));
     DCHECK_GE(value, 0);
     if (value == 0) continue;
