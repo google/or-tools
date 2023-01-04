@@ -204,7 +204,7 @@ class LinearExpr(object):
 
     def __bool__(self):
         raise NotImplementedError(
-            f'Cannot use a LinearExpr {self} as an Boolean value')
+            f'Cannot use a LinearExpr {self} as a Boolean value')
 
     def __eq__(self, arg):
         if arg is None:
@@ -400,9 +400,9 @@ class _WeightedSum(LinearExpr):
 
 
 class Variable(LinearExpr):
-    """An variable (continuous or integral).
+    """A variable (continuous or integral).
 
-  An Variable is an object that can take on any integer value within defined
+  A Variable is an object that can take on any integer value within defined
   ranges. Variables appear in constraint like:
 
       x + y >= 5
@@ -561,7 +561,7 @@ class VarCompVar(object):
         if self.__is_equality:
             return f'{self.__left} == {self.__right}'
         else:
-            return f'{self.__left} == {self.__right}'
+            return f'{self.__left} != {self.__right}'
 
     def __repr__(self):
         return f'VarCompVar({self.__left}, {self.__right}, {self.__is_equality})'
@@ -572,7 +572,7 @@ class VarCompVar(object):
 
     @property
     def right(self):
-        return self.__left
+        return self.__right
 
     @property
     def is_equality(self):

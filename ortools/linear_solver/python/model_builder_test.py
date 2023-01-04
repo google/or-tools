@@ -184,6 +184,53 @@ ENDATA
         self.assertIn(x_copy, var_set)
         self.assertNotIn(y, var_set)
 
+    def test_duplicate_variables(self):
+        model = model_builder.ModelBuilder()
+        x = model.new_int_var(0.0, 4.0, 'x')
+        y = model.new_int_var(0.0, 4.0, 'y')
+        z = model.new_int_var(0.0, 4.0, 'z')
+        model.add(x + 2 * y == x - z)
+        model.minimize(x + y + z)
+        solver = model_builder.ModelSolver('scip')
+        self.assertEqual(model_builder.SolveStatus.OPTIMAL, solver.solve(model))
+
+    def test_issue_3614(self):
+        total_number_of_choices = 5 + 1
+        total_unique_products = 3
+        standalone_features = list(range(5))
+        feature_bundle_incidence_matrix = {}
+        for idx in range(len(standalone_features)):
+            feature_bundle_incidence_matrix[idx, 0] = 0
+        feature_bundle_incidence_matrix[0, 0] = 1
+        feature_bundle_incidence_matrix[1, 0] = 1
+
+        bundle_start_idx = len(standalone_features)
+        # Model
+        model = model_builder.ModelBuilder()
+        y = {}
+        v = {}
+        for i in range(total_number_of_choices):
+            y[i] = model.new_bool_var(f'y_{i}')
+
+        for j in range(total_unique_products):
+            for i in range(len(standalone_features)):
+                v[i, j] = model.new_bool_var(f'v_{(i,j)}')
+                model.add(v[i, j] == (y[i] +
+                                      (feature_bundle_incidence_matrix[(i, 0)] *
+                                       y[bundle_start_idx])))
+
+        solver = model_builder.ModelSolver('scip')
+        status = solver.solve(model)
+        self.assertEqual(model_builder.SolveStatus.OPTIMAL, status)
+
+    def test_varcompvar(self):
+        model = model_builder.ModelBuilder()
+        x = model.new_int_var(0.0, 4.0, 'x')
+        y = model.new_int_var(0.0, 4.0, 'y')
+        ct = x == y
+        self.assertEqual(ct.left.index, x.index)
+        self.assertEqual(ct.right.index, y.index)
+
 
 if __name__ == '__main__':
     unittest.main()
