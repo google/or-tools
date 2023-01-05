@@ -155,14 +155,11 @@ python_configure(name = "local_config_python", python_version = "3")
 # Swig support
 
 # pcre source code repository
-http_archive(
+new_git_repository(
     name = "pcre2",
     build_file = "//bazel:pcre2.BUILD",
-    strip_prefix = "pcre2-10.42",
-    urls = [
-        "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.42/pcre2-10.42.tar.gz",
-    ],
-    sha256 = "c33b418e3b936ee3153de2c61cc638e7e4fe3156022a5c77d0711bcbb9d64f1f",
+    tag = "pcre2-10.42",
+    remote = "https://github.com/PCRE2Project/pcre2.git",
 )
 
 # generate Patch:
@@ -190,7 +187,7 @@ load("@rules_jvm_external//:defs.bzl", "maven_install")
 
 maven_install(
     artifacts = [
-        "net.java.dev.jna:jna:aar:5.8.0"
+        "net.java.dev.jna:jna:aar:5.12.1"
     ],
     repositories = [
         "https://repo1.maven.org/maven2",

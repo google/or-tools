@@ -28,7 +28,6 @@ def _create_src_jar(ctx, java_runtime_info, input_dir, output_jar):
     )
 
 def _java_wrap_cc_impl(ctx):
-    name = ctx.attr.name
     src = ctx.file.src
     outfile = ctx.outputs.outfile
     outhdr = ctx.outputs.outhdr
@@ -162,6 +161,8 @@ def ortools_java_wrap_cc(
         swig_opt: optional defines passed to the swig command.
         swig_includes: list of swig files included by the current swig file.
         use_directors: Boolean flag.
+        visibility: global visibility of the rule.
+        **kwargs: extra generic arguments, usually passed to sub-rules.
 
     Generated targets:
         {name}: java_library

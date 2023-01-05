@@ -19,3 +19,4 @@ function test::ortools::code_samples_sat_java() {
 }
 
 test::ortools::code_samples_sat_java $1
+

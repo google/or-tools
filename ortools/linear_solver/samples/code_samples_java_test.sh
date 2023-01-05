@@ -19,3 +19,4 @@ function test::ortools::code_samples_linear_solver_java() {
 }
 
 test::ortools::code_samples_linear_solver_java $1
+
