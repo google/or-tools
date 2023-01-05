@@ -27,9 +27,3 @@ exports_files([
     "archive_helper.bzl",
     "python_deps.txt",
 ])
-
-sh_binary(
-    name = "run_swig",
-    srcs = ["run_swig.sh"],
-    visibility = ["//visibility:public"],
-)

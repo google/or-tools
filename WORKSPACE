@@ -158,7 +158,6 @@ python_configure(name = "local_config_python", python_version = "3")
 http_archive(
     name = "pcre2",
     build_file = "//bazel:pcre2.BUILD",
-    patches = ["//bazel:pcre2.patch"],
     strip_prefix = "pcre2-10.42",
     urls = [
         "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.42/pcre2-10.42.tar.gz",
