@@ -35,7 +35,7 @@ namespace sat {
 // Returns the smallest factor f such that f * abs(x) is integer modulo the
 // given tolerance relative to f (we use f * tolerance). It is only looking
 // for f smaller than the given limit. Returns zero if no such factor exist
-// below the limit. The limit must be at most 2^62.
+// below the limit.
 //
 // The complexity is a lot less than O(limit), but it is possible that we might
 // miss the smallest such factor if the tolerance used is too low. This is

@@ -44,9 +44,9 @@ def code_sample_java(name):
         ],
         deps = [
             "//ortools/algorithms/java:knapsacksolver",
-            "//ortools/java/com/google/ortools:Loader"
+            "//ortools/java/com/google/ortools:Loader",
         ],
-    )    
+    )
 
     native.sh_test(
         name = name + "_java_test",

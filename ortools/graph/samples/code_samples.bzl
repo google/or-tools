@@ -98,7 +98,7 @@ def code_sample_java(name):
         ],
         deps = [
             "//ortools/graph/java:graph",
-            "//ortools/java/com/google/ortools:Loader"
+            "//ortools/java/com/google/ortools:Loader",
         ],
     )
 

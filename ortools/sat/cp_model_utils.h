@@ -216,7 +216,8 @@ uint64_t FingerprintExpression(const LinearExpressionProto& lin, uint64_t seed);
 uint64_t FingerprintModel(const CpModelProto& model,
                           uint64_t seed = kDefaultFingerprintSeed);
 
-bool WriteModelProtoToFile(const CpModelProto& model, const std::string& filename);
+bool WriteModelProtoToFile(const CpModelProto& model,
+                           const std::string& filename);
 
 }  // namespace sat
 }  // namespace operations_research

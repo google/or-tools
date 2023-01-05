@@ -428,7 +428,12 @@ class PresolveContext {
   //
   // Returns true if a simplification was done.
   bool ExploitExactlyOneInObjective(absl::Span<const int> exactly_one);
-  void ShiftCostInExactlyOne(absl::Span<const int> exactly_one, int64_t shift);
+
+  // We can always add a multiple of sum X - 1 == 0 to the objective.
+  // However, depending on which multiple we choose, this might break our
+  // overflow preconditions on the objective. So we return false and do nothing
+  // if this happens.
+  bool ShiftCostInExactlyOne(absl::Span<const int> exactly_one, int64_t shift);
 
   // Allows to manipulate the objective coefficients.
   void RemoveVariableFromObjective(int ref);

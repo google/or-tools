@@ -102,4 +102,4 @@ def code_sample_java(name):
         data = [
             ":" + name + "_java",
         ],
-    )      
+    )

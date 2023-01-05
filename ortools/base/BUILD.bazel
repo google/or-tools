@@ -32,8 +32,6 @@ filegroup(
     name = "base_swig",
     srcs = [
         "base.i",
-#        "//base:swig_includes",
-#        "//third_party/absl/base:swig_includes",
     ],
     visibility = ["//visibility:public"],
 )

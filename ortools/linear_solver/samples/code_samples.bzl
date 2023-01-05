@@ -81,7 +81,7 @@ def code_sample_java(name):
         deps = [
             "//ortools/linear_solver/java:modelbuilder",
             "//ortools/java/com/google/ortools/modelbuilder",
-            "//ortools/java/com/google/ortools:Loader"
+            "//ortools/java/com/google/ortools:Loader",
         ],
     )
 

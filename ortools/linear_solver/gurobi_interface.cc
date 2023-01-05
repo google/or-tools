@@ -1079,13 +1079,13 @@ void GurobiInterface::SetDualTolerance(double value) {
 void GurobiInterface::SetPresolveMode(int value) {
   switch (value) {
     case MPSolverParameters::PRESOLVE_OFF: {
-      CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE,
-                                       GRB_PRESOLVE_OFF));
+      CheckedGurobiCall(
+          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, false));
       break;
     }
     case MPSolverParameters::PRESOLVE_ON: {
-      CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE,
-                                       GRB_PRESOLVE_AUTO));
+      CheckedGurobiCall(
+          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, true));
       break;
     }
     default: {

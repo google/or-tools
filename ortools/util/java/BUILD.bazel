@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Description: java wrapping of the code in ../
 
 load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
@@ -46,12 +59,12 @@ ortools_java_wrap_cc(
     src = "sorted_interval_list.i",
     package = "com.google.ortools.util",
     swig_includes = [
-        "//ortools/base:base_swig",
         ":vector_swig",
+        "//ortools/base:base_swig",
     ],
     swig_opt = select({
-    		"on_linux": "-DSWIGWORDSIZE64",
-		"//conditions:default": "",
+        "on_linux": "-DSWIGWORDSIZE64",
+        "//conditions:default": "",
     }),
     visibility = ["//visibility:public"],
     deps = [

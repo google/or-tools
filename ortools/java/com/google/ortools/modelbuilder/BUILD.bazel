@@ -30,9 +30,9 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/java/com/google/ortools:libjniortools.so",    
-        "//ortools/java/com/google/ortools:libjniortools.dylib",    
-        "//ortools/java/com/google/ortools:jniortools.dll",    
+        "//ortools/java/com/google/ortools:jniortools.dll",
+        "//ortools/java/com/google/ortools:libjniortools.dylib",
+        "//ortools/java/com/google/ortools:libjniortools.so",
         "//ortools/linear_solver/java:modelbuilder",
     ],
 )

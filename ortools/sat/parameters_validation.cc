@@ -84,6 +84,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(mip_wanted_precision);
   TEST_IS_FINITE(mip_check_precision);
   TEST_IS_FINITE(mip_max_valid_magnitude);
+  TEST_IS_FINITE(mip_drop_tolerance);
 
   TEST_NOT_NAN(max_time_in_seconds);
   TEST_NOT_NAN(max_deterministic_time);
@@ -99,6 +100,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(mip_wanted_precision);
   TEST_NON_NEGATIVE(max_time_in_seconds);
   TEST_NON_NEGATIVE(max_deterministic_time);
+  TEST_NON_NEGATIVE(new_constraints_batch_size);
   TEST_NON_NEGATIVE(num_workers);
   TEST_NON_NEGATIVE(num_search_workers);
   TEST_NON_NEGATIVE(min_num_lns_workers);

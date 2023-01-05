@@ -853,20 +853,20 @@ void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
   if (interface_->result_status_ == MPSolver::OPTIMAL ||
       interface_->result_status_ == MPSolver::FEASIBLE) {
     response->set_objective_value(Objective().Value());
-    for (int i = 0; i < variables_.size(); ++i) {
-      response->add_variable_value(variables_[i]->solution_value());
+    for (MPVariable* variable : variables_) {
+      response->add_variable_value(variable->solution_value());
     }
 
     if (interface_->IsMIP()) {
       response->set_best_objective_bound(interface_->best_objective_bound());
     } else {
       // Dual values have no meaning in MIP.
-      for (int j = 0; j < constraints_.size(); ++j) {
-        response->add_dual_value(constraints_[j]->dual_value());
+      for (MPConstraint* constraint : constraints_) {
+        response->add_dual_value(constraint->dual_value());
       }
       // Reduced cost have no meaning in MIP.
-      for (int i = 0; i < variables_.size(); ++i) {
-        response->add_reduced_cost(variables_[i]->reduced_cost());
+      for (MPVariable* variable : variables_) {
+        response->add_reduced_cost(variable->reduced_cost());
       }
     }
   }
@@ -1076,8 +1076,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   // Name
   output_model->set_name(Name());
   // Variables
-  for (int j = 0; j < variables_.size(); ++j) {
-    const MPVariable* const var = variables_[j];
+  for (const MPVariable* var : variables_) {
     MPVariableProto* const variable_proto = output_model->add_variable();
     // TODO(user): Add option to avoid filling the var name to avoid overly
     // large protocol buffers.
@@ -1101,13 +1100,12 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   // underlying solver at the time of model extraction.
   // TODO(user): remove this step.
   absl::flat_hash_map<const MPVariable*, int> var_to_index;
-  for (int j = 0; j < variables_.size(); ++j) {
+  for (int j = 0; j < static_cast<int>(variables_.size()); ++j) {
     var_to_index[variables_[j]] = j;
   }
 
   // Constraints
-  for (int i = 0; i < constraints_.size(); ++i) {
-    MPConstraint* const constraint = constraints_[i];
+  for (MPConstraint* const constraint : constraints_) {
     MPConstraintProto* constraint_proto;
     if (constraint->indicator_variable() != nullptr) {
       MPGeneralConstraintProto* const general_constraint_proto =
@@ -1172,7 +1170,8 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
   // Before touching the variables, verify that the solution looks legit:
   // each variable of the MPSolver must have its value listed exactly once, and
   // each listed solution should correspond to a known variable.
-  if (response.variable_value_size() != variables_.size()) {
+  if (static_cast<size_t>(response.variable_value_size()) !=
+      variables_.size()) {
     return absl::InvalidArgumentError(absl::StrCat(
         "Trying to load a solution whose number of variables (",
         response.variable_value_size(),
@@ -1212,7 +1211,8 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
     variables_[i]->set_solution_value(response.variable_value(i));
   }
   if (response.dual_value_size() > 0) {
-    if (response.dual_value_size() != constraints_.size()) {
+    if (static_cast<size_t>(response.dual_value_size()) !=
+        constraints_.size()) {
       return absl::InvalidArgumentError(absl::StrCat(
           "Trying to load a dual solution whose number of entries (",
           response.dual_value_size(), ") does not correspond to the Solver's (",
@@ -1223,7 +1223,8 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
     }
   }
   if (response.reduced_cost_size() > 0) {
-    if (response.reduced_cost_size() != variables_.size()) {
+    if (static_cast<size_t>(response.reduced_cost_size()) !=
+        variables_.size()) {
       return absl::InvalidArgumentError(absl::StrCat(
           "Trying to load a reduced cost solution whose number of entries (",
           response.reduced_cost_size(),
@@ -1389,7 +1390,7 @@ int MPSolver::ComputeMaxConstraintSize(int min_constraint_index,
   DCHECK_LE(max_constraint_index, constraints_.size());
   for (int i = min_constraint_index; i < max_constraint_index; ++i) {
     MPConstraint* const ct = constraints_[i];
-    if (ct->coefficients_.size() > max_constraint_size) {
+    if (static_cast<int>(ct->coefficients_.size()) > max_constraint_size) {
       max_constraint_size = ct->coefficients_.size();
     }
   }
@@ -1398,7 +1399,7 @@ int MPSolver::ComputeMaxConstraintSize(int min_constraint_index,
 
 bool MPSolver::HasInfeasibleConstraints() const {
   bool hasInfeasibleConstraints = false;
-  for (int i = 0; i < constraints_.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(constraints_.size()); ++i) {
     if (constraints_[i]->lb() > constraints_[i]->ub()) {
       LOG(WARNING) << "Constraint " << constraints_[i]->name() << " (" << i
                    << ") has contradictory bounds:"
@@ -1536,7 +1537,7 @@ std::vector<double> MPSolver::ComputeConstraintActivities() const {
   // TODO(user): test this failure case.
   if (!interface_->CheckSolutionIsSynchronizedAndExists()) return {};
   std::vector<double> activities(constraints_.size(), 0.0);
-  for (int i = 0; i < constraints_.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(constraints_.size()); ++i) {
     const MPConstraint& constraint = *constraints_[i];
     AccurateSum<double> sum;
     for (const auto& entry : constraint.coefficients_) {
@@ -1554,8 +1555,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   int num_errors = 0;
 
   // Verify variables.
-  for (int i = 0; i < variables_.size(); ++i) {
-    const MPVariable& var = *variables_[i];
+  for (MPVariable* variable : variables_) {
+    const MPVariable& var = *variable;
     const double value = var.solution_value();
     // Check for NaN.
     if (std::isnan(value)) {
@@ -1602,7 +1603,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
 
   // Verify constraints.
   const std::vector<double> activities = ComputeConstraintActivities();
-  for (int i = 0; i < constraints_.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(constraints_.size()); ++i) {
     const MPConstraint& constraint = *constraints_[i];
     const double activity = activities[i];
     // Re-compute the activity with a inaccurate summing algorithm.
@@ -1708,7 +1709,7 @@ double MPSolver::ComputeExactConditionNumber() const {
 
 bool MPSolver::OwnsVariable(const MPVariable* var) const {
   if (var == nullptr) return false;
-  if (var->index() >= 0 && var->index() < variables_.size()) {
+  if (var->index() >= 0 && var->index() < static_cast<int>(variables_.size())) {
     // Then, verify that the variable with this index has the same address.
     return variables_[var->index()] == var;
   }

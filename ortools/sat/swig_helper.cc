@@ -157,7 +157,7 @@ operations_research::Domain CpSatHelper::VariableDomain(
 bool CpSatHelper::WriteModelToFile(
     const operations_research::sat::CpModelProto& model_proto,
     const std::string& filename) {
-      return WriteModelProtoToFile(model_proto, filename);
+  return WriteModelProtoToFile(model_proto, filename);
 }
 
 }  // namespace sat

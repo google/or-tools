@@ -1522,7 +1522,7 @@ void PresolveContext::ReadObjectiveFromProto() {
   // This is an upper bound of the higher magnitude that can be reach by
   // summing an objective partial sum. Because of the model validation, this
   // shouldn't overflow, and we make sure it stays this way.
-  objective_overflow_detection_ = 0;
+  objective_overflow_detection_ = std::abs(objective_integer_before_offset_);
 
   objective_map_.clear();
   for (int i = 0; i < obj.vars_size(); ++i) {
@@ -1651,14 +1651,26 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
       entry.second /= gcd;
     }
     objective_domain_ = objective_domain_.InverseMultiplicationBy(gcd);
+    if (objective_domain_.IsEmpty()) return false;
+
     objective_offset_ /= static_cast<double>(gcd);
     objective_scaling_factor_ *= static_cast<double>(gcd);
 
     // We update the offset accordingly.
-    absl::int128 offset = absl::int128(objective_integer_before_offset_) *
-                              absl::int128(objective_integer_scaling_factor_) +
-                          absl::int128(objective_integer_after_offset_);
-    objective_integer_scaling_factor_ *= gcd;
+    const absl::int128 offset =
+        absl::int128(objective_integer_before_offset_) *
+            absl::int128(objective_integer_scaling_factor_) +
+        absl::int128(objective_integer_after_offset_);
+
+    if (objective_domain_.IsFixed() && objective_domain_.FixedValue() == 0) {
+      // We avoid a corner case where this would overflow but the objective is
+      // zero. In this case any factor work, so we just take 1 and avoid the
+      // overflow.
+      objective_integer_scaling_factor_ = 1;
+    } else {
+      objective_integer_scaling_factor_ *= gcd;
+    }
+
     objective_integer_before_offset_ = static_cast<int64_t>(
         offset / absl::int128(objective_integer_scaling_factor_));
     objective_integer_after_offset_ = static_cast<int64_t>(
@@ -1835,13 +1847,36 @@ bool PresolveContext::ExploitExactlyOneInObjective(
     }
   }
 
-  ShiftCostInExactlyOne(exactly_one, min_coeff);
-  return true;
+  return ShiftCostInExactlyOne(exactly_one, min_coeff);
 }
 
-void PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
+bool PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
                                             int64_t shift) {
-  if (shift == 0) return;
+  if (shift == 0) return true;
+
+  // We have to be careful because shifting cost like this might increase the
+  // min/max possible activity of the sum.
+  //
+  // TODO(user): Be more precise with this objective_overflow_detection_ and
+  // always keep it up to date on each offset / coeff change.
+  int64_t sum = 0;
+  int64_t new_sum = 0;
+  for (const int ref : exactly_one) {
+    const int var = PositiveRef(ref);
+    const int64_t obj = ObjectiveCoeff(var);
+    sum = CapAdd(sum, std::abs(obj));
+
+    const int64_t new_obj = RefIsPositive(ref) ? obj - shift : obj + shift;
+    new_sum = CapAdd(new_sum, std::abs(new_obj));
+  }
+  if (AtMinOrMaxInt64(new_sum)) return false;
+  if (new_sum > sum) {
+    const int64_t new_value =
+        CapAdd(objective_overflow_detection_, new_sum - sum);
+    if (AtMinOrMaxInt64(new_value)) return false;
+    objective_overflow_detection_ = new_value;
+  }
+
   int64_t offset = shift;
   for (const int ref : exactly_one) {
     const int var = PositiveRef(ref);
@@ -1871,6 +1906,7 @@ void PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
 
   // Note that the domain never include the offset, so we need to update it.
   if (offset != 0) AddToObjectiveOffset(offset);
+  return true;
 }
 
 void PresolveContext::WriteObjectiveToProto() const {

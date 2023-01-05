@@ -32,8 +32,6 @@
 namespace operations_research {
 namespace sat {
 
-BoolVar::BoolVar() : builder_(nullptr), index_(0) {}
-
 BoolVar::BoolVar(int index, CpModelBuilder* builder)
     : builder_(builder), index_(index) {}
 
@@ -91,8 +89,6 @@ std::ostream& operator<<(std::ostream& os, const BoolVar& var) {
   os << var.DebugString();
   return os;
 }
-
-IntVar::IntVar() : builder_(nullptr), index_(0) {}
 
 IntVar::IntVar(int index, CpModelBuilder* builder)
     : builder_(builder), index_(index) {

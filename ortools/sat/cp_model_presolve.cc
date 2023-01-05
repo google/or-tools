@@ -585,19 +585,18 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
     }
 
     const int literal = singleton_literal_with_cost[0].first;
-    const int64_t min_obj = singleton_literal_with_cost[0].second;
-    if (is_at_most_one && min_obj >= 0) {
+    const int64_t literal_cost = singleton_literal_with_cost[0].second;
+    if (is_at_most_one && literal_cost >= 0) {
       // We can just always set it to false in this case.
       context_->UpdateRuleStats("at_most_one: singleton");
       if (!context_->SetLiteralToFalse(literal)) return false;
-    } else {
+    } else if (context_->ShiftCostInExactlyOne(*literals, literal_cost)) {
       // We can make the constraint an exactly one if needed since it is always
       // beneficial to set this literal to true if everything else is zero. Now
       // that we have an exactly one, we can transfer the cost to the other
       // terms. The objective of literal should become zero, and we can then
       // decide its value at postsolve and just have an at most one on the other
       // literals.
-      context_->ShiftCostInExactlyOne(*literals, min_obj);
       DCHECK(!context_->ObjectiveMap().contains(PositiveRef(literal)));
 
       if (!is_at_most_one) transform_to_at_most_one = true;
@@ -893,88 +892,95 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
     return changed;
   }
 
-  // If everything is Boolean and affine, do not use a lin max!
-  if (context_->ExpressionIsAffineBoolean(target)) {
-    const int target_ref = context_->LiteralForExpressionMax(target);
+  changed |= PresolveLinMaxWhenAllBoolean(ct);
+  return changed;
+}
 
-    bool abort = false;
+// If everything is Boolean and affine, do not use a lin max!
+bool CpModelPresolver::PresolveLinMaxWhenAllBoolean(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+  if (HasEnforcementLiteral(*ct)) return false;
 
-    bool min_is_reachable = false;
-    std::vector<int> min_literals;
-    std::vector<int> literals_above_min;
-    std::vector<int> max_literals;
+  const LinearExpressionProto& target = ct->lin_max().target();
+  if (!context_->ExpressionIsAffineBoolean(target)) return false;
 
-    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-      const int64_t value_min = context_->MinOf(expr);
-      const int64_t value_max = context_->MaxOf(expr);
+  const int64_t target_min = context_->MinOf(target);
+  const int64_t target_max = context_->MaxOf(target);
+  const int target_ref = context_->LiteralForExpressionMax(target);
 
-      // This shouldn't happen, but it document the fact.
-      if (value_min > target_min) {
-        context_->UpdateRuleStats("lin_max: fix target");
-        if (!context_->SetLiteralToTrue(target_ref)) return true;
-        abort = true;
-        break;
-      }
+  bool min_is_reachable = false;
+  std::vector<int> min_literals;
+  std::vector<int> literals_above_min;
+  std::vector<int> max_literals;
 
-      // expr is fixed.
-      if (value_min == value_max) {
-        if (value_min == target_min) min_is_reachable = true;
-        continue;
-      }
+  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+    if (!context_->ExpressionIsAffineBoolean(expr)) return false;
+    const int64_t value_min = context_->MinOf(expr);
+    const int64_t value_max = context_->MaxOf(expr);
+    const int ref = context_->LiteralForExpressionMax(expr);
 
-      if (!context_->ExpressionIsAffineBoolean(expr)) {
-        abort = true;
-        break;
-      }
-
-      const int ref = context_->LiteralForExpressionMax(expr);
-      CHECK_LE(value_min, target_min);
-      if (value_min == target_min) {
-        min_literals.push_back(NegatedRef(ref));
-      }
-
-      CHECK_LE(value_max, target_max);
-      if (value_max == target_max) {
-        max_literals.push_back(ref);
-        literals_above_min.push_back(ref);
-      } else if (value_max > target_min) {
-        literals_above_min.push_back(ref);
-      } else if (value_max == target_min) {
-        min_literals.push_back(ref);
-      }
+    // Get corner case out of the way, and wait for the constraint to be
+    // processed again in these case.
+    if (value_min > target_min) {
+      context_->UpdateRuleStats("lin_max: fix target");
+      (void)context_->SetLiteralToTrue(target_ref);
+      return false;
     }
-    if (!abort) {
-      context_->UpdateRuleStats("lin_max: all Booleans.");
+    if (value_max > target_max) {
+      context_->UpdateRuleStats("lin_max: fix bool expr");
+      (void)context_->SetLiteralToFalse(ref);
+      return false;
+    }
 
-      // target_ref => at_least_one(max_literals);
-      ConstraintProto* clause = context_->working_model->add_constraints();
-      clause->add_enforcement_literal(target_ref);
-      clause->mutable_bool_or();
-      for (const int lit : max_literals) {
-        clause->mutable_bool_or()->add_literals(lit);
-      }
+    // expr is fixed.
+    if (value_min == value_max) {
+      if (value_min == target_min) min_is_reachable = true;
+      continue;
+    }
 
-      // not(target_ref) => not(lit) for lit in literals_above_min
-      for (const int lit : literals_above_min) {
-        context_->AddImplication(lit, target_ref);
-      }
+    CHECK_LE(value_min, target_min);
+    if (value_min == target_min) {
+      min_literals.push_back(NegatedRef(ref));
+    }
 
-      if (!min_is_reachable) {
-        // not(target_ref) => at_least_one(min_literals).
-        ConstraintProto* clause = context_->working_model->add_constraints();
-        clause->add_enforcement_literal(NegatedRef(target_ref));
-        clause->mutable_bool_or();
-        for (const int lit : min_literals) {
-          clause->mutable_bool_or()->add_literals(lit);
-        }
-      }
-
-      context_->UpdateNewConstraintsVariableUsage();
-      return RemoveConstraint(ct);
+    CHECK_LE(value_max, target_max);
+    if (value_max == target_max) {
+      max_literals.push_back(ref);
+      literals_above_min.push_back(ref);
+    } else if (value_max > target_min) {
+      literals_above_min.push_back(ref);
+    } else if (value_max == target_min) {
+      min_literals.push_back(ref);
     }
   }
 
-  return changed;
+  context_->UpdateRuleStats("lin_max: all Booleans.");
+
+  // target_ref => at_least_one(max_literals);
+  ConstraintProto* clause = context_->working_model->add_constraints();
+  clause->add_enforcement_literal(target_ref);
+  clause->mutable_bool_or();
+  for (const int lit : max_literals) {
+    clause->mutable_bool_or()->add_literals(lit);
+  }
+
+  // not(target_ref) => not(lit) for lit in literals_above_min
+  for (const int lit : literals_above_min) {
+    context_->AddImplication(lit, target_ref);
+  }
+
+  if (!min_is_reachable) {
+    // not(target_ref) => at_least_one(min_literals).
+    ConstraintProto* clause = context_->working_model->add_constraints();
+    clause->add_enforcement_literal(NegatedRef(target_ref));
+    clause->mutable_bool_or();
+    for (const int lit : min_literals) {
+      clause->mutable_bool_or()->add_literals(lit);
+    }
+  }
+
+  context_->UpdateNewConstraintsVariableUsage();
+  return RemoveConstraint(ct);
 }
 
 // This presolve expect that the constraint only contains affine expressions.
@@ -8157,6 +8163,7 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
                               subset_ct_domain.MultiplicationBy(-factor)),
                           mutable_linear);
         PropagateDomainsInLinear(/*ct_index=*/-1, &temp_ct_);
+        if (context_->ModelIsUnsat()) detector.Stop();
       }
       if (superset_ct_domain.IsFixed()) {
         if (subset_lin.vars().size() + 1 == superset_lin.vars().size()) {
@@ -9003,32 +9010,33 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
 
   // If the cost is non-zero, we can use an exactly one to make it zero.
   // Use that exactly one in the postsolve to recover the value of var.
-  auto* postsolve_literals = context_->mapping_model->add_constraints()
-                                 ->mutable_exactly_one()
-                                 ->mutable_literals();
+  int64_t cost_shift = 0;
+  absl::Span<const int> literals;
   if (ct1.constraint_case() == ConstraintProto::kExactlyOne) {
-    context_->ShiftCostInExactlyOne(ct1.exactly_one().literals(),
-                                    RefIsPositive(c1_ref) ? cost : -cost);
-    *postsolve_literals = ct1.exactly_one().literals();
+    cost_shift = RefIsPositive(c1_ref) ? cost : -cost;
+    literals = ct1.exactly_one().literals();
   } else if (ct2.constraint_case() == ConstraintProto::kExactlyOne) {
-    context_->ShiftCostInExactlyOne(ct2.exactly_one().literals(),
-                                    RefIsPositive(c2_ref) ? cost : -cost);
-    *postsolve_literals = ct2.exactly_one().literals();
+    cost_shift = RefIsPositive(c2_ref) ? cost : -cost;
+    literals = ct2.exactly_one().literals();
   } else {
     // Dual argument. The one with a negative cost can be transformed to
     // an exactly one.
     if (context_->keep_all_feasible_solutions) return;
     if (RefIsPositive(c1_ref) == (cost < 0)) {
-      context_->ShiftCostInExactlyOne(ct1.at_most_one().literals(),
-                                      RefIsPositive(c1_ref) ? cost : -cost);
-      *postsolve_literals = ct1.at_most_one().literals();
+      cost_shift = RefIsPositive(c1_ref) ? cost : -cost;
+      literals = ct1.at_most_one().literals();
     } else {
-      context_->ShiftCostInExactlyOne(ct2.at_most_one().literals(),
-                                      RefIsPositive(c2_ref) ? cost : -cost);
-      *postsolve_literals = ct2.at_most_one().literals();
+      cost_shift = RefIsPositive(c2_ref) ? cost : -cost;
+      literals = ct2.at_most_one().literals();
     }
   }
+
+  if (!context_->ShiftCostInExactlyOne(literals, cost_shift)) return;
   DCHECK(!context_->ObjectiveMap().contains(var));
+  context_->mapping_model->add_constraints()
+      ->mutable_exactly_one()
+      ->mutable_literals()
+      ->Assign(literals.begin(), literals.end());
 
   // We can now replace the two constraint by a single one, and delete var!
   const int new_ct_index = context_->working_model->constraints().size();
