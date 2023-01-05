@@ -132,7 +132,7 @@ It's expected that the `swig` binary exists in the host's path.
             allow_files = True,
         ),
         "swig_opt": attr.string(doc = "Optional Swig opt."),
-        "use_directors": attr.bool(doc = "use directors")
+        "use_directors": attr.bool(doc = "use directors"),
     },
 )
 
@@ -142,7 +142,7 @@ def ortools_java_wrap_cc(
         package,
         deps = [],
         java_deps = [],
-        swig_opt = '',
+        swig_opt = "",
         swig_includes = [],
         use_directors = False,
         module = None,
