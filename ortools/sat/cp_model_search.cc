@@ -726,8 +726,9 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       // Disable subsolvers that do not implement the determistic mode.
       //
       // TODO(user): Enable lb_tree_search in deterministic mode.
-      if (params.optimize_with_lb_tree_search() &&
-          (params.interleave_search() || params.use_objective_lb_search())) {
+      if (params.interleave_search() &&
+          (params.optimize_with_lb_tree_search() ||
+           params.use_objective_lb_search())) {
         continue;
       }
     } else {
