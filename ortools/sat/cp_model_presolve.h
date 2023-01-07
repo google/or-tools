@@ -116,6 +116,7 @@ class CpModelPresolver {
   bool PresolveInterval(int c, ConstraintProto* ct);
   bool PresolveInverse(ConstraintProto* ct);
   bool PresolveLinMax(ConstraintProto* ct);
+  bool PresolveLinMaxWhenAllBoolean(ConstraintProto* ct);
   bool PresolveTable(ConstraintProto* ct);
 
   bool PresolveCumulative(ConstraintProto* ct);

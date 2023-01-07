@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 declare -r DIR="${TEST_SRCDIR}/com_google_ortools/ortools/graph/samples"
 
 function test::ortools::code_samples_graph_java() {

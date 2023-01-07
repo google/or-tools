@@ -10,8 +10,8 @@ OR-Tools includes solvers for:
 - Linear and Mixed-Integer Programming
   - Glop: A linear optimizer to find the optimal value of a linear objective
   function, given a set of linear inequalities as constraints.
-  - Wrappers around commercial and other open source solvers, including mixed
-  integer solvers: CBC, CLP, GLPK, Gurobi or SCIP
+  - MPSolver, ModelBuilder: Wrappers around commercial and other open source
+  solvers, including mixed integer solvers: CBC, CLP, GLPK, Gurobi or SCIP.
 - Vehicle Routing
   A specialized library for identifying best vehicle routes given constraints.
 - Graph Algorithms

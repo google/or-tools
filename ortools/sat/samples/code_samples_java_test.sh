@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 declare -r DIR="${TEST_SRCDIR}/com_google_ortools/ortools/sat/samples"
 
 function test::ortools::code_samples_sat_java() {
@@ -20,3 +19,4 @@ function test::ortools::code_samples_sat_java() {
 }
 
 test::ortools::code_samples_sat_java $1
+

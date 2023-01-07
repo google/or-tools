@@ -283,6 +283,13 @@ void SeparateSubtourInequalities(
                              /*stop_at_num_components=*/2, &subset_data,
                              &subsets);
 
+  const int depot = 0;
+  if (!demands.empty()) {
+    // Add the depot so that we have a trivial bound on the number of
+    // vehicle.
+    subsets.push_back(absl::MakeSpan(&depot, 1));
+  }
+
   // Compute the total demands in order to know the minimum incoming/outgoing
   // flow.
   int64_t total_demands = 0;
@@ -293,7 +300,7 @@ void SeparateSubtourInequalities(
   // Process each subsets and add any violated cut.
   std::vector<bool> in_subset(num_nodes, false);
   for (const absl::Span<const int> subset : subsets) {
-    DCHECK_GT(subset.size(), 1);
+    DCHECK_GE(subset.size(), 1);
     DCHECK_LT(subset.size(), num_nodes);
 
     // These fields will be left untouched if demands.empty().
@@ -311,9 +318,9 @@ void SeparateSubtourInequalities(
 
     // Compute a lower bound on the outgoing flow.
     //
-    // TODO(user): This lower bound assume all nodes in subset must be served,
-    // which is not the case. For TSP we do the correct thing in
-    // AddOutgoingCut() but not for CVRP... Fix!!
+    // TODO(user): This lower bound assume all nodes in subset must be served.
+    // If this is not the case, we are really defensive in AddOutgoingCut().
+    // Improve depending on where the self-loop are.
     //
     // TODO(user): It could be very interesting to see if this "min outgoing
     // flow" cannot be automatically infered from the constraint in the
@@ -325,9 +332,8 @@ void SeparateSubtourInequalities(
     int64_t min_outgoing_flow = 1;
     if (!demands.empty()) {
       min_outgoing_flow =
-          contain_depot
-              ? (total_demands - subset_demand + capacity - 1) / capacity
-              : (subset_demand + capacity - 1) / capacity;
+          contain_depot ? CeilOfRatio(total_demands - subset_demand, capacity)
+                        : CeilOfRatio(subset_demand, capacity);
     }
 
     // We still need to serve nodes with a demand of zero, and in the corner
@@ -384,20 +390,45 @@ std::vector<IntegerVariable> GetAssociatedVariables(
   return result;
 }
 
+// This is especially useful to remove fixed self loop.
+void FilterFalseArcsAtLevelZero(std::vector<int>& tails,
+                                std::vector<int>& heads,
+                                std::vector<Literal>& literals, Model* model) {
+  const Trail& trail = *model->GetOrCreate<Trail>();
+  if (trail.CurrentDecisionLevel() != 0) return;
+
+  int new_size = 0;
+  const int size = static_cast<int>(tails.size());
+  const VariablesAssignment& assignment = trail.Assignment();
+  for (int i = 0; i < size; ++i) {
+    if (assignment.LiteralIsFalse(literals[i])) continue;
+    tails[new_size] = tails[i];
+    heads[new_size] = heads[i];
+    literals[new_size] = literals[i];
+    ++new_size;
+  }
+  if (new_size < size) {
+    tails.resize(new_size);
+    heads.resize(new_size);
+    literals.resize(new_size);
+  }
+}
+
 }  // namespace
 
 // We use a basic algorithm to detect components that are not connected to the
 // rest of the graph in the LP solution, and add cuts to force some arcs to
 // enter and leave this component from outside.
 CutGenerator CreateStronglyConnectedGraphCutGenerator(
-    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<Literal>& literals, Model* model) {
+    int num_nodes, std::vector<int> tails, std::vector<int> heads,
+    std::vector<Literal> literals, Model* model) {
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
       [num_nodes, tails, heads, literals, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) {
+          LinearConstraintManager* manager) mutable {
+        FilterFalseArcsAtLevelZero(tails, heads, literals, model);
         SeparateSubtourInequalities(
             num_nodes, tails, heads, literals, lp_values,
             /*demands=*/{}, /*capacity=*/0, manager, model);
@@ -406,18 +437,18 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
   return result;
 }
 
-CutGenerator CreateCVRPCutGenerator(int num_nodes,
-                                    const std::vector<int>& tails,
-                                    const std::vector<int>& heads,
-                                    const std::vector<Literal>& literals,
-                                    const std::vector<int64_t>& demands,
+CutGenerator CreateCVRPCutGenerator(int num_nodes, std::vector<int> tails,
+                                    std::vector<int> heads,
+                                    std::vector<Literal> literals,
+                                    std::vector<int64_t> demands,
                                     int64_t capacity, Model* model) {
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
       [num_nodes, tails, heads, demands, capacity, literals, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) {
+          LinearConstraintManager* manager) mutable {
+        FilterFalseArcsAtLevelZero(tails, heads, literals, model);
         SeparateSubtourInequalities(num_nodes, tails, heads, literals,
                                     lp_values, demands, capacity, manager,
                                     model);

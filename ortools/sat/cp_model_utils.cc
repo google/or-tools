@@ -20,9 +20,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/status/status.h"
 #include "absl/strings/match.h"
-#include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -748,11 +747,15 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
 
 bool WriteModelProtoToFile(const CpModelProto& model,
                            const std::string& filename) {
+#if defined(__PORTABLE_PLATFORM__)
+  return false;
+#else
   if (absl::EndsWith(filename, "txt")) {
     return file::SetTextProto(filename, model, file::Defaults()).ok();
   } else {
     return file::SetBinaryProto(filename, model, file::Defaults()).ok();
   }
+#endif
 }
 
 }  // namespace sat

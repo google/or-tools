@@ -107,7 +107,6 @@ cc_binary(
             "-fexceptions",
         ],
     }),
-    data = [":templates"],
     includes = [
         "Source/CParse",
         "Source/DOH",
@@ -123,12 +122,24 @@ cc_binary(
 )
 
 filegroup(
-    name = "templates",
+    name = "lib_java",
+    srcs = glob([
+        'Lib/*',
+        'Lib/java/*',
+        'Lib/std/*',
+        'Lib/typemaps/*'
+    ]),
+    licenses = ["notice"],  # simple notice license for Lib/
+    path = "Lib",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "lib_python",
     srcs = glob([
         'Lib/*',
         'Lib/python/*',
         'Lib/std/*',
-        'Lib/java/*',
         'Lib/typemaps/*'
     ]),
     licenses = ["notice"],  # simple notice license for Lib/

@@ -56,7 +56,7 @@ class LineBreaker {
   // Returns true if string s will fit on the current line without adding a
   // carriage return.
   bool WillFit(const std::string& s) {
-    return line_size_ + s.size() < max_line_size_;
+    return line_size_ + static_cast<int>(s.size()) < max_line_size_;
   }
 
   // "Consumes" size characters on the line. Used when starting the constraint
@@ -450,7 +450,8 @@ bool IsBoolean(const MPVariableProto& var) {
 }
 
 void UpdateMaxSize(const std::string& new_string, int* size) {
-  if (new_string.size() > *size) *size = new_string.size();
+  const int new_size = new_string.size();
+  if (new_size > *size) *size = new_size;
 }
 
 void UpdateMaxSize(double new_number, int* size) {

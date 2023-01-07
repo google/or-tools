@@ -61,18 +61,17 @@ void GenerateInterestingSubsets(int num_nodes,
 // connected. Note that we already assume basic constraint to be in the lp, so
 // we do not add any cuts for components of size 1.
 CutGenerator CreateStronglyConnectedGraphCutGenerator(
-    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<Literal>& literals, Model* model);
+    int num_nodes, std::vector<int> tails, std::vector<int> heads,
+    std::vector<Literal> literals, Model* model);
 
 // Almost the same as CreateStronglyConnectedGraphCutGenerator() but for each
 // components, computes the demand needed to serves it, and depending on whether
 // it contains the depot (node zero) or not, compute the minimum number of
 // vehicle that needs to cross the component border.
-CutGenerator CreateCVRPCutGenerator(int num_nodes,
-                                    const std::vector<int>& tails,
-                                    const std::vector<int>& heads,
-                                    const std::vector<Literal>& literals,
-                                    const std::vector<int64_t>& demands,
+CutGenerator CreateCVRPCutGenerator(int num_nodes, std::vector<int> tails,
+                                    std::vector<int> heads,
+                                    std::vector<Literal> literals,
+                                    std::vector<int64_t> demands,
                                     int64_t capacity, Model* model);
 
 // Try to find a subset where the current LP capacity of the outgoing or

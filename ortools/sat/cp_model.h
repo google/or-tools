@@ -77,7 +77,7 @@ class BoolVar {
   /// However, it shouldn't be passed to any of the functions in this file.
   /// Doing so will crash in debug mode and will result in an invalid model in
   /// opt mode.
-  BoolVar();
+  BoolVar() = default;
 
   /// Sets the name of the variable.
   /// Note that this will always set the "positive" version of this Boolean.
@@ -145,7 +145,7 @@ class IntVar {
   /// However, it shouldn't be passed to any of the functions in this file.
   /// Doing so will crash in debug mode and will result in an invalid model in
   /// opt mode.
-  IntVar();
+  IntVar() = default;
 
   /// Cast BoolVar -> IntVar.
   /// The IntVar will take the value 1 (when the bool is true) and 0 otherwise.

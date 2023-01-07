@@ -460,7 +460,7 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
     absl::Span<const int64_t> variable_values,
     const std::string& solution_info) {
   CpSolverResponse result;
-  result.set_status(synchronized_best_status_);
+  result.set_status(best_status_);
   if (!unsat_cores_.empty()) {
     DCHECK_EQ(best_status_, CpSolverStatus::INFEASIBLE);
     result.mutable_sufficient_assumptions_for_infeasibility()->Assign(

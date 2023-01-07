@@ -1,10 +1,9 @@
-# Copyright 2020 The Cross-Media Measurement Authors
-#
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,7 +28,6 @@ def _create_src_jar(ctx, java_runtime_info, input_dir, output_jar):
     )
 
 def _java_wrap_cc_impl(ctx):
-    name = ctx.attr.name
     src = ctx.file.src
     outfile = ctx.outputs.outfile
     outhdr = ctx.outputs.outhdr
@@ -133,7 +131,7 @@ It's expected that the `swig` binary exists in the host's path.
             allow_files = True,
         ),
         "swig_opt": attr.string(doc = "Optional Swig opt."),
-        "use_directors": attr.bool(doc = "use directors")
+        "use_directors": attr.bool(doc = "use directors"),
     },
 )
 
@@ -143,7 +141,7 @@ def ortools_java_wrap_cc(
         package,
         deps = [],
         java_deps = [],
-        swig_opt = '',
+        swig_opt = "",
         swig_includes = [],
         use_directors = False,
         module = None,
@@ -163,6 +161,8 @@ def ortools_java_wrap_cc(
         swig_opt: optional defines passed to the swig command.
         swig_includes: list of swig files included by the current swig file.
         use_directors: Boolean flag.
+        visibility: global visibility of the rule.
+        **kwargs: extra generic arguments, usually passed to sub-rules.
 
     Generated targets:
         {name}: java_library
@@ -185,7 +185,7 @@ def ortools_java_wrap_cc(
         deps = deps,
         swig_opt = swig_opt,
         module = module,
-        swig_includes = swig_includes,
+        swig_includes = swig_includes + ["@swig//:lib_java"],
         use_directors = use_directors,
         visibility = ["//visibility:private"],
         **kwargs

@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(":code_samples.bzl", "code_sample_cc", "code_sample_py", "code_sample_java")
+load(":code_samples.bzl", "code_sample_cc", "code_sample_java", "code_sample_py")
 
 # Linear Solver
 code_sample_cc(name = "assignment_mip")

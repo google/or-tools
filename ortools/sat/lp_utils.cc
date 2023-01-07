@@ -238,7 +238,43 @@ bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
 
 void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
                          SolverLogger* logger) {
+  // Having really low bounds or rhs can be problematic. We set them to zero.
+  int num_dropped = 0;
+  double max_dropped = 0.0;
+  const double drop = params.mip_drop_tolerance();
   const int num_variables = mp_model->variable_size();
+  for (int i = 0; i < num_variables; ++i) {
+    MPVariableProto* var = mp_model->mutable_variable(i);
+    if (var->lower_bound() != 0.0 && std::abs(var->lower_bound()) < drop) {
+      ++num_dropped;
+      max_dropped = std::max(max_dropped, std::abs(var->lower_bound()));
+      var->set_lower_bound(0.0);
+    }
+    if (var->upper_bound() != 0.0 && std::abs(var->upper_bound()) < drop) {
+      ++num_dropped;
+      max_dropped = std::max(max_dropped, std::abs(var->upper_bound()));
+      var->set_upper_bound(0.0);
+    }
+  }
+  const int num_constraints = mp_model->constraint_size();
+  for (int i = 0; i < num_constraints; ++i) {
+    MPConstraintProto* ct = mp_model->mutable_constraint(i);
+    if (ct->lower_bound() != 0.0 && std::abs(ct->lower_bound()) < drop) {
+      ++num_dropped;
+      max_dropped = std::max(max_dropped, std::abs(ct->lower_bound()));
+      ct->set_lower_bound(0.0);
+    }
+    if (ct->upper_bound() != 0.0 && std::abs(ct->upper_bound()) < drop) {
+      ++num_dropped;
+      max_dropped = std::max(max_dropped, std::abs(ct->upper_bound()));
+      ct->set_upper_bound(0.0);
+    }
+  }
+  if (num_dropped > 0) {
+    SOLVER_LOG(logger, "Set to zero ", num_dropped,
+               " variable or constraint bounds with largest magnitude ",
+               max_dropped);
+  }
 
   // Compute for each variable its current maximum magnitude. Note that we will
   // only scale variable with a coefficient >= 1, so it is safe to use this
@@ -251,14 +287,16 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
     max_bounds[i] = value;
   }
 
+  // Note that when a variable is fixed to zero, the code here remove all its
+  // coefficients. But we do not count them here.
+  double largest_removed = 0.0;
+
   // We want the maximum absolute error while setting coefficients to zero to
   // not exceed our mip wanted precision. So for a binary variable we might set
   // to zero coefficient around 1e-7. But for large domain, we need lower coeff
   // than that, around 1e-12 with the default params.mip_max_bound(). This also
   // depends on the size of the constraint.
   int64_t num_removed = 0;
-  double largest_removed = 0.0;
-  const int num_constraints = mp_model->constraint_size();
   for (int c = 0; c < num_constraints; ++c) {
     MPConstraintProto* ct = mp_model->mutable_constraint(c);
     int new_size = 0;
@@ -302,8 +340,6 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
   }
 
   if (num_removed > 0) {
-    // Note that when a variable is fixed to zero, the code here remove all its
-    // coefficients, so the largest magnitude can be quite large.
     SOLVER_LOG(logger, "Removed ", num_removed,
                " near zero terms with largest magnitude of ", largest_removed,
                ".");

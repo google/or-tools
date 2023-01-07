@@ -82,6 +82,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %rename (Constraint) operations_research::MPConstraint;
 %rename (Objective) operations_research::MPObjective;
 %rename (SolverParameters) operations_research::MPSolverParameters;
+%unignore operations_research::MPSolver::SolverVersion;
 
 // Expose the MPSolver::OptimizationProblemType enum.
 %unignore operations_research::MPSolver::OptimizationProblemType;
