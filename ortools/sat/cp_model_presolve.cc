@@ -9259,6 +9259,13 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
       min_value =
           obj_coeff > 0 ? encoded_values.front() : encoded_values.back();
     } else {
+      // Tricky: We cannot just choose an arbitrary value if the objective has
+      // a restrictive domain!
+      if (context_->ObjectiveDomainIsConstraining() &&
+          !other_values.IsFixed()) {
+        return;
+      }
+      
       // Tricky: If the variable is not fully encoded, then when all
       // partial encoding literal are false, it must take the "best" value
       // in other_values. That depend on the sign of the objective coeff.
