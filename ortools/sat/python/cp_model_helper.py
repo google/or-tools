@@ -77,7 +77,7 @@ def assert_is_boolean(x):
 def assert_is_a_number(x):
     """Asserts that x is a number and returns it."""
     if not is_a_number(x):
-        raise TypeError('Not an number: %s' % x)
+        raise TypeError('Not a number: %s' % x)
     elif is_integral(x):
         return int(x)
     else:
