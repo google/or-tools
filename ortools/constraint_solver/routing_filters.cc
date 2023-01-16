@@ -2089,10 +2089,8 @@ void AppendLightWeightDimensionFilters(
     std::vector<LocalSearchFilterManager::FilterEvent>* filters) {
   using Interval = DimensionChecker::Interval;
   // For every dimension that fits, add a DimensionChecker.
+  // Add a DimensionChecker for every dimension.
   for (const RoutingDimension* dimension : dimensions) {
-    // Skip dimension if not unary.
-    if (dimension->GetUnaryTransitEvaluator(0) == nullptr) continue;
-
     // Fill path capacities and classes.
     const int num_vehicles = dimension->model()->vehicles();
     std::vector<Interval> path_capacity(num_vehicles);
@@ -2116,16 +2114,30 @@ void AppendLightWeightDimensionFilters(
     for (int vehicle = 0; vehicle < num_vehicles; ++vehicle) {
       const int vehicle_class = path_class[vehicle];
       if (transits[vehicle_class] != nullptr) continue;
-      const auto& evaluator = dimension->GetUnaryTransitEvaluator(vehicle);
-      transits[vehicle_class] = [&evaluator, dimension, num_slacks](
-                                    int64_t node,
-                                    int64_t /*next*/) -> Interval {
-        if (node >= num_slacks) return {0, 0};
-        const int64_t min_transit = evaluator(node);
-        const int64_t max_transit =
-            CapAdd(min_transit, dimension->SlackVar(node)->Max());
-        return {min_transit, max_transit};
-      };
+      const auto& unary_evaluator =
+          dimension->GetUnaryTransitEvaluator(vehicle);
+      if (unary_evaluator != nullptr) {
+        transits[vehicle_class] = [&unary_evaluator, dimension, num_slacks](
+                                      int64_t node, int64_t next) -> Interval {
+          if (node >= num_slacks) return {0, 0};
+          const int64_t min_transit = unary_evaluator(node);
+          const int64_t max_transit =
+              CapAdd(min_transit, dimension->SlackVar(node)->Max());
+          return {min_transit, max_transit};
+        };
+      } else {
+        const auto& binary_evaluator =
+            dimension->GetBinaryTransitEvaluator(vehicle);
+
+        transits[vehicle_class] = [&binary_evaluator, dimension, num_slacks](
+                                      int64_t node, int64_t next) -> Interval {
+          if (node >= num_slacks) return {0, 0};
+          const int64_t min_transit = binary_evaluator(node, next);
+          const int64_t max_transit =
+              CapAdd(min_transit, dimension->SlackVar(node)->Max());
+          return {min_transit, max_transit};
+        };
+      }
     }
     // Fill node capacities.
     std::vector<Interval> node_capacity(num_cumuls);
@@ -2147,7 +2159,7 @@ void AppendLightWeightDimensionFilters(
 void AppendDimensionCumulFilters(
     const std::vector<RoutingDimension*>& dimensions,
     const RoutingSearchParameters& parameters, bool filter_objective_cost,
-    bool filter_light_weight_unary_dimensions,
+    bool use_chain_cumul_filter,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters) {
   const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
   // Filter priority depth increases with complexity of filtering.
@@ -2207,8 +2219,7 @@ void AppendDimensionCumulFilters(
                                !use_global_lp && !filter_resource_assignment,
                                filter_objective_cost, has_dimension_optimizers),
            kAccept, /*priority*/ 0});
-    } else if (filter_light_weight_unary_dimensions ||
-               dimension.GetUnaryTransitEvaluator(0) == nullptr) {
+    } else if (use_chain_cumul_filter) {
       filters->push_back(
           {model.solver()->RevAlloc(new ChainCumulFilter(model, dimension)),
            kAccept, /*priority*/ 0});

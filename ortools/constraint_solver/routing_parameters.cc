@@ -91,6 +91,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_make_chain_inactive(BOOL_TRUE);
   o->set_use_swap_active(BOOL_TRUE);
   o->set_use_extended_swap_active(BOOL_FALSE);
+  o->set_use_shortest_path_swap_active(BOOL_TRUE);
   o->set_use_node_pair_swap_active(BOOL_FALSE);
   o->set_use_path_lns(BOOL_FALSE);
   o->set_use_full_path_lns(BOOL_FALSE);

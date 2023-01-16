@@ -88,7 +88,7 @@ void AppendLightWeightDimensionFilters(
 void AppendDimensionCumulFilters(
     const std::vector<RoutingDimension*>& dimensions,
     const RoutingSearchParameters& parameters, bool filter_objective_cost,
-    bool filter_light_weight_unary_dimensions,
+    bool use_chain_cumul_filter,
     std::vector<LocalSearchFilterManager::FilterEvent>* filters);
 
 /// Generic path-based filter class.

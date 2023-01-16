@@ -4724,6 +4724,14 @@ void RoutingModel::CreateNeighborhoodOperators(
   local_search_operators_[SWAP_ACTIVE] = CreateCPOperator<SwapActiveOperator>();
   local_search_operators_[EXTENDED_SWAP_ACTIVE] =
       CreateCPOperator<ExtendedSwapActiveOperator>();
+  std::vector<std::vector<int64_t>> alternative_sets(disjunctions_.size());
+  for (const RoutingModel::Disjunction& disjunction : disjunctions_) {
+    alternative_sets.push_back(disjunction.indices);
+  }
+  local_search_operators_[SHORTEST_PATH_SWAP_ACTIVE] =
+      CreateOperator<SwapActiveToShortestPathOperator>(
+          std::move(alternative_sets),
+          absl::bind_front(&RoutingModel::GetHomogeneousCost, this));
 
   // Routing-specific operators.
   local_search_operators_[MAKE_ACTIVE] = CreateInsertionOperator();
@@ -4930,6 +4938,8 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(SWAP_ACTIVE, swap_active, operators);
     CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active,
                              operators);
+    CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_SWAP_ACTIVE,
+                             shortest_path_swap_active, operators);
   }
   operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 
@@ -4987,13 +4997,6 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
 }
 
 #undef CP_ROUTING_PUSH_OPERATOR
-
-bool HasUnaryDimension(const std::vector<RoutingDimension*>& dimensions) {
-  for (const RoutingDimension* dimension : dimensions) {
-    if (dimension->GetUnaryTransitEvaluator(0) != nullptr) return true;
-  }
-  return false;
-}
 
 namespace {
 
@@ -5054,9 +5057,8 @@ RoutingModel::CreateLocalSearchFilters(
       filter_events.push_back({sum, kAccept, priority});
     }
   }
-  const bool model_has_unary_dimension = HasUnaryDimension(GetDimensions());
   const PathState* path_state_reference = nullptr;
-  if (model_has_unary_dimension) {
+  {
     std::vector<int> path_starts;
     std::vector<int> path_ends;
     ConvertVectorInt64ToVectorInt(paths_metadata_.Starts(), &path_starts);
@@ -5095,14 +5097,14 @@ RoutingModel::CreateLocalSearchFilters(
       filter_events.push_back({MakeVehicleVarFilter(*this), kAccept, priority});
     }
 
-    if (model_has_unary_dimension) {
-      // Append filters, then overwrite preset priority to current priority.
-      const int first_lightweight_index = filter_events.size();
-      AppendLightWeightDimensionFilters(path_state_reference, GetDimensions(),
-                                        &filter_events);
-      for (int e = first_lightweight_index; e < filter_events.size(); ++e) {
-        filter_events[e].priority = priority;
-      }
+    // Append filters, then overwrite preset priority to current priority.
+    // TODO(user): Merge Append*DimensionFilters in one procedure, needs
+    // to revisit priorities so they reflect complexity less arbitrarily.
+    const int first_lightweight_index = filter_events.size();
+    AppendLightWeightDimensionFilters(path_state_reference, GetDimensions(),
+                                      &filter_events);
+    for (int e = first_lightweight_index; e < filter_events.size(); ++e) {
+      filter_events[e].priority = priority;
     }
   }
 
@@ -5125,12 +5127,12 @@ RoutingModel::CreateLocalSearchFilters(
 
   {
     ++priority;
-    const int first_lightweight_index = filter_events.size();
+    const int first_dimension_filter_index = filter_events.size();
     AppendDimensionCumulFilters(
         GetDimensions(), parameters, options.filter_objective,
-        /* filter_light_weight_unary_dimensions */ false, &filter_events);
+        /* filter_light_weight_dimensions */ false, &filter_events);
     int max_priority = priority;
-    for (int e = first_lightweight_index; e < filter_events.size(); ++e) {
+    for (int e = first_dimension_filter_index; e < filter_events.size(); ++e) {
       filter_events[e].priority += priority;
       max_priority = std::max(max_priority, filter_events[e].priority);
     }

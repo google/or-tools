@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/strings/str_cat.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -87,6 +88,49 @@ class MakeRelocateNeighborsOperator : public PathOperator {
   RoutingTransitCallback2 arc_evaluator_;
 };
 
+// Swaps active nodes from node alternatives in sequence. Considers chains of
+// nodes with alternatives, builds a DAG from the chain, each "layer" of the DAG
+// being composed of the set of alternatives of the node at a given rank in the
+// chain, fully connected to the next layer. A neighbor is built from the
+// shortest path starting from the node before the chain (source), through the
+// DAG to the node following the chain. The path is valued with a given
+// callback.
+// Example:
+// Alternative sets: {1,2} and {3,4}
+// Current path: 0 -> 1 -> 3 -> 5
+// DAG + source and sink:  -> 1 ---> 3 --
+//                        |    \ /       v
+//                        0     X        5
+//                        |    / \       ^
+//                         -> 2 ---> 4 --
+// Supposing the shortest path from 0 to 5 is 0, 2, 3, 5, the neighbor for the
+// chain will be: 0 -> 2 -> 3 -> 5.
+// TODO(user): Support vehicle-class-dependent arc_evaluators.
+class SwapActiveToShortestPathOperator : public PathOperator {
+ public:
+  SwapActiveToShortestPathOperator(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
+      std::function<int(int64_t)> start_empty_path_class,
+      std::vector<std::vector<int64_t>> alternative_sets,
+      RoutingTransitCallback2 arc_evaluator);
+  ~SwapActiveToShortestPathOperator() override = default;
+  bool MakeNeighbor() override;
+  std::string DebugString() const override {
+    return "SwapActiveToShortestPath";
+  }
+
+ private:
+  void UpdateShortestPath(int source, int sink,
+                          const std::vector<int>& alternative_chain);
+
+  RoutingTransitCallback2 arc_evaluator_;
+  const std::vector<std::vector<int64_t>> alternative_sets_;
+  std::vector<int> to_alternative_set_;
+  std::vector<int64_t> path_predecessor_;
+  std::vector<int64_t> path_;
+};
+
 /// Pair-based neighborhood operators, designed to move nodes by pairs (pairs
 /// are static and given). These neighborhoods are very useful for Pickup and
 /// Delivery problems where pickup and delivery nodes must remain on the same
@@ -105,7 +149,7 @@ class MakeRelocateNeighborsOperator : public PathOperator {
 ///   1 -> [B] ->  2 ->  [A] ->  3
 ///   1 -> [A] ->  2  -> [B] ->  3
 ///   1 ->  2  -> [A] -> [B] ->  3
-/// Note that this operator does not expicitely insert the nodes of a pair one
+/// Note that this operator does not explicitly insert the nodes of a pair one
 /// after the other which forbids the following solutions:
 ///   1 -> [B] -> [A] ->  2  ->  3
 ///   1 ->  2  -> [B] -> [A] ->  3

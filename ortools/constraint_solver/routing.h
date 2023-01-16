@@ -1756,6 +1756,7 @@ class RoutingModel {
     MAKE_CHAIN_INACTIVE,
     SWAP_ACTIVE,
     EXTENDED_SWAP_ACTIVE,
+    SHORTEST_PATH_SWAP_ACTIVE,
     NODE_PAIR_SWAP,
     PATH_LNS,
     FULL_PATH_LNS,
@@ -2851,6 +2852,11 @@ class RoutingDimension {
     return model_->UnaryTransitCallbackOrNull(
         class_evaluators_[vehicle_to_class_[vehicle]]);
   }
+  const RoutingModel::TransitCallback2& GetBinaryTransitEvaluator(
+      int vehicle) const {
+    return model_->TransitCallback(
+        class_evaluators_[vehicle_to_class_[vehicle]]);
+  }
   /// Returns true iff the transit evaluator of 'vehicle' is positive for all
   /// arcs.
   bool AreVehicleTransitsPositive(int vehicle) const {
@@ -3254,10 +3260,6 @@ class RoutingDimension {
       vehicle_quadratic_cost_soft_span_upper_bound_;
   friend class RoutingModel;
   friend class RoutingModelInspector;
-  friend void AppendDimensionCumulFilters(
-      const std::vector<RoutingDimension*>& dimensions,
-      const RoutingSearchParameters& parameters, bool filter_objective_cost,
-      std::vector<LocalSearchFilterManager::FilterEvent>* filters);
 
   DISALLOW_COPY_AND_ASSIGN(RoutingDimension);
 };

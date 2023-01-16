@@ -132,7 +132,7 @@ message RoutingSearchParameters {
   bool christofides_use_minimum_matching = 30;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 34
+  // Next ID: 35
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -326,6 +326,13 @@ message RoutingSearchParameters {
     //   1 -> [5] ->  2  -> 4 with 3 inactive
     //   1 ->  2  -> [5] -> 4 with 3 inactive
     OptionalBoolean use_extended_swap_active = 15;
+    // Swaps active nodes from node alternatives in sequence. Considers chains
+    // of nodes with alternatives, builds a DAG from the chain, each "layer" of
+    // the DAG being composed of the set of alternatives of the node at a given
+    // rank in the chain, fully connected to the next layer. A neighbor is built
+    // from the shortest path starting from the node before the chain (source),
+    // through the DAG to the node following the chain.
+    OptionalBoolean use_shortest_path_swap_active = 34;
     // Operator which makes an inactive node active and an active pair of nodes
     // inactive OR makes an inactive pair of nodes active and an active node
     // inactive.
