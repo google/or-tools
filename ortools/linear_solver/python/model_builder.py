@@ -624,7 +624,7 @@ class BoundedLinearExpression(object):
 
     def __bool__(self):
         raise NotImplementedError(
-            f'Cannot use a BoundedLinearExpression {self} as an Boolean value')
+            f'Cannot use a BoundedLinearExpression {self} as a Boolean value')
 
 
 class LinearConstraint(object):
