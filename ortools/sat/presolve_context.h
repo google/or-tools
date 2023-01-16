@@ -447,8 +447,8 @@ class PresolveContext {
   // Returns false, if the substitution cannot be done. This is the case if the
   // model become UNSAT or if doing it will result in an objective that do not
   // satisfy our overflow preconditions. Note that this can only happen if the
-  // substitued variable is not implied free (i.e. if its domain is smaller than
-  // the implied domain from the equality).
+  // substituted variable is not implied free (i.e. if its domain is smaller
+  // than the implied domain from the equality).
   ABSL_MUST_USE_RESULT bool SubstituteVariableInObjective(
       int var_in_equality, int64_t coeff_in_equality,
       const ConstraintProto& equality);

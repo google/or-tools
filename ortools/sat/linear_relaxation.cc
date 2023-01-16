@@ -1272,9 +1272,8 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       break;
     }
     case ConstraintProto::ConstraintCase::kAllDiff: {
-      if (linearization_level > 1) {
-        AddAllDiffCutGenerator(ct, model, relaxation);
-      }
+      AddAllDiffRelaxationAndCutGenerator(ct, linearization_level, model,
+                                          relaxation);
       break;
     }
     case ConstraintProto::ConstraintCase::kLinear: {
@@ -1427,17 +1426,46 @@ void AddSquareCutGenerator(const ConstraintProto& ct, int linearization_level,
       CreateSquareCutGenerator(square, x, linearization_level, m));
 }
 
-void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
-                            LinearRelaxation* relaxation) {
+void AddAllDiffRelaxationAndCutGenerator(const ConstraintProto& ct,
+                                         int linearization_level, Model* m,
+                                         LinearRelaxation* relaxation) {
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   const int num_exprs = ct.all_diff().exprs_size();
 
-  if (num_exprs <= m->GetOrCreate<SatParameters>()->max_all_diff_cut_size()) {
-    std::vector<AffineExpression> exprs(num_exprs);
-    for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
-      exprs.push_back(mapping->Affine(expr));
+  const std::vector<AffineExpression> exprs =
+      mapping->Affines(ct.all_diff().exprs());
+
+  // Build union of affine expressions domains to check if this is a
+  // permutation.
+  Domain union_of_domains;
+  for (const AffineExpression& expr : exprs) {
+    if (integer_trail->IsFixed(expr)) {
+      union_of_domains.UnionWith(
+          Domain(integer_trail->FixedValue(expr).value()));
+    } else {
+      union_of_domains = union_of_domains.UnionWith(
+          integer_trail->InitialVariableDomain(expr.var)
+              .MultiplicationBy(expr.coeff.value())
+              .AdditionWith(Domain(expr.constant.value())));
     }
+  }
+
+  if (union_of_domains.Size() == num_exprs) {
+    // In case of a permutation, the linear constraint is tight.
+    int64_t sum_of_values = 0;
+    for (const int64_t v : union_of_domains.Values()) {
+      sum_of_values += v;
+    }
+    LinearConstraintBuilder relax(m, sum_of_values, sum_of_values);
+    for (const AffineExpression& expr : exprs) {
+      relax.AddTerm(expr, 1);
+    }
+    relaxation->linear_constraints.push_back(relax.Build());
+  } else if (num_exprs <=
+                 m->GetOrCreate<SatParameters>()->max_all_diff_cut_size() &&
+             linearization_level > 1) {
     relaxation->cut_generators.push_back(
         CreateAllDifferentCutGenerator(exprs, m));
   }

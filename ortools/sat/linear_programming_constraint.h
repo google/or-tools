@@ -57,7 +57,7 @@ namespace sat {
 // TODO(user): find a better way?
 struct LinearProgrammingConstraintLpSolution
     : public absl::StrongVector<IntegerVariable, double> {
-  LinearProgrammingConstraintLpSolution() {}
+  LinearProgrammingConstraintLpSolution() = default;
 };
 
 // Helper struct to combine info generated from solving LP.
@@ -102,7 +102,7 @@ class ScatteredIntegerVector {
     return dense_vector_[col];
   }
 
-  const bool IsSparse() const { return is_sparse_; }
+  bool IsSparse() const { return is_sparse_; }
 
  private:
   // If is_sparse is true we maintain the non_zeros positions and bool vector
@@ -179,7 +179,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // ReversibleInterface API.
   void SetLevel(int level) override;
 
-  int NumVariables() const { return integer_variables_.size(); }
+  int NumVariables() const {
+    return static_cast<int>(integer_variables_.size());
+  }
   const std::vector<IntegerVariable>& integer_variables() const {
     return integer_variables_;
   }
@@ -267,6 +269,15 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Solve the LP, returns false if something went wrong in the LP solver.
   bool SolveLp();
+
+  // Returns false if some terms cannot be removed because of overflow. If this
+  // happends the cut is left in a non-usable state and we should abort its
+  // processing.
+  bool RemoveFixedTerms(LinearConstraint* cut);
+
+  // Does some basic preprocessing of a cut candidate. Returns false if we
+  // should abort processing this candidate.
+  bool PreprocessCut(LinearConstraint* cut);
 
   // Add a "MIR" cut obtained by first taking the linear combination of the
   // row of the matrix according to "integer_multipliers" and then trying
@@ -382,8 +393,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // DUAL_FEASIBLE status as a signal to correct the prediction. The next limit
   // is capped by 'min_iter' and 'max_iter'. Note that this is enabled only for
   // linearization level 2 and above.
-  void UpdateSimplexIterationLimit(const int64_t min_iter,
-                                   const int64_t max_iter);
+  void UpdateSimplexIterationLimit(int64_t min_iter, int64_t max_iter);
 
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
@@ -427,6 +437,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   CoverCutHelper cover_cut_helper_;
   FlowCoverCutHelper flow_cover_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
+
+  CutData base_ct_;
   LinearConstraint cut_;
   LinearConstraint saved_cut_;
   LinearConstraint tmp_constraint_;
@@ -437,7 +449,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerValue> tmp_var_lbs_;
   std::vector<IntegerValue> tmp_var_ubs_;
   std::vector<glop::RowIndex> tmp_slack_rows_;
-  std::vector<IntegerValue> tmp_slack_bounds_;
   std::vector<ImpliedBoundsProcessor::SlackInfo> tmp_ib_slack_infos_;
   std::vector<std::pair<glop::ColIndex, IntegerValue>> tmp_terms_;
 
@@ -468,6 +479,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   Model* model_;
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
+  SatSolver* sat_solver_;
   Trail* trail_;
   IntegerEncoder* integer_encoder_;
   ModelRandomGenerator* random_;
@@ -544,6 +556,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Sum of all simplex iterations performed by this class. This is useful to
   // test the incrementality and compare to other solvers.
   int64_t total_num_simplex_iterations_ = 0;
+
+  // As we form candidate form cuts, sometimes we can propagate level zero
+  // bounds with them.
+  int64_t total_num_cut_propagations_ = 0;
 
   // Some stats on the LP statuses encountered.
   int64_t num_solves_ = 0;

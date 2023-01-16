@@ -158,8 +158,9 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
 void AddSquareCutGenerator(const ConstraintProto& ct, int linearization_level,
                            Model* m, LinearRelaxation* relaxation);
 
-void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
-                            LinearRelaxation* relaxation);
+void AddAllDiffRelaxationAndCutGenerator(const ConstraintProto& ct,
+                                         int linearization_level, Model* m,
+                                         LinearRelaxation* relaxation);
 
 void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation);

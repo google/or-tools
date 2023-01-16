@@ -3025,7 +3025,7 @@ void CpModelPresolver::DetectAndProcessAtMostOneInLinear(
 
   // Detect encoded AMO.
   //
-  // TODO(user): Suppport more coefficient strengthening cases.
+  // TODO(user): Support more coefficient strengthening cases.
   // For instance on neos-954925.pb.gz we have stuff like:
   //    20 * (AMO1 + AMO2) - [coeff in 48 to 53] >= -15
   // this is really AMO1 + AMO2 - 2 * AMO3 >= 0.
@@ -7848,7 +7848,7 @@ void CpModelPresolver::DetectDuplicateConstraints() {
           if (!MarkConstraintAsFalse(
                   context_->working_model->mutable_constraints(rep))) {
             SOLVER_LOG(logger_, "Unsat after merging two linear constraints");
-            break;
+            return;
           }
 
           // The representative constraint is no longer a linear constraint,
@@ -7963,6 +7963,199 @@ void CpModelPresolver::DetectDuplicateConstraints() {
     }
   }
 
+  // Try to find identical linear constraint with incompatible domains.
+  // This works really well on neos16.mps.gz where we have
+  // a <=> x <= y
+  // b <=> x >= y
+  // and a => not(b),
+  // Because of this presolve, we detect that not(a) => b and thus that a and
+  // not(b) are equivalent. We can thus simplify the problem to just
+  // a => x < y
+  // not(a) => x > y
+  //
+  // TODO(user): On that same problem, we could actually just have x != y and
+  // remove the enforcement literal that is just used for that. But then we
+  // will just re-create it, since we don't have a native way to handle x != y.
+  //
+  // TODO(user): Again on neos16.mps, we actually have cliques of x != y so we
+  // end up with a bunch of groups of 7 variables in [0, 6] that are all
+  // different. If we can detect that, then we close the problem quickly instead
+  // of not closing it.
+  bool has_all_diff = false;
+  std::vector<std::pair<uint64_t, int>> hashes;
+  std::vector<std::pair<int, int>> different_vars;
+  const int num_constraints = context_->working_model->constraints_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (ct.constraint_case() == ConstraintProto::kAllDiff) {
+      has_all_diff = true;
+      continue;
+    }
+    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+    if (ct.linear().vars().size() == 1) continue;
+
+    // Detect direct encoding of x != y. Note that we also see that from x > y
+    // and related.
+    if (ct.linear().vars().size() == 2 && ct.enforcement_literal().empty() &&
+        ct.linear().coeffs(0) == -ct.linear().coeffs(1) &&
+        !ReadDomainFromProto(ct.linear()).Contains(0)) {
+      different_vars.push_back({ct.linear().vars(0), ct.linear().vars(1)});
+    }
+
+    // TODO(user): Handle this case?
+    if (ct.enforcement_literal().size() > 1) continue;
+
+    uint64_t hash = kDefaultFingerprintSeed;
+    hash = FingerprintRepeatedField(ct.linear().vars(), hash);
+    hash = FingerprintRepeatedField(ct.linear().coeffs(), hash);
+    hashes.push_back({hash, c});
+  }
+  std::sort(hashes.begin(), hashes.end());
+  for (int next, start = 0; start < hashes.size(); start = next) {
+    next = start + 1;
+    while (next < hashes.size() && hashes[next].first == hashes[start].first) {
+      ++next;
+    }
+    absl::Span<const std::pair<uint64_t, int>> range(&hashes[start],
+                                                     next - start);
+    if (range.size() <= 1) continue;
+    if (range.size() > 10) continue;
+
+    for (int i = 0; i < range.size(); ++i) {
+      const ConstraintProto& ct1 =
+          context_->working_model->constraints(range[i].second);
+      const int num_terms = ct1.linear().vars().size();
+      for (int j = i + 1; j < range.size(); ++j) {
+        const ConstraintProto& ct2 =
+            context_->working_model->constraints(range[j].second);
+        if (ct2.linear().vars().size() != num_terms) continue;
+        if (!ReadDomainFromProto(ct1.linear())
+                 .IntersectionWith(ReadDomainFromProto(ct2.linear()))
+                 .IsEmpty()) {
+          continue;
+        }
+        if (absl::MakeSpan(ct1.linear().vars().data(), num_terms) !=
+            absl::MakeSpan(ct2.linear().vars().data(), num_terms)) {
+          continue;
+        }
+        if (absl::MakeSpan(ct1.linear().coeffs().data(), num_terms) !=
+            absl::MakeSpan(ct2.linear().coeffs().data(), num_terms)) {
+          continue;
+        }
+
+        if (ct1.enforcement_literal().empty() &&
+            ct2.enforcement_literal().empty()) {
+          (void)context_->NotifyThatModelIsUnsat(
+              "two incompatible linear constraint");
+          return;
+        }
+        if (ct1.enforcement_literal().empty()) {
+          context_->UpdateRuleStats(
+              "incompatible linear: set enforcement to false");
+          if (!context_->SetLiteralToFalse(ct2.enforcement_literal(0))) {
+            return;
+          }
+          continue;
+        }
+        if (ct2.enforcement_literal().empty()) {
+          context_->UpdateRuleStats(
+              "incompatible linear: set enforcement to false");
+          if (!context_->SetLiteralToFalse(ct1.enforcement_literal(0))) {
+            return;
+          }
+          continue;
+        }
+
+        // Detect x != y via lit => x > y && not(lit) => x < y.
+        if (ct1.linear().vars().size() == 2 &&
+            ct1.linear().coeffs(0) == -ct1.linear().coeffs(1) &&
+            !ReadDomainFromProto(ct1.linear()).Contains(0) &&
+            !ReadDomainFromProto(ct2.linear()).Contains(0) &&
+            ct1.enforcement_literal(0) ==
+                NegatedRef(ct2.enforcement_literal(0))) {
+          different_vars.push_back(
+              {ct1.linear().vars(0), ct1.linear().vars(1)});
+        }
+
+        context_->UpdateRuleStats("incompatible linear: add implication");
+        context_->AddImplication(ct1.enforcement_literal(0),
+                                 NegatedRef(ct2.enforcement_literal(0)));
+      }
+    }
+  }
+
+  // Detect all_different cliques.
+  // We reuse the max-clique code from sat.
+  //
+  // TODO(user): To avoid doing that more than once, we only run it if there
+  // is no all-diff in the model already. This is not perfect.
+  //
+  // Note(user): The all diff added here will not be expanded since we run this
+  // after expansion. This is fragile though. Not even sure this is what we
+  // want.
+  //
+  // TODO(user): Start with the existing all diff and expand them rather than
+  // not running this if there are all_diff present.
+  if (context_->params().infer_all_diffs() && !has_all_diff &&
+      different_vars.size() > 2) {
+    WallTimer local_time;
+    local_time.Start();
+
+    std::vector<std::vector<Literal>> cliques;
+    absl::flat_hash_set<int> used_var;
+
+    Model local_model;
+    const int num_variables = context_->working_model->variables().size();
+    local_model.GetOrCreate<Trail>()->Resize(num_variables);
+    auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
+    graph->Resize(num_variables);
+    for (const auto [var1, var2] : different_vars) {
+      if (!RefIsPositive(var1)) continue;
+      if (!RefIsPositive(var2)) continue;
+      if (var1 == var2) {
+        (void)context_->NotifyThatModelIsUnsat("x != y with x == y");
+        return;
+      }
+      // All variables at false is always a valid solution of the local model,
+      // so this should never return UNSAT.
+      CHECK(graph->AddAtMostOne({Literal(BooleanVariable(var1), true),
+                                 Literal(BooleanVariable(var2), true)}));
+      if (!used_var.contains(var1)) {
+        used_var.insert(var1);
+        cliques.push_back({Literal(BooleanVariable(var1), true),
+                           Literal(BooleanVariable(var2), true)});
+      }
+      if (!used_var.contains(var2)) {
+        used_var.insert(var2);
+        cliques.push_back({Literal(BooleanVariable(var1), true),
+                           Literal(BooleanVariable(var2), true)});
+      }
+    }
+    CHECK(graph->DetectEquivalences());
+    graph->TransformIntoMaxCliques(&cliques, 1e8);
+
+    int num_cliques = 0;
+    int64_t cumulative_size = 0;
+    for (const std::vector<Literal>& clique : cliques) {
+      if (clique.size() <= 2) continue;
+
+      ++num_cliques;
+      cumulative_size += clique.size();
+      context_->UpdateRuleStats("all_diff: inferred from x != y constraints");
+      auto* new_ct =
+          context_->working_model->add_constraints()->mutable_all_diff();
+      for (const Literal l : clique) {
+        auto* expr = new_ct->add_exprs();
+        expr->add_vars(l.Variable().value());
+        expr->add_coeffs(1);
+      }
+    }
+    SOLVER_LOG(logger_, "[AllDiffInferrence]",
+               " #different=", different_vars.size(), " #cliques=", num_cliques,
+               " #size=", cumulative_size, " time=", local_time.Get(), "s");
+  }
+
+  context_->UpdateNewConstraintsVariableUsage();
   SOLVER_LOG(logger_, "[DetectDuplicateConstraints]",
              " #duplicates=", duplicates.size(),
              " #without_enforcements=", duplicates_without_enforcement.size(),
@@ -9265,7 +9458,7 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
           !other_values.IsFixed()) {
         return;
       }
-      
+
       // Tricky: If the variable is not fully encoded, then when all
       // partial encoding literal are false, it must take the "best" value
       // in other_values. That depend on the sign of the objective coeff.
