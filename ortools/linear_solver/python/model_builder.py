@@ -32,6 +32,7 @@ rather than for solving specific optimization problems.
 """
 
 import math
+import numpy as np
 
 from ortools.linear_solver.python import model_builder_helper as mbh
 from ortools.linear_solver.python import pywrap_model_builder_helper as pwmb
@@ -40,7 +41,7 @@ from ortools.linear_solver.python import pywrap_model_builder_helper as pwmb
 SolveStatus = pwmb.SolveStatus
 
 
-class LinearExpr(object):
+class LinearExpr:
     """Holds an linear expression.
 
   A linear expression is built from constants and variables.
@@ -425,11 +426,11 @@ class Variable(LinearExpr):
         #     helper is a ModelBuilderHelper, lb is an index (int), ub is None,
         #     is_integral is None, and name is None.
         if mbh.is_integral(lb) and ub is None and is_integral is None:
-            self.__index = int(lb)
+            self.__index = np.int32(lb)
             self.__helper = helper
         else:
             index = helper.add_var()
-            self.__index = index
+            self.__index = np.int32(index)
             self.__helper = helper
             helper.set_var_lower_bound(index, lb)
             helper.set_var_upper_bound(index, ub)
@@ -464,10 +465,10 @@ class Variable(LinearExpr):
 
     def __repr__(self):
         index = self.__index
-        name = self.__helper.VarName(index)
-        lb = self.__helper.VarLowerBound(index)
-        ub = self.__helper.VarUpperBound(index)
-        is_integer = self.__helper.VarIsInteger(index)
+        name = self.__helper.var_name(index)
+        lb = self.__helper.var_lower_bound(index)
+        ub = self.__helper.var_upper_bound(index)
+        is_integer = self.__helper.var_is_integral(index)
         if name:
             if is_integer:
                 return f'{name}(index={index}, lb={lb}, ub={ub}, integer)'
@@ -549,7 +550,61 @@ class Variable(LinearExpr):
         return hash((self.__helper, self.__index))
 
 
-class VarCompVar(object):
+class VariableContainer:
+    """Variable container."""
+
+    def __init__(self, helper, indices):
+        self.__helper = helper
+        self.__indices = indices
+
+    def __getitem__(self, pos):
+        index_or_slice = self.__indices[pos]
+        if mbh.is_integral(index_or_slice):
+            return Variable(self.__helper, self.__indices[pos], None, None,
+                            None)
+        else:
+            return VariableContainer(self.__helper, index_or_slice)
+
+    def index_at(self, pos):
+        """Returns the index of the variable at the position 'pos'."""
+        return self.__indices[pos]
+
+    # pylint: disable=invalid-name
+    @property
+    def T(self):
+        """Returns a view upon the transposed numpy array of variables."""
+        return VariableContainer(self.__helper, self.__indices.T)
+
+    # pylint: enable=invalid-name
+
+    @property
+    def shape(self):
+        """Returns the shape of the numpy array."""
+        return self.__indices.shape
+
+    @property
+    def size(self):
+        """Returns the number of variables in the numpy array."""
+        return self.__indices.size
+
+    @property
+    def ravel(self):
+        """returns the flattened array of variables."""
+        return VariableContainer(self.__helper, self.__indices.ravel())
+
+    @property
+    def flatten(self):
+        """returns the flattened array of variables."""
+        return VariableContainer(self.__helper, self.__indices.flatten())
+
+    def __str__(self):
+        return f'VariableContainer({self.__indices})'
+
+    def __repr__(self):
+        return f'VariableContainer({self.__helper}, {repr(self.__indices)})'
+
+
+class VarCompVar:
     """Represents var == /!= var."""
 
     def __init__(self, left, right, is_equality):
@@ -579,10 +634,11 @@ class VarCompVar(object):
         return self.__is_equality
 
     def __bool__(self):
-        return (self.__left.index == self.__right.index) == self.__is_equality
+        return bool(
+            self.__left.index == self.__right.index) == self.__is_equality
 
 
-class BoundedLinearExpression(object):
+class BoundedLinearExpression:
     """Represents a linear constraint: `lb <= linear expression <= ub`.
 
   The only use of this class is to be added to the ModelBuilder through
@@ -627,7 +683,7 @@ class BoundedLinearExpression(object):
             f'Cannot use a BoundedLinearExpression {self} as a Boolean value')
 
 
-class LinearConstraint(object):
+class LinearConstraint:
     """Stores a linear equation.
 
   Example:
@@ -680,7 +736,7 @@ class LinearConstraint(object):
         self.__helper.add_term_to_constraint(self.__index, var.index, coeff)
 
 
-class ModelBuilder(object):
+class ModelBuilder:
     """Methods for building a linear model.
 
   Methods beginning with:
@@ -744,6 +800,53 @@ class ModelBuilder(object):
     def new_constant(self, value):
         """Declares a constant variable."""
         return self.new_var(value, value, False, '')
+
+    def new_var_ndarray_with_bounds(self, lbs, ubs, ints, name):
+        """Creates a vector of continuous variables from two vector of bounds."""
+        if np.shape(lbs) != np.shape(ubs):
+            raise ValueError('The lbs and ubs vectors must have the same size')
+        if np.shape(lbs) != np.shape(ints):
+            raise ValueError('The lbs and ints vectors must have the same size')
+        var_indices = self.__helper.add_var_ndarray_with_bounds(
+            lbs, ubs, ints, name)
+        return VariableContainer(self.__helper, var_indices)
+
+    def new_num_var_ndarray(self, shape, lb, ub, name):
+        """Creates a vector of continuous variables with the same bounds."""
+        if mbh.is_integral(shape):
+            shape = [shape]
+        var_indices = self.__helper.add_var_ndarray(shape, lb, ub, False, name)
+        return VariableContainer(self.__helper, var_indices)
+
+    def new_num_var_ndarray_with_bounds(self, lbs, ubs, name):
+        """Creates a vector of continuous variables from two vector of bounds."""
+        if np.shape(lbs) != np.shape(ubs):
+            raise ValueError('The lbs and ubs vectors must have the same size')
+        var_indices = self.__helper.add_var_ndarray_with_bounds(
+            lbs, ubs, np.zeros(len(lbs), dtype=bool), name)
+        return VariableContainer(self.__helper, var_indices)
+
+    def new_int_var_ndarray(self, shape, lb, ub, name):
+        """Creates a vector of integer variables with the same bounds."""
+        if mbh.is_integral(shape):
+            shape = [shape]
+        var_indices = self.__helper.add_var_ndarray(shape, lb, ub, True, name)
+        return VariableContainer(self.__helper, var_indices)
+
+    def new_int_var_ndarray_with_bounds(self, lbs, ubs, name):
+        """Creates a vector of integer variables from two vector of bounds."""
+        if np.shape(lbs) != np.shape(ubs):
+            raise ValueError('The lbs and ubs vectors must have the same size')
+        var_indices = self.__helper.add_var_ndarray_with_bounds(
+            lbs, ubs, np.ones(len(lbs), dtype=bool), name)
+        return VariableContainer(self.__helper, var_indices)
+
+    def new_bool_var_ndarray(self, shape, name):
+        """Creates a vector of Boolean variables."""
+        if mbh.is_integral(shape):
+            shape = [shape]
+        var_indices = self.__helper.add_var_ndarray(shape, 0.0, 1.0, True, name)
+        return VariableContainer(self.__helper, var_indices)
 
     def var_from_index(self, index):
         """Rebuilds a variable object from the model and its index."""
@@ -896,7 +999,7 @@ class ModelBuilder(object):
         return self.__helper
 
 
-class ModelSolver(object):
+class ModelSolver:
     """Main solver class.
 
   The purpose of this class is to search for a solution to the model provided

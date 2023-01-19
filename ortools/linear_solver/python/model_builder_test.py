@@ -14,9 +14,11 @@
 """Tests for model_builder."""
 
 import math
+import numpy as np
+import os
+
 from ortools.linear_solver.python import model_builder
 import unittest
-import os
 
 
 class ModelBuilderTest(unittest.TestCase):
@@ -124,7 +126,7 @@ ENDATA
 
     def test_import_from_mps_file(self):
         path = os.path.dirname(__file__)
-        mps_path = f'{path}/maximization.mps'
+        mps_path = f'{path}/../testdata/maximization.mps'
         model = model_builder.ModelBuilder()
         self.assertTrue(model.import_from_mps_file(mps_path))
         self.assertEqual(model.name, 'SupportedMaximizationProblem')
@@ -148,7 +150,7 @@ ENDATA
 
     def test_import_from_lp_file(self):
         path = os.path.dirname(__file__)
-        lp_path = f'{path}/small_model.lp'
+        lp_path = f'{path}/../testdata/small_model.lp'
         model = model_builder.ModelBuilder()
         self.assertTrue(model.import_from_lp_file(lp_path))
         self.assertEqual(6, model.num_variables)
@@ -176,6 +178,33 @@ ENDATA
         self.assertEqual(x, x)
         self.assertEqual(x, x_copy)
         self.assertNotEqual(x, y)
+
+        # array
+        xs = model.new_int_var_ndarray(10, 0.0, 5.0, 'xs_')
+        self.assertEqual(10, xs.size)
+        self.assertEqual('xs_4', str(xs[4]))
+        lbs = np.array([1.0, 2.0, 3.0])
+        ubs = np.array([3.0, 4.0, 5.0])
+        ys = model.new_int_var_ndarray_with_bounds(lbs, ubs, 'ys_')
+        self.assertEqual('VariableContainer([12 13 14])', str(ys))
+        zs = model.new_int_var_ndarray_with_bounds([1.0, 2.0, 3], [4, 4, 4],
+                                                   'zs_')
+        self.assertEqual(3, zs.size)
+        self.assertEqual((3,), zs.shape)
+        self.assertEqual('zs_1', str(zs[1]))
+        self.assertEqual('zs_2(index=17, lb=3.0, ub=4.0, integer)', repr(zs[2]))
+
+        bs = model.new_bool_var_ndarray([4, 5], 'bs_')
+        self.assertEqual((4, 5), bs.shape)
+        self.assertEqual((5, 4), bs.T.shape)
+        self.assertEqual(31, bs.index_at((2, 3)))
+        self.assertEqual(20, bs.size)
+        self.assertEqual((20,), bs.flatten.shape)
+        self.assertEqual((20,), bs.ravel.shape)
+
+        # Slices are [lb, ub) closed - open.
+        self.assertEqual(5, bs[3, :].size)
+        self.assertEqual(6, bs[1:3, 2:5].size)
 
         # Tests the hash method.
         var_set = set()

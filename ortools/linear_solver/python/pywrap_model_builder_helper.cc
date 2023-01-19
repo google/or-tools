@@ -16,6 +16,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
@@ -39,7 +40,9 @@ using ::operations_research::MPModelRequest;
 using ::operations_research::MPSolutionResponse;
 using ::operations_research::MPVariableProto;
 using ::operations_research::SolveStatus;
-using ::pybind11::arg;
+
+namespace py = pybind11;
+using ::py::arg;
 
 // TODO(user): The interface uses serialized protos because of issues building
 // pybind11_protobuf. See
@@ -103,8 +106,8 @@ void BuildModelFromSparseData(
 }
 
 PYBIND11_MODULE(pywrap_model_builder_helper, m) {
-  pybind11::class_<MPModelExportOptions>(m, "MPModelExportOptions")
-      .def(pybind11::init<>())
+  py::class_<MPModelExportOptions>(m, "MPModelExportOptions")
+      .def(py::init<>())
       .def_readwrite("obfuscate", &MPModelExportOptions::obfuscate)
       .def_readwrite("log_invalid_names",
                      &MPModelExportOptions::log_invalid_names)
@@ -112,8 +115,8 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
                      &MPModelExportOptions::show_unused_variables)
       .def_readwrite("max_line_length", &MPModelExportOptions::max_line_length);
 
-  pybind11::class_<ModelBuilderHelper>(m, "ModelBuilderHelper")
-      .def(pybind11::init<>())
+  py::class_<ModelBuilderHelper>(m, "ModelBuilderHelper")
+      .def(py::init<>())
       .def("export_to_mps_string", &ModelBuilderHelper::ExportToMpsString,
            arg("options") = MPModelExportOptions())
       .def("export_to_lp_string", &ModelBuilderHelper::ExportToLpString,
@@ -147,6 +150,68 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
           arg("objective_coefficients"), arg("constraint_lower_bounds"),
           arg("constraint_upper_bounds"), arg("constraint_matrix"))
       .def("add_var", &ModelBuilderHelper::AddVar)
+      .def("add_var_ndarray",
+           [](ModelBuilderHelper* helper, std::vector<size_t> shape, double lb,
+              double ub, bool is_integral, const std::string& name_prefix) {
+             int size = shape[0];
+             for (int i = 1; i < shape.size(); ++i) {
+               size *= shape[i];
+             }
+             py::array_t<int> result(size);
+             py::buffer_info info = result.request();
+             result.resize(shape);
+             auto ptr = static_cast<int*>(info.ptr);
+             for (int i = 0; i < size; ++i) {
+               const int index = helper->AddVar();
+               ptr[i] = index;
+               helper->SetVarLowerBound(index, lb);
+               helper->SetVarUpperBound(index, ub);
+               helper->SetVarIntegrality(index, is_integral);
+               if (!name_prefix.empty()) {
+                 helper->SetVarName(index, absl::StrCat(name_prefix, i));
+               }
+             }
+             return result;
+           })
+      .def("add_var_ndarray_with_bounds",
+           [](ModelBuilderHelper* helper, py::array_t<double> lbs,
+              py::array_t<double> ubs, py::array_t<bool> are_integral,
+              const std::string& name_prefix) {
+             py::buffer_info buf_lbs = lbs.request();
+             py::buffer_info buf_ubs = ubs.request();
+             py::buffer_info buf_are_integral = are_integral.request();
+             if (buf_lbs.ndim != 1 || buf_ubs.ndim != 1 ||
+                 buf_are_integral.ndim != 1) {
+               throw std::runtime_error("Number of dimensions must be one");
+             }
+             const int size = buf_lbs.size;
+             if (size != buf_ubs.size || size != buf_are_integral.size) {
+               throw std::runtime_error("Input sizes must match");
+             }
+             const auto shape = buf_lbs.shape;
+             if (shape != buf_ubs.shape || shape != buf_are_integral.shape) {
+               throw std::runtime_error("Input shapes must match");
+             }
+
+             auto lower_bounds = static_cast<double*>(buf_lbs.ptr);
+             auto upper_bounds = static_cast<double*>(buf_ubs.ptr);
+             auto integers = static_cast<bool*>(buf_are_integral.ptr);
+             py::array_t<int> result(size);
+             result.resize(shape);
+             py::buffer_info result_info = result.request();
+             auto ptr = static_cast<int*>(result_info.ptr);
+             for (int i = 0; i < size; ++i) {
+               const int index = helper->AddVar();
+               ptr[i] = index;
+               helper->SetVarLowerBound(index, lower_bounds[i]);
+               helper->SetVarUpperBound(index, upper_bounds[i]);
+               helper->SetVarIntegrality(index, integers[i]);
+               if (!name_prefix.empty()) {
+                 helper->SetVarName(index, absl::StrCat(name_prefix, i));
+               }
+             }
+             return result;
+           })
       .def("set_var_lower_bound", &ModelBuilderHelper::SetVarLowerBound,
            arg("var_index"), arg("lb"))
       .def("set_var_upper_bound", &ModelBuilderHelper::SetVarUpperBound,
@@ -199,7 +264,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            arg("offset"))
       .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset);
 
-  pybind11::enum_<SolveStatus>(m, "SolveStatus")
+  py::enum_<SolveStatus>(m, "SolveStatus")
       .value("OPTIMAL", SolveStatus::OPTIMAL)
       .value("FEASIBLE", SolveStatus::FEASIBLE)
       .value("INFEASIBLE", SolveStatus::INFEASIBLE)
@@ -216,20 +281,20 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .value("INCOMPATIBLE_OPTIONS", SolveStatus::INCOMPATIBLE_OPTIONS)
       .export_values();
 
-  pybind11::class_<ModelSolverHelper>(m, "ModelSolverHelper")
-      .def(pybind11::init<const std::string&>())
+  py::class_<ModelSolverHelper>(m, "ModelSolverHelper")
+      .def(py::init<const std::string&>())
       .def("solver_is_supported", &ModelSolverHelper::SolverIsSupported)
       .def("solve", &ModelSolverHelper::Solve, arg("model"),
            // The GIL is released during the solve to allow Python threads to do
            // other things in parallel, e.g., log and interrupt.
-           pybind11::call_guard<pybind11::gil_scoped_release>())
+           py::call_guard<py::gil_scoped_release>())
       .def("solve_serialized_request",
            [](ModelSolverHelper* solver, const std::string& request_str) {
              std::string result;
              {
                // The GIL is released during the solve to allow Python threads
                // to do other things in parallel, e.g., log and interrupt.
-               pybind11::gil_scoped_release release;
+               py::gil_scoped_release release;
                MPModelRequest request;
 
                if (!request.ParseFromString(request_str)) {
@@ -242,7 +307,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
                  result = solution.value().SerializeAsString();
                }
              }
-             return pybind11::bytes(result);
+             return py::bytes(result);
            })
       .def("interrupt_solve", &ModelSolverHelper::InterruptSolve,
            "Returns true if the interrupt signal was correctly sent, that is, "
