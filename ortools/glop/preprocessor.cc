@@ -2952,6 +2952,7 @@ MatrixEntry SingletonPreprocessor::GetSingletonColumnMatrixEntry(
       return MatrixEntry(e.row(), col, e.coefficient());
     }
   }
+
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a column that is supposed to have one.";
   status_ = ProblemStatus::ABNORMAL;
@@ -2967,6 +2968,7 @@ MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
       return MatrixEntry(row, col, e.coefficient());
     }
   }
+
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a row that is supposed to have one.";
   status_ = ProblemStatus::ABNORMAL;

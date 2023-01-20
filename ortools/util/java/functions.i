@@ -14,7 +14,6 @@
 // This file provides swig wrapping for some specialization of std::function
 // parameters. Currently, swig does not support much of C++11 features, and
 // especially not the std::function.
-
 //
 // Java callers will need to use a specific "type" of callbacks: they must
 // specialize one of the existing generic callback classes defined in
@@ -31,7 +30,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/util/functions_swig_helpers.h"
 %}
-
 
 #define PARENTHIZE(ReturnType, Args...) ReturnType(Args)
 #define CAT3(a, b, c) a ## b ## c

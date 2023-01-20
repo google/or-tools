@@ -29,7 +29,6 @@
 // described in http://dx.doi.org/10.1137/S0895480194281185
 // (see also http://theory.stanford.edu/~robert/papers/glob_upd.ps).
 //
-//
 // Example usage:
 //
 //   #include "ortools/graph/graph.h"

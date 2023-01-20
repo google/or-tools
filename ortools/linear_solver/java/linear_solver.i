@@ -81,7 +81,6 @@ PROTO2_RETURN(
     operations_research::MPSolutionResponse,
     com.google.ortools.linearsolver.MPSolutionResponse);
 
-
 %extend operations_research::MPSolver {
   /**
    * Loads a model and returns the error message, which will be empty iff the
@@ -316,7 +315,6 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
-
 
 // Expose the MPSolver::ResultStatus enum.
 %unignore operations_research::MPSolver::ResultStatus;

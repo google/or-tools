@@ -137,7 +137,6 @@
 //     }
 //   }
 //
-//
 // Note: The graphs are primarily designed to be constructed first and then used
 // because it covers most of the use cases. It is possible to extend the
 // interface with more dynamicity (like removing arcs), but this is not done at
@@ -302,6 +301,7 @@ class BaseGraph {
 // - Has an efficient Tail() but need an extra NodeIndexType/arc memory for it.
 // - Never changes the initial arc index returned by AddArc().
 //
+// All graphs should be -compatible, but we haven't tested that.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;

@@ -67,5 +67,4 @@ NestedTimeLimit::~NestedTimeLimit() {
   base_time_limit_->AdvanceDeterministicTime(
       time_limit_.GetElapsedDeterministicTime());
 }
-
 }  // namespace operations_research

@@ -41,7 +41,6 @@ class Status {
 
     // The linear program is invalid or it does not have the required format.
     ERROR_INVALID_PROBLEM = 4,
-
   };
 
   // Creates a "successful" status.

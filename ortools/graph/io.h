@@ -148,10 +148,12 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
       }
     }
   }
+
   if (fclose(f) != 0) {
     return absl::Status(absl::StatusCode::kInternal,
                         "Could not close file '" + filename + "'");
   }
+
   return ::absl::OkStatus();
 }
 

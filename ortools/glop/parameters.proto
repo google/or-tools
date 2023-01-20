@@ -24,7 +24,6 @@ package operations_research.glop;
 option java_package = "com.google.ortools.glop";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Glop";
-
 // next id = 70
 message GlopParameters {
   // Supported algorithms for scaling:
