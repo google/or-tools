@@ -60,256 +60,6 @@ cc_library(
 )
 
 cc_library(
-    name = "sharder",
-    srcs = ["sharder.cc"],
-    hdrs = ["sharder.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:mathutil",
-        "//ortools/base:threadpool",
-        "//ortools/base:timer",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/time",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_test(
-    name = "sharder_test",
-    size = "small",
-    srcs = ["sharder_test.cc"],
-    deps = [
-        ":gtest_main",
-        ":sharder",
-        "//ortools/base",
-        "//ortools/base:mathutil",
-        "@com_google_absl//absl/random:distributions",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_library(
-    name = "quadratic_program",
-    srcs = ["quadratic_program.cc"],
-    hdrs = ["quadratic_program.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:status_macros",
-        "//ortools/linear_solver:linear_solver_cc_proto",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_test(
-    name = "quadratic_program_test",
-    size = "small",
-    srcs = ["quadratic_program_test.cc"],
-    deps = [
-        ":gtest_main",
-        ":quadratic_program",
-        ":test_util",
-        "//ortools/base:protobuf_util",
-        "//ortools/linear_solver:linear_solver_cc_proto",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_library(
-    name = "test_util",
-    testonly = 1,
-    srcs = ["test_util.cc"],
-    hdrs = ["test_util.h"],
-    deps = [
-        ":quadratic_program",
-        "//ortools/base",
-        "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_test(
-    name = "test_util_test",
-    srcs = ["test_util_test.cc"],
-    defines = ["_USE_MATH_DEFINES"],
-    deps = [
-        ":gtest_main",
-        ":test_util",
-        "//ortools/base",
-        "@com_google_absl//absl/types:span",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_library(
-    name = "sharded_quadratic_program",
-    srcs = ["sharded_quadratic_program.cc"],
-    hdrs = ["sharded_quadratic_program.h"],
-    deps = [
-        ":quadratic_program",
-        ":sharder",
-        "//ortools/base",
-        "//ortools/base:threadpool",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_test(
-    name = "sharded_quadratic_program_test",
-    srcs = ["sharded_quadratic_program_test.cc"],
-    deps = [
-        ":gtest_main",
-        ":quadratic_program",
-        ":sharded_quadratic_program",
-        ":sharder",
-        ":test_util",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_library(
-    name = "sharded_optimization_utils",
-    srcs = ["sharded_optimization_utils.cc"],
-    hdrs = ["sharded_optimization_utils.h"],
-    deps = [
-        ":quadratic_program",
-        ":sharded_quadratic_program",
-        ":sharder",
-        ":solve_log_cc_proto",
-        "//ortools/base",
-        "//ortools/base:mathutil",
-        "@com_google_absl//absl/random:distributions",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_test(
-    name = "sharded_optimization_utils_test",
-    size = "small",
-    srcs = ["sharded_optimization_utils_test.cc"],
-    deps = [
-        ":gtest_main",
-        ":quadratic_program",
-        ":sharded_optimization_utils",
-        ":sharded_quadratic_program",
-        ":sharder",
-        ":solve_log_cc_proto",
-        ":test_util",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_library(
-    name = "termination",
-    srcs = ["termination.cc"],
-    hdrs = ["termination.h"],
-    deps = [
-        ":solve_log_cc_proto",
-        ":solvers_cc_proto",
-        "//ortools/base",
-    ],
-)
-
-cc_test(
-    name = "termination_test",
-    size = "small",
-    srcs = ["termination_test.cc"],
-    deps = [
-        ":gtest_main",
-        ":solve_log_cc_proto",
-        ":solvers_cc_proto",
-        ":termination",
-        "//ortools/base:protobuf_util",
-    ],
-)
-
-cc_library(
-    name = "trust_region",
-    srcs = ["trust_region.cc"],
-    hdrs = ["trust_region.h"],
-    deps = [
-        ":quadratic_program",
-        ":sharded_optimization_utils",
-        ":sharded_quadratic_program",
-        ":sharder",
-        "//ortools/base",
-        "//ortools/base:mathutil",
-        "@com_google_absl//absl/algorithm:container",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_test(
-    name = "trust_region_test",
-    srcs = ["trust_region_test.cc"],
-    deps = [
-        ":gtest_main",
-        ":quadratic_program",
-        ":sharded_optimization_utils",
-        ":sharded_quadratic_program",
-        ":sharder",
-        ":test_util",
-        ":trust_region",
-        "@com_google_absl//absl/strings",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_library(
-    name = "solvers_proto_validation",
-    srcs = ["solvers_proto_validation.cc"],
-    hdrs = ["solvers_proto_validation.h"],
-    deps = [
-        ":solvers_cc_proto",
-        "//ortools/base:status_macros",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_test(
-    name = "solvers_proto_validation_test",
-    srcs = ["solvers_proto_validation_test.cc"],
-    deps = [
-        ":gtest_main",
-        ":solvers_cc_proto",
-        ":solvers_proto_validation",
-        "//ortools/base:protobuf_util",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "quadratic_program_io",
-    srcs = ["quadratic_program_io.cc"],
-    hdrs = ["quadratic_program_io.h"],
-    deps = [
-        ":quadratic_program",
-        "//ortools/base",
-        "//ortools/base:mathutil",
-        "//ortools/base:status_macros",
-        "//ortools/linear_solver:linear_solver_cc_proto",
-        "//ortools/linear_solver:model_exporter",
-        "//ortools/lp_data:mps_reader",
-        "//ortools/util:file_util",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@eigen//:eigen3",
-    ],
-)
-
-cc_library(
     name = "iteration_stats",
     srcs = ["iteration_stats.cc"],
     hdrs = ["iteration_stats.h"],
@@ -399,6 +149,256 @@ cc_test(
         "//ortools/lp_data:base",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_library(
+    name = "quadratic_program",
+    srcs = ["quadratic_program.cc"],
+    hdrs = ["quadratic_program.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_test(
+    name = "quadratic_program_test",
+    size = "small",
+    srcs = ["quadratic_program_test.cc"],
+    deps = [
+        ":gtest_main",
+        ":quadratic_program",
+        ":test_util",
+        "//ortools/base:protobuf_util",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_library(
+    name = "quadratic_program_io",
+    srcs = ["quadratic_program_io.cc"],
+    hdrs = ["quadratic_program_io.h"],
+    deps = [
+        ":quadratic_program",
+        "//ortools/base",
+        "//ortools/base:mathutil",
+        "//ortools/base:status_macros",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_exporter",
+        "//ortools/lp_data:mps_reader",
+        "//ortools/util:file_util",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_library(
+    name = "sharded_optimization_utils",
+    srcs = ["sharded_optimization_utils.cc"],
+    hdrs = ["sharded_optimization_utils.h"],
+    deps = [
+        ":quadratic_program",
+        ":sharded_quadratic_program",
+        ":sharder",
+        ":solve_log_cc_proto",
+        "//ortools/base",
+        "//ortools/base:mathutil",
+        "@com_google_absl//absl/random:distributions",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_test(
+    name = "sharded_optimization_utils_test",
+    size = "small",
+    srcs = ["sharded_optimization_utils_test.cc"],
+    deps = [
+        ":gtest_main",
+        ":quadratic_program",
+        ":sharded_optimization_utils",
+        ":sharded_quadratic_program",
+        ":sharder",
+        ":solve_log_cc_proto",
+        ":test_util",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_library(
+    name = "sharded_quadratic_program",
+    srcs = ["sharded_quadratic_program.cc"],
+    hdrs = ["sharded_quadratic_program.h"],
+    deps = [
+        ":quadratic_program",
+        ":sharder",
+        "//ortools/base",
+        "//ortools/base:threadpool",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_test(
+    name = "sharded_quadratic_program_test",
+    srcs = ["sharded_quadratic_program_test.cc"],
+    deps = [
+        ":gtest_main",
+        ":quadratic_program",
+        ":sharded_quadratic_program",
+        ":sharder",
+        ":test_util",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_library(
+    name = "sharder",
+    srcs = ["sharder.cc"],
+    hdrs = ["sharder.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:mathutil",
+        "//ortools/base:threadpool",
+        "//ortools/base:timer",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_test(
+    name = "sharder_test",
+    size = "small",
+    srcs = ["sharder_test.cc"],
+    deps = [
+        ":gtest_main",
+        ":sharder",
+        "//ortools/base",
+        "//ortools/base:mathutil",
+        "@com_google_absl//absl/random:distributions",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_library(
+    name = "solvers_proto_validation",
+    srcs = ["solvers_proto_validation.cc"],
+    hdrs = ["solvers_proto_validation.h"],
+    deps = [
+        ":solvers_cc_proto",
+        "//ortools/base:status_macros",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "solvers_proto_validation_test",
+    srcs = ["solvers_proto_validation_test.cc"],
+    deps = [
+        ":gtest_main",
+        ":solvers_cc_proto",
+        ":solvers_proto_validation",
+        "//ortools/base:protobuf_util",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "termination",
+    srcs = ["termination.cc"],
+    hdrs = ["termination.h"],
+    deps = [
+        ":solve_log_cc_proto",
+        ":solvers_cc_proto",
+        "//ortools/base",
+    ],
+)
+
+cc_test(
+    name = "termination_test",
+    size = "small",
+    srcs = ["termination_test.cc"],
+    deps = [
+        ":gtest_main",
+        ":solve_log_cc_proto",
+        ":solvers_cc_proto",
+        ":termination",
+        "//ortools/base:protobuf_util",
+    ],
+)
+
+cc_library(
+    name = "test_util",
+    testonly = 1,
+    srcs = ["test_util.cc"],
+    hdrs = ["test_util.h"],
+    deps = [
+        ":quadratic_program",
+        "//ortools/base",
+        "@com_google_absl//absl/types:span",
+        "@com_google_googletest//:gtest",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_test(
+    name = "test_util_test",
+    srcs = ["test_util_test.cc"],
+    defines = ["_USE_MATH_DEFINES"],
+    deps = [
+        ":gtest_main",
+        ":test_util",
+        "//ortools/base",
+        "@com_google_absl//absl/types:span",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_library(
+    name = "trust_region",
+    srcs = ["trust_region.cc"],
+    hdrs = ["trust_region.h"],
+    deps = [
+        ":quadratic_program",
+        ":sharded_optimization_utils",
+        ":sharded_quadratic_program",
+        ":sharder",
+        "//ortools/base",
+        "//ortools/base:mathutil",
+        "@com_google_absl//absl/algorithm:container",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_test(
+    name = "trust_region_test",
+    srcs = ["trust_region_test.cc"],
+    deps = [
+        ":gtest_main",
+        ":quadratic_program",
+        ":sharded_optimization_utils",
+        ":sharded_quadratic_program",
+        ":sharder",
+        ":test_util",
+        ":trust_region",
         "@com_google_absl//absl/strings",
         "@eigen//:eigen3",
     ],
