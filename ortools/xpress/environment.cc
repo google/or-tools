@@ -2205,14 +2205,12 @@ absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSrefinemipsol, "XPRSrefinemipsol");
 
   auto notFound = xpress_dynamic_library->FunctionsNotFound();
-  if (notFound.empty())
-      return absl::OkStatus();
-  else {
-      absl::NotFoundError(absl::StrCat(
-          "Could not find the following functions. [",
-          absl::StrJoin(notFound, "', '"),
-          "]. Please make sure that your XPRESS install is up-to-date"));
+  if (!notFound.empty()) {
+    return absl::NotFoundError(absl::StrCat("Could not find the following functions. [",
+                                            absl::StrJoin(notFound, "', '"),
+                                            "]. Please make sure that your XPRESS install is up-to-date"));
   }
+  return absl::OkStatus();
 }
 
 void printXpressBanner(bool error) {
