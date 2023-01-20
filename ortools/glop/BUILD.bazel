@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -235,6 +236,11 @@ cc_library(
 cc_proto_library(
     name = "parameters_cc_proto",
     deps = [":parameters_proto"],
+)
+
+py_proto_library(
+    name = "parameters_py_pb2",
+    srcs = ["parameters.proto"],
 )
 
 proto_library(
