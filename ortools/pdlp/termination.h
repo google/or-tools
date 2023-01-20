@@ -56,8 +56,9 @@ std::optional<TerminationReasonAndPointType> CheckSimpleTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
     const std::atomic<bool>* interrupt_solve = nullptr);
 
-// Checks if any termination criteria are satisfied by the solution state
-// described by the IterationStats instance stats (see definitions of
+// Checks if any iterate-based termination criteria (i.e., the criteria not
+// checked by CheckSimpleTerimationCriteria()) are satisfied by the solution
+// state described by the IterationStats instance stats (see definitions of
 // termination criteria in solvers.proto). bound_norms provides the instance-
 // dependent data required for the relative convergence criteria. Returns a
 // termination reason and a point type if so (if multiple are satisfied, the
@@ -65,21 +66,25 @@ std::optional<TerminationReasonAndPointType> CheckSimpleTerminationCriteria(
 // force_numerical_termination is true, returns NUMERICAL_ERROR if no other
 // criteria are satisfied. The return value is empty in any other case. If the
 // output is not empty, the PointType indicates which entry prompted
-// termination. If no entry prompted termination, e.g. NUMERICAL_ERROR or
-// ITERATION_LIMIT is returned, then the PointType is set to POINT_TYPE_NONE.
-// NOTE: This function assumes that the solution used to compute the stats
-// satisfies the primal and dual variable bounds; see
+// termination. If no entry prompted termination, e.g. NUMERICAL_ERROR is
+// returned, then the PointType is set to POINT_TYPE_NONE. NOTE: This function
+// assumes that the solution used to compute the stats satisfies the primal and
+// dual variable bounds; see
 // https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds.
-std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
+std::optional<TerminationReasonAndPointType> CheckIterateTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
     const QuadraticProgramBoundNorms& bound_norms,
-    const std::atomic<bool>* interrupt_solve = nullptr,
     bool force_numerical_termination = false);
 
 // Extracts the norms needed for the termination criteria from the full problem
 // statistics.
 QuadraticProgramBoundNorms BoundNormsFromProblemStats(
     const QuadraticProgramStats& stats);
+
+// Returns epsilon_absolute / epsilon_relative, returning 1.0 if
+// epsilon_absolute and epsilon_relative are equal (even if they are both 0.0 or
+// infinity, which would normally yield NAN).
+double EpsilonRatio(double epsilon_absolute, double epsilon_relative);
 
 // Metrics for tracking progress when relative convergence criteria are used.
 // These depend on the ConvergenceInformation, the problem data, and the
@@ -92,7 +97,9 @@ struct RelativeConvergenceInformation {
   //   residual = one of the residuals (l{2,_inf}_{primal,dual}_residual)
   //   norm = the relative norm (l{2,_inf} norm of
   //          {constraint_bounds,primal_linear_objective} respectively).
-  // If eps_optimal_relative = 0.0, these will all be 0.0.
+  // If eps_optimal_relative == eps_optimal_absolute, eps_ratio will be 1.0
+  // (even if eps_optimal_relative == 0.0 or inf). Otherwise, if
+  // eps_optimal_relative = 0.0, these will all be 0.0.
   //
   // If eps_optimal_relative > 0.0, the absolute and relative termination
   // criteria translate to relative_residual <= eps_optimal_relative.

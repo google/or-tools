@@ -42,7 +42,7 @@ git_repository(
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    tag = "v21.10",
+    tag = "v21.12",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
@@ -145,7 +145,7 @@ git_repository(
 new_git_repository(
     name = "pybind11",
     build_file = "@pybind11_bazel//:pybind11.BUILD",
-    tag = "v2.10.2",
+    tag = "v2.10.3",
     remote = "https://github.com/pybind/pybind11.git",
 )
 

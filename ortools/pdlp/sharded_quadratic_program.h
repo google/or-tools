@@ -75,6 +75,24 @@ class ShardedQuadraticProgram {
   void RescaleQuadraticProgram(const Eigen::VectorXd& col_scaling_vec,
                                const Eigen::VectorXd& row_scaling_vec);
 
+  void SwapVariableBounds(Eigen::VectorXd& variable_lower_bounds,
+                          Eigen::VectorXd& variable_upper_bounds) {
+    qp_.variable_lower_bounds.swap(variable_lower_bounds);
+    qp_.variable_upper_bounds.swap(variable_upper_bounds);
+  }
+
+  void SwapConstraintBounds(Eigen::VectorXd& constraint_lower_bounds,
+                            Eigen::VectorXd& constraint_upper_bounds) {
+    qp_.constraint_lower_bounds.swap(constraint_lower_bounds);
+    qp_.constraint_upper_bounds.swap(constraint_upper_bounds);
+  }
+
+  // Swaps the objective vector with the one on the quadratic program. Swapping
+  // the objective matrix is not yet supported because it hasn't been needed.
+  void SwapObjectiveVector(Eigen::VectorXd& objective) {
+    qp_.objective_vector.swap(objective);
+  }
+
  private:
   QuadraticProgram qp_;
   Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>

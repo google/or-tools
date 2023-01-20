@@ -37,30 +37,35 @@ namespace {
 
 using ::Eigen::VectorXd;
 
-// ResidualNorms contains four measures of the infeasibility of a primal or
-// dual solution.  "objective_correction" is the (additive) adjustment to the
+// ResidualNorms contains measures of the infeasibility of a primal or dual
+// solution.  "objective_correction" is the (additive) adjustment to the
 // objective function from the reduced costs. "objective_full_correction" is the
 // (additive) adjustment to the objective function if all dual residuals were
-// set to zero, while l_inf_residual and l_2_residual are the L_infinity and L_2
-// norms of the residuals (portions of the primal gradient not included in the
-// reduced costs).
+// set to zero, while l_inf_residual, l_2_residual, and
+// l_inf_componentwise_residual are the L_infinity, L_2, and L_infinity
+// (componentwise) norms of the residuals (portions of the primal gradient not
+// included in the reduced costs).
 struct ResidualNorms {
   double objective_correction;
   double objective_full_correction;
   double l_inf_residual;
   double l_2_residual;
+  double l_inf_componentwise_residual;
 };
 
 // Computes norms of the primal residual infeasibilities (b - A x) of the
 // unscaled problem. Note the primal residuals of the unscaled problem are equal
 // to those of the scaled problem divided by row_scaling_vec. Does not perform
 // any corrections (so the returned .correction == 0.0). sharded_qp is assumed
-// to be the scaled problem. If use_homogeneous_primal_bounds is set to true
+// to be the scaled problem. If use_homogeneous_constraint_bounds is set to true
 // the residuals are computed with upper and lower bounds zeroed out (note that
 // we only zero out the bounds that are finite in the original problem).
+// NOTE: componentwise_residual_offset only affects the value of
+// l_inf_componentwise_residual in the returned ResidualNorms.
 ResidualNorms PrimalResidualNorms(
     const ShardedQuadraticProgram& sharded_qp, const VectorXd& row_scaling_vec,
     const VectorXd& scaled_primal_solution,
+    const double componentwise_residual_offset,
     bool use_homogeneous_constraint_bounds = false) {
   const QuadraticProgram& qp = sharded_qp.Qp();
   CHECK_EQ(row_scaling_vec.size(), sharded_qp.DualSize());
@@ -71,6 +76,8 @@ ResidualNorms PrimalResidualNorms(
       sharded_qp.TransposedConstraintMatrixSharder());
   VectorXd local_l_inf_residual(sharded_qp.DualSharder().NumShards());
   VectorXd local_sumsq_residual(sharded_qp.DualSharder().NumShards());
+  VectorXd local_l_inf_componentwise_residual(
+      sharded_qp.DualSharder().NumShards());
   sharded_qp.DualSharder().ParallelForEachShard(
       [&](const Sharder::Shard& shard) {
         const auto lower_bound_shard = shard(qp.constraint_lower_bounds);
@@ -79,6 +86,7 @@ ResidualNorms PrimalResidualNorms(
         const auto primal_product_shard = shard(primal_product);
         double l_inf_residual = 0.0;
         double sumsq_residual = 0.0;
+        double l_inf_componentwise_residual = 0.0;
         for (int64_t i = 0; i < primal_product_shard.size(); ++i) {
           const double upper_bound = (use_homogeneous_constraint_bounds &&
                                       std::isfinite(upper_bound_shard[i]))
@@ -89,54 +97,74 @@ ResidualNorms PrimalResidualNorms(
                                          ? 0.0
                                          : lower_bound_shard[i];
           double scaled_residual = 0.0;
+          double residual_bound = 0.0;
           if (primal_product_shard[i] > upper_bound) {
             scaled_residual = primal_product_shard[i] - upper_bound;
-
+            residual_bound = upper_bound;
           } else if (primal_product_shard[i] < lower_bound) {
             scaled_residual = lower_bound - primal_product_shard[i];
+            residual_bound = lower_bound;
           }
           const double residual = scaled_residual / row_scaling_shard[i];
           l_inf_residual = std::max(l_inf_residual, residual);
           sumsq_residual += residual * residual;
+          // Special case: ignore residual if == 0, to avoid NaN if offset and
+          // bound are both zero.
+          if (residual > 0.0) {
+            l_inf_componentwise_residual = std::max(
+                l_inf_componentwise_residual,
+                residual / (componentwise_residual_offset +
+                            std::abs(residual_bound / row_scaling_shard[i])));
+          }
         }
         local_l_inf_residual[shard.Index()] = l_inf_residual;
         local_sumsq_residual[shard.Index()] = sumsq_residual;
+        local_l_inf_componentwise_residual[shard.Index()] =
+            l_inf_componentwise_residual;
       });
   return ResidualNorms{
       .objective_correction = 0.0,
       .objective_full_correction = 0.0,
       .l_inf_residual = local_l_inf_residual.lpNorm<Eigen::Infinity>(),
       .l_2_residual = std::sqrt(local_sumsq_residual.sum()),
+      .l_inf_componentwise_residual =
+          local_l_inf_componentwise_residual.lpNorm<Eigen::Infinity>(),
   };
 }
 
 // Decides whether a primal gradient term should be handled as a reduced cost or
-// as a dual residual.
-bool HandlePrimalGradientTermAsReducedCost(double primal_gradient,
-                                           double primal_value,
-                                           double lower_bound,
-                                           double upper_bound) {
+// as a dual residual. See the documentation for
+// PrimalDualHybridGradientParams::
+// handle_some_primal_gradients_on_finite_bounds_as_residuals.
+bool HandlePrimalGradientTermAsReducedCost(
+    const PrimalDualHybridGradientParams& params, double primal_gradient,
+    double primal_value, double lower_bound, double upper_bound) {
   if (primal_gradient == 0.0) return true;
-  return std::abs(primal_value -
-                  (primal_gradient > 0.0 ? lower_bound : upper_bound)) <=
-         std::abs(primal_value);
+  const double active_bound = primal_gradient > 0.0 ? lower_bound : upper_bound;
+  if (params.handle_some_primal_gradients_on_finite_bounds_as_residuals()) {
+    // Note that this test is always false if active_bound is infinite.
+    return std::abs(primal_value - active_bound) <= std::abs(primal_value);
+  } else {
+    return std::isfinite(active_bound);
+  }
 }
 
 // Computes norms of the dual residuals and reduced costs of the unscaled
 // problem. Note the primal gradient of the unscaled problem is equal to the
 // scaled primal gradient divided by col_scaling_vec. sharded_qp is assumed to
-// be the scaled problem.  See
-// https://developers.google.com/optimization/lp/pdlp_math for details and
-// notation. Primal gradients that have corresponding (finite) bounds (the
-// finite terms from (l^v)^T[r]_+ − (u^v)^T[r]_− in the dual objective), and
-// have |x - b| <= |x| (where x is the variable's value and b is the
-// corresponding bound) are treated as reduced costs and accumulated in
-// objective_correction, while the other primal gradient terms are handled as
-// residual infeasibilities in l_inf_residual and l_2_residual.
-ResidualNorms DualResidualNorms(const ShardedQuadraticProgram& sharded_qp,
+// be the scaled problem. See
+// https://developers.google.com/optimization/lp/pdlp_math and the documentation
+// for PrimalDualHybridGradientParams::
+// handle_some_primal_gradients_on_finite_bounds_as_residuals for details and
+// notation.
+// NOTE: componentwise_residual_offset only affects the value of
+// l_inf_componentwise_residual in the returned ResidualNorms.
+ResidualNorms DualResidualNorms(const PrimalDualHybridGradientParams& params,
+                                const ShardedQuadraticProgram& sharded_qp,
                                 const VectorXd& col_scaling_vec,
                                 const VectorXd& scaled_primal_solution,
-                                const VectorXd& scaled_primal_gradient) {
+                                const VectorXd& scaled_primal_gradient,
+                                const double componentwise_residual_offset) {
   const QuadraticProgram& qp = sharded_qp.Qp();
   CHECK_EQ(col_scaling_vec.size(), sharded_qp.PrimalSize());
   CHECK_EQ(scaled_primal_gradient.size(), sharded_qp.PrimalSize());
@@ -144,6 +172,8 @@ ResidualNorms DualResidualNorms(const ShardedQuadraticProgram& sharded_qp,
   VectorXd local_dual_full_correction(sharded_qp.PrimalSharder().NumShards());
   VectorXd local_l_inf_residual(sharded_qp.PrimalSharder().NumShards());
   VectorXd local_sumsq_residual(sharded_qp.PrimalSharder().NumShards());
+  VectorXd local_l_inf_componentwise_residual(
+      sharded_qp.PrimalSharder().NumShards());
   sharded_qp.PrimalSharder().ParallelForEachShard(
       [&](const Sharder::Shard& shard) {
         const auto lower_bound_shard = shard(qp.variable_lower_bounds);
@@ -151,10 +181,12 @@ ResidualNorms DualResidualNorms(const ShardedQuadraticProgram& sharded_qp,
         const auto primal_gradient_shard = shard(scaled_primal_gradient);
         const auto col_scaling_shard = shard(col_scaling_vec);
         const auto primal_solution_shard = shard(scaled_primal_solution);
+        const auto objective_shard = shard(qp.objective_vector);
         double dual_correction = 0.0;
         double dual_full_correction = 0.0;
         double l_inf_residual = 0.0;
         double sumsq_residual = 0.0;
+        double l_inf_componentwise_residual = 0.0;
         for (int64_t i = 0; i < primal_gradient_shard.size(); ++i) {
           // The corrections use the scaled values because
           // unscaled_lower_bound = lower_bound * scale and
@@ -166,7 +198,7 @@ ResidualNorms DualResidualNorms(const ShardedQuadraticProgram& sharded_qp,
                                           : upper_bound_shard[i];
           dual_full_correction += bound_for_rc * primal_gradient_shard[i];
           if (HandlePrimalGradientTermAsReducedCost(
-                  primal_gradient_shard[i], primal_solution_shard[i],
+                  params, primal_gradient_shard[i], primal_solution_shard[i],
                   lower_bound_shard[i], upper_bound_shard[i])) {
             dual_correction += bound_for_rc * primal_gradient_shard[i];
           } else {
@@ -174,18 +206,31 @@ ResidualNorms DualResidualNorms(const ShardedQuadraticProgram& sharded_qp,
             const double residual = scaled_residual / col_scaling_shard[i];
             l_inf_residual = std::max(l_inf_residual, residual);
             sumsq_residual += residual * residual;
+            // Special case: ignore residual if == 0, to avoid NaN if offset and
+            // objective are both zero.
+            if (residual > 0.0) {
+              l_inf_componentwise_residual = std::max(
+                  l_inf_componentwise_residual,
+                  residual /
+                      (componentwise_residual_offset +
+                       std::abs(objective_shard[i] / col_scaling_shard[i])));
+            }
           }
         }
         local_dual_correction[shard.Index()] = dual_correction;
         local_dual_full_correction[shard.Index()] = dual_full_correction;
         local_l_inf_residual[shard.Index()] = l_inf_residual;
         local_sumsq_residual[shard.Index()] = sumsq_residual;
+        local_l_inf_componentwise_residual[shard.Index()] =
+            l_inf_componentwise_residual;
       });
   return ResidualNorms{
       .objective_correction = local_dual_correction.sum(),
       .objective_full_correction = local_dual_full_correction.sum(),
       .l_inf_residual = local_l_inf_residual.lpNorm<Eigen::Infinity>(),
       .l_2_residual = std::sqrt(local_sumsq_residual.sum()),
+      .l_inf_componentwise_residual =
+          local_l_inf_componentwise_residual.lpNorm<Eigen::Infinity>(),
   };
 }
 
@@ -218,7 +263,7 @@ double QuadraticObjective(const ShardedQuadraticProgram& sharded_qp,
 
 // Returns objective_product + c − A^T y when use_zero_primal_objective =
 // false, and returns − A^T y when use_zero_primal_objective = true.
-// objective_product is passed by copy, and modified in place.
+// objective_product is passed by value, and modified in place.
 VectorXd PrimalGradientFromObjectiveProduct(
     const ShardedQuadraticProgram& sharded_qp, const VectorXd& dual_solution,
     VectorXd objective_product, bool use_zero_primal_objective = false) {
@@ -301,11 +346,14 @@ double RandomProjection(const VectorXd& vector, const Sharder& sharder,
 }  // namespace
 
 ConvergenceInformation ComputeConvergenceInformation(
+    const PrimalDualHybridGradientParams& params,
     const ShardedQuadraticProgram& scaled_sharded_qp,
     const Eigen::VectorXd& col_scaling_vec,
     const Eigen::VectorXd& row_scaling_vec,
     const Eigen::VectorXd& scaled_primal_solution,
-    const Eigen::VectorXd& scaled_dual_solution, PointType candidate_type) {
+    const Eigen::VectorXd& scaled_dual_solution,
+    const double componentwise_primal_residual_offset,
+    const double componentwise_dual_residual_offset, PointType candidate_type) {
   const QuadraticProgram& qp = scaled_sharded_qp.Qp();
   CHECK_EQ(col_scaling_vec.size(), scaled_sharded_qp.PrimalSize());
   CHECK_EQ(row_scaling_vec.size(), scaled_sharded_qp.DualSize());
@@ -317,9 +365,12 @@ ConvergenceInformation ComputeConvergenceInformation(
 
   ConvergenceInformation result;
   ResidualNorms primal_residuals = PrimalResidualNorms(
-      scaled_sharded_qp, row_scaling_vec, scaled_primal_solution);
+      scaled_sharded_qp, row_scaling_vec, scaled_primal_solution,
+      componentwise_primal_residual_offset);
   result.set_l_inf_primal_residual(primal_residuals.l_inf_residual);
   result.set_l2_primal_residual(primal_residuals.l_2_residual);
+  result.set_l_inf_componentwise_primal_residual(
+      primal_residuals.l_inf_componentwise_residual);
 
   result.set_l_inf_primal_variable(
       ScaledLInfNorm(scaled_primal_solution, col_scaling_vec,
@@ -350,21 +401,24 @@ ConvergenceInformation ComputeConvergenceInformation(
       -quadratic_objective +
       DualObjectiveBoundsTerm(scaled_sharded_qp, scaled_dual_solution);
 
-  ResidualNorms dual_residuals =
-      DualResidualNorms(scaled_sharded_qp, col_scaling_vec,
-                        scaled_primal_solution, scaled_primal_gradient);
+  ResidualNorms dual_residuals = DualResidualNorms(
+      params, scaled_sharded_qp, col_scaling_vec, scaled_primal_solution,
+      scaled_primal_gradient, componentwise_dual_residual_offset);
   result.set_dual_objective(qp.ApplyObjectiveScalingAndOffset(
       dual_objective_piece + dual_residuals.objective_correction));
   result.set_corrected_dual_objective(qp.ApplyObjectiveScalingAndOffset(
       dual_objective_piece + dual_residuals.objective_full_correction));
   result.set_l_inf_dual_residual(dual_residuals.l_inf_residual);
   result.set_l2_dual_residual(dual_residuals.l_2_residual);
+  result.set_l_inf_componentwise_dual_residual(
+      dual_residuals.l_inf_componentwise_residual);
 
   result.set_candidate_type(candidate_type);
   return result;
 }
 
 InfeasibilityInformation ComputeInfeasibilityInformation(
+    const PrimalDualHybridGradientParams& params,
     const ShardedQuadraticProgram& scaled_sharded_qp,
     const Eigen::VectorXd& col_scaling_vec,
     const Eigen::VectorXd& row_scaling_vec,
@@ -386,9 +440,11 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
       scaled_sharded_qp, scaled_dual_ray,
       ZeroVector(scaled_sharded_qp.PrimalSharder()),
       /*use_zero_primal_objective=*/true);
-  ResidualNorms dual_residuals =
-      DualResidualNorms(scaled_sharded_qp, col_scaling_vec, scaled_primal_ray,
-                        scaled_primal_gradient);
+  // We don't use dual_residuals.l_inf_componentwise_residual, so don't need to
+  // set componentwise_residual_offset to a meaningful value.
+  ResidualNorms dual_residuals = DualResidualNorms(
+      params, scaled_sharded_qp, col_scaling_vec, scaled_primal_ray,
+      scaled_primal_gradient, /*componentwise_residual_offset=*/0.0);
 
   double dual_ray_objective =
       DualObjectiveBoundsTerm(scaled_sharded_qp, scaled_dual_ray) +
@@ -402,9 +458,12 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
     result.set_max_dual_ray_infeasibility(0.0);
   }
 
-  // Compute dual infeasibility information.
+  // Compute dual infeasibility information. We don't use
+  // primal_residuals.l_inf_componentwise_residual, so don't need to set
+  // componentwise_residual_offset to a meaningful value.
   ResidualNorms primal_residuals =
       PrimalResidualNorms(scaled_sharded_qp, row_scaling_vec, scaled_primal_ray,
+                          /*componentwise_residual_offset=*/0.0,
                           /*use_homogeneous_constraint_bounds=*/true);
   // primal_residuals contains the violations of the linear constraints. The
   // signs of the components are also constrained by the presence or absence
@@ -458,15 +517,20 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
 }
 
 ConvergenceInformation ComputeScaledConvergenceInformation(
+    const PrimalDualHybridGradientParams& params,
     const ShardedQuadraticProgram& sharded_qp, const VectorXd& primal_solution,
-    const VectorXd& dual_solution, PointType candidate_type) {
+    const VectorXd& dual_solution,
+    const double componentwise_primal_residual_offset,
+    const double componentwise_dual_residual_offset, PointType candidate_type) {
   return ComputeConvergenceInformation(
-      sharded_qp, OnesVector(sharded_qp.PrimalSharder()),
+      params, sharded_qp, OnesVector(sharded_qp.PrimalSharder()),
       OnesVector(sharded_qp.DualSharder()), primal_solution, dual_solution,
+      componentwise_primal_residual_offset, componentwise_dual_residual_offset,
       candidate_type);
 }
 
-VectorXd ReducedCosts(const ShardedQuadraticProgram& sharded_qp,
+VectorXd ReducedCosts(const PrimalDualHybridGradientParams& params,
+                      const ShardedQuadraticProgram& sharded_qp,
                       const VectorXd& primal_solution,
                       const VectorXd& dual_solution,
                       bool use_zero_primal_objective) {
@@ -490,8 +554,8 @@ VectorXd ReducedCosts(const ShardedQuadraticProgram& sharded_qp,
         for (int64_t i = 0; i < rc_shard.size(); ++i) {
           if (rc_shard[i] != 0.0 &&
               !HandlePrimalGradientTermAsReducedCost(
-                  rc_shard[i], primal_solution_shard[i], lower_bound_shard[i],
-                  upper_bound_shard[i])) {
+                  params, rc_shard[i], primal_solution_shard[i],
+                  lower_bound_shard[i], upper_bound_shard[i])) {
             rc_shard[i] = 0.0;
           }
         }

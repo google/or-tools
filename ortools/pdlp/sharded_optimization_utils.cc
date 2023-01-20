@@ -547,8 +547,8 @@ double PowerMethodFailureProbability(int64_t dimension, double epsilon, int k) {
     // The theorem requires epsilon > 0 and k >= 2.
     return 1.0;
   }
-  return std::min(0.824, 0.354 / (epsilon * (k - 1))) * std::sqrt(dimension) *
-         std::pow(1.0 - epsilon, k - 0.5);
+  return std::min(0.824, 0.354 / std::sqrt(epsilon * (k - 1))) *
+         std::sqrt(dimension) * std::pow(1.0 - epsilon, k - 0.5);
 }
 
 SingularValueAndIterations EstimateMaximumSingularValue(

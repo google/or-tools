@@ -15,15 +15,25 @@ syntax = "proto2";
 
 package operations_research.pdlp;
 
-option java_package = "com.google.ortools.pdlp";
-option java_multiple_files = true;
-
 import "ortools/glop/parameters.proto";
 
 enum OptimalityNorm {
   OPTIMALITY_NORM_UNSPECIFIED = 0;
   OPTIMALITY_NORM_L_INF = 1;  // The infinity norm.
   OPTIMALITY_NORM_L2 = 2;     // The Euclidean norm.
+
+  // The infinity norm of component-wise relative errors offset by the ratio of
+  // the absolute and relative error tolerances, i.e., the l_∞ norm of
+  // [residual / (eps_ratio + |bound|)], where eps_ratio =
+  // eps_optimal_{X}_residual_absolute / eps_optimal_{X}_residual_relative
+  // where {X} is either primal or dual, and bound is the corresponding primal
+  // or dual bound (that is, the violated constraint bound for primal residuals,
+  // and the objective coefficient for dual residuals).
+  // Using eps_ratio in this norm means that if the norm is <=
+  // eps_optimal_{X}_residual_relative, then the residuals satisfy
+  // residual <= eps_optimal_{X}_residual_absolute
+  //           + eps_optimal_{X}_residual_relative * |bound|
+  OPTIMALITY_NORM_L_INF_COMPONENTWISE = 3;
 }
 
 // A description of solver termination criteria. The criteria are defined in
@@ -51,26 +61,35 @@ message TerminationCriteria {
   // Recalling the definitions from
   // https://developers.google.com/optimization/lp/pdlp_math, c is the linear
   // objective vector, l^c are the constraint lower bounds, and u^c are the
-  // constraint upper bounds. Define b^c = CombineBounds(l^c, u^c).
+  // constraint upper bounds. Define b^c = CombineBounds(l^c, u^c). Also,
+  // define violated_bound(l^c, u^c, i) to be the bound (l^c or u^c) which is
+  // violated by the current x[i].
 
-  // Let p correspond to the norm we are using as specified by optimality_norm.
-  // If the algorithm terminates with termination_reason =
-  // TERMINATION_REASON_OPTIMAL then
-  //
   // When using DetailedOptimalityCriteria the conditions to declare a solution
   // optimal are:
   // | primal_objective - dual_objective | <=
   //     eps_optimal_objective_gap_absolute +
   //     eps_optimal_objective_gap_relative *
   //         ( | primal_objective | + | dual_objective | )
+  // If optimality_norm is OPTIMALITY_NORM_L_INF or OPTIMALITY_NORM_L2 (where
+  // norm(x, p) is the l_∞ or l_2 norm):
   // norm(primal_residual, p) <=
   //     eps_optimal_primal_residual_absolute +
-  //     eps_optimal_primal_residual_relative * norm(b, p)
+  //     eps_optimal_primal_residual_relative * norm(b^c, p)
   // norm(dual_residual, p) <=
   //     eps_optimal_dual_residual_absolute +
   //     eps_optimal_dual_residual_relative * norm(c, p)
+  // Otherwise, if optimality_norm is OPTIMALITY_NORM_L_INF_COMPONENTWISE, then,
+  // for all i:
+  // primal_residual[i] <=
+  //     eps_optimal_primal_residual_absolute +
+  //     eps_optimal_primal_residual_relative * |violated_bound(l^c, u^c, i)|
+  // dual_residual[i] <=
+  //     eps_optimal_dual_residual_absolute +
+  //     eps_optimal_dual_residual_relative * |c[i]|
   // It is possible to prove that a solution satisfying the above conditions
-  // also satisfies SCS's optimality conditions (see link above) with
+  // for L_INF and L_2 norms also satisfies SCS's optimality conditions (see
+  // link above) with
   // ϵ_pri = ϵ_dual = ϵ_gap = eps_optimal_*_absolute = eps_optimal_*_relative.
   // (ϵ_pri, ϵ_dual, and ϵ_gap are SCS's parameters).
   // When using SimpleOptimalityCriteria all the eps_optimal_*_absolute have the
@@ -234,8 +253,8 @@ message PrimalDualHybridGradientParams {
     ADAPTIVE_LINESEARCH_RULE = 1;
     // Applies Malitsky & Pock linesearch rule. This guarantees an
     // ergodic O(1/N) convergence rate https://arxiv.org/pdf/1608.08883.pdf.
-    // This is provably convergent, but only supports linear problems and
-    // quadratic problems with a diagonal objective matrix.
+    // This is provably convergent but doesn't usually work as well in practice
+    // as ADAPTIVE_LINESEARCH_RULE.
     MALITSKY_POCK_LINESEARCH_RULE = 2;
     // Uses a constant step size corresponding to an estimate of the maximum
     // singular value of the constraint matrix.
@@ -367,8 +386,6 @@ message PrimalDualHybridGradientParams {
   // linesearch_rule == CONSTANT_STEP_SIZE_RULE).
   optional double initial_step_size_scaling = 25 [default = 1.0];
 
-  reserved 13, 14, 15, 20;
-
   // Seeds for generating (pseudo-)random projections of iterates during
   // termination checks. For each seed, the projection of the primal and dual
   // solutions onto random planes in primal and dual space will be computed and
@@ -385,6 +402,28 @@ message PrimalDualHybridGradientParams {
   // relative convergence criteria stronger.
   optional double infinite_constraint_bound_threshold = 22 [default = inf];
 
+  // See https://developers.google.com/optimization/lp/pdlp_math for notation.
+  // handle_some_primal_gradients_on_finite_bounds_as_residuals controls for
+  // which primal variables i the term (l^v_i)^T[r_i]_+ − (u^v_i)^T[r_i]_− in
+  // the theoretical dual objective is included in PDLP's dual objective and
+  // which are excluded from the dual objective with r_i accounted separately as
+  // contributing to the dual residual. This parameter has no effect on the
+  // primal and dual solution found after t iterations; it only affects when
+  // termination occurs and reported statistics.
+  // When (l^v_i)^T[r_i]_+ − (u^v_i)^T[r_i]_− is infinite due to an infinite
+  // variable bound the term is always treated as a residual (to keep the dual
+  // objective finite) regardless of the value of
+  // handle_some_primal_gradients_on_finite_bounds_as_residuals.
+  // When handle_some_primal_gradients_on_finite_bounds_as_residuals is false no
+  // finite terms are accounted as residuals.
+  // When handle_some_primal_gradients_on_finite_bounds_as_residuals is true,
+  // finite terms with |x_i - b_i| > |x_i| (where x_i is the variable's value
+  // and b_i is l^v_i if r_i > 0 and u^v_i otherwise) are counted as residuals.
+  // Setting this to true can substantially reduce the duality gap at the
+  // expense of increasing the dual residual.
+  optional bool handle_some_primal_gradients_on_finite_bounds_as_residuals = 29
+      [default = true];
+
   // When solving QPs with diagonal objective matrices, this option can be
   // turned on to enable an experimental solver that avoids linearization of the
   // quadratic term. The `diagonal_qp_solver_accuracy` parameter controls the
@@ -399,7 +438,7 @@ message PrimalDualHybridGradientParams {
   // solution vector.
   // TODO(user): Find an expression for the final relative error.
   optional double diagonal_qp_trust_region_solver_tolerance = 24
-      [default = 1e-8];
+      [default = 1.0e-8];
 
-  reserved 21;
+  reserved 13, 14, 15, 20, 21;
 }

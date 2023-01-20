@@ -198,8 +198,8 @@ QuadraticProgram SmallInitializationLp();
 //         x_1 <= 0
 QuadraticProgram LpWithoutConstraints();
 
-// Verifies that the given QuadraticProgram equals TestQp().
-void VerifyTestQp(const QuadraticProgram& qp, bool maximize = false);
+// Verifies that the given QuadraticProgram equals TestDiagonalQp1().
+void VerifyTestDiagonalQp1(const QuadraticProgram& qp, bool maximize = false);
 
 // Converts a sparse matrix into a dense matrix in the format suitable for
 // the matcher EigenArrayEq. Example usage:

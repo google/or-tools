@@ -39,7 +39,8 @@ absl::Status CheckNonNegative(const double value,
 
 absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
   if (criteria.optimality_norm() != OPTIMALITY_NORM_L_INF &&
-      criteria.optimality_norm() != OPTIMALITY_NORM_L2) {
+      criteria.optimality_norm() != OPTIMALITY_NORM_L2 &&
+      criteria.optimality_norm() != OPTIMALITY_NORM_L_INF_COMPONENTWISE) {
     return InvalidArgumentError("invalid value for optimality_norm");
   }
   if (criteria.has_detailed_optimality_criteria() ||

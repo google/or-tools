@@ -187,7 +187,7 @@ absl::StatusOr<MPModelProto> QpToMpModelProto(const QuadraticProgram& qp);
 // This avoids having the third copy in memory by sorting the triplets,
 // reserving space in the matrix, and then inserting in sorted order.
 // Compresses the matrix (SparseMatrix.makeCompressed()) after loading it.
-// NOTE: This intentionally passes triplets by copy, because it modifies them.
+// NOTE: This intentionally passes triplets by value, because it modifies them.
 // To avoid the copy, pass a move reference.
 void SetEigenMatrixFromTriplets(
     std::vector<Eigen::Triplet<double, int64_t>> triplets,

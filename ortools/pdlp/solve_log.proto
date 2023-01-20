@@ -18,9 +18,6 @@ syntax = "proto2";
 
 package operations_research.pdlp;
 
-option java_package = "com.google.ortools.pdlp";
-option java_multiple_files = true;
-
 import "ortools/pdlp/solvers.proto";
 
 // Easy-to-compute statistics for the quadratic program.
@@ -146,12 +143,25 @@ message ConvergenceInformation {
   // The l_2 norm of the violations of primal constraints.
   optional double l2_primal_residual = 6;
 
+  // The maximum relative violation of any primal constraint, with an absolute
+  // offset, i.e., the l_∞ norm of [violation / (eps_ratio + |bound|)] where
+  // eps_ratio = eps_optimal_primal_residual_absolute
+  //           / eps_optimal_primal_residual_relative
+  // and bound is the violated bound.
+  optional double l_inf_componentwise_primal_residual = 24;
+
   // The maximum violation of any dual constraint, i.e., the l_∞ norm of the
   // violations.
   optional double l_inf_dual_residual = 7;
 
   // The l_2 norm of the violations of dual constraints.
   optional double l2_dual_residual = 8;
+
+  // The maximum relative violation of any dual constraint, with an absolute
+  // offset, i.e., the l_∞ norm of [violation / (eps_ratio + |objective|)] where
+  // eps_ratio = eps_optimal_dual_residual_absolute
+  //           / eps_optimal_dual_residual_relative
+  optional double l_inf_componentwise_dual_residual = 25;
 
   // The maximum absolute value of the primal variables, i.e., the l_∞ norm.
   // This is useful to detect when the primal iterates are diverging. Divergence
@@ -299,7 +309,7 @@ message IterationStats {
   // See field 'step_size' for a detailed description.
   optional double primal_weight = 9;
 
-  map<string, double> method_specific_stats = 10;
+  reserved 10;
 }
 
 enum TerminationReason {
@@ -317,6 +327,9 @@ enum TerminationReason {
   // Indicates that the solver detected invalid problem data, e.g., inconsistent
   // bounds.
   TERMINATION_REASON_INVALID_PROBLEM = 9;
+  // Indicates that the solver detected that the initial solution that was
+  // provided was invalid, e.g., wrong size or containing NAN or inf.
+  TERMINATION_REASON_INVALID_INITIAL_SOLUTION = 13;
   // Indicates that an invalid value for the parameters was detected.
   TERMINATION_REASON_INVALID_PARAMETER = 10;
   TERMINATION_REASON_OTHER = 7;

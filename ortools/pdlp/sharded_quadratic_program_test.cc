@@ -47,6 +47,46 @@ TEST(ShardedQuadraticProgramTest, BasicTest) {
             dual_size);
 }
 
+TEST(ShardedQuadraticProgramTest, SwapVariableBounds) {
+  const int num_threads = 2;
+  const int num_shards = 2;
+  ShardedQuadraticProgram sharded_qp(TestDiagonalQp1(), num_threads,
+                                     num_shards);
+  Eigen::VectorXd new_lb{{-kInfinity, 0.0}};
+  Eigen::VectorXd new_ub{{0.0, 1.0}};
+  sharded_qp.SwapVariableBounds(new_lb, new_ub);
+  EXPECT_THAT(new_lb, ElementsAre(1.0, -2.0));
+  EXPECT_THAT(new_ub, ElementsAre(2.0, 4.0));
+  EXPECT_THAT(sharded_qp.Qp().variable_lower_bounds,
+              ElementsAre(-kInfinity, 0.0));
+  EXPECT_THAT(sharded_qp.Qp().variable_upper_bounds, ElementsAre(0.0, 1.0));
+}
+
+TEST(ShardedQuadraticProgramTest, SwapConstraintBounds) {
+  const int num_threads = 2;
+  const int num_shards = 2;
+  ShardedQuadraticProgram sharded_qp(TestDiagonalQp1(), num_threads,
+                                     num_shards);
+  Eigen::VectorXd new_lb{{1.0}};
+  Eigen::VectorXd new_ub{{5.0}};
+  sharded_qp.SwapConstraintBounds(new_lb, new_ub);
+  EXPECT_THAT(new_lb, ElementsAre(-kInfinity));
+  EXPECT_THAT(new_ub, ElementsAre(1.0));
+  EXPECT_THAT(sharded_qp.Qp().constraint_lower_bounds, ElementsAre(1.0));
+  EXPECT_THAT(sharded_qp.Qp().constraint_upper_bounds, ElementsAre(5.0));
+}
+
+TEST(ShardedQuadraticProgramTest, SwapObjectiveVector) {
+  const int num_threads = 2;
+  const int num_shards = 2;
+  ShardedQuadraticProgram sharded_qp(TestDiagonalQp1(), num_threads,
+                                     num_shards);
+  Eigen::VectorXd new_objective{{1.0, 2.0}};
+  sharded_qp.SwapObjectiveVector(new_objective);
+  EXPECT_THAT(new_objective, ElementsAre(-1.0, -1.0));
+  EXPECT_THAT(sharded_qp.Qp().objective_vector, ElementsAre(1.0, 2.0));
+}
+
 TEST(RescaleProblem, BasicTest) {
   // The original qp is:
   // min 4x_1^2 + x_2^2 - x_1 - x_2 +5

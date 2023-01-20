@@ -267,7 +267,7 @@ QuadraticProgram LpWithoutConstraints() {
   return lp;
 }
 
-void VerifyTestQp(const QuadraticProgram& qp, bool maximize) {
+void VerifyTestDiagonalQp1(const QuadraticProgram& qp, bool maximize) {
   const double objective_sign = maximize ? -1 : 1;
   EXPECT_EQ(qp.objective_scaling_factor, objective_sign);
   EXPECT_THAT(objective_sign * qp.objective_offset, testing::DoubleEq(5));
