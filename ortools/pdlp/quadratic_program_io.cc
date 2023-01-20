@@ -66,7 +66,6 @@ QuadraticProgram ReadQuadraticProgramOrDie(const std::string& filename,
 
 QuadraticProgram ReadMpsLinearProgramOrDie(const std::string& lp_file,
                                            bool include_names) {
-  LOG(INFO) << "Reading " << lp_file;
   absl::StatusOr<MPModelProto> lp_proto =
       operations_research::glop::MpsFileToMPModelProto(lp_file);
   QCHECK_OK(lp_proto);

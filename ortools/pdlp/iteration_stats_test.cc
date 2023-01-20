@@ -24,6 +24,7 @@
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/sharded_quadratic_program.h"
 #include "ortools/pdlp/solve_log.pb.h"
+#include "ortools/pdlp/solvers.pb.h"
 #include "ortools/pdlp/test_util.h"
 
 namespace operations_research::pdlp {
@@ -51,7 +52,10 @@ TEST(CorrectedDualTest, SimpleLpWithSuboptimalDual) {
   primal_solution << 0, 0, 6, 2.5;
   dual_solution << -2, 0, 2.375, 1;
   const ConvergenceInformation stats = ComputeScaledConvergenceInformation(
-      sharded_qp, primal_solution, dual_solution, POINT_TYPE_CURRENT_ITERATE);
+      PrimalDualHybridGradientParams(), sharded_qp, primal_solution,
+      dual_solution,
+      /*componentwise_primal_residual_offset=*/1.0,
+      /*componentwise_dual_residual_offset=*/1.0, POINT_TYPE_CURRENT_ITERATE);
   // -36.5 = -14 - 24 - 9.5 - 1 - 3 + 15
   EXPECT_DOUBLE_EQ(stats.dual_objective(), -36.5);
   EXPECT_DOUBLE_EQ(stats.corrected_dual_objective(), -36.5);
@@ -62,7 +66,7 @@ TEST(CorrectedDualTest, SimpleLpWithSuboptimalDual) {
 // the primal gradient will be treated as a residual of 0.5 instead of a dual
 // correction of -3, but in the corrected dual objective it is still treated as
 // a dual correction.
-TEST(CorrectedDualTest, SimpleLpWithVariableFarFromBound) {
+TEST(CorrectedDualTest, SimpleLpWithVariableFarFromBoundAsResiduals) {
   const int num_threads = 2;
   const int num_shards = 10;
   ShardedQuadraticProgram sharded_qp(TestLp(), num_threads, num_shards);
@@ -70,13 +74,40 @@ TEST(CorrectedDualTest, SimpleLpWithVariableFarFromBound) {
   Eigen::VectorXd primal_solution(4), dual_solution(4);
   primal_solution << 0, 0, 2, 2.5;
   dual_solution << -2, 0, 2.375, 1;
+  PrimalDualHybridGradientParams params;
+  params.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(true);
   const ConvergenceInformation stats = ComputeScaledConvergenceInformation(
-      sharded_qp, primal_solution, dual_solution, POINT_TYPE_CURRENT_ITERATE);
+      params, sharded_qp, primal_solution, dual_solution,
+      /*componentwise_primal_residual_offset=*/1.0,
+      /*componentwise_dual_residual_offset=*/1.0, POINT_TYPE_CURRENT_ITERATE);
   // -33.5 = -14 - 24 - 9.5 - 1 + 15
   EXPECT_DOUBLE_EQ(stats.dual_objective(), -33.5);
   EXPECT_DOUBLE_EQ(stats.corrected_dual_objective(), -36.5);
   EXPECT_DOUBLE_EQ(stats.l_inf_dual_residual(), 0.5);
   EXPECT_DOUBLE_EQ(stats.l2_dual_residual(), 0.5);
+  EXPECT_DOUBLE_EQ(stats.l_inf_componentwise_dual_residual(), 0.25);
+}
+
+TEST(CorrectedDualTest, SimpleLpWithVariableFarFromBoundAsReducedCosts) {
+  const int num_threads = 2;
+  const int num_shards = 10;
+  ShardedQuadraticProgram sharded_qp(TestLp(), num_threads, num_shards);
+
+  Eigen::VectorXd primal_solution(4), dual_solution(4);
+  primal_solution << 0, 0, 2, 2.5;
+  dual_solution << -2, 0, 2.375, 1;
+  PrimalDualHybridGradientParams params;
+  params.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(false);
+  const ConvergenceInformation stats = ComputeScaledConvergenceInformation(
+      params, sharded_qp, primal_solution, dual_solution,
+      /*componentwise_primal_residual_offset=*/1.0,
+      /*componentwise_dual_residual_offset=*/1.0, POINT_TYPE_CURRENT_ITERATE);
+  // -36.5 = -14 - 24 - 9.5 - 1 - 3 + 15
+  EXPECT_DOUBLE_EQ(stats.dual_objective(), -36.5);
+  EXPECT_DOUBLE_EQ(stats.corrected_dual_objective(), -36.5);
+  EXPECT_DOUBLE_EQ(stats.l_inf_dual_residual(), 0.0);
+  EXPECT_DOUBLE_EQ(stats.l2_dual_residual(), 0.0);
+  EXPECT_DOUBLE_EQ(stats.l_inf_componentwise_dual_residual(), 0.0);
 }
 
 TEST(CorrectedDualObjective, QpSuboptimal) {
@@ -89,7 +120,10 @@ TEST(CorrectedDualObjective, QpSuboptimal) {
   dual_solution << -3;
   primal_solution << -2.0, 2.0;
   const ConvergenceInformation stats = ComputeScaledConvergenceInformation(
-      sharded_qp, primal_solution, dual_solution, POINT_TYPE_CURRENT_ITERATE);
+      PrimalDualHybridGradientParams(), sharded_qp, primal_solution,
+      dual_solution,
+      /*componentwise_primal_residual_offset=*/1.0,
+      /*componentwise_dual_residual_offset=*/1.0, POINT_TYPE_CURRENT_ITERATE);
   // primal gradient vector: [-6, 4]
   // Constant term: 5
   // Quadratic term: -(16+4)/2 = -10
@@ -143,9 +177,11 @@ TEST(ReducedCostsTest, SimpleLp) {
   // c is: [5.5, -2, -1, 1]
   // -A'y is: [-2, -1, 2, -4]
   // c - A'y is: [3.5, -3.0, 1.0, -3.0].
-  EXPECT_THAT(ReducedCosts(sharded_qp, primal_solution, dual_solution),
+  EXPECT_THAT(ReducedCosts(PrimalDualHybridGradientParams(), sharded_qp,
+                           primal_solution, dual_solution),
               ElementsAre(0.0, 0.0, 0.0, -3.0));
-  EXPECT_THAT(ReducedCosts(sharded_qp, primal_solution, dual_solution,
+  EXPECT_THAT(ReducedCosts(PrimalDualHybridGradientParams(), sharded_qp,
+                           primal_solution, dual_solution,
                            /*use_zero_primal_objective=*/true),
               ElementsAre(0.0, 0.0, 0.0, -4.0));
 }
@@ -158,18 +194,34 @@ TEST(ReducedCostsTest, SimpleLpWithGapResiduals) {
   Eigen::VectorXd primal_solution(4), dual_solution(4);
   primal_solution = Eigen::VectorXd::Zero(4);
   dual_solution << 1.0, 0.0, 0.0, -1.0;
+  PrimalDualHybridGradientParams params_true, params_false;
+  params_true.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(
+      true);
+  params_false.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(
+      false);
   // c is: [5.5, -2, -1, 1]
   // -A'y is: [-2, -1, 0.5, -3]
   // c - A'y is: [3.5, -3.0, -0.5, -2.0].
-  // When the primal variable is 0.0 and the bound is not 0.0, the c - A'y is
-  // always handled as a residual.
-  EXPECT_THAT(ReducedCosts(sharded_qp, primal_solution, dual_solution),
-              ElementsAre(0.0, 0.0, 0.0, 0.0));
-  // If the primal variables are closer to the bound, c - A'y is handled as a
-  // reduced cost.
+  // When the primal variable is 0.0 and the bound is not 0.0, c - A'y is
+  // handled as a residual when
+  // handle_some_primal_gradients_on_finite_bounds_as_residuals = true and as a
+  // reduced cost otherwise.
+  EXPECT_THAT(
+      ReducedCosts(params_true, sharded_qp, primal_solution, dual_solution),
+      ElementsAre(0.0, 0.0, 0.0, 0.0));
+  EXPECT_THAT(
+      ReducedCosts(params_false, sharded_qp, primal_solution, dual_solution),
+      ElementsAre(0.0, 0.0, -0.5, -2.0));
+  // The primal variables are closer to the bound, c - A'y is handled as a
+  // reduced cost regardless of the value of
+  // handle_some_primal_gradients_on_finite_bounds_as_residuals.
   primal_solution << 0.0, 0.0, 4.0, 3.0;
-  EXPECT_THAT(ReducedCosts(sharded_qp, primal_solution, dual_solution),
-              ElementsAre(0.0, 0.0, -0.5, -2.0));
+  EXPECT_THAT(
+      ReducedCosts(params_true, sharded_qp, primal_solution, dual_solution),
+      ElementsAre(0.0, 0.0, -0.5, -2.0));
+  EXPECT_THAT(
+      ReducedCosts(params_false, sharded_qp, primal_solution, dual_solution),
+      ElementsAre(0.0, 0.0, -0.5, -2.0));
 }
 
 TEST(ReducedCostsTest, SimpleQp) {
@@ -181,16 +233,31 @@ TEST(ReducedCostsTest, SimpleQp) {
   Eigen::VectorXd primal_solution(2), dual_solution(1);
   primal_solution << 1.0, 2.0;
   dual_solution << 0.0;
+  PrimalDualHybridGradientParams params_true, params_false;
+  params_true.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(
+      true);
+  params_false.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(
+      false);
   // Q*x is: [4.0, 2.0]
   // c is: [-1, -1]
   // A'y is zero.
-  // The second primal gradient term is handled as a residual, not a reduced
-  // cost.
-  EXPECT_THAT(ReducedCosts(sharded_qp, primal_solution, dual_solution),
-              ElementsAre(3.0, 0.0));
-  EXPECT_THAT(ReducedCosts(sharded_qp, primal_solution, dual_solution,
-                           /*use_zero_primal_objective=*/true),
-              ElementsAre(0.0, 0.0));
+  // If handle_some_primal_gradients_on_finite_bounds_as_residuals is
+  // true the second primal gradient term is handled as a residual, not a
+  // reduced cost.
+  EXPECT_THAT(
+      ReducedCosts(params_true, sharded_qp, primal_solution, dual_solution),
+      ElementsAre(3.0, 0.0));
+  EXPECT_THAT(
+      ReducedCosts(params_false, sharded_qp, primal_solution, dual_solution),
+      ElementsAre(3.0, 1.0));
+  EXPECT_THAT(
+      ReducedCosts(params_true, sharded_qp, primal_solution, dual_solution,
+                   /*use_zero_primal_objective=*/true),
+      ElementsAre(0.0, 0.0));
+  EXPECT_THAT(
+      ReducedCosts(params_false, sharded_qp, primal_solution, dual_solution,
+                   /*use_zero_primal_objective=*/true),
+      ElementsAre(0.0, 0.0));
 }
 
 TEST(GetConvergenceInformation, GetsCorrectEntry) {

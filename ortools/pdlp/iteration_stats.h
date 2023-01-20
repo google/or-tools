@@ -29,26 +29,34 @@ namespace operations_research::pdlp {
 // This function is equivalent to ComputeConvergenceInformation given scaling
 // vectors uniformly equal to one.
 ConvergenceInformation ComputeScaledConvergenceInformation(
+    const PrimalDualHybridGradientParams& params,
     const ShardedQuadraticProgram& sharded_qp,
     const Eigen::VectorXd& primal_solution,
-    const Eigen::VectorXd& dual_solution, PointType candidate_type);
+    const Eigen::VectorXd& dual_solution,
+    double componentwise_primal_residual_offset,
+    double componentwise_dual_residual_offset, PointType candidate_type);
 
 // Returns convergence statistics about a primal/dual solution pair. It is
 // assumed that scaled_sharded_qp has been transformed from the original qp by
 // ShardedQuadraticProgram::RescaleQuadraticProgram(col_scaling_vec,
 // row_scaling_vec). scaled_primal_solution and scaled_dual_solution are
 // solutions for the scaled problem. The stats are computed with respect to the
-// implicit original problem.
+// implicit original problem. 'componentwise_primal_residual_offset' and
+// 'componentwise_dual_residual_offset' are the offsets (i.e., eps_ratio) used
+// for computing the l_inf_componentwise residual norms.
 // NOTE: This function assumes that scaled_primal_solution satisfies the
 // variable bounds and scaled_dual_solution satisfies the dual variable bounds;
 // see
 // https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds.
 ConvergenceInformation ComputeConvergenceInformation(
+    const PrimalDualHybridGradientParams& params,
     const ShardedQuadraticProgram& sharded_qp,
     const Eigen::VectorXd& col_scaling_vec,
     const Eigen::VectorXd& row_scaling_vec,
     const Eigen::VectorXd& scaled_primal_solution,
-    const Eigen::VectorXd& scaled_dual_solution, PointType candidate_type);
+    const Eigen::VectorXd& scaled_dual_solution,
+    double componentwise_primal_residual_offset,
+    double componentwise_dual_residual_offset, PointType candidate_type);
 
 // Returns infeasibility statistics about a primal/dual infeasibility
 // certificate estimate. It is assumed that scaled_sharded_qp has been
@@ -58,6 +66,7 @@ ConvergenceInformation ComputeConvergenceInformation(
 // problem. The stats are computed with respect to the implicit original
 // problem.
 InfeasibilityInformation ComputeInfeasibilityInformation(
+    const PrimalDualHybridGradientParams& params,
     const ShardedQuadraticProgram& scaled_sharded_qp,
     const Eigen::VectorXd& col_scaling_vec,
     const Eigen::VectorXd& row_scaling_vec,
@@ -71,7 +80,8 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
 // vector are corrected component-wise to zero to ensure that the dual objective
 // takes a finite value. See
 // https://developers.google.com/optimization/lp/pdlp_math#reduced_costs_dual_residuals_and_the_corrected_dual_objective.
-Eigen::VectorXd ReducedCosts(const ShardedQuadraticProgram& scaled_sharded_qp,
+Eigen::VectorXd ReducedCosts(const PrimalDualHybridGradientParams& params,
+                             const ShardedQuadraticProgram& scaled_sharded_qp,
                              const Eigen::VectorXd& primal_solution,
                              const Eigen::VectorXd& dual_solution,
                              bool use_zero_primal_objective = false);

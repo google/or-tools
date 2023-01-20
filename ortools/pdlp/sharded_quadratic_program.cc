@@ -67,7 +67,7 @@ ShardedQuadraticProgram::ShardedQuadraticProgram(QuadraticProgram qp,
       transposed_constraint_matrix_(qp_.constraint_matrix.transpose()),
       thread_pool_(num_threads == 1
                        ? nullptr
-                       : absl::make_unique<ThreadPool>("PDLP", num_threads)),
+                       : std::make_unique<ThreadPool>("PDLP", num_threads)),
       constraint_matrix_sharder_(qp_.constraint_matrix, num_shards,
                                  thread_pool_.get()),
       transposed_constraint_matrix_sharder_(transposed_constraint_matrix_,

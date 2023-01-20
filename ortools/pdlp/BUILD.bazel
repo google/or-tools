@@ -71,7 +71,6 @@ cc_test(
         "//ortools/base",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings",
         "@eigen//:eigen3",
     ],
 )
@@ -109,6 +108,7 @@ cc_test(
 
 cc_library(
     name = "test_util",
+    testonly = 1,
     srcs = ["test_util.cc"],
     hdrs = ["test_util.h"],
     deps = [
@@ -172,7 +172,6 @@ cc_library(
         ":solve_log_cc_proto",
         "//ortools/base",
         "//ortools/base:mathutil",
-        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/random:distributions",
         "@eigen//:eigen3",
     ],
@@ -245,6 +244,7 @@ cc_test(
         ":sharder",
         ":test_util",
         ":trust_region",
+        "@com_google_absl//absl/strings",
         "@eigen//:eigen3",
     ],
 )
@@ -309,8 +309,6 @@ cc_library(
         "//ortools/base",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
         "@eigen//:eigen3",
     ],
 )
@@ -324,6 +322,7 @@ cc_test(
         ":quadratic_program",
         ":sharded_quadratic_program",
         ":solve_log_cc_proto",
+        ":solvers_cc_proto",
         ":test_util",
         "//ortools/base:protobuf_util",
         "@eigen//:eigen3",
@@ -358,6 +357,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
         "@eigen//:eigen3",
     ],
@@ -377,6 +377,7 @@ cc_test(
         ":sharded_quadratic_program",
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
+        ":termination",
         ":test_util",
         "//ortools/base",
         "//ortools/glop:parameters_cc_proto",
@@ -386,7 +387,6 @@ cc_test(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
         "@eigen//:eigen3",
     ],
 )

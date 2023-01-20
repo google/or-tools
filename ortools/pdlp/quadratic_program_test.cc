@@ -50,14 +50,14 @@ TEST(QuadraticProgram, DefaultConstructorWorks) { QuadraticProgram qp; }
 TEST(QuadraticProgram, MoveConstructor) {
   QuadraticProgram qp1 = TestDiagonalQp1();
   QuadraticProgram qp2(std::move(qp1));
-  VerifyTestQp(qp2);
+  VerifyTestDiagonalQp1(qp2);
 }
 
 TEST(QuadraticProgram, MoveAssignment) {
   QuadraticProgram qp1 = TestDiagonalQp1();
   QuadraticProgram qp2;
   qp2 = std::move(qp1);
-  VerifyTestQp(qp2);
+  VerifyTestDiagonalQp1(qp2);
 }
 
 TEST(ValidateQuadraticProgramDimensions, ValidProblem) {

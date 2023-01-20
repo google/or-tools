@@ -223,7 +223,7 @@ double ProjectedValue(const TrustRegionProblem& problem, const int64_t index,
 }
 
 // An easy way of computing medians that's slightly off when the length of the
-// array is even. "array" is intentionally passed by copy.
+// array is even. "array" is intentionally passed by value.
 // "value_function" maps an element of "array" to its (double) value.  Returns
 // the value of the median element.
 template <typename ArrayType, typename ValueFunction>

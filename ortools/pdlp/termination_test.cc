@@ -87,7 +87,7 @@ class SimpleTerminationTest : public testing::Test {
   TerminationCriteria test_criteria_;
 };
 
-class TerminationTest : public testing::TestWithParam<OptimalityNorm> {
+class IterateTerminationTest : public testing::TestWithParam<OptimalityNorm> {
  protected:
   void SetUp() override {
     test_criteria_ = ParseTextOrDie<TerminationCriteria>(R"pb(
@@ -217,10 +217,12 @@ TEST_P(DetailedRelativeTerminationTest, TerminationWithNearOptimal) {
     convergence_information {
       primal_objective: 1.00019
       dual_objective: 1.0
-      l_inf_primal_residual: 11e-4
+      l_inf_primal_residual: 11.0e-4
       l_inf_dual_residual: 5.4e-4
-      l2_primal_residual: 14e-4
-      l2_dual_residual: 6e-4
+      l2_primal_residual: 14.0e-4
+      l2_dual_residual: 6.0e-4
+      l_inf_componentwise_primal_residual: 9.0e-5
+      l_inf_componentwise_dual_residual: 9.0e-5
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   EXPECT_TRUE(ObjectiveGapMet(test_criteria_.detailed_optimality_criteria(),
@@ -229,10 +231,10 @@ TEST_P(DetailedRelativeTerminationTest, TerminationWithNearOptimal) {
       test_criteria_.detailed_optimality_criteria(),
       stats.convergence_information(0), test_criteria_.optimality_norm(),
       TestLpBoundNorms()));
-  EXPECT_THAT(
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
-      Optional(
-          FieldsAre(TERMINATION_REASON_OPTIMAL, POINT_TYPE_CURRENT_ITERATE)));
+  EXPECT_THAT(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                              TestLpBoundNorms()),
+              Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
+                                 POINT_TYPE_CURRENT_ITERATE)));
 }
 
 TEST_P(DetailedRelativeTerminationTest, NoTerminationWithExcessiveGap) {
@@ -240,10 +242,12 @@ TEST_P(DetailedRelativeTerminationTest, NoTerminationWithExcessiveGap) {
     convergence_information {
       primal_objective: 1.00021
       dual_objective: 1.0
-      l_inf_primal_residual: 11e-4
+      l_inf_primal_residual: 11.0e-4
       l_inf_dual_residual: 5.4e-4
-      l2_primal_residual: 14e-4
-      l2_dual_residual: 6e-4
+      l2_primal_residual: 14.0e-4
+      l2_dual_residual: 6.0e-4
+      l_inf_componentwise_primal_residual: 9.0e-5
+      l_inf_componentwise_dual_residual: 9.0e-5
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   EXPECT_FALSE(ObjectiveGapMet(test_criteria_.detailed_optimality_criteria(),
@@ -252,7 +256,8 @@ TEST_P(DetailedRelativeTerminationTest, NoTerminationWithExcessiveGap) {
       test_criteria_.detailed_optimality_criteria(),
       stats.convergence_information(0), test_criteria_.optimality_norm(),
       TestLpBoundNorms()));
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                            TestLpBoundNorms()),
             absl::nullopt);
 }
 
@@ -262,17 +267,20 @@ TEST_P(DetailedRelativeTerminationTest,
     convergence_information {
       primal_objective: 1.00019
       dual_objective: 1.0
-      l_inf_primal_residual: 13e-4
+      l_inf_primal_residual: 13.0e-4
       l_inf_dual_residual: 5.4e-4
-      l2_primal_residual: 15e-4
-      l2_dual_residual: 6e-4
+      l2_primal_residual: 15.0e-4
+      l2_dual_residual: 6.0e-4
+      l_inf_componentwise_primal_residual: 1.1e-4
+      l_inf_componentwise_dual_residual: 9.0e-5
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   EXPECT_FALSE(OptimalityCriteriaMet(
       test_criteria_.detailed_optimality_criteria(),
       stats.convergence_information(0), test_criteria_.optimality_norm(),
       TestLpBoundNorms()));
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                            TestLpBoundNorms()),
             absl::nullopt);
 }
 
@@ -282,17 +290,20 @@ TEST_P(DetailedRelativeTerminationTest,
     convergence_information {
       primal_objective: 1.00019
       dual_objective: 1.0
-      l_inf_primal_residual: 11e-4
+      l_inf_primal_residual: 11.0e-4
       l_inf_dual_residual: 5.6e-4
-      l2_primal_residual: 14e-4
-      l2_dual_residual: 7e-4
+      l2_primal_residual: 14.0e-4
+      l2_dual_residual: 7.0e-4
+      l_inf_componentwise_primal_residual: 9.0e-5
+      l_inf_componentwise_dual_residual: 1.1e-4
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   EXPECT_FALSE(OptimalityCriteriaMet(
       test_criteria_.detailed_optimality_criteria(),
       stats.convergence_information(0), test_criteria_.optimality_norm(),
       TestLpBoundNorms()));
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                            TestLpBoundNorms()),
             absl::nullopt);
 }
 
@@ -301,10 +312,12 @@ TEST_P(DetailedAbsoluteTerminationTest, TerminationWithNearOptimal) {
     convergence_information {
       primal_objective: 1.00009
       dual_objective: 1.0
-      l_inf_primal_residual: 9e-5
-      l_inf_dual_residual: 9e-5
-      l2_primal_residual: 9e-5
-      l2_dual_residual: 9e-5
+      l_inf_primal_residual: 9.0e-5
+      l_inf_dual_residual: 9.0e-5
+      l2_primal_residual: 9.0e-5
+      l2_dual_residual: 9.0e-5
+      l_inf_componentwise_primal_residual: 0.0
+      l_inf_componentwise_dual_residual: 0.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   EXPECT_TRUE(ObjectiveGapMet(test_criteria_.detailed_optimality_criteria(),
@@ -313,10 +326,10 @@ TEST_P(DetailedAbsoluteTerminationTest, TerminationWithNearOptimal) {
       test_criteria_.detailed_optimality_criteria(),
       stats.convergence_information(0), test_criteria_.optimality_norm(),
       TestLpBoundNorms()));
-  EXPECT_THAT(
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
-      Optional(
-          FieldsAre(TERMINATION_REASON_OPTIMAL, POINT_TYPE_CURRENT_ITERATE)));
+  EXPECT_THAT(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                              TestLpBoundNorms()),
+              Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
+                                 POINT_TYPE_CURRENT_ITERATE)));
 }
 
 TEST_P(DetailedAbsoluteTerminationTest, NoTerminationWithExcessiveGap) {
@@ -324,10 +337,12 @@ TEST_P(DetailedAbsoluteTerminationTest, NoTerminationWithExcessiveGap) {
     convergence_information {
       primal_objective: 1.00011
       dual_objective: 1.0
-      l_inf_primal_residual: 9e-5
-      l_inf_dual_residual: 9e-5
-      l2_primal_residual: 9e-5
-      l2_dual_residual: 9e-5
+      l_inf_primal_residual: 9.0e-5
+      l_inf_dual_residual: 9.0e-5
+      l2_primal_residual: 9.0e-5
+      l2_dual_residual: 9.0e-5
+      l_inf_componentwise_primal_residual: 0.0
+      l_inf_componentwise_dual_residual: 0.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   EXPECT_FALSE(ObjectiveGapMet(test_criteria_.detailed_optimality_criteria(),
@@ -336,7 +351,8 @@ TEST_P(DetailedAbsoluteTerminationTest, NoTerminationWithExcessiveGap) {
       test_criteria_.detailed_optimality_criteria(),
       stats.convergence_information(0), test_criteria_.optimality_norm(),
       TestLpBoundNorms()));
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                            TestLpBoundNorms()),
             absl::nullopt);
 }
 
@@ -346,17 +362,20 @@ TEST_P(DetailedAbsoluteTerminationTest,
     convergence_information {
       primal_objective: 1.00009
       dual_objective: 1.0
-      l_inf_primal_residual: 11e-5
-      l_inf_dual_residual: 9e-5
-      l2_primal_residual: 11e-5
-      l2_dual_residual: 9e-5
+      l_inf_primal_residual: 11.0e-5
+      l_inf_dual_residual: 9.0e-5
+      l2_primal_residual: 11.0e-5
+      l2_dual_residual: 9.0e-5
+      l_inf_componentwise_primal_residual: 1.0e-6
+      l_inf_componentwise_dual_residual: 0.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   EXPECT_FALSE(OptimalityCriteriaMet(
       test_criteria_.detailed_optimality_criteria(),
       stats.convergence_information(0), test_criteria_.optimality_norm(),
       TestLpBoundNorms()));
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                            TestLpBoundNorms()),
             absl::nullopt);
 }
 
@@ -366,28 +385,32 @@ TEST_P(DetailedAbsoluteTerminationTest,
     convergence_information {
       primal_objective: 1.00009
       dual_objective: 1.0
-      l_inf_primal_residual: 9e-5
-      l_inf_dual_residual: 11e-5
-      l2_primal_residual: 9e-5
-      l2_dual_residual: 11e-5
+      l_inf_primal_residual: 9.0e-5
+      l_inf_dual_residual: 11.0e-5
+      l2_primal_residual: 9.0e-5
+      l2_dual_residual: 11.0e-5
+      l_inf_componentwise_primal_residual: 0.0
+      l_inf_componentwise_dual_residual: 1.0e-6
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   EXPECT_FALSE(OptimalityCriteriaMet(
       test_criteria_.detailed_optimality_criteria(),
       stats.convergence_information(0), test_criteria_.optimality_norm(),
       TestLpBoundNorms()));
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                            TestLpBoundNorms()),
             absl::nullopt);
 }
 
-TEST_P(TerminationTest, NoTerminationWithLargeGap) {
+TEST_P(IterateTerminationTest, NoTerminationWithLargeGap) {
   IterationStats stats = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       # Ensures that optimality conditions are not met.
       primal_objective: 50.0
       dual_objective: -50.0
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                            TestLpBoundNorms()),
             std::nullopt);
 }
 
@@ -397,9 +420,10 @@ TEST_F(SimpleTerminationTest, NoTerminationWithEmptyIterationStats) {
             std::nullopt);
 }
 
-TEST_P(TerminationTest, NoTerminationWithEmptyIterationStats) {
+TEST_P(IterateTerminationTest, NoTerminationWithEmptyIterationStats) {
   IterationStats stats;
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
+                                            TestLpBoundNorms()),
             std::nullopt);
 }
 
@@ -413,12 +437,11 @@ TEST_F(SimpleTerminationTest, TerminationWithInterruptSolve) {
                                  POINT_TYPE_NONE)));
 }
 
-TEST_P(TerminationTest, TerminationWithNumericalError) {
+TEST_P(IterateTerminationTest, TerminationWithNumericalError) {
   IterationStats stats;
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
-                               /*interrupt_solve=*/nullptr,
-                               /*force_numerical_termination=*/true);
+      CheckIterateTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
+                                      /*force_numerical_termination=*/true);
   EXPECT_THAT(
       maybe_result,
       Optional(FieldsAre(TERMINATION_REASON_NUMERICAL_ERROR, POINT_TYPE_NONE)));
@@ -453,17 +476,7 @@ TEST_F(SimpleTerminationTest, TerminationWithIterationLimit) {
       Optional(FieldsAre(TERMINATION_REASON_ITERATION_LIMIT, POINT_TYPE_NONE)));
 }
 
-TEST_P(TerminationTest, TerminationWithIterationLimit) {
-  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
-    iteration_number: 20)pb");
-  std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
-  EXPECT_THAT(
-      maybe_result,
-      Optional(FieldsAre(TERMINATION_REASON_ITERATION_LIMIT, POINT_TYPE_NONE)));
-}
-
-TEST_P(TerminationTest, PrimalInfeasibleFromIterateDifference) {
+TEST_P(IterateTerminationTest, PrimalInfeasibleFromIterateDifference) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     infeasibility_information: {
       dual_ray_objective: 1.0
@@ -471,46 +484,47 @@ TEST_P(TerminationTest, PrimalInfeasibleFromIterateDifference) {
       candidate_type: POINT_TYPE_ITERATE_DIFFERENCE
     })pb");
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
+      CheckIterateTerminationCriteria(test_criteria_, stats,
+                                      TestLpBoundNorms());
   EXPECT_THAT(maybe_result,
               Optional(FieldsAre(TERMINATION_REASON_PRIMAL_INFEASIBLE,
                                  POINT_TYPE_ITERATE_DIFFERENCE)));
 }
 
-TEST_P(TerminationTest, NoTerminationWithInfeasibleDualRay) {
+TEST_P(IterateTerminationTest, NoTerminationWithInfeasibleDualRay) {
   const auto stats_infeasible_ray = ParseTextOrDie<IterationStats>(R"pb(
     infeasibility_information: {
       dual_ray_objective: 1.0
       max_dual_ray_infeasibility: 1.0e-5  # Too large
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_infeasible_ray,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(
+                test_criteria_, stats_infeasible_ray, TestLpBoundNorms()),
             std::nullopt);
 }
 
-TEST_P(TerminationTest, NoTerminationWithNegativeDualRayObjective) {
+TEST_P(IterateTerminationTest, NoTerminationWithNegativeDualRayObjective) {
   const auto stats_wrong_sign = ParseTextOrDie<IterationStats>(R"pb(
     infeasibility_information: {
       dual_ray_objective: -1.0  # Wrong sign
       max_dual_ray_infeasibility: 0.0
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_wrong_sign,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats_wrong_sign,
+                                            TestLpBoundNorms()),
             std::nullopt);
 }
 
-TEST_P(TerminationTest, NoTerminationWithZeroDualRayObjective) {
+TEST_P(IterateTerminationTest, NoTerminationWithZeroDualRayObjective) {
   const auto stats_objective_zero = ParseTextOrDie<IterationStats>(R"pb(
     infeasibility_information: {
       dual_ray_objective: 0.0
       max_dual_ray_infeasibility: 0.0
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_objective_zero,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(
+                test_criteria_, stats_objective_zero, TestLpBoundNorms()),
             std::nullopt);
 }
 
-TEST_P(TerminationTest, DualInfeasibleFromAverageIterate) {
+TEST_P(IterateTerminationTest, DualInfeasibleFromAverageIterate) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     infeasibility_information: {
       primal_ray_linear_objective: -1.0
@@ -518,46 +532,47 @@ TEST_P(TerminationTest, DualInfeasibleFromAverageIterate) {
       candidate_type: POINT_TYPE_AVERAGE_ITERATE
     })pb");
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
+      CheckIterateTerminationCriteria(test_criteria_, stats,
+                                      TestLpBoundNorms());
   EXPECT_THAT(maybe_result,
               Optional(FieldsAre(TERMINATION_REASON_DUAL_INFEASIBLE,
                                  POINT_TYPE_AVERAGE_ITERATE)));
 }
 
-TEST_P(TerminationTest, NoTerminationWithInfeasiblePrimalRay) {
+TEST_P(IterateTerminationTest, NoTerminationWithInfeasiblePrimalRay) {
   const auto stats_infeasible_ray = ParseTextOrDie<IterationStats>(R"pb(
     infeasibility_information: {
       primal_ray_linear_objective: -1.0
       max_primal_ray_infeasibility: 1.0e-5  # Too large
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_infeasible_ray,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(
+                test_criteria_, stats_infeasible_ray, TestLpBoundNorms()),
             std::nullopt);
 }
 
-TEST_P(TerminationTest, NoTerminationWithPositivePrimalRayObjective) {
+TEST_P(IterateTerminationTest, NoTerminationWithPositivePrimalRayObjective) {
   const auto stats_wrong_sign = ParseTextOrDie<IterationStats>(R"pb(
     infeasibility_information: {
       primal_ray_linear_objective: 1.0  # Wrong sign
       max_primal_ray_infeasibility: 0.0
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_wrong_sign,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats_wrong_sign,
+                                            TestLpBoundNorms()),
             std::nullopt);
 }
 
-TEST_P(TerminationTest, NoTerminationWithZeroPrimalRayObjective) {
+TEST_P(IterateTerminationTest, NoTerminationWithZeroPrimalRayObjective) {
   const auto stats_objective_zero = ParseTextOrDie<IterationStats>(R"pb(
     infeasibility_information: {
       primal_ray_linear_objective: 0.0
       max_primal_ray_infeasibility: 0.0
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_objective_zero,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(
+                test_criteria_, stats_objective_zero, TestLpBoundNorms()),
             std::nullopt);
 }
 
-TEST_P(TerminationTest, TerminationWithOptimal) {
+TEST_P(IterateTerminationTest, TerminationWithOptimal) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 1.0
@@ -566,34 +581,41 @@ TEST_P(TerminationTest, TerminationWithOptimal) {
       l_inf_dual_residual: 0.0
       l2_primal_residual: 0.0
       l2_dual_residual: 0.0
+      l_inf_componentwise_primal_residual: 0.0
+      l_inf_componentwise_dual_residual: 0.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
 
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
+      CheckIterateTerminationCriteria(test_criteria_, stats,
+                                      TestLpBoundNorms());
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
 }
 
-TEST_P(TerminationTest, TerminationWithNearOptimal) {
+TEST_P(IterateTerminationTest, TerminationWithNearOptimal) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 1.00019
       dual_objective: 1.0
-      l_inf_primal_residual: 11e-4
+      l_inf_primal_residual: 11.0e-4
       l_inf_dual_residual: 5.4e-4
-      l2_primal_residual: 14e-4
-      l2_dual_residual: 6e-4
+      l2_primal_residual: 14.0e-4
+      l2_dual_residual: 6.0e-4
+      l_inf_componentwise_primal_residual: 9.0e-5
+      l_inf_componentwise_dual_residual: 9.0e-5
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
 
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
+      CheckIterateTerminationCriteria(test_criteria_, stats,
+                                      TestLpBoundNorms());
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
 }
 
-TEST_P(TerminationTest, TerminationWithNonOptimalInfiniteAbsoluteTolerances) {
+TEST_P(IterateTerminationTest,
+       TerminationWithNonOptimalInfiniteAbsoluteTolerances) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 1.0
@@ -602,6 +624,8 @@ TEST_P(TerminationTest, TerminationWithNonOptimalInfiniteAbsoluteTolerances) {
       l_inf_dual_residual: 1.0
       l2_primal_residual: 1.0
       l2_dual_residual: 1.0
+      l_inf_componentwise_primal_residual: 1.0
+      l_inf_componentwise_dual_residual: 1.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   test_criteria_.mutable_simple_optimality_criteria()->set_eps_optimal_absolute(
@@ -609,12 +633,14 @@ TEST_P(TerminationTest, TerminationWithNonOptimalInfiniteAbsoluteTolerances) {
   test_criteria_.mutable_simple_optimality_criteria()->set_eps_optimal_relative(
       0);
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, ZeroLpBoundNorms());
+      CheckIterateTerminationCriteria(test_criteria_, stats,
+                                      ZeroLpBoundNorms());
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
 }
 
-TEST_P(TerminationTest, TerminationWithNonOptimalInfiniteRelativeTolerances) {
+TEST_P(IterateTerminationTest,
+       TerminationWithNonOptimalInfiniteRelativeTolerances) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 0.0
@@ -623,6 +649,8 @@ TEST_P(TerminationTest, TerminationWithNonOptimalInfiniteRelativeTolerances) {
       l_inf_dual_residual: 1.0
       l2_primal_residual: 1.0
       l2_dual_residual: 1.0
+      l_inf_componentwise_primal_residual: 1.0
+      l_inf_componentwise_dual_residual: 1.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   test_criteria_.mutable_simple_optimality_criteria()->set_eps_optimal_absolute(
@@ -630,12 +658,13 @@ TEST_P(TerminationTest, TerminationWithNonOptimalInfiniteRelativeTolerances) {
   test_criteria_.mutable_simple_optimality_criteria()->set_eps_optimal_relative(
       std::numeric_limits<double>::infinity());
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, ZeroLpBoundNorms());
+      CheckIterateTerminationCriteria(test_criteria_, stats,
+                                      ZeroLpBoundNorms());
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
 }
 
-TEST_P(TerminationTest,
+TEST_P(IterateTerminationTest,
        TerminationWithNonOptimalInfiniteAbsoluteAndRelativeTolerances) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
@@ -645,6 +674,8 @@ TEST_P(TerminationTest,
       l_inf_dual_residual: 1.0
       l2_primal_residual: 1.0
       l2_dual_residual: 1.0
+      l_inf_componentwise_primal_residual: 1.0
+      l_inf_componentwise_dual_residual: 1.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   test_criteria_.mutable_simple_optimality_criteria()->set_eps_optimal_absolute(
@@ -652,12 +683,13 @@ TEST_P(TerminationTest,
   test_criteria_.mutable_simple_optimality_criteria()->set_eps_optimal_relative(
       std::numeric_limits<double>::infinity());
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, ZeroLpBoundNorms());
+      CheckIterateTerminationCriteria(test_criteria_, stats,
+                                      ZeroLpBoundNorms());
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
 }
 
-TEST_P(TerminationTest, OptimalEvenWithNumericalError) {
+TEST_P(IterateTerminationTest, OptimalEvenWithNumericalError) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 1.0
@@ -666,39 +698,20 @@ TEST_P(TerminationTest, OptimalEvenWithNumericalError) {
       l_inf_dual_residual: 0.0
       l2_primal_residual: 0.0
       l2_dual_residual: 0.0
+      l_inf_componentwise_primal_residual: 0.0
+      l_inf_componentwise_dual_residual: 0.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
   // Tests that OPTIMAL overrides NUMERICAL_ERROR when
   // force_numerical_termination == true.
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
-                               /*interrupt_solve=*/nullptr,
-                               /*force_numerical_termination=*/true);
+      CheckIterateTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
+                                      /*force_numerical_termination=*/true);
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
 }
 
-TEST_P(TerminationTest, OptimalEvenWithInterrupt) {
-  const auto stats = ParseTextOrDie<IterationStats>(R"pb(
-    convergence_information {
-      primal_objective: 1.0
-      dual_objective: 1.0
-      l_inf_primal_residual: 0.0
-      l_inf_dual_residual: 0.0
-      l2_primal_residual: 0.0
-      l2_dual_residual: 0.0
-      candidate_type: POINT_TYPE_CURRENT_ITERATE
-    })pb");
-  std::atomic<bool> interrupt_solve = true;
-  // Tests that OPTIMAL overrides interrupt_solve.
-  std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
-                               &interrupt_solve);
-  EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
-                                               POINT_TYPE_CURRENT_ITERATE)));
-}
-
-TEST_P(TerminationTest, NoTerminationWithBadGap) {
+TEST_P(IterateTerminationTest, NoTerminationWithBadGap) {
   const auto stats_bad_gap = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 10.0
@@ -707,13 +720,15 @@ TEST_P(TerminationTest, NoTerminationWithBadGap) {
       l_inf_dual_residual: 0.0
       l2_primal_residual: 0.0
       l2_dual_residual: 0.0
+      l_inf_componentwise_primal_residual: 0.0
+      l_inf_componentwise_dual_residual: 0.0
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_bad_gap,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats_bad_gap,
+                                            TestLpBoundNorms()),
             std::nullopt);
 }
 
-TEST_P(TerminationTest, NoTerminationWithInfiniteGap) {
+TEST_P(IterateTerminationTest, NoTerminationWithInfiniteGap) {
   const auto stats_infinite_gap = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 0
@@ -722,13 +737,15 @@ TEST_P(TerminationTest, NoTerminationWithInfiniteGap) {
       l_inf_dual_residual: 0.0
       l2_primal_residual: 0.0
       l2_dual_residual: 0.0
+      l_inf_componentwise_primal_residual: 0.0
+      l_inf_componentwise_dual_residual: 0.0
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_infinite_gap,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats_infinite_gap,
+                                            TestLpBoundNorms()),
             std::nullopt);
 }
 
-TEST_P(TerminationTest, NoTerminationWithBadPrimalResidual) {
+TEST_P(IterateTerminationTest, NoTerminationWithBadPrimalResidual) {
   const auto stats_bad_primal = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 1.0
@@ -737,13 +754,15 @@ TEST_P(TerminationTest, NoTerminationWithBadPrimalResidual) {
       l_inf_dual_residual: 0.0
       l2_primal_residual: 1.0
       l2_dual_residual: 0.0
+      l_inf_componentwise_primal_residual: 1.0
+      l_inf_componentwise_dual_residual: 0.0
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_bad_primal,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats_bad_primal,
+                                            TestLpBoundNorms()),
             std::nullopt);
 }
 
-TEST_P(TerminationTest, NoTerminationWithBadDualResidual) {
+TEST_P(IterateTerminationTest, NoTerminationWithBadDualResidual) {
   const auto stats_bad_dual = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 1.0
@@ -752,15 +771,17 @@ TEST_P(TerminationTest, NoTerminationWithBadDualResidual) {
       l_inf_dual_residual: 1.0
       l2_primal_residual: 0.0
       l2_dual_residual: 1.0
+      l_inf_componentwise_primal_residual: 0.0
+      l_inf_componentwise_dual_residual: 1.0
     })pb");
-  EXPECT_EQ(CheckTerminationCriteria(test_criteria_, stats_bad_dual,
-                                     TestLpBoundNorms()),
+  EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats_bad_dual,
+                                            TestLpBoundNorms()),
             std::nullopt);
 }
 
 // Tests that optimality is checked with non-strict inequalities, as per the
 // definitions in solvers.proto.
-TEST_P(TerminationTest, ZeroToleranceZeroError) {
+TEST_P(IterateTerminationTest, ZeroToleranceZeroError) {
   const auto stats = ParseTextOrDie<IterationStats>(R"pb(
     convergence_information {
       primal_objective: 1.0
@@ -769,6 +790,8 @@ TEST_P(TerminationTest, ZeroToleranceZeroError) {
       l_inf_dual_residual: 0.0
       l2_primal_residual: 0.0
       l2_dual_residual: 0.0
+      l_inf_componentwise_primal_residual: 0.0
+      l_inf_componentwise_dual_residual: 0.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
 
@@ -778,60 +801,87 @@ TEST_P(TerminationTest, ZeroToleranceZeroError) {
       0.0);
 
   std::optional<TerminationReasonAndPointType> maybe_result =
-      CheckTerminationCriteria(test_criteria_, stats, TestLpBoundNorms());
+      CheckIterateTerminationCriteria(test_criteria_, stats,
+                                      TestLpBoundNorms());
   EXPECT_THAT(maybe_result, Optional(FieldsAre(TERMINATION_REASON_OPTIMAL,
                                                POINT_TYPE_CURRENT_ITERATE)));
 }
 
-INSTANTIATE_TEST_SUITE_P(OptNorm, TerminationTest,
-                         testing::Values(OPTIMALITY_NORM_L2,
-                                         OPTIMALITY_NORM_L_INF));
+INSTANTIATE_TEST_SUITE_P(OptNorm, IterateTerminationTest,
+                         testing::Values(OPTIMALITY_NORM_L_INF,
+                                         OPTIMALITY_NORM_L2,
+                                         OPTIMALITY_NORM_L_INF_COMPONENTWISE));
 
 INSTANTIATE_TEST_SUITE_P(DetailedRelativeOptNorm,
                          DetailedRelativeTerminationTest,
-                         testing::Values(OPTIMALITY_NORM_L2,
-                                         OPTIMALITY_NORM_L_INF));
+                         testing::Values(OPTIMALITY_NORM_L_INF,
+                                         OPTIMALITY_NORM_L2,
+                                         OPTIMALITY_NORM_L_INF_COMPONENTWISE));
 INSTANTIATE_TEST_SUITE_P(DetailedAbsoluteOptNorm,
                          DetailedAbsoluteTerminationTest,
-                         testing::Values(OPTIMALITY_NORM_L2,
-                                         OPTIMALITY_NORM_L_INF));
+                         testing::Values(OPTIMALITY_NORM_L_INF,
+                                         OPTIMALITY_NORM_L2,
+                                         OPTIMALITY_NORM_L_INF_COMPONENTWISE));
 
-TEST(TerminationTest, L2AndLInfDiffer) {
+TEST(IterateTerminationTest, OptimalityNormsDiffer) {
   auto test_criteria = ParseTextOrDie<TerminationCriteria>(R"pb(
     simple_optimality_criteria { eps_optimal_relative: 1.0 })pb");
 
   // For L2, optimality requires norm(primal_residual, 2) <= 14.49
-  // For LInf, optimality requires norm(primal_residual, Inf) <= 12.0
+  // For L_inf, optimality requires norm(primal_residual, Inf) <= 12.0
+  // For L_inf_componentwise, optimality requires norm(primal_residual) <= 1.0
 
   struct {
     double primal_residual;
     std::optional<TerminationReasonAndPointType> expected_l2;
     std::optional<TerminationReasonAndPointType> expected_l_inf;
+    std::optional<TerminationReasonAndPointType> expected_l_inf_relative;
   } test_configs[] = {
-      {10.0,
+      {0.5,
+       TerminationReasonAndPointType{.reason = TERMINATION_REASON_OPTIMAL,
+                                     .type = POINT_TYPE_CURRENT_ITERATE},
        TerminationReasonAndPointType{.reason = TERMINATION_REASON_OPTIMAL,
                                      .type = POINT_TYPE_CURRENT_ITERATE},
        TerminationReasonAndPointType{.reason = TERMINATION_REASON_OPTIMAL,
                                      .type = POINT_TYPE_CURRENT_ITERATE}},
-      {13.0,
+      {10.0,
+       TerminationReasonAndPointType{.reason = TERMINATION_REASON_OPTIMAL,
+                                     .type = POINT_TYPE_CURRENT_ITERATE},
        TerminationReasonAndPointType{.reason = TERMINATION_REASON_OPTIMAL,
                                      .type = POINT_TYPE_CURRENT_ITERATE},
        std::nullopt},
-      {15.0, std::nullopt, std::nullopt}};
+      {13.0,
+       TerminationReasonAndPointType{.reason = TERMINATION_REASON_OPTIMAL,
+                                     .type = POINT_TYPE_CURRENT_ITERATE},
+       std::nullopt, std::nullopt},
+      {15.0, std::nullopt, std::nullopt, std::nullopt}};
 
   for (const auto& config : test_configs) {
     IterationStats stats;
     auto* convergence_info = stats.add_convergence_information();
     convergence_info->set_primal_objective(1.0);
     convergence_info->set_dual_objective(1.0);
-    convergence_info->set_l2_primal_residual(config.primal_residual);
     convergence_info->set_l_inf_primal_residual(config.primal_residual);
+    convergence_info->set_l2_primal_residual(config.primal_residual);
+    convergence_info->set_l_inf_componentwise_primal_residual(
+        config.primal_residual);
     convergence_info->set_candidate_type(POINT_TYPE_CURRENT_ITERATE);
+
+    test_criteria.set_optimality_norm(OPTIMALITY_NORM_L_INF);
+    std::optional<TerminationReasonAndPointType> maybe_result =
+        CheckIterateTerminationCriteria(test_criteria, stats,
+                                        TestLpBoundNorms());
+    ASSERT_TRUE(maybe_result.has_value() == config.expected_l_inf.has_value())
+        << "primal_residual: " << config.primal_residual;
+    if (config.expected_l_inf.has_value()) {
+      EXPECT_EQ(maybe_result->reason, config.expected_l_inf->reason);
+      EXPECT_EQ(maybe_result->type, config.expected_l_inf->type);
+    }
 
     test_criteria.set_optimality_norm(OPTIMALITY_NORM_L2);
 
-    std::optional<TerminationReasonAndPointType> maybe_result =
-        CheckTerminationCriteria(test_criteria, stats, TestLpBoundNorms());
+    maybe_result = CheckIterateTerminationCriteria(test_criteria, stats,
+                                                   TestLpBoundNorms());
     ASSERT_TRUE(maybe_result.has_value() == config.expected_l2.has_value())
         << "primal_residual: " << config.primal_residual;
     if (config.expected_l2.has_value()) {
@@ -839,14 +889,15 @@ TEST(TerminationTest, L2AndLInfDiffer) {
       EXPECT_EQ(maybe_result->type, config.expected_l2->type);
     }
 
-    test_criteria.set_optimality_norm(OPTIMALITY_NORM_L_INF);
-    maybe_result =
-        CheckTerminationCriteria(test_criteria, stats, TestLpBoundNorms());
-    ASSERT_TRUE(maybe_result.has_value() == config.expected_l_inf.has_value())
+    test_criteria.set_optimality_norm(OPTIMALITY_NORM_L_INF_COMPONENTWISE);
+    maybe_result = CheckIterateTerminationCriteria(test_criteria, stats,
+                                                   TestLpBoundNorms());
+    ASSERT_TRUE(maybe_result.has_value() ==
+                config.expected_l_inf_relative.has_value())
         << "primal_residual: " << config.primal_residual;
-    if (config.expected_l_inf.has_value()) {
-      EXPECT_EQ(maybe_result->reason, config.expected_l_inf->reason);
-      EXPECT_EQ(maybe_result->type, config.expected_l_inf->type);
+    if (config.expected_l_inf_relative.has_value()) {
+      EXPECT_EQ(maybe_result->reason, config.expected_l_inf_relative->reason);
+      EXPECT_EQ(maybe_result->type, config.expected_l_inf_relative->type);
     }
   }
 }
@@ -865,12 +916,26 @@ TEST(BoundNormsFromProblemStats, ExtractsBoundNorms) {
   EXPECT_EQ(norms.l_inf_norm_constraint_bounds, 2.0);
 }
 
+TEST(EpsilonRatio, SimpleChecks) {
+  EXPECT_EQ(EpsilonRatio(0.0, 0.0), 1.0);
+  EXPECT_EQ(EpsilonRatio(1.0, 1.0), 1.0);
+  EXPECT_EQ(EpsilonRatio(std::numeric_limits<double>::infinity(),
+                         std::numeric_limits<double>::infinity()),
+            1.0);
+  EXPECT_EQ(EpsilonRatio(1.0, 2.0), 0.5);
+  EXPECT_EQ(EpsilonRatio(2.0, 1.0), 2.0);
+  EXPECT_EQ(EpsilonRatio(0.0, std::numeric_limits<double>::infinity()), 0.0);
+  EXPECT_EQ(EpsilonRatio(std::numeric_limits<double>::infinity(), 0.0),
+            std::numeric_limits<double>::infinity());
+}
+
 TEST(ComputeRelativeResiduals,
      ComputesRelativeResidualsForZeroAbsoluteTolerance) {
   ConvergenceInformation stats;
-  // If the absolute error tolerance is 0.0, the relative residuals are just the
-  // absolute residuals divided by the corresponding norms (the actual nonzero
-  // value of the relative error tolerance doesn't matter).
+  // If the absolute error tolerance is 0.0 and the relative error tolerance is
+  // nonzero, the relative residuals are just the absolute residuals divided by
+  // the corresponding norms (the actual nonzero value of the relative error
+  // tolerance doesn't matter).
   stats.set_primal_objective(10.0);
   stats.set_dual_objective(5.0);
   stats.set_l_inf_primal_residual(1.0);
@@ -901,9 +966,9 @@ TEST(ComputeRelativeResiduals,
 TEST(ComputeRelativeResiduals,
      ComputesRelativeResidualsForZeroRelativeTolerance) {
   ConvergenceInformation stats;
-  // If the relative error tolerance is 0.0, all of the relative residuals and
-  // the relative optimality gap should be 0.0, no matter what the absolute
-  // error tolerance is.
+  // If the relative error tolerance is 0.0 and the absolute error tolerance
+  // is nonzero, all of the relative residuals and the relative optimality gap
+  // should be 0.0, no matter what the absolute error tolerance is.
   stats.set_primal_objective(10.0);
   stats.set_dual_objective(5.0);
   stats.set_l_inf_primal_residual(1.0);
@@ -911,7 +976,7 @@ TEST(ComputeRelativeResiduals,
   stats.set_l_inf_dual_residual(1.0);
   stats.set_l2_dual_residual(1.0);
   TerminationCriteria::SimpleOptimalityCriteria opt_criteria;
-  opt_criteria.set_eps_optimal_absolute(0.0);
+  opt_criteria.set_eps_optimal_absolute(1.0e-6);
   opt_criteria.set_eps_optimal_relative(0.0);
   const RelativeConvergenceInformation relative_info = ComputeRelativeResiduals(
       EffectiveOptimalityCriteria(opt_criteria), stats, TestLpBoundNorms());
@@ -938,6 +1003,36 @@ TEST(ComputeRelativeResiduals,
   TerminationCriteria::SimpleOptimalityCriteria opt_criteria;
   opt_criteria.set_eps_optimal_absolute(1.0e-6);
   opt_criteria.set_eps_optimal_relative(1.0e-6);
+  const RelativeConvergenceInformation relative_info = ComputeRelativeResiduals(
+      EffectiveOptimalityCriteria(opt_criteria), stats, TestLpBoundNorms());
+
+  EXPECT_EQ(relative_info.relative_l_inf_primal_residual, 1.0 / (1.0 + 12.0));
+  EXPECT_EQ(relative_info.relative_l2_primal_residual,
+            1.0 / (1.0 + std::sqrt(210.0)));
+
+  EXPECT_EQ(relative_info.relative_l_inf_dual_residual, 1.0 / (1.0 + 5.5));
+  EXPECT_EQ(relative_info.relative_l2_dual_residual, 1.0 / (1.0 + sqrt(36.25)));
+
+  // The relative optimality gap should just be the objective difference divided
+  // by 1.0 + the sum of absolute values.
+  EXPECT_EQ(relative_info.relative_optimality_gap, 5.0 / (1.0 + 15.0));
+}
+
+TEST(ComputeRelativeResiduals,
+     ComputesCorrectRelativeResidualsForBothTolerancesZero) {
+  ConvergenceInformation stats;
+  // If the absolute error tolerance and relative error tolerance are both zero,
+  // the relative residuals are the same as when the tolerances are equal and
+  // nonzero.
+  stats.set_primal_objective(10.0);
+  stats.set_dual_objective(5.0);
+  stats.set_l_inf_primal_residual(1.0);
+  stats.set_l2_primal_residual(1.0);
+  stats.set_l_inf_dual_residual(1.0);
+  stats.set_l2_dual_residual(1.0);
+  TerminationCriteria::SimpleOptimalityCriteria opt_criteria;
+  opt_criteria.set_eps_optimal_absolute(0.0);
+  opt_criteria.set_eps_optimal_relative(0.0);
   const RelativeConvergenceInformation relative_info = ComputeRelativeResiduals(
       EffectiveOptimalityCriteria(opt_criteria), stats, TestLpBoundNorms());
 

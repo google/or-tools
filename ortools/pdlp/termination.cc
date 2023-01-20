@@ -49,6 +49,10 @@ bool OptimalityCriteriaMet(
   double primal_err_baseline;
   double dual_err;
   double dual_err_baseline;
+  double primal_absolute_epsilon =
+      optimality_criteria.eps_optimal_primal_residual_absolute();
+  double dual_absolute_epsilon =
+      optimality_criteria.eps_optimal_dual_residual_absolute();
 
   switch (optimality_norm) {
     case OPTIMALITY_NORM_L_INF:
@@ -63,6 +67,14 @@ bool OptimalityCriteriaMet(
       dual_err = stats.l2_dual_residual();
       dual_err_baseline = bound_norms.l2_norm_primal_linear_objective;
       break;
+    case OPTIMALITY_NORM_L_INF_COMPONENTWISE:
+      primal_err = stats.l_inf_componentwise_primal_residual();
+      primal_err_baseline = 1.0;
+      primal_absolute_epsilon = 0.0;
+      dual_err = stats.l_inf_componentwise_dual_residual();
+      dual_err_baseline = 1.0;
+      dual_absolute_epsilon = 0.0;
+      break;
     default:
       LOG(FATAL) << "Invalid optimality_norm value "
                  << OptimalityNorm_Name(optimality_norm);
@@ -72,13 +84,13 @@ bool OptimalityCriteriaMet(
       std::isinf(optimality_criteria.eps_optimal_primal_residual_absolute()) ||
       std::isinf(optimality_criteria.eps_optimal_primal_residual_relative()) ||
       primal_err <=
-          optimality_criteria.eps_optimal_primal_residual_absolute() +
+          primal_absolute_epsilon +
               optimality_criteria.eps_optimal_primal_residual_relative() *
                   primal_err_baseline;
   const bool dual_err_ok =
       std::isinf(optimality_criteria.eps_optimal_dual_residual_absolute()) ||
       std::isinf(optimality_criteria.eps_optimal_dual_residual_relative()) ||
-      dual_err <= optimality_criteria.eps_optimal_dual_residual_absolute() +
+      dual_err <= dual_absolute_epsilon +
                       optimality_criteria.eps_optimal_dual_residual_relative() *
                           dual_err_baseline;
   return primal_err_ok && dual_err_ok &&
@@ -172,10 +184,9 @@ std::optional<TerminationReasonAndPointType> CheckSimpleTerminationCriteria(
   return std::nullopt;
 }
 
-std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
+std::optional<TerminationReasonAndPointType> CheckIterateTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
     const QuadraticProgramBoundNorms& bound_norms,
-    const std::atomic<bool>* interrupt_solve,
     const bool force_numerical_termination) {
   TerminationCriteria::DetailedOptimalityCriteria optimality_criteria =
       EffectiveOptimalityCriteria(criteria);
@@ -201,11 +212,6 @@ std::optional<TerminationReasonAndPointType> CheckTerminationCriteria(
           .type = infeasibility_stats.candidate_type()};
     }
   }
-  if (const auto termination =
-          CheckSimpleTerminationCriteria(criteria, stats, interrupt_solve);
-      termination.has_value()) {
-    return termination;
-  }
   if (force_numerical_termination) {
     return TerminationReasonAndPointType{
         .reason = TERMINATION_REASON_NUMERICAL_ERROR, .type = POINT_TYPE_NONE};
@@ -222,26 +228,28 @@ QuadraticProgramBoundNorms BoundNormsFromProblemStats(
       .l_inf_norm_constraint_bounds = stats.combined_bounds_max()};
 }
 
+double EpsilonRatio(const double epsilon_absolute,
+                    const double epsilon_relative) {
+  // Handling epsilon_absolute == epsilon_relative avoids NANs when both values
+  // are zero or infinite.
+  return (epsilon_absolute == epsilon_relative)
+             ? 1.0
+             : epsilon_absolute / epsilon_relative;
+}
+
 RelativeConvergenceInformation ComputeRelativeResiduals(
     const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
     const ConvergenceInformation& stats,
     const QuadraticProgramBoundNorms& bound_norms) {
-  auto eps_ratio = [](const double absolute, const double relative) {
-    // The both-infinite case avoids a NAN.
-    return (std::isinf(absolute) && std::isinf(relative))
-               ? 1.0
-               : (relative == 0.0 ? std::numeric_limits<double>::infinity()
-                                  : absolute / relative);
-  };
   const double eps_ratio_primal =
-      eps_ratio(optimality_criteria.eps_optimal_primal_residual_absolute(),
-                optimality_criteria.eps_optimal_primal_residual_relative());
+      EpsilonRatio(optimality_criteria.eps_optimal_primal_residual_absolute(),
+                   optimality_criteria.eps_optimal_primal_residual_relative());
   const double eps_ratio_dual =
-      eps_ratio(optimality_criteria.eps_optimal_dual_residual_absolute(),
-                optimality_criteria.eps_optimal_dual_residual_relative());
+      EpsilonRatio(optimality_criteria.eps_optimal_dual_residual_absolute(),
+                   optimality_criteria.eps_optimal_dual_residual_relative());
   const double eps_ratio_gap =
-      eps_ratio(optimality_criteria.eps_optimal_objective_gap_absolute(),
-                optimality_criteria.eps_optimal_objective_gap_relative());
+      EpsilonRatio(optimality_criteria.eps_optimal_objective_gap_absolute(),
+                   optimality_criteria.eps_optimal_objective_gap_relative());
   RelativeConvergenceInformation info;
   info.relative_l_inf_primal_residual =
       stats.l_inf_primal_residual() /
