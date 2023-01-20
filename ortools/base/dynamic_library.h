@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_DYNAMIC_LIBRARY_H_
 #define OR_TOOLS_BASE_DYNAMIC_LIBRARY_H_
 
+#include <vector>
 #include <functional>
 #include <stdexcept>
 #include <string>
@@ -54,6 +55,9 @@ class DynamicLibrary {
   }
 
   bool LibraryIsLoaded() const { return library_handle_ != nullptr; }
+  const std::vector<std::string>& FunctionsNotFound() const {
+      return functions_not_found;
+  }
 
   template <typename T>
   std::function<T> GetFunction(const char* function_name) {
@@ -64,10 +68,8 @@ class DynamicLibrary {
 #else
         dlsym(library_handle_, function_name);
 #endif
-
-    CHECK(function_address != nullptr)
-        << "Error: could not find function " << std::string(function_name)
-        << " in " << library_name_;
+    if (!function_address)
+        functions_not_found.push_back(function_name);
 
     return TypeParser<T>::CreateFunction(function_address);
   }
@@ -91,6 +93,7 @@ class DynamicLibrary {
  private:
   void* library_handle_ = nullptr;
   std::string library_name_;
+  std::vector<std::string> functions_not_found;
 
   template <typename T>
   struct TypeParser {};

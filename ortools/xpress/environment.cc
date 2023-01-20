@@ -1578,7 +1578,7 @@ std::function<int(XPRSprob prob, int options, const char* flags,
                   const double solution[], double refined[], int* p_status)>
     XPRSrefinemipsol = nullptr;
 
-void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
+absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   // This was generated with the parse_header_xpress.py script.
   // See the comment at the top of the script.
 
@@ -2203,6 +2203,16 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSbasiscondition,
                                       "XPRSbasiscondition");
   xpress_dynamic_library->GetFunction(&XPRSrefinemipsol, "XPRSrefinemipsol");
+
+  auto notFound = xpress_dynamic_library->FunctionsNotFound();
+  if (notFound.empty())
+      return absl::OkStatus();
+  else {
+      absl::NotFoundError(absl::StrCat(
+          "Could not find the following functions. [",
+          absl::StrJoin(notFound, "', '"),
+          "]. Please make sure that your XPRESS install is up-to-date"));
+  }
 }
 
 void printXpressBanner(bool error) {
@@ -2280,8 +2290,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
     }
 
     if (xpress_library.LibraryIsLoaded()) {
-      LoadXpressFunctions(&xpress_library);
-      xpress_load_status = absl::OkStatus();
+      xpress_load_status =  LoadXpressFunctions(&xpress_library);
     } else {
       xpress_load_status = absl::NotFoundError(absl::StrCat(
           "Could not find the Xpress shared library. Looked in: [",
@@ -2299,7 +2308,7 @@ bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
   std::string xpresspath;
   absl::Status status = LoadXpressDynamicLibrary(xpresspath);
   if (!status.ok()) {
-    LOG(ERROR) << status << "\n";
+    LOG(WARNING) << status << "\n";
     return false;
   }
 
