@@ -1027,6 +1027,7 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input) {
   alt_cut_.Clear();
 
   base_ct_ = input;
+  if (base_ct_.rhs < 0) return false;
 
   // Now make each coeff positive.
   //

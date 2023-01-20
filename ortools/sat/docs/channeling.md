@@ -18,9 +18,9 @@ https://developers.google.com/optimization/
       * [Java code](#java-code-1)
       * [C# code](#c-code-3)
 
+<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
 
 <!--te-->
-
 
 A *channeling constraint* links variables inside a model. They're used when you
 want to express a complicated relationship between variables, such as "if this

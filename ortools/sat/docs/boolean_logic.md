@@ -27,9 +27,9 @@ https://developers.google.com/optimization/
    * [Product of two Boolean Variables](#product-of-two-boolean-variables)
       * [Python code](#python-code-3)
 
+<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
 
 <!--te-->
-
 
 ## Introduction
 

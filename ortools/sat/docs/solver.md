@@ -28,9 +28,9 @@ https://developers.google.com/optimization/
       * [Java code](#java-code-2)
       * [C# code](#c-code-5)
 
+<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
 
 <!--te-->
-
 
 ## Changing the parameters of the solver
 

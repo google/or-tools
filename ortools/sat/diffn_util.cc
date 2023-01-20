@@ -423,7 +423,7 @@ void GetOverlappingIntervalComponents(
   // If that becomes a performance bottleneck:
   // - One may want to sort the list outside of this function, and simply
   //   have this function DCHECK that it's sorted by start.
-  // - One may use std::stable_sort() with ComparatorByStart().
+  // - One may use stable_sort() with ComparatorByStart().
   std::sort(intervals->begin(), intervals->end(),
             IndexedInterval::ComparatorByStartThenEndThenIndex());
 

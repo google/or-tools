@@ -15,9 +15,9 @@ https://developers.google.com/optimization/cp/cp_solver
       * [Java code samples](#java-code-samples)
       * [C# code samples](#c-code-samples-1)
 
+<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
 
 <!--te-->
-
 
 ## Documentation structure
 
@@ -183,7 +183,6 @@ public final class SimpleSatProgram {
 
 The C\# code implements the same interface as the Python code, with a
 **CpModel** and a **CpSolver** class.
-
 
 ```cs
 using System;

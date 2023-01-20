@@ -39,9 +39,9 @@ https://developers.google.com/optimization/
    * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
    * [Reservoir constraint](#reservoir-constraint)
 
+<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
 
 <!--te-->
-
 
 ## Introduction
 
