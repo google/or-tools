@@ -17,12 +17,11 @@
 #include <string>
 
 #if !defined(__PORTABLE_PLATFORM__)
-#include "google/protobuf/descriptor.h"
+#include "google/protobuf/generated_enum_reflection.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/util/parse_proto.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
 
-#include "absl/base/attributes.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 
@@ -67,7 +66,7 @@ bool ProtobufTextFormatMergeFromString(const std::string& proto_text_string,
                                        ProtoType* proto) {
 #if defined(__PORTABLE_PLATFORM__)
   return false;
-#else   // defined(__PORTABLE_PLATFORM__)
+#else   // !defined(__PORTABLE_PLATFORM__)
   return google::protobuf::TextFormat::MergeFromString(proto_text_string,
                                                        proto);
 #endif  // !defined(__PORTABLE_PLATFORM__)

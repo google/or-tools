@@ -1335,7 +1335,7 @@ bool ScaleAndSetObjective(const SatParameters& params,
 
   if (scaled_sum_error / scaling_factor > wanted_precision) {
     SOLVER_LOG(logger,
-               "[Scaling] Warning: the wort-case absolute error is greater "
+               "[Scaling] Warning: the worst-case absolute error is greater "
                "than the wanted precision (",
                wanted_precision,
                "). Try to increase mip_max_activity_exponent (default = ",

@@ -562,7 +562,6 @@ constexpr
         {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
         {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress"},
-
 };
 // static
 bool MPSolver::ParseSolverType(absl::string_view solver_id,
