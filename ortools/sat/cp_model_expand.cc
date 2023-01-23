@@ -1831,6 +1831,19 @@ bool IsExprEqOrNeqValue(PresolveContext* context,
   return false;
 }
 
+// This method will scan all constraints of all variables appearing in an
+// all_diff.
+// There are 3 outcomes:
+//    - expand to Boolean variables
+//    - keep integer all_different constraint (and cuts)
+//    - expand and keep.
+//
+// Expand is selected if the variable will be fully encoded (index of element,
+// table, automaton...).
+// Keep is forced is the variable appears in a linear equation with at least 3
+// terms, and with a tight domain ( == cst).
+// If unknown, we rely on the AllDiffShouldBeExpanded() method that checks the
+// size of the domain of the variables, and their numbers/
 void ScanModelAndDecideAllDiffExpansion(
     PresolveContext* context, absl::flat_hash_set<int>& expand_all_diff,
     absl::flat_hash_set<int>& keep_all_diff) {
@@ -1883,22 +1896,20 @@ void ScanModelAndDecideAllDiffExpansion(
             case ConstraintProto::ConstraintCase::kBoolXor:
               break;
             case ConstraintProto::ConstraintCase::kIntDiv:
-              bounds_are_used = true;
               break;
             case ConstraintProto::ConstraintCase::kIntMod:
-              bounds_are_used = true;
               break;
             case ConstraintProto::ConstraintCase::kLinMax:
               bounds_are_used = true;
               break;
             case ConstraintProto::ConstraintCase::kIntProd:
-              bounds_are_used = true;
               break;
             case ConstraintProto::ConstraintCase::kLinear:
               if (IsExprEqOrNeqValue(context, o.linear())) {
                 // Encoding literals.
                 domain_is_used = true;
-              } else if (o.linear().domain_size() == 2 &&
+              } else if (o.linear().vars_size() > 2 &&
+                         o.linear().domain_size() == 2 &&
                          o.linear().domain(0) == o.linear().domain(1)) {
                 // We assume all_diff cuts will only be useful if the linear
                 // constraint has a fixed domain.
@@ -1915,8 +1926,6 @@ void ScanModelAndDecideAllDiffExpansion(
               // Note: elements should have been expanded.
               if (o.element().index() == var) {
                 domain_is_used = true;
-              } else {
-                bounds_are_used = true;
               }
               break;
             case ConstraintProto::ConstraintCase::kCircuit:
@@ -1938,13 +1947,13 @@ void ScanModelAndDecideAllDiffExpansion(
               bounds_are_used = true;
               break;
             case ConstraintProto::ConstraintCase::kNoOverlap:
-              bounds_are_used = true;
+              // Will be covered by the interval case.
               break;
             case ConstraintProto::ConstraintCase::kNoOverlap2D:
-              bounds_are_used = true;
+              // Will be covered by the interval case.
               break;
             case ConstraintProto::ConstraintCase::kCumulative:
-              bounds_are_used = true;
+              // Will be covered by the interval case.
               break;
             case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
               break;

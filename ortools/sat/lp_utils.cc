@@ -1333,6 +1333,18 @@ bool ScaleAndSetObjective(const SatParameters& params,
   SOLVER_LOG(logger,
              "[Scaling] Objective scaling factor: ", scaling_factor / gcd);
 
+  if (scaled_sum_error / scaling_factor > wanted_precision) {
+    SOLVER_LOG(logger,
+               "[Scaling] Warning: the wort-case absolute error is greater "
+               "than the wanted precision (",
+               wanted_precision,
+               "). Try to increase mip_max_activity_exponent (default = ",
+               params.mip_max_activity_exponent(),
+               ") or reduced your variables range and/or objective "
+               "coefficient. We will continue the solve, but the final "
+               "objective value might be off.");
+  }
+
   // Note that here we set the scaling factor for the inverse operation of
   // getting the "true" objective value from the scaled one. Hence the
   // inverse.
