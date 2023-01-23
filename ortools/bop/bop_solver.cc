@@ -62,7 +62,6 @@ bool UpdateProblemStateBasedOnStatus(BopOptimizerBase::Status status,
 
   return false;
 }
-
 }  // anonymous namespace
 
 //------------------------------------------------------------------------------

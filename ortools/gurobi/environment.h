@@ -724,8 +724,6 @@ extern std::function<char *(void)> GRBplatform;
 #define GRB_BATCH_ABORTED 3
 #define GRB_BATCH_FAILED 4
 #define GRB_BATCH_COMPLETED 5
-
-
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GUROBI_ENVIRONMENT_H_

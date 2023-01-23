@@ -1215,7 +1215,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // Fill the search order.
   m.TranslateSearchAnnotations(fz_model.search_annotations(), logger);
 
-  if (p.display_all_solutions && !m.proto.has_objective()) {
+  if (p.display_all_solutions && !m.pb.has_objective()) {
     // Enumerate all sat solutions.
     m.parameters.set_enumerate_all_solutions(true);
   }
