@@ -1,21 +1,9 @@
-diff --git a/pybind11.BUILD b/pybind11.BUILD
-index 15590aa..989dfdf 100644
---- a/pybind11.BUILD
-+++ b/pybind11.BUILD
-@@ -21,6 +21,7 @@ OPTIONS = select({
- INCLUDES = [
-     "include/pybind11/*.h",
-     "include/pybind11/detail/*.h",
-+    "include/pybind11/eigen/*.h",
- ]
- 
- EXCLUDES = [
 diff --git a/build_defs.bzl b/build_defs.bzl
-index 1e55548..6763bc6 100644
+index cde1e93..e8dba55 100644
 --- a/build_defs.bzl
 +++ b/build_defs.bzl
 @@ -41,6 +41,10 @@ def pybind_extension(
-
+ 
      native.cc_binary(
          name = name + ".so",
 +        target_compatible_with = select({
@@ -25,7 +13,7 @@ index 1e55548..6763bc6 100644
          copts = copts + PYBIND_COPTS + select({
              "@pybind11//:msvc_compiler": [],
              "//conditions:default": [
-@@ -59,6 +75,33 @@ def pybind_extension(
+@@ -59,6 +63,33 @@ def pybind_extension(
          **kwargs
      )
  
@@ -59,6 +47,15 @@ index 1e55548..6763bc6 100644
  # Builds a pybind11 compatible library. This can be linked to a pybind_extension.
  def pybind_library(
          name,
---
-2.36.0.512.ge40c2bad7a-goog
-
+diff --git a/pybind11.BUILD b/pybind11.BUILD
+index 15590aa..989dfdf 100644
+--- a/pybind11.BUILD
++++ b/pybind11.BUILD
+@@ -21,6 +21,7 @@ OPTIONS = select({
+ INCLUDES = [
+     "include/pybind11/*.h",
+     "include/pybind11/detail/*.h",
++    "include/pybind11/eigen/*.h",
+ ]
+ 
+ EXCLUDES = [
