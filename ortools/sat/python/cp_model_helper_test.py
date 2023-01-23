@@ -13,11 +13,11 @@
 # limitations under the License.
 """Tests for ortools.sat.python.cp_model_helper."""
 
-import unittest
+from absl.testing import absltest
 from ortools.sat.python import cp_model_helper
 
 
-class CpModelHelperTest(unittest.TestCase):
+class CpModelHelperTest(absltest.TestCase):
 
     def testassert_is_int64(self):
         print('testassert_is_int64')
@@ -78,4 +78,4 @@ class CpModelHelperTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    absltest.main()

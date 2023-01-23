@@ -71,7 +71,7 @@ def assert_is_int32(x):
 def assert_is_boolean(x):
     """Asserts that x is 0 or 1."""
     if not is_integral(x) or x < 0 or x > 1:
-        raise TypeError('Not an boolean: %s' % x)
+        raise TypeError('Not a boolean: %s' % x)
 
 
 def assert_is_a_number(x):
