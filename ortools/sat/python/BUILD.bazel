@@ -43,6 +43,15 @@ py_library(
     ],
 )
 
+
+py_test(
+    name = "cp_model_helper_test",
+    srcs = ["cp_model_helper_test.py"],
+    deps = [
+        ":cp_model_helper",
+    ],
+)
+
 py_library(
     name = "cp_model",
     srcs = ["cp_model.py"],
