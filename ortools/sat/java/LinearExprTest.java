@@ -29,7 +29,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_add() {
+  public void testLinearExprAdd() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Domain domain = new Domain(0, 10);
@@ -45,7 +45,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_add_literal() {
+  public void testLinearExprAddLiteral() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar y = model.newBoolVar("y");
@@ -60,7 +60,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_add_negated_literal() {
+  public void testLinearExprAddNegatedLiteral() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar y = model.newBoolVar("y");
@@ -75,7 +75,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_term() {
+  public void testLinearExprTerm() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Domain domain = new Domain(0, 10);
@@ -91,7 +91,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_booleanTerm() {
+  public void testLinearExprBooleanTerm() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Literal y = model.newBoolVar("y");
@@ -106,7 +106,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_affine() {
+  public void testLinearExprAffine() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Domain domain = new Domain(0, 10);
@@ -122,7 +122,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_booleanAffine() {
+  public void testLinearExprBooleanAffine() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Literal y = model.newBoolVar("y");
@@ -137,7 +137,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_sum() {
+  public void testLinearExprSum() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Domain domain = new Domain(0, 10);
@@ -156,7 +156,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_weightedSum() {
+  public void testLinearExprWeightedSum() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Domain domain = new Domain(0, 10);
@@ -175,7 +175,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_booleanSum() {
+  public void testLinearExprBooleanSum() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Literal x = model.newBoolVar("x");
@@ -193,7 +193,7 @@ public final class LinearExprTest {
   }
 
   @Test
-  public void testLinearExpr_booleanWeightedSum() {
+  public void testLinearExprBooleanWeightedSum() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Literal x = model.newBoolVar("x");

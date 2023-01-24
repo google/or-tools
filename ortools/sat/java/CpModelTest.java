@@ -17,10 +17,13 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.util.Domain;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +35,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_newIntVar() throws Exception {
+  public void testCpModelNewIntVar() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newIntVar(0, 10, "x");
@@ -57,7 +60,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_newIntervalVar() throws Exception {
+  public void testCpModelNewIntervalVar() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
@@ -84,7 +87,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addBoolOr() throws Exception {
+  public void testCpModelAddBoolOr() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -98,7 +101,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addAtLeastOne() throws Exception {
+  public void testCpModelAddAtLeastOne() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -112,7 +115,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addAtMostOne() throws Exception {
+  public void testCpModelAddAtMostOne() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -126,7 +129,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addExactlyOne() throws Exception {
+  public void testCpModelAddExactlyOne() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -140,7 +143,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addBoolAnd() throws Exception {
+  public void testCpModelAddBoolAnd() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -154,7 +157,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addBoolXor() throws Exception {
+  public void testCpModelAddBoolXor() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -168,7 +171,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addImplication() throws Exception {
+  public void testCpModelAddImplication() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -181,7 +184,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addLinear() throws Exception {
+  public void testCpModelAddLinear() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -209,7 +212,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testLinearExpr_addEquality_literal() {
+  public void testLinearExprAddEqualityLiteral() {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final Literal x = model.newBoolVar("x");
@@ -219,7 +222,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addMinEquality() throws Exception {
+  public void testCpModelAddMinEquality() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -243,7 +246,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addMaxEquality() throws Exception {
+  public void testCpModelAddMaxEquality() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -267,7 +270,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addMinExprEquality() throws Exception {
+  public void testCpModelAddMinExprEquality() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newBoolVar("x");
@@ -292,7 +295,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addAbsEquality() throws Exception {
+  public void testCpModelAddAbsEquality() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newBoolVar("x");
@@ -318,7 +321,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addCircuit() throws Exception {
+  public void testCpModelAddCircuit() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
 
@@ -338,7 +341,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addMultipleCircuit() throws Exception {
+  public void testCpModelAddMultipleCircuit() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
 
@@ -358,7 +361,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addAutomaton() throws Exception {
+  public void testCpModelAddAutomaton() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
 
@@ -385,7 +388,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addNoOverlap() throws Exception {
+  public void testCpModelAddNoOverlap() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
@@ -407,7 +410,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addCumulative() throws Exception {
+  public void testCpModelAddCumulative() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
@@ -442,7 +445,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_addNoOverlap2D() throws Exception {
+  public void testCpModelAddNoOverlap2D() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
@@ -467,7 +470,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_modelStats() throws Exception {
+  public void testCpModelModelStats() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -479,7 +482,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_validateOk() throws Exception {
+  public void testCpModelValidateOk() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final BoolVar x = model.newBoolVar("x");
@@ -491,7 +494,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_validateNotOk() throws Exception {
+  public void testCpModelValidateNotOk() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newIntVar(0, 9223372036854775807L, "x");
@@ -504,7 +507,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_exceptionVisibility() throws Exception {
+  public void testCpModelExceptionVisibility() throws Exception {
     CpModel.MismatchedArrayLengths ex1 = new CpModel.MismatchedArrayLengths("test1", "ar1", "ar2");
     CpModel.WrongLength ex2 = new CpModel.WrongLength("test2", "ar");
     assertThat(ex1).hasMessageThat().isEqualTo("test1: ar1 and ar2 have mismatched lengths");
@@ -512,7 +515,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_clearConstraint() throws Exception {
+  public void testCpModelClearConstraint() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final IntVar x = model.newIntVar(0, 92, "x");
@@ -547,7 +550,7 @@ public final class CpModelTest {
   }
 
   @Test
-  public void testCpModel_minimize() throws Exception {
+  public void testCpModelMinimize() throws Exception {
     final CpModel model = new CpModel();
     assertNotNull(model);
 
@@ -590,5 +593,230 @@ public final class CpModelTest {
     model.maximize(DoubleLinearExpr.affine(x3, 1.4, 1.2));
     assertThat(model.getBuilder().getFloatingPointObjectiveBuilder().getVarsCount()).isEqualTo(1);
     assertThat(model.getBuilder().hasObjective()).isFalse();
+  }
+
+  @Test
+  public void testDomainGetter() {
+    System.out.println("testDomainGetter");
+    CpModel model = new CpModel();
+
+    // Create decision variables
+    IntVar x = model.newIntVar(0, 5, "x");
+
+    Domain d = x.getDomain();
+    long[] flat = d.flattenedIntervals();
+    if (flat.length != 2 || flat[0] != 0 || flat[1] != 5) {
+      throw new RuntimeException("Wrong domain");
+    }
+  }
+
+  @Test
+  public void testCrashInPresolve() {
+    System.out.println("testCrashInPresolve");
+    CpModel model = new CpModel();
+
+    // Create decision variables
+    IntVar x = model.newIntVar(0, 5, "x");
+    IntVar y = model.newIntVar(0, 5, "y");
+
+    // Create a linear constraint which enforces that only x or y can be greater
+    // than 0.
+    model.addLinearConstraint(LinearExpr.sum(new IntVar[] {x, y}), 0, 1);
+
+    // Create the objective variable
+    IntVar obj = model.newIntVar(0, 3, "obj");
+
+    // Cut the domain of the objective variable
+    model.addGreaterOrEqual(obj, 2);
+
+    // Set a constraint that makes the problem infeasible
+    model.addMaxEquality(obj, new IntVar[] {x, y});
+
+    // Optimize objective
+    model.minimize(obj);
+
+    // Create a solver and solve the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.solve(model);
+
+    if (status != CpSolverStatus.INFEASIBLE) {
+      throw new IllegalStateException("Wrong status in testCrashInPresolve");
+    }
+  }
+
+  @Test
+  public void testCrashInSolveWithAllowedAssignment() {
+    System.out.println("testCrashInSolveWithAllowedAssignment");
+    final CpModel model = new CpModel();
+    final int numEntityOne = 50000;
+    final int numEntityTwo = 100;
+    final IntVar[] entitiesOne = new IntVar[numEntityOne];
+    for (int i = 0; i < entitiesOne.length; i++) {
+      entitiesOne[i] = model.newIntVar(1, numEntityTwo, "E" + i);
+    }
+    final int[][] allAllowedValues = new int[numEntityTwo][entitiesOne.length];
+    for (int i = 0; i < numEntityTwo; i++) {
+      for (int j = 0; j < entitiesOne.length; j++) {
+        allAllowedValues[i][j] = i;
+      }
+    }
+    try {
+      TableConstraint table = model.addAllowedAssignments(entitiesOne);
+      final int[] oneTuple = new int[entitiesOne.length];
+      for (int i = 0; i < numEntityTwo; i++) {
+        for (int j = 0; j < entitiesOne.length; j++) {
+          oneTuple[j] = i;
+        }
+        table.addTuple(oneTuple);
+      }
+    } catch (final Exception e) {
+      e.printStackTrace();
+    }
+    final Random r = new Random();
+    for (int i = 0; i < entitiesOne.length; i++) {
+      model.addEquality(entitiesOne[i], r.nextInt((numEntityTwo)));
+    }
+    final CpSolver solver = new CpSolver();
+    CpSolverStatus unused = solver.solve(model);
+  }
+
+  @Test
+  public void testCrashEquality() {
+    System.out.println("testCrashInSolveWithAllowedAssignment");
+    final CpModel model = new CpModel();
+
+    final IntVar[] entities = new IntVar[20];
+    for (int i = 0; i < entities.length; i++) {
+      entities[i] = model.newIntVar(1, 5, "E" + i);
+    }
+
+    final int[] equalities = new int[] {18, 4, 19, 3, 12};
+    addEqualities(model, entities, equalities);
+
+    final int[] allowedAssignments = new int[] {12, 8, 15};
+    final int[] allowedAssignmentValues = new int[] {1, 3};
+    addAllowedAssignMents(model, entities, allowedAssignments, allowedAssignmentValues);
+
+    final int[] forbiddenAssignments1 = new int[] {6, 15, 19};
+    final int[] forbiddenAssignments1Values = new int[] {3};
+    final int[] forbiddenAssignments2 = new int[] {10, 19};
+    final int[] forbiddenAssignments2Values = new int[] {4};
+    final int[] forbiddenAssignments3 = new int[] {18, 0, 9, 7};
+    final int[] forbiddenAssignments3Values = new int[] {4};
+    final int[] forbiddenAssignments4 = new int[] {14, 11};
+    final int[] forbiddenAssignments4Values = new int[] {1, 2, 3, 4, 5};
+    final int[] forbiddenAssignments5 = new int[] {5, 16, 1, 3};
+    final int[] forbiddenAssignments5Values = new int[] {1, 2, 3, 4, 5};
+    final int[] forbiddenAssignments6 = new int[] {2, 6, 11, 4};
+    final int[] forbiddenAssignments6Values = new int[] {1, 2, 3, 4, 5};
+    final int[] forbiddenAssignments7 = new int[] {6, 18, 12, 2, 9, 14};
+    final int[] forbiddenAssignments7Values = new int[] {1, 2, 3, 4, 5};
+
+    addForbiddenAssignments(forbiddenAssignments1Values, forbiddenAssignments1, entities, model);
+    addForbiddenAssignments(forbiddenAssignments2Values, forbiddenAssignments2, entities, model);
+    addForbiddenAssignments(forbiddenAssignments3Values, forbiddenAssignments3, entities, model);
+    addForbiddenAssignments(forbiddenAssignments4Values, forbiddenAssignments4, entities, model);
+    addForbiddenAssignments(forbiddenAssignments5Values, forbiddenAssignments5, entities, model);
+    addForbiddenAssignments(forbiddenAssignments6Values, forbiddenAssignments6, entities, model);
+    addForbiddenAssignments(forbiddenAssignments7Values, forbiddenAssignments7, entities, model);
+
+    final int[] configuration =
+        new int[] {5, 4, 2, 3, 3, 3, 4, 3, 3, 1, 4, 4, 3, 1, 4, 1, 4, 4, 3, 3};
+    for (int i = 0; i < configuration.length; i++) {
+      model.addEquality(entities[i], configuration[i]);
+    }
+
+    final CpSolver solver = new CpSolver();
+    CpSolverStatus unused = solver.solve(model);
+  }
+
+  @Test
+  public void testLogCapture() {
+    System.out.println("testLogCapture");
+
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    int numVals = 3;
+
+    IntVar x = model.newIntVar(0, numVals - 1, "x");
+    IntVar y = model.newIntVar(0, numVals - 1, "y");
+    // Creates the constraints.
+    model.addDifferent(x, y);
+
+    // Creates a solver and solves the model.
+    final CpSolver solver = new CpSolver();
+    StringBuilder logBuilder = new StringBuilder();
+    Consumer<String> appendToLog = (String message) -> {
+      System.out.println("Current Thread Name:" + Thread.currentThread().getName()
+          + " Id:" + Thread.currentThread().getId() + " msg:" + message);
+      logBuilder.append(message).append('\n');
+    };
+    solver.setLogCallback(appendToLog);
+    solver.getParameters().setLogToStdout(false).setLogSearchProgress(true);
+    CpSolverStatus status = solver.solve(model);
+    if (status != CpSolverStatus.OPTIMAL) {
+      throw new IllegalStateException("Wrong status in testCrashInPresolve");
+    }
+
+    String log = logBuilder.toString();
+    if (log.isEmpty()) {
+      throw new IllegalStateException("Log should not be empty");
+    }
+  }
+
+  private void addEqualities(final CpModel model, final IntVar[] entities, final int[] equalities) {
+    for (int i = 0; i < (equalities.length - 1); i++) {
+      model.addEquality(entities[equalities[i]], entities[equalities[i + 1]]);
+    }
+  }
+
+  private void addAllowedAssignMents(final CpModel model, final IntVar[] entities,
+      final int[] allowedAssignments, final int[] allowedAssignmentValues) {
+    final int[][] allAllowedValues =
+        new int[allowedAssignmentValues.length][allowedAssignments.length];
+    for (int i = 0; i < allowedAssignmentValues.length; i++) {
+      final Integer value = allowedAssignmentValues[i];
+      for (int j = 0; j < allowedAssignments.length; j++) {
+        allAllowedValues[i][j] = value;
+      }
+    }
+    final IntVar[] specificEntities = new IntVar[allowedAssignments.length];
+    for (int i = 0; i < allowedAssignments.length; i++) {
+      specificEntities[i] = entities[allowedAssignments[i]];
+    }
+    try {
+      TableConstraint table = model.addAllowedAssignments(specificEntities);
+      for (int[] tuple : allAllowedValues) {
+        table.addTuple(tuple);
+      }
+    } catch (final Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void addForbiddenAssignments(final int[] forbiddenAssignmentsValues,
+      final int[] forbiddenAssignments, final IntVar[] entities, final CpModel model) {
+    final IntVar[] specificEntities = new IntVar[forbiddenAssignments.length];
+    for (int i = 0; i < forbiddenAssignments.length; i++) {
+      specificEntities[i] = entities[forbiddenAssignments[i]];
+    }
+
+    final int[][] notAllowedValues =
+        new int[forbiddenAssignmentsValues.length][forbiddenAssignments.length];
+    for (int i = 0; i < forbiddenAssignmentsValues.length; i++) {
+      final Integer value = forbiddenAssignmentsValues[i];
+      for (int j = 0; j < forbiddenAssignments.length; j++) {
+        notAllowedValues[i][j] = value;
+      }
+    }
+    try {
+      TableConstraint table = model.addForbiddenAssignments(specificEntities);
+      for (int[] tuple : notAllowedValues) {
+        table.addTuple(tuple);
+      }
+    } catch (final Exception e) {
+      e.printStackTrace();
+    }
   }
 }
