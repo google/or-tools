@@ -856,148 +856,124 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
         expanded_lp_solution_, flow_cover_cut_helper_.Info());
   }
 
-  // We will create "artificial" variables after this index that will be
-  // substituted back into LP variables afterwards. Also not that we only use
-  // positive variable indices for these new variables, so that algorithm that
-  // take their negation will not mess up the indexing.
-  const IntegerVariable first_new_var(expanded_lp_solution_.size());
-  CHECK_EQ(first_new_var.value() % 2, 0);
-
-  // TODO(user): for TrySimpleKnapsack() and IntegerRoundingCut() the implied
-  // bounds heuristic is not the same. Clean this up.
-  saved_cut_ = cut_;
-  for (int heuristic = 0; heuristic < 2; ++heuristic) {
-    if (heuristic > 0) cut_ = saved_cut_;
-
-    // Unlike for the knapsack cuts, it might not be always beneficial to
-    // process the implied bounds even though it seems to be better in average.
-    //
-    // TODO(user): Perform more experiments, in particular with which bound we
-    // use and if we complement or not before the MIR rounding. Other solvers
-    // seems to try different complementation strategies in a "postprocessing"
-    // and we don't. Try this too.
-    //
-    // TODO(user): substitute_only_inner_variables = true is really helpful on
-    // some instance like "mtest4ma.mps". We should probably have a dedicated
-    // heuristic depending on the type of cut we do below.
-    tmp_ib_slack_infos_.clear();
-    if (heuristic > 0) {
-      const bool substitute_only_inner_variables =
-          absl::Bernoulli(*random_, 0.5);
-      implied_bounds_processor_.ProcessUpperBoundedConstraintWithSlackCreation(
-          substitute_only_inner_variables, first_new_var, expanded_lp_solution_,
-          &cut_, &tmp_ib_slack_infos_);
-      DCHECK(implied_bounds_processor_.DebugSlack(first_new_var, saved_cut_,
-                                                  cut_, tmp_ib_slack_infos_));
-
-      // No need to recompute the same thing if we didn't do any substitution.
-      if (tmp_ib_slack_infos_.empty()) break;
-    }
-
-    // Fills data for computing the cut.
-    tmp_lp_values_.clear();
-    tmp_var_lbs_.clear();
-    tmp_var_ubs_.clear();
-    for (const IntegerVariable var : cut_.vars) {
-      if (var >= first_new_var) {
-        CHECK(VariableIsPositive(var));
-        const auto& info =
-            tmp_ib_slack_infos_[(var.value() - first_new_var.value()) / 2];
-        tmp_lp_values_.push_back(info.lp_value);
-        tmp_var_lbs_.push_back(info.lb);
-        tmp_var_ubs_.push_back(info.ub);
-      } else {
-        tmp_lp_values_.push_back(expanded_lp_solution_[var]);
-        tmp_var_lbs_.push_back(integer_trail_->LevelZeroLowerBound(var));
-        tmp_var_ubs_.push_back(integer_trail_->LevelZeroUpperBound(var));
-        CHECK_GT(tmp_var_ubs_.back(), tmp_var_lbs_.back());
-      }
-    }
-
-    // TODO(user): Keep track of the potential overflow here.
-    if (!base_ct_.FillFromParallelVectors(cut_, tmp_lp_values_, tmp_var_lbs_,
-                                          tmp_var_ubs_)) {
-      continue;
-    }
-
-    // Add slack.
-    const IntegerVariable first_slack(
-        first_new_var + IntegerVariable(2 * tmp_ib_slack_infos_.size()));
-    tmp_slack_rows_.clear();
-    for (const auto& pair : integer_multipliers) {
-      const RowIndex row = pair.first;
-      const IntegerValue coeff = pair.second;
-      const auto status = simplex_.GetConstraintStatus(row);
-      if (status == glop::ConstraintStatus::FIXED_VALUE) continue;
-
-      CutTerm entry;
-      entry.coeff = IntTypeAbs(coeff);
-      entry.lp_value = 0.0;
-      entry.bound_diff =
-          CapSub(integer_lp_[row].ub.value(), integer_lp_[row].lb.value());
-      entry.expr_size = 1;
-      entry.expr_vars[0] =
-          first_slack + 2 * IntegerVariable(tmp_slack_rows_.size());
-      if (coeff > 0) {
-        // Slack = ub - constraint;
-        entry.expr_coeffs[0] = IntegerValue(-1);
-        entry.expr_offset = integer_lp_[row].ub;
-      } else {
-        // Slack = constraint - lb;
-        entry.expr_coeffs[0] = IntegerValue(1);
-        entry.expr_offset = -integer_lp_[row].lb;
-      }
-
-      base_ct_.terms.push_back(entry);
-      tmp_slack_rows_.push_back(row);
-    }
-
-    // Try cover approach to find cut.
-    // We always use IB substitution with positive coeff here.
-    if (cover_cut_helper_.TrySimpleKnapsack(base_ct_)) {
-      at_least_one_added |= PostprocessAndAddCut(
-          absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_new_var,
-          first_slack, tmp_ib_slack_infos_, cover_cut_helper_.mutable_cut());
-      at_least_one_added |= PostprocessAndAddCut(
-          absl::StrCat(name, "_K2"), "", first_new_var, first_slack,
-          tmp_ib_slack_infos_, cover_cut_helper_.mutable_alt_cut());
-    }
-
-    // Try integer rounding heuristic to find cut.
-    RoundingOptions options;
-    options.max_scaling = parameters_.max_integer_rounding_scaling();
-    if (integer_rounding_cut_helper_.ComputeCut(options, base_ct_,
-                                                &implied_bounds_processor_)) {
-      at_least_one_added |= PostprocessAndAddCut(
-          name,
-          absl::StrCat("num_lifted_booleans=",
-                       integer_rounding_cut_helper_.NumLiftedBooleans()),
-          first_new_var, first_slack, tmp_ib_slack_infos_,
-          integer_rounding_cut_helper_.mutable_cut());
-    }
+  // Note that this always complement the terms to have an lp value closer to
+  // zero.
+  //
+  // TODO(user): Keep track of the potential overflow here.
+  if (!base_ct_.FillFromLinearConstraint(cut_, expanded_lp_solution_,
+                                         integer_trail_)) {
+    return false;
   }
+
+  // If there are no integer (all Booleans), no need to try implied bounds
+  // heurititics. By setting this to nullptr, we are a bit faster.
+  bool some_ints = false;
+  bool some_relevant_positions = false;
+  for (const CutTerm& term : base_ct_.terms) {
+    if (term.bound_diff > 1) some_ints = true;
+    if (term.HasRelevantLpValue()) some_relevant_positions = true;
+  }
+
+  // If all value are integer, we will not be able to cut anything.
+  if (!some_relevant_positions) return false;
+
+  ImpliedBoundsProcessor* ib_processor =
+      some_ints ? &implied_bounds_processor_ : nullptr;
+
+  // Add constraint slack.
+  const IntegerVariable first_slack(expanded_lp_solution_.size());
+  CHECK_EQ(first_slack.value() % 2, 0);
+  tmp_slack_rows_.clear();
+  for (const auto& pair : integer_multipliers) {
+    const RowIndex row = pair.first;
+    const IntegerValue coeff = pair.second;
+    const auto status = simplex_.GetConstraintStatus(row);
+    if (status == glop::ConstraintStatus::FIXED_VALUE) continue;
+
+    CutTerm entry;
+    entry.coeff = IntTypeAbs(coeff);
+    entry.lp_value = 0.0;
+    entry.bound_diff =
+        CapSub(integer_lp_[row].ub.value(), integer_lp_[row].lb.value());
+    entry.expr_vars[0] =
+        first_slack + 2 * IntegerVariable(tmp_slack_rows_.size());
+    entry.expr_coeffs[1] = 0;
+    if (coeff > 0) {
+      // Slack = ub - constraint;
+      entry.expr_coeffs[0] = IntegerValue(-1);
+      entry.expr_offset = integer_lp_[row].ub;
+    } else {
+      // Slack = constraint - lb;
+      entry.expr_coeffs[0] = IntegerValue(1);
+      entry.expr_offset = -integer_lp_[row].lb;
+    }
+
+    base_ct_.terms.push_back(entry);
+    tmp_slack_rows_.push_back(row);
+  }
+
+  // Try cover approach to find cut.
+  // TODO(user): Optimize by merging common steps (sort mainly).
+  if (cover_cut_helper_.TrySimpleKnapsack(base_ct_, ib_processor)) {
+    at_least_one_added |= PostprocessAndAddCut(
+        absl::StrCat(name, "_KB"), cover_cut_helper_.Info(), first_slack,
+        cover_cut_helper_.cut());
+  }
+  if (cover_cut_helper_.TryWithLetchfordSouliLifting(base_ct_, ib_processor)) {
+    at_least_one_added |= PostprocessAndAddCut(
+        absl::StrCat(name, "_KL"), cover_cut_helper_.Info(), first_slack,
+        cover_cut_helper_.cut());
+  }
+
+  // Try integer rounding heuristic to find cut.
+  RoundingOptions options;
+  options.max_scaling = parameters_.max_integer_rounding_scaling();
+
+  options.use_ib_before_heuristic = false;
+  if (integer_rounding_cut_helper_.ComputeCut(options, base_ct_,
+                                              ib_processor)) {
+    at_least_one_added |= PostprocessAndAddCut(
+        absl::StrCat(name, "_R"), integer_rounding_cut_helper_.Info(),
+        first_slack, integer_rounding_cut_helper_.cut());
+  }
+
+  options.use_ib_before_heuristic = true;
+  options.prefer_positive_ib = false;
+  if (ib_processor != nullptr && integer_rounding_cut_helper_.ComputeCut(
+                                     options, base_ct_, ib_processor)) {
+    at_least_one_added |= PostprocessAndAddCut(
+        absl::StrCat(name, "_RB"), integer_rounding_cut_helper_.Info(),
+        first_slack, integer_rounding_cut_helper_.cut());
+  }
+
+  options.use_ib_before_heuristic = true;
+  options.prefer_positive_ib = true;
+  if (ib_processor != nullptr && integer_rounding_cut_helper_.ComputeCut(
+                                     options, base_ct_, ib_processor)) {
+    at_least_one_added |= PostprocessAndAddCut(
+        absl::StrCat(name, "_RBP"), integer_rounding_cut_helper_.Info(),
+        first_slack, integer_rounding_cut_helper_.cut());
+  }
+
   return at_least_one_added;
 }
 
 bool LinearProgrammingConstraint::PostprocessAndAddCut(
     const std::string& name, const std::string& info,
-    IntegerVariable first_new_var, IntegerVariable first_slack,
-    const std::vector<ImpliedBoundsProcessor::SlackInfo>& ib_slack_infos,
-    LinearConstraint* cut) {
+    IntegerVariable first_slack, const LinearConstraint& cut) {
   // Compute the activity. Warning: the cut no longer have the same size so we
   // cannot use tmp_lp_values_. Note that the substitution below shouldn't
   // change the activity by definition.
   double activity = 0.0;
-  for (int i = 0; i < cut->vars.size(); ++i) {
-    if (cut->vars[i] < first_new_var) {
-      activity +=
-          ToDouble(cut->coeffs[i]) * expanded_lp_solution_[cut->vars[i]];
+  for (int i = 0; i < cut.vars.size(); ++i) {
+    if (cut.vars[i] < first_slack) {
+      activity += ToDouble(cut.coeffs[i]) * expanded_lp_solution_[cut.vars[i]];
     }
   }
   const double kMinViolation = 1e-4;
-  const double violation = activity - ToDouble(cut->ub);
+  const double violation = activity - ToDouble(cut.ub);
   if (violation < kMinViolation) {
-    VLOG(3) << "Bad cut " << activity << " <= " << ToDouble(cut->ub);
+    VLOG(3) << "Bad cut " << activity << " <= " << ToDouble(cut.ub);
     return false;
   }
 
@@ -1005,44 +981,19 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
   {
     int num_slack = 0;
     tmp_scattered_vector_.ClearAndResize(integer_variables_.size());
-    IntegerValue cut_ub = cut->ub;
+    IntegerValue cut_ub = cut.ub;
     bool overflow = false;
-    for (int i = 0; i < cut->vars.size(); ++i) {
-      const IntegerVariable var = cut->vars[i];
+    for (int i = 0; i < cut.vars.size(); ++i) {
+      const IntegerVariable var = cut.vars[i];
 
       // Simple copy for non-slack variables.
-      if (var < first_new_var) {
+      if (var < first_slack) {
         const glop::ColIndex col =
             mirror_lp_variable_.at(PositiveVariable(var));
         if (VariableIsPositive(var)) {
-          tmp_scattered_vector_.Add(col, cut->coeffs[i]);
+          tmp_scattered_vector_.Add(col, cut.coeffs[i]);
         } else {
-          tmp_scattered_vector_.Add(col, -cut->coeffs[i]);
-        }
-        continue;
-      }
-
-      // Replace slack from bound substitution.
-      if (var < first_slack) {
-        const IntegerValue multiplier = cut->coeffs[i];
-        const int index = (var.value() - first_new_var.value()) / 2;
-        CHECK_LT(index, ib_slack_infos.size());
-
-        tmp_terms_.clear();
-        for (const std::pair<IntegerVariable, IntegerValue>& term :
-             ib_slack_infos[index].terms) {
-          tmp_terms_.push_back(
-              {mirror_lp_variable_.at(PositiveVariable(term.first)),
-               VariableIsPositive(term.first) ? term.second : -term.second});
-        }
-        if (!tmp_scattered_vector_.AddLinearExpressionMultiple(multiplier,
-                                                               tmp_terms_)) {
-          overflow = true;
-          break;
-        }
-        if (!AddProductTo(multiplier, -ib_slack_infos[index].offset, &cut_ub)) {
-          overflow = true;
-          break;
+          tmp_scattered_vector_.Add(col, -cut.coeffs[i]);
         }
         continue;
       }
@@ -1051,7 +1002,7 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
       ++num_slack;
       const int slack_index = (var.value() - first_slack.value()) / 2;
       const glop::RowIndex row = tmp_slack_rows_[slack_index];
-      const IntegerValue multiplier = cut->coeffs[i];
+      const IntegerValue multiplier = cut.coeffs[i];
       if (!tmp_scattered_vector_.AddLinearExpressionMultiple(
               multiplier, integer_lp_[row].terms)) {
         overflow = true;
@@ -1066,23 +1017,18 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
 
     VLOG(3) << " num_slack: " << num_slack;
     tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_, cut_ub,
-                                                    cut);
+                                                    &cut_);
   }
 
-  // Display some stats used for investigation of cut generation.
-  const std::string extra_info =
-      absl::StrCat(info, " num_ib_substitutions=", ib_slack_infos.size());
-
   const double new_violation =
-      ComputeActivity(*cut, expanded_lp_solution_) - ToDouble(cut->ub);
+      ComputeActivity(cut_, expanded_lp_solution_) - ToDouble(cut_.ub);
   if (std::abs(violation - new_violation) >= 1e-4) {
     VLOG(1) << "Violation discrepancy after slack removal. "
             << " before = " << violation << " after = " << new_violation;
   }
 
-  DivideByGCD(cut);
-  return constraint_manager_.AddCut(*cut, name, expanded_lp_solution_,
-                                    extra_info);
+  DivideByGCD(&cut_);
+  return constraint_manager_.AddCut(cut_, name, expanded_lp_solution_, info);
 }
 
 // TODO(user): This can be still too slow on some problems like

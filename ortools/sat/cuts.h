@@ -59,6 +59,7 @@ struct CutGenerator {
 // and implied bound substitution.
 struct CutTerm {
   bool IsBoolean() const { return bound_diff == 1; }
+  bool IsSimple() const { return expr_coeffs[1] == 0; }
   bool HasRelevantLpValue() const { return lp_value > 1e-2; }
   double LpDistToMaxValue() const {
     return static_cast<double>(bound_diff.value()) - lp_value;
@@ -78,7 +79,7 @@ struct CutTerm {
 
   // X = the given LinearExpression.
   // We only support size 1 or 2 here which allow to inline the memory.
-  int expr_size = 0;
+  // When a coefficient is zero, we don't care about the variable.
   IntegerValue expr_offset = IntegerValue(0);
   std::array<IntegerVariable, 2> expr_vars;
   std::array<IntegerValue, 2> expr_coeffs;
@@ -157,45 +158,9 @@ class ImpliedBoundsProcessor {
   void RecomputeCacheAndSeparateSomeImpliedBoundCuts(
       const absl::StrongVector<IntegerVariable, double>& lp_values);
 
-  // Processes and updates the given cut.
-  //
-  // Note that we always look for implied bound under the variable as they
-  // appear. One can change coefficient sign and a variable to its negation to
-  // try the other way around.
-  void ProcessUpperBoundedConstraint(
-      const absl::StrongVector<IntegerVariable, double>& lp_values,
-      LinearConstraint* cut);
-
-  // Same as ProcessUpperBoundedConstraint() but instead of just using
-  // var >= coeff * binary + lb we use var == slack + coeff * binary + lb where
-  // slack is a new temporary variable that we create.
-  //
-  // The new slack will be such that slack_infos[(slack - first_slack) / 2]
-  // contains its definition so that we can properly handle it in the cut
-  // generation and substitute it back later.
-  struct SlackInfo {
-    // This slack is equal to sum of terms + offset.
-    std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
-    IntegerValue offset;
-
-    // The slack bounds and current lp_value.
-    IntegerValue lb = IntegerValue(0);
-    IntegerValue ub = IntegerValue(0);
-    double lp_value = 0.0;
-  };
-  void ProcessUpperBoundedConstraintWithSlackCreation(
-      bool substitute_only_inner_variables, IntegerVariable first_slack,
-      const absl::StrongVector<IntegerVariable, double>& lp_values,
-      LinearConstraint* cut, std::vector<SlackInfo>* slack_infos);
-
-  // Only used for debugging.
-  //
-  // Substituting back the slack created by the function above should give
-  // exactly the same cut as the original one.
-  bool DebugSlack(IntegerVariable first_slack,
-                  const LinearConstraint& initial_cut,
-                  const LinearConstraint& cut,
-                  const std::vector<SlackInfo>& info);
+  bool TryToExpandWithLowerImpliedbound(IntegerValue factor_t, int i,
+                                        bool complement, CutData* cut,
+                                        CutDataBuilder* builder);
 
   // Add a new variable that could be used in the new cuts.
   // Note that the cache must be computed to take this into account.
@@ -242,9 +207,6 @@ class ImpliedBoundsProcessor {
   // Data from the constructor.
   IntegerTrail* integer_trail_;
   ImpliedBounds* implied_bounds_;
-
-  // Temporary memory used by ProcessUpperBoundedConstraint().
-  mutable std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
 };
 
 // A single node flow relaxation is a constraint of the form
@@ -312,15 +274,14 @@ class FlowCoverCutHelper {
       IntegerTrail* integer_trail, ImpliedBoundsProcessor* ib_helper);
 
   // Try to generate a cut for the given single node flow problem. Returns true
-  // if a cut was generated. It can be accessed by cut()/mutable_cut().
+  // if a cut was generated. It can be accessed by cut().
   bool GenerateCut(const SingleNodeFlow& data);
 
   // If successful, info about the last generated cut.
-  LinearConstraint* mutable_cut() { return &cut_; }
   const LinearConstraint& cut() const { return cut_; }
 
   // Single line of text that we append to the cut log line.
-  std::string Info() {
+  std::string Info() const {
     return absl::StrCat("lift=", num_lifting_, " slack=", slack_.value(),
                         " #in=", num_in_ignored_, "|", num_in_flow_, "|",
                         num_in_bin_, " #out:", num_out_capa_, "|",
@@ -420,6 +381,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 struct RoundingOptions {
   IntegerValue max_scaling = IntegerValue(60);
   bool use_ib_before_heuristic = true;
+  bool prefer_positive_ib = true;
 };
 class IntegerRoundingCutHelper {
  public:
@@ -427,17 +389,15 @@ class IntegerRoundingCutHelper {
 
   // Returns true on success. The cut can be accessed via cut().
   bool ComputeCut(RoundingOptions options, const CutData& base_ct,
-                  ImpliedBoundsProcessor* ib_processor);
+                  ImpliedBoundsProcessor* ib_processor = nullptr);
 
   // If successful, info about the last generated cut.
-  LinearConstraint* mutable_cut() { return &cut_; }
   const LinearConstraint& cut() const { return cut_; }
 
-  // Returns the number of implied bound lifted Booleans in the last
-  // ComputeCut() call. Useful for investigation.
-  int NumLiftedBooleans() const { return num_ib_used_; }
-
   void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
+
+  // Single line of text that we append to the cut log line.
+  std::string Info() const { return absl::StrCat("ib_lift=", num_ib_used_); }
 
  private:
   bool HasComplementedImpliedBound(const CutTerm& entry,
@@ -446,10 +406,6 @@ class IntegerRoundingCutHelper {
   double GetScaledViolation(IntegerValue divisor, IntegerValue max_scaling,
                             IntegerValue remainder_threshold,
                             const CutData& cut);
-
-  bool TryToExpandWithLowerImpliedbound(IntegerValue factor_t, int i,
-                                        bool complement, CutData* cut,
-                                        ImpliedBoundsProcessor* ib_processor);
 
   // The helper is just here to reuse the memory for these vectors.
   std::vector<IntegerValue> divisors_;
@@ -479,7 +435,6 @@ class IntegerRoundingCutHelper {
 
   int64_t total_num_initial_ibs_ = 0;
   int64_t total_num_initial_merges_ = 0;
-  int64_t total_num_initial_complements_ = 0;
 };
 
 // Helper to find knapsack cover cuts.
@@ -489,21 +444,9 @@ class CoverCutHelper {
 
   // Try to find a cut with a knapsack heuristic.
   // If this returns true, you can get the cut via cut().
-  bool TrySimpleKnapsack(const CutData& input);
+  bool TrySimpleKnapsack(const CutData& input,
+                         ImpliedBoundsProcessor* ib_processor = nullptr);
 
-  // If successful, info about the last generated cut.
-  LinearConstraint* mutable_cut() { return &cut_; }
-  const LinearConstraint& cut() const { return cut_; }
-
-  // Single line of text that we append to the cut log line.
-  const std::string Info() { return absl::StrCat("lift=", num_lifting_); }
-
-  // Provides an alternative cut with a different lifting procedure.
-  LinearConstraint* mutable_alt_cut() { return &alt_cut_; }
-  const LinearConstraint& alt_cut() const { return alt_cut_; }
-
-  // Visible for testing.
-  //
   // Applies the lifting procedure described in "On Lifted Cover Inequalities: A
   // New Lifting Procedure with Unusual Properties", Adam N. Letchford, Georgia
   // Souli.
@@ -529,11 +472,25 @@ class CoverCutHelper {
   // - Also, f() should be super additive on the value <= rhs, i.e. f(a + b) >=
   //   f(a) + f(b), so it is always good to use implied bounds of the form X =
   //   bound * B + Slack.
-  bool GenerateLetchfordSouliLifting(const CutData& base_ct, int cover_size);
+  bool TryWithLetchfordSouliLifting(
+      const CutData& input, ImpliedBoundsProcessor* ib_processor = nullptr);
+
+  // If successful, info about the last generated cut.
+  const LinearConstraint& cut() const { return cut_; }
+
+  // Single line of text that we append to the cut log line.
+  std::string Info() const { return absl::StrCat("lift=", num_lifting_); }
 
   void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
 
  private:
+  // This changes base_ct_, returns false on overflow.
+  bool MakeAllTermsPositive();
+
+  // This looks at base_ct_ and reoder the terms so that the first ones are in
+  // the cover. return zero if no interesting cover was found.
+  int GetCoverSize(int relevant_size, IntegerValue* rhs);
+
   // Here to reuse memory.
   CutData base_ct_;
   CutData temp_cut_;
@@ -542,13 +499,13 @@ class CoverCutHelper {
   // Stats.
   SharedStatistics* shared_stats_ = nullptr;
   int64_t num_lifting_ = 0;
+
   int64_t total_num_lifting_ = 0;
-  int64_t total_num_cover_not_bool_ = 0;
+  int64_t total_num_ibs_ = 0;
   int64_t total_num_overflow_abort_ = 0;
 
   // Stores the cut for output.
   LinearConstraint cut_;
-  LinearConstraint alt_cut_;
 };
 
 // A cut generator for z = x * y (x and y >= 0).
@@ -648,7 +605,7 @@ bool BuildMaxAffineUpConstraint(
 CutGenerator CreateMaxAffineCutGenerator(
     LinearExpression target, IntegerVariable var,
     std::vector<std::pair<IntegerValue, IntegerValue>> affines,
-    const std::string cut_name, Model* model);
+    std::string cut_name, Model* model);
 
 // Extracts the variables that have a Literal view from base variables and
 // create a generator that will returns constraint of the form "at_most_one"

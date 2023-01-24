@@ -290,11 +290,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
           integer_multipliers);
 
   // Second half of AddCutFromConstraints().
-  bool PostprocessAndAddCut(
-      const std::string& name, const std::string& info,
-      IntegerVariable first_new_var, IntegerVariable first_slack,
-      const std::vector<ImpliedBoundsProcessor::SlackInfo>& ib_slack_infos,
-      LinearConstraint* cut);
+  bool PostprocessAndAddCut(const std::string& name, const std::string& info,
+                            IntegerVariable first_slack,
+                            const LinearConstraint& cut);
 
   // Computes and adds the corresponding type of cuts.
   // This can currently only be called at the root node.
@@ -449,7 +447,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerValue> tmp_var_lbs_;
   std::vector<IntegerValue> tmp_var_ubs_;
   std::vector<glop::RowIndex> tmp_slack_rows_;
-  std::vector<ImpliedBoundsProcessor::SlackInfo> tmp_ib_slack_infos_;
   std::vector<std::pair<glop::ColIndex, IntegerValue>> tmp_terms_;
 
   // Used by AddCGCuts().
