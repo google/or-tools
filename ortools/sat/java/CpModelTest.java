@@ -660,21 +660,17 @@ public final class CpModelTest {
         allAllowedValues[i][j] = i;
       }
     }
-    try {
-      TableConstraint table = model.addAllowedAssignments(entitiesOne);
-      final int[] oneTuple = new int[entitiesOne.length];
-      for (int i = 0; i < numEntityTwo; i++) {
-        for (int j = 0; j < entitiesOne.length; j++) {
-          oneTuple[j] = i;
-        }
-        table.addTuple(oneTuple);
+    TableConstraint table = model.addAllowedAssignments(entitiesOne);
+    final int[] oneTuple = new int[entitiesOne.length];
+    for (int i = 0; i < numEntityTwo; i++) {
+      for (int j = 0; j < entitiesOne.length; j++) {
+        oneTuple[j] = i;
       }
-    } catch (final Exception e) {
-      e.printStackTrace();
+      table.addTuple(oneTuple);
     }
     final Random r = new Random();
     for (int i = 0; i < entitiesOne.length; i++) {
-      model.addEquality(entitiesOne[i], r.nextInt((numEntityTwo)));
+      model.addEquality(entitiesOne[i], r.nextInt(numEntityTwo));
     }
     final CpSolver solver = new CpSolver();
     CpSolverStatus unused = solver.solve(model);
@@ -776,7 +772,7 @@ public final class CpModelTest {
     final int[][] allAllowedValues =
         new int[allowedAssignmentValues.length][allowedAssignments.length];
     for (int i = 0; i < allowedAssignmentValues.length; i++) {
-      final Integer value = allowedAssignmentValues[i];
+      final int value = allowedAssignmentValues[i];
       for (int j = 0; j < allowedAssignments.length; j++) {
         allAllowedValues[i][j] = value;
       }
@@ -785,13 +781,9 @@ public final class CpModelTest {
     for (int i = 0; i < allowedAssignments.length; i++) {
       specificEntities[i] = entities[allowedAssignments[i]];
     }
-    try {
-      TableConstraint table = model.addAllowedAssignments(specificEntities);
-      for (int[] tuple : allAllowedValues) {
-        table.addTuple(tuple);
-      }
-    } catch (final Exception e) {
-      e.printStackTrace();
+    TableConstraint table = model.addAllowedAssignments(specificEntities);
+    for (int[] tuple : allAllowedValues) {
+      table.addTuple(tuple);
     }
   }
 
@@ -805,18 +797,14 @@ public final class CpModelTest {
     final int[][] notAllowedValues =
         new int[forbiddenAssignmentsValues.length][forbiddenAssignments.length];
     for (int i = 0; i < forbiddenAssignmentsValues.length; i++) {
-      final Integer value = forbiddenAssignmentsValues[i];
+      final int value = forbiddenAssignmentsValues[i];
       for (int j = 0; j < forbiddenAssignments.length; j++) {
         notAllowedValues[i][j] = value;
       }
     }
-    try {
-      TableConstraint table = model.addForbiddenAssignments(specificEntities);
-      for (int[] tuple : notAllowedValues) {
-        table.addTuple(tuple);
-      }
-    } catch (final Exception e) {
-      e.printStackTrace();
+    TableConstraint table = model.addForbiddenAssignments(specificEntities);
+    for (int[] tuple : notAllowedValues) {
+      table.addTuple(tuple);
     }
   }
 }
