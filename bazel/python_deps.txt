@@ -1,4 +1,4 @@
-absl-py >= 0.13
-numpy >= 1.13.3
-protobuf >= 4.21.12
-scipy >= 1.10.0
+absl-py==1.4.0
+numpy==1.24.1
+protobuf==4.21.12
+scipy==1.10.0
