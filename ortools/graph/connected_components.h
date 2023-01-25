@@ -51,7 +51,6 @@
 #include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/ptr_util.h"
 
 namespace util {
 // Generic version of GetConnectedComponents() (see below) that supports other

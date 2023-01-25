@@ -18,17 +18,18 @@
 #include <string>
 
 #include "absl/strings/numbers.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
 
-int32_t strtoint32(const std::string& word) {
+int32_t strtoint32(absl::string_view word) {
   int result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }
 
-int64_t strtoint64(const std::string& word) {
+int64_t strtoint64(absl::string_view word) {
   int64_t result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
