@@ -21,6 +21,7 @@
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/wrappers/model_builder_helper.h"
@@ -152,7 +153,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("add_var", &ModelBuilderHelper::AddVar)
       .def("add_var_ndarray",
            [](ModelBuilderHelper* helper, std::vector<size_t> shape, double lb,
-              double ub, bool is_integral, const std::string& name_prefix) {
+              double ub, bool is_integral, absl::string_view name_prefix) {
              int size = shape[0];
              for (int i = 1; i < shape.size(); ++i) {
                size *= shape[i];
@@ -176,7 +177,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("add_var_ndarray_with_bounds",
            [](ModelBuilderHelper* helper, py::array_t<double> lbs,
               py::array_t<double> ubs, py::array_t<bool> are_integral,
-              const std::string& name_prefix) {
+              absl::string_view name_prefix) {
              py::buffer_info buf_lbs = lbs.request();
              py::buffer_info buf_ubs = ubs.request();
              py::buffer_info buf_are_integral = are_integral.request();
@@ -289,15 +290,14 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            // other things in parallel, e.g., log and interrupt.
            py::call_guard<py::gil_scoped_release>())
       .def("solve_serialized_request",
-           [](ModelSolverHelper* solver, const std::string& request_str) {
+           [](ModelSolverHelper* solver, absl::string_view request_str) {
              std::string result;
              {
                // The GIL is released during the solve to allow Python threads
                // to do other things in parallel, e.g., log and interrupt.
                py::gil_scoped_release release;
                MPModelRequest request;
-
-               if (!request.ParseFromString(request_str)) {
+               if (!request.ParseFromString(std::string(request_str))) {
                  throw std::invalid_argument(
                      "Unable to parse request as MPModelRequest.");
                }

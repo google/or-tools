@@ -21,6 +21,7 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.util.Domain;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -682,9 +683,7 @@ public final class CpModelTest {
     final CpModel model = new CpModel();
 
     final IntVar[] entities = new IntVar[20];
-    for (int i = 0; i < entities.length; i++) {
-      entities[i] = model.newIntVar(1, 5, "E" + i);
-    }
+    Arrays.setAll(entities, i -> model.newIntVar(1, 5, "E" + i));
 
     final int[] equalities = new int[] {18, 4, 19, 3, 12};
     addEqualities(model, entities, equalities);
@@ -773,9 +772,7 @@ public final class CpModelTest {
         new int[allowedAssignmentValues.length][allowedAssignments.length];
     for (int i = 0; i < allowedAssignmentValues.length; i++) {
       final int value = allowedAssignmentValues[i];
-      for (int j = 0; j < allowedAssignments.length; j++) {
-        allAllowedValues[i][j] = value;
-      }
+      Arrays.fill(allAllowedValues[i], 0, allowedAssignments.length, value);
     }
     final IntVar[] specificEntities = new IntVar[allowedAssignments.length];
     for (int i = 0; i < allowedAssignments.length; i++) {
@@ -798,9 +795,7 @@ public final class CpModelTest {
         new int[forbiddenAssignmentsValues.length][forbiddenAssignments.length];
     for (int i = 0; i < forbiddenAssignmentsValues.length; i++) {
       final int value = forbiddenAssignmentsValues[i];
-      for (int j = 0; j < forbiddenAssignments.length; j++) {
-        notAllowedValues[i][j] = value;
-      }
+      Arrays.fill(notAllowedValues[i], 0, forbiddenAssignments.length, value);
     }
     TableConstraint table = model.addForbiddenAssignments(specificEntities);
     for (int[] tuple : notAllowedValues) {

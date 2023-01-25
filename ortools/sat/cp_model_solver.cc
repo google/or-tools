@@ -152,10 +152,6 @@ ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
           "When true, all intermediate solutions found by the solver will be "
           "checked. This can be expensive, therefore it is off by default.");
 
-ABSL_FLAG(std::string, contention_profile, "",
-          "If non-empty, dump a contention pprof proto to the specified "
-          "destination at the end of the solve.");
-
 ABSL_FLAG(
     std::string, cp_model_load_debug_solution, "",
     "DEBUG ONLY. When this is set to a non-empty file name, "
@@ -3952,7 +3948,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (logger->LoggingIsEnabled()) {
     model->GetOrCreate<SharedStatistics>()->Log(logger);
   }
-
   return shared_response_manager->GetResponse();
 }
 
