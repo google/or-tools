@@ -939,12 +939,30 @@ CoverCutHelper::~CoverCutHelper() {
 // Try a simple cover heuristic.
 // Look for violated CUT of the form: sum (UB - X) or (X - LB) >= 1.
 int CoverCutHelper::GetCoverSize(int relevant_size, IntegerValue* rhs) {
-  relevant_size =
-      std::partition(
-          base_ct_.terms.begin(), base_ct_.terms.begin() + relevant_size,
-          [](const CutTerm& t) { return t.LpDistToMaxValue() < 0.9999; }) -
-      base_ct_.terms.begin();
-  std::sort(base_ct_.terms.begin(), base_ct_.terms.begin() + relevant_size,
+  if (relevant_size == 0) return 0;
+
+  // Sorting can be slow, so we start by splitting the vector in 3 parts
+  // [can always be in cover, candidates, can never be in cover].
+  int part1 = 0;
+  const double threshold = 1.0 / static_cast<double>(relevant_size);
+  for (int i = 0; i < relevant_size;) {
+    const double dist = base_ct_.terms[i].LpDistToMaxValue();
+    if (dist < threshold) {
+      // Move to part 1.
+      std::swap(base_ct_.terms[i], base_ct_.terms[part1]);
+      ++i;
+      ++part1;
+    } else if (dist < 0.9999) {
+      // Keep in part 2.
+      ++i;
+    } else {
+      // Exclude entirely (part 3).
+      --relevant_size;
+      std::swap(base_ct_.terms[i], base_ct_.terms[relevant_size]);
+    }
+  }
+  std::sort(base_ct_.terms.begin() + part1,
+            base_ct_.terms.begin() + relevant_size,
             [](const CutTerm& a, const CutTerm& b) {
               const double dist_a = a.LpDistToMaxValue();
               const double dist_b = b.LpDistToMaxValue();
@@ -978,7 +996,7 @@ int CoverCutHelper::GetCoverSize(int relevant_size, IntegerValue* rhs) {
       // Abort early if we run into overflow.
       // In that case, rhs must be negative, and we can try this cover still.
       cover_size = i;
-      CHECK_LT(*rhs, 0);
+      DCHECK_LT(*rhs, 0);
       break;
     }
   }
@@ -1010,26 +1028,26 @@ int CoverCutHelper::GetCoverSize(int relevant_size, IntegerValue* rhs) {
     *rhs += t.bound_diff * t.coeff;
     std::swap(base_ct_.terms[i], base_ct_.terms[--cover_size]);
   }
-  CHECK_GT(cover_size, 0);
+  DCHECK_GT(cover_size, 0);
 
   return cover_size;
 }
 
-bool CoverCutHelper::MakeAllTermsPositive() {
+bool CoverCutHelper::MakeAllTermsPositive(CutData* cut) {
   // Make sure each coeff is positive.
   //
   // TODO(user): maybe we should do it all at once to avoid some overflow
   // condition.
-  for (CutTerm& term : base_ct_.terms) {
+  for (CutTerm& term : cut->terms) {
     if (term.coeff >= 0) continue;
-    if (!term.Complement(&base_ct_.rhs)) {
+    if (!term.Complement(&cut->rhs)) {
       ++total_num_overflow_abort_;
       return false;
     }
   }
 
   // We should have aborted early if the base constraint was already infeasible.
-  CHECK_GE(base_ct_.rhs, 0);
+  CHECK_GE(cut->rhs, 0);
   return true;
 }
 
@@ -1037,7 +1055,6 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input,
                                        ImpliedBoundsProcessor* ib_processor) {
   cut_.Clear();
   base_ct_ = input;
-  if (!MakeAllTermsPositive()) return false;
 
   if (ib_processor != nullptr) {
     cut_builder_.RegisterAllBooleansTerms(base_ct_);
@@ -1147,7 +1164,6 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
     const CutData& input, ImpliedBoundsProcessor* ib_processor) {
   cut_.Clear();
   base_ct_ = input;
-  if (!MakeAllTermsPositive()) return false;
 
   // Perform IB expansion with no restriction, all coeff should still be
   // positive.

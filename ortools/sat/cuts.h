@@ -442,6 +442,14 @@ class CoverCutHelper {
  public:
   ~CoverCutHelper();
 
+  // Complements term to make sure all coeff are positive, returns false on
+  // overflow.
+  //
+  // Important: This must be called on the input of both Try*() functions. It
+  // is separated as an optimization to share the loop rather than do it in
+  // both functions.
+  bool MakeAllTermsPositive(CutData* cut);
+
   // Try to find a cut with a knapsack heuristic.
   // If this returns true, you can get the cut via cut().
   bool TrySimpleKnapsack(const CutData& input,
@@ -484,9 +492,6 @@ class CoverCutHelper {
   void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
 
  private:
-  // This changes base_ct_, returns false on overflow.
-  bool MakeAllTermsPositive();
-
   // This looks at base_ct_ and reoder the terms so that the first ones are in
   // the cover. return zero if no interesting cover was found.
   int GetCoverSize(int relevant_size, IntegerValue* rhs);

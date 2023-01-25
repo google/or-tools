@@ -3720,8 +3720,18 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // TODO(user): If 2 * min_coeff_magnitude >= bound, then the constraint can
   // be completely rewriten to 2 * (enforcement_part) + sum var >= 2 which is
   // what happen eventually when bound is even, but not if it is odd currently.
-  const int64_t second_threshold = std::max(CeilOfRatio(threshold, int64_t{2}),
-                                            threshold - min_coeff_magnitude);
+  int64_t second_threshold = std::max(CeilOfRatio(threshold, int64_t{2}),
+                                      threshold - min_coeff_magnitude);
+
+  // Tricky: The second threshold only work if the domain is simple. If the
+  // domain has holes, changing the coefficient might change whether the
+  // variable can be at one or not by herself.
+  //
+  // TODO(user): We could still reduce it to the smaller value with same
+  // feasibility.
+  if (rhs_domain.NumIntervals() > 1) {
+    second_threshold = threshold;  // Disable.
+  }
 
   // Do we only extract Booleans?
   //
@@ -9179,9 +9189,14 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
   // We can always sum the two constraints.
   // If var appear in one and not(var) in the other, the two term cancel out to
   // one, so we still have an <= 1 (or eventually a ==1 (see below).
+  //
+  // Note that if the constraint are of size one, they can just be preprocessed
+  // individually and just be removed. So we abort here as the code below
+  // is incorrect if new_ct is an empty constraint.
   context_->tmp_literals.clear();
   int c1_ref = std::numeric_limits<int>::min();
   const ConstraintProto& ct1 = context_->working_model->constraints(c1);
+  if (AtMostOneOrExactlyOneLiterals(ct1).size() <= 1) return;
   for (const int lit : AtMostOneOrExactlyOneLiterals(ct1)) {
     if (PositiveRef(lit) == var) {
       c1_ref = lit;
@@ -9191,6 +9206,7 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
   }
   int c2_ref = std::numeric_limits<int>::min();
   const ConstraintProto& ct2 = context_->working_model->constraints(c2);
+  if (AtMostOneOrExactlyOneLiterals(ct2).size() <= 1) return;
   for (const int lit : AtMostOneOrExactlyOneLiterals(ct2)) {
     if (PositiveRef(lit) == var) {
       c2_ref = lit;
@@ -9261,6 +9277,7 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
   // TODO(user): If the merged list contains duplicates or literal that are
   // negation of other, we need to deal with that right away. For some reason
   // something is not robust to that it seems. Investigate & fix!
+  DCHECK_NE(new_ct->constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
   if (PresolveAtMostOrExactlyOne(new_ct)) {
     context_->UpdateConstraintVariableUsage(new_ct_index);
   }

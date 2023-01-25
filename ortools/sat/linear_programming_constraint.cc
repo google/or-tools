@@ -912,19 +912,6 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     tmp_slack_rows_.push_back(row);
   }
 
-  // Try cover approach to find cut.
-  // TODO(user): Optimize by merging common steps (sort mainly).
-  if (cover_cut_helper_.TrySimpleKnapsack(base_ct_, ib_processor)) {
-    at_least_one_added |= PostprocessAndAddCut(
-        absl::StrCat(name, "_KB"), cover_cut_helper_.Info(), first_slack,
-        cover_cut_helper_.cut());
-  }
-  if (cover_cut_helper_.TryWithLetchfordSouliLifting(base_ct_, ib_processor)) {
-    at_least_one_added |= PostprocessAndAddCut(
-        absl::StrCat(name, "_KL"), cover_cut_helper_.Info(), first_slack,
-        cover_cut_helper_.cut());
-  }
-
   // Try integer rounding heuristic to find cut.
   RoundingOptions options;
   options.max_scaling = parameters_.max_integer_rounding_scaling();
@@ -953,6 +940,21 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     at_least_one_added |= PostprocessAndAddCut(
         absl::StrCat(name, "_RBP"), integer_rounding_cut_helper_.Info(),
         first_slack, integer_rounding_cut_helper_.cut());
+  }
+
+  // Try cover approach to find cut.
+  if (cover_cut_helper_.MakeAllTermsPositive(&base_ct_)) {
+    if (cover_cut_helper_.TrySimpleKnapsack(base_ct_, ib_processor)) {
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_KB"), cover_cut_helper_.Info(), first_slack,
+          cover_cut_helper_.cut());
+    }
+    if (cover_cut_helper_.TryWithLetchfordSouliLifting(base_ct_,
+                                                       ib_processor)) {
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_KL"), cover_cut_helper_.Info(), first_slack,
+          cover_cut_helper_.cut());
+    }
   }
 
   return at_least_one_added;
