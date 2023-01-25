@@ -121,18 +121,20 @@ git_repository(
 ## Bazel Python rules.
 git_repository(
     name = "rules_python",
-    tag = "0.12.0",
+    tag = "0.16.2",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
-load("@rules_python//python:pip.bzl", "pip_install")
-
 # Create a central external repo, @ortools_deps, that contains Bazel targets for all the
 # third-party packages specified in the python_deps.txt file.
-pip_install(
+load("@rules_python//python:pip.bzl", "pip_parse")
+pip_parse(
    name = "ortools_deps",
    requirements = "//bazel:python_deps.txt",
 )
+# Install all third_party packages
+load("@ortools_deps//:requirements.bzl", "install_deps")
+install_deps()
 
 git_repository(
     name = "pybind11_bazel",

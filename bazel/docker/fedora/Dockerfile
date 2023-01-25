@@ -9,7 +9,7 @@ RUN dnf -y update \
 && dnf -y install gcc-c++ zlib-devel \
 && dnf -y install dnf-plugins-core \
 && dnf -y copr enable vbatts/bazel \
-&& dnf -y install bazel5 \
+&& dnf -y install bazel5 which \
 && dnf clean all
 
 # Install Python
