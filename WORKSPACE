@@ -185,14 +185,9 @@ new_git_repository(
 )
 
 # Java support (with junit 5)
-JUNIT_JUPITER_VERSION = "5.9.2"
-JUNIT_PLATFORM_VERSION = "1.9.2"
-RULES_JVM_EXTERNAL_TAG = "4.5"
-CONTRIB_RULES_JVM_TAG = "v0.9.0"
-
 git_repository(
     name = "rules_jvm_external",
-    tag = RULES_JVM_EXTERNAL_TAG,
+    tag = "4.5",
     remote = "https://github.com/bazelbuild/rules_jvm_external.git",
 )
 
@@ -202,8 +197,9 @@ rules_jvm_external_deps()
 load("@rules_jvm_external//:setup.bzl", "rules_jvm_external_setup")
 rules_jvm_external_setup()
 
+JUNIT_PLATFORM_VERSION = "1.9.2"
+JUNIT_JUPITER_VERSION = "5.9.2"
 load("@rules_jvm_external//:defs.bzl", "maven_install")
-
 maven_install(
     artifacts = [
         "net.java.dev.jna:jna:aar:5.12.1",
@@ -221,7 +217,7 @@ maven_install(
 
 git_repository(
     name = "contrib_rules_jvm",
-    tag = CONTRIB_RULES_JVM_TAG,
+    tag = "v0.9.0",
     remote = "https://github.com/bazel-contrib/rules_jvm.git",
 )
 
