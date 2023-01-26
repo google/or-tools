@@ -27,12 +27,11 @@ from absl import flags
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string('params', 'num_search_workers:16, max_time_in_seconds:30',
-                    'Sat solver parameters.')
-flags.DEFINE_string('proto_file', '',
-                    'If not empty, output the proto to this file.')
+_PARAMS = flags.DEFINE_string('params',
+                              'num_search_workers:16, max_time_in_seconds:30',
+                              'Sat solver parameters.')
+_PROTO_FILE = flags.DEFINE_string(
+    'proto_file', '', 'If not empty, output the proto to this file.')
 
 # Recipes
 CROISSANT = 'croissant'
@@ -277,8 +276,8 @@ def solve_with_cp_sat(recipes, resources, orders):
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
     solver.parameters.log_search_progress = True
     status = solver.Solve(model)
 

@@ -58,8 +58,8 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
                                  soft_max, hard_max, max_cost, prefix):
     """Sequence constraint on true variables with soft and hard bounds.
 
-  This constraint looks at every maximal contiguous sequence of variables
-  assigned to true. It forbids sequence of length < hard_min or > hard_max.
+  This constraint look at every maximal contiguous sequence of variables
+  assigned to true. If forbids sequence of length < hard_min or > hard_max.
   Then it creates penalty terms if the length is < soft_min or > soft_max.
 
   Args:

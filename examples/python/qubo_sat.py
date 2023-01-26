@@ -575,6 +575,7 @@ def solve_qubo():
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 16
     solver.parameters.log_search_progress = True
+    solver.parameters.max_time_in_seconds = 30
     solver.Solve(model)
 
 

@@ -33,6 +33,7 @@ from typing import Sequence
 from absl import app
 from absl import flags
 from google.protobuf import text_format
+
 from ortools.sat.python import cp_model
 
 _INPUT = flags.DEFINE_string('input', '', 'Input file to parse and solve.')
@@ -259,14 +260,14 @@ def solve_boolean_model(model, hint):
     for t in all_tasks:
         model.AddHint(assign[t, hint[t]], 1)
 
-    if FLAGS.output_proto:
-        print(f'Writing proto to {FLAGS.output_proto}')
-        model.ExportToFile(FLAGS.output_proto)
+    if _OUTPUT_PROTO.value:
+        print(f'Writing proto to {_OUTPUT_PROTO.value}')
+        model.ExportToFile(_OUTPUT_PROTO.value)
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
     solver.parameters.log_search_progress = True
     solver.Solve(model)
 
@@ -321,32 +322,31 @@ def solve_scheduling_model(model, hint):
     for t in all_tasks:
         model.AddHint(pods[t], hint[t])
 
-    if FLAGS.output_proto:
-        print(f'Writing proto to{FLAGS.output_proto}')
-        model.ExportToFile(FLAGS.output_proto)
+    if _OUTPUT_PROTO.value:
+        print(f'Writing proto to{_OUTPUT_PROTO.value}')
+        model.ExportToFile(_OUTPUT_PROTO.value)
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
     solver.parameters.log_search_progress = True
-    solver.parameters.exploit_all_precedences = True  # Helps with the lower bound.
     solver.Solve(model)
 
 
 def main(argv: Sequence[str]) -> None:
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
-    if FLAGS.input == '':
+    if _INPUT.value == '':
         raise app.UsageError('Missing input file.')
 
-    model = read_model(FLAGS.input)
+    model = read_model(_INPUT.value)
     print_stats(model)
     greedy_solution = solve_model_greedily(model)
 
-    if FLAGS.model == 'boolean':
+    if _MODEL.value == 'boolean':
         solve_boolean_model(model, greedy_solution)
-    elif FLAGS.model == 'scheduling':
+    elif _MODEL.value == 'scheduling':
         solve_scheduling_model(model, greedy_solution)
 
 

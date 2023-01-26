@@ -88,3 +88,10 @@ py_test(
         requirement("absl-py"),
     ],
 )
+
+py_library(
+    name = "visualization",
+    srcs = ["visualization.py"],
+    visibility = ["//visibility:public"],
+)
+

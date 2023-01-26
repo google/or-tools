@@ -26,12 +26,11 @@ from absl import flags
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string('output_proto', '',
-                    'Output file to write the cp_model proto to.')
-flags.DEFINE_string('params', 'num_search_workers:8,log_search_progress:true',
-                    'Sat solver parameters.')
+_OUTPUT_PROTO = flags.DEFINE_string(
+    'output_proto', '', 'Output file to write the cp_model proto to.')
+_PARAMS = flags.DEFINE_string('params',
+                              'num_search_workers:8,log_search_progress:true',
+                              'Sat solver parameters.')
 
 
 def add_neighbor(size, x, y, z, dx, dy, dz, model, index_map, position_to_rank,
@@ -142,7 +141,7 @@ def escape_the_maze(params, output_proto):
 def main(argv: Sequence[str]) -> None:
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
-    escape_the_maze(FLAGS.params, FLAGS.output_proto)
+    escape_the_maze(_PARAMS.value, _OUTPUT_PROTO.value)
 
 
 if __name__ == '__main__':

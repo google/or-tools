@@ -1,0 +1,90 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# BUILD file to run python examples.
+
+load(":code_samples.bzl", "code_sample_compile_py", "code_sample_py")
+
+# code_sample_py("arc_flow_cutting_stock_sat")  # using pywraplp
+
+code_sample_py("assignment2_sat")
+
+code_sample_py("assignment_with_constraints_sat")
+
+code_sample_py("balance_group_sat")
+
+code_sample_py("bus_driver_scheduling_flow_sat")
+
+code_sample_py("bus_driver_scheduling_sat")
+
+code_sample_py("chemical_balance_sat")
+
+code_sample_py("clustering_sat")
+
+code_sample_py("cover_rectangle_sat")
+
+code_sample_py("flexible_job_shop_sat")
+
+code_sample_py("gate_scheduling_sat")
+
+code_sample_py("golomb_sat")
+
+code_sample_py("hidato_sat")
+
+code_sample_py("jobshop_ft06_distance_sat")
+
+code_sample_py("jobshop_ft06_sat")
+
+code_sample_py("jobshop_with_maintenance_sat")
+
+code_sample_py("knapsack_2d_sat")
+
+code_sample_compile_py("line_balancing_sat")  # no input
+
+code_sample_py("maze_escape_sat")
+
+code_sample_py("no_wait_baking_scheduling_sat")
+
+code_sample_py("prize_collecting_tsp_sat")
+
+code_sample_py("prize_collecting_vrp_sat")
+
+code_sample_py("qubo_sat")
+
+code_sample_compile_py("rcpsp_sat")  # no input
+
+code_sample_py("reallocate_sat")
+
+code_sample_py("shift_scheduling_sat")
+
+code_sample_py("single_machine_scheduling_with_setup_release_due_dates_sat")
+
+# code_sample_py("steel_mill_slab_sat")  # using pywraplp
+
+code_sample_py("sudoku_sat")
+
+code_sample_py("task_allocation_sat")
+
+code_sample_py("tasks_and_workers_assignment_sat")
+
+code_sample_py("tsp_sat")
+
+code_sample_py("vendor_scheduling_sat")
+
+code_sample_py("wedding_optimal_chart_sat")
+
+code_sample_py("weighted_latency_problem_sat")
+
+code_sample_py("worker_schedule_sat")
+
+code_sample_py("zebra_sat")

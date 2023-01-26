@@ -100,14 +100,13 @@ def AggregateItemCollectionsOptimally(item_collections, max_num_collections,
   Each collection may be selected more than one time.
 
   Args:
-    item_collections: a list of item collections. Each item collection is a
-        list of integers [#item0, ..., #itemN-1], where #itemK is the number
-        of times item #K appears in the collection, and N is the number of
-        distinct items.
-    max_num_collections: an integer, the maximum number of item collections
-        that may be selected (counting repetitions of the same collection).
+    item_collections: a list of item collections. Each item collection is a list
+      of integers [#item0, ..., #itemN-1], where #itemK is the number of times
+      item #K appears in the collection, and N is the number of distinct items.
+    max_num_collections: an integer, the maximum number of item collections that
+      may be selected (counting repetitions of the same collection).
     ideal_item_ratios: A list of N float which sums to 1.0: the K-th element is
-        the ideal ratio of item #K in the whole aggregated selection.
+      the ideal ratio of item #K in the whole aggregated selection.
 
   Returns:
     A pair (objective value, list of pairs (item collection, num_selections)),
@@ -184,10 +183,10 @@ def GetOptimalSchedule(demand):
     """Computes the optimal schedule for the installation input.
 
   Args:
-    demand: a list of "appointment types". Each "appointment type" is
-      a triple (ideal_ratio_pct, name, duration_minutes), where
-      ideal_ratio_pct is the ideal percentage (in [0..100.0]) of that
-      type of appointment among all appointments scheduled.
+    demand: a list of "appointment types". Each "appointment type" is a triple
+      (ideal_ratio_pct, name, duration_minutes), where ideal_ratio_pct is the
+      ideal percentage (in [0..100.0]) of that type of appointment among all
+      appointments scheduled.
 
   Returns:
     The same output type as EnumerateAllKnapsacksWithRepetition.
