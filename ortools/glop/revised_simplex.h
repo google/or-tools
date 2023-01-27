@@ -678,6 +678,7 @@ class RevisedSimplex {
   // Array of column index, giving the column number corresponding
   // to a given basis row.
   RowToColMapping basis_;
+  RowToColMapping tmp_basis_;
 
   // Vector of strings containing the names of variables.
   // Indexed by column number.
@@ -742,6 +743,7 @@ class RevisedSimplex {
 
   // Used in dual phase I to hold the price of each possible leaving choices.
   DenseColumn dual_pricing_vector_;
+  DenseColumn tmp_dual_pricing_vector_;
 
   // Temporary memory used by DualMinimize().
   std::vector<ColIndex> bound_flip_candidates_;

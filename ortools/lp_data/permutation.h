@@ -119,6 +119,14 @@ void ApplyColumnPermutationToRowIndexedVector(
   ApplyPermutation(col_perm, temp_v, v);
 }
 
+template <typename RowIndexedVector>
+void ApplyColumnPermutationToRowIndexedVector(
+    const Permutation<ColIndex>& col_perm, RowIndexedVector* v,
+    RowIndexedVector* tmp) {
+  ApplyPermutation(col_perm, *v, tmp);
+  std::swap(*tmp, *v);
+}
+
 // --------------------------------------------------------
 // Implementation
 // --------------------------------------------------------

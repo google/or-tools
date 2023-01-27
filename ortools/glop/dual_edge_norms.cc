@@ -40,7 +40,8 @@ const DenseColumn& DualEdgeNorms::GetEdgeSquaredNorms() {
 void DualEdgeNorms::UpdateDataOnBasisPermutation(
     const ColumnPermutation& col_perm) {
   if (recompute_edge_squared_norms_) return;
-  ApplyColumnPermutationToRowIndexedVector(col_perm, &edge_squared_norms_);
+  ApplyColumnPermutationToRowIndexedVector(col_perm, &edge_squared_norms_,
+                                           &tmp_edge_squared_norms_);
 }
 
 bool DualEdgeNorms::TestPrecision(RowIndex leaving_row,

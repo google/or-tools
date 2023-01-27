@@ -132,6 +132,7 @@ class DualEdgeNorms {
 
   // The dual edge norms.
   DenseColumn edge_squared_norms_;
+  DenseColumn tmp_edge_squared_norms_;
 
   // Whether we should recompute the norm from scratch.
   bool recompute_edge_squared_norms_;

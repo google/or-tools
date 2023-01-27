@@ -2477,13 +2477,14 @@ void RevisedSimplex::PermuteBasis() {
   if (col_perm.empty()) return;
 
   // Permute basis_.
-  ApplyColumnPermutationToRowIndexedVector(col_perm, &basis_);
+  ApplyColumnPermutationToRowIndexedVector(col_perm, &basis_, &tmp_basis_);
 
   // Permute dual_pricing_vector_ if needed.
   if (!dual_pricing_vector_.empty()) {
     // TODO(user): We need to permute dual_prices_ too now, we recompute
     // everything one each basis factorization, so this don't matter.
-    ApplyColumnPermutationToRowIndexedVector(col_perm, &dual_pricing_vector_);
+    ApplyColumnPermutationToRowIndexedVector(col_perm, &dual_pricing_vector_,
+                                             &tmp_dual_pricing_vector_);
   }
 
   // Notify the other classes.
