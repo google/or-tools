@@ -35,15 +35,9 @@
 // @param JavaProtoType the corresponding fully qualified Java protocol message
 //        type
 // @param param_name the parameter name
-//
-// TODO(user): move this file to base/swig/java
 
 %{
 #include "ortools/base/integral_types.h"
-%}
-
-%{
-#include "ortools/base/jniutil.h"
 %}
 
 %define PROTO_INPUT(CppProtoType, JavaProtoType, param_name)
@@ -53,9 +47,9 @@
 %typemap(javain) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$javainput.toByteArray()"
 %typemap(in) PROTO_TYPE* INPUT (CppProtoType temp),
              PROTO_TYPE& INPUT (CppProtoType temp) {
-  int proto_size = 0;
-  std::unique_ptr<char[]> proto_buffer(
-    JNIUtil::MakeCharArray(jenv, $input, &proto_size));
+  const int proto_size = jenv->GetArrayLength($input);
+  std::unique_ptr<jbyte[]> proto_buffer(new jbyte[proto_size]);
+  jenv->GetByteArrayRegion($input, 0, proto_size, proto_buffer.get());
   bool parsed_ok = temp.ParseFromArray(proto_buffer.get(), proto_size);
   if (!parsed_ok) {
     SWIG_JavaThrowException(jenv,
@@ -90,8 +84,9 @@
 }
 %typemap(out) CppProtoType {
   const long size = $1.ByteSizeLong();
-  std::unique_ptr<char[]> buf(new char[size]);
+  std::unique_ptr<jbyte[]> buf(new jbyte[size]);
   $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buf.get()));
-  $result = JNIUtil::MakeJByteArray(jenv, buf.get(), size);
+  $result = jenv->NewByteArray(size);
+  jenv->SetByteArrayRegion($result, 0, size, buf.get());
 }
 %enddef // PROTO2_RETURN
