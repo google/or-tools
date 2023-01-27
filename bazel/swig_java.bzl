@@ -153,7 +153,7 @@ def ortools_java_wrap_cc(
 
     Args:
         name: target name.
-        src: single .swig source file.
+        src: single .i source file.
         package: package of generated Java files.
         deps: C++ deps.
         java_deps: Java deps.
