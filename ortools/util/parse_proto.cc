@@ -36,14 +36,12 @@ class TextFormatErrorCollector : public google::protobuf::io::ErrorCollector {
   TextFormatErrorCollector() = default;
   ~TextFormatErrorCollector() override = default;
 
-  void AddError(const int line, const int column,
-                const std::string& message) override {
-    collected_errors_.push_back({/*warning=*/false, line, column, message});
+  void AddError(int line, int column, const std::string& message) override {
+    collected_errors_.push_back({false, line, column, std::string(message)});
   }
-
   void AddWarning(const int line, const int column,
-                  const std::string& message) override {
-    collected_errors_.push_back({/*warning=*/true, line, column, message});
+                  absl::string_view message) override {
+    collected_errors_.push_back({true, line, column, std::string(message)});
   }
 
   // Returns a string listing each collected error.  When an error is associated
