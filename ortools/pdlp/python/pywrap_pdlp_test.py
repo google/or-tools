@@ -13,11 +13,10 @@
 # limitations under the License.
 """Tests for ortools.pdlp.python.quadratic_program."""
 
+from absl.testing import absltest
 import numpy as np
 import scipy.sparse
 
-import unittest
-from absl.testing import absltest
 from ortools.pdlp import solve_log_pb2
 from ortools.pdlp import solvers_pb2
 from ortools.pdlp.python import pywrap_pdlp
@@ -254,4 +253,4 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    absltest.main()
