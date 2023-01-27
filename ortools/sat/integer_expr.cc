@@ -523,7 +523,7 @@ bool LinMinPropagator::PropagateLinearUpperBound(
     const std::vector<IntegerValue>& coeffs, const IntegerValue upper_bound) {
   IntegerValue sum_lb = IntegerValue(0);
   const int num_vars = vars.size();
-  std::vector<IntegerValue> max_variations;
+  max_variations_.resize(num_vars);
   for (int i = 0; i < num_vars; ++i) {
     const IntegerVariable var = vars[i];
     const IntegerValue coeff = coeffs[i];
@@ -531,7 +531,7 @@ bool LinMinPropagator::PropagateLinearUpperBound(
     DCHECK_GE(coeff, 0);
     const IntegerValue lb = integer_trail_->LowerBound(var);
     const IntegerValue ub = integer_trail_->UpperBound(var);
-    max_variations.push_back((ub - lb) * coeff);
+    max_variations_[i] = (ub - lb) * coeff;
     sum_lb += lb * coeff;
   }
 
@@ -539,31 +539,29 @@ bool LinMinPropagator::PropagateLinearUpperBound(
       static_cast<double>(num_vars) * 1e-9);
 
   const IntegerValue slack = upper_bound - sum_lb;
-
-  std::vector<IntegerLiteral> linear_sum_reason;
-  std::vector<IntegerValue> reason_coeffs;
-  for (int i = 0; i < num_vars; ++i) {
-    const IntegerVariable var = vars[i];
-    if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
-      linear_sum_reason.push_back(integer_trail_->LowerBoundAsLiteral(var));
-      reason_coeffs.push_back(coeffs[i]);
-    }
-  }
   if (slack < 0) {
     // Conflict.
-    integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs,
-                                      &linear_sum_reason);
-    std::vector<IntegerLiteral> local_reason =
-        integer_reason_for_unique_candidate_;
-    local_reason.insert(local_reason.end(), linear_sum_reason.begin(),
-                        linear_sum_reason.end());
-    return integer_trail_->ReportConflict({}, local_reason);
+    local_reason_.clear();
+    reason_coeffs_.clear();
+    for (int i = 0; i < num_vars; ++i) {
+      const IntegerVariable var = vars[i];
+      if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
+        local_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
+        reason_coeffs_.push_back(coeffs[i]);
+      }
+    }
+    integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs_,
+                                      &local_reason_);
+    local_reason_.insert(local_reason_.end(),
+                         integer_reason_for_unique_candidate_.begin(),
+                         integer_reason_for_unique_candidate_.end());
+    return integer_trail_->ReportConflict({}, local_reason_);
   }
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
   for (int i = 0; i < num_vars; ++i) {
-    if (max_variations[i] <= slack) continue;
+    if (max_variations_[i] <= slack) continue;
 
     const IntegerVariable var = vars[i];
     const IntegerValue coeff = coeffs[i];
@@ -644,15 +642,15 @@ bool LinMinPropagator::Propagate() {
     min_of_linear_expression_lb = current_min_ub + 1;
   }
   if (min_of_linear_expression_lb > integer_trail_->LowerBound(min_var_)) {
-    std::vector<IntegerLiteral> local_reason;
+    local_reason_.clear();
     for (int i = 0; i < exprs_.size(); ++i) {
       const IntegerValue slack = expr_lbs_[i] - min_of_linear_expression_lb;
       integer_trail_->AppendRelaxedLinearReason(slack, exprs_[i].coeffs,
-                                                exprs_[i].vars, &local_reason);
+                                                exprs_[i].vars, &local_reason_);
     }
     if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(
                                      min_var_, min_of_linear_expression_lb),
-                                 {}, local_reason)) {
+                                 {}, local_reason_)) {
       return false;
     }
   }

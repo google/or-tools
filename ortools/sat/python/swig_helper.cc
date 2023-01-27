@@ -25,6 +25,7 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/functional.h"
@@ -57,55 +58,60 @@ class PySolutionCallback : public SolutionCallback {
   }
 };
 
-void SetSerializedParameters(const std::string& serialized_parameters,
+template <class M>
+bool StringToProtobuf(absl::string_view serialized_message, M& message) {
+  return message.ParseFromString(std::string(serialized_message));
+}
+
+void SetSerializedParameters(absl::string_view serialized_parameters,
                              SolveWrapper* solve_wrapper) {
   SatParameters parameters;
-  if (parameters.ParseFromString(serialized_parameters)) {
+  if (StringToProtobuf(serialized_parameters, parameters)) {
     solve_wrapper->SetParameters(parameters);
   }
 }
 
-pybind11::bytes SerializedSolve(const std::string& serialized_model,
+pybind11::bytes SerializedSolve(absl::string_view serialized_model,
                                 SolveWrapper* solve_wrapper) {
   std::string result;
   {
     ::pybind11::gil_scoped_release release;
     CpModelProto model_proto;
-    model_proto.ParseFromString(serialized_model);
+    CHECK(StringToProtobuf(serialized_model, model_proto));
     result = solve_wrapper->Solve(model_proto).SerializeAsString();
   }
   return result;
 }
 
-std::string SerializedModelStats(const std::string& serialized_model) {
+std::string SerializedModelStats(absl::string_view serialized_model) {
   CpModelProto model_proto;
-  model_proto.ParseFromString(serialized_model);
+  CHECK(StringToProtobuf(serialized_model, model_proto));
   return CpSatHelper::ModelStats(model_proto);
 }
 
 std::string SerializedSolverResponseStats(
-    const std::string& serialized_response) {
+    absl::string_view serialized_response) {
   CpSolverResponse response_proto;
-  response_proto.ParseFromString(serialized_response);
+  CHECK(StringToProtobuf(serialized_response, response_proto));
   return CpSatHelper::SolverResponseStats(response_proto);
 }
 
-std::string SerializedValidateModel(const std::string& serialized_model) {
+std::string SerializedValidateModel(absl::string_view serialized_model) {
   CpModelProto model_proto;
-  model_proto.ParseFromString(serialized_model);
+  CHECK(StringToProtobuf(serialized_model, model_proto));
   return CpSatHelper::ValidateModel(model_proto);
 }
 
-Domain SerializedVariableDomain(const std::string& serialized_variable) {
+Domain SerializedVariableDomain(absl::string_view serialized_variable) {
   IntegerVariableProto variable_proto;
-  variable_proto.ParseFromString(serialized_variable);
+  CHECK(StringToProtobuf(serialized_variable, variable_proto));
   return CpSatHelper::VariableDomain(variable_proto);
 }
 
-bool SerializedWriteModelToFile(const std::string& serialized_model,
+bool SerializedWriteModelToFile(absl::string_view serialized_model,
                                 const std::string& filename) {
   CpModelProto model_proto;
-  model_proto.ParseFromString(serialized_model);
+  CHECK(StringToProtobuf(serialized_model, model_proto));
   return CpSatHelper::WriteModelToFile(model_proto, filename);
 }
 

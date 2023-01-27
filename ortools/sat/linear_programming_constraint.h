@@ -423,6 +423,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   absl::StrongVector<glop::RowIndex, IntegerValue> infinity_norms_;
 
   // Underlying LP solver API.
+  glop::GlopParameters simplex_params_;
+  glop::BasisState state_;
   glop::LinearProgram lp_data_;
   glop::RevisedSimplex simplex_;
   int64_t next_simplex_iter_ = 500;

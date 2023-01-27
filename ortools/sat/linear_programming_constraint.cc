@@ -190,9 +190,14 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       expanded_lp_solution_(
           *model->GetOrCreate<LinearProgrammingConstraintLpSolution>()) {
   // Tweak the default parameters to make the solve incremental.
-  glop::GlopParameters parameters;
-  parameters.set_use_dual_simplex(true);
-  simplex_.SetParameters(parameters);
+  simplex_params_.set_use_dual_simplex(true);
+  simplex_params_.set_cost_scaling(glop::GlopParameters::MEAN_COST_SCALING);
+  if (parameters_.use_exact_lp_reason()) {
+    simplex_params_.set_change_status_to_imprecise(false);
+    simplex_params_.set_primal_feasibility_tolerance(1e-7);
+    simplex_params_.set_dual_feasibility_tolerance(1e-7);
+  }
+  simplex_.SetParameters(simplex_params_);
   if (parameters_.use_branching_in_lp() ||
       parameters_.search_branching() == SatParameters::LP_SEARCH) {
     compute_reduced_cost_averages_ = true;
@@ -358,9 +363,7 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
 
   // TODO(user): As we have an idea of the LP optimal after the first solves,
   // maybe we can adapt the scaling accordingly.
-  glop::GlopParameters params;
-  params.set_cost_scaling(glop::GlopParameters::MEAN_COST_SCALING);
-  scaler_.Scale(params, &lp_data_);
+  scaler_.Scale(simplex_params_, &lp_data_);
   UpdateBoundsOfLpVariables();
 
   // Set the information for the step to polish the LP basis. All our variables
@@ -1213,20 +1216,28 @@ void LinearProgrammingConstraint::AddMirCuts() {
 
   // We compute all the rows that are tight, these will be used as the base row
   // for the MIR_n procedure below.
-  const RowIndex num_rows = lp_data_.num_constraints();
+  const int num_rows = lp_data_.num_constraints().value();
   std::vector<std::pair<RowIndex, IntegerValue>> base_rows;
-  absl::StrongVector<RowIndex, double> row_weights(num_rows.value(), 0.0);
+  absl::StrongVector<RowIndex, double> row_weights(num_rows, 0.0);
+  absl::StrongVector<RowIndex, bool> at_ub(num_rows, false);
+  absl::StrongVector<RowIndex, bool> at_lb(num_rows, false);
   for (RowIndex row(0); row < num_rows; ++row) {
+    // We only consider tight rows.
+    // We use both the status and activity to have as much options as possible.
+    //
+    // TODO(user): shall we consider rows that are not tight?
     const auto status = simplex_.GetConstraintStatus(row);
-    if (status == glop::ConstraintStatus::BASIC) continue;
-    if (status == glop::ConstraintStatus::FREE) continue;
-
-    if (status == glop::ConstraintStatus::AT_UPPER_BOUND ||
+    const double activity = simplex_.GetConstraintActivity(row);
+    if (activity > lp_data_.constraint_upper_bounds()[row] - 1e-4 ||
+        status == glop::ConstraintStatus::AT_UPPER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
+      at_ub[row] = true;
       base_rows.push_back({row, IntegerValue(1)});
     }
-    if (status == glop::ConstraintStatus::AT_LOWER_BOUND ||
+    if (activity < lp_data_.constraint_lower_bounds()[row] + 1e-4 ||
+        status == glop::ConstraintStatus::AT_LOWER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
+      at_lb[row] = true;
       base_rows.push_back({row, IntegerValue(-1)});
     }
 
@@ -1282,7 +1293,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
       dense_cut[col] += coeff * multiplier;
     }
 
-    used_rows.assign(num_rows.value(), false);
+    used_rows.assign(num_rows, false);
     used_rows[entry.first] = true;
 
     // We will aggregate at most kMaxAggregation more rows.
@@ -1327,9 +1338,6 @@ void LinearProgrammingConstraint::AddMirCuts() {
       weights.clear();
       for (const auto entry : lp_data_.GetSparseColumn(var_to_eliminate)) {
         const RowIndex row = entry.row();
-        const auto status = simplex_.GetConstraintStatus(row);
-        if (status == glop::ConstraintStatus::BASIC) continue;
-        if (status == glop::ConstraintStatus::FREE) continue;
 
         // We disallow all the rows that contain a variable that we already
         // eliminated (or are about to). This mean that we choose rows that
@@ -1337,23 +1345,16 @@ void LinearProgrammingConstraint::AddMirCuts() {
         if (used_rows[row]) continue;
         used_rows[row] = true;
 
-        // TODO(user): Instead of using FIXED_VALUE consider also both direction
-        // when we almost have an equality? that is if the LP constraints bounds
-        // are close from each others (<1e-6 ?). Initial experiments shows it
-        // doesn't change much, so I kept this version for now. Note that it
-        // might just be better to use the side that constrain the current lp
-        // optimal solution (that we get from the status).
+        // We only consider "tight" rows, as defined above.
         bool add_row = false;
-        if (status == glop::ConstraintStatus::FIXED_VALUE ||
-            status == glop::ConstraintStatus::AT_UPPER_BOUND) {
+        if (at_ub[row]) {
           if (entry.coefficient() > 0.0) {
             if (dense_cut[var_to_eliminate] < 0) add_row = true;
           } else {
             if (dense_cut[var_to_eliminate] > 0) add_row = true;
           }
         }
-        if (status == glop::ConstraintStatus::FIXED_VALUE ||
-            status == glop::ConstraintStatus::AT_LOWER_BOUND) {
+        if (at_lb[row]) {
           if (entry.coefficient() > 0.0) {
             if (dense_cut[var_to_eliminate] > 0) add_row = true;
           } else {
@@ -1505,7 +1506,6 @@ bool LinearProgrammingConstraint::Propagate() {
 
   // TODO(user): It seems the time we loose by not stopping early might be worth
   // it because we end up with a better explanation at optimality.
-  glop::GlopParameters glop_params = simplex_.GetParameters();
   if (/* DISABLES CODE */ (false) && objective_is_defined_) {
     // We put a limit on the dual objective since there is no point increasing
     // it past our current objective upper-bound (we will already fail as soon
@@ -1514,7 +1514,7 @@ bool LinearProgrammingConstraint::Propagate() {
     //
     // Note that we use a bigger epsilon here to be sure that if we abort
     // because of this, we will report a conflict.
-    glop_params.set_objective_upper_limit(
+    simplex_params_.set_objective_upper_limit(
         static_cast<double>(integer_trail_->UpperBound(objective_cp_).value() +
                             100.0 * kCpEpsilon));
   }
@@ -1523,17 +1523,13 @@ bool LinearProgrammingConstraint::Propagate() {
   // that because we are "incremental", even if we don't solve it this time we
   // will make progress towards a solve in the lower node of the tree search.
   if (trail_->CurrentDecisionLevel() == 0) {
-    glop_params.set_max_number_of_iterations(parameters_.root_lp_iterations());
+    simplex_params_.set_max_number_of_iterations(
+        parameters_.root_lp_iterations());
   } else {
-    glop_params.set_max_number_of_iterations(next_simplex_iter_);
-  }
-  if (parameters_.use_exact_lp_reason()) {
-    glop_params.set_change_status_to_imprecise(false);
-    glop_params.set_primal_feasibility_tolerance(1e-7);
-    glop_params.set_dual_feasibility_tolerance(1e-7);
+    simplex_params_.set_max_number_of_iterations(next_simplex_iter_);
   }
 
-  simplex_.SetParameters(glop_params);
+  simplex_.SetParameters(simplex_params_);
   simplex_.NotifyThatMatrixIsUnchangedForNextSolve();
   if (!SolveLp()) return true;
 
@@ -1580,9 +1576,9 @@ bool LinearProgrammingConstraint::Propagate() {
           expanded_lp_solution_, &constraint_manager_);
     }
 
-    glop::BasisState state = simplex_.GetState();
-    if (constraint_manager_.ChangeLp(expanded_lp_solution_, &state)) {
-      simplex_.LoadStateForNextSolve(state);
+    state_ = simplex_.GetState();
+    if (constraint_manager_.ChangeLp(expanded_lp_solution_, &state_)) {
+      simplex_.LoadStateForNextSolve(state_);
       if (!CreateLpFromConstraintManager()) {
         return integer_trail_->ReportConflict({});
       }

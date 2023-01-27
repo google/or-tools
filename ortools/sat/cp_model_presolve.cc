@@ -1753,6 +1753,12 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
     const int64_t coeff = ct->linear().coeffs(i);
     CHECK(RefIsPositive(var));
     if (context_->VariableIsUniqueAndRemovable(var)) {
+      // This is not needed for the code below, but in practice, removing
+      // singleton with a large coefficient create holes in the constraint rhs
+      // and we will need to add more variable to deal with that.
+      // This works way better on timtab1CUTS.pb.gz for instance.
+      if (std::abs(coeff) != 1) continue;
+
       bool exact;
       const auto term_domain =
           context_->DomainOf(var).MultiplicationBy(-coeff, &exact);
@@ -1943,6 +1949,10 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
         *(context_->mapping_model->add_constraints()) = *ct;
         return RemoveConstraint(ct);
       }
+
+      // On supportcase20, this transformation make the LP relaxation way worse.
+      // TODO(user): understand why.
+      if (true) continue;
 
       // Update the objective and remove the variable from its equality
       // constraint by expanding its rhs. This might fail if the new linear
@@ -3683,6 +3693,9 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   const bool upper_bounded = max_sum > rhs_domain.Max();
   if (!lower_bounded && !upper_bounded) return;
   if (lower_bounded && upper_bounded) {
+    // We disable this for now.
+    if (true) return;
+
     // Lets not split except if we extract enforcement.
     if (max_coeff_magnitude < std::max(ub_threshold, lb_threshold)) return;
 

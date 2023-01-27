@@ -216,6 +216,9 @@ class LinMinPropagator : public PropagatorInterface {
   std::vector<IntegerValue> expr_lbs_;
   Model* model_;
   IntegerTrail* integer_trail_;
+  std::vector<IntegerValue> max_variations_;
+  std::vector<IntegerValue> reason_coeffs_;
+  std::vector<IntegerLiteral> local_reason_;
   std::vector<IntegerLiteral> integer_reason_for_unique_candidate_;
   int rev_unique_candidate_ = 0;
 };
