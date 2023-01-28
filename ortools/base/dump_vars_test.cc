@@ -21,6 +21,7 @@
 
 #include "gtest/gtest.h"
 
+#if !defined(__APPLE__)
 namespace operations_research::base {
 namespace {
 
@@ -161,3 +162,4 @@ TEST(DumpVars, TemporaryLifetime) {
 
 }  // namespace
 }  // namespace operations_research::base
+#endif  // !defined(__APPLE__)

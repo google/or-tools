@@ -83,8 +83,6 @@ code_sample_py("vendor_scheduling_sat")
 
 code_sample_py("wedding_optimal_chart_sat")
 
-code_sample_py("weighted_latency_problem_sat")
-
 code_sample_py("worker_schedule_sat")
 
 code_sample_py("zebra_sat")
