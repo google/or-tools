@@ -22,19 +22,22 @@ of the rule.
 see: https://en.wikipedia.org/wiki/Golomb_ruler
 """
 
+from typing import Sequence
 from absl import app
 from absl import flags
 
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
-flags.DEFINE_integer('order', 8, 'Order of the ruler.')
-flags.DEFINE_string('params', 'max_time_in_seconds:10.0',
-                    'Sat solver parameters.')
+_ORDER = flags.DEFINE_integer('order', 8, 'Order of the ruler.')
+_PARAMS = flags.DEFINE_string(
+    'params',
+    'num_search_workers:16,log_search_progress:true,max_time_in_seconds:45',
+    'Sat solver parameters.')
 
 
 def solve_golomb_ruler(order, params):
+    """Solve the Golomb ruler problem."""
     # Create the model.
     model = cp_model.CpModel()
 
@@ -85,8 +88,10 @@ def solve_golomb_ruler(order, params):
     print(f'- wall time: {solver.WallTime()}s\n')
 
 
-def main(_=None):
-    solve_golomb_ruler(FLAGS.order, FLAGS.params)
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    solve_golomb_ruler(_ORDER.value, _PARAMS.value)
 
 
 if __name__ == '__main__':

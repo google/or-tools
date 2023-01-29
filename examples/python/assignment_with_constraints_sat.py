@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,21 +13,20 @@
 # limitations under the License.
 """Solve an assignment problem with combination constraints on workers."""
 
-
+from typing import Sequence
+from absl import app
 from ortools.sat.python import cp_model
 
 
 def solve_assignment():
     """Solve the assignment problem."""
     # Data.
-    cost = [[90, 76, 75, 70, 50, 74], [35, 85, 55, 65, 48,
-                                       101], [125, 95, 90, 105, 59, 120],
-            [45, 110, 95, 115, 104, 83], [60, 105, 80, 75, 59, 62], [
-                45, 65, 110, 95, 47, 31
-            ], [38, 51, 107, 41, 69, 99], [47, 85, 57, 71,
-                                           92, 77], [39, 63, 97, 49, 118, 56],
-            [47, 101, 71, 60, 88, 109], [17, 39, 103, 64, 61,
-                                         92], [101, 45, 83, 59, 92, 27]]
+    cost = [[90, 76, 75, 70, 50, 74], [35, 85, 55, 65, 48, 101],
+            [125, 95, 90, 105, 59, 120], [45, 110, 95, 115, 104, 83],
+            [60, 105, 80, 75, 59, 62], [45, 65, 110, 95, 47, 31],
+            [38, 51, 107, 41, 69, 99], [47, 85, 57, 71, 92, 77],
+            [39, 63, 97, 49, 118, 56], [47, 101, 71, 60, 88, 109],
+            [17, 39, 103, 64, 61, 92], [101, 45, 83, 59, 92, 27]]
 
     group1 = [
         [0, 0, 1, 1],  # Workers 2, 3
@@ -63,7 +63,8 @@ def solve_assignment():
 
     model = cp_model.CpModel()
     # Variables
-    selected = [[model.NewBoolVar('x[%i,%i]' % (i, j)) for j in all_tasks]
+    selected = [[model.NewBoolVar('x[%i,%i]' % (i, j))
+                 for j in all_tasks]
                 for i in all_workers]
     works = [model.NewBoolVar('works[%i]' % i) for i in all_workers]
 
@@ -92,7 +93,8 @@ def solve_assignment():
 
     # Objective
     model.Minimize(
-        sum(selected[i][j] * cost[i][j] for j in all_tasks
+        sum(selected[i][j] * cost[i][j]
+            for j in all_tasks
             for i in all_workers))
 
     # Solve and output solution.
@@ -116,4 +118,11 @@ def solve_assignment():
     print('  - wall time : %f s' % solver.WallTime())
 
 
-solve_assignment()
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    solve_assignment()
+
+
+if __name__ == '__main__':
+    app.run(main)

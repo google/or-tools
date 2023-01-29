@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +13,8 @@
 # limitations under the License.
 """Fill a 60x50 rectangle by a minimum number of non-overlapping squares."""
 
-
+from typing import Sequence
+from absl import app
 from ortools.sat.python import cp_model
 
 
@@ -74,11 +76,12 @@ def cover_rectangle(num_squares):
         model.Add(x_starts[i] <= x_starts[i + 1]).OnlyEnforceIf(same)
 
     # Symmetry breaking 2: first square in one quadrant.
-    model.Add(x_starts[0] < (size_x + 1)// 2)
+    model.Add(x_starts[0] < (size_x + 1) // 2)
     model.Add(y_starts[0] < (size_y + 1) // 2)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
+    solver.parameters.num_workers = 8
     status = solver.Solve(model)
     print('%s found in %0.2fs' % (solver.StatusName(status), solver.WallTime()))
 
@@ -102,7 +105,14 @@ def cover_rectangle(num_squares):
     return status == cp_model.OPTIMAL
 
 
-for num_squares in range(1, 15):
-    print('Trying with size =', num_squares)
-    if cover_rectangle(num_squares):
-        break
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    for num_squares in range(1, 15):
+        print('Trying with size =', num_squares)
+        if cover_rectangle(num_squares):
+            break
+
+
+if __name__ == '__main__':
+    app.run(main)

@@ -23,7 +23,6 @@ jobs. This is called the makespan.
 """
 
 # overloaded sum() clashes with pytype.
-# pytype: disable=wrong-arg-types
 
 import collections
 

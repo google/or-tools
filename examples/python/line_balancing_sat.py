@@ -42,7 +42,6 @@ _OUTPUT_PROTO = flags.DEFINE_string(
     'output_proto', '', 'Output file to write the cp_model proto to.')
 _MODEL = flags.DEFINE_string('model', 'boolean',
                              'Model used: boolean, scheduling, greedy')
-# pytype: disable=wrong-arg-types
 
 
 class SectionInfo(object):
@@ -337,8 +336,6 @@ def solve_scheduling_model(model, hint):
 def main(argv: Sequence[str]) -> None:
     if len(argv) > 1:
         raise app.UsageError('Too many command-line arguments.')
-    if _INPUT.value == '':
-        raise app.UsageError('Missing input file.')
 
     model = read_model(_INPUT.value)
     print_stats(model)

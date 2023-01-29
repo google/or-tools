@@ -47,6 +47,8 @@ code_sample_cc_py(name = "literal_sample_sat")
 
 code_sample_cc_py(name = "multiple_knapsack_sat")
 
+code_sample_cc_py(name = "non_linear_sat")
+
 code_sample_cc_py(name = "nqueens_sat")
 
 code_sample_cc_py(name = "nurses_sat")

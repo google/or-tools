@@ -16,6 +16,8 @@
 #include <cstdint>
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 namespace operations_research {
 namespace bop {
 
@@ -27,7 +29,7 @@ using ::operations_research::sat::LinearObjective;
 // BopSolution
 //------------------------------------------------------------------------------
 BopSolution::BopSolution(const LinearBooleanProblem& problem,
-                         const std::string& name)
+                         absl::string_view name)
     : problem_(&problem),
       name_(name),
       values_(problem.num_variables(), false),

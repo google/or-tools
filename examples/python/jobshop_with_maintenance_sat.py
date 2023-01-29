@@ -1,4 +1,5 @@
-# Copyright 2010-2022 Google
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,6 +14,8 @@
 """Jobshop with maintenance tasks using the CP-SAT solver."""
 
 import collections
+from typing import Sequence
+from absl import app
 from ortools.sat.python import cp_model
 
 
@@ -144,4 +147,11 @@ def jobshop_with_maintenance():
         print('  - wall time : %f s' % solver.WallTime())
 
 
-jobshop_with_maintenance()
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    jobshop_with_maintenance()
+
+
+if __name__ == '__main__':
+    app.run(main)

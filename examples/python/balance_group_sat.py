@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +18,8 @@ be as close to the average as possible.
 Furthermore, if one color is an a group, at least k items with this color must
 be in that group.
 """
-
-
+from typing import Sequence
+from absl import app
 from ortools.sat.python import cp_model
 
 
@@ -60,7 +61,11 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
             print(']')
 
 
-def main():
+def main(argv: Sequence[str]) -> None:
+    """Solves a group balancing problem."""
+
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
     # Data.
     num_groups = 10
     num_items = 100
@@ -149,7 +154,8 @@ def main():
 
     # Compute the maximum number of colors in a group.
     max_color = num_items_per_group // min_items_of_same_color_per_group
-    # Redundant contraint: The problem does not solve in reasonable time without it.
+
+    # Redundant constraint, it helps with solving time.
     if max_color < num_colors:
         for g in all_groups:
             model.Add(
@@ -158,9 +164,9 @@ def main():
     # Minimize epsilon
     model.Minimize(e)
 
-    model.ExportToFile('balance_group_sat.pbtxt')
-
     solver = cp_model.CpSolver()
+    # solver.parameters.log_search_progress = True
+    solver.parameters.num_workers = 16
     solution_printer = SolutionPrinter(values, colors, all_groups, all_items,
                                        item_in_group)
     status = solver.Solve(model, solution_printer)
@@ -176,4 +182,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    app.run(main)

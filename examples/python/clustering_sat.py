@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +13,8 @@
 # limitations under the License.
 """Cluster 40 cities in 4 equal groups to minimize sum of crossed distances."""
 
-
+from typing import Sequence
+from absl import app
 from ortools.sat.python import cp_model
 
 
@@ -57,10 +59,10 @@ distance_matrix = [
     [10084, 20956, 14618, 12135, 38935, 8306, 9793, 2615, 5850, 10467, 9918, 14568, 13907, 11803, 11750, 13657, 6901, 23862, 16125, 14748, 12981, 11624, 21033, 15358, 24144, 10304, 10742, 9094, 8042, 7408, 4580, 4072, 8446, 20543, 26181, 7668, 2747, 0, 3330, 5313],
     [13026, 23963, 17563, 14771, 42160, 11069, 12925, 5730, 8778, 13375, 11235, 14366, 13621, 11188, 10424, 11907, 5609, 21861, 13624, 11781, 9718, 8304, 17737, 12200, 20816, 7330, 7532, 6117, 4735, 4488, 2599, 3355, 7773, 22186, 27895, 9742, 726, 3330, 0, 2042],
     [15056, 25994, 19589, 16743, 44198, 13078, 14967, 7552, 10422, 14935, 11891, 14002, 13225, 10671, 9475, 10633, 5084, 20315, 11866, 9802, 7682, 6471, 15720, 10674, 18908, 6204, 6000, 5066, 3039, 3721, 3496, 4772, 8614, 23805, 29519, 11614, 2749, 5313, 2042, 0],
- ] # yapf: disable
+]  # yapf: disable
 
 
-def main():
+def clustering_sat():
     """Entry point of the program."""
     num_nodes = len(distance_matrix)
     print('Num nodes =', num_nodes)
@@ -85,16 +87,17 @@ def main():
 
     # Number of neighborss:
     for n in range(num_nodes):
-        model.Add(sum(neighbors[m, n] for m in range(n)) + 
-                  sum(neighbors[n, m] for m in range(n + 1, num_nodes)) ==
-                  group_size - 1)
-    
+        model.Add(
+            sum(neighbors[m, n] for m in range(n)) +
+            sum(neighbors[n, m]
+                for m in range(n + 1, num_nodes)) == group_size - 1)
+
     # Enforce transivity on all triplets.
     for n1 in range(num_nodes - 2):
         for n2 in range(n1 + 1, num_nodes - 1):
             for n3 in range(n2 + 1, num_nodes):
-                model.Add(
-                    neighbors[n1, n3] + neighbors[n2, n3] + neighbors[n1, n2] != 2)
+                model.Add(neighbors[n1, n3] + neighbors[n2, n3] +
+                          neighbors[n1, n2] != 2)
 
     # Redundant constraints on total sum of neighborss.
     model.Add(sum(obj_vars) == num_groups * group_size * (group_size - 1) // 2)
@@ -111,19 +114,26 @@ def main():
     status = solver.Solve(model)
     print(solver.ResponseStats())
 
-    visited = set()
-    for g in range(num_groups):
-        for n in range(num_nodes):
-            if not n in visited:
-                visited.add(n)
-                output = str(n)
-                for o in range(n + 1, num_nodes):
-                    if solver.BooleanValue(neighbors[n, o]):
-                        visited.add(o)
-                        output += ' ' + str(o)
-                print('Group', g, ':', output)
-                break
+    if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
+        visited = set()
+        for g in range(num_groups):
+            for n in range(num_nodes):
+                if n not in visited:
+                    visited.add(n)
+                    output = str(n)
+                    for o in range(n + 1, num_nodes):
+                        if solver.BooleanValue(neighbors[n, o]):
+                            visited.add(o)
+                            output += ' ' + str(o)
+                    print('Group', g, ':', output)
+                    break
+
+
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    clustering_sat()
 
 
 if __name__ == '__main__':
-    main()
+    app.run(main)

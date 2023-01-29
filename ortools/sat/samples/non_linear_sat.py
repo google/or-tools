@@ -18,16 +18,16 @@
 from ortools.sat.python import cp_model
 
 
-def NonLinearSat():
+def non_linear_sat():
     perimeter = 20
 
     model = cp_model.CpModel()
 
-    x = model.NewIntVar(0, perimeter, "x")
-    y = model.NewIntVar(0, perimeter, "y")
+    x = model.NewIntVar(0, perimeter, 'x')
+    y = model.NewIntVar(0, perimeter, 'y')
     model.Add(2 * (x + y) == perimeter)
 
-    area = model.NewIntVar(0, perimeter * perimeter, "s")
+    area = model.NewIntVar(0, perimeter * perimeter, 's')
     model.AddMultiplicationEquality(area, x, y)
 
     model.Maximize(area)
@@ -44,4 +44,4 @@ def NonLinearSat():
         print('No solution found.')
 
 
-NonLinearSat()
+non_linear_sat()

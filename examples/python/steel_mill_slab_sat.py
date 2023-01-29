@@ -14,7 +14,6 @@
 """Solves the Stell Mill Slab problem with 4 different techniques."""
 
 # overloaded sum() clashes with pytype.
-# pytype: disable=wrong-arg-types
 
 import collections
 import time
@@ -703,9 +702,8 @@ def steel_mill_slab_with_mip_column_generation(problem):
 
     # create model and decision variables.
     start_time = time.time()
-    solver = pywraplp.Solver.CreateSolver('SCIP')
-    if not solver:
-      return
+    solver = pywraplp.Solver('Steel',
+                             pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
     selected = [
         solver.IntVar(0.0, 1.0, 'selected_%i' % i) for i in all_valid_slabs
     ]

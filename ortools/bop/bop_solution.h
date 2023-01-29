@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/sat/boolean_problem.h"
@@ -34,8 +35,7 @@ namespace bop {
 // the feasibility.
 class BopSolution {
  public:
-  BopSolution(const sat::LinearBooleanProblem& problem,
-              const std::string& name);
+  BopSolution(const sat::LinearBooleanProblem& problem, absl::string_view name);
 
   void SetValue(VariableIndex var, bool value) {
     recompute_cost_ = true;
@@ -46,7 +46,7 @@ class BopSolution {
   size_t Size() const { return values_.size(); }
   bool Value(VariableIndex var) const { return values_[var]; }
   const std::string& name() const { return name_; }
-  void set_name(const std::string& name) { name_ = name; }
+  void set_name(absl::string_view name) { name_ = name; }
 
   // Returns the objective cost of the solution.
   // Note that this code is lazy but not incremental and might run in the

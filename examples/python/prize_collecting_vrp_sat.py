@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Simple prize collecting TSP problem with a max distance."""
+"""Simple prize collecting VRP problem with a max distance."""
 
+from typing import Sequence
+from absl import app
 from ortools.sat.python import cp_model
+
 
 DISTANCE_MATRIX = [
     [0, 10938, 4542, 2835, 29441, 2171, 1611, 9208, 9528, 11111, 16120, 22606, 22127, 20627, 21246, 23387, 16697, 33609, 26184, 24772, 22644, 20655, 30492, 23296, 32979, 18141, 19248, 17129, 17192, 15645, 12658, 11210, 12094, 13175, 18162, 4968, 12308, 10084, 13026, 15056],
@@ -56,12 +59,13 @@ DISTANCE_MATRIX = [
     [10084, 20956, 14618, 12135, 38935, 8306, 9793, 2615, 5850, 10467, 9918, 14568, 13907, 11803, 11750, 13657, 6901, 23862, 16125, 14748, 12981, 11624, 21033, 15358, 24144, 10304, 10742, 9094, 8042, 7408, 4580, 4072, 8446, 20543, 26181, 7668, 2747, 0, 3330, 5313],
     [13026, 23963, 17563, 14771, 42160, 11069, 12925, 5730, 8778, 13375, 11235, 14366, 13621, 11188, 10424, 11907, 5609, 21861, 13624, 11781, 9718, 8304, 17737, 12200, 20816, 7330, 7532, 6117, 4735, 4488, 2599, 3355, 7773, 22186, 27895, 9742, 726, 3330, 0, 2042],
     [15056, 25994, 19589, 16743, 44198, 13078, 14967, 7552, 10422, 14935, 11891, 14002, 13225, 10671, 9475, 10633, 5084, 20315, 11866, 9802, 7682, 6471, 15720, 10674, 18908, 6204, 6000, 5066, 3039, 3721, 3496, 4772, 8614, 23805, 29519, 11614, 2749, 5313, 2042, 0],
-] # yapf: disable
+]  # yapf: disable
 
 MAX_DISTANCE = 80_000
 
 VISIT_VALUES = [60_000, 50_000, 40_000, 30_000] * (len(DISTANCE_MATRIX) // 4)
 VISIT_VALUES[0] = 0
+
 
 # Create a console solution printer.
 def print_solution(solver, visited_nodes, used_arcs, num_nodes, num_vehicles):
@@ -71,7 +75,10 @@ def print_solution(solver, visited_nodes, used_arcs, num_nodes, num_vehicles):
     for node in range(num_nodes):
         if node == 0:
             continue
-        is_visited = sum([solver.BooleanValue(visited_nodes[v][node]) for v in range(num_vehicles)])
+        is_visited = sum([
+            solver.BooleanValue(visited_nodes[v][node])
+            for v in range(num_vehicles)
+        ])
         if not is_visited:
             dropped_nodes += f' {node}({VISIT_VALUES[node]})'
     print(dropped_nodes)
@@ -106,7 +113,8 @@ def print_solution(solver, visited_nodes, used_arcs, num_nodes, num_vehicles):
     print(f'Total Distance: {total_distance}m')
     print(f'Total Value collected: {total_value_collected}/{sum(VISIT_VALUES)}')
 
-def main():
+
+def prize_collecting_vrp():
     """Entry point of the program."""
     num_nodes = len(DISTANCE_MATRIX)
     num_vehicles = 4
@@ -151,13 +159,15 @@ def main():
         model.Add(visited_nodes[v][0] == 1)
 
         # limit the route distance
-        model.Add(sum(used_arcs[v][i, j] * DISTANCE_MATRIX[i][j]
-            for i in all_nodes
-            for j in all_nodes) <= MAX_DISTANCE)
+        model.Add(
+            sum(used_arcs[v][i, j] * DISTANCE_MATRIX[i][j]
+                for i in all_nodes
+                for j in all_nodes) <= MAX_DISTANCE)
 
     # Each node is visited at most once
     for node in range(1, num_nodes):
-        model.AddAtMostOne([visited_nodes[v][node] for v in range(num_vehicles)])
+        model.AddAtMostOne(
+            [visited_nodes[v][node] for v in range(num_vehicles)])
 
     # Maximize visited node values minus the travelled distance.
     model.Maximize(
@@ -167,16 +177,19 @@ def main():
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 8
     solver.parameters.max_time_in_seconds = 15.0
-    # solver.parameters.log_search_progress = True
+    solver.parameters.log_search_progress = True
 
     status = solver.Solve(model)
     if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
-        print(f'search returned with the status {solver.StatusName(status)}')
-        print_solution(solver, visited_nodes, used_arcs,
-                       num_nodes, num_vehicles)
-    else:
-        print(solver.ResponseStats())
+        print_solution(solver, visited_nodes, used_arcs, num_nodes,
+                       num_vehicles)
+
+
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    prize_collecting_vrp()
 
 
 if __name__ == '__main__':
-    main()
+    app.run(main)

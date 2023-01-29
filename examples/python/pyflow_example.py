@@ -13,12 +13,13 @@
 # limitations under the License.
 """MaxFlow and MinCostFlow examples."""
 
+from typing import Sequence
 from absl import app
 from ortools.graph.python import max_flow
 from ortools.graph.python import min_cost_flow
 
 
-def MaxFlow():
+def max_flow_api():
     """MaxFlow simple interface example."""
     print('MaxFlow on a simple network.')
     tails = [0, 0, 0, 0, 1, 2, 3, 3, 4]
@@ -39,7 +40,7 @@ def MaxFlow():
         print('There was an issue with the max flow input.')
 
 
-def MinCostFlow():
+def min_cost_flow_api():
     """MinCostFlow simple interface example.
 
   Note that this example is actually a linear sum assignment example and will
@@ -72,9 +73,11 @@ def MinCostFlow():
         print('There was an issue with the min cost flow input.')
 
 
-def main(_=None):
-    MaxFlow()
-    MinCostFlow()
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    max_flow_api()
+    min_cost_flow_api()
 
 
 if __name__ == '__main__':

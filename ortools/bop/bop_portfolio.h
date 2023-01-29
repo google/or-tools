@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_lns.h"
@@ -174,7 +175,7 @@ class OptimizerSelector {
   void UpdateOrder();
 
   struct RunInfo {
-    RunInfo(OptimizerIndex i, const std::string& n)
+    RunInfo(OptimizerIndex i, absl::string_view n)
         : optimizer_index(i),
           name(n),
           num_successes(0),

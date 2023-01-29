@@ -18,7 +18,6 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
-import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.LinearExpr;
 
 public class NonLinearSat {
@@ -30,9 +29,7 @@ public class NonLinearSat {
     IntVar x = model.newIntVar(0, perimeter, "x");
     IntVar y = model.newIntVar(0, perimeter, "y");
 
-    model.addEquality(
-        LinearExpr.weightedSum(new IntVar[] {x, y}, new long[] {2, 2}),
-        perimeter);
+    model.addEquality(LinearExpr.weightedSum(new IntVar[] {x, y}, new long[] {2, 2}), perimeter);
 
     IntVar area = model.newIntVar(0, perimeter * perimeter, "s");
     model.addMultiplicationEquality(area, x, y);
@@ -46,8 +43,7 @@ public class NonLinearSat {
       System.out.println("x = " + solver.value(x));
       System.out.println("y = " + solver.value(y));
       System.out.println("s = " + solver.value(area));
-    }
-    else
+    } else
       System.out.println("No solution found");
   }
 }

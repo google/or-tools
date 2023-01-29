@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/sat/boolean_problem.h"
 
@@ -28,7 +29,7 @@ namespace bop {
 using ::operations_research::sat::LinearBooleanProblem;
 using ::operations_research::sat::LinearObjective;
 
-BopOptimizerBase::BopOptimizerBase(const std::string& name)
+BopOptimizerBase::BopOptimizerBase(absl::string_view name)
     : name_(name), stats_(name) {
   SCOPED_TIME_STAT(&stats_);
 }

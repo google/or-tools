@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +13,8 @@
 # limitations under the License.
 """Solves a simple shift scheduling problem."""
 
-
+from typing import Sequence
+from absl import app
 from ortools.sat.python import cp_model
 
 
@@ -36,8 +38,9 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         print('Solution %i: ', self.__solution_count)
         print('  min vendors:', self.__min_vendors)
         for i in range(self.__num_vendors):
-            print('  - vendor %i: ' % i, self.__possible_schedules[self.Value(
-                self.__selected_schedules[i])])
+            print(
+                '  - vendor %i: ' % i, self.__possible_schedules[self.Value(
+                    self.__selected_schedules[i])])
         print()
 
         for j in range(self.__num_hours):
@@ -51,7 +54,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-def main():
+def vendor_scheduling_sat():
     """Create the shift scheduling model and solve it."""
     # Create the model.
     model = cp_model.CpModel()
@@ -69,12 +72,12 @@ def main():
     # Last columns are :
     #   index_of_the_schedule, sum of worked hours (per work type).
     # The index is useful for branching.
-    possible_schedules = [[1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0,
-                           8], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1,
-                                4], [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2,
-                                     5], [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
-                          [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4,
-                           3], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]]
+    possible_schedules = [[1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 8],
+                          [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 4],
+                          [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2, 5],
+                          [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
+                          [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4, 3],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]]
 
     num_possible_schedules = len(possible_schedules)
     selected_schedules = []
@@ -134,9 +137,15 @@ def main():
     print('  - conflicts : %i' % solver.NumConflicts())
     print('  - branches  : %i' % solver.NumBranches())
     print('  - wall time : %f s' % solver.WallTime())
-    print(
-        '  - number of solutions found: %i' % solution_printer.solution_count())
+    print('  - number of solutions found: %i' %
+          solution_printer.solution_count())
+
+
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    vendor_scheduling_sat()
 
 
 if __name__ == '__main__':
-    main()
+    app.run(main)

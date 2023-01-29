@@ -18,11 +18,12 @@
    modified so the optimum solution is unique.
 """
 
+from typing import Sequence
 from absl import app
 from ortools.graph.python import linear_sum_assignment
 
 
-def RunAssignmentOn4x4Matrix():
+def run_assignment_on_4x4_matrix():
     """Test linear sum assignment on a 4x4 matrix."""
     num_sources = 4
     num_targets = 4
@@ -49,8 +50,10 @@ def RunAssignmentOn4x4Matrix():
             'Some input costs are too large and may cause an integer overflow.')
 
 
-def main(_=None):
-    RunAssignmentOn4x4Matrix()
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    run_assignment_on_4x4_matrix()
 
 
 if __name__ == '__main__':

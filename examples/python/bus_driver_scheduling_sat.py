@@ -1664,7 +1664,6 @@ SAMPLE_SHIFTS_LARGE = [
     [1355, '00:57', '01:07', 1497, 1507, 10]
 ]  # yapf:disable
 
-# pytype: disable=wrong-arg-types
 
 
 def bus_driver_scheduling(minimize_drivers, max_num_drivers):

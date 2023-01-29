@@ -250,6 +250,7 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/colab/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/scheduling/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/python/__init__.py CONTENT "")
@@ -264,8 +265,10 @@ file(COPY
 file(COPY
   ortools/sat/python/cp_model.py
   ortools/sat/python/cp_model_helper.py
-  ortools/sat/python/visualization.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/python)
+file(COPY
+  ortools/sat/colab/visualization.py
+  DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
 
 # setup.py.in contains cmake variable e.g. @PYTHON_PROJECT@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>

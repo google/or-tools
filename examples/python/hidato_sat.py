@@ -14,7 +14,7 @@
 """Solves the Hidato problem with the CP-SAT solver."""
 
 from absl import app
-from ortools.sat.python import visualization
+from ortools.sat.colab import visualization
 from ortools.sat.python import cp_model
 
 

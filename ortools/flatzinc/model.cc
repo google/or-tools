@@ -1044,7 +1044,7 @@ void Model::AddConstraint(absl::string_view id, std::vector<Argument> arguments,
   constraints_.push_back(constraint);
 }
 
-void Model::AddConstraint(const std::string& id,
+void Model::AddConstraint(absl::string_view id,
                           std::vector<Argument> arguments) {
   AddConstraint(id, std::move(arguments), false);
 }

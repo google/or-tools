@@ -21,7 +21,6 @@ ratio of appointment types.
 """
 
 # overloaded sum() clashes with pytype.
-# pytype: disable=wrong-arg-types
 
 # [START import]
 from absl import app

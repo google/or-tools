@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/basictypes.h"
 #include "ortools/base/strong_vector.h"
@@ -44,7 +45,7 @@ class ProblemState;
 // are run sequentially or concurrently. See for instance BopRandomLNSOptimizer.
 class BopOptimizerBase {
  public:
-  explicit BopOptimizerBase(const std::string& name);
+  explicit BopOptimizerBase(absl::string_view name);
   virtual ~BopOptimizerBase();
 
   // Returns the name given at construction.

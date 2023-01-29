@@ -24,7 +24,7 @@ jobs. This is called the makespan.
 
 import collections
 
-from ortools.sat.python import visualization
+from ortools.sat.colab import visualization
 from ortools.sat.python import cp_model
 
 

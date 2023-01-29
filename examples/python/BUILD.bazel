@@ -17,13 +17,9 @@ load(":code_samples.bzl", "code_sample_compile_py", "code_sample_py")
 
 # code_sample_py("arc_flow_cutting_stock_sat")  # using pywraplp
 
-code_sample_py("assignment2_sat")
-
 code_sample_py("assignment_with_constraints_sat")
 
 code_sample_py("balance_group_sat")
-
-code_sample_py("bus_driver_scheduling_flow_sat")
 
 code_sample_py("bus_driver_scheduling_sat")
 
@@ -63,8 +59,6 @@ code_sample_py("qubo_sat")
 
 code_sample_compile_py("rcpsp_sat")  # no input
 
-code_sample_py("reallocate_sat")
-
 code_sample_py("shift_scheduling_sat")
 
 code_sample_py("single_machine_scheduling_with_setup_release_due_dates_sat")
@@ -82,7 +76,5 @@ code_sample_py("tsp_sat")
 code_sample_py("vendor_scheduling_sat")
 
 code_sample_py("wedding_optimal_chart_sat")
-
-code_sample_py("worker_schedule_sat")
 
 code_sample_py("zebra_sat")

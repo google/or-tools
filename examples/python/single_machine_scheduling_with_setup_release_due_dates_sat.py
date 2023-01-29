@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,25 +13,22 @@
 # limitations under the License.
 """Single machine jobshop with setup times, release dates and due dates."""
 
-import argparse
-
+from typing import Sequence
+from absl import app
+from absl import flags
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 #----------------------------------------------------------------------------
 # Command line arguments.
-PARSER = argparse.ArgumentParser()
-PARSER.add_argument(
-    '--output_proto_file',
-    default='',
-    help='Output file to write the cp_model'
-    'proto to.')
-PARSER.add_argument('--params', default='', help='Sat solver parameters.')
-PARSER.add_argument(
-    '--preprocess_times',
-    default=True,
-    type=bool,
-    help='Preprocess setup times and durations')
+_OUTPUT_PROTO = flags.DEFINE_string(
+    'output_proto', '', 'Output file to write the cp_model proto to.')
+_PARAMS = flags.DEFINE_string(
+    'params',
+    'num_search_workers:16,log_search_progress:true,max_time_in_seconds:45',
+    'Sat solver parameters.')
+_PREPROCESS = flags.DEFINE_bool('--preprocess_times', True,
+                                'Preprocess setup times and durations')
 
 
 #----------------------------------------------------------------------------
@@ -49,11 +47,11 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
 
-def main(args):
+def single_machine_scheduling():
     """Solves a complex single machine jobshop scheduling problem."""
 
-    parameters = args.params
-    output_proto_file = args.output_proto_file
+    parameters = _PARAMS.value
+    output_proto_file = _OUTPUT_PROTO.value
 
     #----------------------------------------------------------------------------
     # Data.
@@ -147,7 +145,7 @@ def main(args):
 
     #----------------------------------------------------------------------------
     # Preprocess.
-    if args.preprocess_times:
+    if _PREPROCESS.value:
         for job_id in all_jobs:
             min_incoming_setup = min(
                 setup_times[j][job_id] for j in range(num_jobs + 1))
@@ -175,7 +173,8 @@ def main(args):
     #----------------------------------------------------------------------------
     # Compute a maximum makespan greedily.
     horizon = sum(job_durations) + sum(
-        max(setup_times[i][j] for i in range(num_jobs + 1))
+        max(setup_times[i][j]
+            for i in range(num_jobs + 1))
         for j in range(num_jobs))
     print('Greedy horizon =', horizon)
 
@@ -232,8 +231,8 @@ def main(args):
                 model.Add(starts[j] == ends[i] +
                           setup_times[i + 1][j]).OnlyEnforceIf(lit)
             else:
-                model.Add(starts[j] >=
-                          ends[i] + setup_times[i + 1][j]).OnlyEnforceIf(lit)
+                model.Add(starts[j] >= ends[i] +
+                          setup_times[i + 1][j]).OnlyEnforceIf(lit)
 
     model.AddCircuit(arcs)
 
@@ -259,17 +258,21 @@ def main(args):
     #----------------------------------------------------------------------------
     # Solve.
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = 60 * 60 * 2
     if parameters:
-        text_format.Merge(parameters, solver.parameters)
+        text_format.Parse(parameters, solver.parameters)
     solution_printer = SolutionPrinter()
     solver.Solve(model, solution_printer)
-    print(solver.ResponseStats())
     for job_id in all_jobs:
-        print('job %i starts at %i end ends at %i' %
-              (job_id, solver.Value(starts[job_id]),
-               solver.Value(ends[job_id])))
+        print(
+            'job %i starts at %i end ends at %i' %
+            (job_id, solver.Value(starts[job_id]), solver.Value(ends[job_id])))
+
+
+def main(argv: Sequence[str]) -> None:
+    if len(argv) > 1:
+        raise app.UsageError('Too many command-line arguments.')
+    single_machine_scheduling()
 
 
 if __name__ == '__main__':
-    main(PARSER.parse_args())
+    app.run(main)

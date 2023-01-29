@@ -357,7 +357,7 @@ class Model {
   // Creates and add a constraint to the model.
   void AddConstraint(absl::string_view id, std::vector<Argument> arguments,
                      bool is_domain);
-  void AddConstraint(const std::string& id, std::vector<Argument> arguments);
+  void AddConstraint(absl::string_view id, std::vector<Argument> arguments);
   void AddOutput(SolutionOutputSpecs output);
 
   // Set the search annotations and the objective: either simply satisfy the

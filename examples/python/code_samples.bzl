@@ -17,7 +17,7 @@ load("@ortools_deps//:requirements.bzl", "requirement")
 
 PYTHON_DEPS = [
     "//ortools/sat/python:cp_model",
-    "//ortools/sat/python:visualization",
+    "//ortools/sat/colab:visualization",
     requirement("absl-py"),
     requirement("numpy"),
     requirement("pandas"),
