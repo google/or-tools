@@ -35,7 +35,7 @@ git_repository(
 # Abseil-cpp
 git_repository(
     name = "com_google_absl",
-    tag = "20220623.1",
+    tag = "20230125.0",
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
@@ -226,4 +226,3 @@ contrib_rules_jvm_deps()
 
 load("@contrib_rules_jvm//:setup.bzl", "contrib_rules_jvm_setup")
 contrib_rules_jvm_setup()
-
