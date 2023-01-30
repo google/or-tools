@@ -141,10 +141,10 @@ message(STATUS "Build Java examples: ${BUILD_JAVA_EXAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_EXAMPLES "Build dotnet examples" ON "BUILD_EXAMPLES;BUILD_DOTNET" OFF)
 message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 
-CMAKE_DEPENDENT_OPTION(INSTALL_DOC "Install doc" ON "BUILD_CXX" OFF)
+option(BUILD_DOC "Build documentation" OFF)
+message(STATUS "Build documentation: ${BUILD_DOC}")
+CMAKE_DEPENDENT_OPTION(INSTALL_DOC "Install doc" ON "BUILD_CXX AND BUILD_DOC" OFF)
 message(STATUS "Install doc: ${INSTALL_DOC}")
-#option(BUILD_DOC "Build doxygen" OFF)
-#message(STATUS "Build doxygen: ${BUILD_DOC}")
 
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
 # BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.

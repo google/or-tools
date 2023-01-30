@@ -221,6 +221,9 @@ cmake -S. -Bbuild -LH
 | | | |
 | `USE_XPRESS` | OFF | Enable XPRESS support |
 | | | |
+| `BUILD_DOC`   | OFF\* | Build all documentations |
+| `INSTALL_DOC` | OFF\* | Install all documentations<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_DOC=OFF` |
+| | | |
 | `BUILD_SAMPLES`  | ON\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
 | `BUILD_CXX_SAMPLES`  | ON\* | Build all C++ samples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
 | `BUILD_DOTNET_SAMPLES`  | ON\* | Build all .Net samples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF` |
