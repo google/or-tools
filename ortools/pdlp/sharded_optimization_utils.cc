@@ -24,8 +24,8 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
+#include "absl/log/check.h"
 #include "absl/random/distributions.h"
-#include "ortools/base/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/quadratic_program.h"

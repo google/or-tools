@@ -121,7 +121,6 @@ void RunAllExamples() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_alsologtostderr, true);
   InitGoogle(argv[0], &argc, &argv, true);
   operations_research::RunAllExamples();
   return EXIT_SUCCESS;

@@ -14,9 +14,11 @@
 #ifndef OR_TOOLS_BASE_INIT_GOOGLE_H_
 #define OR_TOOLS_BASE_INIT_GOOGLE_H_
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
-
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/log/initialize.h"
 // Initializes misc google-related things in the binary.
 //
 // Typically called early on in main() and must be called before other
@@ -29,9 +31,22 @@
 //         requirement for an element (*argv)[*argc] to exist or to have
 //         any particular value, unlike the similar array that is passed
 //         to the `main` function.
-void InitGoogle(const char* usage, int* argc, char*** argv, bool deprecated) {
-  google::InitGoogleLogging(usage);
+inline void InitGoogle(const char* usage, int* argc, char*** argv,
+                       bool deprecated) {
+  absl::InitializeLog();
+  absl::SetProgramUsageMessage(usage);
   absl::ParseCommandLine(*argc, *argv);
 }
+
+namespace google {
+
+inline void InitGoogleLogging(const std::string& usage) {
+  absl::InitializeLog();
+  absl::SetProgramUsageMessage(usage);
+}
+
+inline void ShutdownGoogleLogging() {}  // No op.
+
+}  // namespace google
 
 #endif  // OR_TOOLS_BASE_INIT_GOOGLE_H_

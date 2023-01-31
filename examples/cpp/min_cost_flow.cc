@@ -13,6 +13,7 @@
 
 #include "ortools/graph/min_cost_flow.h"
 
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {

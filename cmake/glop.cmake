@@ -243,6 +243,11 @@ target_link_libraries(glop PUBLIC
   absl::memory
   absl::hash
   absl::flags
+  absl::log
+  absl::log_globals
+  absl::log_initialize
+  absl::check
+  absl::die_if_null
   absl::status
   absl::time
   absl::strings

@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "google/protobuf/duration.pb.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"

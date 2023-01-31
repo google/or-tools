@@ -19,6 +19,8 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/log/globals.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/version.h"
 #include "ortools/gurobi/environment.h"
@@ -35,11 +37,6 @@ namespace operations_research {
  * Simple structure that holds useful C++ flags to setup from non-C++ languages.
  */
 struct CppFlags {
-  /**
-   * If true, all logging message will be sent to stderr.
-   */
-  bool logtostderr = false;
-
   /**
    * Controls is time and source code info are used to prefix logging messages.
    */
@@ -103,8 +100,7 @@ class CppBridge {
    * Sets all the C++ flags contained in the CppFlags structure.
    */
   static void SetFlags(const CppFlags& flags) {
-    absl::SetFlag(&FLAGS_logtostderr, flags.logtostderr);
-    absl::SetFlag(&FLAGS_log_prefix, flags.log_prefix);
+    absl::EnableLogPrefix(flags.log_prefix);
     if (!flags.cp_model_dump_prefix.empty()) {
       absl::SetFlag(&FLAGS_cp_model_dump_prefix, flags.cp_model_dump_prefix);
     }

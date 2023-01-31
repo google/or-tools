@@ -88,6 +88,7 @@
 // The class also defines a hash functor that allows the StrongInt to be used
 // as key to hashable containers such as hash_map and hash_set.
 //
+// We suggest using the StrongIntIndexedContainer wrapper around google3's
 // FixedArray and STL vector (see int-type-indexed-container.h) if an StrongInt
 // is intended to be used as an index into these containers.  These wrappers are
 // indexed in a type-safe manner using StrongInts to ensure type-safety.
@@ -191,6 +192,7 @@ class StrongInt {
   }
 
   // Note that this may change from time to time without notice.
+  // See .
   struct Hasher {
     size_t operator()(const StrongInt& arg) const {
       return static_cast<size_t>(arg.value());

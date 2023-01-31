@@ -633,7 +633,6 @@ int main(int argc, char** argv) {
     found = true;
   }
 #endif
-
   if (!found) {
     LOG(ERROR) << "Unknown solver " << absl::GetFlag(FLAGS_colgen_solver);
     return 1;

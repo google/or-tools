@@ -145,6 +145,7 @@ cc_library(
         "//ortools/graph:util",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],

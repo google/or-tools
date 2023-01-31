@@ -103,8 +103,8 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/check.h"
-#include "ortools/base/log.h"
+#include "absl/log/check.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/id_map.h"     // IWYU pragma: export
 #include "ortools/math_opt/cpp/key_types.h"  // IWYU pragma: export

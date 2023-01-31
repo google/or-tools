@@ -13,6 +13,7 @@
 
 #include "gtest/gtest.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 
 int main(int argc, char** argv) {

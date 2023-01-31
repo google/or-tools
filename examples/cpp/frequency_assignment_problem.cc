@@ -49,15 +49,17 @@
 #include <algorithm>
 #include <cstdint>
 #include <map>
+#include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
+#include "absl/container/btree_map.h"
+#include "absl/strings/string_view.h"
 #include "examples/cpp/fap_model_printer.h"
 #include "examples/cpp/fap_parser.h"
 #include "examples/cpp/fap_utilities.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -174,7 +176,7 @@ class OrderingBuilder : public DecisionBuilder {
                   const std::vector<FapConstraint>& data_constraints,
                   const std::vector<IntVar*>& variables,
                   const std::vector<IntVar*>& violated_constraints,
-                  const std::map<int, int>& index_from_key)
+                  const absl::btree_map<int, int>& index_from_key)
       : data_variables_(data_variables),
         data_constraints_(data_constraints),
         variables_(variables),
@@ -312,7 +314,7 @@ class OrderingBuilder : public DecisionBuilder {
   const std::vector<FapConstraint> data_constraints_;
   const std::vector<IntVar*> variables_;
   const std::vector<IntVar*> violated_constraints_;
-  const std::map<int, int> index_from_key_;
+  const absl::btree_map<int, int> index_from_key_;
   // Used by Next() for monitoring decisions.
   const int size_;
   int iter_;
@@ -365,7 +367,7 @@ int64_t ValueEvaluator(
   }
   std::pair<int64_t, int64_t> new_value_ranking =
       std::make_pair(new_value, new_ranking);
-  gtl::InsertOrUpdate(value_evaluator_map, variable_index, new_value_ranking);
+  value_evaluator_map->insert_or_assign(variable_index, new_value_ranking);
 
   return new_ranking;
 }
@@ -384,7 +386,7 @@ int64_t VariableEvaluator(const std::vector<int>& key_from_index,
 // Creates the variables of the solver from the parsed data.
 void CreateModelVariables(const std::map<int, FapVariable>& data_variables,
                           Solver* solver, std::vector<IntVar*>* model_variables,
-                          std::map<int, int>* index_from_key,
+                          absl::btree_map<int, int>* index_from_key,
                           std::vector<int>* key_from_index) {
   CHECK(solver != nullptr);
   CHECK(model_variables != nullptr);
@@ -399,7 +401,7 @@ void CreateModelVariables(const std::map<int, FapVariable>& data_variables,
   for (const auto& it : data_variables) {
     CHECK_LT(index, model_variables->size());
     (*model_variables)[index] = solver->MakeIntVar(it.second.domain);
-    gtl::InsertOrUpdate(index_from_key, it.first, index);
+    index_from_key->insert_or_assign(it.first, index);
     (*key_from_index)[index] = it.first;
 
     if ((it.second.initial_position != -1) && (it.second.hard)) {
@@ -414,7 +416,7 @@ void CreateModelVariables(const std::map<int, FapVariable>& data_variables,
 // Creates the constraints of the instance from the parsed data.
 void CreateModelConstraints(const std::vector<FapConstraint>& data_constraints,
                             const std::vector<IntVar*>& variables,
-                            const std::map<int, int>& index_from_key,
+                            const absl::btree_map<int, int>& index_from_key,
                             Solver* solver) {
   CHECK(solver != nullptr);
 
@@ -516,14 +518,14 @@ void CreateAdditionalMonitors(OptimizeVar* const objective, Solver* solver,
 // of frequencies used to the solution.
 void HardFapSolver(const std::map<int, FapVariable>& data_variables,
                    const std::vector<FapConstraint>& data_constraints,
-                   const std::string& data_objective,
+                   absl::string_view data_objective,
                    const std::vector<int>& values) {
   Solver solver("HardFapSolver");
   std::vector<SearchMonitor*> monitors;
 
   // Create Model Variables.
   std::vector<IntVar*> variables;
-  std::map<int, int> index_from_key;
+  absl::btree_map<int, int> index_from_key;
   std::vector<int> key_from_index;
   CreateModelVariables(data_variables, &solver, &variables, &index_from_key,
                        &key_from_index);
@@ -636,10 +638,10 @@ void SplitVariablesHardSoft(const std::map<int, FapVariable>& data_variables,
     if (it.second.initial_position != -1) {
       if (it.second.hard) {
         CHECK_LT(it.second.mobility_cost, 0);
-        gtl::InsertOrUpdate(hard_variables, it.first, it.second);
+        hard_variables->insert_or_assign(it.first, it.second);
       } else {
         CHECK_GE(it.second.mobility_cost, 0);
-        gtl::InsertOrUpdate(soft_variables, it.first, it.second);
+        soft_variables->insert_or_assign(it.first, it.second);
       }
     }
   }
@@ -664,7 +666,7 @@ void SplitConstraintHardSoft(const std::vector<FapConstraint>& data_constraints,
 // the instance.
 void PenalizeVariablesViolation(
     const std::map<int, FapVariable>& soft_variables,
-    const std::map<int, int>& index_from_key,
+    const absl::btree_map<int, int>& index_from_key,
     const std::vector<IntVar*>& variables, std::vector<IntVar*>* cost,
     Solver* solver) {
   for (const auto& it : soft_variables) {
@@ -682,7 +684,7 @@ void PenalizeVariablesViolation(
 void PenalizeConstraintsViolation(
     const std::vector<FapConstraint>& constraints,
     const std::vector<FapConstraint>& soft_constraints,
-    const std::map<int, int>& index_from_key,
+    const absl::btree_map<int, int>& index_from_key,
     const std::vector<IntVar*>& variables, std::vector<IntVar*>* cost,
     std::vector<IntVar*>* violated_constraints, Solver* solver) {
   int violated_constraints_index = 0;
@@ -729,7 +731,7 @@ void PenalizeConstraintsViolation(
 // equal to 0 denotes that the instance is feasible.
 int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
                   const std::vector<FapConstraint>& data_constraints,
-                  const std::string& data_objective,
+                  absl::string_view data_objective,
                   const std::vector<int>& values) {
   Solver solver("SoftFapSolver");
   std::vector<SearchMonitor*> monitors;
@@ -751,7 +753,7 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
 
   // Create Model Variables.
   std::vector<IntVar*> variables;
-  std::map<int, int> index_from_key;
+  absl::btree_map<int, int> index_from_key;
   std::vector<int> key_from_index;
   CreateModelVariables(data_variables, &solver, &variables, &index_from_key,
                        &key_from_index);
@@ -860,8 +862,7 @@ void SolveProblem(const std::map<int, FapVariable>& variables,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   CHECK(!absl::GetFlag(FLAGS_directory).empty())
       << "Requires --directory=<directory name>";

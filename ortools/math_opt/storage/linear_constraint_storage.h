@@ -25,7 +25,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/check.h"
+#include "absl/log/check.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"

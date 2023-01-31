@@ -27,6 +27,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/log/check.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 

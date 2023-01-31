@@ -11,14 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Non linear example.
 
-# Finds a rectangle with maximum available area for given perimeter
-# using AddMultiplicationEquality
+Finds a rectangle with maximum available area for given perimeter using
+AddMultiplicationEquality().
+"""
 
 from ortools.sat.python import cp_model
 
 
 def non_linear_sat():
+    """Non linear sample."""
     perimeter = 20
 
     model = cp_model.CpModel()

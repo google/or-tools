@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "Eigen/Core"
-#include "ortools/base/check.h"
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/quadratic_program.h"

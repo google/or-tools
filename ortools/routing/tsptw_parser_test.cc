@@ -25,11 +25,7 @@ ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
 
 namespace operations_research {
 namespace {
-TEST(TspTWParserTest, Ctor) {
-    TspTWParser parser;
-    EXPECT_TRUE(parser.LoadFile(""));
-}
-/*
+
 TEST(TspTWParserTest, LoadDataSet) {
   const int sizes[] = {26, 21, 21};
   const double distances[] = {25166.316, 9538, 9006};
@@ -39,9 +35,9 @@ TEST(TspTWParserTest, LoadDataSet) {
   const double service_times[] = {250, 0, 0};
   const bool has_coordinates[] = {false, false, true};
   int count = 0;
-  for (const std::string& data :
-       {"ortools/util/testdata/rc201.0", "ortools/util/testdata/n20w20.001.txt",
-        "ortools/util/testdata/n20w20.002.txt"}) {
+  for (const std::string& data : {"ortools/routing/testdata/rc201.0",
+                                  "ortools/routing/testdata/n20w20.001.txt",
+                                  "ortools/routing/testdata/n20w20.002.txt"}) {
     TspTWParser parser;
     EXPECT_TRUE(parser.LoadFile(
         file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), data)));
@@ -72,6 +68,6 @@ TEST(TspTWParserTest, LoadDataSet) {
     ++count;
   }
 }
-*/
+
 }  // namespace
 }  // namespace operations_research

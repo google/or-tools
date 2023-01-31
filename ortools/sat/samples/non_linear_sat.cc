@@ -14,6 +14,7 @@
 // Finds a rectangle with maximum available area for given perimeter
 // using AddMultiplicationEquality
 
+// [START program]
 #include <stdlib.h>
 
 #include "ortools/base/logging.h"

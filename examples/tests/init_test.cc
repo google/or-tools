@@ -25,7 +25,6 @@ void TestLogging() {
 void TestFlags() {
   LOG(INFO) << "Test Flags";
   auto cpp_flags = CppFlags();
-  cpp_flags.logtostderr = true;
   cpp_flags.log_prefix = true;
   cpp_flags.cp_model_dump_prefix = "init";
   cpp_flags.cp_model_dump_models = true;

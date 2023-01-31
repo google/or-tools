@@ -20,7 +20,6 @@
 #include "absl/flags/flag.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging_extensions.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
@@ -81,8 +80,6 @@ int main(int argc, char** argv) {
   const char kUsage[] =
       "Parses a flatzinc .fzn file, optionally presolve it, and prints it in "
       "human-readable format";
-  absl::SetFlag(&FLAGS_log_prefix, false);
-  absl::SetFlag(&FLAGS_logtostderr, true);
   absl::SetProgramUsageMessage(kUsage);
   absl::ParseCommandLine(argc, argv);
   google::InitGoogleLogging(argv[0]);

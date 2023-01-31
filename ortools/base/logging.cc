@@ -11,9 +11,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_LOGGING_FLAGS_H_
-#define OR_TOOLS_BASE_LOGGING_FLAGS_H_
-
 #include "ortools/base/logging.h"
 
-#endif  // OR_TOOLS_BASE_LOGGING_FLAGS_H_
+#include <mutex>  // for std::call_once and std::once_flag.  // NOLINT
+
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
+#include "absl/log/globals.h"
+#include "absl/log/initialize.h"
+
+ABSL_FLAG(bool, logtostderr, false, "no op compatibility flag");
+
+namespace operations_research {
+
+namespace {
+std::once_flag init_done;
+}  // namespace
+
+void FixFlagsAndEnvironmentForSwig() {
+  std::call_once(init_done, [] {
+    absl::InitializeLog();
+    absl::SetProgramUsageMessage("swig_helper");
+  });
+  absl::EnableLogPrefix(false);
+}
+
+}  // namespace operations_research

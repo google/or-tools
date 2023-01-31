@@ -14,9 +14,10 @@
 #ifndef OR_TOOLS_BASE_TIMER_H_
 #define OR_TOOLS_BASE_TIMER_H_
 
+#include "absl/log/check.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/basictypes.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 
 class WallTimer {

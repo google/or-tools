@@ -14,8 +14,11 @@
 #ifndef OR_TOOLS_BASE_VLOG_IS_ON_H_
 #define OR_TOOLS_BASE_VLOG_IS_ON_H_
 
+#include "absl/flags/declare.h"
+#include "absl/log/log.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/log_severity.h"
+
+ABSL_DECLARE_FLAG(int, v);
 
 namespace google {
 
@@ -52,8 +55,7 @@ namespace google {
 //.   one needs to supply the exact --vmodule pattern that applied to them.
 //       (If no --vmodule pattern applied to them
 //       the value of FLAGS_v will continue to control them.)
-extern GOOGLE_GLOG_DLL_DECL int SetVLOGLevel(const char* module_pattern,
-                                             int log_level);
+extern int SetVLOGLevel(const char* module_pattern, int log_level);
 
 // Various declarations needed for VLOG_IS_ON above: =========================
 
@@ -71,10 +73,8 @@ extern int32_t kLogSiteUninitialized;
 //   verbose_level is the argument to VLOG_IS_ON
 // We will return the return value for VLOG_IS_ON
 // and if possible set *site_flag appropriately.
-extern GOOGLE_GLOG_DLL_DECL bool InitVLOG3__(int32_t** vmodule_info,
-                                             bool* initialized,
-                                             const char* fname,
-                                             int32_t verbose_level);
+extern bool InitVLOG3__(int32_t** vmodule_info, bool* initialized,
+                        const char* fname, int32_t verbose_level);
 
 }  // namespace google
 

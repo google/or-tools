@@ -70,7 +70,7 @@
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
 #include "ortools/util/time_limit.h"
 
-ABSL_FLAG(int, num_gurobi_threads, /*auto=*/0,
+ABSL_FLAG(int, num_gurobi_threads, 0,
           "Number of threads available for Gurobi.");
 
 namespace operations_research {

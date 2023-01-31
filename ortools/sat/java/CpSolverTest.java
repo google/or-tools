@@ -160,7 +160,7 @@ public final class CpSolverTest {
     int numVals = 3;
     final IntVar x = model.newIntVar(0, numVals - 1, "x");
     final IntVar y = model.newIntVar(0, numVals - 1, "y");
-    model.newIntVar(0, numVals - 1, "z");
+    final IntVar unusedZ = model.newIntVar(0, numVals - 1, "z");
     // Creates the constraints.
     model.addDifferent(x, y);
 

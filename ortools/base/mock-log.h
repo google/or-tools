@@ -16,12 +16,11 @@
 
 #include <string>
 
-#include "absl/base/log_severity.h"
+#include "absl/log/log_sink.h"
+#include "absl/log/log_sink_registry.h"
 #include "gmock/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/raw_logging.h"
-// #include "ortools/base/threadlocal.h"
 
 namespace testing {
 
@@ -35,7 +34,7 @@ namespace testing {
 // kDoNotCaptureLogsYet.
 enum LogCapturingState_ { kDoNotCaptureLogsYet };
 
-class ScopedMockLog : public google::LogSink {
+class ScopedMockLog : public absl::LogSink {
  public:
   // A user can use the syntax
   //   ScopedMockLog log(kDoNotCaptureLogsYet);
@@ -64,7 +63,7 @@ class ScopedMockLog : public google::LogSink {
         "object is not capturing logs.");
 
     is_capturing_logs_ = true;
-    google::AddLogSink(this);
+    absl::AddLogSink(this);
   }
 
   // Stops log capturing if the object is capturing logs.  Otherwise
@@ -82,7 +81,7 @@ class ScopedMockLog : public google::LogSink {
         "object is capturing logs.");
 
     is_capturing_logs_ = false;
-    google::RemoveLogSink(this);
+    absl::RemoveLogSink(this);
   }
 
   // Implements the mock method:
@@ -99,17 +98,17 @@ class ScopedMockLog : public google::LogSink {
   // expectations are matched on two threads concurrently, their actions will
   // be executed concurrently as well and may interleave.
   MOCK_METHOD(void, Log,
-              (LogSeverity severity, const std::string& file_path,
+              (absl::LogSeverity severity, const std::string& file_path,
                const std::string& message));
 
  private:
   // Implements the Send() virtual function in class LogSink.
   // Whenever a LOG() statement is executed, this function will be
   // invoked with information presented in the LOG().
-  void Send(const google::LogEntry& entry) override {
+  void Send(const absl::LogEntry& entry) override {
     // We are only interested in the log severity, full file name, and
     // log message.
-    Log(static_cast<LogSeverity>(entry.log_severity()),
+    Log(static_cast<absl::LogSeverity>(entry.log_severity()),
         std::string(entry.source_filename()),
         std::string(entry.text_message()));
   }

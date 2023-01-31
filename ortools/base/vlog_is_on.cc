@@ -20,11 +20,8 @@
 #include <cstring>
 #include <string>
 
+#include "absl/flags/flag.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/log.h"
-#include "ortools/base/log_severity.h"
-#include "ortools/base/logging_utilities.h"
-#include "ortools/base/raw_logging.h"
 
 ABSL_FLAG(int, v, 0,
           "Show all VLOG(m) messages for m <= this."
@@ -42,15 +39,15 @@ namespace google {
 namespace logging_internal {
 
 // Used by logging_unittests.cc so can't make it static here.
-GOOGLE_GLOG_DLL_DECL bool SafeFNMatch_(const char* pattern, size_t patt_len,
-                                       const char* str, size_t str_len);
+bool SafeFNMatch_(const char* pattern, size_t patt_len, const char* str,
+                  size_t str_len);
 
 // Implementation of fnmatch that does not need 0-termination
 // of arguments and does not allocate any memory,
 // but we only support "*" and "?" wildcards, not the "[...]" patterns.
 // It's not a static function for the unittest.
-GOOGLE_GLOG_DLL_DECL bool SafeFNMatch_(const char* pattern, size_t patt_len,
-                                       const char* str, size_t str_len) {
+bool SafeFNMatch_(const char* pattern, size_t patt_len, const char* str,
+                  size_t str_len) {
   size_t p = 0;
   size_t s = 0;
   while (1) {
@@ -172,7 +169,7 @@ int SetVLOGLevel(const char* module_pattern, int log_level) {
       vmodule_list = info;
     }
   }
-  RAW_VLOG(1, "Set VLOG level for \"%s\" to %d", module_pattern, log_level);
+  // RAW_VLOG(1, "Set VLOG level for \"%s\" to %d", module_pattern, log_level);
   return result;
 }
 

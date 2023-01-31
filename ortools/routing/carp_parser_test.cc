@@ -48,14 +48,14 @@ TEST(CarpParserTest, LoadNonExistingFile) {
   CarpParser parser;
   EXPECT_FALSE(parser.LoadFile(""));
 }
-/*
+
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfNodes) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the number of nodes: -4"));
   EXPECT_CALL(
       log,
-      Log(ERROR, testing::_,
+      Log(absl::LogSeverity::kError, testing::_,
           "Error when parsing the following metadata line:  VERTICES : -4"));
   log.StartCapturingLogs();
 
@@ -69,9 +69,9 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfNodes) {
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithServicings) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
   EXPECT_CALL(
-      log, Log(ERROR, testing::_,
+      log, Log(absl::LogSeverity::kError, testing::_,
                "Error when parsing the number of edges with servicing: -11"));
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the following metadata line:  "
                        "ARISTAS_REQ : -11"));
   log.StartCapturingLogs();
@@ -86,9 +86,9 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithServicings) {
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithoutServicings) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
   EXPECT_CALL(
-      log, Log(ERROR, testing::_,
+      log, Log(absl::LogSeverity::kError, testing::_,
                "Error when parsing the number of edges without servicing: a"));
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the following metadata line:  "
                        "ARISTAS_NOREQ : a"));
   log.StartCapturingLogs();
@@ -102,11 +102,11 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithoutServicings) {
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfVehicles) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the number of vehicles: 0"));
   EXPECT_CALL(
       log,
-      Log(ERROR, testing::_,
+      Log(absl::LogSeverity::kError, testing::_,
           "Error when parsing the following metadata line:  VEHICULOS : 0"));
   log.StartCapturingLogs();
 
@@ -119,11 +119,11 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfVehicles) {
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectCapacity) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
-  EXPECT_CALL(log,
-              Log(ERROR, testing::_, "Error when parsing the capacity: 0"));
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
+                       "Error when parsing the capacity: 0"));
   EXPECT_CALL(
       log,
-      Log(ERROR, testing::_,
+      Log(absl::LogSeverity::kError, testing::_,
           "Error when parsing the following metadata line:  CAPACIDAD : 0"));
   log.StartCapturingLogs();
 
@@ -136,10 +136,10 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectCapacity) {
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectTypeOfArcCost) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Value of TIPO_COSTES_ARISTAS is unexpected, only "
                        "EXPLICITOS is supported, but IMPLICITOS was found"));
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the following metadata line:  "
                        "TIPO_COSTES_ARISTAS : IMPLICITOS"));
   log.StartCapturingLogs();
@@ -153,9 +153,9 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectTypeOfArcCost) {
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectTotalServicingCost) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the total servicing cost: qwertz"));
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the following metadata line:  "
                        "COSTE_TOTAL_REQ : qwertz"));
   log.StartCapturingLogs();
@@ -169,11 +169,13 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectTotalServicingCost) {
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectDepot) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
-  EXPECT_CALL(log, Log(ERROR, testing::_, "Could not parse node index: -1"));
-  EXPECT_CALL(log, Log(ERROR, testing::_, "Error when parsing the depot: -1"));
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
+                       "Could not parse node index: -1"));
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
+                       "Error when parsing the depot: -1"));
   EXPECT_CALL(
       log,
-      Log(ERROR, testing::_,
+      Log(absl::LogSeverity::kError, testing::_,
           "Error when parsing the following metadata line:  DEPOSITO :   -1"));
   log.StartCapturingLogs();
 
@@ -187,11 +189,11 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectDepot) {
 TEST(CarpParserTest, LoadInvalidFileNoEdgeWithServicing) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
   EXPECT_CALL(log,
-              Log(ERROR, testing::_,
+              Log(absl::LogSeverity::kError, testing::_,
                   "Error when parsing the number of edges with servicing: 0"));
   EXPECT_CALL(
       log,
-      Log(ERROR, testing::_,
+      Log(absl::LogSeverity::kError, testing::_,
           "Error when parsing the following metadata line:  ARISTAS_REQ : 0"));
   log.StartCapturingLogs();
 
@@ -204,9 +206,9 @@ TEST(CarpParserTest, LoadInvalidFileNoEdgeWithServicing) {
 
 TEST(CarpParserTest, LoadInvalidFileServicingForArcsWithoutServicing) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Extraneous elements in line, starting with: demanda"));
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Could not parse line in LISTA_ARISTAS_NOREQ:  ( 1, 4)  "
                        "coste 3 demanda 3"));
   log.StartCapturingLogs();
@@ -220,8 +222,9 @@ TEST(CarpParserTest, LoadInvalidFileServicingForArcsWithoutServicing) {
 
 TEST(CarpParserTest, LoadInvalidFileServicingForArcsInWrongOrder) {
   testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
-  EXPECT_CALL(log, Log(ERROR, testing::_, "Unexpected keyword: demanda"));
-  EXPECT_CALL(log, Log(ERROR, testing::_,
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
+                       "Unexpected keyword: demanda"));
+  EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Could not parse line in LISTA_ARISTAS_REQ:  ( 1, 4)  "
                        "demanda 3 coste 3"));
   log.StartCapturingLogs();
@@ -266,6 +269,5 @@ TEST(CarpParserTest, LoadInstanceFileWithDifferentDepot) {
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.depot(), 4);
 }
-*/
 }  // namespace
 }  // namespace operations_research

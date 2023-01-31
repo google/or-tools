@@ -29,7 +29,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/check.h"
+#include "absl/log/check.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/indicator/storage.h"  // IWYU pragma: export

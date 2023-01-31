@@ -22,7 +22,7 @@
 
 #include "Eigen/Core"
 #include "absl/algorithm/container.h"
-#include "ortools/base/check.h"
+#include "absl/log/check.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/sharded_quadratic_program.h"
 #include "ortools/pdlp/sharder.h"

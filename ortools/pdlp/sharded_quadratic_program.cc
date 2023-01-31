@@ -19,9 +19,9 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
+#include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/pdlp/quadratic_program.h"

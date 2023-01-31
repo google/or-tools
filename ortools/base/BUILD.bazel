@@ -42,8 +42,10 @@ cc_library(
         "version.cc",
     ],
     hdrs = [
+        "commandlineflags.h",
         "init_google.h",
-        "logging_flags.h",
+        "integral_types.h",
+        "logging.h",
         "stl_logging.h",
         "version.h",
     ],
@@ -53,21 +55,20 @@ cc_library(
         "-DOR_TOOLS_PATCH=9999",
     ],
     deps = [
-        ":basictypes",
-        ":check",
         ":commandlineflags",
         ":integral_types",
-        ":log",
         ":logging",
-        ":logging_extensions",
         ":macros",
-        ":sysinfo",
-        ":vlog",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/log:die_if_null",
+        "@com_google_absl//absl/log:initialize",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
     ],
@@ -84,7 +85,10 @@ cc_library(
         "adjustable_priority_queue.h",
         "adjustable_priority_queue-inl.h",
     ],
-    deps = [":base"],
+    deps = [
+        ":base",
+        ":basictypes",
+    ],
 )
 
 cc_library(
@@ -100,7 +104,7 @@ cc_library(
     name = "bitmap",
     srcs = ["bitmap.cc"],
     hdrs = ["bitmap.h"],
-    deps = [":base"],
+    deps = [":integral_types"],
 )
 
 cc_library(
@@ -108,16 +112,6 @@ cc_library(
     srcs = ["case.cc"],
     hdrs = ["case.h"],
     deps = [":base"],
-)
-
-cc_library(
-    name = "check",
-    hdrs = ["check.h"],
-    deps = [
-        ":log",
-        ":log_severity",
-        ":logging_export",
-    ],
 )
 
 cc_library(
@@ -133,8 +127,6 @@ cc_library(
     ],
     hdrs = ["commandlineflags.h"],
     deps = [
-        ":logging",
-        ":logging_extensions",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
@@ -187,7 +179,10 @@ cc_library(
         "on_windows": [],
         "//conditions:default": [],
     }),
-    deps = [":base"],
+    deps = [
+        ":base",
+        ":logging",
+    ],
 )
 
 cc_library(
@@ -213,8 +208,9 @@ cc_library(
         "options.h",
     ],
     deps = [
-        ":base",
         ":status_macros",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
@@ -264,7 +260,7 @@ cc_library(
         "hash.h",
     ],
     deps = [
-        ":base",
+        ":integral_types",
         "@com_google_absl//absl/strings",
         #"@com_google_protobuf//:protobuf",
     ],
@@ -298,59 +294,28 @@ cc_library(
     hdrs = ["linked_hash_map.h"],
     deps = [
         ":base",
+        ":logging",
         "@com_google_absl//absl/container:common",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
 
 cc_library(
-    name = "log",
-    srcs = [
-        "log.cc",
-        "logging_utilities.cc",
-        "logging_utilities.h",
-        "raw_logging.cc",
-        "raw_logging.h",
-        "vlog_is_on.cc",
-    ],
-    hdrs = [
-        "check.h",
-        "die_if_null.h",
-        "log.h",
-    ],
-    deps = [
-        ":flags",
-        ":integral_types",
-        ":log_severity",
-        ":logging_export",
-        ":logging_extensions",
-        ":macros",
-        ":vlog",
-        "@com_google_absl//absl/debugging:failure_signal_handler",
-        "@com_google_absl//absl/debugging:stacktrace",
-        "@com_google_absl//absl/debugging:symbolize",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/time",
-    ],
-)
-
-cc_library(
-    name = "log_severity",
-    hdrs = ["log_severity.h"],
-    deps = [
-        ":logging_export",
-    ],
-)
-
-cc_library(
     name = "logging",
+    srcs = ["logging.cc"],
     hdrs = ["logging.h"],
     deps = [
-        ":check",
-        ":log",
-        ":log_severity",
-        ":logging_extensions",
+        ":macros",
         ":vlog",
+        "@com_google_absl//absl/base:log_severity",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:die_if_null",
+        "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/log:globals",
+        "@com_google_absl//absl/log:initialize",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
@@ -358,19 +323,18 @@ cc_library(
 )
 
 cc_library(
-    name = "logging_export",
-    hdrs = ["logging_export.h"],
-    defines = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["OR_TOOLS_EXPORTS"],  # For logging_export.h
-        "//conditions:default": [],
-    }),
-)
-
-cc_library(
-    name = "logging_extensions",
-    hdrs = ["logging_extensions.h"],
+    name = "vlog",
+    srcs = ["vlog_is_on.cc"],
+    hdrs = [
+        "vlog.h",
+        "vlog_is_on.h",
+    ],
+    deps = [
+        ":integral_types",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+    ],
 )
 
 cc_library(
@@ -387,7 +351,10 @@ cc_library(
 cc_library(
     name = "mathutil",
     hdrs = ["mathutil.h"],
-    deps = [":base"],
+    deps = [
+        ":base",
+        ":basictypes",
+    ],
 )
 
 cc_library(
@@ -400,10 +367,11 @@ cc_library(
     name = "mock_log",
     hdrs = ["mock-log.h"],
     deps = [
-        ":log",
         ":logging",
         ":macros",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log:log_sink",
+        "@com_google_absl//absl/log:log_sink_registry",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -472,6 +440,7 @@ cc_library(
     deps = [
         ":base",
         ":file",
+        ":logging",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
@@ -532,7 +501,8 @@ cc_library(
     srcs = ["strtoint.cc"],
     hdrs = ["strtoint.h"],
     deps = [
-        ":base",
+        ":integral_types",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -542,7 +512,7 @@ cc_library(
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
     deps = [
-        ":basictypes",
+        ":integral_types",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -552,7 +522,7 @@ cc_library(
     srcs = ["threadpool.cc"],
     hdrs = ["threadpool.h"],
     deps = [
-        ":base",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/synchronization",
     ],
 )
@@ -562,9 +532,9 @@ cc_library(
     srcs = ["timer.cc"],
     hdrs = ["timer.h"],
     deps = [
-        ":basictypes",
-        ":check",
+        ":integral_types",
         ":macros",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/time",
     ],
 )
@@ -572,15 +542,6 @@ cc_library(
 cc_library(
     name = "typeid",
     hdrs = ["typeid.h"],
-)
-
-cc_library(
-    name = "vlog",
-    hdrs = ["vlog_is_on.h"],
-    deps = [
-        ":integral_types",
-        ":log_severity",
-    ],
 )
 
 cc_library(

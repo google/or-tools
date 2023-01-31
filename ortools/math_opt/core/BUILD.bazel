@@ -206,7 +206,7 @@ cc_library(
     srcs = ["concurrent_calls_guard.cc"],
     hdrs = ["concurrent_calls_guard.h"],
     deps = [
-        "//ortools/base:check",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/base:core_headers",
         #"@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",

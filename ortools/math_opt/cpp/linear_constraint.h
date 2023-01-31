@@ -24,7 +24,7 @@
 #include <utility>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/check.h"
+#include "absl/log/check.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/id_map.h"  // IWYU pragma: export

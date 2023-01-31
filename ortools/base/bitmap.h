@@ -17,7 +17,7 @@
 #include <cassert>
 #include <cstring>
 
-#include "ortools/base/basictypes.h"
+#include "ortools/base/integral_types.h"
 
 namespace operations_research {
 namespace internal {

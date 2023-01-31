@@ -13,6 +13,7 @@
 
 // Constraint programming example that shows how to use the API.
 
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 

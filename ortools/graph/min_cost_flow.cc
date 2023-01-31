@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/graph.h"

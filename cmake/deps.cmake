@@ -39,6 +39,11 @@ set(ABSL_DEPS
   absl::flags_commandlineflag
   absl::flags_parse
   absl::flags_usage
+  absl::log
+  absl::log_globals
+  absl::log_initialize
+  absl::check
+  absl::die_if_null
   absl::cord
   absl::random_random
   absl::raw_hash_set
@@ -144,4 +149,3 @@ if(BUILD_PYTHON)
     find_package(pybind11 REQUIRED)
   endif()
 endif()
-

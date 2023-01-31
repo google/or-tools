@@ -3373,6 +3373,18 @@ class DimensionChecker {
     int64_t min;
     int64_t max;
   };
+
+  // TODO(user): benchmark different implementation details for this class:
+  // - num_negative/positive_infinity to int32_t
+  // - use int128_t or absl's int128 to avoid counting infinities.
+  // - use Interval instead of min/max.
+  struct ExtendedInterval {
+    int64_t min;
+    int64_t num_negative_infinity;
+    int64_t max;
+    int64_t num_positive_infinity;
+  };
+
   // TODO(user): the addition of kMinRangeSizeForRIQ slowed down Check().
   // See if using a template parameter makes it faster.
   DimensionChecker(const PathState* path_state,
@@ -3394,20 +3406,29 @@ class DimensionChecker {
   static constexpr int kOptimalMinRangeSizeForRIQ = 4;
 
  private:
-  // Range intersection query on backwards_demand_sums_.
-  // The first_node and last_node MUST form a subpath in the committed state.
-  // Nodes first_node and last_node are passed by their index in precomputed
-  // data, they must be committed in some path, and it has to be the same path.
-  // See backwards_demand_sums_riq_.
-  Interval GetTightestBackwardsDemandSum(int first_node_index,
-                                         int last_node_index) const;
+  // Returns the feasible cumul interval at first_node_index, under all
+  // path capacity and dimension constraints of the chain formed by the
+  // [first_node_index, last_node_index] range of indices.
+  ExtendedInterval FirstIndexCumulsFromPathCapacity(
+      int first_node_index, int last_node_index,
+      const ExtendedInterval& path_capacity) const;
 
-  // Queries whether all nodes in the committed subpath [first_node, last_node]
-  // have fixed demands and trivial node_capacity [kint64min, kint64max].
-  // first_node and last_node MUST form a subpath in the committed state.
-  // Nodes are passed by their index in precomputed data.
-  bool SubpathOnlyHasTrivialNodes(int first_node_index,
-                                  int last_node_index) const;
+  // Returns the feasible cumul interval at first_node_index, under all
+  // node capacity and dimension constraints of the chain formed by the
+  // [first_node_index, last_node_index] range of indices.
+  ExtendedInterval FirstIndexCumulsFromNodeCapacities(
+      int first_node_index, int last_node_index) const;
+
+  // Returns the feasible cumul interval at last_node_index, under all
+  // node capacity and dimension constraints of the chain formed by the
+  // [first_node_index, last_node_index] range of indices.
+  ExtendedInterval LastIndexCumulsFromNodeCapacities(int first_node_index,
+                                                     int last_node_index) const;
+
+  // Returns the total transit to go from first_node to last_node, which
+  // must be a subchain of the committed solution.
+  ExtendedInterval TotalTransit(int first_node_index,
+                                int last_node_index) const;
 
   // Commits to the current solution and rebuilds structures from scratch.
   void FullCommit();
@@ -3425,38 +3446,36 @@ class DimensionChecker {
   void UpdateRIQStructure(int begin_index, int end_index);
 
   const PathState* const path_state_;
-  const std::vector<Interval> path_capacity_;
+  const std::vector<ExtendedInterval> path_capacity_;
   const std::vector<int> path_class_;
   const std::vector<std::function<Interval(int64_t, int64_t)>>
       demand_per_path_class_;
-  std::vector<Interval> cached_demand_;
-  const std::vector<Interval> node_capacity_;
+  std::vector<ExtendedInterval> cached_demand_;
+  const std::vector<ExtendedInterval> node_capacity_;
 
   // Precomputed data.
   // Maps nodes to their pre-computed data, except for isolated nodes,
   // which do not have precomputed data.
   // Only valid for nodes that are in some path in the committed state.
   std::vector<int> index_;
-  // Implementation of a <O(n log n), O(1)> range min/max query, n = #nodes.
-  // backwards_demand_sums_riq_[0][index_[node]] contains the sum of demands
-  // from the start of the node's path to the node.
-  // If node is the start of path, the sum is demand_[path_class_[path]][node],
-  // moreover backwards_demand_sums_riq_[0][index_[node]-1] is {0, 0}.
-  // backwards_demand_sums_riq_[layer][index] contains an interval
-  // [min_value, max_value] such that min_value is
-  // min(backwards_demand_sums_riq_[0][index+i].min | i in [0, 2^layer)),
-  // similarly max_value is the maximum of .max on the same range.
-  std::vector<std::vector<Interval>> backwards_demand_sums_riq_;
+  // Range intersection query in <O(n log n), O(1)>, with n = #nodes.
+  // forwards_demand_sums_riq_[0][index_[node]] contains the sum of demands
+  // from the start of the node's path to the node,
+  // forwards_demand_sums_riq_[l][i] contains the intersection
+  // of forwards_demand_sums_riq_[0][i'] for i' in (s, i] where s is the max of
+  // i - 2**l + 1 and the index of the start node before or at i.
+  std::vector<std::vector<ExtendedInterval>> forwards_demand_sums_riq_;
+  // Range intersection query on node capacity + demand constraint, for
+  // queries on last node.
+  std::vector<std::vector<ExtendedInterval>> forwards_node_capacity_riq_;
+  // Range intersection query on node capacity + demand constraint, for
+  // queries on first node.
+  std::vector<std::vector<ExtendedInterval>> backwards_node_capacity_riq_;
   // The incremental branch of Commit() may waste space in the layers of the
   // RIQ structure. This is the upper limit of a layer's size.
   const int maximum_riq_layer_size_;
   // Range queries are used on a chain only if the range is larger than this.
   const int min_range_size_for_riq_;
-  // previous_nontrivial_index_[index_[node]] has the index of the previous
-  // node on its committed path that has nonfixed demand or nontrivial node
-  // capacity. This allows for O(1) queries that all nodes on a subpath
-  // are nonfixed and nontrivial.
-  std::vector<int> previous_nontrivial_index_;
 };
 
 // Make a filter that takes ownership of a PathState and synchronizes it with

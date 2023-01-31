@@ -17,9 +17,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/check.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research {

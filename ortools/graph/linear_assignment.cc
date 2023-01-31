@@ -15,7 +15,7 @@
 
 #include <cstdint>
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
 
 ABSL_FLAG(int64_t, assignment_alpha, 5,
           "Divisor for epsilon at each Refine "

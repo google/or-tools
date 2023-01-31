@@ -30,7 +30,6 @@
 #include "examples/cpp/sat_cnf_reader.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/flags.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
@@ -453,6 +452,6 @@ int main(int argc, char** argv) {
   // to be set before InitGoogle() which has the nice side-effect of allowing
   // the user to override it.
   InitGoogle(kUsage, &argc, &argv, /*remove_flags=*/true);
-  absl::SetFlag(&FLAGS_alsologtostderr, true);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   return operations_research::sat::Run();
 }

@@ -13,7 +13,7 @@
 
 #include "ortools/base/threadpool.h"
 
-#include "ortools/base/check.h"
+#include "absl/log/check.h"
 
 namespace operations_research {
 void RunWorker(void* data) {

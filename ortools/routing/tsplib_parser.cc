@@ -22,10 +22,10 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/check.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/path.h"

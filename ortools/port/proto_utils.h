@@ -62,13 +62,13 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
 }
 
 template <typename ProtoType>
-bool ProtobufTextFormatMergeFromString(const std::string& proto_text_string,
+bool ProtobufTextFormatMergeFromString(absl::string_view proto_text_string,
                                        ProtoType* proto) {
 #if defined(__PORTABLE_PLATFORM__)
   return false;
 #else   // !defined(__PORTABLE_PLATFORM__)
-  return google::protobuf::TextFormat::MergeFromString(proto_text_string,
-                                                       proto);
+  return google::protobuf::TextFormat::MergeFromString(
+      std::string(proto_text_string), proto);
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 

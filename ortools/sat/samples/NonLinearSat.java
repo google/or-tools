@@ -20,6 +20,7 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 
+/** Non linear examples using the addMultiplicationEquality(). */
 public class NonLinearSat {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
@@ -43,7 +44,8 @@ public class NonLinearSat {
       System.out.println("x = " + solver.value(x));
       System.out.println("y = " + solver.value(y));
       System.out.println("s = " + solver.value(area));
-    } else
+    } else {
       System.out.println("No solution found");
+    }
   }
 }

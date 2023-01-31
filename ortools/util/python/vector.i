@@ -18,12 +18,12 @@
 
 // --------- std::vector<data> wrapping ----------
 
-// We can't just reuse the google.i code (see LIST_OUTPUT_TYPEMAP in that
+// We can't just reuse the base.i code (see LIST_OUTPUT_TYPEMAP in that
 // file); for two reasons:
 // 1) We want a few extra typemaps (ITI integers <-> int, for example), but
-//    can't invoke google.i's LIST_OUTPUT_TYPEMAP because it's only
+//    can't invoke base.i's LIST_OUTPUT_TYPEMAP because it's only
 //    defined there. We may reuse base/swig/python-swig.cc though, since it's
-//    bundled with the google.i rule.
+//    bundled with the base.i rule.
 // 2) We use a lot of function overloading, so we must add extra typechecks.
 //
 // Note(user): for an unknown reason, using the (handy) method PyObjAs()

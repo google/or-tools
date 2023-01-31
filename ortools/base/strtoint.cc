@@ -17,9 +17,9 @@
 
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 

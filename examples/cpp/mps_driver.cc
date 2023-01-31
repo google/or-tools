@@ -17,6 +17,7 @@
 #include <stdio.h>
 
 #include <string>
+#include <vector>
 
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -25,6 +26,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
@@ -68,6 +70,10 @@ using operations_research::glop::ToDouble;
 void ReadGlopParameters(GlopParameters* parameters) {
   if (!absl::GetFlag(FLAGS_params_file).empty()) {
     std::string params;
+    operations_research::file::GetContents(
+        absl::GetFlag(FLAGS_params_file), &params,
+        operations_research::file::Defaults())
+        .CheckSuccess();
     CHECK(TextFormat::ParseFromString(params, parameters)) << params;
   }
   if (!absl::GetFlag(FLAGS_params).empty()) {

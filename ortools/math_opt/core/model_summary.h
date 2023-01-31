@@ -29,7 +29,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/check.h"
+#include "absl/log/check.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/model.pb.h"

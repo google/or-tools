@@ -24,10 +24,9 @@
 
 #include "absl/base/port.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/memory/memory.h"
+#include "absl/flags/declare.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/timer.h"

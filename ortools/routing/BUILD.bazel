@@ -243,9 +243,9 @@ cc_test(
     size = "small",
     srcs = ["tsptw_parser_test.cc"],
     data = [
-        #"//ortools/util/testdata:n20w20.001.txt",
-        #"//ortools/util/testdata:n20w20.002.txt",
-        #"//ortools/util/testdata:rc201.0",
+        "//ortools/routing/testdata:n20w20.001.txt",
+        "//ortools/routing/testdata:n20w20.002.txt",
+        "//ortools/routing/testdata:rc201.0",
     ],
     deps = [
         ":tsptw_parser",

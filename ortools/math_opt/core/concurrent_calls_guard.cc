@@ -17,7 +17,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/check.h"
+#include "absl/log/check.h"
 
 namespace operations_research::math_opt {
 

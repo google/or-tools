@@ -18,7 +18,7 @@
 #include <string>
 #include <utility>
 
-#include "ortools/base/basictypes.h"
+#include "ortools/base/integral_types.h"
 
 // In SWIG mode, we don't want anything besides these top-level includes.
 #if !defined(SWIG)

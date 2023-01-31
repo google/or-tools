@@ -27,12 +27,12 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
@@ -962,9 +962,7 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
 }
 
 void LogInfoWithoutPrefix(absl::string_view message) {
-  google::LogMessage("", google::LogMessage::kNoLogPrefix, google::GLOG_INFO)
-          .stream()
-      << message;
+  LOG(INFO).NoPrefix() << message;
 }
 
 glop::GlopParameters PreprocessSolver::PreprocessorParameters(
@@ -1560,6 +1558,8 @@ Solver::NextSolutionAndDelta Solver::ComputeNextPrimalSolution(
   ShardedWorkingQp().PrimalSharder().ParallelForEachShard(
       [&](const Sharder::Shard& shard) {
         if (!IsLinearProgram(qp)) {
+          // TODO(user): Does changing this to auto (so it becomes an
+          // Eigen deferred result), or inlining it below, change performance?
           const VectorXd diagonal_scaling =
               primal_step_size *
                   shard(qp.objective_matrix->diagonal()).array() +

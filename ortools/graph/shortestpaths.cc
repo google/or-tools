@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"

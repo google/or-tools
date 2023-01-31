@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <map>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_format.h"
