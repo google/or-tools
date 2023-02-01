@@ -13,6 +13,7 @@ def Sum(arg):
   for i in arg:
     sum += i
   print('sum(%s) = %d' % (str(arg), sum))
+  
 
 
 def test_sum_no_brackets():

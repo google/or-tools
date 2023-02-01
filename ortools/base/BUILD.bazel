@@ -54,6 +54,12 @@ cc_library(
         "-DOR_TOOLS_MINOR=5",
         "-DOR_TOOLS_PATCH=9999",
     ],
+    linkopts = select({
+        "on_linux": [],
+        "on_macos": ["-framework CoreFoundation"],
+        "on_windows": [],
+        "//conditions:default": [],
+    }),
     deps = [
         ":commandlineflags",
         ":integral_types",
