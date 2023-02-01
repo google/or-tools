@@ -226,7 +226,7 @@ void RunAllExamples(int32_t facilities, int32_t clients, double fix_cost) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   absl::SetProgramUsageMessage(
       std::string("This program solve a (randomly generated)\n") +
       std::string("Uncapacitated Facility Location Problem. Sample Usage:\n"));
