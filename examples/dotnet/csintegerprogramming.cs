@@ -103,7 +103,6 @@ public class CsIntegerProgramming
     {
         CppBridge.InitLogging("csintegerprogramming.cs");
         CppFlags flags = new CppFlags();
-        flags.logtostderr = true;
         flags.log_prefix = false;
         CppBridge.SetFlags(flags);
 
