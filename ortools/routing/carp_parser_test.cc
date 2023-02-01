@@ -15,9 +15,10 @@
 
 #include <string>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
+#include "absl/log/scoped_mock_log.h"
 #include "gtest/gtest.h"
-#include "ortools/base/mock-log.h"
 #include "ortools/base/path.h"
 
 ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
@@ -50,7 +51,7 @@ TEST(CarpParserTest, LoadNonExistingFile) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfNodes) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the number of nodes: -4"));
   EXPECT_CALL(
@@ -67,7 +68,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfNodes) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithServicings) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(
       log, Log(absl::LogSeverity::kError, testing::_,
                "Error when parsing the number of edges with servicing: -11"));
@@ -84,7 +85,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithServicings) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithoutServicings) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(
       log, Log(absl::LogSeverity::kError, testing::_,
                "Error when parsing the number of edges without servicing: a"));
@@ -101,7 +102,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithoutServicings) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfVehicles) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the number of vehicles: 0"));
   EXPECT_CALL(
@@ -118,7 +119,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfVehicles) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectCapacity) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the capacity: 0"));
   EXPECT_CALL(
@@ -135,7 +136,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectCapacity) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectTypeOfArcCost) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Value of TIPO_COSTES_ARISTAS is unexpected, only "
                        "EXPLICITOS is supported, but IMPLICITOS was found"));
@@ -152,7 +153,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectTypeOfArcCost) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectTotalServicingCost) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Error when parsing the total servicing cost: qwertz"));
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
@@ -168,7 +169,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectTotalServicingCost) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectDepot) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Could not parse node index: -1"));
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
@@ -187,7 +188,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectDepot) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileNoEdgeWithServicing) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(log,
               Log(absl::LogSeverity::kError, testing::_,
                   "Error when parsing the number of edges with servicing: 0"));
@@ -205,7 +206,7 @@ TEST(CarpParserTest, LoadInvalidFileNoEdgeWithServicing) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileServicingForArcsWithoutServicing) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Extraneous elements in line, starting with: demanda"));
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
@@ -221,7 +222,7 @@ TEST(CarpParserTest, LoadInvalidFileServicingForArcsWithoutServicing) {
 }
 
 TEST(CarpParserTest, LoadInvalidFileServicingForArcsInWrongOrder) {
-  testing::ScopedMockLog log(testing::kDoNotCaptureLogsYet);
+  absl::ScopedMockLog log;
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,
                        "Unexpected keyword: demanda"));
   EXPECT_CALL(log, Log(absl::LogSeverity::kError, testing::_,

@@ -17,7 +17,6 @@
 
 #include "absl/flags/flag.h"
 #include "gtest/gtest.h"
-#include "ortools/base/mock-log.h"
 #include "ortools/base/path.h"
 
 ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");

@@ -166,6 +166,7 @@ class RevisedSimplex {
   // matrices. Note that this call will be ignored if Solve() was never called
   // or if ClearStateForNextSolve() was called.
   void NotifyThatMatrixIsUnchangedForNextSolve();
+  void NotifyThatMatrixIsChangedForNextSolve();
 
   // Getters to retrieve all the information computed by the last Solve().
   RowIndex GetProblemNumRows() const;

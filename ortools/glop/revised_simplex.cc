@@ -131,6 +131,10 @@ void RevisedSimplex::NotifyThatMatrixIsUnchangedForNextSolve() {
   notify_that_matrix_is_unchanged_ = true;
 }
 
+void RevisedSimplex::NotifyThatMatrixIsChangedForNextSolve() {
+  notify_that_matrix_is_unchanged_ = false;
+}
+
 Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&function_stats_);
   DCHECK(lp.IsCleanedUp());

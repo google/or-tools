@@ -319,6 +319,7 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -361,19 +362,6 @@ cc_library(
     name = "memfile",
     hdrs = ["memfile.h"],
     deps = [],
-)
-
-cc_library(
-    name = "mock_log",
-    hdrs = ["mock-log.h"],
-    deps = [
-        ":logging",
-        ":macros",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/log:log_sink",
-        "@com_google_absl//absl/log:log_sink_registry",
-        "@com_google_googletest//:gtest",
-    ],
 )
 
 cc_library(

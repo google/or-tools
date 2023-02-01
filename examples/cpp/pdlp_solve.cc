@@ -26,6 +26,7 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/pdlp/iteration_stats.h"
 #include "ortools/pdlp/primal_dual_hybrid_gradient.h"

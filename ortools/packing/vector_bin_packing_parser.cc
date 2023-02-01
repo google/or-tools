@@ -37,7 +37,7 @@ bool VbpParser::ParseFile(const std::string& data_filename) {
 
   // Checks status.
   if (load_status_ == ERROR_FOUND) {
-    LOG(INFO) << vbp_.DebugString();
+    LOG(INFO) << vbp_;
     return false;
   }
   return vbp_.item_size() == num_declared_items_;

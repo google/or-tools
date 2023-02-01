@@ -48,7 +48,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -172,7 +171,7 @@ class OrderingBuilder : public DecisionBuilder {
  public:
   enum Order { LESS = -1, EQUAL = 0, GREATER = 1 };
 
-  OrderingBuilder(const std::map<int, FapVariable>& data_variables,
+  OrderingBuilder(const absl::btree_map<int, FapVariable>& data_variables,
                   const std::vector<FapConstraint>& data_constraints,
                   const std::vector<IntVar*>& variables,
                   const std::vector<IntVar*>& violated_constraints,
@@ -310,7 +309,7 @@ class OrderingBuilder : public DecisionBuilder {
   }
 
   // Passed as arguments from the function that creates the Decision Builder.
-  const std::map<int, FapVariable> data_variables_;
+  const absl::btree_map<int, FapVariable> data_variables_;
   const std::vector<FapConstraint> data_constraints_;
   const std::vector<IntVar*> variables_;
   const std::vector<IntVar*> violated_constraints_;
@@ -375,7 +374,7 @@ int64_t ValueEvaluator(
 // The variables which participate in more constraints and have the
 // smaller domain should be in higher priority for assignment.
 int64_t VariableEvaluator(const std::vector<int>& key_from_index,
-                          const std::map<int, FapVariable>& data_variables,
+                          const absl::btree_map<int, FapVariable>& data_variables,
                           int64_t variable_index) {
   FapVariable variable =
       gtl::FindOrDie(data_variables, key_from_index[variable_index]);
@@ -384,7 +383,7 @@ int64_t VariableEvaluator(const std::vector<int>& key_from_index,
 }
 
 // Creates the variables of the solver from the parsed data.
-void CreateModelVariables(const std::map<int, FapVariable>& data_variables,
+void CreateModelVariables(const absl::btree_map<int, FapVariable>& data_variables,
                           Solver* solver, std::vector<IntVar*>* model_variables,
                           absl::btree_map<int, int>* index_from_key,
                           std::vector<int>* key_from_index) {
@@ -516,7 +515,7 @@ void CreateAdditionalMonitors(OptimizeVar* const objective, Solver* solver,
 // instances of the problem with objective either the minimization of
 // the largest frequency assigned or the minimization of the number
 // of frequencies used to the solution.
-void HardFapSolver(const std::map<int, FapVariable>& data_variables,
+void HardFapSolver(const absl::btree_map<int, FapVariable>& data_variables,
                    const std::vector<FapConstraint>& data_constraints,
                    absl::string_view data_objective,
                    const std::vector<int>& values) {
@@ -631,9 +630,9 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
 }
 
 // Splits variables of the instance to hard and soft.
-void SplitVariablesHardSoft(const std::map<int, FapVariable>& data_variables,
-                            std::map<int, FapVariable>* hard_variables,
-                            std::map<int, FapVariable>* soft_variables) {
+void SplitVariablesHardSoft(const absl::btree_map<int, FapVariable>& data_variables,
+                            absl::btree_map<int, FapVariable>* hard_variables,
+                            absl::btree_map<int, FapVariable>* soft_variables) {
   for (const auto& it : data_variables) {
     if (it.second.initial_position != -1) {
       if (it.second.hard) {
@@ -665,7 +664,7 @@ void SplitConstraintHardSoft(const std::vector<FapConstraint>& data_constraints,
 // Penalize the modification of the initial position of soft variable of
 // the instance.
 void PenalizeVariablesViolation(
-    const std::map<int, FapVariable>& soft_variables,
+    const absl::btree_map<int, FapVariable>& soft_variables,
     const absl::btree_map<int, int>& index_from_key,
     const std::vector<IntVar*>& variables, std::vector<IntVar*>* cost,
     Solver* solver) {
@@ -729,7 +728,7 @@ void PenalizeConstraintsViolation(
 // The Soft Solver is dealing with the optimization of unfeasible instances
 // and aims to minimize the total cost of violated constraints. Returning value
 // equal to 0 denotes that the instance is feasible.
-int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
+int SoftFapSolver(const absl::btree_map<int, FapVariable>& data_variables,
                   const std::vector<FapConstraint>& data_constraints,
                   absl::string_view data_objective,
                   const std::vector<int>& values) {
@@ -737,8 +736,8 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
   std::vector<SearchMonitor*> monitors;
 
   // Split variables to hard and soft.
-  std::map<int, FapVariable> hard_variables;
-  std::map<int, FapVariable> soft_variables;
+  absl::btree_map<int, FapVariable> hard_variables;
+  absl::btree_map<int, FapVariable> soft_variables;
   SplitVariablesHardSoft(data_variables, &hard_variables, &soft_variables);
 
   // Order instance's constraints by their impact and then split them to
@@ -833,7 +832,7 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
   return violation_sum;
 }
 
-void SolveProblem(const std::map<int, FapVariable>& variables,
+void SolveProblem(const absl::btree_map<int, FapVariable>& variables,
                   const std::vector<FapConstraint>& constraints,
                   const std::string& objective, const std::vector<int>& values,
                   bool soft) {
@@ -870,7 +869,7 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Solving instance in directory  "
             << absl::GetFlag(FLAGS_directory);
   // Parse!
-  std::map<int, operations_research::FapVariable> variables;
+  absl::btree_map<int, operations_research::FapVariable> variables;
   std::vector<operations_research::FapConstraint> constraints;
   std::string objective;
   std::vector<int> values;

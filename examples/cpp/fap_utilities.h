@@ -19,10 +19,10 @@
 #define OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
 
 #include <cstdint>
-#include <map>
 #include <set>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/strings/str_format.h"
 #include "examples/cpp/fap_parser.h"
 #include "ortools/base/logging.h"
@@ -36,13 +36,13 @@ namespace operations_research {
 bool CheckConstraintSatisfaction(
     const std::vector<FapConstraint>& data_constraints,
     const std::vector<int>& variables,
-    const std::map<int, int>& index_from_key);
+    const absl::btree_map<int, int>& index_from_key);
 
 // Checks if the solution given from the Solver has not modified the values of
 // the variables that were initially assigned and denoted as hard in var.txt.
-bool CheckVariablePosition(const std::map<int, FapVariable>& data_variables,
+bool CheckVariablePosition(const absl::btree_map<int, FapVariable>& data_variables,
                            const std::vector<int>& variables,
-                           const std::map<int, int>& index_from_key);
+                           const absl::btree_map<int, int>& index_from_key);
 
 // Counts the number of different values in the variable vector.
 int NumberOfAssignedValues(const std::vector<int>& variables);
@@ -54,26 +54,26 @@ void PrintElapsedTime(const int64_t time1, const int64_t time2);
 void PrintResultsHard(SolutionCollector* const collector,
                       const std::vector<IntVar*>& variables,
                       IntVar* const objective_var,
-                      const std::map<int, FapVariable>& data_variables,
+                      const absl::btree_map<int, FapVariable>& data_variables,
                       const std::vector<FapConstraint>& data_constraints,
-                      const std::map<int, int>& index_from_key,
+                      const absl::btree_map<int, int>& index_from_key,
                       const std::vector<int>& key_from_index);
 
 // Prints the solution found by the Soft Solver for unfeasible instances.
 void PrintResultsSoft(SolutionCollector* const collector,
                       const std::vector<IntVar*>& variables,
                       IntVar* const total_cost,
-                      const std::map<int, FapVariable>& hard_variables,
+                      const absl::btree_map<int, FapVariable>& hard_variables,
                       const std::vector<FapConstraint>& hard_constraints,
-                      const std::map<int, FapVariable>& soft_variables,
+                      const absl::btree_map<int, FapVariable>& soft_variables,
                       const std::vector<FapConstraint>& soft_constraints,
-                      const std::map<int, int>& index_from_key,
+                      const absl::btree_map<int, int>& index_from_key,
                       const std::vector<int>& key_from_index);
 
 bool CheckConstraintSatisfaction(
     const std::vector<FapConstraint>& data_constraints,
     const std::vector<int>& variables,
-    const std::map<int, int>& index_from_key) {
+    const absl::btree_map<int, int>& index_from_key) {
   bool status = true;
   for (const FapConstraint& ct : data_constraints) {
     const int index1 = gtl::FindOrDie(index_from_key, ct.variable1);
@@ -101,9 +101,9 @@ bool CheckConstraintSatisfaction(
   return status;
 }
 
-bool CheckVariablePosition(const std::map<int, FapVariable>& data_variables,
+bool CheckVariablePosition(const absl::btree_map<int, FapVariable>& data_variables,
                            const std::vector<int>& variables,
-                           const std::map<int, int>& index_from_key) {
+                           const absl::btree_map<int, int>& index_from_key) {
   bool status = true;
   for (const auto& it : data_variables) {
     const int index = gtl::FindOrDie(index_from_key, it.first);
@@ -135,9 +135,9 @@ void PrintElapsedTime(const int64_t time1, const int64_t time2) {
 void PrintResultsHard(SolutionCollector* const collector,
                       const std::vector<IntVar*>& variables,
                       IntVar* const objective_var,
-                      const std::map<int, FapVariable>& data_variables,
+                      const absl::btree_map<int, FapVariable>& data_variables,
                       const std::vector<FapConstraint>& data_constraints,
-                      const std::map<int, int>& index_from_key,
+                      const absl::btree_map<int, int>& index_from_key,
                       const std::vector<int>& key_from_index) {
   LOG(INFO) << "Printing...";
   LOG(INFO) << "Number of Solutions: " << collector->solution_count();
@@ -175,11 +175,11 @@ void PrintResultsHard(SolutionCollector* const collector,
 void PrintResultsSoft(SolutionCollector* const collector,
                       const std::vector<IntVar*>& variables,
                       IntVar* const total_cost,
-                      const std::map<int, FapVariable>& hard_variables,
+                      const absl::btree_map<int, FapVariable>& hard_variables,
                       const std::vector<FapConstraint>& hard_constraints,
-                      const std::map<int, FapVariable>& soft_variables,
+                      const absl::btree_map<int, FapVariable>& soft_variables,
                       const std::vector<FapConstraint>& soft_constraints,
-                      const std::map<int, int>& index_from_key,
+                      const absl::btree_map<int, int>& index_from_key,
                       const std::vector<int>& key_from_index) {
   LOG(INFO) << "Printing...";
   LOG(INFO) << "Number of Solutions: " << collector->solution_count();

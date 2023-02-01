@@ -152,8 +152,8 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
   result_status_ = static_cast<MPSolver::ResultStatus>(response->status());
-  LOG_IF(DFATAL, !response->has_solver_specific_info())
-      << response->DebugString();
+  LOG_IF(FATAL, DEBUG_MODE && !response->has_solver_specific_info())
+    << *response;
   if (!solve_log_.ParseFromString(response->solver_specific_info())) {
     LOG(DFATAL) << "Unable to parse PDLP's SolveLog from solver_specific_info";
   }

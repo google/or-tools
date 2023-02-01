@@ -70,10 +70,8 @@ using operations_research::glop::ToDouble;
 void ReadGlopParameters(GlopParameters* parameters) {
   if (!absl::GetFlag(FLAGS_params_file).empty()) {
     std::string params;
-    operations_research::file::GetContents(
-        absl::GetFlag(FLAGS_params_file), &params,
-        operations_research::file::Defaults())
-        .CheckSuccess();
+    CHECK_OK(file::GetContents(absl::GetFlag(FLAGS_params_file), &params,
+			       file::Defaults()));
     CHECK(TextFormat::ParseFromString(params, parameters)) << params;
   }
   if (!absl::GetFlag(FLAGS_params).empty()) {

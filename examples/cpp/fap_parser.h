@@ -110,7 +110,7 @@ struct FapConstraint {
 struct FapComponent {
   // Fields:
   // the variable set of the sub-problem, i.e. the vertices of the component
-  std::map<int, FapVariable> variables;
+  absl::btree_map<int, FapVariable> variables;
 
   // the constraint set of the sub-problem, i.e. the edges of the component
   std::vector<FapConstraint> constraints;
@@ -124,7 +124,7 @@ class VariableParser {
   explicit VariableParser(const std::string& data_directory);
   ~VariableParser();
 
-  const std::map<int, FapVariable>& variables() const { return variables_; }
+  const absl::btree_map<int, FapVariable>& variables() const { return variables_; }
 
   void Parse();
 
@@ -133,7 +133,7 @@ class VariableParser {
   // A map is used because in the model, the variables have ids which may not
   // be consecutive, may be very sparse and don't have a specific upper-bound.
   // The key of the map, is the link's id.
-  std::map<int, FapVariable> variables_;
+  absl::btree_map<int, FapVariable> variables_;
 
   DISALLOW_COPY_AND_ASSIGN(VariableParser);
 };
@@ -146,7 +146,7 @@ class DomainParser {
   explicit DomainParser(const std::string& data_directory);
   ~DomainParser();
 
-  const std::map<int, std::vector<int> >& domains() const { return domains_; }
+  const absl::btree_map<int, std::vector<int> >& domains() const { return domains_; }
 
   void Parse();
 
@@ -155,7 +155,7 @@ class DomainParser {
   // A map is used because in the model, the ids of the different available
   // domains may be random values, since they are used as names. The key of the
   // map is the subset's id.
-  std::map<int, std::vector<int> > domains_;
+  absl::btree_map<int, std::vector<int> > domains_;
 
   DISALLOW_COPY_AND_ASSIGN(DomainParser);
 };
@@ -216,18 +216,18 @@ int strtoint32(const std::string& word) {
 
 // Function that finds the disjoint sub-graphs of the graph of the instance.
 void FindComponents(const std::vector<FapConstraint>& constraints,
-                    const std::map<int, FapVariable>& variables,
+                    const absl::btree_map<int, FapVariable>& variables,
                     const int maximum_variable_id,
                     absl::flat_hash_map<int, FapComponent>* components);
 
 // Function that computes the impact of a constraint.
-int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
+int EvaluateConstraintImpact(const absl::btree_map<int, FapVariable>& variables,
                              const int max_weight_cost,
                              const FapConstraint constraint);
 
 // Function that parses an instance of frequency assignment problem.
 void ParseInstance(const std::string& data_directory, bool find_components,
-                   std::map<int, FapVariable>* variables,
+                   absl::btree_map<int, FapVariable>* variables,
                    std::vector<FapConstraint>* constraints,
                    std::string* objective, std::vector<int>* frequencies,
                    absl::flat_hash_map<int, FapComponent>* components);
@@ -400,7 +400,7 @@ void ParametersParser::Parse() {
 
 // TODO(user): Make FindComponents linear instead of quadratic.
 void FindComponents(const std::vector<FapConstraint>& constraints,
-                    const std::map<int, FapVariable>& variables,
+                    const absl::btree_map<int, FapVariable>& variables,
                     const int maximum_variable_id,
                     absl::flat_hash_map<int, FapComponent>* components) {
   std::vector<int> in_component(maximum_variable_id + 1, -1);
@@ -485,7 +485,7 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
   }
 }
 
-int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
+int EvaluateConstraintImpact(const absl::btree_map<int, FapVariable>& variables,
                              const int max_weight_cost,
                              const FapConstraint constraint) {
   const FapVariable& variable1 =
@@ -509,7 +509,7 @@ int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
 }
 
 void ParseInstance(const std::string& data_directory, bool find_components,
-                   std::map<int, FapVariable>* variables,
+                   absl::btree_map<int, FapVariable>* variables,
                    std::vector<FapConstraint>* constraints,
                    std::string* objective, std::vector<int>* frequencies,
                    absl::flat_hash_map<int, FapComponent>* components) {

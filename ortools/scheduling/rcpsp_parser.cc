@@ -57,7 +57,7 @@ bool RcpspParser::ParseFile(const std::string& file_name) {
       ProcessRcpspLine(line);
     }
     if (load_status_ == ERROR_FOUND) {
-      LOG(INFO) << rcpsp_.DebugString();
+      LOG(INFO) << rcpsp_;
       return false;
     }
   }
