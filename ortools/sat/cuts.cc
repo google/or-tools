@@ -987,7 +987,7 @@ int CoverCutHelper::GetCoverSize(int relevant_size, IntegerValue* rhs) {
     //
     // TODO(user): experiment with different threshold (even greater than one).
     // Or come up with an algo that incorporate the lifting into the heuristic.
-    if (activity > 1.0) {
+    if (activity > 0.9999) {
       cover_size = i;  // before this entry.
       break;
     }

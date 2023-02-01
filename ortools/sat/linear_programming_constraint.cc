@@ -274,6 +274,8 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
 // for TSP for instance where the number of edges is large, but only a small
 // fraction will be used in the optimal solution.
 bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
+  simplex_.NotifyThatMatrixIsChangedForNextSolve();
+
   // Fill integer_lp_.
   integer_lp_.clear();
   infinity_norms_.clear();
@@ -383,7 +385,7 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   }
 
   lp_data_.NotifyThatColumnsAreClean();
-  VLOG(1) << "LP relaxation: " << lp_data_.GetDimensionString() << ". "
+  VLOG(3) << "LP relaxation: " << lp_data_.GetDimensionString() << ". "
           << constraint_manager_.AllConstraints().size()
           << " Managed constraints.";
   return true;
@@ -597,7 +599,9 @@ void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
 
 bool LinearProgrammingConstraint::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
-  if (!lp_solution_is_set_) return Propagate();
+  if (!lp_solution_is_set_) {
+    return Propagate();
+  }
 
   // At level zero, if there is still a chance to add cuts or lazy constraints,
   // we re-run the LP.
@@ -671,6 +675,10 @@ bool LinearProgrammingConstraint::SolveLp() {
             << average_degeneracy_.CurrentAverage();
   }
 
+  // By default we assume the matrix is unchanged.
+  // This will be reset by CreateLpFromConstraintManager().
+  simplex_.NotifyThatMatrixIsUnchangedForNextSolve();
+
   const int status_as_int = static_cast<int>(simplex_.GetProblemStatus());
   if (status_as_int >= num_solves_by_status_.size()) {
     num_solves_by_status_.resize(status_as_int + 1);
@@ -696,6 +704,108 @@ bool LinearProgrammingConstraint::SolveLp() {
 
     if (lp_solution_level_ == 0) {
       level_zero_lp_solution_ = lp_solution_;
+    }
+  }
+  return true;
+}
+
+bool LinearProgrammingConstraint::AnalyzeLp() {
+  // A dual-unbounded problem is infeasible. We use the dual ray reason.
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_UNBOUNDED) {
+    if (parameters_.use_exact_lp_reason()) {
+      if (!FillExactDualRayReason()) return true;
+    } else {
+      FillReducedCostReasonIn(simplex_.GetDualRayRowCombination(),
+                              &integer_reason_);
+    }
+    return integer_trail_->ReportConflict(integer_reason_);
+  }
+
+  // TODO(user): Update limits for DUAL_UNBOUNDED status as well.
+  UpdateSimplexIterationLimit(/*min_iter=*/10, /*max_iter=*/1000);
+
+  // Optimality deductions if problem has an objective.
+  if (objective_is_defined_ &&
+      (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
+       simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE)) {
+    // TODO(user): Maybe do a bit less computation when we cannot propagate
+    // anything.
+    if (parameters_.use_exact_lp_reason()) {
+      if (!ExactLpReasonning()) return false;
+
+      // Display when the inexact bound would have propagated more.
+      if (VLOG_IS_ON(2)) {
+        const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
+        const IntegerValue approximate_new_lb(static_cast<int64_t>(
+            std::ceil(relaxed_optimal_objective - kCpEpsilon)));
+        const IntegerValue propagated_lb =
+            integer_trail_->LowerBound(objective_cp_);
+        if (approximate_new_lb > propagated_lb) {
+          VLOG(2) << "LP objective [ " << ToDouble(propagated_lb) << ", "
+                  << ToDouble(integer_trail_->UpperBound(objective_cp_))
+                  << " ] approx_lb += "
+                  << ToDouble(approximate_new_lb - propagated_lb) << " gap: "
+                  << integer_trail_->UpperBound(objective_cp_) - propagated_lb;
+        }
+      }
+    } else {
+      // Try to filter optimal objective value. Note that GetObjectiveValue()
+      // already take care of the scaling so that it returns an objective in the
+      // CP world.
+      FillReducedCostReasonIn(simplex_.GetReducedCosts(), &integer_reason_);
+      const double objective_cp_ub =
+          ToDouble(integer_trail_->UpperBound(objective_cp_));
+      const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
+      ReducedCostStrengtheningDeductions(objective_cp_ub -
+                                         relaxed_optimal_objective);
+      if (!deductions_.empty()) {
+        deductions_reason_ = integer_reason_;
+        deductions_reason_.push_back(
+            integer_trail_->UpperBoundAsLiteral(objective_cp_));
+      }
+
+      // Push new objective lb.
+      const IntegerValue approximate_new_lb(static_cast<int64_t>(
+          std::ceil(relaxed_optimal_objective - kCpEpsilon)));
+      if (approximate_new_lb > integer_trail_->LowerBound(objective_cp_)) {
+        const IntegerLiteral deduction =
+            IntegerLiteral::GreaterOrEqual(objective_cp_, approximate_new_lb);
+        if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
+          return false;
+        }
+      }
+
+      // Push reduced cost strengthening bounds.
+      if (!deductions_.empty()) {
+        const int trail_index_with_same_reason = integer_trail_->Index();
+        for (const IntegerLiteral deduction : deductions_) {
+          if (!integer_trail_->Enqueue(deduction, {}, deductions_reason_,
+                                       trail_index_with_same_reason)) {
+            return false;
+          }
+        }
+      }
+    }
+  }
+
+  // Copy more info about the current solution.
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+    CHECK(lp_solution_is_set_);
+
+    lp_objective_ = simplex_.GetObjectiveValue();
+    lp_solution_is_integer_ = true;
+    const int num_vars = integer_variables_.size();
+    for (int i = 0; i < num_vars; i++) {
+      lp_reduced_cost_[i] = scaler_.UnscaleReducedCost(
+          glop::ColIndex(i), simplex_.GetReducedCost(glop::ColIndex(i)));
+      if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) >
+          kCpEpsilon) {
+        lp_solution_is_integer_ = false;
+      }
+    }
+
+    if (compute_reduced_cost_averages_) {
+      UpdateAverageReducedCosts();
     }
   }
   return true;
@@ -966,72 +1076,42 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
 bool LinearProgrammingConstraint::PostprocessAndAddCut(
     const std::string& name, const std::string& info,
     IntegerVariable first_slack, const LinearConstraint& cut) {
-  // Compute the activity. Warning: the cut no longer have the same size so we
-  // cannot use tmp_lp_values_. Note that the substitution below shouldn't
-  // change the activity by definition.
-  double activity = 0.0;
+  // Substitute any slack left.
+  tmp_scattered_vector_.ClearAndResize(integer_variables_.size());
+  IntegerValue cut_ub = cut.ub;
+  bool overflow = false;
   for (int i = 0; i < cut.vars.size(); ++i) {
-    if (cut.vars[i] < first_slack) {
-      activity += ToDouble(cut.coeffs[i]) * expanded_lp_solution_[cut.vars[i]];
+    const IntegerVariable var = cut.vars[i];
+
+    // Simple copy for non-slack variables.
+    if (var < first_slack) {
+      const glop::ColIndex col = mirror_lp_variable_.at(PositiveVariable(var));
+      if (VariableIsPositive(var)) {
+        tmp_scattered_vector_.Add(col, cut.coeffs[i]);
+      } else {
+        tmp_scattered_vector_.Add(col, -cut.coeffs[i]);
+      }
+      continue;
+    }
+
+    // Replace slack from LP constraints.
+    const int slack_index = (var.value() - first_slack.value()) / 2;
+    const glop::RowIndex row = tmp_slack_rows_[slack_index];
+    const IntegerValue multiplier = cut.coeffs[i];
+    if (!tmp_scattered_vector_.AddLinearExpressionMultiple(
+            multiplier, integer_lp_[row].terms)) {
+      overflow = true;
+      break;
     }
   }
-  const double kMinViolation = 1e-4;
-  const double violation = activity - ToDouble(cut.ub);
-  if (violation < kMinViolation) {
-    VLOG(3) << "Bad cut " << activity << " <= " << ToDouble(cut.ub);
+
+  if (overflow) {
+    VLOG(1) << "Overflow in slack removal.";
     return false;
   }
 
-  // Substitute any slack left.
-  {
-    int num_slack = 0;
-    tmp_scattered_vector_.ClearAndResize(integer_variables_.size());
-    IntegerValue cut_ub = cut.ub;
-    bool overflow = false;
-    for (int i = 0; i < cut.vars.size(); ++i) {
-      const IntegerVariable var = cut.vars[i];
-
-      // Simple copy for non-slack variables.
-      if (var < first_slack) {
-        const glop::ColIndex col =
-            mirror_lp_variable_.at(PositiveVariable(var));
-        if (VariableIsPositive(var)) {
-          tmp_scattered_vector_.Add(col, cut.coeffs[i]);
-        } else {
-          tmp_scattered_vector_.Add(col, -cut.coeffs[i]);
-        }
-        continue;
-      }
-
-      // Replace slack from LP constraints.
-      ++num_slack;
-      const int slack_index = (var.value() - first_slack.value()) / 2;
-      const glop::RowIndex row = tmp_slack_rows_[slack_index];
-      const IntegerValue multiplier = cut.coeffs[i];
-      if (!tmp_scattered_vector_.AddLinearExpressionMultiple(
-              multiplier, integer_lp_[row].terms)) {
-        overflow = true;
-        break;
-      }
-    }
-
-    if (overflow) {
-      VLOG(1) << "Overflow in slack removal.";
-      return false;
-    }
-
-    VLOG(3) << " num_slack: " << num_slack;
-    tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_, cut_ub,
-                                                    &cut_);
-  }
-
-  const double new_violation =
-      ComputeActivity(cut_, expanded_lp_solution_) - ToDouble(cut_.ub);
-  if (std::abs(violation - new_violation) >= 1e-4) {
-    VLOG(1) << "Violation discrepancy after slack removal. "
-            << " before = " << violation << " after = " << new_violation;
-  }
-
+  tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_, cut_ub,
+                                                  &cut_);
   DivideByGCD(&cut_);
   return constraint_manager_.AddCut(cut_, name, expanded_lp_solution_, info);
 }
@@ -1530,8 +1610,8 @@ bool LinearProgrammingConstraint::Propagate() {
   }
 
   simplex_.SetParameters(simplex_params_);
-  simplex_.NotifyThatMatrixIsUnchangedForNextSolve();
   if (!SolveLp()) return true;
+  if (!AnalyzeLp()) return false;
 
   // Add new constraints to the LP and resolve?
   const int max_cuts_rounds = trail_->CurrentDecisionLevel() == 0
@@ -1576,16 +1656,26 @@ bool LinearProgrammingConstraint::Propagate() {
           expanded_lp_solution_, &constraint_manager_);
     }
 
+    int num_added = 0;
     state_ = simplex_.GetState();
-    if (constraint_manager_.ChangeLp(expanded_lp_solution_, &state_)) {
+    if (constraint_manager_.ChangeLp(expanded_lp_solution_, &state_,
+                                     &num_added)) {
       simplex_.LoadStateForNextSolve(state_);
       if (!CreateLpFromConstraintManager()) {
         return integer_trail_->ReportConflict({});
       }
+
+      // If we didn't add any new constraint, we delay the next Solve() since
+      // likely the optimal didn't change.
+      if (num_added == 0) {
+        break;
+      }
+
       const double old_obj = simplex_.GetObjectiveValue();
       if (!SolveLp()) return true;
+      if (!AnalyzeLp()) return false;
       if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
-        VLOG(1) << "Relaxation improvement " << old_obj << " -> "
+        VLOG(3) << "Relaxation improvement " << old_obj << " -> "
                 << simplex_.GetObjectiveValue()
                 << " diff: " << simplex_.GetObjectiveValue() - old_obj
                 << " level: " << trail_->CurrentDecisionLevel();
@@ -1598,105 +1688,7 @@ bool LinearProgrammingConstraint::Propagate() {
     }
   }
 
-  // A dual-unbounded problem is infeasible. We use the dual ray reason.
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_UNBOUNDED) {
-    if (parameters_.use_exact_lp_reason()) {
-      if (!FillExactDualRayReason()) return true;
-    } else {
-      FillReducedCostReasonIn(simplex_.GetDualRayRowCombination(),
-                              &integer_reason_);
-    }
-    return integer_trail_->ReportConflict(integer_reason_);
-  }
-
-  // TODO(user): Update limits for DUAL_UNBOUNDED status as well.
-  UpdateSimplexIterationLimit(/*min_iter=*/10, /*max_iter=*/1000);
-
-  // Optimality deductions if problem has an objective.
-  if (objective_is_defined_ &&
-      (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
-       simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE)) {
-    // TODO(user): Maybe do a bit less computation when we cannot propagate
-    // anything.
-    if (parameters_.use_exact_lp_reason()) {
-      if (!ExactLpReasonning()) return false;
-
-      // Display when the inexact bound would have propagated more.
-      if (VLOG_IS_ON(2)) {
-        const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
-        const IntegerValue approximate_new_lb(static_cast<int64_t>(
-            std::ceil(relaxed_optimal_objective - kCpEpsilon)));
-        const IntegerValue propagated_lb =
-            integer_trail_->LowerBound(objective_cp_);
-        if (approximate_new_lb > propagated_lb) {
-          VLOG(2) << "LP objective [ " << ToDouble(propagated_lb) << ", "
-                  << ToDouble(integer_trail_->UpperBound(objective_cp_))
-                  << " ] approx_lb += "
-                  << ToDouble(approximate_new_lb - propagated_lb) << " gap: "
-                  << integer_trail_->UpperBound(objective_cp_) - propagated_lb;
-        }
-      }
-    } else {
-      // Try to filter optimal objective value. Note that GetObjectiveValue()
-      // already take care of the scaling so that it returns an objective in the
-      // CP world.
-      FillReducedCostReasonIn(simplex_.GetReducedCosts(), &integer_reason_);
-      const double objective_cp_ub =
-          ToDouble(integer_trail_->UpperBound(objective_cp_));
-      const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
-      ReducedCostStrengtheningDeductions(objective_cp_ub -
-                                         relaxed_optimal_objective);
-      if (!deductions_.empty()) {
-        deductions_reason_ = integer_reason_;
-        deductions_reason_.push_back(
-            integer_trail_->UpperBoundAsLiteral(objective_cp_));
-      }
-
-      // Push new objective lb.
-      const IntegerValue approximate_new_lb(static_cast<int64_t>(
-          std::ceil(relaxed_optimal_objective - kCpEpsilon)));
-      if (approximate_new_lb > integer_trail_->LowerBound(objective_cp_)) {
-        const IntegerLiteral deduction =
-            IntegerLiteral::GreaterOrEqual(objective_cp_, approximate_new_lb);
-        if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
-          return false;
-        }
-      }
-
-      // Push reduced cost strengthening bounds.
-      if (!deductions_.empty()) {
-        const int trail_index_with_same_reason = integer_trail_->Index();
-        for (const IntegerLiteral deduction : deductions_) {
-          if (!integer_trail_->Enqueue(deduction, {}, deductions_reason_,
-                                       trail_index_with_same_reason)) {
-            return false;
-          }
-        }
-      }
-    }
-  }
-
-  // Copy more info about the current solution.
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
-    CHECK(lp_solution_is_set_);
-
-    lp_objective_ = simplex_.GetObjectiveValue();
-    lp_solution_is_integer_ = true;
-    const int num_vars = integer_variables_.size();
-    for (int i = 0; i < num_vars; i++) {
-      lp_reduced_cost_[i] = scaler_.UnscaleReducedCost(
-          glop::ColIndex(i), simplex_.GetReducedCost(glop::ColIndex(i)));
-      if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) >
-          kCpEpsilon) {
-        lp_solution_is_integer_ = false;
-      }
-    }
-
-    if (compute_reduced_cost_averages_) {
-      UpdateAverageReducedCosts();
-    }
-  }
-
+  // TODO(user): Is this the best place for this ?
   if (parameters_.use_branching_in_lp() && objective_is_defined_ &&
       trail_->CurrentDecisionLevel() == 0 && !is_degenerate_ &&
       lp_solution_is_set_ && !lp_solution_is_integer_ &&
@@ -1761,6 +1753,7 @@ bool LinearProgrammingConstraint::Propagate() {
       branching_frequency_ *= 2;
     }
   }
+
   return true;
 }
 

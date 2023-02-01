@@ -192,25 +192,6 @@ class CpModelPresolver {
   // related presolve.
   void DetectDominatedLinearConstraints();
 
-  // Returns true if the domain of x is implied by the current constraints.
-  //
-  // Warning: this potentially scan all the constraint in which x appear.
-  // work_done will be incremented by the number of entries scanned.
-  bool IsImpliedFree(const std::vector<int>& constraints, int x,
-                     int64_t* work_done);
-
-  // Detects if two columns that contains only linear constraints share a lot of
-  // common entries. Then calls PerformFreeColumnSubstitution() on promising
-  // candidate to reduce the overall number of non zeros.
-  void DetectOverlappingColumns();
-
-  // Assuming that x is implied free and only appear in linear constraints, this
-  // replace x by x + factor * y. This assumes that we precomputed all the
-  // constraints in which x appears and the coefficient of x inside.
-  void PerformFreeColumnSubstitution(
-      const std::vector<std::pair<int, int64_t>>& constraints_with_x_coeff,
-      int x, int y, int64_t factor);
-
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
   // We detect inclusion of these constraint which allows a few simplifications.

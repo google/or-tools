@@ -233,7 +233,7 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
 // Same as Add(), but logs some information about the newly added constraint.
 // Cuts are also handled slightly differently than normal constraints.
 bool LinearConstraintManager::AddCut(
-    LinearConstraint ct, std::string type_name,
+    const LinearConstraint& ct, std::string type_name,
     const absl::StrongVector<IntegerVariable, double>& lp_solution,
     std::string extra_info) {
   ++num_add_cut_calls_;
@@ -245,10 +245,17 @@ bool LinearConstraintManager::AddCut(
   const double l2_norm = ComputeL2Norm(ct);
 
   // Only add cut with sufficient efficacy.
-  if (violation / l2_norm < 1e-5) return false;
+  if (violation / l2_norm < 1e-5) {
+    VLOG(2) << "BAD Cut '" << type_name << "'"
+            << " size=" << ct.vars.size()
+            << " max_magnitude=" << ComputeInfinityNorm(ct)
+            << " norm=" << l2_norm << " violation=" << violation
+            << " eff=" << violation / l2_norm << " " << extra_info;
+    return false;
+  }
 
   bool added = false;
-  const ConstraintIndex ct_index = Add(std::move(ct), &added);
+  const ConstraintIndex ct_index = Add(ct, &added);
 
   // We only mark the constraint as a cut if it is not an update of an already
   // existing one.
@@ -504,7 +511,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
 
 bool LinearConstraintManager::ChangeLp(
     const absl::StrongVector<IntegerVariable, double>& lp_solution,
-    glop::BasisState* solution_state) {
+    glop::BasisState* solution_state, int* num_new_constraints) {
   VLOG(3) << "Enter ChangeLP, scan " << constraint_infos_.size()
           << " constraints";
   const double saved_dtime = dtime_;
@@ -720,6 +727,9 @@ bool LinearConstraintManager::ChangeLp(
     }
   }
 
+  if (num_new_constraints != nullptr) {
+    *num_new_constraints = num_added;
+  }
   if (num_added > 0) {
     // We update the solution sate to match the new LP size.
     VLOG(2) << "Added " << num_added << " constraints.";

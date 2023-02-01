@@ -892,7 +892,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
     // post-solve.
     if (mp_var.lower_bound() > static_cast<double>(kMaxVariableBound) ||
         mp_var.upper_bound() < static_cast<double>(-kMaxVariableBound)) {
-      SOLVER_LOG(logger, "Error: variable ", mp_var.DebugString(),
+      SOLVER_LOG(logger, "Error: variable ", mp_var,
                  " is outside [-mip_max_bound..mip_max_bound]");
       return false;
     }

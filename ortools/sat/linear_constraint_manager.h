@@ -93,7 +93,7 @@ class LinearConstraintManager {
   //
   // Returns true if a new cut was added and false if this cut is not
   // efficacious or if it is a duplicate of an already existing one.
-  bool AddCut(LinearConstraint ct, std::string type_name,
+  bool AddCut(const LinearConstraint& ct, std::string type_name,
               const absl::StrongVector<IntegerVariable, double>& lp_solution,
               std::string extra_info = "");
 
@@ -114,7 +114,8 @@ class LinearConstraintManager {
   //
   // Returns true iff LpConstraints() will return a different LP than before.
   bool ChangeLp(const absl::StrongVector<IntegerVariable, double>& lp_solution,
-                glop::BasisState* solution_state);
+                glop::BasisState* solution_state,
+                int* num_new_constraints = nullptr);
 
   // This can be called initially to add all the current constraint to the LP
   // returned by GetLp().

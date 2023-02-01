@@ -270,6 +270,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Solve the LP, returns false if something went wrong in the LP solver.
   bool SolveLp();
 
+  // Analyzes the result of an LP Solution. Returns false on conflict.
+  bool AnalyzeLp();
+
   // Returns false if some terms cannot be removed because of overflow. If this
   // happends the cut is left in a non-usable state and we should abort its
   // processing.
