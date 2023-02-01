@@ -287,19 +287,19 @@ class XpressInterface : public MPSolverInterface {
   // Query problem type.
   // Remember that problem type is a static property that is set
   // in the constructor and never changed.
-  virtual bool IsContinuous() const { return IsLP(); }
-  virtual bool IsLP() const { return !mMip; }
-  virtual bool IsMIP() const { return mMip; }
+  bool IsContinuous() const override { return IsLP(); }
+  bool IsLP() const override { return !mMip; }
+  bool IsMIP() const override { return mMip; }
 
-  virtual void ExtractNewVariables();
-  virtual void ExtractNewConstraints();
-  virtual void ExtractObjective();
+  void ExtractNewVariables() override;
+  void ExtractNewConstraints() override;
+  void ExtractObjective() override;
 
-  virtual std::string SolverVersion() const;
+  std::string SolverVersion() const override;
 
-  virtual void* underlying_solver() { return reinterpret_cast<void*>(mLp); }
+  void* underlying_solver() override { return reinterpret_cast<void*>(mLp); }
 
-  virtual double ComputeExactConditionNumber() const {
+  double ComputeExactConditionNumber() const override {
     if (!IsContinuous()) {
       LOG(DFATAL) << "ComputeExactConditionNumber not implemented for"
                   << " XPRESS_MIXED_INTEGER_PROGRAMMING";
@@ -312,8 +312,8 @@ class XpressInterface : public MPSolverInterface {
     return 0.0;
   }
 
-  virtual bool SetSolverSpecificParametersAsString(const std::string& parameters);
-  virtual bool InterruptSolve() {
+  bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
+  bool InterruptSolve() override {
     if (mLp)
       XPRSinterrupt(mLp, XPRS_STOP_USER);
     return true;
@@ -321,14 +321,14 @@ class XpressInterface : public MPSolverInterface {
 
  protected:
   // Set all parameters in the underlying solver.
-  virtual void SetParameters(MPSolverParameters const& param);
+  void SetParameters(MPSolverParameters const& param) override;
   // Set each parameter in the underlying solver.
-  virtual void SetRelativeMipGap(double value);
-  virtual void SetPrimalTolerance(double value);
-  virtual void SetDualTolerance(double value);
-  virtual void SetPresolveMode(int value);
-  virtual void SetScalingMode(int value);
-  virtual void SetLpAlgorithm(int value);
+  void SetRelativeMipGap(double value) override;
+  void SetPrimalTolerance(double value) override;
+  void SetDualTolerance(double value) override;
+  void SetPresolveMode(int value) override;
+  void SetScalingMode(int value) override;
+  void SetLpAlgorithm(int value) override;
 
   virtual bool ReadParameterFile(std::string const& filename);
   virtual std::string ValidFileExtensionForParameterFile() const;
