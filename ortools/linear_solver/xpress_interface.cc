@@ -98,6 +98,7 @@ namespace {
 
     // Depending on the type, parse the text in value and apply it.
     std::stringstream v(value);
+    v.imbue(std::locale("C"));
     switch (type) {
     case XPRS_TYPE_INT:
     {
