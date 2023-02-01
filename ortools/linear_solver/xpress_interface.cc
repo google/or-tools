@@ -43,15 +43,18 @@ extern "C" {
   static void XPRS_CC
   cbmessage(XPRSprob, void *cbdata, char const *msg, int msglen, int msgtype)
   {
-    std::ostream *os = reinterpret_cast<std::ostream *>(cbdata);
-    if (msgtype < 0)
-      *os << std::flush;
+    if (msgtype < 0) {
+      // msgtype < 0 is a request to flush all output.
+      LOG(INFO) << std::flush;
+      LOG(WARNING) << std::flush;
+      LOG(ERROR) << std::flush;
+    }
     else if (msglen > 0 || msg) { // Empty lines have msglen=0, msg!=NULL
       switch (msgtype) {
-      case 1: /* info */ *os << msg << std::endl; break;
+      case 1: /* info */ LOG(INFO) << msg << std::endl; break;
       case 2: /* unused */ break;
-      case 3: /* warn */ *os << msg << std::endl; break;
-      case 4: /* error */ *os << msg << std::endl; break;
+      case 3: /* warn */ LOG(WARNING) << msg << std::endl; break;
+      case 4: /* error */ LOG(ERROR) << msg << std::endl; break;
       }
     }
   }
@@ -1432,7 +1435,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   // Enable log output.
   if (!quiet())
-    XPRSaddcbmessage(mLp, cbmessage, &std::cout, 0);
+    XPRSaddcbmessage(mLp, cbmessage, nullptr, 0);
   // Set parameters.
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
@@ -1465,7 +1468,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   }
 
   // Disable screen output right after solve
-  XPRSremovecbmessage(mLp, cbmessage, 0);
+  XPRSremovecbmessage(mLp, cbmessage, nullptr);
 
   if (status) {
     VLOG(1) << absl::StrFormat("Failed to optimize MIP. Error %d", status);
