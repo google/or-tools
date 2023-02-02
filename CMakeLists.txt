@@ -257,6 +257,8 @@ message(STATUS "XPRESS support: ${USE_XPRESS}")
 
 # Language specific options
 if(BUILD_CXX)
+  CMAKE_DEPENDENT_OPTION(BUILD_CXX_DOC "Build the C++ doc" OFF "NOT BUILD_DOC" ON)
+  message(STATUS "C++: Build doc: ${BUILD_CXX_DOC}")
 endif()
 
 if(BUILD_DOTNET)

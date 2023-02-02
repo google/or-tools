@@ -287,6 +287,35 @@ add_subdirectory(ortools/linear_solver/proto_solver)
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_proto_solver>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
 
+###############
+## Doc rules ##
+###############
+if(BUILD_CXX_DOC)
+  # add a target to generate API documentation with Doxygen
+  find_package(Doxygen REQUIRED)
+  if(DOXYGEN_FOUND)
+    configure_file(${PROJECT_SOURCE_DIR}/ortools/cpp/Doxyfile.in ${PROJECT_BINARY_DIR}/cpp/Doxyfile @ONLY)
+    file(DOWNLOAD
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      ${PROJECT_BINARY_DIR}/cpp/doxygen-awesome.css
+      SHOW_PROGRESS
+    )
+    add_custom_target(${PROJECT_NAME}_cxx_doc ALL
+      #COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_BINARY_DIR}/docs/cpp
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/cpp
+      COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/cpp/Doxyfile
+      DEPENDS
+        ${PROJECT_BINARY_DIR}/cpp/Doxyfile
+        ${PROJECT_BINARY_DIR}/cpp/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/cpp/stylesheet.css
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      COMMENT "Generating C++ API documentation with Doxygen"
+      VERBATIM)
+  else()
+    message(WARNING "cmd `doxygen` not found, C++ doc generation is disable!")
+  endif()
+endif()
+
 ###################
 ## Install rules ##
 ###################
