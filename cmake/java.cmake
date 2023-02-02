@@ -331,6 +331,55 @@ add_custom_target(java_deploy
   WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
 add_dependencies(java_deploy java_package)
 
+###############
+## Doc rules ##
+###############
+if(BUILD_JAVA_DOC)
+  # add a target to generate API documentation with Doxygen
+  find_package(Doxygen)
+  if(DOXYGEN_FOUND)
+    configure_file(${PROJECT_SOURCE_DIR}/ortools/java/Doxyfile.in ${PROJECT_BINARY_DIR}/java/Doxyfile @ONLY)
+    file(DOWNLOAD
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      ${PROJECT_BINARY_DIR}/java/doxygen-awesome.css
+      SHOW_PROGRESS
+    )
+    add_custom_target(${PROJECT_NAME}_java_doc ALL
+      #COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_BINARY_DIR}/docs/java
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/java
+      COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/java/Doxyfile
+      DEPENDS
+        java_package
+        ${PROJECT_BINARY_DIR}/java/Doxyfile
+        ${PROJECT_BINARY_DIR}/java/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/java/stylesheet.css
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      COMMENT "Generating Java API documentation with Doxygen"
+      VERBATIM)
+  else()
+    message(WARNING "cmd `doxygen` not found, Java doc generation is disable!")
+  endif()
+
+  # Java doc
+  find_program(JAR_PRG NAMES jar)
+  if (JAR_PRG)
+    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/docs/javadoc)
+    add_custom_target(${PROJECT_NAME}_javadoc_doc ALL
+      #COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_BINARY_DIR}/docs/javadoc
+      #COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/javadoc
+      COMMAND jar xvf
+      "${PROJECT_BINARY_DIR}/java/ortools-java/target/ortools-java-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-javadoc.jar"
+      DEPENDS
+        java_package
+        ${PROJECT_BINARY_DIR}/docs/javadoc
+      WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/docs/javadoc
+      COMMENT "Generating Java API documentation with Doxygen"
+      VERBATIM)
+  else()
+    message(WARNING "cmd `jar` not found, Javadoc doc generation is disable!")
+  endif()
+endif()
+
 ###################
 ##  Java Sample  ##
 ###################
