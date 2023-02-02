@@ -247,15 +247,21 @@ if(USE_SCIP)
 endif()
 
 # Optional third party solvers (disabled by default)
+## CPLEX
 option(USE_CPLEX "Use the CPLEX solver" OFF)
 message(STATUS "CPLEX support: ${USE_CPLEX}")
 
+## XPRESS
 option(USE_XPRESS "Use the XPRESS solver" OFF)
 message(STATUS "XPRESS support: ${USE_XPRESS}")
 
+# Language specific options
+if(BUILD_CXX)
+endif()
+
 if(BUILD_DOTNET)
   option(UNIVERSAL_DOTNET_PACKAGE "Build a .Net multi OS Package" OFF)
-  message(STATUS ".Net: Create multiple os package: ${UNIVERSAL_DOTNET_PACKAGE}")
+  message(STATUS ".Net: Create multiple OS Package: ${UNIVERSAL_DOTNET_PACKAGE}")
 
   # Language Version
   # see: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
@@ -301,7 +307,7 @@ if(BUILD_JAVA)
   message(STATUS "Java: Disable gpg:sign: ${SKIP_GPG}")
 
   option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
-  message(STATUS "Java: Create multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
+  message(STATUS "Java: Create multiple OS package: ${UNIVERSAL_JAVA_PACKAGE}")
 
   # On Centos-7 this option (needed otherwise) is unrecognized and should be
   # replaced by an empty string.
