@@ -166,14 +166,6 @@ namespace {
     return true;
   }
 
-  void printError(const XPRSprob& mLp, int line) {
-    char errmsg[512];
-    XPRSgetlasterror(mLp, errmsg);
-    VLOG(0) << absl::StrFormat("Function line %d did not execute correctly: %s\n",
-                               line, errmsg);
-    exit(0);
-  }
-
   int XPRSgetnumcols(const XPRSprob& mLp) {
     int nCols = 0;
     XPRSgetintattrib(mLp, XPRS_ORIGINALCOLS, &nCols);
