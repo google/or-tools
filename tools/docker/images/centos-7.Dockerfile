@@ -28,18 +28,18 @@ RUN ARCH=$(uname -m) \
 && ./cmake-3.23.2-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
 && rm cmake-3.23.2-linux-${ARCH}.sh
 
-# Install Swig 4.0.2
+# Install Swig 4.1.1
 RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz" \
- -o swig-4.0.2.tar.gz \
-&& tar xvf swig-4.0.2.tar.gz \
-&& rm swig-4.0.2.tar.gz \
-&& cd swig-4.0.2 \
+ --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.1.1/swig-4.1.1.tar.gz" \
+ -o swig-4.1.1.tar.gz \
+&& tar xvf swig-4.1.1.tar.gz \
+&& rm swig-4.1.1.tar.gz \
+&& cd swig-4.1.1 \
 && ./configure --prefix=/usr \
 && make -j 4 \
 && make install \
 && cd .. \
-&& rm -rf swig-4.0.2
+&& rm -rf swig-4.1.1
 
 # Install .Net
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-

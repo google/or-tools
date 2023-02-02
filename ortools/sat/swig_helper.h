@@ -33,7 +33,7 @@ namespace operations_research {
 namespace sat {
 
 // Base class for SWIG director based on solution callbacks.
-// See http://www.swig.org/Doc4.0/SWIGDocumentation.html#CSharp_directors.
+// See http://www.swig.org/Doc4.1/SWIGDocumentation.html#CSharp_directors.
 class SolutionCallback {
  public:
   virtual ~SolutionCallback();

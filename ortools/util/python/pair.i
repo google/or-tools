@@ -18,7 +18,7 @@
 // %include "std_pair.i"
 // %template(IntBoolPair) std::pair<int, bool>;
 // ```
-// see http://swig.org/Doc4.0/Library.html#Library_std_vector), but
+// see http://swig.org/Doc4.1/Library.html#Library_std_vector), but
 // here we can't, because exceptions are forbidden and std_pair.i will rely on
 // on python/pystdcommon.swg which use few throw in type traits...
 

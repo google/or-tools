@@ -207,7 +207,7 @@ swig_add_library(pyFoo
 ## Doxygen
 
 Since swig 4.0, swig can now
-[extract doxygen comments](http://www.swig.org/Doc4.0/Doxygen.html) from C++ to
+[extract doxygen comments](http://www.swig.org/Doc4.1/Doxygen.html) from C++ to
 inject it in Python and Java.
 
 ### Csharp documentation
