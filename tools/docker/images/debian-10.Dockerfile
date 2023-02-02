@@ -13,12 +13,12 @@ RUN apt-get update -qq \
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
 
-# Install CMake 3.23.2
+# Install CMake 3.25.2
 RUN ARCH=$(uname -m) \
-&& wget -q "https://cmake.org/files/v3.23/cmake-3.23.2-linux-${ARCH}.sh" \
-&& chmod a+x cmake-3.23.2-linux-${ARCH}.sh \
-&& ./cmake-3.23.2-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.23.2-linux-${ARCH}.sh
+&& wget -q "https://cmake.org/files/v3.25/cmake-3.25.2-linux-${ARCH}.sh" \
+&& chmod a+x cmake-3.25.2-linux-${ARCH}.sh \
+&& ./cmake-3.25.2-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.25.2-linux-${ARCH}.sh
 
 # Install .Net
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian#debian-10-

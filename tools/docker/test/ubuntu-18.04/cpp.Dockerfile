@@ -17,12 +17,12 @@ ENV CC=gcc-11 CXX=g++-11
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
 
-# Install CMake 3.21.1
+# Install CMake 3.25.2
 RUN ARCH=$(uname -m) \
-&& wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-${ARCH}.sh" \
-&& chmod a+x cmake-3.21.1-linux-${ARCH}.sh \
-&& ./cmake-3.21.1-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.21.1-linux-${ARCH}.sh
+&& wget -q "https://cmake.org/files/v3.25/cmake-3.25.2-linux-${ARCH}.sh" \
+&& chmod a+x cmake-3.25.2-linux-${ARCH}.sh \
+&& ./cmake-3.25.2-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.25.2-linux-${ARCH}.sh
 
 #ENV TZ=America/Los_Angeles
 #RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
