@@ -1,0 +1,24 @@
+r'''
+# OR-Tools
+
+This is the reference documentation for Google OR-Tools.
+
+This repository contains several component:
+
+ - `ortools.init`,
+
+ - `ortools.algorithms`,
+ - `ortools.graph`,
+
+ - `ortools.linear_solver`,
+ - `ortools.bop`,
+ - `ortools.glop`,
+ - `ortools.pdlp`,
+ - `ortools.constraint_solver`,
+ - `ortools.sat`,
+ - `ortools.packing`,
+ - `ortools.scheduling`,
+'''
+
+__docformat__ = "markdown"  # explicitly disable rST processing above.
+__version__ = "@PROJECT_VERSION@"

@@ -235,7 +235,14 @@ endforeach()
 ## Python Packaging  ##
 #######################
 #file(MAKE_DIRECTORY python/${PYTHON_PROJECT})
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/__init__.py CONTENT "__version__ = \"${PROJECT_VERSION}\"\n")
+configure_file(
+  ${PROJECT_SOURCE_DIR}/ortools/python/__init__.py.in
+  ${PROJECT_BINARY_DIR}/python/__init__.py.in
+  @ONLY)
+file(GENERATE
+  OUTPUT ${PYTHON_PROJECT_DIR}/__init__.py
+  INPUT ${PROJECT_BINARY_DIR}/python/__init__.py.in)
+
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/bop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/__init__.py CONTENT "")
