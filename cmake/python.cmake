@@ -400,6 +400,31 @@ if(BUILD_TESTING)
     COMMAND ${VENV_Python3_EXECUTABLE} ${PROJECT_BINARY_DIR}/python/version_test.py)
 endif()
 
+###############
+## Doc rules ##
+###############
+if(BUILD_PYTHON_DOC)
+  find_program(PDOC_PRG NAMES pdoc)
+  if (PDOC_PRG)
+    # add a target to generate API documentation with pdoc
+    add_custom_target(${PROJECT_NAME}_python_doc
+      #COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_BINARY_DIR}/docs/python
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/python
+      COMMAND ${PDOC_PRG}
+      --logo ${PROJECT_SOURCE_DIR}/tools/doc/orLogo.png
+      --no-search -d google
+      --footer-text "OR-Tools ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+      -o ${PROJECT_BINARY_DIR}/docs/python
+      ${PROJECT_BINARY_DIR}/python/ortools
+      DEPENDS python_package
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      COMMENT "Generating Python API documentation with pdoc"
+      VERBATIM)
+  else()
+    message(WARNING "cmd `pdoc` not found, Python doc generation is disable!")
+  endif()
+endif()
+
 #####################
 ##  Python Sample  ##
 #####################
