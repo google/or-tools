@@ -265,6 +265,9 @@ if(BUILD_DOTNET)
   option(UNIVERSAL_DOTNET_PACKAGE "Build a .Net multi OS Package" OFF)
   message(STATUS ".Net: Create multiple OS Package: ${UNIVERSAL_DOTNET_PACKAGE}")
 
+  CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_DOC "Build the .Net doc" OFF "NOT BUILD_DOC" ON)
+  message(STATUS ".Net: Build doc: ${BUILD_DOTNET_DOC}")
+
   # Language Version
   # see: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
   set(DOTNET_LANG "9.0" CACHE STRING "Specify the C# language version (default \"9.0\")")

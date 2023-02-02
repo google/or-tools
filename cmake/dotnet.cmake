@@ -382,6 +382,36 @@ add_custom_target(dotnet_package ALL
     ${DOTNET_PROJECT_DIR}/timestamp
   WORKING_DIRECTORY ${DOTNET_PROJECT_DIR})
 
+###############
+## Doc rules ##
+###############
+if(BUILD_DOTNET_DOC)
+  # add a target to generate API documentation with Doxygen
+  find_package(Doxygen REQUIRED)
+  if(DOXYGEN_FOUND)
+    configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Doxyfile.in ${PROJECT_BINARY_DIR}/dotnet/Doxyfile @ONLY)
+    file(DOWNLOAD
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      ${PROJECT_BINARY_DIR}/dotnet/doxygen-awesome.css
+      SHOW_PROGRESS
+    )
+    add_custom_target(${PROJECT_NAME}_dotnet_doc ALL
+      #COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_BINARY_DIR}/docs/dotnet
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/dotnet
+      COMMAND ${DOXYGEN_EXECUTABLE} -q ${PROJECT_BINARY_DIR}/dotnet/Doxyfile
+      DEPENDS
+        dotnet_package
+        ${PROJECT_BINARY_DIR}/dotnet/Doxyfile
+        ${PROJECT_BINARY_DIR}/dotnet/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/dotnet/stylesheet.css
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      COMMENT "Generating .Net API documentation with Doxygen"
+      VERBATIM)
+  else()
+    message(WARNING "cmd `doxygen` not found, .Net doc generation is disable!")
+  endif()
+endif()
+
 ###################
 ##  .Net Sample  ##
 ###################

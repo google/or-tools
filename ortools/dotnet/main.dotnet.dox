@@ -1,0 +1,22 @@
+/*! @file
+* @author Laurent Perron <lperron@google.com>
+* @author Corentin "Mizux" Le Molgat <corentinl@google.com>
+*/
+
+/*! @mainpage OR-Tools
+This is the reference documentation for Google OR-Tools.
+
+This repository contains several component:
+
+@li @ref Google.OrTools.Init "Google.OrTools.Init"
+
+@li @ref Google.OrTools.Algorithms "Google.OrTools.Algorithms"
+@li @ref Google.OrTools.Graph "Google.OrTools.Graph"
+
+@li @ref Google.OrTools.LinearSolver "Google.OrTools.LinearSolver"
+@li @ref Google.OrTools.Bop "Google.OrTools.Bop"
+@li @ref Google.OrTools.Glop "Google.OrTools.Glop"
+@li @ref Google.OrTools.Sat "Google.OrTools.SAT"
+@li @ref Google.OrTools.ConstraintSolver "Google.OrTools.ConstraintSolver"
+
+*/

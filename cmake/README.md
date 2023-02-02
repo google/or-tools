@@ -223,6 +223,7 @@ cmake -S. -Bbuild -LH
 | | | |
 | `BUILD_DOC`   | OFF\* | Build all documentations |
 | `BUILD_CXX_DOC` | OFF\* | Build C++ documentation<br>**Forced** to ON if `BUILD_DOC=ON` |
+| `BUILD_DOTNET_DOC` | OFF\* | Build .Net documentation<br>**Forced** to ON if `BUILD_DOC=ON` |
 | `INSTALL_DOC` | OFF\* | Install all documentations<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_DOC=OFF` |
 | | | |
 | `BUILD_SAMPLES`  | ON\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
