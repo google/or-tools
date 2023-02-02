@@ -165,44 +165,43 @@ namespace {
     
     return true;
   }
-}
 
+  void printError(const XPRSprob& mLp, int line) {
+    char errmsg[512];
+    XPRSgetlasterror(mLp, errmsg);
+    VLOG(0) << absl::StrFormat("Function line %d did not execute correctly: %s\n",
+                               line, errmsg);
+    exit(0);
+  }
 
-void printError(const XPRSprob& mLp, int line) {
-  char errmsg[512];
-  XPRSgetlasterror(mLp, errmsg);
-  VLOG(0) << absl::StrFormat("Function line %d did not execute correctly: %s\n",
-                             line, errmsg);
-  exit(0);
-}
+  int XPRSgetnumcols(const XPRSprob& mLp) {
+    int nCols = 0;
+    XPRSgetintattrib(mLp, XPRS_ORIGINALCOLS, &nCols);
+    return nCols;
+  }
 
-int XPRSgetnumcols(const XPRSprob& mLp) {
-  int nCols = 0;
-  XPRSgetintattrib(mLp, XPRS_ORIGINALCOLS, &nCols);
-  return nCols;
-}
+  int XPRSgetnumrows(const XPRSprob& mLp) {
+    int nRows = 0;
+    XPRSgetintattrib(mLp, XPRS_ORIGINALROWS, &nRows);
+    return nRows;
+  }
 
-int XPRSgetnumrows(const XPRSprob& mLp) {
-  int nRows = 0;
-  XPRSgetintattrib(mLp, XPRS_ORIGINALROWS, &nRows);
-  return nRows;
-}
+  int XPRSgetitcnt(const XPRSprob& mLp) {
+    int nIters = 0;
+    XPRSgetintattrib(mLp, XPRS_SIMPLEXITER, &nIters);
+    return nIters;
+  }
 
-int XPRSgetitcnt(const XPRSprob& mLp) {
-  int nIters = 0;
-  XPRSgetintattrib(mLp, XPRS_SIMPLEXITER, &nIters);
-  return nIters;
-}
+  int XPRSgetnodecnt(const XPRSprob& mLp) {
+    int nNodes = 0;
+    XPRSgetintattrib(mLp, XPRS_NODES, &nNodes);
+    return nNodes;
+  }
 
-int XPRSgetnodecnt(const XPRSprob& mLp) {
-  int nNodes = 0;
-  XPRSgetintattrib(mLp, XPRS_NODES, &nNodes);
-  return nNodes;
-}
-
-int XPRSsetobjoffset(const XPRSprob& mLp, double value) {
-  XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
-  return 0;
+  int XPRSsetobjoffset(const XPRSprob& mLp, double value) {
+    XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
+    return 0;
+  }
 }
 
 enum XPRS_BASIS_STATUS {
