@@ -116,7 +116,6 @@ endif()
 if(BUILD_re2)
   message(CHECK_START "Fetching re2")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  set(ABSL_ENABLE_INSTALL ON)
   set(RE2_BUILD_TESTING OFF)
   FetchContent_Declare(
     re2
