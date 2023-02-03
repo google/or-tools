@@ -302,6 +302,9 @@ if(BUILD_DOTNET)
 
   option(USE_DOTNET_6 "Use .Net 6.0 LTS support" ON)
   message(STATUS ".Net: Use .Net 6.0 LTS support: ${USE_DOTNET_6}")
+
+  option(USE_DOTNET_7 "Use .Net 7.0 support" OFF)
+  message(STATUS ".Net: Use .Net 7.0 support: ${USE_DOTNET_7}")
 endif()
 
 if(BUILD_JAVA)

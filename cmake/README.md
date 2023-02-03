@@ -247,6 +247,7 @@ cmake -S. -Bbuild -LH
 | `USE_DOTNET_STD_21`  | OFF | Enable .Net Standard 2.1 support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
 | `USE_DOTNET_CORE_31`  | OFF | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
 | `USE_DOTNET_6`  | ON | Enable .Net 6 LTS support<br>Only available if `BUILD_DOTNET=ON` |
+| `USE_DOTNET_7`  | OFF | Enable .Net 7 support<br>Only available if `BUILD_DOTNET=ON` |
 | `UNIVERSAL_DOTNET_PACKAGE`  | OFF | Build a multi platform package (i.e. `Google.OrTools` will depends on all runtime packages)<br>Only available if `BUILD_DOTNET=ON` |
 | | | |
 | `SKIP_GPG`  | ON | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |
