@@ -296,7 +296,7 @@ if(BUILD_DOTNET)
   if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
     set(USE_DOTNET_CORE_31 OFF)
   else()
-    option(USE_DOTNET_CORE_31 "Use .Net Core 3.1 LTS support" ON)
+    option(USE_DOTNET_CORE_31 "Use .Net Core 3.1 LTS support" OFF)
   endif()
   message(STATUS ".Net: Use .Net Core 3.1 LTS support: ${USE_DOTNET_CORE_31}")
 

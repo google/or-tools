@@ -240,7 +240,7 @@ cmake -S. -Bbuild -LH
 | `BUILD_JAVA_EXAMPLES`  | ON\* | Build all Java examples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
 | `BUILD_PYTHON_EXAMPLES`  | ON\* | Build all Python examples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF` |
 | | | |
-| `USE_DOTNET_CORE_31`  | ON | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
+| `USE_DOTNET_CORE_31`  | OFF | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
 | `USE_DOTNET_6`  | ON | Enable .Net 6 LTS support<br>Only available if `BUILD_DOTNET=ON` |
 | `UNIVERSAL_DOTNET_PACKAGE`  | OFF | Build a multi platform package (i.e. `Google.OrTools` will depends on all runtime packages)<br>Only available if `BUILD_DOTNET=ON` |
 | | | |
