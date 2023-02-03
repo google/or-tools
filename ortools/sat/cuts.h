@@ -119,7 +119,6 @@ class CutDataBuilder {
   // as separate terms. Note that we currently only merge Booleans since this
   // is the only case we need.
   void ClearIndices();
-  void RegisterAllBooleansTerms(const CutData& cut);
   void AddOrMergeTerm(const CutTerm& term, IntegerValue t, CutData* cut);
   int NumMergesSinceLastClear() const { return num_merges_; }
 
@@ -127,7 +126,10 @@ class CutDataBuilder {
   bool ConvertToLinearConstraint(const CutData& cut, LinearConstraint* output);
 
  private:
+  void RegisterAllBooleansTerms(const CutData& cut);
+
   int num_merges_ = 0;
+  bool constraint_is_indexed_ = false;
   absl::flat_hash_map<IntegerVariable, int> direct_index_;
   absl::flat_hash_map<IntegerVariable, int> complemented_index_;
   absl::btree_map<IntegerVariable, IntegerValue> tmp_map_;
@@ -241,8 +243,8 @@ struct FlowInfo {
   // of original problem variables. After we compute a cut on the flow and
   // usage variable, we can just directly substitute these variable by the
   // expression here to have a cut in term of the original problem variables.
-  LinearExpression flow_expr;
-  LinearExpression bool_expr;
+  AffineExpression flow_expr;
+  AffineExpression bool_expr;
 };
 
 struct SingleNodeFlow {
@@ -251,6 +253,9 @@ struct SingleNodeFlow {
     demand = IntegerValue(0);
     in_flow.clear();
     out_flow.clear();
+    num_bool = 0;
+    num_to_lb = 0;
+    num_to_ub = 0;
   }
   std::string DebugString() const;
 
@@ -266,9 +271,9 @@ struct SingleNodeFlow {
 
 class FlowCoverCutHelper {
  public:
-  // Try to extract a nice SingleNodeFlow relaxation for the given upper bounded
-  // linear constraint.
-  SingleNodeFlow ComputeFlowCoverRelaxation(
+  // Extract a SingleNodeFlow relaxation from the base_ct and try to generate
+  // a cut from it.
+  bool ComputeFlowCoverRelaxationAndGenerateCut(
       const LinearConstraint& base_ct,
       const absl::StrongVector<IntegerVariable, double>& lp_values,
       IntegerTrail* integer_trail, ImpliedBoundsProcessor* ib_helper);
@@ -282,13 +287,21 @@ class FlowCoverCutHelper {
 
   // Single line of text that we append to the cut log line.
   std::string Info() const {
-    return absl::StrCat("lift=", num_lifting_, " slack=", slack_.value(),
-                        " #in=", num_in_ignored_, "|", num_in_flow_, "|",
-                        num_in_bin_, " #out:", num_out_capa_, "|",
-                        num_out_flow_, "|", num_out_bin_);
+    return absl::StrCat(" slack=", slack_.value(), " #in=", num_in_ignored_,
+                        "|", num_in_flow_, "|", num_in_bin_,
+                        " #out:", num_out_capa_, "|", num_out_flow_, "|",
+                        num_out_bin_);
   }
 
  private:
+  // Try to extract a nice SingleNodeFlow relaxation for the given upper bounded
+  // linear constraint.
+  bool ComputeFlowCoverRelaxation(
+      const LinearConstraint& base_ct,
+      const absl::StrongVector<IntegerVariable, double>& lp_values,
+      SingleNodeFlow* snf, IntegerTrail* integer_trail,
+      ImpliedBoundsProcessor* ib_helper);
+
   // Helpers used by ComputeFlowCoverRelaxation() to convert one linear term.
   bool TryXminusLB(IntegerVariable var, double lp_value, IntegerValue lb,
                    IntegerValue ub, IntegerValue coeff,
@@ -299,7 +312,8 @@ class FlowCoverCutHelper {
                    ImpliedBoundsProcessor* ib_helper,
                    SingleNodeFlow* result) const;
 
-  int num_lifting_ = 0;
+  // Temporary memory to avoid reallocating the vector.
+  SingleNodeFlow snf_;
 
   // Stats, mainly to debug/investigate the code.
   IntegerValue slack_;
@@ -617,6 +631,24 @@ CutGenerator CreateMaxAffineCutGenerator(
 // between such literals.
 CutGenerator CreateCliqueCutGenerator(
     const std::vector<IntegerVariable>& base_variables, Model* model);
+
+// Utility class for the AllDiff cut generator.
+class SumOfAllDiffLowerBounder {
+ public:
+  void Clear();
+  void Add(const AffineExpression& expr, int num_expr,
+           const IntegerTrail& integer_trail);
+
+  IntegerValue SumOfMinDomainValues();
+  IntegerValue SumOfDifferentMins();
+  IntegerValue GetBestLowerBound(std::string& suffix);
+
+  int size() const { return expr_mins_.size(); }
+
+ private:
+  absl::btree_set<IntegerValue> min_values_;
+  std::vector<IntegerValue> expr_mins_;
+};
 
 }  // namespace sat
 }  // namespace operations_research

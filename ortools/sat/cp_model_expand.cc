@@ -23,7 +23,6 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
@@ -1576,80 +1575,6 @@ bool AllDiffShouldBeExpanded(const Domain& union_of_domains,
   return false;
 }
 
-void ExpandAllDiff(bool force_alldiff_expansion, bool keep_after_expansion,
-                   ConstraintProto* ct, PresolveContext* context) {
-  AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
-  if (proto.exprs_size() <= 1) return;
-
-  const int num_exprs = proto.exprs_size();
-  Domain union_of_domains = context->DomainSuperSetOf(proto.exprs(0));
-  for (int i = 1; i < num_exprs; ++i) {
-    union_of_domains =
-        union_of_domains.UnionWith(context->DomainSuperSetOf(proto.exprs(i)));
-  }
-
-  if (!AllDiffShouldBeExpanded(union_of_domains, ct, context) &&
-      !force_alldiff_expansion) {
-    return;
-  }
-
-  const bool is_a_permutation = num_exprs == union_of_domains.Size();
-
-  // Collect all possible variables that can take each value, and add one linear
-  // equation per value stating that this value can be assigned at most once, or
-  // exactly once in case of permutation.
-  for (const int64_t v : union_of_domains.Values()) {
-    // Collect references which domain contains v.
-    std::vector<LinearExpressionProto> possible_exprs;
-    int fixed_expression_count = 0;
-    for (const LinearExpressionProto& expr : proto.exprs()) {
-      if (!context->DomainContains(expr, v)) continue;
-      possible_exprs.push_back(expr);
-      if (context->IsFixed(expr)) {
-        fixed_expression_count++;
-      }
-    }
-
-    if (fixed_expression_count > 1) {
-      // Violates the definition of AllDifferent.
-      return (void)context->NotifyThatModelIsUnsat();
-    } else if (fixed_expression_count == 1) {
-      // Remove values from other domains.
-      for (const LinearExpressionProto& expr : possible_exprs) {
-        if (context->IsFixed(expr)) continue;
-        if (!context->IntersectDomainWith(expr, Domain(v).Complement())) {
-          VLOG(1) << "Empty domain for a variable in ExpandAllDiff()";
-          return;
-        }
-      }
-    }
-
-    BoolArgumentProto* at_most_or_equal_one =
-        is_a_permutation
-            ? context->working_model->add_constraints()->mutable_exactly_one()
-            : context->working_model->add_constraints()->mutable_at_most_one();
-    for (const LinearExpressionProto& expr : possible_exprs) {
-      // The above propagation can remove a value after the expressions was
-      // added to possible_exprs.
-      if (!context->DomainContains(expr, v)) continue;
-
-      // If the expression is fixed, the created literal will be the true
-      // literal. We still need to fail if two expressions are fixed to the same
-      // value.
-      const int encoding = context->GetOrCreateAffineValueEncoding(expr, v);
-      at_most_or_equal_one->add_literals(encoding);
-    }
-  }
-  const std::string permutation_str = is_a_permutation ? " permutation" : "";
-  const std::string kept_str = keep_after_expansion ? " and kept" : "";
-
-  if (is_a_permutation) {
-    context->UpdateRuleStats(
-        absl::StrCat("all_diff:", permutation_str, " expanded", kept_str));
-  }
-  if (!keep_after_expansion) ct->Clear();
-}
-
 // Replaces a constraint literal => ax + by != cte by a set of clauses.
 // This is performed if the domains are small enough, and the variables are
 // fully encoded.
@@ -1817,168 +1742,254 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
   context->UpdateConstraintVariableUsage(c);
 }
 
-bool IsExprEqOrNeqValue(PresolveContext* context,
-                        const LinearConstraintProto& lin) {
+bool IsVarEqOrNeqValue(PresolveContext* context,
+                       const LinearConstraintProto& lin) {
   if (lin.vars_size() != 1) return false;
   const Domain rhs = ReadDomainFromProto(lin);
   if (rhs.IsFixed()) return true;
-  Domain expr_domain;
-  for (int i = 0; i < lin.vars_size(); ++i) {
-    expr_domain = expr_domain.UnionWith(
-        context->DomainOf(lin.vars(i)).MultiplicationBy(lin.coeffs(i)));
-  }
-  if (rhs.Complement().IntersectionWith(expr_domain).IsFixed()) return true;
-  return false;
+  return rhs.InverseMultiplicationBy(lin.coeffs(0))
+      .Complement()
+      .IntersectionWith(context->DomainOf(lin.vars(0)))
+      .IsFixed();
 }
 
 // This method will scan all constraints of all variables appearing in an
 // all_diff.
 // There are 3 outcomes:
-//    - expand to Boolean variables
+//    - maybe expand to Boolean variables (depending on the size)
 //    - keep integer all_different constraint (and cuts)
-//    - expand and keep.
+//    - expand and keep
 //
-// Expand is selected if the variable will be fully encoded (index of element,
-// table, automaton...).
+// Expand is selected if the variable is fully encoded, or will be when
+//   expanding other constraints: index of element, table, automaton.
+//   It will check AllDiffShouldBeExpanded() before doing the actual expansion.
 // Keep is forced is the variable appears in a linear equation with at least 3
 // terms, and with a tight domain ( == cst).
-// If unknown, we rely on the AllDiffShouldBeExpanded() method that checks the
-// size of the domain of the variables, and their numbers/
+// TODO(user): The above rule is complex. Revisit.
 void ScanModelAndDecideAllDiffExpansion(
-    PresolveContext* context, absl::flat_hash_set<int>& expand_all_diff,
-    absl::flat_hash_set<int>& keep_all_diff) {
-  expand_all_diff.clear();
-  keep_all_diff.clear();
-  absl::flat_hash_set<int> bounds_of_var_are_used;
-  absl::flat_hash_set<int> domain_of_var_is_used;
-  absl::flat_hash_set<int> processed_variables;
-  for (int i = 0; i < context->working_model->constraints_size(); ++i) {
-    const ConstraintProto& ct = context->working_model->constraints(i);
-    if (ct.constraint_case() != ConstraintProto::kAllDiff) continue;
+    ConstraintProto* all_diff_ct, PresolveContext* context,
+    absl::flat_hash_set<int>& domain_of_var_is_used,
+    absl::flat_hash_set<int>& bounds_of_var_are_used,
+    absl::flat_hash_set<int>& processed_variables, bool& expand, bool& keep) {
+  CHECK_EQ(all_diff_ct->constraint_case(), ConstraintProto::kAllDiff);
 
-    bool domain_is_used = false;
-    bool bounds_are_used = false;
+  bool at_least_one_var_domain_is_used = false;
+  bool at_least_one_var_bound_is_used = false;
 
-    // Scan variables.
-    for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
-      // Skip constant expressions.
-      if (expr.vars().empty()) continue;
-      DCHECK_EQ(1, expr.vars_size());
-      const int var = expr.vars(0);
-      DCHECK(RefIsPositive(var));
-      if (context->IsFixed(var)) continue;
+  // Scan variables.
+  for (const LinearExpressionProto& expr : all_diff_ct->all_diff().exprs()) {
+    // Skip constant expressions.
+    if (expr.vars().empty()) continue;
+    DCHECK_EQ(1, expr.vars_size());
+    const int var = expr.vars(0);
+    DCHECK(RefIsPositive(var));
+    if (context->IsFixed(var)) continue;
 
-      // Check cache.
-      if (!processed_variables.insert(var).second) {  // Already processed.
-        if (bounds_of_var_are_used.contains(var)) {
-          bounds_are_used = true;
-        }
-        if (domain_of_var_is_used.contains(var)) {
-          domain_is_used = true;
-        }
-      } else {
-        // Note: Boolean constraints are ignored.
-        for (const int ct_index : context->VarToConstraints(var)) {
-          // Skip artificial constraints.
-          if (ct_index < 0) continue;
+    bool at_least_one_var_domain_is_used = false;
+    bool at_least_one_var_bound_is_used = false;
 
-          const ConstraintProto& o =
-              context->working_model->constraints(ct_index);
-          switch (o.constraint_case()) {
-            case ConstraintProto::ConstraintCase::kBoolOr:
-              break;
-            case ConstraintProto::ConstraintCase::kBoolAnd:
-              break;
-            case ConstraintProto::ConstraintCase::kAtMostOne:
-              break;
-            case ConstraintProto::ConstraintCase::kExactlyOne:
-              break;
-            case ConstraintProto::ConstraintCase::kBoolXor:
-              break;
-            case ConstraintProto::ConstraintCase::kIntDiv:
-              break;
-            case ConstraintProto::ConstraintCase::kIntMod:
-              break;
-            case ConstraintProto::ConstraintCase::kLinMax:
+    // Check cache.
+    if (!processed_variables.insert(var).second) {
+      at_least_one_var_domain_is_used = bounds_of_var_are_used.contains(var);
+      at_least_one_var_bound_is_used = domain_of_var_is_used.contains(var);
+    } else {
+      bool domain_is_used = false;
+      bool bounds_are_used = false;
+
+      // Note: Boolean constraints are ignored.
+      for (const int ct_index : context->VarToConstraints(var)) {
+        // Skip artificial constraints.
+        if (ct_index < 0) continue;
+
+        const ConstraintProto& other_ct =
+            context->working_model->constraints(ct_index);
+        switch (other_ct.constraint_case()) {
+          case ConstraintProto::ConstraintCase::kBoolOr:
+            break;
+          case ConstraintProto::ConstraintCase::kBoolAnd:
+            break;
+          case ConstraintProto::ConstraintCase::kAtMostOne:
+            break;
+          case ConstraintProto::ConstraintCase::kExactlyOne:
+            break;
+          case ConstraintProto::ConstraintCase::kBoolXor:
+            break;
+          case ConstraintProto::ConstraintCase::kIntDiv:
+            break;
+          case ConstraintProto::ConstraintCase::kIntMod:
+            break;
+          case ConstraintProto::ConstraintCase::kLinMax:
+            bounds_are_used = true;
+            break;
+          case ConstraintProto::ConstraintCase::kIntProd:
+            break;
+          case ConstraintProto::ConstraintCase::kLinear:
+            if (IsVarEqOrNeqValue(context, other_ct.linear()) &&
+                var == other_ct.linear().vars(0)) {
+              // Encoding literals.
+              domain_is_used = true;
+            } else if (other_ct.linear().vars_size() > 2 &&
+                       other_ct.linear().domain_size() == 2 &&
+                       other_ct.linear().domain(0) ==
+                           other_ct.linear().domain(1)) {
+              // We assume all_diff cuts will only be useful if the linear
+              // constraint has a fixed domain.
               bounds_are_used = true;
-              break;
-            case ConstraintProto::ConstraintCase::kIntProd:
-              break;
-            case ConstraintProto::ConstraintCase::kLinear:
-              if (IsExprEqOrNeqValue(context, o.linear())) {
-                // Encoding literals.
-                domain_is_used = true;
-              } else if (o.linear().vars_size() > 2 &&
-                         o.linear().domain_size() == 2 &&
-                         o.linear().domain(0) == o.linear().domain(1)) {
-                // We assume all_diff cuts will only be useful if the linear
-                // constraint has a fixed domain.
-                bounds_are_used = true;
-              }
-              break;
-            case ConstraintProto::ConstraintCase::kAllDiff:
-              // We ignore all_diffs as we are trying to decide their expansion
-              // from the rest of the model.
-              break;
-            case ConstraintProto::ConstraintCase::kDummyConstraint:
-              break;
-            case ConstraintProto::ConstraintCase::kElement:
-              // Note: elements should have been expanded.
-              if (o.element().index() == var) {
-                domain_is_used = true;
-              }
-              break;
-            case ConstraintProto::ConstraintCase::kCircuit:
-              break;
-            case ConstraintProto::ConstraintCase::kRoutes:
-              break;
-            case ConstraintProto::ConstraintCase::kInverse:
+            }
+            break;
+          case ConstraintProto::ConstraintCase::kAllDiff:
+            // We ignore all_diffs as we are trying to decide their expansion
+            // from the rest of the model.
+            break;
+          case ConstraintProto::ConstraintCase::kDummyConstraint:
+            break;
+          case ConstraintProto::ConstraintCase::kElement:
+            // Note: elements should have been expanded.
+            if (other_ct.element().index() == var) {
               domain_is_used = true;
-              break;
-            case ConstraintProto::ConstraintCase::kReservoir:
-              break;
-            case ConstraintProto::ConstraintCase::kTable:
-              domain_is_used = true;
-              break;
-            case ConstraintProto::ConstraintCase::kAutomaton:
-              domain_is_used = true;
-              break;
-            case ConstraintProto::ConstraintCase::kInterval:
-              bounds_are_used = true;
-              break;
-            case ConstraintProto::ConstraintCase::kNoOverlap:
-              // Will be covered by the interval case.
-              break;
-            case ConstraintProto::ConstraintCase::kNoOverlap2D:
-              // Will be covered by the interval case.
-              break;
-            case ConstraintProto::ConstraintCase::kCumulative:
-              // Will be covered by the interval case.
-              break;
-            case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
-              break;
-          }
+            }
+            break;
+          case ConstraintProto::ConstraintCase::kCircuit:
+            break;
+          case ConstraintProto::ConstraintCase::kRoutes:
+            break;
+          case ConstraintProto::ConstraintCase::kInverse:
+            domain_is_used = true;
+            break;
+          case ConstraintProto::ConstraintCase::kReservoir:
+            break;
+          case ConstraintProto::ConstraintCase::kTable:
+            domain_is_used = true;
+            break;
+          case ConstraintProto::ConstraintCase::kAutomaton:
+            domain_is_used = true;
+            break;
+          case ConstraintProto::ConstraintCase::kInterval:
+            bounds_are_used = true;
+            break;
+          case ConstraintProto::ConstraintCase::kNoOverlap:
+            // Will be covered by the interval case.
+            break;
+          case ConstraintProto::ConstraintCase::kNoOverlap2D:
+            // Will be covered by the interval case.
+            break;
+          case ConstraintProto::ConstraintCase::kCumulative:
+            // Will be covered by the interval case.
+            break;
+          case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
+            break;
+        }
 
-          // Update the cache.
-          if (bounds_are_used) bounds_of_var_are_used.insert(var);
-          if (domain_is_used) domain_of_var_is_used.insert(var);
-        }
-        if (domain_is_used && bounds_are_used) {
-          break;  // No need to scan the rest of the model.
-        }
-      }
-      if (domain_is_used && bounds_are_used) {
-        break;  // No need to scan the rest of the all_diff.
+        // Exit early.
+        if (domain_is_used && bounds_are_used) break;
+      }  // Loop on other_ct.
+
+      // Update cache.
+      if (domain_is_used) domain_of_var_is_used.insert(var);
+      if (bounds_are_used) bounds_of_var_are_used.insert(var);
+
+      // Update the usage of the variable.
+      at_least_one_var_domain_is_used |= domain_is_used;
+      at_least_one_var_bound_is_used |= bounds_are_used;
+    }  // End of model scanning.
+
+    if (at_least_one_var_domain_is_used && at_least_one_var_bound_is_used) {
+      break;  // No need to scan the rest of the all_diff.
+    }
+  }  // End of var processing.
+
+  expand = at_least_one_var_domain_is_used;
+  keep = at_least_one_var_bound_is_used;
+}
+
+void MaybeExpandAllDiff(ConstraintProto* ct, PresolveContext* context,
+                        absl::flat_hash_set<int>& domain_of_var_is_used,
+                        absl::flat_hash_set<int>& bounds_of_var_are_used,
+                        absl::flat_hash_set<int>& processed_variable) {
+  const bool expand_all_diff_from_parameters =
+      context->params().expand_alldiff_constraints();
+  AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
+  if (proto.exprs_size() <= 1) return;
+
+  bool keep_after_expansion = false;
+  bool expand_all_diff_from_usage = false;
+  ScanModelAndDecideAllDiffExpansion(
+      ct, context, domain_of_var_is_used, bounds_of_var_are_used,
+      processed_variable, expand_all_diff_from_usage, keep_after_expansion);
+
+  const int num_exprs = proto.exprs_size();
+  Domain union_of_domains = context->DomainSuperSetOf(proto.exprs(0));
+  for (int i = 1; i < num_exprs; ++i) {
+    union_of_domains =
+        union_of_domains.UnionWith(context->DomainSuperSetOf(proto.exprs(i)));
+  }
+
+  const bool expand_all_diff_from_size =
+      AllDiffShouldBeExpanded(union_of_domains, ct, context);
+
+  // Decide expansion:
+  //  - always expand if expand_all_diff_from_parameters
+  //  - expand if size is compatible (expand_all_diff_from_size) and
+  //    expansion is desired:
+  //       expand_all_diff_from_usage || !keep_after_expansion
+  const bool should_expand =
+      expand_all_diff_from_parameters ||
+      (expand_all_diff_from_size &&
+       (expand_all_diff_from_usage || !keep_after_expansion));
+  if (!should_expand) return;
+
+  const bool is_a_permutation = num_exprs == union_of_domains.Size();
+
+  // Collect all possible variables that can take each value, and add one linear
+  // equation per value stating that this value can be assigned at most once, or
+  // exactly once in case of permutation.
+  for (const int64_t v : union_of_domains.Values()) {
+    // Collect references which domain contains v.
+    std::vector<LinearExpressionProto> possible_exprs;
+    int fixed_expression_count = 0;
+    for (const LinearExpressionProto& expr : proto.exprs()) {
+      if (!context->DomainContains(expr, v)) continue;
+      possible_exprs.push_back(expr);
+      if (context->IsFixed(expr)) {
+        fixed_expression_count++;
       }
     }
-    if (domain_is_used) expand_all_diff.insert(i);
-    if (bounds_are_used) keep_all_diff.insert(i);
-    if (!domain_is_used && !bounds_are_used) {
-      // We rely on the size check of AllDiffShouldBeExpanded() to decide if we
-      // expand this all_diff.
-      expand_all_diff.insert(i);
+
+    if (fixed_expression_count > 1) {
+      // Violates the definition of AllDifferent.
+      return (void)context->NotifyThatModelIsUnsat();
+    } else if (fixed_expression_count == 1) {
+      // Remove values from other domains.
+      for (const LinearExpressionProto& expr : possible_exprs) {
+        if (context->IsFixed(expr)) continue;
+        if (!context->IntersectDomainWith(expr, Domain(v).Complement())) {
+          VLOG(1) << "Empty domain for a variable in MaybeExpandAllDiff()";
+          return;
+        }
+      }
+    }
+
+    BoolArgumentProto* at_most_or_equal_one =
+        is_a_permutation
+            ? context->working_model->add_constraints()->mutable_exactly_one()
+            : context->working_model->add_constraints()->mutable_at_most_one();
+    for (const LinearExpressionProto& expr : possible_exprs) {
+      // The above propagation can remove a value after the expressions was
+      // added to possible_exprs.
+      if (!context->DomainContains(expr, v)) continue;
+
+      // If the expression is fixed, the created literal will be the true
+      // literal. We still need to fail if two expressions are fixed to the same
+      // value.
+      const int encoding = context->GetOrCreateAffineValueEncoding(expr, v);
+      at_most_or_equal_one->add_literals(encoding);
     }
   }
+
+  context->UpdateRuleStats(
+      absl::StrCat("all_diff:", is_a_permutation ? " permutation" : "",
+                   " expanded", keep_after_expansion ? " and kept" : ""));
+  if (!keep_after_expansion) ct->Clear();
 }
 
 }  // namespace
@@ -2076,24 +2087,20 @@ void ExpandCpModel(PresolveContext* context) {
     }
   }
 
-  // Scan the model and decide what to do with all_diffs.
-  absl::flat_hash_set<int> expand_all_diff;
-  absl::flat_hash_set<int> keep_all_diff;
-  if (has_all_diffs) {
-    ScanModelAndDecideAllDiffExpansion(context, expand_all_diff, keep_all_diff);
-  }
-
   // Second pass. We may decide to expand constraints if all their variables
   // are fully encoded.
+  //
+  // Cache for variable scanning.
+  absl::flat_hash_set<int> domain_of_var_is_used;
+  absl::flat_hash_set<int> bounds_of_var_are_used;
+  absl::flat_hash_set<int> processed_variables;
   for (int i = 0; i < context->working_model->constraints_size(); ++i) {
     ConstraintProto* const ct = context->working_model->mutable_constraints(i);
     bool skip = false;
     switch (ct->constraint_case()) {
       case ConstraintProto::kAllDiff:
-        if (expand_all_diff.contains(i)) {
-          ExpandAllDiff(context->params().expand_alldiff_constraints(),
-                        keep_all_diff.contains(i), ct, context);
-        }
+        MaybeExpandAllDiff(ct, context, domain_of_var_is_used,
+                           bounds_of_var_are_used, processed_variables);
         break;
       case ConstraintProto::kLinear:
         ExpandSomeLinearOfSizeTwo(ct, context);

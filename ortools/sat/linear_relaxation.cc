@@ -1442,7 +1442,7 @@ void AddAllDiffRelaxationAndCutGenerator(const ConstraintProto& ct,
   Domain union_of_domains;
   for (const AffineExpression& expr : exprs) {
     if (integer_trail->IsFixed(expr)) {
-      union_of_domains.UnionWith(
+      union_of_domains = union_of_domains.UnionWith(
           Domain(integer_trail->FixedValue(expr).value()));
     } else {
       union_of_domains = union_of_domains.UnionWith(

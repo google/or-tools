@@ -178,12 +178,13 @@ void CutData::Canonicalize() {
 
 void CutDataBuilder::ClearIndices() {
   num_merges_ = 0;
+  constraint_is_indexed_ = false;
   direct_index_.clear();
   complemented_index_.clear();
 }
 
 void CutDataBuilder::RegisterAllBooleansTerms(const CutData& cut) {
-  ClearIndices();
+  constraint_is_indexed_ = true;
   const int size = cut.terms.size();
   for (int i = 0; i < size; ++i) {
     const CutTerm& term = cut.terms[i];
@@ -199,6 +200,10 @@ void CutDataBuilder::RegisterAllBooleansTerms(const CutData& cut) {
 
 void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, IntegerValue t,
                                     CutData* cut) {
+  if (!constraint_is_indexed_) {
+    RegisterAllBooleansTerms(*cut);
+  }
+
   DCHECK(term.IsSimple());
   const IntegerVariable var = term.expr_vars[0];
   const int new_index = cut->terms.size();
@@ -541,7 +546,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
   // This should be better except it can mess up the norm and the divisors.
   best_cut_ = base_ct;
   if (options.use_ib_before_heuristic && ib_processor != nullptr) {
-    cut_builder_.RegisterAllBooleansTerms(best_cut_);
+    cut_builder_.ClearIndices();
     const int old_size = static_cast<int>(best_cut_.terms.size());
     bool abort = true;
     for (int i = 0; i < old_size; ++i) {
@@ -748,7 +753,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
   // This should lead to stronger cuts even if the norms migth be worse.
   num_ib_used_ = 0;
   if (ib_processor != nullptr) {
-    cut_builder_.RegisterAllBooleansTerms(best_cut_);
+    cut_builder_.ClearIndices();
     const int old_size = best_cut_.terms.size();
     for (int i = 0; i < old_size; ++i) {
       CutTerm& term = best_cut_.terms[i];
@@ -1057,7 +1062,7 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input,
   base_ct_ = input;
 
   if (ib_processor != nullptr) {
-    cut_builder_.RegisterAllBooleansTerms(base_ct_);
+    cut_builder_.ClearIndices();
     const int old_size = static_cast<int>(base_ct_.terms.size());
     for (int i = 0; i < old_size; ++i) {
       // We only look at non-Boolean with an lp value not close to the upper
@@ -1170,7 +1175,7 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
   //
   // TODO(user): Merge Boolean terms that are complement of each other.
   if (ib_processor != nullptr) {
-    cut_builder_.RegisterAllBooleansTerms(base_ct_);
+    cut_builder_.ClearIndices();
     const int old_size = static_cast<int>(base_ct_.terms.size());
     for (int i = 0; i < old_size; ++i) {
       if (base_ct_.terms[i].bound_diff <= 1) continue;
@@ -1653,19 +1658,19 @@ bool FlowCoverCutHelper::TryXminusLB(IntegerVariable var, double lp_value,
   FlowInfo info;
   if (ib.is_positive) {
     info.bool_lp_value = 1 - ib.bool_lp_value;
-    info.bool_expr.vars.push_back(ib.bool_var);
-    info.bool_expr.coeffs.push_back(-1);
-    info.bool_expr.offset = 1;
+    info.bool_expr.var = ib.bool_var;
+    info.bool_expr.coeff = -1;
+    info.bool_expr.constant = 1;
   } else {
     info.bool_lp_value = ib.bool_lp_value;
-    info.bool_expr.vars.push_back(ib.bool_var);
-    info.bool_expr.coeffs.push_back(1);
+    info.bool_expr.var = ib.bool_var;
+    info.bool_expr.coeff = 1;
   }
   info.capacity = IntTypeAbs(coeff) * (ub - lb);
   info.flow_lp_value = ToDouble(IntTypeAbs(coeff)) * (lp_value - ToDouble(lb));
-  info.flow_expr.vars.push_back(var);
-  info.flow_expr.coeffs.push_back(IntTypeAbs(coeff));
-  info.flow_expr.offset = -lb * IntTypeAbs(coeff);
+  info.flow_expr.var = var;
+  info.flow_expr.coeff = IntTypeAbs(coeff);
+  info.flow_expr.constant = -lb * IntTypeAbs(coeff);
 
   // We use (var - lb) so sign is preserved
   result->demand -= coeff * lb;
@@ -1693,19 +1698,19 @@ bool FlowCoverCutHelper::TryUBminusX(IntegerVariable var, double lp_value,
   FlowInfo info;
   if (ib.is_positive) {
     info.bool_lp_value = 1 - ib.bool_lp_value;
-    info.bool_expr.vars.push_back(ib.bool_var);
-    info.bool_expr.coeffs.push_back(-1);
-    info.bool_expr.offset = 1;
+    info.bool_expr.var = ib.bool_var;
+    info.bool_expr.coeff = -1;
+    info.bool_expr.constant = 1;
   } else {
     info.bool_lp_value = ib.bool_lp_value;
-    info.bool_expr.vars.push_back(ib.bool_var);
-    info.bool_expr.coeffs.push_back(1);
+    info.bool_expr.var = ib.bool_var;
+    info.bool_expr.coeff = 1;
   }
   info.capacity = IntTypeAbs(coeff) * (ub - lb);
   info.flow_lp_value = ToDouble(IntTypeAbs(coeff)) * (ToDouble(ub) - lp_value);
-  info.flow_expr.vars.push_back(var);
-  info.flow_expr.coeffs.push_back(-IntTypeAbs(coeff));
-  info.flow_expr.offset = ub * IntTypeAbs(coeff);
+  info.flow_expr.var = var;
+  info.flow_expr.coeff = -IntTypeAbs(coeff);
+  info.flow_expr.constant = ub * IntTypeAbs(coeff);
 
   // We reverse the sign because we use (ub - var) here.
   // So coeff * var = -coeff * (ub - var) + coeff * ub;
@@ -1718,18 +1723,24 @@ bool FlowCoverCutHelper::TryUBminusX(IntegerVariable var, double lp_value,
   return true;
 }
 
-SingleNodeFlow FlowCoverCutHelper::ComputeFlowCoverRelaxation(
+bool FlowCoverCutHelper::ComputeFlowCoverRelaxationAndGenerateCut(
     const LinearConstraint& base_ct,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     IntegerTrail* integer_trail, ImpliedBoundsProcessor* ib_helper) {
-  SingleNodeFlow result;
-  result.demand = base_ct.ub;
+  if (!ComputeFlowCoverRelaxation(base_ct, lp_values, &snf_, integer_trail,
+                                  ib_helper)) {
+    return false;
+  }
+  return GenerateCut(snf_);
+}
 
-  // Stats.
-  int num_bool = 0;
-  int num_to_ub = 0;
-  int num_to_lb = 0;
-
+bool FlowCoverCutHelper::ComputeFlowCoverRelaxation(
+    const LinearConstraint& base_ct,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    SingleNodeFlow* snf, IntegerTrail* integer_trail,
+    ImpliedBoundsProcessor* ib_helper) {
+  snf->clear();
+  snf->demand = base_ct.ub;
   const int size = base_ct.vars.size();
   for (int i = 0; i < size; ++i) {
     // We can either use (X - LB) or (UB - X) for a variable in [0, capacity].
@@ -1737,47 +1748,40 @@ SingleNodeFlow FlowCoverCutHelper::ComputeFlowCoverRelaxation(
     const IntegerValue coeff = base_ct.coeffs[i];
 
     // Hack: abort if coefficient in the base constraint are too large.
-    if (IntTypeAbs(coeff) > 1'000'000) {
-      result.clear();
-      return result;
-    }
+    if (IntTypeAbs(coeff) > 1'000'000) return false;
 
     const IntegerValue lb = integer_trail->LevelZeroLowerBound(var);
     const IntegerValue ub = integer_trail->LevelZeroUpperBound(var);
     const IntegerValue capacity(
         CapProd(IntTypeAbs(coeff).value(), (ub - lb).value()));
-    if (capacity >= kMaxIntegerValue) {
-      // Abort.
-      result.clear();
-      return result;
-    }
+    if (capacity >= kMaxIntegerValue) return false;
     if (lb == ub) {
       // Fixed variable shouldn't really appear here.
-      result.demand -= coeff * lb;
+      snf->demand -= coeff * lb;
       continue;
     }
 
     // We have a Boolean, this is an easy case.
     if (ub - lb == 1) {
-      ++num_bool;
+      ++snf->num_bool;
       FlowInfo info;
       info.bool_lp_value = (lp_values[var] - ToDouble(lb));
       info.capacity = capacity;
-      info.bool_expr.vars.push_back(var);
-      info.bool_expr.coeffs.push_back(1);
-      info.bool_expr.offset = -lb;
+      info.bool_expr.var = var;
+      info.bool_expr.coeff = 1;
+      info.bool_expr.constant = -lb;
 
       info.flow_lp_value = ToDouble(capacity) * info.bool_lp_value;
-      info.flow_expr.vars.push_back(var);
-      info.flow_expr.coeffs.push_back(info.capacity);
-      info.flow_expr.offset = -lb * info.capacity;
+      info.flow_expr.var = var;
+      info.flow_expr.coeff = info.capacity;
+      info.flow_expr.constant = -lb * info.capacity;
 
       // coeff * x = coeff * (x - lb) + coeff * lb;
-      result.demand -= coeff * lb;
+      snf->demand -= coeff * lb;
       if (coeff > 0) {
-        result.in_flow.push_back(info);
+        snf->in_flow.push_back(info);
       } else {
-        result.out_flow.push_back(info);
+        snf->out_flow.push_back(info);
       }
       continue;
     }
@@ -1788,35 +1792,31 @@ SingleNodeFlow FlowCoverCutHelper::ComputeFlowCoverRelaxation(
     const double lp = lp_values[var];
     const bool prefer_lb = (lp - ToDouble(lb)) > (ToDouble(ub) - lp);
     if (prefer_lb) {
-      if (TryXminusLB(var, lp, lb, ub, coeff, ib_helper, &result)) {
-        ++num_to_lb;
+      if (TryXminusLB(var, lp, lb, ub, coeff, ib_helper, snf)) {
+        ++snf->num_to_lb;
         continue;
       }
-      if (TryUBminusX(var, lp, lb, ub, coeff, ib_helper, &result)) {
-        ++num_to_ub;
+      if (TryUBminusX(var, lp, lb, ub, coeff, ib_helper, snf)) {
+        ++snf->num_to_ub;
         continue;
       }
     } else {
-      if (TryUBminusX(var, lp, lb, ub, coeff, ib_helper, &result)) {
-        ++num_to_ub;
+      if (TryUBminusX(var, lp, lb, ub, coeff, ib_helper, snf)) {
+        ++snf->num_to_ub;
         continue;
       }
-      if (TryXminusLB(var, lp, lb, ub, coeff, ib_helper, &result)) {
-        ++num_to_lb;
+      if (TryXminusLB(var, lp, lb, ub, coeff, ib_helper, snf)) {
+        ++snf->num_to_lb;
         continue;
       }
     }
 
     // Abort.
     // TODO(user): Technically we can always use a arc usage Boolean fixed to 1.
-    result.clear();
-    return result;
+    return false;
   }
 
-  result.num_bool = num_bool;
-  result.num_to_ub = num_to_ub;
-  result.num_to_lb = num_to_lb;
-  return result;
+  return true;
 }
 
 // Reference: "Lifted flow cover inequalities for mixed 0-1 integer programs".
@@ -1836,8 +1836,8 @@ bool FlowCoverCutHelper::GenerateCut(const SingleNodeFlow& data) {
   // all the out_flow with a bool value close to one.
   IntegerValue slack;
   {
-    IntegerValue sum_in(0);
-    IntegerValue sum_out(0);
+    IntegerValue sum_in = 0;
+    IntegerValue sum_out = 0;
     for (int i = 0; i < data.in_flow.size(); ++i) {
       const FlowInfo& info = data.in_flow[i];
       if (info.bool_lp_value > tolerance) {
@@ -1933,12 +1933,12 @@ bool FlowCoverCutHelper::GenerateCut(const SingleNodeFlow& data) {
       continue;
     }
     num_in_flow_++;
-    cut_builder_.AddLinearExpression(info.flow_expr, -1);
+    cut_builder_.AddTerm(info.flow_expr, -1);
     if (info.capacity > slack) {
       num_in_bin_++;
       const IntegerValue coeff = info.capacity - slack;
       cut_builder_.AddConstant(-coeff);
-      cut_builder_.AddLinearExpression(info.bool_expr, coeff);
+      cut_builder_.AddTerm(info.bool_expr, coeff);
     }
   }
   for (int i = 0; i < data.out_flow.size(); ++i) {
@@ -1948,10 +1948,10 @@ bool FlowCoverCutHelper::GenerateCut(const SingleNodeFlow& data) {
       cut_builder_.AddConstant(info.capacity);
     } else if (info.capacity > slack) {
       num_out_bin_++;
-      cut_builder_.AddLinearExpression(info.bool_expr, slack);
+      cut_builder_.AddTerm(info.bool_expr, slack);
     } else {
       num_out_flow_++;
-      cut_builder_.AddLinearExpression(info.flow_expr);
+      cut_builder_.AddTerm(info.flow_expr, 1);
     }
   }
 
@@ -1960,24 +1960,51 @@ bool FlowCoverCutHelper::GenerateCut(const SingleNodeFlow& data) {
   return true;
 }
 
-namespace {
+void SumOfAllDiffLowerBounder::Clear() {
+  min_values_.clear();
+  expr_mins_.clear();
+}
 
-int64_t SumOfKMinValues(const absl::btree_set<int64_t>& values, int k) {
+void SumOfAllDiffLowerBounder::Add(const AffineExpression& expr, int num_exprs,
+                                   const IntegerTrail& integer_trail) {
+  expr_mins_.push_back(integer_trail.LevelZeroLowerBound(expr).value());
+
+  if (integer_trail.IsFixed(expr)) {
+    min_values_.insert(integer_trail.FixedValue(expr));
+  } else {
+    if (expr.coeff > 0) {
+      int count = 0;
+      for (const IntegerValue value :
+           integer_trail.InitialVariableDomain(expr.var).Values()) {
+        min_values_.insert(expr.ValueAt(value));
+        if (++count >= num_exprs) break;
+      }
+    } else {
+      int count = 0;
+      for (const IntegerValue value :
+           integer_trail.InitialVariableDomain(expr.var).Negation().Values()) {
+        min_values_.insert(-expr.ValueAt(value));
+        if (++count >= num_exprs) break;
+      }
+    }
+  }
+}
+
+IntegerValue SumOfAllDiffLowerBounder::SumOfMinDomainValues() {
   int count = 0;
-  int64_t sum = 0;
-  for (const int64_t value : values) {
+  IntegerValue sum = 0;
+  for (const IntegerValue value : min_values_) {
     sum += value;
-    if (++count >= k) return sum;
+    if (++count >= expr_mins_.size()) return sum;
   }
   return sum;
 }
 
-// Copies the data before sorting.
-int64_t SumOfDiffMins(std::vector<int64_t> values) {
-  std::sort(values.begin(), values.end());
-  int64_t tmp_value = std::numeric_limits<int64_t>::min();
-  int64_t result = 0;
-  for (const int64_t value : values) {
+IntegerValue SumOfAllDiffLowerBounder::SumOfDifferentMins() {
+  std::sort(expr_mins_.begin(), expr_mins_.end());
+  IntegerValue tmp_value = kMinIntegerValue;
+  IntegerValue result = 0;
+  for (const IntegerValue value : expr_mins_) {
     // Make sure values are different.
     tmp_value = std::max(tmp_value + 1, value);
     result += tmp_value;
@@ -1985,83 +2012,47 @@ int64_t SumOfDiffMins(std::vector<int64_t> values) {
   return result;
 }
 
+IntegerValue SumOfAllDiffLowerBounder::GetBestLowerBound(std::string& suffix) {
+  const IntegerValue domain_bound = SumOfMinDomainValues();
+  const IntegerValue alldiff_bound = SumOfDifferentMins();
+  if (domain_bound > alldiff_bound) {
+    suffix = "d";
+    return domain_bound;
+  }
+  suffix = alldiff_bound > domain_bound ? "a" : "e";
+  return alldiff_bound;
+}
+
+namespace {
+
 void TryToGenerateAllDiffCut(
     const std::vector<std::pair<double, AffineExpression>>& sorted_exprs_lp,
     const IntegerTrail& integer_trail,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    LinearConstraintManager* manager, Model* model) {
+    TopNCuts& top_n_cuts, Model* model) {
   const int num_exprs = sorted_exprs_lp.size();
 
   std::vector<AffineExpression> current_set_exprs;
-  absl::btree_set<int64_t> min_values;
-  absl::btree_set<int64_t> negated_max_values;
-  std::vector<int64_t> expr_mins;
-  std::vector<int64_t> negated_expr_maxes;
+  SumOfAllDiffLowerBounder diff_mins;
+  SumOfAllDiffLowerBounder negated_diff_maxes;
 
   double sum = 0.0;
-  TopNCuts top_n_cuts(5);
 
   for (const auto& [expr_lp, expr] : sorted_exprs_lp) {
     sum += expr_lp;
-    expr_mins.push_back(integer_trail.LevelZeroLowerBound(expr).value());
-    negated_expr_maxes.push_back(
-        -integer_trail.LevelZeroUpperBound(expr).value());
-
-    if (integer_trail.IsFixed(expr)) {
-      const int64_t value = integer_trail.FixedValue(expr).value();
-      min_values.insert(value);
-      negated_max_values.insert(-value);
-    } else {
-      int count = 0;
-      const int64_t coeff = expr.coeff.value();
-      const int64_t constant = expr.constant.value();
-      for (const int64_t value :
-           integer_trail.InitialVariableDomain(expr.var).Values()) {
-        if (coeff > 0) {
-          min_values.insert(value * coeff + constant);
-        } else {
-          negated_max_values.insert(-(value * coeff + constant));
-        }
-        if (++count >= num_exprs) break;
-      }
-
-      count = 0;
-      for (const int64_t value :
-           integer_trail.InitialVariableDomain(expr.var).Negation().Values()) {
-        if (coeff > 0) {
-          negated_max_values.insert(value * coeff - constant);
-        } else {
-          min_values.insert(-value * coeff + constant);
-        }
-        if (++count >= num_exprs) break;
-      }
-    }
-
+    diff_mins.Add(expr, num_exprs, integer_trail);
+    negated_diff_maxes.Add(expr.Negated(), num_exprs, integer_trail);
     current_set_exprs.push_back(expr);
-    CHECK_EQ(current_set_exprs.size(), expr_mins.size());
-    CHECK_EQ(current_set_exprs.size(), negated_expr_maxes.size());
-
-    const int64_t required_min_sum_smallest =
-        SumOfKMinValues(min_values, current_set_exprs.size());
-    const int64_t required_max_sum_smallest =
-        -SumOfKMinValues(negated_max_values, current_set_exprs.size());
-    const int64_t required_min_sum_alldiff = SumOfDiffMins(expr_mins);
-    const int64_t required_max_sum_alldiff = -SumOfDiffMins(negated_expr_maxes);
-
-    const int64_t required_min_sum =
-        std::max(required_min_sum_smallest, required_min_sum_alldiff);
-    const int64_t required_max_sum =
-        std::min(required_max_sum_smallest, required_max_sum_alldiff);
-    const std::string min_suffix =
-        required_min_sum_alldiff > required_min_sum_smallest      ? "a"
-        : (required_min_sum_alldiff == required_min_sum_smallest) ? "e"
-                                                                  : "d";
-    const std::string max_suffix =
-        required_max_sum_alldiff < required_max_sum_smallest      ? "a"
-        : (required_max_sum_alldiff == required_max_sum_smallest) ? "e"
-                                                                  : "d";
-    if (sum < static_cast<double>(required_min_sum) - kMinCutViolation ||
-        sum > static_cast<double>(required_max_sum) + kMinCutViolation) {
+    CHECK_EQ(current_set_exprs.size(), diff_mins.size());
+    CHECK_EQ(current_set_exprs.size(), negated_diff_maxes.size());
+    std::string min_suffix;
+    const IntegerValue required_min_sum =
+        diff_mins.GetBestLowerBound(min_suffix);
+    std::string max_suffix;
+    const IntegerValue required_max_sum =
+        -negated_diff_maxes.GetBestLowerBound(max_suffix);
+    if (sum < ToDouble(required_min_sum) - kMinCutViolation ||
+        sum > ToDouble(required_max_sum) + kMinCutViolation) {
       LinearConstraintBuilder cut(model, required_min_sum, required_max_sum);
       for (AffineExpression expr : current_set_exprs) {
         cut.AddTerm(expr, IntegerValue(1));
@@ -2073,13 +2064,10 @@ void TryToGenerateAllDiffCut(
       // the cut on a different set of variables so we reset the counters.
       sum = 0.0;
       current_set_exprs.clear();
-      min_values.clear();
-      negated_max_values.clear();
-      expr_mins.clear();
-      negated_expr_maxes.clear();
+      diff_mins.Clear();
+      negated_diff_maxes.Clear();
     }
   }
-  top_n_cuts.TransferToManager(lp_values, manager);
 }
 
 }  // namespace
@@ -2113,17 +2101,20 @@ CutGenerator CreateAllDifferentCutGenerator(
           }
           sorted_exprs.push_back(std::make_pair(expr.LpValue(lp_values), expr));
         }
+
+        TopNCuts top_n_cuts(5);
         std::sort(sorted_exprs.begin(), sorted_exprs.end(),
                   [](std::pair<double, AffineExpression>& a,
                      const std::pair<double, AffineExpression>& b) {
                     return a.first < b.first;
                   });
         TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
-                                manager, model);
+                                top_n_cuts, model);
         // Other direction.
         std::reverse(sorted_exprs.begin(), sorted_exprs.end());
         TryToGenerateAllDiffCut(sorted_exprs, *integer_trail, lp_values,
-                                manager, model);
+                                top_n_cuts, model);
+        top_n_cuts.TransferToManager(lp_values, manager);
         return true;
       };
   VLOG(2) << "Created all_diff cut generator of size: " << exprs.size();

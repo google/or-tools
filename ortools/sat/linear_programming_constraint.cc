@@ -961,9 +961,9 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   //
   // TODO(user): We should probably deal with slack here too. We can always
   // add slack and integrate them if they lead to better cuts.
-  const SingleNodeFlow snf = flow_cover_cut_helper_.ComputeFlowCoverRelaxation(
-      cut_, expanded_lp_solution_, integer_trail_, &implied_bounds_processor_);
-  if (flow_cover_cut_helper_.GenerateCut(snf)) {
+  if (flow_cover_cut_helper_.ComputeFlowCoverRelaxationAndGenerateCut(
+          cut_, expanded_lp_solution_, integer_trail_,
+          &implied_bounds_processor_)) {
     at_least_one_added |= constraint_manager_.AddCut(
         flow_cover_cut_helper_.cut(), absl::StrCat(name, "_F"),
         expanded_lp_solution_, flow_cover_cut_helper_.Info());
