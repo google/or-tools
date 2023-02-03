@@ -9,7 +9,8 @@ ENV PATH=/usr/local/bin:$PATH
 RUN apk add --no-cache make
 
 # Install Python
-RUN apk add --no-cache python3-dev py3-pip py3-wheel py3-numpy
+RUN apk add --no-cache python3-dev py3-pip py3-wheel \
+ py3-numpy py3-pandas py3-matplotlib py3-scipy
 RUN python3 -m pip install absl-py mypy-protobuf
 ENTRYPOINT ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
