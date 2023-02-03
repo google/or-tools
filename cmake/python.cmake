@@ -407,7 +407,7 @@ if(BUILD_PYTHON_DOC)
   find_program(PDOC_PRG NAMES pdoc)
   if (PDOC_PRG)
     # add a target to generate API documentation with pdoc
-    add_custom_target(${PROJECT_NAME}_python_doc
+    add_custom_target(${PROJECT_NAME}_python_doc ALL
       #COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_BINARY_DIR}/docs/python
       COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/python
       COMMAND ${PDOC_PRG}
