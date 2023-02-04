@@ -31,7 +31,7 @@ from ortools.sat.python import cp_model
 _OUTPUT_PROTO = flags.DEFINE_string(
     'output_proto', '', 'Output file to write the cp_model proto to.')
 _PARAMS = flags.DEFINE_string('params',
-                              'num_search_workers:16,log_search_progress:true',
+                              'num_search_workers:16,log_search_progress:true,max_time_in_seconds:45',
                               'Sat solver parameters.')
 _MODEL = flags.DEFINE_string('model', 'rotation',
                              '\'duplicate\' or \'rotation\' or \'optional\'')

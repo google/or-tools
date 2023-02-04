@@ -35,7 +35,7 @@ _OUTPUT_PROTO = flags.DEFINE_string(
     'output_proto', '', 'Output file to write the cp_model proto to.')
 _PARAMS = flags.DEFINE_string(
     'params',
-    'num_search_workers:16,log_search_progress:true,max_time_in_seconds:45',
+    'num_search_workers:16,log_search_progress:true,max_time_in_seconds:30',
     'Sat solver parameters.')
 _INSTANCE = flags.DEFINE_integer('instance', 1, 'Instance to select (1, 2, 3).',
                                  1, 3)
