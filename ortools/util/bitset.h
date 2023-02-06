@@ -448,6 +448,7 @@ class Bitset64 {
   }
 
   // Resizes the Bitset64 to the given number of bits. New bits are sets to 0.
+  void resize(int size) { Resize(IndexType(size)); }
   void Resize(IndexType size) {
     DCHECK_GE(Value(size), 0);
     size_ = Value(size) > 0 ? size : IndexType(0);
