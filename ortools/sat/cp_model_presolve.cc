@@ -10500,7 +10500,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     DetectDuplicateConstraints();
     DetectDominatedLinearConstraints();
     ProcessSetPPC();
-    FindBigLinearOverlap();
+    if (context_->params().find_big_linear_overlap()) FindBigLinearOverlap();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
     // We do that after the duplicate, SAT and SetPPC constraints.

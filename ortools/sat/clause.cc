@@ -495,7 +495,7 @@ void LiteralWatchers::DeleteRemovedClauses() {
 void BinaryImplicationGraph::Resize(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
   implications_.resize(num_variables << 1);
-  is_redundant_.resize(implications_.size(), false);
+  is_redundant_.resize(implications_.size());
   is_removed_.resize(implications_.size(), false);
   estimated_sizes_.resize(implications_.size(), 0);
   in_direct_implications_.resize(implications_.size(), false);
@@ -1208,7 +1208,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   // The old values will still be valid.
   representative_of_.resize(size, kNoLiteralIndex);
-  is_redundant_.resize(size, false);
+  is_redundant_.resize(size);
 
   int num_equivalences = 0;
   reverse_topological_order_.clear();
@@ -1235,7 +1235,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
           const Literal l = Literal(LiteralIndex(i));
           if (!is_redundant_[l.Index()]) {
             ++num_redundant_literals_;
-            is_redundant_[l.Index()] = true;
+            is_redundant_.Set(l.Index());
           }
           const Literal to_fix = all_true ? l : l.Negated();
           if (assignment.LiteralIsFalse(to_fix)) return false;
@@ -1284,7 +1284,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
       const Literal literal = Literal(LiteralIndex(component[i]));
       if (!is_redundant_[literal.Index()]) {
         ++num_redundant_literals_;
-        is_redundant_[literal.Index()] = true;
+        is_redundant_.Set(literal.Index());
       }
       representative_of_[literal.Index()] = representative;
 
@@ -1841,7 +1841,7 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
   }
 
   // Do not genate too many cut at once.
-  const int kMaxNumberOfCutPerCall = 50;
+  const int kMaxNumberOfCutPerCall = 10;
   std::sort(candidates.begin(), candidates.end());
   if (candidates.size() > kMaxNumberOfCutPerCall) {
     candidates.resize(kMaxNumberOfCutPerCall);
@@ -1859,34 +1859,41 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
   return tmp_cuts_;
 }
 
-// We use dfs_stack_ but we actually do a BFS.
 void BinaryImplicationGraph::MarkDescendants(Literal root) {
-  dfs_stack_ = {root};
+  bfs_stack_.resize(implications_.size());
+  auto* const stack = bfs_stack_.data();
+  auto* const amo_buffer = at_most_one_buffer_.data();
+  const int amo_size = static_cast<int>(at_most_ones_.size());
+  auto is_marked = is_marked_.const_view();
+  auto is_redundant = is_redundant_.const_view();
+  if (is_redundant[root.Index()]) return;
+
+  int stack_size = 1;
+  stack[0] = root;
   is_marked_.Set(root.Index());
-  if (is_redundant_[root.Index()]) return;
-  for (int j = 0; j < dfs_stack_.size(); ++j) {
-    const Literal current = dfs_stack_[j];
+  for (int j = 0; j < stack_size; ++j) {
+    const Literal current = stack[j];
     for (const Literal l : implications_[current.Index()]) {
-      if (!is_marked_[l.Index()] && !is_redundant_[l.Index()]) {
-        dfs_stack_.push_back(l);
-        is_marked_.Set(l.Index());
+      if (!is_marked[l.Index()] && !is_redundant[l.Index()]) {
+        is_marked_.SetUnsafe(l.Index());
+        stack[stack_size++] = l;
       }
     }
 
-    if (current.Index() >= at_most_ones_.size()) continue;
+    if (current.Index() >= amo_size) continue;
     for (const int start : at_most_ones_[current.Index()]) {
       for (int i = start;; ++i) {
-        const Literal l = at_most_one_buffer_[i];
+        const Literal l = amo_buffer[i];
         if (l.Index() == kNoLiteralIndex) break;
         if (l == current) continue;
-        if (!is_marked_[l.NegatedIndex()] && !is_redundant_[l.NegatedIndex()]) {
-          dfs_stack_.push_back(l.Negated());
-          is_marked_.Set(l.NegatedIndex());
+        if (!is_marked[l.NegatedIndex()] && !is_redundant[l.NegatedIndex()]) {
+          is_marked_.SetUnsafe(l.NegatedIndex());
+          stack[stack_size++] = l.Negated();
         }
       }
     }
   }
-  work_done_in_mark_descendants_ += dfs_stack_.size();
+  work_done_in_mark_descendants_ += stack_size;
 }
 
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
@@ -1902,6 +1909,9 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
     }
   }
 
+  // TODO(user): Improve algorithm. If we do a dfs, we can know if a literal
+  // has no descendant in the current intersection. We can keep such literal
+  // marked.
   std::vector<LiteralIndex> intersection;
   for (int i = 0; i < clique.size(); ++i) {
     if (work_done_in_mark_descendants_ > max_num_explored_nodes) break;
@@ -1920,6 +1930,10 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
     }
     intersection.resize(new_size);
     if (intersection.empty()) break;
+
+    // TODO(user): If the intersection is small compared to the members of the
+    // clique left to explore, we could look at the descendants of the negated
+    // intersection instead.
 
     // Expand?
     if (i + 1 == clique.size()) {
@@ -2057,7 +2071,7 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
     is_removed_[index] = true;
     if (!is_redundant_[index]) {
       ++num_redundant_literals_;
-      is_redundant_[index] = true;
+      is_redundant_.Set(index);
     }
     implications_[index].clear();
   }

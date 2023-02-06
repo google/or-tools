@@ -745,7 +745,7 @@ class BinaryImplicationGraph : public SatPropagator {
   void RemoveRedundantLiterals(std::vector<Literal>* conflict);
 
   // Fill is_marked_ with all the descendant of root.
-  // Note that this also use dfs_stack_.
+  // Note that this also use bfs_stack_.
   void MarkDescendants(Literal root);
 
   // Expands greedily the given at most one until we get a maximum clique in
@@ -821,11 +821,12 @@ class BinaryImplicationGraph : public SatPropagator {
   // Used to limit the work done by ComputeTransitiveReduction() and
   // TransformIntoMaxCliques().
   int64_t work_done_in_mark_descendants_ = 0;
+  std::vector<Literal> bfs_stack_;
 
   // Filled by DetectEquivalences().
   bool is_dag_ = false;
   std::vector<LiteralIndex> reverse_topological_order_;
-  absl::StrongVector<LiteralIndex, bool> is_redundant_;
+  Bitset64<LiteralIndex> is_redundant_;
   absl::StrongVector<LiteralIndex, LiteralIndex> representative_of_;
 
   // For in-processing and removing variables.

@@ -1,4 +1,4 @@
-# CpModel Colab
+# CpModel Notebook
 
 Below you'll find three examples of Google's CP-SAT solver.
 

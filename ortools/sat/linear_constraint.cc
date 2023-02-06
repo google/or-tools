@@ -164,11 +164,35 @@ LinearExpression LinearConstraintBuilder::BuildExpression() {
 double ComputeActivity(
     const LinearConstraint& constraint,
     const absl::StrongVector<IntegerVariable, double>& values) {
-  double activity = 0;
-  for (int i = 0; i < constraint.vars.size(); ++i) {
-    const IntegerVariable var = constraint.vars[i];
-    const IntegerValue coeff = constraint.coeffs[i];
-    activity += coeff.value() * values[var];
+  int i = 0;
+  const int size = static_cast<int>(constraint.vars.size());
+  const int shifted_size = size - 3;
+  double a0 = 0.0;
+  double a1 = 0.0;
+  double a2 = 0.0;
+  double a3 = 0.0;
+  for (; i < shifted_size; i += 4) {
+    a0 += static_cast<double>(constraint.coeffs[i].value()) *
+          values[constraint.vars[i]];
+    a1 += static_cast<double>(constraint.coeffs[i + 1].value()) *
+          values[constraint.vars[i + 1]];
+    a2 += static_cast<double>(constraint.coeffs[i + 2].value()) *
+          values[constraint.vars[i + 2]];
+    a3 += static_cast<double>(constraint.coeffs[i + 3].value()) *
+          values[constraint.vars[i + 3]];
+  }
+  double activity = a0 + a1 + a2 + a3;
+  if (i < size) {
+    activity += static_cast<double>(constraint.coeffs[i].value()) *
+                values[constraint.vars[i]];
+    if (i + 1 < size) {
+      activity += static_cast<double>(constraint.coeffs[i + 1].value()) *
+                  values[constraint.vars[i + 1]];
+      if (i + 2 < size) {
+        activity += static_cast<double>(constraint.coeffs[i + 2].value()) *
+                    values[constraint.vars[i + 2]];
+      }
+    }
   }
   return activity;
 }

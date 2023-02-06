@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 234
+// NEXT TAG: 235
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -544,6 +544,12 @@ message SatParameters {
   // already in the model so that if a user want to add some all_diff, we assume
   // it is well done and do not try to add more.
   optional bool infer_all_diffs = 233 [default = true];
+
+  // Try to find large "rectangle" in the linear constraint matrix with
+  // identical lines. If such rectangle is big enough, we can introduce a new
+  // integer variable corresponding to the common expression and greatly reduce
+  // the number of non-zero.
+  optional bool find_big_linear_overlap = 234 [default = true];
 
   // ==========================================================================
   // Multithread

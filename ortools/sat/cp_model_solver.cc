@@ -2634,6 +2634,7 @@ class LnsSolver : public SubSolver {
       local_params.set_log_search_progress(false);
       local_params.set_cp_model_probing_level(0);
       local_params.set_symmetry_level(0);
+      local_params.set_find_big_linear_overlap(false);
       local_params.set_solution_pool_size(1);  // Keep the best solution found.
 
       Model local_model(lns_info);
@@ -2718,6 +2719,13 @@ class LnsSolver : public SubSolver {
         SolveLoadedCpModel(lns_fragment, &local_model);
         local_response = local_response_manager->GetResponse();
       } else {
+        // TODO(user): Clean this up? when the model is closed by presolve,
+        // we don't have a nice api to get the response with stats. That said
+        // for LNS, we don't really need it.
+        if (presolve_status == CpSolverStatus::INFEASIBLE) {
+          local_response_manager->NotifyThatImprovingProblemIsInfeasible(
+              "presolve");
+        }
         local_response = local_response_manager->GetResponse();
         local_response.set_status(presolve_status);
       }
@@ -2742,10 +2750,7 @@ class LnsSolver : public SubSolver {
 
       bool new_solution = false;
       bool display_lns_info = VLOG_IS_ON(2);
-      const std::vector<int64_t> solution(local_response.solution().begin(),
-                                          local_response.solution().end());
-
-      if (!solution.empty()) {
+      if (!local_response.solution().empty()) {
         // A solution that does not pass our validator indicates a bug. We
         // abort and dump the problematic model to facilitate debugging.
         //
