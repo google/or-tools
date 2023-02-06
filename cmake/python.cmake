@@ -411,9 +411,9 @@ if(BUILD_PYTHON_DOC)
       #COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_BINARY_DIR}/docs/python
       COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/python
       COMMAND ${PDOC_PRG}
-      --logo ${PROJECT_SOURCE_DIR}/tools/doc/orLogo.png
+      --logo https://developers.google.com/optimization/images/orLogo.png
       --no-search -d google
-      --footer-text "OR-Tools ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+      --footer-text "OR-Tools v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
       -o ${PROJECT_BINARY_DIR}/docs/python
       ${PROJECT_BINARY_DIR}/python/ortools
       DEPENDS python_package
