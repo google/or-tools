@@ -795,6 +795,10 @@ class SparseBitset {
       to_clear_.push_back(index);
     }
   }
+  void SetUnsafe(IntegerType index) {
+    bitset_.Set(index);
+    to_clear_.push_back(index);
+  }
   void Clear(IntegerType index) { bitset_.Clear(index); }
   int NumberOfSetCallsWithDifferentArguments() const {
     return to_clear_.size();
@@ -814,6 +818,10 @@ class SparseBitset {
       for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
     }
     to_clear_.clear();
+  }
+
+  typename Bitset64<IntegerType>::ConstView const_view() const {
+    return bitset_.const_view();
   }
 
  private:
