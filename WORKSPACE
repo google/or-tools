@@ -134,7 +134,6 @@ pip_parse(
    requirements = "//bazel:python_deps.txt",
 )
 
-# Install all third_party packages
 load("@ortools_deps//:requirements.bzl", "install_deps")
 install_deps()
 
@@ -143,7 +142,9 @@ pip_parse(
    name = "ortools_notebook_deps",
    requirements = "//bazel:python_notebook_deps.txt",
 )
-load("@ortools_notebook_deps//:requirements.bzl", install_notebook_deps="install_deps")
+
+load("@ortools_notebook_deps//:requirements.bzl", 
+     install_notebook_deps="install_deps")
 install_notebook_deps()
 
 git_repository(
