@@ -26,4 +26,5 @@ exports_files([
     #    "zlib.BUILD",
     "archive_helper.bzl",
     "python_deps.txt",
+    "python_notebook_deps.txt",
 ])

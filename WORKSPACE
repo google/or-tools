@@ -128,13 +128,23 @@ git_repository(
 # Create a central external repo, @ortools_deps, that contains Bazel targets for all the
 # third-party packages specified in the python_deps.txt file.
 load("@rules_python//python:pip.bzl", "pip_parse")
+
 pip_parse(
    name = "ortools_deps",
    requirements = "//bazel:python_deps.txt",
 )
+
 # Install all third_party packages
 load("@ortools_deps//:requirements.bzl", "install_deps")
 install_deps()
+
+# Add a second repo @ortools_notebook_deps for jupyter notebooks.
+pip_parse(
+   name = "ortools_notebook_deps",
+   requirements = "//bazel:python_notebook_deps.txt",
+)
+load("@ortools_notebook_deps//:requirements.bzl", install_notebook_deps="install_deps")
+install_notebook_deps()
 
 git_repository(
     name = "pybind11_bazel",

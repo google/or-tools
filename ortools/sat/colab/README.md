@@ -12,7 +12,7 @@ Below you'll find three examples of Google's CP-SAT solver.
 Build and run locally:
 
 ```
-blaze run -c opt ortools/colab:or_notebook -- --alsologtostderr
+bazel run -c opt --cxxopt=-std=c++17 ortools/python:ortools_notebook
 ```
 
 In your browser go to  Open an existing or create
