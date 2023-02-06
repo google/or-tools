@@ -15,11 +15,15 @@ Build and run locally:
 bazel run -c opt --cxxopt=-std=c++17 ortools/python:ortools_notebook
 ```
 
-In your browser go to  Open an existing or create
-a new notebook. Click Connect button and click CONNECT under **Local runtime**.
+This will open a jupyter notebook in your browser.
 
-After you've connected to the local runtime, cut and paste each of the following
-Python programs into a Colab cell. Then run the cell to see the results.
+To use it as a server only, use the command
+
+```
+bazel run -c opt --cxxopt=-std=c++17 ortools/python:ortools_notebook -- --no-browser
+```
+
+And paste the resulting url in your favorite environment, like visual studio code.
 
 ## Hidato Problem {#hidato}
 
