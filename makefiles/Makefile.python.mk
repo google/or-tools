@@ -383,7 +383,6 @@ test_python_contrib: \
 .PHONY: test_python_python # Build and Run all Python Examples (located in examples/python)
 test_python_python: \
  rpy_appointments \
- rpy_assignment2_sat \
  rpy_assignment_with_constraints_sat \
  rpy_balance_group_sat \
  rpy_chemical_balance_lp \
@@ -410,7 +409,6 @@ test_python_python: \
  rpy_transit_time \
  rpy_vendor_scheduling_sat \
  rpy_wedding_optimal_chart_sat \
- rpy_worker_schedule_sat \
  rpy_zebra_sat
 
 test_python: \
