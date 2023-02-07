@@ -55,6 +55,12 @@ foreach(PROTO_FILE IN LISTS proto_files)
   list(APPEND PROTO_SRCS ${PROTO_SRC})
 endforeach()
 
+list(APPEND GLOP_COMPILE_DEFINITIONS
+  "-DOR_TOOLS_MAJOR=${PROJECT_VERSION_MAJOR}"
+  "-DOR_TOOLS_MINOR=${PROJECT_VERSION_MINOR}"
+  "-DOR_TOOLS_PATCH=${PROJECT_VERSION_PATCH}"
+)
+
 add_library(glop_proto OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
 set_target_properties(glop_proto PROPERTIES
   POSITION_INDEPENDENT_CODE ON
@@ -77,15 +83,12 @@ target_sources(glop PRIVATE
   ortools/base/file.cc
   ortools/base/file.h
   ortools/base/integral_types.h
-  ortools/base/log_severity.h
   ortools/base/logging.h
-  ortools/base/logging_utilities.cc
-  ortools/base/logging_utilities.h
   ortools/base/macros.h
-  ortools/base/raw_logging.cc
-  ortools/base/raw_logging.h
   ortools/base/sysinfo.cc
   ortools/base/sysinfo.h
+  ortools/base/version.cc
+  ortools/base/version.h
   ortools/base/vlog_is_on.cc
   ortools/base/vlog_is_on.h
   ortools/glop/basis_representation.cc
