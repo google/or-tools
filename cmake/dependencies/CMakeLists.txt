@@ -78,6 +78,7 @@ if(BUILD_absl)
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   set(ABSL_ENABLE_INSTALL ON)
   set(ABSL_USE_SYSTEM_INCLUDES ON)
+  set(ABSL_PROPAGATE_CXX_STD ON)
   FetchContent_Declare(
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
