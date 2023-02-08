@@ -34,18 +34,21 @@ if(NOT BUILD_absl)
 endif()
 set(ABSL_DEPS
   absl::base
-  absl::check
   absl::core_headers
+  absl::absl_check
+  absl::absl_log
+  absl::check
   absl::die_if_null
   absl::flags
   absl::flags_commandlineflag
+  absl::flags_marshalling
   absl::flags_parse
   absl::flags_usage
   absl::log
+  absl::log_flags
   absl::log_globals
   absl::log_initialize
-  absl::check
-  absl::die_if_null
+  absl::log_internal_message
   absl::cord
   absl::random_random
   absl::raw_hash_set
