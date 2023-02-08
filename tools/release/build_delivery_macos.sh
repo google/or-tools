@@ -82,7 +82,7 @@ function build_dotnet() {
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
     -in "${RELEASE_DIR}/or-tools.snk.enc" \
     -out "${ROOT_DIR}/export/or-tools.snk" -d
-  DOTNET_SNK=export/or-tools.snk
+  export DOTNET_SNK=export/or-tools.snk
   echo "DONE" | tee -a build.log
 
   # Clean dotnet
@@ -177,7 +177,7 @@ function build_java() {
     GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
   fi
 
-  # shellcheck disable=SC2086: cmake fail to parse empty string ""
+  # shellcheck disable=SC2086 # cmake fail to parse empty string ""
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java -j8 -v
@@ -217,53 +217,53 @@ function build_python() {
     local -r PY=(3.7 3.8 3.9 3.10 3.11)
   fi
 
-  for i in "${PY[@]}"; do
-    PY_PATH="/Library/Frameworks/Python.framework/Versions/$i"
+  for PY_VERSION in "${PY[@]}"; do
+    PY_PATH="/Library/Frameworks/Python.framework/Versions/${PY_VERSION}"
     if [[ ! -d "$PY_PATH" ]]; then
-      echo "Error: Python $i is not found (${PY_PATH})." | tee -a build.log
+      echo "Error: Python ${PY_VERSION} is not found (${PY_PATH})." | tee -a build.log
       exit 1
     fi
-    export PATH="${HOME}/Library/Python/$i/bin:${PY_PATH}/bin:${PATH_BCKP}"
+    export PATH="${HOME}/Library/Python/${PY_VERSION}/bin:${PY_PATH}/bin:${PATH_BCKP}"
 
   # Check Python env
     echo "check python3..."
     command -v python3 | xargs echo "python3: " | tee -a build.log
-    command -v "python$i" | xargs echo "python$i: " | tee -a build.log
-    "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
-    "python$i" -m pip install --upgrade --user pip
-    "python$i" -m pip install --upgrade --user wheel absl-py mypy-protobuf virtualenv
+    command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a build.log
+    "python${PY_VERSION}" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
+    "python${PY_VERSION}" -m pip install --upgrade --user pip
+    "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy-protobuf virtualenv
     echo "check protoc-gen-mypy..."
     command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
     protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
     protoc-gen-mypy --version | grep "3\.4\.0"
   done
 
-  for i in "${PY[@]}"; do
-    PY_PATH="/Library/Frameworks/Python.framework/Versions/$i"
+  for PY_VERSION in "${PY[@]}"; do
+    PY_PATH="/Library/Frameworks/Python.framework/Versions/${PY_VERSION}"
     if [[ ! -d "$PY_PATH" ]]; then
-      echo "Error: Python $i is not found (${PY_PATH})." | tee -a build.log
+      echo "Error: Python ${PY_VERSION} is not found (${PY_PATH})." | tee -a build.log
       exit 1
     fi
-    export PATH="${HOME}/Library/Python/$i/bin:${PY_PATH}/bin:${PATH_BCKP}"
+    export PATH="${HOME}/Library/Python/${PY_VERSION}/bin:${PY_PATH}/bin:${PATH_BCKP}"
 
   # Clean and build
-    echo -n "Cleaning Python $i..." | tee -a build.log
-    rm -rf "temp_python$i"
+    echo -n "Cleaning Python ${PY_VERSION}..." | tee -a build.log
+    rm -rf "temp_python${PY_VERSION}"
     echo "DONE" | tee -a build.log
-    echo -n "Build Python $i..." | tee -a build.log
-    cmake -S. -B"temp_python$i" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
-    cmake --build "temp_python$i" -j8 -v
+    echo -n "Build Python ${PY_VERSION}..." | tee -a build.log
+    cmake -S. -B"temp_python${PY_VERSION}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
+    cmake --build "temp_python${PY_VERSION}" -j8 -v
     echo "DONE" | tee -a build.log
-    #cmake --build temp_python$i --target test
-    #echo "cmake test_python$i: DONE" | tee -a build.log
+    #cmake --build temp_python${PY_VERSION} --target test
+    #echo "cmake test_python${PY_VERSION}: DONE" | tee -a build.log
 
-    cp "temp_python$i"/python/dist/*.whl export/
+    cp "temp_python${PY_VERSION}"/python/dist/*.whl export/
     pushd export
-    for i in *_universal2.whl; do
+    for WHEEL_FILE in *_universal2.whl; do
       if [[ ${PLATFORM} == "arm64" ]]; then
-        mv "$i" "${i%_universal2.whl}_arm64.whl"
+        mv "${WHEEL_FILE}" "${WHEEL_FILE%_universal2.whl}_arm64.whl"
       else
-        mv "$i" "${i%_universal2.whl}_x86_64.whl"
+        mv "${WHEEL_FILE}" "${WHEEL_FILE%_universal2.whl}_x86_64.whl"
       fi
     done
     popd
