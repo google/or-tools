@@ -19,8 +19,9 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
 #include "absl/log/globals.h"
-#include "ortools/base/init_google.h"
+#include "absl/log/initialize.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/version.h"
 #include "ortools/gurobi/environment.h"
@@ -84,8 +85,9 @@ class CppBridge {
    *
    * This must be called once before any other library from OR-Tools are used.
    */
-  static void InitLogging(const std::string& program_name) {
-    google::InitGoogleLogging(program_name.c_str());
+  static void InitLogging(const std::string& usage) {
+    absl::SetProgramUsageMessage(usage);
+    absl::InitializeLog();
   }
 
   /**
@@ -93,8 +95,10 @@ class CppBridge {
    *
    * This can be called to shutdown the C++ logging layer from OR-Tools.
    * It should only be called once.
+   *
+   * Deprecated: this is a no-op.
    */
-  static void ShutdownLogging() { google::ShutdownGoogleLogging(); }
+  static void ShutdownLogging() {}
 
   /**
    * Sets all the C++ flags contained in the CppFlags structure.

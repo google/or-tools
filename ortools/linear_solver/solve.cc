@@ -52,30 +52,37 @@
 #include <algorithm>
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/options.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/mps_reader.h"
 #include "ortools/lp_data/proto_utils.h"
+#include "ortools/lp_data/sol_reader.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/util/file_util.h"
 #include "ortools/util/sigint.h"
 
 ABSL_FLAG(std::string, input, "", "REQUIRED: Input file name.");
+ABSL_FLAG(std::string, sol_hint, "",
+          "Input file name with solution in .sol format.");
 ABSL_FLAG(std::string, solver, "glop",
           "The solver to use: bop, cbc, clp, glop, glpk_lp, glpk_mip, "
           "gurobi_lp, gurobi_mip, pdlp, scip, knapsack, sat.");
@@ -127,7 +134,14 @@ namespace {
 MPModelRequest ReadMipModel(const std::string& input) {
   MPModelRequest request_proto;
   MPModelProto model_proto;
-  if (absl::EndsWith(input, ".mps") || absl::EndsWith(input, ".mps.gz")) {
+  if (absl::EndsWith(input, ".lp")) {
+    std::string data;
+    CHECK_OK(file::GetContents(input, &data, file::Defaults()));
+    absl::StatusOr<MPModelProto> result = ModelProtoFromLpFormat(data);
+    CHECK_OK(result);
+    model_proto = std::move(result).value();
+  } else if (absl::EndsWith(input, ".mps") ||
+             absl::EndsWith(input, ".mps.gz")) {
     QCHECK_OK(glop::MPSReader().ParseFile(input, &model_proto))
         << "Error while parsing the mps file '" << input << "'.";
   } else {
@@ -138,7 +152,9 @@ MPModelRequest ReadMipModel(const std::string& input) {
   // return true. Instead use the actual number of variables found to test the
   // correct format of the input.
   const bool is_model_proto = model_proto.variable_size() > 0;
-  const bool is_request_proto = request_proto.model().variable_size() > 0;
+  const bool is_request_proto =
+      request_proto.model().variable_size() > 0 ||
+      !request_proto.model_delta().baseline_model_file_path().empty();
   if (!is_model_proto && !is_request_proto) {
     LOG(FATAL) << "Failed to parse '" << input
                << "' as an MPModelProto or an MPModelRequest.";
@@ -154,10 +170,118 @@ MPModelRequest ReadMipModel(const std::string& input) {
   return request_proto;
 }
 
-// Returns false if an error was encountered.
-// More details should be available in the logs.
-bool Run(MPSolver::OptimizationProblemType type) {
+MPSolutionResponse LocalSolve(const MPModelRequest& request_proto) {
+  // TODO(or-core-team): Why doesn't this use MPSolver::SolveWithProto() ?
+
+  // Create the solver, we use the name of the model as the solver name.
+  MPSolver solver(request_proto.model().name(),
+                  static_cast<MPSolver::OptimizationProblemType>(
+                      request_proto.solver_type()));
+  const absl::Status set_num_threads_status =
+      solver.SetNumThreads(absl::GetFlag(FLAGS_num_threads));
+  if (set_num_threads_status.ok()) {
+    LOG(INFO) << "Set number of threads to " << absl::GetFlag(FLAGS_num_threads)
+              << ".";
+  } else if (absl::GetFlag(FLAGS_num_threads) != 1) {
+    LOG(ERROR) << "Failed to set number of threads due to: "
+               << set_num_threads_status.message() << ". Using 1 as default.";
+  }
+  solver.EnableOutput();
+
+  if (request_proto.has_solver_specific_parameters()) {
+    CHECK(solver.SetSolverSpecificParametersAsString(
+        request_proto.solver_specific_parameters()))
+        << "Wrong solver_specific_parameters (bad --params or --params_file ?)";
+  }
+
+  MPSolutionResponse response;
+
+  // Load the model proto into the solver.
+  {
+    std::string error_message;
+    const MPSolverResponseStatus status =
+        solver.LoadModelFromProtoWithUniqueNamesOrDie(request_proto.model(),
+                                                      &error_message);
+    // Note, the underlying MPSolver treats time limit equal to 0 as no limit.
+    if (status != MPSOLVER_MODEL_IS_VALID) {
+      // HACK(user): For SAT solves, when the model is invalid we directly
+      // exit here.
+      if (request_proto.solver_type() ==
+          MPModelRequest::SAT_INTEGER_PROGRAMMING) {
+        sat::CpSolverResponse sat_response;
+        sat_response.set_status(sat::CpSolverStatus::MODEL_INVALID);
+        LOG(INFO) << sat::CpSolverResponseStats(sat_response);
+        exit(1);
+      }
+      response.set_status(status);
+      response.set_status_str(error_message);
+      return response;
+    }
+  }
+  if (request_proto.has_solver_time_limit_seconds()) {
+    solver.SetTimeLimit(
+        absl::Seconds(request_proto.solver_time_limit_seconds()));
+  }
+
+  // Register a signal handler to interrupt the solve when the user presses ^C.
+  // Note that we ignore all previously registered handler here. If SCIP is
+  // used, this handler will be overridden by the one of SCIP that does the same
+  // thing.
+  SigintHandler handler;
+  handler.Register([&solver] { solver.InterruptSolve(); });
+
+  // Solve.
+  const MPSolver::ResultStatus status = solver.Solve();
+
+  // If --verify_solution is true, we already verified it. If not, we add
+  // a verification step here.
+  if ((status == MPSolver::OPTIMAL || status == MPSolver::FEASIBLE) &&
+      !absl::GetFlag(FLAGS_verify_solution)) {
+    LOG(INFO) << "Verifying the solution";
+    solver.VerifySolution(/*tolerance=*/MPSolverParameters().GetDoubleParam(
+                              MPSolverParameters::PRIMAL_TOLERANCE),
+                          /*log_errors=*/true);
+  }
+
+  // If the solver is a MIP, print the number of nodes.
+  // TODO(user): add the number of nodes to the response, and move this code
+  // to the main Run().
+  if (SolverTypeIsMip(request_proto.solver_type())) {
+    absl::PrintF("%-12s: %d\n", "Nodes", solver.nodes());
+  }
+
+  // Fill and return the response proto.
+  solver.FillSolutionResponseProto(&response);
+  return response;
+}
+
+void Run() {
+  QCHECK(!absl::GetFlag(FLAGS_input).empty()) << "--input is required";
+  QCHECK_GE(absl::GetFlag(FLAGS_time_limit), absl::ZeroDuration())
+      << "--time_limit must be given a positive duration";
+
+  MPSolver::OptimizationProblemType type;
+  CHECK(MPSolver::ParseSolverType(absl::GetFlag(FLAGS_solver), &type))
+      << "Unsupported --solver: " << absl::GetFlag(FLAGS_solver);
+
   MPModelRequest request_proto = ReadMipModel(absl::GetFlag(FLAGS_input));
+
+  if (!absl::GetFlag(FLAGS_sol_hint).empty()) {
+    const auto read_sol =
+        ParseSolFile(absl::GetFlag(FLAGS_sol_hint), request_proto.model());
+    CHECK(read_sol.ok());
+    const MPSolutionResponse sol = read_sol.value();
+    if (request_proto.model().has_solution_hint()) {
+      LOG(WARNING) << "Overwriting solution hint found in the request with "
+                   << "solution from " << absl::GetFlag(FLAGS_sol_hint);
+    }
+    request_proto.mutable_model()->clear_solution_hint();
+    for (int i = 0; i < sol.variable_value_size(); ++i) {
+      request_proto.mutable_model()->mutable_solution_hint()->add_var_index(i);
+      request_proto.mutable_model()->mutable_solution_hint()->add_var_value(
+          sol.variable_value(i));
+    }
+  }
 
   printf("%-12s: '%s'\n", "File", absl::GetFlag(FLAGS_input).c_str());
 
@@ -174,101 +298,70 @@ bool Run(MPSolver::OptimizationProblemType type) {
                << absl::GetFlag(FLAGS_dump_format);
   }
 
-  // Create the solver, we use the name of the model as the solver name.
-  MPSolver solver(request_proto.model().name(), type);
-  const absl::Status set_num_threads_status =
-      solver.SetNumThreads(absl::GetFlag(FLAGS_num_threads));
-  if (set_num_threads_status.ok()) {
-    LOG(INFO) << "Set number of threads to " << absl::GetFlag(FLAGS_num_threads)
-              << ".";
-  } else if (absl::GetFlag(FLAGS_num_threads) != 1) {
-    LOG(ERROR) << "Failed to set number of threads due to: "
-               << set_num_threads_status.message() << ". Using 1 as default.";
+  // Set or override request proto options from the command line flags.
+  request_proto.set_solver_type(static_cast<MPModelRequest::SolverType>(type));
+  if (absl::GetFlag(FLAGS_time_limit) != absl::InfiniteDuration()) {
+    LOG(INFO) << "Setting a time limit of " << absl::GetFlag(FLAGS_time_limit);
+    request_proto.set_solver_time_limit_seconds(
+        absl::ToDoubleSeconds(absl::GetFlag(FLAGS_time_limit)));
   }
-  solver.EnableOutput();
+  if (absl::GetFlag(FLAGS_linear_solver_enable_verbose_output)) {
+    request_proto.set_enable_internal_solver_output(true);
+  }
   if (!absl::GetFlag(FLAGS_params_file).empty()) {
+    CHECK(absl::GetFlag(FLAGS_params).empty())
+        << "--params and --params_file are incompatible";
     std::string file_contents;
     CHECK_OK(file::GetContents(absl::GetFlag(FLAGS_params_file), &file_contents,
                                file::Defaults()))
         << "Could not read parameters file.";
-    CHECK(solver.SetSolverSpecificParametersAsString(file_contents));
-  } else if (!absl::GetFlag(FLAGS_params).empty()) {
-    CHECK(
-        solver.SetSolverSpecificParametersAsString(absl::GetFlag(FLAGS_params)))
-        << "Wrong --params format.";
+    request_proto.set_solver_specific_parameters(file_contents);
   }
-  absl::PrintF(
-      "%-12s: %s\n", "Solver",
-      MPModelRequest::SolverType_Name(
-          static_cast<MPModelRequest::SolverType>(solver.ProblemType()))
-          .c_str());
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    request_proto.set_solver_specific_parameters(absl::GetFlag(FLAGS_params));
+  }
 
-  // Load the proto into the solver.
-  std::string error_message;
-
-  // If requested, save the model to file.
+  // If requested, save the model and/or request to file.
   if (!absl::GetFlag(FLAGS_dump_model).empty()) {
     CHECK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_model),
                            request_proto.model(), write_format,
                            absl::GetFlag(FLAGS_dump_gzip)));
   }
-
-  const MPSolverResponseStatus status =
-      solver.LoadModelFromProtoWithUniqueNamesOrDie(request_proto.model(),
-                                                    &error_message);
-  // Note, the underlying MPSolver treats time limit equal to 0 as no limit.
-  if (status != MPSOLVER_MODEL_IS_VALID) {
-    LOG(ERROR) << MPSolverResponseStatus_Name(status) << ": " << error_message;
-    return false;
-  }
-
-  // Time limits.
-  if (absl::GetFlag(FLAGS_time_limit) != absl::InfiniteDuration()) {
-    LOG(INFO) << "Setting a time limit of " << absl::GetFlag(FLAGS_time_limit);
-    // Overwrite the request time limit.
-    request_proto.set_solver_time_limit_seconds(
-        absl::ToDoubleSeconds(absl::GetFlag(FLAGS_time_limit)));
-  }
-  if (request_proto.has_solver_time_limit_seconds()) {
-    solver.SetTimeLimit(
-        absl::Seconds(request_proto.solver_time_limit_seconds()));
-  }
-
-  absl::PrintF("%-12s: %d x %d\n", "Dimension", solver.NumConstraints(),
-               solver.NumVariables());
-
-  // Register a signal handler to interrupt the solve when the user presses ^C.
-  // Note that we ignore all previously registered handler here. If SCIP is
-  // used, this handler will be overridden by the one of SCIP that does the same
-  // thing.
-  SigintHandler handler;
-  handler.Register([&solver] { solver.InterruptSolve(); });
-
-  // Solve.
-  MPSolverParameters param;
-  MPSolver::ResultStatus solve_status = MPSolver::NOT_SOLVED;
-  absl::Duration solving_time;
-  const absl::Time time_before = absl::Now();
-  solve_status = solver.Solve(param);
-  solving_time = absl::Now() - time_before;
-
-  // If requested, re-create a corresponding MPModelRequest and save it to file.
   if (!absl::GetFlag(FLAGS_dump_request).empty()) {
-    request_proto.set_solver_type(
-        static_cast<MPModelRequest::SolverType>(solver.ProblemType()));
-    request_proto.set_solver_time_limit_seconds(solver.time_limit_in_secs());
-    request_proto.set_solver_specific_parameters(
-        solver.GetSolverSpecificParametersAsString());
     CHECK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_request), request_proto,
                            write_format, absl::GetFlag(FLAGS_dump_gzip)));
   }
 
-  const bool has_solution =
-      solve_status == MPSolver::OPTIMAL || solve_status == MPSolver::FEASIBLE;
+  absl::PrintF(
+      "%-12s: %s\n", "Solver",
+      MPModelRequest::SolverType_Name(request_proto.solver_type()).c_str());
+  absl::PrintF("%-12s: %s\n", "Parameters", absl::GetFlag(FLAGS_params));
+  absl::PrintF("%-12s: %d x %d\n", "Dimension",
+               request_proto.model().constraint_size(),
+               request_proto.model().variable_size());
 
+  const absl::Time solve_start_time = absl::Now();
+
+  const MPSolutionResponse response = LocalSolve(request_proto);
+
+  const absl::Duration solving_time = absl::Now() - solve_start_time;
+  const bool has_solution = response.status() == MPSOLVER_OPTIMAL ||
+                            response.status() == MPSOLVER_FEASIBLE;
+  absl::PrintF("%-12s: %s\n", "Status",
+               MPSolverResponseStatus_Name(
+                   static_cast<MPSolverResponseStatus>(response.status()))
+                   .c_str());
+  absl::PrintF("%-12s: %15.15e\n", "Objective",
+               has_solution ? response.objective_value() : 0.0);
+  absl::PrintF("%-12s: %15.15e\n", "BestBound",
+               has_solution ? response.best_objective_bound() : 0.0);
+  absl::PrintF("%-12s: %s\n", "StatusString", response.status_str());
+  absl::PrintF("%-12s: %-6.4g s\n", "Time",
+               absl::ToDoubleSeconds(solving_time));
+
+  // If requested, write the solution, in .sol format (--sol_file), proto
+  // format and/or csv format.
   if (!absl::GetFlag(FLAGS_sol_file).empty() && has_solution) {
-    operations_research::MPSolutionResponse response;
-    solver.FillSolutionResponseProto(&response);
     std::string sol_string;
     absl::StrAppend(&sol_string, "=obj= ", response.objective_value(), "\n");
     for (int i = 0; i < response.variable_value().size(); ++i) {
@@ -280,78 +373,26 @@ bool Run(MPSolver::OptimizationProblemType type) {
     CHECK_OK(file::SetContents(absl::GetFlag(FLAGS_sol_file), sol_string,
                                file::Defaults()));
   }
-
-  // If requested, get the MPSolutionResponse and save it to file.
   if (!absl::GetFlag(FLAGS_dump_response).empty() && has_solution) {
-    operations_research::MPSolutionResponse response;
-    solver.FillSolutionResponseProto(&response);
     CHECK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_response), response,
                            write_format, absl::GetFlag(FLAGS_dump_gzip)));
   }
   if (!absl::GetFlag(FLAGS_output_csv).empty() && has_solution) {
-    operations_research::MPSolutionResponse result;
-    solver.FillSolutionResponseProto(&result);
     std::string csv_file;
-    for (int i = 0; i < result.variable_value_size(); ++i) {
+    for (int i = 0; i < response.variable_value_size(); ++i) {
       csv_file +=
           absl::StrFormat("%s,%e\n", request_proto.model().variable(i).name(),
-                          result.variable_value(i));
+                          response.variable_value(i));
     }
     CHECK_OK(file::SetContents(absl::GetFlag(FLAGS_output_csv), csv_file,
                                file::Defaults()));
   }
-  // If --verify_solution is true, we already verified it. If not, we add
-  // a verification step here.
-  if (has_solution && !absl::GetFlag(FLAGS_verify_solution)) {
-    LOG(INFO) << "Verifying the solution";
-    solver.VerifySolution(/*tolerance=*/param.GetDoubleParam(
-                              MPSolverParameters::PRIMAL_TOLERANCE),
-                          /*log_errors=*/true);
-  }
-
-  absl::PrintF("%-12s: %s\n", "Status",
-               MPSolverResponseStatus_Name(
-                   static_cast<MPSolverResponseStatus>(solve_status))
-                   .c_str());
-  absl::PrintF("%-12s: %15.15e\n", "Objective",
-               has_solution ? solver.Objective().Value() : 0.0);
-  absl::PrintF("%-12s: %15.15e\n", "BestBound",
-               has_solution ? solver.Objective().BestBound() : 0.0);
-  absl::PrintF("%-12s: %d\n", "Iterations", solver.iterations());
-  // NOTE(user): nodes() for non-MIP solvers crashes in debug mode by design.
-  if (solver.IsMIP()) {
-    absl::PrintF("%-12s: %d\n", "Nodes", solver.nodes());
-  }
-  absl::PrintF("%-12s: %-6.4g\n", "Time", absl::ToDoubleSeconds(solving_time));
-  return true;
 }
 
 }  // namespace
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(kUsageStr);
-  absl::ParseCommandLine(argc, argv);
-  QCHECK(!absl::GetFlag(FLAGS_input).empty()) << "--input is required";
-  QCHECK_GE(absl::GetFlag(FLAGS_time_limit), absl::ZeroDuration())
-      << "--time_limit must be given a positive duration";
-
-  operations_research::MPSolver::OptimizationProblemType type;
-  CHECK(operations_research::MPSolver::ParseSolverType(
-      absl::GetFlag(FLAGS_solver), &type))
-      << "Unsupported --solver: " << absl::GetFlag(FLAGS_solver);
-
-  if (!operations_research::Run(type)) {
-    // If the solver is SAT and we encountered an error, display it in a format
-    // interpretable by our scripts.
-    if (type == operations_research::MPSolver::SAT_INTEGER_PROGRAMMING) {
-      operations_research::sat::CpSolverResponse response;
-      response.set_status(
-          operations_research::sat::CpSolverStatus::MODEL_INVALID);
-      LOG(INFO) << operations_research::sat::CpSolverResponseStats(response);
-    }
-    return EXIT_FAILURE;
-  }
-  return EXIT_SUCCESS;
+  InitGoogle(kUsageStr, &argc, &argv, /*remove_flags=*/true);
+  operations_research::Run();
 }

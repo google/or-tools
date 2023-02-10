@@ -12,8 +12,9 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
-#list(FILTER _SRCS EXCLUDE REGEX ".*/solver_interface.cc")
-
+list(REMOVE_ITEM _SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/solve.cc
+)
 if(USE_SCIP)
   list(APPEND _SRCS ${LPI_GLOP_SRC})
 endif()
@@ -45,3 +46,21 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   ${PROJECT_NAME}::proto)
 #add_library(${PROJECT_NAME}::linear_solver ALIAS ${NAME})
+
+# solve
+include(GNUInstallDirs)
+if(APPLE)
+  set(CMAKE_INSTALL_RPATH
+    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+elseif(UNIX)
+  set(CMAKE_INSTALL_RPATH
+    "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
+endif()
+
+add_executable(solve)
+target_sources(solve PRIVATE "solve.cc")
+target_include_directories(solve PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_features(solve PRIVATE cxx_std_17)
+target_link_libraries(solve PRIVATE ${PROJECT_NAMESPACE}::ortools)
+
+install(TARGETS solve)

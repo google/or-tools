@@ -17,6 +17,7 @@
 
 #include <limits>
 
+#include "absl/log/initialize.h"
 #include "ortools/base/path.h"
 
 #if defined(__GNUC__)  // Linux or Mac OS X.

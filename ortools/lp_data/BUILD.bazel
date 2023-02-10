@@ -352,3 +352,22 @@ cc_library(
         "@com_google_absl//absl/synchronization",
     ],
 )
+
+cc_library(
+    name = "sol_reader",
+    srcs = ["sol_reader.cc"],
+    hdrs = ["sol_reader.h"],
+    deps = [
+        ":base",
+        ":lp_data",
+        ":proto_utils",
+        "//ortools/base",
+        "//ortools/base:numbers",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/util:file_util",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)

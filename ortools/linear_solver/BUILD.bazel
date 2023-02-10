@@ -222,3 +222,20 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
     ],
 )
+
+cc_binary(
+    name = "solve",
+    srcs = ["solve.cc"],
+    deps = [
+        ":linear_solver",
+        ":linear_solver_cc_proto",
+        "//ortools/base",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:model_reader",
+        "//ortools/lp_data:mps_reader",
+        "//ortools/lp_data:sol_reader",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/time",
+    ],
+)
