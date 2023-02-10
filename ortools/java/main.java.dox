@@ -4,17 +4,19 @@
 */
 
 /*! @mainpage OR-Tools
-This is the reference documentation for Google OR-Tools.
+This is the reference documentation for the Google OR-Tools Java wrapper.
 
-This repository contains several component:
+This repository contains several components:
 
 @li @ref com.google.ortools.Loader "com.google.ortools.Loader"
 @li @ref com.google.ortools.init "com.google.ortools.init"
+@li @ref com.google.ortools.util "com.google.ortools.util"
 
 @li @ref com.google.ortools.algorithms "com.google.ortools.algorithms"
 @li @ref com.google.ortools.graph "com.google.ortools.graph"
 
 @li @ref com.google.ortools.linearsolver "com.google.ortools.linearsolver"
+@li @ref com.google.ortools.modelbuilder "com.google.ortools.modelbuilder"
 @li @ref com.google.ortools.bop "com.google.ortools.bop"
 @li @ref com.google.ortools.glop "com.google.ortools.glop"
 @li @ref com.google.ortools.sat "com.google.ortools.sat"
