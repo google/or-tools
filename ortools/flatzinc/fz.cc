@@ -106,7 +106,7 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
   absl::SetProgramUsageMessage(kUsage);
   const std::vector<char*> residual_flags =
       absl::ParseCommandLine(*argc, *argv);
-  google::InitGoogleLogging((*argv)[0]);
+  absl::InitializeLog();
 
   // Fix time limit if -t was used.
   if (use_time_param) {
