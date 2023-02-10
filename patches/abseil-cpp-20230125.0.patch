@@ -1,0 +1,88 @@
+diff --git a/CMake/AbseilDll.cmake b/CMake/AbseilDll.cmake
+index c4a41e6d..e770b6bf 100644
+--- a/CMake/AbseilDll.cmake
++++ b/CMake/AbseilDll.cmake
+@@ -602,23 +602,34 @@ endfunction()
+ 
+ include(CheckCXXSourceCompiles)
+ 
+-check_cxx_source_compiles(
+-  [==[
+-#ifdef _MSC_VER
+-#  if _MSVC_LANG < 201700L
+-#    error "The compiler defaults or is configured for C++ < 17"
+-#  endif
+-#elif __cplusplus < 201700L
+-#  error "The compiler defaults or is configured for C++ < 17"
+-#endif
+-int main() { return 0; }
+-]==]
+-  ABSL_INTERNAL_AT_LEAST_CXX17)
++message(WARNING "ABSL_CXX_STANDARD: ${ABSL_CXX_STANDARD}")
++message(WARNING "CMAKE_CXX_STANDARD: ${CMAKE_CXX_STANDARD}")
++message(WARNING "CMAKE_CXX_STANDARD_REQUIRED: ${CMAKE_CXX_STANDARD_REQUIRED}")
++message(WARNING "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
++
++if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
++  set(ABSL_INTERNAL_AT_LEAST_CXX17 TRUE)
++else()
++  check_cxx_source_compiles(
++    [==[
++    #ifdef _MSC_VER
++    #  if _MSVC_LANG < 201700L
++    #    error "The compiler defaults or is configured for C++ < 17"
++    #  endif
++    #elif __cplusplus < 201700L
++    #  error "The compiler defaults or is configured for C++ < 17"
++    #endif
++    int main() { return 0; }
++    ]==]
++    ABSL_INTERNAL_AT_LEAST_CXX17)
++endif()
+ 
+ if(ABSL_INTERNAL_AT_LEAST_CXX17)
+   set(ABSL_INTERNAL_CXX_STD_FEATURE cxx_std_17)
++  #message(FATAL_ERROR "Should pass here !!!")
+ else()
+   set(ABSL_INTERNAL_CXX_STD_FEATURE cxx_std_14)
++  message(FATAL_ERROR "Should not pass here !!!")
+ endif()
+ 
+ function(absl_internal_dll_contains)
+diff --git a/CMake/AbseilHelpers.cmake b/CMake/AbseilHelpers.cmake
+index 6d059e7e..439197e5 100644
+--- a/CMake/AbseilHelpers.cmake
++++ b/CMake/AbseilHelpers.cmake
+@@ -292,6 +292,7 @@ Cflags: -I\${includedir}${PC_CFLAGS}\n")
+       # compiled with C++17 (either because it is the compiler's default or
+       # explicitly requested), then Abseil requires C++17.
+       _absl_target_compile_features_if_available(${_NAME} PUBLIC ${ABSL_INTERNAL_CXX_STD_FEATURE})
++      message(WARNING "Force CXX_FLAGS flags to ${ABSL_INTERNAL_CXX_STD_FEATURE}")
+     else()
+       # Note: This is legacy (before CMake 3.8) behavior. Setting the
+       # target-level CXX_STANDARD property to ABSL_CXX_STANDARD (which is
+@@ -340,6 +341,7 @@ Cflags: -I\${includedir}${PC_CFLAGS}\n")
+       # Top-level application CMake projects should ensure a consistent C++
+       # standard for all compiled sources by setting CMAKE_CXX_STANDARD.
+       _absl_target_compile_features_if_available(${_NAME} INTERFACE ${ABSL_INTERNAL_CXX_STD_FEATURE})
++      message(WARNING "Force CXX_FLAGS flags to ${ABSL_INTERNAL_CXX_STD_FEATURE}")
+ 
+       # (INTERFACE libraries can't have the CXX_STANDARD property set, so there
+       # is no legacy behavior else case).
+@@ -453,6 +455,7 @@ function(absl_cc_test)
+     # Top-level application CMake projects should ensure a consistent C++
+     # standard for all compiled sources by setting CMAKE_CXX_STANDARD.
+     _absl_target_compile_features_if_available(${_NAME} PUBLIC ${ABSL_INTERNAL_CXX_STD_FEATURE})
++    message(WARNING "Force CXX_FLAGS flags to ${ABSL_INTERNAL_CXX_STD_FEATURE}")
+   else()
+     # Note: This is legacy (before CMake 3.8) behavior. Setting the
+     # target-level CXX_STANDARD property to ABSL_CXX_STANDARD (which is
+diff --git a/absl/copts/AbseilConfigureCopts.cmake b/absl/copts/AbseilConfigureCopts.cmake
+index 8209b262..fd966694 100644
+--- a/absl/copts/AbseilConfigureCopts.cmake
++++ b/absl/copts/AbseilConfigureCopts.cmake
+@@ -94,3 +94,4 @@ else()
+ endif()
+ 
+ set(ABSL_CXX_STANDARD "${CMAKE_CXX_STANDARD}")
++message(WARNING "ABSL_CXX_STANDARD: ${ABSL_CXX_STANDARD}.")
