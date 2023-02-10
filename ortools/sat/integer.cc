@@ -343,6 +343,12 @@ void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
 void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
                                                   IntegerVariable var,
                                                   IntegerValue value) {
+  // The function is symmetric and we only deal with positive variable.
+  if (!VariableIsPositive(var)) {
+    var = NegationOf(var);
+    value = -value;
+  }
+
   // Detect literal view. Note that the same literal can be associated to more
   // than one variable, and thus already have a view. We don't change it in
   // this case.
@@ -393,8 +399,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     equality_by_var_.resize(index.value() + 1);
     is_fully_encoded_.resize(index.value() + 1);
   }
-  equality_by_var_[index].push_back(
-      {VariableIsPositive(var) ? value : -value, literal});
+  equality_by_var_[index].push_back({value, literal});
 
   // Fix literal for constant domain.
   if (value == domain.Min() && value == domain.Max()) {
@@ -429,11 +434,10 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
 
   // Update reverse encoding.
   const int new_size = 1 + literal.Index().value();
-  if (new_size > full_reverse_encoding_.size()) {
-    full_reverse_encoding_.resize(new_size);
+  if (new_size > reverse_equality_encoding_.size()) {
+    reverse_equality_encoding_.resize(new_size);
   }
-  full_reverse_encoding_[literal.Index()].push_back(le);
-  full_reverse_encoding_[literal.Index()].push_back(ge);
+  reverse_equality_encoding_[literal.Index()].push_back({var, value});
 }
 
 // TODO(user): The hard constraints we add between associated literals seems to
@@ -446,9 +450,6 @@ void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
   const int new_size = 1 + literal.Index().value();
   if (new_size > reverse_encoding_.size()) {
     reverse_encoding_.resize(new_size);
-  }
-  if (new_size > full_reverse_encoding_.size()) {
-    full_reverse_encoding_.resize(new_size);
   }
 
   // Associate the new literal to i_lit.
@@ -467,7 +468,6 @@ void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
 
     // TODO(user): do that for the other branch too?
     reverse_encoding_[literal.Index()].push_back(i_lit);
-    full_reverse_encoding_[literal.Index()].push_back(i_lit);
   } else {
     const Literal associated(insert_result.first->second);
     if (associated != literal) {

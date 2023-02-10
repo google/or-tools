@@ -16,7 +16,6 @@ understand how optimization problems can be modeled using the solver. You can
 then solve a model with the functions in
 [cp_model_solver.h](../sat/cp_model_solver.h).
 
-
 ## Parameters
 
 *   [sat_parameters.proto](../sat/sat_parameters.proto):

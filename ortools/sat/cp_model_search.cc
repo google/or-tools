@@ -390,9 +390,12 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     if (decision.boolean_literal_index != kNoLiteralIndex) {
       const Literal l = Literal(decision.boolean_literal_index);
       LOG(INFO) << "Boolean decision " << l;
-      for (const IntegerLiteral i_lit :
-           model->Get<IntegerEncoder>()->GetAllIntegerLiterals(l)) {
+      const auto& encoder = model->Get<IntegerEncoder>();
+      for (const IntegerLiteral i_lit : encoder->GetIntegerLiterals(l)) {
         LOG(INFO) << " - associated with " << i_lit;
+      }
+      for (const auto [var, value] : encoder->GetEqualityLiterals(l)) {
+        LOG(INFO) << " - associated with " << var << " == " << value;
       }
     } else {
       LOG(INFO) << "Integer decision " << decision.integer_literal;

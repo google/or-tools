@@ -115,6 +115,9 @@ ABSL_FLAG(bool, cp_model_dump_models, false,
           "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
           "mapping_model}.pb.txt.");
 
+ABSL_FLAG(bool, cp_model_dump_text_proto, true,
+          "DEBUG ONLY, dump models in text proto instead of binary proto.");
+
 ABSL_FLAG(bool, cp_model_dump_lns, false,
           "DEBUG ONLY. When set to true, solve will dump all "
           "lns models proto in text format to "
@@ -3348,10 +3351,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #if !defined(__PORTABLE_PLATFORM__)
   // Dump initial model?
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
-    const std::string file =
-        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), "model.pb.txt");
-    LOG(INFO) << "Dumping cp model proto to '" << file << "'.";
-    CHECK_OK(file::SetTextProto(file, model_proto, file::Defaults()));
+    if (absl::GetFlag(FLAGS_cp_model_dump_text_proto)) {
+      const std::string file = absl::StrCat(
+          absl::GetFlag(FLAGS_cp_model_dump_prefix), "model.pb.txt");
+      LOG(INFO) << "Dumping cp model text proto to '" << file << "'.";
+      CHECK_OK(file::SetTextProto(file, model_proto, file::Defaults()));
+    } else {
+      const std::string file =
+          absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), "model.bin");
+      LOG(INFO) << "Dumping cp model binary proto to '" << file << "'.";
+      CHECK_OK(file::SetBinaryProto(file, model_proto, file::Defaults()));
+    }
   }
 #endif  // __PORTABLE_PLATFORM__
 
@@ -3812,17 +3822,32 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
 #if !defined(__PORTABLE_PLATFORM__)
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
-    const std::string presolved_file = absl::StrCat(
-        absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_model.pb.txt");
-    LOG(INFO) << "Dumping presolved CpModelProto to '" << presolved_file
-              << "'.";
-    CHECK_OK(file::SetTextProto(presolved_file, new_cp_model_proto,
-                                file::Defaults()));
+    if (absl::GetFlag(FLAGS_cp_model_dump_text_proto)) {
+      const std::string presolved_file = absl::StrCat(
+          absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_model.pb.txt");
+      LOG(INFO) << "Dumping presolved CpModelProto to '" << presolved_file
+                << "'.";
+      CHECK_OK(file::SetTextProto(presolved_file, new_cp_model_proto,
+                                  file::Defaults()));
 
-    const std::string mapping_file = absl::StrCat(
-        absl::GetFlag(FLAGS_cp_model_dump_prefix), "mapping_model.pb.txt");
-    LOG(INFO) << "Dumping mapping CpModelProto to '" << mapping_file << "'.";
-    CHECK_OK(file::SetTextProto(mapping_file, mapping_proto, file::Defaults()));
+      const std::string mapping_file = absl::StrCat(
+          absl::GetFlag(FLAGS_cp_model_dump_prefix), "mapping_model.pb.txt");
+      LOG(INFO) << "Dumping mapping CpModelProto to '" << mapping_file << "'.";
+      CHECK_OK(
+          file::SetTextProto(mapping_file, mapping_proto, file::Defaults()));
+    } else {
+      const std::string presolved_file = absl::StrCat(
+          absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_model.bin");
+      LOG(INFO) << "Dumping presolved CpModelProto to '" << presolved_file
+                << "'.";
+      CHECK_OK(file::SetBinaryProto(presolved_file, new_cp_model_proto,
+                                    file::Defaults()));
+      const std::string mapping_file = absl::StrCat(
+          absl::GetFlag(FLAGS_cp_model_dump_prefix), "mapping_model.bin");
+      LOG(INFO) << "Dumping mapping CpModelProto to '" << mapping_file << "'.";
+      CHECK_OK(
+          file::SetBinaryProto(mapping_file, mapping_proto, file::Defaults()));
+    }
 
     // If the model is convertible to a MIP, we dump it too.
     //

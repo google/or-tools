@@ -106,15 +106,34 @@ std::vector<PseudoCosts::VariableBoundChange> PseudoCosts::GetBoundChanges(
     Literal decision) {
   std::vector<PseudoCosts::VariableBoundChange> bound_changes;
 
-  // NOTE: We ignore negation of equality decisions.
-  for (const IntegerLiteral l : encoder_->GetAllIntegerLiterals(decision)) {
-    if (l.var == kNoIntegerVariable) continue;
+  for (const IntegerLiteral l : encoder_->GetIntegerLiterals(decision)) {
     if (integer_trail_->IsCurrentlyIgnored(l.var)) continue;
     PseudoCosts::VariableBoundChange var_bound_change;
     var_bound_change.var = l.var;
     var_bound_change.lower_bound_change =
         l.bound - integer_trail_->LowerBound(l.var);
     bound_changes.push_back(var_bound_change);
+  }
+
+  // NOTE: We ignore literal associated to var != value.
+  for (const auto [var, value] : encoder_->GetEqualityLiterals(decision)) {
+    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+    {
+      PseudoCosts::VariableBoundChange var_bound_change;
+      var_bound_change.var = var;
+      var_bound_change.lower_bound_change =
+          value - integer_trail_->LowerBound(var);
+      bound_changes.push_back(var_bound_change);
+    }
+
+    // Also do the negation.
+    {
+      PseudoCosts::VariableBoundChange var_bound_change;
+      var_bound_change.var = NegationOf(var);
+      var_bound_change.lower_bound_change =
+          (-value) - integer_trail_->LowerBound(NegationOf(var));
+      bound_changes.push_back(var_bound_change);
+    }
   }
 
   return bound_changes;

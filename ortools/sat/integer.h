@@ -240,6 +240,8 @@ inline std::ostream& operator<<(std::ostream& os,
 }
 
 using InlinedIntegerLiteralVector = absl::InlinedVector<IntegerLiteral, 2>;
+using InlinedIntegerValueVector =
+    absl::InlinedVector<std::pair<IntegerVariable, IntegerValue>, 2>;
 
 // Represents [coeff * variable + constant] or just a [constant].
 //
@@ -504,14 +506,27 @@ class IntegerEncoder {
     return reverse_encoding_[lit.Index()];
   }
 
-  // Same as GetIntegerLiterals(), but in addition, if the literal was
-  // associated to an integer == value, then the returned list will contain both
-  // (integer >= value) and (integer <= value).
-  const InlinedIntegerLiteralVector& GetAllIntegerLiterals(Literal lit) const {
-    if (lit.Index() >= full_reverse_encoding_.size()) {
-      return empty_integer_literal_vector_;
+  // Returns the variable == value pairs that were associated with the given
+  // Literal. Note that only positive IntegerVariable appears here.
+  const InlinedIntegerValueVector& GetEqualityLiterals(Literal lit) const {
+    if (lit.Index() >= reverse_equality_encoding_.size()) {
+      return empty_integer_value_vector_;
     }
-    return full_reverse_encoding_[lit.Index()];
+    return reverse_equality_encoding_[lit.Index()];
+  }
+
+  // Returns all the variables for which this literal is associated to either
+  // var >= value or var == value.
+  const std::vector<IntegerVariable>& GetAllAssociatedVariables(
+      Literal lit) const {
+    temp_associated_vars_.clear();
+    for (const IntegerLiteral l : GetIntegerLiterals(lit)) {
+      temp_associated_vars_.push_back(l.var);
+    }
+    for (const auto [var, value] : GetEqualityLiterals(lit)) {
+      temp_associated_vars_.push_back(var);
+    }
+    return temp_associated_vars_;
   }
 
   // This is part of a "hack" to deal with new association involving a fixed
@@ -610,8 +625,13 @@ class IntegerEncoder {
   const InlinedIntegerLiteralVector empty_integer_literal_vector_;
   absl::StrongVector<LiteralIndex, InlinedIntegerLiteralVector>
       reverse_encoding_;
-  absl::StrongVector<LiteralIndex, InlinedIntegerLiteralVector>
-      full_reverse_encoding_;
+  const InlinedIntegerValueVector empty_integer_value_vector_;
+  absl::StrongVector<LiteralIndex, InlinedIntegerValueVector>
+      reverse_equality_encoding_;
+
+  // Used by GetAllAssociatedVariables().
+  mutable std::vector<IntegerVariable> temp_associated_vars_;
+
   std::vector<IntegerLiteral> newly_fixed_integer_literals_;
 
   // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex

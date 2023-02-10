@@ -243,13 +243,15 @@ std::function<BooleanOrIntegerLiteral()> SequentialValueSelection(
 
     // Boolean case. We try to decode the Boolean decision to see if it is
     // associated with an integer variable.
-    for (const IntegerLiteral l : encoder->GetAllIntegerLiterals(
+    //
+    // TODO(user): we will likely stop at the first non-fixed variable.
+    for (const IntegerVariable var : encoder->GetAllAssociatedVariables(
              Literal(current_decision.boolean_literal_index))) {
-      if (integer_trail->IsCurrentlyIgnored(l.var)) continue;
+      if (integer_trail->IsCurrentlyIgnored(var)) continue;
 
       // Sequentially try the value selection heuristics.
       for (const auto& value_heuristic : value_selection_heuristics) {
-        const IntegerLiteral decision = value_heuristic(l.var);
+        const IntegerLiteral decision = value_heuristic(var);
         if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
       }
     }
@@ -270,6 +272,9 @@ bool LinearizedPartIsLarge(Model* model) {
   return (num_integer_variables <= 2 * num_lp_variables);
 }
 
+// Note that all these heuristic do not depend on the variable being positive
+// or negative.
+//
 // TODO(user): Experiment more with value selection heuristics.
 std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
     std::function<BooleanOrIntegerLiteral()> var_selection_heuristic,
@@ -604,13 +609,13 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     }
 
     // Decode the decision and get the variable.
-    for (const IntegerLiteral l : encoder->GetAllIntegerLiterals(
+    for (const IntegerVariable var : encoder->GetAllAssociatedVariables(
              Literal(current_decision.boolean_literal_index))) {
-      if (integer_trail->IsCurrentlyIgnored(l.var)) continue;
+      if (integer_trail->IsCurrentlyIgnored(var)) continue;
 
       // Try the selected policy.
       const IntegerLiteral new_decision =
-          value_selection_heuristics[val_policy_index](l.var);
+          value_selection_heuristics[val_policy_index](var);
       if (new_decision.IsValid()) return BooleanOrIntegerLiteral(new_decision);
     }
 
