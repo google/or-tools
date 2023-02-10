@@ -39,6 +39,7 @@ _PARAMS = flags.DEFINE_string(
     'Sat solver parameters.')
 _INSTANCE = flags.DEFINE_integer('instance', 0, 'Instance to select (0, 1, 2, 3).',
                                  0, 3)
+
 SAMPLE_SHIFTS_TINY = [
     #
     # column description:
