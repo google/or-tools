@@ -37,8 +37,46 @@ _PARAMS = flags.DEFINE_string(
     'params',
     'num_search_workers:16,log_search_progress:true,max_time_in_seconds:30',
     'Sat solver parameters.')
-_INSTANCE = flags.DEFINE_integer('instance', 1, 'Instance to select (1, 2, 3).',
-                                 1, 3)
+_INSTANCE = flags.DEFINE_integer('instance', 0, 'Instance to select (0, 1, 2, 3).',
+                                 0, 3)
+SAMPLE_SHIFTS_TINY = [
+    #
+    # column description:
+    # - shift id
+    # - shift start time as hh:mm string (for logging and readability purposes)
+    # - shift end time as hh:mm string (for logging and readability purposes)
+    # - shift start minute
+    # - shift end minute
+    # - shift duration in minutes
+    #
+    [1, '08:00', '09:05', 480, 545, 65],
+    [2, '08:00', '08:35', 480, 515, 35],
+    [3, '08:11', '09:41', 491, 581, 90],
+    [4, '08:28', '08:50', 508, 530, 22],
+    [5, '08:35', '08:45', 515, 525, 10],
+    [6, '08:40', '08:50', 520, 530, 10],
+    [7, '09:03', '10:28', 543, 628, 85],
+    [8, '09:23', '09:49', 563, 589, 26],
+    [9, '09:30', '09:40', 570, 580, 10],
+    [10, '09:57', '10:20', 597, 620, 23],
+    [11, '10:09', '11:03', 609, 663, 54],
+    [12, '10:20', '10:30', 620, 630, 10],
+    [13, '11:00', '11:10', 660, 670, 10],
+    [14, '11:45', '12:24', 705, 744, 39],
+    [15, '12:18', '13:00', 738, 780, 42],
+    [16, '13:18', '14:44', 798, 884, 86],
+    [17, '13:53', '14:49', 833, 889, 56],
+    [18, '14:03', '14:50', 843, 890, 47],
+    [19, '14:28', '15:15', 868, 915, 47],
+    [20, '14:30', '15:41', 870, 941, 71],
+    [21, '14:48', '15:35', 888, 935, 47],
+    [22, '15:03', '15:50', 903, 950, 47],
+    [23, '15:28', '16:54', 928, 1014, 86],
+    [24, '15:38', '16:25', 938, 985, 47],
+    [25, '15:40', '15:56', 940, 956, 16],
+    [26, '15:58', '16:45', 958, 1005, 47],
+    [27, '16:04', '17:30', 964, 1050, 86],
+]  # yapf:disable
 
 SAMPLE_SHIFTS_SMALL = [
     #
@@ -1688,7 +1726,9 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
       The objective value of the model.
   """
     shifts = None
-    if _INSTANCE.value == 1:
+    if _INSTANCE.value == 0:
+        shifts = SAMPLE_SHIFTS_TINY
+    elif _INSTANCE.value == 1:
         shifts = SAMPLE_SHIFTS_SMALL
     elif _INSTANCE.value == 2:
         shifts = SAMPLE_SHIFTS_MEDIUM
