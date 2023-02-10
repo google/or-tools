@@ -6,7 +6,7 @@ ENV PATH=/usr/local/bin:$PATH
 RUN apt-get update -qq \
 && apt-get install -yq \
  git wget libssl-dev build-essential cmake \
- autoconf libtool zlib1g-dev lsb-release \
+ lsb-release \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 CMD [ "/bin/bash" ]
