@@ -12,6 +12,11 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(REMOVE_ITEM _SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/opb_reader.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/sat_cnf_reader.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/sat_runner.cc
+)
 set(NAME ${PROJECT_NAME}_sat)
 
 # Will be merge in libortools.so
@@ -33,3 +38,21 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
   ${PROJECT_NAME}::proto)
 #add_library(${PROJECT_NAME}::sat ALIAS ${NAME})
+
+# Sat Runner
+include(GNUInstallDirs)
+if(APPLE)
+  set(CMAKE_INSTALL_RPATH
+    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+elseif(UNIX)
+  set(CMAKE_INSTALL_RPATH
+    "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
+endif()
+
+add_executable(sat_runner)
+target_sources(sat_runner PRIVATE "sat_runner.cc")
+target_include_directories(sat_runner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_features(sat_runner PRIVATE cxx_std_17)
+target_link_libraries(sat_runner PRIVATE ${PROJECT_NAMESPACE}::ortools)
+
+install(TARGETS sat_runner)

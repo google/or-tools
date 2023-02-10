@@ -41,7 +41,6 @@ list(FILTER CXX_SRCS EXCLUDE REGEX ".*/multi_knapsack_sat.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/network_routing_sat.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdlp_solve.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdptw.cc")
-list(FILTER CXX_SRCS EXCLUDE REGEX ".*/sat_runner.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/shift_minimization_sat.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdlp_solve.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/solve.cc")
@@ -52,25 +51,3 @@ list(FILTER CXX_SRCS EXCLUDE REGEX ".*/weighted_tardiness_sat.cc")
 foreach(SAMPLE IN LISTS CXX_SRCS)
   add_cxx_example(${SAMPLE})
 endforeach()
-
-# Sat Runner
-include(GNUInstallDirs)
-if(APPLE)
-  set(CMAKE_INSTALL_RPATH
-    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-elseif(UNIX)
-  set(CMAKE_INSTALL_RPATH
-    "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
-endif()
-
-add_executable(sat_runner)
-target_sources(sat_runner PRIVATE
- "sat_runner.cc"
- "opb_reader.h"
- "sat_cnf_reader.h")
-target_include_directories(sat_runner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_features(sat_runner PRIVATE cxx_std_17)
-target_link_libraries(sat_runner PRIVATE ${PROJECT_NAMESPACE}::ortools)
-
-install(TARGETS sat_runner)
-

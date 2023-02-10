@@ -19,6 +19,9 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
+#include "absl/log/flags.h"
+#include "absl/log/initialize.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -26,13 +29,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "examples/cpp/opb_reader.h"
-#include "examples/cpp/sat_cnf_reader.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/options.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -44,9 +43,11 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/opb_reader.h"
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_cnf_reader.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
@@ -445,13 +446,11 @@ int Run() {
 
 static const char kUsage[] =
     "Usage: see flags.\n"
-    "This program solves a given Boolean linear problem.";
+    "This program solves a given problem with the CP-SAT solver.";
 
 int main(int argc, char** argv) {
-  // By default, we want to show how the solver progress. Note that this needs
-  // to be set before InitGoogle() which has the nice side-effect of allowing
-  // the user to override it.
-  InitGoogle(kUsage, &argc, &argv, /*remove_flags=*/true);
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::InitializeLog();
+  absl::SetProgramUsageMessage(kUsage);
+  absl::ParseCommandLine(argc, argv);
   return operations_research::sat::Run();
 }

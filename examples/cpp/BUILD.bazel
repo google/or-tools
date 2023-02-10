@@ -463,38 +463,6 @@ cc_binary(
     ],
 )
 
-cc_binary(
-    name = "sat_runner",
-    srcs = [
-        "opb_reader.h",
-        "sat_cnf_reader.h",
-        "sat_runner.cc",
-    ],
-    deps = [
-        "//ortools/algorithms:sparse_permutation",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:threadpool",
-        "//ortools/lp_data:mps_reader",
-        "//ortools/lp_data:proto_utils",
-        "//ortools/sat:boolean_problem",
-        "//ortools/sat:boolean_problem_cc_proto",
-        "//ortools/sat:cp_model_cc_proto",
-        "//ortools/sat:cp_model_solver",
-        "//ortools/sat:drat_proof_handler",
-        "//ortools/sat:lp_utils",
-        "//ortools/sat:optimization",
-        "//ortools/sat:sat_solver",
-        "//ortools/sat:simplification",
-        "//ortools/sat:symmetry",
-        "//ortools/util:filelineiter",
-        "//ortools/util:sigint",
-        "//ortools/util:time_limit",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
 
 cc_binary(
     name = "shift_minimization_sat",
