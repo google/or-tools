@@ -230,8 +230,8 @@ QuadraticProgramBoundNorms BoundNormsFromProblemStats(
 
 double EpsilonRatio(const double epsilon_absolute,
                     const double epsilon_relative) {
-  // Handling epsilon_absolute == epsilon_relative avoids NANs when both values
-  // are zero or infinite.
+  // Handling `epsilon_absolute == epsilon_relative` explicitly avoids NANs when
+  // both values are zero or infinite.
   return (epsilon_absolute == epsilon_relative)
              ? 1.0
              : epsilon_absolute / epsilon_relative;

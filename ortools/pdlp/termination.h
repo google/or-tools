@@ -36,12 +36,12 @@ struct QuadraticProgramBoundNorms {
   double l_inf_norm_constraint_bounds;
 };
 
-// Computes the effective optimality criteria for a TerminationCriteria.
+// Computes the effective optimality criteria for a `TerminationCriteria`.
 TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
     const TerminationCriteria& termination_criteria);
 
-// Like previous overload but takes a SimpleOptimalityCriteria. Useful in
-// unit tests where no TerminationCriteria is naturally available.
+// Like the previous overload but takes a `SimpleOptimalityCriteria`. Useful in
+// unit tests where no `TerminationCriteria` is naturally available.
 TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
     const TerminationCriteria::SimpleOptimalityCriteria& simple_criteria);
 
@@ -51,25 +51,25 @@ TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
 // `kkt_matrix_pass_limit`, and `interrupt_solve`. The corresponding fields of
 // `stats` (`cumulative_time_sec`, `iteration_number`,
 // `cumulative_kkt_matrix_passes`) are the only ones accessed. If returning a
-// termination reason, the PointType will be set to POINT_TYPE_NONE.
+// termination reason, the `PointType` will be set to `POINT_TYPE_NONE`.
 std::optional<TerminationReasonAndPointType> CheckSimpleTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
     const std::atomic<bool>* interrupt_solve = nullptr);
 
 // Checks if any iterate-based termination criteria (i.e., the criteria not
-// checked by CheckSimpleTerimationCriteria()) are satisfied by the solution
-// state described by the IterationStats instance stats (see definitions of
-// termination criteria in solvers.proto). bound_norms provides the instance-
-// dependent data required for the relative convergence criteria. Returns a
-// termination reason and a point type if so (if multiple are satisfied, the
-// optimality and infeasibility conditions are checked first). If
-// force_numerical_termination is true, returns NUMERICAL_ERROR if no other
-// criteria are satisfied. The return value is empty in any other case. If the
-// output is not empty, the PointType indicates which entry prompted
-// termination. If no entry prompted termination, e.g. NUMERICAL_ERROR is
-// returned, then the PointType is set to POINT_TYPE_NONE. NOTE: This function
-// assumes that the solution used to compute the stats satisfies the primal and
-// dual variable bounds; see
+// checked by `CheckSimpleTerimationCriteria()`) are satisfied by the solution
+// state described by `stats` (see definitions of termination criteria in
+// solvers.proto). `bound_norms` provides the instance-dependent data required
+// for the relative convergence criteria. Returns a termination reason and a
+// point type if so (if multiple criteria are satisfied, the optimality and
+// infeasibility conditions are checked first). If `force_numerical_termination`
+// is true, returns `TERMINATION_REASON_NUMERICAL_ERROR` if no other criteria
+// are satisfied. The return value is empty in any other case. If the output is
+// not empty, the `PointType` indicates which entry prompted termination. If no
+// entry prompted termination, e.g. `TERMINATION_REASON_NUMERICAL_ERROR` is
+// returned, then the `PointType` is set to `POINT_TYPE_NONE`. NOTE: This
+// function assumes that the solution used to compute the stats satisfies the
+// primal and dual variable bounds; see
 // https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds.
 std::optional<TerminationReasonAndPointType> CheckIterateTerminationCriteria(
     const TerminationCriteria& criteria, const IterationStats& stats,
@@ -77,32 +77,32 @@ std::optional<TerminationReasonAndPointType> CheckIterateTerminationCriteria(
     bool force_numerical_termination = false);
 
 // Extracts the norms needed for the termination criteria from the full problem
-// statistics.
+// `stats`.
 QuadraticProgramBoundNorms BoundNormsFromProblemStats(
     const QuadraticProgramStats& stats);
 
-// Returns epsilon_absolute / epsilon_relative, returning 1.0 if
-// epsilon_absolute and epsilon_relative are equal (even if they are both 0.0 or
-// infinity, which would normally yield NAN).
+// Returns `epsilon_absolute / epsilon_relative`, returning 1.0 if
+// `epsilon_absolute` and `epsilon_relative` are equal (even if they are both
+// 0.0 or infinity, which would normally yield NAN).
 double EpsilonRatio(double epsilon_absolute, double epsilon_relative);
 
 // Metrics for tracking progress when relative convergence criteria are used.
-// These depend on the ConvergenceInformation, the problem data, and the
+// These depend on the `ConvergenceInformation`, the problem data, and the
 // convergence tolerances.
 struct RelativeConvergenceInformation {
   // Relative versions of the residuals, defined as
   //   relative_residual = residual / (eps_ratio + norm),
   // where
-  //   eps_ratio = eps_optimal_absolute / eps_optimal_relative
+  //   eps_ratio = `eps_optimal_absolute / eps_optimal_relative`
   //   residual = one of the residuals (l{2,_inf}_{primal,dual}_residual)
   //   norm = the relative norm (l{2,_inf} norm of
   //          {constraint_bounds,primal_linear_objective} respectively).
-  // If eps_optimal_relative == eps_optimal_absolute, eps_ratio will be 1.0
-  // (even if eps_optimal_relative == 0.0 or inf). Otherwise, if
-  // eps_optimal_relative = 0.0, these will all be 0.0.
+  // If `eps_optimal_relative == eps_optimal_absolute`, eps_ratio will be 1.0
+  // (even if `eps_optimal_relative` == 0.0 or inf). Otherwise, if
+  // `eps_optimal_relative == 0.0`, these will all be 0.0.
   //
-  // If eps_optimal_relative > 0.0, the absolute and relative termination
-  // criteria translate to relative_residual <= eps_optimal_relative.
+  // If `eps_optimal_relative > 0.0`, the absolute and relative termination
+  // criteria translate to relative_residual <= `eps_optimal_relative`.
   double relative_l_inf_primal_residual = 0;
   double relative_l2_primal_residual = 0;
   double relative_l_inf_dual_residual = 0;
@@ -126,7 +126,7 @@ bool ObjectiveGapMet(
 // Determines if the optimality criteria are met.
 bool OptimalityCriteriaMet(
     const TerminationCriteria::DetailedOptimalityCriteria& optimality_criteria,
-    const ConvergenceInformation& stats, const OptimalityNorm optimality_norm,
+    const ConvergenceInformation& stats, OptimalityNorm optimality_norm,
     const QuadraticProgramBoundNorms& bound_norms);
 
 }  // namespace operations_research::pdlp

@@ -29,7 +29,7 @@
 
 namespace operations_research::pdlp {
 
-// A small LP with all 4 patterns of which lower and upper bounds on the
+// Returns a small LP with all 4 patterns of which lower and upper bounds on the
 // constraints are finite and similarly for the variables.
 // min 5.5 x_0 - 2 x_1 - x_2 +   x_3 - 14 s.t.
 //     2 x_0 +     x_1 +   x_2 + 2 x_3  = 12
@@ -50,8 +50,7 @@ QuadraticProgram TestLp();
 // Verifies that the given QuadraticProgram equals TestLp().
 void VerifyTestLp(const QuadraticProgram& qp, bool maximize = false);
 
-// Returns a small test LP.
-// The LP:
+// Returns a "tiny" test LP.
 //   min 5 x_1 + 2 x_2 + x_3 +   x_4 - 14 s.t.
 //   2 x_1 +   x_2 + x_3 + 2 x_4  = 12
 //     x_1 +         x_3         >=  7
@@ -93,7 +92,7 @@ QuadraticProgram CorrelationClusteringLp();
 //
 // The variables are x_12, x_13, x_14, x_23, x_24, and x_34.
 // This time the graph is a star centered at vertex 1.
-// Only the three triangle inequalities that are needed are included."""
+// Only the three triangle inequalities that are needed are included.
 // Optimal solutions:
 // Primal: [0.5, 0.5, 0.5, 0.0, 0.0, 0.0]
 // Dual: [0.5, 0.5, 0.5]
@@ -112,6 +111,9 @@ QuadraticProgram CorrelationClusteringStarLp();
 //   Reduced costs: [4.0, 0.0]
 //   Value: 2 - 1 + 5 = 6
 QuadraticProgram TestDiagonalQp1();
+
+// Verifies that the given QuadraticProgram equals TestDiagonalQp1().
+void VerifyTestDiagonalQp1(const QuadraticProgram& qp, bool maximize = false);
 
 // Returns a small diagonal QP.
 //   min 0.5 x_0^2 + 0.5 x_1^2 - 3 x_0 - x_1 s.t.
@@ -179,7 +181,7 @@ QuadraticProgram SmallDualInfeasibleLp();
 // negated.
 QuadraticProgram SmallPrimalDualInfeasibleLp();
 
-// This is a small lp for which optimality conditions are met by x=(0, 0), y=(0,
+// Returns a small lp for which optimality conditions are met by x=(0, 0), y=(0,
 // 0) if one doesn't check that x satisfies the variable bounds. Analogously,
 // the assignment x=(1, 0), y = -(1, 1) also satisfies the optimality conditions
 // if one doesn't check dual variable bounds.
@@ -190,7 +192,7 @@ QuadraticProgram SmallPrimalDualInfeasibleLp();
 //    0.5 <= x_1 <= 2.0
 QuadraticProgram SmallInitializationLp();
 
-// This is a small LP with 2 variables and zero constraints (excluding variable
+// Returns a small LP with 2 variables and zero constraints (excluding variable
 // bounds), resulting in an empty constraint matrix (zero rows) and empty lower
 // and upper constraint bounds.
 //   min   4 x_0 s.t.
@@ -198,12 +200,9 @@ QuadraticProgram SmallInitializationLp();
 //         x_1 <= 0
 QuadraticProgram LpWithoutConstraints();
 
-// Verifies that the given QuadraticProgram equals TestDiagonalQp1().
-void VerifyTestDiagonalQp1(const QuadraticProgram& qp, bool maximize = false);
-
 // Converts a sparse matrix into a dense matrix in the format suitable for
-// the matcher EigenArrayEq. Example usage:
-//   EXPECT_THAT(ToDense(sparse_mat), EigenArrayEq<double>({{1, 1}}));
+// the matcher `EigenArrayEq`. Example usage:
+//   `EXPECT_THAT(ToDense(sparse_mat), EigenArrayEq<double>({{1, 1}}));`
 ::Eigen::ArrayXXd ToDense(
     const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& sparse_mat);
 
@@ -220,10 +219,10 @@ MATCHER(TupleFloatEq, "is almost equal to") {
   return matcher.Matches(std::get<0>(arg));
 }
 
-// Convert nested Span to a 2D Eigen Array. Spans are implicitly
-// constructable from initializer_lists and vectors, so this conversion is used
-// in EigenArrayNear and EigenArrayEq to support syntaxes like
-// EXPECT_THAT(array2d, EigenArrayNear<int>({{1, 2}, {3, 4}}, tolerance);
+// Convert a nested `absl::Span` to a 2D `Eigen::Array`. Spans are implicitly
+// constructable from initializer lists and vectors, so this conversion is used
+// in `EigenArrayNear` and `EigenArrayEq` to support syntax like
+// `EXPECT_THAT(array2d, EigenArrayNear<int>({{1, 2}, {3, 4}}, tolerance);`
 // This conversion creates a copy of the slice data, so it is safe to use the
 // result even after the original slices vanish.
 template <typename T>
@@ -241,21 +240,6 @@ Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic> EigenArray2DFromNestedSpans(
   return result;
 }
 
-// Get a matcher's description as a string. To produce the description for
-// EigenEach(inner_matcher), this function is called to get the description of
-// inner_matcher.
-template <typename LhsType>
-std::string GetMatcherDescriptionAsString(
-    const testing::Matcher<LhsType>& matcher, bool negation) {
-  std::stringstream ss;
-  if (negation) {
-    matcher.DescribeNegationTo(&ss);
-  } else {
-    matcher.DescribeTo(&ss);
-  }
-  return ss.str();
-}
-
 }  // namespace internal
 
 // Defines a gMock matcher that tests whether two numeric arrays are
@@ -263,16 +247,16 @@ std::string GetMatcherDescriptionAsString(
 // value type may be float, double, or integral types.
 //
 // Example:
-// vector<double> output = ComputeVector();
-// vector<double> expected({-1.5333, sqrt(2), M_PI});
-// EXPECT_THAT(output, FloatArrayNear(expected, 1.0e-3));
+// `vector<double> output = ComputeVector();`
+// `vector<double> expected({-1.5333, sqrt(2), M_PI});`
+// `EXPECT_THAT(output, FloatArrayNear(expected, 1.0e-3));`
 template <typename ContainerType>
 decltype(testing::Pointwise(internal::TupleIsNear(0.0), ContainerType()))
 FloatArrayNear(const ContainerType& container, double tolerance) {
   return testing::Pointwise(internal::TupleIsNear(tolerance), container);
 }
 
-// Defines a gMock matcher acting as an elementwise version of FloatEq() for
+// Defines a gMock matcher acting as an elementwise version of `FloatEq()` for
 // arrays of real floating point types. It tests whether two arrays are
 // pointwise equal within 4 units in the last place (ULP) in float precision
 // [http://en.wikipedia.org/wiki/Unit_in_the_last_place]. Roughly, 4 ULPs is
@@ -281,16 +265,16 @@ FloatArrayNear(const ContainerType& container, double tolerance) {
 // of the same sign, and NaNs don't match anything.
 //
 // Example:
-// vector<float> output = ComputeVector();
-// vector<float> expected({-1.5333, sqrt(2), M_PI});
-// EXPECT_THAT(output, FloatArrayEq(expected));
+// `vector<float> output = ComputeVector();`
+// `vector<float> expected({-1.5333, sqrt(2), M_PI});`
+// `EXPECT_THAT(output, FloatArrayEq(expected));`
 template <typename ContainerType>
 decltype(testing::Pointwise(internal::TupleFloatEq(), ContainerType()))
 FloatArrayEq(const ContainerType& container) {
   return testing::Pointwise(internal::TupleFloatEq(), container);
 }
 
-// Call .eval() on input and convert it to a column major representation.
+// Call `.eval()` on input and convert it to a column major representation.
 template <typename EigenType>
 Eigen::Array<typename EigenType::Scalar, Eigen::Dynamic, Eigen::Dynamic,
              Eigen::ColMajor>
@@ -298,7 +282,7 @@ EvalAsColMajorEigenArray(const EigenType& input) {
   return input.eval();
 }
 
-// Wrap a column major Eigen Array as a Span.
+// Wrap a column major `Eigen::Array` as an `absl::Span`.
 template <typename Scalar>
 absl::Span<const Scalar> EigenArrayAsSpan(
     const Eigen::Array<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>&
@@ -308,12 +292,12 @@ absl::Span<const Scalar> EigenArrayAsSpan(
 
 // Gmock matcher to test whether all elements in an array match expected_array
 // within the specified tolerance, and print a detailed error message pointing
-// to the first mismatched element if they do not.  Essentially an elementwise
-// version of testing::DoubleNear for Eigen arrays.
+// to the first mismatched element if they do not. Essentially an elementwise
+// version of `testing::DoubleNear` for Eigen arrays.
 //
 // Example:
-// Eigen::ArrayXf expected = ...
-// EXPECT_THAT(actual_arrayxf, EigenArrayNear(expected, 1.0e-5));
+// `Eigen::ArrayXf expected = ...`
+// `EXPECT_THAT(actual_arrayxf, EigenArrayNear(expected, 1.0e-5));`
 MATCHER_P2(EigenArrayNear, expected_array, tolerance,
            "array is near " + testing::PrintToString(expected_array) +
                " within tolerance " + testing::PrintToString(tolerance)) {
@@ -324,9 +308,10 @@ MATCHER_P2(EigenArrayNear, expected_array, tolerance,
                      << arg.rows() << ", " << arg.cols() << ")";
     return false;
   }
-  // Call .eval() to allow callers to pass in Eigen expressions and possibly
-  // noncontiguous objects, e.g. Eigen::ArrayXf::Zero(10) or Map with a stride.
-  // Arrays are represented in column major order for consistent comparison.
+  // Call `.eval()` to allow callers to pass in Eigen expressions and possibly
+  // noncontiguous objects, e.g. `Eigen::ArrayXf::Zero(10)` or `Map` with a
+  // stride. Arrays are represented in column major order for consistent
+  // comparison.
   auto realized_expected_array = EvalAsColMajorEigenArray(expected_array);
   auto realized_actual_array = EvalAsColMajorEigenArray(arg);
   return ExplainMatchResult(
@@ -336,11 +321,11 @@ MATCHER_P2(EigenArrayNear, expected_array, tolerance,
 
 // Gmock matcher to test whether all elements in an array match expected_array
 // within 4 units of least precision (ULP) in float precision. Essentially an
-// elementwise version of testing::FloatEq for Eigen arrays.
+// elementwise version of `testing::FloatEq` for Eigen arrays.
 //
 // Example:
-// Eigen::ArrayXf expected = ...
-// EXPECT_THAT(actual_arrayxf, EigenArrayEq(expected));
+// `Eigen::ArrayXf expected = ...`
+// `EXPECT_THAT(actual_arrayxf, EigenArrayEq(expected));`
 MATCHER_P(EigenArrayEq, expected_array,
           "array is almost equal to " +
               testing::PrintToString(expected_array)) {
@@ -351,9 +336,10 @@ MATCHER_P(EigenArrayEq, expected_array,
                      << arg.rows() << ", " << arg.cols() << ")";
     return false;
   }
-  // Call .eval() to allow callers to pass in Eigen expressions and possibly
-  // noncontiguous objects, e.g. Eigen::ArrayXf::Zero(10) or Map with a stride.
-  // Arrays are represented in column major order for consistent comparison.
+  // Call `.eval()` to allow callers to pass in Eigen expressions and possibly
+  // noncontiguous objects, e.g. `Eigen::ArrayXf::Zero(10)` or `Map` with a
+  // stride. Arrays are represented in column major order for consistent
+  // comparison.
   auto realized_expected_array = EvalAsColMajorEigenArray(expected_array);
   auto realized_actual_array = EvalAsColMajorEigenArray(arg);
   return ExplainMatchResult(
@@ -361,14 +347,14 @@ MATCHER_P(EigenArrayEq, expected_array,
       EigenArrayAsSpan(realized_actual_array), result_listener);
 }
 
-// The next few functions are syntactic sugar for EigenArrayNear and
-// EigenArrayEq to allow callers to pass in non-Eigen types that can be
+// The next few functions are syntactic sugar for `EigenArrayNear` and
+// `EigenArrayEq` to allow callers to pass in non-Eigen types that can be
 // statically initialized like (nested in the 2D case) initializer_lists, or
 // vectors, etc. For example this specialization lets one make calls inlining
 // expected_array like:
-//   EXPECT_THAT(array1d, EigenArrayNear<float>({0.1, 0.2}, tolerance));
+//   `EXPECT_THAT(array1d, EigenArrayNear<float>({0.1, 0.2}, tolerance));`
 // or in the 2D case:
-//   EXPECT_THAT(array2d, EigenArrayNear<int>({{1, 2}, {3, 4}}, tolerance);
+//   `EXPECT_THAT(array2d, EigenArrayNear<int>({{1, 2}, {3, 4}}, tolerance);`
 
 template <typename T>
 EigenArrayNearMatcherP2<Eigen::Array<T, Eigen::Dynamic, 1>, double>
@@ -403,7 +389,7 @@ EigenArrayEq(absl::Span<const absl::Span<const T>> rows) {
 }  // namespace operations_research::pdlp
 
 namespace Eigen {
-// Pretty prints an Eigen::Array on a gunit test failures.  See
+// Pretty prints an `Eigen::Array` on a gunit test failures. See
 // https://google.github.io/googletest/advanced.html#teaching-googletest-how-to-print-your-values
 template <typename Scalar, int Rows, int Cols, int Options, int MaxRows,
           int MaxCols>

@@ -60,7 +60,7 @@ QuadraticProgram ReadQuadraticProgramOrDie(const std::string& filename,
     return ReadMPModelProtoFileOrDie(filename, include_names);
   }
   LOG(QFATAL) << "Invalid filename suffix in " << filename
-              << ".  Valid suffixes are .mps, .mps.gz, .pb, .textproto,"
+              << ". Valid suffixes are .mps, .mps.gz, .pb, .textproto,"
               << ".json, and .json.gz";
 }
 
@@ -69,7 +69,7 @@ QuadraticProgram ReadMpsLinearProgramOrDie(const std::string& lp_file,
   absl::StatusOr<MPModelProto> lp_proto =
       operations_research::glop::MpsFileToMPModelProto(lp_file);
   QCHECK_OK(lp_proto);
-  // MpsFileToMPModelProto sometimes fails silently if the file isn't read
+  // `MpsFileToMPModelProto` sometimes fails silently if the file isn't read
   // properly.
   QCHECK_GT(lp_proto->variable_size(), 0)
       << "No variables in LP. Error reading file? " << lp_file;

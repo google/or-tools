@@ -54,7 +54,7 @@ ShardedWeightedAverage::ShardedWeightedAverage(const Sharder* sharder)
 void ShardedWeightedAverage::Add(const VectorXd& datapoint, double weight) {
   CHECK_GE(weight, 0.0);
   CHECK_EQ(datapoint.size(), average_.size());
-  // This `if` protects against NaN if sum_weights_ also == 0.0.
+  // This `if` protects against NaN if `sum_weights_` also == 0.0.
   if (weight > 0.0) {
     const double weight_ratio = weight / (sum_weights_ + weight);
     sharder_->ParallelForEachShard([&](const Sharder::Shard& shard) {
@@ -111,10 +111,10 @@ struct InfNormInfo {
   VectorInfo col_norms;
 };
 
-// VectorInfoAccumulator accumulates values for a VectorInfo.
-// NOTE: In VectorInfo, the max and min of an empty set is 0.0 by convention.
-// In VectorInfoAccumulator, it is -kInfinity and kInfinity to simplify adding
-// additional values.
+// `VectorInfoAccumulator` accumulates values for a `VectorInfo`.
+// NOTE: In `VectorInfo`, the max and min of an empty set is 0.0 by convention.
+// In `VectorInfoAccumulator`, it is -`kInfinity` and `kInfinity` to simplify
+// adding additional values.
 class VectorInfoAccumulator {
  public:
   VectorInfoAccumulator() {}
@@ -186,9 +186,9 @@ VectorInfo CombineAccumulators(
   return VectorInfo(result);
 }
 
-// TODO(b/223148482): Switch `vec` to const Eigen::Ref<const VectorXd> if/when
-// Sharder supports Eigen::Ref, to avoid a copy when called on
-// qp.Qp().objective_matrix->diagonal().
+// TODO(b/223148482): Switch `vec` to `const Eigen::Ref<const VectorXd>` if/when
+// `Sharder` supports `Eigen::Ref`, to avoid a copy when called on
+// `qp.Qp().objective_matrix->diagonal()`.
 VectorInfo ComputeVectorInfo(const VectorXd& vec, const Sharder& sharder) {
   std::vector<VectorInfoAccumulator> local_accumulator(sharder.NumShards());
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
@@ -275,7 +275,7 @@ QuadraticProgramStats ComputeStats(
     const ShardedQuadraticProgram& qp,
     const double infinite_constraint_bound_threshold) {
   // Caution: if the constraint matrix is empty, elementwise operations
-  // (like .coeffs().maxCoeff() or .minCoeff()) will fail.
+  // (like `.coeffs().maxCoeff()` or `.minCoeff()`) will fail.
   InfNormInfo cons_matrix_norm_info = ConstraintMatrixRowColInfo(
       qp.Qp().constraint_matrix, qp.TransposedConstraintMatrix(),
       qp.ConstraintMatrixSharder(), qp.TransposedConstraintMatrixSharder(),
@@ -341,11 +341,11 @@ namespace {
 
 enum class ScalingNorm { kL2, kLInf };
 
-// Divides the vector (componentwise) by the square root of the divisor,
-// updating the vector in-place. If a component of the divisor is equal to zero,
-// leaves the component of the vector unchanged. The Sharder should have the
-// same size as the vector. For best performance the Sharder should have been
-// created with the Sharder(int64_t, int, ThreadPool*) constructor.
+// Divides `vector` (componentwise) by the square root of `divisor`, updating
+// `vector` in-place. If a component of `divisor` is equal to zero, leaves the
+// component of `vector` unchanged. `sharder` should have the same size as
+// `vector`. For best performance `sharder` should have been created with the
+// `Sharder(int64_t, int, ThreadPool*)` constructor.
 void DivideBySquareRootOfDivisor(const VectorXd& divisor,
                                  const Sharder& sharder, VectorXd& vector) {
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
@@ -452,9 +452,9 @@ LagrangianPart ComputePrimalGradient(const ShardedQuadraticProgram& sharded_qp,
           value_parts[shard.Index()] =
               shard(primal_solution).dot(shard(result.gradient));
         } else {
-          // Note: using auto instead of VectorXd for the type of
-          // objective_product causes eigen to defer the matrix product until it
-          // is used (twice).
+          // Note: using `auto` instead of `VectorXd` for the type of
+          // `objective_product` causes eigen to defer the matrix product until
+          // it is used (twice).
           const VectorXd objective_product =
               shard(*qp.objective_matrix) * shard(primal_solution);
           shard(result.gradient) = shard(qp.objective_vector) +
@@ -526,8 +526,8 @@ namespace {
 using ::Eigen::ColMajor;
 using ::Eigen::SparseMatrix;
 
-// Scales a vector (in-place) to have norm 1, unless it has norm 0 (in which
-// case it is left unscaled). Returns the norm of the input vector.
+// Scales `vector` (in-place) to have norm 1, unless it has norm 0 (in which
+// case it is left unscaled). Returns the original norm of `vector`.
 double NormalizeVector(const Sharder& sharder, VectorXd& vector) {
   const double norm = Norm(vector, sharder);
   if (norm != 0.0) {
@@ -538,13 +538,13 @@ double NormalizeVector(const Sharder& sharder, VectorXd& vector) {
 }
 
 // Estimates the probability that the power method, after k iterations, has
-// relative error > epsilon.  This is based on Theorem 4.1(a) (on page 13) from
+// relative error > `epsilon`. This is based on Theorem 4.1(a) (on page 13) from
 // "Estimating the Largest Eigenvalue by the Power and Lanczos Algorithms with a
 // Random Start"
 // https://pdfs.semanticscholar.org/2b2e/a941e55e5fa2ee9d8f4ff393c14482051143.pdf
 double PowerMethodFailureProbability(int64_t dimension, double epsilon, int k) {
   if (k < 2 || epsilon <= 0.0) {
-    // The theorem requires epsilon > 0 and k >= 2.
+    // The theorem requires `epsilon > 0` and `k >= 2`.
     return 1.0;
   }
   return std::min(0.824, 0.354 / std::sqrt(epsilon * (k - 1))) *
@@ -562,7 +562,7 @@ SingularValueAndIterations EstimateMaximumSingularValue(
     std::mt19937& mt_generator) {
   const int64_t dimension = matrix.cols();
   VectorXd eigenvector(dimension);
-  // Even though it will be slower, we initialize eigenvector sequentially so
+  // Even though it will be slower, we initialize `eigenvector` sequentially so
   // that the result doesn't depend on the number of threads.
   for (double& entry : eigenvector) {
     entry = absl::Gaussian<double>(mt_generator);
@@ -576,8 +576,8 @@ SingularValueAndIterations EstimateMaximumSingularValue(
 
   int num_iterations = 0;
   // The maximum singular value of A is the square root of the maximum
-  // eigenvalue of A^T A.  epsilon is the relative error needed for the maximum
-  // eigenvalue of A^T A that gives desired_relative_error for the maximum
+  // eigenvalue of A^T A. `epsilon` is the relative error needed for the maximum
+  // eigenvalue of A^T A that gives `desired_relative_error` for the maximum
   // singular value of A.
   const double epsilon = 1.0 - MathUtil::Square(1.0 - desired_relative_error);
   while (PowerMethodFailureProbability(dimension, epsilon, num_iterations) >
@@ -610,7 +610,7 @@ SingularValueAndIterations EstimateMaximumSingularValue(
       .estimated_relative_error = desired_relative_error};
 }
 
-// Given a primal solution, compute a {0, 1}-valued vector that is nonzero in
+// Given `primal_solution`, compute a {0, 1}-valued vector that is nonzero in
 // all the coordinates that are not saturating the primal variable bounds.
 VectorXd ComputePrimalActiveSetIndicator(
     const ShardedQuadraticProgram& sharded_qp,
@@ -638,8 +638,8 @@ VectorXd ComputePrimalActiveSetIndicator(
   return indicator;
 }
 
-// Like ComputePrimalActiveSetIndicator(sharded_qp, primal_solution), but this
-// time using the implicit bounds on the dual variable.
+// Like `ComputePrimalActiveSetIndicator(sharded_qp, primal_solution)`, but this
+// time using the implicit bounds on the dual variables.
 VectorXd ComputeDualActiveSetIndicator(
     const ShardedQuadraticProgram& sharded_qp, const VectorXd& dual_solution) {
   VectorXd indicator(sharded_qp.DualSize());

@@ -290,7 +290,7 @@ TEST(QpFromMpModelProto, ErrorsOnOffDiagonalTerms) {
 }
 
 TEST(CanFitInMpModelProto, SmallQpOk) {
-  // QpFromMpModelProtoTest verifies that qp is as expected.
+  // `QpFromMpModelProtoTest` verifies that `qp` is as expected.
   const auto qp = QpFromMpModelProto(TestQpProto(/*maximize=*/false),
                                      /*relax_integer_variables=*/false);
   ASSERT_TRUE(qp.ok()) << qp.status();

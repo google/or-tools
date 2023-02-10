@@ -45,30 +45,30 @@ class Sharder {
                      /*InnerPanel=*/true>;
 
   // This class extracts a particular shard of vectors or matrices passed to it.
-  // See ParallelForEachShard().
-  // Caution: Like absl::Span, Shard::operator() returns mutable or immutable
-  // views into the vector or matrix argument. The underlying object must
-  // outlive the view.
+  // See `ParallelForEachShard()`.
+  // Caution: Like `absl::Span`, `Shard::operator()` returns mutable or
+  // immutable views into the vector or matrix argument. The underlying object
+  // must outlive the view.
   // Extra Caution: The const& arguments for the immutable views can bind to
   // temporary objects, e.g., shard(3*a) will create a view into the "3*a"
   // object that will be destroyed immediately after the shard is created.
   class Shard {
    public:
-    // Returns this shard of the given vector.
+    // Returns this shard of `vector`.
     Eigen::VectorBlock<const Eigen::VectorXd> operator()(
         const Eigen::VectorXd& vector) const {
       CHECK_EQ(vector.size(), parent_.NumElements());
       return vector.segment(parent_.ShardStart(shard_num_),
                             parent_.ShardSize(shard_num_));
     }
-    // Returns this shard of the given vector in mutable form.
+    // Returns this shard of `vector` in mutable form.
     Eigen::VectorBlock<Eigen::VectorXd> operator()(
         Eigen::VectorXd& vector) const {
       CHECK_EQ(vector.size(), parent_.NumElements());
       return vector.segment(parent_.ShardStart(shard_num_),
                             parent_.ShardSize(shard_num_));
     }
-    // Returns this shard of the given VectorBlock.
+    // Returns this shard of `vector`.
     Eigen::VectorBlock<const Eigen::VectorXd> operator()(
         Eigen::VectorBlock<const Eigen::VectorXd> vector) const {
       CHECK_EQ(vector.size(), parent_.NumElements());
@@ -77,7 +77,7 @@ class Sharder {
           vector.startRow() + parent_.ShardStart(shard_num_),
           parent_.ShardSize(shard_num_));
     }
-    // Returns this shard of the given VectorBlock in mutable form.
+    // Returns this shard of `vector` in mutable form.
     Eigen::VectorBlock<Eigen::VectorXd> operator()(
         Eigen::VectorBlock<Eigen::VectorXd> vector) const {
       CHECK_EQ(vector.size(), parent_.NumElements());
@@ -86,8 +86,8 @@ class Sharder {
           vector.startRow() + parent_.ShardStart(shard_num_),
           parent_.ShardSize(shard_num_));
     }
-    // Returns this shard of the given DiagonalMatrix. Note that the shard is
-    // a *square* diagonal matrix, not a block of columns of original length.
+    // Returns this shard of `diag`. Note that the shard is a *square* diagonal
+    // matrix, not a block of columns of original length.
     auto operator()(const Eigen::DiagonalMatrix<double, Eigen::Dynamic>& diag)
         const -> decltype(diag.diagonal().segment(0, 0).asDiagonal()) {
       CHECK_EQ(diag.diagonal().size(), parent_.NumElements());
@@ -96,7 +96,7 @@ class Sharder {
                    parent_.ShardSize(shard_num_))
           .asDiagonal();
     }
-    // Returns this shard of the columns of the given matrix.
+    // Returns this shard of the columns of `matrix`.
     ConstSparseColumnBlock operator()(
         const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix)
         const {
@@ -104,26 +104,26 @@ class Sharder {
       auto result = matrix.middleCols(parent_.ShardStart(shard_num_),
                                       parent_.ShardSize(shard_num_));
       // This is a guard against implicit conversions, because the return type
-      // of middleCols is not 100% clear from the documentation.
+      // of `middleCols` is not 100% clear from the documentation.
       static_assert(
           std::is_same<decltype(result), ConstSparseColumnBlock>::value,
           "The return type of middleCols changed!");
       return result;
     }
-    // Returns this shard of the columns of the given matrix in mutable form.
+    // Returns this shard of the columns of `matrix` in mutable form.
     SparseColumnBlock operator()(
         Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix) const {
       CHECK_EQ(matrix.cols(), parent_.NumElements());
       auto result = matrix.middleCols(parent_.ShardStart(shard_num_),
                                       parent_.ShardSize(shard_num_));
       // This is a guard against implicit conversions, because the return type
-      // of middleCols is not 100% clear from the documentation.
+      // of `middleCols` is not 100% clear from the documentation.
       static_assert(std::is_same<decltype(result), SparseColumnBlock>::value,
                     "The return type of middleCols changed!");
       return result;
     }
-    // A non-negative identifier for this shard, less than the parent Sharder's
-    // NumShards().
+    // A non-negative identifier for this shard, less than `NumShards()` of the
+    // parent `Sharder`.
     int Index() const { return shard_num_; }
 
    private:
@@ -138,41 +138,41 @@ class Sharder {
     const Sharder& parent_;
   };
 
-  // Creates a Sharder for problems with `num_elements` elements and mass of
+  // Creates a `Sharder` for problems with `num_elements` elements and mass of
   // each element given by `element_mass`. Each shard will have roughly the same
-  // mass. The number of shards in the resulting Sharder will be approximately
+  // mass. The number of shards in the resulting `Sharder` will be approximately
   // `num_shards` but may differ. The `thread_pool` will be used for parallel
-  // operations executed by e.g. ParallelForEachShard(). The `thread_pool` may
+  // operations executed by e.g. `ParallelForEachShard()`. The `thread_pool` may
   // be nullptr, which means work will be executed in the same thread. If
   // `thread_pool` is not nullptr, the underlying object is not owned and must
-  // outlive the Sharder.
+  // outlive the `Sharder`.
   Sharder(int64_t num_elements, int num_shards, ThreadPool* thread_pool,
           const std::function<int64_t(int64_t)>& element_mass);
 
-  // Creates a Sharder for problems with `num_elements` elements and unit mass.
-  // This constructor exploits having all element mass equal to 1 to take time
-  // proportional to num_shards instead of num_elements.  Also see the comments
-  // above the first constructor.
+  // Creates a `Sharder` for problems with `num_elements` elements and unit
+  // mass. This constructor exploits having all element mass equal to 1 to take
+  // time proportional to `num_shards` instead of `num_elements`. Also see the
+  // comments above the first constructor.
   Sharder(int64_t num_elements, int num_shards, ThreadPool* thread_pool);
 
-  // Creates a Sharder for processing the given matrix. The elements correspond
-  // to columns of the matrix and have mass linear in the number of non-zeros.
-  // Also see the comments above the first constructor.
+  // Creates a `Sharder` for processing `matrix`. The elements correspond to
+  // columns of `matrix` and have mass linear in the number of non-zeros. Also
+  // see the comments above the first constructor.
   Sharder(const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
           int num_shards, ThreadPool* thread_pool)
       : Sharder(matrix.cols(), num_shards, thread_pool, [&matrix](int64_t col) {
           return 1 + 1 * matrix.col(col).nonZeros();
         }) {}
 
-  // Constructs a Sharder with the same thread pool as `other_sharder`, for
+  // Constructs a `Sharder` with the same thread pool as `other_sharder`, for
   // problems with `num_elements` elements and unit mass. The number of shards
   // will be approximately the same as that of `other_sharder`. Also see the
   // comments on the first constructor.
   Sharder(const Sharder& other_sharder, int64_t num_elements);
 
-  // Sharders may be copied or moved.
+  // `Sharder` may be copied or moved.
   // Moved-from objects may be in an invalid state. The only methods that may be
-  // called on a moved-from object are the destructor or operator=.
+  // called on a moved-from object are the destructor or `operator=`.
   Sharder(const Sharder& other) = default;
   Sharder(Sharder&& other) = default;
   Sharder& operator=(const Sharder& other) = default;
@@ -201,15 +201,15 @@ class Sharder {
     return shard_masses_[shard];
   }
 
-  // Runs a functor on each of the shards.
+  // Runs `func` on each of the shards.
   void ParallelForEachShard(
       const std::function<void(const Shard&)>& func) const;
 
-  // Runs a functor on each of the shards and sums the results.
+  // Runs `func` on each of the shards and sums the results.
   double ParallelSumOverShards(
       const std::function<double(const Shard&)>& func) const;
 
-  // Runs a functor on each of the shards. Returns true iff all shards returned
+  // Runs `func` on each of the shards. Returns true iff all shards returned
   // true.
   bool ParallelTrueForAllShards(
       const std::function<bool(const Shard&)>& func) const;
@@ -220,111 +220,110 @@ class Sharder {
   }
 
  private:
-  // Size: NumShards() + 1. The first entry is 0 and the last entry is
-  // NumElements(). The entries are sorted in increasing order and are unique.
+  // Size: `NumShards() + 1`. The first entry is 0 and the last entry is
+  // `NumElements()`. The entries are sorted in increasing order and are unique.
   // Note that {0} is valid and indicates zero elements split into zero shards.
   std::vector<int64_t> shard_starts_;
-  // Size: NumShards(). The mass of each shard.
+  // Size: `NumShards()`. The mass of each shard.
   std::vector<int64_t> shard_masses_;
   // NOT owned. May be nullptr.
   ThreadPool* thread_pool_;
 };
 
-// Like matrix.transpose() * vector but executed in parallel using the given
-// Sharder. The Sharder's size must match the matrix's number of columns. To
-// ensure good parallelization the matrix passed here should have (roughly) the
-// same location of non-zeros as the matrix passed to the Sharder's
-// constructor.
+// Like `matrix.transpose() * vector` but executed in parallel using `sharder`.
+// The size of `sharder` must match the number of columns in `matrix`. To ensure
+// good parallelization `matrix` should have (roughly) the same location of
+// non-zeros as the `matrix` used when constructing `sharder`.
 Eigen::VectorXd TransposedMatrixVectorProduct(
     const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
     const Eigen::VectorXd& vector, const Sharder& sharder);
 
 ////////////////////////////////////////////////////////////////////////////////
-// The following functions use a Sharder to compute a vector operation in
-// parallel. The Sharder should have the same size as the vector(s). For best
-// performance the Sharder should have been created with the Sharder(int64_t,
-// int, ThreadPool*) constructor.
+// The following functions use `sharder` to compute a vector operation in
+// parallel. `sharder` should have the same size as the vector(s). For best
+// performance `sharder` should have been created with the `Sharder(int64_t,
+// int, ThreadPool*)` constructor.
 ////////////////////////////////////////////////////////////////////////////////
 
-// Like dest.setZero(sharder.NumElements()). Note that if dest.size() !=
-// sharder.NumElements(), dest will be resized.
+// Like `dest.setZero(sharder.NumElements())`. Note that if `dest.size() !=
+// sharder.NumElements()`, `dest` will be resized.
 void SetZero(const Sharder& sharder, Eigen::VectorXd& dest);
 
-// Like VectorXd::Zero(sharder.NumElements())
+// Like `VectorXd::Zero(sharder.NumElements())`.
 Eigen::VectorXd ZeroVector(const Sharder& sharder);
 
-// Like VectorXd::Ones(sharder.NumElements())
+// Like `VectorXd::Ones(sharder.NumElements())`.
 Eigen::VectorXd OnesVector(const Sharder& sharder);
 
-// Like dest += scale * increment
+// Like `dest += scale * increment`.
 void AddScaledVector(double scale, const Eigen::VectorXd& increment,
                      const Sharder& sharder, Eigen::VectorXd& dest);
 
-// Like dest = vec. dest is resized if needed.
+// Like `dest = vec`. `dest` is resized if needed.
 void AssignVector(const Eigen::VectorXd& vec, const Sharder& sharder,
                   Eigen::VectorXd& dest);
 
-// Returns a copy of vec.
+// Returns a copy of `vec`.
 Eigen::VectorXd CloneVector(const Eigen::VectorXd& vec, const Sharder& sharder);
 
-// Like dest = dest.cwiseProduct(scale).
+// Like `dest = dest.cwiseProduct(scale)`.
 void CoefficientWiseProductInPlace(const Eigen::VectorXd& scale,
                                    const Sharder& sharder,
                                    Eigen::VectorXd& dest);
 
-// Like dest = dest.cwiseQuotient(scale).
+// Like `dest = dest.cwiseQuotient(scale)`.
 void CoefficientWiseQuotientInPlace(const Eigen::VectorXd& scale,
                                     const Sharder& sharder,
                                     Eigen::VectorXd& dest);
 
-// Like v1.dot(v2)
+// Like `v1.dot(v2)`.
 double Dot(const Eigen::VectorXd& v1, const Eigen::VectorXd& v2,
            const Sharder& sharder);
-// Like vector.lpNorm<Eigen::Infinity>(), a.k.a. LInf norm.
+// Like `vector.lpNorm<Eigen::Infinity>()`, a.k.a. LInf norm.
 double LInfNorm(const Eigen::VectorXd& vector, const Sharder& sharder);
-// Like vector.lpNorm<1>(), a.k.a. L_1 norm.
+// Like `vector.lpNorm<1>()`, a.k.a. L_1 norm.
 double L1Norm(const Eigen::VectorXd& vector, const Sharder& sharder);
-// Like vector.squaredNorm()
+// Like `vector.squaredNorm()`.
 double SquaredNorm(const Eigen::VectorXd& vector, const Sharder& sharder);
-// Like vector.norm()
+// Like `vector.norm()`.
 double Norm(const Eigen::VectorXd& vector, const Sharder& sharder);
 
-// Like (vector1 - vector2).squaredNorm()
+// Like `(vector1 - vector2).squaredNorm()`.
 double SquaredDistance(const Eigen::VectorXd& vector1,
                        const Eigen::VectorXd& vector2, const Sharder& sharder);
-// Like (vector1 - vector2).norm()
+// Like `(vector1 - vector2).norm()`.
 double Distance(const Eigen::VectorXd& vector1, const Eigen::VectorXd& vector2,
                 const Sharder& sharder);
 
-// ScaledL1Norm is omitted because it's not needed (yet).
+// `ScaledL1Norm` is omitted because it's not needed (yet).
 
 // LInf norm of a rescaled vector, i.e.,
-// vector.cwiseProduct(scale).lpNorm<Eigen::Infinity>().
+// `vector.cwiseProduct(scale).lpNorm<Eigen::Infinity>()`.
 double ScaledLInfNorm(const Eigen::VectorXd& vector,
                       const Eigen::VectorXd& scale, const Sharder& sharder);
 // Squared L2 norm of a rescaled vector, i.e.,
-// vector.cwiseProduct(scale).squaredNorm().
+// `vector.cwiseProduct(scale).squaredNorm()`.
 double ScaledSquaredNorm(const Eigen::VectorXd& vector,
                          const Eigen::VectorXd& scale, const Sharder& sharder);
-// L2 norm of a rescaled vector, i.e., vector.cwiseProduct(scale).norm().
+// L2 norm of a rescaled vector, i.e., `vector.cwiseProduct(scale).norm()`.
 double ScaledNorm(const Eigen::VectorXd& vector, const Eigen::VectorXd& scale,
                   const Sharder& sharder);
 
 ////////////////////////////////////////////////////////////////////////////////
-// The functions below compute norms of the columns of a scaled matrix.  The
-// (i,j) entry of the scaled matrix equals matrix[i,j] * row_scaling_vec[i] *
-// col_scaling_vec[j].  To ensure good parallelization the matrix passed here
-// should have (roughly) the same location of non-zeros as the matrix passed to
-// the Sharder's constructor. The Sharder's size must match the matrix's number
-// of columns.
+// The functions below compute norms of the columns of a scaled matrix. The
+// (i,j) entry of the scaled matrix equals `matrix[i,j] * row_scaling_vec[i]
+// * col_scaling_vec[j]`. To ensure good parallelization `matrix` should have
+// (roughly) the same location of non-zeros as the `matrix` used to construct
+// `sharder`. The size of `sharder` must match the number of columns in
+// `matrix`.
 ////////////////////////////////////////////////////////////////////////////////
 
-// Computes the LInf norm of each column of a scaled matrix.
+// Computes the LInf norm of each column of a scaled `matrix`.
 Eigen::VectorXd ScaledColLInfNorm(
     const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
     const Eigen::VectorXd& row_scaling_vec,
     const Eigen::VectorXd& col_scaling_vec, const Sharder& sharder);
-// Computes the L2 norm of each column of a scaled matrix.
+// Computes the L2 norm of each column of a scaled `matrix`.
 Eigen::VectorXd ScaledColL2Norm(
     const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
     const Eigen::VectorXd& row_scaling_vec,

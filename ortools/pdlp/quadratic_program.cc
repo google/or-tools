@@ -135,11 +135,11 @@ absl::StatusOr<QuadraticProgram> QpFromMpModelProto(
     }
   }
   // To reduce peak RAM usage we construct the constraint matrix in-place.
-  // According to the documentation of SparseMatrix::insert() it's effecient to
-  // construct a matrix with insert()s as long as reserve() is called first and
-  // the non-zeros are inserted in increasing order of inner index.
+  // According to the documentation of `SparseMatrix::insert()` it's effecient
+  // to construct a matrix with insert()s as long as reserve() is called first
+  // and the non-zeros are inserted in increasing order of inner index.
   // The non-zeros in each input constraint may not be sorted so this is only
-  // efficient with Column major format.
+  // efficient with column major format.
   static_assert(qp.constraint_matrix.IsRowMajor == 0, "See comment.");
   qp.constraint_matrix.reserve(nonzeros_by_column);
   for (int i = 0; i < dual_size; ++i) {
@@ -192,7 +192,7 @@ absl::StatusOr<QuadraticProgram> QpFromMpModelProto(
           "th nonzero has off-diagonal element at (", index1, ", ", index2,
           "). Only diagonal objective matrices are supported."));
     }
-    // Note: QuadraticProgram has an implicit "1/2" in front of the quadratic
+    // Note: `QuadraticProgram` has an implicit "1/2" in front of the quadratic
     // term.
     qp.objective_matrix->diagonal()[index1] = 2 * quadratic.coefficient(i);
   }
@@ -285,15 +285,16 @@ absl::StatusOr<MPModelProto> QpToMpModelProto(const QuadraticProgram& qp) {
     for (InnerIterator iter(qp.constraint_matrix, col); iter; ++iter) {
       auto* con = proto.mutable_constraint(iter.row());
       // To avoid reallocs during the inserts, we could count the nonzeros
-      // and reserve() before filling.
+      // and `reserve()` before filling.
       con->add_var_index(iter.col());
       con->add_coefficient(iter.value());
     }
   }
 
   // Some OR tools decide the objective is quadratic based on
-  // has_quadratic_objective() rather than on quadratic_objective_size()  == 0,
-  // so don't create the quadratic objective for linear programs.
+  // `has_quadratic_objective()` rather than on
+  // `quadratic_objective_size() == 0`, so don't create the quadratic objective
+  // for linear programs.
   if (!IsLinearProgram(qp)) {
     auto* quadratic_objective = proto.mutable_quadratic_objective();
     const auto& diagonal = qp.objective_matrix->diagonal();
@@ -301,7 +302,7 @@ absl::StatusOr<MPModelProto> QpToMpModelProto(const QuadraticProgram& qp) {
       if (diagonal[i] != 0.0) {
         quadratic_objective->add_qvar1_index(i);
         quadratic_objective->add_qvar2_index(i);
-        // Undo the implicit (1/2) term in QuadraticProgram's objective.
+        // Undo the implicit (1/2) term in `QuadraticProgram`'s objective.
         quadratic_objective->add_coefficient(qp.objective_scaling_factor *
                                              diagonal[i] / 2.0);
       }
@@ -322,15 +323,15 @@ void SetEigenMatrixFromTriplets(
             });
 
   // The triplets are allowed to contain duplicate entries (and intentionally
-  // do for the diagonals of the objective matrix).  For efficiency of insert
-  // and reserve, merge the duplicates first.
+  // do for the diagonals of the objective matrix). For efficiency of insert and
+  // reserve, merge the duplicates first.
   internal::CombineRepeatedTripletsInPlace(triplets);
 
   std::vector<int64_t> num_column_entries(matrix.cols());
   for (const Triplet& triplet : triplets) {
     ++num_column_entries[triplet.col()];
   }
-  // NOTE: reserve() takes column counts because matrix is in column major
+  // NOTE: `reserve()` takes column counts because matrix is in column major
   // order.
   matrix.reserve(num_column_entries);
   for (const Triplet& triplet : triplets) {
@@ -357,7 +358,7 @@ void CombineRepeatedTripletsInPlace(
       }
     }
   }
-  // *output_iter is the last output value, so erase everything after that.
+  // `*output_iter` is the last output value, so erase everything after that.
   triplets.erase(output_iter + 1, triplets.end());
 }
 }  // namespace internal

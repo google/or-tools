@@ -26,20 +26,20 @@ namespace operations_research::pdlp {
 
 // Reads a quadratic program, determining the type based on the filename's
 // suffix:
-//   *.mps, *.mps.gz, *.mps.bz2 -> ReadMpsLinearProgramOrDie
-//   *.pb, *.textproto, *.json, *.json.gz -> ReadMPModelProtoFileOrDie
+//   *.mps, *.mps.gz, *.mps.bz2 -> `ReadMpsLinearProgramOrDie`
+//   *.pb, *.textproto, *.json, *.json.gz -> `ReadMPModelProtoFileOrDie`
 // otherwise CHECK-fails.
 QuadraticProgram ReadQuadraticProgramOrDie(const std::string& filename,
                                            bool include_names = false);
 
 QuadraticProgram ReadMpsLinearProgramOrDie(const std::string& lp_file,
                                            bool include_names = false);
-// The input may be MPModelProto in text format, binary format, or JSON,
+// The input may be `MPModelProto` in text format, binary format, or JSON,
 // possibly gzipped.
 QuadraticProgram ReadMPModelProtoFileOrDie(
     const std::string& mpmodel_proto_file, bool include_names = false);
 
-// NOTE: This will fail if 'linear_program' is actually a quadratic program
+// NOTE: This will fail if `linear_program` is actually a quadratic program
 // (that is, has a non-empty quadratic objective term).
 absl::Status WriteLinearProgramToMps(const QuadraticProgram& linear_program,
                                      const std::string& mps_file);

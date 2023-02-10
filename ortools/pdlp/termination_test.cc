@@ -702,8 +702,9 @@ TEST_P(IterateTerminationTest, OptimalEvenWithNumericalError) {
       l_inf_componentwise_dual_residual: 0.0
       candidate_type: POINT_TYPE_CURRENT_ITERATE
     })pb");
-  // Tests that OPTIMAL overrides NUMERICAL_ERROR when
-  // force_numerical_termination == true.
+  // Tests that `TERMINATION_REASON_OPTIMAL` overrides
+  // `TERMINATION_REASON_NUMERICAL_ERROR` when
+  // `force_numerical_termination == true`.
   std::optional<TerminationReasonAndPointType> maybe_result =
       CheckIterateTerminationCriteria(test_criteria_, stats, TestLpBoundNorms(),
                                       /*force_numerical_termination=*/true);
@@ -827,9 +828,9 @@ TEST(IterateTerminationTest, OptimalityNormsDiffer) {
   auto test_criteria = ParseTextOrDie<TerminationCriteria>(R"pb(
     simple_optimality_criteria { eps_optimal_relative: 1.0 })pb");
 
-  // For L2, optimality requires norm(primal_residual, 2) <= 14.49
-  // For L_inf, optimality requires norm(primal_residual, Inf) <= 12.0
-  // For L_inf_componentwise, optimality requires norm(primal_residual) <= 1.0
+  // For L2, optimality requires norm(`primal_residual`, 2) <= 14.49
+  // For L_inf, optimality requires norm(`primal_residual`, Inf) <= 12.0
+  // For L_inf_componentwise, optimality requires norm(`primal_residual`) <= 1.0
 
   struct {
     double primal_residual;

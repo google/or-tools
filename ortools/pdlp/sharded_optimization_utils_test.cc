@@ -131,7 +131,7 @@ TEST(ShardedWeightedAverageTest, AddsZeroWeight) {
   EXPECT_THAT(average.ComputeAverage(), ElementsAre(0.0));
 }
 
-// The combined bounds vector for TestLp() is [12, 7, 4, 1].
+// The combined bounds vector for `TestLp()` is [12, 7, 4, 1].
 // L_inf norm: 12.0
 // L_2 norm: sqrt(210.0) ≈ 14.49
 
@@ -236,7 +236,7 @@ TEST(ProblemStatsTest, TestDiagonalQp1) {
 
 TEST(ProblemStatsTest, ModifiedTestDiagonalQp1) {
   QuadraticProgram orig_qp = TestDiagonalQp1();
-  // A case where objective_matrix_num_nonzeros doesn't match the dimension.
+  // A case where `objective_matrix_num_nonzeros` doesn't match the dimension.
   orig_qp.objective_matrix->diagonal() << 2.0, 0.0;
   ShardedQuadraticProgram qp(orig_qp, 2, 2);
   const QuadraticProgramStats stats = ComputeStats(qp);
@@ -248,9 +248,9 @@ TEST(ProblemStatsTest, ModifiedTestDiagonalQp1) {
   EXPECT_DOUBLE_EQ(stats.objective_matrix_l2_norm(), 2.0);
 }
 
-// This is like SmallLp, except that an infinite_bound_threshold of 10 treats
-// the first bound as infinite, leaving [0, 7, 4, 1] as the combined bounds
-// vector.
+// This is like `SmallLp`, except that an `infinite_bound_threshold` of 10
+// treats the first bound as infinite, leaving [0, 7, 4, 1] as the combined
+// bounds vector.
 TEST(ProblemStatsTest, TestLpWithInfiniteConstraintBoundThreshold) {
   ShardedQuadraticProgram lp(TestLp(), 2, 2);
   const QuadraticProgramStats stats =
@@ -317,8 +317,8 @@ TEST(ProblemStatsTest, LpWithoutConstraints) {
 TEST(ProblemStatsTest, EmptyLp) {
   ShardedQuadraticProgram lp(QuadraticProgram(0, 0), 2, 2);
   const QuadraticProgramStats stats = ComputeStats(lp);
-  // When LP is empty, everything except averages should be 0 and averages
-  // should be NaN
+  // When `lp` is empty, everything except averages should be 0 and averages
+  // should be NaN.
   EXPECT_EQ(stats.num_variables(), 0);
   EXPECT_EQ(stats.num_constraints(), 0);
   EXPECT_DOUBLE_EQ(stats.constraint_matrix_col_min_l_inf_norm(), 0.0);
@@ -348,7 +348,7 @@ TEST(ProblemStatsTest, EmptyLp) {
   EXPECT_DOUBLE_EQ(stats.combined_bounds_l2_norm(), 0.0);
 }
 
-// The test_lp matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
+// The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
 // the scaled matrix is [ 0 1 2 -2; 0 0 4 0; 0 0 0 0; 0 0 9 3],
 // so the row LInf norms are [2 4 0 9] and the column LInf norms are [0 1 9 3].
 // Rescaling divides the scaling vectors by sqrt(norms).
@@ -363,7 +363,7 @@ TEST(LInfRuizRescaling, OneIteration) {
               ElementsAre(0.0, 1.0, 2.0 / 3.0, -1.0 / std::sqrt(3.0)));
 }
 
-// The test_lp matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
+// The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
 // the scaled matrix is [ 0 1 2 -2; 0 0 4 0; 0 0 0 0; 0 0 9 3],
 // so the row L2 norms are [3 4 0 sqrt(90)] and the column L2 norms are [0 1
 // sqrt(101) sqrt(13)]. Rescaling divides the scaling vectors by sqrt(norms).
@@ -379,8 +379,9 @@ TEST(L2RuizRescaling, OneIteration) {
                                            -1.0 / std::pow(13.0, 0.25)));
 }
 
-// The test matrix is [2 3], so the row L2 norms are [sqrt(13)] and the column
-// L2 norms are [2 3]. Rescaling divides the scaling vectors by sqrt(norms).
+// The `test_lp` matrix is [2 3], so the row L2 norms are [sqrt(13)] and the
+// column L2 norms are [2 3]. Rescaling divides the scaling vectors by
+// sqrt(norms).
 TEST(L2RuizRescaling, OneIterationNonSquare) {
   QuadraticProgram test_lp(/*num_variables=*/2, /*num_constraints=*/1);
   std::vector<Eigen::Triplet<double, int64_t>> triplets = {{0, 0, 2.0},
@@ -396,8 +397,8 @@ TEST(L2RuizRescaling, OneIterationNonSquare) {
               ElementsAre(1.0 / std::sqrt(2.0), 1.0 / std::sqrt(3.0)));
 }
 
-// With many iterations of LInfRuizRescaling, the scaled matrix should converge
-// to have col LInf norm 1 and row LInf norm 1.
+// With many iterations of `LInfRuizRescaling`, the scaled matrix should
+// converge to have col LInf norm 1 and row LInf norm 1.
 TEST(LInfRuizRescaling, Convergence) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
   VectorXd row_scaling_vec(4), col_scaling_vec(4);
@@ -416,12 +417,12 @@ TEST(LInfRuizRescaling, Convergence) {
 }
 
 // This applies one round of l_inf and one round of L2 rescaling.
-// The test_lp matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
+// The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
 // so the row LInf norms are [2 1 4 1.5] and column LInf norms are [4 1 1.5 2].
 // l_inf divides by sqrt(norms), giving
 // [0.7071 0.7071 0.5773 1; 0.5 0 0.8165 0; 1 0 0 0; 0 0 1 -0.5773]
 // which has row L2 norms [1.5275 0.957429 1 1.1547] and col L2 norms
-// [1.3229 0.7071 1.4142 1.1547].  The resulting scaling vectors are
+// [1.3229 0.7071 1.4142 1.1547]. The resulting scaling vectors are
 // 1/sqrt((l_inf norms).*(l2 norms)).
 TEST(ApplyRescaling, ApplyRescalingWorksForTestLp) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
@@ -453,10 +454,10 @@ TEST(ComputePrimalGradientTest, CorrectForLp) {
       lp, primal_solution, lp.TransposedConstraintMatrix() * dual_solution);
   // Using notation consistent with
   // https://developers.google.com/optimization/lp/pdlp_math.
-  // c - A'y
+  // c - A^T y
   EXPECT_THAT(primal_part.gradient,
               ElementsAre(5.5 - 2.0, -2.0 + 1.0, -1.0 - 0.5, 1.0 + 3.0));
-  // c'x - y'Ax.
+  // c^T x - y^T Ax.
   EXPECT_DOUBLE_EQ(primal_part.value, 3.0 + 9.0);
 }
 
@@ -476,7 +477,7 @@ TEST(ComputeDualGradientTest, CorrectForLp) {
   // active_constraint_right_hand_side - Ax
   EXPECT_THAT(dual_part.gradient,
               ElementsAre(12.0 - 6.0, 7.0, -4.0, -1.0 + 3.0));
-  // y'active_constraint_right_hand_side
+  // y^T active_constraint_right_hand_side
   EXPECT_DOUBLE_EQ(dual_part.value, 12.0 * -1.0 + -4.0 * 1.0 + -1.0 * 1.0);
 }
 
@@ -503,7 +504,7 @@ TEST(ComputeDualGradientTest, CorrectOnTwoSidedConstraints) {
   // active_constraint_right_hand_side - Ax
   EXPECT_THAT(dual_part.gradient,
               ElementsAre(0.0, 5.0 - 0.0, -1.0 - 0.0, 1.0 + 3.0));
-  // y'active_constraint_right_hand_side
+  // y^T active_constraint_right_hand_side
   EXPECT_DOUBLE_EQ(dual_part.value, 1.0 * -1.0);
 }
 
@@ -536,10 +537,10 @@ TEST(ComputePrimalGradientTest, CorrectForQp) {
 
   // Using notation consistent with
   // https://developers.google.com/optimization/lp/pdlp_math.
-  // c - A'y + Qx
+  // c - A^T y + Qx
   EXPECT_THAT(primal_part.gradient,
               ElementsAre(-1.0 + 2.0 + 4.0, -1.0 + 2.0 + 2.0));
-  // (1/2) x'Qx + c'x - y'Ax.
+  // (1/2) x^T Qx + c^T x - y^T Ax.
   EXPECT_DOUBLE_EQ(primal_part.value, 4.0 - 3.0 + 2.0 * 3.0);
 }
 
@@ -558,14 +559,14 @@ TEST(ComputeDualGradientTest, CorrectForQp) {
   // https://developers.google.com/optimization/lp/pdlp_math.
   // active_constraint_right_hand_side - Ax
   EXPECT_THAT(dual_part.gradient, ElementsAre(1.0 - (1.0 + 2.0)));
-  // y'active_constraint_right_hand_side
+  // y^T active_constraint_right_hand_side
   EXPECT_DOUBLE_EQ(dual_part.value, -2.0);
 }
 
 TEST(EstimateSingularValuesTest, CorrectForTestLp) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  // The test_lp matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1].
+  // The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1].
   std::mt19937 random(1);
   auto result = EstimateMaximumSingularValueOfConstraintMatrix(
       lp, std::nullopt, std::nullopt,
@@ -581,7 +582,7 @@ TEST(EstimateSingularValuesTest, CorrectForTestLpWithActivePrimalSubspace) {
   VectorXd primal_solution(4);
   // Chosen so x_1 is at its bound, and all other variables are not at bounds.
   primal_solution << 0.0, -2.0, 0.0, 3.0;
-  // The test_lp matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
+  // The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
   // so the projected matrix is [ 2 1 2; 1 1 0; 4 0 0; 0 1.5 -1].
   std::mt19937 random(1);
   auto result = EstimateMaximumSingularValueOfConstraintMatrix(
@@ -598,7 +599,7 @@ TEST(EstimateSingularValuesTest, CorrectForTestLpWithActiveDualSubspace) {
   // Chosen so the second dual is at its bound, and all other duals are not at
   // bounds.
   dual_solution << 1.0, 0.0, 1.0, 3.0;
-  // The test_lp matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
+  // The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
   // so the projected matrix is [ 2 1 1 2; 4 0 0 0; 0 0 1.5 -1].
   std::mt19937 random(1);
   auto result = EstimateMaximumSingularValueOfConstraintMatrix(
@@ -617,7 +618,7 @@ TEST(EstimateSingularValuesTest, CorrectForTestLpWithBothActiveSubspaces) {
   // Chosen so the second dual is at its bound, and all other duals are not at
   // bounds.
   dual_solution << 1.0, 0.0, 1.0, 3.0;
-  // The test_lp matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
+  // The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
   // so the projected matrix is [ 2 1 2; 4 0 0; 0 1.5 -1].
   std::mt19937 random(1);
   auto result = EstimateMaximumSingularValueOfConstraintMatrix(
@@ -635,7 +636,7 @@ TEST(EstimateSingularValuesTest, CorrectForDiagonalLp) {
                                                 triplets.end());
   ShardedQuadraticProgram lp(diagonal_lp, /*num_threads=*/2, /*num_shards=*/2);
 
-  // The diagonal_lp matrix is [ 2 0 0 0; 0 1 0 0; 0 0 -3 0; 0 0 0 -1].
+  // The `diagonal_lp` matrix is [ 2 0 0 0; 0 1 0 0; 0 0 -3 0; 0 0 0 -1].
   std::mt19937 random(1);
   auto result = EstimateMaximumSingularValueOfConstraintMatrix(
       lp, std::nullopt, std::nullopt,

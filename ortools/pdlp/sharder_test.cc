@@ -78,8 +78,8 @@ Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t> LargeSparseMatrix(
   return mat;
 }
 
-// Verify that the given sharder is consistent and has shards of reasonable
-// mass. Requires target_num_shards > 0 and !element_masses.empty().
+// Verify that `sharder` is consistent and has shards of reasonable mass.
+// Requires `target_num_shards > 0` and `!element_masses.empty()`.
 void VerifySharder(const Sharder& sharder, const int target_num_shards,
                    const std::vector<int64_t>& element_masses) {
   int64_t num_elements = element_masses.size();

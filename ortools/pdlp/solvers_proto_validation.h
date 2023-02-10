@@ -21,21 +21,21 @@
 
 namespace operations_research::pdlp {
 
-// Returns InvalidArgument if the proto contains invalid values. Returns
-// OkStatus otherwise.
+// Returns `InvalidArgumentError` if the proto contains invalid values. Returns
+// `OkStatus` otherwise.
 absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria);
 
-// Returns InvalidArgument if the proto contains invalid values. Returns
-// OkStatus otherwise.
+// Returns `InvalidArgumentError` if the proto contains invalid values. Returns
+// `OkStatus` otherwise.
 absl::Status ValidateAdaptiveLinesearchParams(
     const AdaptiveLinesearchParams& params);
 
-// Returns InvalidArgument if the proto contains invalid values. Returns
-// OkStatus otherwise.
+// Returns `InvalidArgumentError` if the proto contains invalid values. Returns
+// `OkStatus` otherwise.
 absl::Status ValidateMalitskyPockParams(const MalitskyPockParams& params);
 
-// Returns InvalidArgument if the proto contains invalid values. Returns
-// OkStatus otherwise.
+// Returns `InvalidArgumentError` if the proto contains invalid values. Returns
+// `OkStatus` otherwise.
 absl::Status ValidatePrimalDualHybridGradientParams(
     const PrimalDualHybridGradientParams& params);
 

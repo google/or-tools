@@ -32,13 +32,13 @@ namespace operations_research::pdlp {
 struct TrustRegionResult {
   // The step_size of the solution.
   double solution_step_size;
-  // The value objective_vector' * (solution - center_point)
+  // The value objective_vector^T * (solution - center_point)
   // when using the linear-time solver for LPs and QPs with objective matrix not
   // treated in the prox term. When using the approximate solver for QPs, this
   // field contains the value
-  //   0.5 * (solution - center_point)' * objective_matrix * (
+  //   0.5 * (solution - center_point)^T * objective_matrix * (
   //     solution - center_point)
-  //   + objective_vector' * (solution - center_point)
+  //   + objective_vector^T * (solution - center_point)
   // instead.
   double objective_value;
   // The solution.
@@ -46,16 +46,16 @@ struct TrustRegionResult {
 };
 
 // Solves the following trust-region problem with bound constraints:
-// min_x objective_vector' * (x - center_point)
-// s.t. variable_lower_bounds <= x <= variable_upper_bounds
-//      || x - center_point ||_W <= target_radius
-// where ||y||_W = sqrt(sum_i norm_weights[i] * y[i]^2)
+// min_x `objective_vector`^T * (x - `center_point`)
+// s.t. `variable_lower_bounds` <= x <= `variable_upper_bounds`
+//      || x - `center_point` ||_W <= `target_radius`
+// where ||y||_W = sqrt(sum_i `norm_weights`[i] * y[i]^2)
 // using an exact linear-time method.
-// The sharder should have the same size as the number of variables in the
+// `sharder` should have the same size as the number of variables in the
 // problem.
 // Assumes that there is always a feasible solution, that is, that
-// variable_lower_bounds <= center_point <= variable_upper_bounds, and that
-// norm_weights > 0, for 0 <= i < sharder.NumElements().
+// `variable_lower_bounds` <= `center_point` <= `variable_upper_bounds`, and
+// that `norm_weights` > 0, for 0 <= i < `sharder.NumElements()`.
 TrustRegionResult SolveTrustRegion(const Eigen::VectorXd& objective_vector,
                                    const Eigen::VectorXd& variable_lower_bounds,
                                    const Eigen::VectorXd& variable_upper_bounds,
@@ -65,21 +65,21 @@ TrustRegionResult SolveTrustRegion(const Eigen::VectorXd& objective_vector,
                                    const Sharder& sharder);
 
 // Solves the following trust-region problem with bound constraints:
-// min_x (1/2) * (x - center_point)' * Q * (x - center_point)
-//        + objective_vector' * (x - center_point)
-// s.t. variable_lower_bounds <= x <= variable_upper_bounds
-//      || x - center_point ||_W <= target_radius
-// where ||y||_W = sqrt(sum_i norm_weights[i] * y[i]^2).
-// It replaces the ball constraint || x - center_point ||_W <= target_radius
-// with the equivalent constraint 0.5 * || x - center_point ||_W^2 <= 0.5 *
-// target_radius^2 and does a binary search for a Lagrange multiplier for the
-// latter constraint that is at most `solve_tolerance * max(1, lambda*)` away
+// min_x (1/2) * (x - `center_point`)^T * Q * (x - `center_point`)
+//        + `objective_vector`^T * (x - `center_point`)
+// s.t. `variable_lower_bounds` <= x <= `variable_upper_bounds`
+//      || x - `center_point` ||_W <= `target_radius`
+// where ||y||_W = sqrt(sum_i `norm_weights`[i] * y[i]^2).
+// It replaces the ball constraint || x - `center_point` ||_W <= `target_radius`
+// with the equivalent constraint 0.5 * || x - `center_point` ||_W^2 <= 0.5 *
+// `target_radius`^2 and does a binary search for a Lagrange multiplier for the
+// latter constraint that is at most (`solve_tolerance` * max(1, lambda*)) away
 // from the optimum Lagrange multiplier lambda*.
-// The sharder should have the same size as the number of variables in the
+// `sharder` should have the same size as the number of variables in the
 // problem.
 // Assumes that there is always a feasible solution, that is, that
-// variable_lower_bounds <= center_point <= variable_upper_bounds, and that
-// norm_weights > 0, for 0 <= i < sharder.NumElements().
+// `variable_lower_bounds` <= `center_point` <= `variable_upper_bounds`, and
+// that `norm_weights` > 0, for 0 <= i < `sharder.NumElements()`.
 TrustRegionResult SolveDiagonalTrustRegion(
     const Eigen::VectorXd& objective_vector,
     const Eigen::VectorXd& objective_matrix_diagonal,
@@ -88,9 +88,9 @@ TrustRegionResult SolveDiagonalTrustRegion(
     const Eigen::VectorXd& center_point, const Eigen::VectorXd& norm_weights,
     double target_radius, const Sharder& sharder, double solve_tolerance);
 
-// Like SolveDiagonalTrustRegion, but extracts the problem data from a
-// ShardedQuadraticProgram and implicitly concatenates the primal and dual parts
-// before solving the trust-region subproblem.
+// Like `SolveDiagonalTrustRegion`, but extracts the problem data from a
+// `ShardedQuadraticProgram` and implicitly concatenates the primal and dual
+// parts before solving the trust-region subproblem.
 TrustRegionResult SolveDiagonalQpTrustRegion(
     const ShardedQuadraticProgram& sharded_qp,
     const Eigen::VectorXd& primal_solution,
@@ -127,41 +127,46 @@ enum class PrimalDualNorm {
 // Recall the saddle-point formulation OPT = min_x max_y L(x, y) defined at
 // https://developers.google.com/optimization/lp/pdlp_math#saddle-point_formulation.
 // This function computes lower and upper bounds on OPT with an additional ball
-// or "trust- region" constraint on the domains of x and y.
+// or "trust-region" constraint on the domains of x and y.
 //
 // The bounds are derived from the solution of the following problem:
-// min_{x,y} ∇_x L(primal_solution, dual_solution)^T (x - primal_solution) -
-// ∇_y L(primal_solution, dual_solution)^T (y - dual_solution)
-// subject to ||(x - primal_solution, y - dual_solution)||_PD <= radius,
+// min_{x,y}
+//    ∇_x L(`primal_solution`, `dual_solution`)^T (x - `primal_solution`)
+//  - ∇_y L(`primal_solution`, `dual_solution`)^T (y - `dual_solution`)
+// subject to
+//    ||(x - `primal_solution`, y - `dual_solution`)||_PD <= `radius`,
 // where x and y are constrained to their respective bounds and ||(x,y)||_PD is
-// defined by primal_dual_norm.
-// When use_diagonal_qp_trust_region_solver is true, the solver instead solves
+// defined by `primal_dual_norm`.
+// When `use_diagonal_qp_trust_region_solver` is true, the solver instead solves
 // the following problem:
-// min_{x,y} ∇_x L(primal_solution, dual_solution)^T (x - primal_solution) -
-// ∇_y L(primal_solution, dual_solution)^T (y - dual_solution) +
-// (1 / 2) * (x - primal_solution)^T * objective_matrix * (x - primal_solution),
-// subject to ||(x - primal_solution, y - dual_solution)||_PD <= radius.
-// use_diagonal_qp_trust_region_solver == true assumes that primal_dual_norm
+// min_{x,y}
+//    ∇_x L(`primal_solution`, `dual_solution`)^T (x - `primal_solution`)
+//  - ∇_y L(`primal_solution`, `dual_solution`)^T (y - `dual_solution`)
+//  + (1 / 2) * (x - `primal_solution`)^T * `objective_matrix`
+//    * (x - `primal_solution`),
+// subject to
+//    ||(x - `primal_solution`, y - `dual_solution`)||_PD <= `radius`.
+// `use_diagonal_qp_trust_region_solver` == true assumes that `primal_dual_norm`
 // is the Euclidean norm and the objective matrix is diagonal.
-// See SolveDiagonalTrustRegion() above for the meaning of
-// diagonal_qp_trust_region_solver_tolerance.
+// See `SolveDiagonalTrustRegion()` above for the meaning of
+// `diagonal_qp_trust_region_solver_tolerance`.
 //
 // In the context of primal_dual_norm, the primal norm ||.||_P is defined as
-// (||x||_P)^2 = (1 / 2) * primal_weight * ||x||_2^2, and the dual norm ||.||_D
-// is defined as
-// (||y||_D)^2 = (1 / 2) * (1 / primal_weight) * ||y||_2^2.
+// (||x||_P)^2 = (1 / 2) * `primal_weight` * ||x||_2^2, and the dual norm
+// ||.||_D is defined as
+// (||y||_D)^2 = (1 / 2) * (1 / `primal_weight`) * ||y||_2^2.
 //
 // Given an optimal solution (x, y) to the above problem, the lower bound is
-// computed as L(primal_solution, dual_solution) +
-// ∇_x L(primal_solution, dual_solution)^T (x - primal_solution)
-// and the upper bound is computed as L(primal_solution, dual_solution) +
-// ∇_y L(primal_solution, dual_solution)^T (y - dual_solution).
+// computed as L(`primal_solution`, `dual_solution`) +
+// ∇_x L(`primal_solution`, `dual_solution`)^T (x - `primal_solution`)
+// and the upper bound is computed as L(`primal_solution`, `dual_solution`) +
+// ∇_y L(`primal_solution`, `dual_solution`)^T (y - `dual_solution`).
 //
 // The bounds are "localized" because they are guaranteed to bound OPT only if
 // the ||.||_PD ball contains an optimal solution.
-// The primal_product and dual_product arguments optionally specify the values
-// of constraint_matrix * primal_solution and constraint_matrix.transpose() *
-// dual_solution, respectively. If set to nullptr, they will be computed.
+// `primal_product` and `dual_product` optionally specify the values of
+// `constraint_matrix` * `primal_solution` and `constraint_matrix.transpose()` *
+// `dual_solution`, respectively. If set to nullptr, they will be computed.
 LocalizedLagrangianBounds ComputeLocalizedLagrangianBounds(
     const ShardedQuadraticProgram& sharded_qp,
     const Eigen::VectorXd& primal_solution,
@@ -173,14 +178,14 @@ LocalizedLagrangianBounds ComputeLocalizedLagrangianBounds(
 
 namespace internal {
 
-// These functions templated on TrustRegionProblem compute values useful to the
-// trust region solve. The templated TrustRegionProblem type should provide
-// methods:
-//   double Objective(int64_t index) const;
-//   double LowerBound(int64_t index) const;
-//   double UpperBound(int64_t index) const;
-//   double CenterPoint(int64_t index) const;
-//   double NormWeight(int64_t index) const;
+// These functions templated on `TrustRegionProblem` compute values useful to
+// the trust region solve. The templated `TrustRegionProblem` type should
+// provide methods:
+//   `double Objective(int64_t index) const;`
+//   `double LowerBound(int64_t index) const;`
+//   `double UpperBound(int64_t index) const;`
+//   `double CenterPoint(int64_t index) const;`
+//   `double NormWeight(int64_t index) const;`
 // See trust_region.cc for more details and several implementations.
 
 // The distance (in the indexed element) from the center point to the bound, in
@@ -223,8 +228,8 @@ double ProjectedValue(const TrustRegionProblem& problem, const int64_t index,
 }
 
 // An easy way of computing medians that's slightly off when the length of the
-// array is even. "array" is intentionally passed by value.
-// "value_function" maps an element of "array" to its (double) value.  Returns
+// array is even. `array` is intentionally passed by value.
+// `value_function` maps an element of `array` to its (double) value. Returns
 // the value of the median element.
 template <typename ArrayType, typename ValueFunction>
 double EasyMedian(ArrayType array, ValueFunction value_function) {
@@ -238,15 +243,15 @@ double EasyMedian(ArrayType array, ValueFunction value_function) {
   return value_function(*middle);
 }
 
-// Lists the undecided components (from [start_index, end_index) as those with
-// finite critical step sizes. The components with infinite critical step sizes
-// will never hit their bounds, so returns their contribution to square of the
-// radius.
+// Lists the undecided components (from [`start_index`, `end_index`) as those
+// with finite critical step sizes. The components with infinite critical step
+// sizes will never hit their bounds, so returns their contribution to square of
+// the radius.
 template <typename TrustRegionProblem>
 double ComputeInitialUndecidedComponents(
     const TrustRegionProblem& problem, int64_t start_index, int64_t end_index,
     std::vector<int64_t>& undecided_components) {
-  // TODO(user): Evaluate dropping this reserve(), since it wastes space
+  // TODO(user): Evaluate dropping this `reserve()`, since it wastes space
   // if many components are decided.
   undecided_components.clear();
   undecided_components.reserve(end_index - start_index);
@@ -277,8 +282,8 @@ double RadiusSquaredOfUndecidedComponents(
       });
 }
 
-// Points whose critical step-sizes are greater than or equal to
-// step_size_threshold are eliminated from the undecided components (we know
+// Points whose critical step sizes are greater than or equal to
+// `step_size_threshold` are eliminated from the undecided components (we know
 // they'll be determined by center_point - step_size * objective /
 // norm_weights). Returns the coefficient of step_size^2 that accounts of the
 // contribution of the removed variables to the radius squared.
@@ -305,8 +310,8 @@ double RemoveCriticalStepsAboveThreshold(
   return variable_radius_coefficient;
 }
 
-// Points whose critical step-sizes are smaller than or equal to
-// step_size_threshold are eliminated from the undecided components (we know
+// Points whose critical step sizes are smaller than or equal to
+// `step_size_threshold` are eliminated from the undecided components (we know
 // they'll always be at their bounds). Returns the weighted distance squared
 // from the center point for the removed components.
 template <typename TrustRegionProblem>
@@ -331,14 +336,14 @@ double RemoveCriticalStepsBelowThreshold(
   return radius_sq;
 }
 
-// PrimalTrustRegionProblem defines the primal trust region problem given a
-// QuadraticProgram, primal solution, and primal gradient. It captures const
-// references to the constructor arguments, which should outlive the class
+// `PrimalTrustRegionProblem` defines the primal trust region problem given a
+// `QuadraticProgram`, `primal_solution`, and `primal_gradient`. It captures
+// const references to the constructor arguments, which should outlive the class
 // instance.
 // The corresponding trust region problem is
-// min_x primal_gradient' * (x - primal_solution)
-// s.t. qp.variable_lower_bounds <= x <= qp.variable_upper_bounds
-//      || x - primal_solution ||_2 <= target_radius
+// min_x `primal_gradient`^T * (x - `primal_solution`)
+// s.t. `qp.variable_lower_bounds` <= x <= `qp.variable_upper_bounds`
+//      || x - `primal_solution` ||_2 <= target_radius
 class PrimalTrustRegionProblem {
  public:
   PrimalTrustRegionProblem(const QuadraticProgram* qp,
@@ -366,14 +371,14 @@ class PrimalTrustRegionProblem {
   const double norm_weight_;
 };
 
-// DualTrustRegionProblem defines the dual trust region problem given a
-// QuadraticProgram, dual solution, and dual gradient. It captures const
+// `DualTrustRegionProblem` defines the dual trust region problem given a
+// `QuadraticProgram`, `dual_solution`, and `dual_gradient`. It captures const
 // references to the constructor arguments, which should outlive the class
 // instance.
 // The corresponding trust region problem is
-// max_y dual_gradient' * (y - dual_solution)
-// s.t. qp.implicit_dual_lower_bounds <= y <= qp.implicit_dual_upper_bounds
-//      || y - dual_solution ||_2 <= target_radius
+// max_y `dual_gradient`^T * (y - `dual_solution`)
+// s.t. `qp.implicit_dual_lower_bounds` <= y <= `qp.implicit_dual_upper_bounds`
+//      || y - `dual_solution` ||_2 <= target_radius
 // where the implicit dual bounds are those given in
 // https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds
 class DualTrustRegionProblem {

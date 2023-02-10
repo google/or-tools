@@ -61,7 +61,7 @@ TEST(CorrectedDualTest, SimpleLpWithSuboptimalDual) {
   EXPECT_DOUBLE_EQ(stats.corrected_dual_objective(), -36.5);
 }
 
-// This is similar to SimpleLpWithSuboptimalDual, except with
+// This is similar to `SimpleLpWithSuboptimalDual`, except with
 // x_2 = 2. In the dual correction calculation, the corresponding bound is 6, so
 // the primal gradient will be treated as a residual of 0.5 instead of a dual
 // correction of -3, but in the corrected dual objective it is still treated as
@@ -158,7 +158,7 @@ TEST(RandomProjectionsTest, TwoRandomProjectionsOfVector) {
   EXPECT_THAT(metadata.random_primal_projections(), SizeIs(2));
   EXPECT_THAT(metadata.random_dual_projections(), SizeIs(2));
   // The primal solution has norm 2; the random projection should only reduce
-  // the norm.  Obtaining 0.0 is a probability-zero event.
+  // the norm. Obtaining 0.0 is a probability-zero event.
   EXPECT_THAT(metadata.random_primal_projections(),
               Each(AllOf(Ge(-2.0), Le(2.0), Ne(0.0))));
   EXPECT_THAT(metadata.random_dual_projections(), Each(Eq(0.0)));
@@ -175,8 +175,8 @@ TEST(ReducedCostsTest, SimpleLp) {
   primal_solution << 0.0, -2.0, 6.0, 3.5;
   dual_solution << 1.0, 0.0, 0.0, -2.0;
   // c is: [5.5, -2, -1, 1]
-  // -A'y is: [-2, -1, 2, -4]
-  // c - A'y is: [3.5, -3.0, 1.0, -3.0].
+  // -A^T y is: [-2, -1, 2, -4]
+  // c - A^T y is: [3.5, -3.0, 1.0, -3.0].
   EXPECT_THAT(ReducedCosts(PrimalDualHybridGradientParams(), sharded_qp,
                            primal_solution, dual_solution),
               ElementsAre(0.0, 0.0, 0.0, -3.0));
@@ -200,21 +200,21 @@ TEST(ReducedCostsTest, SimpleLpWithGapResiduals) {
   params_false.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(
       false);
   // c is: [5.5, -2, -1, 1]
-  // -A'y is: [-2, -1, 0.5, -3]
-  // c - A'y is: [3.5, -3.0, -0.5, -2.0].
-  // When the primal variable is 0.0 and the bound is not 0.0, c - A'y is
+  // -A^T y is: [-2, -1, 0.5, -3]
+  // c - A^T y is: [3.5, -3.0, -0.5, -2.0].
+  // When the primal variable is 0.0 and the bound is not 0.0, c - A^T y is
   // handled as a residual when
-  // handle_some_primal_gradients_on_finite_bounds_as_residuals = true and as a
-  // reduced cost otherwise.
+  // `handle_some_primal_gradients_on_finite_bounds_as_residuals` is true and as
+  // a reduced cost otherwise.
   EXPECT_THAT(
       ReducedCosts(params_true, sharded_qp, primal_solution, dual_solution),
       ElementsAre(0.0, 0.0, 0.0, 0.0));
   EXPECT_THAT(
       ReducedCosts(params_false, sharded_qp, primal_solution, dual_solution),
       ElementsAre(0.0, 0.0, -0.5, -2.0));
-  // The primal variables are closer to the bound, c - A'y is handled as a
+  // The primal variables are closer to the bound, c - A^T y is handled as a
   // reduced cost regardless of the value of
-  // handle_some_primal_gradients_on_finite_bounds_as_residuals.
+  // `handle_some_primal_gradients_on_finite_bounds_as_residuals`.
   primal_solution << 0.0, 0.0, 4.0, 3.0;
   EXPECT_THAT(
       ReducedCosts(params_true, sharded_qp, primal_solution, dual_solution),
@@ -240,8 +240,8 @@ TEST(ReducedCostsTest, SimpleQp) {
       false);
   // Q*x is: [4.0, 2.0]
   // c is: [-1, -1]
-  // A'y is zero.
-  // If handle_some_primal_gradients_on_finite_bounds_as_residuals is
+  // A^T y is zero.
+  // If `handle_some_primal_gradients_on_finite_bounds_as_residuals` is
   // true the second primal gradient term is handled as a residual, not a
   // reduced cost.
   EXPECT_THAT(

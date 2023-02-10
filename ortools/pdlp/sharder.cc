@@ -56,7 +56,7 @@ Sharder::Sharder(const int64_t num_elements, const int num_shards,
   for (int64_t elem = 1; elem < num_elements; ++elem) {
     int64_t this_elem_mass = element_mass(elem);
     if (this_shard_mass + (this_elem_mass / 2) >= overall_mass / num_shards) {
-      // this elem starts a new shard
+      // `elem` starts a new shard.
       shard_masses_.push_back(this_shard_mass);
       shard_starts_.push_back(elem);
       this_shard_mass = this_elem_mass;
@@ -96,8 +96,8 @@ Sharder::Sharder(const int64_t num_elements, const int num_shards,
 }
 
 Sharder::Sharder(const Sharder& other_sharder, const int64_t num_elements)
-    // The std::max() protects against other_sharder.NumShards() == 0, which
-    // will happen if other_sharder had num_elements == 0.
+    // The `std::max()` protects against `other_sharder.NumShards() == 0`, which
+    // will happen if `other_sharder` had `num_elements == 0`.
     : Sharder(num_elements, std::max(1, other_sharder.NumShards()),
               other_sharder.thread_pool_) {}
 
@@ -146,7 +146,7 @@ double Sharder::ParallelSumOverShards(
 
 bool Sharder::ParallelTrueForAllShards(
     const std::function<bool(const Shard&)>& func) const {
-  // Recall std::vector<bool> is not thread-safe.
+  // Recall `std::vector<bool>` is not thread-safe.
   std::vector<int> local_result(NumShards());
   ParallelForEachShard([&](const Sharder::Shard& shard) {
     local_result[shard.Index()] = static_cast<int>(func(shard));
@@ -161,9 +161,9 @@ VectorXd TransposedMatrixVectorProduct(
   CHECK_EQ(vector.size(), matrix.rows());
   VectorXd answer(matrix.cols());
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
-    // NOTE: For very sparse columns, assignment to shard(answer) incurs a
+    // NOTE: For very sparse columns, assignment to `shard(answer)` incurs a
     // measurable overhead compared to using a constructor
-    // (i.e. VectorXd temp = ...). It is not clear why this is the case, nor
+    // (i.e. `VectorXd temp = ...`). It is not clear why this is the case, nor
     // how to avoid it.
     shard(answer) = shard(matrix).transpose() * vector;
   });

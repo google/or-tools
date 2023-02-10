@@ -58,7 +58,7 @@ void TestTerminationCriteriaValidation(
       << "With termination criteria \"" << termination_criteria_string << "\"";
 }
 
-// Tests that the given DetailedOptimalityCriteria field can't be negative or
+// Tests that the given `DetailedOptimalityCriteria` field can't be negative or
 // NAN.
 void TestDetailedOptimalityCriteriaFieldValidation(
     absl::string_view field_name) {

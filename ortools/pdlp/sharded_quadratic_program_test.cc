@@ -88,12 +88,12 @@ TEST(ShardedQuadraticProgramTest, SwapObjectiveVector) {
 }
 
 TEST(RescaleProblem, BasicTest) {
-  // The original qp is:
+  // `TestDiagonalQp1()` is:
   // min 4x_1^2 + x_2^2 - x_1 - x_2 +5
   // s.t. -inf <= x_1 + x_2 <=1,
   //       1<=x_1<=2, -2<=x_2<=4.
-  // After rescaling with row_scaling_vec [0.5] and col_scaling_vec [1,0.5],
-  // the new qp becomes:
+  // After rescaling with `row_scaling_vec` [0.5] and `col_scaling_vec` [1,0.5],
+  // `sharded_qp` becomes:
   // min 4x_1^2 + 0.25x_2^2 - x_1 - 0.5x_2 +5
   // s.t.  -inf <= 0.5x_1 + 0.25x_2 <=1,
   //       1<=x_1<=2, -4<=x_2<=8.

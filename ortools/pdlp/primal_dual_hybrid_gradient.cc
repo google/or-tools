@@ -62,7 +62,7 @@ using ::Eigen::VectorXd;
 using IterationStatsCallback =
     std::function<void(const IterationCallbackInfo&)>;
 
-// Computes a `num_threads' that is capped by the problem size and num_shards,
+// Computes a `num_threads` that is capped by the problem size and `num_shards`,
 // if specified, to avoid creating unusable threads.
 int NumThreads(const int num_threads, const int num_shards,
                const QuadraticProgram& qp) {
@@ -83,9 +83,9 @@ int NumThreads(const int num_threads, const int num_shards,
   return capped_num_threads;
 }
 
-// If `num_shards' is positive, returns it. Otherwise returns a reasonable
-// number of shards to use with ShardedQuadraticProgram for the given number of
-// threads.
+// If `num_shards` is positive, returns it. Otherwise returns a reasonable
+// number of shards to use with `ShardedQuadraticProgram` for the given
+// `num_threads`.
 int NumShards(const int num_threads, const int num_shards) {
   if (num_shards > 0) return num_shards;
   return num_threads == 1 ? 1 : 4 * num_threads;
@@ -177,10 +177,11 @@ std::string ToShortString(
   }
 }
 
-// Returns a string describing iter_stats, based on the ConvergenceInformation
-// with candidate_type==preferred_candidate if one exists, otherwise based on
-// the first value, if any. termination_criteria.optimality_norm determines the
-// norm in which the residuals are displayed.
+// Returns a string describing `iter_stats`, based on the
+// `iter_stats.convergence_information` entry with
+// `.candidate_type()==preferred_candidate` if one exists, otherwise based on
+// the first value, if any. `termination_criteria.optimality_norm` determines
+// which residual norms from `iter_stats.convergence_information` are used.
 std::string ToString(const IterationStats& iter_stats,
                      const TerminationCriteria& termination_criteria,
                      const QuadraticProgramBoundNorms& bound_norms,
@@ -233,7 +234,7 @@ std::string ToShortString(const IterationStats& iter_stats,
   return iteration_string;
 }
 
-// Returns a label string corresponding to the format of ToString().
+// Returns a label string corresponding to the format of `ToString()`.
 std::string ConvergenceInformationLabelString() {
   return absl::StrFormat(
       "%12s %12s %12s | %12s %12s %12s | %12s %12s | %12s %12s", "rel_prim_res",
@@ -262,9 +263,10 @@ enum class InnerStepOutcome {
   kForceNumericalTermination,
 };
 
-// Makes the closing changes to the SolveLog and builds a SolverResult.
-// NOTE: The primal_solution, dual_solution, and solve_log are passed by value.
-// To avoid unnecessary copying, move these objects (i.e. use std::move()).
+// Makes the closing changes to `solve_log` and builds a `SolverResult`.
+// NOTE: `primal_solution`, `dual_solution`, and `solve_log` are passed by
+// value. To avoid unnecessary copying, move these objects (i.e. use
+// `std::move()`).
 SolverResult ConstructSolverResult(VectorXd primal_solution,
                                    VectorXd dual_solution,
                                    const IterationStats& stats,
@@ -282,35 +284,35 @@ SolverResult ConstructSolverResult(VectorXd primal_solution,
 
 class PreprocessSolver {
  public:
-  // Assumes that the qp and params are valid.
-  // Note that the qp is intentionally passed by value.
-  // NOTE: Many PreprocessSolver methods accept a params argument. This is
+  // Assumes that `qp` and `params` are valid.
+  // Note that the `qp` is intentionally passed by value.
+  // NOTE: Many `PreprocessSolver` methods accept a `params` argument. This is
   // passed as an argument instead of stored as a member variable to support
-  // using different params in different contexts with the same PreprocessSolver
-  // object.
+  // using different `params` in different contexts with the same
+  // `PreprocessSolver` object.
   explicit PreprocessSolver(QuadraticProgram qp,
                             const PrimalDualHybridGradientParams& params);
 
-  // Not copyable or movable (because glop::MainLpPreprocessor isn't).
+  // Not copyable or movable (because `glop::MainLpPreprocessor` isn't).
   PreprocessSolver(const PreprocessSolver&) = delete;
   PreprocessSolver& operator=(const PreprocessSolver&) = delete;
   PreprocessSolver(PreprocessSolver&&) = delete;
   PreprocessSolver& operator=(PreprocessSolver&&) = delete;
 
-  // Zero is used if initial_solution is nullopt. If interrupt_solve is not
-  // nullptr, then the solver will periodically check if interrupt_solve->load()
-  // is true, in which case the solve will terminate with
-  // TERMINATION_REASON_INTERRUPTED_BY_USER. Ownership is not transferred. If
-  // iteration_stats_callback is not nullptr, then at each termination step
-  // (when iteration stats are logged), iteration_stats_callback will also
-  // be called with those iteration stats.
+  // Zero is used if `initial_solution` is nullopt. If `interrupt_solve` is not
+  // nullptr, then the solver will periodically check if
+  // `interrupt_solve->load()` is true, in which case the solve will terminate
+  // with `TERMINATION_REASON_INTERRUPTED_BY_USER`. Ownership is not
+  // transferred. If `iteration_stats_callback` is not nullptr, then at each
+  // termination step (when iteration stats are logged),
+  // `iteration_stats_callback` will also be called with those iteration stats.
   SolverResult PreprocessAndSolve(
       const PrimalDualHybridGradientParams& params,
       std::optional<PrimalAndDualSolution> initial_solution,
       const std::atomic<bool>* interrupt_solve,
       IterationStatsCallback iteration_stats_callback);
 
-  // Returns a TerminationReasonAndPointType when the termination criteria are
+  // Returns a `TerminationReasonAndPointType` when the termination criteria are
   // satisfied, otherwise returns nothing. The pointers to working_* can be
   // nullptr if an iterate of that type is not available. For the iterate types
   // that are available, uses the primal and dual vectors to compute solution
@@ -335,10 +337,10 @@ class PreprocessSolver {
       const VectorXd& working_primal, const VectorXd& working_dual,
       PointType candidate_type) const;
 
-  // Returns a SolverResult for the original problem, given a SolverResult
+  // Returns a `SolverResult` for the original problem, given a `SolverResult`
   // from the scaled or preprocessed problem. Also computes the reduced costs.
-  // NOTE: 'result' is passed by value. To avoid unnecessary copying, move this
-  // object (i.e. use std::move()).
+  // NOTE: `result` is passed by value. To avoid unnecessary copying, move this
+  // object (i.e. use `std::move()`).
   SolverResult ConstructOriginalSolverResult(
       const PrimalDualHybridGradientParams& params, SolverResult result) const;
 
@@ -372,11 +374,11 @@ class PreprocessSolver {
   static glop::GlopParameters PreprocessorParameters(
       const PrimalDualHybridGradientParams& params);
 
-  // If presolve is enabled, moves sharded_qp_ to
-  // presolve_info_.sharded_original_qp and computes the presolved linear
-  // program and installs it in sharded_qp_. Clears initial_solution if
+  // If presolve is enabled, moves `sharded_qp_` to
+  // `presolve_info_.sharded_original_qp` and computes the presolved linear
+  // program and installs it in `sharded_qp_`. Clears `initial_solution` if
   // presolve is enabled. If presolve solves the problem completely returns the
-  // appropriate TerminationReason. Otherwise returns nullopt. If presolve
+  // appropriate `TerminationReason`. Otherwise returns nullopt. If presolve
   // is disabled or an error occurs modifies nothing and returns nullopt.
   std::optional<TerminationReason> ApplyPresolveIfEnabled(
       const PrimalDualHybridGradientParams& params,
@@ -396,9 +398,10 @@ class PreprocessSolver {
       PrimalAndDualSolution working_solution) const;
 
   // Adds one entry of convergence information and infeasibility information to
-  // stats using the input solutions. The primal_solution and dual_solution are
-  // solutions for sharded_qp. The col_scaling_vec and row_scaling_vec are used
-  // to implicitly unscale sharded_qp when computing the relevant information.
+  // `stats` using the input solutions. `primal_solution` and `dual_solution`
+  // are solutions for `sharded_qp`. `col_scaling_vec` and `row_scaling_vec` are
+  // used to implicitly unscale `sharded_qp` when computing the relevant
+  // information.
   void AddConvergenceAndInfeasibilityInformation(
       const PrimalDualHybridGradientParams& params,
       const VectorXd& primal_solution, const VectorXd& dual_solution,
@@ -406,7 +409,7 @@ class PreprocessSolver {
       const VectorXd& col_scaling_vec, const VectorXd& row_scaling_vec,
       PointType candidate_type, IterationStats& stats) const;
 
-  // Adds one entry of PointMetadata to stats using the input solutions.
+  // Adds one entry of `PointMetadata` to `stats` using the input solutions.
   void AddPointMetadata(const PrimalDualHybridGradientParams& params,
                         const VectorXd& primal_solution,
                         const VectorXd& dual_solution, PointType point_type,
@@ -423,11 +426,11 @@ class PreprocessSolver {
   QuadraticProgramBoundNorms original_bound_norms_;
 
   // This is the QP that PDHG is run on. It is modified by presolve and
-  // rescaling, if those are enabled, and then serves as the ShardedWorkingQp()
-  // when calling Solver::Solve. The original problem is available in
-  // presolve_info_->sharded_original_qp if presolve_info_.has_value(), and
-  // otherwise can be obtained by undoing the scaling of sharded_qp_ by
-  // col_scaling_vec_ and row_scaling_vec_.
+  // rescaling, if those are enabled, and then serves as the
+  // `ShardedWorkingQp()` when calling `Solver::Solve()`. The original problem
+  // is available in `presolve_info_->sharded_original_qp` if
+  // `presolve_info_.has_value()`, and otherwise can be obtained by undoing the
+  // scaling of `sharded_qp_` by `col_scaling_vec_` and `row_scaling_vec_`.
   ShardedQuadraticProgram sharded_qp_;
 
   // Set iff presolve is enabled.
@@ -435,7 +438,7 @@ class PreprocessSolver {
 
   // The scaling vectors that map the original (or presolved) quadratic program
   // to the working version. See
-  // ShardedQuadraticProgram::RescaleQuadraticProgram() for details.
+  // `ShardedQuadraticProgram::RescaleQuadraticProgram()` for details.
   VectorXd col_scaling_vec_;
   VectorXd row_scaling_vec_;
 
@@ -445,8 +448,8 @@ class PreprocessSolver {
 
 class Solver {
  public:
-  // preprocess_solver should not be nullptr, and the PreprocessSolver object
-  // must outlive this Solver object. ownership is not transferred.
+  // `preprocess_solver` should not be nullptr, and the `PreprocessSolver`
+  // object must outlive this `Solver` object. Ownership is not transferred.
   explicit Solver(const PrimalDualHybridGradientParams& params,
                   VectorXd starting_primal_solution,
                   VectorXd starting_dual_solution, double initial_step_size,
@@ -465,12 +468,13 @@ class Solver {
     return preprocess_solver_->ShardedWorkingQp();
   }
 
-  // Runs PDHG iterations on the instance that has been initialized in Solver.
-  // If interrupt_solve is not nullptr, then the solver will periodically check
-  // if interrupt_solve->load() is true, in which case the solve will terminate
-  // with TERMINATION_REASON_INTERRUPTED_BY_USER. Ownership is not transferred.
-  // solve_log should contain initial problem statistics.
-  // On return, SolveResult.reduced_costs will be empty, and the solution will
+  // Runs PDHG iterations on the instance that has been initialized in `Solver`.
+  // If `interrupt_solve` is not nullptr, then the solver will periodically
+  // check if `interrupt_solve->load()` is true, in which case the solve will
+  // terminate with `TERMINATION_REASON_INTERRUPTED_BY_USER`. Ownership is not
+  // transferred.
+  // `solve_log` should contain initial problem statistics.
+  // On return, `SolveResult.reduced_costs` will be empty, and the solution will
   // be to the preprocessed/scaled problem.
   SolverResult Solve(const std::atomic<bool>* interrupt_solve,
                      SolveLog solve_log);
@@ -478,7 +482,7 @@ class Solver {
  private:
   struct NextSolutionAndDelta {
     VectorXd value;
-    // delta is value - current_solution.
+    // `delta` is `value` - current_solution.
     VectorXd delta;
   };
 
@@ -515,16 +519,16 @@ class Solver {
 
   double ComputeNewPrimalWeight() const;
 
-  // Picks the primal and dual solutions according to output_type, and makes the
-  // closing changes to the SolveLog. This function should only be called once
-  // the solver is finishing its execution.
-  // NOTE: The primal_solution and dual_solution are used as the output except
-  // when output_type is POINT_TYPE_CURRENT_ITERATE or
-  // POINT_TYPE_ITERATE_DIFFERENCE, in which case the values are computed from
-  // Solver data.
-  // NOTE: The primal_solution, dual_solution, and solve_log are passed by
+  // Picks the primal and dual solutions according to `output_type`, and makes
+  // the closing changes to `solve_log`. This function should only be called
+  // once when the solver is finishing its execution.
+  // NOTE: `primal_solution` and `dual_solution` are used as the output except
+  // when `output_type` is `POINT_TYPE_CURRENT_ITERATE` or
+  // `POINT_TYPE_ITERATE_DIFFERENCE`, in which case the values are computed from
+  // `Solver` data.
+  // NOTE: `primal_solution`, `dual_solution`, and `solve_log` are passed by
   // value. To avoid unnecessary copying, move these objects (i.e. use
-  // std::move()).
+  // `std::move()`).
   SolverResult PickSolutionAndConstructSolverResult(
       VectorXd primal_solution, VectorXd dual_solution,
       const IterationStats& stats, TerminationReason termination_reason,
@@ -537,7 +541,7 @@ class Solver {
 
   LocalizedLagrangianBounds ComputeLocalizedBoundsAtAverage() const;
 
-  // Applies the given RestartChoice. If a restart is chosen, updates the
+  // Applies the given `RestartChoice`. If a restart is chosen, updates the
   // state of the algorithm accordingly and computes a new primal weight.
   void ApplyRestartChoice(RestartChoice restart_to_apply);
 
@@ -586,7 +590,7 @@ class Solver {
 
   const PreprocessSolver* preprocess_solver_;
 
-  // For Malitsky-Pock linesearch only: step_size_ / previous_step_size
+  // For Malitsky-Pock linesearch only: `step_size_` / previous_step_size
   double ratio_last_two_step_sizes_;
   // For adaptive restarts only.
   double normalized_gap_at_last_trial_ =
@@ -596,7 +600,7 @@ class Solver {
       std::numeric_limits<double>::infinity();
   int iterations_completed_;
   int num_rejected_steps_;
-  // A cache of constraint_matrix.transpose() * current_dual_solution.
+  // A cache of `constraint_matrix.transpose() * current_dual_solution_`.
   VectorXd current_dual_product_;
   // The primal point at which the algorithm was last restarted from, or
   // the initial primal starting point if no restart has occurred.
@@ -893,7 +897,7 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
 
   VectorXd starting_primal_solution;
   VectorXd starting_dual_solution;
-  // The current solution is updated by ComputeAndApplyRescaling.
+  // The current solution is updated by `ComputeAndApplyRescaling`.
   if (initial_solution.has_value()) {
     starting_primal_solution = std::move(initial_solution->primal_solution);
     starting_dual_solution = std::move(initial_solution->dual_solution);
@@ -925,8 +929,9 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
             sharded_qp_, std::nullopt, std::nullopt,
             /*desired_relative_error=*/0.2, /*failure_probability=*/0.0005,
             random);
-    // With high probability, the estimate of the lipschitz term is within
-    // +/- estimated_relative_error * lipschitz_term.
+    // With high probability, `lipschitz_result.singular_value` is within
+    // +/- `lipschitz_result.estimated_relative_error
+    //     * lipschitz_result.singular_value`
     const double lipschitz_term_upper_bound =
         lipschitz_result.singular_value /
         (1.0 - lipschitz_result.estimated_relative_error);
@@ -1029,11 +1034,11 @@ std::optional<TerminationReason> PreprocessSolver::ApplyPresolveIfEnabled(
   }
   glop::LinearProgram glop_lp;
   glop::MPModelProtoToLinearProgram(*model, &glop_lp);
-  // Save RAM
+  // Save RAM.
   model->Clear();
   presolve_info_.emplace(std::move(sharded_qp_), params);
   // To simplify our code we ignore the return value indicating whether
-  // postprocessing is required. We simply call RecoverSolution()
+  // postprocessing is required. We simply call `RecoverSolution()`
   // unconditionally, which may do nothing.
   presolve_info_->preprocessor.Run(&glop_lp);
   presolve_info_->presolved_problem_was_maximization =
@@ -1044,14 +1049,14 @@ std::optional<TerminationReason> PreprocessSolver::ApplyPresolveIfEnabled(
   absl::StatusOr<QuadraticProgram> presolved_qp =
       QpFromMpModelProto(output, /*relax_integer_variables=*/false);
   CHECK_OK(presolved_qp.status());
-  // MPModelProto doesn't support scaling factors, so if glop_lp has an
-  // objective_scaling_factor it won't set in output and presolved_qp. The
-  // scaling factor of presolved_qp isn't actually used anywhere, but we set it
-  // for completeness.
+  // `MPModelProto` doesn't support scaling factors, so if `glop_lp` has an
+  // `objective_scaling_factor` it won't be set in output and `presolved_qp`.
+  // The scaling factor of `presolved_qp` isn't actually used anywhere, but we
+  // set it for completeness.
   presolved_qp->objective_scaling_factor = glop_lp.objective_scaling_factor();
   sharded_qp_ = ShardedQuadraticProgram(std::move(*presolved_qp), num_threads_,
                                         num_shards_);
-  // A status of INIT means the preprocessor created a (usually) smaller
+  // A status of `INIT` means the preprocessor created a (usually) smaller
   // problem that needs solving. Other statuses mean the preprocessor solved
   // the problem completely.
   if (presolve_info_->preprocessor.status() != glop::ProblemStatus::INIT) {
@@ -1169,8 +1174,8 @@ PrimalAndDualSolution PreprocessSolver::RecoverOriginalSolution(
     glop_solution.dual_values =
         glop::DenseColumn(working_solution.dual_solution.begin(),
                           working_solution.dual_solution.end());
-    // We got the working QP by calling LinearProgramToMPModelProto() and
-    // QpFromMpModelProto(). We need to negate the duals if the LP resulting
+    // We got the working QP by calling `LinearProgramToMPModelProto()` and
+    // `QpFromMpModelProto()`. We need to negate the duals if the LP resulting
     // from presolve was a max problem.
     if (presolve_info_->presolved_problem_was_maximization) {
       for (glop::RowIndex i{0}; i < glop_solution.dual_values.size(); ++i) {
@@ -1185,11 +1190,11 @@ PrimalAndDualSolution PreprocessSolver::RecoverOriginalSolution(
     solution.dual_solution =
         Eigen::Map<Eigen::VectorXd>(glop_solution.dual_values.data(),
                                     glop_solution.dual_values.size().value());
-    // We called QpToMpModelProto() and MPModelProtoToLinearProgram() to convert
-    // our original QP into input for glop's preprocessor. The former multiplies
-    // the objective vector by the objective_scaling_factor, which multiplies
-    // the duals by that factor as well. To undo this we divide by the
-    // objective_scaling_factor.
+    // We called `QpToMpModelProto()` and `MPModelProtoToLinearProgram()` to
+    // convert our original QP into input for glop's preprocessor. The former
+    // multiplies the objective vector by `objective_scaling_factor`, which
+    // multiplies the duals by that factor as well. To undo this we divide by
+    // `objective_scaling_factor`.
     solution.dual_solution /=
         presolve_info_->sharded_original_qp.Qp().objective_scaling_factor;
     // Glop's preprocessor sometimes violates the primal bounds constraints. To
@@ -1248,9 +1253,9 @@ void SetActiveSetInformation(const ShardedQuadraticProgram& sharded_qp,
                 .count();
           })));
 
-  // Most of the computation from the previous ParallelSumOverShards is
+  // Most of the computation from the previous `ParallelSumOverShards` is
   // duplicated here. However the overhead shouldn't be too large, and using
-  // ParallelSumOverShards is simpler than just using ParallelForEachShard.
+  // `ParallelSumOverShards` is simpler than just using `ParallelForEachShard`.
   metadata.set_active_primal_variable_change(
       static_cast<int64_t>(sharded_qp.PrimalSharder().ParallelSumOverShards(
           [&](const Sharder::Shard& shard) {
@@ -1465,7 +1470,7 @@ PreprocessSolver::ComputeConvergenceInformationFromWorkingSolution(
   }
 }
 
-// 'result' is used both as the input and as the temporary that will be
+// `result` is used both as the input and as the temporary that will be
 // returned.
 SolverResult PreprocessSolver::ConstructOriginalSolverResult(
     const PrimalDualHybridGradientParams& params, SolverResult result) const {
@@ -1479,7 +1484,7 @@ SolverResult PreprocessSolver::ConstructOriginalSolverResult(
          .dual_solution = std::move(result.dual_solution)});
     result.primal_solution = std::move(original_solution.primal_solution);
     result.dual_solution = std::move(original_solution.dual_solution);
-    // RecoverOriginalSolution doesn't recover reduced costs so we need to
+    // `RecoverOriginalSolution` doesn't recover reduced costs so we need to
     // compute them with respect to the original problem.
     result.reduced_costs = ReducedCosts(
         params, presolve_info_->sharded_original_qp, result.primal_solution,
@@ -1548,9 +1553,9 @@ Solver::NextSolutionAndDelta Solver::ComputeNextPrimalSolution(
   };
   const QuadraticProgram& qp = WorkingQp();
   // This computes the primal portion of the PDHG algorithm:
-  // argmin_x[gradient(f)(current_primal_solution)'x + g(x)
-  //   + current_dual_solution' K x
-  //   + (0.5 / primal_step_size) * norm(x - current_primal_solution) ^ 2]
+  // argmin_x[gradient(f)(`current_primal_solution_`)^T x + g(x)
+  //   + `current_dual_solution_`^T K x
+  //   + (0.5 / `primal_step_size`) * norm(x - `current_primal_solution_`)^2]
   // See Sections 2 - 3 of Chambolle and Pock and the comment in the header.
   // We omitted the constant terms from Chambolle and Pock's (7).
   // This minimization is easy to do in closed form since it can be separated
@@ -1568,7 +1573,7 @@ Solver::NextSolutionAndDelta Solver::ComputeNextPrimalSolution(
               (shard(current_primal_solution_) -
                primal_step_size *
                    (shard(qp.objective_vector) - shard(current_dual_product_)))
-                  // Scale i-th element by 1 / (1 + primal_step_size * Q_{ii})
+                  // Scale i-th element by 1 / (1 + `primal_step_size` * Q_{ii})
                   .cwiseQuotient(diagonal_scaling)
                   .cwiseMin(shard(qp.variable_upper_bounds))
                   .cwiseMax(shard(qp.variable_lower_bounds));
@@ -1614,9 +1619,9 @@ Solver::NextSolutionAndDelta Solver::ComputeNextDualSolution(
                 shard(ShardedWorkingQp().TransposedConstraintMatrix())
                     .transpose() *
                 extrapolated_primal;
-        // Each element of the argument of the cwiseMin is the critical point
+        // Each element of the argument of `.cwiseMin()` is the critical point
         // of the respective 1D minimization problem if it's negative.
-        // Likewise the argument to the cwiseMax is the critical point if
+        // Likewise the argument to the `.cwiseMax()` is the critical point if
         // positive.
         shard(result.value) =
             VectorXd::Zero(temp.size())
@@ -1765,7 +1770,7 @@ RestartChoice Solver::DetermineDistanceBasedRestartChoice() const {
 
   // A restart should be triggered when the normalized distance traveled by
   // the average is at least a constant factor smaller than the last.
-  // TODO(user): Experiment with using .necessary_reduction_for_restart()
+  // TODO(user): Experiment with using `.necessary_reduction_for_restart()`
   // as a heuristic when deciding if a restart should be triggered.
   if ((distance_moved_this_restart_period_by_average / restart_period_length) <
       params_.sufficient_reduction_for_restart() *
@@ -1790,7 +1795,7 @@ RestartChoice Solver::ChooseRestartToApply(const bool is_major_iteration) {
     return RESTART_CHOICE_NO_RESTART;
   }
   // TODO(user): This forced restart is very important for the performance of
-  // ADAPTIVE_HEURISTIC. Test if the impact comes primarily from the first
+  // `ADAPTIVE_HEURISTIC`. Test if the impact comes primarily from the first
   // forced restart (which would unseat a good initial starting point that could
   // prevent restarts early in the solve) or if it's really needed for the full
   // duration of the solve. If it is really needed, should we then trigger major
@@ -1911,7 +1916,7 @@ SolverResult Solver::PickSolutionAndConstructSolverResult(
     case POINT_TYPE_PRESOLVER_SOLUTION:
       break;
     default:
-      // Default to average whenever the type is POINT_TYPE_NONE.
+      // Default to average whenever `output_type` is `POINT_TYPE_NONE`.
       output_type = POINT_TYPE_AVERAGE_ITERATE;
       break;
   }
@@ -2051,8 +2056,9 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
   NextSolutionAndDelta next_primal_solution =
       ComputeNextPrimalSolution(primal_step_size);
   // The theory by Malitsky and Pock holds for any new_step_size in the interval
-  // [step_size, step_size * sqrt(1 + theta)]. The dilating coefficient
-  // determines where in this interval the new step size lands.
+  // [`step_size`, `step_size` * sqrt(1 + `ratio_last_two_step_sizes_`)].
+  // `dilating_coeff` determines where in this interval the new step size lands.
+  // NOTE: Malitsky and Pock use theta for `ratio_last_two_step_sizes`.
   double dilating_coeff =
       1 + (params_.malitsky_pock_parameters().step_size_interpolation() *
            (sqrt(1 + ratio_last_two_step_sizes_) - 1));
@@ -2123,7 +2129,7 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
       new_primal_step_size = step_size_downscaling * new_primal_step_size;
     }
   }
-  // inner_iterations isn't incremented for the accepted step.
+  // `inner_iterations` isn't incremented for the accepted step.
   num_rejected_steps_ += inner_iterations;
   return outcome;
 }
@@ -2172,8 +2178,8 @@ InnerStepOutcome Solver::TakeAdaptiveStep() {
     }
     const double total_steps_attempted =
         num_rejected_steps_ + iterations_completed_ + 1;
-    // Our step sizes are a factor 1 - (total_steps_attempted + 1)^(-
-    // step_size_reduction_exponent) smaller than they could be as a margin to
+    // Our step sizes are a factor 1 - (`total_steps_attempted` + 1)^(-
+    // `step_size_reduction_exponent`) smaller than they could be as a margin to
     // reduce rejected steps.
     const double first_term =
         (1 - std::pow(total_steps_attempted + 1.0,
@@ -2185,14 +2191,14 @@ InnerStepOutcome Solver::TakeAdaptiveStep() {
                       -params_.adaptive_linesearch_parameters()
                            .step_size_growth_exponent())) *
         step_size_;
-    // From the first term when we have to reject a step, the step_size
-    // decreases by a factor of at least 1 - (total_steps_attempted + 1)^(-
-    // step_size_reduction_exponent). From the second term we increase the
-    // step_size by a factor of at most 1 + (total_steps_attempted +
-    // 1)^(-step_size_growth_exponent) Therefore if more than order
-    // (total_steps_attempted + 1)^(step_size_reduction_exponent
-    // - step_size_growth_exponent) fraction of the time we have a rejected
-    // step, we overall decrease the step_size. When the step_size is
+    // From the first term when we have to reject a step, `step_size_`
+    // decreases by a factor of at least 1 - (`total_steps_attempted` + 1)^(-
+    // `step_size_reduction_exponent`). From the second term we increase
+    // `step_size_` by a factor of at most 1 + (`total_steps_attempted` +
+    // 1)^(-`step_size_growth_exponent`) Therefore if more than order
+    // (`total_steps_attempted` + 1)^(`step_size_reduction_exponent`
+    // - `step_size_growth_exponent`) fraction of the time we have a rejected
+    // step, we overall decrease `step_size_`. When `step_size_` is
     // sufficiently small we stop having rejected steps.
     step_size_ = std::min(first_term, second_term);
     if (!accepted_step) {
@@ -2368,7 +2374,7 @@ glop::ProblemSolution ComputeStatuses(const QuadraticProgram& qp,
                        qp.variable_lower_bounds[i.value()];
     const bool at_ub = solution.primal_solution[i.value()] >=
                        qp.variable_upper_bounds[i.value()];
-    // Note that ShardedWeightedAverage is designed so that variables at their
+    // Note that `ShardedWeightedAverage` is designed so that variables at their
     // bounds will be exactly at their bounds even with floating-point roundoff.
     if (at_lb) {
       if (at_ub) {

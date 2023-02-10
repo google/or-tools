@@ -707,16 +707,14 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, OptimalNotInBoundRange) {
 
   switch (primal_dual_norm) {
     case PrimalDualNorm::kMaxNorm:
-      // The target_radius r = sqrt(2) * 0.1 ≈ 0.14, and the projected primal
+      // The target radius r = sqrt(2) * 0.1 ≈ 0.14, and the projected primal
       // direction is d=[-5.5, 2, 1, -1]. The resulting delta is d / ||d|| * r,
-      // giving an objective delta of
-      // ||d|| * r.
+      // giving an objective delta of ||d|| * r.
       EXPECT_NEAR(bounds.lower_bound,
                   expected_lagrangian - 0.1 * sqrt(2) * sqrt(36.25), 1.0e-6);
-      // The target_radius r = sqrt(2) * 0.1 ≈ 0.14, and the projected dual
+      // The target radius r = sqrt(2) * 0.1 ≈ 0.14, and the projected dual
       // direction is d=[6, 0, 0, 2]. The resulting delta is d / ||d|| * r,
-      // giving an objective delta of
-      // ||d|| * r.
+      // giving an objective delta of ||d|| * r.
       EXPECT_NEAR(bounds.upper_bound,
                   expected_lagrangian + 0.1 * sqrt(2) * sqrt(40.0), 1.0e-6);
       break;
@@ -735,7 +733,7 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, OptimalNotInBoundRange) {
   }
 }
 
-// kEuclideanNorm isn't covered by this test because the analysis of the
+// `kEuclideanNorm` isn't covered by this test because the analysis of the
 // correct solution is more complex.
 TEST(ComputeLocalizedLagrangianBoundsTest, ProcessesPrimalWeight) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
@@ -756,7 +754,7 @@ TEST(ComputeLocalizedLagrangianBoundsTest, ProcessesPrimalWeight) {
   const double expected_lagrangian = 3.0;
   EXPECT_DOUBLE_EQ(bounds.lagrangian_value, expected_lagrangian);
 
-  // Compared with OptimalNotInBoundRange, a primal weight of 100.0 translates
+  // Compared with `OptimalNotInBoundRange`, a primal weight of 100.0 translates
   // to a 10x smaller radius in the primal and 10x larger radius in the dual.
   EXPECT_LE(bounds.lower_bound, expected_lagrangian - 0.028);
   EXPECT_GE(bounds.lower_bound, expected_lagrangian - 0.28);
@@ -764,7 +762,8 @@ TEST(ComputeLocalizedLagrangianBoundsTest, ProcessesPrimalWeight) {
   EXPECT_LE(bounds.upper_bound, expected_lagrangian + 28);
 }
 
-// Same as OptimalInBoundRange but providing primal_product and dual_product.
+// Same as `OptimalInBoundRange` but providing `primal_product` and
+// `dual_product`.
 TEST_P(ComputeLocalizedLagrangianBoundsTest, AcceptsCachedProducts) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
@@ -868,10 +867,9 @@ struct TestProblemData {
   VectorXd norm_weights;
 };
 
-// Generates the problem data corresponding to OneDimLp() as raw vectors with
+// Generates the problem data corresponding to `OneDimLp()` as raw vectors with
 // center point [x, y] = [0, -1].
 TestProblemData GenerateTestLpProblemData(const double primal_weight) {
-  // Extract objective vector from primal and dual gradients.
   VectorXd objective_vector(2), center_point(2), norm_weights(2),
       variable_lower_bounds(2), variable_upper_bounds(2);
   objective_vector << 2, -1;
@@ -887,7 +885,7 @@ TestProblemData GenerateTestLpProblemData(const double primal_weight) {
           .norm_weights = norm_weights};
 }
 
-// Generates the problem data corresponding to OneDimQp() as raw vectors with
+// Generates the problem data corresponding to `OneDimQp()` as raw vectors with
 // center point [x, y] = [0, -1].
 TestProblemData GenerateTestQpProblemData(const double primal_weight) {
   TestProblemData lp_data = GenerateTestLpProblemData(primal_weight);
@@ -896,7 +894,7 @@ TestProblemData GenerateTestQpProblemData(const double primal_weight) {
 }
 
 // This is a tiny problem where we can compute the exact solution, checking
-// that kMaxNorm and kEuclideanNorm give different answers.
+// that `kMaxNorm` and `kEuclideanNorm` give different answers.
 TEST_P(ComputeLocalizedLagrangianBoundsTest, NormsBehaveDifferently) {
   ShardedQuadraticProgram lp(OneDimLp(), /*num_threads=*/2, /*num_shards=*/2);
 
@@ -939,7 +937,7 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, NormsBehaveDifferently) {
   }
 }
 
-// Like NormsBehaveDifferently but with a larger primal weight.
+// Like `NormsBehaveDifferently` but with a larger primal weight.
 TEST_P(ComputeLocalizedLagrangianBoundsTest,
        NormsBehaveDifferentlyWithLargePrimalWeight) {
   ShardedQuadraticProgram lp(OneDimLp(), /*num_threads=*/2, /*num_shards=*/2);

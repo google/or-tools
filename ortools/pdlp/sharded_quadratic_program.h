@@ -26,14 +26,15 @@
 namespace operations_research::pdlp {
 
 // This class stores:
-//  - A QuadraticProgram (QP)
+//  - A `QuadraticProgram` (QP)
 //  - A transposed version of the QP's constraint matrix
 //  - A thread pool
-//  - Various Sharder objects for doing sharded matrix and vector computations.
+//  - Various `Sharder` objects for doing sharded matrix and vector
+//    computations.
 class ShardedQuadraticProgram {
  public:
-  // Requires num_shards >= num_threads >= 1.
-  // Note that the qp is intentionally passed by value.
+  // Requires `num_shards` >= `num_threads` >= 1.
+  // Note that the `qp` is intentionally passed by value.
   ShardedQuadraticProgram(QuadraticProgram qp, int num_threads, int num_shards);
 
   // Movable but not copyable.
@@ -50,28 +51,29 @@ class ShardedQuadraticProgram {
     return transposed_constraint_matrix_;
   }
 
-  // Returns a Sharder intended for the columns of the QP's constraint matrix.
+  // Returns a `Sharder` intended for the columns of the QP's constraint matrix.
   const Sharder& ConstraintMatrixSharder() const {
     return constraint_matrix_sharder_;
   }
-  // Returns a Sharder intended for the rows of the QP's constraint matrix.
+  // Returns a `Sharder` intended for the rows of the QP's constraint matrix.
   const Sharder& TransposedConstraintMatrixSharder() const {
     return transposed_constraint_matrix_sharder_;
   }
-  // Returns a Sharder intended for primal vectors.
+  // Returns a `Sharder` intended for primal vectors.
   const Sharder& PrimalSharder() const { return primal_sharder_; }
-  // Returns a Sharder intended for dual vectors.
+  // Returns a `Sharder` intended for dual vectors.
   const Sharder& DualSharder() const { return dual_sharder_; }
 
   int64_t PrimalSize() const { return qp_.variable_lower_bounds.size(); }
   int64_t DualSize() const { return qp_.constraint_lower_bounds.size(); }
 
-  // Rescale the QP (including objective, variable bounds, constraint bounds,
+  // Rescales the QP (including objective, variable bounds, constraint bounds,
   // constraint matrix, and transposed constraint matrix) based on
-  // col_scaling_vec and row_scaling_vec. That is, rescale the problem so that
-  // each variable is rescaled as variable[i] <- variable[i] /
-  // col_scaling_vec[i], and the j-th constraint is multiplied by
-  // row_scaling_vec[j]. col_scaling_vec and row_scaling_vec must be positive.
+  // `col_scaling_vec` and `row_scaling_vec`. That is, rescale the problem so
+  // that each variable is rescaled as variable[i] <- variable[i] /
+  // `col_scaling_vec[i]`, and the j-th constraint is multiplied by
+  // `row_scaling_vec[j]`. `col_scaling_vec` and `row_scaling_vec` must be
+  // positive.
   void RescaleQuadraticProgram(const Eigen::VectorXd& col_scaling_vec,
                                const Eigen::VectorXd& row_scaling_vec);
 
@@ -87,8 +89,9 @@ class ShardedQuadraticProgram {
     qp_.constraint_upper_bounds.swap(constraint_upper_bounds);
   }
 
-  // Swaps the objective vector with the one on the quadratic program. Swapping
-  // the objective matrix is not yet supported because it hasn't been needed.
+  // Swaps `objective` with the `objective_vector` in the quadratic program.
+  // Swapping `objective_matrix` is not yet supported because it hasn't been
+  // needed.
   void SwapObjectiveVector(Eigen::VectorXd& objective) {
     qp_.objective_vector.swap(objective);
   }

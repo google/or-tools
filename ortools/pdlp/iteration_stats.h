@@ -25,8 +25,8 @@
 namespace operations_research::pdlp {
 
 // Returns convergence statistics about a primal/dual solution pair. The stats
-// are with respect to sharded_qp (which is typically scaled).
-// This function is equivalent to ComputeConvergenceInformation given scaling
+// are with respect to `sharded_qp` (which is typically scaled).
+// This function is equivalent to `ComputeConvergenceInformation` given scaling
 // vectors uniformly equal to one.
 ConvergenceInformation ComputeScaledConvergenceInformation(
     const PrimalDualHybridGradientParams& params,
@@ -37,16 +37,16 @@ ConvergenceInformation ComputeScaledConvergenceInformation(
     double componentwise_dual_residual_offset, PointType candidate_type);
 
 // Returns convergence statistics about a primal/dual solution pair. It is
-// assumed that scaled_sharded_qp has been transformed from the original qp by
-// ShardedQuadraticProgram::RescaleQuadraticProgram(col_scaling_vec,
-// row_scaling_vec). scaled_primal_solution and scaled_dual_solution are
+// assumed that `scaled_sharded_qp` has been transformed from the original qp by
+// `ShardedQuadraticProgram::RescaleQuadraticProgram(col_scaling_vec,
+// row_scaling_vec)`. `scaled_primal_solution` and `scaled_dual_solution` are
 // solutions for the scaled problem. The stats are computed with respect to the
-// implicit original problem. 'componentwise_primal_residual_offset' and
-// 'componentwise_dual_residual_offset' are the offsets (i.e., eps_ratio) used
+// implicit original problem. `componentwise_primal_residual_offset` and
+// `componentwise_dual_residual_offset` are the offsets (i.e., eps_ratio) used
 // for computing the l_inf_componentwise residual norms.
-// NOTE: This function assumes that scaled_primal_solution satisfies the
-// variable bounds and scaled_dual_solution satisfies the dual variable bounds;
-// see
+// NOTE: This function assumes that `scaled_primal_solution` satisfies the
+// variable bounds and `scaled_dual_solution` satisfies the dual variable
+// bounds; see
 // https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds.
 ConvergenceInformation ComputeConvergenceInformation(
     const PrimalDualHybridGradientParams& params,
@@ -59,12 +59,12 @@ ConvergenceInformation ComputeConvergenceInformation(
     double componentwise_dual_residual_offset, PointType candidate_type);
 
 // Returns infeasibility statistics about a primal/dual infeasibility
-// certificate estimate. It is assumed that scaled_sharded_qp has been
+// certificate estimate. It is assumed that `scaled_sharded_qp` has been
 // transformed from the original qp by
-// ShardedQuadraticProgram::RescaleQuadraticProgram(col_scaling_vec,
-// row_scaling_vec). primal_ray and dual_ray are certificates for the scaled
-// problem. The stats are computed with respect to the implicit original
-// problem.
+// `ShardedQuadraticProgram::RescaleQuadraticProgram(col_scaling_vec,
+// row_scaling_vec)`. `scaled_primal_ray` and `scaled_dual_ray` are
+// potential certificates for the scaled problem. The stats are computed with
+// respect to the implicit original problem.
 InfeasibilityInformation ComputeInfeasibilityInformation(
     const PrimalDualHybridGradientParams& params,
     const ShardedQuadraticProgram& scaled_sharded_qp,
@@ -73,12 +73,12 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
     const Eigen::VectorXd& scaled_primal_ray,
     const Eigen::VectorXd& scaled_dual_ray, PointType candidate_type);
 
-// Computes the reduced costs vector, objective_matrix * primal_solution +
-// objective_vector - constraint_matrix * dual_solution - dual_residuals, when
-// use_zero_primal_objective is false, and -constraint_matrix * dual_solution -
-// dual_residuals when use_zero_primal_objective is true. The elements of the
-// vector are corrected component-wise to zero to ensure that the dual objective
-// takes a finite value. See
+// Computes the reduced costs vector, objective_matrix * `primal_solution` +
+// objective_vector - constraint_matrix * `dual_solution` - dual_residuals, when
+// `use_zero_primal_objective` is false, and -constraint_matrix *
+// `dual_solution` - dual_residuals when `use_zero_primal_objective` is true.
+// The elements of the vector are corrected component-wise to zero to ensure
+// that the dual objective takes a finite value. See
 // https://developers.google.com/optimization/lp/pdlp_math#reduced_costs_dual_residuals_and_the_corrected_dual_objective.
 Eigen::VectorXd ReducedCosts(const PrimalDualHybridGradientParams& params,
                              const ShardedQuadraticProgram& scaled_sharded_qp,
@@ -86,25 +86,25 @@ Eigen::VectorXd ReducedCosts(const PrimalDualHybridGradientParams& params,
                              const Eigen::VectorXd& dual_solution,
                              bool use_zero_primal_objective = false);
 
-// Finds and returns the ConvergenceInformation with the specified
-// candidate_type, or std::nullopt if no such candidate exists.
+// Finds and returns the `ConvergenceInformation` with the specified
+// `candidate_type`, or std::nullopt if no such candidate exists.
 std::optional<ConvergenceInformation> GetConvergenceInformation(
     const IterationStats& stats, PointType candidate_type);
 
-// Finds and returns the InfeasibilityInformation with the specified
-// candidate_type, or std::nullopt if no such candidate exists.
+// Finds and returns the `InfeasibilityInformation` with the specified
+// `candidate_type`, or std::nullopt if no such candidate exists.
 std::optional<InfeasibilityInformation> GetInfeasibilityInformation(
     const IterationStats& stats, PointType candidate_type);
 
-// Finds and returns the PointMetadata with the specified
-// point_type, or std::nullopt if no such point exists.
+// Finds and returns the `PointMetadata` with the specified
+// `point_type`, or std::nullopt if no such point exists.
 std::optional<PointMetadata> GetPointMetadata(const IterationStats& stats,
                                               PointType point_type);
 
-// For each entry in random_projection_seeds, computes a random projection of
+// For each entry in `random_projection_seeds`, computes a random projection of
 // the primal/dual solution pair onto pseudo-random vectors generated from that
 // seed and adds the results to
-// random_primal_projections/random_dual_projections in metadata.
+// `random_primal_projections`/`random_dual_projections` in `metadata`.
 void SetRandomProjections(const ShardedQuadraticProgram& sharded_qp,
                           const Eigen::VectorXd& primal_solution,
                           const Eigen::VectorXd& dual_solution,

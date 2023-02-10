@@ -31,7 +31,7 @@ namespace operations_research::pdlp {
 
 namespace {
 
-// Logs a warning if the given matrix has more than density_limit non-zeros in
+// Logs a warning if `matrix` has more than `density_limit` non-zeros in
 // a single column.
 void WarnIfMatrixUnbalanced(
     const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
@@ -94,9 +94,9 @@ ShardedQuadraticProgram::ShardedQuadraticProgram(QuadraticProgram qp,
 
 namespace {
 
-// Multiply each entry of the matrix by the corresponding element of
-// row_scaling_vec and col_scaling_vec, i.e., matrix[i,j] *= row_scaling_vec[i]
-// * col_scaling_vec[j].
+// Multiply each entry of `matrix` by the corresponding element of
+// `row_scaling_vec` and `col_scaling_vec`, i.e.,
+// `matrix[i,j] *= row_scaling_vec[i] * col_scaling_vec[j]`.
 void ScaleMatrix(
     const Eigen::VectorXd& col_scaling_vec,
     const Eigen::VectorXd& row_scaling_vec, const Sharder& sharder,
