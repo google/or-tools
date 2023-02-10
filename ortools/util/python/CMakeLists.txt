@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 pybind11_add_module(sorted_interval_list MODULE sorted_interval_list.cc)
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
