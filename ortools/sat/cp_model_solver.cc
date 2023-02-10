@@ -182,6 +182,23 @@ std::string Summarize(const std::string& input) {
                       input.substr(input.size() - half, half));
 }
 
+template <class M>
+void DumpModelProto(const M& proto, const std::string& name) {
+#if !defined(__PORTABLE_PLATFORM__)
+  if (absl::GetFlag(FLAGS_cp_model_dump_text_proto)) {
+    const std::string file = absl::StrCat(
+        absl::GetFlag(FLAGS_cp_model_dump_prefix), name, ".pb.txt");
+    LOG(INFO) << "Dumping " << name << " text proto to '" << file << "'.";
+    CHECK_OK(file::SetTextProto(file, proto, file::Defaults()));
+  } else {
+    const std::string file =
+        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), name, ".bin");
+    LOG(INFO) << "Dumping " << name << " binary proto to '" << file << "'.";
+    CHECK_OK(file::SetBinaryProto(file, proto, file::Defaults()));
+  }
+#endif  // !defined(__PORTABLE_PLATFORM__)
+}
+
 }  // namespace.
 
 // =============================================================================
@@ -3351,17 +3368,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #if !defined(__PORTABLE_PLATFORM__)
   // Dump initial model?
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
-    if (absl::GetFlag(FLAGS_cp_model_dump_text_proto)) {
-      const std::string file = absl::StrCat(
-          absl::GetFlag(FLAGS_cp_model_dump_prefix), "model.pb.txt");
-      LOG(INFO) << "Dumping cp model text proto to '" << file << "'.";
-      CHECK_OK(file::SetTextProto(file, model_proto, file::Defaults()));
-    } else {
-      const std::string file =
-          absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), "model.bin");
-      LOG(INFO) << "Dumping cp model binary proto to '" << file << "'.";
-      CHECK_OK(file::SetBinaryProto(file, model_proto, file::Defaults()));
-    }
+    DumpModelProto(model_proto, "model");
   }
 #endif  // __PORTABLE_PLATFORM__
 
@@ -3822,45 +3829,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
 #if !defined(__PORTABLE_PLATFORM__)
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
-    if (absl::GetFlag(FLAGS_cp_model_dump_text_proto)) {
-      const std::string presolved_file = absl::StrCat(
-          absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_model.pb.txt");
-      LOG(INFO) << "Dumping presolved CpModelProto to '" << presolved_file
-                << "'.";
-      CHECK_OK(file::SetTextProto(presolved_file, new_cp_model_proto,
-                                  file::Defaults()));
-
-      const std::string mapping_file = absl::StrCat(
-          absl::GetFlag(FLAGS_cp_model_dump_prefix), "mapping_model.pb.txt");
-      LOG(INFO) << "Dumping mapping CpModelProto to '" << mapping_file << "'.";
-      CHECK_OK(
-          file::SetTextProto(mapping_file, mapping_proto, file::Defaults()));
-    } else {
-      const std::string presolved_file = absl::StrCat(
-          absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_model.bin");
-      LOG(INFO) << "Dumping presolved CpModelProto to '" << presolved_file
-                << "'.";
-      CHECK_OK(file::SetBinaryProto(presolved_file, new_cp_model_proto,
-                                    file::Defaults()));
-      const std::string mapping_file = absl::StrCat(
-          absl::GetFlag(FLAGS_cp_model_dump_prefix), "mapping_model.bin");
-      LOG(INFO) << "Dumping mapping CpModelProto to '" << mapping_file << "'.";
-      CHECK_OK(
-          file::SetBinaryProto(mapping_file, mapping_proto, file::Defaults()));
-    }
+    DumpModelProto(new_cp_model_proto, "presolved_model");
+    DumpModelProto(mapping_proto, "mapping_model");
 
     // If the model is convertible to a MIP, we dump it too.
     //
     // TODO(user): We could try to dump our linear relaxation too.
     MPModelProto mip_model;
     if (ConvertCpModelProtoToMPModelProto(new_cp_model_proto, &mip_model)) {
-      const std::string file =
-          absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                       "presolved.mp_model.pb.txt");
-      LOG(INFO) << "Presolved problem is pure linear IP. Dumping presolved "
-                   "MPModelProto to '"
-                << file << "'.";
-      CHECK_OK(file::SetTextProto(file, mip_model, file::Defaults()));
+      DumpModelProto(mip_model, "presolved_mp_model");
     }
   }
 #endif  // __PORTABLE_PLATFORM__

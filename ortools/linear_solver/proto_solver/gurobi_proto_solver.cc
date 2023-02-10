@@ -227,6 +227,8 @@ absl::Status SetSolverSpecificParameters(const std::string& parameters,
   if (parameters.empty()) return absl::OkStatus();
   std::vector<std::string> error_messages;
   for (absl::string_view line : absl::StrSplit(parameters, '\n')) {
+    // Empty lines are simply ignored.
+    if (line.empty()) continue;
     // Comment tokens end at the next new-line, or the end of the string.
     // The first character must be '#'
     if (line[0] == '#') continue;

@@ -640,7 +640,12 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back("quick_restart");
     names.push_back("quick_restart_no_lp");
     names.push_back("lb_tree_search");
-    names.push_back("objective_lb_search");
+    // Do not add objective_lb_search if core is active and num_workers <= 16.
+    if (cp_model.has_objective() &&
+        (cp_model.objective().vars().size() == 1 ||  // core is not active
+         base_params.num_workers() > 16)) {
+      names.push_back("objective_lb_search");
+    }
     names.push_back("probing");
     if (base_params.num_workers() >= 20) {
       names.push_back("probing_max_lp");
@@ -714,13 +719,6 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       // Disable core search if only 1 term in the objective.
       if (cp_model.objective().vars().size() == 1 &&
           params.optimize_with_core()) {
-        continue;
-      }
-
-      // Disable objective_lb_search if core is active and num_workers <= 16.
-      if (params.use_objective_lb_search() &&
-          cp_model.objective().vars().size() > 1 &&  // core is active
-          base_params.num_workers() <= 16) {
         continue;
       }
 
