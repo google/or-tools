@@ -9,6 +9,7 @@ This is the reference documentation for Google OR-Tools.
 This repository contains several component:
 
 @li @ref Google.OrTools.Init "Google.OrTools.Init"
+@li @ref Google.OrTools.Util "Google.OrTools.Util"
 
 @li @ref Google.OrTools.Algorithms "Google.OrTools.Algorithms"
 @li @ref Google.OrTools.Graph "Google.OrTools.Graph"
