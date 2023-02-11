@@ -140,7 +140,7 @@ install_deps()
 # Add a second repo @ortools_notebook_deps for jupyter notebooks.
 pip_parse(
    name = "ortools_notebook_deps",
-   requirements = "//bazel:python_notebook_deps.txt",
+   requirements = "//bazel:notebook_requirements.txt",
 )
 
 load("@ortools_notebook_deps//:requirements.bzl", 

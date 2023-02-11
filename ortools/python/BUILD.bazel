@@ -25,6 +25,7 @@ py_binary(
         "//ortools/graph/python:min_cost_flow.so",
         "//ortools/sat/python:swig_helper.so",
     ],
+    tags = ["manual"],
     deps = [
         "//ortools/linear_solver/python:model_builder",
         "//ortools/linear_solver/python:model_builder_helper",

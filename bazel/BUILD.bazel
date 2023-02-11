@@ -28,3 +28,11 @@ exports_files([
     "python_deps.txt",
     "python_notebook_deps.txt",
 ])
+
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+
+compile_pip_requirements(
+    name = "notebook_requirements",
+    requirements_in = "notebook_requirements.in",
+    requirements_txt = "notebook_requirements.txt",
+)
