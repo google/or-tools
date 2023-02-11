@@ -490,19 +490,6 @@ cc_binary(
 )
 
 cc_binary(
-    name = "solve",
-    srcs = ["solve.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/linear_solver",
-        "//ortools/linear_solver:linear_solver_cc_proto",
-        "//ortools/lp_data:model_reader",
-        "//ortools/lp_data:mps_reader",
-        "@com_google_absl//absl/time",
-    ],
-)
-
-cc_binary(
     name = "sports_scheduling_sat",
     srcs = ["sports_scheduling_sat.cc"],
     deps = [

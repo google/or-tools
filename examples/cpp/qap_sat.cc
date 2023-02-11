@@ -125,7 +125,7 @@ void SolveQap() {
 }  // namespace operations_research
 
 static const char kUsageStr[] =
-    "Solves quadratic assigment problems with CP-SAT. "
+    "Solves quadratic assignment problems with CP-SAT. "
     "The input file should have the format described in the QAPLIB (see "
     "http://anjos.mgi.polymtl.ca/qaplib/).";
 

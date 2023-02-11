@@ -139,7 +139,22 @@ void CreateJobs(const JsspInputProblem& problem, int64_t horizon,
         durations.push_back(task.duration(a));
       }
 
-      const IntVar start = cp_model.NewIntVar(Domain(hard_start, hard_end));
+      // Hack: we force the end to be below the horizon if the job has no hard
+      // limit defined.
+      //
+      // The correct formula should use min_duration, but this will break the
+      // makespan detection inside the solver. Luckily, the horizon computation
+      // is very loose and has a lot of slack, so we should not loose the
+      // optimal solution.
+      //
+      // TODO(user): remove the makespan interval when makespan detection is
+      // based on the dependency graph and not on the creation of the makespan
+      // interval.
+      const IntVar start = cp_model.NewIntVar(Domain(
+          hard_start,
+          job.has_latest_end() || problem.makespan_cost_per_time_unit() == 0
+              ? hard_end
+              : hard_end - max_duration));
       if (min_duration == max_duration) {
         const IntervalVar interval =
             cp_model.NewFixedSizeIntervalVar(start, min_duration);
@@ -346,7 +361,7 @@ void CreateMachines(
       const int job_i = machine_to_tasks[m][i].job;
       const MachineTaskData& tail = machine_to_tasks[m][i];
 
-      // TODO(user, lperron): simplify the code!
+      // TODO(user): simplify the code!
       CHECK_EQ(i, job_i);
 
       // Source to nodes.
@@ -370,7 +385,7 @@ void CreateMachines(
           const MachineTaskData& head = machine_to_tasks[m][j];
           const int job_j = head.job;
 
-          // TODO(user, lperron): simplify the code!
+          // TODO(user): simplify the code!
           CHECK_EQ(j, job_j);
           const int64_t transition =
               machine_transitions.transition_time(job_i * num_jobs + job_j);
@@ -519,13 +534,11 @@ void AddCumulativeRelaxation(
     machines_per_component[components[c]].push_back(c);
   }
   LOG(INFO) << "Found " << machines_per_component.size()
-            << " connected machine components.";
+            << " connected machine components";
 
   for (const auto& it : machines_per_component) {
-    // Ignore the trivial cases.
-    if (it.second.size() < 2 || it.second.size() == num_machines) continue;
     absl::flat_hash_set<int> component(it.second.begin(), it.second.end());
-    std::vector<IntervalVar> intervals;
+    std::vector<IntervalVar> connected_intervals;
     for (int j = 0; j < num_jobs; ++j) {
       const Job& job = problem.jobs(j);
       const int num_tasks_in_job = job.tasks_size();
@@ -533,26 +546,51 @@ void AddCumulativeRelaxation(
         const Task& task = job.tasks(t);
         for (const int m : task.machine()) {
           if (component.contains(m)) {
-            intervals.push_back(job_to_tasks[j][t].interval);
+            connected_intervals.push_back(job_to_tasks[j][t].interval);
             break;
           }
         }
       }
     }
 
-    LOG(INFO) << "Found machine connected component: ["
-              << absl::StrJoin(it.second, ", ") << "] with " << intervals.size()
-              << " intervals";
-    // Ignore trivial case with all intervals.
-    if (intervals.size() == 1 || intervals.size() == num_tasks) continue;
+    // Ignore trivial cases with at most one interval, or all intervals, or only
+    // one machine.
+    if (connected_intervals.size() <= 1 || component.size() <= 1 ||
+        component.size() == num_tasks) {
+      continue;
+    }
+
+    LOG(INFO) << "Interesting machine connected component: ["
+              << absl::StrJoin(it.second, ", ") << "] with "
+              << connected_intervals.size() << " intervals";
 
     CumulativeConstraint cumul = cp_model.AddCumulative(component.size());
-    for (int i = 0; i < intervals.size(); ++i) {
-      cumul.AddDemand(intervals[i], 1);
+    for (const IntervalVar& interval : connected_intervals) {
+      cumul.AddDemand(interval, 1);
     }
     if (absl::GetFlag(FLAGS_use_interval_makespan)) {
       cumul.AddDemand(makespan_interval, component.size());
     }
+  }
+
+  // Add a global cumulative that contains all main intervals.
+  //
+  // On most benchmarks, this is the only cumulative constraint created as the
+  // graph of connected interval has only one component.
+  //
+  // Even on benchmarks with cliques, it still helps, as it allows a global
+  // energetic reasoning that uses the makespan.
+  LOG(INFO) << "Add global cumulative with  " << num_tasks << " intervals and "
+            << num_machines << " machines";
+  CumulativeConstraint global_cumul = cp_model.AddCumulative(num_machines);
+  for (int j = 0; j < num_jobs; ++j) {
+    const int num_tasks_in_job = problem.jobs(j).tasks_size();
+    for (int t = 0; t < num_tasks_in_job; ++t) {
+      global_cumul.AddDemand(job_to_tasks[j][t].interval, 1);
+    }
+  }
+  if (absl::GetFlag(FLAGS_use_interval_makespan)) {
+    global_cumul.AddDemand(makespan_interval, num_machines);
   }
 }
 
@@ -611,7 +649,7 @@ void DisplayJobStatistics(
 // Solve a JobShop scheduling problem using CP-SAT.
 void Solve(const JsspInputProblem& problem) {
   if (absl::GetFlag(FLAGS_display_model)) {
-    LOG(INFO) << problem.DebugString();
+    LOG(INFO) << problem;
   }
 
   CpModelBuilder cp_model;
@@ -649,16 +687,15 @@ void Solve(const JsspInputProblem& problem) {
   // that was slower than the interval trick when I tried.
   const IntVar makespan = cp_model.NewIntVar(Domain(0, horizon));
   IntervalVar makespan_interval;
-  if (absl::GetFlag(FLAGS_use_interval_makespan)) {
-    makespan_interval = cp_model.NewIntervalVar(
-        /*start=*/makespan,
-        /*size=*/cp_model.NewIntVar(Domain(1, horizon)),
-        /*end=*/cp_model.NewIntVar(Domain(horizon + 1)));
-  } else if (problem.makespan_cost_per_time_unit() != 0L) {
+  if (problem.makespan_cost_per_time_unit() != 0L) {
+    if (absl::GetFlag(FLAGS_use_interval_makespan)) {
+      makespan_interval = cp_model.NewIntervalVar(
+          /*start=*/makespan,
+          /*size=*/cp_model.NewIntVar(Domain(1, horizon)),
+          /*end=*/cp_model.NewIntVar(Domain(horizon + 1)));
+    }
     for (int j = 0; j < num_jobs; ++j) {
       // The makespan will be greater than the end of each job.
-      // This is not needed if we add the makespan "interval" to each
-      // disjunctive.
       cp_model.AddLessOrEqual(job_to_tasks[j].back().end, makespan);
     }
   }
@@ -675,7 +712,8 @@ void Solve(const JsspInputProblem& problem) {
   // Try to detect connected components of alternative machines.
   // If this is happens, we can add a cumulative constraint as a relaxation of
   // all no_ovelap constraints on the set of alternative machines.
-  if (absl::GetFlag(FLAGS_use_cumulative_relaxation)) {
+  if (absl::GetFlag(FLAGS_use_cumulative_relaxation) &&
+      problem.makespan_cost_per_time_unit() != 0) {
     AddCumulativeRelaxation(problem, job_to_tasks, makespan_interval, cp_model);
   }
 

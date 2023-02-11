@@ -72,7 +72,7 @@ void ParseAndSolve(const std::string& filename, absl::string_view solver,
             << data.item_size() << " item types, and "
             << data.resource_capacity_size() << " dimensions.";
   if (absl::GetFlag(FLAGS_display_proto)) {
-    LOG(INFO) << data.DebugString();
+    LOG(INFO) << data;
   }
 
   // Build optimization model.

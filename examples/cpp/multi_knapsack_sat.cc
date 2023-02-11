@@ -20,6 +20,7 @@
 // of each items.
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "absl/flags/flag.h"
