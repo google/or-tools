@@ -131,7 +131,7 @@ load("@rules_python//python:pip.bzl", "pip_parse")
 
 pip_parse(
    name = "ortools_deps",
-   requirements = "//bazel:python_deps.txt",
+   requirements = "//bazel:ortools_requirements.txt",
 )
 
 load("@ortools_deps//:requirements.bzl", "install_deps")
