@@ -2651,6 +2651,7 @@ class LnsSolver : public SubSolver {
       SatParameters local_params(parameters_);
       local_params.set_max_deterministic_time(data.deterministic_limit);
       local_params.set_stop_after_first_solution(false);
+      local_params.set_cp_model_presolve(true);
       local_params.set_log_search_progress(false);
       local_params.set_cp_model_probing_level(0);
       local_params.set_symmetry_level(0);
@@ -2756,9 +2757,8 @@ class LnsSolver : public SubSolver {
       data.status = local_response.status();
       // TODO(user): we actually do not need to postsolve if the solution is
       // not going to be used...
-      if (local_params.cp_model_presolve() &&
-          (data.status == CpSolverStatus::OPTIMAL ||
-           data.status == CpSolverStatus::FEASIBLE)) {
+      if (data.status == CpSolverStatus::OPTIMAL ||
+          data.status == CpSolverStatus::FEASIBLE) {
         PostsolveResponseWrapper(
             local_params, helper_->ModelProto().variables_size(), mapping_proto,
             postsolve_mapping, &solution_values);
