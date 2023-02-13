@@ -1164,10 +1164,26 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
                                                   coeffs, ub));
       }
     }
-    for (const int ref : ct.enforcement_literal()) {
-      clause.push_back(mapping->Literal(ref).Negated());
+
+    const std::vector<Literal> enforcement_literals =
+        mapping->Literals(ct.enforcement_literal());
+
+    // Make sure all booleans are tights when enumerating all solutions.
+    if (params.enumerate_all_solutions() && !enforcement_literals.empty()) {
+      for (const Literal enforcement_literal : enforcement_literals) {
+        for (const Literal literal : clause) {
+          m->Add(Implication(enforcement_literal.Negated(), literal.Negated()));
+          if (special_case) break;  // For the unique Boolean var to be false.
+        }
+      }
     }
-    if (!special_case) m->Add(ClauseConstraint(clause));
+
+    if (!special_case) {
+      for (const Literal enforcement_literal : enforcement_literals) {
+        clause.push_back(enforcement_literal.Negated());
+      }
+      m->Add(ClauseConstraint(clause));
+    }
   }
 }
 
