@@ -1703,6 +1703,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
     // Boolean encoding.
     int single_bool;
     BoolArgumentProto* clause = nullptr;
+    std::vector<int> domain_literals;
     if (ct->enforcement_literal().empty() && ct->linear().domain_size() == 4) {
       // We cover the special case of no enforcement and two choices by creating
       // a single Boolean.
@@ -1713,6 +1714,10 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
         clause->add_literals(NegatedRef(ref));
       }
     }
+
+    // Save enforcement literals for the enumeration.
+    const std::vector<int> enforcement_literals(
+        ct->enforcement_literal().begin(), ct->enforcement_literal().end());
     ct->mutable_enforcement_literal()->Clear();
     for (int i = 0; i < ct->linear().domain_size(); i += 2) {
       const int64_t lb = ct->linear().domain(i);
@@ -1722,7 +1727,9 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
       if (clause != nullptr) {
         subdomain_literal = context->NewBoolVar();
         clause->add_literals(subdomain_literal);
+        domain_literals.push_back(subdomain_literal);
       } else {
+        if (i == 0) domain_literals.push_back(single_bool);
         subdomain_literal = i == 0 ? single_bool : NegatedRef(single_bool);
       }
 
@@ -1732,6 +1739,30 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
       *new_ct = *ct;
       new_ct->add_enforcement_literal(subdomain_literal);
       FillDomainInProto(Domain(lb, ub), new_ct->mutable_linear());
+    }
+
+    // Make sure all booleans are tights when enumerating all solutions.
+    if (context->params().enumerate_all_solutions() &&
+        !enforcement_literals.empty()) {
+      int linear_is_enforced;
+      if (enforcement_literals.size() == 1) {
+        linear_is_enforced = enforcement_literals[0];
+      } else {
+        linear_is_enforced = context->NewBoolVar();
+        BoolArgumentProto* maintain_linear_is_enforced =
+            context->working_model->add_constraints()->mutable_bool_or();
+        for (const int e_lit : enforcement_literals) {
+          context->AddImplication(NegatedRef(e_lit),
+                                  NegatedRef(linear_is_enforced));
+          maintain_linear_is_enforced->add_literals(NegatedRef(e_lit));
+        }
+        maintain_linear_is_enforced->add_literals(linear_is_enforced);
+      }
+
+      for (const int lit : domain_literals) {
+        context->AddImplication(NegatedRef(linear_is_enforced),
+                                NegatedRef(lit));
+      }
     }
     ct->Clear();
   }

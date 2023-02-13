@@ -194,18 +194,6 @@ class CpModelMapping {
     return result;
   }
 
-  // Returns a heuristic set of values that could be created for the given
-  // variable when the constraints will be loaded.
-  // Note that the pointer is not stable across calls.
-  // It returns nullptr if the set is empty.
-  const absl::flat_hash_set<int64_t>& PotentialEncodedValues(int var) {
-    const auto& it = variables_to_encoded_values_.find(var);
-    if (it != variables_to_encoded_values_.end()) {
-      return it->second;
-    }
-    return empty_set_;
-  }
-
   // Returns the number of variables in the loaded proto.
   int NumProtoVariables() const { return integers_.size(); }
 
@@ -230,10 +218,6 @@ class CpModelMapping {
   // ExtractEncoding().
   absl::flat_hash_set<const ConstraintProto*> already_loaded_ct_;
   absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
-
-  absl::flat_hash_map<int, absl::flat_hash_set<int64_t>>
-      variables_to_encoded_values_;
-  const absl::flat_hash_set<int64_t> empty_set_;
 };
 
 }  // namespace sat

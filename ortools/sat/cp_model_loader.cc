@@ -474,9 +474,6 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
         }
         var_to_equalities[var].push_back(
             {&ct, enforcement_literal, inter.Min(), true});
-        if (domain.Contains(inter.Min())) {
-          mapping->variables_to_encoded_values_[var].insert(inter.Min());
-        }
       }
     }
     {
@@ -485,9 +482,6 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
       if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
         var_to_equalities[var].push_back(
             {&ct, enforcement_literal, inter.Min(), false});
-        if (domain.Contains(inter.Min())) {
-          mapping->variables_to_encoded_values_[var].insert(inter.Min());
-        }
       }
     }
   }
@@ -1170,17 +1164,28 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
     // Make sure all booleans are tights when enumerating all solutions.
     if (params.enumerate_all_solutions() && !enforcement_literals.empty()) {
-      for (const Literal enforcement_literal : enforcement_literals) {
-        for (const Literal literal : clause) {
-          m->Add(Implication(enforcement_literal.Negated(), literal.Negated()));
-          if (special_case) break;  // For the unique Boolean var to be false.
+      Literal linear_is_enforced;
+      if (enforcement_literals.size() == 1) {
+        linear_is_enforced = enforcement_literals[0];
+      } else {
+        linear_is_enforced = Literal(m->Add(NewBooleanVariable()), true);
+        std::vector<Literal> maintain_linear_is_enforced;
+        for (const Literal e_lit : enforcement_literals) {
+          m->Add(Implication(e_lit.Negated(), linear_is_enforced.Negated()));
+          maintain_linear_is_enforced.push_back(e_lit.Negated());
         }
+        maintain_linear_is_enforced.push_back(linear_is_enforced);
+        m->Add(ClauseConstraint(maintain_linear_is_enforced));
+      }
+      for (const Literal lit : clause) {
+        m->Add(Implication(linear_is_enforced.Negated(), lit.Negated()));
+        if (special_case) break;  // For the unique Boolean var to be false.
       }
     }
 
     if (!special_case) {
-      for (const Literal enforcement_literal : enforcement_literals) {
-        clause.push_back(enforcement_literal.Negated());
+      for (const Literal e_lit : enforcement_literals) {
+        clause.push_back(e_lit.Negated());
       }
       m->Add(ClauseConstraint(clause));
     }
