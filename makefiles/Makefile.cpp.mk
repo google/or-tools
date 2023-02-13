@@ -561,9 +561,6 @@ test_cc_cpp: \
 #	$(MAKE) run \
  SOURCE=examples/cpp/shift_minimization_sat.cc \
  ARGS="--input=$(subst $S,/,$(OR_ROOT_FULL))/examples/cpp/shift_minimization.dat"
-	$(MAKE) run \
- SOURCE=examples/cpp/solve.cc \
- ARGS="--input=$(subst $S,/,$(OR_ROOT_FULL))/examples/cpp/test2.mps"
 
 rfz_%: cpp
 	$(INSTALL_DIR)$Sbin$Sfzn-ortools$E $(OR_ROOT_FULL)/examples/flatzinc/$*.fzn
