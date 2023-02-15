@@ -2206,7 +2206,7 @@ absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
 
   auto notFound = xpress_dynamic_library->FunctionsNotFound();
   if (!notFound.empty()) {
-    return absl::NotFoundError(absl::StrCat("Could not find the following functions. [",
+    return absl::NotFoundError(absl::StrCat("Could not find the following functions (list may not be exhaustive). [",
                                             absl::StrJoin(notFound, "', '"),
                                             "]. Please make sure that your XPRESS install is up-to-date (>= 8.13.0)."));
   }
