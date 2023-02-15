@@ -57,6 +57,7 @@ class DynamicLibrary {
   }
 
   bool LibraryIsLoaded() const { return library_handle_ != nullptr; }
+
   const std::vector<std::string>& FunctionsNotFound() const {
       return functions_not_found_;
   }
