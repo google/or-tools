@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #include <list>
 #include <memory>
 #include <queue>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -407,6 +408,7 @@ class AtSolutionCallback : public SearchMonitor {
       : SearchMonitor(solver), callback_(std::move(callback)) {}
   ~AtSolutionCallback() override {}
   bool AtSolution() override;
+  void Install() override;
 
  private:
   const std::function<void()> callback_;
@@ -415,6 +417,10 @@ class AtSolutionCallback : public SearchMonitor {
 bool AtSolutionCallback::AtSolution() {
   callback_();
   return false;
+}
+
+void AtSolutionCallback::Install() {
+  ListenToEvent(Solver::MonitorEvent::kAtSolution);
 }
 
 }  // namespace
@@ -430,12 +436,17 @@ class EnterSearchCallback : public SearchMonitor {
       : SearchMonitor(solver), callback_(std::move(callback)) {}
   ~EnterSearchCallback() override {}
   void EnterSearch() override;
+  void Install() override;
 
  private:
   const std::function<void()> callback_;
 };
 
 void EnterSearchCallback::EnterSearch() { callback_(); }
+
+void EnterSearchCallback::Install() {
+  ListenToEvent(Solver::MonitorEvent::kEnterSearch);
+}
 
 }  // namespace
 
@@ -450,12 +461,17 @@ class ExitSearchCallback : public SearchMonitor {
       : SearchMonitor(solver), callback_(std::move(callback)) {}
   ~ExitSearchCallback() override {}
   void ExitSearch() override;
+  void Install() override;
 
  private:
   const std::function<void()> callback_;
 };
 
 void ExitSearchCallback::ExitSearch() { callback_(); }
+
+void ExitSearchCallback::Install() {
+  ListenToEvent(Solver::MonitorEvent::kExitSearch);
+}
 
 }  // namespace
 
@@ -1492,7 +1508,7 @@ int64_t StaticEvaluatorSelector::SelectValue(const IntVar* var, int64_t id) {
 
 int64_t StaticEvaluatorSelector::ChooseVariable() {
   if (first_ == -1) {  // first call to select. update assignment costs
-    // Two phases: compute size then filland sort
+    // Two phases: compute size then fill and sort
     int64_t element_size = 0;
     for (int64_t i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
@@ -2278,6 +2294,10 @@ SolutionCollector::~SolutionCollector() {
   gtl::STLDeleteElements(&recycle_solutions_);
 }
 
+void SolutionCollector::Install() {
+  ListenToEvent(Solver::MonitorEvent::kEnterSearch);
+}
+
 void SolutionCollector::Add(IntVar* const var) {
   if (prototype_ != nullptr) {
     prototype_->Add(var);
@@ -2450,6 +2470,7 @@ class FirstSolutionCollector : public SolutionCollector {
   ~FirstSolutionCollector() override;
   void EnterSearch() override;
   bool AtSolution() override;
+  void Install() override;
   std::string DebugString() const override;
 
  private:
@@ -2476,6 +2497,11 @@ bool FirstSolutionCollector::AtSolution() {
     done_ = true;
   }
   return false;
+}
+
+void FirstSolutionCollector::Install() {
+  SolutionCollector::Install();
+  ListenToEvent(Solver::MonitorEvent::kAtSolution);
 }
 
 std::string FirstSolutionCollector::DebugString() const {
@@ -2506,6 +2532,7 @@ class LastSolutionCollector : public SolutionCollector {
   explicit LastSolutionCollector(Solver* const s);
   ~LastSolutionCollector() override;
   bool AtSolution() override;
+  void Install() override;
   std::string DebugString() const override;
 };
 
@@ -2522,6 +2549,11 @@ bool LastSolutionCollector::AtSolution() {
   PopSolution();
   PushSolution();
   return true;
+}
+
+void LastSolutionCollector::Install() {
+  SolutionCollector::Install();
+  ListenToEvent(Solver::MonitorEvent::kAtSolution);
 }
 
 std::string LastSolutionCollector::DebugString() const {
@@ -2553,6 +2585,7 @@ class BestValueSolutionCollector : public SolutionCollector {
   ~BestValueSolutionCollector() override {}
   void EnterSearch() override;
   bool AtSolution() override;
+  void Install() override;
   std::string DebugString() const override;
 
  public:
@@ -2599,6 +2632,11 @@ bool BestValueSolutionCollector::AtSolution() {
   return true;
 }
 
+void BestValueSolutionCollector::Install() {
+  SolutionCollector::Install();
+  ListenToEvent(Solver::MonitorEvent::kAtSolution);
+}
+
 std::string BestValueSolutionCollector::DebugString() const {
   if (prototype_ == nullptr) {
     return "BestValueSolutionCollector()";
@@ -2631,6 +2669,7 @@ class NBestValueSolutionCollector : public SolutionCollector {
   void EnterSearch() override;
   void ExitSearch() override;
   bool AtSolution() override;
+  void Install() override;
   std::string DebugString() const override;
 
  public:
@@ -2695,6 +2734,12 @@ bool NBestValueSolutionCollector::AtSolution() {
   return true;
 }
 
+void NBestValueSolutionCollector::Install() {
+  SolutionCollector::Install();
+  ListenToEvent(Solver::MonitorEvent::kExitSearch);
+  ListenToEvent(Solver::MonitorEvent::kAtSolution);
+}
+
 std::string NBestValueSolutionCollector::DebugString() const {
   if (prototype_ == nullptr) {
     return "NBestValueSolutionCollector()";
@@ -2740,6 +2785,7 @@ class AllSolutionCollector : public SolutionCollector {
   explicit AllSolutionCollector(Solver* const s);
   ~AllSolutionCollector() override;
   bool AtSolution() override;
+  void Install() override;
   std::string DebugString() const override;
 };
 
@@ -2755,6 +2801,11 @@ AllSolutionCollector::~AllSolutionCollector() {}
 bool AllSolutionCollector::AtSolution() {
   PushSolution();
   return true;
+}
+
+void AllSolutionCollector::Install() {
+  SolutionCollector::Install();
+  ListenToEvent(Solver::MonitorEvent::kAtSolution);
 }
 
 std::string AllSolutionCollector::DebugString() const {
@@ -3031,10 +3082,21 @@ Metaheuristic::Metaheuristic(Solver* const solver, bool maximize,
       maximize_(maximize) {}
 
 bool Metaheuristic::AtSolution() {
-  current_ = objective_->Value();
+  // In case the objective is not bound, stick to conservative bounds. For that
+  // reason Value() should not be called directly.
   if (maximize_) {
+    if (!objective_->Bound()) {
+      VLOG(2) << "Objective not bound: " << objective_->DebugString()
+              << ". Taking domain min.";
+    }
+    current_ = objective_->Min();
     best_ = std::max(current_, best_);
   } else {
+    if (!objective_->Bound()) {
+      VLOG(2) << "Objective not bound: " << objective_->DebugString()
+              << ". Taking domain max.";
+    }
+    current_ = objective_->Max();
     best_ = std::min(current_, best_);
   }
   return true;
@@ -3098,11 +3160,9 @@ class TabuSearch : public Metaheuristic {
 
  protected:
   struct VarValue {
-    VarValue(IntVar* const var, int64_t value, int64_t stamp)
-        : var_(var), value_(value), stamp_(stamp) {}
-    IntVar* const var_;
-    const int64_t value_;
-    const int64_t stamp_;
+    IntVar* const var;
+    const int64_t value;
+    const int64_t stamp;
   };
   typedef std::list<VarValue> TabuList;
 
@@ -3146,6 +3206,7 @@ TabuSearch::TabuSearch(Solver* const s, bool maximize, IntVar* objective,
 void TabuSearch::EnterSearch() {
   Metaheuristic::EnterSearch();
   found_initial_solution_ = false;
+  stamp_ = 0;
 }
 
 void TabuSearch::ApplyDecision(Decision* const d) {
@@ -3209,11 +3270,11 @@ std::vector<IntVar*> TabuSearch::CreateTabuVars() {
   // the tabu criterion which is tolerated; a factor of 1 means no violations
   // allowed, a factor of 0 means all violations allowed.
   std::vector<IntVar*> tabu_vars;
-  for (const VarValue& vv : keep_tabu_list_) {
-    tabu_vars.push_back(s->MakeIsEqualCstVar(vv.var_, vv.value_));
+  for (const auto [var, value, unused_stamp] : keep_tabu_list_) {
+    tabu_vars.push_back(s->MakeIsEqualCstVar(var, value));
   }
-  for (const VarValue& vv : forbid_tabu_list_) {
-    tabu_vars.push_back(s->MakeIsDifferentCstVar(vv.var_, vv.value_));
+  for (const auto [var, value, unused_stamp] : forbid_tabu_list_) {
+    tabu_vars.push_back(s->MakeIsDifferentCstVar(var, value));
   }
   return tabu_vars;
 }
@@ -3234,12 +3295,10 @@ bool TabuSearch::AtSolution() {
       const int64_t new_value = var->Value();
       if (old_value != new_value) {
         if (keep_tenure_ > 0) {
-          VarValue keep_value(var, new_value, stamp_);
-          keep_tabu_list_.push_front(keep_value);
+          keep_tabu_list_.push_front({var, new_value, stamp_});
         }
         if (forbid_tenure_ > 0) {
-          VarValue forbid_value(var, old_value, stamp_);
-          forbid_tabu_list_.push_front(forbid_value);
+          forbid_tabu_list_.push_front({var, old_value, stamp_});
         }
       }
     }
@@ -3266,7 +3325,7 @@ void TabuSearch::AcceptNeighbor() {
 }
 
 void TabuSearch::AgeList(int64_t tenure, TabuList* list) {
-  while (!list->empty() && list->back().stamp_ < stamp_ - tenure) {
+  while (!list->empty() && list->back().stamp < stamp_ - tenure) {
     list->pop_back();
   }
 }
@@ -3295,8 +3354,8 @@ std::vector<IntVar*> GenericTabuSearch::CreateTabuVars() {
   // Tabu criterion
   // At least one element of the forbid_tabu_list must change value.
   std::vector<IntVar*> forbid_values;
-  for (const VarValue& vv : forbid_tabu_list()) {
-    forbid_values.push_back(s->MakeIsDifferentCstVar(vv.var_, vv.value_));
+  for (const auto [var, value, unused_stamp] : forbid_tabu_list()) {
+    forbid_values.push_back(s->MakeIsDifferentCstVar(var, value));
   }
   std::vector<IntVar*> tabu_vars;
   if (!forbid_values.empty()) {
@@ -3431,45 +3490,39 @@ SearchMonitor* Solver::MakeSimulatedAnnealing(bool maximize, IntVar* const v,
 
 // ---------- Guided Local Search ----------
 
-typedef std::pair<int64_t, int64_t> Arc;
-
 namespace {
-// Base GLS penalties abstract class. Maintains the penalty frequency for each
-// (variable, value) arc.
-class GuidedLocalSearchPenalties {
- public:
-  virtual ~GuidedLocalSearchPenalties() {}
-  virtual bool HasValues() const = 0;
-  virtual void Increment(const Arc& arc) = 0;
-  virtual int64_t Value(const Arc& arc) const = 0;
-  virtual void Reset() = 0;
-};
+// GLS penalty management classes. Maintains the penalty frequency for each
+// (variable, value) pair.
 
 // Dense GLS penalties implementation using a matrix to store penalties.
-class GuidedLocalSearchPenaltiesTable : public GuidedLocalSearchPenalties {
+class GuidedLocalSearchPenaltiesTable {
  public:
-  explicit GuidedLocalSearchPenaltiesTable(int size);
-  ~GuidedLocalSearchPenaltiesTable() override {}
-  bool HasValues() const override { return has_values_; }
-  void Increment(const Arc& arc) override;
-  int64_t Value(const Arc& arc) const override;
-  void Reset() override;
+  struct VarValue {
+    int64_t var;
+    int64_t value;
+  };
+  explicit GuidedLocalSearchPenaltiesTable(int num_vars);
+  bool HasPenalties() const { return has_values_; }
+  void IncrementPenalty(const VarValue& var_value);
+  int64_t GetPenalty(const VarValue& var_value) const;
+  void Reset();
 
  private:
   std::vector<std::vector<int64_t>> penalties_;
   bool has_values_;
 };
 
-GuidedLocalSearchPenaltiesTable::GuidedLocalSearchPenaltiesTable(int size)
-    : penalties_(size), has_values_(false) {}
+GuidedLocalSearchPenaltiesTable::GuidedLocalSearchPenaltiesTable(int num_vars)
+    : penalties_(num_vars), has_values_(false) {}
 
-void GuidedLocalSearchPenaltiesTable::Increment(const Arc& arc) {
-  std::vector<int64_t>& first_penalties = penalties_[arc.first];
-  const int64_t second = arc.second;
-  if (second >= first_penalties.size()) {
-    first_penalties.resize(second + 1, 0);
+void GuidedLocalSearchPenaltiesTable::IncrementPenalty(
+    const VarValue& var_value) {
+  std::vector<int64_t>& var_penalties = penalties_[var_value.var];
+  const int64_t value = var_value.value;
+  if (value >= var_penalties.size()) {
+    var_penalties.resize(value + 1, 0);
   }
-  ++first_penalties[second];
+  ++var_penalties[value];
   has_values_ = true;
 }
 
@@ -3480,37 +3533,46 @@ void GuidedLocalSearchPenaltiesTable::Reset() {
   }
 }
 
-int64_t GuidedLocalSearchPenaltiesTable::Value(const Arc& arc) const {
-  const std::vector<int64_t>& first_penalties = penalties_[arc.first];
-  const int64_t second = arc.second;
-  if (second >= first_penalties.size()) {
-    return 0;
-  } else {
-    return first_penalties[second];
-  }
+int64_t GuidedLocalSearchPenaltiesTable::GetPenalty(
+    const VarValue& var_value) const {
+  const std::vector<int64_t>& var_penalties = penalties_[var_value.var];
+  const int64_t value = var_value.value;
+  return (value >= var_penalties.size()) ? 0 : var_penalties[value];
 }
 
 // Sparse GLS penalties implementation using hash_map to store penalties.
-class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
+class GuidedLocalSearchPenaltiesMap {
  public:
-  explicit GuidedLocalSearchPenaltiesMap(int size);
-  ~GuidedLocalSearchPenaltiesMap() override {}
-  bool HasValues() const override { return (!penalties_.empty()); }
-  void Increment(const Arc& arc) override;
-  int64_t Value(const Arc& arc) const override;
-  void Reset() override;
+  struct VarValue {
+    int64_t var;
+    int64_t value;
+
+    friend bool operator==(const VarValue& lhs, const VarValue& rhs) {
+      return lhs.var == rhs.var && lhs.value == rhs.value;
+    }
+    template <typename H>
+    friend H AbslHashValue(H h, const VarValue& var_value) {
+      return H::combine(std::move(h), var_value.var, var_value.value);
+    }
+  };
+  explicit GuidedLocalSearchPenaltiesMap(int num_vars);
+  bool HasPenalties() const { return (!penalties_.empty()); }
+  void IncrementPenalty(const VarValue& var_value);
+  int64_t GetPenalty(const VarValue& var_value) const;
+  void Reset();
 
  private:
   Bitmap penalized_;
-  absl::flat_hash_map<Arc, int64_t> penalties_;
+  absl::flat_hash_map<VarValue, int64_t> penalties_;
 };
 
-GuidedLocalSearchPenaltiesMap::GuidedLocalSearchPenaltiesMap(int size)
-    : penalized_(size, false) {}
+GuidedLocalSearchPenaltiesMap::GuidedLocalSearchPenaltiesMap(int num_vars)
+    : penalized_(num_vars, false) {}
 
-void GuidedLocalSearchPenaltiesMap::Increment(const Arc& arc) {
-  ++penalties_[arc];
-  penalized_.Set(arc.first, true);
+void GuidedLocalSearchPenaltiesMap::IncrementPenalty(
+    const VarValue& var_value) {
+  ++penalties_[var_value];
+  penalized_.Set(var_value.var, true);
 }
 
 void GuidedLocalSearchPenaltiesMap::Reset() {
@@ -3518,13 +3580,14 @@ void GuidedLocalSearchPenaltiesMap::Reset() {
   penalized_.Clear();
 }
 
-int64_t GuidedLocalSearchPenaltiesMap::Value(const Arc& arc) const {
-  if (penalized_.Get(arc.first)) {
-    return gtl::FindWithDefault(penalties_, arc, 0);
-  }
-  return 0;
+int64_t GuidedLocalSearchPenaltiesMap::GetPenalty(
+    const VarValue& var_value) const {
+  return (penalized_.Get(var_value.var))
+             ? gtl::FindWithDefault(penalties_, var_value)
+             : 0;
 }
 
+template <typename P>
 class GuidedLocalSearch : public Metaheuristic {
  public:
   GuidedLocalSearch(Solver* const s, IntVar* objective, bool maximize,
@@ -3536,68 +3599,124 @@ class GuidedLocalSearch : public Metaheuristic {
   bool AtSolution() override;
   void EnterSearch() override;
   bool LocalOptimum() override;
-  virtual int64_t AssignmentElementPenalty(const Assignment& assignment,
-                                           int index) = 0;
-  virtual int64_t AssignmentPenalty(const Assignment& assignment, int index,
-                                    int64_t next) = 0;
-  virtual bool EvaluateElementValue(const Assignment::IntContainer& container,
-                                    int64_t index, int* container_index,
-                                    int64_t* penalty) = 0;
+  virtual int64_t AssignmentElementPenalty(int index) const = 0;
+  virtual int64_t AssignmentPenalty(int64_t var, int64_t value) const = 0;
+  virtual int64_t Evaluate(const Assignment* delta, int64_t current_penalty,
+                           bool incremental) = 0;
   virtual IntExpr* MakeElementPenalty(int index) = 0;
   std::string DebugString() const override { return "Guided Local Search"; }
 
  protected:
-  struct Comparator {
-    bool operator()(const std::pair<Arc, double>& i,
-                    const std::pair<Arc, double>& j) {
-      return i.second > j.second;
+  // Array which keeps track of modifications done. This allows to effectively
+  // revert or commit modifications.
+  // TODO(user): Expose this in a utility file.
+  template <typename T, typename IndexType = int64_t>
+  class DirtyArray {
+   public:
+    explicit DirtyArray(IndexType size)
+        : base_data_(size), modified_data_(size), touched_(size) {}
+    // Sets a value in the array. This value will be reverted if Revert() is
+    // called.
+    void Set(IndexType i, const T& value) {
+      modified_data_[i] = value;
+      touched_.Set(i);
     }
+    // Same as Set() but modifies all values of the array.
+    void SetAll(const T& value) {
+      for (IndexType i = 0; i < modified_data_.size(); ++i) {
+        Set(i, value);
+      }
+    }
+    // Returns the modified value in the array.
+    T Get(IndexType i) const { return modified_data_[i]; }
+    // Commits all modifications done to the array, effectively copying all
+    // modifications to the base values.
+    void Commit() {
+      for (const IndexType index : touched_.PositionsSetAtLeastOnce()) {
+        base_data_[index] = modified_data_[index];
+      }
+      touched_.SparseClearAll();
+    }
+    // Reverts all modified values in the array.
+    void Revert() {
+      for (const IndexType index : touched_.PositionsSetAtLeastOnce()) {
+        modified_data_[index] = base_data_[index];
+      }
+      touched_.SparseClearAll();
+    }
+    // Returns the number of values modified since the last call to Commit or
+    // Revert.
+    int NumSetValues() const {
+      return touched_.NumberOfSetCallsWithDifferentArguments();
+    }
+
+   private:
+    std::vector<T> base_data_;
+    std::vector<T> modified_data_;
+    SparseBitset<IndexType> touched_;
   };
 
-  int64_t Evaluate(const Assignment* delta, int64_t current_penalty,
-                   const int64_t* const out_values, bool cache_delta_values);
+  int64_t GetValue(int64_t index) const {
+    return assignment_.Element(index).Value();
+  }
+  IntVar* GetVar(int64_t index) const {
+    return assignment_.Element(index).Var();
+  }
+  void AddVars(const std::vector<IntVar*>& vars);
+  int NumPrimaryVars() const { return num_vars_; }
+  int GetLocalIndexFromVar(IntVar* var) const {
+    const int var_index = var->index();
+    return (var_index < var_index_to_local_index_.size())
+               ? var_index_to_local_index_[var_index]
+               : -1;
+  }
 
   IntVar* penalized_objective_;
-  Assignment assignment_;
+  Assignment::IntContainer assignment_;
   int64_t assignment_penalized_value_;
   int64_t old_penalized_value_;
-  const std::vector<IntVar*> vars_;
-  absl::flat_hash_map<const IntVar*, int64_t> indices_;
+  const int num_vars_;
+  std::vector<int> var_index_to_local_index_;
   const double penalty_factor_;
-  std::unique_ptr<GuidedLocalSearchPenalties> penalties_;
-  std::unique_ptr<int64_t[]> current_penalized_values_;
-  std::unique_ptr<int64_t[]> delta_cache_;
+  P penalties_;
+  DirtyArray<int64_t> penalized_values_;
   bool incremental_;
 };
 
-GuidedLocalSearch::GuidedLocalSearch(Solver* const s, IntVar* objective,
-                                     bool maximize, int64_t step,
-                                     const std::vector<IntVar*>& vars,
-                                     double penalty_factor)
+template <typename P>
+GuidedLocalSearch<P>::GuidedLocalSearch(Solver* const s, IntVar* objective,
+                                        bool maximize, int64_t step,
+                                        const std::vector<IntVar*>& vars,
+                                        double penalty_factor)
     : Metaheuristic(s, maximize, objective, step),
       penalized_objective_(nullptr),
-      assignment_(s),
       assignment_penalized_value_(0),
       old_penalized_value_(0),
-      vars_(vars),
+      num_vars_(vars.size()),
       penalty_factor_(penalty_factor),
+      penalties_(vars.size()),
+      penalized_values_(vars.size()),
       incremental_(false) {
-  if (!vars.empty()) {
-    // TODO(user): Remove scoped_array.
-    assignment_.Add(vars_);
-    current_penalized_values_ = absl::make_unique<int64_t[]>(vars_.size());
-    delta_cache_ = absl::make_unique<int64_t[]>(vars_.size());
-    memset(current_penalized_values_.get(), 0,
-           vars_.size() * sizeof(*current_penalized_values_.get()));
+  AddVars(vars);
+}
+
+template <typename P>
+void GuidedLocalSearch<P>::AddVars(const std::vector<IntVar*>& vars) {
+  const int offset = assignment_.Size();
+  if (vars.empty()) return;
+  assignment_.Resize(offset + vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    assignment_.AddAtPosition(vars[i], offset + i);
   }
-  for (int i = 0; i < vars_.size(); ++i) {
-    indices_[vars_[i]] = i;
+  const int max_var_index =
+      (*std::max_element(vars.begin(), vars.end(), [](IntVar* a, IntVar* b) {
+        return a->index() < b->index();
+      }))->index();
+  if (max_var_index >= var_index_to_local_index_.size()) {
+    var_index_to_local_index_.resize(max_var_index + 1, -1);
   }
-  if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
-    penalties_ = absl::make_unique<GuidedLocalSearchPenaltiesMap>(vars_.size());
-  } else {
-    penalties_ =
-        absl::make_unique<GuidedLocalSearchPenaltiesTable>(vars_.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    var_index_to_local_index_[vars[i]->index()] = offset + i;
   }
 }
 
@@ -3608,26 +3727,27 @@ GuidedLocalSearch::GuidedLocalSearch(Solver* const s, IntVar* objective,
 // if maximizing,
 //      objective >= Min(current penalized cost - penalized_objective + step,
 //                       best solution cost + step)
-void GuidedLocalSearch::ApplyDecision(Decision* const d) {
+template <typename P>
+void GuidedLocalSearch<P>::ApplyDecision(Decision* const d) {
   if (d == solver()->balancing_decision()) {
     return;
   }
   assignment_penalized_value_ = 0;
-  if (penalties_->HasValues()) {
+  if (penalties_.HasPenalties()) {
     // Computing sum of penalties expression.
     // Scope needed to avoid potential leak of elements.
     {
       std::vector<IntVar*> elements;
-      for (int i = 0; i < vars_.size(); ++i) {
+      for (int i = 0; i < num_vars_; ++i) {
         elements.push_back(MakeElementPenalty(i)->Var());
-        const int64_t penalty = AssignmentElementPenalty(assignment_, i);
-        current_penalized_values_[i] = penalty;
-        delta_cache_[i] = penalty;
+        const int64_t penalty = AssignmentElementPenalty(i);
+        penalized_values_.Set(i, penalty);
         assignment_penalized_value_ =
             CapAdd(assignment_penalized_value_, penalty);
       }
       penalized_objective_ = solver()->MakeSum(elements)->Var();
     }
+    penalized_values_.Commit();
     old_penalized_value_ = assignment_penalized_value_;
     incremental_ = false;
     if (maximize_) {
@@ -3658,124 +3778,101 @@ void GuidedLocalSearch::ApplyDecision(Decision* const d) {
   }
 }
 
-bool GuidedLocalSearch::AtSolution() {
+template <typename P>
+bool GuidedLocalSearch<P>::AtSolution() {
   if (!Metaheuristic::AtSolution()) {
     return false;
   }
   if (penalized_objective_ != nullptr) {  // In case no move has been found
-    current_ += penalized_objective_->Value();
+    current_ = CapAdd(current_, penalized_objective_->Value());
   }
   assignment_.Store();
   return true;
 }
 
-void GuidedLocalSearch::EnterSearch() {
+template <typename P>
+void GuidedLocalSearch<P>::EnterSearch() {
   Metaheuristic::EnterSearch();
   penalized_objective_ = nullptr;
   assignment_penalized_value_ = 0;
   old_penalized_value_ = 0;
-  memset(current_penalized_values_.get(), 0,
-         vars_.size() * sizeof(*current_penalized_values_.get()));
-  penalties_->Reset();
+  penalized_values_.SetAll(0);
+  penalized_values_.Commit();
+  penalties_.Reset();
 }
 
 // GLS filtering; compute the penalized value corresponding to the delta and
 // modify objective bound accordingly.
-bool GuidedLocalSearch::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
-  if (delta != nullptr || deltadelta != nullptr) {
-    if (!penalties_->HasValues()) {
-      return Metaheuristic::AcceptDelta(delta, deltadelta);
-    }
-    int64_t penalty = 0;
-    if (!deltadelta->Empty()) {
-      if (!incremental_) {
-        penalty = Evaluate(delta, assignment_penalized_value_,
-                           current_penalized_values_.get(), true);
-      } else {
-        penalty = Evaluate(deltadelta, old_penalized_value_, delta_cache_.get(),
-                           true);
-      }
-      incremental_ = true;
+template <typename P>
+bool GuidedLocalSearch<P>::AcceptDelta(Assignment* delta,
+                                       Assignment* deltadelta) {
+  if (delta == nullptr && deltadelta == nullptr) return true;
+  if (!penalties_.HasPenalties()) {
+    return Metaheuristic::AcceptDelta(delta, deltadelta);
+  }
+  int64_t penalty = 0;
+  if (!deltadelta->Empty()) {
+    if (!incremental_) {
+      DCHECK_EQ(penalized_values_.NumSetValues(), 0);
+      penalty = Evaluate(delta, assignment_penalized_value_, true);
     } else {
-      if (incremental_) {
-        for (int i = 0; i < vars_.size(); ++i) {
-          delta_cache_[i] = current_penalized_values_[i];
-        }
-        old_penalized_value_ = assignment_penalized_value_;
-      }
-      incremental_ = false;
-      penalty = Evaluate(delta, assignment_penalized_value_,
-                         current_penalized_values_.get(), false);
+      penalty = Evaluate(deltadelta, old_penalized_value_, true);
     }
-    old_penalized_value_ = penalty;
-    if (!delta->HasObjective()) {
-      delta->AddObjective(objective_);
+    incremental_ = true;
+  } else {
+    if (incremental_) {
+      penalized_values_.Revert();
     }
-    if (delta->Objective() == objective_) {
-      if (maximize_) {
-        delta->SetObjectiveMin(
-            std::max(std::min(CapSub(CapAdd(current_, step_), penalty),
-                              CapAdd(best_, step_)),
-                     delta->ObjectiveMin()));
-      } else {
-        delta->SetObjectiveMax(
-            std::min(std::max(CapSub(CapSub(current_, step_), penalty),
-                              CapSub(best_, step_)),
-                     delta->ObjectiveMax()));
-      }
+    incremental_ = false;
+    DCHECK_EQ(penalized_values_.NumSetValues(), 0);
+    penalty = Evaluate(delta, assignment_penalized_value_, false);
+  }
+  old_penalized_value_ = penalty;
+  if (!delta->HasObjective()) {
+    delta->AddObjective(objective_);
+  }
+  if (delta->Objective() == objective_) {
+    if (maximize_) {
+      delta->SetObjectiveMin(
+          std::max(std::min(CapSub(CapAdd(current_, step_), penalty),
+                            CapAdd(best_, step_)),
+                   delta->ObjectiveMin()));
+    } else {
+      delta->SetObjectiveMax(
+          std::min(std::max(CapSub(CapSub(current_, step_), penalty),
+                            CapSub(best_, step_)),
+                   delta->ObjectiveMax()));
     }
   }
   return true;
 }
 
-int64_t GuidedLocalSearch::Evaluate(const Assignment* delta,
-                                    int64_t current_penalty,
-                                    const int64_t* const out_values,
-                                    bool cache_delta_values) {
-  int64_t penalty = current_penalty;
-  const Assignment::IntContainer& container = delta->IntVarContainer();
-  const int size = container.Size();
-  for (int i = 0; i < size; ++i) {
-    const IntVarElement& new_element = container.Element(i);
-    IntVar* var = new_element.Var();
-    int64_t index = -1;
-    if (gtl::FindCopy(indices_, var, &index)) {
-      penalty = CapSub(penalty, out_values[index]);
-      int64_t new_penalty = 0;
-      if (EvaluateElementValue(container, index, &i, &new_penalty)) {
-        penalty = CapAdd(penalty, new_penalty);
-        if (cache_delta_values) {
-          delta_cache_[index] = new_penalty;
-        }
-      }
-    }
-  }
-  return penalty;
-}
-
-// Penalize all the most expensive arcs (var, value) according to their utility:
-// utility(i, j) = cost(i, j) / (1 + penalty(i, j))
-bool GuidedLocalSearch::LocalOptimum() {
-  std::vector<std::pair<Arc, double>> utility(vars_.size());
-  for (int i = 0; i < vars_.size(); ++i) {
-    if (!assignment_.Bound(vars_[i])) {
+// Penalize (var, value) pairs of maximum utility, with
+// utility(var, value) = cost(var, value) / (1 + penalty(var, value))
+template <typename P>
+bool GuidedLocalSearch<P>::LocalOptimum() {
+  std::vector<double> utilities(num_vars_);
+  double max_utility = -std::numeric_limits<double>::infinity();
+  for (int var = 0; var < num_vars_; ++var) {
+    const IntVarElement& element = assignment_.Element(var);
+    if (!element.Bound()) {
       // Never synced with a solution, problem infeasible.
       return false;
     }
-    const int64_t var_value = assignment_.Value(vars_[i]);
-    const int64_t value =
-        (var_value != i) ? AssignmentPenalty(assignment_, i, var_value) : 0;
-    const Arc arc(i, var_value);
-    const int64_t penalty = penalties_->Value(arc);
-    utility[i] = std::pair<Arc, double>(arc, value / (penalty + 1.0));
+    const int64_t value = element.Value();
+    // The fact that we do not penalize loops is influenced by vehicle routing.
+    // Assuming a cost of 0 in that case.
+    const int64_t cost = (value != var) ? AssignmentPenalty(var, value) : 0;
+    const double utility = cost / (penalties_.GetPenalty({var, value}) + 1.0);
+    utilities[var] = utility;
+    if (utility > max_utility) max_utility = utility;
   }
-  Comparator comparator;
-  std::sort(utility.begin(), utility.end(), comparator);
-  int64_t utility_value = utility[0].second;
-  penalties_->Increment(utility[0].first);
-  for (int i = 1; i < utility.size() && utility_value == utility[i].second;
-       ++i) {
-    penalties_->Increment(utility[i].first);
+  for (int var = 0; var < num_vars_; ++var) {
+    if (utilities[var] == max_utility) {
+      const IntVarElement& element = assignment_.Element(var);
+      DCHECK(element.Bound());
+      penalties_.IncrementPenalty({var, element.Value()});
+    }
   }
   if (maximize_) {
     current_ = std::numeric_limits<int64_t>::min();
@@ -3785,7 +3882,8 @@ bool GuidedLocalSearch::LocalOptimum() {
   return true;
 }
 
-class BinaryGuidedLocalSearch : public GuidedLocalSearch {
+template <typename P>
+class BinaryGuidedLocalSearch : public GuidedLocalSearch<P> {
  public:
   BinaryGuidedLocalSearch(
       Solver* const solver, IntVar* const objective,
@@ -3794,76 +3892,81 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch {
       double penalty_factor);
   ~BinaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
-  int64_t AssignmentElementPenalty(const Assignment& assignment,
-                                   int index) override;
-  int64_t AssignmentPenalty(const Assignment& assignment, int index,
-                            int64_t next) override;
-  bool EvaluateElementValue(const Assignment::IntContainer& container,
-                            int64_t index, int* container_index,
-                            int64_t* penalty) override;
+  int64_t AssignmentElementPenalty(int index) const override;
+  int64_t AssignmentPenalty(int64_t var, int64_t value) const override;
+  int64_t Evaluate(const Assignment* delta, int64_t current_penalty,
+                   bool incremental) override;
 
  private:
-  int64_t PenalizedValue(int64_t i, int64_t j);
+  int64_t PenalizedValue(int64_t i, int64_t j) const;
   std::function<int64_t(int64_t, int64_t)> objective_function_;
 };
 
-BinaryGuidedLocalSearch::BinaryGuidedLocalSearch(
+template <typename P>
+BinaryGuidedLocalSearch<P>::BinaryGuidedLocalSearch(
     Solver* const solver, IntVar* const objective,
     std::function<int64_t(int64_t, int64_t)> objective_function, bool maximize,
     int64_t step, const std::vector<IntVar*>& vars, double penalty_factor)
-    : GuidedLocalSearch(solver, objective, maximize, step, vars,
-                        penalty_factor),
+    : GuidedLocalSearch<P>(solver, objective, maximize, step, vars,
+                           penalty_factor),
       objective_function_(std::move(objective_function)) {}
 
-IntExpr* BinaryGuidedLocalSearch::MakeElementPenalty(int index) {
-  return solver()->MakeElement(
+template <typename P>
+IntExpr* BinaryGuidedLocalSearch<P>::MakeElementPenalty(int index) {
+  return this->solver()->MakeElement(
       [this, index](int64_t i) { return PenalizedValue(index, i); },
-      vars_[index]);
+      this->GetVar(index));
 }
 
-int64_t BinaryGuidedLocalSearch::AssignmentElementPenalty(
-    const Assignment& assignment, int index) {
-  return PenalizedValue(index, assignment.Value(vars_[index]));
+template <typename P>
+int64_t BinaryGuidedLocalSearch<P>::AssignmentElementPenalty(int index) const {
+  return PenalizedValue(index, this->GetValue(index));
 }
 
-int64_t BinaryGuidedLocalSearch::AssignmentPenalty(const Assignment& assignment,
-                                                   int index, int64_t next) {
-  return objective_function_(index, next);
+template <typename P>
+int64_t BinaryGuidedLocalSearch<P>::AssignmentPenalty(int64_t var,
+                                                      int64_t value) const {
+  return objective_function_(var, value);
 }
 
-bool BinaryGuidedLocalSearch::EvaluateElementValue(
-    const Assignment::IntContainer& container, int64_t index,
-    int* container_index, int64_t* penalty) {
-  const IntVarElement& element = container.Element(*container_index);
-  if (element.Activated()) {
-    *penalty = PenalizedValue(index, element.Value());
-    return true;
+template <typename P>
+int64_t BinaryGuidedLocalSearch<P>::Evaluate(const Assignment* delta,
+                                             int64_t current_penalty,
+                                             bool incremental) {
+  int64_t penalty = current_penalty;
+  const Assignment::IntContainer& container = delta->IntVarContainer();
+  for (const IntVarElement& new_element : container.elements()) {
+    const int index = this->GetLocalIndexFromVar(new_element.Var());
+    if (index == -1) continue;
+    penalty = CapSub(penalty, this->penalized_values_.Get(index));
+    if (new_element.Activated()) {
+      const int64_t new_penalty = PenalizedValue(index, new_element.Value());
+      penalty = CapAdd(penalty, new_penalty);
+      if (incremental) {
+        this->penalized_values_.Set(index, new_penalty);
+      }
+    }
   }
-  return false;
+  return penalty;
 }
 
 // Penalized value for (i, j) = penalty_factor_ * penalty(i, j) * cost (i, j)
-int64_t BinaryGuidedLocalSearch::PenalizedValue(int64_t i, int64_t j) {
-  const Arc arc(i, j);
-  const int64_t penalty = penalties_->Value(arc);
-  if (penalty != 0) {  // objective_function_->Run(i, j) can be costly
-    const double penalized_value_fp =
-        penalty_factor_ * penalty * objective_function_(i, j);
-    const int64_t penalized_value =
-        (penalized_value_fp <= std::numeric_limits<int64_t>::max())
-            ? static_cast<int64_t>(penalized_value_fp)
-            : std::numeric_limits<int64_t>::max();
-    if (maximize_) {
-      return -penalized_value;
-    } else {
-      return penalized_value;
-    }
-  } else {
-    return 0;
-  }
+template <typename P>
+int64_t BinaryGuidedLocalSearch<P>::PenalizedValue(int64_t i, int64_t j) const {
+  const int64_t penalty = this->penalties_.GetPenalty({i, j});
+  // Calls to objective_function_(i, j) can be costly.
+  if (penalty == 0) return 0;
+  const double penalized_value_fp =
+      this->penalty_factor_ * penalty * objective_function_(i, j);
+  const int64_t penalized_value =
+      (penalized_value_fp <= std::numeric_limits<int64_t>::max())
+          ? static_cast<int64_t>(penalized_value_fp)
+          : std::numeric_limits<int64_t>::max();
+  return this->maximize_ ? -penalized_value : penalized_value;
 }
 
-class TernaryGuidedLocalSearch : public GuidedLocalSearch {
+template <typename P>
+class TernaryGuidedLocalSearch : public GuidedLocalSearch<P> {
  public:
   TernaryGuidedLocalSearch(
       Solver* const solver, IntVar* const objective,
@@ -3872,104 +3975,112 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch {
       const std::vector<IntVar*>& secondary_vars, double penalty_factor);
   ~TernaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
-  int64_t AssignmentElementPenalty(const Assignment& assignment,
-                                   int index) override;
-  int64_t AssignmentPenalty(const Assignment& assignment, int index,
-                            int64_t next) override;
-  bool EvaluateElementValue(const Assignment::IntContainer& container,
-                            int64_t index, int* container_index,
-                            int64_t* penalty) override;
+  int64_t AssignmentElementPenalty(int index) const override;
+  int64_t AssignmentPenalty(int64_t var, int64_t value) const override;
+  int64_t Evaluate(const Assignment* delta, int64_t current_penalty,
+                   bool incremental) override;
 
  private:
-  int64_t PenalizedValue(int64_t i, int64_t j, int64_t k);
-  int64_t GetAssignmentSecondaryValue(const Assignment::IntContainer& container,
-                                      int index, int* container_index) const;
+  int64_t PenalizedValue(int64_t i, int64_t j, int64_t k) const;
 
-  const std::vector<IntVar*> secondary_vars_;
   std::function<int64_t(int64_t, int64_t, int64_t)> objective_function_;
+  std::vector<int> secondary_values_;
 };
 
-TernaryGuidedLocalSearch::TernaryGuidedLocalSearch(
+template <typename P>
+TernaryGuidedLocalSearch<P>::TernaryGuidedLocalSearch(
     Solver* const solver, IntVar* const objective,
     std::function<int64_t(int64_t, int64_t, int64_t)> objective_function,
     bool maximize, int64_t step, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, double penalty_factor)
-    : GuidedLocalSearch(solver, objective, maximize, step, vars,
-                        penalty_factor),
-      secondary_vars_(secondary_vars),
-      objective_function_(std::move(objective_function)) {
-  if (!secondary_vars.empty()) {
-    assignment_.Add(secondary_vars);
-  }
+    : GuidedLocalSearch<P>(solver, objective, maximize, step, vars,
+                           penalty_factor),
+      objective_function_(std::move(objective_function)),
+      secondary_values_(this->NumPrimaryVars(), -1) {
+  this->AddVars(secondary_vars);
 }
 
-IntExpr* TernaryGuidedLocalSearch::MakeElementPenalty(int index) {
-  return solver()->MakeElement(
-      [this, index](int64_t i, int64_t j) {
-        return PenalizedValue(index, i, j);
+template <typename P>
+IntExpr* TernaryGuidedLocalSearch<P>::MakeElementPenalty(int index) {
+  Solver* const solver = this->solver();
+  IntVar* var = solver->MakeIntVar(0, kint64max);
+  solver->AddConstraint(solver->MakeLightElement(
+      [this, index](int64_t j, int64_t k) {
+        return PenalizedValue(index, j, k);
       },
-      vars_[index], secondary_vars_[index]);
+      var, this->GetVar(index), this->GetVar(this->NumPrimaryVars() + index)));
+  return var;
 }
 
-int64_t TernaryGuidedLocalSearch::AssignmentElementPenalty(
-    const Assignment& assignment, int index) {
-  return PenalizedValue(index, assignment.Value(vars_[index]),
-                        assignment.Value(secondary_vars_[index]));
+template <typename P>
+int64_t TernaryGuidedLocalSearch<P>::AssignmentElementPenalty(int index) const {
+  return PenalizedValue(index, this->GetValue(index),
+                        this->GetValue(this->NumPrimaryVars() + index));
 }
 
-int64_t TernaryGuidedLocalSearch::AssignmentPenalty(
-    const Assignment& assignment, int index, int64_t next) {
-  return objective_function_(index, next,
-                             assignment.Value(secondary_vars_[index]));
+template <typename P>
+int64_t TernaryGuidedLocalSearch<P>::AssignmentPenalty(int64_t var,
+                                                       int64_t value) const {
+  return objective_function_(var, value,
+                             this->GetValue(this->NumPrimaryVars() + var));
 }
 
-bool TernaryGuidedLocalSearch::EvaluateElementValue(
-    const Assignment::IntContainer& container, int64_t index,
-    int* container_index, int64_t* penalty) {
-  const IntVarElement& element = container.Element(*container_index);
-  if (element.Activated()) {
-    *penalty = PenalizedValue(
-        index, element.Value(),
-        GetAssignmentSecondaryValue(container, index, container_index));
-    return true;
-  }
-  return false;
-}
-
-// Penalized value for (i, j) = penalty_factor_ * penalty(i, j) * cost (i, j)
-int64_t TernaryGuidedLocalSearch::PenalizedValue(int64_t i, int64_t j,
-                                                 int64_t k) {
-  const Arc arc(i, j);
-  const int64_t penalty = penalties_->Value(arc);
-  if (penalty != 0) {  // objective_function_(i, j, k) can be costly
-    const double penalized_value_fp =
-        penalty_factor_ * penalty * objective_function_(i, j, k);
-    const int64_t penalized_value =
-        (penalized_value_fp <= std::numeric_limits<int64_t>::max())
-            ? static_cast<int64_t>(penalized_value_fp)
-            : std::numeric_limits<int64_t>::max();
-    if (maximize_) {
-      return -penalized_value;
-    } else {
-      return penalized_value;
+template <typename P>
+int64_t TernaryGuidedLocalSearch<P>::Evaluate(const Assignment* delta,
+                                              int64_t current_penalty,
+                                              bool incremental) {
+  int64_t penalty = current_penalty;
+  const Assignment::IntContainer& container = delta->IntVarContainer();
+  // Collect values for each secondary variable, matching them with their
+  // corresponding primary variable. Making sure all secondary values are -1 if
+  // unset.
+  for (const IntVarElement& new_element : container.elements()) {
+    const int index = this->GetLocalIndexFromVar(new_element.Var());
+    if (index != -1 && index < this->NumPrimaryVars()) {  // primary variable
+      secondary_values_[index] = -1;
     }
-  } else {
-    return 0;
   }
+  for (const IntVarElement& new_element : container.elements()) {
+    const int index = this->GetLocalIndexFromVar(new_element.Var());
+    if (!new_element.Activated()) continue;
+    if (index != -1 && index >= this->NumPrimaryVars()) {  // secondary variable
+      secondary_values_[index - this->NumPrimaryVars()] = new_element.Value();
+    }
+  }
+  for (const IntVarElement& new_element : container.elements()) {
+    const int index = this->GetLocalIndexFromVar(new_element.Var());
+    // Only process primary variables.
+    if (index == -1 || index >= this->NumPrimaryVars()) {
+      continue;
+    }
+    penalty = CapSub(penalty, this->penalized_values_.Get(index));
+    // Performed and active.
+    if (new_element.Activated() && secondary_values_[index] != -1) {
+      const int64_t new_penalty =
+          PenalizedValue(index, new_element.Value(), secondary_values_[index]);
+      penalty = CapAdd(penalty, new_penalty);
+      if (incremental) {
+        this->penalized_values_.Set(index, new_penalty);
+      }
+    }
+  }
+  return penalty;
 }
 
-int64_t TernaryGuidedLocalSearch::GetAssignmentSecondaryValue(
-    const Assignment::IntContainer& container, int index,
-    int* container_index) const {
-  const IntVar* secondary_var = secondary_vars_[index];
-  int hint_index = *container_index + 1;
-  if (hint_index > 0 && hint_index < container.Size() &&
-      secondary_var == container.Element(hint_index).Var()) {
-    *container_index = hint_index;
-    return container.Element(hint_index).Value();
-  } else {
-    return container.Element(secondary_var).Value();
-  }
+// Penalized value for (i, j) = penalty_factor_ * penalty(i, j) * cost (i, j, k)
+template <typename P>
+int64_t TernaryGuidedLocalSearch<P>::PenalizedValue(int64_t i, int64_t j,
+                                                    int64_t k) const {
+  const int64_t penalty = this->penalties_.GetPenalty({i, j});
+  // Calls to objective_function_(i, j, k) can be costly.
+  if (penalty == 0) return 0;
+  const double penalized_value_fp =
+      this->penalty_factor_ * penalty * objective_function_(i, j, k);
+  const int64_t penalized_value =
+      (penalized_value_fp < std::numeric_limits<int64_t>::max())
+          ? static_cast<int64_t>(penalized_value_fp)
+          : std::numeric_limits<int64_t>::max();
+  return this->maximize_ ? -penalized_value : penalized_value;
 }
 }  // namespace
 
@@ -3977,9 +4088,16 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize, IntVar* const objective,
     Solver::IndexEvaluator2 objective_function, int64_t step,
     const std::vector<IntVar*>& vars, double penalty_factor) {
-  return RevAlloc(new BinaryGuidedLocalSearch(
-      this, objective, std::move(objective_function), maximize, step, vars,
-      penalty_factor));
+  if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
+    return RevAlloc(new BinaryGuidedLocalSearch<GuidedLocalSearchPenaltiesMap>(
+        this, objective, std::move(objective_function), maximize, step, vars,
+        penalty_factor));
+  } else {
+    return RevAlloc(
+        new BinaryGuidedLocalSearch<GuidedLocalSearchPenaltiesTable>(
+            this, objective, std::move(objective_function), maximize, step,
+            vars, penalty_factor));
+  }
 }
 
 SearchMonitor* Solver::MakeGuidedLocalSearch(
@@ -3987,9 +4105,16 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     Solver::IndexEvaluator3 objective_function, int64_t step,
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, double penalty_factor) {
-  return RevAlloc(new TernaryGuidedLocalSearch(
-      this, objective, std::move(objective_function), maximize, step, vars,
-      secondary_vars, penalty_factor));
+  if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
+    return RevAlloc(new TernaryGuidedLocalSearch<GuidedLocalSearchPenaltiesMap>(
+        this, objective, std::move(objective_function), maximize, step, vars,
+        secondary_vars, penalty_factor));
+  } else {
+    return RevAlloc(
+        new TernaryGuidedLocalSearch<GuidedLocalSearchPenaltiesTable>(
+            this, objective, std::move(objective_function), maximize, step,
+            vars, secondary_vars, penalty_factor));
+  }
 }
 
 // ---------- Search Limits ----------
@@ -3997,6 +4122,13 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
 // ----- Base Class -----
 
 SearchLimit::~SearchLimit() {}
+
+void SearchLimit::Install() {
+  ListenToEvent(Solver::MonitorEvent::kEnterSearch);
+  ListenToEvent(Solver::MonitorEvent::kBeginNextDecision);
+  ListenToEvent(Solver::MonitorEvent::kPeriodicCheck);
+  ListenToEvent(Solver::MonitorEvent::kRefuteDecision);
+}
 
 void SearchLimit::EnterSearch() {
   crossed_ = false;
@@ -4049,6 +4181,14 @@ RegularLimit::RegularLimit(Solver* const s, absl::Duration time,
 
 RegularLimit::~RegularLimit() {}
 
+void RegularLimit::Install() {
+  SearchLimit::Install();
+  ListenToEvent(Solver::MonitorEvent::kExitSearch);
+  ListenToEvent(Solver::MonitorEvent::kIsUncheckedSolutionLimitReached);
+  ListenToEvent(Solver::MonitorEvent::kProgressPercent);
+  ListenToEvent(Solver::MonitorEvent::kAccept);
+}
+
 void RegularLimit::Copy(const SearchLimit* const limit) {
   const RegularLimit* const regular =
       reinterpret_cast<const RegularLimit* const>(limit);
@@ -4068,11 +4208,11 @@ RegularLimit* RegularLimit::MakeIdenticalClone() const {
                       smart_time_check_);
 }
 
-bool RegularLimit::Check() {
+bool RegularLimit::CheckWithOffset(absl::Duration offset) {
   Solver* const s = solver();
   // Warning limits might be kint64max, do not move the offset to the rhs
   return s->branches() - branches_offset_ >= branches_ ||
-         s->failures() - failures_offset_ >= failures_ || CheckTime() ||
+         s->failures() - failures_offset_ >= failures_ || CheckTime(offset) ||
          s->solutions() - solutions_offset_ >= solutions_;
 }
 
@@ -4148,7 +4288,9 @@ void RegularLimit::Accept(ModelVisitor* const visitor) const {
   visitor->EndVisitExtension(ModelVisitor::kObjectiveExtension);
 }
 
-bool RegularLimit::CheckTime() { return TimeElapsed() >= duration_limit(); }
+bool RegularLimit::CheckTime(absl::Duration offset) {
+  return TimeElapsed() >= duration_limit() - offset;
+}
 
 absl::Duration RegularLimit::TimeElapsed() {
   const int64_t kMaxSkip = 100;
@@ -4251,6 +4393,11 @@ ImprovementSearchLimit::ImprovementSearchLimit(
 
 ImprovementSearchLimit::~ImprovementSearchLimit() {}
 
+void ImprovementSearchLimit::Install() {
+  SearchLimit::Install();
+  ListenToEvent(Solver::MonitorEvent::kAtSolution);
+}
+
 void ImprovementSearchLimit::Init() {
   best_objective_ = maximize_ ? -std::numeric_limits<double>::infinity()
                               : std::numeric_limits<double>::infinity();
@@ -4283,7 +4430,7 @@ SearchLimit* ImprovementSearchLimit::MakeClone() const {
       improvement_rate_coefficient_, improvement_rate_solutions_distance_);
 }
 
-bool ImprovementSearchLimit::Check() {
+bool ImprovementSearchLimit::CheckWithOffset(absl::Duration offset) {
   if (!objective_updated_) {
     return false;
   }
@@ -4371,11 +4518,11 @@ class ORLimit : public SearchLimit {
         << "not the other.";
   }
 
-  bool Check() override {
+  bool CheckWithOffset(absl::Duration offset) override {
     // Check being non-const, there may be side effects. So we always call both
     // checks.
-    const bool check_1 = limit_1_->Check();
-    const bool check_2 = limit_2_->Check();
+    const bool check_1 = limit_1_->CheckWithOffset(offset);
+    const bool check_2 = limit_2_->CheckWithOffset(offset);
     return check_1 || check_2;
   }
 
@@ -4429,7 +4576,7 @@ namespace {
 class CustomLimit : public SearchLimit {
  public:
   CustomLimit(Solver* const s, std::function<bool()> limiter);
-  bool Check() override;
+  bool CheckWithOffset(absl::Duration offset) override;
   void Init() override;
   void Copy(const SearchLimit* const limit) override;
   SearchLimit* MakeClone() const override;
@@ -4441,7 +4588,8 @@ class CustomLimit : public SearchLimit {
 CustomLimit::CustomLimit(Solver* const s, std::function<bool()> limiter)
     : SearchLimit(s), limiter_(std::move(limiter)) {}
 
-bool CustomLimit::Check() {
+bool CustomLimit::CheckWithOffset(absl::Duration offset) {
+  // TODO(user): Consider the offset in limiter_.
   if (limiter_) return limiter_();
   return false;
 }
@@ -4720,6 +4868,8 @@ class LubyRestart : public SearchMonitor {
     }
   }
 
+  void Install() override { ListenToEvent(Solver::MonitorEvent::kBeginFail); }
+
   std::string DebugString() const override {
     return absl::StrFormat("LubyRestart(%i)", scale_factor_);
   }
@@ -4754,6 +4904,8 @@ class ConstantRestart : public SearchMonitor {
       solver()->RestartCurrentSearch();
     }
   }
+
+  void Install() override { ListenToEvent(Solver::MonitorEvent::kBeginFail); }
 
   std::string DebugString() const override {
     return absl::StrFormat("ConstantRestart(%i)", frequency_);

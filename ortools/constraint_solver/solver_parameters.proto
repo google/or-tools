@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,8 +28,8 @@ message ConstraintSolverParameters {
   //
   enum TrailCompression {
     NO_COMPRESSION = 0;
-        COMPRESS_WITH_ZLIB = 1;
-  };
+    COMPRESS_WITH_ZLIB = 1;
+  }
 
   // This parameter indicates if the solver should compress the trail
   // during the search. No compression means that the solver will be faster,

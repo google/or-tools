@@ -75,15 +75,23 @@ jobs:
         run: |
           yum install -y epel-release
           yum install -y git redhat-lsb-core make wget centos-release-scl scl-utils rpm-build
-          yum install -y cmake3 devtoolset-9
+          yum install -y devtoolset-9
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.22.x'
 
       - name: Checkout OR-Tools
         run: |
           git clone $GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git -b ${BRANCH_NAME} .
 
       - name: Checkout Xpress linux
-        run: |
-          git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/rte-france/xpress-mp.git ${{ env.XPRESS_INSTALL_DIR }}
+        uses: actions/checkout@v2
+        with:
+          repository: rte-france/xpress-mp
+          path: ${{ env.XPRESS_INSTALL_DIR }}
+          ref: master
+          token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: set Xpress variables
         run: |
@@ -110,12 +118,13 @@ jobs:
       - name: Configure OR-Tools
         run: |
           source /opt/rh/devtoolset-9/enable
-          cmake3 -S . -B build -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_CMAKE_DIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }}
+          cmake --version
+          cmake -S . -B build -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_CMAKE_DIR }}" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }}
 
       - name: Build OR-Tools Linux
         run: |
           source /opt/rh/devtoolset-9/enable
-          cmake3 --build build --config Release --target all install -j4
+          cmake --build build --config Release --target all install -j4
 
       - name: Prepare OR-Tools install
         if: ${{ matrix.publish-or == 'ON' }}
@@ -149,19 +158,19 @@ jobs:
         if: ${{ matrix.sirius == 'ON' }}
         run: |
           cd build
-          ctest3 -V -C Release -R 'cxx_unittests_sirius_interface'
+          ctest -V -C Release -R 'cxx_unittests_sirius_interface'
       - name: Run xpress_interface unittests
         run: |
           cd build
-          ctest3 -V -C Release -R 'cxx_unittests_xpress_interface'
+          ctest -V -C Release -R 'cxx_unittests_xpress_interface'
       - name: Run specific cpp tests
         run: |
           cd build
-          ctest3 -V -C Release -R 'cxx_cpp_linear_programming'
+          ctest -V -C Release -R 'cxx_cpp_linear_programming'
       - name: Run other cpp tests
         run: |
           cd build
-          ctest3 --output-on-failure -C Release -R cxx_cpp -E 'cxx_cpp_linear_programming'
+          ctest --output-on-failure -C Release -R cxx_cpp -E 'cxx_cpp_linear_programming'
 
 
 

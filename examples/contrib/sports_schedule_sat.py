@@ -1,4 +1,4 @@
-# Based on sports_scheduling_sat.cc, Copyright 2010-2021 Google LLC
+# Based on sports_scheduling_sat.cc, Copyright 2010-2022 Google LLC
 #
 # Translated to Python by James E. Marca August 2019
 #

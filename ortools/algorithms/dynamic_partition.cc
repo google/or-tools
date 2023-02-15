@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -290,6 +292,76 @@ std::string MergingPartition::DebugString() {
     out += absl::StrJoin(part, " ");
   }
   return out;
+}
+
+void SimpleDynamicPartition::Refine(
+    absl::Span<const int> distinguished_subset) {
+  // Compute the size of the non-empty intersection of each part with the
+  // distinguished_subset.
+  temp_to_clean_.clear();
+  std::vector<int>& local_sizes = temp_data_by_part_;
+  local_sizes.resize(size_of_part_.size(), 0);
+  for (const int element : distinguished_subset) {
+    const int part = part_of_[element];
+    if (local_sizes[part] == 0) temp_to_clean_.push_back(part);
+    local_sizes[part]++;
+  }
+
+  // Reuse local_sizes to store new_part index or zero (no remapping).
+  // Also update the size of each part.
+  for (const int part : temp_to_clean_) {
+    if (local_sizes[part] == size_of_part_[part]) {
+      // No need to remap if the whole part is in distinguished_subset.
+      local_sizes[part] = 0;
+      continue;
+    }
+
+    const int new_part_index = size_of_part_.size();
+    size_of_part_[part] -= local_sizes[part];
+    size_of_part_.push_back(local_sizes[part]);
+    local_sizes[part] = new_part_index;
+  }
+
+  // For each part not completely included or excluded, split out the element
+  // from distinguished_subset into a new part.
+  for (const int element : distinguished_subset) {
+    const int new_part = local_sizes[part_of_[element]];
+    if (new_part != 0) part_of_[element] = new_part;
+  }
+
+  // Sparse clean.
+  for (const int part : temp_to_clean_) {
+    local_sizes[part] = 0;
+  }
+}
+
+std::vector<absl::Span<const int>> SimpleDynamicPartition::GetParts(
+    std::vector<int>* buffer) {
+  const int num_elements = part_of_.size();
+  const int num_parts = size_of_part_.size();
+  buffer->resize(num_elements);
+
+  std::vector<absl::Span<const int>> result(num_parts);
+  if (result.empty()) return result;
+
+  // Compute start of each part in buffer.
+  std::vector<int>& starts = temp_data_by_part_;
+  starts.resize(num_parts, 0);
+  for (int i = 1; i < num_parts; ++i) {
+    starts[i] = starts[i - 1] + size_of_part_[i - 1];
+  }
+
+  // Fill result.
+  for (int i = 0; i < num_parts; ++i) {
+    result[i] = absl::MakeSpan(&(*buffer)[starts[i]], size_of_part_[i]);
+  }
+
+  // Copy elements in order and at their place.
+  for (int element = 0; element < num_elements; ++element) {
+    (*buffer)[starts[part_of_[element]]++] = element;
+  }
+  starts.clear();
+  return result;
 }
 
 }  // namespace operations_research

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
@@ -1302,31 +1303,43 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn& rows_to_delete) {
   }
 }
 
-bool LinearProgram::IsValid() const {
+bool LinearProgram::IsValid(Fractional max_valid_magnitude) const {
   if (!IsFinite(objective_offset_)) return false;
+  if (std::abs(objective_offset_) > max_valid_magnitude) return false;
+
   if (!IsFinite(objective_scaling_factor_)) return false;
   if (objective_scaling_factor_ == 0.0) return false;
+  if (std::abs(objective_scaling_factor_) > max_valid_magnitude) return false;
+
   const ColIndex num_cols = num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
-    if (!AreBoundsValid(variable_lower_bounds()[col],
-                        variable_upper_bounds()[col])) {
-      return false;
-    }
+    const Fractional lb = variable_lower_bounds()[col];
+    const Fractional ub = variable_upper_bounds()[col];
+    if (!AreBoundsValid(lb, ub)) return false;
+    if (IsFinite(lb) && std::abs(lb) > max_valid_magnitude) return false;
+    if (IsFinite(ub) && std::abs(ub) > max_valid_magnitude) return false;
+
     if (!IsFinite(objective_coefficients()[col])) {
       return false;
     }
+    if (std::abs(objective_coefficients()[col]) > max_valid_magnitude) {
+      return false;
+    }
+
     for (const SparseColumn::Entry e : GetSparseColumn(col)) {
       if (!IsFinite(e.coefficient())) return false;
+      if (std::abs(e.coefficient()) > max_valid_magnitude) return false;
     }
   }
   if (constraint_upper_bounds_.size() != constraint_lower_bounds_.size()) {
     return false;
   }
   for (RowIndex row(0); row < constraint_lower_bounds_.size(); ++row) {
-    if (!AreBoundsValid(constraint_lower_bounds()[row],
-                        constraint_upper_bounds()[row])) {
-      return false;
-    }
+    const Fractional lb = constraint_lower_bounds()[row];
+    const Fractional ub = constraint_upper_bounds()[row];
+    if (!AreBoundsValid(lb, ub)) return false;
+    if (IsFinite(lb) && std::abs(lb) > max_valid_magnitude) return false;
+    if (IsFinite(ub) && std::abs(ub) > max_valid_magnitude) return false;
   }
   return true;
 }

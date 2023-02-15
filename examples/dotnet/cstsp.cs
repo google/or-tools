@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -72,8 +72,9 @@ class Tsp
         }
 
         // Add dummy dimension to test API.
-        routing.AddDimension(routing.RegisterUnaryTransitCallback((long index) => { return 1; }), size + 1, size + 1,
-                             true, "dummy");
+        routing.AddDimension(routing.RegisterUnaryTransitCallback((long index) =>
+                                                                  { return 1; }),
+                             size + 1, size + 1, true, "dummy");
 
         // Solve, returns a solution if any (owned by RoutingModel).
         RoutingSearchParameters search_parameters =
@@ -102,19 +103,19 @@ class Tsp
     public static void Main(String[] args)
     {
         int size = 10;
-        if (args.Length > 0)
-        {
-            size = Convert.ToInt32(args[0]);
-        }
-        int forbidden = 0;
         if (args.Length > 1)
         {
-            forbidden = Convert.ToInt32(args[1]);
+            size = Convert.ToInt32(args[1]);
         }
-        int seed = 0;
+        int forbidden = 0;
         if (args.Length > 2)
         {
-            seed = Convert.ToInt32(args[2]);
+            forbidden = Convert.ToInt32(args[2]);
+        }
+        int seed = 0;
+        if (args.Length > 3)
+        {
+            seed = Convert.ToInt32(args[3]);
         }
 
         Solve(size, forbidden, seed);

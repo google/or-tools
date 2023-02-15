@@ -1,5 +1,5 @@
+#!/usr/bin/env python3
 from ortools.constraint_solver import pywrapcp
-
 
 class OneVarLns(pywrapcp.BaseLns):
   """One Var LNS."""

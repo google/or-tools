@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,7 +29,7 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
             Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s", solution_count_, WallTime()));
             foreach (IntVar v in variables_)
             {
-                Console.WriteLine(String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+                Console.WriteLine(String.Format("  {0} = {1}", v.ToString(), Value(v)));
             }
             solution_count_++;
         }
@@ -73,7 +73,7 @@ public class SolutionHintingSampleSat
         model.AddHint(y, 2);
 
         // [START objective]
-        model.Maximize(LinearExpr.ScalProd(new IntVar[] { x, y, z }, new int[] { 1, 2, 3 }));
+        model.Maximize(LinearExpr.WeightedSum(new IntVar[] { x, y, z }, new int[] { 1, 2, 3 }));
         // [END objective]
 
         // Creates a solver and solves the model.

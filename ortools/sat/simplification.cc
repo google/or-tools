@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,21 +15,31 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <deque>
 #include <limits>
-#include <set>
+#include <memory>
 #include <utility>
+#include <vector>
 
-#include "absl/memory/memory.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
+#include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
+#include "ortools/sat/drat_proof_handler.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/probing.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_inprocessing.h"
-#include "ortools/sat/util.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -450,7 +460,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
 
     // Set m_cls_ to p_[lmax].
     m_cls_.clear();
-    for (const auto entry : flattened_p_) {
+    for (const auto& entry : flattened_p_) {
       literal_to_p_size_[entry.first] = 0;
       if (entry.first == lmax) m_cls_.push_back(entry.second);
     }
@@ -458,7 +468,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   }
 
   // Make sure literal_to_p_size_ is all zero.
-  for (const auto entry : flattened_p_) literal_to_p_size_[entry.first] = 0;
+  for (const auto& entry : flattened_p_) literal_to_p_size_[entry.first] = 0;
   flattened_p_.clear();
 
   // A strictly positive reduction means that applying the BVA transform will
@@ -1313,7 +1323,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     absl::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
     ProbeAndFindEquivalentLiteral((*solver).get(), &postsolver,
                                   drat_proof_handler, &equiv_map);
-    if ((*solver)->IsModelUnsat()) {
+    if ((*solver)->ModelIsUnsat()) {
       VLOG(1) << "UNSAT during probing.";
       return SatSolver::INFEASIBLE;
     }
@@ -1353,7 +1363,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
       VLOG(1) << "UNSAT during presolve.";
 
       // This is just here to reset the SatSolver::Solve() statistics.
-      (*solver) = absl::make_unique<SatSolver>();
+      (*solver) = std::make_unique<SatSolver>();
       return SatSolver::INFEASIBLE;
     }
 
@@ -1363,7 +1373,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     }
 
     // Load the presolved problem in a new solver.
-    (*solver) = absl::make_unique<SatSolver>();
+    (*solver) = std::make_unique<SatSolver>();
     (*solver)->SetDratProofHandler(drat_proof_handler);
     (*solver)->SetParameters(parameters);
     presolver.LoadProblemIntoSatSolver((*solver).get());

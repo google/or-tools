@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,7 @@ syntax = "proto3";
 package operations_research.sat.v1;
 
 import "ortools/sat/cp_model.proto";
+import "ortools/sat/sat_parameters.proto";
 
 option csharp_namespace = "Google.OrTools.Sat";
 option java_package = "com.google.ortools.sat.v1";
@@ -26,15 +27,15 @@ option java_outer_classname = "CpModelServiceProto";
 // a solution of the problem.
 service CpSolver {
   // Single solve, sends a model, gets a response.
-  rpc SolveProblem(CpSolverRequest) returns (CpSolverResponse) {
-  }
+  rpc SolveProblem(CpSolverRequest) returns (CpSolverResponse) {}
 }
 
-// The request set to the remote solve service.
+// The request sent to the remote solve service.
 message CpSolverRequest {
+  reserved 2;
   // The model to solve.
   CpModelProto model = 1;
 
-  // Extra solver parameters passed as a string.
-  string parameters_as_string = 2;
+  // Solver parameters.
+  SatParameters parameters = 3;
 }

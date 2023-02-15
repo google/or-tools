@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,6 +19,7 @@ It is known as the Golomb Ruler problem.
 The idea is to put marks on a rule such that all differences
 between all marks are all different. The objective is to minimize the length
 of the rule.
+see: https://en.wikipedia.org/wiki/Golomb_ruler
 """
 
 from absl import app
@@ -26,56 +27,74 @@ from absl import flags
 from ortools.constraint_solver import pywrapcp
 
 FLAGS = flags.FLAGS
-
-# We disable the following warning because it is a false positive on constraints
-# like: solver.Add(x == 0)
-# pylint: disable=g-explicit-bool-comparison
+flags.DEFINE_integer('order', 8, 'Order of the ruler.')
 
 
-def main(_):
+def solve_golomb_ruler(order):
     # Create the solver.
     solver = pywrapcp.Solver('golomb ruler')
 
-    size = 8
-    var_max = size * size
-    all_vars = list(range(0, size))
+    var_max = order * order
+    all_vars = list(range(0, order))
 
-    marks = [solver.IntVar(0, var_max, 'marks_%d' % i) for i in all_vars]
-
-    objective = solver.Minimize(marks[size - 1], 1)
+    marks = [solver.IntVar(0, var_max, f'marks_{i}') for i in all_vars]
 
     solver.Add(marks[0] == 0)
+    for i in range(order - 2):
+        solver.Add(marks[i + 1] > marks[i])
 
     # We expand the creation of the diff array to avoid a pylint warning.
     diffs = []
-    for i in range(size - 1):
-        for j in range(i + 1, size):
+    for i in range(order - 1):
+        for j in range(i + 1, order):
             diffs.append(marks[j] - marks[i])
     solver.Add(solver.AllDifferent(diffs))
 
-    solver.Add(marks[size - 1] - marks[size - 2] > marks[1] - marks[0])
-    for i in range(size - 2):
-        solver.Add(marks[i + 1] > marks[i])
+    # symmetry breaking
+    if order > 2:
+        solver.Add(marks[order - 1] - marks[order - 2] > marks[1] - marks[0])
 
+    # objective
+    objective = solver.Minimize(marks[order - 1], 1)
+
+    # Solve the model.
     solution = solver.Assignment()
-    solution.Add(marks[size - 1])
+    for mark in marks:
+        solution.Add(mark)
+    for diff in diffs:
+        solution.Add(diff)
     collector = solver.AllSolutionCollector(solution)
 
     solver.Solve(
-        solver.Phase(marks, solver.CHOOSE_FIRST_UNBOUND,
-                     solver.ASSIGN_MIN_VALUE), [objective, collector])
+        solver.Phase(
+            marks,
+            solver.CHOOSE_FIRST_UNBOUND,
+            solver.ASSIGN_MIN_VALUE),
+        [objective, collector])
+
+    # Print solution.
     for i in range(0, collector.SolutionCount()):
-        obj_value = collector.Value(i, marks[size - 1])
-        time = collector.WallTime(i)
-        branches = collector.Branches(i)
-        failures = collector.Failures(i)
-        print(('Solution #%i: value = %i, failures = %i, branches = %i,'
-               'time = %i ms') % (i, obj_value, failures, branches, time))
-    time = solver.WallTime()
-    branches = solver.Branches()
-    failures = solver.Failures()
-    print(('Total run : failures = %i, branches = %i, time = %i ms' %
-           (failures, branches, time)))
+        obj_value = collector.Value(i, marks[order - 1])
+        print(f'Solution #{i}: value = {obj_value}')
+        for idx, var in enumerate(marks):
+            print(f'mark[{idx}]: {collector.Value(i, var)}')
+        intervals = [collector.Value(i, diff) for diff in diffs]
+        intervals.sort()
+        print(f'intervals: {intervals}')
+
+        print('Statistics:')
+        print(f'- conflicts: {collector.Failures(i)}')
+        print(f'- branches : {collector.Branches(i)}')
+        print(f'- wall time: {collector.WallTime(i)}ms\n')
+
+    print('Global Statistics:')
+    print(f'- total conflicts: {solver.Failures()}')
+    print(f'- total branches : {solver.Branches()}')
+    print(f'- total wall time: {solver.WallTime()}ms\n')
+
+
+def main(_=None):
+    solve_golomb_ruler(FLAGS.order)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,11 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.LinearExprBuilder;
+import com.google.ortools.sat.Literal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.IntStream;
 // [END import]
 
@@ -46,7 +49,7 @@ public class MultipleKnapsackSat {
 
     // Variables.
     // [START variables]
-    IntVar[][] x = new IntVar[numItems][numBins];
+    Literal[][] x = new Literal[numItems][numBins];
     for (int i : allItems) {
       for (int b : allBins) {
         x[i][b] = model.newBoolVar("x_" + i + "_" + b);
@@ -58,36 +61,33 @@ public class MultipleKnapsackSat {
     // [START constraints]
     // Each item is assigned to at most one bin.
     for (int i : allItems) {
-      IntVar[] vars = new IntVar[numBins];
+      List<Literal> bins = new ArrayList<>();
       for (int b : allBins) {
-        vars[b] = x[i][b];
+        bins.add(x[i][b]);
       }
-      model.addLessOrEqual(LinearExpr.sum(vars), 1);
+      model.addAtMostOne(bins);
     }
 
     // The amount packed in each bin cannot exceed its capacity.
     for (int b : allBins) {
-      IntVar[] vars = new IntVar[numItems];
+      LinearExprBuilder load = LinearExpr.newBuilder();
       for (int i : allItems) {
-        vars[i] = x[i][b];
+        load.addTerm(x[i][b], weights[i]);
       }
-      model.addLessOrEqual(LinearExpr.scalProd(vars, weights), binCapacities[b]);
+      model.addLessOrEqual(load, binCapacities[b]);
     }
     // [END constraints]
 
     // Objective.
     // [START objective]
     // Maximize total value of packed items.
-    IntVar[] objectiveVars = new IntVar[numItems * numBins];
-    int[] objectiveValues = new int[numItems * numBins];
+    LinearExprBuilder obj = LinearExpr.newBuilder();
     for (int i : allItems) {
       for (int b : allBins) {
-        int k = i * numBins + b;
-        objectiveVars[k] = x[i][b];
-        objectiveValues[k] = values[i];
+        obj.addTerm(x[i][b], values[i]);
       }
     }
-    model.maximize(LinearExpr.scalProd(objectiveVars, objectiveValues));
+    model.maximize(obj);
     // [END objective]
 
     // [START solve]
@@ -105,7 +105,7 @@ public class MultipleKnapsackSat {
         long binValue = 0;
         System.out.println("Bin " + b);
         for (int i : allItems) {
-          if (solver.value(x[i][b]) > 0) {
+          if (solver.booleanValue(x[i][b])) {
             System.out.println("Item " + i + " weight: " + weights[i] + " value: " + values[i]);
             binWeight += weights[i];
             binValue += values[i];

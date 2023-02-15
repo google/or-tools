@@ -550,7 +550,7 @@ def solve_qubo():
     for i in range(num_vars - 1):
         x_i = variables[i]
         for j in range(i + 1, num_vars):
-            coeff = int((RAW_DATA[i][j] + RAW_DATA[j][i]) * 1000.0)
+            coeff = RAW_DATA[i][j] + RAW_DATA[j][i]
             if coeff == 0.0:
                 continue
             x_j = variables[j]
@@ -562,7 +562,7 @@ def solve_qubo():
             obj_coeffs.append(coeff)
 
     for i in all_vars:
-        self_coeff = int((RAW_DATA[i][i] + RAW_DATA[i][-1]) * 1000.0)
+        self_coeff = RAW_DATA[i][i] + RAW_DATA[i][-1]
         if self_coeff != 0.0:
             obj_vars.append(variables[i])
             obj_coeffs.append(self_coeff)
@@ -570,17 +570,14 @@ def solve_qubo():
 
     model.Minimize(
         sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
-    # Patch the scaling factor of the objective.
-    model.Proto().objective.scaling_factor = 1.0 / 1000.0
-    print(model.ModelStats())
 
     ### Solve model.
     solver = cp_model.CpSolver()
-    solver.parameters.num_search_workers = 8
+    solver.parameters.num_search_workers = 16
     solver.parameters.log_search_progress = True
     solver.Solve(model)
-    print(solver.ResponseStats())
 
 
 if __name__ == '__main__':
     solve_qubo()
+ 

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,14 +17,18 @@
 
 #include "ortools/constraint_solver/constraint_solver.h"
 
+#include <algorithm>
 #include <csetjmp>
 #include <cstdint>
 #include <deque>
 #include <iosfwd>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <string>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "absl/memory/memory.h"
 #include "absl/time/clock.h"
@@ -115,6 +119,13 @@ void ForAll(const std::vector<T*>& objects, MethodPointer method,
     (object->*method)(args...);
   }
 }
+
+// Converts a scoped enum to its underlying type.
+template <typename E>
+constexpr typename std::underlying_type<E>::type to_underlying(E e) {
+  return static_cast<typename std::underlying_type<E>::type>(e);
+}
+
 }  // namespace
 
 // ----- ConstraintSolverParameters -----
@@ -549,7 +560,7 @@ class NoCompressionTrailPacker : public TrailPacker<T> {
   }
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(NoCompressionTrailPacker<T>);
+  DISALLOW_COPY_AND_ASSIGN(NoCompressionTrailPacker);
 };
 
 template <class T>
@@ -588,7 +599,7 @@ class ZlibTrailPacker : public TrailPacker<T> {
  private:
   const uint64_t tmp_size_;
   std::unique_ptr<char[]> tmp_block_;
-  DISALLOW_COPY_AND_ASSIGN(ZlibTrailPacker<T>);
+  DISALLOW_COPY_AND_ASSIGN(ZlibTrailPacker);
 };
 
 template <class T>
@@ -704,7 +715,7 @@ class CompressedTrail {
     }
   }
 
-  std::unique_ptr<TrailPacker<T> > packer_;
+  std::unique_ptr<TrailPacker<T>> packer_;
   const int block_size_;
   Block* blocks_;
   Block* free_blocks_;
@@ -959,6 +970,7 @@ class Search {
   explicit Search(Solver* const s)
       : solver_(s),
         marker_stack_(),
+        monitor_event_listeners_(to_underlying(Solver::MonitorEvent::kLast)),
         fail_buffer_(),
         solution_counter_(0),
         unchecked_solution_counter_(0),
@@ -978,6 +990,7 @@ class Search {
   Search(Solver* const s, int /* dummy_argument */)
       : solver_(s),
         marker_stack_(),
+        monitor_event_listeners_(to_underlying(Solver::MonitorEvent::kLast)),
         fail_buffer_(),
         solution_counter_(0),
         unchecked_solution_counter_(0),
@@ -1016,7 +1029,15 @@ class Search {
   void PeriodicCheck();
   int ProgressPercent();
   void Accept(ModelVisitor* const visitor) const;
-  void push_monitor(SearchMonitor* const m);
+  void AddEventListener(Solver::MonitorEvent event, SearchMonitor* monitor) {
+    if (monitor != nullptr) {
+      monitor_event_listeners_[to_underlying(event)].push_back(monitor);
+    }
+  }
+  const std::vector<SearchMonitor*>& GetEventListeners(
+      Solver::MonitorEvent event) const {
+    return monitor_event_listeners_[to_underlying(event)];
+  }
   void Clear();
   void IncrementSolutionCounter() { ++solution_counter_; }
   int64_t solution_counter() const { return solution_counter_; }
@@ -1072,7 +1093,7 @@ class Search {
 
   Solver* const solver_;
   std::vector<StateMarker*> marker_stack_;
-  std::vector<SearchMonitor*> monitors_;
+  std::vector<std::vector<SearchMonitor*>> monitor_event_listeners_;
   jmp_buf fail_buffer_;
   int64_t solution_counter_;
   int64_t unchecked_solution_counter_;
@@ -1189,19 +1210,19 @@ Solver::DecisionModification Search::ModifyDecision() {
   return Solver::NO_CHANGE;
 }
 
-void Search::push_monitor(SearchMonitor* const m) {
-  if (m) {
-    monitors_.push_back(m);
-  }
-}
-
 void Search::Clear() {
-  monitors_.clear();
+  for (auto& listeners : monitor_event_listeners_) listeners.clear();
   search_depth_ = 0;
   left_search_depth_ = 0;
   selector_ = nullptr;
   backtrack_at_the_end_of_the_search_ = true;
 }
+
+#define CALL_EVENT_LISTENERS(Event)                           \
+  do {                                                        \
+    ForAll(GetEventListeners(Solver::MonitorEvent::k##Event), \
+           &SearchMonitor::Event);                            \
+  } while (false)
 
 void Search::EnterSearch() {
   // The solution counter is reset when entering search and not when
@@ -1210,58 +1231,62 @@ void Search::EnterSearch() {
   solution_counter_ = 0;
   unchecked_solution_counter_ = 0;
 
-  ForAll(monitors_, &SearchMonitor::EnterSearch);
+  CALL_EVENT_LISTENERS(EnterSearch);
 }
 
 void Search::ExitSearch() {
   // Backtrack to the correct state.
-  ForAll(monitors_, &SearchMonitor::ExitSearch);
+  CALL_EVENT_LISTENERS(ExitSearch);
 }
 
-void Search::RestartSearch() {
-  ForAll(monitors_, &SearchMonitor::RestartSearch);
-}
+void Search::RestartSearch() { CALL_EVENT_LISTENERS(RestartSearch); }
 
 void Search::BeginNextDecision(DecisionBuilder* const db) {
-  ForAll(monitors_, &SearchMonitor::BeginNextDecision, db);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kBeginNextDecision),
+         &SearchMonitor::BeginNextDecision, db);
   CheckFail();
 }
 
 void Search::EndNextDecision(DecisionBuilder* const db, Decision* const d) {
-  ForAll(monitors_, &SearchMonitor::EndNextDecision, db, d);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kEndNextDecision),
+         &SearchMonitor::EndNextDecision, db, d);
   CheckFail();
 }
 
 void Search::ApplyDecision(Decision* const d) {
-  ForAll(monitors_, &SearchMonitor::ApplyDecision, d);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kApplyDecision),
+         &SearchMonitor::ApplyDecision, d);
   CheckFail();
 }
 
 void Search::AfterDecision(Decision* const d, bool apply) {
-  ForAll(monitors_, &SearchMonitor::AfterDecision, d, apply);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kAfterDecision),
+         &SearchMonitor::AfterDecision, d, apply);
   CheckFail();
 }
 
 void Search::RefuteDecision(Decision* const d) {
-  ForAll(monitors_, &SearchMonitor::RefuteDecision, d);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kRefuteDecision),
+         &SearchMonitor::RefuteDecision, d);
   CheckFail();
 }
 
-void Search::BeginFail() { ForAll(monitors_, &SearchMonitor::BeginFail); }
+void Search::BeginFail() { CALL_EVENT_LISTENERS(BeginFail); }
 
-void Search::EndFail() { ForAll(monitors_, &SearchMonitor::EndFail); }
+void Search::EndFail() { CALL_EVENT_LISTENERS(EndFail); }
 
 void Search::BeginInitialPropagation() {
-  ForAll(monitors_, &SearchMonitor::BeginInitialPropagation);
+  CALL_EVENT_LISTENERS(BeginInitialPropagation);
 }
 
 void Search::EndInitialPropagation() {
-  ForAll(monitors_, &SearchMonitor::EndInitialPropagation);
+  CALL_EVENT_LISTENERS(EndInitialPropagation);
 }
 
 bool Search::AcceptSolution() {
   bool valid = true;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kAcceptSolution)) {
     if (!monitor->AcceptSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
@@ -1274,7 +1299,8 @@ bool Search::AcceptSolution() {
 
 bool Search::AtSolution() {
   bool should_continue = false;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kAtSolution)) {
     if (monitor->AtSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
@@ -1285,23 +1311,23 @@ bool Search::AtSolution() {
   return should_continue;
 }
 
-void Search::NoMoreSolutions() {
-  ForAll(monitors_, &SearchMonitor::NoMoreSolutions);
-}
+void Search::NoMoreSolutions() { CALL_EVENT_LISTENERS(NoMoreSolutions); }
 
 bool Search::LocalOptimum() {
-  bool res = false;
-  for (SearchMonitor* const monitor : monitors_) {
+  bool at_local_optimum = false;
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kLocalOptimum)) {
     if (monitor->LocalOptimum()) {
-      res = true;
+      at_local_optimum = true;
     }
   }
-  return res;
+  return at_local_optimum;
 }
 
 bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   bool accept = true;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kAcceptDelta)) {
     if (!monitor->AcceptDelta(delta, deltadelta)) {
       accept = false;
     }
@@ -1309,16 +1335,15 @@ bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   return accept;
 }
 
-void Search::AcceptNeighbor() {
-  ForAll(monitors_, &SearchMonitor::AcceptNeighbor);
-}
+void Search::AcceptNeighbor() { CALL_EVENT_LISTENERS(AcceptNeighbor); }
 
 void Search::AcceptUncheckedNeighbor() {
-  ForAll(monitors_, &SearchMonitor::AcceptUncheckedNeighbor);
+  CALL_EVENT_LISTENERS(AcceptUncheckedNeighbor);
 }
 
 bool Search::IsUncheckedSolutionLimitReached() {
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor : GetEventListeners(
+           Solver::MonitorEvent::kIsUncheckedSolutionLimitReached)) {
     if (monitor->IsUncheckedSolutionLimitReached()) {
       return true;
     }
@@ -1326,24 +1351,26 @@ bool Search::IsUncheckedSolutionLimitReached() {
   return false;
 }
 
-void Search::PeriodicCheck() {
-  ForAll(monitors_, &SearchMonitor::PeriodicCheck);
-}
+void Search::PeriodicCheck() { CALL_EVENT_LISTENERS(PeriodicCheck); }
 
 int Search::ProgressPercent() {
   int progress = SearchMonitor::kNoProgress;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor* const monitor :
+       GetEventListeners(Solver::MonitorEvent::kProgressPercent)) {
     progress = std::max(progress, monitor->ProgressPercent());
   }
   return progress;
 }
 
 void Search::Accept(ModelVisitor* const visitor) const {
-  ForAll(monitors_, &SearchMonitor::Accept, visitor);
+  ForAll(GetEventListeners(Solver::MonitorEvent::kAccept),
+         &SearchMonitor::Accept, visitor);
   if (decision_builder_ != nullptr) {
     decision_builder_->Accept(visitor);
   }
 }
+
+#undef CALL_EVENT_LISTENERS
 
 bool LocalOptimumReached(Search* const search) {
   return search->LocalOptimum();
@@ -1375,8 +1402,8 @@ class FailDecision : public Decision {
 class BalancingDecision : public Decision {
  public:
   ~BalancingDecision() override {}
-  void Apply(Solver* const s) override {}
-  void Refute(Solver* const s) override {}
+  void Apply(Solver* const /*s*/) override {}
+  void Refute(Solver* const /*s*/) override {}
 };
 }  // namespace
 
@@ -1395,7 +1422,7 @@ enum SentinelMarker {
 }  // namespace
 
 extern PropagationMonitor* BuildTrace(Solver* const s);
-extern LocalSearchMonitor* BuildLocalSearchMonitorMaster(Solver* const s);
+extern LocalSearchMonitor* BuildLocalSearchMonitorPrimary(Solver* const s);
 extern ModelCache* BuildModelCache(Solver* const solver);
 
 std::string Solver::model_name() const { return name_; }
@@ -1430,9 +1457,9 @@ Solver::Solver(const std::string& name)
 
 void Solver::Init() {
   CheckSolverParameters(parameters_);
-  queue_ = absl::make_unique<Queue>(this);
-  trail_ = absl::make_unique<Trail>(parameters_.trail_block_size(),
-                                    parameters_.compress_trail());
+  queue_ = std::make_unique<Queue>(this);
+  trail_ = std::make_unique<Trail>(parameters_.trail_block_size(),
+                                   parameters_.compress_trail());
   state_ = OUTSIDE_SEARCH;
   branches_ = 0;
   fails_ = 0;
@@ -1441,19 +1468,19 @@ void Solver::Init() {
   filtered_neighbors_ = 0;
   accepted_neighbors_ = 0;
   optimization_direction_ = NOT_SET;
-  timer_ = absl::make_unique<ClockTimer>();
+  timer_ = std::make_unique<ClockTimer>();
   searches_.assign(1, new Search(this, 0));
   fail_stamp_ = uint64_t{1};
-  balancing_decision_ = absl::make_unique<BalancingDecision>();
+  balancing_decision_ = std::make_unique<BalancingDecision>();
   fail_intercept_ = nullptr;
   true_constraint_ = nullptr;
   false_constraint_ = nullptr;
-  fail_decision_ = absl::make_unique<FailDecision>();
+  fail_decision_ = std::make_unique<FailDecision>();
   constraint_index_ = 0;
   additional_constraint_index_ = 0;
   num_int_vars_ = 0;
   propagation_monitor_.reset(BuildTrace(this));
-  local_search_monitor_.reset(BuildLocalSearchMonitorMaster(this));
+  local_search_monitor_.reset(BuildLocalSearchMonitorPrimary(this));
   print_trace_ = nullptr;
   anonymous_variable_index_ = 0;
   should_fail_ = false;
@@ -2537,9 +2564,9 @@ std::string DecisionBuilder::GetName() const {
 }
 
 void DecisionBuilder::AppendMonitors(
-    Solver* const solver, std::vector<SearchMonitor*>* const extras) {}
+    Solver* const /*solver*/, std::vector<SearchMonitor*>* const /*extras*/) {}
 
-void DecisionBuilder::Accept(ModelVisitor* const visitor) const {}
+void DecisionBuilder::Accept(ModelVisitor* const /*visitor*/) const {}
 
 // ---------- Decision and DecisionVisitor ----------
 
@@ -2584,6 +2611,7 @@ const char ModelVisitor::kDistribute[] = "Distribute";
 const char ModelVisitor::kDivide[] = "Divide";
 const char ModelVisitor::kDurationExpr[] = "DurationExpression";
 const char ModelVisitor::kElement[] = "Element";
+const char ModelVisitor::kLightElementEqual[] = "LightElementEqual";
 const char ModelVisitor::kElementEqual[] = "ElementEqual";
 const char ModelVisitor::kEndExpr[] = "EndExpression";
 const char ModelVisitor::kEquality[] = "Equal";
@@ -2900,7 +2928,14 @@ void SearchMonitor::PeriodicCheck() {}
 void SearchMonitor::Accept(ModelVisitor* const visitor) const {}
 // A search monitors adds itself on the active search.
 void SearchMonitor::Install() {
-  solver()->searches_.back()->push_monitor(this);
+  for (std::underlying_type<Solver::MonitorEvent>::type event = 0;
+       event != to_underlying(Solver::MonitorEvent::kLast); ++event) {
+    ListenToEvent(static_cast<Solver::MonitorEvent>(event));
+  }
+}
+
+void SearchMonitor::ListenToEvent(Solver::MonitorEvent event) {
+  solver()->searches_.back()->AddEventListener(event, this);
 }
 
 // ---------- Propagation Monitor -----------
@@ -3147,11 +3182,11 @@ PropagationMonitor* Solver::GetPropagationMonitor() const {
   return propagation_monitor_.get();
 }
 
-// ---------- Local Search Monitor Master ----------
+// ---------- Local Search Monitor Primary ----------
 
-class LocalSearchMonitorMaster : public LocalSearchMonitor {
+class LocalSearchMonitorPrimary : public LocalSearchMonitor {
  public:
-  explicit LocalSearchMonitorMaster(Solver* solver)
+  explicit LocalSearchMonitorPrimary(Solver* solver)
       : LocalSearchMonitor(solver) {}
 
   void BeginOperatorStart() override {
@@ -3204,19 +3239,20 @@ class LocalSearchMonitorMaster : public LocalSearchMonitor {
   void Install() override { SearchMonitor::Install(); }
 
   std::string DebugString() const override {
-    return "LocalSearchMonitorMaster";
+    return "LocalSearchMonitorPrimary";
   }
 
  private:
   std::vector<LocalSearchMonitor*> monitors_;
 };
 
-LocalSearchMonitor* BuildLocalSearchMonitorMaster(Solver* const s) {
-  return new LocalSearchMonitorMaster(s);
+LocalSearchMonitor* BuildLocalSearchMonitorPrimary(Solver* const s) {
+  return new LocalSearchMonitorPrimary(s);
 }
 
 void Solver::AddLocalSearchMonitor(LocalSearchMonitor* const monitor) {
-  reinterpret_cast<class LocalSearchMonitorMaster*>(local_search_monitor_.get())
+  reinterpret_cast<class LocalSearchMonitorPrimary*>(
+      local_search_monitor_.get())
       ->Add(monitor);
 }
 
@@ -3239,7 +3275,7 @@ std::string Solver::SearchContext(const Search* search) const {
 
 Assignment* Solver::GetOrCreateLocalSearchState() {
   if (local_search_state_ == nullptr) {
-    local_search_state_ = absl::make_unique<Assignment>(this);
+    local_search_state_ = std::make_unique<Assignment>(this);
   }
   return local_search_state_.get();
 }

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 // A faster version of flat_hash_map for Variable and LinearConstraint keys.
 #ifndef OR_TOOLS_MATH_OPT_CPP_ID_MAP_H_
 #define OR_TOOLS_MATH_OPT_CPP_ID_MAP_H_
@@ -21,14 +24,14 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
-#include "ortools/math_opt/core/indexed_model.h"
-#include "ortools/math_opt/cpp/arrow_operator_proxy.h"  // IWYU pragma: export
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/math_opt/core/arrow_operator_proxy.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/key_types.h"
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -139,7 +142,7 @@ class IdMap {
   inline IdMap(std::initializer_list<value_type> ilist);
 
   // Typically for internal use only.
-  inline IdMap(IndexedModel* model, StorageType values);
+  inline IdMap(const ModelStorage* storage, StorageType values);
 
   inline const_iterator cbegin() const;
   inline const_iterator begin() const;
@@ -159,12 +162,15 @@ class IdMap {
   inline void insert(InputIt first, InputIt last);
   inline void insert(std::initializer_list<value_type> ilist);
 
+  template <typename M>
+  inline std::pair<iterator, bool> insert_or_assign(const K& k, M&& v);
+
   inline std::pair<iterator, bool> emplace(const K& k, V v);
   template <typename... Args>
   inline std::pair<iterator, bool> try_emplace(const K& k, Args&&... args);
 
   // Returns the number of elements erased (zero or one).
-  inline int erase(const K& k);
+  inline size_type erase(const K& k);
   // In STL erase(const_iterator) and erase(iterator) both return an
   // iterator. But flat_hash_map instead has void return types. So here we also
   // use void.
@@ -226,10 +232,10 @@ class IdMap {
   inline std::vector<V> SortedValues() const;
 
   const StorageType& raw_map() const { return map_; }
-  IndexedModel* model() const { return model_; }
+  const ModelStorage* storage() const { return storage_; }
 
   friend bool operator==(const IdMap& lhs, const IdMap& rhs) {
-    return lhs.model_ == rhs.model_ && lhs.map_ == rhs.map_;
+    return lhs.storage_ == rhs.storage_ && lhs.map_ == rhs.map_;
   }
   friend bool operator!=(const IdMap& lhs, const IdMap& rhs) {
     return !(lhs == rhs);
@@ -237,21 +243,21 @@ class IdMap {
 
  private:
   inline std::vector<IdType> SortedIds() const;
-  // CHECKs that model_ and k.model() matches when this map is not empty
-  // (i.e. its model_ is not null). When it is empty, simply check that
-  // k.model() is not null.
+  // CHECKs that storage_ and k.storage() matches when this map is not empty
+  // (i.e. its storage_ is not null). When it is empty, simply check that
+  // k.storage() is not null.
   inline void CheckModel(const K& k) const;
-  // Sets model_ to k.model() if this map is empty (i.e. its model_ is
-  // null). Else CHECK that it has the same model. It also CHECK that k.model()
-  // is not null.
+  // Sets storage_ to k.storage() if this map is empty (i.e. its storage_ is
+  // null). Else CHECK that it has the same model. It also CHECK that
+  // k.storage() is not null.
   inline void CheckOrSetModel(const K& k);
-  // Sets model_ to other.model_ if this map is empty (i.e. its model_ is
+  // Sets storage_ to other.storage_ if this map is empty (i.e. its storage_ is
   // null). Else if the other map is not empty, CHECK that it has the same
   // model.
   inline void CheckOrSetModel(const IdMap& other);
 
-  // Invariant: model == nullptr if and only if map_.empty().
-  IndexedModel* model_ = nullptr;
+  // Invariant: storage == nullptr if and only if map_.empty().
+  const ModelStorage* storage_ = nullptr;
   StorageType map_;
 };
 
@@ -274,7 +280,7 @@ void swap(IdMap<K, V>& a, IdMap<K, V>& b) {
 
 template <typename K, typename V>
 typename IdMap<K, V>::reference IdMap<K, V>::iterator::operator*() const {
-  return reference(K(map_->model_, storage_iterator_->first),
+  return reference(K(map_->storage_, storage_iterator_->first),
                    storage_iterator_->second);
 }
 
@@ -314,7 +320,7 @@ IdMap<K, V>::const_iterator::const_iterator(const iterator& non_const_iterator)
 template <typename K, typename V>
 typename IdMap<K, V>::const_iterator::reference
 IdMap<K, V>::const_iterator::operator*() const {
-  return reference(K(map_->model_, storage_iterator_->first),
+  return reference(K(map_->storage_, storage_iterator_->first),
                    storage_iterator_->second);
 }
 
@@ -349,10 +355,10 @@ IdMap<K, V>::const_iterator::const_iterator(
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename K, typename V>
-IdMap<K, V>::IdMap(IndexedModel* model, StorageType values)
-    : model_(model), map_(std::move(values)) {
+IdMap<K, V>::IdMap(const ModelStorage* storage, StorageType values)
+    : storage_(values.empty() ? nullptr : storage), map_(std::move(values)) {
   if (!map_.empty()) {
-    CHECK(model_ != nullptr);
+    CHECK(storage_ != nullptr);
   }
 }
 
@@ -399,7 +405,7 @@ typename IdMap<K, V>::iterator IdMap<K, V>::end() {
 
 template <typename K, typename V>
 void IdMap<K, V>::clear() {
-  model_ = nullptr;
+  storage_ = nullptr;
   map_.clear();
 }
 
@@ -423,6 +429,16 @@ void IdMap<K, V>::insert(std::initializer_list<value_type> ilist) {
 }
 
 template <typename K, typename V>
+template <typename M>
+std::pair<typename IdMap<K, V>::iterator, bool> IdMap<K, V>::insert_or_assign(
+    const K& k, M&& v) {
+  CheckOrSetModel(k);
+  auto initial_ret = map_.insert_or_assign(k.typed_id(), std::forward<M>(v));
+  return std::make_pair(iterator(this, std::move(initial_ret.first)),
+                        initial_ret.second);
+}
+
+template <typename K, typename V>
 std::pair<typename IdMap<K, V>::iterator, bool> IdMap<K, V>::emplace(const K& k,
                                                                      V v) {
   CheckOrSetModel(k);
@@ -443,11 +459,11 @@ std::pair<typename IdMap<K, V>::iterator, bool> IdMap<K, V>::try_emplace(
 }
 
 template <typename K, typename V>
-int IdMap<K, V>::erase(const K& k) {
+typename IdMap<K, V>::size_type IdMap<K, V>::erase(const K& k) {
   CheckModel(k);
-  const int ret = map_.erase(k.typed_id());
+  const size_type ret = map_.erase(k.typed_id());
   if (map_.empty()) {
-    model_ = nullptr;
+    storage_ = nullptr;
   }
   return ret;
 }
@@ -456,7 +472,7 @@ template <typename K, typename V>
 void IdMap<K, V>::erase(const const_iterator pos) {
   map_.erase(pos.storage_iterator_);
   if (map_.empty()) {
-    model_ = nullptr;
+    storage_ = nullptr;
   }
 }
 
@@ -465,7 +481,7 @@ typename IdMap<K, V>::iterator IdMap<K, V>::erase(const const_iterator first,
                                                   const const_iterator last) {
   auto ret = map_.erase(first.storage_iterator_, last.storage_iterator_);
   if (map_.empty()) {
-    model_ = nullptr;
+    storage_ = nullptr;
   }
   return iterator(this, std::move(ret));
 }
@@ -473,7 +489,7 @@ typename IdMap<K, V>::iterator IdMap<K, V>::erase(const const_iterator first,
 template <typename K, typename V>
 void IdMap<K, V>::swap(IdMap& other) {
   using std::swap;
-  swap(model_, other.model_);
+  swap(storage_, other.storage_);
   swap(map_, other.map_);
 }
 
@@ -581,7 +597,7 @@ std::vector<K> IdMap<K, V>::SortedKeys() const {
   std::vector<K> result;
   result.reserve(map_.size());
   for (const IdType id : SortedIds()) {
-    result.push_back(K(model_, id));
+    result.push_back(K(storage_, id));
   }
   return result;
 }
@@ -609,29 +625,30 @@ std::vector<typename K::IdType> IdMap<K, V>::SortedIds() const {
 
 template <typename K, typename V>
 void IdMap<K, V>::CheckModel(const K& k) const {
-  CHECK(k.model() != nullptr) << internal::kKeyHasNullIndexedModel;
-  CHECK(model_ == nullptr || model_ == k.model())
-      << internal::kObjectsFromOtherIndexedModel;
+  CHECK(k.storage() != nullptr) << internal::kKeyHasNullModelStorage;
+  CHECK(storage_ == nullptr || storage_ == k.storage())
+      << internal::kObjectsFromOtherModelStorage;
 }
 
 template <typename K, typename V>
 void IdMap<K, V>::CheckOrSetModel(const K& k) {
-  CHECK(k.model() != nullptr) << internal::kKeyHasNullIndexedModel;
-  if (model_ == nullptr) {
-    model_ = k.model();
+  CHECK(k.storage() != nullptr) << internal::kKeyHasNullModelStorage;
+  if (storage_ == nullptr) {
+    storage_ = k.storage();
   } else {
-    CHECK_EQ(model_, k.model()) << internal::kObjectsFromOtherIndexedModel;
+    CHECK_EQ(storage_, k.storage()) << internal::kObjectsFromOtherModelStorage;
   }
 }
 
 template <typename K, typename V>
 void IdMap<K, V>::CheckOrSetModel(const IdMap& other) {
-  if (model_ == nullptr) {
-    model_ = other.model_;
-  } else if (other.model_ != nullptr) {
-    CHECK_EQ(model_, other.model_) << internal::kObjectsFromOtherIndexedModel;
+  if (storage_ == nullptr) {
+    storage_ = other.storage_;
+  } else if (other.storage_ != nullptr) {
+    CHECK_EQ(storage_, other.storage_)
+        << internal::kObjectsFromOtherModelStorage;
   } else {
-    // By construction when other is not empty, it has a non null `model_`.
+    // By construction when other is not empty, it has a non null `storage_`.
     DCHECK(other.empty());
   }
 }

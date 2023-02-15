@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,11 +14,13 @@
 //
 //  Expression constraints
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_format.h"
@@ -358,9 +360,9 @@ void DiffCst::BoundPropagate() {
   if (var_min > value_ || var_max < value_) {
     demon_->inhibit(solver());
   } else if (var_min == value_) {
-    var_->SetMin(value_ + 1);
+    var_->SetMin(CapAdd(value_, 1));
   } else if (var_max == value_) {
-    var_->SetMax(value_ - 1);
+    var_->SetMax(CapSub(value_, 1));
   } else if (!HasLargeDomain(var_)) {
     demon_->inhibit(solver());
     var_->RemoveValue(value_);

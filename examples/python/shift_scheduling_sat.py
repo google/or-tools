@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,12 +19,10 @@ from absl import flags
 from ortools.sat.python import cp_model
 from google.protobuf import text_format
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string('output_proto', '',
-                    'Output file to write the cp_model proto to.')
-flags.DEFINE_string('params', 'max_time_in_seconds:10.0',
-                    'Sat solver parameters.')
+_OUTPUT_PROTO = flags.DEFINE_string(
+    'output_proto', '', 'Output file to write the cp_model proto to.')
+_PARAMS = flags.DEFINE_string('params', 'max_time_in_seconds:10.0',
+                              'Sat solver parameters.')
 
 
 def negated_bounded_span(works, start, length):
@@ -60,8 +58,8 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
                                  soft_max, hard_max, max_cost, prefix):
     """Sequence constraint on true variables with soft and hard bounds.
 
-  This constraint look at every maximal contiguous sequence of variables
-  assigned to true. If forbids sequence of length < hard_min or > hard_max.
+  This constraint looks at every maximal contiguous sequence of variables
+  assigned to true. It forbids sequence of length < hard_min or > hard_max.
   Then it creates penalty terms if the length is < soft_min or > soft_max.
 
   Args:
@@ -215,11 +213,13 @@ def solve_shift_scheduling(params, output_proto):
     # Request: (employee, shift, day, weight)
     # A negative weight indicates that the employee desire this assignment.
     requests = [
-        # Employee 3 wants the first Saturday off.
+        # Employee 3 does not want to work on the first Saturday (negative weight
+        # for the Off shift).
         (3, 0, 5, -2),
-        # Employee 5 wants a night shift on the second Thursday.
+        # Employee 5 wants a night shift on the second Thursday (negative weight).
         (5, 3, 10, -2),
-        # Employee 2 does not want a night shift on the first Friday.
+        # Employee 2 does not want a night shift on the first Friday (positive
+        # weight).
         (2, 3, 4, 4)
     ]
 
@@ -229,7 +229,7 @@ def solve_shift_scheduling(params, output_proto):
     shift_constraints = [
         # One or two consecutive days of rest, this is a hard constraint.
         (0, 1, 1, 0, 2, 2, 0),
-        # betweem 2 and 3 consecutive days of night shifts, 1 and 4 are
+        # between 2 and 3 consecutive days of night shifts, 1 and 4 are
         # possible but penalized.
         (3, 1, 2, 20, 3, 4, 5),
     ]
@@ -288,7 +288,7 @@ def solve_shift_scheduling(params, output_proto):
     # Exactly one shift per day.
     for e in range(num_employees):
         for d in range(num_days):
-            model.Add(sum(work[e, s, d] for s in range(num_shifts)) == 1)
+            model.AddExactlyOne(work[e, s, d] for s in range(num_shifts))
 
     # Fixed assignments.
     for e, s, d in fixed_assignments:
@@ -419,7 +419,7 @@ def solve_shift_scheduling(params, output_proto):
 
 
 def main(_):
-    solve_shift_scheduling(FLAGS.params, FLAGS.output_proto)
+    solve_shift_scheduling(_PARAMS.value, _OUTPUT_PROTO.value)
 
 
 if __name__ == '__main__':

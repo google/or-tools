@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,29 +14,39 @@
 #include "ortools/sat/boolean_problem.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <numeric>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
+#include "ortools/graph/graph.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/graph/io.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "ortools/algorithms/find_graph_symmetries.h"
-#include "ortools/base/hash.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/map_util.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/util.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/sat/simplification.h"
+#include "ortools/util/strong_integers.h"
 
 ABSL_FLAG(std::string, debug_dump_symmetry_graph_to_file, "",
           "If this flag is non-empty, an undirected graph whose"
@@ -508,7 +518,7 @@ class IdGenerator {
   // a new id, otherwise return the previously generated id.
   int GetId(int type, Coefficient coefficient) {
     const std::pair<int, int64_t> key(type, coefficient.value());
-    return gtl::LookupOrInsert(&id_map_, key, id_map_.size());
+    return id_map_.emplace(key, id_map_.size()).first->second;
   }
 
  private:
@@ -706,8 +716,10 @@ void FindLinearBooleanProblemSymmetries(
                                       /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   // TODO(user): inject the appropriate time limit here.
-  CHECK_OK(symmetry_finder.FindSymmetries(&equivalence_classes, generators,
-                                          &factorized_automorphism_group_size));
+  CHECK(symmetry_finder
+            .FindSymmetries(&equivalence_classes, generators,
+                            &factorized_automorphism_group_size)
+            .ok());
 
   // Remove from the permutations the part not concerning the literals.
   // Note that some permutation may becomes empty, which means that we had

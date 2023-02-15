@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -272,13 +272,38 @@ int64_t PairRelocateOperator::GetBaseNodeRestartPosition(int base_index) {
   }
 }
 
-LightPairRelocateOperator::LightPairRelocateOperator(
+GroupPairAndRelocateOperator::GroupPairAndRelocateOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathOperator(vars, secondary_vars, 2, true, false,
                    std::move(start_empty_path_class)) {
+  AddPairAlternativeSets(index_pairs);
+}
+
+bool GroupPairAndRelocateOperator::MakeNeighbor() {
+  const int64_t prev1 = BaseNode(0);
+  const int64_t node1 = Next(prev1);
+  if (IsPathEnd(node1)) return false;
+  const int64_t sibling1 = GetActiveAlternativeSibling(node1);
+  if (sibling1 == -1) return false;
+  const int64_t node2 = BaseNode(1);
+  // Skip redundant cases.
+  if (node2 == node1 || node2 == sibling1) return false;
+  const bool ok = MoveChain(prev1, node1, node2);
+  return MoveChain(Prev(sibling1), sibling1, node1) || ok;
+}
+
+LightPairRelocateOperator::LightPairRelocateOperator(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    const RoutingIndexPairs& index_pairs,
+    std::function<bool(int64_t)> force_lifo)
+    : PathOperator(vars, secondary_vars, 2, true, false,
+                   std::move(start_empty_path_class)),
+      force_lifo_(std::move(force_lifo)) {
   AddPairAlternativeSets(index_pairs);
 }
 
@@ -290,14 +315,45 @@ bool LightPairRelocateOperator::MakeNeighbor() {
   if (sibling1 == -1) return false;
   const int64_t node2 = BaseNode(1);
   if (node2 == sibling1) return false;
-  const int64_t sibling2 = GetActiveAlternativeSibling(node2);
-  if (sibling2 == -1) return false;
+  const bool path2_is_lifo =
+      (force_lifo_ != nullptr && force_lifo_(StartNode(1)));
   // Note: MoveChain will return false if it is a no-op (moving the chain to its
   // current position). However we want to accept the move if at least node1 or
   // sibling1 gets moved to a new position. Therefore we want to be sure both
   // MoveChains are called and at least one succeeds.
+
+  // Special case handling relocating the first node of a pair "before" the
+  // first node of another pair. Limiting this to relocating after the start of
+  // the path as other moves will be mostly equivalent to relocating "after".
+  // TODO(user): extend to relocating before the start of sub-tours (when all
+  // pairs have been matched).
+  if (IsPathStart(node2)) {
+    const bool ok = MoveChain(prev1, node1, node2);
+    const int64_t sibling2 = GetActiveAlternativeSibling(Next(node1));
+    if (sibling2 == -1) {
+      // Not inserting before a pair node: insert sibling1 after node1.
+      return MoveChain(Prev(sibling1), sibling1, node1) || ok;
+    } else {
+      // Depending on the lifo status of the path, insert sibling1 before or
+      // after sibling2 since node1 is being inserted before next2.
+      if (!path2_is_lifo) {
+        if (Prev(sibling2) == sibling1) return ok;
+        return MoveChain(Prev(sibling1), sibling1, Prev(sibling2)) || ok;
+      } else {
+        return MoveChain(Prev(sibling1), sibling1, sibling2) || ok;
+      }
+    }
+  }
+  // Relocating the first node of a pair "after" the first node of another pair.
+  const int64_t sibling2 = GetActiveAlternativeSibling(node2);
+  if (sibling2 == -1) return false;
   const bool ok = MoveChain(prev1, node1, node2);
-  return MoveChain(Prev(sibling1), sibling1, sibling2) || ok;
+  if (!path2_is_lifo) {
+    return MoveChain(Prev(sibling1), sibling1, sibling2) || ok;
+  } else {
+    if (Prev(sibling2) == sibling1) return ok;
+    return MoveChain(Prev(sibling1), sibling1, Prev(sibling2)) || ok;
+  }
 }
 
 PairExchangeOperator::PairExchangeOperator(
@@ -575,10 +631,7 @@ bool SwapIndexPairOperator::MakeNextNeighbor(Assignment* delta,
       return false;
     }
 
-    if (ApplyChanges(delta, deltadelta)) {
-      VLOG(2) << "Delta (" << DebugString() << ") = " << delta->DebugString();
-      return true;
-    }
+    if (ApplyChanges(delta, deltadelta)) return true;
   }
   return false;
 }
@@ -937,16 +990,23 @@ FilteredHeuristicCloseNodesLNSOperator::FilteredHeuristicCloseNodesLNSOperator(
       pickup_delivery_pairs_(model_->GetPickupAndDeliveryPairs()),
       current_node_(0),
       last_node_(0),
+      just_started_(false),
+      initialized_(false),
       close_nodes_(model_->Size()),
+      num_close_nodes_(num_close_nodes),
       new_nexts_(model_->Size()),
       changed_nexts_(model_->Size()),
       new_prevs_(model_->Size()),
-      changed_prevs_(model_->Size()) {
+      changed_prevs_(model_->Size()) {}
+
+void FilteredHeuristicCloseNodesLNSOperator::Initialize() {
+  if (initialized_) return;
+  initialized_ = true;
   const int64_t size = model_->Size();
   const int64_t max_num_neighbors =
       std::max<int64_t>(0, size - 1 - model_->vehicles());
   const int64_t num_closest_neighbors =
-      std::min<int64_t>(num_close_nodes, max_num_neighbors);
+      std::min<int64_t>(num_close_nodes_, max_num_neighbors);
   DCHECK_GE(num_closest_neighbors, 0);
 
   if (num_closest_neighbors == 0) return;
@@ -985,11 +1045,13 @@ FilteredHeuristicCloseNodesLNSOperator::FilteredHeuristicCloseNodesLNSOperator(
 }
 
 void FilteredHeuristicCloseNodesLNSOperator::OnStart() {
+  Initialize();
   last_node_ = current_node_;
   just_started_ = true;
 }
 
 bool FilteredHeuristicCloseNodesLNSOperator::IncrementPosition() {
+  DCHECK(initialized_);
   if (just_started_) {
     just_started_ = false;
     return true;
@@ -1057,6 +1119,7 @@ std::vector<int64_t> FilteredHeuristicCloseNodesLNSOperator::GetActiveSiblings(
 
 std::function<int64_t(int64_t)>
 FilteredHeuristicCloseNodesLNSOperator::SetupNextAccessorForNeighbor() {
+  DCHECK(initialized_);
   if (model_->IsStart(current_node_)) {
     return nullptr;
   }

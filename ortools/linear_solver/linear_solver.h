@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -140,12 +140,13 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/base/port.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/status/status.h"
@@ -194,10 +195,16 @@ class MPSolver {
     CLP_LINEAR_PROGRAMMING = 0,
     GLPK_LINEAR_PROGRAMMING = 1,
     GLOP_LINEAR_PROGRAMMING = 2,  // Recommended default value. Made in Google.
+    // In-house linear programming solver based on the primal-dual hybrid
+    // gradient method. Sometimes faster than Glop for medium-size problems and
+    // scales to much larger problems than Glop.
+    PDLP_LINEAR_PROGRAMMING = 8,
+    HIGHS_LINEAR_PROGRAMMING = 15,
 
     // Integer programming problems.
     // -----------------------------
-    SCIP_MIXED_INTEGER_PROGRAMMING = 3,  // Recommended default value.
+    // Recommended default value for MIP problems.
+    SCIP_MIXED_INTEGER_PROGRAMMING = 3,
     GLPK_MIXED_INTEGER_PROGRAMMING = 4,
     CBC_MIXED_INTEGER_PROGRAMMING = 5,
 
@@ -210,6 +217,7 @@ class MPSolver {
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
     SIRIUS_LINEAR_PROGRAMMING = 103,
     SIRIUS_MIXED_INTEGER_PROGRAMMING = 104,
+    HIGHS_MIXED_INTEGER_PROGRAMMING = 16,
 
     // Boolean optimization problem (requires only integer variables and works
     // best with only Boolean variables).
@@ -218,6 +226,8 @@ class MPSolver {
     // SAT based solver (requires only integer and Boolean variables).
     // If you pass it mixed integer problems, it will scale coefficients to
     // integer values, and solver continuous variables as integral variables.
+    //
+    // Recommended default value for pure integral problems problems.
     SAT_INTEGER_PROGRAMMING = 14,
 
     // Dedicated knapsack solvers.
@@ -568,7 +578,8 @@ class MPSolver {
     return solver == MPModelRequest::GLOP_LINEAR_PROGRAMMING ||
            solver == MPModelRequest::GUROBI_LINEAR_PROGRAMMING ||
            solver == MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING ||
-           solver == MPModelRequest::SAT_INTEGER_PROGRAMMING;
+           solver == MPModelRequest::SAT_INTEGER_PROGRAMMING ||
+           solver == MPModelRequest::PDLP_LINEAR_PROGRAMMING;
   }
 
   /// Exports model to protocol buffer.
@@ -665,6 +676,8 @@ class MPSolver {
    * solver. There is also no guarantee that the solver will use this hint or
    * try to return a solution "close" to this assignment in case of multiple
    * optimal solutions.
+   *
+   * Calling SetHint clears all previous hints.
    */
   void SetHint(std::vector<std::pair<const MPVariable*, double> > hint);
 
@@ -853,6 +866,8 @@ class MPSolver {
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
+  friend class PdlpInterface;
+  friend class HighsInterface;
   friend class KnapsackInterface;
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
@@ -889,7 +904,7 @@ class MPSolver {
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
-  mutable absl::optional<absl::flat_hash_map<std::string, int> >
+  mutable std::optional<absl::flat_hash_map<std::string, int> >
       variable_name_to_index_;
   // Whether variables have been extracted to the underlying interface.
   std::vector<bool> variable_is_extracted_;
@@ -897,7 +912,7 @@ class MPSolver {
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  mutable absl::optional<absl::flat_hash_map<std::string, int> >
+  mutable std::optional<absl::flat_hash_map<std::string, int> >
       constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
@@ -1073,6 +1088,8 @@ class MPObjective {
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
+  friend class PdlpInterface;
+  friend class HighsInterface;
   friend class KnapsackInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
@@ -1183,6 +1200,8 @@ class MPVariable {
   friend class MPVariableSolutionValueTest;
   friend class BopInterface;
   friend class SatInterface;
+  friend class PdlpInterface;
+  friend class HighsInterface;
   friend class KnapsackInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
@@ -1325,6 +1344,8 @@ class MPConstraint {
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
+  friend class PdlpInterface;
+  friend class HighsInterface;
   friend class KnapsackInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
@@ -1598,12 +1619,12 @@ class MPSolverInterface {
   // Returns {} (eg. absl::nullopt) if direct-solve is not supported by the
   // underlying solver (possibly because interrupt != nullptr), in which case
   // the user should fall back to using MPSolver.
-  virtual absl::optional<MPSolutionResponse> DirectlySolveProto(
+  virtual std::optional<MPSolutionResponse> DirectlySolveProto(
       const MPModelRequest& /* request */,
       // `interrupt` is non-const because the internal
       // solver may set it to true itself, in some cases.
       std::atomic<bool>* /* interrupt */) {
-    return absl::nullopt;
+    return std::nullopt;
   }
 
   // Writes the model using the solver internal write function.  Currently only

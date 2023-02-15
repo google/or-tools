@@ -11,7 +11,7 @@ CP-SAT was described during the CPAIOR 2020 masterclass. The recording is
 available [here](https://www.youtube.com/watch?v=lmy1ddn4cyw).
 
 To begin, skim
-[cp_model.proto](../cp_model.proto) to
+[cp_model.proto](../sat/cp_model.proto) to
 understand how optimization problems can be modeled using the solver. You can
 then solve a model with the functions in
 [cp_model_solver.h](../sat/cp_model_solver.h).
@@ -26,7 +26,7 @@ then solve a model with the functions in
 
 The optimization model description and related utilities:
 
-*   [cp_model.proto](../cp_model.proto):
+*   [cp_model.proto](../sat/cp_model.proto):
     Proto describing a general Constraint Programming model.
 *   [cp_model_utils.h](../sat/cp_model_utils.h):
     Utilities to manipulate and create a cp_model.proto.
@@ -77,9 +77,9 @@ Input/output:
 *   [drat_writer.h](../sat/drat_writer.h):
     Write UNSAT proof in the DRAT format. This allows to check the correctness
     of an UNSAT proof with the third party program DRAT-trim.
-*   [opb_reader.h](../sat/opb_reader.h):
+*   [opb_reader.h](../../examples/cpp/opb_reader.h):
     Parser for the .opb format for Pseudo-Boolean optimization problems.
-*   [sat_cnf_reader.h](../sat/sat_cnf_reader.h):
+*   [sat_cnf_reader.h](../../examples/cpp/sat_cnf_reader.h):
     Parser for the classic SAT .cnf format. Also parses max-SAT files.
 *   [boolean_problem.proto](../sat/boolean_problem.proto):
     Deprecated by cp_model.proto.
@@ -144,4 +144,4 @@ Scheduling constraints:
 ## Recipes
 
 You can find a set a code recipes in
-[the documentation directory](doc/README.md).
+[the documentation directory](docs/README.md).

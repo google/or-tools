@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,20 @@
 // [START program]
 // OR-Tools solution to the N-queens problem.
 // [START import]
-#include <cstdint>
+#include <stdlib.h>
+
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "absl/strings/numbers.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 // [END import]
 
 namespace operations_research {
@@ -106,7 +113,11 @@ void NQueensSat(const int board_size) {
 int main(int argc, char** argv) {
   int board_size = 8;
   if (argc > 1) {
-    CHECK(absl::SimpleAtoi(argv[1], &board_size));
+    if (!absl::SimpleAtoi(argv[1], &board_size)) {
+      LOG(INFO) << "Cannot parse '" << argv[1]
+                << "', using the default value of 8.";
+      board_size = 8;
+    }
   }
   operations_research::sat::NQueensSat(board_size);
   return EXIT_SUCCESS;

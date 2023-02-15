@@ -1,12 +1,12 @@
 FROM ortools/make:opensuse_swig AS env
-RUN zypper update -y \
-&& zypper install -y wget tar gzip libicu-devel
 
-# .NET install
+# Install .Net
+RUN zypper refresh \
+&& zypper install -y wget tar gzip libicu-devel
 RUN mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
-
-# see: https://dotnet.microsoft.com/download/dotnet-core/3.1
+## .Net 3.1
+## see: https://dotnet.microsoft.com/download/dotnet-core/3.1
 RUN dotnet_sdk_version=3.1.415 \
 && wget -qO dotnet.tar.gz \
 "https://dotnetcli.azureedge.net/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-x64.tar.gz" \
@@ -14,10 +14,8 @@ RUN dotnet_sdk_version=3.1.415 \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
 && rm dotnet.tar.gz
-# Trigger first run experience by running arbitrary cmd
-RUN dotnet --info
-
-# see: https://dotnet.microsoft.com/download/dotnet-core/6.0
+## .Net 6.0
+## see: https://dotnet.microsoft.com/download/dotnet-core/6.0
 RUN dotnet_sdk_version=6.0.100 \
 && wget -qO dotnet.tar.gz \
 "https://dotnetcli.azureedge.net/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-x64.tar.gz" \
@@ -33,7 +31,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
 RUN make dotnet
 
 FROM build AS test

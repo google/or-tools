@@ -1,0 +1,742 @@
+# proto-file: ortools/tour_optimization/tour_optimization.proto
+# proto-message: TourOptimizationRequest
+model {
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488586059
+            lng_e7: 23482490
+          }
+        }
+      }
+      time_window {
+        start_time: 0
+        end_time: 20
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 10 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488586959
+            lng_e7: 23482490
+          }
+        }
+      }
+      time_window {
+        start_time: 10
+        end_time: 30
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 20 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488587858
+            lng_e7: 23482490
+          }
+        }
+      }
+      time_window {
+        start_time: 20
+        end_time: 40
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 30 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488588757
+            lng_e7: 23482490
+          }
+        }
+      }
+      time_window {
+        start_time: 30
+        end_time: 50
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 40 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23483857
+          }
+        }
+      }
+      time_window {
+        start_time: 0
+        end_time: 20
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 10 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488586059
+            lng_e7: 23483857
+          }
+        }
+      }
+      time_window {
+        start_time: 10
+        end_time: 30
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 20 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488586959
+            lng_e7: 23483857
+          }
+        }
+      }
+      time_window {
+        start_time: 20
+        end_time: 40
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 30 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488587858
+            lng_e7: 23483857
+          }
+        }
+      }
+      time_window {
+        start_time: 30
+        end_time: 50
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 40 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488588757
+            lng_e7: 23483857
+          }
+        }
+      }
+      time_window {
+        start_time: 40
+        end_time: 60
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 50 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23485224
+          }
+        }
+      }
+      time_window {
+        start_time: 0
+        end_time: 20
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 10 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488586059
+            lng_e7: 23485224
+          }
+        }
+      }
+      time_window {
+        start_time: 10
+        end_time: 30
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 20 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488586959
+            lng_e7: 23485224
+          }
+        }
+      }
+      time_window {
+        start_time: 20
+        end_time: 40
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 30 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488587858
+            lng_e7: 23485224
+          }
+        }
+      }
+      time_window {
+        start_time: 30
+        end_time: 50
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 40 }
+    }
+  }
+  shipment {
+    pickup {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488588757
+            lng_e7: 23485224
+          }
+        }
+      }
+      time_window {
+        start_time: 40
+        end_time: 60
+      }
+      duration_seconds: 2
+    }
+    delivery {
+      arrival_waypoint {
+        location {
+          point {
+            lat_e7: 488585160
+            lng_e7: 23482490
+          }
+        }
+      }
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 50 }
+    }
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+  vehicle {
+    start_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    end_waypoint {
+      location {
+        point {
+          lat_e7: 488585160
+          lng_e7: 23482490
+        }
+      }
+    }
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    fixed_cost: 0
+    cost_per_traveled_hour: 3600
+  }
+}
+routing_search_parameters {
+}
+use_geodesic_distances: true
+geodesic_meters_per_second: 1

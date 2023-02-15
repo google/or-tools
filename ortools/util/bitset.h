@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
@@ -74,7 +75,7 @@ inline uint32_t LeastSignificantBitWord32(uint32_t n) { return n & ~(n - 1); }
 
 #if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
 inline int LeastSignificantBitPosition64Fast(uint64_t n) {
-  return n == 0 ? 0 : __builtin_ctzll(n);
+  return __builtin_ctzll(n);
 }
 #endif
 
@@ -91,7 +92,7 @@ inline int LeastSignificantBitPosition64DeBruijn(uint64_t n) {
 }
 
 inline int LeastSignificantBitPosition64Default(uint64_t n) {
-  if (n == 0) return 0;
+  DCHECK_NE(n, 0);
   int pos = 63;
   if (n & 0x00000000FFFFFFFFLL) {
     pos -= 32;
@@ -137,7 +138,7 @@ inline int LeastSignificantBitPosition64(uint64_t n) {
 
 #if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
 inline int LeastSignificantBitPosition32Fast(uint32_t n) {
-  return n == 0 ? 0 : __builtin_ctzl(n);
+  return __builtin_ctzl(n);
 }
 #endif
 
@@ -151,7 +152,7 @@ inline int LeastSignificantBitPosition32DeBruijn(uint32_t n) {
 }
 
 inline int LeastSignificantBitPosition32Default(uint32_t n) {
-  if (n == 0) return 0;
+  DCHECK_NE(n, 0);
   int pos = 31;
   if (n & 0x0000FFFFL) {
     pos -= 16;
@@ -413,11 +414,28 @@ inline uint64_t TwoBitsFromPos64(uint64_t pos) {
 template <typename IndexType = int64_t>
 class Bitset64 {
  public:
-  Bitset64() : size_(), data_(), end_(*this, /*at_end=*/true) {}
+  // When speed matter, caching the base pointer like this to access this class
+  // in a read only mode help.
+  class ConstView {
+   public:
+    explicit ConstView(const Bitset64* bitset) : data_(bitset->data_.data()) {}
+
+    bool operator[](IndexType i) const {
+      return data_[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
+    }
+
+    const uint64_t* data() const { return data_; }
+
+   private:
+    const uint64_t* const data_;
+  };
+
+  Bitset64() : size_(), data_() {}
   explicit Bitset64(IndexType size)
       : size_(Value(size) > 0 ? size : IndexType(0)),
-        data_(BitLength64(Value(size_))),
-        end_(*this, /*at_end=*/true) {}
+        data_(BitLength64(Value(size_))) {}
+
+  ConstView const_view() const { return ConstView(this); }
 
   // Returns how many bits this Bitset64 can hold.
   IndexType size() const { return size_; }
@@ -564,79 +582,48 @@ class Bitset64 {
   //
   // IMPORTANT: Because the iterator "caches" the current uint64_t bucket, this
   // will probably not do what you want if Bitset64 is modified while iterating.
+  class EndIterator {};
   class Iterator {
    public:
-    explicit Iterator(const Bitset64& data_)
-        : bitset_(data_), index_(0), base_index_(0), current_(0) {
-      if (bitset_.data_.empty()) {
-        index_ = -1;
-      } else {
-        current_ = bitset_.data_[0];
-        Next();
+    explicit Iterator(const Bitset64& bitset)
+        : data_(bitset.data_.data()), size_(bitset.data_.size()) {
+      if (!bitset.data_.empty()) {
+        current_ = data_[0];
+        this->operator++();
       }
     }
 
-    // Returns true if the Iterator is at a valid position.
-    bool Ok() const { return index_ != -1; }
+    bool operator!=(const EndIterator&) const { return size_ != 0; }
 
-    // Returns the current position of the iterator.
-    IndexType Index() const {
-      DCHECK(Ok());
-      return IndexType(index_);
-    }
+    IndexType operator*() const { return IndexType(index_); }
 
-    // Moves the iterator the the next position at 1 of the Bitset64.
-    void Next() {
-      DCHECK(Ok());
-      if (current_ == 0) {
-        int bucket = BitOffset64(base_index_);
-        const int size = bitset_.data_.size();
-        do {
-          bucket++;
-        } while (bucket < size && bitset_.data_[bucket] == 0);
-        if (bucket == size) {
-          index_ = -1;
+    void operator++() {
+      int bucket = BitOffset64(index_);
+      while (current_ == 0) {
+        bucket++;
+        if (bucket == size_) {
+          size_ = 0;
           return;
         }
-        current_ = bitset_.data_[bucket];
-        base_index_ = BitShift64(bucket);
+        current_ = data_[bucket];
       }
 
       // Computes the index and clear the least significant bit of current_.
-      index_ = base_index_ + LeastSignificantBitPosition64(current_);
+      index_ = BitShift64(bucket) | LeastSignificantBitPosition64(current_);
       current_ &= current_ - 1;
     }
 
-    // STL version of the functions above to support range-based "for" loop.
-    Iterator(const Bitset64& data_, bool at_end)
-        : bitset_(data_), index_(0), base_index_(0), current_(0) {
-      if (at_end || bitset_.data_.empty()) {
-        index_ = -1;
-      } else {
-        current_ = bitset_.data_[0];
-        Next();
-      }
-    }
-    bool operator!=(const Iterator& other) const {
-      return index_ != other.index_;
-    }
-    IndexType operator*() const { return IndexType(index_); }
-    void operator++() { Next(); }
-
    private:
-    const Bitset64& bitset_;
-    int index_;
-    int base_index_;
-    uint64_t current_;
+    const uint64_t* const data_;
+    int size_;
+    int index_ = 0;
+    uint64_t current_ = 0;
   };
 
   // Allows range-based "for" loop on the non-zero positions:
   //   for (const IndexType index : bitset) {}
-  // instead of:
-  //   for (Bitset64<IndexType>::Iterator it(bitset); it.Ok(); it.Next()) {
-  //     const IndexType index = it.Index();
   Iterator begin() const { return Iterator(*this); }
-  Iterator end() const { return end_; }
+  EndIterator end() const { return EndIterator(); }
 
   // Cryptic function! This is just an optimized version of a given piece of
   // code and has probably little general use.
@@ -644,7 +631,6 @@ class Bitset64 {
                                           const Bitset64<IndexType>& set1,
                                           uint64_t use2,
                                           const Bitset64<IndexType>& set2) {
-    DCHECK_EQ(set1.data_.size(), set1.data_.size());
     DCHECK(use1 == 0 || use1 == 1);
     DCHECK(use2 == 0 || use2 == 1);
     const int bucket = BitOffset64(Value(i));
@@ -665,14 +651,10 @@ class Bitset64 {
  private:
   // Returns the value of the index type.
   // This function is specialized below to work with IntType and int64_t.
-  static int64_t Value(IndexType input);
+  static int Value(IndexType input);
 
   IndexType size_;
   std::vector<uint64_t> data_;
-
-  // It is faster to store the end() Iterator than to recompute it every time.
-  // Note that we cannot do the same for begin().
-  const Iterator end_;
 
   template <class OtherIndexType>
   friend class Bitset64;
@@ -750,12 +732,17 @@ class BitQueue64 {
 
 // The specialization of Value() for IntType and int64_t.
 template <typename IntType>
-inline int64_t Bitset64<IntType>::Value(IntType input) {
+inline int Bitset64<IntType>::Value(IntType input) {
   DCHECK_GE(input.value(), 0);
   return input.value();
 }
 template <>
-inline int64_t Bitset64<int64_t>::Value(int64_t input) {
+inline int Bitset64<int>::Value(int input) {
+  DCHECK_GE(input, 0);
+  return input;
+}
+template <>
+inline int Bitset64<int64_t>::Value(int64_t input) {
   DCHECK_GE(input, 0);
   return input;
 }

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,10 @@
 
 #include "ortools/util/stats.h"
 
+#include <algorithm>
 #include <cmath>
+#include <string>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/stl_util.h"
@@ -39,7 +42,7 @@ std::string MemoryUsage() {
   }
 }
 
-Stat::Stat(const std::string& name, StatsGroup* group) : name_(name) {
+Stat::Stat(absl::string_view name, StatsGroup* group) : name_(name) {
   group->Register(this);
 }
 
@@ -120,7 +123,7 @@ TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
   return ref;
 }
 
-DistributionStat::DistributionStat(const std::string& name)
+DistributionStat::DistributionStat(absl::string_view name)
     : Stat(name),
       sum_(0.0),
       average_(0.0),
@@ -129,7 +132,7 @@ DistributionStat::DistributionStat(const std::string& name)
       max_(0.0),
       num_(0) {}
 
-DistributionStat::DistributionStat(const std::string& name, StatsGroup* group)
+DistributionStat::DistributionStat(absl::string_view name, StatsGroup* group)
     : Stat(name, group),
       sum_(0.0),
       average_(0.0),
@@ -237,7 +240,7 @@ std::string IntegerDistribution::ValueAsString() const {
 
 #ifdef HAS_PERF_SUBSYSTEM
 EnabledScopedInstructionCounter::EnabledScopedInstructionCounter(
-    const std::string& name, TimeLimit* time_limit)
+    absl::string_view name, TimeLimit* time_limit)
     : time_limit_(time_limit), name_(name) {
   starting_count_ =
       time_limit_ != nullptr ? time_limit_->ReadInstructionCounter() : 0;

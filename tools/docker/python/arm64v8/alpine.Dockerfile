@@ -1,7 +1,6 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/_/alpine
 FROM arm64v8/alpine:edge AS env
-LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN apk add --no-cache git build-base linux-headers cmake xfce4-dev-tools
@@ -22,7 +21,7 @@ FROM env AS devel
 ENV GIT_URL https://github.com/google/or-tools
 
 ARG GIT_BRANCH
-ENV GIT_BRANCH ${GIT_BRANCH:-master}
+ENV GIT_BRANCH ${GIT_BRANCH:-main}
 ARG GIT_SHA1
 ENV GIT_SHA1 ${GIT_SHA1:-unknown}
 

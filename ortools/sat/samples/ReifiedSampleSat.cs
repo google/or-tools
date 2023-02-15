@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,9 +20,9 @@ public class ReifiedSampleSat
     {
         CpModel model = new CpModel();
 
-        IntVar x = model.NewBoolVar("x");
-        IntVar y = model.NewBoolVar("y");
-        IntVar b = model.NewBoolVar("b");
+        BoolVar x = model.NewBoolVar("x");
+        BoolVar y = model.NewBoolVar("y");
+        BoolVar b = model.NewBoolVar("b");
 
         //  First version using a half-reified bool and.
         model.AddBoolAnd(new ILiteral[] { x, y.Not() }).OnlyEnforceIf(b);

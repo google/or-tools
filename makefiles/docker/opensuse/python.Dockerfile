@@ -1,5 +1,5 @@
 FROM ortools/make:opensuse_swig AS env
-RUN zypper update -y \
+RUN zypper refresh \
 && zypper install -y python3-devel python3-pip \
  python3-wheel \
  python3-numpy python3-pandas \
@@ -11,7 +11,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
 RUN make python
 
 FROM build AS test

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,6 +40,8 @@
 %include "ortools/util/python/functions.i"
 %include "ortools/util/python/vector.i"
 
+%include "ortools/constraint_solver/python/pywrapcp_util.i"
+
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2019-07, with
 // types such as operations_research::Solver.
@@ -66,7 +68,6 @@ struct FailureProtect {
 };
 
 // This #includes constraint_solver.h, and inlines some C++ helpers.
-#include "ortools/constraint_solver/python/pywrapcp_util.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -1917,8 +1918,6 @@ namespace operations_research {
 // Ignored top-level classes, enums and methods:
 // - BaseIntExpr
 // - VarTypes (enum)
-// - IntVarLocalSearchHandler
-// - SequenceVarLocalSearchHandler
 // - ChangeValue
 // - PathOperator
 // - MakeLocalSearchOperator()
@@ -1966,29 +1965,6 @@ namespace operations_research {
 %rename (NextNeighbor) LocalSearchOperator::MakeNextNeighbor;
 %unignore LocalSearchOperator::Start;
 
-// VarLocalSearchOperator<>
-// Ignored:
-// - VarLocalSearchOperator()
-// - ~VarLocalSearchOperator()
-// - Start()
-// - Var()
-// - SkipUnchanged()
-// - Activated()
-// - Activate()
-// - Deactivate()
-// - ApplyChanges()
-// - RevertChanges()
-// - AddVars()
-%unignore VarLocalSearchOperator;
-%unignore VarLocalSearchOperator::Size;
-%unignore VarLocalSearchOperator::Value;
-%unignore VarLocalSearchOperator::IsIncremental;
-%unignore VarLocalSearchOperator::IsIncremental;
-%unignore VarLocalSearchOperator::OnStart;
-%unignore VarLocalSearchOperator::OnStart;
-%unignore VarLocalSearchOperator::OldValue;
-%unignore VarLocalSearchOperator::SetValue;
-
 
 // IntVarLocalSearchOperator
 // Ignored:
@@ -1998,7 +1974,18 @@ namespace operations_research {
 %unignore IntVarLocalSearchOperator::IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::~IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::Size;
+%unignore IntVarLocalSearchOperator::Var;
+%unignore IntVarLocalSearchOperator::AddVars;
+%unignore IntVarLocalSearchOperator::IsIncremental;
+%unignore IntVarLocalSearchOperator::Activate;
+%unignore IntVarLocalSearchOperator::Deactivate;
+%unignore IntVarLocalSearchOperator::Activated;
+%unignore IntVarLocalSearchOperator::OldValue;
+%unignore IntVarLocalSearchOperator::PrevValue;
+%unignore IntVarLocalSearchOperator::Value;
+%unignore IntVarLocalSearchOperator::SetValue;
 %feature("nodirector") IntVarLocalSearchOperator::Start;
+%unignore IntVarLocalSearchOperator::OnStart;
 %rename (OneNeighbor) IntVarLocalSearchOperator::MakeOneNeighbor;
 
 
@@ -2022,17 +2009,6 @@ namespace operations_research {
 %unignore ChangeValue::ChangeValue;
 %unignore ChangeValue::~ChangeValue;
 %unignore ChangeValue::ModifyValue;
-
-// SequenceVarLocalSearchOperator
-// Ignored:
-// - SequenceVarLocalSearchOperator()
-// - ~SequenceVarLocalSearchOperator()
-// - Sequence()
-// - OldSequence()
-// - SetForwardSequence()
-// - SetBackwardSequence()
-%unignore SequenceVarLocalSearchOperator;
-%unignore SequenceVarLocalSearchOperator::Start;
 
 // PathOperator
 // Ignored:

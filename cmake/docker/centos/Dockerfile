@@ -1,7 +1,6 @@
 # Create a virtual environment with all tools installed
-# ref: https://hub.docker.com/_/centos
-FROM centos:latest AS base
-LABEL maintainer="corentinl@google.com"
+# ref: https://quay.io/repository/centos/centos
+FROM quay.io/centos/centos:stream AS base
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
@@ -9,6 +8,16 @@ RUN dnf -y update \
 && dnf -y groupinstall "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
+
+# Install system build dependencies
+ENV PATH=/usr/local/bin:$PATH
+RUN dnf -y update \
+&& dnf -y install gcc-toolset-11 \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
+
+RUN echo "source /opt/rh/gcc-toolset-11/enable" >> /etc/bashrc
+SHELL ["/bin/bash", "--login", "-c"]
 
 # Install CMake 3.21.1
 RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \

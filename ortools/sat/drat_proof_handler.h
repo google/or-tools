@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,9 @@
 #include <string>
 #include <vector>
 
+#if !defined(__PORTABLE_PLATFORM__)
+#include "ortools/base/file.h"
+#endif  // !defined(__PORTABLE_PLATFORM__)
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/drat_checker.h"

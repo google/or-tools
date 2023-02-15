@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -54,11 +54,10 @@ IntVarLocalSearchFilter* MakeVehicleVarFilter(
     const RoutingModel& routing_model);
 
 /// Returns a filter handling dimension costs and constraints.
-IntVarLocalSearchFilter* MakePathCumulFilter(
-    const RoutingDimension& dimension,
-    const RoutingSearchParameters& parameters,
-    bool propagate_own_objective_value, bool filter_objective_cost,
-    bool can_use_lp = true);
+IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
+                                             bool propagate_own_objective_value,
+                                             bool filter_objective_cost,
+                                             bool can_use_lp);
 
 /// Returns a filter handling dimension cumul bounds.
 IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
@@ -123,6 +122,8 @@ class BasePathFilter : public IntVarLocalSearchFilter {
     return new_synchronized_unperformed_nodes_.PositionsSetAtLeastOnce();
   }
 
+  bool lns_detected() const { return lns_detected_; }
+
  private:
   enum Status { UNKNOWN, ENABLED, DISABLED };
 
@@ -158,6 +159,7 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   std::vector<int> ranks_;
 
   Status status_;
+  bool lns_detected_;
 };
 
 }  // namespace operations_research

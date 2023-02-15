@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.google.ortools"},{"l":"com.google.ortools.algorithms"},{"l":"com.google.ortools.constraintsolver"},{"l":"com.google.ortools.graph"},{"l":"com.google.ortools.init"},{"l":"com.google.ortools.linearsolver"},{"l":"com.google.ortools.sat"},{"l":"com.google.ortools.util"}];updateSearchResults();

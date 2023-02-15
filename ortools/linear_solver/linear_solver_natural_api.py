@@ -1,4 +1,4 @@
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,9 +10,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Patch to the python wrapper of ../linear_solver.h providing an algebraic API.
 
-This is directly imported, and use exclusively in ./linear_solver.swig. See that
+This is directly imported, and use exclusively in ./linear_solver.i. See that
 file.
 For examples leveraging the code defined here, see ./pywraplp_test.py and
 ../../../python/linear_programming.py.

@@ -1,34 +1,37 @@
-set_property(SOURCE sat.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE sat.i PROPERTY SWIG_MODULE_NAME pywrapsat)
-set_property(SOURCE sat.i PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
-swig_add_library(pywrapsat
-  TYPE SHARED
-  LANGUAGE python
-  OUTPUT_DIR  ${PYTHON_PROJECT_DIR}/sat
-  SOURCES sat.i)
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-target_include_directories(pywrapsat PRIVATE ${Python3_INCLUDE_DIRS})
-set_property(TARGET pywrapsat PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
-target_compile_definitions(pywrapsat PUBLIC "PY3")
-
+pybind11_add_module(swig_helper MODULE swig_helper.cc)
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
-  set_target_properties(pywrapsat PROPERTIES
+  set_target_properties(swig_helper PROPERTIES
     SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs")
-  set_property(TARGET pywrapsat APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress")
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
+    )
+  set_property(TARGET swig_helper APPEND PROPERTY
+    LINK_FLAGS "-flat_namespace -undefined suppress"
+    )
 elseif(UNIX)
-  set_target_properties(pywrapsat PROPERTIES
-    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../${PROJECT_NAME}/.libs")
+  set_target_properties(swig_helper PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
+    )
 endif()
-target_link_libraries(pywrapsat PRIVATE ortools::ortools)
+target_link_libraries(swig_helper PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::swig_helper ALIAS swig_helper)
 
-# Variable PYTHON_LIBRARIES can contains keyword `optimized`
-# which won't be interpreted inside a generator expression.
-# i.e. we can't use: $<$<PLATFORM_ID:Windows>:${PYTHON_LIBRARIES}>
-# see: https://cmake.org/cmake/help/git-stage/command/target_link_libraries.html#command:target_link_libraries
-if(MSVC)
-  target_link_libraries(pywrapsat PRIVATE ${Python3_LIBRARIES})
+if(BUILD_TESTING)
+  file(GLOB PYTHON_SRCS "*_test.py")
+  foreach(FILE_NAME IN LISTS PYTHON_SRCS)
+    add_python_test(${FILE_NAME})
+  endforeach()
 endif()

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,8 @@
 // limitations under the License.
 
 #include "ortools/lp_data/lp_utils.h"
+
+#include <algorithm>
 
 #include "ortools/lp_data/sparse_column.h"
 
@@ -41,6 +43,17 @@ Fractional PreciseSquaredNorm(const SparseColumn& v) {
     sum.Add(Square(e.coefficient()));
   }
   return sum.Value();
+}
+
+Fractional SquaredNorm(const ScatteredColumn& v) {
+  if (v.ShouldUseDenseIteration()) {
+    return SquaredNorm(v.values);
+  }
+  Fractional sum(0.0);
+  for (const RowIndex row : v.non_zeros) {
+    sum += Square(v[row]);
+  }
+  return sum;
 }
 
 Fractional PreciseSquaredNorm(const ScatteredColumn& v) {

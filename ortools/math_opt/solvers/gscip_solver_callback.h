@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,14 +19,11 @@
 
 #include "absl/base/thread_annotations.h"
 #include "absl/status/status.h"
-#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
-#include "scip/type_scip.h"
-#include "ortools/gscip/gscip.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver_interface.h"
-#include "ortools/math_opt/solvers/message_callback_data.h"
+#include "scip/type_scip.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -36,6 +33,12 @@ namespace math_opt {
 // It deals with solve interruption when the user request it or when an error
 // occurs during the call of the user callback. Any such error is returned by
 // Flush().
+//
+// TODO(b/193537362): see if we need to share code with the handling of
+// SolveInterrupter. It is likely that it could the case to make sure the
+// `userinterrupt` flag is not lost. It may require sharing the same SCIP event
+// handler to make sure the user callback is called first; but maybe that is not
+// necessary.
 class GScipSolverCallbackHandler {
  public:
   // Returns a non null handler if needed (there are supported events that we
@@ -55,9 +58,6 @@ class GScipSolverCallbackHandler {
   GScipSolverCallbackHandler& operator=(const GScipSolverCallbackHandler&) =
       delete;
 
-  // Returns the handler to pass to GScip::Solve().
-  GScipMessageHandler MessageHandler();
-
   // Makes any last pending calls and returns the first error that occurred
   // while calling the user callback. Returns OkStatus if no error has occurred.
   absl::Status Flush();
@@ -65,11 +65,6 @@ class GScipSolverCallbackHandler {
  private:
   GScipSolverCallbackHandler(SolverInterface::Callback callback,
                              absl::Time solve_start, SCIP* scip);
-
-  // Updates message_callback_data_ and makes the necessary calls to the user
-  // callback if necessary. This method has the expected signature for a
-  // GScipMessageHandler.
-  void MessageCallback(GScipMessageType type, absl::string_view message);
 
   // Makes a call to the user callback, updating the status_ and interrupting
   // the solve if needed (in case of error or if requested by the user).
@@ -80,7 +75,7 @@ class GScipSolverCallbackHandler {
   //
   // This function will hold the callback_mutex_ while making the call to the
   // user callback to serialize calls.
-  absl::optional<CallbackResultProto> CallUserCallback(
+  std::optional<CallbackResultProto> CallUserCallback(
       const CallbackDataProto& callback_data)
       ABSL_LOCKS_EXCLUDED(callback_mutex_);
 
@@ -98,13 +93,6 @@ class GScipSolverCallbackHandler {
 
   // The first error status returned by the user callback.
   absl::Status status_ ABSL_GUARDED_BY(callback_mutex_);
-
-  // Mutex serializing access to message_callback_data_ and the serialization of
-  // calls to the user callback for CALLBACK_EVENT_MESSAGE events.
-  absl::Mutex message_mutex_;
-
-  // The buffer used to generate the message events.
-  MessageCallbackData message_callback_data_ ABSL_GUARDED_BY(message_mutex_);
 };
 
 }  // namespace math_opt

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,9 @@
 // limitations under the License.
 
 #include "ortools/glop/variable_values.h"
+
+#include <algorithm>
+#include <vector>
 
 #include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_utils.h"
@@ -222,45 +225,72 @@ void VariableValues::UpdateGivenNonBasicVariables(
   initially_all_zero_scratchpad_.non_zeros.clear();
 }
 
-void VariableValues::RecomputeDualPrices() {
+void VariableValues::RecomputeDualPrices(bool put_more_importance_on_norm) {
   SCOPED_TIME_STAT(&stats_);
   const RowIndex num_rows = matrix_.num_rows();
   dual_prices_->ClearAndResize(num_rows);
   dual_prices_->StartDenseUpdates();
 
+  put_more_importance_on_norm_ = put_more_importance_on_norm;
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
   const DenseColumn& squared_norms = dual_edge_norms_->GetEdgeSquaredNorms();
-  for (RowIndex row(0); row < num_rows; ++row) {
-    const ColIndex col = basis_[row];
-    const Fractional infeasibility = std::max(GetUpperBoundInfeasibility(col),
-                                              GetLowerBoundInfeasibility(col));
-    if (infeasibility > tolerance) {
-      dual_prices_->DenseAddOrUpdate(
-          row, Square(infeasibility) / squared_norms[row]);
+  if (put_more_importance_on_norm) {
+    for (RowIndex row(0); row < num_rows; ++row) {
+      const ColIndex col = basis_[row];
+      const Fractional infeasibility = std::max(
+          GetUpperBoundInfeasibility(col), GetLowerBoundInfeasibility(col));
+      if (infeasibility > tolerance) {
+        dual_prices_->DenseAddOrUpdate(
+            row, std::abs(infeasibility) / squared_norms[row]);
+      }
+    }
+  } else {
+    for (RowIndex row(0); row < num_rows; ++row) {
+      const ColIndex col = basis_[row];
+      const Fractional infeasibility = std::max(
+          GetUpperBoundInfeasibility(col), GetLowerBoundInfeasibility(col));
+      if (infeasibility > tolerance) {
+        dual_prices_->DenseAddOrUpdate(
+            row, Square(infeasibility) / squared_norms[row]);
+      }
     }
   }
 }
 
-void VariableValues::UpdateDualPrices(const std::vector<RowIndex>& rows) {
+void VariableValues::UpdateDualPrices(absl::Span<const RowIndex> rows) {
   if (dual_prices_->Size() != matrix_.num_rows()) {
-    RecomputeDualPrices();
+    RecomputeDualPrices(put_more_importance_on_norm_);
     return;
   }
 
-  // Note(user): this is the same as the code in
-  // RecomputePrimalInfeasibilityInformation(), but we do need the clear part.
+  // Note(user): this is the same as the code in RecomputeDualPrices(), but we
+  // do need the clear part.
   SCOPED_TIME_STAT(&stats_);
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
   const DenseColumn& squared_norms = dual_edge_norms_->GetEdgeSquaredNorms();
-  for (const RowIndex row : rows) {
-    const ColIndex col = basis_[row];
-    const Fractional infeasibility = std::max(GetUpperBoundInfeasibility(col),
-                                              GetLowerBoundInfeasibility(col));
-    if (infeasibility > tolerance) {
-      dual_prices_->AddOrUpdate(row,
-                                Square(infeasibility) / squared_norms[row]);
-    } else {
-      dual_prices_->Remove(row);
+  if (put_more_importance_on_norm_) {
+    for (const RowIndex row : rows) {
+      const ColIndex col = basis_[row];
+      const Fractional infeasibility = std::max(
+          GetUpperBoundInfeasibility(col), GetLowerBoundInfeasibility(col));
+      if (infeasibility > tolerance) {
+        dual_prices_->AddOrUpdate(row,
+                                  std::abs(infeasibility) / squared_norms[row]);
+      } else {
+        dual_prices_->Remove(row);
+      }
+    }
+  } else {
+    for (const RowIndex row : rows) {
+      const ColIndex col = basis_[row];
+      const Fractional infeasibility = std::max(
+          GetUpperBoundInfeasibility(col), GetLowerBoundInfeasibility(col));
+      if (infeasibility > tolerance) {
+        dual_prices_->AddOrUpdate(row,
+                                  Square(infeasibility) / squared_norms[row]);
+      } else {
+        dual_prices_->Remove(row);
+      }
     }
   }
 }

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,7 +25,6 @@
 //
 // Check ./linear_solver.h and Wikipedia for more detail:
 //   http://en.wikipedia.org/wiki/Linear_programming
-//
 
 syntax = "proto2";
 
@@ -292,6 +291,29 @@ message MPModelProto {
   // try to return a solution "close" to this assignment in case of multiple
   // optimal solutions.
   optional PartialVariableAssignment solution_hint = 6;
+
+  // Annotations can be freely added by users who want to attach arbitrary
+  // payload to the model's variables or constraints.
+  message Annotation {
+    // The target of an Annotation is a single entity (e.g. a variable).
+    // Several Annotations may apply to the same entity.
+    enum TargetType {
+      VARIABLE_DEFAULT = 0;
+      CONSTRAINT = 1;
+      GENERAL_CONSTRAINT = 2;
+    }
+    optional TargetType target_type = 1;
+    // If both `target_index` and `target_name` are set, they must point to the
+    // same entity.
+    optional int32 target_index = 2;  // Index in the MPModelProto.
+    optional string target_name = 3;  // Alternate to index. Assumes uniqueness.
+
+    // The payload is a (key, value) string pair. Depending on the use cases,
+    // one of the two may be omitted.
+    optional string payload_key = 4;
+    optional string payload_value = 5;
+  }
+  repeated Annotation annotation = 9;
 }
 
 // To support 'unspecified' double value in proto3, the simplest is to wrap
@@ -384,7 +406,7 @@ message MPModelDeltaProto {
   // NOTE(user): We may also add more deltas, eg. objective offset.
 }
 
-// Next id: 15.
+// Next id: 17.
 message MPModelRequest {
   // The model to be optimized by the server.
   optional MPModelProto model = 1;
@@ -395,32 +417,41 @@ message MPModelRequest {
   // program?).
   // This must remain consistent with MPSolver::OptimizationProblemType.
   enum SolverType {
-    GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
     SIRIUS_LINEAR_PROGRAMMING = 103;
     CLP_LINEAR_PROGRAMMING = 0;
+    GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
     GLPK_LINEAR_PROGRAMMING = 1;
     GUROBI_LINEAR_PROGRAMMING = 6;  // Commercial, needs a valid license.
-    XPRESS_LINEAR_PROGRAMMING = 101;  // Commercial, needs a valid license. NOLINT
+    XPRESS_LINEAR_PROGRAMMING =
+        101;                        // Commercial, needs a valid license. NOLINT
     CPLEX_LINEAR_PROGRAMMING = 10;  // Commercial, needs a valid license. NOLINT
+    HIGHS_LINEAR_PROGRAMMING = 15;
 
     SCIP_MIXED_INTEGER_PROGRAMMING = 3;  // Recommended default for MIP models.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
     CBC_MIXED_INTEGER_PROGRAMMING = 5;
     SIRIUS_MIXED_INTEGER_PROGRAMMING = 104;
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
-    XPRESS_MIXED_INTEGER_PROGRAMMING = 102;  // Commercial, needs a valid license. NOLINT
-    CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a valid license. NOLINT
+    XPRESS_MIXED_INTEGER_PROGRAMMING =
+        102;  // Commercial, needs a valid license. NOLINT
+    CPLEX_MIXED_INTEGER_PROGRAMMING =
+        11;  // Commercial, needs a valid license. NOLINT
+    HIGHS_MIXED_INTEGER_PROGRAMMING = 16;
     BOP_INTEGER_PROGRAMMING = 12;
 
     // WARNING: This solver will currently interpret all variables as integer,
     // so any solution you get will be valid, but the optimal might be far away
     // for the real one (when you authorise non-integer value for continuous
     // variables).
-    SAT_INTEGER_PROGRAMMING = 14;
+    SAT_INTEGER_PROGRAMMING = 14;  // Recommended for pure integer problems.
 
+    // In-house linear programming solver based on the primal-dual hybrid
+    // gradient method. Sometimes faster than Glop for medium-size problems and
+    // scales to much larger problems than Glop.
+    PDLP_LINEAR_PROGRAMMING = 8;
     KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13;
   }
-  optional SolverType solver_type = 2;
+  optional SolverType solver_type = 2 [default = GLOP_LINEAR_PROGRAMMING];
 
   // Maximum time to be spent by the solver to solve 'model'. If the server is
   // busy and the RPC's deadline_left is less than this, it will immediately
@@ -456,12 +487,9 @@ message MPModelRequest {
   optional string solver_specific_parameters = 5;
   optional bool ignore_solver_specific_parameters_failure = 9 [default = false];
 
-
   // Advanced usage: model "delta". If used, "model" must be unset. See the
   // definition of MPModelDeltaProto.
   optional MPModelDeltaProto model_delta = 8;
-
-
 
   // Controls the recovery of additional solutions, if any, saved by the
   // underlying solver back in the MPSolutionResponse.additional_solutions.
@@ -471,9 +499,7 @@ message MPModelRequest {
   // These additional solutions may have a worse objective than the main
   // solution returned in the response.
   optional int32 populate_additional_solutions_up_to = 11 [default = 0];
-
 }
-
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to
 // allow us to add more enum values in the future. Clients should use
@@ -557,7 +583,6 @@ enum MPSolverResponseStatus {
   // solver that doesn't support cancellation. status_str should contain a
   // description of the issue.
   MPSOLVER_INCOMPATIBLE_OPTIONS = 0x71;
-
 }
 
 message MPSolution {
@@ -575,7 +600,7 @@ message MPSolveInfo {
   optional double solve_user_time_seconds = 2;
 }
 
-// Next id: 11.
+// Next id: 12.
 message MPSolutionResponse {
   // Result of the optimization.
   optional /*required*/ MPSolverResponseStatus status = 1
@@ -609,6 +634,10 @@ message MPSolutionResponse {
   // by SCIP and Gurobi proto solves.
   optional MPSolveInfo solve_info = 10;
 
+  // Opaque solver-specific information.
+  // For the PDLP solver, this is a serialized pdlp::SolveLog proto.
+  optional bytes solver_specific_info = 11;
+
   // [Advanced usage.]
   // Values of the dual variables values in the same order as the
   // MPModelProto::constraint field. This is a dense representation.
@@ -631,5 +660,4 @@ message MPSolutionResponse {
   // additional solutions are different than the main solution described by the
   // above fields `objective_value` and `variable_value`.
   repeated MPSolution additional_solutions = 8;
-
 }

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -150,6 +150,10 @@ class StrongVector {
   void resize(size_type new_size) { v_.resize(new_size); }
   void resize(size_type new_size, const value_type& x) {
     v_.resize(new_size, x);
+  }
+  void resize(IntType new_size) { v_.resize(new_size.value()); }
+  void resize(IntType new_size, const value_type& x) {
+    v_.resize(new_size.value(), x);
   }
 
   size_type capacity() const { return v_.capacity(); }

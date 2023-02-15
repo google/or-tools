@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,11 +13,25 @@
 
 #include "ortools/sat/linear_constraint.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <limits>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_cat.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -66,9 +80,30 @@ void LinearConstraintBuilder::AddLinearExpression(const LinearExpression& expr,
   offset_ += expr.offset * coeff;
 }
 
+ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddDecomposedProduct(
+    const std::vector<LiteralValueValue>& product) {
+  if (product.empty()) return true;
+
+  IntegerValue product_min = kMaxIntegerValue;
+  // TODO(user): Checks the value of literals.
+  for (const LiteralValueValue& term : product) {
+    product_min = std::min(product_min, term.left_value * term.right_value);
+  }
+
+  for (const LiteralValueValue& term : product) {
+    IntegerValue coeff = term.left_value * term.right_value - product_min;
+    if (coeff == 0) continue;
+    if (!AddLiteralTerm(term.literal, coeff)) {
+      return false;
+    }
+  }
+  AddConstant(product_min);
+  return true;
+}
+
 void LinearConstraintBuilder::AddQuadraticLowerBound(
-    AffineExpression left, AffineExpression right,
-    IntegerTrail* integer_trail) {
+    AffineExpression left, AffineExpression right, IntegerTrail* integer_trail,
+    bool* is_quadratic) {
   if (integer_trail->IsFixed(left)) {
     AddTerm(right, integer_trail->FixedValue(left));
   } else if (integer_trail->IsFixed(right)) {
@@ -80,6 +115,7 @@ void LinearConstraintBuilder::AddQuadraticLowerBound(
     AddTerm(right, left_min);
     // Substract the energy counted twice.
     AddConstant(-left_min * right_min);
+    if (is_quadratic != nullptr) *is_quadratic = true;
   }
 }
 
@@ -89,31 +125,20 @@ void LinearConstraintBuilder::AddConstant(IntegerValue value) {
 
 ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
     Literal lit, IntegerValue coeff) {
-  bool has_direct_view = encoder_.GetLiteralView(lit) != kNoIntegerVariable;
-  bool has_opposite_view =
-      encoder_.GetLiteralView(lit.Negated()) != kNoIntegerVariable;
+  DCHECK(encoder_ != nullptr);
+  IntegerVariable var = kNoIntegerVariable;
+  bool view_is_direct = true;
+  if (!encoder_->LiteralOrNegationHasView(lit, &var, &view_is_direct)) {
+    return false;
+  }
 
-  // If a literal has both views, we want to always keep the same
-  // representative: the smallest IntegerVariable. Note that AddTerm() will
-  // also make sure to use the associated positive variable.
-  if (has_direct_view && has_opposite_view) {
-    if (encoder_.GetLiteralView(lit) <=
-        encoder_.GetLiteralView(lit.Negated())) {
-      has_opposite_view = false;
-    } else {
-      has_direct_view = false;
-    }
-  }
-  if (has_direct_view) {
-    AddTerm(encoder_.GetLiteralView(lit), coeff);
-    return true;
-  }
-  if (has_opposite_view) {
-    AddTerm(encoder_.GetLiteralView(lit.Negated()), -coeff);
+  if (view_is_direct) {
+    AddTerm(var, coeff);
+  } else {
+    AddTerm(var, -coeff);
     offset_ += coeff;
-    return true;
   }
-  return false;
+  return true;
 }
 
 LinearConstraint LinearConstraintBuilder::Build() {
@@ -261,7 +286,41 @@ double LinearExpression::LpValue(
   return result;
 }
 
+IntegerValue LinearExpression::LevelZeroMin(IntegerTrail* integer_trail) const {
+  IntegerValue result = offset;
+  for (int i = 0; i < vars.size(); ++i) {
+    DCHECK_GE(coeffs[i], 0);
+    result += coeffs[i] * integer_trail->LevelZeroLowerBound(vars[i]);
+  }
+  return result;
+}
+
+IntegerValue LinearExpression::Min(const IntegerTrail& integer_trail) const {
+  IntegerValue result = offset;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (coeffs[i] > 0) {
+      result += coeffs[i] * integer_trail.LowerBound(vars[i]);
+    } else {
+      result += coeffs[i] * integer_trail.UpperBound(vars[i]);
+    }
+  }
+  return result;
+}
+
+IntegerValue LinearExpression::Max(const IntegerTrail& integer_trail) const {
+  IntegerValue result = offset;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (coeffs[i] > 0) {
+      result += coeffs[i] * integer_trail.UpperBound(vars[i]);
+    } else {
+      result += coeffs[i] * integer_trail.LowerBound(vars[i]);
+    }
+  }
+  return result;
+}
+
 std::string LinearExpression::DebugString() const {
+  if (vars.empty()) return absl::StrCat(offset.value());
   std::string result;
   for (int i = 0; i < vars.size(); ++i) {
     absl::StrAppend(&result, i > 0 ? " " : "",
@@ -326,26 +385,6 @@ LinearExpression CanonicalizeExpr(const LinearExpression& expr) {
     }
   }
   return canonical_expr;
-}
-
-IntegerValue LinExprLowerBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
-  IntegerValue lower_bound = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
-    lower_bound += expr.coeffs[i] * integer_trail.LowerBound(expr.vars[i]);
-  }
-  return lower_bound;
-}
-
-IntegerValue LinExprUpperBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
-  IntegerValue upper_bound = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
-    upper_bound += expr.coeffs[i] * integer_trail.UpperBound(expr.vars[i]);
-  }
-  return upper_bound;
 }
 
 // TODO(user): Avoid duplication with PossibleIntegerOverflow() in the checker?

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -44,9 +44,10 @@
 %rename (setTimeLimit) operations_research::KnapsackSolver::set_time_limit;  // untested
 
 %unignore operations_research::KnapsackSolver::SolverType;
-%unignore operations_research::KnapsackSolver::KNAPSACK_BRUTE_FORCE_SOLVER;  // untested
-%unignore operations_research::KnapsackSolver::KNAPSACK_64ITEMS_SOLVER;  // untested
-%unignore operations_research::KnapsackSolver::KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER;  // untested
+%unignore operations_research::KnapsackSolver::KNAPSACK_BRUTE_FORCE_SOLVER;
+%unignore operations_research::KnapsackSolver::KNAPSACK_64ITEMS_SOLVER;
+%unignore operations_research::KnapsackSolver::KNAPSACK_DIVIDE_AND_CONQUER_SOLVER;
+%unignore operations_research::KnapsackSolver::KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER;
 %unignore operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER;  // untested
 %unignore operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_GLPK_MIP_SOLVER;  // untested
 %unignore operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER;

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,11 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.LinearExprBuilder;
+import com.google.ortools.sat.Literal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.IntStream;
 // [END import]
 
@@ -46,7 +49,7 @@ public class NursesSat {
     // Creates shift variables.
     // shifts[(n, d, s)]: nurse 'n' works shift 's' on day 'd'.
     // [START variables]
-    IntVar[][][] shifts = new IntVar[numNurses][numDays][numShifts];
+    Literal[][][] shifts = new Literal[numNurses][numDays][numShifts];
     for (int n : allNurses) {
       for (int d : allDays) {
         for (int s : allShifts) {
@@ -60,11 +63,11 @@ public class NursesSat {
     // [START exactly_one_nurse]
     for (int d : allDays) {
       for (int s : allShifts) {
-        IntVar[] x = new IntVar[numNurses];
+        List<Literal> nurses = new ArrayList<>();
         for (int n : allNurses) {
-          x[n] = shifts[n][d][s];
+          nurses.add(shifts[n][d][s]);
         }
-        model.addEquality(LinearExpr.sum(x), 1);
+        model.addExactlyOne(nurses);
       }
     }
     // [END exactly_one_nurse]
@@ -73,11 +76,11 @@ public class NursesSat {
     // [START at_most_one_shift]
     for (int n : allNurses) {
       for (int d : allDays) {
-        IntVar[] x = new IntVar[numShifts];
+        List<Literal> work = new ArrayList<>();
         for (int s : allShifts) {
-          x[s] = shifts[n][d][s];
+          work.add(shifts[n][d][s]);
         }
-        model.addLessOrEqual(LinearExpr.sum(x), 1);
+        model.addAtMostOne(work);
       }
     }
     // [END at_most_one_shift]
@@ -95,14 +98,13 @@ public class NursesSat {
       maxShiftsPerNurse = minShiftsPerNurse + 1;
     }
     for (int n : allNurses) {
-      IntVar[] numShiftsWorked = new IntVar[numDays * numShifts];
+      LinearExprBuilder shiftsWorked = LinearExpr.newBuilder();
       for (int d : allDays) {
         for (int s : allShifts) {
-          numShiftsWorked[d * numShifts + s] = shifts[n][d][s];
+          shiftsWorked.add(shifts[n][d][s]);
         }
       }
-      model.addLinearConstraint(
-          LinearExpr.sum(numShiftsWorked), minShiftsPerNurse, maxShiftsPerNurse);
+      model.addLinearConstraint(shiftsWorked, minShiftsPerNurse, maxShiftsPerNurse);
     }
     // [END assign_nurses_evenly]
 
@@ -118,7 +120,7 @@ public class NursesSat {
     final int solutionLimit = 5;
     class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
       public VarArraySolutionPrinterWithLimit(
-          int[] allNurses, int[] allDays, int[] allShifts, IntVar[][][] shifts, int limit) {
+          int[] allNurses, int[] allDays, int[] allShifts, Literal[][][] shifts, int limit) {
         solutionCount = 0;
         this.allNurses = allNurses;
         this.allDays = allDays;
@@ -135,7 +137,7 @@ public class NursesSat {
           for (int n : allNurses) {
             boolean isWorking = false;
             for (int s : allShifts) {
-              if (value(shifts[n][d][s]) == 1L) {
+              if (booleanValue(shifts[n][d][s])) {
                 isWorking = true;
                 System.out.printf("  Nurse %d work shift %d%n", n, s);
               }
@@ -160,7 +162,7 @@ public class NursesSat {
       private final int[] allNurses;
       private final int[] allDays;
       private final int[] allShifts;
-      private final IntVar[][][] shifts;
+      private final Literal[][][] shifts;
       private final int solutionLimit;
     }
 

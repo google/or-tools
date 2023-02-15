@@ -5,7 +5,7 @@ about: Create a report to help us improve
 
 
 **What version of OR-Tools and what language are you using?**
-Version: master/v7.3/v7.2 etc.
+Version: main/v9.5/v9.4 etc.
 Language: C++/Java/Python/C#
 
 **Which solver are you using (e.g. CP-SAT, Routing Solver, GLOP, BOP, Gurobi)**

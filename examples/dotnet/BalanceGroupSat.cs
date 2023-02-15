@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -59,7 +59,7 @@ public class BalanceGroupSat
 
         var model = new CpModel();
 
-        var itemInGroup = new IntVar[numberItems, numberGroups];
+        var itemInGroup = new BoolVar[numberItems, numberGroups];
         foreach (var item in allItems)
         {
             foreach (var @group in allGroups)
@@ -75,7 +75,7 @@ public class BalanceGroupSat
             model.AddLinearConstraint(LinearExpr.Sum(itemsInGroup), numItemsPerGroup, numItemsPerGroup);
         }
 
-        //# One item must belong to exactly one group.
+        // # One item must belong to exactly one group.
         foreach (var item in allItems)
         {
             var groupsForItem = allGroups.Select(x => itemInGroup[item, x]).ToArray();
@@ -91,13 +91,13 @@ public class BalanceGroupSat
         {
             var itemValues = allItems.Select(x => itemInGroup[x, @group]).ToArray();
 
-            var sum = LinearExpr.ScalProd(itemValues, values);
+            var sum = LinearExpr.WeightedSum(itemValues, values);
             model.Add(sum <= averageSumPerGroup + e);
             model.Add(sum >= averageSumPerGroup - e);
         }
 
         // colorInGroup variables.
-        var colorInGroup = new IntVar[numberColors, numberGroups];
+        var colorInGroup = new BoolVar[numberColors, numberGroups];
         foreach (var @group in allGroups)
         {
             foreach (var color in allColors)
@@ -156,11 +156,11 @@ public class BalanceGroupSat
         private int[] _colors;
         private int[] _allGroups;
         private int[] _allItems;
-        private IntVar[,] _itemInGroup;
+        private BoolVar[,] _itemInGroup;
 
         private int _solutionCount;
 
-        public SolutionPrinter(int[] values, int[] colors, int[] allGroups, int[] allItems, IntVar[,] itemInGroup)
+        public SolutionPrinter(int[] values, int[] colors, int[] allGroups, int[] allItems, BoolVar[,] itemInGroup)
         {
             this._values = values;
             this._colors = colors;

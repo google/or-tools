@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,11 +15,13 @@
 #define OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
 
 #include <algorithm>
+#include <array>
+#include <bitset>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -27,7 +29,11 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -82,7 +88,8 @@ class ImpliedBounds {
       : parameters_(*model->GetOrCreate<SatParameters>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
-        integer_encoder_(model->GetOrCreate<IntegerEncoder>()) {}
+        integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
   ~ImpliedBounds();
 
   // Adds literal => integer_literal to the repository.
@@ -154,6 +161,7 @@ class ImpliedBounds {
   SatSolver* sat_solver_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* integer_encoder_;
+  SharedStatistics* shared_stats_;
 
   // TODO(user): Remove the need for this.
   std::vector<IntegerLiteral> tmp_integer_literals_;
@@ -202,6 +210,14 @@ class ImpliedBounds {
   int64_t num_enqueued_in_var_to_bounds_ = 0;
 };
 
+// Tries to decompose a product left * right in a list of constant alternative
+// left_value * right_value controlled by literals in an exactly one
+// relationship. We construct this by using literals from the full encoding or
+// element encodings of the variables of the two affine expressions.
+// If it fails, it returns an empty vector.
+std::vector<LiteralValueValue> TryToDecomposeProduct(
+    const AffineExpression& left, const AffineExpression& right, Model* model);
+
 // Looks at value encodings and detects if the product of two variables can be
 // linearized.
 //
@@ -214,17 +230,115 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
                                     const AffineExpression& right, Model* model,
                                     LinearConstraintBuilder* builder);
 
-// Try to linearize each term of the inner product of left and right.
-// If the linearization not possible at position i, then
-// ProductIsLinearized(energies[i]) will return false.
-void LinearizeInnerProduct(const std::vector<AffineExpression>& left,
-                           const std::vector<AffineExpression>& right,
-                           Model* model,
-                           std::vector<LinearExpression>* energies);
+// Class used to detect and hold all the information about a variable beeing the
+// product of two others. This class is meant to be used by LP relaxation and
+// cuts.
+class ProductDetector {
+ public:
+  explicit ProductDetector(Model* model);
+  ~ProductDetector();
 
-// Returns whether the corresponding expression is a valid linearization of
-// the product of two affine expressions.
-bool ProductIsLinearized(const LinearExpression& expr);
+  // Internally, a Boolean product is encoded in a linear fashion:
+  // p = a * b become:
+  // 1/ a and b => p, i.e.  a clause (not(a), not(b), p).
+  // 2/ p => a and p => b, which is a clause (not(p), a) and (not(p), b).
+  //
+  // In particular if we have a+b+c==1 then we have a=b*c, b=a*c, and c=a*b !!
+  //
+  // For the detection to work, we must load all ternary clause first, then the
+  // implication.
+  void ProcessTernaryClause(absl::Span<const Literal> ternary_clause);
+  void ProcessTernaryExactlyOne(absl::Span<const Literal> ternary_exo);
+  void ProcessBinaryClause(absl::Span<const Literal> binary_clause);
+
+  // Utility function to process a bunch of implication all at once.
+  void ProcessImplicationGraph(BinaryImplicationGraph* graph);
+  void ProcessTrailAtLevelOne();
+
+  // We also detect product of Boolean with IntegerVariable.
+  // After presolve, a product P = l * X should be encoded with:
+  //      l => P = X
+  // not(l) => P = 0
+  //
+  // TODO(user): Generalize to a * X + b = l * (Y + c) since these are also
+  // easy to linearize if we see l * Y.
+  void ProcessConditionalEquality(Literal l, IntegerVariable x,
+                                  IntegerVariable y);
+  void ProcessConditionalZero(Literal l, IntegerVariable p);
+
+  // Query function mainly used for testing.
+  LiteralIndex GetProduct(Literal a, Literal b) const;
+  IntegerVariable GetProduct(Literal a, IntegerVariable b) const;
+
+  // Query Functions. LinearizeProduct() should only be called if
+  // ProductIsLinearizable() is true.
+  bool ProductIsLinearizable(IntegerVariable a, IntegerVariable b) const;
+
+  // TODO(user): Implement!
+  LinearExpression LinearizeProduct(IntegerVariable a, IntegerVariable b);
+
+  // Returns an expression that is always lower or equal to the product a * b.
+  // This use the exact LinearizeProduct() if ProductIsLinearizable() otherwise
+  // it uses the simple McCormick lower bound.
+  //
+  // TODO(user): Implement!
+  LinearExpression ProductLowerBound(IntegerVariable a, IntegerVariable b);
+
+ private:
+  std::array<LiteralIndex, 2> GetKey(LiteralIndex a, LiteralIndex b) const;
+  void ProcessNewProduct(LiteralIndex p, LiteralIndex a, LiteralIndex b);
+  void ProcessNewProduct(IntegerVariable p, Literal l, IntegerVariable x);
+
+  // Fixed at creation time.
+  bool enabled_;
+  SatSolver* sat_solver_;
+  Trail* trail_;
+  IntegerTrail* integer_trail_;
+  IntegerEncoder* integer_encoder_;
+  SharedStatistics* shared_stats_;
+
+  // No need to process implication a => b if a was never seen.
+  absl::StrongVector<LiteralIndex, bool> seen_;
+
+  // For each clause of size 3 (l0, l1, l2) and a permutation of index (i, j, k)
+  // we bitset[i] to true if lj => not(lk) and lk => not(lj).
+  //
+  // The key is sorted.
+  absl::flat_hash_map<std::array<LiteralIndex, 3>, std::bitset<3>> detector_;
+
+  // For each (l0, l1) we list all the l2 such that (l0, l1, l2) is a 3 clause.
+  absl::flat_hash_map<std::array<LiteralIndex, 2>, std::vector<LiteralIndex>>
+      candidates_;
+
+  // Products (a, b) -> p such that p == a * b. They key is sorted.
+  absl::flat_hash_map<std::array<LiteralIndex, 2>, LiteralIndex> products_;
+
+  // Same keys has in products_ but canonicalized so we capture all 4 products
+  // a * b, (1 - a) * b, a * (1 - b) and (1 - a) * (1 - b) with one query.
+  absl::flat_hash_set<std::array<LiteralIndex, 2>> has_product_;
+
+  // For bool * int detection. Note that we only use positive IntegerVariable
+  // in the key part.
+  absl::flat_hash_set<std::pair<LiteralIndex, IntegerVariable>>
+      conditional_zeros_;
+  absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>,
+                      std::vector<IntegerVariable>>
+      conditional_equalities_;
+
+  // Stores l * X = P.
+  absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>, IntegerVariable>
+      int_products_;
+
+  // Stats.
+  int64_t num_products_ = 0;
+  int64_t num_int_products_ = 0;
+  int64_t num_trail_updates_ = 0;
+  int64_t num_processed_binary_ = 0;
+  int64_t num_processed_ternary_ = 0;
+  int64_t num_processed_exo_ = 0;
+  int64_t num_conditional_zeros_ = 0;
+  int64_t num_conditional_equalities_ = 0;
+};
 
 }  // namespace sat
 }  // namespace operations_research

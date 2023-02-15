@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -672,7 +673,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   bool AlreadyVisited(const BaseObject* const object) {
-    return gtl::ContainsKey(already_visited_, object);
+    return already_visited_.contains(object);
   }
 
   // T should derive from BaseObject
@@ -723,7 +724,7 @@ class VariableDegreeVisitor : public ModelVisitor {
   void VisitIntegerVariable(const IntVar* const variable,
                             IntExpr* const delegate) override {
     IntVar* const var = const_cast<IntVar*>(variable);
-    if (gtl::ContainsKey(*map_, var)) {
+    if (map_->contains(var)) {
       (*map_)[var]++;
     }
     if (delegate) {
@@ -735,7 +736,7 @@ class VariableDegreeVisitor : public ModelVisitor {
                             const std::string& operation, int64_t value,
                             IntVar* const delegate) override {
     IntVar* const var = const_cast<IntVar*>(variable);
-    if (gtl::ContainsKey(*map_, var)) {
+    if (map_->contains(var)) {
       (*map_)[var]++;
     }
     VisitSubArgument(delegate);

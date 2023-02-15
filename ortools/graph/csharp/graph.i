@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -46,6 +46,7 @@
 %unignore operations_research::SimpleMaxFlow::SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::~SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::AddArcWithCapacity;
+%unignore operations_research::SimpleMaxFlow::SetArcCapacity;
 %unignore operations_research::SimpleMaxFlow::Solve;
 %unignore operations_research::SimpleMaxFlow::NumNodes;
 %unignore operations_research::SimpleMaxFlow::NumArcs;

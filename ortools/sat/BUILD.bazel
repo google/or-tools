@@ -1,7 +1,21 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Home of CP/SAT solver (which includes SAT, max-SAT and PB problems).
 #
 
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -17,6 +31,12 @@ cc_proto_library(
     deps = [":sat_parameters_proto"],
 )
 
+py_proto_library(
+    name = "sat_parameters_py_pb2",
+    srcs = ["sat_parameters.proto"],
+    visibility = ["//visibility:public"],
+)
+
 cc_proto_library(
     name = "boolean_problem_cc_proto",
     deps = [":boolean_problem_proto"],
@@ -27,14 +47,20 @@ proto_library(
     srcs = ["boolean_problem.proto"],
 )
 
+proto_library(
+    name = "cp_model_proto",
+    srcs = ["cp_model.proto"],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     deps = [":cp_model_proto"],
 )
 
-proto_library(
-    name = "cp_model_proto",
+py_proto_library(
+    name = "cp_model_py_pb2",
     srcs = ["cp_model.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -48,7 +74,6 @@ cc_library(
         ":cp_model_utils",
         ":model",
         ":sat_parameters_cc_proto",
-        "//ortools/base:map_util",
         "//ortools/util:sorted_interval_list",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings:str_format",
@@ -62,7 +87,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
-        "//ortools/base:map_util",
         "//ortools/base:typeid",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
@@ -76,6 +100,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         "//ortools/base",
+        "//ortools/base:hash",
         "//ortools/base:stl_util",
         "//ortools/util:sorted_interval_list",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -90,17 +115,17 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_mapping",
         ":cp_model_utils",
         ":integer",
-        ":linear_programming_constraint",
         ":model",
         ":sat_base",
         "//ortools/base",
         "//ortools/util:bitset",
         "//ortools/util:logging",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
     ],
 )
 
@@ -112,12 +137,13 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":sat_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:map_util",
         "//ortools/port:proto_utils",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
@@ -193,6 +219,7 @@ cc_library(
         ":lb_tree_search",
         ":linear_programming_constraint",
         ":linear_relaxation",
+        ":max_hs",
         ":model",
         ":optimization",
         ":parameters_validation",
@@ -208,8 +235,6 @@ cc_library(
         ":synchronization",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/base:threadpool",
@@ -218,10 +243,11 @@ cc_library(
         "//ortools/util:logging",
         "//ortools/util:sigint",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -243,10 +269,10 @@ cc_library(
         ":model",
         ":sat_base",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -284,13 +310,13 @@ cc_library(
         ":timetable",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_protobuf//:protobuf",
@@ -305,12 +331,13 @@ cc_library(
         ":cp_model_cc_proto",
         ":cp_model_utils",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
     ],
 )
 
@@ -328,8 +355,6 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":util",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/base:mathutil",
         "//ortools/base:strong_vector",
         "//ortools/port:proto_utils",
@@ -337,7 +362,9 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
@@ -357,6 +384,8 @@ cc_library(
         ":cp_model_symmetries",
         ":cp_model_utils",
         ":diffn_util",
+        ":diophantine",
+        ":inclusion",
         ":presolve_context",
         ":presolve_util",
         ":probing",
@@ -366,7 +395,6 @@ cc_library(
         ":var_domination",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:map_util",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/port:proto_utils",
@@ -375,6 +403,7 @@ cc_library(
         "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
@@ -406,8 +435,8 @@ cc_library(
         ":util",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:map_util",
         "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
     ],
@@ -419,9 +448,9 @@ cc_library(
     deps = [
         ":model",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
@@ -450,15 +479,16 @@ cc_library(
         ":util",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/port:proto_utils",
         "//ortools/port:sysinfo",
+        "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
@@ -546,13 +576,13 @@ cc_library(
         ":util",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/graph:strongly_connected_components",
         "//ortools/util:bitset",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:inlined_vector",
@@ -575,13 +605,13 @@ cc_library(
         "//ortools/algorithms:dynamic_partition",
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
-        "//ortools/base:int_type",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/graph:strongly_connected_components",
         "//ortools/util:logging",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -596,12 +626,12 @@ cc_library(
         ":sat_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
         "//ortools/base:murmur",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
@@ -616,9 +646,9 @@ cc_library(
         ":sat_base",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:stats",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -645,8 +675,8 @@ cc_library(
         ":presolve_context",
         "//ortools/algorithms:dynamic_partition",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -662,9 +692,7 @@ cc_library(
         ":sat_solver",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
         "//ortools/base:iterator_adaptors",
-        "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/graph:iterators",
@@ -672,8 +700,10 @@ cc_library(
         "//ortools/util:rev",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/strings",
@@ -715,6 +745,7 @@ cc_library(
         ":integer_search",
         ":linear_programming_constraint",
         ":sat_base",
+        ":sat_parameters_cc_proto",
         ":sat_solver",
         ":synchronization",
     ],
@@ -737,17 +768,19 @@ cc_library(
     hdrs = ["intervals.h"],
     deps = [
         ":cp_constraints",
+        ":implied_bounds",
         ":integer",
         ":integer_expr",
+        ":linear_constraint",
         ":model",
         ":pb_constraint",
         ":precedences",
         ":sat_base",
         ":sat_solver",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:sort",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -762,12 +795,15 @@ cc_library(
         ":model",
         ":sat_base",
         ":sat_solver",
+        ":synchronization",
         "//ortools/base",
         "//ortools/base:cleanup",
-        "//ortools/base:int_type",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
+        "//ortools/graph:topologicalsorter",
         "//ortools/util:bitset",
+        "//ortools/util:strong_integers",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:inlined_vector",
     ],
 )
@@ -781,12 +817,20 @@ cc_library(
         ":linear_constraint",
         ":model",
         ":sat_base",
+        ":synchronization",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:inlined_vector",
+    ],
+)
+
+cc_library(
+    name = "inclusion",
+    hdrs = ["inclusion.h"],
+    deps = [
+        "//ortools/base",
     ],
 )
 
@@ -797,15 +841,32 @@ cc_library(
     deps = [
         ":integer",
         ":linear_constraint",
+        ":linear_propagation",
         ":model",
         ":precedences",
         ":sat_base",
         ":sat_solver",
+        ":util",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:stl_util",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
+    name = "linear_propagation",
+    srcs = ["linear_propagation.cc"],
+    hdrs = ["linear_propagation.h"],
+    deps = [
+        ":integer",
+        ":sat_base",
+        ":sat_solver",
+        ":synchronization",
+        "//ortools/base:strong_vector",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -819,11 +880,11 @@ cc_library(
         ":sat_base",
         ":sat_solver",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/graph:strongly_connected_components",
         "//ortools/util:sort",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
@@ -836,7 +897,7 @@ cc_library(
     deps = [
         ":integer",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -856,8 +917,8 @@ cc_library(
         ":theta_tree",
         ":timetable",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:iterator_adaptors",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -871,9 +932,9 @@ cc_library(
         ":sat_base",
         ":sat_solver",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/util:rev",
         "//ortools/util:sort",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -882,12 +943,13 @@ cc_library(
     srcs = ["timetable_edgefinding.cc"],
     hdrs = ["timetable_edgefinding.h"],
     deps = [
+        ":implied_bounds",
         ":integer",
         ":intervals",
         ":sat_base",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/util:sort",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -910,7 +972,7 @@ cc_library(
         ":timetable",
         ":timetable_edgefinding",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -919,33 +981,17 @@ cc_library(
     srcs = ["cumulative_energy.cc"],
     hdrs = ["cumulative_energy.h"],
     deps = [
+        ":implied_bounds",
         ":integer",
         ":intervals",
         ":model",
         ":sat_base",
         ":theta_tree",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/util:sort",
+        "//ortools/util:strong_integers",
     ],
 )
-
-#cc_library(
-#    name = "cumulative_energy",
-#    srcs = ["cumulative_energy.cc"],
-#    hdrs = ["cumulative_energy.h"],
-#    deps = [
-#        ":integer",
-#        ":intervals",
-#        ":model",
-#        ":sat_base",
-#        ":sat_solver",
-#        ":theta_tree",
-#        "//ortools/base",
-#        "//ortools/base:int_type",
-#        "//ortools/base:iterator_adaptors",
-#    ],
-#)
 
 cc_library(
     name = "boolean_problem",
@@ -963,12 +1009,11 @@ cc_library(
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/base:strong_vector",
         "//ortools/graph:io",
         "//ortools/graph:util",
         "//ortools/port:proto_utils",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings:str_format",
@@ -990,12 +1035,15 @@ cc_library(
         ":linear_constraint",
         ":linear_programming_constraint",
         ":model",
+        ":presolve_util",
+        ":routing_cuts",
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":scheduling_constraints",
         ":scheduling_cuts",
         "//ortools/base",
         "//ortools/base:iterator_adaptors",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
 )
@@ -1027,8 +1075,6 @@ cc_library(
         ":util",
         ":zero_half_cuts",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/base:strong_vector",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:preprocessor",
@@ -1040,6 +1086,7 @@ cc_library(
         "//ortools/lp_data:matrix_scaler",
         "//ortools/util:rev",
         "//ortools/util:saturated_arithmetic",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/numeric:int128",
@@ -1055,8 +1102,10 @@ cc_library(
         ":linear_constraint",
         ":model",
         ":sat_parameters_cc_proto",
+        ":synchronization",
         "//ortools/glop:revised_simplex",
         "//ortools/util:logging",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
@@ -1076,10 +1125,25 @@ cc_library(
         ":util",
         "//ortools/algorithms:knapsack_solver_for_cuts",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:stl_util",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:btree",
+    ],
+)
+
+cc_library(
+    name = "routing_cuts",
+    srcs = ["routing_cuts.cc"],
+    hdrs = ["routing_cuts.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cuts",
+        ":integer",
+        ":linear_constraint",
+        ":model",
+        "//ortools/base",
+        "//ortools/base:mathutil",
     ],
 )
 
@@ -1098,8 +1162,8 @@ cc_library(
         ":sat_base",
         ":util",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:stl_util",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
     ],
 )
@@ -1112,8 +1176,8 @@ cc_library(
         ":integer",
         ":util",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/lp_data:base",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -1131,7 +1195,6 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
@@ -1139,6 +1202,7 @@ cc_library(
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/util:fp_utils",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -1161,10 +1225,41 @@ cc_library(
         ":sat_solver",
         ":util",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/port:proto_utils",
+        "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "max_hs",
+    srcs = ["max_hs.cc"],
+    hdrs = ["max_hs.h"],
+    deps = [
+        ":boolean_problem",
+        ":boolean_problem_cc_proto",
+        ":cp_model_mapping",
+        ":cp_model_utils",
+        ":encoding",
+        ":integer",
+        ":integer_expr",
+        ":integer_search",
+        ":linear_relaxation",
+        ":model",
+        ":optimization",
+        ":pb_constraint",
+        ":sat_base",
+        ":sat_parameters_cc_proto",
+        ":sat_solver",
+        ":util",
+        "//ortools/base",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/port:proto_utils",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -1180,9 +1275,13 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         "//ortools/base",
+        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/util:random_engine",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/random",
@@ -1202,10 +1301,9 @@ cc_library(
         ":sat_solver",
         ":util",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
@@ -1221,10 +1319,9 @@ cc_library(
         ":sat_base",
         ":sat_solver",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/util:rev",
         "//ortools/util:sort",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
@@ -1240,7 +1337,7 @@ cc_library(
         ":sat_base",
         ":sat_solver",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
@@ -1272,10 +1369,9 @@ cc_library(
         ":sat_solver",
         ":theta_tree",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/util:rev",
         "//ortools/util:sort",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
@@ -1290,9 +1386,9 @@ cc_library(
         ":sat_base",
         ":sat_solver",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/base:map_util",
         "//ortools/util:rev",
+        "//ortools/util:strong_integers",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
@@ -1308,7 +1404,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -1330,6 +1426,7 @@ cc_library(
         ":subsolver",
         ":synchronization",
         "//ortools/base",
+        "//ortools/base:stl_util",
         "//ortools/base:threadpool",
         "//ortools/util:adaptative_parameter_value",
         "//ortools/util:random_engine",
@@ -1403,10 +1500,9 @@ cc_library(
         ":sat_base",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/hash",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/types:span",
     ],
@@ -1424,9 +1520,9 @@ cc_library(
         ":sat_base",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
+        "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
@@ -1465,16 +1561,15 @@ cc_library(
         "//ortools/algorithms:find_graph_symmetries",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base:hash",
-        "//ortools/base:map_util",
         "//ortools/util:logging",
         "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
     ],
 )
 
 cc_library(
     name = "swig_helper",
+    srcs = ["swig_helper.cc"],
     hdrs = ["swig_helper.h"],
     visibility = [
         "//ortools/sat/java:__pkg__",
@@ -1489,5 +1584,16 @@ cc_library(
         ":sat_parameters_cc_proto",
         "//ortools/base",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "diophantine",
+    srcs = ["diophantine.cc"],
+    hdrs = ["diophantine.h"],
+    deps = [
+        ":util",
+        "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/types:span",
     ],
 )

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,9 @@
 // limitations under the License.
 
 #include "ortools/glop/basis_representation.h"
+
+#include <algorithm>
+#include <vector>
 
 #include "ortools/base/stl_util.h"
 #include "ortools/glop/status.h"
@@ -269,9 +272,10 @@ Status BasisFactorization::MiddleProductFormUpdate(
   // Initialize scratchpad_ with the right update vector.
   DCHECK(IsAllZero(scratchpad_));
   scratchpad_.resize(right_storage_.num_rows(), 0.0);
-  for (const EntryIndex i : right_storage_.Column(right_index)) {
-    const RowIndex row = right_storage_.EntryRow(i);
-    scratchpad_[row] = right_storage_.EntryCoefficient(i);
+  const auto view = right_storage_.view();
+  for (const EntryIndex i : view.Column(right_index)) {
+    const RowIndex row = view.EntryRow(i);
+    scratchpad_[row] = view.EntryCoefficient(i);
     scratchpad_non_zeros_.push_back(row);
   }
   // Subtract the column of U from scratchpad_.

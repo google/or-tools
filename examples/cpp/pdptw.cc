@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -36,20 +36,23 @@
 // Reads data in the format defined by Li & Lim
 // (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/routing.h"
@@ -395,8 +398,7 @@ bool LoadAndSolve(const std::string& pdp_file,
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::RoutingModelParameters model_parameters =
       operations_research::DefaultRoutingModelParameters();
   model_parameters.set_reduce_vehicle_cost_model(

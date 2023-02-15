@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,7 @@ option java_package = "com.google.ortools.constraintsolver";
 option java_multiple_files = true;
 // We set the outer classname to something other than 'SearchLimit', which is
 // in conflict with the SWIG-generated class in the same directory (see
-// java/constraint_solver.swig).
+// java/constraint_solver.i).
 option java_outer_classname = "SearchLimitProtobuf";
 option csharp_namespace = "Google.OrTools.ConstraintSolver";
 

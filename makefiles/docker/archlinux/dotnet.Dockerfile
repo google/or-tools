@@ -1,5 +1,5 @@
 FROM ortools/make:archlinux_swig AS env
-RUN pacman -Syu --noconfirm dotnet-sdk-3.1 dotnet-sdk
+RUN pacman -Syu --noconfirm dotnet-sdk
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
@@ -8,7 +8,7 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
+ENV USE_DOTNET_CORE_31=OFF
 RUN make dotnet
 
 FROM build AS test

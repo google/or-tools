@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 // https://publications.csiro.au/rpr/download?pid=csiro:EP104071&dsid=DS2)/
 //
 // Data files are in
-//    examples/data/shift_scheduling/minization
+//    data/shift_scheduling/minization
 //
 // The problem is the following:
 //   - There is a list of jobs. Each job has a start date and an end date. They
@@ -26,6 +26,7 @@
 //   - The objective it to minimize the number of active workers, while
 //     performing all the jobs.
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -33,15 +34,14 @@
 
 #include "absl/container/btree_set.h"
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/filelineiter.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
+#include "ortools/util/filelineiter.h"
 
 ABSL_FLAG(std::string, input, "", "Input file.");
 ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
@@ -305,8 +305,7 @@ void LoadAndSolve(const std::string& file_name) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

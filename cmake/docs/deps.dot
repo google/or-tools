@@ -1,0 +1,154 @@
+@startdot
+digraph CMakeDeps {
+  //rankdir=BT;
+  rankdir=TD;
+  node [shape=box, style="rounded,filled", color=royalblue, fillcolor=royalblue];
+
+  subgraph clusterZLIB {
+    ZLIB [label="ZLIB::ZLIB"];
+
+    color=royalblue;
+    label = "madler/zlib.git + cmake patch";
+  }
+
+  subgraph clusterAbsl {
+    Absl [label="absl::absl_*"];
+
+    color=royalblue;
+    label = "abseil/abseil-cpp.git";
+  }
+
+  subgraph clusterProtobuf {
+    Protobuf [label="protobuf::libprotobuf"];
+    Protoc [label="protobuf::protoc", shape=component];
+
+    color=royalblue;
+    label = "protocolbuffers/protobuf.git";
+  }
+
+  subgraph clusterRe2 {
+    Re2 [label="re2::re2"];
+
+    color=royalblue;
+    label = "google/re2.git";
+  }
+
+  subgraph clusterEigen3 {
+    Eigen3 [label="Eigen3::eigen"];
+
+    color=royalblue;
+    label = "libeigen/eigen.git";
+  }
+
+  subgraph clusterPybind11 {
+    Pybind11 [label="pybind11::pybind11"];
+
+    color=royalblue;
+    label = "pybind/pybind11.git";
+  }
+
+  subgraph clusterCoinOR {
+    subgraph clusterCoinUtils {
+      CoinUtils [label="Coin::CoinUtils"];
+
+      color=royalblue;
+      label = "Mizux/CoinUtils.git";
+    }
+    subgraph clusterOsi {
+      Osi [label="Coin::Osi"];
+
+      color=royalblue;
+      label = "Mizux/Osi.git";
+    }
+    subgraph clusterClp {
+      Clp [label="Coin::Clp"];
+      OsiClp [label="Coin::OsiClp"];
+      ClpSolver [label="Coin::ClpSolver"];
+
+      color=royalblue;
+      label = "Mizux/Clp.git";
+    }
+    subgraph clusterCgl {
+      Cgl [label="Coin::Cgl"];
+
+      color=royalblue;
+      label = "Mizux/Cgl.git";
+    }
+    subgraph clusterCbc {
+      Cbc [label="Coin::Cbc"];
+      OsiCbc [label="Coin::OsiCbc"];
+      CbcSolver [label="Coin::CbcSolver"];
+
+      color=royalblue;
+      label = "Mizux/Cbc.git";
+    }
+
+    CoinUtils -> Osi;
+
+    CoinUtils -> Clp;
+    Osi -> Clp;
+
+    CoinUtils -> OsiClp;
+    Osi -> OsiClp;
+    Clp -> OsiClp;
+
+    Clp -> ClpSolver;
+
+    CoinUtils -> Cgl;
+    Osi -> Cgl;
+    OsiClp -> Cgl;
+
+    CoinUtils -> Cbc;
+    Osi -> Cbc;
+    Clp -> Cbc;
+    Cgl -> Cbc;
+
+    CoinUtils -> OsiCbc;
+    Osi -> OsiCbc;
+    Cbc -> OsiCbc;
+
+    Cbc -> CbcSolver;
+    color=royalblue;
+    label = "-DUSE_COINOR=ON AND -DBUILD_DEPS=ON";
+  }
+
+  subgraph clusterGLPKSolver {
+    subgraph clusterGLPK {
+      GLPK [label="glpk::glpk"];
+
+      color=royalblue;
+      label = "Mizux/GLPK.git";
+    }
+    color=royalblue;
+    label = "-DUSE_GLPK=ON AND -DBUILD_GLPK=ON";
+  }
+
+  subgraph clusterHIGHSSolver {
+    subgraph clusterHIGHS {
+      HIGHS [label="highs::highs"];
+
+      color=royalblue;
+      label = "ERGO-Code/HIGHS.git";
+    }
+    color=royalblue;
+    label = "-DUSE_HIGHS=ON AND -DBUILD_HIGHS=ON";
+  }
+
+  subgraph clusterSCIPSolver {
+    subgraph clusterSCIP {
+      SCIP [label="scip::scip"];
+
+      color=royalblue;
+      label = "scipopt/scip.git";
+    }
+    color=royalblue;
+    label = "-DUSE_SCIP=ON AND -DBUILD_SCIP=ON";
+  }
+
+  // inter deps
+  ZLIB -> Protobuf;
+  ZLIB -> Cbc;
+  Absl -> Protobuf;
+}
+@enddot
+# vim tw:0

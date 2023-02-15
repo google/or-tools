@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 using System;
+using System.Collections.Generic;
 using Google.OrTools.Sat;
 // [END import]
 
@@ -37,18 +38,13 @@ public class AssignmentSat
 
         // Variables.
         // [START variables]
-        IntVar[,] x = new IntVar[numWorkers, numTasks];
+        BoolVar[,] x = new BoolVar[numWorkers, numTasks];
         // Variables in a 1-dim array.
-        IntVar[] xFlat = new IntVar[numWorkers * numTasks];
-        int[] costsFlat = new int[numWorkers * numTasks];
-        for (int i = 0; i < numWorkers; ++i)
+        for (int worker = 0; worker < numWorkers; ++worker)
         {
-            for (int j = 0; j < numTasks; ++j)
+            for (int task = 0; task < numTasks; ++task)
             {
-                x[i, j] = model.NewIntVar(0, 1, $"worker_{i}_task_{j}");
-                int k = i * numTasks + j;
-                xFlat[k] = x[i, j];
-                costsFlat[k] = costs[i, j];
+                x[worker, task] = model.NewBoolVar($"worker_{worker}_task_{task}");
             }
         }
         // [END variables]
@@ -56,31 +52,39 @@ public class AssignmentSat
         // Constraints
         // [START constraints]
         // Each worker is assigned to at most one task.
-        for (int i = 0; i < numWorkers; ++i)
+        for (int worker = 0; worker < numWorkers; ++worker)
         {
-            IntVar[] vars = new IntVar[numTasks];
-            for (int j = 0; j < numTasks; ++j)
+            List<ILiteral> tasks = new List<ILiteral>();
+            for (int task = 0; task < numTasks; ++task)
             {
-                vars[j] = x[i, j];
+                tasks.Add(x[worker, task]);
             }
-            model.Add(LinearExpr.Sum(vars) <= 1);
+            model.AddAtMostOne(tasks);
         }
 
         // Each task is assigned to exactly one worker.
-        for (int j = 0; j < numTasks; ++j)
+        for (int task = 0; task < numTasks; ++task)
         {
-            IntVar[] vars = new IntVar[numWorkers];
-            for (int i = 0; i < numWorkers; ++i)
+            List<ILiteral> workers = new List<ILiteral>();
+            for (int worker = 0; worker < numWorkers; ++worker)
             {
-                vars[i] = x[i, j];
+                workers.Add(x[worker, task]);
             }
-            model.Add(LinearExpr.Sum(vars) == 1);
+            model.AddExactlyOne(workers);
         }
         // [END constraints]
 
         // Objective
         // [START objective]
-        model.Minimize(LinearExpr.ScalProd(xFlat, costsFlat));
+        LinearExprBuilder obj = LinearExpr.NewBuilder();
+        for (int worker = 0; worker < numWorkers; ++worker)
+        {
+            for (int task = 0; task < numTasks; ++task)
+            {
+                obj.AddTerm((IntVar)x[worker, task], costs[worker, task]);
+            }
+        }
+        model.Minimize(obj);
         // [END objective]
 
         // Solve

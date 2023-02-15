@@ -24,11 +24,11 @@ RUN yum -y update \
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 
-# Install CMake 3.21.3
-RUN wget -q --no-check-certificate "https://cmake.org/files/v3.21/cmake-3.21.3-linux-aarch64.sh" \
-&& chmod a+x cmake-3.21.3-linux-aarch64.sh \
-&& ./cmake-3.21.3-linux-aarch64.sh --prefix=/usr --skip-license \
-&& rm cmake-3.21.3-linux-aarch64.sh
+# Install CMake 3.22.2
+RUN wget -q --no-check-certificate "https://cmake.org/files/v3.22/cmake-3.22.2-linux-aarch64.sh" \
+&& chmod a+x cmake-3.22.2-linux-aarch64.sh \
+&& ./cmake-3.22.2-linux-aarch64.sh --prefix=/usr --skip-license \
+&& rm cmake-3.22.2-linux-aarch64.sh
 
 # Install Swig 4.0.2
 RUN curl --location-trusted \
@@ -37,7 +37,7 @@ RUN curl --location-trusted \
 && tar xvf swig-4.0.2.tar.gz \
 && rm swig-4.0.2.tar.gz \
 && cd swig-4.0.2 \
-&& ./configure --prefix=/usr \
+&& ./configure --prefix=/usr/local \
 && make -j 4 \
 && make install \
 && cd .. \
@@ -53,7 +53,7 @@ FROM env AS devel
 ENV GIT_URL https://github.com/google/or-tools
 
 ARG GIT_BRANCH
-ENV GIT_BRANCH ${GIT_BRANCH:-master}
+ENV GIT_BRANCH ${GIT_BRANCH:-main}
 ARG GIT_SHA1
 ENV GIT_SHA1 ${GIT_SHA1:-unknown}
 

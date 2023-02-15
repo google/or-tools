@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,25 +16,26 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "ortools/base/int_type.h"
+#include "absl/meta/type_traits.h"
+#include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/vlog_is_on.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/diffn.h"
@@ -43,17 +44,17 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
-#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
-#include "ortools/sat/table.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/util/logging.h"
-#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -311,7 +312,7 @@ void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m) {
 
     // Convert the variable symmetry to a "literal" one.
     auto literal_permutation =
-        absl::make_unique<SparsePermutation>(num_literals);
+        std::make_unique<SparsePermutation>(num_literals);
     int support_index = 0;
     const int num_cycle = perm.cycle_sizes().size();
     for (int i = 0; i < num_cycle; ++i) {
@@ -355,7 +356,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   auto* sat_solver = m->GetOrCreate<SatSolver>();
 
   // TODO(user): Debug what makes it unsat at this point.
-  if (sat_solver->IsModelUnsat()) return;
+  if (sat_solver->ModelIsUnsat()) return;
 
   // Detection of literal equivalent to (i_var == value). We collect all the
   // half-reified constraint lit => equality or lit => inequality for a given
@@ -382,6 +383,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   // if some of the literal view used in the LP are created later, but that
   // should be fixable via calls to implied_bounds->NotifyNewIntegerView().
   auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
+  auto* detector = m->GetOrCreate<ProductDetector>();
 
   // Detection of literal equivalent to (i_var >= bound). We also collect
   // all the half-refied part and we will sort the vector for detection of the
@@ -467,6 +469,10 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     {
       const Domain inter = domain.IntersectionWith(domain_if_enforced);
       if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
+        if (inter.Min() == 0) {
+          detector->ProcessConditionalZero(enforcement_literal,
+                                           mapping->Integer(var));
+        }
         var_to_equalities[var].push_back(
             {&ct, enforcement_literal, inter.Min(), true});
         if (domain.Contains(inter.Min())) {
@@ -525,7 +531,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     m->Add(
         Implication(inequality.literal,
                     encoder->GetOrCreateAssociatedLiteral(inequality.i_lit)));
-    if (sat_solver->IsModelUnsat()) return;
+    if (sat_solver->ModelIsUnsat()) return;
 
     ++num_half_inequalities;
     mapping->already_loaded_ct_.insert(inequality.ct);
@@ -572,7 +578,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     // TODO(user): Try to remove it. Normally we caught UNSAT above, but
     // tests are very flaky (it only happens in parallel). Keeping it there for
     // the time being.
-    if (sat_solver->IsModelUnsat()) return;
+    if (sat_solver->ModelIsUnsat()) return;
 
     // Encode the half-equalities.
     //
@@ -782,7 +788,7 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
   // Boolean implication (once the presolve remove cycles). Not sure if we can
   // properly exploit that afterwards though. Do some research!
   std::vector<std::vector<int>> enforcement_intersection(num_proto_variables);
-  std::set<int> literals_set;
+  absl::btree_set<int> literals_set;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
     if (ct.enforcement_literal().empty()) {
@@ -803,7 +809,7 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
           std::vector<int>& vector_ref = enforcement_intersection[var];
           int new_size = 0;
           for (const int literal : vector_ref) {
-            if (gtl::ContainsKey(literals_set, literal)) {
+            if (literals_set.contains(literal)) {
               vector_ref[new_size++] = literal;
             }
           }
@@ -830,7 +836,11 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
         mapping->Integer(var),
         mapping->Literal(enforcement_intersection[var].front()));
   }
-  VLOG(2) << "Auto-detected " << num_optionals << " optional variables.";
+
+  if (num_optionals > 0) {
+    SOLVER_LOG(m->GetOrCreate<SolverLogger>(), "Auto-detected ", num_optionals,
+               " optional variables.");
+  }
 }
 
 void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
@@ -843,7 +853,7 @@ void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
     if (strategy.domain_reduction_strategy() ==
         DecisionStrategyProto::SELECT_MEDIAN_VALUE) {
       for (const int ref : strategy.variables()) {
-        if (!mapping->IsInteger(ref)) return;
+        if (!mapping->IsInteger(ref)) continue;
         const IntegerVariable variable = mapping->Integer(PositiveRef(ref));
         if (!integer_trail->IsFixed(variable)) {
           m->Add(FullyEncodeVariable(variable));
@@ -864,6 +874,9 @@ void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
   m->Add(ClauseConstraint(literals));
+  if (literals.size() == 3) {
+    m->GetOrCreate<ProductDetector>()->ProcessTernaryClause(literals);
+  }
 }
 
 void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
@@ -875,7 +888,7 @@ void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
   auto* sat_solver = m->GetOrCreate<SatSolver>();
   for (const Literal literal : mapping->Literals(ct.bool_and().literals())) {
     literals.push_back(literal);
-    sat_solver->AddProblemClause(literals);
+    sat_solver->AddProblemClause(literals, /*is_safe=*/false);
     literals.pop_back();
   }
 }
@@ -889,7 +902,11 @@ void LoadAtMostOneConstraint(const ConstraintProto& ct, Model* m) {
 void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
-  m->Add(ExactlyOneConstraint(mapping->Literals(ct.exactly_one().literals())));
+  const auto& literals = mapping->Literals(ct.exactly_one().literals());
+  m->Add(ExactlyOneConstraint(literals));
+  if (literals.size() == 3) {
+    m->GetOrCreate<ProductDetector>()->ProcessTernaryExactlyOne(literals);
+  }
 }
 
 void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m) {
@@ -970,6 +987,18 @@ void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
   }
 }
 
+bool IsPartOfProductEncoding(const ConstraintProto& ct) {
+  if (ct.enforcement_literal().size() != 1) return false;
+  if (ct.linear().vars().size() > 2) return false;
+  if (ct.linear().domain().size() != 2) return false;
+  if (ct.linear().domain(0) != 0) return false;
+  if (ct.linear().domain(1) != 0) return false;
+  for (const int64_t coeff : ct.linear().coeffs()) {
+    if (std::abs(coeff) != 1) return false;
+  }
+  return true;
+}
+
 }  // namespace
 
 void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
@@ -988,6 +1017,23 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
     }
     return;
+  }
+
+  if (IsPartOfProductEncoding(ct)) {
+    const Literal l = mapping->Literal(ct.enforcement_literal(0));
+    auto* detector = m->GetOrCreate<ProductDetector>();
+    if (ct.linear().vars().size() == 1) {
+      // TODO(user): Actually this should never be called since we process
+      // linear1 in ExtractEncoding().
+      detector->ProcessConditionalZero(l,
+                                       mapping->Integer(ct.linear().vars(0)));
+    } else if (ct.linear().vars().size() == 2) {
+      const IntegerVariable x = mapping->Integer(ct.linear().vars(0));
+      const IntegerVariable y = mapping->Integer(ct.linear().vars(1));
+      detector->ProcessConditionalEquality(
+          l, x,
+          ct.linear().coeffs(0) == ct.linear().coeffs(1) ? NegationOf(y) : y);
+    }
   }
 
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
@@ -1213,8 +1259,7 @@ void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
   m->Add(NonOverlappingRectangles(
       x_intervals, y_intervals,
-      !ct.no_overlap_2d().boxes_with_null_area_can_overlap(),
-      m->GetOrCreate<SatParameters>()->use_cumulative_in_no_overlap_2d()));
+      !ct.no_overlap_2d().boxes_with_null_area_can_overlap()));
 }
 
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
@@ -1225,6 +1270,27 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   const std::vector<AffineExpression> demands =
       mapping->Affines(ct.cumulative().demands());
   m->Add(Cumulative(intervals, demands, capacity));
+}
+
+void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  const std::vector<AffineExpression> times =
+      mapping->Affines(ct.reservoir().time_exprs());
+  const std::vector<AffineExpression> level_changes =
+      mapping->Affines(ct.reservoir().level_changes());
+  std::vector<Literal> presences;
+  const int size = ct.reservoir().time_exprs().size();
+  for (int i = 0; i < size; ++i) {
+    if (!ct.reservoir().active_literals().empty()) {
+      presences.push_back(mapping->Literal(ct.reservoir().active_literals(i)));
+    } else {
+      presences.push_back(encoder->GetTrueLiteral());
+    }
+  }
+  AddReservoirConstraint(times, level_changes, presences,
+                         ct.reservoir().min_level(), ct.reservoir().max_level(),
+                         m);
 }
 
 void LoadCircuitConstraint(const ConstraintProto& ct, Model* m) {
@@ -1300,6 +1366,9 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kCumulative:
       LoadCumulativeConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintProto::kReservoir:
+      LoadReservoirConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kCircuit:
       LoadCircuitConstraint(ct, m);

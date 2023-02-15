@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -2466,15 +2466,18 @@ void DomainIntVar::Process() {
   }
 }
 
-#define COND_REV_ALLOC(rev, alloc) rev ? solver()->RevAlloc(alloc) : alloc;
+template <typename T>
+T* CondRevAlloc(Solver* solver, bool reversible, T* object) {
+  return reversible ? solver->RevAlloc(object) : object;
+}
 
 IntVarIterator* DomainIntVar::MakeHoleIterator(bool reversible) const {
-  return COND_REV_ALLOC(reversible, new DomainIntVarHoleIterator(this));
+  return CondRevAlloc(solver(), reversible, new DomainIntVarHoleIterator(this));
 }
 
 IntVarIterator* DomainIntVar::MakeDomainIterator(bool reversible) const {
-  return COND_REV_ALLOC(reversible,
-                        new DomainIntVarDomainIterator(this, reversible));
+  return CondRevAlloc(solver(), reversible,
+                      new DomainIntVarDomainIterator(this, reversible));
 }
 
 std::string DomainIntVar::DebugString() const {
@@ -2605,10 +2608,10 @@ class IntConst : public IntVar {
   uint64_t Size() const override { return 1; }
   bool Contains(int64_t v) const override { return (v == value_); }
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible, new EmptyIterator());
+    return CondRevAlloc(solver(), reversible, new EmptyIterator());
   }
   IntVarIterator* MakeDomainIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible, new RangeIterator(this));
+    return CondRevAlloc(solver(), reversible, new RangeIterator(this));
   }
   int64_t OldMin() const override { return value_; }
   int64_t OldMax() const override { return value_; }
@@ -2768,12 +2771,14 @@ class PlusCstIntVar : public PlusCstVar {
   bool Contains(int64_t v) const override { return var_->Contains(v - cst_); }
 
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
-    return COND_REV_ALLOC(
-        reversible, new PlusCstIntVarIterator(var_, cst_, true, reversible));
+    return CondRevAlloc(
+        solver(), reversible,
+        new PlusCstIntVarIterator(var_, cst_, true, reversible));
   }
   IntVarIterator* MakeDomainIterator(bool reversible) const override {
-    return COND_REV_ALLOC(
-        reversible, new PlusCstIntVarIterator(var_, cst_, false, reversible));
+    return CondRevAlloc(
+        solver(), reversible,
+        new PlusCstIntVarIterator(var_, cst_, false, reversible));
   }
 };
 
@@ -2816,12 +2821,14 @@ class PlusCstDomainIntVar : public PlusCstVar {
   }
 
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible, new PlusCstDomainIntVarIterator(
-                                          var_, cst_, true, reversible));
+    return CondRevAlloc(
+        solver(), reversible,
+        new PlusCstDomainIntVarIterator(var_, cst_, true, reversible));
   }
   IntVarIterator* MakeDomainIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible, new PlusCstDomainIntVarIterator(
-                                          var_, cst_, false, reversible));
+    return CondRevAlloc(
+        solver(), reversible,
+        new PlusCstDomainIntVarIterator(var_, cst_, false, reversible));
   }
 };
 
@@ -2910,12 +2917,13 @@ class SubCstIntVar : public IntVar {
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
-    return COND_REV_ALLOC(
-        reversible, new SubCstIntVarIterator(var_, cst_, true, reversible));
+    return CondRevAlloc(solver(), reversible,
+                        new SubCstIntVarIterator(var_, cst_, true, reversible));
   }
   IntVarIterator* MakeDomainIterator(bool reversible) const override {
-    return COND_REV_ALLOC(
-        reversible, new SubCstIntVarIterator(var_, cst_, false, reversible));
+    return CondRevAlloc(
+        solver(), reversible,
+        new SubCstIntVarIterator(var_, cst_, false, reversible));
   }
   int64_t OldMin() const override { return CapSub(cst_, var_->OldMax()); }
   int64_t OldMax() const override { return CapSub(cst_, var_->OldMin()); }
@@ -3043,12 +3051,12 @@ class OppIntVar : public IntVar {
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible,
-                          new OppIntVarIterator(var_, true, reversible));
+    return CondRevAlloc(solver(), reversible,
+                        new OppIntVarIterator(var_, true, reversible));
   }
   IntVarIterator* MakeDomainIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible,
-                          new OppIntVarIterator(var_, false, reversible));
+    return CondRevAlloc(solver(), reversible,
+                        new OppIntVarIterator(var_, false, reversible));
   }
   int64_t OldMin() const override { return CapOpp(var_->OldMax()); }
   int64_t OldMax() const override { return CapOpp(var_->OldMin()); }
@@ -3219,12 +3227,14 @@ class TimesPosCstIntVar : public TimesCstIntVar {
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible, new TimesPosCstIntVarIterator(
-                                          var_, cst_, true, reversible));
+    return CondRevAlloc(
+        solver(), reversible,
+        new TimesPosCstIntVarIterator(var_, cst_, true, reversible));
   }
   IntVarIterator* MakeDomainIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible, new TimesPosCstIntVarIterator(
-                                          var_, cst_, false, reversible));
+    return CondRevAlloc(
+        solver(), reversible,
+        new TimesPosCstIntVarIterator(var_, cst_, false, reversible));
   }
   int64_t OldMin() const override { return CapProd(var_->OldMin(), cst_); }
   int64_t OldMax() const override { return CapProd(var_->OldMax(), cst_); }
@@ -3332,11 +3342,11 @@ class TimesPosCstBoolVar : public TimesCstIntVar {
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible, new EmptyIterator());
+    return CondRevAlloc(solver(), reversible, new EmptyIterator());
   }
   IntVarIterator* MakeDomainIterator(bool reversible) const override {
-    return COND_REV_ALLOC(
-        reversible,
+    return CondRevAlloc(
+        solver(), reversible,
         new TimesPosCstBoolVarIterator(boolean_var(), cst_, false, reversible));
   }
   int64_t OldMin() const override { return 0; }
@@ -3483,12 +3493,14 @@ class TimesNegCstIntVar : public TimesCstIntVar {
   void WhenBound(Demon* d) override;
   void WhenDomain(Demon* d) override;
   IntVarIterator* MakeHoleIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible, new TimesNegCstIntVarIterator(
-                                          var_, cst_, true, reversible));
+    return CondRevAlloc(
+        solver(), reversible,
+        new TimesNegCstIntVarIterator(var_, cst_, true, reversible));
   }
   IntVarIterator* MakeDomainIterator(bool reversible) const override {
-    return COND_REV_ALLOC(reversible, new TimesNegCstIntVarIterator(
-                                          var_, cst_, false, reversible));
+    return CondRevAlloc(
+        solver(), reversible,
+        new TimesNegCstIntVarIterator(var_, cst_, false, reversible));
   }
   int64_t OldMin() const override { return CapProd(var_->OldMax(), cst_); }
   int64_t OldMax() const override { return CapProd(var_->OldMin(), cst_); }
@@ -3518,7 +3530,8 @@ void TimesNegCstIntVar::SetMax(int64_t m) {
 }
 
 void TimesNegCstIntVar::SetRange(int64_t l, int64_t u) {
-  var_->SetRange(PosIntDivUp(-u, -cst_), PosIntDivDown(-l, -cst_));
+  var_->SetRange(PosIntDivUp(CapOpp(u), CapOpp(cst_)),
+                 PosIntDivDown(CapOpp(l), CapOpp(cst_)));
 }
 
 void TimesNegCstIntVar::SetValue(int64_t v) {
@@ -6348,10 +6361,10 @@ class LinkExprAndDomainIntVar : public CastConstraint {
 // ----- Misc -----
 
 IntVarIterator* BooleanVar::MakeHoleIterator(bool reversible) const {
-  return COND_REV_ALLOC(reversible, new EmptyIterator());
+  return CondRevAlloc(solver(), reversible, new EmptyIterator());
 }
 IntVarIterator* BooleanVar::MakeDomainIterator(bool reversible) const {
-  return COND_REV_ALLOC(reversible, new RangeIterator(this));
+  return CondRevAlloc(solver(), reversible, new RangeIterator(this));
 }
 
 // ----- API -----
@@ -6596,7 +6609,7 @@ IntExpr* Solver::MakeSum(IntExpr* const left, IntExpr* const right) {
 IntExpr* Solver::MakeSum(IntExpr* const expr, int64_t value) {
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
-    return MakeIntConst(expr->Min() + value);
+    return MakeIntConst(CapAdd(expr->Min(), value));
   }
   if (value == 0) {
     return expr;
@@ -6786,7 +6799,7 @@ IntExpr* Solver::MakeProd(IntExpr* const expr, int64_t value) {
     IntExpr* m_expr = nullptr;
     int64_t coefficient = 1;
     if (IsProduct(expr, &m_expr, &coefficient)) {
-      coefficient *= value;
+      coefficient = CapProd(coefficient, value);
     } else {
       m_expr = expr;
       coefficient = value;
@@ -7508,7 +7521,5 @@ bool Solver::IsProduct(IntExpr* const expr, IntExpr** inner_expr,
   *coefficient = 1;
   return false;
 }
-
-#undef COND_REV_ALLOC
 
 }  // namespace operations_research

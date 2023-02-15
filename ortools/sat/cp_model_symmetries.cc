@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,21 +13,39 @@
 
 #include "ortools/sat/cp_model_symmetries.h"
 
+#include <stddef.h>
+
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/memory/memory.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/meta/type_traits.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "google/protobuf/repeated_field.h"
+#include "google/protobuf/message.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/map_util.h"
+#include "ortools/base/logging.h"
+#include "ortools/graph/graph.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/presolve_context.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry_util.h"
+#include "ortools/util/affine_relation.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -52,7 +70,7 @@ class IdGenerator {
   // If the color was never seen before, then generate a new id, otherwise
   // return the previously generated id.
   int GetId(const std::vector<int64_t>& color) {
-    return gtl::LookupOrInsert(&id_map_, color, id_map_.size());
+    return id_map_.emplace(color, id_map_.size()).first->second;
   }
 
   int NextFreeId() const { return id_map_.size(); }
@@ -95,7 +113,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   CHECK(initial_equivalence_classes != nullptr);
 
   const int num_variables = problem.variables_size();
-  auto graph = absl::make_unique<Graph>();
+  auto graph = std::make_unique<Graph>();
 
   // Each node will be created with a given color. Two nodes of different color
   // can never be send one into another by a symmetry. The first element of
@@ -215,8 +233,13 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
                   get_implication_node(NegatedRef(ref_a)));
   };
 
+  // We need to keep track of this for scheduling constraints.
+  absl::flat_hash_map<int, int> interval_constraint_index_to_node;
+
   // Add constraints to the graph.
-  for (const ConstraintProto& constraint : problem.constraints()) {
+  for (int constraint_index = 0; constraint_index < problem.constraints_size();
+       ++constraint_index) {
+    const ConstraintProto& constraint = problem.constraints(constraint_index);
     const int constraint_node = initial_equivalence_classes->size();
     std::vector<int64_t> color = {CONSTRAINT_NODE,
                                   constraint.constraint_case()};
@@ -281,21 +304,88 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         break;
       }
       case ConstraintProto::kBoolAnd: {
-        // The other cases should be presolved before this is called.
-        // TODO(user): not 100% true, this happen on rmatr200-p5, Fix.
-        if (constraint.enforcement_literal_size() != 1) {
-          SOLVER_LOG(
-              logger,
-              "[Symmetry] BoolAnd with multiple enforcement literal are not "
-              "supported in symmetry code:",
-              constraint.ShortDebugString());
-          return nullptr;
+        if (constraint.enforcement_literal_size() > 1) {
+          CHECK_EQ(constraint_node, new_node(color));
+          for (const int ref : constraint.bool_and().literals()) {
+            graph->AddArc(get_literal_node(ref), constraint_node);
+          }
+          break;
         }
 
         CHECK_EQ(constraint.enforcement_literal_size(), 1);
         const int ref_a = constraint.enforcement_literal(0);
         for (const int ref_b : constraint.bool_and().literals()) {
           add_implication(ref_a, ref_b);
+        }
+        break;
+      }
+      case ConstraintProto::kInterval: {
+        // We create 3 constraint nodes (for start, size and end) including the
+        // offset. We connect these to their terms like for a linear constraint.
+        std::vector<int> nodes;
+        for (int indicator = 0; indicator <= 2; ++indicator) {
+          const LinearExpressionProto& expr =
+              indicator == 0   ? constraint.interval().start()
+              : indicator == 1 ? constraint.interval().size()
+                               : constraint.interval().end();
+
+          std::vector<int64_t> local_color = color;
+          local_color.push_back(indicator);
+          local_color.push_back(expr.offset());
+          const int local_node = new_node(local_color);
+          nodes.push_back(local_node);
+
+          for (int i = 0; i < expr.vars().size(); ++i) {
+            const int ref = expr.vars(i);
+            const int var_node = PositiveRef(ref);
+            const int64_t coeff =
+                RefIsPositive(ref) ? expr.coeffs(i) : -expr.coeffs(i);
+            graph->AddArc(get_coefficient_node(var_node, coeff), local_node);
+          }
+        }
+
+        // We will only map enforcement literal to the start_node below because
+        // it has the same index as the constraint_node.
+        interval_constraint_index_to_node[constraint_index] = constraint_node;
+        CHECK_EQ(nodes[0], constraint_node);
+
+        // Make sure that if one node is mapped to another one, its other two
+        // components are the same.
+        graph->AddArc(nodes[0], nodes[1]);
+        graph->AddArc(nodes[1], nodes[2]);
+        graph->AddArc(nodes[2], nodes[0]);  // TODO(user): not needed?
+        break;
+      }
+      case ConstraintProto::kNoOverlap: {
+        // Note(user): This require that intervals appear before they are used.
+        // We currently enforce this at validation, otherwise we need two passes
+        // here and in a bunch of other places.
+        CHECK_EQ(constraint_node, new_node(color));
+        for (const int interval : constraint.no_overlap().intervals()) {
+          graph->AddArc(interval_constraint_index_to_node.at(interval),
+                        constraint_node);
+        }
+        break;
+      }
+      case ConstraintProto::kNoOverlap2D: {
+        // Note(user): This require that intervals appear before they are used.
+        // We currently enforce this at validation, otherwise we need two passes
+        // here and in a bunch of other places.
+        //
+        // TODO(user): With this graph encoding, we loose the symmetry that the
+        // dimension x can be swapped with the dimension y. I think it is
+        // possible to encode this by creating two extra nodes X and
+        // Y, each connected to all the x and all the y, but I have to think
+        // more about it.
+        CHECK_EQ(constraint_node, new_node(color));
+        const int size = constraint.no_overlap_2d().x_intervals().size();
+        for (int i = 0; i < size; ++i) {
+          const int x = constraint.no_overlap_2d().x_intervals(i);
+          const int y = constraint.no_overlap_2d().y_intervals(i);
+          graph->AddArc(interval_constraint_index_to_node.at(x),
+                        constraint_node);
+          graph->AddArc(interval_constraint_index_to_node.at(x),
+                        interval_constraint_index_to_node.at(y));
         }
         break;
       }
@@ -316,7 +406,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     // Because all our constraint arcs are in the direction var_node to
     // constraint_node, we just use the reverse direction for the enforcement
     // part. This way we can reuse the same get_literal_node() function.
-    if (constraint.constraint_case() != ConstraintProto::kBoolAnd) {
+    if (constraint.constraint_case() != ConstraintProto::kBoolAnd ||
+        constraint.enforcement_literal().size() > 1) {
       for (const int ref : constraint.enforcement_literal()) {
         graph->AddArc(constraint_node, get_literal_node(ref));
       }
@@ -383,6 +474,14 @@ void FindCpModelSymmetries(
     double deterministic_limit, SolverLogger* logger) {
   CHECK(generators != nullptr);
   generators->clear();
+
+  if (params.symmetry_level() < 3 && problem.variables().size() > 1e6 &&
+      problem.constraints().size() > 1e6) {
+    SOLVER_LOG(logger,
+               "[Symmetry] Problem too large. Skipping. You can use "
+               "symmetry_level:3 or more to force it.");
+    return;
+  }
 
   typedef GraphSymmetryFinder::Graph Graph;
 

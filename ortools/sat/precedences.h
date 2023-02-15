@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,8 @@
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
-#include "ortools/base/int_type.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
@@ -28,7 +29,9 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -55,12 +58,14 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
       : SatPropagator("PrecedencesPropagator"),
         trail_(model->GetOrCreate<Trail>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        shared_stats_(model->Mutable<SharedStatistics>()),
         watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
         watcher_id_(watcher_->Register(this)) {
     model->GetOrCreate<SatSolver>()->AddPropagator(this);
     integer_trail_->RegisterWatcher(&modified_vars_);
     watcher_->SetPropagatorPriority(watcher_id_, 0);
   }
+  ~PrecedencesPropagator() override;
 
   bool Propagate() final;
   bool Propagate(Trail* trail) final;
@@ -121,6 +126,36 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
                            std::vector<Literal>* literal_reason,
                            std::vector<IntegerLiteral>* integer_reason) const;
 
+  // Similar to ComputePrecedences() but this uses a "slow algorithm". It is not
+  // meant to be called often and explore the full precedences graph.
+  //
+  // If call_compute_precedence is true, this just wrap ComputePrecedences() and
+  // convert its output to this function format, which is less efficient but
+  // more convenient to use.
+  //
+  // Important: This currently assumes the full precedence graph form a DAG.
+  // Otherwise it will just fail and returns no precedence. By contrast
+  // ComputePrecedences() still work.
+  //
+  // TODO(user): Put some work limit in place, as this can be slow. Complexity
+  // is in O(vars.size()) * num_arcs.
+  //
+  // TODO(user): Since we don't need ALL precedences, we could just work on a
+  // sub-DAG of the full precedence graph instead of aborting.
+  //
+  // TODO(user): Many relations can be redundant. Filter them.
+  //
+  // Returns a bunch of precedences relations:
+  // An IntegerVariable >= to vars[indices[i]] + offset[i], for i in indices.
+  struct FullIntegerPrecedence {
+    IntegerVariable var;
+    std::vector<int> indices;
+    std::vector<IntegerValue> offsets;
+  };
+  void ComputeFullPrecedences(bool call_compute_precedences,
+                              const std::vector<IntegerVariable>& vars,
+                              std::vector<FullIntegerPrecedence>* output);
+
   // Advanced usage. To be called once all the constraints have been added to
   // the model. This will loop over all "node" in this class, and if one of its
   // optional incoming arcs must be chosen, it will add a corresponding
@@ -132,8 +167,8 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   int AddGreaterThanAtLeastOneOfConstraints(Model* model);
 
  private:
-  DEFINE_INT_TYPE(ArcIndex, int);
-  DEFINE_INT_TYPE(OptionalArcIndex, int);
+  DEFINE_STRONG_INDEX_TYPE(ArcIndex);
+  DEFINE_STRONG_INDEX_TYPE(OptionalArcIndex);
 
   // Given an existing clause, sees if it can be used to add "greater than at
   // least one of" type of constraints. Returns the number of such constraint
@@ -218,6 +253,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // new ones.
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  SharedStatistics* shared_stats_ = nullptr;
   GenericLiteralWatcher* watcher_;
   int watcher_id_;
 
@@ -285,6 +321,11 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 
   // Temp vector used by the tree traversal in DisassembleSubtree().
   std::vector<int> tmp_vector_;
+
+  // Stats.
+  int64_t num_cycles_ = 0;
+  int64_t num_pushes_ = 0;
+  int64_t num_enforcement_pushes_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(PrecedencesPropagator);
 };
@@ -422,86 +463,6 @@ inline std::function<void(Model*)> ConditionalLowerOrEqualWithOffset(
   return [=](Model* model) {
     PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
     p->AddConditionalPrecedenceWithOffset(a, b, IntegerValue(offset), is_le);
-  };
-}
-
-// is_le => (a <= b).
-inline std::function<void(Model*)> ConditionalLowerOrEqual(IntegerVariable a,
-                                                           IntegerVariable b,
-                                                           Literal is_le) {
-  return ConditionalLowerOrEqualWithOffset(a, b, 0, is_le);
-}
-
-// literals => (a <= b).
-inline std::function<void(Model*)> ConditionalLowerOrEqual(
-    IntegerVariable a, IntegerVariable b, absl::Span<const Literal> literals) {
-  return [=](Model* model) {
-    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
-    p->AddPrecedenceWithAllOptions(a, b, IntegerValue(0),
-                                   /*offset_var*/ kNoIntegerVariable, literals);
-  };
-}
-
-// is_le <=> (a + offset <= b).
-inline std::function<void(Model*)> ReifiedLowerOrEqualWithOffset(
-    IntegerVariable a, IntegerVariable b, int64_t offset, Literal is_le) {
-  return [=](Model* model) {
-    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
-    p->AddConditionalPrecedenceWithOffset(a, b, IntegerValue(offset), is_le);
-
-    // The negation of (a + offset <= b) is (a + offset > b) which can be
-    // rewritten as (b + 1 - offset <= a).
-    p->AddConditionalPrecedenceWithOffset(b, a, IntegerValue(1 - offset),
-                                          is_le.Negated());
-  };
-}
-
-// is_eq <=> (a == b).
-inline std::function<void(Model*)> ReifiedEquality(IntegerVariable a,
-                                                   IntegerVariable b,
-                                                   Literal is_eq) {
-  return [=](Model* model) {
-    // We creates two extra Boolean variables in this case.
-    //
-    // TODO(user): Avoid creating them if we already have some literal that
-    // have the same meaning. For instance if a client also wanted to know if
-    // a <= b, he would have called ReifiedLowerOrEqualWithOffset() directly.
-    const Literal is_le = Literal(model->Add(NewBooleanVariable()), true);
-    const Literal is_ge = Literal(model->Add(NewBooleanVariable()), true);
-    model->Add(ReifiedBoolAnd({is_le, is_ge}, is_eq));
-    model->Add(ReifiedLowerOrEqualWithOffset(a, b, 0, is_le));
-    model->Add(ReifiedLowerOrEqualWithOffset(b, a, 0, is_ge));
-  };
-}
-
-// is_eq <=> (a + offset == b).
-inline std::function<void(Model*)> ReifiedEqualityWithOffset(IntegerVariable a,
-                                                             IntegerVariable b,
-                                                             int64_t offset,
-                                                             Literal is_eq) {
-  return [=](Model* model) {
-    // We creates two extra Boolean variables in this case.
-    //
-    // TODO(user): Avoid creating them if we already have some literal that
-    // have the same meaning. For instance if a client also wanted to know if
-    // a <= b, he would have called ReifiedLowerOrEqualWithOffset() directly.
-    const Literal is_le = Literal(model->Add(NewBooleanVariable()), true);
-    const Literal is_ge = Literal(model->Add(NewBooleanVariable()), true);
-    model->Add(ReifiedBoolAnd({is_le, is_ge}, is_eq));
-    model->Add(ReifiedLowerOrEqualWithOffset(a, b, offset, is_le));
-    model->Add(ReifiedLowerOrEqualWithOffset(b, a, -offset, is_ge));
-  };
-}
-
-// a != b.
-inline std::function<void(Model*)> NotEqual(IntegerVariable a,
-                                            IntegerVariable b) {
-  return [=](Model* model) {
-    // We have two options (is_gt or is_lt) and one must be true.
-    const Literal is_lt = Literal(model->Add(NewBooleanVariable()), true);
-    const Literal is_gt = is_lt.Negated();
-    model->Add(ConditionalLowerOrEqualWithOffset(a, b, 1, is_lt));
-    model->Add(ConditionalLowerOrEqualWithOffset(b, a, 1, is_gt));
   };
 }
 

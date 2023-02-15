@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,10 +14,18 @@
 #include "ortools/sat/circuit.h"
 
 #include <algorithm>
+#include <functional>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/map_util.h"
+#include "absl/meta/type_traits.h"
+#include "ortools/base/logging.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -67,8 +75,8 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
 
     // Tricky: For self-arc, we watch instead when the arc become false.
     const Literal watched_literal = tail == head ? literal.Negated() : literal;
-    int watch_index = gtl::FindWithDefault(literal_to_watch_index,
-                                           watched_literal.Index(), -1);
+    const auto& it = literal_to_watch_index.find(watched_literal.Index());
+    int watch_index = it != literal_to_watch_index.end() ? it->second : -1;
     if (watch_index == -1) {
       watch_index = watch_index_to_literal_.size();
       literal_to_watch_index[watched_literal.Index()] = watch_index;
@@ -95,7 +103,6 @@ void CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
     watcher->WatchLiteral(watch_index_to_literal_[w], id, w);
   }
   watcher->RegisterReversibleClass(id, this);
-  watcher->RegisterReversibleInt(id, &propagation_trail_index_);
   watcher->RegisterReversibleInt(id, &rev_must_be_in_cycle_size_);
 
   // This is needed in case a Literal is used for more than one arc, we may
@@ -333,6 +340,131 @@ bool CircuitPropagator::Propagate() {
   return true;
 }
 
+NoCyclePropagator::NoCyclePropagator(int num_nodes,
+                                     const std::vector<int>& tails,
+                                     const std::vector<int>& heads,
+                                     const std::vector<Literal>& literals,
+                                     Model* model)
+    : num_nodes_(num_nodes),
+      trail_(model->GetOrCreate<Trail>()),
+      assignment_(trail_->Assignment()) {
+  CHECK(!tails.empty()) << "Empty constraint, shouldn't be constructed!";
+
+  graph_.resize(num_nodes);
+  graph_literals_.resize(num_nodes);
+
+  const int num_arcs = tails.size();
+  absl::flat_hash_map<LiteralIndex, int> literal_to_watch_index;
+  for (int arc = 0; arc < num_arcs; ++arc) {
+    const int head = heads[arc];
+    const int tail = tails[arc];
+    const Literal literal = literals[arc];
+
+    if (assignment_.LiteralIsFalse(literal)) continue;
+    if (assignment_.LiteralIsTrue(literal)) {
+      // Fixed arc. It will never be removed.
+      graph_[tail].push_back(head);
+      graph_literals_[tail].push_back(literal);
+      continue;
+    }
+
+    // We have to deal with the same literal controlling more than one arc.
+    const auto [it, inserted] = literal_to_watch_index.insert(
+        {literal.Index(), watch_index_to_literal_.size()});
+    if (inserted) {
+      watch_index_to_literal_.push_back(literal);
+      watch_index_to_arcs_.push_back({});
+    }
+    watch_index_to_arcs_[it->second].push_back({tail, head});
+  }
+
+  // We register at construction.
+  //
+  // TODO(user): Uniformize this across propagator. Sometimes it is nice not
+  // to register them, but most of them can be registered right away.
+  RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+}
+
+void NoCyclePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  for (int w = 0; w < watch_index_to_literal_.size(); ++w) {
+    watcher->WatchLiteral(watch_index_to_literal_[w], id, w);
+  }
+  watcher->RegisterReversibleClass(id, this);
+
+  // This class currently only test for conflict, so no need to call it twice.
+  // watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
+}
+
+void NoCyclePropagator::SetLevel(int level) {
+  if (level == level_ends_.size()) return;
+  if (level > level_ends_.size()) {
+    while (level > level_ends_.size()) {
+      level_ends_.push_back(touched_nodes_.size());
+    }
+    return;
+  }
+
+  // Backtrack.
+  for (int i = level_ends_[level]; i < touched_nodes_.size(); ++i) {
+    graph_literals_[touched_nodes_[i]].pop_back();
+    graph_[touched_nodes_[i]].pop_back();
+  }
+  touched_nodes_.resize(level_ends_[level]);
+  level_ends_.resize(level);
+}
+
+bool NoCyclePropagator::IncrementalPropagate(
+    const std::vector<int>& watch_indices) {
+  for (const int w : watch_indices) {
+    const Literal literal = watch_index_to_literal_[w];
+    for (const auto& [tail, head] : watch_index_to_arcs_[w]) {
+      graph_[tail].push_back(head);
+      graph_literals_[tail].push_back(literal);
+      touched_nodes_.push_back(tail);
+    }
+  }
+  return Propagate();
+}
+
+// TODO(user): only explore node with newly added arcs.
+//
+// TODO(user): We could easily re-index the graph so that only nodes with arcs
+// are used. Because right now we are in O(num_nodes) even if the graph is
+// empty.
+bool NoCyclePropagator::Propagate() {
+  // The graph should be up to date when this is called thanks to
+  // IncrementalPropagate(). We just do a SCC on the graph.
+  components_.clear();
+  FindStronglyConnectedComponents(num_nodes_, graph_, &components_);
+
+  for (const std::vector<int>& compo : components_) {
+    if (compo.size() <= 1) continue;
+
+    // We collect all arc from this compo.
+    //
+    // TODO(user): We could be more efficient here, but this is only executed on
+    // conflicts. We should at least make sure we return a single cycle even
+    // though if this is called often enough, we shouldn't have a lot more than
+    // this.
+    absl::flat_hash_set<int> nodes(compo.begin(), compo.end());
+    std::vector<Literal>* conflict = trail_->MutableConflict();
+    conflict->clear();
+    for (const int tail : compo) {
+      const int degree = graph_[tail].size();
+      CHECK_EQ(degree, graph_literals_[tail].size());
+      for (int i = 0; i < degree; ++i) {
+        if (nodes.contains(graph_[tail][i])) {
+          conflict->push_back(graph_literals_[tail][i].Negated());
+        }
+      }
+    }
+    return false;
+  }
+
+  return true;
+}
+
 CircuitCoveringPropagator::CircuitCoveringPropagator(
     std::vector<std::vector<Literal>> graph,
     const std::vector<int>& distinguished_nodes, Model* model)
@@ -521,12 +653,12 @@ std::function<void(Model*)> SubcircuitConstraint(
     for (int i = 0; i < exactly_one_incoming.size(); ++i) {
       if (i == 0 && multiple_subcircuit_through_zero) continue;
       model->Add(ExactlyOneConstraint(exactly_one_incoming[i]));
-      if (sat_solver->IsModelUnsat()) return;
+      if (sat_solver->ModelIsUnsat()) return;
     }
     for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
       if (i == 0 && multiple_subcircuit_through_zero) continue;
       model->Add(ExactlyOneConstraint(exactly_one_outgoing[i]));
-      if (sat_solver->IsModelUnsat()) return;
+      if (sat_solver->ModelIsUnsat()) return;
     }
 
     CircuitPropagator::Options options;

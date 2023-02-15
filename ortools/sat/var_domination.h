@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,11 @@
 #define OR_TOOLS_SAT_VAR_DOMINATION_H_
 
 #include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -50,7 +54,7 @@ class VarDomination {
   VarDomination() {}
 
   // This is the translation used from "ref" to IntegerVariable. The API
-  // understand the cp_mode.proto ref, but internally we only store
+  // understand the cp_model.proto ref, but internally we only store
   // IntegerVariable.
   static IntegerVariable RefToIntegerVariable(int ref) {
     return RefIsPositive(ref) ? IntegerVariable(2 * ref)
@@ -61,7 +65,7 @@ class VarDomination {
                                    : NegatedRef(var.value() / 2);
   }
 
-  // Reset the class to a clean state.
+  // Resets the class to a clean state.
   // At the beginning, we assume that there is no constraint.
   void Reset(int num_variables);
 
@@ -101,11 +105,14 @@ class VarDomination {
   // once. One then needs to redo the calls to ActivityShouldNotIncrease() and
   // ActivityShouldNotDecrease(). And finally call EndSecondPhase() before
   // querying the domination information.
-  void EndFirstPhase();
+  //
+  // If EndFirstPhase() return false, there is no point continuing.
+  bool EndFirstPhase();
   void EndSecondPhase();
 
   // This is true if this variable was never restricted by any call. We can thus
-  // fix it to its lower bound.
+  // fix it to its lower bound. Note that we don't do that here as the
+  // DualBoundStrengthening class will take care of that.
   bool CanFreelyDecrease(int ref) const;
   bool CanFreelyDecrease(IntegerVariable var) const;
 
@@ -170,11 +177,11 @@ class VarDomination {
 
   // This do not change after EndFirstPhase().
   //
-  // We will add to the Dynamic partion, a set of subset S, each meaning that
+  // We will add to the Dynamic partition, a set of subset S, each meaning that
   // any variable in S can only dominate or be dominated by another variable in
   // S.
   std::vector<int> tmp_vars_;
-  std::unique_ptr<DynamicPartition> partition_;
+  std::unique_ptr<SimpleDynamicPartition> partition_;
   absl::StrongVector<IntegerVariable, bool> can_freely_decrease_;
 
   // For all one sided constraints, we keep the bitmap of constraint indices
@@ -222,14 +229,14 @@ class DualBoundStrengthening {
   // All constraints should be mapped to one of more call to these functions.
   void CannotDecrease(absl::Span<const int> refs, int ct_index = -1);
   void CannotIncrease(absl::Span<const int> refs, int ct_index = -1);
-  void CannotMove(absl::Span<const int> refs);
+  void CannotMove(absl::Span<const int> refs, int ct_index = -1);
 
   // Most of the logic here deals with linear constraints.
   template <typename LinearProto>
   void ProcessLinearConstraint(bool is_objective,
                                const PresolveContext& context,
                                const LinearProto& linear, int64_t min_activity,
-                               int64_t max_activity);
+                               int64_t max_activity, int ct_index = -1);
 
   // Once ALL constraints have been processed, call this to fix variables or
   // reduce their domain if possible.
@@ -245,6 +252,9 @@ class DualBoundStrengthening {
   int64_t CanFreelyDecreaseUntil(int ref) const {
     return can_freely_decrease_until_[RefToIntegerVariable(ref)].value();
   }
+
+  // Reset on each Strengthen() call.
+  int NumDeletedConstraints() const { return num_deleted_constraints_; }
 
  private:
   // We encode proto ref as IntegerVariable for indexing vectors.
@@ -263,6 +273,8 @@ class DualBoundStrengthening {
   // If num_locks_[var] == 1, this will be the unique constraint that block var
   // in this direction. Note that it can be set to -1 if this wasn't recorded.
   absl::StrongVector<IntegerVariable, int64_t> locking_ct_index_;
+
+  int num_deleted_constraints_ = 0;
 };
 
 // Detect the variable dominance relations within the given model. Note that

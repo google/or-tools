@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -43,7 +43,7 @@ public class MultipleKnapsackSat
 
         // Variables.
         // [START variables]
-        IntVar[,] x = new IntVar[NumItems, NumBins];
+        ILiteral[,] x = new ILiteral[NumItems, NumBins];
         foreach (int i in allItems)
         {
             foreach (int b in allBins)
@@ -58,40 +58,37 @@ public class MultipleKnapsackSat
         // Each item is assigned to at most one bin.
         foreach (int i in allItems)
         {
-            IntVar[] vars = new IntVar[NumBins];
+            List<ILiteral> literals = new List<ILiteral>();
             foreach (int b in allBins)
             {
-                vars[b] = x[i, b];
+                literals.Add(x[i, b]);
             }
-            model.Add(LinearExpr.Sum(vars) <= 1);
+            model.AddAtMostOne(literals);
         }
 
         // The amount packed in each bin cannot exceed its capacity.
         foreach (int b in allBins)
         {
-            IntVar[] vars = new IntVar[NumItems];
+            List<ILiteral> items = new List<ILiteral>();
             foreach (int i in allItems)
             {
-                vars[i] = x[i, b];
+                items.Add(x[i, b]);
             }
-            model.Add(LinearExpr.ScalProd(vars, Weights) <= BinCapacities[b]);
+            model.Add(LinearExpr.WeightedSum(items, Weights) <= BinCapacities[b]);
         }
         // [END constraints]
 
         // Objective.
         // [START objective]
-        IntVar[] objectiveVars = new IntVar[NumItems * NumBins];
-        int[] objectiveValues = new int[NumItems * NumBins];
+        LinearExprBuilder obj = LinearExpr.NewBuilder();
         foreach (int i in allItems)
         {
             foreach (int b in allBins)
             {
-                int k = i * NumBins + b;
-                objectiveVars[k] = x[i, b];
-                objectiveValues[k] = Values[i];
+                obj.AddTerm(x[i, b], Values[i]);
             }
         }
-        model.Maximize(LinearExpr.ScalProd(objectiveVars, objectiveValues));
+        model.Maximize(obj);
         //  [END objective]
 
         // Solve
@@ -114,7 +111,7 @@ public class MultipleKnapsackSat
                 Console.WriteLine($"Bin {b}");
                 foreach (int i in allItems)
                 {
-                    if (solver.Value(x[i, b]) == 1)
+                    if (solver.BooleanValue(x[i, b]))
                     {
                         Console.WriteLine($"Item {i} weight: {Weights[i]} values: {Values[i]}");
                         BinWeight += Weights[i];

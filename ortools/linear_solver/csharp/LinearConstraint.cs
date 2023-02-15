@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,156 +13,156 @@
 
 namespace Google.OrTools.LinearSolver
 {
-    using System;
-    using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 
-    public class LinearConstraint
+public class LinearConstraint
+{
+    public virtual String ToString()
     {
-        public virtual String ToString()
-        {
-            return "LinearConstraint";
-        }
-
-        public virtual Constraint Extract(Solver solver)
-        {
-            return null;
-        }
+        return "LinearConstraint";
     }
 
-    public class RangeConstraint : LinearConstraint
+    public virtual Constraint Extract(Solver solver)
     {
-        public RangeConstraint(LinearExpr expr, double lb, double ub)
-        {
-            this.expr_ = expr;
-            this.lb_ = lb;
-            this.ub_ = ub;
-        }
+        return null;
+    }
+}
 
-        public override String ToString()
-        {
-            return "" + lb_ + " <= " + expr_.ToString() + " <= " + ub_;
-        }
-
-        public override Constraint Extract(Solver solver)
-        {
-            Dictionary<Variable, double> coefficients = new Dictionary<Variable, double>();
-            double constant = expr_.Visit(coefficients);
-            Constraint ct = solver.MakeConstraint(lb_ - constant, ub_ - constant);
-            foreach (KeyValuePair<Variable, double> pair in coefficients)
-            {
-                ct.SetCoefficient(pair.Key, pair.Value);
-            }
-            return ct;
-        }
-
-        public static implicit operator bool(RangeConstraint ct)
-        {
-            return false;
-        }
-
-        private LinearExpr expr_;
-        private double lb_;
-        private double ub_;
+public class RangeConstraint : LinearConstraint
+{
+    public RangeConstraint(LinearExpr expr, double lb, double ub)
+    {
+        this.expr_ = expr;
+        this.lb_ = lb;
+        this.ub_ = ub;
     }
 
-    public class Equality : LinearConstraint
+    public override String ToString()
     {
-        public Equality(LinearExpr left, LinearExpr right, bool equality)
-        {
-            this.left_ = left;
-            this.right_ = right;
-            this.equality_ = equality;
-        }
-
-        public override String ToString()
-        {
-            return "" + left_.ToString() + " == " + right_.ToString();
-        }
-
-        public override Constraint Extract(Solver solver)
-        {
-            if (!equality_)
-            {
-                throw new ArgumentException("Operator != not supported for LinearExpression");
-            }
-            Dictionary<Variable, double> coefficients = new Dictionary<Variable, double>();
-            double constant = left_.Visit(coefficients);
-            constant += right_.DoVisit(coefficients, -1);
-            Constraint ct = solver.MakeConstraint(-constant, -constant);
-            foreach (KeyValuePair<Variable, double> pair in coefficients)
-            {
-                ct.SetCoefficient(pair.Key, pair.Value);
-            }
-            return ct;
-        }
-
-        public static implicit operator bool(Equality ct)
-        {
-            return (object)ct.left_ == (object)ct.right_ ? ct.equality_ : !ct.equality_;
-        }
-
-        private LinearExpr left_;
-        private LinearExpr right_;
-        private bool equality_;
+        return "" + lb_ + " <= " + expr_.ToString() + " <= " + ub_;
     }
 
-    public class VarEquality : LinearConstraint
+    public override Constraint Extract(Solver solver)
     {
-        public VarEquality(Variable left, Variable right, bool equality)
+        Dictionary<Variable, double> coefficients = new Dictionary<Variable, double>();
+        double constant = expr_.Visit(coefficients);
+        Constraint ct = solver.MakeConstraint(lb_ - constant, ub_ - constant);
+        foreach (KeyValuePair<Variable, double> pair in coefficients)
         {
-            this.left_ = left;
-            this.right_ = right;
-            this.equality_ = equality;
+            ct.SetCoefficient(pair.Key, pair.Value);
         }
-
-        public override String ToString()
-        {
-            return "" + left_.Name() + " == " + right_.Name();
-        }
-
-        public override Constraint Extract(Solver solver)
-        {
-            Constraint ct = solver.MakeConstraint(0.0, 0.0);
-            ct.SetCoefficient(left_, 1.0);
-            ct.SetCoefficient(right_, -1.0);
-            return ct;
-        }
-
-        public static implicit operator bool(VarEquality ct)
-        {
-            return (object)ct.left_ == (object)ct.right_ ? ct.equality_ : !ct.equality_;
-        }
-
-        private Variable left_;
-        private Variable right_;
-        private bool equality_;
+        return ct;
     }
 
-    // TODO(user): Try to move this code back to the .swig with @define macros.
-    public partial class MPConstraintVector : IDisposable,
-                                              System.Collections.IEnumerable
+    public static implicit operator bool(RangeConstraint ct)
+    {
+        return false;
+    }
+
+    private LinearExpr expr_;
+    private double lb_;
+    private double ub_;
+}
+
+public class Equality : LinearConstraint
+{
+    public Equality(LinearExpr left, LinearExpr right, bool equality)
+    {
+        this.left_ = left;
+        this.right_ = right;
+        this.equality_ = equality;
+    }
+
+    public override String ToString()
+    {
+        return "" + left_.ToString() + " == " + right_.ToString();
+    }
+
+    public override Constraint Extract(Solver solver)
+    {
+        if (!equality_)
+        {
+            throw new ArgumentException("Operator != not supported for LinearExpression");
+        }
+        Dictionary<Variable, double> coefficients = new Dictionary<Variable, double>();
+        double constant = left_.Visit(coefficients);
+        constant += right_.DoVisit(coefficients, -1);
+        Constraint ct = solver.MakeConstraint(-constant, -constant);
+        foreach (KeyValuePair<Variable, double> pair in coefficients)
+        {
+            ct.SetCoefficient(pair.Key, pair.Value);
+        }
+        return ct;
+    }
+
+    public static implicit operator bool(Equality ct)
+    {
+        return (object)ct.left_ == (object)ct.right_ ? ct.equality_ : !ct.equality_;
+    }
+
+    private LinearExpr left_;
+    private LinearExpr right_;
+    private bool equality_;
+}
+
+public class VarEquality : LinearConstraint
+{
+    public VarEquality(Variable left, Variable right, bool equality)
+    {
+        this.left_ = left;
+        this.right_ = right;
+        this.equality_ = equality;
+    }
+
+    public override String ToString()
+    {
+        return "" + left_.Name() + " == " + right_.Name();
+    }
+
+    public override Constraint Extract(Solver solver)
+    {
+        Constraint ct = solver.MakeConstraint(0.0, 0.0);
+        ct.SetCoefficient(left_, 1.0);
+        ct.SetCoefficient(right_, -1.0);
+        return ct;
+    }
+
+    public static implicit operator bool(VarEquality ct)
+    {
+        return (object)ct.left_ == (object)ct.right_ ? ct.equality_ : !ct.equality_;
+    }
+
+    private Variable left_;
+    private Variable right_;
+    private bool equality_;
+}
+
+// TODO(user): Try to move this code back to the .i with @define macros.
+public partial class MPConstraintVector : IDisposable,
+                                          System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
-        ,
-                                              System.Collections.Generic.IList<Constraint>
+    ,
+                                          System.Collections.Generic.IList<Constraint>
 #endif
+{
+    // cast from C# MPConstraint array
+    public static implicit operator MPConstraintVector(Constraint[] inVal)
     {
-        // cast from C# MPConstraint array
-        public static implicit operator MPConstraintVector(Constraint[] inVal)
+        var outVal = new MPConstraintVector();
+        foreach (Constraint element in inVal)
         {
-            var outVal = new MPConstraintVector();
-            foreach (Constraint element in inVal)
-            {
-                outVal.Add(element);
-            }
-            return outVal;
+            outVal.Add(element);
         }
-
-        // cast to C# MPConstraint array
-        public static implicit operator Constraint[](MPConstraintVector inVal)
-        {
-            var outVal = new Constraint[inVal.Count];
-            inVal.CopyTo(outVal);
-            return outVal;
-        }
+        return outVal;
     }
+
+    // cast to C# MPConstraint array
+    public static implicit operator Constraint[](MPConstraintVector inVal)
+    {
+        var outVal = new Constraint[inVal.Count];
+        inVal.CopyTo(outVal);
+        return outVal;
+    }
+}
 } // namespace Google.OrTools.LinearSolver

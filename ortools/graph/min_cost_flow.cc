@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,13 +17,17 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <string>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
 #include "ortools/graph/max_flow.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 // TODO(user): Remove these flags and expose the parameters in the API.
 // New clients, please do not use these flags!
@@ -57,7 +61,6 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
       alpha_(absl::GetFlag(FLAGS_min_cost_flow_alpha)),
       cost_scaling_factor_(1),
       scaled_arc_unit_cost_(),
-      total_flow_cost_(0),
       status_(NOT_SOLVED),
       initial_node_excess_(),
       feasible_node_excess_(),
@@ -224,27 +227,43 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::CheckResult()
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::CheckCostRange()
     const {
-  CostValue min_cost_magnitude = std::numeric_limits<CostValue>::max();
-  CostValue max_cost_magnitude = 0;
+  using UnsignedCostValue = uint64_t;
+  static_assert(sizeof(UnsignedCostValue) >= sizeof(CostValue), "");
+  UnsignedCostValue max_cost_magnitude = 0;
+  UnsignedCostValue min_cost_magnitude =
+      std::numeric_limits<UnsignedCostValue>::max();
   // Traverse the initial arcs of the graph:
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
-    const CostValue cost_magnitude = MathUtil::Abs(scaled_arc_unit_cost_[arc]);
+    const UnsignedCostValue cost_magnitude =
+        static_cast<UnsignedCostValue>(std::abs(scaled_arc_unit_cost_[arc]));
     max_cost_magnitude = std::max(max_cost_magnitude, cost_magnitude);
-    if (cost_magnitude != 0.0) {
+    if (cost_magnitude != 0) {
       min_cost_magnitude = std::min(min_cost_magnitude, cost_magnitude);
     }
   }
   VLOG(3) << "Min cost magnitude = " << min_cost_magnitude
           << ", Max cost magnitude = " << max_cost_magnitude;
-#if !defined(_MSC_VER)
-  if (log(std::numeric_limits<CostValue>::max()) <
-      log(max_cost_magnitude + 1) + log(graph_->num_nodes() + 1)) {
-    LOG(DFATAL) << "Maximum cost magnitude " << max_cost_magnitude << " is too "
-                << "high for the number of nodes. Try changing the data.";
-    return false;
-  }
-#endif
-  return true;
+  constexpr UnsignedCostValue kMaxCost =
+      std::numeric_limits<UnsignedCostValue>::max();
+  const UnsignedCostValue num_nodes = graph_->num_nodes();
+  // The predicate we want to verify is:
+  // 3 * max_cost_magnitude * num_nodes ≤ kMaxCost.
+  // NOTE(user): The factor of 3 might be reduced to 2 or even 1 if we audited
+  // the potential overflow-driving code, but it's not trivial. See cl/457335394
+  // which changed the factor from 2 to 3 because it had detected overflows.
+  //
+  // To verify the above predicate without overflows, we use this trick:
+  // a×b ≤ c ⇔ (a < c/b || (a == c/b && c%b == 0)).
+  if (num_nodes == 0) return true;
+  const UnsignedCostValue quotient = kMaxCost / num_nodes;
+  const UnsignedCostValue remainder = kMaxCost % num_nodes;
+  // First, we guard against overflows when computing 3 * max_cost_magnitude.
+  if (max_cost_magnitude > kMaxCost / 3) return false;
+  if (3 * max_cost_magnitude < quotient) return true;  // Common case.
+  if (3 * max_cost_magnitude <= quotient && remainder == 0) return true;
+  LOG(DFATAL) << "max(3 * abs(arc cost)) * num_nodes overflows: "
+              << DUMP_VARS(max_cost_magnitude, num_nodes, kMaxCost);
+  return false;
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
@@ -518,17 +537,36 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
   UnscaleCosts();
   if (status_ != OPTIMAL) {
     LOG(DFATAL) << "Status != OPTIMAL";
-    total_flow_cost_ = 0;
     return false;
-  }
-  total_flow_cost_ = 0;
-  for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
-    const FlowQuantity flow_on_arc = residual_arc_capacity_[Opposite(arc)];
-    total_flow_cost_ += scaled_arc_unit_cost_[arc] * flow_on_arc;
   }
   status_ = OPTIMAL;
   IF_STATS_ENABLED(VLOG(1) << stats_.StatString());
   return true;
+}
+
+template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
+CostValue
+GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GetOptimalCost() {
+  if (status_ != OPTIMAL) {
+    return 0;
+  }
+
+  // The total cost of the flow.
+  // We cap the result if its overflow.
+  CostValue total_flow_cost = 0;
+  const CostValue kMaxCost = std::numeric_limits<CostValue>::max();
+  const CostValue kMinCost = std::numeric_limits<CostValue>::min();
+  for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
+    const CostValue flow_on_arc = residual_arc_capacity_[Opposite(arc)];
+    const CostValue flow_cost =
+        CapProd(scaled_arc_unit_cost_[arc], flow_on_arc);
+    if (flow_cost == kMaxCost || flow_cost == kMinCost) return kMaxCost;
+    total_flow_cost = CapAdd(flow_cost, total_flow_cost);
+    if (total_flow_cost == kMaxCost || total_flow_cost == kMinCost) {
+      return kMaxCost;
+    }
+  }
+  return total_flow_cost;
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>

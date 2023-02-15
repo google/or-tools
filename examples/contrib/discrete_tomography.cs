@@ -205,9 +205,9 @@ public class DiscreteTomography
 
     public static void Main(String[] args)
     {
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            readFile(args[0]);
+            readFile(args[1]);
             Solve(rowsums2, colsums2);
         }
         else

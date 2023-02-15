@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,8 +20,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/memory/memory.h"
-#include "ortools/base/basictypes.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -232,7 +230,7 @@ class KnapsackSolver {
    */
   void set_time_limit(double time_limit_seconds) {
     time_limit_seconds_ = time_limit_seconds;
-    time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds_);
+    time_limit_ = std::make_unique<TimeLimit>(time_limit_seconds_);
   }
 
  private:
@@ -270,12 +268,12 @@ class KnapsackSolver {
 //
 // Constraints are enforced using KnapsackPropagator objects, in the current
 // code there is one propagator per dimension (KnapsackCapacityPropagator).
-// One of those propagators, named master propagator, is used to guide the
+// One of those propagators, named primary propagator, is used to guide the
 // search, i.e. decides which item should be assigned next.
 // Roughly speaking the search algorithm is:
 //  - While not optimal
 //    - Select next search node to expand
-//    - Select next item_i to assign (using master propagator)
+//    - Select next item_i to assign (using primary propagator)
 //    - Generate a new search node where item_i is in the knapsack
 //      - Check validity of this new partial solution (using propagators)
 //      - If valid, add this new search node to the search
@@ -287,8 +285,8 @@ class KnapsackSolver {
 // TODO(user): Add a new propagator class used as a guide when the problem has
 // several dimensions.
 
-// ----- KnapsackAssignement -----
-// KnapsackAssignement is a small struct used to pair an item with its
+// ----- KnapsackAssignment -----
+// KnapsackAssignment is a small struct used to pair an item with its
 // assignment. It is mainly used for search nodes and updates.
 struct KnapsackAssignment {
   KnapsackAssignment(int _item_id, bool _is_in)
@@ -330,7 +328,7 @@ typedef KnapsackItem* KnapsackItemPtr;
 // KnapsackSearchNode is a class used to describe a decision in the decision
 // search tree.
 // The node is defined by a pointer to the parent search node and an
-// assignment (see KnapsackAssignement).
+// assignment (see KnapsackAssignment).
 // As the current state is not explicitly stored in a search node, one should
 // go through the search tree to incrementally build a partial solution from
 // a previous search node.
@@ -603,7 +601,7 @@ class BaseKnapsackSolver {
 // ----- KnapsackGenericSolver -----
 // KnapsackGenericSolver is the multi-dimensional knapsack solver class.
 // In the current implementation, the next item to assign is given by the
-// master propagator. Using SetMasterPropagator allows changing the default
+// primary propagator. Using SetPrimaryPropagator allows changing the default
 // (propagator of the first dimension), and selecting another dimension when
 // more constrained.
 // TODO(user): In the case of a multi-dimensional knapsack problem, implement
@@ -624,10 +622,10 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
                                      int64_t* upper_bound) override;
 
   // Sets which propagator should be used to guide the search.
-  // 'master_propagator_id' should be in 0..p-1 with p the number of
+  // 'primary_propagator_id' should be in 0..p-1 with p the number of
   // propagators.
-  void set_master_propagator_id(int master_propagator_id) {
-    master_propagator_id_ = master_propagator_id;
+  void set_primary_propagator_id(int primary_propagator_id) {
+    primary_propagator_id_ = primary_propagator_id;
   }
 
   // Solves the problem and returns the profit of the optimal solution.
@@ -660,14 +658,14 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
   int64_t GetAggregatedProfitUpperBound() const;
   bool HasOnePropagator() const { return propagators_.size() == 1; }
   int64_t GetCurrentProfit() const {
-    return propagators_.at(master_propagator_id_)->current_profit();
+    return propagators_.at(primary_propagator_id_)->current_profit();
   }
   int64_t GetNextItemId() const {
-    return propagators_.at(master_propagator_id_)->GetNextItemId();
+    return propagators_.at(primary_propagator_id_)->GetNextItemId();
   }
 
   std::vector<KnapsackPropagator*> propagators_;
-  int master_propagator_id_;
+  int primary_propagator_id_;
   std::vector<KnapsackSearchNode*> search_nodes_;
   KnapsackState state_;
   int64_t best_solution_profit_;

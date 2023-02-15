@@ -1,7 +1,7 @@
 FROM ortools/cmake:centos_swig AS env
 ENV PATH=/root/.local/bin:$PATH
 RUN dnf -y update \
-&& dnf -y install python36-devel \
+&& dnf -y install python39-devel python39-numpy \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 

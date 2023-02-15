@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -98,7 +98,7 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
 std::string LinearBooleanProblemToCnfString(
     const LinearBooleanProblem& problem);
 
-// Store a variable assignment into the given BooleanAssignement proto.
+// Store a variable assignment into the given BooleanAssignment proto.
 // Note that only the assigned variables are stored, so the assignment may be
 // incomplete.
 void StoreAssignment(const VariablesAssignment& assignment,

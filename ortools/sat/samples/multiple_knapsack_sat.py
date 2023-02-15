@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # [START program]
 """Solves a multiple knapsack problem using the CP-SAT solver."""
 # [START import]
@@ -53,7 +54,7 @@ def main():
     # [START constraints]
     # Each item is assigned to at most one bin.
     for i in data['all_items']:
-        model.Add(sum(x[i, b] for b in data['all_bins']) <= 1)
+        model.AddAtMostOne(x[i, b] for b in data['all_bins'])
 
     # The amount packed in each bin cannot exceed its capacity.
     for b in data['all_bins']:

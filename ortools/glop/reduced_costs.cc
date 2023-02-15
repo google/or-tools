@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 #include "ortools/glop/reduced_costs.h"
 
+#include <algorithm>
 #include <random>
 
 #ifdef OMP
@@ -62,7 +63,7 @@ Fractional ReducedCosts::TestEnteringReducedCostPrecision(
   const Fractional old_reduced_cost = reduced_costs_[entering_col];
   const Fractional precise_reduced_cost =
       objective_[entering_col] + cost_perturbations_[entering_col] -
-      PreciseScalarProduct(basic_objective_, direction);
+      ScalarProduct(basic_objective_, direction);
 
   // Update the reduced cost of the entering variable with the precise version.
   reduced_costs_[entering_col] = precise_reduced_cost;

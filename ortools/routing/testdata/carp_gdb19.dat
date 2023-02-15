@@ -1,0 +1,22 @@
+ NOMBRE : gdb19
+ COMENTARIO : 10000 (cota superior) 
+ VERTICES : 8
+ ARISTAS_REQ : 11
+ ARISTAS_NOREQ : 0
+ VEHICULOS : 3
+ CAPACIDAD : 27
+ TIPO_COSTES_ARISTAS : EXPLICITOS
+ COSTE_TOTAL_REQ : 45
+ LISTA_ARISTAS_REQ :
+ ( 1, 2)  coste 4 demanda 8
+ ( 1, 4)  coste 3 demanda 3
+ ( 1, 5)  coste 1 demanda 5
+ ( 1, 6)  coste 2 demanda 8
+ ( 2, 3)  coste 1 demanda 4
+ ( 2, 4)  coste 9 demanda 6
+ ( 2, 5)  coste 5 demanda 1
+ ( 2, 7)  coste 2 demanda 9
+ ( 5, 7)  coste 7 demanda 9
+ ( 6, 8)  coste 5 demanda 5
+ ( 7, 3)  coste 6 demanda 8
+ DEPOSITO :   1

@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -56,7 +69,34 @@ cc_library(
     deps = [
         ":vector_bin_packing_cc_proto",
         "//ortools/base",
-        "//ortools/base:filelineiter",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+### Multiple Dimension (non vector) Bin Packing ###
+
+proto_library(
+    name = "multiple_dimensions_bin_packing_proto",
+    srcs = ["multiple_dimensions_bin_packing.proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "multiple_dimensions_bin_packing_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":multiple_dimensions_bin_packing_proto"],
+)
+
+cc_library(
+    name = "binpacking_2d_parser",
+    srcs = ["binpacking_2d_parser.cc"],
+    hdrs = ["binpacking_2d_parser.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":multiple_dimensions_bin_packing_cc_proto",
+        "//ortools/base",
+        "//ortools/util:filelineiter",
         "@com_google_absl//absl/strings",
     ],
 )

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,14 +14,22 @@
 #ifndef OR_TOOLS_SAT_DIFFN_UTIL_H_
 #define OR_TOOLS_SAT_DIFFN_UTIL_H_
 
+#include <algorithm>
 #include <cstdint>
+#include <iosfwd>
+#include <ostream>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -49,7 +57,7 @@ struct Rectangle {
   }
 };
 
-// Creates a graph when two nodes are connected iif their rectangles overlap.
+// Creates a graph when two nodes are connected iff their rectangles overlap.
 // Then partition into connected components.
 //
 // This method removes all singleton components. It will modify the
@@ -155,6 +163,99 @@ void GetOverlappingIntervalComponents(
 // https://en.wikipedia.org/wiki/Glossary_of_graph_theory#articulation_point.
 std::vector<int> GetIntervalArticulationPoints(
     std::vector<IndexedInterval>* intervals);
+
+// This class is used by the no_overlap_2d constraint to maintain the envelope
+// of a set of rectangles. This envelope is not the convex hull, but the exact
+// polyline (aligned with the x and y axis) that contains all the rectangles
+// passed with the AddRectangle() call.
+class CapacityProfile {
+ public:
+  // Simple start of a rectangle. This is used to represent the residual
+  // capacity profile.
+  struct Rectangle {
+    Rectangle(IntegerValue start, IntegerValue height)
+        : start(start), height(height) {}
+
+    bool operator<(const Rectangle& other) const { return start < other.start; }
+    bool operator==(const Rectangle& other) const {
+      return start == other.start && height == other.height;
+    }
+
+    IntegerValue start = IntegerValue(0);
+    IntegerValue height = IntegerValue(0);
+  };
+
+  void Clear();
+
+  // Adds a rectangle to the current shape.
+  void AddRectangle(IntegerValue x_min, IntegerValue x_max, IntegerValue y_min,
+                    IntegerValue y_max);
+
+  // Adds a mandatory profile consumption. All mandatory usages will be
+  // subtracted from the y_max-y_min profile to build the residual capacity.
+  void AddMandatoryConsumption(IntegerValue x_min, IntegerValue x_max,
+                               IntegerValue y_height);
+
+  // Returns the profile of the function:
+  // capacity(x) = max(y_max of rectangles overlapping x) - min(y_min of
+  //     rectangle overlapping x) - sum(y_height of mandatory rectangles
+  //     overlapping x) where a rectangle overlaps x if x_min <= x < x_max.
+  //
+  // Note the profile can contain negative heights in case the mandatory part
+  // exceeds the range on the y axis.
+  //
+  // Note that it adds a sentinel (kMinIntegerValue, 0) at the start. It is
+  // useful when we reverse the direction on the x axis.
+  void BuildResidualCapacityProfile(std::vector<Rectangle>* result);
+
+  // Returns the exact area of the bounding polyline of all rectangles added.
+  //
+  // Note that this will redo the computation each time.
+  IntegerValue GetBoundingArea();
+
+ private:
+  // Type for the capacity events.
+  enum EventType { START_RECTANGLE, END_RECTANGLE, CHANGE_MANDATORY_PROFILE };
+
+  // Individual events.
+  struct Event {
+    IntegerValue time;
+    IntegerValue y_min;
+    IntegerValue y_max;
+    EventType type;
+    int index;
+
+    const bool operator<(const Event& other) const { return time < other.time; }
+  };
+
+  // Element of the integer_pq heap.
+  struct QueueElement {
+    int Index() const { return index; }
+    const bool operator<(const QueueElement& o) const {
+      return value < o.value;
+    }
+
+    int index;
+    IntegerValue value;
+  };
+
+  static Event StartRectangleEvent(int index, IntegerValue x_min,
+                                   IntegerValue y_min, IntegerValue y_max) {
+    return {x_min, y_min, y_max, START_RECTANGLE, index};
+  }
+
+  static Event EndRectangleEvent(int index, IntegerValue x_max) {
+    return {x_max, kMinIntegerValue, kMinIntegerValue, END_RECTANGLE, index};
+  }
+
+  static Event ChangeMandatoryProfileEvent(IntegerValue x, IntegerValue delta) {
+    return {x, /*y_min=*/delta, /*y_max=*/kMinIntegerValue,
+            CHANGE_MANDATORY_PROFILE, /*index=*/-1};
+  }
+
+  std::vector<Event> events_;
+  int num_rectangles_added_ = 0;
+};
 
 }  // namespace sat
 }  // namespace operations_research

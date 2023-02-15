@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 PROJECT := ortools
 BUILD_SYSTEM := bazel
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
@@ -108,7 +121,7 @@ sh_targets_$1 = $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
 $$(sh_targets_$1): sh_%_$1: %_$1
 	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$*_$1 ${IMAGE}:$$*_$1
 
-#$$(info Create targets: $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
+#$$(info Create targets: clean_$1 $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: clean_$1 $(clean_targets_$1)
 clean_$1: $$(clean_targets_$1)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # [START program]
 """Example of a simple nurse scheduling problem."""
 # [START import]
@@ -49,14 +50,14 @@ def main():
     # [START exactly_one_nurse]
     for d in all_days:
         for s in all_shifts:
-            model.Add(sum(shifts[(n, d, s)] for n in all_nurses) == 1)
+            model.AddExactlyOne(shifts[(n, d, s)] for n in all_nurses)
     # [END exactly_one_nurse]
 
     # Each nurse works at most one shift per day.
     # [START at_most_one_shift]
     for n in all_nurses:
         for d in all_days:
-            model.Add(sum(shifts[(n, d, s)] for s in all_shifts) <= 1)
+            model.AddAtMostOne(shifts[(n, d, s)] for s in all_shifts)
     # [END at_most_one_shift]
 
     # [START assign_nurses_evenly]
@@ -70,12 +71,12 @@ def main():
     else:
         max_shifts_per_nurse = min_shifts_per_nurse + 1
     for n in all_nurses:
-        num_shifts_worked = []
+        shifts_worked = []
         for d in all_days:
             for s in all_shifts:
-                num_shifts_worked.append(shifts[(n, d, s)])
-        model.Add(min_shifts_per_nurse <= sum(num_shifts_worked))
-        model.Add(sum(num_shifts_worked) <= max_shifts_per_nurse)
+                shifts_worked.append(shifts[(n, d, s)])
+        model.Add(min_shifts_per_nurse <= sum(shifts_worked))
+        model.Add(sum(shifts_worked) <= max_shifts_per_nurse)
     # [END assign_nurses_evenly]
 
     # Creates the solver and solve.

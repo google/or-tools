@@ -1,4 +1,5 @@
-# Copyright 2010-2021 Google LLC
+#!/usr/bin/env python3
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,11 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Simple travelling salesman problem between cities."""
-
+"""Simple prize collecting TSP problem with a max distance."""
 
 from ortools.sat.python import cp_model
-
 
 DISTANCE_MATRIX = [
     [0, 10938, 4542, 2835, 29441, 2171, 1611, 9208, 9528, 11111, 16120, 22606, 22127, 20627, 21246, 23387, 16697, 33609, 26184, 24772, 22644, 20655, 30492, 23296, 32979, 18141, 19248, 17129, 17192, 15645, 12658, 11210, 12094, 13175, 18162, 4968, 12308, 10084, 13026, 15056],
@@ -59,49 +58,91 @@ DISTANCE_MATRIX = [
     [15056, 25994, 19589, 16743, 44198, 13078, 14967, 7552, 10422, 14935, 11891, 14002, 13225, 10671, 9475, 10633, 5084, 20315, 11866, 9802, 7682, 6471, 15720, 10674, 18908, 6204, 6000, 5066, 3039, 3721, 3496, 4772, 8614, 23805, 29519, 11614, 2749, 5313, 2042, 0],
 ] # yapf: disable
 
-VISIT_VALUES = [6000] * len(DISTANCE_MATRIX)
+MAX_DISTANCE = 80_000
+
+VISIT_VALUES = [60_000, 50_000, 40_000, 30_000] * (len(DISTANCE_MATRIX) // 4)
+VISIT_VALUES[0] = 0
+
+# Create a console solution printer.
+def print_solution(solver, visited_nodes, used_arcs, num_nodes):
+    """Prints solution on console."""
+    # Display dropped nodes.
+    dropped_nodes = 'Dropped nodes:'
+    for i in range(num_nodes):
+        if i == 0:
+            continue
+        if not solver.BooleanValue(visited_nodes[i]):
+            dropped_nodes += f' {i}({VISIT_VALUES[i]})'
+    print(dropped_nodes)
+    # Display routes
+    current_node = 0
+    plan_output = 'Route for vehicle 0:\n'
+    route_distance = 0
+    value_collected = 0
+    route_is_finished = False
+    while not route_is_finished:
+        value_collected += VISIT_VALUES[current_node]
+        plan_output += f' {current_node} ->'
+        # find next node
+        for node in range(num_nodes):
+            if node == current_node:
+                continue
+            if solver.BooleanValue(used_arcs[current_node, node]):
+                route_distance += DISTANCE_MATRIX[current_node][node]
+                current_node = node
+                if current_node == 0:
+                    route_is_finished = True
+                break
+    plan_output += f' {current_node}\n'
+    plan_output += f'Distance of the route: {route_distance}m\n'
+    plan_output += f'Value collected: {value_collected}/{sum(VISIT_VALUES)}\n'
+    print(plan_output)
 
 def main():
     """Entry point of the program."""
     num_nodes = len(DISTANCE_MATRIX)
     all_nodes = range(num_nodes)
-    print('Num nodes =', num_nodes)
+    print(f'Num nodes = {num_nodes}')
 
     # Model.
     model = cp_model.CpModel()
 
     obj_vars = []
     obj_coeffs = []
-
     visited_nodes = []
-    arc_literals = {}
+    used_arcs = {}
 
     # Create the circuit constraint.
     arcs = []
     for i in all_nodes:
-        is_visited = model.NewBoolVar('%i is visited' % i)
+        is_visited = model.NewBoolVar(f'{i} is visited')
         arcs.append([i, i, is_visited.Not()])
 
         obj_vars.append(is_visited)
         obj_coeffs.append(VISIT_VALUES[i])
-
         visited_nodes.append(is_visited)
 
         for j in all_nodes:
             if i == j:
+                used_arcs[i, j] = is_visited.Not()
                 continue
+            arc_is_used = model.NewBoolVar(f'{j} follows {i}')
+            arcs.append([i, j, arc_is_used])
 
-            lit = model.NewBoolVar('%i follows %i' % (j, i))
-            arcs.append([i, j, lit])
-            arc_literals[i, j] = lit
-
-            obj_vars.append(lit)
+            obj_vars.append(arc_is_used)
             obj_coeffs.append(-DISTANCE_MATRIX[i][j])
+            used_arcs[i, j] = arc_is_used
 
     model.AddCircuit(arcs)
 
     # Node 0 must be visited.
     model.Add(visited_nodes[0] == 1)
+
+    # limit the route distance
+    model.Add(sum(used_arcs[i, j] * DISTANCE_MATRIX[i][j]
+        for i in all_nodes
+        for j in all_nodes) <= MAX_DISTANCE)
+
 
     # Maximize visited node values minus the travelled distance.
     model.Maximize(
@@ -109,45 +150,15 @@ def main():
 
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
     # To benefit from the linearization of the circuit constraint.
-    solver.parameters.linearization_level = 2
+    solver.parameters.max_time_in_seconds = 15.0
+    solver.parameters.num_search_workers = 8
+    # solver.parameters.log_search_progress = True
 
     solver.Solve(model)
-    print(solver.ResponseStats())
+    #print(solver.ResponseStats())
+    print_solution(solver, visited_nodes, used_arcs, num_nodes)
 
-    first_visited_node = -1
-    dropped_nodes = '['
-    for i in all_nodes:
-        if not solver.BooleanValue(visited_nodes[i]):
-            dropped_nodes += ('%i ' % i)
-        elif first_visited_node == -1:
-            first_visited_node = i
-    dropped_nodes += ']'
-    print('Dropped nodes:', dropped_nodes)
-
-    if first_visited_node != -1:
-        current_node = first_visited_node
-        str_route = '%i' % current_node
-        route_is_finished = False
-        route_distance = 0
-        value_collected = 0
-        while not route_is_finished:
-            value_collected += VISIT_VALUES[current_node]
-            for i in all_nodes:
-                if i == current_node:
-                    continue
-                if solver.BooleanValue(arc_literals[current_node, i]):
-                    str_route += ' -> %i' % i
-                    route_distance += DISTANCE_MATRIX[current_node][i]
-                    current_node = i
-                    if current_node == first_visited_node:
-                        route_is_finished = True
-                    break
-
-        print('Route:', str_route)
-        print('Travelled distance:', route_distance)
-        print('Value collected: ', value_collected)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,14 +19,15 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/port/proto_utils.h"
@@ -39,7 +40,7 @@ AllSolversRegistry* AllSolversRegistry::Instance() {
   return instance;
 }
 
-void AllSolversRegistry::Register(const SolverType solver_type,
+void AllSolversRegistry::Register(const SolverTypeProto solver_type,
                                   SolverInterface::Factory factory) {
   bool inserted;
   {
@@ -52,28 +53,31 @@ void AllSolversRegistry::Register(const SolverType solver_type,
 }
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> AllSolversRegistry::Create(
-    SolverType solver_type, const ModelProto& model,
-    const SolverInitializerProto& initializer) const {
+    SolverTypeProto solver_type, const ModelProto& model,
+    const SolverInterface::InitArgs& init_args) const {
   const SolverInterface::Factory* factory = nullptr;
   {
     const absl::MutexLock lock(&mutex_);
     factory = gtl::FindOrNull(registered_solvers_, solver_type);
   }
   if (factory == nullptr) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Solver type: ", ProtoEnumToString(solver_type),
-                     " is not registered."));
+    std::string name = SolverTypeProto_Name(solver_type);
+    if (name.empty()) {
+      name = absl::StrCat("unknown(", static_cast<int>(solver_type), ")");
+    }
+    return util::InvalidArgumentErrorBuilder()
+           << "solver type " << name << " is not registered";
   }
-  return (*factory)(model, initializer);
+  return (*factory)(model, init_args);
 }
 
-bool AllSolversRegistry::IsRegistered(const SolverType solver_type) const {
+bool AllSolversRegistry::IsRegistered(const SolverTypeProto solver_type) const {
   const absl::MutexLock lock(&mutex_);
   return registered_solvers_.contains(solver_type);
 }
 
-std::vector<SolverType> AllSolversRegistry::RegisteredSolvers() const {
-  std::vector<SolverType> result;
+std::vector<SolverTypeProto> AllSolversRegistry::RegisteredSolvers() const {
+  std::vector<SolverTypeProto> result;
   {
     const absl::MutexLock lock(&mutex_);
     for (const auto& kv_pair : registered_solvers_) {

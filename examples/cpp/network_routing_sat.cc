@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,6 +25,7 @@
 
 // A random problem generator is also included.
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <random>
@@ -36,11 +37,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/random/uniform_int_distribution.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/shortestpaths.h"
@@ -111,16 +111,16 @@ class NetworkRoutingData {
 
   // Returns the capacity of an arc, and 0 if the arc is not defined.
   int Capacity(int node1, int node2) const {
-    return gtl::FindWithDefault(
-        all_arcs_,
-        std::make_pair(std::min(node1, node2), std::max(node1, node2)), 0);
+    const auto& iter = all_arcs_.find(
+        std::make_pair(std::min(node1, node2), std::max(node1, node2)));
+    return iter != all_arcs_.end() ? iter->second : 0;
   }
 
   // Returns the demand between the source and the destination, and 0 if
   // there are no demands between the source and the destination.
   int Demand(int source, int destination) const {
-    return gtl::FindWithDefault(all_demands_,
-                                std::make_pair(source, destination), 0);
+    const auto& iter = all_demands_.find(std::make_pair(source, destination));
+    return iter != all_demands_.end() ? iter->second : 0;
   }
 
   // External building API.
@@ -678,8 +678,7 @@ class NetworkRoutingSolver {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::NetworkRoutingData data;
   operations_research::sat::NetworkRoutingDataBuilder builder(

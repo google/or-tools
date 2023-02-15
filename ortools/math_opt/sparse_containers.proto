@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,9 @@ syntax = "proto3";
 
 package operations_research.math_opt;
 
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
 // A sparse representation of a vector of doubles.
 message SparseDoubleVectorProto {
   // Must be sorted (in increasing ordering) with all elements distinct.
@@ -30,6 +33,14 @@ message SparseBoolVectorProto {
   repeated int64 ids = 1;
   // Must have equal length to ids.
   repeated bool values = 2;
+}
+
+// A sparse representation of a vector of ints.
+message SparseInt32VectorProto {
+  // Should be sorted (in increasing ordering) with all elements distinct.
+  repeated int64 ids = 1;
+  // Must have equal length to ids.
+  repeated int32 values = 2;
 }
 
 // This message allows to query/set specific parts of a SparseXxxxVector.
@@ -61,4 +72,16 @@ message SparseDoubleMatrixProto {
   repeated int64 column_ids = 2;
   // May not contain NaN.
   repeated double coefficients = 3;
+}
+
+// A sparse representation of a linear expression (a weighted sum of variables,
+// plus a constant offset).
+message LinearExpressionProto {
+  // Ids of variables. Must be sorted (in increasing ordering) with all elements
+  // distinct.
+  repeated int64 ids = 1;
+  // Must have equal length to ids. Values must be finite may not be NaN.
+  repeated double coefficients = 2;
+  // Must be finite and may not be NaN.
+  double offset = 3;
 }

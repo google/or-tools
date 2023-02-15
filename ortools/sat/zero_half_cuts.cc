@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,17 @@
 // limitations under the License.
 
 #include "ortools/sat/zero_half_cuts.h"
+
+#include <algorithm>
+#include <functional>
+#include <utility>
+#include <vector>
+
+#include "ortools/base/logging.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -269,7 +280,7 @@ ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator* random) {
       result.push_back(row.multipliers);
     }
   }
-  VLOG(1) << "#candidates: " << result.size() << " / " << rows_.size();
+  VLOG(2) << "#candidates: " << result.size() << " / " << rows_.size();
   return result;
 }
 

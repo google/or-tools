@@ -233,9 +233,9 @@ public class FillAPix
     public static void Main(String[] args)
     {
         String file = "";
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            file = args[0];
+            file = args[1];
             readFile(file);
         }
         else

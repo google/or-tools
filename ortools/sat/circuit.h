@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,17 +16,20 @@
 
 #include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/rev.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -92,9 +95,6 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   std::vector<Literal> watch_index_to_literal_;
   std::vector<std::vector<Arc>> watch_index_to_arcs_;
 
-  // Index in trail_ up to which we propagated all the assigned Literals.
-  int propagation_trail_index_ = 0;
-
   // Current partial chains of arc that are present.
   std::vector<int> next_;  // -1 if not assigned yet.
   std::vector<int> prev_;  // -1 if not assigned yet.
@@ -115,6 +115,47 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   std::vector<bool> in_current_path_;
 
   DISALLOW_COPY_AND_ASSIGN(CircuitPropagator);
+};
+
+// Enforce the fact that there is no cycle in the given directed graph.
+class NoCyclePropagator : PropagatorInterface, ReversibleInterface {
+ public:
+  NoCyclePropagator(int num_nodes, const std::vector<int>& tails,
+                    const std::vector<int>& heads,
+                    const std::vector<Literal>& literals, Model* model);
+
+  void SetLevel(int level) final;
+  bool Propagate() final;
+  bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
+
+ private:
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+  const int num_nodes_;
+  Trail* trail_;
+  const VariablesAssignment& assignment_;
+
+  // The set of all watched literals and to what arc they correspond.
+  std::vector<Literal> watch_index_to_literal_;
+  std::vector<std::vector<std::pair<int, int>>> watch_index_to_arcs_;
+
+  // This will only contains the subgraph with all the arc at true.
+  // We maintain it incrementally and update this on SetLevel()/Propagate().
+  std::vector<std::vector<int>> graph_;
+  std::vector<std::vector<Literal>> graph_literals_;
+
+  // For now we redo a strongly connected component on the graph formed of arcs
+  // at one.
+  //
+  // TODO(user): code a true algo.
+  std::vector<std::vector<int>> components_;
+  StronglyConnectedComponentsFinder<int, std::vector<std::vector<int>>,
+                                    std::vector<std::vector<int>>>
+      ssc_;
+
+  // SAT incremental state.
+  std::vector<int> level_ends_;
+  std::vector<int> touched_nodes_;
 };
 
 // This constraint ensures that the graph is a covering of all nodes by
@@ -165,12 +206,13 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
 // Changes the node indices so that we get a graph in [0, num_nodes) where every
 // node has at least one incoming or outgoing arc. Returns the number of nodes.
 template <class IntContainer>
-int ReindexArcs(IntContainer* tails, IntContainer* heads) {
+int ReindexArcs(IntContainer* tails, IntContainer* heads,
+                absl::flat_hash_map<int, int>* mapping_output = nullptr) {
   const int num_arcs = tails->size();
   if (num_arcs == 0) return 0;
 
   // Put all nodes in a set.
-  std::set<int> nodes;
+  absl::btree_set<int> nodes;
   for (int arc = 0; arc < num_arcs; ++arc) {
     nodes.insert((*tails)[arc]);
     nodes.insert((*heads)[arc]);
@@ -188,6 +230,11 @@ int ReindexArcs(IntContainer* tails, IntContainer* heads) {
     (*tails)[arc] = mapping[(*tails)[arc]];
     (*heads)[arc] = mapping[(*heads)[arc]];
   }
+
+  if (mapping_output != nullptr) {
+    *mapping_output = std::move(mapping);
+  }
+
   return nodes.size();
 }
 

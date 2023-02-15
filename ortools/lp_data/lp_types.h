@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,12 +19,16 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <ostream>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 #include "ortools/base/basictypes.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/strong_integers.h"
 
 // We use typedefs as much as possible to later permit the usage of
 // types such as quad-doubles or rationals.
@@ -39,11 +43,11 @@ typedef int32_t Index;
 
 // ColIndex is the type for integers representing column/variable indices.
 // int32s are enough for handling even the largest problems.
-DEFINE_INT_TYPE(ColIndex, Index);
+DEFINE_STRONG_INDEX_TYPE(ColIndex);
 
 // RowIndex is the type for integers representing row/constraint indices.
 // int32s are enough for handling even the largest problems.
-DEFINE_INT_TYPE(RowIndex, Index);
+DEFINE_STRONG_INDEX_TYPE(RowIndex);
 
 // Get the ColIndex corresponding to the column # row.
 inline ColIndex RowToColIndex(RowIndex row) { return ColIndex(row.value()); }
@@ -61,9 +65,9 @@ inline Index RowToIntIndex(RowIndex row) { return row.value(); }
 // An entry in a sparse matrix is a pair (row, value) for a given known column.
 // See classes SparseColumn and SparseMatrix.
 #if defined(__ANDROID__)
-DEFINE_INT_TYPE(EntryIndex, int32_t);
+DEFINE_STRONG_INDEX_TYPE(EntryIndex);
 #else
-DEFINE_INT_TYPE(EntryIndex, int64_t);
+DEFINE_STRONG_INT64_TYPE(EntryIndex);
 #endif
 
 static inline double ToDouble(double f) { return f; }
@@ -78,13 +82,13 @@ static inline double ToDouble(long double f) { return static_cast<double>(f); }
 typedef double Fractional;
 
 // Range max for type Fractional. DBL_MAX for double for example.
-const double kRangeMax = std::numeric_limits<double>::max();
+constexpr double kRangeMax = std::numeric_limits<double>::max();
 
 // Infinity for type Fractional.
-const double kInfinity = std::numeric_limits<double>::infinity();
+constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
 // Epsilon for type Fractional, i.e. the smallest e such that 1.0 + e != 1.0 .
-const double kEpsilon = std::numeric_limits<double>::epsilon();
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // Returns true if the given value is finite, that means for a double:
 // not a NaN and not +/- infinity.
@@ -95,8 +99,8 @@ inline bool IsFinite(Fractional value) {
 // Constants to represent invalid row or column index.
 // It is important that their values be the same because during transposition,
 // one needs to be converted into the other.
-const RowIndex kInvalidRow(-1);
-const ColIndex kInvalidCol(-1);
+constexpr RowIndex kInvalidRow(-1);
+constexpr ColIndex kInvalidCol(-1);
 
 // Different statuses for a given problem.
 enum class ProblemStatus : int8_t {
@@ -247,6 +251,33 @@ inline std::ostream& operator<<(std::ostream& os, ConstraintStatus status) {
 // Returns the ConstraintStatus corresponding to a given VariableStatus.
 ConstraintStatus VariableToConstraintStatus(VariableStatus status);
 
+// A span of `T`, indexed by a strict int type `IntType`. Intended to be passed
+// by value. See b/259677543.
+template <typename IntType, typename T>
+class StrictITISpan {
+ public:
+  using IndexType = IntType;
+  using reference = T&;
+  using value_type = T;
+
+  StrictITISpan(T* data, IntType size) : data_(data), size_(size) {}
+
+  reference operator[](IntType i) const {
+    return data_[static_cast<size_t>(i.value())];
+  }
+
+  IntType size() const { return size_; }
+
+  // TODO(user): This should probably be a strictly typed iterator too, but
+  // `StrongVector::begin()` already suffers from this problem.
+  auto begin() const { return data_; }
+  auto end() const { return data_ + static_cast<size_t>(size_.value()); }
+
+ private:
+  T* const data_;
+  const IntType size_;
+};
+
 // Wrapper around an ITIVector to allow (and enforce) creation/resize/assign
 // to use the index type for the size.
 //
@@ -257,6 +288,9 @@ class StrictITIVector : public absl::StrongVector<IntType, T> {
  public:
   typedef IntType IndexType;
   typedef absl::StrongVector<IntType, T> ParentType;
+  using View = StrictITISpan<IntType, T>;
+  using ConstView = StrictITISpan<IntType, const T>;
+
 // This allows for brace initialization, which is really useful in tests.
 // It is not 'explicit' by design, so one can do vector = {...};
 #if !defined(__ANDROID__) && (!defined(_MSC_VER) || (_MSC_VER >= 1800))
@@ -280,6 +314,10 @@ class StrictITIVector : public absl::StrongVector<IntType, T> {
   IntType size() const { return IntType(ParentType::size()); }
 
   IntType capacity() const { return IntType(ParentType::capacity()); }
+
+  View view() { return View(ParentType::data(), size()); }
+  ConstView const_view() const { return ConstView(ParentType::data(), size()); }
+  ConstView view() const { return const_view(); }
 
   // Since calls to resize() must use a default value, we introduce a new
   // function for convenience to reduce the size of a vector.

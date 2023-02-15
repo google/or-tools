@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,7 +21,6 @@ option csharp_namespace = "Google.OrTools.Sat";
 option java_package = "com.google.ortools.sat";
 option java_multiple_files = true;
 option java_outer_classname = "CpModelProtobuf";
-
 
 // An integer variable.
 //
@@ -110,18 +109,18 @@ message ElementConstraintProto {
   repeated int32 vars = 3;
 }
 
-// This "special" constraint not only enforces (start + size == end) and (size
-// >= 0) but can also be referred by other constraints using this "interval"
-// concept.
+// This is not really a constraint. It is there so it can be referred by other
+// constraints using this "interval" concept.
+//
+// IMPORTANT: For now, this constraint do not enforce any relations on the
+// components, and it is up to the client to add in the model:
+// - enforcement => start + size == end.
+// - enforcement => size >= 0  // Only needed if size is not already >= 0.
+//
+// IMPORTANT: For now, we just support affine relation. We could easily
+// create an intermediate variable to support full linear expression, but this
+// isn't done currently.
 message IntervalConstraintProto {
-  // IMPORTANT: For now, this constraint do not enforce any relations on the
-  // view, and a linear constraint must be added together with this to enforce
-  // enforcement => start + size == end. An enforcement => size >=0 might also
-  // be needed.
-  //
-  // IMPORTANT: For now, we just support affine relation. We could easily
-  // create an intermediate variable to support full linear expression, but this
-  // isn't done currently.
   LinearExpressionProto start = 4;
   LinearExpressionProto end = 5;
   LinearExpressionProto size = 6;
@@ -150,6 +149,10 @@ message NoOverlap2DConstraintProto {
 // a capacity. Note that intervals are interpreted as [start, end) and as
 // such intervals like [2,3) and [3,4) do not overlap for the point of view of
 // this constraint. Moreover, intervals of size zero are ignored.
+//
+// All demands must not contain any negative value in their domains. This is
+// checked at validation. The capacity can currently contains negative values,
+// but it will be propagated to >= 0 right away.
 message CumulativeConstraintProto {
   LinearExpressionProto capacity = 1;
   repeated int32 intervals = 2;
@@ -159,11 +162,12 @@ message CumulativeConstraintProto {
 // Maintain a reservoir level within bounds. The water level starts at 0, and at
 // any time, it must be within [min_level, max_level].
 //
-// If the variable actives[i] is true, and if the variable times[i] is assigned
-// a value t, then the current level changes by level_changes[i] (which is
-// constant) at the time t. Therefore, at any time t:
+// If the variable active_literals[i] is true, and if the expression
+// time_exprs[i] is assigned a value t, then the current level changes by
+// level_changes[i] at the time t. Therefore, at any time t:
 //
-// sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+// sum(level_changes[i] * active_literals[i] if time_exprs[i] <= t)
+//   in [min_level, max_level]
 //
 // Note that min level must be <= 0, and the max level must be >= 0. Please use
 // fixed level_changes to simulate initial state.
@@ -175,8 +179,10 @@ message ReservoirConstraintProto {
   int64 min_level = 1;
   int64 max_level = 2;
   repeated LinearExpressionProto time_exprs = 3;  // affine expressions.
-  repeated int64 level_changes = 4;               // constants, can be negative.
+  // Currently, we only support constant level changes.
+  repeated LinearExpressionProto level_changes = 6;  // affine expressions.
   repeated int32 active_literals = 5;
+  reserved 4;
 }
 
 // The circuit constraint is defined on a graph where the arc presence are
@@ -463,15 +469,20 @@ message CpObjectiveProto {
   // TODO(user): Put the error bounds we computed instead?
   bool scaling_was_exact = 6;
 
-  // Internal field. This is only useful for inner_objective_lower_bound, It
-  // should never be set in most cases, so we have the simple:
-  //   sum(coefficients[i] * objective_vars[i]) >= inner_objective_lower_bound.
+  // Internal fields to recover a bound on the original integer objective from
+  // the presolved one. Basically, initially the integer objective fit on an
+  // int64 and is in [Initial_lb, Initial_ub]. During presolve, we might change
+  // the linear expression to have a new domain [Presolved_lb, Presolved_ub]
+  // that will also always fit on an int64.
   //
-  // This is similar to offset/scaling_factor but allows to stay in the integer
-  // domain. Note that the formula is not the same than for the floating point
-  // objective. If this is set, we have
-  //    linear_expression * scaling + offset >= inner_objective_lower_bound
-  int64 integer_offset = 7;
+  // The two domain will always be linked with an affine transformation between
+  // the two of the form:
+  //   old = (new + before_offset) * integer_scaling_factor + after_offset.
+  // Note that we use both offsets to always be able to do the computation while
+  // staying in the int64 domain. In particular, the after_offset will always
+  // be in (-integer_scaling_factor, integer_scaling_factor).
+  int64 integer_before_offset = 7;
+  int64 integer_after_offset = 9;
   int64 integer_scaling_factor = 8;
 }
 

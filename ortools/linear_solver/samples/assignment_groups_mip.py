@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # [START program]
 """Solve assignment problem for given group of workers."""
 # [START import]
@@ -35,6 +36,8 @@ def main():
         [17, 39, 103, 64, 61, 92],
         [101, 45, 83, 59, 92, 27],
     ]
+    num_workers = len(costs)
+    num_tasks = len(costs[0])
     # [END data]
 
     # Allowed groups of workers:
@@ -62,54 +65,14 @@ def main():
         [8, 10],
         [8, 11],
     ]
-
-    allowed_groups = []
-    for workers_g1 in group1:
-        for workers_g2 in group2:
-            for workers_g3 in group3:
-                allowed_groups.append(workers_g1 + workers_g2 + workers_g3)
     # [END allowed_groups]
 
-    # [START solves]
-    min_val = 1e6
-    total_time = 0
-    for group in allowed_groups:
-        res = assignment(costs, group)
-        status_tmp = res[0]
-        solver_tmp = res[1]
-        x_tmp = res[2]
-        if status_tmp == pywraplp.Solver.OPTIMAL or status_tmp == pywraplp.Solver.FEASIBLE:
-            if solver_tmp.Objective().Value() < min_val:
-                min_val = solver_tmp.Objective().Value()
-                min_group = group
-                min_solver = solver_tmp
-                min_x = x_tmp
-        total_time += solver_tmp.WallTime()
-    # [END solves]
-
-    # Print best solution.
-    # [START print_solution]
-    if min_val < 1e6:
-        print(f'Total cost = {min_solver.Objective().Value()}\n')
-        num_tasks = len(costs[0])
-        for worker in min_group:
-            for task in range(num_tasks):
-                if min_x[worker, task].solution_value() > 0.5:
-                    print(f'Worker {worker} assigned to task {task}.' +
-                          f' Cost = {costs[worker][task]}')
-    else:
-        print('No solution found.')
-    print(f'Time = {total_time} ms')
-    # [END print_solution]
-
-
-def assignment(costs, group):
-    """Solve the assignment problem for one allowed group combinaison."""
-    num_tasks = len(costs[1])
-    # Solver
+    # Solver.
     # [START solver]
     # Create the mip solver with the SCIP backend.
     solver = pywraplp.Solver.CreateSolver('SCIP')
+    if not solver:
+        return
     # [END solver]
 
     # Variables
@@ -117,7 +80,7 @@ def assignment(costs, group):
     # x[worker, task] is an array of 0-1 variables, which will be 1
     # if the worker is assigned to the task.
     x = {}
-    for worker in group:
+    for worker in range(num_workers):
         for task in range(num_tasks):
             x[worker, task] = solver.BoolVar(f'x[{worker},{task}]')
     # [END variables]
@@ -125,19 +88,70 @@ def assignment(costs, group):
     # Constraints
     # [START constraints]
     # The total size of the tasks each worker takes on is at most total_size_max.
-    for worker in group:
+    for worker in range(num_workers):
         solver.Add(
             solver.Sum([x[worker, task] for task in range(num_tasks)]) <= 1)
 
     # Each task is assigned to exactly one worker.
     for task in range(num_tasks):
-        solver.Add(solver.Sum([x[worker, task] for worker in group]) == 1)
+        solver.Add(
+            solver.Sum([x[worker, task] for worker in range(num_workers)]) == 1)
     # [END constraints]
+
+    # [START assignments]
+    # Create variables for each worker, indicating whether they work on some task.
+    work = {}
+    for worker in range(num_workers):
+        work[worker] = solver.BoolVar(f'work[{worker}]')
+
+    for worker in range(num_workers):
+        solver.Add(work[worker] == solver.Sum(
+            [x[worker, task] for task in range(num_tasks)]))
+
+    # Group1
+    constraint_g1 = solver.Constraint(1, 1)
+    for i in range(len(group1)):
+        # a*b can be transformed into 0 <= a + b - 2*p <= 1 with p in [0,1]
+        # p is True if a AND b, False otherwise
+        constraint = solver.Constraint(0, 1)
+        constraint.SetCoefficient(work[group1[i][0]], 1)
+        constraint.SetCoefficient(work[group1[i][1]], 1)
+        p = solver.BoolVar(f'g1_p{i}')
+        constraint.SetCoefficient(p, -2)
+
+        constraint_g1.SetCoefficient(p, 1)
+
+    # Group2
+    constraint_g2 = solver.Constraint(1, 1)
+    for i in range(len(group2)):
+        # a*b can be transformed into 0 <= a + b - 2*p <= 1 with p in [0,1]
+        # p is True if a AND b, False otherwise
+        constraint = solver.Constraint(0, 1)
+        constraint.SetCoefficient(work[group2[i][0]], 1)
+        constraint.SetCoefficient(work[group2[i][1]], 1)
+        p = solver.BoolVar(f'g2_p{i}')
+        constraint.SetCoefficient(p, -2)
+
+        constraint_g2.SetCoefficient(p, 1)
+
+    # Group3
+    constraint_g3 = solver.Constraint(1, 1)
+    for i in range(len(group3)):
+        # a*b can be transformed into 0 <= a + b - 2*p <= 1 with p in [0,1]
+        # p is True if a AND b, False otherwise
+        constraint = solver.Constraint(0, 1)
+        constraint.SetCoefficient(work[group3[i][0]], 1)
+        constraint.SetCoefficient(work[group3[i][1]], 1)
+        p = solver.BoolVar(f'g3_p{i}')
+        constraint.SetCoefficient(p, -2)
+
+        constraint_g3.SetCoefficient(p, 1)
+    # [END assignments]
 
     # Objective
     # [START objective]
     objective_terms = []
-    for worker in group:
+    for worker in range(num_workers):
         for task in range(num_tasks):
             objective_terms.append(costs[worker][task] * x[worker, task])
     solver.Minimize(solver.Sum(objective_terms))
@@ -148,7 +162,18 @@ def assignment(costs, group):
     status = solver.Solve()
     # [END solve]
 
-    return [status, solver, x]
+    # Print solution.
+    # [START print_solution]
+    if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
+        print(f'Total cost = {solver.Objective().Value()}\n')
+        for worker in range(num_workers):
+            for task in range(num_tasks):
+                if x[worker, task].solution_value() > 0.5:
+                    print(f'Worker {worker} assigned to task {task}.' +
+                          f' Cost: {costs[worker][task]}')
+    else:
+        print('No solution found.')
+    # [END print_solution]
 
 
 if __name__ == '__main__':

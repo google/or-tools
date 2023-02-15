@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #define OR_TOOLS_BASE_RAW_LOGGING_H_
 
 #include "ortools/base/log_severity.h"
+#include "ortools/base/logging_export.h"
 #include "ortools/base/vlog_is_on.h"
 
 namespace google {
@@ -28,7 +29,7 @@ namespace google {
 // * it uses an explicit format and arguments list
 // * it will silently chop off really long message strings
 // Usage example:
-//   RAW_LOG(ERROR, "Failed foo with %i: %s", status, error);
+//   ABSL_RAW_LOG(ERROR, "Failed foo with %i: %s", status, error);
 //   RAW_VLOG(3, "status is %i", status);
 // These will print an almost standard log lines like this to stderr only:
 //   E0821 211317 file.cc:123] RAW: Failed foo with 22: bad_file
@@ -101,27 +102,27 @@ namespace google {
 // Similar to CHECK(condition) << message,
 // but for low-level modules: we use only RAW_LOG that does not allocate memory.
 // We do not want to provide args list here to encourage this usage:
-//   if (!cond)  RAW_LOG(FATAL, "foo ...", hard_to_compute_args);
+//   if (!cond)  ABSL_RAW_LOG(FATAL, "foo ...", hard_to_compute_args);
 // so that the args are not computed when not needed.
-#define RAW_CHECK(condition, message)                             \
-  do {                                                            \
-    if (!(condition)) {                                           \
-      RAW_LOG(FATAL, "Check %s failed: %s", #condition, message); \
-    }                                                             \
+#define ABSL_RAW_CHECK(condition, message)                             \
+  do {                                                                 \
+    if (!(condition)) {                                                \
+      ABSL_RAW_LOG(FATAL, "Check %s failed: %s", #condition, message); \
+    }                                                                  \
   } while (0)
 
 // Debug versions of RAW_LOG and RAW_CHECK
 #ifndef NDEBUG
 
 #define RAW_DLOG(severity, ...) RAW_LOG(severity, __VA_ARGS__)
-#define RAW_DCHECK(condition, message) RAW_CHECK(condition, message)
+#define RAW_DCHECK(condition, message) ABSL_RAW_CHECK(condition, message)
 
 #else  // NDEBUG
 
 #define RAW_DLOG(severity, ...) \
   while (false) RAW_LOG(severity, __VA_ARGS__)
 #define RAW_DCHECK(condition, message) \
-  while (false) RAW_CHECK(condition, message)
+  while (false) ABSL_RAW_CHECK(condition, message)
 
 #endif  // NDEBUG
 

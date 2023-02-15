@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,9 @@ syntax = "proto2";
 
 package operations_research.bop;
 
+option java_package = "com.google.ortools.bop";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Bop";
 // Method used to optimize a solution in Bop.
 //
 // NEXT TAG: 16
@@ -130,7 +133,6 @@ message BopParameters {
 
   // Use Large Neighborhood Search based on the LP relaxation.
   optional bool use_lp_lns = 12 [default = true];
-
 
   // Whether we use sat propagation to choose the lns neighbourhood.
   optional bool use_sat_to_choose_lns_neighbourhood = 15 [default = true];
@@ -270,7 +272,6 @@ message BopParameters {
   // if num_bop_solvers_used_by_decomposition is greater than 1 so that the
   // overhead can be "absorbed" by the other threads.
   optional double decomposed_problem_min_time_in_seconds = 36 [default = 0.0];
-
 
   // The first solutions based on guided SAT will work in chunk of that many
   // conflicts at the time. This allows to simulate parallelism between the

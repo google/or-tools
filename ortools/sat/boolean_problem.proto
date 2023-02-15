@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -101,8 +101,8 @@ message LinearBooleanProblem {
   // literals +(i + 1) or -(i + 1). This is optional and can be left empty.
   repeated string var_names = 6;
 
-  // Stores an assignement of the problem variables. That may be an initial
-  // feasible solution, just a partial assignement or the optimal solution.
+  // Stores an assignment of the problem variables. That may be an initial
+  // feasible solution, just a partial assignment or the optimal solution.
   optional BooleanAssignment assignment = 7;
 
   // Hack: When converting a wcnf formulat to a LinearBooleanProblem, extra

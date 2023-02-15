@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,13 +23,27 @@
 #ifndef OR_TOOLS_SAT_INTEGER_SEARCH_H_
 #define OR_TOOLS_SAT_INTEGER_SEARCH_H_
 
+#include <stdint.h>
+
+#include <functional>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
+#include "absl/time/time.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/probing.h"
 #include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -73,6 +87,10 @@ struct SearchHeuristics {
   // These are used by ConfigureSearchHeuristics() to fill the policies above.
   std::function<BooleanOrIntegerLiteral()> fixed_search = nullptr;
   std::function<BooleanOrIntegerLiteral()> hint_search = nullptr;
+
+  // This is currently only filled and used by PARTIAL_FIXED_SEARCH.
+  // It contains only the part specified in the input cp model proto.
+  std::function<BooleanOrIntegerLiteral()> user_search = nullptr;
 
   // Some search strategy need to take more than one decision at once. They can
   // set this function that will be called on the next decision. It will be
@@ -230,8 +248,7 @@ std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
 // of integer variables.
 SatSolver::Status ContinuousProbing(
     const std::vector<BooleanVariable>& bool_vars,
-    const std::vector<IntegerVariable>& int_vars,
-    const std::function<void()>& feasible_solution_observer, Model* model);
+    const std::vector<IntegerVariable>& int_vars, Model* model);
 
 // An helper class to share the code used by the different kind of search.
 class IntegerSearchHelper {
@@ -256,9 +273,65 @@ class IntegerSearchHelper {
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   ImpliedBounds* implied_bounds_;
+  ProductDetector* product_detector_;
   TimeLimit* time_limit_;
   PseudoCosts* pseudo_costs_;
   IntegerVariable objective_var_ = kNoIntegerVariable;
+};
+
+// This class will loop continuously on model variables and try to probe/shave
+// its bounds.
+class ContinuousProber {
+ public:
+  // The model_proto is just used to construct the lists of variable to probe.
+  ContinuousProber(const CpModelProto& model_proto, Model* model);
+
+  // Starts or continues probing variables and their bounds.
+  // It returns:
+  //   - SatSolver::INFEASIBLE if the problem is proven infeasible.
+  //   - SatSolver::FEASIBLE when a feasible solution is found
+  //   - SatSolver::LIMIT_REACHED if the limit stored in the model is reached
+  // Calling Probe() after it has returned FEASIBLE or LIMIT_REACHED will resume
+  // probing from its previous state.
+  SatSolver::Status Probe();
+
+ private:
+  bool ImportFromSharedClasses();
+  SatSolver::Status ShaveLiteral(Literal literal);
+  bool ReportStatus(const SatSolver::Status status);
+  void LogStatistics();
+
+  // Variables to probe.
+  std::vector<BooleanVariable> bool_vars_;
+  std::vector<IntegerVariable> int_vars_;
+
+  // Model object.
+  Model* model_;
+  SatSolver* sat_solver_;
+  TimeLimit* time_limit_;
+  Trail* trail_;
+  IntegerTrail* integer_trail_;
+  IntegerEncoder* encoder_;
+  const SatParameters parameters_;
+  LevelZeroCallbackHelper* level_zero_callbacks_;
+  Prober* prober_;
+  SharedResponseManager* shared_response_manager_;
+  SharedBoundsManager* shared_bounds_manager_;
+
+  // Statistics.
+  int64_t num_literals_probed_ = 0;
+  int64_t num_bounds_shaved_ = 0;
+  int64_t num_bounds_tried_ = 0;
+
+  // Current state of the probe.
+  double active_limit_;
+  // TODO(user): use 2 vector<bool>.
+  absl::flat_hash_set<BooleanVariable> probed_bool_vars_;
+  absl::flat_hash_set<LiteralIndex> probed_literals_;
+  int iteration_ = 1;
+  absl::Time last_logging_time_;
+  int current_int_var_ = 0;
+  int current_bool_var_ = 0;
 };
 
 }  // namespace sat

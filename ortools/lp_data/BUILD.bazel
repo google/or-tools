@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 package(default_visibility = ["//visibility:public"])
 
 config_setting(
@@ -38,9 +51,9 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -63,9 +76,9 @@ cc_library(
     deps = [
         ":base",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -122,10 +135,10 @@ cc_library(
         ":sparse_column",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:fp_utils",
         "//ortools/util:return_macros",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -173,10 +186,10 @@ cc_library(
         ":sparse",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/util:fp_utils",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
@@ -227,6 +240,7 @@ cc_library(
     srcs = ["lp_parser.cc"],
     hdrs = ["lp_parser.h"],
     copts = SAFE_FP_CODE,
+    defines = ["USE_LP_PARSER"],
     deps = [
         ":base",
         ":lp_data",
@@ -290,15 +304,14 @@ cc_library(
         ":lp_print_utils",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:filelineiter",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
         "//ortools/base:map_util",
         "//ortools/base:protobuf_util",
         "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/base:strong_vector",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/util:filelineiter",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:node_hash_set",
         "@com_google_absl//absl/status",

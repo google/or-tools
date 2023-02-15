@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,69 +16,69 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using Xunit;
 using Google.OrTools.ConstraintSolver;
 
-namespace Google.OrTools.Tests
+public class Issue22Test
 {
-    public class Issue22Test
+    private static long Solve(long num_buses_check = 0)
     {
-        private long Solve(long num_buses_check = 0)
+        ConstraintSolverParameters sPrm = Solver.DefaultSolverParameters();
+        sPrm.CompressTrail = 0;
+        Solver solver = new Solver("OrTools", sPrm);
+
+        // this works
+        // IntVar[,] x = solver.MakeIntVarMatrix(2,2, new int[] {-2,0,1,2}, "x");
+
+        // this doesn't work
+        IntVar[,] x = solver.MakeIntVarMatrix(2, 2, new int[] { 0, 1, 2 }, "x");
+
+        for (int w = 0; w < 2; w++)
         {
-            ConstraintSolverParameters sPrm = Solver.DefaultSolverParameters();
-            sPrm.CompressTrail = 0;
-            Solver solver = new Solver("OrTools", sPrm);
-
-            // this works
-            // IntVar[,] x = solver.MakeIntVarMatrix(2,2, new int[] {-2,0,1,2}, "x");
-
-            // this doesn't work
-            IntVar[,] x = solver.MakeIntVarMatrix(2, 2, new int[] { 0, 1, 2 }, "x");
-
-            for (int w = 0; w < 2; w++)
+            IntVar[] b = new IntVar[2];
+            for (int i = 0; i < 2; i++)
             {
-                IntVar[] b = new IntVar[2];
+                b[i] = solver.MakeIsEqualCstVar(x[w, i], 0);
+            }
+            solver.Add(solver.MakeSumGreaterOrEqual(b, 2));
+        }
+
+        IntVar[] x_flat = x.Flatten();
+        DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+        solver.NewSearch(db);
+        while (solver.NextSolution())
+        {
+            Console.WriteLine("x: ");
+            for (int j = 0; j < 2; j++)
+            {
+                Console.Write("worker" + (j + 1).ToString() + ":");
                 for (int i = 0; i < 2; i++)
                 {
-                    b[i] = solver.MakeIsEqualCstVar(x[w, i], 0);
+                    Console.Write(" {0,2} ", x[j, i].Value());
                 }
-                solver.Add(solver.MakeSumGreaterOrEqual(b, 2));
+                Console.Write("\n");
             }
-
-            IntVar[] x_flat = x.Flatten();
-            DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
-            solver.NewSearch(db);
-            while (solver.NextSolution())
-            {
-                Console.WriteLine("x: ");
-                for (int j = 0; j < 2; j++)
-                {
-                    Console.Write("worker" + (j + 1).ToString() + ":");
-                    for (int i = 0; i < 2; i++)
-                    {
-                        Console.Write(" {0,2} ", x[j, i].Value());
-                    }
-                    Console.Write("\n");
-                }
-                Console.WriteLine("End   at---->" + DateTime.Now);
-            }
-
-            Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-            Console.WriteLine("WallTime: {0}ms", solver.WallTime());
-            Console.WriteLine("Failures: {0}", solver.Failures());
-            Console.WriteLine("Branches: {0} ", solver.Branches());
-
-            solver.EndSearch();
-            return 1;
+            Console.WriteLine("End   at---->" + DateTime.Now);
         }
 
-        [Fact]
-        public void InitialPropagateTest()
-        {
-            Console.WriteLine("Check for minimum number of buses: ");
-            long num_buses = Solve();
-            Console.WriteLine("\n... got {0} as minimal value.", num_buses);
-            Console.WriteLine("\nAll solutions: ", num_buses);
-        }
+        Console.WriteLine("\nSolutions: {0}", solver.Solutions());
+        Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+        Console.WriteLine("Failures: {0}", solver.Failures());
+        Console.WriteLine("Branches: {0} ", solver.Branches());
+
+        solver.EndSearch();
+        return 1;
     }
-} // namespace Google.OrTools.Tests
+
+    public static void InitialPropagateTest()
+    {
+        Console.WriteLine("Check for minimum number of buses: ");
+        long num_buses = Solve();
+        Console.WriteLine("\n... got {0} as minimal value.", num_buses);
+        Console.WriteLine("\nAll solutions: ", num_buses);
+    }
+
+    static void Main()
+    {
+        InitialPropagateTest();
+    }
+}

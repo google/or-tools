@@ -1,4 +1,18 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -45,15 +59,26 @@ cc_library(
 )
 
 cc_library(
+    name = "flat_matrix",
+    hdrs = ["flat_matrix.h"],
+    deps = [
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "vector_map",
     hdrs = ["vector_map.h"],
-    deps = ["//ortools/base:map_util"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
 )
 
 cc_library(
     name = "random_engine",
     hdrs = ["random_engine.h"],
-    deps = ["//ortools/base:map_util"],
+    deps = [],
 )
 
 cc_library(
@@ -170,12 +195,22 @@ cc_library(
 )
 
 cc_library(
+    name = "string_util",
+    srcs = ["string_util.cc"],
+    hdrs = ["string_util.h"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "tuple_set",
     hdrs = ["tuple_set.h"],
     deps = [
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:map_util",
     ],
 )
 
@@ -299,6 +334,12 @@ cc_proto_library(
     deps = [":optional_boolean_proto"],
 )
 
+py_proto_library(
+    name = "optional_boolean_py_pb2",
+    srcs = ["optional_boolean.proto"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "functions_swig_helpers",
     hdrs = [
@@ -360,39 +401,16 @@ cc_library(
     ],
 )
 
-#cc_library(
-#    name = "tsplib_parser",
-#    srcs = ["tsplib_parser.cc"],
-#    hdrs = ["tsplib_parser.h"],
-#    visibility = ["//visibility:public"],
-#    deps = [
-#        "@com_google_absl//absl/strings",
-#        ":filelineiter",
-#        "//ortools/base",
-#        "//ortools/base:file",
-#        "//ortools/base:file:path",
-#        "//ortools/base:map_util",
-#        "//ortools/base:mathutil",
-#        "/@com_google_absl//absl/strings",
-#        "//file/zipfile",
-#        "@com_google_re2//:re2",
-#    ],
-#)
-
-#cc_library(
-#    name = "pdtsp_parser",
-#    srcs = ["pdtsp_parser.cc"],
-#    hdrs = ["pdtsp_parser.h"],
-#    visibility = ["//visibility:public"],
-#    deps = [
-#        "@com_google_absl//absl/strings",
-#        ":filelineiter",
-#        "//ortools/base",
-#        "//ortools/base:file",
-#        "//ortools/base:file:path",
-#        "//ortools/base:mathutil",
-#    ],
-#)
+cc_library(
+    name = "filelineiter",
+    hdrs = ["filelineiter.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
 
 #cc_library(
 #    name = "bp_parser",
@@ -406,6 +424,16 @@ cc_library(
 #        "//ortools/base:file",
 #    ],
 #)
+
+cc_library(
+    name = "qap_reader",
+    srcs = ["qap_reader.cc"],
+    hdrs = ["qap_reader.h"],
+    deps = [
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/strings",
+    ],
+)
 
 cc_library(
     name = "sort",
@@ -424,5 +452,53 @@ cc_library(
     deps = [
         "//ortools/base",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "testing_utils",
+    hdrs = ["testing_utils.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "strong_integers",
+    hdrs = ["strong_integers.h"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "status_macros",
+    hdrs = ["status_macros.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "@com_google_absl//absl/status",
+    ],
+)
+
+cc_library(
+    name = "fp_roundtrip_conv",
+    srcs = ["fp_roundtrip_conv.cc"],
+    hdrs = ["fp_roundtrip_conv.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_builder",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "parse_proto",
+    srcs = ["parse_proto.cc"],
+    hdrs = ["parse_proto.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
     ],
 )

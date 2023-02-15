@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -195,18 +195,48 @@ class PairRelocateOperator : public PathOperator {
   static constexpr int kPairSecondNodeDestination = 2;
 };
 
+/// Operator which moves a pair of nodes to another position where the first
+/// node of the pair is directly before the second node.
+class GroupPairAndRelocateOperator : public PathOperator {
+ public:
+  GroupPairAndRelocateOperator(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
+      std::function<int(int64_t)> start_empty_path_class,
+      const RoutingIndexPairs& index_pairs);
+  ~GroupPairAndRelocateOperator() override {}
+
+  bool MakeNeighbor() override;
+  std::string DebugString() const override { return "GroupPairAndRelocate"; }
+};
+
+/// Operator which moves a pair of nodes to another position where the first
+/// node of the pair must be before the second node on the same path.
+/// The default behavior of the operator is to insert the first node after the
+/// first node of another pair, and the second node after the other pair's
+/// second node. This results in a FIFO behavior. The behavior can be overridden
+/// for each path to enforce a LIFO behavior (the second node gets inserted
+/// before the other pair's second node). This is specified using the force_lifo
+/// callback which takes the start node of a path as argument; if the callback
+/// returns true then the LIFO behavior will be enforced, otherwise it's FIFO.
+// TODO(user): Add a version which inserts the first node before the other
+// pair's first node; there are many redundant neighbors if done blindly.
 class LightPairRelocateOperator : public PathOperator {
  public:
   LightPairRelocateOperator(const std::vector<IntVar*>& vars,
                             const std::vector<IntVar*>& secondary_vars,
                             std::function<int(int64_t)> start_empty_path_class,
-                            const RoutingIndexPairs& index_pairs);
+                            const RoutingIndexPairs& index_pairs,
+                            std::function<bool(int64_t)> force_lifo = nullptr);
   ~LightPairRelocateOperator() override {}
 
   bool MakeNeighbor() override;
   std::string DebugString() const override {
     return "LightPairRelocateOperator";
   }
+
+ private:
+  std::function<bool(int64_t)> force_lifo_;
 };
 
 /// Operator which exchanges the position of two pairs; for both pairs the first
@@ -518,6 +548,8 @@ class FilteredHeuristicCloseNodesLNSOperator
   }
 
  private:
+  void Initialize();
+
   void OnStart() override;
 
   bool IncrementPosition() override;
@@ -550,8 +582,10 @@ class FilteredHeuristicCloseNodesLNSOperator
   int current_node_;
   int last_node_;
   bool just_started_;
+  bool initialized_;
 
   std::vector<std::vector<int64_t>> close_nodes_;
+  const int num_close_nodes_;
   /// Keep track of changes when making a neighbor.
   std::vector<int64_t> new_nexts_;
   SparseBitset<> changed_nexts_;

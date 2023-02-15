@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #define OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 
 #include <iterator>
+#include <ostream>
 #include <set>
 #include <string>
 #include <utility>
@@ -371,6 +372,11 @@ class Domain {
    * For now we just intersect with the min/max possible value.
    */
   Domain PositiveDivisionBySuperset(const Domain& divisor) const;
+
+  /**
+   * Returns a superset of {x ∈ Int64, ∃ y ∈ D, x = y * y }.
+   */
+  Domain SquareSuperset() const;
 
   /**
    * Advanced usage. Given some \e implied information on this domain that is

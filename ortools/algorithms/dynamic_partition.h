@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -270,6 +271,35 @@ class MergingPartition {
 
   // Used transiently by KeepOnlyOneNodePerPart().
   std::vector<bool> tmp_part_bit_;
+};
+
+// A subset of the API of DynamicPartition without backtrack support. The
+// Refine() here is about twice as fast, but we have limited query support until
+// a batch ComputeElementsByPart() is called.
+class SimpleDynamicPartition {
+ public:
+  explicit SimpleDynamicPartition(int num_elements)
+      : part_of_(num_elements, 0),
+        size_of_part_(num_elements > 0 ? 1 : 0, num_elements) {}
+
+  int NumElements() const { return part_of_.size(); }
+  const int NumParts() const { return size_of_part_.size(); }
+  int PartOf(int element) const { return part_of_[element]; }
+  int SizeOfPart(int part) const { return size_of_part_[part]; }
+
+  void Refine(absl::Span<const int> distinguished_subset);
+
+  // This is meant to be called once after a bunch of Refine().
+  // The returned Span<> points into the given buffer which is re-initialized.
+  std::vector<absl::Span<const int>> GetParts(std::vector<int>* buffer);
+
+ private:
+  std::vector<int> part_of_;
+  std::vector<int> size_of_part_;
+
+  // Temp data. Always empty or all zero.
+  std::vector<int> temp_to_clean_;
+  std::vector<int> temp_data_by_part_;
 };
 
 // *** Implementation of inline methods of the above classes. ***

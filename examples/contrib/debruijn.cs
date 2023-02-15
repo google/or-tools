@@ -186,19 +186,19 @@ public class DeBruijn
         int n = 3;
         int m = 8;
 
-        if (args.Length > 0)
-        {
-            bbase = Convert.ToInt32(args[0]);
-        }
-
         if (args.Length > 1)
         {
-            n = Convert.ToInt32(args[1]);
+            bbase = Convert.ToInt32(args[1]);
         }
 
         if (args.Length > 2)
         {
-            m = Convert.ToInt32(args[2]);
+            n = Convert.ToInt32(args[2]);
+        }
+
+        if (args.Length > 3)
+        {
+            m = Convert.ToInt32(args[3]);
         }
 
         Solve(bbase, n, m);

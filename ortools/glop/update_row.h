@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 #define OR_TOOLS_GLOP_UPDATE_ROW_H_
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
@@ -50,10 +52,14 @@ class UpdateRow {
   // right away.
   void Invalidate();
 
+  // Computes the left inverse of the given unit row, and stores it in
+  // unit_row_left_inverse_. The result is computed only once if leaving_row do
+  // not change, this until the next Invalidate() call.
+  void ComputeUnitRowLeftInverse(RowIndex leaving_row);
+
   // Computes the relevant coefficients (See GetIsRelevantBitRow() in
-  // VariablesInfo) of the update row. The result is only computed once until
-  // the next Invalidate() call and calling this function more than once will
-  // have no effect until then.
+  // VariablesInfo) of the update row. The result is only computed once
+  // if leaving_row do not change, this until the next Invalidate() call.
   void ComputeUpdateRow(RowIndex leaving_row);
 
   // Returns the left inverse of the unit row as computed by the last call to
@@ -61,19 +67,26 @@ class UpdateRow {
   const ScatteredRow& GetUnitRowLeftInverse() const;
 
   // Returns true if ComputeUpdateRow() was called since the last Invalidate().
-  const bool IsComputed() const { return !compute_update_row_; }
+  const bool IsComputedFor(RowIndex leaving_row) const {
+    return update_row_computed_for_ == leaving_row;
+  }
 
   // Returns the update coefficients and non-zero positions corresponding to the
   // last call to ComputeUpdateRow().
+  //
+  // TODO(user): Consider returning a packed vector of coefficient parallel to
+  // GetNonZeroPositions() instead. It should be fast to compute and iteration
+  // later should be quicker.
   const DenseRow& GetCoefficients() const;
   const ColIndexVector& GetNonZeroPositions() const;
   const Fractional GetCoefficient(ColIndex col) const {
     return coefficient_[col];
   }
 
-  // This must be called after a call to ComputeUpdateRow(). It will fill
-  // all the non-relevant positions that where not filled by ComputeUpdateRow().
-  void RecomputeFullUpdateRow(RowIndex leaving_row);
+  // Computes the update row including all position and fill output with it.
+  // We only use this when ComputeUnitRowLeftInverse() has already been called
+  // and we CHECK that.
+  void ComputeFullUpdateRow(RowIndex leaving_row, DenseRow* output) const;
 
   // Sets the algorithm parameters.
   void SetParameters(const GlopParameters& parameters);
@@ -98,18 +111,13 @@ class UpdateRow {
   // the class state by calling Invalidate().
   const ScatteredRow& ComputeAndGetUnitRowLeftInverse(RowIndex leaving_row);
 
-  // Advanced usage. This has side effects and should be used with care.
-  //
-  // Computes the left inverse of the given unit row, and stores it in
-  // unit_row_left_inverse_.
-  void ComputeUnitRowLeftInverse(RowIndex leaving_row);
-
  private:
   // ComputeUpdateRow() does the common work and calls one of these functions
   // depending on the situation.
   void ComputeUpdatesRowWise();
   void ComputeUpdatesRowWiseHypersparse();
   void ComputeUpdatesColumnWise();
+  void ComputeUpdatesForSingleRow(ColIndex row_as_col);
 
   // Problem data that should be updated from outside.
   const CompactSparseMatrix& matrix_;
@@ -126,14 +134,15 @@ class UpdateRow {
   std::vector<ColIndex> unit_row_left_inverse_filtered_non_zeros_;
 
   // Holds the current update row data.
-  // TODO(user): Introduce a ScatteredSparseRow class?
+  // Note that non_zero_position_set_ is not always up to date.
   ColIndexVector non_zero_position_list_;
   DenseBitRow non_zero_position_set_;
   DenseRow coefficient_;
 
   // Boolean used to avoid recomputing many times the same thing.
   bool compute_update_row_;
-  RowIndex update_row_computed_for_;
+  RowIndex left_inverse_computed_for_ = kInvalidRow;
+  RowIndex update_row_computed_for_ = kInvalidRow;
 
   // Statistics about this class.
   struct Stats : public StatsGroup {

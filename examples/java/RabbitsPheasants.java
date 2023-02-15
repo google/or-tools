@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package com.google.ortools.java;
 
 import com.google.ortools.Loader;
@@ -19,7 +20,10 @@ import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
 import java.util.logging.Logger;
 
-/** Sample showing how to model using the constraint programming solver.*/
+/**
+ * Sample showing how to model using the constraint programming solver.
+ *
+ */
 public class RabbitsPheasants {
   private static Logger logger = Logger.getLogger(RabbitsPheasants.class.getName());
 
@@ -29,10 +33,8 @@ public class RabbitsPheasants {
    * seeing?
    */
   private static void solve(boolean traceSearch) {
-    ConstraintSolverParameters parameters = ConstraintSolverParameters.newBuilder()
-                                                .mergeFrom(Solver.defaultSolverParameters())
-                                                .setTraceSearch(traceSearch)
-                                                .build();
+    ConstraintSolverParameters parameters =
+        Solver.defaultSolverParameters().toBuilder().setTraceSearch(traceSearch).build();
     Solver solver = new Solver("RabbitsPheasants", parameters);
     IntVar rabbits = solver.makeIntVar(0, 100, "rabbits");
     IntVar pheasants = solver.makeIntVar(0, 100, "pheasants");

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 #ifndef OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
 #define OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
+
+#include <string>
+#include <vector>
 
 #include "ortools/base/logging.h"
 #include "ortools/glop/lu_factorization.h"
@@ -292,6 +295,9 @@ class BasisFactorization {
   // The deterministic time used by this class. It is incremented for each
   // solve and each factorization.
   double DeterministicTime() const;
+
+  // Returns the number of updates since last refactorization.
+  int NumUpdates() const { return num_updates_; }
 
  private:
   // Called by ForceRefactorization() or Refactorize() or Initialize().

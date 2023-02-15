@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,10 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
+#include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "ortools/base/file.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -26,6 +29,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -35,67 +39,45 @@ namespace sat {
 // See http://www.swig.org/Doc4.0/SWIGDocumentation.html#CSharp_directors.
 class SolutionCallback {
  public:
-  virtual ~SolutionCallback() {}
+  virtual ~SolutionCallback();
 
   virtual void OnSolutionCallback() const = 0;
 
-  void Run(const operations_research::sat::CpSolverResponse& response) const {
-    response_ = response;
-    has_response_ = true;
-    OnSolutionCallback();
-  }
+  void Run(const operations_research::sat::CpSolverResponse& response) const;
 
-  int64_t NumBooleans() const { return response_.num_booleans(); }
+  int64_t NumBooleans() const;
 
-  int64_t NumBranches() const { return response_.num_branches(); }
+  int64_t NumBranches() const;
 
-  int64_t NumConflicts() const { return response_.num_conflicts(); }
+  int64_t NumConflicts() const;
 
-  int64_t NumBinaryPropagations() const {
-    return response_.num_binary_propagations();
-  }
+  int64_t NumBinaryPropagations() const;
 
-  int64_t NumIntegerPropagations() const {
-    return response_.num_integer_propagations();
-  }
+  int64_t NumIntegerPropagations() const;
 
-  double WallTime() const { return response_.wall_time(); }
+  double WallTime() const;
 
-  double UserTime() const { return response_.user_time(); }
+  double UserTime() const;
 
-  double DeterministicTime() const { return response_.deterministic_time(); }
+  double DeterministicTime() const;
 
-  double ObjectiveValue() const { return response_.objective_value(); }
+  double ObjectiveValue() const;
 
-  double BestObjectiveBound() const { return response_.best_objective_bound(); }
+  double BestObjectiveBound() const;
 
-  int64_t SolutionIntegerValue(int index) {
-    return index >= 0 ? response_.solution(index)
-                      : -response_.solution(-index - 1);
-  }
+  int64_t SolutionIntegerValue(int index);
 
-  bool SolutionBooleanValue(int index) {
-    return index >= 0 ? response_.solution(index) != 0
-                      : response_.solution(-index - 1) == 0;
-  }
+  bool SolutionBooleanValue(int index);
 
   // Stops the search.
-  void StopSearch() {
-    if (stopped_ptr_ != nullptr) {
-      (*stopped_ptr_) = true;
-    }
-  }
+  void StopSearch();
 
-  operations_research::sat::CpSolverResponse Response() const {
-    return response_;
-  }
+  operations_research::sat::CpSolverResponse Response() const;
 
   // We use mutable and non const methods to overcome SWIG difficulties.
-  void SetAtomicBooleanToStopTheSearch(std::atomic<bool>* stopped_ptr) const {
-    stopped_ptr_ = stopped_ptr;
-  }
+  void SetAtomicBooleanToStopTheSearch(std::atomic<bool>* stopped_ptr) const;
 
-  bool HasResponse() const { return has_response_; }
+  bool HasResponse() const;
 
  private:
   mutable CpSolverResponse response_;
@@ -122,54 +104,25 @@ class SolveWrapper {
   // 3) String variations of the parameters have been added for C# as
   //    C# protobufs do not support proto2.
 
-  void SetParameters(
-      const operations_research::sat::SatParameters& parameters) {
-    model_.Add(NewSatParameters(parameters));
-  }
+  void SetParameters(const operations_research::sat::SatParameters& parameters);
 
-  void SetStringParameters(const std::string& string_parameters) {
-    model_.Add(NewSatParameters(string_parameters));
-  }
+  void SetStringParameters(const std::string& string_parameters);
 
-  void AddSolutionCallback(const SolutionCallback& callback) {
-    // Overwrite the atomic bool.
-    callback.SetAtomicBooleanToStopTheSearch(&stopped_);
-    model_.Add(NewFeasibleSolutionObserver(
-        [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
-  }
-
-  void ClearSolutionCallback(const SolutionCallback& callback) {
-    // cleanup the atomic bool.
-    callback.SetAtomicBooleanToStopTheSearch(nullptr);
-  }
-
-  void AddLogCallback(std::function<void(const std::string&)> log_callback) {
-    if (log_callback != nullptr) {
-      model_.GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(log_callback);
-    }
-  }
+  void AddSolutionCallback(const SolutionCallback& callback);
+  void ClearSolutionCallback(const SolutionCallback& callback);
+  void AddLogCallback(std::function<void(const std::string&)> log_callback);
 
   // Workaround for C#.
-  void AddLogCallbackFromClass(LogCallback* log_callback) {
-    model_.GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(
-        [log_callback](const std::string& message) {
-          log_callback->NewMessage(message);
-        });
-  }
+  void AddLogCallbackFromClass(LogCallback* log_callback);
 
   operations_research::sat::CpSolverResponse Solve(
-      const operations_research::sat::CpModelProto& model_proto) {
-    FixFlagsAndEnvironmentForSwig();
-    stopped_ = false;
-    model_.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped_);
-    return operations_research::sat::SolveCpModel(model_proto, &model_);
-  }
+      const operations_research::sat::CpModelProto& model_proto);
 
-  void StopSearch() { stopped_ = true; }
+  void StopSearch();
 
  private:
   Model model_;
-  std::atomic<bool> stopped_;
+  std::atomic<bool> stopped_ = false;
 };
 
 // Static methods are stored in a module which name can vary.
@@ -179,40 +132,26 @@ struct CpSatHelper {
  public:
   // Returns a string with some statistics on the given CpModelProto.
   static std::string ModelStats(
-      const operations_research::sat::CpModelProto& model_proto) {
-    return CpModelStats(model_proto);
-  }
+      const operations_research::sat::CpModelProto& model_proto);
 
   // Returns a string with some statistics on the solver response.
   static std::string SolverResponseStats(
-      const operations_research::sat::CpSolverResponse& response) {
-    return CpSolverResponseStats(response);
-  }
+      const operations_research::sat::CpSolverResponse& response);
 
   // Returns a non empty string explaining the issue if the model is not valid.
   static std::string ValidateModel(
-      const operations_research::sat::CpModelProto& model_proto) {
-    return ValidateCpModel(model_proto);
-  }
+      const operations_research::sat::CpModelProto& model_proto);
 
   // Rebuilds a domain from an integer variable proto.
   static operations_research::Domain VariableDomain(
-      const operations_research::sat::IntegerVariableProto& variable_proto) {
-    return ReadDomainFromProto(variable_proto);
-  }
+      const operations_research::sat::IntegerVariableProto& variable_proto);
 
   // Write the model proto to file. If the filename ends with 'txt', the model
   // will be written as a text file, otherwise, the binary format will be used.
   // The functions returns true if the model was correctly written.
   static bool WriteModelToFile(
       const operations_research::sat::CpModelProto& model_proto,
-      const std::string& filename) {
-    if (absl::EndsWith(filename, "txt")) {
-      return file::SetTextProto(filename, model_proto, file::Defaults()).ok();
-    } else {
-      return file::SetBinaryProto(filename, model_proto, file::Defaults()).ok();
-    }
-  }
+      const std::string& filename);
 };
 
 }  // namespace sat

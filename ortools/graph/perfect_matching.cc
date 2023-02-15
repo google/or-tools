@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,13 @@
 
 #include "ortools/graph/perfect_matching.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/memory/memory.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -22,7 +27,7 @@
 namespace operations_research {
 
 void MinCostPerfectMatching::Reset(int num_nodes) {
-  graph_ = absl::make_unique<BlossomGraph>(num_nodes);
+  graph_ = std::make_unique<BlossomGraph>(num_nodes);
   optimal_cost_ = 0;
   matches_.assign(num_nodes, -1);
 }

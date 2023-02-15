@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "google/protobuf/repeated_field.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -143,9 +145,11 @@ inline double ScaleObjectiveValue(const CpObjectiveProto& proto,
 inline int64_t ScaleInnerObjectiveValue(const CpObjectiveProto& proto,
                                         int64_t value) {
   if (proto.integer_scaling_factor() == 0) {
-    return value + proto.integer_offset();
+    return value + proto.integer_before_offset();
   }
-  return value * proto.integer_scaling_factor() + proto.integer_offset();
+  return (value + proto.integer_before_offset()) *
+             proto.integer_scaling_factor() +
+         proto.integer_after_offset();
 }
 
 // Removes the objective scaling and offset from the given value.
@@ -162,7 +166,7 @@ inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
 // This is the objective without offset and scaling. Call ScaleObjectiveValue()
 // to get the user facing objective.
 int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
-                              const CpSolverResponse& response);
+                              absl::Span<const int64_t> solution);
 
 // Returns true if a linear expression can be reduced to a single ref.
 bool ExpressionContainsSingleRef(const LinearExpressionProto& expr);
@@ -187,6 +191,31 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
 bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
                                     const LinearExpressionProto& b,
                                     int64_t b_scaling = 1);
+
+// T must be castable to uint64_t.
+template <class T>
+inline uint64_t FingerprintRepeatedField(
+    const google::protobuf::RepeatedField<T>& sequence,
+    uint64_t seed = uint64_t{0xa5b85c5e198ed849}) {
+  return fasthash64(reinterpret_cast<const char*>(sequence.data()),
+                    sequence.size() * sizeof(T), seed);
+}
+
+// T must be castable to uint64_t.
+template <class T>
+inline uint64_t FingerprintSingleField(const T& field,
+                                       uint64_t seed = uint64_t{
+                                           0xa5b85c5e198ed849}) {
+  return fasthash64(reinterpret_cast<const char*>(&field), sizeof(T), seed);
+}
+
+// Returns a stable fingerprint of a linear expression.
+uint64_t FingerprintExpression(const LinearExpressionProto& lin,
+                               uint64_t seed = uint64_t{0xa5b85c5e198ed849});
+
+// Returns a stable fingerprint of a model.
+uint64_t FingerprintModel(const CpModelProto& model,
+                          uint64_t seed = uint64_t{0xa5b85c5e198ed849});
 
 }  // namespace sat
 }  // namespace operations_research

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# [START program]
 """Appointment selection.
 
 This module maximizes the number of appointments that can
@@ -21,16 +23,19 @@ ratio of appointment types.
 # overloaded sum() clashes with pytype.
 # pytype: disable=wrong-arg-types
 
+# [START import]
 from absl import app
 from absl import flags
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
+# [END import]
 
-FLAGS = flags.FLAGS
-flags.DEFINE_integer('load_min', 480, 'Minimum load in minutes.')
-flags.DEFINE_integer('load_max', 540, 'Maximum load in minutes.')
-flags.DEFINE_integer('commute_time', 30, 'Commute time in minutes.')
-flags.DEFINE_integer('num_workers', 98, 'Maximum number of workers.')
+_LOAD_MIN = flags.DEFINE_integer('load_min', 480, 'Minimum load in minutes.')
+_LOAD_MAX = flags.DEFINE_integer('load_max', 540, 'Maximum load in minutes.')
+_COMMUTE_TIME = flags.DEFINE_integer('commute_time', 30,
+                                     'Commute time in minutes.')
+_NUM_WORKERS = flags.DEFINE_integer('num_workers', 98,
+                                    'Maximum number of workers.')
 
 
 class AllSolutionCollector(cp_model.CpSolverSolutionCallback):
@@ -113,8 +118,9 @@ def AggregateItemCollectionsOptimally(item_collections, max_num_collections,
       - and its associated "num_selections" is the number of times it was
         selected.
   """
-    solver = pywraplp.Solver('Select',
-                             pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('SCIP')
+    if not solver:
+        return []
     n = len(ideal_item_ratios)
     num_distinct_collections = len(item_collections)
     max_num_items_per_collection = 0
@@ -187,13 +193,13 @@ def GetOptimalSchedule(demand):
     The same output type as EnumerateAllKnapsacksWithRepetition.
   """
     combinations = EnumerateAllKnapsacksWithRepetition(
-        [a[2] + FLAGS.commute_time for a in demand], FLAGS.load_min,
-        FLAGS.load_max)
+        [a[2] + _COMMUTE_TIME.value for a in demand], _LOAD_MIN.value,
+        _LOAD_MAX.value)
     print(('Found %d possible day schedules ' % len(combinations) +
            '(i.e. combination of appointments filling up one worker\'s day)'))
 
     selection = AggregateItemCollectionsOptimally(
-        combinations, FLAGS.num_workers, [a[0] / 100.0 for a in demand])
+        combinations, _NUM_WORKERS.value, [a[0] / 100.0 for a in demand])
     output = []
     for i in range(len(selection)):
         if selection[i] != 0:
@@ -210,10 +216,10 @@ def main(_):
     print('Appointments: ')
     for a in demand:
         print('   %.2f%% of %s : %d min' % (a[0], a[1], a[2]))
-    print('Commute time = %d' % FLAGS.commute_time)
+    print('Commute time = %d' % _COMMUTE_TIME.value)
     print('Acceptable duration of a work day = [%d..%d]' %
-          (FLAGS.load_min, FLAGS.load_max))
-    print('%d workers' % FLAGS.num_workers)
+          (_LOAD_MIN.value, _LOAD_MAX.value))
+    print('%d workers' % _NUM_WORKERS.value)
     selection = GetOptimalSchedule(demand)
     print()
     installed = 0
@@ -221,6 +227,7 @@ def main(_):
     for a in demand:
         installed_per_type[a[1]] = 0
 
+    # [START print_solution]
     print('*** output solution ***')
     for template in selection:
         num_instances = template[0]
@@ -236,9 +243,15 @@ def main(_):
     for a in demand:
         name = a[1]
         per_type = installed_per_type[name]
-        print(('   %d (%.2f%%) installations of type %s planned' %
-               (per_type, per_type * 100.0 / installed, name)))
+        if installed != 0:
+            print(
+                f'   {per_type} ({per_type * 100.0 / installed}%) installations of type {name} planned'
+            )
+        else:
+            print(f'   {per_type} installations of type {name} planned')
+    # [END print_solution]
 
 
 if __name__ == '__main__':
     app.run(main)
+# [END program]

@@ -1,4 +1,4 @@
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Fill a 72x37 rectangle by a minimum number of non-overlapping squares."""
+"""Fill a 60x50 rectangle by a minimum number of non-overlapping squares."""
 
 
 from ortools.sat.python import cp_model
@@ -18,8 +18,8 @@ from ortools.sat.python import cp_model
 
 def cover_rectangle(num_squares):
     """Try to fill the rectangle with a given number of squares."""
-    size_x = 72
-    size_y = 37
+    size_x = 60
+    size_y = 50
 
     model = cp_model.CpModel()
 
@@ -42,7 +42,7 @@ def cover_rectangle(num_squares):
         interval_y = model.NewIntervalVar(start_y, size, end_y, 'iy_%i' % i)
 
         area = model.NewIntVar(1, size_y * size_y, 'area_%i' % i)
-        model.AddProdEquality(area, [size, size])
+        model.AddMultiplicationEquality(area, [size, size])
 
         areas.append(area)
         x_intervals.append(interval_x)
@@ -74,8 +74,8 @@ def cover_rectangle(num_squares):
         model.Add(x_starts[i] <= x_starts[i + 1]).OnlyEnforceIf(same)
 
     # Symmetry breaking 2: first square in one quadrant.
-    model.Add(x_starts[0] < 36)
-    model.Add(y_starts[0] < 19)
+    model.Add(x_starts[0] < (size_x + 1)// 2)
+    model.Add(y_starts[0] < (size_y + 1) // 2)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
@@ -99,10 +99,10 @@ def cover_rectangle(num_squares):
 
         for line in range(size_y):
             print(' '.join(display[line]))
-    return status == cp_model.FEASIBLE
+    return status == cp_model.OPTIMAL
 
 
-for num in range(1, 15):
-    print('Trying with size =', num)
-    if cover_rectangle(num):
+for num_squares in range(1, 15):
+    print('Trying with size =', num_squares)
+    if cover_rectangle(num_squares):
         break

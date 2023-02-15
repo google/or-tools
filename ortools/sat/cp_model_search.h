@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,6 +24,8 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -70,11 +72,14 @@ class CpModelView {
   const IntegerEncoder& integer_encoder_;
 };
 
-// Constructs the search strategy specified in the given CpModelProto. A
-// positive variable ref in the proto is mapped to variable_mapping[ref] in the
-// model. All the variables referred in the search strategy must be correctly
-// mapped, the other entries can be set to kNoIntegerVariable.
-std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
+// Constructs the search strategy specified in the given CpModelProto.
+std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
+    const CpModelProto& cp_model_proto, Model* model);
+
+// Constructs our "fixed" search strategy which start with
+// ConstructUserSearchStrategy() but is completed by a couple of automatic
+// heuristics.
+std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model);
@@ -89,12 +94,11 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
     Model* model);
 
-// Returns up to "num_workers" different parameters. We do not always return
-// num_worker parameters to leave room for strategies like LNS that do not
-// consume a full worker and can always be interleaved.
+// Returns up to base_params.num_workers() different parameters.
+// We do not always return num_worker parameters to leave room for strategies
+// like LNS that do not consume a full worker and can always be interleaved.
 std::vector<SatParameters> GetDiverseSetOfParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    const int num_workers);
+    const SatParameters& base_params, const CpModelProto& cp_model);
 
 }  // namespace sat
 }  // namespace operations_research

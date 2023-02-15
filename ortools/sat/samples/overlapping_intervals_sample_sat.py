@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -68,12 +68,12 @@ def OverlappingIntervals():
     a_overlaps_b = model.NewBoolVar('a_overlaps_b')
 
     # Option a: using only clauses
-    model.AddBoolOr([a_after_b, b_after_a, a_overlaps_b])
+    model.AddBoolOr(a_after_b, b_after_a, a_overlaps_b)
     model.AddImplication(a_after_b, a_overlaps_b.Not())
     model.AddImplication(b_after_a, a_overlaps_b.Not())
 
-    # Option b: using a sum() == 1.
-    # model.Add(a_after_b + b_after_a + a_overlaps_b == 1)
+    # Option b: using an exactly one constraint.
+    # model.AddExactlyOne(a_after_b, b_after_a, a_overlaps_b)
 
     # Search for start values in increasing order for the two intervals.
     model.AddDecisionStrategy([start_var_a, start_var_b], cp_model.CHOOSE_FIRST,

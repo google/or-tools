@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -193,7 +193,11 @@ void ApplyPermutation(const Permutation<IndexType>& perm,
                       const ITIVectorType& b, ITIVectorType* result) {
   RETURN_IF_NULL(result);
   const IndexType size(perm.size());
-  if (size == 0) return;
+  if (size == 0) {
+    // Empty size means identity.
+    *result = b;
+    return;
+  }
   DCHECK_EQ(size.value(), b.size().value());
   result->resize(b.size(), /*whatever junk value*/ b.back());
   for (IndexType i(0); i < size; ++i) {
@@ -207,8 +211,12 @@ template <typename IndexType, typename ITIVectorType>
 void ApplyInversePermutation(const Permutation<IndexType>& perm,
                              const ITIVectorType& b, ITIVectorType* result) {
   RETURN_IF_NULL(result);
-  const IndexType size(perm.size().value());
-  if (size == 0) return;
+  const IndexType size(perm.size());
+  if (size == 0) {
+    // Empty size means identity.
+    *result = b;
+    return;
+  }
   DCHECK_EQ(size.value(), b.size().value());
   result->resize(b.size(), /*whatever junk value*/ b.back());
   for (IndexType i(0); i < size; ++i) {

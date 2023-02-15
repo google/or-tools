@@ -1,5 +1,5 @@
 FROM ortools/cmake:archlinux_swig AS env
-RUN pacman -Syu --noconfirm dotnet-sdk-3.1 dotnet-sdk
+RUN pacman -Syu --noconfirm dotnet-sdk
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
@@ -8,7 +8,7 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON -DUSE_DOTNET_CORE_31=OFF -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

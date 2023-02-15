@@ -25,18 +25,12 @@ import sys
 from ortools.linear_solver import pywraplp
 
 
-def main(sol='CBC'):
+def main():
 
   # Create the solver.
-
-  # using GLPK
-  if sol == 'GLPK':
-    solver = pywraplp.Solver('CoinsGridGLPK',
-                             pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
-  else:
-    # Using CLP
-    solver = pywraplp.Solver('CoinsGridCLP',
-                             pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
+  solver = pywraplp.Solver.CreateSolver('glop')
+  if not solver:
+    return
 
   #
   # data
@@ -107,12 +101,4 @@ def main(sol='CBC'):
 
 
 if __name__ == '__main__':
-
-  sol = 'CBC'
-  if len(sys.argv) > 1:
-    sol = sys.argv[1]
-    if sol != 'GLPK' and sol != 'CBC':
-      print('Solver must be either GLPK or CBC')
-      sys.exit(1)
-
-  main(sol)
+  main()

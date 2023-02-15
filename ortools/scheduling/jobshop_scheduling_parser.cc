@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,16 +15,19 @@
 
 #include <cmath>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/path.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
+#include "ortools/util/filelineiter.h"
 
 ABSL_FLAG(int64_t, jssp_scaling_up_factor, 100000L,
           "Scaling factor for floating point penalties.");
@@ -56,6 +59,7 @@ bool JsspParser::ParseFile(const std::string& filename) {
   // Try to detect the type of the data file.
   //  - fjs suffix -> Flexible Jobshop
   //  - txt suffix -> Taillard or time dependent scheduling.
+
   if (absl::EndsWith(filename, "fjs")) {
     problem_type_ = FLEXIBLE;
   } else if (absl::EndsWith(filename, ".txt")) {
@@ -63,6 +67,12 @@ bool JsspParser::ParseFile(const std::string& filename) {
   } else {
     problem_type_ = JSSP;
   }
+
+  // We use a temporary string as open source protobufs do not accept
+  // set(string_view).
+  const std::string problem_name(file::Stem(filename));
+  problem_.set_name(problem_name);
+
   for (const std::string& line : FileLines(filename)) {
     if (line.empty()) {
       continue;

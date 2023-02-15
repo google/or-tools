@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,8 +14,8 @@
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
 /** Code sample to demonstrates a simple Boolean constraint. */
@@ -23,8 +23,8 @@ public class BoolOrSampleSat {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
-    IntVar x = model.newBoolVar("x");
-    IntVar y = model.newBoolVar("y");
+    BoolVar x = model.newBoolVar("x");
+    BoolVar y = model.newBoolVar("y");
     model.addBoolOr(new Literal[] {x, y.not()});
   }
 }

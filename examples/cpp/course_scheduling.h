@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,14 +15,15 @@
 #define OR_TOOLS_EXAMPLES_COURSE_SCHEDULING_H_
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
-#include "examples/cpp/course_scheduling.pb.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/scheduling/course_scheduling.pb.h"
 
 namespace operations_research {
 class CourseSchedulingSolver {

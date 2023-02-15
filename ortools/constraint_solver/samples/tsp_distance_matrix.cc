@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 #include <cstdint>
+#include <sstream>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -146,7 +147,7 @@ void Tsp() {
 
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::Tsp();
   return EXIT_SUCCESS;
 }

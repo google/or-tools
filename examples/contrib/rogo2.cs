@@ -331,9 +331,9 @@ public class Rogo2
 
         String file = "";
 
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            file = args[0];
+            file = args[1];
             problem_name = "Problem " + file;
             ReadFile(file);
         }

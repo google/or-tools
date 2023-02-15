@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,7 +21,6 @@
 %include "ortools/constraint_solver/python/constraint_solver.i"
 %include "ortools/constraint_solver/python/routing_types.i"
 %include "ortools/constraint_solver/python/routing_index_manager.i"
-%include "ortools/util/python/sorted_interval_list.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -61,10 +60,10 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 
 PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
                  RoutingModelParameters,
-                 operations_research::RoutingModelParameters)
+                 ::operations_research::RoutingModelParameters)
 PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
                  RoutingSearchParameters,
-                 operations_research::RoutingSearchParameters)
+                 ::operations_research::RoutingSearchParameters)
 
 // Wrap routing_types.h, routing_parameters.h according to the SWIG styleguide.
 %ignoreall
@@ -81,7 +80,7 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
 %include "ortools/constraint_solver/routing_parameters.h"
 %unignoreall
 
-// %including a .proto.h is frowned upon (for good general reasons), so we
+// %including a .pb.h is frowned upon (for good general reasons), so we
 // have to duplicate the OptionalBoolean enum here to give it to python users.
 namespace operations_research {
 enum OptionalBoolean {
@@ -89,6 +88,22 @@ enum OptionalBoolean {
   BOOL_FALSE = 2,
   BOOL_TRUE = 3,
 };
+
+struct FirstSolutionStrategy {
+  enum Value {};
+};
+
+struct LocalSearchMetaheuristic {
+  enum Value {};
+};
+
+// SimpleBoundCosts
+%unignore BoundCost;
+
+%unignore SimpleBoundCosts;
+%unignore SimpleBoundCosts::bound_cost;
+%rename("size") SimpleBoundCosts::Size;
+
 }  // namespace operations_research
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.

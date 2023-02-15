@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,11 +14,24 @@
 #include "ortools/sat/intervals.h"
 
 #include <algorithm>
-#include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_expr.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -95,6 +108,21 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
   if (!SynchronizeAndSetTimeDirection(true)) {
     model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
   }
+}
+
+// TODO(user): Ideally we should sort the vector of variables, but right now
+// we cannot since we often use this with a parallel vector of demands. So this
+// "sorting" should happen in the presolver so we can share as much as possible.
+SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
+    const std::vector<IntervalVariable>& variables) {
+  const auto it = helper_repository_.find(variables);
+  if (it != helper_repository_.end()) return it->second;
+
+  SchedulingConstraintHelper* helper =
+      new SchedulingConstraintHelper(variables, model_);
+  helper_repository_[variables] = helper;
+  model_->TakeOwnership(helper);
+  return helper;
 }
 
 SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
@@ -195,6 +223,10 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
   emin = std::max(emin, smin + dmin);
   emax = std::min(emax, smax + dmax);
 
+  if (emin != cached_end_min_[t]) {
+    recompute_energy_profile_ = true;
+  }
+
   cached_start_min_[t] = smin;
   cached_end_min_[t] = emin;
   cached_negated_start_max_[t] = -smax;
@@ -204,6 +236,7 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
   // Note that we use the cached value here for EndMin()/StartMax().
   const IntegerValue new_shifted_start_min = EndMin(t) - dmin;
   if (new_shifted_start_min != cached_shifted_start_min_[t]) {
+    recompute_energy_profile_ = true;
     recompute_shifted_start_min_ = true;
     cached_shifted_start_min_[t] = new_shifted_start_min;
   }
@@ -269,6 +302,7 @@ void SchedulingConstraintHelper::InitSortedVectors() {
     task_by_negated_shifted_end_max_[t].task_index = t;
   }
 
+  recompute_energy_profile_ = true;
   recompute_shifted_start_min_ = true;
   recompute_negated_shifted_end_max_ = true;
 }
@@ -285,6 +319,7 @@ void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
     std::swap(task_by_increasing_shifted_start_min_,
               task_by_negated_shifted_end_max_);
 
+    recompute_energy_profile_ = true;
     std::swap(cached_start_min_, cached_negated_end_max_);
     std::swap(cached_end_min_, cached_negated_start_max_);
     std::swap(cached_shifted_start_min_, cached_negated_shifted_end_max_);
@@ -301,8 +336,9 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
     }
   } else {
     for (int t = 0; t < recompute_cache_.size(); ++t) {
-      if (recompute_cache_[t])
+      if (recompute_cache_[t]) {
         if (!UpdateCachedValues(t)) return false;
+      }
     }
   }
   recompute_all_cache_ = false;
@@ -378,26 +414,58 @@ SchedulingConstraintHelper::TaskByIncreasingShiftedStartMin() {
   return task_by_increasing_shifted_start_min_;
 }
 
+// TODO(user): Avoid recomputing it if nothing changed.
+const std::vector<SchedulingConstraintHelper::ProfileEvent>&
+SchedulingConstraintHelper::GetEnergyProfile() {
+  if (energy_profile_.empty()) {
+    const int num_tasks = NumTasks();
+    for (int t = 0; t < num_tasks; ++t) {
+      energy_profile_.push_back(
+          {cached_shifted_start_min_[t], t, /*is_first=*/true});
+      energy_profile_.push_back({cached_end_min_[t], t, /*is_first=*/false});
+    }
+  } else {
+    if (!recompute_energy_profile_) return energy_profile_;
+    for (ProfileEvent& ref : energy_profile_) {
+      const int t = ref.task;
+      if (ref.is_first) {
+        ref.time = cached_shifted_start_min_[t];
+      } else {
+        ref.time = cached_end_min_[t];
+      }
+    }
+  }
+  IncrementalSort(energy_profile_.begin(), energy_profile_.end());
+  recompute_energy_profile_ = false;
+  return energy_profile_;
+}
+
 // Produces a relaxed reason for StartMax(before) < EndMin(after).
 void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
                                                          int after) {
   AddOtherReason(before);
   AddOtherReason(after);
 
+  // The reason will be a linear expression greater than a value. Note that all
+  // coeff must be positive, and we will use the variable lower bound.
   std::vector<IntegerVariable> vars;
+  std::vector<IntegerValue> coeffs;
 
   // Reason for StartMax(before).
   const IntegerValue smax_before = StartMax(before);
   if (smax_before >= integer_trail_->UpperBound(starts_[before])) {
     if (starts_[before].var != kNoIntegerVariable) {
       vars.push_back(NegationOf(starts_[before].var));
+      coeffs.push_back(starts_[before].coeff);
     }
   } else {
     if (ends_[before].var != kNoIntegerVariable) {
       vars.push_back(NegationOf(ends_[before].var));
+      coeffs.push_back(ends_[before].coeff);
     }
     if (sizes_[before].var != kNoIntegerVariable) {
       vars.push_back(sizes_[before].var);
+      coeffs.push_back(sizes_[before].coeff);
     }
   }
 
@@ -406,21 +474,23 @@ void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
   if (emin_after <= integer_trail_->LowerBound(ends_[after])) {
     if (ends_[after].var != kNoIntegerVariable) {
       vars.push_back(ends_[after].var);
+      coeffs.push_back(ends_[after].coeff);
     }
   } else {
     if (starts_[after].var != kNoIntegerVariable) {
       vars.push_back(starts_[after].var);
+      coeffs.push_back(starts_[after].coeff);
     }
     if (sizes_[after].var != kNoIntegerVariable) {
       vars.push_back(sizes_[after].var);
+      coeffs.push_back(sizes_[after].coeff);
     }
   }
 
   DCHECK_LT(smax_before, emin_after);
   const IntegerValue slack = emin_after - smax_before - 1;
-  integer_trail_->AppendRelaxedLinearReason(
-      slack, std::vector<IntegerValue>(vars.size(), IntegerValue(1)), vars,
-      &integer_reason_);
+  integer_trail_->AppendRelaxedLinearReason(slack, coeffs, vars,
+                                            &integer_reason_);
 }
 
 bool SchedulingConstraintHelper::PushIntegerLiteral(IntegerLiteral lit) {
@@ -450,22 +520,33 @@ bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
   return true;
 }
 
-bool SchedulingConstraintHelper::IncreaseStartMin(int t,
-                                                  IntegerValue new_start_min) {
+bool SchedulingConstraintHelper::IncreaseStartMin(int t, IntegerValue value) {
   if (starts_[t].var == kNoIntegerVariable) {
-    if (new_start_min > starts_[t].constant) return PushTaskAbsence(t);
+    if (value > starts_[t].constant) return PushTaskAbsence(t);
     return true;
   }
-  return PushIntervalBound(t, starts_[t].GreaterOrEqual(new_start_min));
+  return PushIntervalBound(t, starts_[t].GreaterOrEqual(value));
 }
 
-bool SchedulingConstraintHelper::DecreaseEndMax(int t,
-                                                IntegerValue new_end_max) {
+bool SchedulingConstraintHelper::IncreaseEndMin(int t, IntegerValue value) {
   if (ends_[t].var == kNoIntegerVariable) {
-    if (new_end_max < ends_[t].constant) return PushTaskAbsence(t);
+    if (value > ends_[t].constant) return PushTaskAbsence(t);
     return true;
   }
-  return PushIntervalBound(t, ends_[t].LowerOrEqual(new_end_max));
+  return PushIntervalBound(t, ends_[t].GreaterOrEqual(value));
+}
+
+bool SchedulingConstraintHelper::DecreaseEndMax(int t, IntegerValue value) {
+  if (ends_[t].var == kNoIntegerVariable) {
+    if (value < ends_[t].constant) return PushTaskAbsence(t);
+    return true;
+  }
+  return PushIntervalBound(t, ends_[t].LowerOrEqual(value));
+}
+
+bool SchedulingConstraintHelper::PushLiteral(Literal l) {
+  integer_trail_->EnqueueLiteral(l, literal_reason_, integer_reason_);
+  return true;
 }
 
 bool SchedulingConstraintHelper::PushTaskAbsence(int t) {
@@ -561,6 +642,336 @@ IntegerValue SchedulingConstraintHelper::GetMinOverlap(int t,
                                                        IntegerValue end) const {
   return std::min(std::min(end - start, SizeMin(t)),
                   std::min(EndMin(t) - start, end - StartMax(t)));
+}
+
+IntegerValue ComputeEnergyMinInWindow(
+    IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
+    IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
+    const std::vector<LiteralValueValue>& filtered_energy,
+    IntegerValue window_start, IntegerValue window_end) {
+  if (window_end <= window_start) return IntegerValue(0);
+
+  // Returns zero if the interval do not necessarily overlap.
+  if (end_min <= window_start) return IntegerValue(0);
+  if (start_max >= window_end) return IntegerValue(0);
+  const IntegerValue window_size = window_end - window_start;
+  const IntegerValue simple_energy_min =
+      demand_min * std::min({end_min - window_start, window_end - start_max,
+                             size_min, window_size});
+  if (filtered_energy.empty()) return simple_energy_min;
+
+  IntegerValue result = kMaxIntegerValue;
+  for (const auto [lit, fixed_size, fixed_demand] : filtered_energy) {
+    const IntegerValue alt_end_min = std::max(end_min, start_min + fixed_size);
+    const IntegerValue alt_start_max =
+        std::min(start_max, end_max - fixed_size);
+    const IntegerValue energy_min =
+        fixed_demand *
+        std::min({alt_end_min - window_start, window_end - alt_start_max,
+                  fixed_size, window_size});
+    result = std::min(result, energy_min);
+  }
+  if (result == kMaxIntegerValue) return simple_energy_min;
+  return std::max(simple_energy_min, result);
+}
+
+SchedulingDemandHelper::SchedulingDemandHelper(
+    std::vector<AffineExpression> demands, SchedulingConstraintHelper* helper,
+    Model* model)
+    : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      assignment_(model->GetOrCreate<SatSolver>()->Assignment()),
+      demands_(std::move(demands)),
+      helper_(helper) {
+  const int num_tasks = helper->NumTasks();
+  linearized_energies_.resize(num_tasks);
+  decomposed_energies_.resize(num_tasks);
+  cached_energies_min_.resize(num_tasks, kMinIntegerValue);
+  cached_energies_max_.resize(num_tasks, kMaxIntegerValue);
+  energy_is_quadratic_.resize(num_tasks, false);
+
+  // For the special case were demands is empty.
+  if (demands_.size() != num_tasks) return;
+  for (int t = 0; t < num_tasks; ++t) {
+    const AffineExpression size = helper->Sizes()[t];
+    const AffineExpression demand = demands_[t];
+    decomposed_energies_[t] = TryToDecomposeProduct(size, demand, model);
+  }
+}
+
+IntegerValue SchedulingDemandHelper::SimpleEnergyMin(int t) const {
+  if (demands_.empty()) return kMinIntegerValue;
+  return DemandMin(t) * helper_->SizeMin(t);
+}
+
+IntegerValue SchedulingDemandHelper::LinearEnergyMin(int t) const {
+  if (!linearized_energies_[t].has_value()) return kMinIntegerValue;
+  return linearized_energies_[t]->Min(*integer_trail_);
+}
+
+IntegerValue SchedulingDemandHelper::DecomposedEnergyMin(int t) const {
+  if (decomposed_energies_[t].empty()) return kMinIntegerValue;
+  IntegerValue result = kMaxIntegerValue;
+  for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
+    if (assignment_.LiteralIsTrue(lit)) {
+      return fixed_size * fixed_demand;
+    }
+    if (assignment_.LiteralIsFalse(lit)) continue;
+    result = std::min(result, fixed_size * fixed_demand);
+  }
+  DCHECK_NE(result, kMaxIntegerValue);
+  return result;
+}
+
+IntegerValue SchedulingDemandHelper::SimpleEnergyMax(int t) const {
+  if (demands_.empty()) return kMaxIntegerValue;
+  return DemandMax(t) * helper_->SizeMax(t);
+}
+
+IntegerValue SchedulingDemandHelper::LinearEnergyMax(int t) const {
+  if (!linearized_energies_[t].has_value()) return kMaxIntegerValue;
+  return linearized_energies_[t]->Max(*integer_trail_);
+}
+
+IntegerValue SchedulingDemandHelper::DecomposedEnergyMax(int t) const {
+  if (decomposed_energies_[t].empty()) return kMaxIntegerValue;
+  IntegerValue result = kMinIntegerValue;
+  for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
+    if (assignment_.LiteralIsTrue(lit)) {
+      return fixed_size * fixed_demand;
+    }
+    if (assignment_.LiteralIsFalse(lit)) continue;
+    result = std::max(result, fixed_size * fixed_demand);
+  }
+  DCHECK_NE(result, kMinIntegerValue);
+  return result;
+}
+
+void SchedulingDemandHelper::CacheAllEnergyValues() {
+  const int num_tasks = cached_energies_min_.size();
+  const bool is_at_level_zero = sat_solver_->CurrentDecisionLevel() == 0;
+  for (int t = 0; t < num_tasks; ++t) {
+    // Try to reduce the size of the decomposed energy vector.
+    if (is_at_level_zero) {
+      int new_size = 0;
+      for (int i = 0; i < decomposed_energies_[t].size(); ++i) {
+        if (assignment_.LiteralIsFalse(decomposed_energies_[t][i].literal)) {
+          continue;
+        }
+        decomposed_energies_[t][new_size++] = decomposed_energies_[t][i];
+      }
+      decomposed_energies_[t].resize(new_size);
+    }
+
+    cached_energies_min_[t] = std::max(
+        {SimpleEnergyMin(t), LinearEnergyMin(t), DecomposedEnergyMin(t)});
+    CHECK_NE(cached_energies_min_[t], kMinIntegerValue);
+    energy_is_quadratic_[t] =
+        decomposed_energies_[t].empty() && !demands_.empty() &&
+        !integer_trail_->IsFixed(demands_[t]) && !helper_->SizeIsFixed(t);
+    cached_energies_max_[t] = std::min(
+        {SimpleEnergyMax(t), LinearEnergyMax(t), DecomposedEnergyMax(t)});
+    CHECK_NE(cached_energies_min_[t], kMaxIntegerValue);
+  }
+}
+
+IntegerValue SchedulingDemandHelper::DemandMin(int t) const {
+  DCHECK_LT(t, demands_.size());
+  return integer_trail_->LowerBound(demands_[t]);
+}
+
+IntegerValue SchedulingDemandHelper::DemandMax(int t) const {
+  DCHECK_LT(t, demands_.size());
+  return integer_trail_->UpperBound(demands_[t]);
+}
+
+bool SchedulingDemandHelper::DemandIsFixed(int t) const {
+  return integer_trail_->IsFixed(demands_[t]);
+}
+
+bool SchedulingDemandHelper::DecreaseEnergyMax(int t, IntegerValue value) {
+  if (value < EnergyMin(t)) {
+    if (helper_->IsOptional(t)) {
+      return helper_->PushTaskAbsence(t);
+    } else {
+      return helper_->ReportConflict();
+    }
+  } else if (!decomposed_energies_[t].empty()) {
+    for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
+      if (fixed_size * fixed_demand > value) {
+        if (assignment_.LiteralIsTrue(lit)) return helper_->ReportConflict();
+        if (assignment_.LiteralIsFalse(lit)) continue;
+        if (!helper_->PushLiteral(lit.Negated())) return false;
+      }
+    }
+  } else if (linearized_energies_[t].has_value() &&
+             linearized_energies_[t]->vars.size() == 1) {
+    const LinearExpression& e = linearized_energies_[t].value();
+    const AffineExpression affine_energy(e.vars[0], e.coeffs[0], e.offset);
+    const IntegerLiteral deduction = affine_energy.LowerOrEqual(value);
+    if (!helper_->PushIntegerLiteralIfTaskPresent(t, deduction)) {
+      return false;
+    }
+  } else {
+    // TODO(user): Propagate if possible.
+    VLOG(3) << "Cumulative energy missed propagation";
+  }
+  return true;
+}
+
+void SchedulingDemandHelper::AddDemandMinReason(int t) {
+  DCHECK_LT(t, demands_.size());
+  if (demands_[t].var != kNoIntegerVariable) {
+    helper_->MutableIntegerReason()->push_back(
+        integer_trail_->LowerBoundAsLiteral(demands_[t].var));
+  }
+}
+
+void SchedulingDemandHelper::AddEnergyMinReason(int t) {
+  // We prefer these reason in order.
+  const IntegerValue value = cached_energies_min_[t];
+  if (DecomposedEnergyMin(t) >= value) {
+    auto* reason = helper_->MutableLiteralReason();
+    const int old_size = reason->size();
+    for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
+      if (assignment_.LiteralIsTrue(lit)) {
+        reason->resize(old_size);
+        reason->push_back(lit.Negated());
+        return;
+      } else if (fixed_size * fixed_demand < value &&
+                 assignment_.LiteralIsFalse(lit)) {
+        reason->push_back(lit);
+      }
+    }
+  } else if (SimpleEnergyMin(t) >= value) {
+    AddDemandMinReason(t);
+    helper_->AddSizeMinReason(t);
+  } else {
+    DCHECK_GE(LinearEnergyMin(t), value);
+    for (const IntegerVariable var : linearized_energies_[t]->vars) {
+      helper_->MutableIntegerReason()->push_back(
+          integer_trail_->LowerBoundAsLiteral(var));
+    }
+  }
+}
+
+bool SchedulingDemandHelper::AddLinearizedDemand(
+    int t, LinearConstraintBuilder* builder) const {
+  if (helper_->IsPresent(t)) {
+    if (!decomposed_energies_[t].empty()) {
+      for (const LiteralValueValue& entry : decomposed_energies_[t]) {
+        if (!builder->AddLiteralTerm(entry.literal, entry.right_value)) {
+          return false;
+        }
+      }
+    } else {
+      builder->AddTerm(demands_[t], IntegerValue(1));
+    }
+  } else if (!helper_->IsAbsent(t)) {
+    return builder->AddLiteralTerm(helper_->PresenceLiteral(t), DemandMin(t));
+  }
+  return true;
+}
+
+void SchedulingDemandHelper::OverrideLinearizedEnergies(
+    const std::vector<LinearExpression>& energies) {
+  const int num_tasks = energies.size();
+  DCHECK_EQ(num_tasks, helper_->NumTasks());
+  linearized_energies_.resize(num_tasks);
+  for (int t = 0; t < num_tasks; ++t) {
+    linearized_energies_[t] = energies[t];
+    if (DEBUG_MODE) {
+      for (const IntegerValue coeff : linearized_energies_[t]->coeffs) {
+        DCHECK_GE(coeff, 0);
+      }
+    }
+  }
+}
+
+std::vector<LiteralValueValue> SchedulingDemandHelper::FilteredDecomposedEnergy(
+    int index) {
+  if (decomposed_energies_[index].empty()) return {};
+  if (sat_solver_->CurrentDecisionLevel() == 0) {
+    // CacheAllEnergyValues has already filtered false literals.
+    return decomposed_energies_[index];
+  }
+
+  // Scan and filter false literals.
+  std::vector<LiteralValueValue> result;
+  for (const auto& e : decomposed_energies_[index]) {
+    if (assignment_.LiteralIsFalse(e.literal)) continue;
+    result.push_back(e);
+  }
+  return result;
+}
+
+void SchedulingDemandHelper::OverrideDecomposedEnergies(
+    const std::vector<std::vector<LiteralValueValue>>& energies) {
+  DCHECK_EQ(energies.size(), helper_->NumTasks());
+  decomposed_energies_ = energies;
+}
+
+IntegerValue SchedulingDemandHelper::EnergyMinInWindow(
+    int t, IntegerValue window_start, IntegerValue window_end) {
+  return ComputeEnergyMinInWindow(
+      helper_->StartMin(t), helper_->StartMax(t), helper_->EndMin(t),
+      helper_->EndMax(t), helper_->SizeMin(t), DemandMin(t),
+      FilteredDecomposedEnergy(t), window_start, window_end);
+}
+
+// Since we usually ask way less often for the reason, we redo the computation
+// here.
+void SchedulingDemandHelper::AddEnergyMinInWindowReason(
+    int t, IntegerValue window_start, IntegerValue window_end) {
+  const IntegerValue actual_energy_min =
+      EnergyMinInWindow(t, window_start, window_end);
+  if (actual_energy_min == 0) return;
+
+  // Return simple reason right away if there is no decomposition or the simple
+  // energy is enough.
+  const IntegerValue start_max = helper_->StartMax(t);
+  const IntegerValue end_min = helper_->EndMin(t);
+  const IntegerValue min_overlap =
+      helper_->GetMinOverlap(t, window_start, window_end);
+  const IntegerValue simple_energy_min = DemandMin(t) * min_overlap;
+  if (simple_energy_min == actual_energy_min) {
+    AddDemandMinReason(t);
+    helper_->AddSizeMinReason(t);
+    helper_->AddStartMaxReason(t, start_max);
+    helper_->AddEndMinReason(t, end_min);
+    return;
+  }
+
+  // TODO(user): only include the one we need?
+  const IntegerValue start_min = helper_->StartMin(t);
+  const IntegerValue end_max = helper_->EndMax(t);
+  DCHECK(!decomposed_energies_[t].empty());
+  helper_->AddStartMinReason(t, start_min);
+  helper_->AddStartMaxReason(t, start_max);
+  helper_->AddEndMinReason(t, end_min);
+  helper_->AddEndMaxReason(t, end_max);
+
+  auto* literal_reason = helper_->MutableLiteralReason();
+  const int old_size = literal_reason->size();
+
+  DCHECK(!decomposed_energies_[t].empty());
+  for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
+    // Should be the same in most cases.
+    if (assignment_.LiteralIsTrue(lit)) {
+      literal_reason->resize(old_size);
+      literal_reason->push_back(lit.Negated());
+      return;
+    }
+    if (assignment_.LiteralIsFalse(lit)) {
+      const IntegerValue alt_em = std::max(end_min, start_min + fixed_size);
+      const IntegerValue alt_sm = std::min(start_max, end_max - fixed_size);
+      const IntegerValue energy_min =
+          fixed_demand *
+          std::min({alt_em - window_start, window_end - alt_sm, fixed_size});
+      if (energy_min >= actual_energy_min) continue;
+      literal_reason->push_back(lit);
+    }
+  }
 }
 
 }  // namespace sat

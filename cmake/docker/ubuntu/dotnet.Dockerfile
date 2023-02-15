@@ -1,11 +1,9 @@
 FROM ortools/cmake:ubuntu_swig AS env
+
+# Install .NET SDK
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
 RUN apt-get update -qq \
-&& apt-get install -yq wget apt-transport-https \
-&& wget -q https://packages.microsoft.com/config/ubuntu/21.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
-&& dpkg -i packages-microsoft-prod.deb \
-&& apt-get update -qq \
-&& DEBIAN_FRONTEND=noninteractive apt-get install -yq dotnet-sdk-3.1 dotnet-sdk-6.0\
+&& apt-get install -yq dotnet-sdk-6.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
@@ -17,7 +15,7 @@ COPY . .
 
 FROM devel AS build
 RUN cmake -version
-RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON -DUSE_DOTNET_CORE_31=OFF -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install -v
 

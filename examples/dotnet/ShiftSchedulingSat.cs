@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -102,7 +102,7 @@ public class ShiftSchedulingSat
 
         var model = new CpModel();
 
-        IntVar[,,] work = new IntVar[numEmployees, numShifts, numDays];
+        BoolVar[,,] work = new BoolVar[numEmployees, numShifts, numDays];
 
         foreach (int e in Range(numEmployees))
         {
@@ -116,17 +116,14 @@ public class ShiftSchedulingSat
         }
 
         // Linear terms of the objective in a minimization context.
-        var objIntVars = new List<IntVar>();
-        var objIntCoeffs = new List<int>();
-        var objBoolVars = new List<IntVar>();
-        var objBoolCoeffs = new List<int>();
+        LinearExprBuilder obj = LinearExpr.NewBuilder();
 
         // Exactly one shift per day.
         foreach (int e in Range(numEmployees))
         {
             foreach (int d in Range(numDays))
             {
-                var temp = new IntVar[numShifts];
+                var temp = new BoolVar[numShifts];
                 foreach (int s in Range(numShifts))
                 {
                     temp[s] = work[e, s, d];
@@ -145,8 +142,7 @@ public class ShiftSchedulingSat
         // Employee requests
         foreach (var (e, s, d, w) in requests)
         {
-            objBoolVars.Add(work[e, s, d]);
-            objBoolCoeffs.Add(w);
+            obj.AddTerm(work[e, s, d], w);
         }
 
         // Shift constraints
@@ -154,7 +150,7 @@ public class ShiftSchedulingSat
         {
             foreach (int e in Range(numEmployees))
             {
-                var works = new IntVar[numDays];
+                var works = new BoolVar[numDays];
                 foreach (int d in Range(numDays))
                 {
                     works[d] = work[e, constraint.Shift, d];
@@ -165,8 +161,7 @@ public class ShiftSchedulingSat
                     constraint.HardMax, constraint.MaxPenalty,
                     $"shift_constraint(employee {e}, shift {constraint.Shift}");
 
-                objBoolVars.AddRange(variables);
-                objBoolCoeffs.AddRange(coeffs);
+                obj.AddWeightedSum(variables, coeffs);
             }
         }
 
@@ -177,7 +172,7 @@ public class ShiftSchedulingSat
             {
                 foreach (int w in Range(numWeeks))
                 {
-                    var works = new IntVar[7];
+                    var works = new BoolVar[7];
 
                     foreach (int d in Range(7))
                     {
@@ -189,8 +184,7 @@ public class ShiftSchedulingSat
                         constraint.HardMax, constraint.MaxPenalty,
                         $"weekly_sum_constraint(employee {e}, shift {constraint.Shift}, week {w}");
 
-                    objBoolVars.AddRange(variables);
-                    objBoolCoeffs.AddRange(coeffs);
+                    obj.AddWeightedSum(variables, coeffs);
                 }
             }
         }
@@ -214,8 +208,7 @@ public class ShiftSchedulingSat
                         var transVar = model.NewBoolVar($"transition (employee {e}, day={d}");
                         transition.Add(transVar);
                         model.AddBoolOr(transition);
-                        objBoolVars.Add(transVar);
-                        objBoolCoeffs.Add(penalizedTransition.Penalty);
+                        obj.AddTerm(transVar, penalizedTransition.Penalty);
                     }
                 }
             }
@@ -228,7 +221,7 @@ public class ShiftSchedulingSat
             {
                 foreach (int d in Range(7))
                 {
-                    var works = new IntVar[numEmployees];
+                    var works = new BoolVar[numEmployees];
                     foreach (int e in Range(numEmployees))
                     {
                         works[e] = work[e, s, w * 7 + d];
@@ -245,18 +238,14 @@ public class ShiftSchedulingSat
                         var name = $"excess_demand(shift={s}, week={w}, day={d}";
                         var excess = model.NewIntVar(0, numEmployees - minDemand, name);
                         model.Add(excess == worked - minDemand);
-                        objIntVars.Add(excess);
-                        objIntCoeffs.Add(overPenalty);
+                        obj.AddTerm(excess, overPenalty);
                     }
                 }
             }
         }
 
         // Objective
-        var objBoolSum = LinearExpr.ScalProd(objBoolVars, objBoolCoeffs);
-        var objIntSum = LinearExpr.ScalProd(objIntVars, objIntCoeffs);
-
-        model.Minimize(objBoolSum + objIntSum);
+        model.Minimize(obj);
 
         // Solve model
         var solver = new CpSolver();
@@ -296,30 +285,30 @@ public class ShiftSchedulingSat
             Console.WriteLine();
             Console.WriteLine("Penalties:");
 
-            foreach (var (i, var) in objBoolVars.Select((x, i) => (i, x)))
-            {
-                if (solver.BooleanValue(var))
-                {
-                    var penalty = objBoolCoeffs[i];
-                    if (penalty > 0)
-                    {
-                        Console.WriteLine($"  {var.Name()} violated, penalty={penalty}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"  {var.Name()} fulfilled, gain={-penalty}");
-                    }
-                }
-            }
+            // foreach (var (i, var) in objBoolVars.Select((x, i) => (i, x)))
+            // {
+            //     if (solver.BooleanValue(var))
+            //     {
+            //         var penalty = objBoolCoeffs[i];
+            //         if (penalty > 0)
+            //         {
+            //             Console.WriteLine($"  {var.Name()} violated, penalty={penalty}");
+            //         }
+            //         else
+            //         {
+            //             Console.WriteLine($"  {var.Name()} fulfilled, gain={-penalty}");
+            //         }
+            //     }
+            // }
 
-            foreach (var (i, var) in objIntVars.Select((x, i) => (i, x)))
-            {
-                if (solver.Value(var) > 0)
-                {
-                    Console.WriteLine(
-                        $"  {var.Name()} violated by {solver.Value(var)}, linear penalty={objIntCoeffs[i]}");
-                }
-            }
+            // foreach (var (i, var) in objIntVars.Select((x, i) => (i, x)))
+            // {
+            //     if (solver.Value(var) > 0)
+            //     {
+            //         Console.WriteLine(
+            //             $"  {var.Name()} violated by {solver.Value(var)}, linear penalty={objIntCoeffs[i]}");
+            //     }
+            // }
 
             Console.WriteLine();
             Console.WriteLine("Statistics");
@@ -342,7 +331,7 @@ public class ShiftSchedulingSat
     /// <returns>An array of variables which conjunction will be false if the
     /// sub-list is assigned to True, and correctly bounded by variables assigned
     /// to False, or by the start or end of works.</returns>
-    static ILiteral[] NegatedBoundedSpan(IntVar[] works, int start, int length)
+    static ILiteral[] NegatedBoundedSpan(BoolVar[] works, int start, int length)
     {
         var sequence = new List<ILiteral>();
 
@@ -380,11 +369,11 @@ public class ShiftSchedulingSat
     /// base name for penalty literals.</param> <returns>A tuple (costLiterals,
     /// costCoefficients) containing the different penalties created by the
     /// sequence constraint.</returns>
-    static (IntVar[] costLiterals, int[] costCoefficients)
-        AddSoftSequenceConstraint(CpModel model, IntVar[] works, int hardMin, int softMin, int minCost, int softMax,
+    static (IEnumerable<BoolVar> costLiterals, IEnumerable<int> costCoefficients)
+        AddSoftSequenceConstraint(CpModel model, BoolVar[] works, int hardMin, int softMin, int minCost, int softMax,
                                   int hardMax, int maxCost, string prefix)
     {
-        var costLiterals = new List<IntVar>();
+        var costLiterals = new List<BoolVar>();
         var costCoefficients = new List<int>();
 
         // Forbid sequences that are too short.
@@ -449,7 +438,7 @@ public class ShiftSchedulingSat
             model.AddBoolOr(temp);
         }
 
-        return (costLiterals.ToArray(), costCoefficients.ToArray());
+        return (costLiterals, costCoefficients);
     }
 
     /// <summary>
@@ -473,8 +462,8 @@ public class ShiftSchedulingSat
     /// base name for penalty literals.</param> <returns>A tuple (costVariables,
     /// costCoefficients) containing the different penalties created by the
     /// sequence constraint.</returns>
-    static (IntVar[] costVariables, int[] costCoefficients)
-        AddSoftSumConstraint(CpModel model, IntVar[] works, int hardMin, int softMin, int minCost, int softMax,
+    static (IEnumerable<IntVar> costVariables, IEnumerable<int> costCoefficients)
+        AddSoftSumConstraint(CpModel model, BoolVar[] works, int hardMin, int softMin, int minCost, int softMax,
                              int hardMax, int maxCost, string prefix)
     {
         var costVariables = new List<IntVar>();
@@ -508,7 +497,7 @@ public class ShiftSchedulingSat
             costCoefficients.Add(maxCost);
         }
 
-        return (costVariables.ToArray(), costCoefficients.ToArray());
+        return (costVariables, costCoefficients);
     }
 
     /// <summary>

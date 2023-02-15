@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,22 @@
 
 #include "ortools/sat/sat_decision.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <random>
+#include <utility>
+#include <vector>
 
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/integer_pq.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -71,7 +84,8 @@ void SatDecisionPolicy::BeforeConflict(int trail_index) {
   }
 
   if (trail_index > best_partial_assignment_.size()) {
-    best_partial_assignment_.assign(&trail_[0], &trail_[trail_index]);
+    best_partial_assignment_.assign(trail_.IteratorAt(0),
+                                    trail_.IteratorAt(trail_index));
   }
 
   --num_conflicts_until_rephase_;

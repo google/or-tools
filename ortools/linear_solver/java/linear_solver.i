@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // This .i file exposes the linear programming and integer programming
+// solver. See the C++/Python codelab:  (there isn't
 // a java codelab yet, as of July 2014)
 //
 // The java API is pretty much identical to the C++ API, with methods
@@ -301,6 +302,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::PDLP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
@@ -322,6 +324,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::INFEASIBLE;  // no test
 %unignore operations_research::MPSolver::UNBOUNDED;  // no test
 %unignore operations_research::MPSolver::ABNORMAL;  // no test
+%unignore operations_research::MPSolver::MODEL_INVALID;  // no test
 %unignore operations_research::MPSolver::NOT_SOLVED;  // no test
 
 // Expose the MPSolver's basic API, with some non-trivial renames.

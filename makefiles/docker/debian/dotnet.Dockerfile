@@ -17,7 +17,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
 RUN make dotnet
 
 FROM build AS test

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,9 @@
 
 // [START program]
 // [START import]
+#include <algorithm>
 #include <cstdint>
+#include <sstream>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -145,7 +147,18 @@ void VrpInitialRoutes() {
   routing.GetMutableDimension("Distance")->SetGlobalSpanCostCoefficient(100);
   // [END distance_constraint]
 
-  // Get initial solution from routes.
+  // Close model with the custom search parameters
+  // [START parameters]
+  RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
+  searchParameters.set_first_solution_strategy(FirstSolutionStrategy_Value_PATH_CHEAPEST_ARC);
+  searchParameters.set_local_search_metaheuristic(LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
+  searchParameters.mutable_time_limit()->set_seconds(5);
+  // When an initial solution is given for search, the model will be closed with the default
+  // search parameters unless it is explicitly closed with the custom search parameters.
+  routing.CloseModelWithParameters(searchParameters);
+  // [END parameters]
+
+  // Get initial solution from routes after closing the model.
   // [START print_initial_solution]
   const Assignment* initial_solution =
       routing.ReadAssignmentFromRoutes(data.initial_routes, true);
@@ -153,16 +166,12 @@ void VrpInitialRoutes() {
   LOG(INFO) << "Initial solution: ";
   PrintSolution(data, manager, routing, *initial_solution);
   // [END print_initial_solution]
-  // Setting first solution heuristic.
-  // [START parameters]
-  RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
-  // [END parameters]
 
   // Solve from initial solution.
   // [START solve]
   const Assignment* solution = routing.SolveFromAssignmentWithParameters(
       initial_solution, searchParameters);
-  // [START solve]
+  // [END solve]
 
   // Print solution on console.
   // [START print_solution]
@@ -173,7 +182,7 @@ void VrpInitialRoutes() {
 }
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::VrpInitialRoutes();
   return EXIT_SUCCESS;
 }

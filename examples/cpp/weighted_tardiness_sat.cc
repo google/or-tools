@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,27 +13,27 @@
 
 #include <math.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <numeric>
 #include <string>
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/filelineiter.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
+#include "ortools/util/filelineiter.h"
 
-ABSL_FLAG(std::string, input, "examples/data/weighted_tardiness/wt40.txt",
+ABSL_FLAG(std::string, input, "examples/cpp/wt40.txt",
           "wt data file name.");
 ABSL_FLAG(int, size, 40, "Size of the problem in the wt file.");
 ABSL_FLAG(int, n, 28, "1-based instance number in the wt file.");
@@ -253,8 +253,7 @@ void ParseAndSolve() {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

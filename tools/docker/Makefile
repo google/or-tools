@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # General commands
 .PHONY: help
 BOLD=\e[1m
@@ -10,7 +23,7 @@ help:
 	@echo -e "${BOLD}DESCRIPTION${RESET}"
 	@echo -e "\tTools to generate various deliveries for linux distros"
 	@echo
-	@echo -e "${BOLD}MAKE TARGETS${RESET}"
+	@echo -e "${BOLD}MAIN TARGETS${RESET}"
 	@echo -e "\t${BOLD}help${RESET}: display this help and exit."
 	@echo
 	@echo -e "\t${BOLD}delivery${RESET}: Build ${BOLD}archives${RESET} and ${BOLD}python${RESET} targets."
@@ -19,6 +32,7 @@ help:
 	@echo -e "\t${BOLD}archives${RESET}: Build all OR-Tools archives in export."
 	@echo -e "\t${BOLD}test_archives${RESET}: Test each OR-Tools archives for all ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
+	@echo -e "${BOLD}PYTHON TARGETS${RESET}"
 	@echo -e "\t${BOLD}python${RESET}: Build alpine and manylinux2014 python 'ortools' wheel packages (3.6+)."
 	@echo -e "\t${BOLD}python_<platform>${RESET}: Build all python 'ortools' wheel packages (3.6+) for a specific platform."
 	@echo -e "\t${BOLD}python_<platform>_<step>${RESET}: Build all python 'ortools' wheel packages (3.6+) for a specific platform."
@@ -45,6 +59,7 @@ help:
 	@echo -e "\t\t${BOLD}38${RESET} Python3.8"
 	@echo -e "\t\t${BOLD}39${RESET} Python3.9"
 	@echo -e "\t\t${BOLD}310${RESET} Python3.10"
+	@echo -e "\t\t${BOLD}311${RESET} Python3.11"
 	@echo
 	@echo -e "\t${BOLD}<step>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -56,51 +71,64 @@ help:
 	@echo -e "\te.g. 'make python_arm64v8_alpine_export'"
 	@echo
 	@echo
-	@echo -e "\t${BOLD}amd64_<stage>${RESET}: Build <stage> docker images for ALL DISTROS."
-	@echo -e "\t${BOLD}amd64_<distro>_<stage>${RESET}: Build the <stage> docker image for a specific distro."
-	@echo -e "\t${BOLD}save_amd64_<stage>${RESET}: Save <stage> docker images for ALL DISTROS."
-	@echo -e "\t${BOLD}save_amd64_<distro>_<stage>${RESET}: Save the <stage> docker image for a specific distro."
-	@echo -e "\t${BOLD}sh_amd64_<distro>_<stage>${RESET}: Run a container using the <stage> docker image specified (debug purpose)."
-	@echo -e "\t${BOLD}clean_amd64_<stage>${RESET}: Clean <stage> docker images for ALL DISTROS."
-	@echo -e "\t${BOLD}clean_amd64_<distro>_<stage>${RESET}: Clean the <stage> docker image for a specific distro."
-	@echo
-	@echo -e "\t${BOLD}amd64_<distro>_test${RESET}: Test OR-Tools archive for ALL LANGUAGES for the specified ${BOLD}<distro>${RESET}."
-	@echo -e "\t${BOLD}amd64_<distro>_test_<lang>${RESET}: Test OR-Tools archive for the specified ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
+	@echo -e "${BOLD}ARCHIVE TARGETS${RESET}"
+	@echo -e "\t${BOLD}<platform>_<stage>${RESET}: Build <stage> docker images for ALL DISTROS and ALL LANGUAGES."
+	@echo -e "\t${BOLD}<target>${RESET}: Build the docker image for a specific platform,distro,lang,stage."
+	@echo -e "\t${BOLD}save_<target>${RESET}: Save <stage> docker images for ALL DISTROS."
+	@echo -e "\t${BOLD}sh_<target>${RESET}: Run a container using the docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_<target>${RESET}: Clean the docker image specified."
 	@echo
 	@echo -e "\t${BOLD}clean${RESET}: Clean all docker images but keep archives (i.e. don't touch the export directory)."
 	@echo -e "\t${BOLD}distclean${RESET}: Clean all docker images and remove all archives."
 	@echo
+	@echo -e "\t${BOLD}<target>${RESET}:"
+	@echo -e "\t\t${BOLD}<platform>_<distro>_<stage>${RESET}"
+	@echo
+	@echo -e "\t${BOLD}<platform>${RESET}:"
+	@echo -e "\t\t${BOLD}amd64${RESET}"
+	@echo -e "\t\t${BOLD}arm64${RESET}"
+#	@echo -e "\t\t${BOLD}riscv64 (RISC-V 64bits, experimental)${RESET}"
+	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
-	@echo -e "\t\t${BOLD}centos-8${RESET} (latest)"
+	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
+	@echo -e "\t\t${BOLD}centos-8${RESET} (Centos Stream 8)"
 	@echo -e "\t\t${BOLD}centos-7${RESET} (Centos 7 LTS)"
+	@echo -e "\t\t${BOLD}debian-sid${RESET} (unstable)"
 	@echo -e "\t\t${BOLD}debian-11${RESET} (bullseye, latest)"
 	@echo -e "\t\t${BOLD}debian-10${RESET} (buster)"
-	@echo -e "\t\t${BOLD}fedora-35${RESET} (latest)"
+	@echo -e "\t\t${BOLD}fedora-36${RESET} (latest)"
+	@echo -e "\t\t${BOLD}fedora-35${RESET}"
 	@echo -e "\t\t${BOLD}fedora-34${RESET}"
 	@echo -e "\t\t${BOLD}fedora-33${RESET}"
 	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
-	@echo -e "\t\t${BOLD}ubuntu-21.10${RESET} (rolling)"
-	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS, latest)"
+	@echo -e "\t\t${BOLD}ubuntu-22.10${RESET} (Ubuntu 22.10, devel)"
+	@echo -e "\t\t${BOLD}ubuntu-22.04${RESET} (Ubuntu 22.04 LTS, latest)"
+	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
-	@echo -e "\t\t${BOLD}ubuntu-16.04${RESET} (Ubuntu 16.04 LTS)"
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
 	@echo -e "\t\t${BOLD}devel${RESET}"
-	@echo -e "\t\t${BOLD}third_party${RESET}"
-	@echo -e "\t\t${BOLD}build${RESET}"
-	@echo -e "\t\t${BOLD}archive${RESET}"
-	@echo -e "\t\t${BOLD}test_<lang>${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_build${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_archive${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_export${RESET}"
+	@echo -e "\t\t${BOLD}<lang>_test${RESET}"
 	@echo
 	@echo -e "\t${BOLD}<lang>${RESET}: Language to build"
-	@echo -e "\t\t${BOLD}cc${RESET} C++"
-	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) SWIG wrappers"
-	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Core 3.1 and .Net 5.0 SWIG wrappers"
+	@echo -e "\t\t${BOLD}cpp${RESET} C++"
+	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Core 3.1 and/or .Net 6.0 wrappers"
+	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) wrappers"
+	@echo -e "\t\t${BOLD}python${RESET} Python 3.6+ wrappers"
 	@echo
-	@echo -e "\te.g. 'make ubuntu-18.04_archive'"
-	@echo -e "\te.g. 'make sh_ubuntu-18.04_build'"
-	@echo -e "\te.g. 'make ubuntu-18.04_test_cc'"
+	@echo -e "\te.g. 'make sh_amd64_ubuntu-22.04_cpp_build'"
+	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_archive'"
+	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_export'"
+	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_test'"
+	@echo
+	@echo -e "\tnote: Few custom merge targets (e.g. ${BOLD}export${RESET}) are also provided."
+	@echo -e "\te.g. 'make amd64_centos-7_export'"
+	@echo -e "\te.g. 'make arm64_centos-7_export'"
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo
@@ -118,8 +146,9 @@ SUFFIXES =
 
 OR_TOOLS_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 OR_TOOLS_SHA1 := $(shell git rev-parse --verify HEAD)
+# OR_TOOLS_MAJOR & OR_TOOLS_MINOR
 include ../../Version.txt
-OR_TOOLS_PATCH := $(shell git rev-list --count HEAD)
+OR_TOOLS_PATCH := $(shell git rev-list --count v${OR_TOOLS_MAJOR}.0..HEAD)
 OR_TOOLS_VERSION := ${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.${OR_TOOLS_PATCH}
 ifdef PRE_RELEASE
 OR_TOOLS_VERSION := ${OR_TOOLS_VERSION}-rc
@@ -131,12 +160,15 @@ $(info version: ${OR_TOOLS_VERSION})
 # Docker image name prefix.
 IMAGE := or-tools/docker
 
-DOCKER_RUN_CMD := docker run --rm --init
 ifdef NOCACHE
 DOCKER_BUILD_CMD := docker build --no-cache
+DOCKER_BUILDX_CMD := docker buildx build --no-cache
 else
 DOCKER_BUILD_CMD := docker build
+DOCKER_BUILDX_CMD := docker buildx build
 endif
+DOCKER_RUN_CMD := docker run --rm --init
+
 #################
 ###  DELIVERY  ##
 #################
@@ -152,9 +184,9 @@ test_delivery: test_archives
 # $* stem
 # $< first prerequist
 # $@ target name
-PYTHON_PLATFORMS = amd64 arm64v8
-PYTHON_DISTROS = manylinux alpine
-PYTHON_STAGES = env devel build test
+PYTHON_PLATFORMS := amd64 arm64v8
+PYTHON_DISTROS := manylinux alpine
+PYTHON_STAGES := env devel build test
 
 export:
 	-mkdir $@
@@ -169,7 +201,7 @@ cache/python: | cache
 	-mkdir $@
 
 ## MANYLINUX ##
-PYTHON_VERSIONS = 36 37 38 39 310
+PYTHON_VERSIONS := 36 37 38 39 310 311
 
 export/python/manylinux: | export/python
 	-mkdir -p $@
@@ -178,9 +210,7 @@ export/python/manylinux/build-manylinux.sh: python/build-manylinux.sh | export/p
 	cp $< $@
 
 define manylinux_inner =
-#$$(info manylinux_inner:PLATFORM: '$1')
-#$$(info manylinux_inner:VERSION: '$2')
-#$$(info manylinux_inner:STAGE: '$3')
+#$$(info manylinux_inner: PLATFORM:'$1' VERSION:'$2' STAGE:'$3')
 
 .PHONY: python_$1_manylinux_cp$2_$3
 python_$1_manylinux_cp$2_$3: python/$1/manylinux.Dockerfile export/python/manylinux/build-manylinux.sh
@@ -189,6 +219,7 @@ python_$1_manylinux_cp$2_$3: python/$1/manylinux.Dockerfile export/python/manyli
  --tag ${IMAGE}:$$@ \
  --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \
+ --build-arg OR_TOOLS_PATCH=${OR_TOOLS_PATCH} \
  --build-arg PYTHON_VERSION=$2 \
  --target=$3 \
  -f $$< \
@@ -217,8 +248,7 @@ sh_python_$1_manylinux_cp$2_$3: python_$1_manylinux_cp$2_$3
 endef
 
 define manylinux_outer =
-#$$(info manylinux_outer:PLATFORM: '$1')
-#$$(info manylinux_outer:VERSION: '$2')
+#$$(info manylinux_outer: PLATFORM: '$1' VERSION: '$2')
 
 $$(foreach stage,${PYTHON_STAGES},$$(eval $$(call manylinux_inner,$1,$2,$${stage})))
 
@@ -237,8 +267,7 @@ $(foreach version,${PYTHON_VERSIONS},$(eval $(call manylinux_outer,arm64v8,${ver
 
 # Merge
 define manylinux_merge =
-#$$(info manylinux_merge:PLATFORM: '$1')
-#$$(info manylinux_merge:STAGE: '$2')
+#$$(info manylinux_merge: PLATFORM:'$1' STAGE:'$2')
 
 .PHONY: python_$1_manylinux_$2
 python_$1_manylinux_$2: $(addprefix python_$1_manylinux_cp, $(addsuffix _$2, ${PYTHON_VERSIONS}))
@@ -256,8 +285,7 @@ export/python/alpine: | export/python
 	-mkdir -p $@
 
 define alpine_loop =
-#$$(info alpine_loop:PLATFORM: '$1')
-#$$(info alpine_loop:STAGE: '$2')
+#$$(info alpine_loop: PLATFORM:'$1' STAGE:'$2')
 
 .PHONY: python_$1_alpine_$2
 python_$1_alpine_$2: python/$1/alpine.Dockerfile | export/python/alpine
@@ -266,6 +294,7 @@ python_$1_alpine_$2: python/$1/alpine.Dockerfile | export/python/alpine
  --tag ${IMAGE}:$$@ \
  --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \
+ --build-arg OR_TOOLS_PATCH=${OR_TOOLS_PATCH} \
  --target=$2 \
  -f $$< \
  export/python/alpine
@@ -305,9 +334,8 @@ ${alpine_export_targets}: python_%_alpine_export: python_%_alpine_build | export
  "cp build*/python/dist/*.whl /export/python"
 
 ## MERGE DISTRO ##
-define distro_merge =
-#$$(info distro_merge:PLATFORM: '$1')
-#$$(info distro_merge:STAGE: '$2')
+define python_distro_merge =
+#$$(info python_distro_merge: PLATFORM:'$1' STAGE:'$2')
 
 .PHONY: python_$1_$2
 python_$1_$2: $(addprefix python_$1_, $(addsuffix _$2, ${PYTHON_DISTROS}))
@@ -317,12 +345,22 @@ save_python_$1_$2: $(addprefix save_python_$1_, $(addsuffix _$2, ${PYTHON_DISTRO
 clean_python_$1_$2: $(addprefix clean_python_$1_, $(addsuffix _$2, ${PYTHON_DISTROS}))
 endef
 
-$(foreach stage,${PYTHON_STAGES} export,$(eval $(call distro_merge,amd64,${stage})))
-$(foreach stage,${PYTHON_STAGES} export,$(eval $(call distro_merge,arm64v8,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call python_distro_merge,amd64,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call python_distro_merge,arm64v8,${stage})))
 
 ## MERGE PLATFORM ##
-define platform_merge =
-#$$(info platform_merge:STAGE: '$1')
+define clean_python_platform =
+#$$(info clean_python_platform: PLATFORM:'$1')
+
+.PHONY: clean_python_$1
+clean_python_$1: $(addprefix clean_python_$1_, ${PYTHON_STAGES})
+endef
+
+$(foreach platform,${PYTHON_PLATFORMS},$(eval $(call clean_python_platform,${platform})))
+
+
+define python_platform_merge =
+#$$(info python_platform_merge: STAGE:'$1')
 
 .PHONY: python_$1
 python_$1: $(addprefix python_, $(addsuffix _$1, ${PYTHON_PLATFORMS}))
@@ -332,17 +370,16 @@ save_python_$1: $(addprefix save_python_, $(addsuffix _$1, ${PYTHON_PLATFORMS}))
 clean_python_$1: $(addprefix clean_python_, $(addsuffix _$1, ${PYTHON_PLATFORMS}))
 endef
 
-$(foreach stage,${PYTHON_STAGES} export,$(eval $(call platform_merge,${stage})))
+$(foreach stage,${PYTHON_STAGES} export,$(eval $(call python_platform_merge,${stage})))
 
 # Alias
-.PHONY: python_amd64
-python_amd64: python_amd64_export
-
-.PHONY: python_arm64v8
-python_arm64v8: python_arm64v8_export
-
 .PHONY: python
-python: python_export
+python: python_amd64_export
+
+.PHONY: clean_python
+clean_python: $(addprefix clean_python_, ${PYTHON_PLATFORMS})
+	-rm -rf cache/python/*
+	-rm -rf export/python
 
 #################
 ###  ARCHIVES  ##
@@ -350,16 +387,6 @@ python: python_export
 # $* stem
 # $< first prerequist
 # $@ target name
-
-# Currently supported distro
-DISTROS = \
- alpine-edge \
- centos-7 centos-8 \
- debian-10 debian-11 \
- fedora-33 fedora-34 fedora-35 \
- opensuse-leap \
- ubuntu-16.04 ubuntu-18.04 ubuntu-20.04 ubuntu-21.10
-STAGES = env devel third_party build
 
 export/%/or-tools.snk: or-tools.snk | export
 	-mkdir -p export/$*
@@ -370,197 +397,337 @@ export/%/or-tools.snk: or-tools.snk | export
 export/archives: | export
 	-mkdir $@
 
-define make-stage-target =
-targets_$1 = $(addprefix amd64_, $(addsuffix _$1, $(DISTROS)))
-.PHONY: amd64_$1
-amd64_$1: $$(targets_$1)
-.PHONY: $(targets_$1)
-$$(targets_$1): amd64_%_$1: amd64/%.Dockerfile | export/%/or-tools.snk
-	#@docker image rm -f ${IMAGE}:amd64_$$*_$1 2>/dev/null
-	${DOCKER_BUILD_CMD} \
- --tag ${IMAGE}:amd64_$$*_$1 \
- --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
- --build-arg SRC_GIT_SHA1=$(OR_TOOLS_SHA1) \
- --target=$1 \
+# Currently supported platform
+PLATFORMS := amd64 arm64 # riscv64
+
+# Currently supported distro
+DISTROS := \
+ alpine-edge \
+ archlinux \
+ centos-7 centos-8 \
+ debian-10 debian-11 debian-sid \
+ fedora-33 fedora-34 fedora-35 fedora-36 \
+ opensuse-leap \
+ ubuntu-18.04 ubuntu-20.04 ubuntu-22.04 ubuntu-22.10
+
+# List of stages
+STAGES := env devel
+
+define build_stage =
+#$$(info build_stage: PLATFORM:'$1' DISTRO:'$2' STAGE:'$3')
+
+.PHONY: $1_$2_$3
+$1_$2_$3: images/$2.Dockerfile | export/$1/$2/or-tools.snk
+	#@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
+	${DOCKER_BUILDX_CMD} --platform linux/$1 \
+ --tag ${IMAGE}:$$@ \
+ --build-arg SRC_GIT_BRANCH=${OR_TOOLS_BRANCH} \
+ --build-arg SRC_GIT_SHA1=${OR_TOOLS_SHA1} \
+ --build-arg OR_TOOLS_PATCH=${OR_TOOLS_PATCH} \
+ --target=$3 \
  -f $$< \
- export/$$*
+ export/$1/$2
 
-save_targets_$1 = $(addprefix save_amd64_, $(addsuffix _$1, $(DISTROS)))
-.PHONY: save_amd64_$1
-save_amd64_$1: $$(save_targets_$1)
-.PHONY: $(save_targets_$1)
-$$(save_targets_$1): save_amd64_%_$1: cache/amd64/%/docker_$1.tar
-cache/amd64/%/docker_$1.tar: amd64_%_$1
+.PHONY: save_$1_$2_$3
+save_$1_$2_$3: cache/$1/$2/docker_$3.tar
+cache/$1/$2/docker_$3.tar: $1_$2_$3
 	@rm -f $$@
-	mkdir -p cache/amd64/$$*
-	docker save ${IMAGE}:amd64_$$*_$1 -o $$@
+	mkdir -p cache/$1/$2
+	docker save ${IMAGE}:$$< -o $$@
 
-sh_targets_$1 = $(addprefix sh_amd64_, $(addsuffix _$1, $(DISTROS)))
-.PHONY: $(sh_targets_$1)
-$$(sh_targets_$1): sh_amd64_%_$1: amd64_%_$1 | export
+.PHONY: sh_$1_$2_$3
+sh_$1_$2_$3: $1_$2_$3 | export
 	${DOCKER_RUN_CMD} \
  -v `pwd`/export:/export \
  -it \
- --name ortools_amd64_$$*_$1 \
- ${IMAGE}:amd64_$$*_$1
+ --name ortools_$$< \
+ ${IMAGE}:$$<
 
-clean_targets_$1 = $(addprefix clean_amd64_, $(addsuffix _$1, $(DISTROS)))
-.PHONY: clean_amd64_$1
-clean_amd64_$1: $$(clean_targets_$1)
-.PHONY: $(clean_targets_$1)
-$$(clean_targets_$1): clean_amd64_%_$1:
-	docker image rm -f ${IMAGE}:amd64_$$*_$1 2>/dev/null
-	rm -f cache/amd64/$$*/docker_$1.tar
+.PHONY: clean_$1_$2_$3
+clean_$1_$2_$3:
+	docker image rm -f ${IMAGE}:$1_$2_$3 2>/dev/null
+	rm -f cache/$1/$2/docker_$3.tar
 endef
 
-$(foreach stage,$(STAGES),$(eval $(call make-stage-target,$(stage))))
+define build_distro =
+#$$(info build_distro: PLATFORM:'$1' DISTRO:'$2')
 
-# Build Archives
-targets = $(addprefix amd64_, $(addsuffix _archive, $(DISTROS)))
-.PHONY: amd64_archives
-amd64_archives: $(targets)
-.PHONY: $(targets)
-$(targets): amd64_%_archive: \
- export/archives/or-tools_amd64_%_v$(OR_TOOLS_VERSION).tar.gz \
- export/archives/or-tools_amd64_flatzinc_%_v$(OR_TOOLS_VERSION).tar.gz
+$$(foreach stage,${STAGES},$$(eval $$(call build_stage,$1,$2,$${stage})))
+endef
 
-export/archives/or-tools_amd64_%_v$(OR_TOOLS_VERSION).tar.gz: amd64_%_build | export/archives
-	-rm -f export/archives/or-tools_amd64_$*_v*.tar.gz
-	$(DOCKER_RUN_CMD) \
+define build_platform =
+#$$(info build_platform: PLATFORM:'$1')
+
+$$(foreach distro,${DISTROS},$$(eval $$(call build_distro,$1,$${distro})))
+endef
+
+$(foreach platform,${PLATFORMS},$(eval $(call build_platform,${platform})))
+
+# List language dependent stages
+LANGS := cpp dotnet java python
+LANGS_EXPORT := cpp dotnet java
+LANG_STAGES := build archive
+
+define build_lang_stage =
+#$$(info build_lang_stage: PLATFORM:'$1' DISTRO:'$2' LANG:'$3' STAGE:'$4')
+
+.PHONY: $1_$2_$3_$4
+$1_$2_$3_$4: images/$2.Dockerfile | export/$1/$2/or-tools.snk
+	#@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
+	${DOCKER_BUILDX_CMD} --platform linux/$1 \
+ --tag ${IMAGE}:$$@ \
+ --build-arg SRC_GIT_BRANCH=${OR_TOOLS_BRANCH} \
+ --build-arg SRC_GIT_SHA1=${OR_TOOLS_SHA1} \
+ --build-arg OR_TOOLS_PATCH=${OR_TOOLS_PATCH} \
+ --target=$3_$4 \
+ -f $$< \
+ export/$1/$2
+
+.PHONY: save_$1_$2_$3_$4
+save_$1_$2_$3_$4: cache/$1/$2/docker_$3_$4.tar
+cache/$1/$2/docker_$3_$4.tar: $1_$2_$3_$4
+	@rm -f $$@
+	mkdir -p cache/$1/$2
+	docker save ${IMAGE}:$$< -o $$@
+
+.PHONY: sh_$1_$2_$3_$4
+sh_$1_$2_$3_$4: $1_$2_$3_$4 | export
+	${DOCKER_RUN_CMD} \
+ -v `pwd`/export:/export \
+ -it \
+ --name ortools_$$< \
+ ${IMAGE}:$$<
+
+.PHONY: clean_$1_$2_$3_$4
+clean_$1_$2_$3_$4:
+	docker image rm -f ${IMAGE}:$1_$2_$3_$4 2>/dev/null
+	rm -f cache/$1/$2/docker_$3_$4.tar
+endef
+
+define build_lang_distro =
+#$$(info build_lang_distro: PLATFORM:'$1' DISTRO:'$2')
+
+$$(foreach stage,${LANG_STAGES},$$(eval $$(call build_lang_stage,$1,$2,cpp,$${stage})))
+$$(foreach stage,${LANG_STAGES},$$(eval $$(call build_lang_stage,$1,$2,dotnet,$${stage})))
+$$(foreach stage,${LANG_STAGES},$$(eval $$(call build_lang_stage,$1,$2,java,$${stage})))
+$$(foreach stage,${LANG_STAGES},$$(eval $$(call build_lang_stage,$1,$2,python,$${stage})))
+endef
+
+define build_lang_platform =
+#$$(info build_lang_platform: PLATFORM:'$1')
+
+$$(foreach distro,${DISTROS},$$(eval $$(call build_lang_distro,$1,$${distro})))
+endef
+
+$(foreach platform,${PLATFORMS},$(eval $(call build_lang_platform,${platform})))
+
+# Special language dependent export target
+define export_archive =
+#$$(info export_archive: PLATFORM:'$1' DISTRO:'$2' LANG:'$3')
+
+.PHONY: $1_$2_$3_export
+$1_$2_$3_export: export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz \
+
+export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz: $1_$2_$3_archive | export/archives
+	-rm -f export/archives/or-tools_$1_$2_$3_v*.tar.gz
+	-mkdir -p export/$1/$2
+	${DOCKER_RUN_CMD} \
  -w /root/or-tools \
  -v `pwd`/export:/export \
- $(IMAGE):amd64_$*_build \
- "make archive && make test_archive && cp *.tar.gz /export/$*"
-	mv export/$*/or-tools_*.tar.gz $@
+ ${IMAGE}:$$< \
+ "cp or-tools_*_v*.tar.gz /export/$1/$2"
+	cp export/$1/$2/or-tools_*_$3*_v*.tar.gz $$@
 
-export/archives/or-tools_amd64_flatzinc_%_v$(OR_TOOLS_VERSION).tar.gz: amd64_%_build | export/archives
-	-rm -f export/archives/or-tools_amd64_flatzinc_$*_v*.tar.gz
-	$(DOCKER_RUN_CMD) \
- -w /root/or-tools \
- -v `pwd`/export:/export \
- $(IMAGE):amd64_$*_build \
- "make fz_archive && make test_fz_archive && cp *.tar.gz /export/$*"
-	mv export/$*/or-tools_flatzinc_*.tar.gz $@
+.PHONY: clean_$1_$2_$3_export
+clean_$1_$2_$3_export:
+	rm -f export/archives/or-tools_$1_$2_$3_v${OR_TOOLS_VERSION}.tar.gz
+endef
+
+define export_distro =
+#$$(info export_distro: PLATFORM:'$1' DISTRO:'$2')
+
+$$(foreach lang,${LANGS},$$(eval $$(call export_archive,$1,$2,$${lang})))
+
+.PHONY: $1_$2_export
+$1_$2_export: $(addprefix $1_$2_, $(addsuffix _export, ${LANGS_EXPORT}))
+
+.PHONY: clean_$1_$2_export
+clean_$1_$2_export: $(addprefix clean_$1_$2_, $(addsuffix _export, ${LANGS}))
+endef
+
+define export_platform =
+#$$(info export_platform: PLATFORM:'$1')
+
+$$(foreach distro,${DISTROS},$$(eval $$(call export_distro,$1,$${distro})))
+endef
+
+$(foreach platform,${PLATFORMS},$(eval $(call export_platform,${platform})))
 
 ## MERGE ##
+define merge_stage =
+#$$(info merge_stage: PLATFORM:'$1' STAGE:'$2')
+
+.PHONY: $1_$2
+$1_$2: $(addprefix $1_, $(addsuffix _$2, ${DISTROS}))
+
+.PHONY: clean_$1_$2
+clean_$1_$2: $(addprefix clean_$1_, $(addsuffix _$2, ${DISTROS}))
+endef
+
+define merge_platform =
+#$$(info merge_platform: PLATFORM:'$1')
+
+$$(foreach stage,${STAGES} export,$$(eval $$(call merge_stage,$1,$${stage})))
+$$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,cpp_$${stage})))
+$$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,dotnet_$${stage})))
+$$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,java_$${stage})))
+$$(foreach stage,${LANG_STAGES} export,$$(eval $$(call merge_stage,$1,python_$${stage})))
+
+build_targets := $(addprefix $1_, ${STAGES} export) \
+ $(addprefix $1_cpp_, ${LANG_STAGES} export) \
+ $(addprefix $1_dotnet_, ${LANG_STAGES} export) \
+ $(addprefix $1_java_, ${LANG_STAGES} export) \
+ $(addprefix $1_python_, ${LANG_STAGES} export)
+.PHONY: $${build_targets}
+$${build_targets}: $1_%: $(addprefix $1_, $(addsuffix _%, ${DISTROS}))
+
+.PHONY: $1_export
+$1_export: $1_cpp_export $1_dotnet_export $1_java_export #$1_python_export
+
+clean_targets := $(addprefix clean_$1_, ${STAGES} export) \
+ $(addprefix clean_$1_cpp_, ${LANG_STAGES} export) \
+ $(addprefix clean_$1_dotnet_, ${LANG_STAGES} export) \
+ $(addprefix clean_$1_java_, ${LANG_STAGES} export) \
+ $(addprefix clean_$1_python_, ${LANG_STAGES} export)
+.PHONY: $${clean_targets}
+$${clean_targets}: clean_$1_%: $(addprefix clean_$1_, $(addsuffix _%, ${DISTROS}))
+
+.PHONY: clean_$1
+clean_$1: $${clean_targets}
+endef
+
+$(foreach platform,${PLATFORMS},$(eval $(call merge_platform,${platform})))
+
+# Alias
 .PHONY: archives
-archives: amd64_archives #arm64v8_archives
+archives: amd64_export
+
+.PHONY: clean_archives
+clean_archives: clean_amd64
 
 ############
 ##  TEST  ##
 ############
-LANGS = cc java dotnet
+define test_lang =
+#$$(info test_lang: PLATFORM:'$1' DISTRO:'$2' LANG:'$3')
 
-define make-test-target =
-targets_$1 = $(addprefix amd64_, $(addsuffix _test_$1, $(DISTROS)))
-.PHONY: amd64_test_$1
-amd64_test_$1: $$(targets_$1)
-.PHONY: $(targets_$1)
-$$(targets_$1): amd64_%_test_$1: test/amd64/%/$1.Dockerfile amd64_%_archive
-	#@docker image rm -f $(IMAGE):amd64_$$*_test_$1 2>/dev/null
-	$(DOCKER_BUILD_CMD) \
- --tag $(IMAGE):amd64_$$*_test_$1 \
+.PHONY: $1_$2_$3_test
+$1_$2_$3_test: test/$2/$3.Dockerfile $1_$2_$3_export
+	#@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
+	${DOCKER_BUILDX_CMD} --platform linux/$1 \
+ --tag ${IMAGE}:$$@ \
  -f $$< \
  export/archives
 
-save_targets_test_$1 = $(addprefix save_amd64_, $(addsuffix _test_$1, $(DISTROS)))
-.PHONY: save_amd64_test_$1
-save_amd64_test_$1: $$(save_targets_test_$1)
-.PHONY: $(save_targets_test_$1)
-$$(save_targets_test_$1): save_amd64_%_test_$1: cache/amd64/%/docker_test_$1.tar
-cache/amd64/%/docker_test_$1.tar: amd64_%_test_$1
+.PHONY: save_$1_$2_$3_test
+save_$1_$2_$3_test: cache/$1/$2/docker_$3_test.tar
+cache/$1/$2/docker_$3_test.tar: $1_$2_$3_test
 	@rm -f $$@
-	mkdir -p cache/amd64/$$*
-	docker save ${IMAGE}:amd64_$$*_test_$1 -o $$@
+	mkdir -p cache/$1/$2
+	docker save ${IMAGE}:$$< -o $$@
 
-sh_targets_$1 = $(addprefix sh_amd64_, $(addsuffix _test_$1, $(DISTROS)))
-.PHONY: $(sh_targets_$1)
-$$(sh_targets_$1): sh_amd64_%_test_$1: %_$1
+.PHONY: sh_$1_$2_$3_test
+sh_$1_$2_$3_test: $1_$2_$3_test
 	${DOCKER_RUN_CMD} \
  -v `pwd`/export:/export \
  -it \
- --name ortools_amd64_$$*_$1 \
- ${IMAGE}:amd64_$$*_test_$1
+ --name ortools_$$< \
+ ${IMAGE}:$$<
 
-clean_targets_$1 = $(addprefix clean_amd64_, $(addsuffix _test_$1, $(DISTROS)))
-.PHONY: clean_amd64_$1
-clean_amd64_$1: $$(clean_targets_$1)
-.PHONY: $(clean_targets_$1)
-$$(clean_targets_$1): clean_amd64_%_test_$1:
-	docker image rm -f ${IMAGE}:amd64_$$*_test_$1 2>/dev/null
-	rm -f cache/amd64/$$*/docker_test_$1.tar
+.PHONY: clean_$1_$2_$3_test
+clean_$1_$2_$3_test:
+	docker image rm -f ${IMAGE}:$1_$2_$3_test 2>/dev/null
+	rm -f cache/$1/$2/docker_$3_test.tar
 endef
 
-$(foreach lang,$(LANGS),$(eval $(call make-test-target,$(lang))))
+define test_distro =
+#$$(info test_distro: PLATFORM:'$1' DISTRO:'$2')
 
-targets = $(addprefix amd64_, $(addsuffix _test, $(DISTROS)))
-.PHONY: amd64_test
-amd64_test: $(targets)
-.PHONY: $(targets)
-$(targets): amd64_%_test: $(addprefix amd64_%_test_, $(LANGS))
+$$(foreach lang,${LANGS},$$(eval $$(call test_lang,$1,$2,$${lang})))
 
-targets = $(addprefix clean_amd64_, $(addsuffix _test, $(DISTROS)))
-.PHONY: clean_amd64_test
-clean_amd64_test: $(targets)
-.PHONY: $(targets)
-$(targets): clean_amd64_%_test: $(addprefix clean_amd64_%_test_, $(LANGS))
+.PHONY: $1_$2_test
+$1_$2_test: $(addprefix $1_$2_, $(addsuffix _test, ${LANGS}))
 
-## MERGE ##
+.PHONY: clean_$1_$2_test
+clean_$1_$2_test: $(addprefix clean_$1_$2_, $(addsuffix _test, ${LANGS}))
+endef
+
+define test_platform =
+#$$(info test_platform: PLATFORM:'$1')
+
+$$(foreach distro,${DISTROS},$$(eval $$(call test_distro,$1,$${distro})))
+
+.PHONY: $1_test
+$1_test: $(addprefix $1_, $(addsuffix _test, ${DISTROS}))
+
+.PHONY: clean_$1_test
+clean_$1_test: $(addprefix clean_$1_, $(addsuffix _test, ${DISTROS}))
+endef
+
+$(foreach platform,${PLATFORMS},$(eval $(call test_platform,${platform})))
+
+# Alias
 .PHONY: test
-test: amd64_test #arm64v8_test
+test: $(addsuffix _test, ${PLATFORMS})
+
+.PHONY: clean_test
+test: $(addprefix clean_, $(addsuffix _test, ${PLATFORMS}))
 
 #############
 ##  CLEAN  ##
 #############
-clean_targets = $(addprefix clean_, $(DISTROS))
-
-.PHONY: $(clean_targets)
-$(clean_targets): clean_%: $(addprefix clean_amd64_%_, $(STAGES)) clean_amd64_%_test
-	-rmdir cache/$*
-	-rm -f export/archives/*.tar.gz
-	-rm -f export/$*/or-tools.snk
-	-rmdir export/$*
-
-.PHONY: clean_python
-clean_python: $(addprefix clean_python_amd64_, $(PYTHON_STAGES)) $(addprefix clean_python_arm64v8_, $(PYTHON_STAGES))
-	-rm -rf cache/python/*
-	-rm -f export/python/*.whl
-	-rm -f export/python/*.tar
-	-rm -f export/python/*.sh
-	-rmdir export/python
-
 .PHONY: clean
-clean: $(clean_targets) clean_python
+clean: \
+ clean_python \
+ clean_archives \
+ clean_test
 	docker container prune -f
 	docker image prune -f
 	-rm -rf cache
 
 .PHONY: distclean
-distclean: clean | export/archives
-	-docker container rm -f $$(docker container ls -f status=exited -q)
-	-docker image rm -f $$(docker image ls --all -q)
-	-rm -rf export/archives
+distclean: clean
+	-docker container ls -a
+	-docker container prune -f
+	-docker image ls -a
+	-docker image prune -a -f
+	-docker system df
+	-docker system prune -a -f
 	-rm -rf export
 
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
-MZN_TAG=or-tools-minizinc-challenge:2021v4
+MZN_TAG=or-tools-minizinc-challenge:2022v1
 
-minizinc-challenge-image:
-	docker build -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
+.PHONY: minizinc-challenge
+minizinc-challenge: minizinc-challenge.Dockerfile
+	${DOCKER_BUILD_CMD} -f minizinc-challenge.Dockerfile -t ${MZN_TAG} .
 
-minizinc-challenge-image-no-cache:
-	docker build --no-cache -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
+.PHONY: minizinc-challenge-test
+minizinc-challenge-test: minizinc-challenge
+	${DOCKER_RUN_CMD} ${MZN_TAG} solver -v /minizinc/test.mzn /minizinc/2.dzn
+	${DOCKER_RUN_CMD} ${MZN_TAG} solver -v --free-search /minizinc/test.mzn /minizinc/2.dzn
+	${DOCKER_RUN_CMD} ${MZN_TAG} solver -v -p 2 /minizinc/test.mzn /minizinc/2.dzn
 
-minizinc-challenge-test:
-	docker run $(MZN_TAG) solver /minizinc/test.mzn /minizinc/2.dzn
-	docker run $(MZN_TAG) solver --free-search /minizinc/test.mzn /minizinc/2.dzn
-	docker run $(MZN_TAG) solver -p 2 /minizinc/test.mzn /minizinc/2.dzn
-
+.PHONY: minizinc-challenge-bash
 minizinc-challenge-bash:
-	docker run -it $(MZN_TAG) /bin/bash
+	${DOCKER_RUN_CMD} \
+ -it \
+ --name minizinc_chalenge \
+ ${MZN_TAG}
 
-minizinc-challenge-export:
-	docker tag $(MZN_TAG) laurentperron/$(MZN_TAG)
-	docker push laurentperron/$(MZN_TAG)
+.PHONY: minizinc-challenge-export
+minizinc-challenge-export: minizinc-challenge
+	docker tag ${MZN_TAG} laurentperron/${MZN_TAG}
+	docker push laurentperron/${MZN_TAG}

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,20 +35,17 @@ public class NoOverlapSampleSat {
     // Task 0, duration 2.
     IntVar start0 = model.newIntVar(0, horizon, "start0");
     int duration0 = 2;
-    IntVar end0 = model.newIntVar(0, horizon, "end0");
-    IntervalVar task0 = model.newIntervalVar(start0, LinearExpr.constant(duration0), end0, "task0");
+    IntervalVar task0 = model.newFixedSizeIntervalVar(start0, duration0, "task0");
 
     //  Task 1, duration 4.
     IntVar start1 = model.newIntVar(0, horizon, "start1");
     int duration1 = 4;
-    IntVar end1 = model.newIntVar(0, horizon, "end1");
-    IntervalVar task1 = model.newIntervalVar(start1, LinearExpr.constant(duration1), end1, "task1");
+    IntervalVar task1 = model.newFixedSizeIntervalVar(start1, duration1, "task1");
 
     // Task 2, duration 3.
     IntVar start2 = model.newIntVar(0, horizon, "start2");
     int duration2 = 3;
-    IntVar end2 = model.newIntVar(0, horizon, "end2");
-    IntervalVar task2 = model.newIntervalVar(start2, LinearExpr.constant(duration2), end2, "task2");
+    IntervalVar task2 = model.newFixedSizeIntervalVar(start2, duration2, "task2");
 
     // Weekends.
     IntervalVar weekend0 = model.newFixedInterval(5, 2, "weekend0");
@@ -62,7 +59,10 @@ public class NoOverlapSampleSat {
 
     // Makespan objective.
     IntVar obj = model.newIntVar(0, horizon, "makespan");
-    model.addMaxEquality(obj, new IntVar[] {end0, end1, end2});
+    model.addMaxEquality(obj,
+        new LinearExpr[] {LinearExpr.newBuilder().add(start0).add(duration0).build(),
+            LinearExpr.newBuilder().add(start1).add(duration1).build(),
+            LinearExpr.newBuilder().add(start2).add(duration2).build()});
     model.minimize(obj);
 
     // Creates a solver and solves the model.

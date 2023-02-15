@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,11 +13,15 @@
 
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <string>
 #include <tuple>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/match.h"
@@ -26,7 +30,6 @@
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
@@ -113,7 +116,8 @@ struct CpModelProtoWithMapping {
   // Translates the flatzinc search annotations into the CpModelProto
   // search_order field.
   void TranslateSearchAnnotations(
-      const std::vector<fz::Annotation>& search_annotations);
+      const std::vector<fz::Annotation>& search_annotations,
+      SolverLogger* logger);
 
   // The output proto.
   CpModelProto proto;
@@ -981,22 +985,43 @@ void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
 }
 
 void CpModelProtoWithMapping::TranslateSearchAnnotations(
-    const std::vector<fz::Annotation>& search_annotations) {
+    const std::vector<fz::Annotation>& search_annotations,
+    SolverLogger* logger) {
   std::vector<fz::Annotation> flat_annotations;
   for (const fz::Annotation& annotation : search_annotations) {
     fz::FlattenAnnotations(annotation, &flat_annotations);
   }
 
+  // CP-SAT rejects models containing variables duplicated in hints.
+  absl::flat_hash_set<int> hinted_vars;
+
   for (const fz::Annotation& annotation : flat_annotations) {
-    if (annotation.IsFunctionCallWithIdentifier("int_search") ||
-        annotation.IsFunctionCallWithIdentifier("bool_search")) {
+    if (annotation.IsFunctionCallWithIdentifier("warm_start")) {
+      CHECK_EQ(2, annotation.annotations.size());
+      const fz::Annotation& vars = annotation.annotations[0];
+      const fz::Annotation& values = annotation.annotations[1];
+      if (vars.type != fz::Annotation::VAR_REF_ARRAY ||
+          values.type != fz::Annotation::INT_LIST) {
+        continue;
+      }
+      for (int i = 0; i < vars.variables.size(); ++i) {
+        fz::Variable* fz_var = vars.variables[i];
+        const int var = fz_var_to_index.at(fz_var);
+        const int64_t value = values.values[i];
+        if (hinted_vars.insert(var).second) {
+          proto.mutable_solution_hint()->add_vars(var);
+          proto.mutable_solution_hint()->add_values(value);
+        }
+      }
+    } else if (annotation.IsFunctionCallWithIdentifier("int_search") ||
+               annotation.IsFunctionCallWithIdentifier("bool_search")) {
       const std::vector<fz::Annotation>& args = annotation.annotations;
       std::vector<fz::Variable*> vars;
       args[0].AppendAllVariables(&vars);
 
       DecisionStrategyProto* strategy = proto.add_search_strategy();
       for (fz::Variable* v : vars) {
-        strategy->add_variables(gtl::FindOrDie(fz_var_to_index, v));
+        strategy->add_variables(fz_var_to_index.at(v));
       }
 
       const fz::Annotation& choose = args[1];
@@ -1016,7 +1041,10 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
         strategy->set_variable_selection_strategy(
             DecisionStrategyProto::CHOOSE_HIGHEST_MAX);
       } else {
-        LOG(FATAL) << "Unsupported order: " << choose.id;
+        SOLVER_LOG(logger, "Unsupported variable selection strategy '",
+                   choose.id, "', falling back to 'smallest'");
+        strategy->set_variable_selection_strategy(
+            DecisionStrategyProto::CHOOSE_LOWEST_MIN);
       }
 
       const fz::Annotation& select = args[2];
@@ -1036,7 +1064,10 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
         strategy->set_domain_reduction_strategy(
             DecisionStrategyProto::SELECT_MEDIAN_VALUE);
       } else {
-        LOG(FATAL) << "Unsupported select: " << select.id;
+        SOLVER_LOG(logger, "Unsupported value selection strategy '", select.id,
+                   "', falling back to 'indomain_min'");
+        strategy->set_domain_reduction_strategy(
+            DecisionStrategyProto::SELECT_MIN_VALUE);
       }
     }
   }
@@ -1182,7 +1213,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   // Fill the search order.
-  m.TranslateSearchAnnotations(fz_model.search_annotations());
+  m.TranslateSearchAnnotations(fz_model.search_annotations(), logger);
 
   if (p.display_all_solutions && !m.proto.has_objective()) {
     // Enumerate all sat solutions.
@@ -1217,19 +1248,36 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   } else {
     num_workers = p.number_of_threads;
   }
-  m.parameters.set_num_search_workers(num_workers);
 
   // Specifies single thread specific search modes.
   if (num_workers == 1) {
     if (p.use_free_search) {
       m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       m.parameters.set_interleave_search(true);
-      m.parameters.set_reduce_memory_usage_in_interleave_mode(true);
+      if (fz_model.objective() != nullptr) {
+        m.parameters.add_subsolvers("default_lp");
+        m.parameters.add_subsolvers(
+            m.proto.search_strategy().empty() ? "quick_restart" : "fixed");
+        m.parameters.add_subsolvers("core_or_no_lp"),
+            m.parameters.add_subsolvers("max_lp");
+
+      } else {
+        m.parameters.add_subsolvers("default_lp");
+        m.parameters.add_subsolvers(
+            m.proto.search_strategy().empty() ? "no_lp" : "fixed");
+        m.parameters.add_subsolvers("less_encoding");
+        m.parameters.add_subsolvers("max_lp");
+        m.parameters.add_subsolvers("quick_restart");
+      }
     } else {
       m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
       m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
     }
+  } else if (num_workers > 1 && num_workers < 8) {
+    SOLVER_LOG(logger, "Bumping number of workers from ", num_workers, " to 8");
+    num_workers = 8;
   }
+  m.parameters.set_num_search_workers(num_workers);
 
   // Time limit.
   if (p.max_time_in_seconds > 0) {
@@ -1251,7 +1299,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
                          solution_logger](const CpSolverResponse& r) {
       const std::string solution_string =
           SolutionString(fz_model, [&m, &r](fz::Variable* v) {
-            return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
+            return r.solution(m.fz_var_to_index.at(v));
           });
       SOLVER_LOG(solution_logger, solution_string);
       if (p.display_statistics) {
@@ -1278,7 +1326,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     CHECK(CheckSolution(
         fz_model,
         [&response, &m](fz::Variable* v) {
-          return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
+          return response.solution(m.fz_var_to_index.at(v));
         },
         logger));
   }
@@ -1290,7 +1338,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       if (!p.display_all_solutions) {  // Already printed otherwise.
         const std::string solution_string =
             SolutionString(fz_model, [&response, &m](fz::Variable* v) {
-              return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
+              return response.solution(m.fz_var_to_index.at(v));
             });
         SOLVER_LOG(solution_logger, solution_string);
         SOLVER_LOG(solution_logger, "----------");

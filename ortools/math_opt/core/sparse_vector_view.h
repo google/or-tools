@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,12 +51,14 @@
 #include <iterator>
 #include <utility>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "google/protobuf/message.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
+#include "google/protobuf/message.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/math_opt/core/arrow_operator_proxy.h"  // IWYU pragma: export
+#include "ortools/math_opt/core/sparse_vector.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
@@ -96,8 +98,10 @@ class SparseVectorView {
     using difference_type = int;
     using iterator_category = std::forward_iterator_tag;
 
-    value_type operator*() const;
+    reference operator*() const;
+    inline internal::ArrowOperatorProxy<reference> operator->() const;
     const_iterator& operator++();
+    bool operator==(const const_iterator& other) const;
     bool operator!=(const const_iterator& other) const;
 
    private:
@@ -134,20 +138,21 @@ class SparseVectorView {
 };
 
 // Returns a view for values that are  vector-like collection like
-// std::vector<T> or google::protobuf::RepeatedField<T>. See other overloads for other
-// values-types.
+// std::vector<T> or google::protobuf::RepeatedField<T>. See other overloads for
+// other values-types.
 template <typename Collection, typename T = typename Collection::value_type>
 SparseVectorView<T> MakeView(absl::Span<const int64_t> ids,
                              const Collection& values) {
   return SparseVectorView<T>(ids, values);
 }
 
-// Returns a view for values that are google::protobuf::RepeatedPtrField<T>. Common use
-// for this overload is when T = std::string. See other overloads for other
-// values-types.
+// Returns a view for values that are google::protobuf::RepeatedPtrField<T>.
+// Common use for this overload is when T = std::string. See other overloads for
+// other values-types.
 template <typename T>
-SparseVectorView<const T*> MakeView(const google::protobuf::RepeatedField<int64_t>& ids,
-                                    const google::protobuf::RepeatedPtrField<T>& values) {
+SparseVectorView<const T*> MakeView(
+    const google::protobuf::RepeatedField<int64_t>& ids,
+    const google::protobuf::RepeatedPtrField<T>& values) {
   return SparseVectorView<const T*>(ids, values);
 }
 
@@ -158,6 +163,13 @@ template <typename SparseVectorProto,
           typename T = sparse_value_type<SparseVectorProto>>
 SparseVectorView<T> MakeView(const SparseVectorProto& sparse_vector) {
   return SparseVectorView<T>(sparse_vector.ids(), sparse_vector.values());
+}
+
+// Returns a view for values in a SparseVector. For this case it is preferred
+// over the two-argument overloads. See other overloads for other values-types.
+template <typename T>
+SparseVectorView<T> MakeView(const SparseVector<T>& sparse_vector) {
+  return SparseVectorView<T>(sparse_vector.ids, sparse_vector.values);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -174,9 +186,16 @@ SparseVectorView<T>::const_iterator::const_iterator(
 }
 
 template <typename T>
-typename SparseVectorView<T>::const_iterator::value_type
+typename SparseVectorView<T>::const_iterator::reference
 SparseVectorView<T>::const_iterator::operator*() const {
   return {view_->ids(index_), view_->values(index_)};
+}
+
+template <typename T>
+internal::ArrowOperatorProxy<
+    typename SparseVectorView<T>::const_iterator::reference>
+SparseVectorView<T>::const_iterator::operator->() const {
+  return internal::ArrowOperatorProxy<reference>(**this);
 }
 
 template <typename T>
@@ -188,10 +207,16 @@ SparseVectorView<T>::const_iterator::operator++() {
 }
 
 template <typename T>
-bool SparseVectorView<T>::const_iterator::operator!=(
+bool SparseVectorView<T>::const_iterator::operator==(
     const const_iterator& other) const {
   DCHECK_EQ(view_, other.view_);
-  return index_ != other.index_;
+  return index_ == other.index_;
+}
+
+template <typename T>
+bool SparseVectorView<T>::const_iterator::operator!=(
+    const const_iterator& other) const {
+  return !(*this == other);
 }
 
 template <typename T>

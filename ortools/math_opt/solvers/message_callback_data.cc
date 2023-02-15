@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,32 +14,31 @@
 #include "ortools/math_opt/solvers/message_callback_data.h"
 
 #include <cstddef>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
-
-#include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
-#include "ortools/math_opt/callback.pb.h"
+#include <vector>
 
 namespace operations_research {
 namespace math_opt {
 
-absl::optional<CallbackDataProto> MessageCallbackData::Parse(
-    const absl::string_view message) {
-  CallbackDataProto data;
+std::vector<std::string> MessageCallbackData::Parse(
+    const std::string_view message) {
+  std::vector<std::string> strings;
 
   // Iterate on all complete lines (lines ending with a '\n').
-  absl::string_view remainder = message;
+  std::string_view remainder = message;
   for (std::size_t end = 0; end = remainder.find('\n'), end != remainder.npos;
        remainder = remainder.substr(end + 1)) {
     const auto line = remainder.substr(0, end);
     if (!unfinished_line_.empty()) {
-      std::string& new_message = *data.add_messages();
-      new_message = std::move(unfinished_line_);
+      std::string new_message = std::move(unfinished_line_);
       unfinished_line_.clear();
       new_message += line;
+      strings.push_back(std::move(new_message));
     } else {
-      data.add_messages(std::string(line));
+      strings.emplace_back(line);
     }
   }
 
@@ -48,27 +47,17 @@ absl::optional<CallbackDataProto> MessageCallbackData::Parse(
   // contain '\n'.
   unfinished_line_ += remainder;
 
-  // It is an error to call the user callback without any message.
-  if (data.messages().empty()) {
-    return absl::nullopt;
-  }
-
-  // We only need to set that if we have messages.
-  data.set_event(CALLBACK_EVENT_MESSAGE);
-
-  return data;
+  return strings;
 }
 
-absl::optional<CallbackDataProto> MessageCallbackData::Flush() {
+std::vector<std::string> MessageCallbackData::Flush() {
   if (unfinished_line_.empty()) {
-    return absl::nullopt;
+    return {};
   }
 
-  CallbackDataProto data;
-  data.set_event(CALLBACK_EVENT_MESSAGE);
-  *data.add_messages() = std::move(unfinished_line_);
+  std::vector<std::string> strings = {std::move(unfinished_line_)};
   unfinished_line_.clear();
-  return data;
+  return strings;
 }
 
 }  // namespace math_opt

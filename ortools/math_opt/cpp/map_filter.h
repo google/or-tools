@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,24 +11,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
+
 #ifndef OR_TOOLS_MATH_OPT_CPP_MAP_FILTER_H_
 #define OR_TOOLS_MATH_OPT_CPP_MAP_FILTER_H_
 
 #include <algorithm>
 #include <initializer_list>
+#include <optional>
 
-#include "absl/types/optional.h"
-#include "ortools/base/int_type.h"
-#include "ortools/math_opt/core/indexed_model.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/id_set.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
 namespace math_opt {
 
 // A filter that only keeps some specific key-value pairs of a map.
 //
-// It is used to limit the quantity of data returned in a Result or in a
+// It is used to limit the quantity of data returned in a SolveResult or in a
 // CallbackResult when the models are huge and the user is only interested in
 // the values of a subset of the keys.
 //
@@ -69,7 +72,7 @@ struct MapFilter {
   //   // Unset the filter.
   //   filter.filtered_keys.reset();
   //   // alternatively:
-  //   filter.filtered_keys = absl::nullopt;
+  //   filter.filtered_keys = std::nullopt;
   //
   //   // Set the filter with an empty list of keys (filtering out all pairs).
   //   //
@@ -87,11 +90,11 @@ struct MapFilter {
   //   filter.emplace(decision_vars.begin(), decision_vars.end());
   //
   // Prefer using MakeSkipAllFilter() or MakeKeepKeysFilter() when appropriate.
-  absl::optional<IdSet<KeyType>> filtered_keys;
+  std::optional<IdSet<KeyType>> filtered_keys;
 
   // Returns the model of filtered keys. It returns a non-null value if and only
   // if the filtered_keys is set and non-empty.
-  inline IndexedModel* model() const;
+  inline const ModelStorage* storage() const;
 
   // Returns the proto corresponding to this filter.
   SparseVectorFilterProto Proto() const;
@@ -99,7 +102,7 @@ struct MapFilter {
 
 // Returns a filter that skips all key-value pairs.
 //
-// This is typically used to disable the dual data in Result when these are
+// This is typically used to disable the dual data in SolveResult when these are
 // ignored by the user.
 //
 // Example:
@@ -157,8 +160,8 @@ MapFilter<KeyType> MakeKeepKeysFilter(std::initializer_list<KeyType> keys) {
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename KeyType>
-IndexedModel* MapFilter<KeyType>::model() const {
-  return filtered_keys ? filtered_keys->model() : nullptr;
+const ModelStorage* MapFilter<KeyType>::storage() const {
+  return filtered_keys ? filtered_keys->storage() : nullptr;
 }
 
 template <typename KeyType>

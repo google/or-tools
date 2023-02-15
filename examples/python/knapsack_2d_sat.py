@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -28,14 +28,14 @@ from google.protobuf import text_format
 
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string('output_proto', '',
-                    'Output file to write the cp_model proto to.')
-flags.DEFINE_string('params', 'num_search_workers:16,log_search_progress:true',
-                    'Sat solver parameters.')
-flags.DEFINE_string('model', 'rotation',
-                    '\'duplicate\' or \'rotation\' or \'optional\'')
+_OUTPUT_PROTO = flags.DEFINE_string(
+    'output_proto', '', 'Output file to write the cp_model proto to.')
+_PARAMS = flags.DEFINE_string(
+    'params',
+    'num_search_workers:16,log_search_progress:true,max_time_in_seconds:10.0',
+    'Sat solver parameters.')
+_MODEL = flags.DEFINE_string('model', 'rotation',
+                             '\'duplicate\' or \'rotation\' or \'optional\'')
 
 
 def build_data():
@@ -127,18 +127,18 @@ def solve_with_duplicate_items(data, max_height, max_width):
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     ## Objective.
-    model.Maximize(cp_model.LinearExpr.ScalProd(is_used, item_values))
+    model.Maximize(cp_model.LinearExpr.WeightedSum(is_used, item_values))
 
     # Output proto to file.
-    if FLAGS.output_proto:
-        print('Writing proto to %s' % FLAGS.output_proto)
-        with open(FLAGS.output_proto, 'w') as text_file:
+    if _OUTPUT_PROTO.value:
+        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
 
     status = solver.Solve(model)
 
@@ -217,18 +217,18 @@ def solve_with_duplicate_optional_items(data, max_height, max_width):
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     ## Objective.
-    model.Maximize(cp_model.LinearExpr.ScalProd(is_used, item_values))
+    model.Maximize(cp_model.LinearExpr.WeightedSum(is_used, item_values))
 
     # Output proto to file.
-    if FLAGS.output_proto:
-        print('Writing proto to %s' % FLAGS.output_proto)
-        with open(FLAGS.output_proto, 'w') as text_file:
+    if _OUTPUT_PROTO.value:
+        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
 
     status = solver.Solve(model)
 
@@ -312,7 +312,7 @@ def solve_with_rotations(data, max_height, max_width):
         rotated = model.NewBoolVar(f'rotated_{i}')
 
         ### Exactly one state must be chosen.
-        model.Add(not_selected + no_rotation + rotated == 1)
+        model.AddExactlyOne(not_selected, no_rotation, rotated)
 
         ### Define height and width according to the state.
         dim1 = item_widths[i]
@@ -330,18 +330,18 @@ def solve_with_rotations(data, max_height, max_width):
     model.AddNoOverlap2D(x_intervals, y_intervals)
 
     # Objective.
-    model.Maximize(cp_model.LinearExpr.ScalProd(is_used, item_values))
+    model.Maximize(cp_model.LinearExpr.WeightedSum(is_used, item_values))
 
     # Output proto to file.
-    if FLAGS.output_proto:
-        print('Writing proto to %s' % FLAGS.output_proto)
-        with open(FLAGS.output_proto, 'w') as text_file:
+    if _OUTPUT_PROTO.value:
+        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if FLAGS.params:
-        text_format.Parse(FLAGS.params, solver.parameters)
+    if _PARAMS.value:
+        text_format.Parse(_PARAMS.value, solver.parameters)
 
     status = solver.Solve(model)
 
@@ -363,9 +363,9 @@ def solve_with_rotations(data, max_height, max_width):
 def main(_):
     """Solve the problem with all models."""
     data, max_height, max_width = build_data()
-    if FLAGS.model == 'duplicate':
+    if _MODEL.value == 'duplicate':
         solve_with_duplicate_items(data, max_height, max_width)
-    elif FLAGS.model == 'optional':
+    elif _MODEL.value == 'optional':
         solve_with_duplicate_optional_items(data, max_height, max_width)
     else:
         solve_with_rotations(data, max_height, max_width)

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,14 +57,14 @@ int64_t GetProcessMemoryUsage() {
     if (fscanf(pf, "%u", &size) != 1) return 0;
   }
   fclose(pf);
-  return size * int64_t{1024};
+  return int64_t{1024} * size;
 }
 #elif defined(__FreeBSD__)                        // FreeBSD
 int64_t GetProcessMemoryUsage() {
   int who = RUSAGE_SELF;
   struct rusage rusage;
   getrusage(who, &rusage);
-  return (int64_t)(rusage.ru_maxrss * int64_t{1024});
+  return (int64_t)(int64_t{1024} * rusage.ru_maxrss);
 }
 #elif defined(_MSC_VER)                           // WINDOWS
 int64_t GetProcessMemoryUsage() {

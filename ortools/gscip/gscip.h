@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,8 +23,8 @@
 //     problem creation are thus not supported.
 //   * gSCIP uses std::numeric_limits<double>::infinity(), rather than SCIPs
 //     infinity (a default value of 1e20). Doubles with absolute value >= 1e20
-//     are automatically converting to std::numeric_limits<double>::infinity()
-//     by gSCIP. Changing the underlying SCIP's infinity is not supported.
+//     but < inf result in an error. Changing the underlying SCIP's infinity is
+//     not supported.
 //   * absl::Status and absl::StatusOr are used to propagate SCIP errors (and on
 //     a best effort basis, also filter out bad input to gSCIP functions).
 //
@@ -105,7 +105,7 @@ struct GScipLinearRange {
 // A variable is implied integer if the integrality constraint is not required
 // for the model to be valid, but the variable takes an integer value in any
 // optimal solution to the problem.
-enum class GScipVarType { kContinuous, kInteger, kImpliedInteger };
+enum class GScipVarType { kContinuous, kBinary, kInteger, kImpliedInteger };
 
 struct GScipIndicatorConstraint;
 struct GScipLogicalConstraintData;
@@ -159,6 +159,9 @@ class GScip {
   // returned variable will have the same lifetime as GScip (if instead,
   // GScipVariableOptions::keep_alive is false, SCIP may free the variable at
   // any time, see GScipVariableOptions::keep_alive for details).
+  //
+  // Note that SCIP will internally convert a variable of type `kInteger` with
+  // bounds of [0, 1] to a variable of type `kBinary`.
   absl::StatusOr<SCIP_VAR*> AddVariable(
       double lb, double ub, double obj_coef, GScipVarType var_type,
       const std::string& var_name = "",
@@ -185,6 +188,7 @@ class GScip {
   double Lb(SCIP_VAR* var);
   double Ub(SCIP_VAR* var);
   double ObjCoef(SCIP_VAR* var);
+  // NOTE: The returned type may differ from the type passed to `AddVariable()`.
   GScipVarType VarType(SCIP_VAR* var);
   absl::string_view Name(SCIP_VAR* var);
   const absl::flat_hash_set<SCIP_VAR*>& variables() { return variables_; }
@@ -203,7 +207,13 @@ class GScip {
   // ///////////////////////////////////////////////////////////////////////////
   // Model Updates (needed for incrementalism)
   // ///////////////////////////////////////////////////////////////////////////
+  // TODO(b/246342145): A crash may occur if you attempt to set a lb <= -1.0 on
+  // a binary variable. SCIP can also silently change the vartype of a variable
+  // after construction, so you should check it via `VarType()`.
   absl::Status SetLb(SCIP_VAR* var, double lb);
+  // TODO(b/246342145): A crash may occur if you attempt to set an ub >= 2.0 on
+  // a binary variable. SCIP can also silently change the vartype of a variable
+  // after construction, so you should check it via `VarType()`.
   absl::Status SetUb(SCIP_VAR* var, double ub);
   absl::Status SetObjCoef(SCIP_VAR* var, double obj_coef);
   absl::Status SetVarType(SCIP_VAR* var, GScipVarType var_type);
@@ -232,6 +242,8 @@ class GScip {
   absl::Status SetLinearConstraintLb(SCIP_CONS* constraint, double lb);
   absl::Status SetLinearConstraintUb(SCIP_CONS* constraint, double ub);
   absl::Status SetLinearConstraintCoef(SCIP_CONS* constraint, SCIP_VAR* var,
+                                       double value);
+  absl::Status AddLinearConstraintCoef(SCIP_CONS* constraint, SCIP_VAR* var,
                                        double value);
 
   // Works on all constraint types. Unlike DeleteVariable, no special action is
@@ -322,10 +334,11 @@ class GScip {
   // more useful.
   absl::Status SetBranchingPriority(SCIP_VAR* var, int priority);
 
-  // Doubles with absolute value of at least this value are replaced by this
-  // value before giving them SCIP. SCIP considers values at least this large to
-  // be infinite. When querying gSCIP, if an absolute value exceeds ScipInf, it
-  // is replaced by std::numeric_limits<double>::infinity().
+  // Doubles with absolute value of at least this value are invalid and result
+  // in errors. Floating point actual infinities are replaced by this value in
+  // SCIP calls. SCIP considers values at least this large to be infinite. When
+  // querying gSCIP, if an absolute value exceeds ScipInf, it is replaced by
+  // std::numeric_limits<double>::infinity().
   double ScipInf();
   static constexpr double kDefaultScipInf = 1e20;
 
@@ -357,10 +370,15 @@ class GScip {
   absl::Status SetParams(const GScipParameters& params,
                          const std::string& legacy_params);
   absl::Status FreeTransform();
-  // Clamps d to [-ScipInf(), ScipInf()].
-  double ScipInfClamp(double d);
+
+  // Replaces +/- inf by +/- ScipInf(), fails when |d| is in [ScipInf(), inf).
+  absl::StatusOr<double> ScipInfClamp(double d);
+
   // Returns +/- inf if |d| >= ScipInf(), otherwise returns d.
   double ScipInfUnclamp(double d);
+
+  // Returns an error if |d| >= ScipInf().
+  absl::Status CheckScipFinite(double d);
 
   absl::Status MaybeKeepConstraintAlive(SCIP_CONS* constraint,
                                         const GScipConstraintOptions& options);
@@ -429,7 +447,7 @@ struct GScipSOSData {
 // Models the constraint z = 1 => a * x <= b
 // If negate_indicator, then instead: z = 0 => a * x <= b
 struct GScipIndicatorConstraint {
-  // The z variable above.
+  // The z variable above. The vartype must be kBinary.
   SCIP_VAR* indicator_variable = nullptr;
   bool negate_indicator = false;
   // The x variable above.

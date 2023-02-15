@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,13 +15,27 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdlib>
 #include <limits>
+#include <string>
 #include <utility>
+#include <vector>
 
-#include "absl/container/flat_hash_set.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/meta/type_traits.h"
+#include "absl/strings/str_cat.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -45,36 +59,47 @@ size_t ComputeHashOfTerms(const LinearConstraint& ct) {
 
 std::string LinearConstraintManager::Statistics() const {
   std::string result;
-  absl::StrAppend(&result, "  managed constraints: ", constraint_infos_.size(),
-                  "\n");
+  absl::StrAppend(&result, "  managed constraints: ",
+                  FormatCounter(constraint_infos_.size()), "\n");
   if (num_merged_constraints_ > 0) {
-    absl::StrAppend(&result, "  merged constraints: ", num_merged_constraints_,
-                    "\n");
+    absl::StrAppend(&result, "  merged constraints: ",
+                    FormatCounter(num_merged_constraints_), "\n");
   }
   if (num_shortened_constraints_ > 0) {
-    absl::StrAppend(
-        &result, "  shortened constraints: ", num_shortened_constraints_, "\n");
+    absl::StrAppend(&result, "  shortened constraints: ",
+                    FormatCounter(num_shortened_constraints_), "\n");
   }
-  if (num_splitted_constraints_ > 0) {
-    absl::StrAppend(
-        &result, "  splitted constraints: ", num_splitted_constraints_, "\n");
+  if (num_split_constraints_ > 0) {
+    absl::StrAppend(&result, "  split constraints: ",
+                    FormatCounter(num_split_constraints_), "\n");
   }
   if (num_coeff_strenghtening_ > 0) {
-    absl::StrAppend(&result,
-                    "  coefficient strenghtenings: ", num_coeff_strenghtening_,
-                    "\n");
+    absl::StrAppend(&result, "  coefficient strenghtenings: ",
+                    FormatCounter(num_coeff_strenghtening_), "\n");
   }
   if (num_simplifications_ > 0) {
-    absl::StrAppend(&result, "  num simplifications: ", num_simplifications_,
-                    "\n");
+    absl::StrAppend(&result, "  num simplifications: ",
+                    FormatCounter(num_simplifications_), "\n");
   }
-  absl::StrAppend(&result, "  total cuts added: ", num_cuts_, " (out of ",
-                  num_add_cut_calls_, " calls)\n");
+  absl::StrAppend(&result, "  total cuts added: ", FormatCounter(num_cuts_),
+                  " (out of ", FormatCounter(num_add_cut_calls_), " calls)\n");
   for (const auto& entry : type_to_num_cuts_) {
-    absl::StrAppend(&result, "    - '", entry.first, "': ", entry.second, "\n");
+    absl::StrAppend(&result, "    - '", entry.first,
+                    "': ", FormatCounter(entry.second), "\n");
   }
   if (!result.empty()) result.pop_back();  // Remove last \n.
   return result;
+}
+
+LinearConstraintManager::~LinearConstraintManager() {
+  if (!VLOG_IS_ON(1)) return;
+  if (model_->Get<SharedStatistics>() == nullptr) return;
+
+  std::vector<std::pair<std::string, int64_t>> cut_stats;
+  for (const auto& entry : type_to_num_cuts_) {
+    cut_stats.push_back({absl::StrCat("cut/", entry.first), entry.second});
+  }
+  model_->Mutable<SharedStatistics>()->AddStats(cut_stats);
 }
 
 void LinearConstraintManager::RescaleActiveCounts(const double scaling_factor) {
@@ -233,7 +258,7 @@ bool LinearConstraintManager::AddCut(
   // them undeletable.
   constraint_infos_[ct_index].is_deletable = true;
 
-  VLOG(1) << "Cut '" << type_name << "'"
+  VLOG(2) << "Cut '" << type_name << "'"
           << " size=" << constraint_infos_[ct_index].constraint.vars.size()
           << " max_magnitude="
           << ComputeInfinityNorm(constraint_infos_[ct_index].constraint)
@@ -296,7 +321,7 @@ void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
   }
 
   if (num_deleted_constraints > 0) {
-    VLOG(1) << "Constraint manager cleanup: #deleted:"
+    VLOG(2) << "Constraint manager cleanup: #deleted:"
             << num_deleted_constraints;
   }
   num_deletable_constraints_ -= num_deleted_constraints;
@@ -317,12 +342,14 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
   sum_of_squared_objective_coeffs_ += coeff_as_double * coeff_as_double;
 }
 
+// TODO(user): Also consider partial gcd simplification? see presolve.
 bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   bool term_changed = false;
 
   IntegerValue min_sum(0);
   IntegerValue max_sum(0);
   IntegerValue max_magnitude(0);
+  IntegerValue min_magnitude = kMaxIntegerValue;
   int new_size = 0;
   const int num_terms = ct->vars.size();
   for (int i = 0; i < num_terms; ++i) {
@@ -336,7 +363,9 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
     if (lb == ub) continue;
     ++new_size;
 
-    max_magnitude = std::max(max_magnitude, IntTypeAbs(coeff));
+    const IntegerValue magnitude = IntTypeAbs(coeff);
+    max_magnitude = std::max(max_magnitude, magnitude);
+    min_magnitude = std::min(min_magnitude, magnitude);
     if (coeff > 0.0) {
       min_sum += coeff * lb;
       max_sum += coeff * ub;
@@ -386,54 +415,85 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   // TODO(user): Split constraint in two if it is boxed and there is possible
   // reduction?
   //
-  // TODO(user): Make sure there cannot be any overflow. They shouldn't, but
-  // I am not sure all the generated cuts are safe regarding min/max sum
-  // computation. We should check this.
-  if (ct->ub != kMaxIntegerValue && max_magnitude > max_sum - ct->ub) {
-    if (ct->lb != kMinIntegerValue) {
-      ++num_splitted_constraints_;
-    } else {
-      term_changed = true;
-      ++num_coeff_strenghtening_;
-      const int num_terms = ct->vars.size();
-      const IntegerValue target = max_sum - ct->ub;
-      for (int i = 0; i < num_terms; ++i) {
-        const IntegerValue coeff = ct->coeffs[i];
-        if (coeff > target) {
-          const IntegerVariable var = ct->vars[i];
-          const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
-          ct->coeffs[i] = target;
-          ct->ub -= (coeff - target) * ub;
-        } else if (coeff < -target) {
-          const IntegerVariable var = ct->vars[i];
-          const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
-          ct->coeffs[i] = -target;
-          ct->ub += (-target - coeff) * lb;
+  // TODO(user): We could cover more case of coefficient strenghtening. For
+  // example, if whe have 15 * X + 3 * Y >= 19, coeff of X can be reduced to 13.
+  if (ct->ub != kMaxIntegerValue) {
+    const IntegerValue threshold = max_sum - ct->ub;
+    const IntegerValue second_threshold = std::max(
+        CeilRatio(threshold, IntegerValue(2)), threshold - min_magnitude);
+    if (max_magnitude > second_threshold) {
+      if (ct->lb != kMinIntegerValue) {
+        ++num_split_constraints_;
+      } else {
+        term_changed = true;
+        ++num_coeff_strenghtening_;
+        const int num_terms = ct->vars.size();
+        for (int i = 0; i < num_terms; ++i) {
+          // In all cases, we reason on a transformed constraint where the term
+          // is max_value - |coeff| * positive_X. If we change coeff, and
+          // retransform the constraint, we need to change the rhs by the
+          // constant term left.
+          const IntegerValue coeff = ct->coeffs[i];
+          if (coeff > threshold) {
+            const IntegerVariable var = ct->vars[i];
+            const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+            ct->coeffs[i] = threshold;
+            ct->ub -= (coeff - threshold) * ub;
+          } else if (coeff > second_threshold && coeff < threshold) {
+            const IntegerVariable var = ct->vars[i];
+            const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+            ct->coeffs[i] = second_threshold;
+            ct->ub -= (coeff - second_threshold) * ub;
+          } else if (coeff < -threshold) {
+            const IntegerVariable var = ct->vars[i];
+            const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+            ct->coeffs[i] = -threshold;
+            ct->ub -= (coeff + threshold) * lb;
+          } else if (coeff < -second_threshold && coeff > -threshold) {
+            const IntegerVariable var = ct->vars[i];
+            const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+            ct->coeffs[i] = -second_threshold;
+            ct->ub -= (coeff + second_threshold) * lb;
+          }
         }
       }
     }
   }
 
-  if (ct->lb != kMinIntegerValue && max_magnitude > ct->lb - min_sum) {
-    if (ct->ub != kMaxIntegerValue) {
-      ++num_splitted_constraints_;
-    } else {
-      term_changed = true;
-      ++num_coeff_strenghtening_;
-      const int num_terms = ct->vars.size();
-      const IntegerValue target = ct->lb - min_sum;
-      for (int i = 0; i < num_terms; ++i) {
-        const IntegerValue coeff = ct->coeffs[i];
-        if (coeff > target) {
-          const IntegerVariable var = ct->vars[i];
-          const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
-          ct->coeffs[i] = target;
-          ct->lb -= (coeff - target) * lb;
-        } else if (coeff < -target) {
-          const IntegerVariable var = ct->vars[i];
-          const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
-          ct->coeffs[i] = -target;
-          ct->lb += (-target - coeff) * ub;
+  if (ct->lb != kMinIntegerValue) {
+    const IntegerValue threshold = ct->lb - min_sum;
+    const IntegerValue second_threshold = std::max(
+        CeilRatio(threshold, IntegerValue(2)), threshold - min_magnitude);
+    if (max_magnitude > second_threshold) {
+      if (ct->ub != kMaxIntegerValue) {
+        ++num_split_constraints_;
+      } else {
+        term_changed = true;
+        ++num_coeff_strenghtening_;
+        const int num_terms = ct->vars.size();
+        for (int i = 0; i < num_terms; ++i) {
+          const IntegerValue coeff = ct->coeffs[i];
+          if (coeff > threshold) {
+            const IntegerVariable var = ct->vars[i];
+            const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+            ct->coeffs[i] = threshold;
+            ct->lb -= (coeff - threshold) * lb;
+          } else if (coeff > second_threshold && coeff < threshold) {
+            const IntegerVariable var = ct->vars[i];
+            const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+            ct->coeffs[i] = second_threshold;
+            ct->lb -= (coeff - second_threshold) * lb;
+          } else if (coeff < -threshold) {
+            const IntegerVariable var = ct->vars[i];
+            const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+            ct->coeffs[i] = -threshold;
+            ct->lb -= (coeff + threshold) * ub;
+          } else if (coeff < -second_threshold && coeff > -threshold) {
+            const IntegerVariable var = ct->vars[i];
+            const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+            ct->coeffs[i] = -second_threshold;
+            ct->lb -= (coeff + second_threshold) * ub;
+          }
         }
       }
     }
@@ -705,6 +765,7 @@ bool LinearConstraintManager::DebugCheckConstraint(
     activity += coeff * debug_solution[var];
   }
   if (activity > cut.ub || activity < cut.lb) {
+    LOG(INFO) << cut.DebugString();
     LOG(INFO) << "activity " << activity << " not in [" << cut.lb << ","
               << cut.ub << "]";
     return false;

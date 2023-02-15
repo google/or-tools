@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,13 +17,17 @@
 #include <functional>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -34,7 +38,7 @@ namespace sat {
 // be inferred by propagation by any subset of the other literal, it will be
 // removed.
 //
-// Note that this function doest NOT preserve the order of Literal in the core.
+// Note that the literal of the minimized core will stay in the same order.
 //
 // TODO(user): Avoid spending too much time trying to minimize a core.
 void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
@@ -114,10 +118,9 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
     std::vector<bool>* solution);
 
-// Model-based API, for now we just provide a basic algorithm that minimizes a
-// given IntegerVariable by solving a sequence of decision problem by using
-// SolveIntegerProblem(). Returns the status of the last solved decision
-// problem.
+// Model-based API to minimize a given IntegerVariable by solving a sequence of
+// decision problem. Each problem is solved using SolveIntegerProblem(). Returns
+// the status of the last solved decision problem.
 //
 // The feasible_solution_observer function will be called each time a new
 // feasible solution is found.
@@ -133,6 +136,17 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
 void RestrictObjectiveDomainWithBinarySearch(
     IntegerVariable objective_var,
     const std::function<void()>& feasible_solution_observer, Model* model);
+
+// Transforms the given linear expression so that:
+//  - duplicate terms are merged.
+//  - terms with a literal and its negation are merged.
+//  - all weight are positive.
+//
+// TODO(user): Merge this with similar code like
+// ComputeBooleanLinearExpressionCanonicalForm().
+void PresolveBooleanLinearExpression(std::vector<Literal>* literals,
+                                     std::vector<Coefficient>* coefficients,
+                                     Coefficient* offset);
 
 // Same as MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
 // a core-based approach instead. Note that the given objective_var is just used
@@ -154,6 +168,21 @@ class CoreBasedOptimizer {
   // aborted position. Currently, the search is "resumable", but it will restart
   // some of the work already done, so it might just never find anything.
   SatSolver::Status Optimize();
+
+  // A different way to encode the objective as core are found.
+  //
+  // If the vector if literals is passed it will use that, otherwise it will
+  // encode the passed integer variables. In both cases, the vector used should
+  // be of the same size as the coefficients vector.
+  //
+  // It seems to be more powerful, but it isn't completely implemented yet.
+  // TODO(user):
+  // - Support resuming for interleaved search.
+  // - Implement all core heurisitics.
+  SatSolver::Status OptimizeWithSatEncoding(
+      const std::vector<Literal>& literals,
+      const std::vector<IntegerVariable>& vars,
+      const std::vector<Coefficient>& coefficients, Coefficient offset);
 
  private:
   CoreBasedOptimizer(const CoreBasedOptimizer&) = delete;
@@ -187,12 +216,29 @@ class CoreBasedOptimizer {
   // Sets it to zero if all the assumptions where already considered.
   void ComputeNextStratificationThreshold();
 
+  // If we have an "at most one can be false" between literals with a positive
+  // cost, you then know that at least n - 1 will contribute to the cost, and
+  // you can increase the objective lower bound. This is the same as having
+  // a real "at most one" constraint on the negation of such literals.
+  //
+  // This detects such "at most ones" and rewrite the objective accordingly.
+  // For each at most one, the rewrite create a new Boolean variable and update
+  // the cost so that the trivial objective lower bound reflect the increase.
+  //
+  // TODO(user) : Code that as a general presolve rule? I am not sure adding
+  // the extra Booleans is always a good idea though. Especially since the LP
+  // will see the same lower bound that what is computed by this.
+  void PresolveObjectiveWithAtMostOne(std::vector<Literal>* literals,
+                                      std::vector<Coefficient>* coefficients,
+                                      Coefficient* offset);
+
   SatParameters* parameters_;
   SatSolver* sat_solver_;
   TimeLimit* time_limit_;
+  BinaryImplicationGraph* implications_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* integer_encoder_;
-  Model* model_;  // TODO(user): remove this one.
+  Model* model_;
 
   IntegerVariable objective_var_;
   std::vector<ObjectiveTerm> terms_;
@@ -210,24 +256,6 @@ class CoreBasedOptimizer {
   // to stop a solver from the feasible solution callback.
   bool stop_ = false;
 };
-
-// Generalization of the max-HS algorithm (HS stands for Hitting Set). This is
-// similar to MinimizeWithCoreAndLazyEncoding() but it uses a hybrid approach
-// with a MIP solver to handle the discovered infeasibility cores.
-//
-// See, Jessica Davies and Fahiem Bacchus, "Solving MAXSAT by Solving a
-// Sequence of Simpler SAT Instances",
-// http://www.cs.toronto.edu/~jdavies/daviesCP11.pdf"
-//
-// Note that an implementation of this approach won the 2016 max-SAT competition
-// on the industrial category, see
-// http://maxsat.ia.udl.cat/results/#wpms-industrial
-//
-// TODO(user): This function brings dependency to the SCIP MIP solver which is
-// quite big, maybe we should find a way not to do that.
-SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
-    const ObjectiveDefinition& objective_definition,
-    const std::function<void()>& feasible_solution_observer, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -140,7 +140,7 @@ def flexible_jobshop():
                         'interval' + alt_suffix)
                     l_presences.append(l_presence)
 
-                    # Link the master variables with the local ones.
+                    # Link the primary/global variables with the local ones.
                     model.Add(start == l_start).OnlyEnforceIf(l_presence)
                     model.Add(duration == l_duration).OnlyEnforceIf(l_presence)
                     model.Add(end == l_end).OnlyEnforceIf(l_presence)
@@ -152,7 +152,7 @@ def flexible_jobshop():
                     presences[(job_id, task_id, alt_id)] = l_presence
 
                 # Select exactly one presence variable.
-                model.Add(sum(l_presences) == 1)
+                model.AddExactlyOne(l_presences)
             else:
                 intervals_per_resources[task[0][1]].append(interval)
                 presences[(job_id, task_id, 0)] = model.NewConstant(1)

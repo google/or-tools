@@ -1,5 +1,19 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,6 +50,13 @@ cc_proto_library(
     deps = [":linear_solver_proto"],
 )
 
+py_proto_library(
+    name = "linear_solver_py_pb2",
+    srcs = ["linear_solver.proto"],
+    visibility = ["//visibility:public"],
+    deps = ["//ortools/util:optional_boolean_py_pb2"],
+)
+
 # You can include the interfaces to different solvers by invoking '--define'
 # flags. By default GLOP, BOP, SCIP, GUROBI, and CP-SAT interface are included.
 #
@@ -49,19 +70,15 @@ cc_library(
         "glop_interface.cc",
         "glop_utils.cc",
         "gurobi_interface.cc",
-        "gurobi_proto_solver.cc",
+        "highs_interface.cc",
         "linear_expr.cc",
         "linear_solver_callback.cc",
         "linear_solver.cc",
         "lpi_glop.cpp",
-        "model_exporter.cc",
-        "model_validator.cc",
+        "pdlp_interface.cc",
         "sat_interface.cc",
-        "sat_proto_solver.cc",
-        "sat_solver_utils.cc",
         "scip_callback.cc",
         "scip_interface.cc",
-        "scip_proto_solver.cc",
         "xpress_interface.cc"
     ] + select({
         ":with_cbc": ["cbc_interface.cc"],
@@ -79,23 +96,24 @@ cc_library(
     hdrs = [
         "glop_interface.cc",
         "glop_utils.h",
-        "gurobi_proto_solver.h",
         "linear_expr.h",
         "linear_solver.h",
         "linear_solver_callback.h",
-        "model_exporter.h",
-        "model_validator.h",
-        "sat_proto_solver.h",
-        "sat_solver_utils.h",
         "scip_callback.h",
         "scip_helper_macros.h",
-        "scip_proto_solver.h",
     ],
-    copts = ["-DUSE_SCIP"],
+    copts = [
+        "-DUSE_PDLP",
+        "-DUSE_SCIP",
+        "-DUSE_HIGHS",
+    ],
     deps = [
         ":linear_solver_cc_proto",
         ":scip_with_glop",
+        ":model_exporter",
+        ":model_validator",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/types:optional",
@@ -113,6 +131,10 @@ cc_library(
         "//ortools/glop:parameters_cc_proto",
         "//ortools/gscip:legacy_scip_params",
         "//ortools/gurobi:environment",
+        "//ortools/linear_solver/proto_solver:proto_solver",
+        "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:solve_log_cc_proto",
+        "//ortools/pdlp:solvers_cc_proto",
         "//ortools/port:file",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
@@ -125,6 +147,30 @@ cc_library(
         ":with_glpk": ["@glpk//:glpk"],
         "//conditions:default": [],
     }),
+)
+
+cc_library(
+    name = "model_validator",
+    srcs = ["model_validator.cc"],
+    hdrs = ["model_validator.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":linear_solver_cc_proto",
+        "//ortools/base",
+        "//ortools/base:accurate_sum",
+        "//ortools/base:map_util",
+        "//ortools/port:file",
+        "//ortools/port:proto_utils",
+        "//ortools/util:fp_utils",
+        "//ortools/util:lazy_mutable_copy",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:optional",
+    ],
 )
 
 copy_file(
@@ -148,6 +194,25 @@ cc_library(
     deps = [
         "//ortools/base:status_macros",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+# Model exporter that can write MPS and LP file formats from an MPModelProto.
+cc_library(
+    name = "model_exporter",
+    srcs = ["model_exporter.cc"],
+    hdrs = ["model_exporter.h"],
+    deps = [
+        ":linear_solver_cc_proto",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/util:fp_utils",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],
 )

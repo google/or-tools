@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,12 +22,12 @@
 #include <cstdint>
 #include <deque>
 #include <memory>
-#include <set>
+#include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
@@ -36,6 +36,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -324,7 +325,7 @@ class SatPresolver {
   AdjustablePriorityQueue<BvaPqElement> bva_pq_;
 
   // Temporary data for SimpleBva().
-  std::set<LiteralIndex> m_lit_;
+  absl::btree_set<LiteralIndex> m_lit_;
   std::vector<ClauseIndex> m_cls_;
   absl::StrongVector<LiteralIndex, int> literal_to_p_size_;
   std::vector<std::pair<LiteralIndex, ClauseIndex>> flattened_p_;

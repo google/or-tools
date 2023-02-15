@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -66,16 +66,16 @@ public final class CpIsFunCp {
 
     // CP + IS + FUN = TRUE
     final IntVar sum1 =
-          solver.makeSum(new IntVar[] {
-            p, s, n,
-            solver.makeProd(solver.makeSum(new IntVar[]{c, i, u}).var(), base).var(),
-            solver.makeProd(f, base * base).var()}).var();
-    final IntVar sum2 =
-          solver.makeSum(new IntVar[] {
-            e,
-            solver.makeProd(u, base).var(),
-            solver.makeProd(r, base * base).var(),
-            solver.makeProd(t, base * base * base).var()}).var();
+        solver
+            .makeSum(new IntVar[] {p, s, n,
+                solver.makeProd(solver.makeSum(new IntVar[] {c, i, u}).var(), base).var(),
+                solver.makeProd(f, base * base).var()})
+            .var();
+    final IntVar sum2 = solver
+                            .makeSum(new IntVar[] {e, solver.makeProd(u, base).var(),
+                                solver.makeProd(r, base * base).var(),
+                                solver.makeProd(t, base * base * base).var()})
+                            .var();
     solver.addConstraint(solver.makeEquality(sum1, sum2));
     // [END constraints]
 

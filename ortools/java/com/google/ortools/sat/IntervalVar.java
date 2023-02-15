@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -69,17 +69,17 @@ public final class IntervalVar {
 
   /** Returns the start expression. */
   public LinearExpr getStartExpr() {
-    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getStart(), modelBuilder);
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getStart());
   }
 
   /** Returns the size expression. */
   public LinearExpr getSizeExpr() {
-    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getSize(), modelBuilder);
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getSize());
   }
 
-  /** Returns the size expression. */
+  /** Returns the end expression. */
   public LinearExpr getEndExpr() {
-    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getEnd(), modelBuilder);
+    return LinearExpr.rebuildFromLinearExpressionProto(intervalBuilder.getEnd());
   }
 
   private final CpModelProto.Builder modelBuilder;

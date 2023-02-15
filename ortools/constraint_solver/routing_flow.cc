@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -155,6 +155,11 @@ struct FlowArc {
 
 bool RoutingModel::SolveMatchingModel(
     Assignment* assignment, const RoutingSearchParameters& parameters) {
+  if (parameters.disable_scheduling_beware_this_may_degrade_performance()) {
+    // We need to use LocalDimensionCumulOptimizers below, so we return false if
+    // LP scheduling is disabled.
+    return false;
+  }
   VLOG(2) << "Solving with flow";
   assignment->Clear();
 

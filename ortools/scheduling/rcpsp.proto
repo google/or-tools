@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,8 +21,9 @@
 // You have a set of tasks. Each task has a list of successors, and a
 // list of recipes. Each recipe consists of a duration, and a list of
 // demands, one per resource.
-// The problem is always built with 2 sentinels. One source task with a set of
-// successors, and one sink task with no successors and a zero duration.
+// The problem is always built with 2 sentinels. The first task is the source
+// with a set of successors. The last task is the sink, with no successors and a
+// zero duration.
 // All tasks are reachable from the source task. And the sink task is reachable
 // from all tasks. Furthermore, the graph has no cycles.
 //
@@ -155,4 +156,9 @@ message RcpspProblem {
   // The due date is defined in the rcpsp base format, but is not used.
   int32 due_date = 13;
   string name = 14;
+}
+
+message RcpspAssignment {
+  repeated int64 start_of_task = 1;
+  repeated int32 selected_recipe_of_task = 2;
 }

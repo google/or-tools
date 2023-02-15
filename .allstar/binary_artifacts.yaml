@@ -1,0 +1,21 @@
+# Ignore reason: These artifacts are used by the Make based build recipes on windows.
+ignorePaths:
+  - tools/make.exe
+  - tools/win/grep.exe
+  - tools/win/gzip.exe
+  - tools/win/libiconv2.dll
+  - tools/win/libintl3.dll
+  - tools/win/mkdir.exe
+  - tools/win/pcre3.dll
+  - tools/win/regex2.dll
+  - tools/win/rm.exe
+  - tools/win/sed.exe
+  - tools/win/tar.exe
+  - tools/win/tee.exe
+  - tools/win/touch.exe
+  - tools/win/unzip.exe
+  - tools/win/wget.exe
+  - tools/win/which.exe
+  - tools/win/zip.exe
+# note: Windows doesn't provide an ubiquitous package manager we could depends on
+# to have these tools available on the user host machine.

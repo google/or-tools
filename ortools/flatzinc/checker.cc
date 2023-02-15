@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,11 +15,13 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <string>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "ortools/base/map_util.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/util/logging.h"
 
@@ -1240,7 +1242,7 @@ bool CheckSolution(const Model& model,
   const CallMap call_map = CreateCallMap();
   for (Constraint* ct : model.constraints()) {
     if (!ct->active) continue;
-    const auto& checker = gtl::FindOrDie(call_map, ct->type);
+    const auto& checker = call_map.at(ct->type);
     if (!checker(*ct, evaluator)) {
       SOLVER_LOG(logger, "Failing constraint ", ct->DebugString());
       ok = false;

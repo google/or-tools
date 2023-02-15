@@ -1,10 +1,15 @@
 Makefile.local
+Makefile.local~
 
-dependencies/archives/
-
-dependencies/install/
-dependencies/sources/
-dependencies/check.log
+/build_make/
+/install_make/
+/dependencies/
+/or-tools_*
+/or-tools_cpp*
+/or-tools_dotnet*
+/or-tools_java*
+/or-tools_python*
+/or-tools_data*
 
 or-tools*.tar.gz
 or-tools*.zip
@@ -25,15 +30,20 @@ test.log
 publish*.log
 ortools/gen/
 objs/
+cmake/protobuf-*.cmake
 classes/
 packages/
 temp_test/
 temp_fz/
 temp_fz_test/
-temp_python*
-temp_java/
+temp_cpp/
+temp_cpp_test/
 temp_dotnet/
 temp_dotnet_test/
+temp_java/
+temp_java_test/
+temp_python*
+temp_python*_test/
 temp_archive/
 temp_fz_archive/
 lib/
@@ -46,7 +56,6 @@ or-tools.snk
 private-key.gpg
 settings.xml
 export
-
 
 ortools/bazel-*
 examples/bazel-*

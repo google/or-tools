@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,9 @@ package operations_research.math_opt;
 
 import "ortools/math_opt/model.proto";
 import "ortools/math_opt/sparse_containers.proto";
+
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
 
 // Updates to existing variables in a ModelProto.
 //
@@ -66,6 +69,24 @@ message ObjectiveUpdatesProto {
   //  * The value 0.0 removes a variable from the linear objective. This
   //    value should only be used for existing variables.
   SparseDoubleVectorProto linear_coefficients = 3;
+
+  // Updates ModelProto.objective.quadratic_coefficients
+  //
+  // Requirements in addition to those on SparseDoubleMatrixProto messages:
+  //  * Each element of quadratic_coefficients.row_ids and each element of
+  //    quadratic_coefficients.column_ids must be a variable id, either an
+  //    existing one (from ModelProto.variables.ids) or a new one (from
+  //    ModelUpdateProto.new_variables.ids).
+  //  * The matrix must be upper triangular: for each i,
+  //    quadratic_coefficients.row_ids[i] <=
+  //    quadratic_coefficients.column_ids[i].
+  //
+  // Notes:
+  //  * Unset values are unchanged.
+  //  * The value 0.0 removes a quadratic term (i.e. product of two variables)
+  //    from the quadratic objective. This value should only be used for
+  //    existing quadratic terms appearing in the objective.
+  SparseDoubleMatrixProto quadratic_coefficients = 4;
 }
 
 // Updates to existing linear constraints in a ModelProto.
@@ -84,6 +105,57 @@ message LinearConstraintUpdatesProto {
   //  * upper_bounds.values must be > -infinity.
   //  * Unset values are unchanged.
   SparseDoubleVectorProto upper_bounds = 2;
+}
+
+// Updates to quadratic constraints; only addition and deletion, no support for
+// in-place constraint updates.
+message QuadraticConstraintUpdatesProto {
+  // Removes quadratic constraints from the model.
+  //
+  // Each value must be in [0, max(int64)). Values must be in strictly
+  // increasing order. Applies only to existing quadratic constraint ids that
+  // have not yet been deleted.
+  repeated int64 deleted_constraint_ids = 1;
+
+  // Add new quadratic constraints to the model. All keys must be in
+  // [0, max(int64)), and must be greater than any ids used in the initial model
+  // and previous updates. All nonempty names should be distinct from existing
+  // names and each other.
+  map<int64, QuadraticConstraintProto> new_constraints = 2;
+}
+
+// Data for updates to SOS1 and SOS2 constraints; only addition and deletion, no
+// support for in-place constraint updates.
+message SosConstraintUpdatesProto {
+  // Removes SOS constraints from the model.
+  //
+  // Each value must be in [0, max(int64)). Values must be in strictly
+  // increasing order. Applies only to existing SOS constraint ids that have not
+  // yet been deleted.
+  repeated int64 deleted_constraint_ids = 1;
+
+  // Add new SOS constraints to the model. All keys must be in [0, max(int64)),
+  // and must be greater than any ids used in the initial model and previous
+  // updates. All nonempty names should be distinct from existing names and each
+  // other.
+  map<int64, SosConstraintProto> new_constraints = 2;
+}
+
+// Data for updates to indicator constraints; only addition and deletion, no
+// support for in-place constraint updates.
+message IndicatorConstraintUpdatesProto {
+  // Removes indicator constraints from the model.
+  //
+  // Each value must be in [0, max(int64)). Values must be in strictly
+  // increasing order. Applies only to existing indicator constraint ids that
+  // have not yet been deleted.
+  repeated int64 deleted_constraint_ids = 1;
+
+  // Add new indicator constraints to the model. All keys must be in
+  // [0, max(int64)), and must be greater than any ids used in the initial model
+  // and previous updates. All nonempty names should be distinct from existing
+  // names and each other.
+  map<int64, IndicatorConstraintProto> new_constraints = 2;
 }
 
 // Updates to a ModelProto.
@@ -113,14 +185,13 @@ message ModelUpdateProto {
   LinearConstraintUpdatesProto linear_constraint_updates = 4;
 
   // Add new variables to the model. All new_variables.ids must be greater than
-  // the existing model's largest variable id. All nonempty names should be
-  // distinct from existing names. TODO(b/169575522): we may relax this.
+  // any ids used in the initial model and previous updates. All nonempty names
+  // should be distinct from existing names.
   VariablesProto new_variables = 5;
 
   // Add new linear constraints to the model. All new_linear_constraints.ids
-  // must be greater than the existing model's largest linear constraints id.
-  // All nonempty names should be distinct from existing names.
-  // TODO(b/169575522): we may relax this.
+  // must be greater than any ids used in the initial model and previous
+  // updates. All nonempty names should be distinct from existing names.
   LinearConstraintsProto new_linear_constraints = 6;
 
   // Updates the objective, both for existing and new variables.
@@ -141,4 +212,12 @@ message ModelUpdateProto {
   //  * Zero values delete existing entries, and have no effect for new entries.
   //  * linear_constraint_matrix.values must all be finite.
   SparseDoubleMatrixProto linear_constraint_matrix_updates = 8;
+
+  // Updates the quadratic constraints (addition and deletion only).
+  QuadraticConstraintUpdatesProto quadratic_constraint_updates = 9;
+
+  // Updates the general constraints (addition and deletion only).
+  SosConstraintUpdatesProto sos1_constraint_updates = 10;
+  SosConstraintUpdatesProto sos2_constraint_updates = 11;
+  IndicatorConstraintUpdatesProto indicator_constraint_updates = 12;
 }

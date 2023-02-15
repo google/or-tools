@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,7 +19,7 @@
 """
 
 from absl import app
-from ortools.graph import pywrapgraph
+from ortools.graph.python import linear_sum_assignment
 
 
 def RunAssignmentOn4x4Matrix():
@@ -30,18 +30,18 @@ def RunAssignmentOn4x4Matrix():
             [45, 110, 95, 115]]
     expected_cost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0]
 
-    assignment = pywrapgraph.LinearSumAssignment()
+    assignment = linear_sum_assignment.SimpleLinearSumAssignment()
     for source in range(0, num_sources):
         for target in range(0, num_targets):
-            assignment.AddArcWithCost(source, target, cost[source][target])
+            assignment.add_arc_with_cost(source, target, cost[source][target])
 
-    solve_status = assignment.Solve()
+    solve_status = assignment.solve()
     if solve_status == assignment.OPTIMAL:
         print('Successful solve.')
-        print('Total cost', assignment.OptimalCost(), '/', expected_cost)
-        for i in range(0, assignment.NumNodes()):
+        print('Total cost', assignment.optimal_cost(), '/', expected_cost)
+        for i in range(0, assignment.num_nodes()):
             print('Left node %d assigned to right node %d with cost %d.' %
-                  (i, assignment.RightMate(i), assignment.AssignmentCost(i)))
+                  (i, assignment.right_mate(i), assignment.assignment_cost(i)))
     elif solve_status == assignment.INFEASIBLE:
         print('No perfect matching exists.')
     elif solve_status == assignment.POSSIBLE_OVERFLOW:
@@ -49,7 +49,7 @@ def RunAssignmentOn4x4Matrix():
             'Some input costs are too large and may cause an integer overflow.')
 
 
-def main(_):
+def main(_=None):
     RunAssignmentOn4x4Matrix()
 
 

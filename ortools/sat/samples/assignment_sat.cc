@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,15 @@
 
 // [START program]
 // [START import]
+#include <stdlib.h>
+
+#include <vector>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+
 // [END import]
 namespace operations_research {
 namespace sat {
@@ -25,8 +33,8 @@ void IntegerProgrammingExample() {
       {90, 80, 75, 70},   {35, 85, 55, 65},   {125, 95, 90, 95},
       {45, 110, 95, 115}, {50, 100, 90, 100},
   };
-  const int num_workers = costs.size();
-  const int num_tasks = costs[0].size();
+  const int num_workers = static_cast<int>(costs.size());
+  const int num_tasks = static_cast<int>(costs[0].size());
   // [END data_model]
 
   // Model
@@ -51,15 +59,15 @@ void IntegerProgrammingExample() {
   // [START constraints]
   // Each worker is assigned to at most one task.
   for (int i = 0; i < num_workers; ++i) {
-    cp_model.AddLessOrEqual(LinearExpr::Sum(x[i]), 1);
+    cp_model.AddAtMostOne(x[i]);
   }
   // Each task is assigned to exactly one worker.
   for (int j = 0; j < num_tasks; ++j) {
-    LinearExpr task_sum;
+    std::vector<BoolVar> tasks;
     for (int i = 0; i < num_workers; ++i) {
-      task_sum.AddTerm(x[i][j], 1);
+      tasks.push_back(x[i][j]);
     }
-    cp_model.AddEquality(task_sum, 1);
+    cp_model.AddExactlyOne(tasks);
   }
   // [END constraints]
 

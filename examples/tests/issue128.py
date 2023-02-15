@@ -110,7 +110,7 @@ def test_v1():
   solver.Add(postTask1_r1.PerformedExpr() + postTask1_r2.PerformedExpr() == 1)
   solver.Add(postTask2_r1.PerformedExpr() + postTask2_r2.PerformedExpr() == 1)
 
-  # Sync master task with copies
+  # Sync main task with copies
   solver.Add(solver.Cover([task1_r1, task1_r2], task1))
   solver.Add(solver.Cover([task2_r1, task2_r2], task2))
   solver.Add(solver.Cover([postTask1_r1, postTask1_r2], postTask1))

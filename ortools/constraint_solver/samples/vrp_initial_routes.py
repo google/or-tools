@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # [START program]
 """Vehicles Routing Problem (VRP)."""
 
 # [START import]
+from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 # [END import]
 
@@ -180,17 +182,26 @@ def main():
     distance_dimension.SetGlobalSpanCostCoefficient(100)
     # [END distance_constraint]
 
+    # Close model with the custom search parameters.
+    # [START parameters]
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+    search_parameters.first_solution_strategy = (
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+    search_parameters.local_search_metaheuristic = (
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+    search_parameters.time_limit.FromSeconds(5)
+    # When an initial solution is given for search, the model will be closed with the default
+    # search parameters unless it is explicitly closed with the custom search parameters.
+    routing.CloseModelWithParameters(search_parameters)
+    # [END parameters]
+
+    # Get initial solution from routes after closing the model.
     # [START print_initial_solution]
     initial_solution = routing.ReadAssignmentFromRoutes(data['initial_routes'],
                                                         True)
     print('Initial solution:')
     print_solution(data, manager, routing, initial_solution)
     # [END print_initial_solution]
-
-    # Set default search parameters.
-    # [START parameters]
-    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-    # [END parameters]
 
     # Solve the problem.
     # [START solve]

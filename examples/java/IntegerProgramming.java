@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package com.google.ortools.java;
 
 import com.google.ortools.Loader;
@@ -18,7 +19,10 @@ import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
-/** Integer programming example that shows how to use the API. */
+/**
+ * Integer programming example that shows how to use the API.
+ *
+ */
 public class IntegerProgramming {
   private static void runIntegerProgrammingExample(String solverType) {
     MPSolver solver = MPSolver.createSolver(solverType);
@@ -76,6 +80,8 @@ public class IntegerProgramming {
     runIntegerProgrammingExample("SCIP");
     System.out.println("---- Integer programming example with CBC ----");
     runIntegerProgrammingExample("CBC");
+    System.out.println("---- Integer programming example with GLPK ----");
+    runIntegerProgrammingExample("GLPK");
     System.out.println("---- Integer programming example with CP-SAT ----");
     runIntegerProgrammingExample("SAT");
   }

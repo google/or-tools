@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -271,7 +271,9 @@ class LPSolver {
   int num_revised_simplex_iterations_;
 
   // The current ProblemSolution.
-  // TODO(user): use a ProblemSolution directly?
+  // TODO(user): use a ProblemSolution directly? Note, that primal_ray_,
+  // constraints_dual_ray_ and variable_bounds_dual_ray_ are not currently in
+  // ProblemSolution and are filled directly by RunRevisedSimplexIfNeeded().
   DenseRow primal_values_;
   DenseColumn dual_values_;
   VariableStatusRow variable_statuses_;
@@ -283,7 +285,7 @@ class LPSolver {
   // Quantities computed from the solution and the linear program.
   DenseRow reduced_costs_;
   DenseColumn constraint_activities_;
-  Fractional problem_objective_value_;
+  Fractional problem_objective_value_ = 0.0;
   bool may_have_multiple_solutions_;
   Fractional max_absolute_primal_infeasibility_;
   Fractional max_absolute_dual_infeasibility_;

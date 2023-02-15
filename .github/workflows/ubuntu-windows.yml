@@ -207,6 +207,7 @@ jobs:
       - name: Configure OR-Tools
         shell: bash
         run: |
+          cmake --version
           cmake -S . -B build -DPython3_ROOT_DIR="${{ env.pythonLocation }}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=${{ matrix.build-examples }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
 
       - name: Build OR-Tools Linux

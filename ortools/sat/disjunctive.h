@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,6 @@
 #include <functional>
 #include <vector>
 
-#include "ortools/base/int_type.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
@@ -26,6 +25,7 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/theta_tree.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -72,7 +72,6 @@ class TaskSet {
     optimized_restart_ = 0;
   }
   void AddEntry(const Entry& e);
-  void RemoveEntryWithIndex(int index);
 
   // Same as AddEntry({t, helper->ShiftedStartMin(t), helper->SizeMin(t)}).
   // This is a minor optimization to not call SizeMin(t) twice.
@@ -96,7 +95,7 @@ class TaskSet {
   //   [Bunch of tasks]   ...   [Bunch of tasks]     ...    [critical tasks].
   //
   // We call "critical tasks" the last group. These tasks will be solely
-  // responsible for for the end-min of the whole set. The returned
+  // responsible for the end-min of the whole set. The returned
   // critical_index will be the index of the first critical task in
   // SortedTasks().
   //

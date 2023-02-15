@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,65 +17,93 @@ using System.Collections.Generic;
 namespace Google.OrTools.Sat
 {
 
+/**
+ * <summary>
+ * Parent class to create a callback called at each solution.
+ * </summary>
+ */
 public class CpSolverSolutionCallback : SolutionCallback
 {
+    /**
+     * <summary>
+     * Returns the value of a linear expression in the current solution.
+     * </summary>
+     */
     public long Value(LinearExpr e)
     {
-        List<LinearExpr> exprs = new List<LinearExpr>();
-        List<long> coeffs = new List<long>();
-        exprs.Add(e);
-        coeffs.Add(1L);
         long constant = 0;
-
-        while (exprs.Count > 0)
+        long coefficient = 1;
+        LinearExpr expr = e;
+        if (terms_ is null)
         {
-            LinearExpr expr = exprs[0];
-            exprs.RemoveAt(0);
-            long coeff = coeffs[0];
-            coeffs.RemoveAt(0);
-            if (coeff == 0)
-                continue;
-
-            if (expr is ProductCst)
-            {
-                ProductCst p = (ProductCst)expr;
-                if (p.Coeff != 0)
-                {
-                    exprs.Add(p.Expr);
-                    coeffs.Add(p.Coeff * coeff);
-                }
-            }
-            else if (expr is SumArray)
-            {
-                SumArray a = (SumArray)expr;
-                constant += coeff * a.Offset;
-                foreach (LinearExpr sub in a.Expressions)
-                {
-                    exprs.Add(sub);
-                    coeffs.Add(coeff);
-                }
-            }
-            else if (expr is IntVar)
-            {
-                int index = expr.Index;
-                long value = SolutionIntegerValue(index);
-                constant += coeff * value;
-            }
-            else if (expr is NotBooleanVariable)
-            {
-                throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
-            }
-            else
-            {
-                throw new ArgumentException("Cannot evaluate '" + expr.ToString() + "' in an integer expression");
-            }
+            terms_ = new Queue<Term>();
         }
+        else
+        {
+            terms_.Clear();
+        }
+
+        do
+        {
+            switch (expr)
+            {
+            case LinearExprBuilder a:
+                constant += coefficient * a.Offset;
+                if (coefficient == 1)
+                {
+                    foreach (Term sub in a.Terms)
+                    {
+                        terms_.Enqueue(sub);
+                    }
+                }
+                else
+                {
+                    foreach (Term sub in a.Terms)
+                    {
+                        terms_.Enqueue(new Term(sub.expr, sub.coefficient * coefficient));
+                    }
+                }
+                break;
+            case IntVar intVar:
+                int index = intVar.GetIndex();
+                long value = SolutionIntegerValue(index);
+                constant += coefficient * value;
+                break;
+            case NotBoolVar:
+                throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
+            default:
+                throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");
+            }
+
+            if (!terms_.TryDequeue(out var term))
+            {
+                break;
+            }
+            expr = term.expr;
+            coefficient = term.coefficient;
+        } while (true);
+
         return constant;
     }
 
+    /**
+     * <summary>
+     * Returns the value of an integer variable in the current solution.
+     * </summary>
+     */
+    public long Value(IntVar intVar)
+    {
+        return SolutionIntegerValue(intVar.GetIndex());
+    }
+
+    /**
+     * <summary>
+     * Returns the Boolean value of a literal in the current solution.
+     * </summary>
+     */
     public Boolean BooleanValue(ILiteral literal)
     {
-        if (literal is IntVar || literal is NotBooleanVariable)
+        if (literal is BoolVar || literal is NotBoolVar)
         {
             int index = literal.GetIndex();
             return SolutionBooleanValue(index);
@@ -85,8 +113,15 @@ public class CpSolverSolutionCallback : SolutionCallback
             throw new ArgumentException("Cannot evaluate '" + literal.ToString() + "' as a boolean literal");
         }
     }
+
+    private Queue<Term> terms_;
 }
 
+/**
+ * <summary>
+ * A specialized solution printer.
+ * </summary>
+ */
 public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
 {
     private DateTime _startTime;

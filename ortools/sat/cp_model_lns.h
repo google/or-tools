@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,21 +14,34 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_LNS_H_
 #define OR_TOOLS_SAT_CP_MODEL_LNS_H_
 
+#include <cmath>
 #include <cstdint>
+#include <functional>
+#include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_presolve.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/adaptative_parameter_value.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -89,7 +102,6 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   NeighborhoodGeneratorHelper(CpModelProto const* model_proto,
                               SatParameters const* parameters,
                               SharedResponseManager* shared_response,
-                              SharedTimeLimit* shared_time_limit = nullptr,
                               SharedBoundsManager* shared_bounds = nullptr);
 
   // SubSolver interface.
@@ -185,6 +197,10 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   std::vector<int> GetActiveIntervals(
       const CpSolverResponse& initial_solution) const;
 
+  // Returns the set of unique intervals list appearing in a no_overlap,
+  // cumulative, or as a dimension of a no_overlap_2d constraint.
+  std::vector<std::vector<int>> GetUniqueIntervalSets() const;
+
   // Returns one sub-vector per circuit or per single vehicle ciruit in a routes
   // constraints. Each circuit is non empty, and does not contain any
   // self-looping arcs. Path are sorted, starting from the arc with the lowest
@@ -192,6 +208,13 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // closed. Each entry correspond to the arc literal on the circuit.
   std::vector<std::vector<int>> GetRoutingPaths(
       const CpSolverResponse& initial_solution) const;
+
+  // Returns all precedences extracted from the scheduling constraint and the
+  // initial solution. The precedences will be sorted by the natural order
+  // the pairs of integers.
+  std::vector<std::pair<int, int>> GetSchedulingPrecedences(
+      const absl::flat_hash_set<int>& ignored_intervals,
+      const CpSolverResponse& initial_solution, absl::BitGenRef random) const;
 
   // The initial problem.
   // Note that the domain of the variables are not updated here.
@@ -233,10 +256,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   const SatParameters& parameters_;
   const CpModelProto& model_proto_;
   int shared_bounds_id_;
-  SharedTimeLimit* shared_time_limit_;
   SharedBoundsManager* shared_bounds_;
   SharedResponseManager* shared_response_;
-  SharedRelaxationSolutionRepository* shared_relaxation_solutions_;
 
   // This proto will only contain the field variables() with an updated version
   // of the domains compared to model_proto_.variables(). We do it like this to
@@ -280,6 +301,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   std::vector<int> active_variables_ ABSL_GUARDED_BY(graph_mutex_);
 
   mutable absl::Mutex domain_mutex_;
+
+  // Used to display periodic info to the log.
+  absl::Time last_logging_time_;
 };
 
 // Base class for a CpModelProto neighborhood generator.
@@ -310,10 +334,6 @@ class NeighborhoodGenerator {
   // Returns true if the neighborhood generator can generate a neighborhood.
   virtual bool ReadyToGenerate() const;
 
-  // Returns true if the neighborhood generator generates relaxation of the
-  // given problem.
-  virtual bool IsRelaxationGenerator() const { return false; }
-
   // Uses UCB1 algorithm to compute the score (Multi armed bandit problem).
   // Details are at
   // https://lilianweng.github.io/lil-log/2018/01/23/the-multi-armed-bandit-problem-and-its-solutions.html.
@@ -326,10 +346,6 @@ class NeighborhoodGenerator {
 
   // Adds solve data about one "solved" neighborhood.
   struct SolveData {
-    // Neighborhood Id. Used to identify the neighborhood by a generator.
-    // Currently only used by WeightedRandomRelaxationNeighborhoodGenerator.
-    int64_t neighborhood_id = 0;
-
     // The status of the sub-solve.
     CpSolverStatus status = CpSolverStatus::UNKNOWN;
 
@@ -355,22 +371,14 @@ class NeighborhoodGenerator {
     IntegerValue base_objective = IntegerValue(0);
     IntegerValue new_objective = IntegerValue(0);
 
-    // Bounds data is only used by relaxation neighborhoods.
-    IntegerValue initial_best_objective_bound = IntegerValue(0);
-    IntegerValue new_objective_bound = IntegerValue(0);
-
     // This is just used to construct a deterministic order for the updates.
     bool operator<(const SolveData& o) const {
       return std::tie(status, difficulty, deterministic_limit,
                       deterministic_time, initial_best_objective,
-                      base_objective, new_objective,
-                      initial_best_objective_bound, new_objective_bound,
-                      neighborhood_id) <
+                      base_objective, new_objective) <
              std::tie(o.status, o.difficulty, o.deterministic_limit,
                       o.deterministic_time, o.initial_best_objective,
-                      o.base_objective, o.new_objective,
-                      o.initial_best_objective_bound, o.new_objective_bound,
-                      o.neighborhood_id);
+                      o.base_objective, o.new_objective);
     }
   };
   void AddSolveData(SolveData data) {
@@ -499,22 +507,46 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
                         double difficulty, absl::BitGenRef random) final;
 };
 
-// Helper method for the scheduling neighborhood generators. Returns the model
-// as neighborhood for the given set of intervals to relax. For each no_overlap
-// constraints, it adds strict relation order between the non-relaxed intervals.
-Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
+// Helper method for the scheduling neighborhood generators. Returns a
+// neighborhood defined from the given set of intervals to relax. For each
+// scheduling constraint, it adds strict relation order between the non-relaxed
+// intervals.
+Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
     const absl::Span<const int> intervals_to_relax,
+    const CpSolverResponse& initial_solution, absl::BitGenRef random,
+    const NeighborhoodGeneratorHelper& helper);
+
+// Helper method for the scheduling neighborhood generators. Returns a
+// full neighborhood enriched with the set or precedences passed to the generate
+// method.
+Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
+    const absl::Span<const std::pair<int, int>> precedences,
     const CpSolverResponse& initial_solution,
     const NeighborhoodGeneratorHelper& helper);
 
 // Only make sense for scheduling problem. This select a random set of interval
-// of the problem according to the difficulty. Then, for each no_overlap
+// of the problem according to the difficulty. Then, for each scheduling
 // constraints, it adds strict relation order between the non-relaxed intervals.
-//
-// TODO(user): Also deal with cumulative constraint.
-class SchedulingNeighborhoodGenerator : public NeighborhoodGenerator {
+class RandomIntervalSchedulingNeighborhoodGenerator
+    : public NeighborhoodGenerator {
  public:
-  explicit SchedulingNeighborhoodGenerator(
+  explicit RandomIntervalSchedulingNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
+// Only make sense for scheduling problem. This select a random set of
+// precedences between intervals of the problem according to the difficulty.
+// These precedences are extracted from the scheduling constraints and their
+// configuration in the current solution. Then it adds the kept precedences to
+// the model.
+class RandomPrecedenceSchedulingNeighborhoodGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit RandomPrecedenceSchedulingNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
 
@@ -532,6 +564,27 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, absl::BitGenRef random) final;
+};
+
+// Similar to SchedulingTimeWindowNeighborhoodGenerator except that it relaxes
+// one independent time window per resource (1 for each dimension in the
+// no_overlap_2d case).
+class SchedulingResourceWindowsNeighborhoodGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit SchedulingResourceWindowsNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper,
+      const std::vector<std::vector<int>>& intervals_in_constraints,
+      const std::string& name)
+      : NeighborhoodGenerator(name, helper),
+        intervals_in_constraints_(intervals_in_constraints) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+
+ private:
+  const std::vector<std::vector<int>> intervals_in_constraints_;
+  absl::flat_hash_set<int> intervals_to_relax_;
 };
 
 // This routing based LNS generator will relax random arcs in all the paths of
@@ -619,60 +672,6 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
   const SharedRelaxationSolutionRepository* relaxation_solutions_;
   const SharedLPSolutionRepository* lp_solutions_;
   SharedIncompleteSolutionManager* incomplete_solutions_;
-};
-
-// Generates a relaxation of the original model by removing a consecutive span
-// of constraints starting at a random index. The number of constraints removed
-// is in sync with the difficulty passed to the generator.
-class ConsecutiveConstraintsRelaxationNeighborhoodGenerator
-    : public NeighborhoodGenerator {
- public:
-  explicit ConsecutiveConstraintsRelaxationNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
-      : NeighborhoodGenerator(name, helper) {}
-  Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
-
-  bool IsRelaxationGenerator() const override { return true; }
-  bool ReadyToGenerate() const override { return true; }
-};
-
-// Generates a relaxation of the original model by removing some constraints
-// randomly with a given weight for each constraint that controls the
-// probability of constraint getting removed. The number of constraints removed
-// is in sync with the difficulty passed to the generator. Higher weighted
-// constraints are more likely to get removed.
-class WeightedRandomRelaxationNeighborhoodGenerator
-    : public NeighborhoodGenerator {
- public:
-  WeightedRandomRelaxationNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name);
-
-  // Generates the neighborhood as described above. Also stores the removed
-  // constraints indices for adjusting the weights.
-  Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
-
-  bool IsRelaxationGenerator() const override { return true; }
-  bool ReadyToGenerate() const override { return true; }
-
- private:
-  // Adjusts the weights of the constraints removed to get the neighborhood
-  // based on the solve_data.
-  void AdditionalProcessingOnSynchronize(const SolveData& solve_data) override
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(generator_mutex_);
-
-  // Higher weighted constraints are more likely to get removed.
-  std::vector<double> constraint_weights_;
-  int num_removable_constraints_ = 0;
-
-  // Indices of the removed constraints per generated neighborhood.
-  absl::flat_hash_map<int64_t, std::vector<int>> removed_constraints_
-      ABSL_GUARDED_BY(generator_mutex_);
-
-  // TODO(user): Move this to parent class if other generators start using
-  // feedbacks.
-  int64_t next_available_id_ ABSL_GUARDED_BY(generator_mutex_) = 0;
 };
 
 }  // namespace sat

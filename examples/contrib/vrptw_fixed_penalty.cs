@@ -16,15 +16,15 @@ using System;
 using Google.OrTools.ConstraintSolver;
 
 /// <summary>
-/// Vehicles Routing Problem (VRP) with Time Windows, with the difference that we'll add a fixed penalty for lateness, as opposed to a linear penalty based on how late it is.
-/// Example is inspired by scheduling items which have contractual deadlines.
-/// Code based on https://developers.google.com/optimization/routing/vrptw#program
+/// Vehicles Routing Problem (VRP) with Time Windows, with the difference that we'll add a fixed penalty for lateness,
+/// as opposed to a linear penalty based on how late it is. Example is inspired by scheduling items which have
+/// contractual deadlines. Code based on https://developers.google.com/optimization/routing/vrptw#program
 /// </summary>
 public class VrpTimeWindowFixedPenalty
 {
-  class DataModel
-  {
-    public long[,] TimeMatrix = {
+    class DataModel
+    {
+        public long[,] TimeMatrix = {
             { 0, 6, 9, 8, 7, 3, 6, 2, 3, 2, 6, 6, 4, 4, 5, 9, 7 },
             { 6, 0, 8, 3, 2, 6, 8, 4, 8, 8, 13, 7, 5, 8, 12, 10, 14 },
             { 9, 8, 0, 11, 10, 6, 3, 9, 5, 8, 4, 15, 14, 13, 9, 18, 9 },
@@ -43,7 +43,7 @@ public class VrpTimeWindowFixedPenalty
             { 9, 10, 18, 6, 8, 12, 15, 8, 13, 9, 13, 3, 4, 5, 9, 0, 9 },
             { 7, 14, 9, 16, 14, 8, 5, 10, 6, 5, 4, 10, 8, 6, 2, 9, 0 },
         };
-    public long[,] TimeWindows = {
+        public long[,] TimeWindows = {
             { 0, 5 },   // depot
             { 7, 12 },  // 1
             { 10, 15 }, // 2
@@ -62,108 +62,109 @@ public class VrpTimeWindowFixedPenalty
             { 10, 15 }, // 15
             { 11, 15 }, // 16
         };
-    public int VehicleNumber = 4;
-    public int Depot = 0;
-  };
+        public int VehicleNumber = 4;
+        public int Depot = 0;
+    };
 
-  /// <summary>
-  ///   Print the solution.
-  /// </summary>
-  static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
-                            in Assignment solution)
-  {
-    RoutingDimension timeDimension = routing.GetMutableDimension("Time");
-    // Inspect solution.
-    long totalTime = 0;
-    for (int i = 0; i < data.VehicleNumber; ++i)
+    /// <summary>
+    ///   Print the solution.
+    /// </summary>
+    static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
+                              in Assignment solution)
     {
-      Console.WriteLine("Route for Vehicle {0}:", i);
-      var index = routing.Start(i);
-      while (routing.IsEnd(index) == false)
-      {
-        var timeVar = timeDimension.CumulVar(index);
-        Console.Write("{0} Time({1},{2}) -> ", manager.IndexToNode(index), solution.Min(timeVar),
-                      solution.Max(timeVar));
-        index = solution.Value(routing.NextVar(index));
-      }
-      var endTimeVar = timeDimension.CumulVar(index);
-      Console.WriteLine("{0} Time({1},{2})", manager.IndexToNode(index), solution.Min(endTimeVar),
-                        solution.Max(endTimeVar));
-      Console.WriteLine("Time of the route: {0}min", solution.Min(endTimeVar));
-      totalTime += solution.Min(endTimeVar);
-    }
-    Console.WriteLine("Total time of all routes: {0}min", totalTime);
-  }
-
-  public static void Main(String[] args)
-  {
-    // Instantiate the data problem.
-    DataModel data = new DataModel();
-
-    // Create Routing Index Manager
-    RoutingIndexManager manager =
-        new RoutingIndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
-
-    // Create Routing Model.
-    RoutingModel routing = new RoutingModel(manager);
-
-    // Create and register a transit callback.
-    int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
-    {
-      // Convert from routing variable Index to distance matrix NodeIndex.
-      var fromNode = manager.IndexToNode(fromIndex);
-      var toNode = manager.IndexToNode(toIndex);
-      return data.TimeMatrix[fromNode, toNode];
-    });
-
-    // Define cost of each arc.
-    routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
-
-    // Add Distance constraint.
-    routing.AddDimension(transitCallbackIndex, // transit callback
-                         30,                   // allow waiting time
-                         30,                   // vehicle maximum capacities
-                         false,                // start cumul to zero
-                         "Time");
-    RoutingDimension timeDimension = routing.GetMutableDimension("Time");
-
-    routing.AddConstantDimensionWithSlack(0, // transit var 0 for all
-      data.TimeMatrix.GetLength(0), // max value is every item being late
-      1, // slack is 0 or 1 based on lateness
-      true, // start cumul to zero
-      "Late");
-
-    RoutingDimension lateDimension = routing.GetMutableDimension("Late");
-
-    // Add time window constraints for each location except depot.
-    for (int i = 1; i < data.TimeWindows.GetLength(0); ++i)
-    {
-      long index = manager.NodeToIndex(i);
-      var isLate = timeDimension.CumulVar(index) > data.TimeWindows[i, 1];
-
-      // set the slack var to 1 if late
-      routing.solver().MakeEquality(isLate, lateDimension.SlackVar(index));
+        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
+        // Inspect solution.
+        long totalTime = 0;
+        for (int i = 0; i < data.VehicleNumber; ++i)
+        {
+            Console.WriteLine("Route for Vehicle {0}:", i);
+            var index = routing.Start(i);
+            while (routing.IsEnd(index) == false)
+            {
+                var timeVar = timeDimension.CumulVar(index);
+                Console.Write("{0} Time({1},{2}) -> ", manager.IndexToNode(index), solution.Min(timeVar),
+                              solution.Max(timeVar));
+                index = solution.Value(routing.NextVar(index));
+            }
+            var endTimeVar = timeDimension.CumulVar(index);
+            Console.WriteLine("{0} Time({1},{2})", manager.IndexToNode(index), solution.Min(endTimeVar),
+                              solution.Max(endTimeVar));
+            Console.WriteLine("Time of the route: {0}min", solution.Min(endTimeVar));
+            totalTime += solution.Min(endTimeVar);
+        }
+        Console.WriteLine("Total time of all routes: {0}min", totalTime);
     }
 
-    // Instantiate route start and end times to produce feasible times.
-    for (int i = 0; i < data.VehicleNumber; ++i)
+    public static void Main(String[] args)
     {
-      // add a fixed penalty for each late item
-      long penalty = 1000;
-      lateDimension.SetCumulVarSoftUpperBound(routing.End(0), 0, penalty);
+        // Instantiate the data problem.
+        DataModel data = new DataModel();
 
-      routing.AddVariableMinimizedByFinalizer(lateDimension.CumulVar(routing.End(i)));
+        // Create Routing Index Manager
+        RoutingIndexManager manager =
+            new RoutingIndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+
+        // Create Routing Model.
+        RoutingModel routing = new RoutingModel(manager);
+
+        // Create and register a transit callback.
+        int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
+                                                                   {
+                                                                       // Convert from routing variable Index to
+                                                                       // distance matrix NodeIndex.
+                                                                       var fromNode = manager.IndexToNode(fromIndex);
+                                                                       var toNode = manager.IndexToNode(toIndex);
+                                                                       return data.TimeMatrix[fromNode, toNode];
+                                                                   });
+
+        // Define cost of each arc.
+        routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+
+        // Add Distance constraint.
+        routing.AddDimension(transitCallbackIndex, // transit callback
+                             30,                   // allow waiting time
+                             30,                   // vehicle maximum capacities
+                             false,                // start cumul to zero
+                             "Time");
+        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
+
+        routing.AddConstantDimensionWithSlack(0,                            // transit var 0 for all
+                                              data.TimeMatrix.GetLength(0), // max value is every item being late
+                                              1,                            // slack is 0 or 1 based on lateness
+                                              true,                         // start cumul to zero
+                                              "Late");
+
+        RoutingDimension lateDimension = routing.GetMutableDimension("Late");
+
+        // Add time window constraints for each location except depot.
+        for (int i = 1; i < data.TimeWindows.GetLength(0); ++i)
+        {
+            long index = manager.NodeToIndex(i);
+            var isLate = timeDimension.CumulVar(index) > data.TimeWindows[i, 1];
+
+            // set the slack var to 1 if late
+            routing.solver().MakeEquality(isLate, lateDimension.SlackVar(index));
+        }
+
+        // Instantiate route start and end times to produce feasible times.
+        for (int i = 0; i < data.VehicleNumber; ++i)
+        {
+            // add a fixed penalty for each late item
+            long penalty = 1000;
+            lateDimension.SetCumulVarSoftUpperBound(routing.End(0), 0, penalty);
+
+            routing.AddVariableMinimizedByFinalizer(lateDimension.CumulVar(routing.End(i)));
+        }
+
+        // Setting first solution heuristic.
+        RoutingSearchParameters searchParameters =
+            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+
+        // Solve the problem.
+        Assignment solution = routing.SolveWithParameters(searchParameters);
+
+        // Print solution on console.
+        PrintSolution(data, routing, manager, solution);
     }
-
-    // Setting first solution heuristic.
-    RoutingSearchParameters searchParameters =
-        operations_research_constraint_solver.DefaultRoutingSearchParameters();
-    searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
-
-    // Solve the problem.
-    Assignment solution = routing.SolveWithParameters(searchParameters);
-
-    // Print solution on console.
-    PrintSolution(data, routing, manager, solution);
-  }
 }

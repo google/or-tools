@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,19 +15,14 @@
 #define OR_TOOLS_SAT_SCHEDULING_CUTS_H_
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/int_type.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
-#include "ortools/sat/linear_constraint.h"
-#include "ortools/sat/linear_constraint_manager.h"
-#include "ortools/sat/model.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -46,10 +41,9 @@ namespace sat {
 //
 // The maximum energy is capacity * span of intervals at level 0.
 CutGenerator CreateCumulativeEnergyCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
+    SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
     const AffineExpression& capacity,
-    const std::vector<AffineExpression>& demands,
-    const std::vector<LinearExpression>& energies, Model* model);
+    const std::optional<AffineExpression>& makespan, Model* model);
 
 // For a given set of intervals and demands, we first compute the mandatory part
 // of the interval as [start_max , end_min]. We use this to calculate mandatory
@@ -63,25 +57,21 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
 //   sum(demands of always present intervals)
 //   + sum(presence_literal * min_of_demand) <= capacity.
 CutGenerator CreateCumulativeTimeTableCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
-    const std::vector<AffineExpression>& demands, Model* model);
+    SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
+    const AffineExpression& capacity, Model* model);
 
 // Completion time cuts for the cumulative constraint. It is a simple relaxation
 // where we replace a cumulative task with demand k and duration d by a
 // no_overlap task with duration d * k / capacity_max.
 CutGenerator CreateCumulativeCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
-    const std::vector<AffineExpression>& demands,
-    const std::vector<LinearExpression>& energies, Model* model);
+    SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
+    const AffineExpression& capacity, Model* model);
 
 // For a given set of intervals in a cumulative constraint, we detect violated
 // mandatory precedences and create a cut for these.
 CutGenerator CreateCumulativePrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const AffineExpression& capacity,
-    const std::vector<AffineExpression>& demands, Model* model);
+    SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
+    const AffineExpression& capacity, Model* model);
 
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
 // the completion time cumulative cuts in both axis.
@@ -117,18 +107,102 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
 //   sum(sizes of always present intervals)
 //   + sum(presence_literal * min_of_size) <= span of all intervals.
 CutGenerator CreateNoOverlapEnergyCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+    SchedulingConstraintHelper* helper,
+    const std::optional<AffineExpression>& makespan, Model* model);
 
 // For a given set of intervals in a no_overlap constraint, we detect violated
 // mandatory precedences and create a cut for these.
 CutGenerator CreateNoOverlapPrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+    SchedulingConstraintHelper* helper, Model* model);
 
 // For a given set of intervals in a no_overlap constraint, we detect violated
 // area based cuts from Queyranne 93 [see note in the code] and create a cut for
 // these.
 CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+    SchedulingConstraintHelper* helper, Model* model);
+
+// Internal methods and data structures, useful for testing.
+
+// Base event type for scheduling cuts.
+struct BaseEvent {
+  BaseEvent(int t, SchedulingConstraintHelper* x_helper);
+
+  // Cache of the intervals bound on the x direction.
+  IntegerValue x_start_min;
+  IntegerValue x_start_max;
+  IntegerValue x_end_min;
+  IntegerValue x_end_max;
+  IntegerValue x_size_min;
+  // Useful for no_overlap_2d or cumulative.
+  IntegerValue y_min = IntegerValue(0);
+  IntegerValue y_max = IntegerValue(0);
+  IntegerValue y_size_min;
+
+  // The energy min of this event.
+  IntegerValue energy_min;
+
+  // If non empty, a decomposed view of the energy of this event.
+  // First value in each pair is x_size, second is y_size.
+  std::vector<LiteralValueValue> decomposed_energy;
+};
+
+// Stores the event for a rectangle along the two axis x and y.
+//   For a no_overlap constraint, y is always of size 1 between 0 and 1.
+//   For a cumulative constraint, y is the demand that must be between 0 and
+//       capacity_max.
+//   For a no_overlap_2d constraint, y the other dimension of the rect.
+struct CtEvent : BaseEvent {
+  CtEvent(int t, SchedulingConstraintHelper* x_helper);
+
+  // The lp value of the end of the x interval.
+  AffineExpression x_end;
+  double x_lp_end;
+
+  // Indicates if the events used the optional energy information from the
+  // model.
+  bool use_energy = false;
+
+  // Indicates if the cut is lifted, that is if it includes tasks that are not
+  // strictly contained in the current time window.
+  bool lifted = false;
+
+  // If we know that the size on y is fixed, we can use some heuristic to
+  // compute the maximum subset sums under the capacity and use that instead
+  // of the full capacity.
+  bool y_size_is_fixed = false;
+
+  std::string DebugString() const;
+};
+
+// Computes the minimum sum of the end min and the minimum sum of the end min
+// weighted by y_size_min of all events. It returns false if no permatutation is
+// valid w.r.t. the range of x_start.
+//
+// Note that this is an exhaustive algorithm, so the number of events should be
+// small, like <= 10. They should also starts in index order.
+//
+// Optim: If both sums are proven <= to the corresponding threshold, we abort.
+struct PermutableEvent {
+  PermutableEvent(int i, CtEvent e)
+      : index(i),
+        x_start_min(e.x_start_min),
+        x_start_max(e.x_start_max),
+        x_size_min(e.x_size_min),
+        y_size_min(e.y_size_min) {}
+  bool operator<(const PermutableEvent& o) const { return index < o.index; }
+
+  int index;  // for < to be used by std::next_permutation().
+  IntegerValue x_start_min;
+  IntegerValue x_start_max;
+  IntegerValue x_size_min;
+  IntegerValue y_size_min;
+};
+bool ComputeMinSumOfWeightedEndMins(std::vector<PermutableEvent>& events,
+                                    IntegerValue capacity_max,
+                                    IntegerValue& min_sum_of_end_mins,
+                                    IntegerValue& min_sum_of_weighted_end_mins,
+                                    IntegerValue unweighted_threshold,
+                                    IntegerValue weighted_threshold);
 
 }  // namespace sat
 }  // namespace operations_research

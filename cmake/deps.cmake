@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Check dependencies
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREAD_PREFER_PTHREAD_FLAG TRUE)
@@ -21,6 +34,7 @@ if(NOT BUILD_absl)
 endif()
 set(ABSL_DEPS
   absl::base
+  absl::core_headers
   absl::flags
   absl::flags_commandlineflag
   absl::flags_parse
@@ -38,6 +52,7 @@ set(ABSL_DEPS
   absl::str_format
   absl::strings
   absl::synchronization
+  absl::time
   absl::any
   )
 
@@ -56,18 +71,6 @@ if(BUILD_LP_PARSER)
     message(FATAL_ERROR "Target re2::re2 not available.")
   endif()
   set(RE2_DEPS re2::re2)
-endif()
-
-if(USE_SCIP)
-  if(NOT BUILD_SCIP)
-    find_package(SCIP REQUIRED)
-  endif()
-endif()
-
-if(USE_GLPK)
-  if(NOT BUILD_GLPK)
-    find_package(GLPK REQUIRED)
-  endif()
 endif()
 
 if(USE_COINOR)
@@ -94,6 +97,38 @@ if(USE_COINOR)
   set(COINOR_DEPS Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp)
 endif()
 
+if(USE_GLPK)
+  if(NOT BUILD_GLPK)
+    find_package(GLPK REQUIRED)
+  endif()
+endif()
+
+if(USE_HIGHS)
+  if(NOT BUILD_HIGHS)
+    find_package(HIGHS REQUIRED)
+  endif()
+endif()
+
+if(USE_PDLP)
+  if(NOT BUILD_PDLP)
+    find_package(PDLP REQUIRED)
+  else()
+    if(NOT BUILD_Eigen3)
+      find_package(Eigen3 REQUIRED)
+    endif()
+    if(NOT TARGET Eigen3::Eigen)
+      message(FATAL_ERROR "Target Eigen3::Eigen not available.")
+    endif()
+    set(PDLP_DEPS Eigen3::Eigen)
+  endif()
+endif()
+
+if(USE_SCIP)
+  if(NOT BUILD_SCIP)
+    find_package(SCIP REQUIRED)
+  endif()
+endif()
+
 # Check optional Dependencies
 if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
@@ -105,3 +140,11 @@ if (USE_SIRIUS)
 	endif()
 	find_package(sirius_solver CONFIG REQUIRED)
 endif(USE_SIRIUS)
+
+# Check language Dependencies
+if(BUILD_PYTHON)
+  if(NOT BUILD_pybind11)
+    find_package(pybind11 REQUIRED)
+  endif()
+endif()
+

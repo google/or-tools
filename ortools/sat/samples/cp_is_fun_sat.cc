@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,12 +19,17 @@
 //
 // This problem has 72 different solutions in base 10.
 // [START import]
-#include <cstdint>
-#include <vector>
+#include <stdlib.h>
 
+#include <cstdint>
+
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 // [END import]
 
 namespace operations_research {

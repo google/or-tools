@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,8 +28,10 @@ const int GLOG_INFO = 0, GLOG_WARNING = 1, GLOG_ERROR = 2, GLOG_FATAL = 3,
 extern GOOGLE_GLOG_DLL_DECL const char* const LogSeverityNames[NUM_SEVERITIES];
 }  // namespace google
 #ifndef _MSC_VER
-const int INFO = google::GLOG_INFO, WARNING = google::GLOG_WARNING,
-          ERROR = google::GLOG_ERROR, FATAL = google::GLOG_FATAL;
+constexpr LogSeverity INFO = google::GLOG_INFO;
+constexpr LogSeverity WARNING = google::GLOG_WARNING;
+constexpr LogSeverity ERROR = google::GLOG_ERROR;
+constexpr LogSeverity FATAL = google::GLOG_FATAL;
 #endif
 
 // DFATAL is FATAL in debug mode, ERROR in normal mode

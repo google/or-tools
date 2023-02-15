@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,11 +16,12 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
-#include "absl/types/span.h"
-#include "ortools/base/int_type.h"
+#include "absl/base/attributes.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -33,12 +34,16 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/rev.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
 
-DEFINE_INT_TYPE(IntervalVariable, int32_t);
+DEFINE_STRONG_INDEX_TYPE(IntervalVariable);
 const IntervalVariable kNoIntervalVariable(-1);
+
+class SchedulingConstraintHelper;
 
 // This class maintains a set of intervals which correspond to three integer
 // variables (start, end and size). It automatically registers with the
@@ -137,6 +142,11 @@ class IntervalsRepository {
     return result;
   }
 
+  // Returns a SchedulingConstraintHelper corresponding to the given variables.
+  // Note that the order of interval in the helper will be the same.
+  SchedulingConstraintHelper* GetOrCreateHelper(
+      const std::vector<IntervalVariable>& variables);
+
  private:
   // External classes needed.
   Model* model_;
@@ -151,6 +161,12 @@ class IntervalsRepository {
   absl::StrongVector<IntervalVariable, AffineExpression> starts_;
   absl::StrongVector<IntervalVariable, AffineExpression> ends_;
   absl::StrongVector<IntervalVariable, AffineExpression> sizes_;
+
+  // We can share the helper for all the propagators that work on the same set
+  // of intervals.
+  absl::flat_hash_map<std::vector<IntervalVariable>,
+                      SchedulingConstraintHelper*>
+      helper_repository_;
 
   DISALLOW_COPY_AND_ASSIGN(IntervalsRepository);
 };
@@ -288,6 +304,25 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   const std::vector<TaskTime>& TaskByDecreasingEndMax();
   const std::vector<TaskTime>& TaskByIncreasingShiftedStartMin();
 
+  // Returns a sorted vector where each task appear twice, the first occurrence
+  // is at size (end_min - size_min) and the second one at (end_min).
+  //
+  // This is quite usage specific.
+  struct ProfileEvent {
+    IntegerValue time;
+    int task;
+    bool is_first;
+
+    bool operator<(const ProfileEvent& other) const {
+      if (time == other.time) {
+        if (task == other.task) return is_first > other.is_first;
+        return task < other.task;
+      }
+      return time < other.time;
+    }
+  };
+  const std::vector<ProfileEvent>& GetEnergyProfile();
+
   // Functions to clear and then set the current reason.
   void ClearReason();
   void AddPresenceReason(int t);
@@ -323,8 +358,10 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // conditionned on its presence. The functions will do the correct thing
   // depending on whether or not the start_min/end_max are optional variables
   // whose presence implies the interval presence.
-  ABSL_MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue new_start_min);
-  ABSL_MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue new_end_max);
+  ABSL_MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue value);
+  ABSL_MUST_USE_RESULT bool IncreaseEndMin(int t, IntegerValue value);
+  ABSL_MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue value);
+  ABSL_MUST_USE_RESULT bool PushLiteral(Literal l);
   ABSL_MUST_USE_RESULT bool PushTaskAbsence(int t);
   ABSL_MUST_USE_RESULT bool PushTaskPresence(int t);
   ABSL_MUST_USE_RESULT bool PushIntegerLiteral(IntegerLiteral lit);
@@ -432,6 +469,10 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   std::vector<TaskTime> task_by_decreasing_start_max_;
   std::vector<TaskTime> task_by_decreasing_end_max_;
 
+  // Sorted vector returned by GetEnergyProfile().
+  bool recompute_energy_profile_ = true;
+  std::vector<ProfileEvent> energy_profile_;
+
   // This one is the most commonly used, so we optimized a bit more its
   // computation by detecting when there is nothing to do.
   std::vector<TaskTime> task_by_increasing_shifted_start_min_;
@@ -454,6 +495,127 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   IntegerValue event_for_other_helper_;
   std::vector<bool> already_added_to_other_reasons_;
 };
+
+// Helper class for cumulative constraint to wrap demands and expose concept
+// like energy.
+//
+// In a cumulative constraint, an interval always has a size and a demand, but
+// it can also have a set of "selector" literals each associated with a fixed
+// size / fixed demands. This allows more precise energy estimation.
+//
+// TODO(user): Cache energy min and reason for the non O(1) cases.
+class SchedulingDemandHelper {
+ public:
+  // Hack: this can be called with and empty demand vector as long as
+  // OverrideEnergies() is called to define the energies.
+  SchedulingDemandHelper(std::vector<AffineExpression> demands,
+                         SchedulingConstraintHelper* helper, Model* model);
+
+  // When defined, the interval will consume this much demand during its whole
+  // duration. Some propagator only relies on the "energy" and thus never uses
+  // this.
+  IntegerValue DemandMin(int t) const;
+  IntegerValue DemandMax(int t) const;
+  bool DemandIsFixed(int t) const;
+  void AddDemandMinReason(int t);
+  const std::vector<AffineExpression>& Demands() const { return demands_; }
+
+  // Adds the linearized demand (either the affine demand expression, or the
+  // demand part of the decomposed energy if present) to the builder.
+  // It returns false and do not add any term to the builder.if any literal
+  // involved has no integer view.
+  ABSL_MUST_USE_RESULT bool AddLinearizedDemand(
+      int t, LinearConstraintBuilder* builder) const;
+
+  // The "energy" is usually size * demand, but in some non-conventional usage
+  // it might have a more complex formula. In all case, the energy is assumed
+  // to be only consumed during the interval duration.
+  //
+  // IMPORTANT: One must call CacheAllEnergyValues() for the values to be
+  // updated. TODO(user): this is error prone, maybe we should revisit. But if
+  // there is many alternatives, we don't want to rescan the list more than a
+  // linear number of time per propagation.
+  //
+  // TODO(user): Add more complex EnergyMinBefore(time) once we also support
+  // expressing the interval as a set of alternatives.
+  //
+  // At level 0, it will filter false literals from decomposed energies.
+  void CacheAllEnergyValues();
+  IntegerValue EnergyMin(int t) const { return cached_energies_min_[t]; }
+  IntegerValue EnergyMax(int t) const { return cached_energies_max_[t]; }
+  bool EnergyIsQuadratic(int t) const { return energy_is_quadratic_[t]; }
+  void AddEnergyMinReason(int t);
+
+  // Returns the energy min in [start, end].
+  //
+  // Note(user): These functions are not in O(1) if the decomposition is used,
+  // so we have to be careful in not calling them too often.
+  IntegerValue EnergyMinInWindow(int t, IntegerValue window_start,
+                                 IntegerValue window_end);
+  void AddEnergyMinInWindowReason(int t, IntegerValue window_start,
+                                  IntegerValue window_end);
+
+  // Important: This might not do anything depending on the representation of
+  // the energy we have.
+  ABSL_MUST_USE_RESULT bool DecreaseEnergyMax(int t, IntegerValue value);
+
+  // Different optional representation of the energy of an interval.
+  //
+  // Important: first value is size, second value is demand.
+  const std::vector<std::vector<LiteralValueValue>>& DecomposedEnergies()
+      const {
+    return decomposed_energies_;
+  }
+
+  // Visible for testing.
+  void OverrideLinearizedEnergies(
+      const std::vector<LinearExpression>& energies);
+  void OverrideDecomposedEnergies(
+      const std::vector<std::vector<LiteralValueValue>>& energies);
+  // Returns the decomposed energy terms compatible with the current literal
+  // assignment. It must not be used to create reasons if not at level 0.
+  // It returns en empty vector if the decomposed energy is not available.
+  //
+  // Important: first value is size, second value is demand.
+  std::vector<LiteralValueValue> FilteredDecomposedEnergy(int index);
+
+ private:
+  IntegerValue SimpleEnergyMin(int t) const;
+  IntegerValue LinearEnergyMin(int t) const;
+  IntegerValue SimpleEnergyMax(int t) const;
+  IntegerValue LinearEnergyMax(int t) const;
+  IntegerValue DecomposedEnergyMin(int t) const;
+  IntegerValue DecomposedEnergyMax(int t) const;
+
+  IntegerTrail* integer_trail_;
+  SatSolver* sat_solver_;  // To get the current propagation level.
+  const VariablesAssignment& assignment_;
+  std::vector<AffineExpression> demands_;
+  SchedulingConstraintHelper* helper_;
+
+  // Cached value of the energies, as it can be a bit costly to compute.
+  std::vector<IntegerValue> cached_energies_min_;
+  std::vector<IntegerValue> cached_energies_max_;
+  std::vector<bool> energy_is_quadratic_;
+
+  // A representation of the energies as a set of alternative.
+  // If subvector is empty, we don't have this representation.
+  std::vector<std::vector<LiteralValueValue>> decomposed_energies_;
+
+  // A representation of the energies as a set of linear expression.
+  // If the optional is not set, we don't have this representation.
+  std::vector<std::optional<LinearExpression>> linearized_energies_;
+};
+
+// =============================================================================
+// Utilities
+// =============================================================================
+
+IntegerValue ComputeEnergyMinInWindow(
+    IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
+    IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
+    const std::vector<LiteralValueValue>& filtered_energy,
+    IntegerValue window_start, IntegerValue window_end);
 
 // =============================================================================
 // SchedulingConstraintHelper inlined functions.
@@ -525,8 +687,7 @@ inline void SchedulingConstraintHelper::AddGenericReason(
   }
   CHECK_NE(a.var, kNoIntegerVariable);
 
-  // Here we assume that the upper_bound on a comes from the lower bound of b +
-  // c.
+  // Here we assume that the upper_bound on a comes from the bound on b + c.
   const IntegerValue slack = upper_bound - integer_trail_->UpperBound(b) -
                              integer_trail_->UpperBound(c);
   CHECK_GE(slack, 0);
@@ -537,8 +698,8 @@ inline void SchedulingConstraintHelper::AddGenericReason(
     integer_reason_.push_back(b.LowerOrEqual(upper_bound - c.constant));
   } else {
     integer_trail_->AppendRelaxedLinearReason(
-        slack, {IntegerValue(1), IntegerValue(1)},
-        {NegationOf(b.var), NegationOf(c.var)}, &integer_reason_);
+        slack, {b.coeff, c.coeff}, {NegationOf(b.var), NegationOf(c.var)},
+        &integer_reason_);
   }
 }
 

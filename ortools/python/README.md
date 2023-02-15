@@ -28,6 +28,7 @@ You'll need "Python >= 3.6" and few python modules ("wheel" and "absl-py").
 ## Build Process
 
 To Create a native dependent package which will contains two parts:
+
 * A bunch of native libraries for the supported platform targeted.
 * The Python code depending on it.
 
@@ -38,8 +39,8 @@ simply upload one package per supported platform.
 
 The pipeline for `linux-x86-64` should be as follow: \
 note: The pipeline will be similar for other architectures, don't hesitate to
-look at the CI log! ![Local Pipeline](doc/local_pipeline.svg)
-![Legend](doc/legend.svg)
+look at the CI log! ![Local Pipeline](docs/local_pipeline.svg)
+![Legend](docs/legend.svg)
 
 #### Building local native Package
 
@@ -47,9 +48,11 @@ Thus we have the C++ shared library `libortools.so` and the SWIG generated
 Python wrappers e.g. `pywrapsat.py` in the same package.
 
 Here some dev-note concerning this `setup.py`.
+
 * This package is a native package containing native libraries.
 
 Then you can generate the package and install it locally using:
+
 ```bash
 python3 setup.py bdist_wheel
 python3 -m pip install --user --find-links=dist ortools
@@ -57,6 +60,7 @@ python3 -m pip install --user --find-links=dist ortools
 
 If everything good the package (located in `<buildir>/python/dist`) should have
 this layout:
+
 ```
 {...}/dist/ortools-X.Y.9999-cp3Z-cp3Z-<platform>.whl:
 \- ortools
@@ -92,7 +96,8 @@ Few links on the subject...
 ## Misc
 
 Image has been generated using [plantuml](http://plantuml.com/):
+
 ```bash
-plantuml -Tsvg doc/{file}.dot
+plantuml -Tsvg docs/{file}.dot
 ```
-So you can find the dot source files in [doc](doc).
+So you can find the dot source files in [docs](docs).

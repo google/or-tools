@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,39 +17,95 @@ syntax = "proto3";
 package operations_research.math_opt;
 
 import "google/protobuf/duration.proto";
+import "ortools/math_opt/solvers/gurobi.proto";
+
+
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
 
 import "ortools/glop/parameters.proto";
 import "ortools/gscip/gscip.proto";
 import "ortools/sat/sat_parameters.proto";
 
-enum SolverType {
+enum SolverTypeProto {
   SOLVER_TYPE_UNSPECIFIED = 0;
+
+  // Solving Constraint Integer Programs (SCIP) solver.
+  //
+  // It supports both MIPs and LPs. No dual data for LPs is returned though. To
+  // solve LPs, SOLVER_TYPE_GLOP should be preferred.
   SOLVER_TYPE_GSCIP = 1;
+
+  // Gurobi solver.
+  //
+  // It supports both MIPs and LPs.
   SOLVER_TYPE_GUROBI = 2;
+
+  // Google's Glop linear solver.
+  //
+  // It only solves LPs.
   SOLVER_TYPE_GLOP = 3;
+
+  // Google's CP-SAT solver.
+  //
+  // It supports solving IPs and can scale MIPs to solve them as IPs.
   SOLVER_TYPE_CP_SAT = 4;
+
+  reserved 5;
+
+  // GNU Linear Programming Kit (GLPK).
+  //
+  // It supports both MIPs and LPs.
+  //
+  // Thread-safety: GLPK use thread-local storage for memory allocations. As a
+  // consequence Solver instances must be destroyed on the same thread as they
+  // are created or GLPK will crash. It seems OK to call Solver::Solve() from
+  // another thread than the one used to create the Solver but it is not
+  // documented by GLPK and should be avoided.
+  //
+  // When solving a LP with the presolver, a solution (and the unbound rays) are
+  // only returned if an optimal solution has been found. Else nothing is
+  // returned. See glpk-5.0/doc/glpk.pdf page #40 available from glpk-5.0.tar.gz
+  // for details.
   SOLVER_TYPE_GLPK = 6;
+
+  reserved 7;
 }
 
-enum LPAlgorithm {
+// Selects an algorithm for solving linear programs.
+enum LPAlgorithmProto {
   LP_ALGORITHM_UNSPECIFIED = 0;
+
+  // The (primal) simplex method. Typically can provide primal and dual
+  // solutions, primal/dual rays on primal/dual unbounded problems, and a basis.
   LP_ALGORITHM_PRIMAL_SIMPLEX = 1;
+
+  // The dual simplex method. Typically can provide primal and dual
+  // solutions, primal/dual rays on primal/dual unbounded problems, and a basis.
   LP_ALGORITHM_DUAL_SIMPLEX = 2;
+
+  // The barrier method, also commonly called an interior point method (IPM).
+  // Can typically give both primal and dual solutions. Some implementations can
+  // also produce rays on unbounded/infeasible problems. A basis is not given
+  // unless the underlying solver does "crossover" and finishes with simplex.
   LP_ALGORITHM_BARRIER = 3;
 }
 
-// How these are mapped onto underlying solvers:
-//  * If a solver doesn't support the feature, only UNSPECIFIED and OFF are
-//    valid, any other setting will give either a warning or error (as
-//    configured for Strictness).
+// Effort level applied to an optional task while solving (see
+// SolveParametersProto for use).
+//
+// Emphasis is used to configure a solver feature as follows:
+//  * If a solver doesn't support the feature, only UNSPECIFIED will always be
+//    valid, any other setting will typically an invalid argument error (some
+//    solvers may also accept OFF).
 //  * If the solver supports the feature:
 //    - When set to UNSPECIFIED, the underlying default is used.
-//    - When the feature cannot be turned off, OFF will a warning/error.
+//    - When the feature cannot be turned off, OFF will return an error.
 //    - If the feature is enabled by default, the solver default is typically
 //      mapped to MEDIUM.
 //    - If the feature is supported, LOW, MEDIUM, HIGH, and VERY HIGH will never
-//      give a warning or error, and will map onto their best match.
-enum Emphasis {
+//      give an error, and will map onto their best match.
+enum EmphasisProto {
   EMPHASIS_UNSPECIFIED = 0;
   EMPHASIS_OFF = 1;
   EMPHASIS_LOW = 2;
@@ -58,30 +114,104 @@ enum Emphasis {
   EMPHASIS_VERY_HIGH = 5;
 }
 
+// Configures if potentially bad solver input is a warning or an error.
+//
+// TODO(b/196132970): implement this feature.
 message StrictnessProto {
-  // If true, warnings on bad parameters are converted to Status errors.
   bool bad_parameter = 1;
 }
 
-message CommonSolveParametersProto {
-  StrictnessProto strictness = 1;
+// This message contains solver specific data that are used when the solver is
+// instantiated.
+message SolverInitializerProto {
+  GurobiInitializerProto gurobi = 1;
+}
+
+// Parameters to control a single solve.
+//
+// Contains both parameters common to all solvers e.g. time_limit, and
+// parameters for a specific solver, e.g. gscip. If a value is set in both
+// common and solver specific field, the solver specific setting is used.
+//
+// The common parameters that are optional and unset or an enum with value
+// unspecified indicate that the solver default is used.
+//
+// Solver specific parameters for solvers other than the one in use are ignored.
+//
+// Parameters that depends on the model (e.g. branching priority is set for
+// each variable) are passed in ModelSolveParametersProto.
+message SolveParametersProto {
+  //////////////////////////////////////////////////////////////////////////////
+  // Parameters common to all solvers.
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Maximum time a solver should spend on the problem (or infinite if not set).
+  //
+  // This value is not a hard limit, solve time may slightly exceed this value.
+  // This parameter is always passed to the underlying solver, the solver
+  // default is not used.
+  google.protobuf.Duration time_limit = 1;
+
+  // Limit on the iterations of the underlying algorithm (e.g. simplex pivots).
+  // The specific behavior is dependent on the solver and algorithm used, but
+  // often can give a deterministic solve limit (further configuration may be
+  // needed, e.g. one thread).
+  //
+  // Typically supported by LP, QP, and MIP solvers, but for MIP solvers see
+  // also node_limit.
+  optional int64 iteration_limit = 2;
+
+  // Limit on the number of subproblems solved in enumerative search (e.g.
+  // branch and bound). For many solvers this can be used to deterministically
+  // limit computation (further configuration may be needed, e.g. one thread).
+  //
+  // Typically for MIP solvers, see also iteration_limit.
+  optional int64 node_limit = 24;
+
+  // The solver stops early if it can prove there are no primal solutions at
+  // least as good as cutoff.
+  //
+  // On an early stop, the solver returns termination reason NO_SOLUTION_FOUND
+  // and with limit CUTOFF and is not required to give any extra solution
+  // information. Has no effect on the return value if there is no early stop.
+  //
+  // It is recommended that you use a tolerance if you want solutions with
+  // objective exactly equal to cutoff to be returned.
+  //
+  // See the user guide for more details and a comparison with best_bound_limit.
+  optional double cutoff_limit = 20;
+
+  // The solver stops early as soon as it finds a solution at least this good,
+  // with termination reason FEASIBLE and limit OBJECTIVE.
+  optional double objective_limit = 21;
+
+  // The solver stops early as soon as it proves the best bound is at least this
+  // good, with termination reason FEASIBLE or NO_SOLUTION_FOUND and limit
+  // OBJECTIVE.
+  //
+  // See the user guide for more details and a comparison with cutoff_limit.
+  optional double best_bound_limit = 22;
+
+  // The solver stops early after finding this many feasible solutions, with
+  // termination reason FEASIBLE and limit SOLUTION. Must be greater than zero
+  // if set. It is often used get the solver to stop on the first feasible
+  // solution found. Note that there is no guarantee on the objective value for
+  // any of the returned solutions.
+  //
+  // Solvers will typically not return more solutions than the solution limit,
+  // but this is not enforced by MathOpt, see also b/214041169.
+  //
+  // Currently supported for Gurobi and SCIP, and for CP-SAT only with value 1.
+  optional int32 solution_limit = 23;
 
   // Enables printing the solver implementation traces. The location of those
   // traces depend on the solver. For SCIP and Gurobi this will be the standard
   // output streams. For Glop and CP-SAT this will LOG(INFO).
   //
-  // When not set, the default solver behavior is used, which can be enabled or
-  // disabled.
-  //
-  // Note that if the solver supports CALLBACK_EVENT_MESSAGE and the user
-  // registers a callback for it, then this parameter value is ignored and no
-  // traces are printed. The traces are only available through the
-  // CallbackDataProto.
-  optional bool enable_output = 2;
-
-  // If not set, the time limit is infinite. This parameter is always passed
-  // to the underlying solver.
-  google.protobuf.Duration time_limit = 3;
+  // Note that if the solver supports message callback and the user registers a
+  // callback for it, then this parameter value is ignored and no traces are
+  // printed.
+  bool enable_output = 3;
 
   // If set, it must be >= 1.
   optional int32 threads = 4;
@@ -101,58 +231,72 @@ message CommonSolveParametersProto {
   // MAX(0, MIN(MAX_VALID_VALUE_FOR_SOLVER, random_seed)).
   optional int32 random_seed = 5;
 
-  // If unspecified, used the solver default algorithm.
-  LPAlgorithm lp_algorithm = 6;
+  // An absolute optimality tolerance (primarily) for MIP solvers.
+  //
+  // The absolute GAP is the absolute value of the difference between:
+  //   * the objective value of the best feasible solution found,
+  //   * the dual bound produced by the search.
+  // The solver can stop once the absolute GAP is at most absolute_gap_tolerance
+  // (when set), and return TERMINATION_REASON_OPTIMAL.
+  //
+  // Must be >= 0 if set.
+  //
+  // See also relative_gap_tolerance.
+  optional double absolute_gap_tolerance = 18;
 
-  Emphasis presolve = 7;
+  // A relative optimality tolerance (primarily) for MIP solvers.
+  //
+  // The relative GAP is a normalized version of the absolute GAP (defined on
+  // absolute_gap_tolerance), where the normalization is solver-dependent, e.g.
+  // the absolute GAP divided by the objective value of the best feasible
+  // solution found.
+  //
+  // The solver can stop once the relative GAP is at most relative_gap_tolerance
+  // (when set), and return TERMINATION_REASON_OPTIMAL.
+  //
+  // Must be >= 0 if set.
+  //
+  // See also absolute_gap_tolerance.
+  optional double relative_gap_tolerance = 17;
+
+  // The algorithm for solving a linear program. If LP_ALGORITHM_UNSPECIFIED,
+  // use the solver default algorithm.
+  //
+  // For problems that are not linear programs but where linear programming is
+  // a subroutine, solvers may use this value. E.g. MIP solvers will typically
+  // use this for the root LP solve only (and use dual simplex otherwise).
+  LPAlgorithmProto lp_algorithm = 6;
+
+  // Effort on simplifying the problem before starting the main algorithm, or
+  // the solver default effort level if EMPHASIS_UNSPECIFIED.
+  EmphasisProto presolve = 7;
+
+  // Effort on getting a stronger LP relaxation (MIP only), or the solver
+  // default effort level if EMPHASIS_UNSPECIFIED.
+  //
   // NOTE: disabling cuts may prevent callbacks from having a chance to add cuts
   // at MIP_NODE, this behavior is solver specific.
-  Emphasis cuts = 8;
-  Emphasis heuristics = 9;
-  Emphasis scaling = 10;
-}
+  EmphasisProto cuts = 8;
 
-// This message contains solver specific data that are used when the solver is
-// instantiated.
-message SolverInitializerProto {}
+  // Effort in finding feasible solutions beyond those encountered in the
+  // complete search procedure (MIP only), or the solver default effort level if
+  // EMPHASIS_UNSPECIFIED.
+  EmphasisProto heuristics = 9;
 
-// Gurobi's parameters have types (int, double, string), but they also support
-// a simpler interface through
-// `GRBsetparam(GRBenv* env,
-//              const char* paramname,
-//              const char* value)`
-//
-// Moreover, Gurobi also has a long list of `private` and `extended`
-// parameters, which are better handled through this generic interface. Given
-// these constraints, we store parameter changes as a sequence of strings of
-// the form "paramname=value".
-//
-// Note that final behavior is order-dependent of the sequence of parameters
-// used, so we apply parameter changes one at a time. Note that when merging
-// Gurobi parameters with common solver parameters, the common parameters will
-// be pre-pended to the list of Gurobi parameters.
-message GurobiParametersProto {
-  message Parameter {
-    string name = 1;
-    string value = 2;
-  }
-  repeated Parameter parameters = 1;
-}
+  // Effort in rescaling the problem to improve numerical stability, or the
+  // solver default effort level if EMPHASIS_UNSPECIFIED.
+  EmphasisProto scaling = 10;
 
-// Parameters to control a single solve.
-//
-// Parameters that depends on the model (parameters about variables, ...) are
-// passed in ModelSolveParametersProto proto.
-message SolveParametersProto {
-  CommonSolveParametersProto common_parameters = 1;
-  // Values in solver_specific_parameters may overlap with values in
-  // common_parameters. In that case, the value in solver_specific_parameters is
-  // the one taken into account.
-  oneof solver_specific_parameters {
-    GScipParameters gscip_parameters = 2;
-    GurobiParametersProto gurobi_parameters = 3;
-    glop.GlopParameters glop_parameters = 4;
-    sat.SatParameters cp_sat_parameters = 5;
-  }
-  reserved 6;
+  //////////////////////////////////////////////////////////////////////////////
+  // Solver specific parameters
+  //////////////////////////////////////////////////////////////////////////////
+  GScipParameters gscip = 12;
+  GurobiParametersProto gurobi = 13;
+  glop.GlopParameters glop = 14;
+  sat.SatParameters cp_sat = 15;
+  reserved 16;
+
+  reserved 19;
+
+  reserved 11;  // Deleted
 }

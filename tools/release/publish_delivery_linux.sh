@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -eo pipefail
 
 function help() {
@@ -67,8 +80,8 @@ function publish_java() {
   command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a build.log
 
-  echo -n "Publish Java..." | tee -a publish.log
-  make publish_java_runtime -l 4 UNIX_PYTHON_VER=3.9
+  echo -n "Publish native Java..." | tee -a publish.log
+  cmake --build temp_java --target java_native_deploy -v
   echo "DONE" | tee -a publish.log
 
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_publish"

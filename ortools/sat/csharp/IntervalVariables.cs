@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,13 @@
 
 namespace Google.OrTools.Sat
 {
-using System;
-using System.Collections.Generic;
-
+/**
+ * <summary>An interval variable </summary>
+ *
+ * <remarks>
+ * This class must be constructed from the CpModel class.
+ * </remarks>
+ */
 public class IntervalVar
 {
     public IntervalVar(CpModelProto model, LinearExpressionProto start, LinearExpressionProto size,
@@ -31,6 +35,7 @@ public class IntervalVar
         ConstraintProto ct = new ConstraintProto();
         ct.Interval = interval_;
         ct.Name = name;
+        ct.EnforcementLiteral.Capacity = 1;
         ct.EnforcementLiteral.Add(is_present_index);
         model.Constraints.Add(ct);
     }
@@ -51,26 +56,31 @@ public class IntervalVar
         model_.Constraints.Add(ct);
     }
 
+    /** <summary>The Index of the interval in the model proto</summary> */
     public int GetIndex()
     {
         return index_;
     }
 
+    /** <summary>The start expression of the interval</summary> */
     public LinearExpr StartExpr()
     {
         return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.Start, model_);
     }
 
+    /** <summary>The size expression of the interval</summary> */
     public LinearExpr SizeExpr()
     {
         return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.Size, model_);
     }
 
+    /** <summary>The end expression of the interval</summary> */
     public LinearExpr EndExpr()
     {
         return LinearExpr.RebuildLinearExprFromLinearExpressionProto(interval_.End, model_);
     }
 
+    /** <summary>The underlying interval proto</summary> */
     public IntervalConstraintProto Proto
     {
         get {

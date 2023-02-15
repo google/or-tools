@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,11 @@
 
 #include "ortools/lp_data/model_reader.h"
 
+#include <string>
+
 #include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/util/file_util.h"

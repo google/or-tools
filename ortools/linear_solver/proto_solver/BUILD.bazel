@@ -1,0 +1,76 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+package(default_visibility = ["//visibility:public"])
+
+# This works on a fixed set of solvers.
+# By default SCIP, GUROBI, PDLP, and CP-SAT interface are included.
+cc_library(
+    name = "proto_solver",
+    srcs = [
+        "gurobi_proto_solver.cc",
+        "highs_proto_solver.cc",
+        "pdlp_proto_solver.cc",
+        "sat_proto_solver.cc",
+        "sat_solver_utils.cc",
+        "scip_proto_solver.cc",
+    ],
+    hdrs = [
+        "gurobi_proto_solver.h",
+        "highs_proto_solver.h",
+        "pdlp_proto_solver.h",
+        "sat_proto_solver.h",
+        "sat_solver_utils.h",
+        "scip_proto_solver.h",
+    ],
+    copts = [
+        "-DUSE_PDLP",
+        "-DUSE_SCIP",
+        "-DUSE_HIGHS",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:accurate_sum",
+        "//ortools/base:dynamic_library",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/base:status_macros",
+        "//ortools/base:stl_util",
+        "//ortools/base:timer",
+        "//ortools/bop:bop_parameters_cc_proto",
+        "//ortools/bop:integral_solver",
+        "//ortools/glop:lp_solver",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/gscip:legacy_scip_params",
+        "//ortools/gurobi:environment",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_exporter",
+        "//ortools/linear_solver:model_validator",
+        "//ortools/linear_solver:scip_with_glop",
+        "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:solve_log_cc_proto",
+        "//ortools/pdlp:solvers_cc_proto",
+        "//ortools/port:file",
+        "//ortools/port:proto_utils",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:lp_utils",
+        "//ortools/util:fp_utils",
+        "//ortools/util:lazy_mutable_copy",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/types:optional",
+    ],
+)

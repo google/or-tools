@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,16 +13,24 @@
 
 #include "ortools/sat/disjunctive.h"
 
-#include <memory>
+#include <algorithm>
+#include <functional>
+#include <utility>
+#include <vector>
 
-#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/theta_tree.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/util/sort.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -65,8 +73,11 @@ std::function<void(Model*)> Disjunctive(
     if (/*DISABLES_CODE*/ (false)) {
       const AffineExpression one(IntegerValue(1));
       std::vector<AffineExpression> demands(vars.size(), one);
-      TimeTablingPerTask* timetable = new TimeTablingPerTask(
-          demands, one, model->GetOrCreate<IntegerTrail>(), helper);
+      SchedulingDemandHelper* demands_helper = model->TakeOwnership(
+          new SchedulingDemandHelper(demands, helper, model));
+
+      TimeTablingPerTask* timetable =
+          new TimeTablingPerTask(one, helper, demands_helper, model);
       timetable->RegisterWith(watcher);
       model->TakeOwnership(timetable);
       return;
@@ -192,11 +203,6 @@ void TaskSet::NotifyEntryIsNowLastIfPresent(const Entry& e) {
   optimized_restart_ = sorted_tasks_.size();
   sorted_tasks_.push_back(e);
   DCHECK(std::is_sorted(sorted_tasks_.begin(), sorted_tasks_.end()));
-}
-
-void TaskSet::RemoveEntryWithIndex(int index) {
-  sorted_tasks_.erase(sorted_tasks_.begin() + index);
-  optimized_restart_ = 0;
 }
 
 IntegerValue TaskSet::ComputeEndMin() const {
@@ -445,6 +451,9 @@ bool CombinedDisjunctive<time_direction>::Propagate() {
       const IntegerValue shifted_smin = helper_->ShiftedStartMin(t);
       const IntegerValue size_min = helper_->SizeMin(t);
       for (const int d_index : task_to_disjunctives_[t]) {
+        // TODO(user): Refactor the code to use the same algo as in
+        // DisjunctiveDetectablePrecedences, it is superior and do not need
+        // this function.
         task_sets_[d_index].NotifyEntryIsNowLastIfPresent(
             {t, shifted_smin, size_min});
         end_mins_[d_index] = task_sets_[d_index].ComputeEndMin();

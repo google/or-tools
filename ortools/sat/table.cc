@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,25 +13,16 @@
 
 #include "ortools/sat/table.h"
 
-#include <algorithm>
-#include <cstdint>
-#include <limits>
-#include <memory>
-#include <set>
+#include <functional>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/util.h"
-#include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

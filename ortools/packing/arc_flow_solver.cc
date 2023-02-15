@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,12 +13,14 @@
 
 #include "ortools/packing/arc_flow_solver.h"
 
+#include <cmath>
 #include <string>
+#include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/flags/flag.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/timer.h"
 #include "ortools/packing/arc_flow_builder.h"
 #include "ortools/packing/vector_bin_packing.pb.h"

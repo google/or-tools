@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,15 +14,29 @@
 #ifndef OR_TOOLS_SAT_LB_TREE_SEARCH_H_
 #define OR_TOOLS_SAT_LB_TREE_SEARCH_H_
 
+#include <stdint.h>
+
+#include <algorithm>
+#include <functional>
 #include <limits>
+#include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
+#include "absl/time/time.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -50,7 +64,7 @@ class LbTreeSearch {
 
  private:
   // Code a binary tree.
-  DEFINE_INT_TYPE(NodeIndex, int);
+  DEFINE_STRONG_INDEX_TYPE(NodeIndex);
   struct Node {
     Node(Literal l, IntegerValue lb)
         : literal(l), true_objective(lb), false_objective(lb) {}
@@ -82,6 +96,9 @@ class LbTreeSearch {
     // Points to adjacent nodes in the tree. Large if no connection.
     NodeIndex true_child = NodeIndex(std::numeric_limits<int32_t>::max());
     NodeIndex false_child = NodeIndex(std::numeric_limits<int32_t>::max());
+
+    // Indicates if this nodes was removed from the tree.
+    bool is_deleted = false;
   };
 
   // Display the current tree, this is mainly here to investigate ideas to
@@ -96,16 +113,42 @@ class LbTreeSearch {
   // the one at level n.
   void UpdateParentObjective(int level);
 
+  // Returns false on conflict.
+  bool FullRestart();
+
+  // Mark the given node as deleted. Its literal is assumed to be set. We also
+  // delete the subtree that is not longer relevant.
+  void MarkAsDeletedNodeAndUnreachableSubtree(Node& node);
+  void MarkSubtreeAsDeleted(NodeIndex root);
+
+  // Create a new node at the end of the current branch.
+  // This assume the last decision in the branch is assigned.
+  void AppendNewNodeToCurrentBranch(Literal decision);
+
+  // Update the bounds on the given nodes by using reduced costs if possible.
+  void ExploitReducedCosts(NodeIndex n);
+
+  // Returns a small number of decision needed to reach the same conflict.
+  // We basically reduce the number of decision at each level to 1.
+  std::vector<Literal> ExtractDecisions(int base_level,
+                                        const std::vector<Literal>& conflict);
+
+  // Used in the solve logs.
+  std::string SmallProgressString() const;
+
   // Model singleton class used here.
   TimeLimit* time_limit_;
   ModelRandomGenerator* random_;
   SatSolver* sat_solver_;
   IntegerEncoder* integer_encoder_;
+  Trail* trail_;
   IntegerTrail* integer_trail_;
+  GenericLiteralWatcher* watcher_;
   SharedResponseManager* shared_response_;
   SatDecisionPolicy* sat_decision_;
   IntegerSearchHelper* search_helper_;
   IntegerVariable objective_var_;
+  const SatParameters& parameters_;
 
   // This can stay null. Otherwise it will be the lp constraint with
   // objective_var_ as objective.
@@ -115,6 +158,7 @@ class LbTreeSearch {
   IntegerValue current_objective_lb_;
 
   // Memory for all the nodes.
+  int num_nodes_in_tree_ = 0;
   absl::StrongVector<NodeIndex, Node> nodes_;
 
   // The list of nodes in the current branch, in order from the root.
@@ -124,6 +168,21 @@ class LbTreeSearch {
   std::function<BooleanOrIntegerLiteral()> search_heuristic_;
 
   int64_t num_rc_detected_ = 0;
+
+  // Counts the number of decisions we are taking while exploring the search
+  // tree.
+  int64_t num_decisions_taken_ = 0;
+
+  // Used to trigger the initial restarts and imports.
+  int num_full_restarts_ = 0;
+  int64_t num_decisions_taken_at_last_restart_ = 0;
+  int64_t num_decisions_taken_at_last_level_zero_ = 0;
+
+  // Count the number of time we are back to decision level zero.
+  int64_t num_back_to_root_node_ = 0;
+
+  // Used to display periodic info to the log.
+  absl::Time last_logging_time_;
 };
 
 }  // namespace sat

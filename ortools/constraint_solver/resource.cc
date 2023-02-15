@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <queue>
 #include <string>
@@ -508,7 +509,8 @@ bool NotLast::Propagate() {
            twi->interval->EndMax() > by_start_max_[j]->interval->StartMax()) {
       if (j > 0 && theta_tree_.Ect() > by_start_max_[j]->interval->StartMax()) {
         const int64_t new_end_max = by_start_max_[j - 1]->interval->StartMax();
-        new_lct_[by_start_max_[j]->index] = new_end_max;
+        new_lct_[by_start_max_[j]->index] =
+            std::min(new_lct_[by_start_max_[j]->index], new_end_max);
       }
       theta_tree_.Insert(by_start_max_[j]);
       j++;
@@ -521,9 +523,10 @@ bool NotLast::Propagate() {
     if (inserted) {
       theta_tree_.Insert(twi);
     }
-    if (ect_theta_less_i > twi->interval->EndMax() && j > 0) {
-      const int64_t new_end_max = by_start_max_[j - 1]->interval->EndMax();
-      if (new_end_max > new_lct_[twi->index]) {
+
+    if (ect_theta_less_i > twi->interval->StartMax() && j > 0) {
+      const int64_t new_end_max = by_start_max_[j - 1]->interval->StartMax();
+      if (new_end_max < new_lct_[twi->index]) {
         new_lct_[twi->index] = new_end_max;
       }
     }
@@ -2191,7 +2194,7 @@ class CumulativeConstraint : public Constraint {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
-    const ConstraintSolverParameters& params = solver()->parameters();
+    const ConstraintSolverParameters& params = solver()->const_parameters();
     if (params.use_cumulative_time_table()) {
       if (params.use_cumulative_time_table_sync()) {
         PostOneSidedConstraint(false, false, true);
@@ -2326,7 +2329,7 @@ class CumulativeConstraint : public Constraint {
     } else {
       Solver* const s = solver();
       if (edge_finder) {
-        const ConstraintSolverParameters& params = solver()->parameters();
+        const ConstraintSolverParameters& params = solver()->const_parameters();
         return useful_tasks.size() < params.max_edge_finder_size()
                    ? s->RevAlloc(new EdgeFinder<CumulativeTask>(s, useful_tasks,
                                                                 capacity_))
@@ -2385,7 +2388,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
-    const ConstraintSolverParameters& params = solver()->parameters();
+    const ConstraintSolverParameters& params = solver()->const_parameters();
     if (params.use_cumulative_time_table()) {
       PostOneSidedConstraint(false, false, false);
       PostOneSidedConstraint(true, false, false);

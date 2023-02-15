@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,12 +14,15 @@
 #include "ortools/scheduling/rcpsp_parser.h"
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/filelineiter.h"
+#include "ortools/base/path.h"
 #include "ortools/scheduling/rcpsp.pb.h"
+#include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 namespace scheduling {
@@ -62,6 +65,12 @@ bool RcpspParser::ParseFile(const std::string& file_name) {
           << ", patterson = " << is_patterson << ", with "
           << rcpsp_.tasks_size() << " tasks, and " << rcpsp_.resources_size()
           << " resources.";
+
+  // We use a temporary string as open source protobufs do not accept
+  // set_name(string_view).
+  std::string problem_name(file::Stem(file_name));
+  rcpsp_.set_name(problem_name);
+
   // Count the extra start and end tasks.
   return num_declared_tasks_ + 2 == rcpsp_.tasks_size() &&
          load_status_ == PARSING_FINISHED;

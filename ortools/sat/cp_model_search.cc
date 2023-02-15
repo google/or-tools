@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,15 +13,35 @@
 
 #include "ortools/sat/cp_model_search.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <limits>
-#include <random>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/str_format.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
+#include "absl/random/distributions.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "ortools/base/logging.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_search.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
+
+// TODO(user): remove this when the code is stable and does not use SCIP
+// anymore.
+ABSL_FLAG(bool, cp_model_use_max_hs, false, "Use max_hs in search portfolio.");
 
 namespace operations_research {
 namespace sat {
@@ -291,20 +311,25 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
   };
 }
 
-std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
+std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
+    const CpModelProto& cp_model_proto, Model* model) {
+  std::vector<DecisionStrategyProto> strategies;
+  for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
+    strategies.push_back(proto);
+  }
+  return ConstructSearchStrategyInternal(strategies, model);
+}
+
+std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model) {
   std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
 
   // We start by the user specified heuristic.
-  {
-    std::vector<DecisionStrategyProto> strategies;
-    for (const DecisionStrategyProto& proto :
-         cp_model_proto.search_strategy()) {
-      strategies.push_back(proto);
-    }
-    heuristics.push_back(ConstructSearchStrategyInternal(strategies, model));
+  const auto& params = *model->GetOrCreate<SatParameters>();
+  if (params.search_branching() != SatParameters::PARTIAL_FIXED_SEARCH) {
+    heuristics.push_back(ConstructUserSearchStrategy(cp_model_proto, model));
   }
 
   // If there are some scheduling constraint, we complete with a custom
@@ -314,7 +339,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
   }
 
   // If needed, we finish by instantiating anything left.
-  if (model->GetOrCreate<SatParameters>()->instantiate_all_variables()) {
+  if (params.instantiate_all_variables()) {
     std::vector<IntegerVariable> decisions;
     for (const IntegerVariable var : variable_mapping) {
       if (var == kNoIntegerVariable) continue;
@@ -394,11 +419,13 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
 //   - Fast restart in randomized search
 //   - Different propatation levels for scheduling constraints
 std::vector<SatParameters> GetDiverseSetOfParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    const int num_workers) {
+    const SatParameters& base_params, const CpModelProto& cp_model) {
   // Defines a set of named strategies so it is easier to read in one place
   // the one that are used. See below.
-  std::map<std::string, SatParameters> strategies;
+  absl::flat_hash_map<std::string, SatParameters> strategies;
+
+  // The "default" name can be used for the base_params unchanged.
+  strategies["default"] = base_params;
 
   // Lp variations only.
   {
@@ -445,8 +472,21 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
   {
     SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_optimize_with_core(true);
+    new_params.set_optimize_with_max_hs(true);
+    strategies["max_hs"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
     new_params.set_optimize_with_lb_tree_search(true);
     new_params.set_linearization_level(2);
+    if (base_params.use_dual_scheduling_heuristics()) {
+      new_params.set_use_overload_checker_in_cumulative(true);
+      new_params.set_use_timetable_edge_finding_in_cumulative(true);
+      new_params.set_use_hard_precedences_in_cumulative(true);
+    }
 
     // We do not want to change the objective_var lb from outside as it gives
     // better result to only use locally derived reason in that algo.
@@ -458,7 +498,18 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     SatParameters new_params = base_params;
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
+    if (base_params.use_dual_scheduling_heuristics()) {
+      new_params.set_use_overload_checker_in_cumulative(true);
+      new_params.set_use_timetable_edge_finding_in_cumulative(true);
+      new_params.set_use_hard_precedences_in_cumulative(true);
+    }
     strategies["probing"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["probing_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    strategies["probing_max_lp"] = new_params;
   }
 
   // Search variation.
@@ -479,12 +530,27 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_linearization_level(0);
     strategies["quick_restart_no_lp"] = new_params;
 
-    // We force the max lp here too.
+    new_params.set_search_branching(
+        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+    new_params.set_linearization_level(2);
+    strategies["quick_restart_max_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
     new_params.set_linearization_level(2);
     new_params.set_search_branching(SatParameters::LP_SEARCH);
+    if (base_params.use_dual_scheduling_heuristics()) {
+      new_params.set_use_overload_checker_in_cumulative(true);
+      new_params.set_use_timetable_edge_finding_in_cumulative(true);
+      new_params.set_use_hard_precedences_in_cumulative(true);
+      new_params.set_exploit_all_precedences(true);
+    }
     strategies["reduced_costs"] = new_params;
+  }
 
-    // For this one, we force other param too.
+  {
+    SatParameters new_params = base_params;
     new_params.set_linearization_level(2);
     new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
     new_params.set_exploit_best_solution(true);
@@ -498,6 +564,11 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     strategies["less_encoding"] = new_params;
   }
 
+  // Add user defined ones.
+  for (const SatParameters& params : base_params.subsolver_params()) {
+    strategies[params.name()] = params;
+  }
+
   // We only use a "fixed search" worker if some strategy is specified or
   // if we have a scheduling model.
   //
@@ -509,108 +580,162 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
   // Our current set of strategies
   //
-  // TODO(user, fdid): Avoid launching two strategies if they are the same,
+  // TODO(user): Avoid launching two strategies if they are the same,
   // like if there is no lp, or everything is already linearized at level 1.
   std::vector<std::string> names;
-  if (base_params.reduce_memory_usage_in_interleave_mode() &&
-      base_params.interleave_search()) {
-    // Low memory mode for interleaved search in single thread.
-    if (cp_model.has_objective()) {
-      names.push_back("default_lp");
-      names.push_back(use_fixed_strategy ? "fixed" : "pseudo_costs");
-      names.push_back(cp_model.objective().vars_size() > 1 ? "core" : "no_lp");
-      names.push_back("max_lp");
-    } else {
-      names.push_back("default_lp");
-      names.push_back(use_fixed_strategy ? "fixed" : "no_lp");
-      names.push_back("less_encoding");
-      names.push_back("max_lp");
-      names.push_back("quick_restart");
-    }
-  } else if (cp_model.has_objective()) {
-    names.push_back("default_lp");
-    if (use_fixed_strategy) {
-      names.push_back("fixed");
-      if (num_workers > 8) names.push_back("reduced_costs");
-    } else {
-      names.push_back("reduced_costs");
-    }
-    names.push_back("pseudo_costs");
-    names.push_back("no_lp");
-    names.push_back("max_lp");
 
-    // TODO(user): Experiment with core and LP.
-    if (cp_model.objective().vars_size() > 1) names.push_back("core");
-
-    // Only add this strategy if we have enough worker left for LNS.
-    if (num_workers > 8 || base_params.interleave_search()) {
-      names.push_back("quick_restart");
-    }
-    if (num_workers > 10) {
-      names.push_back("quick_restart_no_lp");
-    }
-    // Only add lb_tree_search if there is an objective.
-    if (num_workers > 12) {
-      names.push_back("lb_tree_search");
-    }
-  } else {
+  // We use the default if empty.
+  if (base_params.subsolvers().empty()) {
     names.push_back("default_lp");
-    if (use_fixed_strategy) names.push_back("fixed");
+    names.push_back("fixed");
     names.push_back("less_encoding");
+
     names.push_back("no_lp");
     names.push_back("max_lp");
+    names.push_back("core");
+
+    names.push_back("reduced_costs");
+    names.push_back("pseudo_costs");
+
     names.push_back("quick_restart");
-    if (num_workers > 10) {
-      names.push_back("quick_restart_no_lp");
+    names.push_back("quick_restart_no_lp");
+    names.push_back("lb_tree_search");
+    names.push_back("probing");
+#if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
+    if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
+#endif  // !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
+  } else {
+    for (const std::string& name : base_params.subsolvers()) {
+      // Hack for flatzinc. At the time of parameter setting, the objective is
+      // not expanded. So we do not know if core is applicable or not.
+      if (name == "core_or_no_lp") {
+        if (!cp_model.has_objective() ||
+            cp_model.objective().vars_size() <= 1) {
+          names.push_back("no_lp");
+        } else {
+          names.push_back("core");
+        }
+      } else {
+        names.push_back(name);
+      }
     }
   }
-  if (num_workers > 12) {
-    names.push_back("probing");
+
+  // Add subsolvers.
+  for (const std::string& name : base_params.extra_subsolvers()) {
+    names.push_back(name);
   }
 
-  // Creates the diverse set of parameters with names and seed. We remove the
-  // last ones if needed below.
+  // Remove the names that should be ignored.
+  absl::flat_hash_set<std::string> to_ignore;
+  for (const std::string& name : base_params.ignore_subsolvers()) {
+    to_ignore.insert(name);
+  }
+  int new_size = 0;
+  for (const std::string& name : names) {
+    if (to_ignore.contains(name)) continue;
+    names[new_size++] = name;
+  }
+  names.resize(new_size);
+
+  // Creates the diverse set of parameters with names and seed.
   std::vector<SatParameters> result;
   for (const std::string& name : names) {
-    SatParameters new_params = strategies.at(name);
-    new_params.set_name(name);
-    new_params.set_random_seed(result.size() + 1);
-    result.push_back(new_params);
+    if (!strategies.contains(name)) {
+      // TODO(user): Check that at parameter validation and return nice error
+      // instead.
+      LOG(WARNING) << "Unknown parameter name '" << name << "'";
+      continue;
+    }
+    SatParameters params = strategies.at(name);
+
+    // Do some filtering.
+    if (!use_fixed_strategy &&
+        params.search_branching() == SatParameters::FIXED_SEARCH) {
+      continue;
+    }
+    // TODO(user): Enable probing_search in deterministic mode.
+    // Currently it timeouts on small problems as the deterministic time limit
+    // never hits the sharding limit.
+    if (params.use_probing_search() && params.interleave_search()) continue;
+
+    if (cp_model.has_objective()) {
+      if (cp_model.objective().vars_size() <= 1 &&
+          params.optimize_with_core()) {
+        continue;
+      }
+      if (name == "less_encoding") continue;
+      // TODO(user): Enable lb_tree_search in deterministic mode.
+      if (params.optimize_with_lb_tree_search() && params.interleave_search()) {
+        continue;
+      }
+    } else {
+      if (params.optimize_with_lb_tree_search()) continue;
+      if (params.optimize_with_core()) continue;
+      if (params.search_branching() == SatParameters::LP_SEARCH) continue;
+      if (params.search_branching() == SatParameters::PSEUDO_COST_SEARCH) {
+        continue;
+      }
+    }
+
+    // Add this strategy.
+    //
+    // TODO(user): Find a better randomization for the seed so that changing
+    // random_seed() has more impact?
+    params.set_name(name);
+    params.set_random_seed(base_params.random_seed() + result.size() + 1);
+    result.push_back(params);
   }
 
-  // If there is no objective, we complete with randomized fixed search.
-  // If there is an objective, the extra workers will use LNS.
-  if (!cp_model.has_objective()) {
-    int target = num_workers;
-
+  if (cp_model.has_objective()) {
+    // If there is an objective, the extra workers will use LNS.
+    // Make sure we have at least min_num_lns_workers() of them.
+    const int target = std::max(
+        1, base_params.num_workers() - base_params.min_num_lns_workers());
+    if (!base_params.interleave_search() && result.size() > target) {
+      result.resize(target);
+    }
+  } else {
+    // If there is no objective, we complete with randomized fixed search.
+    //
     // If strategies that do not require a full worker are present, leave one
     // worker for them.
+    int target = base_params.num_workers();
     if (!base_params.interleave_search() &&
-        (base_params.use_rins_lns() || base_params.use_relaxation_lns() ||
-         base_params.use_feasibility_pump())) {
-      target = std::max(1, num_workers - 1);
+        (base_params.use_rins_lns() || base_params.use_feasibility_pump())) {
+      target = std::max(1, base_params.num_workers() - 1);
+    }
+    if (!base_params.interleave_search() && result.size() > target) {
+      result.resize(target);
     }
 
-    int index = 1;
+    int num_random = 0;
+    int num_random_qr = 0;
     while (result.size() < target) {
-      // TODO(user): This doesn't make sense if there is no fixed search.
       SatParameters new_params = base_params;
-      new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-      new_params.set_randomize_search(true);
-      new_params.set_search_randomization_tolerance(index);
-      new_params.set_random_seed(result.size() + 1);
-      new_params.set_name(absl::StrCat("random_", index));
+      if (num_random <= num_random_qr) {  // Random search.
+        if (cp_model.search_strategy().empty()) {
+          new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        } else {
+          new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        }
+        new_params.set_randomize_search(true);
+        new_params.set_search_randomization_tolerance(++num_random);
+        new_params.set_random_seed(base_params.random_seed() + result.size() +
+                                   1);
+        new_params.set_name(absl::StrCat("random_", num_random));
+      } else {  // Random quick restart.
+        new_params.set_search_branching(
+            SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+        new_params.set_randomize_search(true);
+        new_params.set_search_randomization_tolerance(++num_random_qr);
+        new_params.set_random_seed(base_params.random_seed() + result.size() +
+                                   1);
+        new_params.set_name(
+            absl::StrCat("random_quick_restart_", num_random_qr));
+      }
       result.push_back(new_params);
-      ++index;
     }
-  }
-
-  // If we are not in interleave search, we cannot run more strategies than
-  // the number of worker.
-  //
-  // TODO(user): consider using LNS if we use a small number of workers.
-  if (!base_params.interleave_search() && result.size() > num_workers) {
-    result.resize(num_workers);
   }
 
   return result;

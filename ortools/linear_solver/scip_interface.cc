@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,9 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
@@ -37,9 +39,9 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
+#include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
 #include "ortools/linear_solver/scip_callback.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
-#include "ortools/linear_solver/scip_proto_solver.h"
 #include "scip/cons_indicator.h"
 #include "scip/scip.h"
 #include "scip/scip_copy.h"
@@ -66,7 +68,7 @@ class SCIPInterface : public MPSolverInterface {
 
   void SetOptimizationDirection(bool maximize) override;
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  absl::optional<MPSolutionResponse> DirectlySolveProto(
+  std::optional<MPSolutionResponse> DirectlySolveProto(
       const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   void Reset() override;
 
@@ -714,7 +716,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     CHECK_EQ(scip_constraint_handler_->mp_callback(), callback_);
   } else if (callback_ != nullptr) {
     scip_constraint_handler_ =
-        absl::make_unique<ScipConstraintHandlerForMPCallback>(callback_);
+        std::make_unique<ScipConstraintHandlerForMPCallback>(callback_);
     RegisterConstraintHandler<EmptyStruct>(scip_constraint_handler_.get(),
                                            scip_);
     AddCallbackConstraint<EmptyStruct>(scip_, scip_constraint_handler_.get(),
@@ -860,19 +862,19 @@ void SCIPInterface::SetSolution(SCIP_SOL* solution) {
   }
 }
 
-absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
+std::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
     const MPModelRequest& request, std::atomic<bool>* interrupt) {
   // ScipSolveProto doesn't solve concurrently.
-  if (solver_->GetNumThreads() > 1) return absl::nullopt;
+  if (solver_->GetNumThreads() > 1) return std::nullopt;
 
   // Interruption via atomic<bool> is not directly supported by SCIP.
-  if (interrupt != nullptr) return absl::nullopt;
+  if (interrupt != nullptr) return std::nullopt;
 
   const auto status_or = ScipSolveProto(request);
   if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
-  if (absl::IsUnimplemented(status_or.status())) return absl::nullopt;
+  if (absl::IsUnimplemented(status_or.status())) return std::nullopt;
 
   if (request.enable_internal_solver_output()) {
     LOG(INFO) << "Invalid SCIP status: " << status_or.status();

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <map>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -64,14 +66,19 @@ std::string IntervalsAsString(const Intervals& intervals) {
 // IntervalsAreSortedAndNonAdjacent() would return true.
 void UnionOfSortedIntervals(absl::InlinedVector<ClosedInterval, 1>* intervals) {
   DCHECK(std::is_sorted(intervals->begin(), intervals->end()));
-  int new_size = 0;
-  for (const ClosedInterval& i : *intervals) {
-    if (new_size > 0 && i.start <= CapAdd((*intervals)[new_size - 1].end, 1)) {
-      (*intervals)[new_size - 1].end =
-          std::max(i.end, (*intervals)[new_size - 1].end);
-    } else {
-      (*intervals)[new_size++] = i;
+  const int size = intervals->size();
+  if (size == 0) return;
+
+  int new_size = 1;
+  for (int i = 1; i < size; ++i) {
+    const ClosedInterval& current = (*intervals)[i];
+    const int64_t end = (*intervals)[new_size - 1].end;
+    if (end == std::numeric_limits<int64_t>::max() ||
+        current.start <= end + 1) {
+      (*intervals)[new_size - 1].end = std::max(current.end, end);
+      continue;
     }
+    (*intervals)[new_size++] = current;
   }
   intervals->resize(new_size);
 
@@ -517,6 +524,32 @@ Domain Domain::PositiveDivisionBySuperset(const Domain& divisor) const {
   CHECK_GT(divisor.Min(), 0);
   return Domain(std::min(Min() / divisor.Max(), Min() / divisor.Min()),
                 std::max(Max() / divisor.Min(), Max() / divisor.Max()));
+}
+
+Domain Domain::SquareSuperset() const {
+  if (IsEmpty()) return Domain();
+  const Domain abs_domain =
+      IntersectionWith({0, std::numeric_limits<int64_t>::max()})
+          .UnionWith(Negation().IntersectionWith(
+              {0, std::numeric_limits<int64_t>::max()}));
+  if (abs_domain.Size() >= kDomainComplexityLimit) {
+    Domain result;
+    result.intervals_.reserve(abs_domain.NumIntervals());
+    for (const auto& interval : abs_domain.intervals()) {
+      result.intervals_.push_back(
+          ClosedInterval(CapProd(interval.start, interval.start),
+                         CapProd(interval.end, interval.end)));
+    }
+    UnionOfSortedIntervals(&result.intervals_);
+    return result;
+  } else {
+    std::vector<int64_t> values;
+    values.reserve(abs_domain.Size());
+    for (const int64_t value : abs_domain.Values()) {
+      values.push_back(CapProd(value, value));
+    }
+    return Domain::FromValues(values);
+  }
 }
 
 // It is a bit difficult to see, but this code is doing the same thing as

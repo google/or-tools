@@ -75,7 +75,8 @@ Vagrant.configure("2") do |config|
   set -x
   pkg update -f
   pkg install -y git cmake
-  pkg install -y swig python py38-pip
+  pkg install -y swig python39 py39-wheel py39-pip py39-pytest-virtualenv
+  pkg install -y py39-numpy py39-pandas py39-matplotlib
   SHELL
 
   config.vm.provision "file", source: "../../../../CMakeLists.txt", destination: "$HOME/project/"
@@ -89,8 +90,6 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: "../../../../examples/tests", destination: "$HOME/project/examples/"
   config.vm.provision "file", source: "../../../../patches", destination: "$HOME/project/"
   config.vm.provision "file", source: "../../../../Version.txt", destination: "$HOME/project/"
-  config.vm.provision "file", source: "../../../../dependencies", destination: "$HOME/project/"
-  config.vm.provision "file", source: "../../../../test.py.in", destination: "$HOME/project/"
   config.vm.provision "file", source: "../../../../tools/README.pypi.txt", destination: "$HOME/project/tools/"
 
   config.vm.provision "devel", type: "shell", inline:<<-SHELL
@@ -104,7 +103,7 @@ Vagrant.configure("2") do |config|
   set -x
   export PATH=${HOME}/.local/bin:"$PATH"
   cd project
-  cmake -S. -Bbuild -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+  cmake -S. -Bbuild -DBUILD_PYTHON=ON -DVENV_USE_SYSTEM_SITE_PACKAGES=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
   SHELL
 
   config.vm.provision "build", type: "shell", inline:<<-SHELL

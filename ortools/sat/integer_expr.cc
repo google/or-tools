@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,14 +15,26 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
+#include <cstdlib>
+#include <functional>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/memory/memory.h"
+#include "absl/types/span.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -78,6 +90,16 @@ void IntegerSumLE::FillIntegerReason() {
 
 std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
     IntegerLiteral integer_literal, IntegerVariable target_var) const {
+  // The code below is wrong if integer_literal and target_var are the same.
+  // In this case we return the trival bounds.
+  if (PositiveVariable(integer_literal.var) == PositiveVariable(target_var)) {
+    if (integer_literal.var == target_var) {
+      return {kMinIntegerValue, integer_literal.bound};
+    } else {
+      return {integer_literal.Negated().bound, kMinIntegerValue};
+    }
+  }
+
   // Recall that all our coefficient are positive.
   bool literal_var_present = false;
   bool literal_var_present_positively = false;
@@ -86,15 +108,16 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
   bool target_var_present_negatively = false;
   IntegerValue target_coeff;
 
-  // Compute the implied_lb excluding  "- target_coeff * target".
-  IntegerValue implied_lb(-upper_bound_);
+  // Warning: It is important to do the computation like the propagation is
+  // doing it to be sure we don't have overflow, since this is what we check
+  // when creating constraints.
+  IntegerValue implied_lb(0);
   for (int i = 0; i < vars_.size(); ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     if (var == NegationOf(target_var)) {
       target_coeff = coeff;
       target_var_present_negatively = true;
-      continue;
     }
 
     const IntegerValue lb = integer_trail_->LowerBound(var);
@@ -105,9 +128,24 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
       literal_var_present_positively = (var == integer_literal.var);
     }
   }
+
   if (!literal_var_present || !target_var_present_negatively) {
     return {kMinIntegerValue, kMinIntegerValue};
   }
+
+  // The upper bound on NegationOf(target_var) are lb(-target) + slack / coeff.
+  // So the lower bound on target_var is ub - slack / coeff.
+  const IntegerValue slack = upper_bound_ - implied_lb;
+  const IntegerValue target_lb = integer_trail_->LowerBound(target_var);
+  const IntegerValue target_ub = integer_trail_->UpperBound(target_var);
+  if (slack <= 0) {
+    // TODO(user): If there is a conflict (negative slack) we can be more
+    // precise.
+    return {target_ub, target_ub};
+  }
+
+  const IntegerValue target_diff = target_ub - target_lb;
+  const IntegerValue delta = std::min(slack / target_coeff, target_diff);
 
   // A literal means var >= bound.
   if (literal_var_present_positively) {
@@ -117,8 +155,11 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
     const IntegerValue diff = std::max(
         IntegerValue(0), integer_literal.bound -
                              integer_trail_->LowerBound(integer_literal.var));
-    return {CeilRatio(implied_lb, target_coeff),
-            CeilRatio(implied_lb + var_coeff * diff, target_coeff)};
+    const IntegerValue tighter_slack =
+        std::max(IntegerValue(0), slack - var_coeff * diff);
+    const IntegerValue tighter_delta =
+        std::min(tighter_slack / target_coeff, target_diff);
+    return {target_ub - delta, target_ub - tighter_delta};
   } else {
     // We have var_coeff * -var in the expression, the literal is var >= bound.
     // When it is true, it is not relevant as implied_lb used -var >= -ub.
@@ -126,8 +167,11 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
     const IntegerValue diff = std::max(
         IntegerValue(0), integer_trail_->UpperBound(integer_literal.var) -
                              integer_literal.bound + 1);
-    return {CeilRatio(implied_lb + var_coeff * diff, target_coeff),
-            CeilRatio(implied_lb, target_coeff)};
+    const IntegerValue tighter_slack =
+        std::max(IntegerValue(0), slack - var_coeff * diff);
+    const IntegerValue tighter_delta =
+        std::min(tighter_slack / target_coeff, target_diff);
+    return {target_ub - tighter_delta, target_ub - delta};
   }
 }
 
@@ -206,6 +250,8 @@ bool IntegerSumLE::Propagate() {
   for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
     if (max_variations_[i] <= slack) continue;
 
+    // TODO(user): If the new ub fall into an hole of the variable, we can
+    // actually relax the reason more by computing a better slack.
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     const IntegerValue div = slack / coeff;
@@ -581,7 +627,7 @@ bool LinMinPropagator::Propagate() {
   expr_lbs_.clear();
   IntegerValue min_of_linear_expression_lb = kMaxIntegerValue;
   for (int i = 0; i < exprs_.size(); ++i) {
-    const IntegerValue lb = LinExprLowerBound(exprs_[i], *integer_trail_);
+    const IntegerValue lb = exprs_[i].Min(*integer_trail_);
     expr_lbs_.push_back(lb);
     min_of_linear_expression_lb = std::min(min_of_linear_expression_lb, lb);
     if (lb <= current_min_ub) {
@@ -617,7 +663,7 @@ bool LinMinPropagator::Propagate() {
   // In this case, ub(min) >= ub(e).
   if (num_intervals_that_can_be_min == 1) {
     const IntegerValue ub_of_only_candidate =
-        LinExprUpperBound(exprs_[last_possible_min_interval], *integer_trail_);
+        exprs_[last_possible_min_interval].Max(*integer_trail_);
     if (current_min_ub < ub_of_only_candidate) {
       // For this propagation, we only need to fill the integer reason once at
       // the lowest level. At higher levels this reason still remains valid.
@@ -712,28 +758,41 @@ bool ProductPropagator::CanonicalizeCases() {
 // do not contains divisor in the domains of a or b. There is an algo in O(
 // smallest domain size between a or b).
 bool ProductPropagator::PropagateWhenAllNonNegative() {
-  const IntegerValue max_a = integer_trail_->UpperBound(a_);
-  const IntegerValue max_b = integer_trail_->UpperBound(b_);
-  const IntegerValue new_max(CapProd(max_a.value(), max_b.value()));
-  if (new_max < integer_trail_->UpperBound(p_)) {
-    if (!integer_trail_->SafeEnqueue(
-            p_.LowerOrEqual(new_max),
-            {integer_trail_->UpperBoundAsLiteral(a_),
-             integer_trail_->UpperBoundAsLiteral(b_), a_.GreaterOrEqual(0),
-             b_.GreaterOrEqual(0)})) {
-      return false;
+  {
+    const IntegerValue max_a = integer_trail_->UpperBound(a_);
+    const IntegerValue max_b = integer_trail_->UpperBound(b_);
+    const IntegerValue new_max(CapProd(max_a.value(), max_b.value()));
+    if (new_max < integer_trail_->UpperBound(p_)) {
+      if (!integer_trail_->SafeEnqueue(
+              p_.LowerOrEqual(new_max),
+              {integer_trail_->UpperBoundAsLiteral(a_),
+               integer_trail_->UpperBoundAsLiteral(b_), a_.GreaterOrEqual(0),
+               b_.GreaterOrEqual(0)})) {
+        return false;
+      }
     }
   }
 
-  const IntegerValue min_a = integer_trail_->LowerBound(a_);
-  const IntegerValue min_b = integer_trail_->LowerBound(b_);
-  const IntegerValue new_min(CapProd(min_a.value(), min_b.value()));
-  if (new_min > integer_trail_->LowerBound(p_)) {
-    if (!integer_trail_->SafeEnqueue(
-            p_.GreaterOrEqual(new_min),
-            {integer_trail_->LowerBoundAsLiteral(a_),
-             integer_trail_->LowerBoundAsLiteral(b_)})) {
-      return false;
+  {
+    const IntegerValue min_a = integer_trail_->LowerBound(a_);
+    const IntegerValue min_b = integer_trail_->LowerBound(b_);
+    const IntegerValue new_min(CapProd(min_a.value(), min_b.value()));
+
+    // The conflict test is needed because when new_min is large, we could
+    // have an overflow in p_.GreaterOrEqual(new_min);
+    if (new_min > integer_trail_->UpperBound(p_)) {
+      return integer_trail_->ReportConflict(
+          {integer_trail_->UpperBoundAsLiteral(p_),
+           integer_trail_->LowerBoundAsLiteral(a_),
+           integer_trail_->LowerBoundAsLiteral(b_)});
+    }
+    if (new_min > integer_trail_->LowerBound(p_)) {
+      if (!integer_trail_->SafeEnqueue(
+              p_.GreaterOrEqual(new_min),
+              {integer_trail_->LowerBoundAsLiteral(a_),
+               integer_trail_->LowerBoundAsLiteral(b_)})) {
+        return false;
+      }
     }
   }
 
@@ -752,7 +811,7 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
                                         p_.GreaterOrEqual(0)})) {
         return false;
       }
-    } else if (prod < min_p) {
+    } else if (prod < min_p && max_a != 0) {
       if (!integer_trail_->SafeEnqueue(
               b.GreaterOrEqual(CeilRatio(min_p, max_a)),
               {integer_trail_->UpperBoundAsLiteral(a),
@@ -964,30 +1023,6 @@ void ProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
-namespace {
-
-// TODO(user): Find better implementation? In pratice passing via double is
-// almost always correct, but the CapProd() might be a bit slow. However this
-// is only called when we do propagate something.
-IntegerValue FloorSquareRoot(IntegerValue a) {
-  IntegerValue result(static_cast<int64_t>(
-      std::floor(std::sqrt(static_cast<double>(a.value())))));
-  while (CapProd(result.value(), result.value()) > a) --result;
-  while (CapProd(result.value() + 1, result.value() + 1) <= a) ++result;
-  return result;
-}
-
-// TODO(user): Find better implementation?
-IntegerValue CeilSquareRoot(IntegerValue a) {
-  IntegerValue result(static_cast<int64_t>(
-      std::ceil(std::sqrt(static_cast<double>(a.value())))));
-  while (CapProd(result.value(), result.value()) < a) ++result;
-  while ((result.value() - 1) * (result.value() - 1) >= a) --result;
-  return result;
-}
-
-}  // namespace
-
 SquarePropagator::SquarePropagator(AffineExpression x, AffineExpression s,
                                    IntegerTrail* integer_trail)
     : x_(x), s_(s), integer_trail_(integer_trail) {
@@ -1006,7 +1041,7 @@ bool SquarePropagator::Propagate() {
       return false;
     }
   } else if (min_x_square < min_s) {
-    const IntegerValue new_min = CeilSquareRoot(min_s);
+    const IntegerValue new_min(CeilSquareRoot(min_s.value()));
     if (!integer_trail_->SafeEnqueue(
             x_.GreaterOrEqual(new_min),
             {s_.GreaterOrEqual((new_min - 1) * (new_min - 1) + 1)})) {
@@ -1023,7 +1058,7 @@ bool SquarePropagator::Propagate() {
       return false;
     }
   } else if (max_x_square > max_s) {
-    const IntegerValue new_max = FloorSquareRoot(max_s);
+    const IntegerValue new_max(FloorSquareRoot(max_s.value()));
     if (!integer_trail_->SafeEnqueue(
             x_.LowerOrEqual(new_max),
             {s_.LowerOrEqual(IntegerValue(CapProd(new_max.value() + 1,

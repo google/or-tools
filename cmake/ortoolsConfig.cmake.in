@@ -3,6 +3,7 @@
 set(@PACKAGE_PREFIX@_VERSION @PROJECT_VERSION@)
 
 @PACKAGE_INIT@
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
 
 include(CMakeFindDependencyMacro)
 # Kitware CMake provide a FindZLIB.cmake module
@@ -19,33 +20,54 @@ if(NOT absl_FOUND)
 endif()
 
 if(NOT Protobuf_FOUND AND NOT PROTOBUF_FOUND AND NOT TARGET protobuf::libprotobuf)
-  find_dependency(Protobuf REQUIRED ${CONFIG_FLAG})
+  # CMake provide a FindProtobuf module so we don't want to use the CONFIG_FLAG
+  # also most distro still use the autotools based build for Protobuf.
+  # ref: https://cmake.org/cmake/help/latest/module/FindProtobuf.html
+  if(@BUILD_Protobuf@)
+    find_dependency(Protobuf CONFIG REQUIRED)
+  else()
+    find_dependency(Protobuf REQUIRED)
+  endif()
 endif()
 
 if(@BUILD_LP_PARSER@)
+  # re2 may not provide a CMake config files
   if(NOT re2_FOUND AND NOT TARGET re2::re2)
-    find_dependency(re2 REQUIRED ${CONFIG_FLAG})
+    find_dependency(re2 REQUIRED)
   endif()
 endif()
 
 if(@USE_COINOR@)
+  # COIN-OR packages don't provide CMake config files
   if(NOT Clp_FOUND AND NOT TARGET Coin::ClpSolver)
-    find_dependency(Clp REQUIRED ${CONFIG_FLAG})
+    find_dependency(Clp REQUIRED)
   endif()
   if(NOT Cbc_FOUND AND NOT TARGET Coin::CbcSolver)
-    find_dependency(Cbc REQUIRED ${CONFIG_FLAG})
+    find_dependency(Cbc REQUIRED)
   endif()
 endif()
 
 if(@USE_GLPK@)
   if(NOT GLPK_FOUND AND NOT TARGET GLPK::GLPK)
-    find_dependency(GLPK REQUIRED ${CONFIG_FLAG})
+    find_dependency(GLPK REQUIRED)
+  endif()
+endif()
+
+if(@USE_HIGHS@)
+  if(NOT HIGHS_FOUND AND NOT TARGET HIGHS::HIGHS)
+    find_dependency(HIGHS REQUIRED ${CONFIG_FLAG})
+  endif()
+endif()
+
+if(@USE_PDLP@)
+  if(NOT Eigen3_FOUND AND NOT TARGET Eigen3::Eigen)
+    find_dependency(Eigen3 REQUIRED)
   endif()
 endif()
 
 if(@USE_SCIP@)
   if(NOT scip_FOUND AND NOT TARGET libscip)
-    find_dependency(scip REQUIRED ${CONFIG_FLAG})
+    find_dependency(SCIP REQUIRED)
   endif()
 endif()
 

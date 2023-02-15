@@ -1,32 +1,89 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # External users should depend only on ":math_opt" and include
 # "math_opt.h". Hence other libraries are private.
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 cc_library(
     name = "math_opt",
-    srcs = ["math_opt.cc"],
     hdrs = ["math_opt.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":callback",
-        ":key_types",
+        ":model",
+        ":solve",
+    ],
+)
+
+cc_library(
+    name = "basis_status",
+    srcs = ["basis_status.cc"],
+    hdrs = ["basis_status.h"],
+    deps = [
+        ":enums",
+        "//ortools/math_opt:solution_cc_proto",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "sparse_containers",
+    srcs = ["sparse_containers.cc"],
+    hdrs = ["sparse_containers.h"],
+    deps = [
+        ":basis_status",
         ":linear_constraint",
-        ":model_solve_parameters",
-        ":objective",
-        ":result",
         ":variable_and_expressions",
         "//ortools/base",
-        "//ortools/base:int_type",
         "//ortools/base:status_macros",
-        "//ortools/math_opt:callback_cc_proto",
-        "//ortools/math_opt/core:indexed_model",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/validators:ids_validator",
+        "//ortools/math_opt/validators:sparse_vector_validator",
+        "//ortools/util:status_macros",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "model",
+    srcs = ["model.cc"],
+    hdrs = ["model.h"],
+    deps = [
+        ":key_types",
+        ":linear_constraint",
+        ":update_tracker",
+        ":variable_and_expressions",
+        "//ortools/base",
+        "//ortools/base:intops",
+        "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
-        "//ortools/math_opt:parameters_cc_proto",
-        "//ortools/math_opt:result_cc_proto",
-        "//ortools/math_opt/core:solver",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/memory",
+        "//ortools/math_opt/constraints/indicator:indicator_constraint",
+        "//ortools/math_opt/constraints/quadratic:quadratic_constraint",
+        "//ortools/math_opt/constraints/sos:sos1_constraint",
+        "//ortools/math_opt/constraints/sos:sos2_constraint",
+        "//ortools/math_opt/constraints/util:model_util",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "//ortools/math_opt/storage:sparse_matrix",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
     ],
@@ -36,11 +93,11 @@ cc_library(
     name = "id_map",
     hdrs = ["id_map.h"],
     deps = [
-        ":arrow_operator_proxy",
         ":key_types",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/math_opt/core:indexed_model",
+        "//ortools/base:intops",
+        "//ortools/math_opt/core:arrow_operator_proxy",
+        "//ortools/math_opt/storage:model_storage",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/types:span",
@@ -52,12 +109,14 @@ cc_library(
     srcs = ["variable_and_expressions.cc"],
     hdrs = ["variable_and_expressions.h"],
     deps = [
+        ":formatters",
         ":id_map",
         ":key_types",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:map_util",
-        "//ortools/math_opt/core:indexed_model",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/util:fp_roundtrip_conv",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
@@ -65,45 +124,69 @@ cc_library(
 
 cc_library(
     name = "linear_constraint",
-    srcs = ["linear_constraint.cc"],
     hdrs = ["linear_constraint.h"],
     deps = [
         ":id_map",
-        ":key_types",
         ":variable_and_expressions",
         "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/math_opt/core:indexed_model",
+        "//ortools/base:intops",
+        "//ortools/math_opt/constraints/util:model_util",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
     ],
 )
 
 cc_library(
-    name = "objective",
-    srcs = ["objective.cc"],
-    hdrs = ["objective.h"],
+    name = "solution",
+    srcs = ["solution.cc"],
+    hdrs = ["solution.h"],
     deps = [
-        ":key_types",
-        ":variable_and_expressions",
-        "//ortools/base",
-        "//ortools/math_opt/core:indexed_model",
-        "@com_google_absl//absl/container:flat_hash_map",
-    ],
-)
-
-cc_library(
-    name = "result",
-    srcs = ["result.cc"],
-    hdrs = ["result.h"],
-    deps = [
+        ":basis_status",
+        ":enums",
         ":linear_constraint",
+        ":sparse_containers",
+        ":variable_and_expressions",
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/validators:ids_validator",
+        "//ortools/math_opt/validators:sparse_vector_validator",
+        "//ortools/util:status_macros",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "solve_result",
+    srcs = ["solve_result.cc"],
+    hdrs = ["solve_result.h"],
+    deps = [
+        ":enums",
+        ":linear_constraint",
+        ":solution",
         ":variable_and_expressions",
         "//ortools/base",
         "//ortools/base:protoutil",
-        "//ortools/math_opt/core:indexed_model",
+        "//ortools/base:status_macros",
+        "//ortools/gscip:gscip_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/port:proto_utils",
+        "//ortools/util:fp_roundtrip_conv",
+        "//ortools/util:status_macros",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -112,9 +195,9 @@ cc_library(
     hdrs = ["map_filter.h"],
     deps = [
         ":id_set",
+        "//ortools/base:intops",
         "//ortools/math_opt:sparse_containers_cc_proto",
-        "//ortools/math_opt/core:indexed_model",
-        "@com_google_absl//absl/types:optional",
+        "//ortools/math_opt/storage:model_storage",
     ],
 )
 
@@ -123,29 +206,24 @@ cc_library(
     srcs = ["callback.cc"],
     hdrs = ["callback.h"],
     deps = [
-        ":key_types",
+        ":enums",
         ":map_filter",
+        ":sparse_containers",
         ":variable_and_expressions",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
-        "//ortools/math_opt/core:indexed_model",
-        "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/math_opt/storage:model_storage",
         "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:optional",
+        "@com_google_absl//absl/types:span",
     ],
-)
-
-cc_library(
-    name = "arrow_operator_proxy",
-    hdrs = ["arrow_operator_proxy.h"],
 )
 
 cc_library(
@@ -153,7 +231,7 @@ cc_library(
     hdrs = ["key_types.h"],
     deps = [
         "//ortools/base",
-        "//ortools/math_opt/core:indexed_model",
+        "//ortools/math_opt/storage:model_storage",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -162,14 +240,11 @@ cc_library(
     name = "id_set",
     hdrs = ["id_set.h"],
     deps = [
-        ":arrow_operator_proxy",
         ":key_types",
-        ":result",
         "//ortools/base",
-        "//ortools/math_opt/core:indexed_model",
-        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt/core:arrow_operator_proxy",
+        "//ortools/math_opt/storage:model_storage",
         "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -178,15 +253,158 @@ cc_library(
     srcs = ["model_solve_parameters.cc"],
     hdrs = ["model_solve_parameters.h"],
     deps = [
-        ":key_types",
         ":linear_constraint",
         ":map_filter",
-        ":result",
+        ":solution",
         ":variable_and_expressions",
-        "//ortools/math_opt/core:indexed_model",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/storage:model_storage",
         "@com_google_protobuf//:protobuf",
     ],
+)
+
+cc_library(
+    name = "update_tracker",
+    srcs = ["update_tracker.cc"],
+    hdrs = ["update_tracker.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt/storage:model_storage",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "message_callback",
+    srcs = [
+        "message_callback.cc",
+    ],
+    hdrs = [
+        "message_callback.h",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:source_location",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
+cc_library(
+    name = "solver_init_arguments",
+    srcs = [
+        "solver_init_arguments.cc",
+    ],
+    hdrs = [
+        "solver_init_arguments.h",
+    ],
+    deps = [
+        ":streamable_solver_init_arguments",
+        "//ortools/math_opt/core:non_streamable_solver_init_arguments",
+    ],
+)
+
+cc_library(
+    name = "solve_arguments",
+    hdrs = [
+        "solve_arguments.h",
+    ],
+    deps = [
+        ":callback",
+        ":message_callback",
+        ":model_solve_parameters",
+        ":parameters",
+        "//ortools/math_opt/core:solve_interrupter",
+    ],
+)
+
+cc_library(
+    name = "solve",
+    srcs = ["solve.cc"],
+    hdrs = ["solve.h"],
+    deps = [
+        ":model",
+        ":parameters",
+        ":solve_arguments",
+        ":solve_result",
+        ":solver_init_arguments",
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:callback_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt/core:solver",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/util:status_macros",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_library(
+    name = "streamable_solver_init_arguments",
+    srcs = ["streamable_solver_init_arguments.cc"],
+    hdrs = ["streamable_solver_init_arguments.h"],
+    deps = [
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_library(
+    name = "parameters",
+    srcs = ["parameters.cc"],
+    hdrs = ["parameters.h"],
+    deps = [
+        ":enums",
+        "//ortools/base",
+        "//ortools/base:linked_hash_map",
+        "//ortools/base:protoutil",
+        "//ortools/base:status_macros",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/gscip:gscip_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "//ortools/port:proto_utils",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:status_macros",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "enums",
+    hdrs = ["enums.h"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "statistics",
+    srcs = ["statistics.cc"],
+    hdrs = ["statistics.h"],
+    deps = [
+        ":model",
+        "//ortools/math_opt/storage:model_storage",
+    ],
+)
+
+cc_library(
+    name = "formatters",
+    hdrs = ["formatters.h"],
+    deps = ["//ortools/util:fp_roundtrip_conv"],
 )

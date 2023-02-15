@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,12 +15,14 @@
 #define OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
@@ -33,9 +35,13 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/rev.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -128,6 +134,7 @@ class ScatteredIntegerVector {
 // However, by default, we interpret the LP result by recomputing everything
 // in integer arithmetic, so we are exact.
 class LinearProgrammingDispatcher;
+
 class LinearProgrammingConstraint : public PropagatorInterface,
                                     ReversibleInterface {
  public:
@@ -341,18 +348,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // current variable bound. Return kMinIntegerValue in case of overflow.
   IntegerValue GetImpliedLowerBound(const LinearConstraint& terms) const;
 
-  // Tests for possible overflow in the propagation of the given linear
-  // constraint.
-  bool PossibleOverflow(const LinearConstraint& constraint);
-
-  // Reduce the coefficient of the constraint so that we cannot have overflow
-  // in the propagation of the given linear constraint. Note that we may loose
-  // some strength by doing so.
-  //
-  // We make sure that any partial sum involving any variable value in their
-  // domain do not exceed 2 ^ max_pow.
-  void PreventOverflow(LinearConstraint* constraint, int max_pow = 62);
-
   // Fills integer_reason_ with the reason for the implied lower bound of the
   // given linear expression. We relax the reason if we have some slack.
   void SetImpliedLowerBoundReason(const LinearConstraint& terms,
@@ -427,8 +422,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Temporary data for cuts.
   ZeroHalfCutHelper zero_half_cut_helper_;
   CoverCutHelper cover_cut_helper_;
+  FlowCoverCutHelper flow_cover_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
   LinearConstraint cut_;
+  LinearConstraint saved_cut_;
+  LinearConstraint tmp_constraint_;
 
   ScatteredIntegerVector tmp_scattered_vector_;
 
@@ -437,6 +435,12 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerValue> tmp_var_ubs_;
   std::vector<glop::RowIndex> tmp_slack_rows_;
   std::vector<IntegerValue> tmp_slack_bounds_;
+  std::vector<ImpliedBoundsProcessor::SlackInfo> tmp_ib_slack_infos_;
+  std::vector<std::pair<glop::ColIndex, IntegerValue>> tmp_terms_;
+
+  // Used by AddCGCuts().
+  std::vector<std::pair<glop::RowIndex, double>> tmp_lp_multipliers_;
+  std::vector<std::pair<glop::RowIndex, IntegerValue>> tmp_integer_multipliers_;
 
   // Used by ScaleLpMultiplier().
   mutable std::vector<std::pair<glop::RowIndex, double>> tmp_cp_multipliers_;
@@ -550,39 +554,36 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 // Important: only positive variable do appear here.
 class LinearProgrammingDispatcher
     : public absl::flat_hash_map<IntegerVariable,
-                                 LinearProgrammingConstraint*> {
- public:
-  explicit LinearProgrammingDispatcher(Model* model) {}
-};
+                                 LinearProgrammingConstraint*> {};
 
 // A class that stores the collection of all LP constraints in a model.
 class LinearProgrammingConstraintCollection
     : public std::vector<LinearProgrammingConstraint*> {
  public:
-  LinearProgrammingConstraintCollection() {}
+  explicit LinearProgrammingConstraintCollection(Model* model)
+      : std::vector<LinearProgrammingConstraint*>() {
+    model->GetOrCreate<CpSolverResponseStatisticCallbacks>()
+        ->callbacks.push_back([this](CpSolverResponse* response) {
+          int64_t num_lp_iters = 0;
+          for (const LinearProgrammingConstraint* lp : *this) {
+            num_lp_iters += lp->total_num_simplex_iterations();
+          }
+          response->set_num_lp_iterations(num_lp_iters);
+        });
+  }
 };
 
-// Cut generator for the circuit constraint, where in any feasible solution, the
-// arcs that are present (variable at 1) must form a circuit through all the
-// nodes of the graph. Self arc are forbidden in this case.
-//
-// In more generality, this currently enforce the resulting graph to be strongly
-// connected. Note that we already assume basic constraint to be in the lp, so
-// we do not add any cuts for components of size 1.
-CutGenerator CreateStronglyConnectedGraphCutGenerator(
-    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<Literal>& literals, Model* model);
+// Tests for possible overflow in the propagation of the given linear
+// constraint.
+bool PossibleOverflow(const IntegerTrail& integer_trail,
+                      const LinearConstraint& constraint);
 
-// Almost the same as CreateStronglyConnectedGraphCutGenerator() but for each
-// components, computes the demand needed to serves it, and depending on whether
-// it contains the depot (node zero) or not, compute the minimum number of
-// vehicle that needs to cross the component border.
-CutGenerator CreateCVRPCutGenerator(int num_nodes,
-                                    const std::vector<int>& tails,
-                                    const std::vector<int>& heads,
-                                    const std::vector<Literal>& literals,
-                                    const std::vector<int64_t>& demands,
-                                    int64_t capacity, Model* model);
+// Reduce the coefficient of the constraint so that we cannot have overflow
+// in the propagation of the given linear constraint. Note that we may loose
+// some strength by doing so.
+void PreventOverflow(const IntegerTrail& integer_trail,
+                     LinearConstraint* constraint);
+
 }  // namespace sat
 }  // namespace operations_research
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,6 +25,7 @@
 #define OR_TOOLS_LP_DATA_LP_DATA_H_
 
 #include <algorithm>  // for max
+#include <cmath>
 #include <cstdint>
 #include <map>
 #include <string>  // for string
@@ -33,13 +34,13 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"  // for CHECK*
 #include "ortools/base/macros.h"   // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/util/fp_utils.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace glop {
@@ -509,7 +510,10 @@ class LinearProgram {
   // - returns false if some coefficient other than the bounds are +/- infinity.
   // Note that these conditions are also guarded by DCHECK on each of the
   // SetXXX() function above.
-  bool IsValid() const;
+  //
+  // This also returns false if any finite value has a magnitude larger than
+  // the given threshold.
+  bool IsValid(Fractional max_valid_magnitude = kInfinity) const;
 
   // Updates the bounds of the variables to the intersection of their original
   // bounds and the bounds specified by variable_lower_bounds and

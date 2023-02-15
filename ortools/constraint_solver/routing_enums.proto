@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -91,6 +91,9 @@ message FirstSolutionStrategy {
     // the start/ends of the routes, i.e. farthest nodes are inserted first.
     // Is faster than SEQUENTIAL_CHEAPEST_INSERTION.
     LOCAL_CHEAPEST_INSERTION = 9;
+    // Same as LOCAL_CHEAPEST_INSERTION except that the cost of insertion is
+    // based on the routing model cost function instead of arc costs only.
+    LOCAL_CHEAPEST_COST_INSERTION = 16;
 
     // --- Variable-based heuristics ---
     // Iteratively connect two nodes which produce the cheapest route segment.

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,7 @@
 
 namespace operations_research {
 void SolveAndPrint(MPSolver& solver, std::vector<MPVariable*> variables,
-                   std::vector<MPConstraint*> constraints,
-                   bool is_continuous) {
+                   std::vector<MPConstraint*> constraints, bool is_continuous) {
   LOG(INFO) << "Number of variables = " << solver.NumVariables();
   LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
 
@@ -47,7 +46,7 @@ void SolveAndPrint(MPSolver& solver, std::vector<MPVariable*> variables,
     const std::vector<double> activities = solver.ComputeConstraintActivities();
     for (const auto& i : constraints) {
       LOG(INFO) << i->name() << ": dual value = " << i->dual_value()
-        << " activity = " << activities[i->index()];
+                << " activity = " << activities[i->index()];
     }
   }
 }
@@ -179,6 +178,10 @@ void RunAllExamples() {
   LOG(INFO) << "---- Linear programming example with GLOP ----";
   RunLinearProgrammingExample(MPSolver::GLOP_LINEAR_PROGRAMMING);
 #endif  // USE_GLOP
+#if defined(USE_PDLP)
+  LOG(INFO) << "---- Linear programming example with PDLP ----";
+  RunLinearProgrammingExample(MPSolver::PDLP_LINEAR_PROGRAMMING);
+#endif  // USE_PDLP
 #if defined(USE_GUROBI)
   LOG(INFO) << "---- Linear programming example with Gurobi ----";
   RunLinearProgrammingExample(MPSolver::GUROBI_LINEAR_PROGRAMMING);

@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -17,7 +30,7 @@ cc_library(
     hdrs = ["bop_types.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
     ],
 )
@@ -31,7 +44,7 @@ cc_library(
         ":bop_solution",
         ":bop_types",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "@com_google_absl//absl/synchronization",
         "//ortools/glop:lp_solver",
@@ -68,7 +81,7 @@ cc_library(
     deps = [
         ":bop_types",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/sat:boolean_problem",
         "//ortools/sat:boolean_problem_cc_proto",
@@ -87,7 +100,7 @@ cc_library(
         ":bop_util",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/base:stl_util",
         "//ortools/glop:lp_solver",
@@ -119,7 +132,7 @@ cc_library(
         ":bop_util",
         "//ortools/base",
         "//ortools/base:cleanup",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/base:stl_util",
         "//ortools/glop:lp_solver",
@@ -147,7 +160,7 @@ cc_library(
         ":bop_types",
         ":bop_util",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/sat:boolean_problem",
@@ -170,7 +183,7 @@ cc_library(
         ":bop_util",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/sat:boolean_problem",
         "//ortools/sat:boolean_problem_cc_proto",
@@ -196,7 +209,7 @@ cc_library(
         ":complete_optimizer",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "@com_google_absl//absl/status:statusor",
         "//ortools/base:stl_util",
@@ -228,7 +241,7 @@ cc_library(
         ":bop_util",
         ":complete_optimizer",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/base:stl_util",
         "//ortools/glop:lp_solver",
@@ -261,7 +274,7 @@ cc_library(
         ":bop_types",
         ":bop_util",
         "//ortools/base",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/glop:lp_solver",

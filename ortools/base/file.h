@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,6 +26,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/status_macros.h"
 
 // This file defines some IO interfaces for compatibility with Google
 // IO specifications.
@@ -116,7 +117,10 @@ class File {
 };
 
 namespace file {
-inline int Defaults() { return 0xBABA; }
+
+using Options = int;
+
+inline Options Defaults() { return 0xBABA; }
 
 // As of 2016-01, these methods can only be used with flags = file::Defaults().
 absl::Status Open(const absl::string_view& filename,
@@ -125,8 +129,22 @@ File* OpenOrDie(const absl::string_view& filename,
                 const absl::string_view& mode, int flags);
 absl::Status GetTextProto(const absl::string_view& filename,
                           google::protobuf::Message* proto, int flags);
+template <typename T>
+absl::StatusOr<T> GetTextProto(absl::string_view filename, int flags) {
+  T proto;
+  RETURN_IF_ERROR(GetTextProto(filename, &proto, flags));
+  return proto;
+}
 absl::Status SetTextProto(const absl::string_view& filename,
                           const google::protobuf::Message& proto, int flags);
+absl::Status GetBinaryProto(absl::string_view filename,
+                            google::protobuf::Message* proto, int flags);
+template <typename T>
+absl::StatusOr<T> GetBinaryProto(absl::string_view filename, int flags) {
+  T proto;
+  RETURN_IF_ERROR(GetBinaryProto(filename, &proto, flags));
+  return proto;
+}
 absl::Status SetBinaryProto(const absl::string_view& filename,
                             const google::protobuf::Message& proto, int flags);
 absl::Status SetContents(const absl::string_view& filename,

@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 if(NOT BUILD_GLOP)
   return()
 endif()
@@ -65,7 +78,6 @@ target_sources(glop PRIVATE
   ortools/base/file.h
   ortools/base/integral_types.h
   ortools/base/log_severity.h
-  ortools/base/logging.cc
   ortools/base/logging.h
   ortools/base/logging_utilities.cc
   ortools/base/logging_utilities.h
@@ -137,6 +149,7 @@ target_sources(glop PRIVATE
   ortools/util/rational_approximation.h
   ortools/util/stats.cc
   ortools/util/stats.h
+  ortools/util/strong_integers.h
   ortools/util/time_limit.cc
   ortools/util/time_limit.h
   )
@@ -279,6 +292,7 @@ install(FILES
   ortools/base/file.h
   ortools/base/hash.h
   ortools/base/int_type.h
+  ortools/base/strong_int.h
   ortools/base/strong_vector.h
   ortools/base/integral_types.h
   ortools/base/log_severity.h
@@ -327,6 +341,7 @@ install(FILES
   ortools/util/return_macros.h
   ortools/util/running_stat.h
   ortools/util/stats.h
+  ortools/util/strong_integers.h
   ortools/util/time_limit.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ortools/util
   COMPONENT Devel)
@@ -360,6 +375,3 @@ install(
   "${PROJECT_BINARY_DIR}/glopConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/glop"
   COMPONENT Devel)
-
-# Build glop samples
-add_subdirectory(ortools/glop/samples)

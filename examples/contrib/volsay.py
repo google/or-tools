@@ -33,8 +33,9 @@ def main(unused_argv):
   #                         pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
 
   # Using CLP
-  solver = pywraplp.Solver('CoinsGridCLP',
-                           pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
+  solver = pywraplp.Solver.CreateSolver('CLP')
+  if not solver:
+    return
 
   # data
 

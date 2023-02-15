@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 if(NOT BUILD_FLATZINC)
   return()
 endif()
@@ -72,6 +85,7 @@ set_target_properties(flatzinc PROPERTIES
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
+  OUTPUT_NAME ${PROJECT_NAME}_flatzinc
   )
 target_compile_features(flatzinc PUBLIC cxx_std_17)
 target_compile_definitions(flatzinc PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
@@ -93,47 +107,76 @@ set_target_properties(flatzinc PROPERTIES
 set_target_properties(flatzinc PROPERTIES INTERFACE_flatzinc_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(flatzinc PROPERTIES COMPATIBLE_INTERFACE_STRING flatzinc_MAJOR_VERSION)
 ## Dependencies
-target_link_libraries(flatzinc PUBLIC ortools::ortools)
+target_link_libraries(flatzinc PUBLIC ${PROJECT_NAMESPACE}::ortools)
 if(WIN32)
   #target_link_libraries(flatzinc PUBLIC psapi.lib ws2_32.lib)
 endif()
 ## Alias
-add_library(${PROJECT_NAME}::flatzinc ALIAS flatzinc)
+add_library(${PROJECT_NAMESPACE}::flatzinc ALIAS flatzinc)
 
 
 if(APPLE)
   set(CMAKE_INSTALL_RPATH
     "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
 elseif(UNIX)
-  set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
+  set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
 endif()
-# Binary
-add_executable(fz
+
+
+# fzn-ortools Binary
+add_executable(fzn
   ortools/flatzinc/fz.cc
   )
 ## Includes
-target_include_directories(fz PRIVATE
+target_include_directories(fzn PRIVATE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
   )
 ## Compile options
-set_target_properties(fz PROPERTIES
+set_target_properties(fzn PROPERTIES
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
+  OUTPUT_NAME fzn-${PROJECT_NAME}
   )
-target_compile_features(fz PUBLIC cxx_std_17)
-target_compile_definitions(fz PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
-target_compile_options(fz PUBLIC ${FLATZINC_COMPILE_OPTIONS})
+target_compile_features(fzn PUBLIC cxx_std_17)
+target_compile_definitions(fzn PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
+target_compile_options(fzn PUBLIC ${FLATZINC_COMPILE_OPTIONS})
 ## Dependencies
-target_link_libraries(fz PRIVATE ortools::flatzinc)
+target_link_libraries(fzn PRIVATE ${PROJECT_NAMESPACE}::flatzinc)
 ## Alias
-add_executable(${PROJECT_NAME}::fz ALIAS fz)
+add_executable(${PROJECT_NAME}::fzn ALIAS fzn)
+
+
+# Parser-main Binary
+add_executable(fzn-parser_test
+  ortools/flatzinc/parser_main.cc
+  )
+## Includes
+target_include_directories(fzn-parser_test PRIVATE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+  )
+## Compile options
+set_target_properties(fzn-parser_test PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+  OUTPUT_NAME fzn-parser-${PROJECT_NAME}
+  )
+target_compile_features(fzn-parser_test PUBLIC cxx_std_17)
+target_compile_definitions(fzn-parser_test PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
+target_compile_options(fzn-parser_test PUBLIC ${FLATZINC_COMPILE_OPTIONS})
+## Dependencies
+target_link_libraries(fzn-parser_test PRIVATE ${PROJECT_NAMESPACE}::flatzinc)
+## Alias
+add_executable(${PROJECT_NAME}::fzn-parser_test ALIAS fzn-parser_test)
+
 
 # MiniZinc solver configuration
 file(RELATIVE_PATH FZ_REL_INSTALL_BINARY
   ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/minizinc/solvers
-  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/fz)
+  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/fzn-${PROJECT_NAME})
 configure_file(
   ortools/flatzinc/ortools.msc.in
   ${PROJECT_BINARY_DIR}/ortools.msc
@@ -141,7 +184,7 @@ configure_file(
 
 # Install rules
 include(GNUInstallDirs)
-install(TARGETS flatzinc fz
+install(TARGETS flatzinc fzn #fzn-parser_test
   EXPORT ${PROJECT_NAME}Targets
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

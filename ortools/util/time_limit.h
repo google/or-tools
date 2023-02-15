@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "absl/base/port.h"
 #include "absl/container/flat_hash_map.h"
@@ -133,10 +134,9 @@ class TimeLimit {
    * deterministic time and instruction count limit.
    */
   static std::unique_ptr<TimeLimit> Infinite() {
-    return absl::make_unique<TimeLimit>(
-        std::numeric_limits<double>::infinity(),
-        std::numeric_limits<double>::infinity(),
-        std::numeric_limits<double>::infinity());
+    return std::make_unique<TimeLimit>(std::numeric_limits<double>::infinity(),
+                                       std::numeric_limits<double>::infinity(),
+                                       std::numeric_limits<double>::infinity());
   }
 
   /**
@@ -144,9 +144,9 @@ class TimeLimit {
    */
   static std::unique_ptr<TimeLimit> FromDeterministicTime(
       double deterministic_limit) {
-    return absl::make_unique<TimeLimit>(
-        std::numeric_limits<double>::infinity(), deterministic_limit,
-        std::numeric_limits<double>::infinity());
+    return std::make_unique<TimeLimit>(std::numeric_limits<double>::infinity(),
+                                       deterministic_limit,
+                                       std::numeric_limits<double>::infinity());
   }
 
   /**
@@ -159,9 +159,9 @@ class TimeLimit {
   template <typename Parameters>
   static std::unique_ptr<TimeLimit> FromParameters(
       const Parameters& parameters) {
-    return absl::make_unique<TimeLimit>(
-        parameters.max_time_in_seconds(), parameters.max_deterministic_time(),
-        std::numeric_limits<double>::infinity());
+    return std::make_unique<TimeLimit>(parameters.max_time_in_seconds(),
+                                       parameters.max_deterministic_time(),
+                                       std::numeric_limits<double>::infinity());
   }
 
   /**
@@ -292,6 +292,18 @@ class TimeLimit {
   void MergeWithGlobalTimeLimit(TimeLimit* other);
 
   /**
+   * Overwrites the deterministic time limit with the new value.
+   */
+  void ChangeDeterministicLimit(double new_limit) {
+    deterministic_limit_ = new_limit;
+  }
+
+  /**
+   * Queries the deterministic time limit.
+   */
+  double GetDeterministicLimit() const { return deterministic_limit_; }
+
+  /**
    * Returns information about the time limit object in a human-readable form.
    */
   std::string DebugString() const;
@@ -387,6 +399,13 @@ class SharedTimeLimit {
     return time_limit_->GetElapsedDeterministicTime();
   }
 
+  std::atomic<bool>* ExternalBooleanAsLimit() const {
+    absl::ReaderMutexLock lock(&mutex_);
+    // We can simply return the "external bool" and remain thread-safe because
+    // it's wrapped in std::atomic.
+    return time_limit_->ExternalBooleanAsLimit();
+  }
+
  private:
   mutable absl::Mutex mutex_;
   TimeLimit* time_limit_ ABSL_GUARDED_BY(mutex_);
@@ -448,7 +467,7 @@ class NestedTimeLimit {
   template <typename Parameters>
   static std::unique_ptr<NestedTimeLimit> FromBaseTimeLimitAndParameters(
       TimeLimit* time_limit, const Parameters& parameters) {
-    return absl::make_unique<NestedTimeLimit>(
+    return std::make_unique<NestedTimeLimit>(
         time_limit, parameters.max_time_in_seconds(),
         parameters.max_deterministic_time());
   }
@@ -498,9 +517,9 @@ inline void TimeLimit::ResetTimers(double limit_in_seconds,
 #endif  // HAS_PERF_SUBSYSTEM
   start_ns_ = absl::GetCurrentTimeNanos();
   last_ns_ = start_ns_;
-  limit_ns_ = limit_in_seconds >= 1e-9 * (kint64max - start_ns_)
-                  ? kint64max
-                  : static_cast<int64_t>(limit_in_seconds * 1e9) + start_ns_;
+  // Note that duration arithmetic is properly saturated.
+  limit_ns_ = (absl::Seconds(limit_in_seconds) + absl::Nanoseconds(start_ns_)) /
+              absl::Nanoseconds(1);
 }
 
 template <typename Parameters>

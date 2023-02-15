@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,8 +25,10 @@
 #define OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
 
 #include <memory>
+#include <string>
 #include <vector>
 
+#include "absl/numeric/int128.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "ortools/algorithms/dynamic_partition.h"
@@ -313,6 +315,39 @@ class GraphSymmetryFinder {
   };
   mutable Stats stats_;
 };
+
+// HELPER FUNCTIONS: PUBLIC FOR UNIT TESTING ONLY.
+
+// Returns, for each node A, the number of pairs of nodes (B, C) such that
+// arcs A->B, A->C and B->C exist. Skips nodes with degree > max_degree
+// (this allows to remain linear in the number of nodes, but gives partial
+// results).
+// The complexity is O(num_nodes * max_degree²).
+//
+// DIFFERENTIATION: In unit test CollisionImpliesIsomorphismInPractice,
+// this metric differentiated 33 of the 34 non-isomorphic collisions found
+// across 200K graphs: only one remained.
+//
+// Example graph differentiated by this metric, but not by LocalBfsFprint():
+//  ,-1-3-.         ,-1-3-.
+// 0  | |  5  and  0   X   5
+//  `-2-3-'         `-2-4-'
+std::vector<int> CountTriangles(const ::util::StaticGraph<int, int>& graph,
+                                int max_degree);
+
+// Runs a Breadth-First-Search locally: it stops when we settled the given
+// number of nodes, though it will finish the current radius.
+// `visited` will contain either the full connected components, or all the nodes
+// with distance ≤ R+1 from the source, where R is the radius where we stopped.
+// `num_within_radius` contains the increasing number of nodes within distance
+// 0, 1, .., R+1 of the source.
+void LocalBfs(const ::util::StaticGraph<int, int>& graph, int source,
+              int stop_after_num_nodes, std::vector<int>* visited,
+              std::vector<int>* num_within_radius,
+              // For performance, the user provides us with an already-
+              // allocated bitmask of size graph.num_nodes() with all values set
+              // to "false", which we'll restore in the same state upon return.
+              std::vector<bool>* tmp_mask);
 
 }  // namespace operations_research
 

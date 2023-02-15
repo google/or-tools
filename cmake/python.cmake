@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 if(NOT BUILD_PYTHON)
   return()
 endif()
@@ -19,7 +32,11 @@ if(${SWIG_VERSION} VERSION_GREATER_EQUAL 4)
 endif()
 
 if(UNIX AND NOT APPLE)
-  list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE64")
+  if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE64")
+  else()
+    list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE32")
+  endif()
 endif()
 
 # Find Python 3
@@ -110,6 +127,9 @@ function(search_python_internal_module)
   endif()
 endfunction()
 
+##################
+##  PROTO FILE  ##
+##################
 # Generate Protobuf py sources with mypy support
 search_python_module(
   NAME mypy_protobuf
@@ -117,13 +137,20 @@ search_python_module(
   NO_VERSION)
 set(PROTO_PYS)
 file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
+  "ortools/glop/*.proto"
+  "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
   "ortools/sat/*.proto"
-  "ortools/util/*.proto"
   "ortools/scheduling/*.proto"
+  "ortools/util/*.proto"
   )
+if(USE_PDLP)
+  file(GLOB_RECURSE pdlp_proto_py_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
+  list(APPEND proto_py_files ${pdlp_proto_py_files})
+endif()
 list(REMOVE_ITEM proto_py_files "ortools/constraint_solver/demon_profiler.proto")
 foreach(PROTO_FILE IN LISTS proto_py_files)
   #message(STATUS "protoc proto(py): ${PROTO_FILE}")
@@ -144,27 +171,55 @@ foreach(PROTO_FILE IN LISTS proto_py_files)
     VERBATIM)
   list(APPEND PROTO_PYS ${PROTO_PY})
 endforeach()
-add_custom_target(Py${PROJECT_NAME}_proto DEPENDS ${PROTO_PYS} ${PROJECT_NAMESPACE}::ortools)
+add_custom_target(Py${PROJECT_NAME}_proto
+  DEPENDS
+    ${PROTO_PYS}
+    ${PROJECT_NAMESPACE}::ortools)
 
-# CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
-#get_target_property(FLAGS ${PROJECT_NAMESPACE}::ortools COMPILE_DEFINITIONS)
-set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
-if(USE_SIRIUS)
-  list(APPEND FLAGS "-DUSE_SIRIUS")
-endif(USE_SIRIUS)
-if(USE_CPLEX)
-  list(APPEND FLAGS "-DUSE_CPLEX")
-endif(USE_CPLEX)
-if(USE_COINOR)
-  list(APPEND FLAGS "-DUSE_CBC" "-DUSE_CLP")
+###################
+##  Python Test  ##
+###################
+if(BUILD_VENV)
+  search_python_module(NAME virtualenv PACKAGE virtualenv)
+  # venv not working on github runners
+  # search_python_internal_module(NAME venv)
+  # Testing using a vitual environment
+  set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m virtualenv)
+  #set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
+  set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/python/venv)
+  if(WIN32)
+    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/Scripts/python.exe)
+  else()
+    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/bin/python)
+  endif()
 endif()
-if(USE_GLPK)
-  list(APPEND FLAGS "-DUSE_GLPK")
+
+if(BUILD_TESTING)
+  # add_python_test()
+  # CMake function to generate and build python test.
+  # Parameters:
+  #  the python filename
+  # e.g.:
+  # add_python_test(foo.py)
+  function(add_python_test FILE_NAME)
+    message(STATUS "Configuring test ${FILE_NAME} ...")
+    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+    add_test(
+      NAME python_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+    message(STATUS "Configuring test ${FILE_NAME} done")
+  endfunction()
 endif()
-if(USE_SCIP)
-  list(APPEND FLAGS "-DUSE_SCIP")
-endif()
-list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
+
+#######################
+##  PYTHON WRAPPERS  ##
+#######################
+list(APPEND CMAKE_SWIG_FLAGS "-I${PROJECT_SOURCE_DIR}")
 
 set(PYTHON_PROJECT ${PROJECT_NAME})
 message(STATUS "Python project: ${PYTHON_PROJECT}")
@@ -181,20 +236,30 @@ endforeach()
 #######################
 #file(MAKE_DIRECTORY python/${PYTHON_PROJECT})
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/__init__.py CONTENT "__version__ = \"${PROJECT_VERSION}\"\n")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/bop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/glop/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/python/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/packing/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/scheduling/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/python/__init__.py CONTENT "")
 
 file(COPY
   ortools/linear_solver/linear_solver_natural_api.py
   DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver)
+file(COPY
+  ortools/linear_solver/python/model_builder.py
+  ortools/linear_solver/python/model_builder_helper.py
+  DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver/python)
 file(COPY
   ortools/sat/python/cp_model.py
   ortools/sat/python/cp_model_helper.py
@@ -240,12 +305,15 @@ add_custom_command(
   ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapinit> ${PYTHON_PROJECT}/init
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PYTHON_PROJECT}/algorithms
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapgraph> ${PYTHON_PROJECT}/graph
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:min_cost_flow_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapsat> ${PYTHON_PROJECT}/sat
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_model_builder_helper> ${PYTHON_PROJECT}/linear_solver/python
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:swig_helper> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PYTHON_PROJECT}/scheduling
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PYTHON_PROJECT}/util
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PYTHON_PROJECT}/util/python
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/dist/timestamp
@@ -255,6 +323,17 @@ add_custom_command(
     python/setup.py
     Py${PROJECT_NAME}_proto
     ${PROJECT_NAMESPACE}::ortools
+    pywrapinit
+    pywrapknapsack_solver
+    linear_sum_assignment_pybind11
+    max_flow_pybind11
+    min_cost_flow_pybind11
+    pywrapcp
+    pywraplp
+    pywrap_model_builder_helper
+    swig_helper
+    pywraprcpsp
+    sorted_interval_list
   BYPRODUCTS
     python/${PYTHON_PROJECT}
     python/${PYTHON_PROJECT}.egg-info
@@ -276,72 +355,38 @@ configure_file(
   @ONLY)
 install(SCRIPT ${PROJECT_BINARY_DIR}/python/python-install.cmake)
 
-###################
-##  Python Test  ##
-###################
-if(BUILD_TESTING)
-  search_python_module(NAME virtualenv PACKAGE virtualenv)
-  # venv not working on github runners
-  # search_python_internal_module(NAME venv)
-  # Testing using a vitual environment
-  set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m virtualenv)
-  #set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
-  set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/python/venv)
-  if(WIN32)
-    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/Scripts/python.exe)
-  else()
-    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/bin/python)
-  endif()
+if(BUILD_VENV)
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
     # Clean previous install otherwise pip install may do nothing
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${VENV_DIR}
-    COMMAND ${VENV_EXECUTABLE} -p ${Python3_EXECUTABLE} --system-site-packages ${VENV_DIR}
+    COMMAND ${VENV_EXECUTABLE} -p ${Python3_EXECUTABLE}
+    $<IF:$<BOOL:${VENV_USE_SYSTEM_SITE_PACKAGES}>,--system-site-packages,-q>
+      ${VENV_DIR}
     #COMMAND ${VENV_EXECUTABLE} ${VENV_DIR}
     # Must NOT call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
     COMMAND ${VENV_Python3_EXECUTABLE} -m pip install protobuf>=3.18.0 absl-py>=0.13
-    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install --no-index --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PROJECT_NAME}
+    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install
+      --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PYTHON_PROJECT}==${PROJECT_VERSION}
     # install modules only required to run examples
-    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install pandas matplotlib
+    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install pandas matplotlib pytest
     BYPRODUCTS ${VENV_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Create venv and install ${PYTHON_PROJECT}"
     VERBATIM)
-
-  add_custom_command(TARGET python_package POST_BUILD
-    DEPENDS python/test.py
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/test.py.in ${VENV_DIR}/test.py
-    BYPRODUCTS ${VENV_DIR}/test.py
-    WORKING_DIRECTORY python
-    COMMENT "Copying test.py"
-    VERBATIM)
-
-  # run the tests within the virtualenv
-  add_test(NAME pytest_venv
-    COMMAND ${VENV_Python3_EXECUTABLE} ${VENV_DIR}/test.py)
 endif()
 
-# add_python_test()
-# CMake function to generate and build python test.
-# Parameters:
-#  the python filename
-# e.g.:
-# add_python_test(foo.py)
-function(add_python_test FILE_NAME)
-  message(STATUS "Configuring test ${FILE_NAME} ...")
-  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+if(BUILD_TESTING)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/init/python/version_test.py.in
+    ${PROJECT_BINARY_DIR}/python/version_test.py
+    @ONLY)
 
-  if(BUILD_TESTING)
-    add_test(
-      NAME python_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
-      WORKING_DIRECTORY ${VENV_DIR})
-  endif()
-  message(STATUS "Configuring test ${FILE_NAME} done")
-endfunction()
+  # run the tests within the virtualenv
+  add_test(NAME python_init_version_test
+    COMMAND ${VENV_Python3_EXECUTABLE} ${PROJECT_BINARY_DIR}/python/version_test.py)
+endif()
 
 #####################
 ##  Python Sample  ##

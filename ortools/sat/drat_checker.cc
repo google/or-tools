@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,15 +13,28 @@
 
 #include "ortools/sat/drat_checker.h"
 
+#include <stddef.h>
+
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <fstream>
+#include <limits>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/stl_util.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -173,7 +186,7 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
     if (HasRupProperty(i, Literals(clause))) {
       continue;
     }
-    // or the Reverse Asymetric Tautology (RAT) property. This property is
+    // or the Reverse Asymmetric Tautology (RAT) property. This property is
     // defined by the fact that all clauses which contain the negation of
     // the RAT literal of 'clause', after resolution with 'clause', must have
     // the RUP property.

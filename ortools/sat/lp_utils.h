@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,11 @@
 #ifndef OR_TOOLS_SAT_LP_UTILS_H_
 #define OR_TOOLS_SAT_LP_UTILS_H_
 
+#include <stdint.h>
+
+#include <utility>
+#include <vector>
+
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/sat/boolean_problem.pb.h"
@@ -29,13 +34,42 @@ namespace sat {
 
 // Returns the smallest factor f such that f * abs(x) is integer modulo the
 // given tolerance relative to f (we use f * tolerance). It is only looking
-// for f smaller than the given limit. Returns zero if no such factor exist.
+// for f smaller than the given limit. Returns zero if no such factor exist
+// below the limit. The limit must be at most 2^62.
 //
 // The complexity is a lot less than O(limit), but it is possible that we might
 // miss the smallest such factor if the tolerance used is too low. This is
 // because we only rely on the best rational approximations of x with increasing
 // denominator.
-int FindRationalFactor(double x, int limit = 1e4, double tolerance = 1e-6);
+int64_t FindRationalFactor(double x, int64_t limit = 1e4,
+                           double tolerance = 1e-6);
+
+// Given a linear expression Sum_i c_i * X_i with each X_i in [lb_i, ub_i],
+// this returns a scaling factor f such that
+// 1/ the rounded expression cannot overflow given the domains of the X_i:
+//    Sum |std::round(f * c_i) * X_i| <= max_absolute_activity
+// 2/ the error is bounded:
+//    | Sum_i (std::round(f * c_i) - f * c_i) |
+//         < f * wanted_absolute_activity_precision
+//
+// This also fills the exact errors made by using the returned scaling factor.
+// The heuristics try to minimize the magnitude of the scaled expression while
+// satisfying the requested precision.
+//
+// Returns 0.0 if no scaling factor can be found under the condition 1/. Note
+// that we try really hard to satisfy 2/ but we still return our best shot even
+// when 2/ is not satisfied. One can check this by comparing the returned
+// scaled_sum_error / f with wanted_absolute_activity_precision.
+//
+// TODO(user): unit test this and move to fp_utils.
+// TODO(user): Ideally the lower/upper should be int64_t so that we can have
+// an exact definition for the max_absolute_activity allowed.
+double FindBestScalingAndComputeErrors(
+    const std::vector<double>& coefficients,
+    const std::vector<double>& lower_bounds,
+    const std::vector<double>& upper_bounds, int64_t max_absolute_activity,
+    double wanted_absolute_activity_precision, double* relative_coeff_error,
+    double* scaled_sum_error);
 
 // Multiplies all continuous variable by the given scaling parameters and change
 // the rest of the model accordingly. The returned vector contains the scaling
@@ -94,6 +128,16 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                        CpModelProto* cp_model,
                                        SolverLogger* logger);
 
+// Converts a CP-SAT model to a MPModelProto one.
+// This only works for pure linear model (otherwise it returns false). This is
+// mainly useful for debugging or using CP-SAT presolve and then trying other
+// MIP solvers.
+//
+// TODO(user): This first version do not even handle basic Boolean constraint.
+// Support more constraints as needed.
+bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
+                                       MPModelProto* output);
+
 // Scales a double objective to its integer version and fills it in the proto.
 // The variable listed in the objective must be already defined in the cp_model
 // proto as this uses the variables bounds to compute a proper scaling.
@@ -134,25 +178,6 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
 // Converts a Boolean optimization problem to its lp formulation.
 void ConvertBooleanProblemToLinearProgram(const LinearBooleanProblem& problem,
                                           glop::LinearProgram* lp);
-
-// Changes the variable bounds of the lp to reflect the variables that have been
-// fixed by the SAT solver (i.e. assigned at decision level 0). Returns the
-// number of variables fixed this way.
-int FixVariablesFromSat(const SatSolver& solver, glop::LinearProgram* lp);
-
-// Solves the given lp problem and uses the lp solution to drive the SAT solver
-// polarity choices. The variable must have the same index in the solved lp
-// problem and in SAT for this to make sense.
-//
-// Returns false if a problem occurred while trying to solve the lp.
-bool SolveLpAndUseSolutionForSatAssignmentPreference(
-    const glop::LinearProgram& lp, SatSolver* sat_solver,
-    double max_time_in_seconds);
-
-// Solves the lp and add constraints to fix the integer variable of the lp in
-// the LinearBoolean problem.
-bool SolveLpAndUseIntegerVariableToStartLNS(const glop::LinearProgram& lp,
-                                            LinearBooleanProblem* problem);
 
 }  // namespace sat
 }  // namespace operations_research

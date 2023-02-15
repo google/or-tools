@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,24 +13,38 @@
 
 #include "ortools/sat/integer_search.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <random>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "absl/types/span.h"
+#include "absl/strings/str_cat.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
+#include "ortools/base/logging.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
+#include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/probing.h"
+#include "ortools/sat/pseudo_costs.h"
+#include "ortools/sat/restart.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -101,8 +115,9 @@ IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
   DCHECK(!integer_trail->IsCurrentlyIgnored(var));
 
   const IntegerVariable positive_var = PositiveVariable(var);
+  const auto& it = lp_dispatcher->find(positive_var);
   const LinearProgrammingConstraint* lp =
-      gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+      it == lp_dispatcher->end() ? nullptr : it->second;
 
   // We only use this if the sub-lp has a solution, and depending on the value
   // of exploit_all_lp_solution() if it is a pure-integer solution.
@@ -578,17 +593,30 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   };
 }
 
-// TODO(user): Avoid the quadratic algorithm!!
 std::function<BooleanOrIntegerLiteral()> FollowHint(
     const std::vector<BooleanOrIntegerVariable>& vars,
     const std::vector<IntegerValue>& values, Model* model) {
-  const Trail* trail = model->GetOrCreate<Trail>();
-  const IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [=] {  // copy
-    for (int i = 0; i < vars.size(); ++i) {
+  auto* trail = model->GetOrCreate<Trail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* rev_int_repo = model->GetOrCreate<RevIntRepository>();
+
+  // This is not ideal as we reserve an int for the full duration of the model
+  // even if we use this FollowHint() function just for a while. But it is
+  // an easy solution to not have reference to deleted memory in the
+  // RevIntRepository(). Note that once we backtrack, these reference will
+  // disapear.
+  int* rev_start_index = model->TakeOwnership(new int);
+  *rev_start_index = 0;
+
+  return [=]() {
+    rev_int_repo->SaveState(rev_start_index);
+    for (int i = *rev_start_index; i < vars.size(); ++i) {
       const IntegerValue value = values[i];
       if (vars[i].bool_var != kNoBooleanVariable) {
         if (trail->Assignment().VariableIsAssigned(vars[i].bool_var)) continue;
+
+        // If we retake a decision at this level, we will restart from i.
+        *rev_start_index = i;
         return BooleanOrIntegerLiteral(
             Literal(vars[i].bool_var, value == 1).Index());
       } else {
@@ -599,7 +627,11 @@ std::function<BooleanOrIntegerLiteral()> FollowHint(
         const IntegerVariable positive_var = PositiveVariable(integer_var);
         const IntegerLiteral decision = SplitAroundGivenValue(
             positive_var, positive_var != integer_var ? -value : value, model);
-        if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
+        if (decision.IsValid()) {
+          // If we retake a decision at this level, we will restart from i.
+          *rev_start_index = i;
+          return BooleanOrIntegerLiteral(decision);
+        }
 
         // If the value is outside the current possible domain, we skip it.
         continue;
@@ -673,6 +705,14 @@ void ConfigureSearchHeuristics(Model* model) {
 
       // TODO(user): We might want to restart if external info is available.
       // Code a custom restart for this?
+      auto no_restart = []() { return false; };
+      heuristics.restart_policies = {no_restart};
+      return;
+    }
+    case SatParameters::PARTIAL_FIXED_SEARCH: {
+      heuristics.decision_policies = {
+          SequentialSearch({heuristics.user_search, SatSolverHeuristic(model),
+                            heuristics.fixed_search})};
       auto no_restart = []() { return false; };
       heuristics.restart_policies = {no_restart};
       return;
@@ -768,6 +808,7 @@ IntegerSearchHelper::IntegerSearchHelper(Model* model)
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
+      product_detector_(model->GetOrCreate<ProductDetector>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       pseudo_costs_(model->GetOrCreate<PseudoCosts>()) {
   // This is needed for recording the pseudo-costs.
@@ -873,14 +914,18 @@ bool IntegerSearchHelper::TakeDecision(Literal decision) {
   }
   const int old_level = sat_solver_->CurrentDecisionLevel();
 
+  // Note that kUnsatTrailIndex might also mean ASSUMPTIONS_UNSAT.
+  //
   // TODO(user): on some problems, this function can be quite long. Expand
   // so that we can check the time limit at each step?
-  sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
+  const int index = sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
+  if (index == kUnsatTrailIndex) return false;
 
   // Update the implied bounds each time we enqueue a literal at level zero.
   // This is "almost free", so we might as well do it.
   if (old_level == 0 && sat_solver_->CurrentDecisionLevel() == 1) {
     implied_bounds_->ProcessIntegerTrail(decision);
+    product_detector_->ProcessTrailAtLevelOne();
   }
 
   // Update the pseudo costs.
@@ -1019,6 +1064,10 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       return sat_solver->UnsatStatus();
     }
 
+    // In multi-thread, we really only want to save the LP relaxation for thread
+    // with high linearization level to avoid to pollute the repository with
+    // sub-par lp solutions.
+    //
     // TODO(user): Experiment more around dynamically changing the
     // threshold for storing LP solutions in the pool. Alternatively expose
     // this as parameter so this can be tuned later.
@@ -1027,7 +1076,8 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     // change. Avoid adding solution that are too deep in the tree (most
     // variable fixed). Also use a callback rather than having this here, we
     // don't want this file to depend on cp_model.proto.
-    if (model->Get<SharedLPSolutionRepository>() != nullptr) {
+    if (model->Get<SharedLPSolutionRepository>() != nullptr &&
+        sat_parameters.linearization_level() >= 2) {
       num_decisions_since_last_lp_record_++;
       if (num_decisions_since_last_lp_record_ >= 100) {
         // NOTE: We can actually record LP solutions more frequently. However
@@ -1079,114 +1129,234 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
   return ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
 }
 
-SatSolver::Status ContinuousProbing(
-    const std::vector<BooleanVariable>& bool_vars,
-    const std::vector<IntegerVariable>& int_vars,
-    const std::function<void()>& feasible_solution_observer, Model* model) {
-  VLOG(2) << "Start continuous probing with " << bool_vars.size()
-          << " Boolean variables, and " << int_vars.size()
-          << " integer variables";
-
-  SatSolver* solver = model->GetOrCreate<SatSolver>();
-  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-  const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
-  auto* level_zero_callbacks = model->GetOrCreate<LevelZeroCallbackHelper>();
-  Prober* prober = model->GetOrCreate<Prober>();
-
-  std::vector<BooleanVariable> active_vars;
-  std::vector<BooleanVariable> integer_bounds;
-  absl::flat_hash_set<BooleanVariable> integer_bounds_set;
-
-  int loop = 0;
-  while (!time_limit->LimitReached()) {
-    VLOG(2) << "Probing loop " << loop++;
-
-    // Sync the bounds first.
-    auto SyncBounds = [solver, &level_zero_callbacks]() {
-      if (!solver->ResetToLevelZero()) return false;
-      for (const auto& cb : level_zero_callbacks->callbacks) {
-        if (!cb()) {
-          solver->NotifyThatModelIsUnsat();
-          return false;
-        }
+ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
+                                   Model* model)
+    : model_(model),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
+      trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      encoder_(model->GetOrCreate<IntegerEncoder>()),
+      parameters_(*(model->GetOrCreate<SatParameters>())),
+      level_zero_callbacks_(model->GetOrCreate<LevelZeroCallbackHelper>()),
+      prober_(model->GetOrCreate<Prober>()),
+      shared_response_manager_(model->Mutable<SharedResponseManager>()),
+      shared_bounds_manager_(model->Mutable<SharedBoundsManager>()),
+      active_limit_(parameters_.shaving_search_deterministic_time()) {
+  auto* mapping = model_->GetOrCreate<CpModelMapping>();
+  absl::flat_hash_set<BooleanVariable> visited;
+  for (int v = 0; v < model_proto.variables_size(); ++v) {
+    if (mapping->IsBoolean(v)) {
+      const BooleanVariable bool_var = mapping->Literal(v).Variable();
+      const auto [_, inserted] = visited.insert(bool_var);
+      if (inserted) {
+        bool_vars_.push_back(bool_var);
       }
-      return true;
-    };
-    if (!SyncBounds()) {
-      return SatSolver::INFEASIBLE;
+    } else {
+      IntegerVariable var = mapping->Integer(v);
+      if (integer_trail_->IsFixed(var)) continue;
+      int_vars_.push_back(var);
     }
+  }
+  VLOG(2) << "Start continuous probing with " << bool_vars_.size()
+          << " Boolean variables, and " << int_vars_.size()
+          << " integer variables"
+          << ", deterministic time limit = "
+          << time_limit_->GetDeterministicLimit() << " on " << model_->Name();
+  last_logging_time_ = absl::Now();
+}
 
+// Continuous probing procedure.
+// TODO(user):
+//   - sort variables before the iteration (statically or dynamically)
+//   - compress clause databases regularly (especially the implication graph)
+//   - better interleaving of the probing and shaving phases
+//   - move the shaving code directly in the probing class
+//   - probe all variables and not just the model ones
+SatSolver::Status ContinuousProber::Probe() {
+  // Backtrack to level 0 in case we are not there.
+  if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+
+  while (!time_limit_->LimitReached()) {
     // Run sat in-processing to reduce the size of the clause database.
-    if (sat_parameters.use_sat_inprocessing() &&
-        !model->GetOrCreate<Inprocessing>()->InprocessingRound()) {
+    if (parameters_.use_sat_inprocessing() &&
+        !model_->GetOrCreate<Inprocessing>()->InprocessingRound()) {
       return SatSolver::INFEASIBLE;
     }
-
-    // TODO(user): Explore fast probing methods.
 
     // Probe each Boolean variable at most once per loop.
-    absl::flat_hash_set<BooleanVariable> probed;
+    probed_bool_vars_.clear();
+    probed_literals_.clear();
+
+    // Store current statistics to detect an iteration without any improvement.
+    const int64_t initial_num_literals_fixed =
+        prober_->num_new_literals_fixed();
+    const int64_t initial_num_bounds_shaved = num_bounds_shaved_;
 
     // Probe variable bounds.
     // TODO(user): Probe optional variables.
-    for (const IntegerVariable int_var : int_vars) {
-      if (integer_trail->IsFixed(int_var) ||
-          integer_trail->IsOptional(int_var)) {
+    for (; current_int_var_ < int_vars_.size(); ++current_int_var_) {
+      const IntegerVariable int_var = int_vars_[current_int_var_];
+      if (integer_trail_->IsFixed(int_var) ||
+          integer_trail_->IsOptional(int_var)) {
         continue;
       }
 
+      if (!ImportFromSharedClasses()) {
+        return SatSolver::INFEASIBLE;
+      }
+
+      if (time_limit_->LimitReached()) {
+        return SatSolver::LIMIT_REACHED;
+      }
+
       const BooleanVariable shave_lb =
-          encoder
+          encoder_
               ->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(
-                  int_var, integer_trail->LowerBound(int_var)))
+                  int_var, integer_trail_->LowerBound(int_var)))
               .Variable();
-      if (!probed.contains(shave_lb)) {
-        probed.insert(shave_lb);
-        if (!prober->ProbeOneVariable(shave_lb)) {
+      const auto [_lb, lb_inserted] = probed_bool_vars_.insert(shave_lb);
+      if (lb_inserted) {
+        if (!prober_->ProbeOneVariable(shave_lb)) {
           return SatSolver::INFEASIBLE;
         }
+        num_literals_probed_++;
       }
 
       const BooleanVariable shave_ub =
-          encoder
+          encoder_
               ->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
-                  int_var, integer_trail->UpperBound(int_var)))
+                  int_var, integer_trail_->UpperBound(int_var)))
               .Variable();
-      if (!probed.contains(shave_ub)) {
-        probed.insert(shave_ub);
-        if (!prober->ProbeOneVariable(shave_ub)) {
+      const auto [_ub, ub_inserted] = probed_bool_vars_.insert(shave_ub);
+      if (ub_inserted) {
+        if (!prober_->ProbeOneVariable(shave_ub)) {
           return SatSolver::INFEASIBLE;
         }
+        num_literals_probed_++;
       }
 
-      if (!SyncBounds()) {
-        return SatSolver::INFEASIBLE;
+      if (parameters_.use_shaving_in_probing_search()) {
+        const SatSolver::Status lb_status =
+            ShaveLiteral(Literal(shave_lb, true));
+        if (ReportStatus(lb_status)) return lb_status;
+
+        const SatSolver::Status ub_status =
+            ShaveLiteral(Literal(shave_ub, true));
+        if (ReportStatus(ub_status)) return ub_status;
       }
-      if (time_limit->LimitReached()) {
-        return SatSolver::LIMIT_REACHED;
-      }
+
+      LogStatistics();
     }
 
     // Probe Boolean variables from the model.
-    for (const BooleanVariable& bool_var : bool_vars) {
-      if (solver->Assignment().VariableIsAssigned(bool_var)) continue;
-      if (time_limit->LimitReached()) {
-        return SatSolver::LIMIT_REACHED;
-      }
-      if (!SyncBounds()) {
+    for (; current_bool_var_ < bool_vars_.size(); ++current_bool_var_) {
+      const BooleanVariable& bool_var = bool_vars_[current_bool_var_];
+
+      if (sat_solver_->Assignment().VariableIsAssigned(bool_var)) continue;
+
+      if (!ImportFromSharedClasses()) {
         return SatSolver::INFEASIBLE;
       }
-      if (!probed.contains(bool_var)) {
-        probed.insert(bool_var);
-        if (!prober->ProbeOneVariable(bool_var)) {
+
+      if (time_limit_->LimitReached()) {
+        return SatSolver::LIMIT_REACHED;
+      }
+
+      const auto [_, inserted] = probed_bool_vars_.insert(bool_var);
+      if (inserted) {
+        if (!prober_->ProbeOneVariable(bool_var)) {
           return SatSolver::INFEASIBLE;
         }
+        num_literals_probed_++;
+      }
+
+      const Literal literal(bool_var, true);
+      if (parameters_.use_shaving_in_probing_search() &&
+          !sat_solver_->Assignment().LiteralIsAssigned(literal)) {
+        const SatSolver::Status true_status = ShaveLiteral(literal);
+        if (ReportStatus(true_status)) return true_status;
+        if (true_status == SatSolver::ASSUMPTIONS_UNSAT) continue;
+
+        const SatSolver::Status false_status = ShaveLiteral(literal.Negated());
+        if (ReportStatus(false_status)) return false_status;
+      }
+
+      LogStatistics();
+    }
+
+    // Adjust the active_limit.
+    {
+      const double deterministic_time =
+          parameters_.shaving_search_deterministic_time();
+      const bool something_has_been_detected =
+          num_bounds_shaved_ != initial_num_bounds_shaved ||
+          prober_->num_new_literals_fixed() != initial_num_literals_fixed;
+      if (something_has_been_detected) {  // Reset the limit.
+        active_limit_ = deterministic_time;
+      } else if (active_limit_ < 25 * deterministic_time) {  // Bump the limit.
+        active_limit_ += deterministic_time;
       }
     }
+
+    ++iteration_;
+    current_bool_var_ = 0;
+    current_int_var_ = 0;
   }
   return SatSolver::LIMIT_REACHED;
+}
+
+bool ContinuousProber::ImportFromSharedClasses() {
+  if (!sat_solver_->ResetToLevelZero()) return false;
+  for (const auto& cb : level_zero_callbacks_->callbacks) {
+    if (!cb()) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
+  }
+  return true;
+}
+
+SatSolver::Status ContinuousProber::ShaveLiteral(Literal literal) {
+  const auto [_, inserted] = probed_literals_.insert(literal.Index());
+  if (trail_->Assignment().LiteralIsAssigned(literal) || !inserted) {
+    return SatSolver::LIMIT_REACHED;
+  }
+  num_bounds_tried_++;
+
+  const double original_dtime_limit = time_limit_->GetDeterministicLimit();
+  time_limit_->ChangeDeterministicLimit(
+      std::min(original_dtime_limit,
+               time_limit_->GetElapsedDeterministicTime() + active_limit_));
+  const SatSolver::Status status =
+      ResetAndSolveIntegerProblem({literal}, model_);
+  time_limit_->ChangeDeterministicLimit(original_dtime_limit);
+
+  if (status == SatSolver::ASSUMPTIONS_UNSAT) {
+    num_bounds_shaved_++;
+  }
+
+  return status;
+}
+
+bool ContinuousProber::ReportStatus(const SatSolver::Status status) {
+  return status == SatSolver::INFEASIBLE || status == SatSolver::FEASIBLE;
+}
+
+void ContinuousProber::LogStatistics() {
+  if (shared_response_manager_ == nullptr ||
+      shared_bounds_manager_ == nullptr) {
+    return;
+  }
+  shared_response_manager_->LogPeriodicMessage(
+      "Probe",
+      absl::StrCat("#iterations:", iteration_, " #literals fixed/probed:",
+                   prober_->num_new_literals_fixed(), "/", num_literals_probed_,
+                   " #bounds shaved/tried:", num_bounds_shaved_, "/",
+                   num_bounds_tried_, " #new_integer_bounds:",
+                   shared_bounds_manager_->NumBoundsExported("probing"),
+                   ", #new_binary_clauses:", prober_->num_new_binary_clauses()),
+      parameters_.log_frequency_in_seconds(), &last_logging_time_);
 }
 
 }  // namespace sat

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,8 +17,11 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/iterators.h"
@@ -127,7 +130,7 @@ struct Variable {
   //   - if one variable is temporary, the name is the name of the other
   //     variable. If both variables are temporary or both variables are not
   //     temporary, the name is chosen arbitrarily between the two names.
-  bool Merge(const std::string& other_name, const Domain& other_domain,
+  bool Merge(absl::string_view other_name, const Domain& other_domain,
              bool other_temporary);
 
   std::string DebugString() const;
@@ -146,7 +149,7 @@ struct Variable {
  private:
   friend class Model;
 
-  Variable(const std::string& name_, const Domain& domain_, bool temporary_);
+  Variable(absl::string_view name_, const Domain& domain_, bool temporary_);
 };
 
 // An argument is either an integer value, an integer domain, a
@@ -216,7 +219,7 @@ struct Argument {
 // A constraint has a type, some arguments, and a few tags. Typically, a
 // Constraint is on the heap, and owned by the global Model object.
 struct Constraint {
-  Constraint(const std::string& t, std::vector<Argument> args,
+  Constraint(absl::string_view t, std::vector<Argument> args,
              bool strong_propag)
       : type(t),
         arguments(std::move(args)),
@@ -263,6 +266,7 @@ struct Annotation {
     IDENTIFIER,
     FUNCTION_CALL,
     INT_VALUE,
+    INT_LIST,
     INTERVAL,
     VAR_REF,
     VAR_REF_ARRAY,
@@ -271,18 +275,19 @@ struct Annotation {
 
   static Annotation Empty();
   static Annotation AnnotationList(std::vector<Annotation> list);
-  static Annotation Identifier(const std::string& id);
-  static Annotation FunctionCallWithArguments(const std::string& id,
+  static Annotation Identifier(absl::string_view id);
+  static Annotation FunctionCallWithArguments(absl::string_view id,
                                               std::vector<Annotation> args);
-  static Annotation FunctionCall(const std::string& id);
+  static Annotation FunctionCall(absl::string_view id);
   static Annotation Interval(int64_t interval_min, int64_t interval_max);
   static Annotation IntegerValue(int64_t value);
+  static Annotation IntegerList(const std::vector<int64_t>& values);
   static Annotation VarRef(Variable* const var);
   static Annotation VarRefArray(std::vector<Variable*> variables);
-  static Annotation String(const std::string& str);
+  static Annotation String(absl::string_view str);
 
   std::string DebugString() const;
-  bool IsFunctionCallWithIdentifier(const std::string& identifier) const {
+  bool IsFunctionCallWithIdentifier(absl::string_view identifier) const {
     return type == FUNCTION_CALL && id == identifier;
   }
   // Copy all the variable references contained in this annotation (and its
@@ -296,6 +301,7 @@ struct Annotation {
   std::string id;
   std::vector<Annotation> annotations;
   std::vector<Variable*> variables;
+  std::vector<int64_t> values;
   std::string string_value;
 };
 
@@ -311,14 +317,14 @@ struct SolutionOutputSpecs {
   };
 
   // Will output: name = <variable value>.
-  static SolutionOutputSpecs SingleVariable(const std::string& name,
+  static SolutionOutputSpecs SingleVariable(absl::string_view name,
                                             Variable* variable,
                                             bool display_as_boolean);
   // Will output (for example):
   //     name = array2d(min1..max1, min2..max2, [list of variable values])
   // for a 2d array (bounds.size() == 2).
   static SolutionOutputSpecs MultiDimensionalArray(
-      const std::string& name, std::vector<Bounds> bounds,
+      absl::string_view name, std::vector<Bounds> bounds,
       std::vector<Variable*> flat_variables, bool display_as_boolean);
   // Empty output.
   static SolutionOutputSpecs VoidOutput();
@@ -336,7 +342,7 @@ struct SolutionOutputSpecs {
 
 class Model {
  public:
-  explicit Model(const std::string& name)
+  explicit Model(absl::string_view name)
       : name_(name), objective_(nullptr), maximize_(true) {}
   ~Model();
 
@@ -344,12 +350,12 @@ class Model {
 
   // The objects returned by AddVariable(), AddConstant(),  and AddConstraint()
   // are owned by the model and will remain live for its lifetime.
-  Variable* AddVariable(const std::string& name, const Domain& domain,
+  Variable* AddVariable(absl::string_view name, const Domain& domain,
                         bool defined);
   Variable* AddConstant(int64_t value);
   Variable* AddFloatConstant(double value);
   // Creates and add a constraint to the model.
-  void AddConstraint(const std::string& id, std::vector<Argument> arguments,
+  void AddConstraint(absl::string_view id, std::vector<Argument> arguments,
                      bool is_domain);
   void AddConstraint(const std::string& id, std::vector<Argument> arguments);
   void AddOutput(SolutionOutputSpecs output);

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,12 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.LinearExprBuilder;
+import com.google.ortools.sat.Literal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.IntStream;
 // [END import]
 
 /** Assignment problem. */
@@ -38,6 +42,9 @@ public class AssignmentSat {
     };
     final int numWorkers = costs.length;
     final int numTasks = costs[0].length;
+
+    final int[] allWorkers = IntStream.range(0, numWorkers).toArray();
+    final int[] allTasks = IntStream.range(0, numTasks).toArray();
     // [END data_model]
 
     // Model
@@ -47,16 +54,10 @@ public class AssignmentSat {
 
     // Variables
     // [START variables]
-    IntVar[][] x = new IntVar[numWorkers][numTasks];
-    // Variables in a 1-dim array.
-    IntVar[] xFlat = new IntVar[numWorkers * numTasks];
-    int[] costsFlat = new int[numWorkers * numTasks];
-    for (int i = 0; i < numWorkers; ++i) {
-      for (int j = 0; j < numTasks; ++j) {
-        x[i][j] = model.newIntVar(0, 1, "");
-        int k = i * numTasks + j;
-        xFlat[k] = x[i][j];
-        costsFlat[k] = costs[i][j];
+    Literal[][] x = new Literal[numWorkers][numTasks];
+    for (int worker : allWorkers) {
+      for (int task : allTasks) {
+        x[worker][task] = model.newBoolVar("x[" + worker + "," + task + "]");
       }
     }
     // [END variables]
@@ -64,27 +65,33 @@ public class AssignmentSat {
     // Constraints
     // [START constraints]
     // Each worker is assigned to at most one task.
-    for (int i = 0; i < numWorkers; ++i) {
-      IntVar[] vars = new IntVar[numTasks];
-      for (int j = 0; j < numTasks; ++j) {
-        vars[j] = x[i][j];
+    for (int worker : allWorkers) {
+      List<Literal> tasks = new ArrayList<>();
+      for (int task : allTasks) {
+        tasks.add(x[worker][task]);
       }
-      model.addLessOrEqual(LinearExpr.sum(vars), 1);
+      model.addAtMostOne(tasks);
     }
+
     // Each task is assigned to exactly one worker.
-    for (int j = 0; j < numTasks; ++j) {
-      // LinearExpr taskSum;
-      IntVar[] vars = new IntVar[numWorkers];
-      for (int i = 0; i < numWorkers; ++i) {
-        vars[i] = x[i][j];
+    for (int task : allTasks) {
+      List<Literal> workers = new ArrayList<>();
+      for (int worker : allWorkers) {
+        workers.add(x[worker][task]);
       }
-      model.addEquality(LinearExpr.sum(vars), 1);
+      model.addExactlyOne(workers);
     }
     // [END constraints]
 
     // Objective
     // [START objective]
-    model.minimize(LinearExpr.scalProd(xFlat, costsFlat));
+    LinearExprBuilder obj = LinearExpr.newBuilder();
+    for (int worker : allWorkers) {
+      for (int task : allTasks) {
+        obj.addTerm(x[worker][task], costs[worker][task]);
+      }
+    }
+    model.minimize(obj);
     // [END objective]
 
     // Solve
@@ -100,7 +107,7 @@ public class AssignmentSat {
       System.out.println("Total cost: " + solver.objectiveValue() + "\n");
       for (int i = 0; i < numWorkers; ++i) {
         for (int j = 0; j < numTasks; ++j) {
-          if (solver.value(x[i][j]) == 1) {
+          if (solver.booleanValue(x[i][j])) {
             System.out.println(
                 "Worker " + i + " assigned to task " + j + ".  Cost: " + costs[i][j]);
           }

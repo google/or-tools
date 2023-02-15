@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,10 +15,9 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
@@ -33,46 +32,50 @@ namespace sat {
 void MagicSquare(int size) {
   CpModelBuilder builder;
 
-  std::vector<std::vector<IntVar> > square(size);
-  std::vector<std::vector<IntVar> > transposed(size);
-  std::vector<IntVar> diag1;
-  std::vector<IntVar> diag2;
+  std::vector<std::vector<IntVar>> square(size);
   std::vector<IntVar> all_variables;
-  Domain domain(1, size * size);
+  const Domain domain(1, size * size);
   for (int i = 0; i < size; ++i) {
     for (int j = 0; j < size; ++j) {
       const IntVar var = builder.NewIntVar(domain);
       square[i].push_back(var);
-      transposed[j].push_back(var);
       all_variables.push_back(var);
-      if (i == j) {
-        diag1.push_back(var);
-      }
-      if (i + j == size) {
-        diag2.push_back(var);
-      }
     }
   }
 
-  // All Diff.
-  for (int i = 0; i < size; ++i) {
-    builder.AddAllDifferent(all_variables);
-  }
+  // All cells take different values.
+  builder.AddAllDifferent(all_variables);
 
-  const int sum = size * (size * size + 1) / 2;
+  // The sum on each row, columns and two main diagonals.
+  const int magic_value = size * (size * size + 1) / 2;
+
   // Sum on rows.
   for (int i = 0; i < size; ++i) {
-    builder.AddEquality(LinearExpr::Sum(square[i]), sum);
+    LinearExpr sum;
+    for (int j = 0; j < size; ++j) {
+      sum += square[i][j];
+    }
+    builder.AddEquality(sum, magic_value);
   }
 
   // Sum on columns.
-  for (int i = 0; i < size; ++i) {
-    builder.AddEquality(LinearExpr::Sum(transposed[i]), sum);
+  for (int j = 0; j < size; ++j) {
+    LinearExpr sum;
+    for (int i = 0; i < size; ++i) {
+      sum += square[i][j];
+    }
+    builder.AddEquality(sum, magic_value);
   }
 
   // Sum on diagonals.
-  builder.AddEquality(LinearExpr::Sum(diag1), sum);
-  builder.AddEquality(LinearExpr::Sum(diag2), sum);
+  LinearExpr diag1_sum;
+  LinearExpr diag2_sum;
+  for (int i = 0; i < size; ++i) {
+    diag1_sum += square[i][i];
+    diag2_sum += square[i][size - 1 - i];
+  }
+  builder.AddEquality(diag1_sum, magic_value);
+  builder.AddEquality(diag2_sum, magic_value);
 
   Model model;
   model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
@@ -99,8 +102,7 @@ void MagicSquare(int size) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::MagicSquare(absl::GetFlag(FLAGS_size));
   return EXIT_SUCCESS;

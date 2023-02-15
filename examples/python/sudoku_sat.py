@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -39,11 +39,11 @@ def solve_sudoku():
 
     # AllDifferent on rows.
     for i in line:
-        model.AddAllDifferent([grid[(i, j)] for j in line])
+        model.AddAllDifferent(grid[(i, j)] for j in line)
 
     # AllDifferent on columns.
     for j in line:
-        model.AddAllDifferent([grid[(i, j)] for i in line])
+        model.AddAllDifferent(grid[(i, j)] for i in line)
 
     # AllDifferent on cells.
     for i in cell:

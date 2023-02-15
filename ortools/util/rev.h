@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 
 namespace operations_research {
@@ -168,10 +167,8 @@ class RevMap : ReversibleInterface {
   void SetLevel(int level) final;
   int Level() const { return first_op_index_of_next_level_.size(); }
 
-  bool ContainsKey(key_type key) const { return gtl::ContainsKey(map_, key); }
-  const mapped_type& FindOrDie(key_type key) const {
-    return gtl::FindOrDie(map_, key);
-  }
+  bool contains(key_type key) const { return map_.contains(key); }
+  const mapped_type& at(key_type key) const { return map_.at(key); }
 
   void EraseOrDie(key_type key);
   void Set(key_type key, mapped_type value);  // Adds or overwrites.

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,10 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
@@ -820,6 +824,12 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   // RHS (right-hand-side) section.
   current_mps_column_ = 0;
   std::string rhs_section;
+  // Follow Gurobi's MPS format for objective offsets.
+  // See https://www.gurobi.com/documentation/9.1/refman/mps_format.html
+  if (proto_.objective_offset() != 0) {
+    AppendMpsTermWithContext("RHS", "COST", -proto_.objective_offset(),
+                             &rhs_section);
+  }
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     const double lb = ct_proto.lower_bound();

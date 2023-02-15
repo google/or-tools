@@ -29,7 +29,11 @@ public class Volsay
      */
     private static void Solve()
     {
-        Solver solver = new Solver("Volsay", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+        Solver solver = Solver.CreateSolver("CLP");
+        if (solver is null)
+        {
+            return;
+        }
 
         //
         // Variables

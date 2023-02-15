@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -72,8 +72,8 @@ def step_function_sample_sat():
     model.Add(x == 7).OnlyEnforceIf(b3)
     model.Add(expr == 3).OnlyEnforceIf(b3)
 
-    # At least one bi is true. (we could use a sum == 1).
-    model.AddBoolOr([b0, b2, b3])
+    # At least one bi is true. (we could use an exactly one constraint).
+    model.AddBoolOr(b0, b2, b3)
 
     # Search for x values in increasing order.
     model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,

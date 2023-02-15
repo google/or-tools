@@ -31,14 +31,12 @@ def main(sol='CBC'):
 
   print('Solver: ', sol)
 
-  # using GLPK
   if sol == 'GLPK':
-    solver = pywraplp.Solver('CoinsGridGLPK',
-                             pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('GLPK')
   else:
-    # Using CBC
-    solver = pywraplp.Solver('CoinsGridCBC',
-                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('CBC')
+  if not solver:
+    return
 
   #
   # data

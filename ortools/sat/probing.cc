@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,19 +13,28 @@
 
 #include "ortools/sat/probing.h"
 
+#include <algorithm>
 #include <cstdint>
-#include <set>
+#include <utility>
+#include <vector>
 
-#include "ortools/base/iterator_adaptors.h"
+#include "absl/container/inlined_vector.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -36,6 +45,7 @@ Prober::Prober(Model* model)
       assignment_(model->GetOrCreate<SatSolver>()->Assignment()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
+      product_detector_(model->GetOrCreate<ProductDetector>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
@@ -43,8 +53,10 @@ Prober::Prober(Model* model)
 
 bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
   const int num_variables = sat_solver_->NumVariables();
+  const VariablesAssignment& assignment = sat_solver_->Assignment();
   std::vector<BooleanVariable> bool_vars;
   for (BooleanVariable b(0); b < num_variables; ++b) {
+    if (assignment.VariableIsAssigned(b)) continue;
     const Literal literal(b, true);
     if (implication_graph_->RepresentativeOf(literal) != literal) {
       continue;
@@ -65,10 +77,14 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
     sat_solver_->AdvanceDeterministicTime(time_limit_);
 
-    if (sat_solver_->IsModelUnsat()) return false;
+    if (sat_solver_->ModelIsUnsat()) return false;
     if (sat_solver_->CurrentDecisionLevel() == 0) continue;
+    if (trail_.Index() > saved_index) {
+      if (callback_ != nullptr) callback_(decision);
+    }
 
     implied_bounds_->ProcessIntegerTrail(decision);
+    product_detector_->ProcessTrailAtLevelOne();
     integer_trail_->AppendNewBounds(&new_integer_bounds_);
     for (int i = saved_index + 1; i < trail_.Index(); ++i) {
       const Literal l = trail_[i];
@@ -179,11 +195,6 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
 }
 
 bool Prober::ProbeOneVariable(BooleanVariable b) {
-  // Reset statistics.
-  num_new_binary_ = 0;
-  num_new_holes_ = 0;
-  num_new_integer_bounds_ = 0;
-
   // Resize the propagated sparse bitset.
   const int num_variables = sat_solver_->NumVariables();
   propagated_.ClearAndResize(LiteralIndex(2 * num_variables));
@@ -192,7 +203,13 @@ bool Prober::ProbeOneVariable(BooleanVariable b) {
   sat_solver_->SetAssumptionLevel(0);
   if (!sat_solver_->RestoreSolverToAssumptionLevel()) return false;
 
-  return ProbeOneVariableInternal(b);
+  const int initial_num_fixed = sat_solver_->LiteralTrail().Index();
+  if (!ProbeOneVariableInternal(b)) return false;
+
+  // Statistics
+  const int num_fixed = sat_solver_->LiteralTrail().Index();
+  num_new_literals_fixed_ += num_fixed - initial_num_fixed;
+  return true;
 }
 
 bool Prober::ProbeBooleanVariables(
@@ -205,6 +222,7 @@ bool Prober::ProbeBooleanVariables(
   num_new_binary_ = 0;
   num_new_holes_ = 0;
   num_new_integer_bounds_ = 0;
+  num_new_literals_fixed_ = 0;
 
   // Resize the propagated sparse bitset.
   const int num_variables = sat_solver_->NumVariables();
@@ -243,19 +261,22 @@ bool Prober::ProbeBooleanVariables(
     }
   }
 
+  // Update stats.
+  const int num_fixed = sat_solver_->LiteralTrail().Index();
+  num_new_literals_fixed_ = num_fixed - initial_num_fixed;
+
   // Display stats.
   if (logger_->LoggingIsEnabled()) {
     const double time_diff =
         time_limit_->GetElapsedDeterministicTime() - initial_deterministic_time;
-    const int num_fixed = sat_solver_->LiteralTrail().Index();
-    const int num_newly_fixed = num_fixed - initial_num_fixed;
     SOLVER_LOG(logger_, "[Probing] deterministic_time: ", time_diff,
                " (limit: ", deterministic_time_limit,
                ") wall_time: ", wall_timer.Get(), " (",
                (limit_reached ? "Aborted " : ""), num_probed, "/",
                bool_vars.size(), ")");
-    if (num_newly_fixed > 0) {
-      SOLVER_LOG(logger_, "[Probing]  - new fixed Boolean: ", num_newly_fixed,
+    if (num_new_literals_fixed_ > 0) {
+      SOLVER_LOG(logger_,
+                 "[Probing]  - new fixed Boolean: ", num_new_literals_fixed_,
                  " (", num_fixed, "/", sat_solver_->NumVariables(), ")");
     }
     if (num_new_holes_ > 0) {
@@ -552,7 +573,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
             Literal(next_decision));
     const int new_level = sat_solver->CurrentDecisionLevel();
     sat_solver->AdvanceDeterministicTime(time_limit);
-    if (sat_solver->IsModelUnsat()) return false;
+    if (sat_solver->ModelIsUnsat()) return false;
     if (new_level <= level) {
       ++num_conflicts;
 

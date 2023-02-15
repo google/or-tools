@@ -10,4 +10,8 @@ BasedOnStyle:  Google
 ---
 Language:      CSharp
 BasedOnStyle:  Microsoft
+NamespaceIndentation: None
+---
+Language:       Proto
+BasedOnStyle:  Google
 ...

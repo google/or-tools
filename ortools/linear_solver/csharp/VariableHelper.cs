@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,209 +13,209 @@
 
 namespace Google.OrTools.LinearSolver
 {
-    using System;
-    using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 
-    // Patch the MPVariable class to support the natural language API.
-    public partial class Variable
+// Patch the MPVariable class to support the natural language API.
+public partial class Variable
+{
+    public static LinearExpr operator +(Variable a, double v)
     {
-        public static LinearExpr operator +(Variable a, double v)
-        {
-            return new VarWrapper(a) + v;
-        }
-
-        public static LinearExpr operator +(double v, Variable a)
-        {
-            return a + v;
-        }
-
-        public static LinearExpr operator +(Variable a, LinearExpr b)
-        {
-            return new VarWrapper(a) + b;
-        }
-
-        public static LinearExpr operator +(Variable a, Variable b)
-        {
-            return new VarWrapper(a) + new VarWrapper(b);
-        }
-
-        public static LinearExpr operator +(LinearExpr a, Variable b)
-        {
-            return a + new VarWrapper(b);
-        }
-
-        public static LinearExpr operator -(Variable a, double v)
-        {
-            return new VarWrapper(a) - v;
-        }
-
-        public static LinearExpr operator -(double v, Variable a)
-        {
-            return v - new VarWrapper(a);
-        }
-
-        public static LinearExpr operator -(Variable a, LinearExpr b)
-        {
-            return new VarWrapper(a) - b;
-        }
-
-        public static LinearExpr operator -(LinearExpr a, Variable b)
-        {
-            return a - new VarWrapper(b);
-        }
-
-        public static LinearExpr operator -(Variable a, Variable b)
-        {
-            return new VarWrapper(a) - new VarWrapper(b);
-        }
-
-        public static LinearExpr operator -(Variable a)
-        {
-            return -new VarWrapper(a);
-        }
-
-        public static LinearExpr operator *(Variable a, double v)
-        {
-            return new VarWrapper(a) * v;
-        }
-
-        public static LinearExpr operator /(Variable a, double v)
-        {
-            return new VarWrapper(a) / v;
-        }
-
-        public static LinearExpr operator *(double v, Variable a)
-        {
-            return v * new VarWrapper(a);
-        }
-
-        public static RangeConstraint operator ==(Variable a, double v)
-        {
-            return new VarWrapper(a) == v;
-        }
-
-        public static RangeConstraint operator ==(double v, Variable a)
-        {
-            return v == new VarWrapper(a);
-        }
-
-        public static RangeConstraint operator !=(Variable a, double v)
-        {
-            return new VarWrapper(a) != v;
-        }
-
-        public static RangeConstraint operator !=(double v, Variable a)
-        {
-            return new VarWrapper(a) != v;
-        }
-
-        public static Equality operator ==(Variable a, LinearExpr b)
-        {
-            return new VarWrapper(a) == b;
-        }
-
-        public static Equality operator ==(LinearExpr a, Variable b)
-        {
-            return a == new VarWrapper(b);
-        }
-
-        public static VarEquality operator ==(Variable a, Variable b)
-        {
-            return new VarEquality(a, b, true);
-        }
-
-        public static Equality operator !=(Variable a, LinearExpr b)
-        {
-            return new VarWrapper(a) != b;
-        }
-
-        public static Equality operator !=(LinearExpr a, Variable b)
-        {
-            return a != new VarWrapper(b);
-        }
-
-        public static VarEquality operator !=(Variable a, Variable b)
-        {
-            return new VarEquality(a, b, false);
-        }
-
-        public static RangeConstraint operator <=(Variable a, double v)
-        {
-            return new VarWrapper(a) <= v;
-        }
-
-        public static RangeConstraint operator >=(Variable a, double v)
-        {
-            return new VarWrapper(a) >= v;
-        }
-
-        public static RangeConstraint operator <=(double v, Variable a)
-        {
-            return new VarWrapper(a) >= v;
-        }
-
-        public static RangeConstraint operator >=(double v, Variable a)
-        {
-            return new VarWrapper(a) <= v;
-        }
-
-        public static RangeConstraint operator <=(Variable a, LinearExpr b)
-        {
-            return new VarWrapper(a) <= b;
-        }
-
-        public static RangeConstraint operator >=(Variable a, LinearExpr b)
-        {
-            return new VarWrapper(a) >= b;
-        }
-
-        public static RangeConstraint operator <=(Variable a, Variable b)
-        {
-            return new VarWrapper(a) <= new VarWrapper(b);
-        }
-
-        public static RangeConstraint operator >=(Variable a, Variable b)
-        {
-            return new VarWrapper(a) >= new VarWrapper(b);
-        }
-
-        public static RangeConstraint operator <=(LinearExpr a, Variable b)
-        {
-            return a <= new VarWrapper(b);
-        }
-
-        public static RangeConstraint operator >=(LinearExpr a, Variable b)
-        {
-            return a >= new VarWrapper(b);
-        }
+        return new VarWrapper(a) + v;
     }
 
-    // TODO(user): Try to move this code back to the .swig with @define macros.
-    public partial class MPVariableVector : IDisposable,
-                                            System.Collections.IEnumerable
+    public static LinearExpr operator +(double v, Variable a)
+    {
+        return a + v;
+    }
+
+    public static LinearExpr operator +(Variable a, LinearExpr b)
+    {
+        return new VarWrapper(a) + b;
+    }
+
+    public static LinearExpr operator +(Variable a, Variable b)
+    {
+        return new VarWrapper(a) + new VarWrapper(b);
+    }
+
+    public static LinearExpr operator +(LinearExpr a, Variable b)
+    {
+        return a + new VarWrapper(b);
+    }
+
+    public static LinearExpr operator -(Variable a, double v)
+    {
+        return new VarWrapper(a) - v;
+    }
+
+    public static LinearExpr operator -(double v, Variable a)
+    {
+        return v - new VarWrapper(a);
+    }
+
+    public static LinearExpr operator -(Variable a, LinearExpr b)
+    {
+        return new VarWrapper(a) - b;
+    }
+
+    public static LinearExpr operator -(LinearExpr a, Variable b)
+    {
+        return a - new VarWrapper(b);
+    }
+
+    public static LinearExpr operator -(Variable a, Variable b)
+    {
+        return new VarWrapper(a) - new VarWrapper(b);
+    }
+
+    public static LinearExpr operator -(Variable a)
+    {
+        return -new VarWrapper(a);
+    }
+
+    public static LinearExpr operator *(Variable a, double v)
+    {
+        return new VarWrapper(a) * v;
+    }
+
+    public static LinearExpr operator /(Variable a, double v)
+    {
+        return new VarWrapper(a) / v;
+    }
+
+    public static LinearExpr operator *(double v, Variable a)
+    {
+        return v * new VarWrapper(a);
+    }
+
+    public static RangeConstraint operator ==(Variable a, double v)
+    {
+        return new VarWrapper(a) == v;
+    }
+
+    public static RangeConstraint operator ==(double v, Variable a)
+    {
+        return v == new VarWrapper(a);
+    }
+
+    public static RangeConstraint operator !=(Variable a, double v)
+    {
+        return new VarWrapper(a) != v;
+    }
+
+    public static RangeConstraint operator !=(double v, Variable a)
+    {
+        return new VarWrapper(a) != v;
+    }
+
+    public static Equality operator ==(Variable a, LinearExpr b)
+    {
+        return new VarWrapper(a) == b;
+    }
+
+    public static Equality operator ==(LinearExpr a, Variable b)
+    {
+        return a == new VarWrapper(b);
+    }
+
+    public static VarEquality operator ==(Variable a, Variable b)
+    {
+        return new VarEquality(a, b, true);
+    }
+
+    public static Equality operator !=(Variable a, LinearExpr b)
+    {
+        return new VarWrapper(a) != b;
+    }
+
+    public static Equality operator !=(LinearExpr a, Variable b)
+    {
+        return a != new VarWrapper(b);
+    }
+
+    public static VarEquality operator !=(Variable a, Variable b)
+    {
+        return new VarEquality(a, b, false);
+    }
+
+    public static RangeConstraint operator <=(Variable a, double v)
+    {
+        return new VarWrapper(a) <= v;
+    }
+
+    public static RangeConstraint operator >=(Variable a, double v)
+    {
+        return new VarWrapper(a) >= v;
+    }
+
+    public static RangeConstraint operator <=(double v, Variable a)
+    {
+        return new VarWrapper(a) >= v;
+    }
+
+    public static RangeConstraint operator >=(double v, Variable a)
+    {
+        return new VarWrapper(a) <= v;
+    }
+
+    public static RangeConstraint operator <=(Variable a, LinearExpr b)
+    {
+        return new VarWrapper(a) <= b;
+    }
+
+    public static RangeConstraint operator >=(Variable a, LinearExpr b)
+    {
+        return new VarWrapper(a) >= b;
+    }
+
+    public static RangeConstraint operator <=(Variable a, Variable b)
+    {
+        return new VarWrapper(a) <= new VarWrapper(b);
+    }
+
+    public static RangeConstraint operator >=(Variable a, Variable b)
+    {
+        return new VarWrapper(a) >= new VarWrapper(b);
+    }
+
+    public static RangeConstraint operator <=(LinearExpr a, Variable b)
+    {
+        return a <= new VarWrapper(b);
+    }
+
+    public static RangeConstraint operator >=(LinearExpr a, Variable b)
+    {
+        return a >= new VarWrapper(b);
+    }
+}
+
+// TODO(user): Try to move this code back to the .i with @define macros.
+public partial class MPVariableVector : IDisposable,
+                                        System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
-        ,
-                                            System.Collections.Generic.IList<Variable>
+    ,
+                                        System.Collections.Generic.IList<Variable>
 #endif
+{
+    // cast from C# MPVariable array
+    public static implicit operator MPVariableVector(Variable[] inVal)
     {
-        // cast from C# MPVariable array
-        public static implicit operator MPVariableVector(Variable[] inVal)
+        var outVal = new MPVariableVector();
+        foreach (Variable element in inVal)
         {
-            var outVal = new MPVariableVector();
-            foreach (Variable element in inVal)
-            {
-                outVal.Add(element);
-            }
-            return outVal;
+            outVal.Add(element);
         }
-
-        // cast to C# MPVariable array
-        public static implicit operator Variable[](MPVariableVector inVal)
-        {
-            var outVal = new Variable[inVal.Count];
-            inVal.CopyTo(outVal);
-            return outVal;
-        }
+        return outVal;
     }
+
+    // cast to C# MPVariable array
+    public static implicit operator Variable[](MPVariableVector inVal)
+    {
+        var outVal = new Variable[inVal.Count];
+        inVal.CopyTo(outVal);
+        return outVal;
+    }
+}
 
 } // namespace Google.OrTools.LinearSolver

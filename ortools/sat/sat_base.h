@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,29 +20,31 @@
 #include <cstdint>
 #include <deque>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
 
 // Index of a variable (>= 0).
-DEFINE_INT_TYPE(BooleanVariable, int);
+DEFINE_STRONG_INDEX_TYPE(BooleanVariable);
 const BooleanVariable kNoBooleanVariable(-1);
 
 // Index of a literal (>= 0), see Literal below.
-DEFINE_INT_TYPE(LiteralIndex, int);
+DEFINE_STRONG_INDEX_TYPE(LiteralIndex);
 const LiteralIndex kNoLiteralIndex(-1);
 
 // Special values used in some API to indicate a literal that is always true
@@ -113,9 +115,17 @@ inline std::ostream& operator<<(std::ostream& os, Literal literal) {
 
 inline std::ostream& operator<<(std::ostream& os,
                                 absl::Span<const Literal> literals) {
+  os << "[";
+  bool first = true;
   for (const Literal literal : literals) {
-    os << literal.DebugString() << ",";
+    if (first) {
+      first = false;
+    } else {
+      os << ",";
+    }
+    os << literal.DebugString();
   }
+  os << "]";
   return os;
 }
 
@@ -234,8 +244,6 @@ struct AssignmentType {
 // and the information of each assignment.
 class Trail {
  public:
-  explicit Trail(Model* model) : Trail() {}
-
   Trail() {
     current_info_.trail_index = 0;
     current_info_.level = 0;
@@ -378,6 +386,11 @@ class Trail {
   int NumVariables() const { return trail_.size(); }
   int64_t NumberOfEnqueues() const { return num_untrailed_enqueues_ + Index(); }
   int Index() const { return current_info_.trail_index; }
+  // This accessor can return trail_.end(). operator[] cannot. This allows
+  // normal std:vector operations, such as assign(begin, end).
+  const std::vector<Literal>::const_iterator IteratorAt(int index) const {
+    return trail_.begin() + index;
+  }
   const Literal& operator[](int index) const { return trail_[index]; }
   const VariablesAssignment& Assignment() const { return assignment_; }
   const AssignmentInfo& Info(BooleanVariable var) const {
@@ -483,7 +496,7 @@ class SatPropagator {
   // on the trail and were propagated by this class.
   //
   // The interpretation is that because all the literals of a reason were
-  // assigned to false, we could deduce the assignement of the given variable.
+  // assigned to false, we could deduce the assignment of the given variable.
   //
   // The returned Span has to be valid until the literal is untrailed. A client
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
@@ -502,6 +515,12 @@ class SatPropagator {
   bool PropagationIsDone(const Trail& trail) const {
     return propagation_trail_index_ == trail.Index();
   }
+
+  // Small optimization: If a propagator does not contain any "constraints"
+  // there is no point calling propagate on it. Before each propagation, the
+  // solver will checks for emptiness, and construct an optimized list of
+  // propagator before looping many time over the list.
+  virtual bool IsEmpty() const { return false; }
 
  protected:
   const std::string name_;

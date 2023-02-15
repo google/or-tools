@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -405,7 +405,7 @@ namespace operations_research {
 // Methods:
 %rename (Add) Solver::AddConstraint;
 // Rename NewSearch and EndSearch to add pinning. See the overrides of
-// NewSearch in ../../open_source/csharp/constraint_solver/SolverHelper.cs
+// NewSearch in ../../csharp/constraint_solver/SolverHelper.cs
 %rename (NewSearchAux) Solver::NewSearch;
 %rename (EndSearchAux) Solver::EndSearch;
 
@@ -710,12 +710,6 @@ namespace operations_research {
 %unignore SearchLog::Maintain;
 %unignore SearchLog::OutputDecision;
 
-// IntVarLocalSearchHandler
-%ignore IntVarLocalSearchHandler;
-
-// SequenceVarLocalSearchHandler
-%ignore SequenceVarLocalSearchHandler;
-
 // LocalSearchOperator
 %feature("director") LocalSearchOperator;
 %unignore LocalSearchOperator;
@@ -723,26 +717,6 @@ namespace operations_research {
 %unignore LocalSearchOperator::MakeNextNeighbor;
 %unignore LocalSearchOperator::Reset;
 %unignore LocalSearchOperator::Start;
-
-// VarLocalSearchOperator<>
-%unignore VarLocalSearchOperator;
-// Ignored:
-%ignore VarLocalSearchOperator::Start;
-%ignore VarLocalSearchOperator::ApplyChanges;
-%ignore VarLocalSearchOperator::RevertChanges;
-%ignore VarLocalSearchOperator::SkipUnchanged;
-// Methods:
-%unignore VarLocalSearchOperator::Size;
-%unignore VarLocalSearchOperator::Value;
-%unignore VarLocalSearchOperator::IsIncremental;
-%unignore VarLocalSearchOperator::OnStart;
-%unignore VarLocalSearchOperator::OldValue;
-%unignore VarLocalSearchOperator::SetValue;
-%unignore VarLocalSearchOperator::Var;
-%unignore VarLocalSearchOperator::Activated;
-%unignore VarLocalSearchOperator::Activate;
-%unignore VarLocalSearchOperator::Deactivate;
-%unignore VarLocalSearchOperator::AddVars;
 
 // IntVarLocalSearchOperator
 %feature("director") IntVarLocalSearchOperator;
@@ -781,17 +755,6 @@ namespace operations_research {
 %unignore ChangeValue;
 // Methods:
 %unignore ChangeValue::ModifyValue;
-
-// SequenceVarLocalSearchOperator
-%feature("director") SequenceVarLocalSearchOperator;
-%unignore SequenceVarLocalSearchOperator;
-// Ignored:
-%ignore SequenceVarLocalSearchOperator::SetBackwardSequence;
-%ignore SequenceVarLocalSearchOperator::SetForwardSequence;
-// Methods:
-%unignore SequenceVarLocalSearchOperator::OldSequence;
-%unignore SequenceVarLocalSearchOperator::Sequence;
-%unignore SequenceVarLocalSearchOperator::Start;
 
 // PathOperator
 %feature("director") PathOperator;
@@ -966,7 +929,7 @@ PROTO2_RETURN(operations_research::CpModel,
 
 namespace operations_research {
 // Globals
-// IMPORTANT(corentinl): Global will be placed in operations_research_constraint_solver.cs
+// IMPORTANT(user): Global will be placed in operations_research_constraint_solver.cs
 // Ignored:
 %ignore FillValues;
 }  // namespace operations_research

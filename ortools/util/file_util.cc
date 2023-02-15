@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 #include "ortools/util/file_util.h"
 
+#include <string>
+
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/descriptor.h"
@@ -22,12 +24,12 @@
 #include "google/protobuf/util/json_util.h"
 #include "ortools/base/file.h"
 #include "ortools/base/gzipstring.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {
 
-using ::google::protobuf::TextFormat;
 using google::protobuf::util::JsonParseOptions;
 using google::protobuf::util::JsonStringToMessage;
 
@@ -85,7 +87,11 @@ bool ReadFileToProto(absl::string_view filename,
     VLOG(1) << "ReadFileToProto(): input is a text proto";
     return true;
   }
-  if (JsonStringToMessage(data, proto, JsonParseOptions()).ok()) {
+  // We use `auto` here since protobuf does not use absl::Status.
+  const auto status = JsonStringToMessage(data, proto, JsonParseOptions());
+  if (!status.ok()) {
+    VLOG(1) << status;
+  } else {
     // NOTE(user): We protect against the JSON proto3 parser being very lenient
     // and easily accepting any JSON as a valid JSON for our proto: if the
     // parsed proto's size is too small compared to the JSON, we probably parsed

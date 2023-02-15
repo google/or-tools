@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,30 +13,30 @@
 
 #include "ortools/math_opt/validators/callback_validator.h"
 
-#include <cmath>
-#include <cstdint>
+#include <algorithm>
 #include <limits>
 #include <string>
+#include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "google/protobuf/duration.pb.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
+#include "absl/strings/str_join.h"
+#include "google/protobuf/duration.pb.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/math_opt/validators/ids_validator.h"
 #include "ortools/math_opt/validators/model_parameters_validator.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
 #include "ortools/math_opt/validators/solution_validator.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
 #include "ortools/port/proto_utils.h"
-#include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -55,7 +55,7 @@ absl::Status IsEventRegistered(
     }
   }
   return absl::InvalidArgumentError(absl::StrCat(
-      "Event ", ProtoEnumToString(event),
+      "event ", ProtoEnumToString(event),
       " not part of the registered_events in callback_registration"));
 }
 
@@ -67,7 +67,7 @@ absl::Status ValidateGeneratedLinearConstraint(
   RETURN_IF_ERROR(CheckIdsAndValues(
       coefficients,
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
-      << "Invalid linear_constraint coefficients";
+      << "invalid linear_constraint coefficients";
   RETURN_IF_ERROR(CheckIdsSubset(coefficients.ids(), model_summary.variables,
                                  "cut variables", "model IDs"));
   RETURN_IF_ERROR(CheckScalar(linear_constraint.lower_bound(),
@@ -79,43 +79,73 @@ absl::Status ValidateGeneratedLinearConstraint(
   if (linear_constraint.lower_bound() == -kInf &&
       linear_constraint.upper_bound() == kInf) {
     return absl::InvalidArgumentError(
-        "Invalid GeneratedLinearConstraint, bounds [-inf,inf]");
+        "invalid GeneratedLinearConstraint, bounds [-inf,inf]");
   }
   if (linear_constraint.is_lazy() && !add_lazy_constraints) {
     return absl::InvalidArgumentError(
-        "Invalid GeneratedLinearConstraint with lazy attribute set to true, "
+        "invalid GeneratedLinearConstraint with lazy attribute set to true, "
         "adding lazy constraints requires "
-        "CallbackRegistrationProto.add_lazy_constraints=true.");
+        "CallbackRegistrationProto.add_lazy_constraints=true");
   }
   if (!linear_constraint.is_lazy() && !add_cuts) {
     return absl::InvalidArgumentError(
-        "Invalid GeneratedLinearConstraint with lazy attribute set to false, "
-        "adding cuts requires CallbackRegistrationProto.add_cuts=true.");
+        "invalid GeneratedLinearConstraint with lazy attribute set to false, "
+        "adding cuts requires CallbackRegistrationProto.add_cuts=true");
   }
   return absl::OkStatus();
 }
 
+template <typename T>
+struct ProtoEnumFormatter {
+  void operator()(std::string* const out, const T value) {
+    out->append(ProtoEnumToString(value));
+  }
+};
+
 }  // namespace
+
 absl::Status ValidateCallbackRegistration(
     const CallbackRegistrationProto& callback_registration,
     const ModelSummary& model_summary) {
   RETURN_IF_ERROR(ValidateSparseVectorFilter(
       callback_registration.mip_solution_filter(), model_summary.variables))
-      << "Invalid CallbackRegistrationProto.mip_solution_filter";
+      << "invalid CallbackRegistrationProto.mip_solution_filter";
   RETURN_IF_ERROR(ValidateSparseVectorFilter(
       callback_registration.mip_node_filter(), model_summary.variables))
-      << "Invalid CallbackRegistrationProto.mip_node_filter";
+      << "invalid CallbackRegistrationProto.mip_node_filter";
   // Unfortunatelly the range iterator return ints and not CallbackEventProtos.
   const int num_events = callback_registration.request_registration_size();
+  bool can_add_lazy_constraints = false;
+  bool can_add_cuts = false;
   for (int k = 0; k < num_events; ++k) {
     const CallbackEventProto requested_event =
         callback_registration.request_registration(k);
     if (requested_event == CALLBACK_EVENT_UNSPECIFIED ||
         !CallbackEventProto_IsValid(requested_event)) {
       return absl::InvalidArgumentError(absl::StrCat(
-          "Invalid event ", requested_event, " can not be registered"));
+          "invalid event ", requested_event, " can not be registered"));
+    }
+    if (requested_event == CALLBACK_EVENT_MIP_NODE) {
+      can_add_lazy_constraints = true;
+      can_add_cuts = true;
+    }
+    if (requested_event == CALLBACK_EVENT_MIP_SOLUTION) {
+      can_add_lazy_constraints = true;
     }
   }
+  if (callback_registration.add_cuts() && !can_add_cuts) {
+    return absl::InvalidArgumentError(
+        "can only add cuts at event CALLBACK_EVENT_MIP_NODE but this event was "
+        "not requested");
+  }
+  if (callback_registration.add_lazy_constraints() &&
+      !can_add_lazy_constraints) {
+    return absl::InvalidArgumentError(
+        "can only add lazy constraints at events CALLBACK_EVENT_MIP_NODE and "
+        "CALLBACK_EVENT_MIP_SOLUTION but neither of these events were "
+        "requested");
+  }
+
   return absl::OkStatus();
 }
 
@@ -125,20 +155,14 @@ absl::Status ValidateCallbackDataProto(
     const ModelSummary& model_summary) {
   const CallbackEventProto event = cb_data.event();
   RETURN_IF_ERROR(IsEventRegistered(event, callback_registration))
-      << "Invalid CallbackDataProto.event for given CallbackRegistrationProto";
+      << "invalid CallbackDataProto.event for given CallbackRegistrationProto";
 
-  if (!cb_data.messages().empty() && event != CALLBACK_EVENT_MESSAGE) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Can't provide message(s) for event ", event, " (",
-                     ProtoEnumToString(event), ")"));
-  }
-
-  const bool has_primal_solution = cb_data.has_primal_solution();
+  const bool has_primal_solution = cb_data.has_primal_solution_vector();
   if (has_primal_solution && event != CALLBACK_EVENT_MIP_SOLUTION &&
       event != CALLBACK_EVENT_MIP_NODE) {
     return absl::InvalidArgumentError(
-        absl::StrCat("Can't provide primal_solution for event ", event, " (",
-                     ProtoEnumToString(event), ")"));
+        absl::StrCat("can't provide primal_solution_vector for event ", event,
+                     " (", ProtoEnumToString(event), ")"));
   }
 
 #ifdef RETURN_IF_SCALAR
@@ -203,31 +227,13 @@ absl::Status ValidateCallbackDataProto(
             event == CALLBACK_EVENT_MIP_NODE
                 ? callback_registration.mip_node_filter()
                 : callback_registration.mip_solution_filter();
-        RETURN_IF_ERROR(ValidatePrimalSolution(cb_data.primal_solution(),
-                                               filter, model_summary))
-            << "Invalid CallbackDataProto.primal_solution";
+        RETURN_IF_ERROR(ValidatePrimalSolutionVector(
+            cb_data.primal_solution_vector(), filter, model_summary))
+            << "invalid CallbackDataProto.primal_solution_vector";
       } else if (event == CALLBACK_EVENT_MIP_SOLUTION) {
         return absl::InvalidArgumentError(
-            absl::StrCat("Must provide primal_solution for event ", event, " (",
-                         ProtoEnumToString(event), ")"));
-      }
-      break;
-    }
-
-    case CALLBACK_EVENT_MESSAGE: {
-      if (!!cb_data.messages().empty()) {
-        return absl::InvalidArgumentError(
-            absl::StrCat("Invalid CallbackDataProto.messages, must provide "
-                         "message(s) for event ",
+            absl::StrCat("must provide primal_solution_vector for event ",
                          event, " (", ProtoEnumToString(event), ")"));
-      }
-      for (absl::string_view message : cb_data.messages()) {
-        // TODO(b/184047243): prefer StrContains on absl version bump
-        if (message.find('\n') != message.npos) {
-          return absl::InvalidArgumentError(
-              absl::StrCat("Invalid CallbackDataProto.messages[], message '",
-                           message, "' contains a new line character '\\n'"));
-        }
       }
       break;
     }
@@ -262,7 +268,7 @@ absl::Status ValidateCallbackResultProto(
     if (callback_event != CALLBACK_EVENT_MIP_NODE &&
         callback_event != CALLBACK_EVENT_MIP_SOLUTION) {
       return absl::InvalidArgumentError(absl::StrCat(
-          "Invalid CallbackResultProto, can't return cuts for callback_event ",
+          "invalid CallbackResultProto, can't return cuts for callback_event ",
           callback_event, "(", ProtoEnumToString(callback_event), ")"));
     }
     for (const CallbackResultProto::GeneratedLinearConstraint& cut :
@@ -272,22 +278,46 @@ absl::Status ValidateCallbackResultProto(
           callback_registration.add_lazy_constraints(), model_summary));
     }
   }
-  if (!callback_result.suggested_solution().empty()) {
+  if (!callback_result.suggested_solutions().empty()) {
     if (callback_event != CALLBACK_EVENT_MIP_NODE) {
       return absl::InvalidArgumentError(absl::StrCat(
-          "Invalid CallbackResultProto, can't return suggested solutions for "
+          "invalid CallbackResultProto, can't return suggested solutions for "
           "callback_event ",
           callback_event, "(", ProtoEnumToString(callback_event), ")"));
     }
-    for (const PrimalSolutionProto& primal_solution :
-         callback_result.suggested_solution()) {
-      RETURN_IF_ERROR(ValidatePrimalSolution(
-          primal_solution, SparseVectorFilterProto(), model_summary))
-          << "Invalid CallbackResultProto.suggested_solution";
+    for (const SparseDoubleVectorProto& primal_solution_vector :
+         callback_result.suggested_solutions()) {
+      RETURN_IF_ERROR(ValidatePrimalSolutionVector(
+          primal_solution_vector, SparseVectorFilterProto(), model_summary))
+          << "invalid CallbackResultProto.suggested_solutions";
     }
   }
 
   return absl::OkStatus();
+}
+
+absl::Status CheckRegisteredCallbackEvents(
+    const CallbackRegistrationProto& registration,
+    const absl::flat_hash_set<CallbackEventProto>& supported_events) {
+  std::vector<CallbackEventProto> unsupported_events;
+  for (const CallbackEventProto event : EventSet(registration)) {
+    if (!supported_events.contains(event)) {
+      unsupported_events.push_back(event);
+    }
+  }
+
+  if (unsupported_events.empty()) {
+    return absl::OkStatus();
+  }
+
+  std::sort(unsupported_events.begin(), unsupported_events.end());
+
+  const bool plural = unsupported_events.size() >= 2;
+  return absl::InvalidArgumentError(
+      absl::StrCat("event", (plural ? "s { " : " "),
+                   absl::StrJoin(unsupported_events, ", ",
+                                 ProtoEnumFormatter<CallbackEventProto>()),
+                   (plural ? " } are" : " is"), " not supported"));
 }
 
 }  // namespace math_opt

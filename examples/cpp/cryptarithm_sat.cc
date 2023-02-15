@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -50,7 +50,7 @@ void SendMoreMoney() {
   cp_model.AddEquality(c0, m);
 
   // Column 1:
-  cp_model.AddEquality(c1 + s + m + o, 10 * c0);
+  cp_model.AddEquality(c1 + s + m, o + 10 * c0);
 
   // Column 2:
   cp_model.AddEquality(c2 + e + o, n + 10 * c1);

@@ -6,25 +6,31 @@ OR-Tools is located at https://developers.google.com/optimization
 
 These modules have been tested under:
 
-  - Ubuntu 16.04, 18.04 and 20.04 (64-bit).
-  - macOS 12 Monterey (64 bit).
-  - Microsoft Windows with Visual Studio Community 2019 (64-bit)
+  - CentOS 8 (64 bit).
+  - Debian 11 (64 bit).
+  - Fedora 33 and up (64 bit).
+  - Ubuntu 18.04 LTS and up (64 bit).
+  - MacOS 12.5 Monterey (64 bit).
+  - Microsoft Windows with Visual Studio 2022 (64-bit)
 
 Upon decompressing the archive, you will get the following structure:
 
 ```
 or-tools/
-  LICENSE-2.0.txt <- Apache 2.0 License
-  README.md       <- This file
-  Makefile        <- Main Makefile for C++,Java and .Net
-  examples/       <- C++, Java and .Net examples
-  include/        <- all include files
-  objs/           <- directory containing C++ compiled object files (*.o)
-  classes/        <- directory containing Java class files.
-  packages/       <- directory containing .Net nuget packages.
-  lib/            <- directory containing libraries and jar files.
-  bin/            <- directory containing executable files
+  [LICENSE](LICENSE)   <- Apache 2.0 License
+  [README.md](README.md) <- This file
+  Makefile  <- Main Makefile for C++,Java and .Net
+  examples/ <- C++, Java and .Net examples
+  include/  <- all include files
+  objs/     <- directory containing C++ compiled object files (*.o)
+  classes/  <- directory containing Java class files.
+  packages/ <- directory containing .Net nuget packages.
+  lib/      <- directory containing libraries and jar files.
+  bin/      <- directory containing executable files
 ```
+
+Warning: While OR-Tools ships with SCIP, please consult the SCIP license
+to ensure that you are complying with it if you want to use this solver.
 
 # C++
 
@@ -34,24 +40,26 @@ We have provided a makefile target to help you.
 Use Makefile:
 
 ```shell
-make run SOURCE=examples/cpp/golomb.cc
+make run SOURCE=examples/basic_example/basic_example.cc
 ```
 
 **OR** this is equivalent to compiling and running
-`examples/cpp/golomb.cc`.
+`examples/basic_example/basic_example.cc`.
 
 - on Unix:
 
   ```shell
-  make bin/golomb
-  ./bin/golomb
+  cd examples/basic_example
+  cmake -S . -B build
+  cmake --build build
   ```
 
 - on Windows:
 
   ```shell
-  make bin\\golomb.exe
-  bin\\golomb.exe
+  cd examples/basic_example
+  cmake -S . -B build
+  cmake --build build
   ```
 
 # Java

@@ -1,6 +1,6 @@
 # Python examples
 The following examples showcase how to use OrTools.
-These examples should work for any Python3.6+.
+These examples should work for any Python3.7+.
 
 We recommend that all projects you create target `Python 3.9`,
 as this allows you to keep up-to-date with the latest Python frameworks.

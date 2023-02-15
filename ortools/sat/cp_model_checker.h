@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,8 +18,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -28,11 +30,31 @@ namespace sat {
 // proto comments. Returns an empty string if it is the case, otherwise fails at
 // the first error and returns a human-readable description of the issue.
 //
+// The extra parameter is internal and mainly for debugging. After the problem
+// has been presolved, we have a stricter set of properties we want to enforce.
+//
 // TODO(user): Add any needed overflow validation because we are far from
 // exhaustive. We could also run a small presolve that tighten variable bounds
 // before the overflow check to facilitate the lives of our users, but it is a
 // some work to put in place.
-std::string ValidateCpModel(const CpModelProto& model);
+std::string ValidateCpModel(const CpModelProto& model,
+                            bool after_presolve = false);
+
+// Some validation (in particular the floating point objective) requires to
+// read parameters.
+//
+// TODO(user): Ideally we would have just one ValidateCpModel() function but
+// this was introduced after many users already use ValidateCpModel() without
+// parameters.
+std::string ValidateInputCpModel(const SatParameters& params,
+                                 const CpModelProto& model);
+
+// Check if a given linear expression can create overflow. It is exposed to test
+// new constraints created during the presolve.
+bool PossibleIntegerOverflow(const CpModelProto& model,
+                             absl::Span<const int> vars,
+                             absl::Span<const int64_t> coeffs,
+                             int64_t offset = 0);
 
 // Verifies that the given variable assignment is a feasible solution of the
 // given model. The values vector should be in one to one correspondence with
@@ -41,7 +63,7 @@ std::string ValidateCpModel(const CpModelProto& model);
 // The last two arguments are optional and help debugging a failing constraint
 // due to presolve.
 bool SolutionIsFeasible(const CpModelProto& model,
-                        const std::vector<int64_t>& variable_values,
+                        absl::Span<const int64_t> variable_values,
                         const CpModelProto* mapping_proto = nullptr,
                         const std::vector<int>* postsolve_mapping = nullptr);
 

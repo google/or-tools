@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -88,6 +88,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::PDLP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
@@ -107,6 +108,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::INFEASIBLE;
 %unignore operations_research::MPSolver::UNBOUNDED;
 %unignore operations_research::MPSolver::ABNORMAL;
+%unignore operations_research::MPSolver::MODEL_INVALID;
 %unignore operations_research::MPSolver::NOT_SOLVED;
 
 // Expose the MPSolver's basic API, with some non-trivial renames.

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,8 @@
 %include "ortools/constraint_solver/java/constraint_solver.i"
 %include "ortools/constraint_solver/java/routing_types.i"
 %include "ortools/constraint_solver/java/routing_index_manager.i"
-%include "ortools/util/java/sorted_interval_list.i"
+
+%import "ortools/util/java/sorted_interval_list.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -59,6 +60,8 @@ namespace operations_research {
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingModel %{
+// Used to wrap Domain
+import com.google.ortools.util.Domain;
 // Used to wrap RoutingTransitCallback2
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
@@ -248,6 +251,13 @@ import java.util.function.LongBinaryOperator;
 %rename (getCumulVarSoftUpperBound) RoutingDimension::GetCumulVarSoftUpperBound;
 %rename (getCumulVarSoftUpperBoundCoefficient) RoutingDimension::GetCumulVarSoftUpperBoundCoefficient;
 %rename (getGlobalSpanCostCoefficient) RoutingDimension::global_span_cost_coefficient;
+%rename (getLocalOptimizerOffsetForVehicle) RoutingDimension::GetLocalOptimizerOffsetForVehicle;
+%rename (setSoftSpanUpperBoundForVehicle) RoutingDimension::SetSoftSpanUpperBoundForVehicle;
+%rename (hasSoftSpanUpperBounds) RoutingDimension::HasSoftSpanUpperBounds;
+%rename (getSoftSpanUpperBoundForVehicle) RoutingDimension::GetSoftSpanUpperBoundForVehicle;
+%rename (setQuadraticCostSoftSpanUpperBoundForVehicle) RoutingDimension::SetQuadraticCostSoftSpanUpperBoundForVehicle;
+%rename (hasQuadraticCostSoftSpanUpperBounds) RoutingDimension::HasQuadraticCostSoftSpanUpperBounds;
+%rename (getQuadraticCostSoftSpanUpperBoundForVehicle) RoutingDimension::GetQuadraticCostSoftSpanUpperBoundForVehicle;
 %rename (getGroupDelay) RoutingDimension::GetGroupDelay;
 %rename (getNodeVisitTransitsOfVehicle) RoutingDimension::GetNodeVisitTransitsOfVehicle;
 %rename (getSpanCostCoefficientForVehicle) RoutingDimension::GetSpanCostCoefficientForVehicle;
@@ -283,10 +293,70 @@ import java.util.function.LongBinaryOperator;
 %unignore TypeRegulationsChecker;
 %ignore TypeRegulationsChecker::CheckVehicle;
 
+// SimpleBoundCosts
+%unignore BoundCost;
+%unignore SimpleBoundCosts;
+%rename (getBoundCost) SimpleBoundCosts::bound_cost;
+%rename (getSize) SimpleBoundCosts::Size;
+
 }  // namespace operations_research
 
 // Generic rename rules.
 %rename (buildSolution) *::BuildSolution;
+
+// Add needed import to mainJNI.java
+%pragma(java) jniclassimports=%{
+// Used to wrap Domain
+import com.google.ortools.util.Domain;
+
+// Used to wrap std::function<std::string()>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/Supplier.html
+import java.util.function.Supplier;
+
+// Used to wrap std::function<bool()>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/BooleanSupplier.html
+import java.util.function.BooleanSupplier;
+
+// Used to wrap std::function<int(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
+import java.util.function.LongToIntFunction;
+
+// Used to wrap std::function<int64_t(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
+import java.util.function.LongUnaryOperator;
+
+// Used to wrap std::function<int64_t(int64_t, int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
+import java.util.function.LongBinaryOperator;
+
+// Used to wrap std::function<int64_t(int64_t, int64_t, int64_t)>
+// note: Java does not provide TernaryOperator so we provide it
+import com.google.ortools.constraintsolver.LongTernaryOperator;
+
+// Used to wrap std::function<int64_t(int, int)>
+// note: Java does not provide it, so we provide it.
+import com.google.ortools.constraintsolver.IntIntToLongFunction;
+
+// Used to wrap std::function<bool(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongPredicate.html
+import java.util.function.LongPredicate;
+
+// Used to wrap std::function<bool(int64_t, int64_t, int64_t)>
+// note: Java does not provide TernaryPredicate so we provide it
+import com.google.ortools.constraintsolver.LongTernaryPredicate;
+
+// Used to wrap std::function<void(Solver*)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/Consumer.html
+import java.util.function.Consumer;
+
+// Used to wrap std::function<void(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
+import java.util.function.LongConsumer;
+
+// Used to wrap std::function<void()>
+// see https://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html
+import java.lang.Runnable;
+%}
 
 // Protobuf support
 PROTO_INPUT(operations_research::RoutingSearchParameters,
@@ -308,7 +378,7 @@ PROTO2_RETURN(operations_research::RoutingModelParameters,
 %unignore RoutingIndexPairs;
 
 namespace operations_research {
-// IMPORTANT(viger): These functions from routing_parameters.h are global, so in
+// IMPORTANT(user): These functions from routing_parameters.h are global, so in
 // java they are in the main.java (import com.[...].constraintsolver.main).
 %rename (defaultRoutingSearchParameters) DefaultRoutingSearchParameters;
 %rename (defaultRoutingModelParameters) DefaultRoutingModelParameters;

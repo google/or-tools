@@ -1,3 +1,16 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ Bazel rules for building swig files."""
 
 def _py_wrap_cc_impl(ctx):
@@ -7,7 +20,7 @@ def _py_wrap_cc_impl(ctx):
     module_name = ctx.attr.module_name
     src = ctx.files.srcs[0]
     inputs = set([src])
-    inputs += ctx.files.swig_includes
+    inputs += ctx.files.i_includes
     for dep in ctx.attr.deps:
         inputs += dep.cc.transitive_headers
     inputs += ctx.files._swiglib
@@ -24,7 +37,7 @@ def _py_wrap_cc_impl(ctx):
         "-outdir",
         ctx.outputs.py_out.dirname,
     ]
-    args += ["-l" + f.path for f in ctx.files.swig_includes]
+    args += ["-l" + f.path for f in ctx.files.i_includes]
     args += ["-I" + i for i in swig_include_dirs]
     args.append(src.path)
     outputs = [ctx.outputs.cc_out, ctx.outputs.py_out]

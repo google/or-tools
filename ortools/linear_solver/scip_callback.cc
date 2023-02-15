@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,12 @@
 
 #include "ortools/linear_solver/scip_callback.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -161,7 +166,7 @@ ScipSeparationResult RunSeparation(internal::ScipCallbackRunner* runner,
         CHECK_OK(SCIP_TO_STATUS(SCIPreleaseRow(scip, &row)));
         // TODO(user): when infeasible is true, it better to have the scip
         // return status be cutoff instead of cutting plane added (e.g. see
-        // cs/scip/cons_knapsack.c). However, as we use
+        // cs/scip/src/scip/cons_knapsack.c). However, as we use
         // SCIPaddRow(), it isn't clear this will even happen.
         if (result != ScipSeparationResult::kLazyConstraintAdded) {
           // NOTE(user): if we have already found a violated lazy constraint,

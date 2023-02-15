@@ -1,6 +1,34 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "on_linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+config_setting(
+    name = "on_macos",
+    constraint_values = ["@platforms//os:macos"],
+)
+
+config_setting(
+    name = "on_windows",
+    constraint_values = ["@platforms//os:windows"],
+)
 
 cc_library(
     name = "graph",
@@ -9,6 +37,7 @@ cc_library(
         ":iterators",
         "//ortools/base",
         "@com_google_absl//absl/debugging:leak_check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -44,7 +73,8 @@ cc_library(
     hdrs = ["io.h"],
     deps = [
         ":graph",
-        "//ortools/base:filelineiter",
+        "//ortools/base:numbers",
+        "//ortools/util:filelineiter",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
@@ -57,7 +87,7 @@ cc_library(
 #    hdrs = ["digraph.h"],
 #    deps = [
 #        "//ortools/base",
-#        "//ortools/base:int_type",
+#        "//ortools/base:intops",
 #        "//ortools/base:strong_vector",
 #    ],
 #)
@@ -88,7 +118,7 @@ cc_library(
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:file",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         #        "//ortools/base:strong_bitmap",
         "//ortools/base:strong_vector",
         "//ortools/base:recordio",
@@ -137,7 +167,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -236,7 +266,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
-        "//ortools/base:int_type",
+        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/util:saturated_arithmetic",
         "@com_google_absl//absl/base",
@@ -274,6 +304,12 @@ cc_library(
     name = "min_cost_flow",
     srcs = ["min_cost_flow.cc"],
     hdrs = ["min_cost_flow.h"],
+    copts = select({
+        "on_linux": [],
+        "on_macos": [],
+        "on_windows": ["/Zc:preprocessor"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":connected_components",
         ":ebert_graph",
@@ -281,7 +317,9 @@ cc_library(
         ":graphs",
         ":max_flow",
         "//ortools/base",
+        "//ortools/base:dump_vars",
         "//ortools/base:mathutil",
+        "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
         "//ortools/util:zvector",
     ],
@@ -345,12 +383,16 @@ cc_library(
     srcs = ["topologicalsorter.cc"],
     hdrs = ["topologicalsorter.h"],
     deps = [
+        ":graph",
         "//ortools/base",
         "//ortools/base:container_logging",
         "//ortools/base:map_util",
+        "//ortools/base:status_builder",
         "//ortools/base:stl_util",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 

@@ -1,0 +1,599 @@
+model {
+  shipment {
+    pickup {
+      time_window {
+        start_time: 0
+        end_time: 20
+      }
+      duration_seconds: 2
+      arrival_index: 1
+      departure_index: 1
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 10 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 10
+        end_time: 30
+      }
+      duration_seconds: 2
+      arrival_index: 2
+      departure_index: 2
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 20 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 20
+        end_time: 40
+      }
+      duration_seconds: 2
+      arrival_index: 3
+      departure_index: 3
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 30 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 30
+        end_time: 50
+      }
+      duration_seconds: 2
+      arrival_index: 4
+      departure_index: 4
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 40 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 0
+        end_time: 20
+      }
+      duration_seconds: 2
+      arrival_index: 5
+      departure_index: 5
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 10 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 10
+        end_time: 30
+      }
+      duration_seconds: 2
+      arrival_index: 6
+      departure_index: 6
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 20 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 20
+        end_time: 40
+      }
+      duration_seconds: 2
+      arrival_index: 7
+      departure_index: 7
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 30 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 30
+        end_time: 50
+      }
+      duration_seconds: 2
+      arrival_index: 8
+      departure_index: 8
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 40 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 40
+        end_time: 60
+      }
+      duration_seconds: 2
+      arrival_index: 9
+      departure_index: 9
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 50 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 0
+        end_time: 20
+      }
+      duration_seconds: 2
+      arrival_index: 10
+      departure_index: 10
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 10 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 10
+        end_time: 30
+      }
+      duration_seconds: 2
+      arrival_index: 11
+      departure_index: 11
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 20 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 20
+        end_time: 40
+      }
+      duration_seconds: 2
+      arrival_index: 12
+      departure_index: 12
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 30 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 30
+        end_time: 50
+      }
+      duration_seconds: 2
+      arrival_index: 13
+      departure_index: 13
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 40 }
+    }
+  }
+  shipment {
+    pickup {
+      time_window {
+        start_time: 40
+        end_time: 60
+      }
+      duration_seconds: 2
+      arrival_index: 14
+      departure_index: 14
+    }
+    load_demand {
+      key: "Load"
+      value { amount: 50 }
+    }
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  vehicle {
+    start_time_window {
+      start_time: 0
+    }
+    end_time_window {
+      end_time: 100
+    }
+    load_limit {
+      key: "Load"
+      value { max_load: 100 }
+    }
+    cost_per_traveled_hour: 3600
+    fixed_cost: 0
+    start_index: 0
+    end_index: 0
+  }
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 40
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 41.231056256176608
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 36.055512754639892
+  duration_seconds_matrix: 44.721359549995796
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 36.055512754639892
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 36.055512754639892
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 40
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 41.231056256176608
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 44.721359549995796
+  duration_seconds_matrix: 36.055512754639892
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 41.231056256176608
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 40
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 41.231056256176608
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 41.231056256176608
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 40
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 41.231056256176608
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 36.055512754639892
+  duration_seconds_matrix: 44.721359549995796
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 41.231056256176608
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 40
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 36.055512754639892
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 36.055512754639892
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 44.721359549995796
+  duration_seconds_matrix: 36.055512754639892
+  duration_seconds_matrix: 28.284271247461902
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 41.231056256176608
+  duration_seconds_matrix: 31.622776601683793
+  duration_seconds_matrix: 22.360679774997898
+  duration_seconds_matrix: 14.142135623730951
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 40
+  duration_seconds_matrix: 30
+  duration_seconds_matrix: 20
+  duration_seconds_matrix: 10
+  duration_seconds_matrix: 0
+}
+routing_search_parameters {
+}

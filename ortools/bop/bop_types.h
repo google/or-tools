@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,19 +15,21 @@
 #define OR_TOOLS_BOP_BOP_TYPES_H_
 
 #include <cstdint>
+#include <ostream>
+#include <string>
 
 #include "ortools/base/basictypes.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace bop {
-DEFINE_INT_TYPE(ConstraintIndex, int);
-DEFINE_INT_TYPE(EntryIndex, int);
-DEFINE_INT_TYPE(SearchIndex, int);
-DEFINE_INT_TYPE(TermIndex, int);
-DEFINE_INT_TYPE(VariableIndex, int);
-DEFINE_INT_TYPE(SolverTimeStamp, int64_t);
+DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
+DEFINE_STRONG_INDEX_TYPE(EntryIndex);
+DEFINE_STRONG_INDEX_TYPE(SearchIndex);
+DEFINE_STRONG_INDEX_TYPE(TermIndex);
+DEFINE_STRONG_INDEX_TYPE(VariableIndex);
+DEFINE_STRONG_INT64_TYPE(SolverTimeStamp);
 
 // Status of the solve of Bop.
 enum class BopSolveStatus {
@@ -71,7 +73,7 @@ inline std::ostream& operator<<(std::ostream& os, BopSolveStatus status) {
 }
 
 // TODO(user): Remove.
-DEFINE_INT_TYPE(SparseIndex, int);
+DEFINE_STRONG_INDEX_TYPE(SparseIndex);
 struct BopConstraintTerm {
   BopConstraintTerm(VariableIndex _var_id, int64_t _weight)
       : var_id(_var_id), search_id(0), weight(_weight) {}

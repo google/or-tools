@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -488,7 +488,7 @@ public class NetworkRoutingSat
                 tmpVars.Add(nodeVars[i]);
                 tmpVars.Add(nodeVars[i + 1]);
                 tmpVars.Add(arcVars[i]);
-                var table = cpModel.AddAllowedAssignments(tmpVars, arcs);
+                cpModel.AddAllowedAssignments(tmpVars).AddTuples(arcs);
             }
 
             var demand = _demands[demandIndex];
@@ -712,7 +712,7 @@ public class NetworkRoutingSat
                     pathCount++;
                 }
 
-                var pathCt = cpModel.AddAllowedAssignments(pathVars[demandIndex], tuples);
+                cpModel.AddAllowedAssignments(pathVars[demandIndex]).AddTuples(tuples);
             }
 
             var trafficVars = new List<IntVar>(numArcs);
@@ -735,7 +735,7 @@ public class NetworkRoutingSat
                     traffics.Add(_demands[i].Traffic);
                 }
 
-                var sum = LinearExpr.ScalProd(vars, traffics);
+                var sum = LinearExpr.WeightedSum(vars, traffics);
                 var trafficVar = cpModel.NewIntVar(0, sumOfTraffic, $"trafficVar{arcIndex}");
                 trafficVars.Add(trafficVar);
                 cpModel.Add(sum == trafficVar);

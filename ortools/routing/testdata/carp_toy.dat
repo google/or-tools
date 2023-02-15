@@ -1,0 +1,18 @@
+ NOMBRE : toy
+ COMENTARIO : cota superio
+ VERTICES : 4
+ ARISTAS_REQ : 5
+ ARISTAS_NOREQ : 1
+ VEHICULOS : 1
+ CAPACIDAD : 31
+ TIPO_COSTES_ARISTAS : EXPLICITOS
+ COSTE_TOTAL_REQ : 45
+ LISTA_ARISTAS_REQ :
+ ( 1, 2)  coste 8 demanda 2
+ ( 1, 3)  coste 3 demanda 3
+ ( 1, 4)  coste 5 demanda 7
+ ( 2, 4)  coste 9 demanda 8
+ ( 3, 4)  coste 7 demanda 9
+ LISTA_ARISTAS_NOREQ :
+ ( 2, 3)  coste 1
+ DEPOSITO :   1

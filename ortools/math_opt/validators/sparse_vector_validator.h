@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,10 +18,10 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/validators/ids_validator.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -38,7 +38,7 @@ absl::Status CheckIdsAndValuesSize(const SparseVectorView<T>& vector_view,
 }
 
 template <typename T,
-          typename = std::enable_if<!std::is_floating_point<T>::value> >
+          typename = std::enable_if_t<!std::is_floating_point<T>::value> >
 absl::Status CheckValues(const SparseVectorView<T>& vector_view,
                          absl::string_view value_name = "values") {
   RETURN_IF_ERROR(CheckIdsAndValuesSize(vector_view, value_name));
@@ -46,16 +46,16 @@ absl::Status CheckValues(const SparseVectorView<T>& vector_view,
 }
 
 template <typename T,
-          typename = std::enable_if<!std::is_floating_point<T>::value> >
+          typename = std::enable_if_t<!std::is_floating_point<T>::value> >
 absl::Status CheckIdsAndValues(const SparseVectorView<T>& vector_view,
                                absl::string_view value_name = "values") {
-  RETURN_IF_ERROR(CheckIdsNonnegativeAndStrictlyIncreasing(vector_view.ids()));
+  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vector_view.ids()));
   RETURN_IF_ERROR(CheckValues(vector_view, value_name));
   return absl::OkStatus();
 }
 
 template <typename T,
-          typename = std::enable_if<std::is_floating_point<T>::value> >
+          typename = std::enable_if_t<std::is_floating_point<T>::value> >
 absl::Status CheckValues(const SparseVectorView<T>& vector_view,
                          const DoubleOptions& options,
                          absl::string_view value_name = "values") {
@@ -69,11 +69,11 @@ absl::Status CheckValues(const SparseVectorView<T>& vector_view,
 }
 
 template <typename T,
-          typename = std::enable_if<std::is_floating_point<T>::value> >
+          typename = std::enable_if_t<std::is_floating_point<T>::value> >
 absl::Status CheckIdsAndValues(const SparseVectorView<T>& vector_view,
                                const DoubleOptions& options,
                                absl::string_view value_name = "values") {
-  RETURN_IF_ERROR(CheckIdsNonnegativeAndStrictlyIncreasing(vector_view.ids()));
+  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vector_view.ids()));
   RETURN_IF_ERROR(CheckValues(vector_view, options, value_name));
   return absl::OkStatus();
 }

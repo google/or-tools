@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_SAT_DECISION_H_
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
@@ -52,7 +53,7 @@ class SatDecisionPolicy {
   // variables are assigned.
   Literal NextBranch();
 
-  // Updates statistics about literal occurences in constraints.
+  // Updates statistics about literal occurrences in constraints.
   // Input is a canonical linear constraint of the form (terms <= rhs).
   void UpdateWeightedSign(const std::vector<LiteralWithCoeff>& terms,
                           Coefficient rhs);
@@ -103,6 +104,12 @@ class SatDecisionPolicy {
   // Returns the vector of the current assignment preferences.
   std::vector<std::pair<Literal, double>> AllPreferences() const;
 
+  // Returns the current activity of a BooleanVariable.
+  double Activity(Literal l) const {
+    if (l.Variable() < activities_.size()) return activities_[l.Variable()];
+    return 0.0;
+  }
+
  private:
   // Computes an initial variable ordering.
   void InitializeVariableOrdering();
@@ -110,7 +117,7 @@ class SatDecisionPolicy {
   // Rescales activity value of all variables when one of them reached the max.
   void RescaleVariableActivities(double scaling_factor);
 
-  // Reinitializes the inital polarity of all the variables with an index
+  // Reinitializes the initial polarity of all the variables with an index
   // greater than or equal to the given one.
   void ResetInitialPolarity(int from, bool inverted = false);
 
@@ -205,7 +212,7 @@ class SatDecisionPolicy {
   absl::StrongVector<BooleanVariable, double> tie_breakers_;
   absl::StrongVector<BooleanVariable, int64_t> num_bumps_;
 
-  // If the polarity if forced (externally) we alway use this first.
+  // If the polarity if forced (externally) we always use this first.
   absl::StrongVector<BooleanVariable, bool> has_forced_polarity_;
   absl::StrongVector<BooleanVariable, bool> forced_polarity_;
 

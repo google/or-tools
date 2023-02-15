@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,11 +13,31 @@
 
 #include "ortools/sat/var_domination.h"
 
-#include <cstdint>
-#include <limits>
+#include <stddef.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
+#include "ortools/algorithms/dynamic_partition.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/presolve_context.h"
+#include "ortools/util/affine_relation.h"
+#include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -25,7 +45,8 @@ namespace sat {
 void VarDomination::Reset(int num_variables) {
   phase_ = 0;
   num_vars_with_negation_ = 2 * num_variables;
-  partition_ = absl::make_unique<DynamicPartition>(num_vars_with_negation_);
+  partition_ =
+      std::make_unique<SimpleDynamicPartition>(num_vars_with_negation_);
 
   can_freely_decrease_.assign(num_vars_with_negation_, true);
 
@@ -143,7 +164,7 @@ void VarDomination::MakeRankEqualToStartOfPart(
 }
 
 void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
-  // The rank can be wrong and need to be recomputed because of how we splitted
+  // The rank can be wrong and need to be recomputed because of how we split
   // tmp_ranks_ into spans.
   MakeRankEqualToStartOfPart(span);
 
@@ -190,7 +211,7 @@ void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
 
 // TODO(user): Use more heuristics to not miss as much dominance relation when
 // we crop initial lists.
-void VarDomination::EndFirstPhase() {
+bool VarDomination::EndFirstPhase() {
   CHECK_EQ(phase_, 0);
   phase_ = 1;
 
@@ -206,6 +227,8 @@ void VarDomination::EndFirstPhase() {
                                                        false);
 
   // Fill the initial domination candidates.
+  std::vector<int> buffer;
+  const auto elements_by_part = partition_->GetParts(&buffer);
   for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
     if (can_freely_decrease_[var]) continue;
     const int part = partition_->PartOf(var.value());
@@ -221,7 +244,7 @@ void VarDomination::EndFirstPhase() {
       // We start with the partition part.
       // Note that all constraint will be filtered again in the second pass.
       int num_tested = 0;
-      for (const int value : partition_->ElementsInPart(part)) {
+      for (const int value : elements_by_part[part]) {
         const IntegerVariable c = IntegerVariable(value);
 
         // This is to limit the complexity to 1k * num_vars. We fill the list
@@ -315,6 +338,10 @@ void VarDomination::EndFirstPhase() {
   VLOG(1) << "Buffer size: " << buffer_.size();
   gtl::STLClearObject(&initial_candidates_);
   gtl::STLClearObject(&shared_buffer_);
+
+  // A second phase is only needed if there are some potential dominance
+  // relations.
+  return !buffer_.empty();
 }
 
 void VarDomination::EndSecondPhase() {
@@ -427,12 +454,12 @@ void VarDomination::FilterUsingTempRanks() {
 
   // The activity of the variable in tmp_rank must not decrease.
   for (const IntegerVariableWithRank entry : tmp_ranks_) {
-    // The only variables that can be paired with a var-- in the constriants are
+    // The only variables that can be paired with a var-- in the constraints are
     // the var++ in the constraints with the same rank or higher.
     //
     // Note that we only filter the var-- domination lists here, we do not
     // remove the var-- appearing in all the lists corresponding to wrong var++.
-    // This is left to the tranpose operation in EndSecondPhase().
+    // This is left to the transpose operation in EndSecondPhase().
     {
       IntegerVariableSpan& span = dominating_vars_[entry.var];
       if (span.size == 0) continue;
@@ -538,20 +565,24 @@ void DualBoundStrengthening::CannotIncrease(absl::Span<const int> refs,
   }
 }
 
-void DualBoundStrengthening::CannotMove(absl::Span<const int> refs) {
+void DualBoundStrengthening::CannotMove(absl::Span<const int> refs,
+                                        int ct_index) {
   for (const int ref : refs) {
     const IntegerVariable var = RefToIntegerVariable(ref);
     can_freely_decrease_until_[var] = kMaxIntegerValue;
     can_freely_decrease_until_[NegationOf(var)] = kMaxIntegerValue;
     num_locks_[var]++;
     num_locks_[NegationOf(var)]++;
+    locking_ct_index_[var] = ct_index;
+    locking_ct_index_[NegationOf(var)] = ct_index;
   }
 }
 
 template <typename LinearProto>
 void DualBoundStrengthening::ProcessLinearConstraint(
     bool is_objective, const PresolveContext& context,
-    const LinearProto& linear, int64_t min_activity, int64_t max_activity) {
+    const LinearProto& linear, int64_t min_activity, int64_t max_activity,
+    int ct_index) {
   const int64_t lb_limit = linear.domain(linear.domain_size() - 2);
   const int64_t ub_limit = linear.domain(1);
   const int num_terms = linear.vars_size();
@@ -571,6 +602,7 @@ void DualBoundStrengthening::ProcessLinearConstraint(
     // lb side.
     if (min_activity < lb_limit) {
       num_locks_[var]++;
+      locking_ct_index_[var] = ct_index;
       if (min_activity + term_diff < lb_limit) {
         can_freely_decrease_until_[var] = kMaxIntegerValue;
       } else {
@@ -594,6 +626,7 @@ void DualBoundStrengthening::ProcessLinearConstraint(
     // ub side.
     if (max_activity > ub_limit) {
       num_locks_[NegationOf(var)]++;
+      locking_ct_index_[NegationOf(var)] = ct_index;
       if (max_activity - term_diff > ub_limit) {
         can_freely_decrease_until_[NegationOf(var)] = kMaxIntegerValue;
       } else {
@@ -608,9 +641,63 @@ void DualBoundStrengthening::ProcessLinearConstraint(
   }
 }
 
+namespace {
+
+// This is used to detect if two linear constraint are equivalent if the literal
+// ref is mapped to another value. We fill a vector that will only be equal
+// to another such vector if the two constraint differ only there.
+void TransformLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
+                                       std::vector<int64_t>* output) {
+  DCHECK_EQ(ct.constraint_case(), ConstraintProto::kLinear);
+  output->clear();
+
+  // Deal with enforcement.
+  // We only detect NegatedRef() here.
+  if (!ct.enforcement_literal().empty()) {
+    output->push_back(ct.enforcement_literal().size());
+    for (const int literal : ct.enforcement_literal()) {
+      if (literal == NegatedRef(ref)) {
+        output->push_back(std::numeric_limits<int32_t>::max());  // Sentinel
+      } else {
+        output->push_back(literal);
+      }
+    }
+  }
+
+  // Deal with linear part.
+  // We look for both literal and not(literal) here.
+  int64_t offset = 0;
+  output->push_back(ct.linear().vars().size());
+  for (int i = 0; i < ct.linear().vars().size(); ++i) {
+    const int v = ct.linear().vars(i);
+    const int64_t c = ct.linear().coeffs(i);
+    if (v == ref) {
+      output->push_back(std::numeric_limits<int32_t>::max());  // Sentinel
+      output->push_back(c);
+    } else if (v == NegatedRef(ref)) {
+      // c * v = -c * (1 - v) + c
+      output->push_back(std::numeric_limits<int32_t>::max());  // Sentinel
+      output->push_back(-c);
+      offset += c;
+    } else {
+      output->push_back(v);
+      output->push_back(c);
+    }
+  }
+
+  // Domain.
+  for (const int64_t value : ct.linear().domain()) {
+    output->push_back(value - offset);
+  }
+}
+
+}  // namespace
+
 bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
+  num_deleted_constraints_ = 0;
   const CpModelProto& cp_model = *context->working_model;
   const int num_vars = cp_model.variables_size();
+  int64_t num_fixed_vars = 0;
   for (int var = 0; var < num_vars; ++var) {
     if (context->IsFixed(var)) continue;
 
@@ -618,7 +705,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     const int64_t lb = context->MinOf(var);
     const int64_t ub_limit = std::max(lb, CanFreelyDecreaseUntil(var));
     if (ub_limit == lb) {
-      context->UpdateRuleStats("dual: fix variable");
+      ++num_fixed_vars;
       CHECK(context->IntersectDomainWith(var, Domain(lb)));
       continue;
     }
@@ -628,7 +715,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     const int64_t lb_limit =
         std::min(ub, -CanFreelyDecreaseUntil(NegatedRef(var)));
     if (lb_limit == ub) {
-      context->UpdateRuleStats("dual: fix variable");
+      ++num_fixed_vars;
       CHECK(context->IntersectDomainWith(var, Domain(ub)));
       continue;
     }
@@ -672,38 +759,204 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       CHECK(context->IntersectDomainWith(var, Domain(new_lb, new_ub)));
     }
   }
+  if (num_fixed_vars > 0) {
+    context->UpdateRuleStats("dual: fix variable", num_fixed_vars);
+  }
 
-  // If (a => b) is the only constraint blocking a literal a in the up
-  // direction, then we can set a == b !
+  // For detecting near-duplicate constraint that can be made equivalent.
+  // hash -> (ct_index, modified ref).
+  absl::flat_hash_map<uint64_t, std::pair<int, int>> equiv_modified_constraints;
+  std::vector<int64_t> temp_data;
+  std::vector<int64_t> other_temp_data;
+  std::string s;
+
+  // If there is only one blocking constraint, we can simplify the problem in
+  // a few situation.
   //
-  // TODO(user): We can deal with more general situation. For instance an at
-  // most one that is the only blocking constraint can become an exactly one.
+  // TODO(user): Cover all the cases.
+  int64_t work_done = 0;
+  const int64_t work_limit = static_cast<int64_t>(1e9);
   std::vector<bool> processed(num_vars, false);
-  for (int positive_ref = 0; positive_ref < num_vars; ++positive_ref) {
+  int64_t num_bool_in_near_duplicate_ct = 0;
+  for (IntegerVariable var(0); var < num_locks_.size(); ++var) {
+    const int ref = VarDomination::IntegerVariableToRef(var);
+    const int positive_ref = PositiveRef(ref);
     if (processed[positive_ref]) continue;
     if (context->IsFixed(positive_ref)) continue;
-    const IntegerVariable var = RefToIntegerVariable(positive_ref);
-    int ct_index = -1;
-    if (num_locks_[var] == 1 && locking_ct_index_[var] != -1) {
-      ct_index = locking_ct_index_[var];
-    } else if (num_locks_[NegationOf(var)] == 1 &&
-               locking_ct_index_[NegationOf(var)] != -1) {
-      ct_index = locking_ct_index_[NegationOf(var)];
-    } else {
+    if (num_locks_[var] != 1) continue;
+    if (locking_ct_index_[var] == -1) {
+      context->UpdateRuleStats(
+          "TODO dual: only one unspecified blocking constraint?");
       continue;
     }
+
+    const int ct_index = locking_ct_index_[var];
     const ConstraintProto& ct = context->working_model->constraints(ct_index);
+    if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
+      // TODO(user): Fix variable right away rather than waiting for next call.
+      continue;
+    }
     if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
       context->UpdateRuleStats("TODO dual: tighten at most one");
       continue;
     }
 
-    if (ct.constraint_case() != ConstraintProto::kBoolAnd) continue;
+    if (ct.constraint_case() != ConstraintProto::kBoolAnd) {
+      // If we have an enforcement literal then we can always add the
+      // implication "not enforced" => var at its lower bound.
+      // If we also had enforced => fixed var, then var is in affine relation
+      // with the enforced literal and we can remove one variable.
+      //
+      // TODO(user): We can also deal with more than one enforcement.
+      if (ct.enforcement_literal().size() == 1 &&
+          PositiveRef(ct.enforcement_literal(0)) != positive_ref) {
+        const int enf = ct.enforcement_literal(0);
+        const int64_t bound = RefIsPositive(ref) ? context->MinOf(positive_ref)
+                                                 : context->MaxOf(positive_ref);
+        const Domain implied =
+            context->DomainOf(positive_ref)
+                .IntersectionWith(
+                    context->deductions.ImpliedDomain(enf, positive_ref));
+        if (implied.IsEmpty()) {
+          context->UpdateRuleStats("dual: fix variable");
+          if (!context->SetLiteralToFalse(enf)) return false;
+          if (!context->IntersectDomainWith(positive_ref, Domain(bound))) {
+            return false;
+          }
+          continue;
+        }
+        if (implied.IsFixed()) {
+          // Corner case.
+          if (implied.FixedValue() == bound) {
+            context->UpdateRuleStats("dual: fix variable");
+            if (!context->IntersectDomainWith(positive_ref, implied)) {
+              return false;
+            }
+            continue;
+          }
+
+          // Note(user): If we have enforced => var fixed, we could actually
+          // just have removed var from the constraint it it was implied by
+          // another constraint. If not, because of the new affine relation we
+          // could remove it right away.
+          processed[PositiveRef(enf)] = true;
+          processed[positive_ref] = true;
+          context->UpdateRuleStats("dual: affine relation");
+          if (RefIsPositive(enf)) {
+            // positive_ref = enf * implied + (1 - enf) * bound.
+            if (!context->StoreAffineRelation(
+                    positive_ref, enf, implied.FixedValue() - bound, bound)) {
+              return false;
+            }
+          } else {
+            // positive_ref = (1 - enf) * implied + enf * bound.
+            if (!context->StoreAffineRelation(positive_ref, PositiveRef(enf),
+                                              bound - implied.FixedValue(),
+                                              implied.FixedValue())) {
+              return false;
+            }
+          }
+          continue;
+        }
+
+        if (context->CanBeUsedAsLiteral(positive_ref)) {
+          // If we have a literal, we always add the implication.
+          // This seems like a good thing to do.
+          processed[PositiveRef(enf)] = true;
+          processed[positive_ref] = true;
+          context->UpdateRuleStats("dual: add implication");
+          context->AddImplication(NegatedRef(enf), NegatedRef(ref));
+          context->UpdateNewConstraintsVariableUsage();
+          continue;
+        }
+
+        // We can add an implication not_enforced => var to its bound ?
+        context->UpdateRuleStats("TODO dual: add implied bound");
+      }
+
+      // If We have two Booleans with a blocking constraint that differ just
+      // on them, we can make the Boolean equivalent. This is because they
+      // will be forced to their bad value only if it is needed for that
+      // constraint.
+      //
+      // TODO(user): Generalize to non-Boolean. Also for Boolean, we might
+      // miss some possible reduction if replacing X by 1 - X make a constraint
+      // near-duplicate of another.
+      //
+      // TODO(user): We can generalize to non-linear constraint.
+      //
+      // TODO(user): Because this can be in num_var ^ 2 in some bad cases where
+      // each variable is only blocked by a long constraint, we impose a work
+      // limit. Improve?
+      if (ct.constraint_case() == ConstraintProto::kLinear &&
+          context->CanBeUsedAsLiteral(ref) && work_done < work_limit) {
+        work_done += ct.linear().vars().size();
+        TransformLinearWithSpecialBoolean(ct, ref, &temp_data);
+        const uint64_t hash =
+            fasthash64(temp_data.data(), temp_data.size() * sizeof(int64_t),
+                       uint64_t{0xa5b85c5e198ed849});
+        const auto [it, inserted] =
+            equiv_modified_constraints.insert({hash, {ct_index, ref}});
+        if (!inserted) {
+          // Already present!
+          const auto [other_c_with_same_hash, other_ref] = it->second;
+          CHECK_NE(other_c_with_same_hash, ct_index);
+          const auto& other_ct =
+              context->working_model->constraints(other_c_with_same_hash);
+          TransformLinearWithSpecialBoolean(other_ct, other_ref,
+                                            &other_temp_data);
+          if (temp_data == other_temp_data) {
+            // We have a true equality. The two ref can be made equivalent.
+            if (!processed[PositiveRef(other_ref)]) {
+              ++num_bool_in_near_duplicate_ct;
+              processed[PositiveRef(ref)] = true;
+              processed[PositiveRef(other_ref)] = true;
+              context->StoreBooleanEqualityRelation(ref, other_ref);
+
+              // We can delete one of the constraint since they are duplicate
+              // now.
+              ++num_deleted_constraints_;
+              context->working_model->mutable_constraints(ct_index)->Clear();
+              context->UpdateConstraintVariableUsage(ct_index);
+              continue;
+            }
+          }
+        }
+      }
+
+      // Other potential cases?
+      if (!ct.enforcement_literal().empty()) {
+        // We can make enf equivalent to the constraint instead of just =>.
+        // This might also be useful for encoding if vars(0) is not a literal.
+        if (ct.constraint_case() == ConstraintProto::kLinear &&
+            ct.linear().vars().size() == 1 && ct.linear().coeffs(0) == 1 &&
+            ct.enforcement_literal().size() == 1 &&
+            ct.enforcement_literal(0) == NegatedRef(ref)) {
+          context->UpdateRuleStats("TODO dual: make encoding equiv?");
+        } else {
+          context->UpdateRuleStats(
+              "TODO dual: only one blocking enforced constraint?");
+        }
+      } else {
+        context->UpdateRuleStats("TODO dual: only one blocking constraint?");
+      }
+      continue;
+    }
     if (ct.enforcement_literal().size() != 1) continue;
 
+    // If (a => b) is the only constraint blocking a literal a in the up
+    // direction, then we can set a == b !
+    //
     // Recover a => b where a is having an unique up_lock (i.e this constraint).
     // Note that if many implications are encoded in the same bool_and, we have
     // to be careful that a is appearing in just one of them.
+    //
+    // TODO(user): Make sure implication graph is transitively reduced to not
+    // miss such reduction. More generally, this might only use the graph rather
+    // than the encoding into bool_and / at_most_one ? Basically if a =>
+    // all_direct_deduction, we can transform it into a <=> all_direct_deduction
+    // if that is interesting. This could always be done on a max-2sat problem
+    // in one of the two direction. Also think about max-2sat specific presolve.
     int a = ct.enforcement_literal(0);
     int b = 1;
     if (PositiveRef(a) == positive_ref &&
@@ -733,6 +986,13 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     context->UpdateRuleStats("dual: enforced equivalence");
   }
 
+  if (num_bool_in_near_duplicate_ct) {
+    context->UpdateRuleStats(
+        "dual: equivalent Boolean in near-duplicate constraints",
+        num_bool_in_near_duplicate_ct);
+  }
+
+  VLOG(2) << "Num deleted constraints: " << num_deleted_constraints_;
   return true;
 }
 
@@ -768,11 +1028,16 @@ void DetectDominanceRelations(
   int64_t max_activity = std::numeric_limits<int64_t>::max();
 
   for (int var = 0; var < num_vars; ++var) {
+    // Ignore variables that have been substitued already or are unused.
+    if (context.IsFixed(var) || context.VariableWasRemoved(var) ||
+        context.VariableIsNotUsedAnymore(var)) {
+      dual_bound_strengthening->CannotMove({var});
+      var_domination->CanOnlyDominateEachOther({var});
+      continue;
+    }
+
     // Deal with the affine relations that are not part of the proto.
     // Those only need to be processed in the first pass.
-    //
-    // TODO(user): This is not ideal since if only the representative is still
-    // used, we shouldn't restrict any dominance relation involving it.
     const AffineRelation::Relation r = context.GetAffineRelation(var);
     if (r.representative != var) {
       dual_bound_strengthening->CannotMove({var, r.representative});
@@ -785,13 +1050,6 @@ void DetectDominanceRelations(
         var_domination->CanOnlyDominateEachOther({var});
         var_domination->CanOnlyDominateEachOther({r.representative});
       }
-    }
-
-    // Also ignore variables that have been substitued already or are unused.
-    if (context.IsFixed(var) || context.VariableWasRemoved(var) ||
-        context.VariableIsNotUsedAnymore(var)) {
-      dual_bound_strengthening->CannotMove({var});
-      var_domination->CanOnlyDominateEachOther({var});
     }
   }
 
@@ -810,7 +1068,8 @@ void DetectDominanceRelations(
       switch (ct.constraint_case()) {
         case ConstraintProto::kBoolOr:
           if (phase == 0) {
-            dual_bound_strengthening->CannotDecrease(ct.bool_or().literals());
+            dual_bound_strengthening->CannotDecrease(ct.bool_or().literals(),
+                                                     c);
           }
           var_domination->ActivityShouldNotDecrease(ct.enforcement_literal(),
                                                     ct.bool_or().literals(),
@@ -852,7 +1111,8 @@ void DetectDominanceRelations(
           break;
         case ConstraintProto::kExactlyOne:
           if (phase == 0) {
-            dual_bound_strengthening->CannotMove(ct.exactly_one().literals());
+            dual_bound_strengthening->CannotMove(ct.exactly_one().literals(),
+                                                 c);
           }
           var_domination->ActivityShouldNotChange(ct.exactly_one().literals(),
                                                   /*coeffs=*/{});
@@ -862,7 +1122,7 @@ void DetectDominanceRelations(
                              &max_activity);
           if (phase == 0) {
             dual_bound_strengthening->ProcessLinearConstraint(
-                false, context, ct.linear(), min_activity, max_activity);
+                false, context, ct.linear(), min_activity, max_activity, c);
           }
           const bool domain_is_simple = ct.linear().domain().size() == 2;
           const bool free_to_increase =
@@ -893,7 +1153,8 @@ void DetectDominanceRelations(
           // We cannot infer anything if we don't know the constraint.
           // TODO(user): Handle enforcement better here.
           if (phase == 0) {
-            dual_bound_strengthening->CannotMove(context.ConstraintToVars(c));
+            dual_bound_strengthening->CannotMove(context.ConstraintToVars(c),
+                                                 c);
           }
           for (const int var : context.ConstraintToVars(c)) {
             var_domination->CanOnlyDominateEachOther({var});
@@ -912,11 +1173,11 @@ void DetectDominanceRelations(
       }
       FillMinMaxActivity(context, cp_model.objective(), &min_activity,
                          &max_activity);
-      if (phase == 0) {
+      const auto& domain = cp_model.objective().domain();
+      if (phase == 0 && !domain.empty()) {
         dual_bound_strengthening->ProcessLinearConstraint(
             true, context, cp_model.objective(), min_activity, max_activity);
       }
-      const auto& domain = cp_model.objective().domain();
       if (domain.empty() || (domain.size() == 2 && domain[0] <= min_activity)) {
         var_domination->ActivityShouldNotIncrease(
             /*enforcements=*/{}, cp_model.objective().vars(),
@@ -927,7 +1188,13 @@ void DetectDominanceRelations(
       }
     }
 
-    if (phase == 0) var_domination->EndFirstPhase();
+    if (phase == 0) {
+      // Early abort if no possible relations can be found.
+      //
+      // TODO(user): We might be able to detect that nothing can be done earlier
+      // during the constraint scanning.
+      if (!var_domination->EndFirstPhase()) return;
+    }
     if (phase == 1) var_domination->EndSecondPhase();
   }
 
@@ -954,6 +1221,41 @@ void DetectDominanceRelations(
           << " num_dominated_refs=" << num_dominated_refs
           << " num_dominance_relations=" << num_dominance_relations;
 }
+
+namespace {
+
+bool ProcessAtMostOne(absl::Span<const int> literals,
+                      const std::string& message,
+                      const VarDomination& var_domination,
+                      absl::StrongVector<IntegerVariable, bool>* in_constraints,
+                      PresolveContext* context) {
+  for (const int ref : literals) {
+    (*in_constraints)[VarDomination::RefToIntegerVariable(ref)] = true;
+  }
+  for (const int ref : literals) {
+    if (context->IsFixed(ref)) continue;
+
+    const auto dominating_ivars = var_domination.DominatingVariables(ref);
+    if (dominating_ivars.empty()) continue;
+    for (const IntegerVariable ivar : dominating_ivars) {
+      if (!(*in_constraints)[ivar]) continue;
+      if (context->IsFixed(VarDomination::IntegerVariableToRef(ivar))) {
+        continue;
+      }
+
+      // We can set the dominated variable to false.
+      context->UpdateRuleStats(message);
+      if (!context->SetLiteralToFalse(ref)) return false;
+      break;
+    }
+  }
+  for (const int ref : literals) {
+    (*in_constraints)[VarDomination::RefToIntegerVariable(ref)] = false;
+  }
+  return true;
+}
+
+}  // namespace
 
 bool ExploitDominanceRelations(const VarDomination& var_domination,
                                PresolveContext* context) {
@@ -1015,34 +1317,21 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
     if (!ct.enforcement_literal().empty()) continue;
 
-    // TODO(user): Also deal with exactly one.
     // TODO(user): More generally, combine with probing? if a dominated variable
     // implies one of its dominant to zero, then it can be set to zero. It seems
     // adding the implication below should have the same effect? but currently
     // it requires a lot of presolve rounds.
     if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
-      for (const int ref : ct.at_most_one().literals()) {
-        in_constraints[VarDomination::RefToIntegerVariable(ref)] = true;
+      if (!ProcessAtMostOne(ct.at_most_one().literals(),
+                            "domination: in at most one", var_domination,
+                            &in_constraints, context)) {
+        return false;
       }
-      for (const int ref : ct.at_most_one().literals()) {
-        if (context->IsFixed(ref)) continue;
-
-        const auto dominating_ivars = var_domination.DominatingVariables(ref);
-        if (dominating_ivars.empty()) continue;
-        for (const IntegerVariable ivar : dominating_ivars) {
-          if (!in_constraints[ivar]) continue;
-          if (context->IsFixed(VarDomination::IntegerVariableToRef(ivar))) {
-            continue;
-          }
-
-          // We can set the dominated variable to false.
-          context->UpdateRuleStats("domination: in at most one");
-          if (!context->SetLiteralToFalse(ref)) return false;
-          break;
-        }
-      }
-      for (const int ref : ct.at_most_one().literals()) {
-        in_constraints[VarDomination::RefToIntegerVariable(ref)] = false;
+    } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      if (!ProcessAtMostOne(ct.exactly_one().literals(),
+                            "domination: in exactly one", var_domination,
+                            &in_constraints, context)) {
+        return false;
       }
     }
 
@@ -1107,6 +1396,12 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         // other bound.
         int64_t delta = 0;
         for (const IntegerVariable ivar : dominated_by) {
+          // Tricky: For now we skip complex domain as we are not sure they
+          // can be moved correctly.
+          if (context->DomainOf(VarDomination::IntegerVariableToRef(ivar))
+                  .NumIntervals() != 1) {
+            continue;
+          }
           if (ub_side) {
             delta += std::max(int64_t{0}, var_lb_to_ub_diff[ivar]);
           } else {
@@ -1194,6 +1489,11 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   //
   // EX: It is possible that X dominate Y and Y dominate X if they are both
   // appearing in exactly the same constraint with the same coefficient.
+  //
+  // TODO(user): if both variable are in a bool_or, this will allow us to remove
+  // the dominated variable. Maybe we should exploit that to decide which
+  // implication we add. Or just remove such variable and not add the
+  // implications?
   //
   // TODO(user): generalize to non Booleans?
   // TODO(user): We always keep adding the same relations. Do that only once!

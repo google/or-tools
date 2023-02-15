@@ -372,16 +372,16 @@ var_or_value_array:  // Cannot be empty.
 
 var_or_value:
   IVALUE { $$ = VarRefOrValue::Value($1); }  // An integer value.
-| DVALUE { $$ = VarRefOrValue::FloatValue($1); } // A float value.  
+| DVALUE { $$ = VarRefOrValue::FloatValue($1); } // A float value.
 | IDENTIFIER {
   // A reference to an existing integer constant or variable.
   const std::string& id = $1;
-  if (gtl::ContainsKey(context->integer_map, id)) {
-    $$ = VarRefOrValue::Value(gtl::FindOrDie(context->integer_map, id));
-  } else if (gtl::ContainsKey(context->float_map, id)) {
-    $$ = VarRefOrValue::FloatValue(gtl::FindOrDie(context->float_map, id));
-  } else if (gtl::ContainsKey(context->variable_map, id)) {
-    $$ = VarRefOrValue::VarRef(gtl::FindOrDie(context->variable_map, id));
+  if (context->integer_map.contains(id)) {
+    $$ = VarRefOrValue::Value(context->integer_map.at(id));
+  } else if (context->float_map.contains(id)) {
+    $$ = VarRefOrValue::FloatValue(context->float_map.at(id));
+  } else if (context->variable_map.contains(id)) {
+    $$ = VarRefOrValue::VarRef(context->variable_map.at(id));
   } else {
     LOG(ERROR) << "Unknown symbol " << id;
     $$ = VarRefOrValue::Undefined();
@@ -392,15 +392,15 @@ var_or_value:
   // A given element of an existing constant array or variable array.
   const std::string& id = $1;
   const int64_t value = $3;
-  if (gtl::ContainsKey(context->integer_array_map, id)) {
+  if (context->integer_array_map.contains(id)) {
     $$ = VarRefOrValue::Value(
-        Lookup(gtl::FindOrDie(context->integer_array_map, id), value));
-  } else if (gtl::ContainsKey(context->float_array_map, id)) {
+        Lookup(context->integer_array_map.at(id), value));
+  } else if (context->float_array_map.contains(id)) {
     $$ = VarRefOrValue::FloatValue(
-        Lookup(gtl::FindOrDie(context->float_array_map, id), value));
-  } else if (gtl::ContainsKey(context->variable_array_map, id)) {
+        Lookup(context->float_array_map.at(id), value));
+  } else if (context->variable_array_map.contains(id)) {
     $$ = VarRefOrValue::VarRef(
-        Lookup(gtl::FindOrDie(context->variable_array_map, id), value));
+        Lookup(context->variable_array_map.at(id), value));
   } else {
     LOG(ERROR) << "Unknown symbol " << id;
     $$ = VarRefOrValue::Undefined();
@@ -445,9 +445,9 @@ integers:
 
 integer:
   IVALUE { $$ = $1; }
-| IDENTIFIER { $$ = gtl::FindOrDie(context->integer_map, $1); }
+| IDENTIFIER { $$ = context->integer_map.at($1); }
 | IDENTIFIER '[' IVALUE ']' {
-  $$ = Lookup(gtl::FindOrDie(context->integer_array_map, $1), $3);
+  $$ = Lookup(context->integer_array_map.at($1), $3);
 }
 
 floats:
@@ -456,9 +456,9 @@ floats:
 
 float:
   DVALUE { $$ = $1; }
-| IDENTIFIER { $$ = gtl::FindOrDie(context->float_map, $1); }
+| IDENTIFIER { $$ = context->float_map.at($1); }
 | IDENTIFIER '[' IVALUE ']' {
-  $$ = Lookup(gtl::FindOrDie(context->float_array_map, $1), $3);
+  $$ = Lookup(context->float_array_map.at($1), $3);
 }
 
 const_literal:
@@ -473,10 +473,10 @@ const_literal:
 | DVALUE {
   $$ = Domain::FloatValue($1);
 }
-| IDENTIFIER { $$ = Domain::IntegerValue(gtl::FindOrDie(context->integer_map, $1)); }
+| IDENTIFIER { $$ = Domain::IntegerValue(context->integer_map.at($1)); }
 | IDENTIFIER '[' IVALUE ']' {
   $$ = Domain::IntegerValue(
-      Lookup(gtl::FindOrDie(context->integer_array_map, $1), $3));
+      Lookup(context->integer_array_map.at($1), $3));
 }
 
 const_literals:
@@ -521,44 +521,44 @@ argument:
 }
 | IDENTIFIER {
   const std::string& id = $1;
-  if (gtl::ContainsKey(context->integer_map, id)) {
-    $$ = Argument::IntegerValue(gtl::FindOrDie(context->integer_map, id));
-  } else if (gtl::ContainsKey(context->integer_array_map, id)) {
-    $$ = Argument::IntegerList(gtl::FindOrDie(context->integer_array_map, id));
-  } else if (gtl::ContainsKey(context->float_map, id)) {
-    const double d = gtl::FindOrDie(context->float_map, id);
+  if (context->integer_map.contains(id)) {
+    $$ = Argument::IntegerValue(context->integer_map.at(id));
+  } else if (context->integer_array_map.contains(id)) {
+    $$ = Argument::IntegerList(context->integer_array_map.at(id));
+  } else if (context->float_map.contains(id)) {
+    const double d = context->float_map.at(id);
     $$ = Argument::FloatValue(d);
-  } else if (gtl::ContainsKey(context->float_array_map, id)) {
-    const auto& double_values = gtl::FindOrDie(context->float_array_map, id);
+  } else if (context->float_array_map.contains(id)) {
+    const auto& double_values = context->float_array_map.at(id);
     $$ = Argument::FloatList(std::move(double_values));
-  } else if (gtl::ContainsKey(context->variable_map, id)) {
-    $$ = Argument::VarRef(gtl::FindOrDie(context->variable_map, id));
-  } else if (gtl::ContainsKey(context->variable_array_map, id)) {
-    $$ = Argument::VarRefArray(gtl::FindOrDie(context->variable_array_map, id));
-  } else if (gtl::ContainsKey(context->domain_map, id)) {
-    const Domain& d = gtl::FindOrDie(context->domain_map, id);
+  } else if (context->variable_map.contains(id)) {
+    $$ = Argument::VarRef(context->variable_map.at(id));
+  } else if (context->variable_array_map.contains(id)) {
+    $$ = Argument::VarRefArray(context->variable_array_map.at(id));
+  } else if (context->domain_map.contains(id)) {
+    const Domain& d = context->domain_map.at(id);
     $$ = Argument::FromDomain(d);
   } else {
-    CHECK(gtl::ContainsKey(context->domain_array_map, id)) << "Unknown identifier: "
+    CHECK(context->domain_array_map.contains(id)) << "Unknown identifier: "
                                                       << id;
-    const std::vector<Domain>& d = gtl::FindOrDie(context->domain_array_map, id);
+    const std::vector<Domain>& d = context->domain_array_map.at(id);
     $$ = Argument::DomainList(d);
   }
 }
 | IDENTIFIER '[' IVALUE ']' {
   const std::string& id = $1;
   const int64_t index = $3;
-  if (gtl::ContainsKey(context->integer_array_map, id)) {
+  if (context->integer_array_map.contains(id)) {
     $$ = Argument::IntegerValue(
-        Lookup(gtl::FindOrDie(context->integer_array_map, id), index));
-  } else if (gtl::ContainsKey(context->variable_array_map, id)) {
+        Lookup(context->integer_array_map.at(id), index));
+  } else if (context->variable_array_map.contains(id)) {
     $$ = Argument::VarRef(
-        Lookup(gtl::FindOrDie(context->variable_array_map, id), index));
+        Lookup(context->variable_array_map.at(id), index));
   } else {
-    CHECK(gtl::ContainsKey(context->domain_array_map, id))
+    CHECK(context->domain_array_map.contains(id))
         << "Unknown identifier: " << id;
     const Domain& d =
-        Lookup(gtl::FindOrDie(context->domain_array_map, id), index);
+        Lookup(context->domain_array_map.at(id), index);
     $$ = Argument::FromDomain(d);
   }
 }
@@ -635,10 +635,14 @@ annotation:
 | SVALUE { $$ = Annotation::String($1); }
 | IDENTIFIER {
   const std::string& id = $1;
-  if (gtl::ContainsKey(context->variable_map, id)) {
-    $$ = Annotation::VarRef(gtl::FindOrDie(context->variable_map, id));
-  } else if (gtl::ContainsKey(context->variable_array_map, id)) {
-    $$ = Annotation::VarRefArray(gtl::FindOrDie(context->variable_array_map, id));
+  if (context->variable_map.contains(id)) {
+    $$ = Annotation::VarRef(context->variable_map.at(id));
+  } else if (context->variable_array_map.contains(id)) {
+    $$ = Annotation::VarRefArray(context->variable_array_map.at(id));
+  } else if (context->integer_map.contains(id)) {
+    $$ = Annotation::IntegerValue(context->integer_map.at(id));
+  } else if (context->integer_array_map.contains(id)) {
+    $$ = Annotation::IntegerList(context->integer_array_map.at(id));
   } else {
     $$ = Annotation::Identifier(id);
   }
@@ -653,15 +657,35 @@ annotation:
   }
 }
 | IDENTIFIER '[' IVALUE ']' {
-  CHECK(gtl::ContainsKey(context->variable_array_map, $1))
+  CHECK(context->variable_array_map.contains($1))
       << "Unknown identifier: " << $1;
   $$ = Annotation::VarRef(
-      Lookup(gtl::FindOrDie(context->variable_array_map, $1), $3));
+      Lookup(context->variable_array_map.at($1), $3));
 }
 | '[' annotation_arguments ']' {
   std::vector<Annotation>* const annotations = $2;
-  if (annotations != nullptr) {
-    $$ = Annotation::AnnotationList(std::move(*annotations));
+  if (annotations != nullptr && !annotations->empty()) {
+    bool all_integers = true;
+    bool all_vars = true;
+    for (const Annotation& ann : *annotations) {
+      if (ann.type != Annotation::INT_VALUE) all_integers = false;
+      if (ann.type != Annotation::VAR_REF) all_vars = false;
+    }
+    if (all_integers) {
+      std::vector<int64_t> values;
+      for (const Annotation& ann : *annotations) {
+        values.push_back(ann.interval_min);
+      }
+      $$ = Annotation::IntegerList(values);
+    } else if (all_vars) {
+      std::vector<Variable*> vars;
+      for (const Annotation& ann : *annotations) {
+        vars.push_back(ann.variables[0]);
+      }
+      $$ = Annotation::VarRefArray(vars);
+    } else {
+      $$ = Annotation::AnnotationList(std::move(*annotations));
+    }
     delete annotations;
   } else {
     $$ = Annotation::Empty();

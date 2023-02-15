@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,18 +14,25 @@
 #ifndef OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -71,13 +78,14 @@ class LinearConstraintManager {
         time_limit_(model->GetOrCreate<TimeLimit>()),
         model_(model),
         logger_(model->GetOrCreate<SolverLogger>()) {}
+  ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
   // and merge the bounds of constraints with the same terms. We also perform
   // basic preprocessing. If added is given, it will be set to true if this
   // constraint was actually a new one and to false if it was dominated by an
   // already existing one.
-  DEFINE_INT_TYPE(ConstraintIndex, int32_t);
+  DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
   ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr);
 
   // Same as Add(), but logs some information about the newly added constraint.
@@ -194,12 +202,12 @@ class LinearConstraintManager {
   int64_t num_simplifications_ = 0;
   int64_t num_merged_constraints_ = 0;
   int64_t num_shortened_constraints_ = 0;
-  int64_t num_splitted_constraints_ = 0;
+  int64_t num_split_constraints_ = 0;
   int64_t num_coeff_strenghtening_ = 0;
 
   int64_t num_cuts_ = 0;
   int64_t num_add_cut_calls_ = 0;
-  std::map<std::string, int> type_to_num_cuts_;
+  absl::btree_map<std::string, int> type_to_num_cuts_;
 
   bool objective_is_defined_ = false;
   bool objective_norm_computed_ = false;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,12 +24,10 @@ from absl import flags
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_integer('problem', 2, 'Problem id to solve.')
-flags.DEFINE_boolean('break_symmetries', True,
-                     'Break symmetries between equivalent orders.')
-flags.DEFINE_string(
+_PROBLEM = flags.DEFINE_integer('problem', 2, 'Problem id to solve.')
+_BREAK_SYMMETRIES = flags.DEFINE_boolean(
+    'break_symmetries', True, 'Break symmetries between equivalent orders.')
+_SOLVER = flags.DEFINE_string(
     'solver', 'mip_column', 'Method used to solve: sat, sat_table, sat_column, '
     'mip_column.')
 
@@ -340,7 +338,7 @@ def steel_mill_slab(problem, break_symmetries):
 
     # Orders are assigned to one slab.
     for o in all_orders:
-        model.Add(sum(assign[o]) == 1)
+        model.AddExactlyOne(assign[o])
 
     # Redundant constraint (sum of loads == sum of widths).
     model.Add(sum(loads) == sum(widths))
@@ -523,7 +521,7 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
 
     # Orders are assigned to one slab.
     for o in all_orders:
-        model.Add(sum(assign[o]) == 1)
+        model.AddExactlyOne(assign[o])
 
     # Redundant constraint (sum of loads == sum of widths).
     model.Add(sum(loads) == sum(widths))
@@ -705,8 +703,9 @@ def steel_mill_slab_with_mip_column_generation(problem):
 
     # create model and decision variables.
     start_time = time.time()
-    solver = pywraplp.Solver('Steel',
-                             pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('SCIP')
+    if not solver:
+      return
     selected = [
         solver.IntVar(0.0, 1.0, 'selected_%i' % i) for i in all_valid_slabs
     ]
@@ -737,14 +736,15 @@ def steel_mill_slab_with_mip_column_generation(problem):
 
 
 def main(_):
-    if FLAGS.solver == 'sat':
-        steel_mill_slab(FLAGS.problem, FLAGS.break_symmetries)
-    elif FLAGS.solver == 'sat_table':
-        steel_mill_slab_with_valid_slabs(FLAGS.problem, FLAGS.break_symmetries)
-    elif FLAGS.solver == 'sat_column':
-        steel_mill_slab_with_column_generation(FLAGS.problem)
+    if _SOLVER.value == 'sat':
+        steel_mill_slab(_PROBLEM.value, _BREAK_SYMMETRIES.value)
+    elif _SOLVER.value == 'sat_table':
+        steel_mill_slab_with_valid_slabs(_PROBLEM.value,
+                                         _BREAK_SYMMETRIES.value)
+    elif _SOLVER.value == 'sat_column':
+        steel_mill_slab_with_column_generation(_PROBLEM.value)
     else:  # 'mip_column'
-        steel_mill_slab_with_mip_column_generation(FLAGS.problem)
+        steel_mill_slab_with_mip_column_generation(_PROBLEM.value)
 
 
 if __name__ == '__main__':

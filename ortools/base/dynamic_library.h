@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -48,7 +48,7 @@ static constexpr size_t kMaxFunctionsNotFound = 10;
   bool TryToLoad(const std::string& library_name) {
     library_name_ = std::string(library_name);
 #if defined(_MSC_VER)
-    library_handle_ = static_cast<void*>(LoadLibrary(library_name.c_str()));
+    library_handle_ = static_cast<void*>(LoadLibraryA(library_name.c_str()));
 #elif defined(__GNUC__)
     library_handle_ = dlopen(library_name.c_str(), RTLD_NOW);
 #endif

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,16 +25,16 @@ class JNIUtil {
   // Creates a Java jstring from a null-terminated UTF-8 encoded C String.
   // The caller must delete the jstring reference.
   static jstring MakeJString(JNIEnv* env, const char* cstr) {
-    if (cstr == NULL) return NULL;
+    if (cstr == nullptr) return nullptr;
     return env->NewStringUTF(cstr);
   }
 
   // Creates a null-terminated UTF-8 encoded C string from a jstring.
   // The returned string should be "delete[]"-ed when no longer needed.
   static char* MakeCString(JNIEnv* env, jstring str) {
-    if (str == NULL) return NULL;
+    if (str == nullptr) return nullptr;
     jsize length = env->GetStringUTFLength(str);
-    const char* src = env->GetStringUTFChars(str, NULL);
+    const char* src = env->GetStringUTFChars(str, nullptr);
     char* dst = new char[length + 1];
     memcpy(dst, src, length);
     dst[length] = '\0';

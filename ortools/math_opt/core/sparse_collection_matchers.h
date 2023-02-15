@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,8 +21,8 @@
 #include <utility>
 #include <vector>
 
-#include "testing/base/public/gmock.h"
-#include "testing/base/public/gunit.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 

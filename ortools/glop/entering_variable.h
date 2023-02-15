@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 #define OR_TOOLS_GLOP_ENTERING_VARIABLE_H_
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include "absl/random/bit_gen_ref.h"
 #include "ortools/glop/basis_representation.h"
@@ -106,6 +108,7 @@ class EnteringVariable {
   // Store a column with its update coefficient and ratio.
   // This is used during the dual phase I & II ratio tests.
   struct ColWithRatio {
+    ColWithRatio() = default;
     ColWithRatio(ColIndex _col, Fractional reduced_cost, Fractional coeff_m)
         : col(_col), ratio(reduced_cost / coeff_m), coeff_magnitude(coeff_m) {}
 

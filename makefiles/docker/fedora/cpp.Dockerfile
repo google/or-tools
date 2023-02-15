@@ -6,11 +6,10 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
-RUN make cc
+RUN make cpp
 
 FROM build AS test
-RUN make test_cc
+RUN make test_cpp
 
 FROM build AS package
-RUN make package_cc
+RUN make package_cpp

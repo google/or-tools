@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -44,13 +44,13 @@ public final class CpSatExample {
 
     // Create the constraints.
     // [START constraints]
-    model.addLessOrEqual(LinearExpr.scalProd(new IntVar[] {x, y, z}, new int[] {2, 7, 3}), 50);
-    model.addLessOrEqual(LinearExpr.scalProd(new IntVar[] {x, y, z}, new int[] {3, -5, 7}), 45);
-    model.addLessOrEqual(LinearExpr.scalProd(new IntVar[] {x, y, z}, new int[] {5, 2, -6}), 37);
+    model.addLessOrEqual(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {2, 7, 3}), 50);
+    model.addLessOrEqual(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {3, -5, 7}), 45);
+    model.addLessOrEqual(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {5, 2, -6}), 37);
     // [END constraints]
 
     // [START objective]
-    model.maximize(LinearExpr.scalProd(new IntVar[] {x, y, z}, new int[] {2, 2, 3}));
+    model.maximize(LinearExpr.weightedSum(new IntVar[] {x, y, z}, new long[] {2, 2, 3}));
     // [END objective]
 
     // Create a solver and solve the model.

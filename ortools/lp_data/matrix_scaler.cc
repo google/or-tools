@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
+#include <string>
 #include <vector>
 
 #include "absl/strings/str_format.h"
@@ -358,9 +360,9 @@ void SparseMatrixScaler::Unscale() {
 Status SparseMatrixScaler::LPScale() {
   DCHECK(matrix_ != nullptr);
 
-  auto linear_program = absl::make_unique<LinearProgram>();
+  auto linear_program = std::make_unique<LinearProgram>();
   GlopParameters params;
-  auto simplex = absl::make_unique<RevisedSimplex>();
+  auto simplex = std::make_unique<RevisedSimplex>();
   simplex->SetParameters(params);
 
   // Begin linear program construction.
@@ -406,12 +408,14 @@ Status SparseMatrixScaler::LPScale() {
           row, linear_program.get(), &row_scale_var_indices);
 
       linear_program->SetVariableBounds(row_scale, -kInfinity, kInfinity);
+      // clang-format off
       // This is derived from the formulation in
       // min β
       // Subject to:
       // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c + β ≥ 0.0
       // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c     ≤ β
       // If a variable is integer, its scale factor is zero.
+      // clang-format on
 
       // Start with the constraint w_cv + s_c + s_v + beta >= 0.
       const RowIndex positive_constraint =

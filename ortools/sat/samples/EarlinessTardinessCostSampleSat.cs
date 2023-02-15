@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,7 +27,7 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
         {
             foreach (IntVar v in variables_)
             {
-                Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
+                Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
             }
             Console.WriteLine();
         }
@@ -61,19 +61,9 @@ public class EarlinessTardinessCostSampleSat
         long large_constant = 1000;
         IntVar expr = model.NewIntVar(0, large_constant, "expr");
 
-        // First segment.
-        IntVar s1 = model.NewIntVar(-large_constant, large_constant, "s1");
-        model.Add(s1 == earliness_cost * (earliness_date - x));
-
-        // Second segment.
-        IntVar s2 = model.NewConstant(0);
-
-        // Third segment.
-        IntVar s3 = model.NewIntVar(-large_constant, large_constant, "s3");
-        model.Add(s3 == lateness_cost * (x - lateness_date));
-
         // Link together expr and x through s1, s2, and s3.
-        model.AddMaxEquality(expr, new IntVar[] { s1, s2, s3 });
+        model.AddMaxEquality(expr, new LinearExpr[] { earliness_cost * (earliness_date - x), model.NewConstant(0),
+                                                      lateness_cost * (x - lateness_date) });
 
         // Search for x values in increasing order.
         model.AddDecisionStrategy(new IntVar[] { x }, DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,

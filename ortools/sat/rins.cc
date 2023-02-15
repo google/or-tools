@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,12 +13,19 @@
 
 #include "ortools/sat/rins.h"
 
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <limits>
+#include <utility>
+#include <vector>
 
-#include "ortools/sat/cp_model_mapping.h"
+#include "absl/random/bit_gen_ref.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {

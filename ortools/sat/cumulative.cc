@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,18 @@
 #include "ortools/sat/cumulative.h"
 
 #include <algorithm>
-#include <memory>
+#include <functional>
+#include <vector>
 
-#include "ortools/base/int_type.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/disjunctive.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_expr.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
@@ -28,6 +33,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/sat/timetable_edgefinding.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -82,20 +88,41 @@ std::function<void(Model*)> Cumulative(
 
     // Detect a subset of intervals that needs to be in disjunction and add a
     // Disjunctive() constraint over them.
-    if (parameters.use_disjunctive_constraint_in_cumulative_constraint()) {
+    if (parameters.use_disjunctive_constraint_in_cumulative()) {
       // TODO(user): We need to exclude intervals that can be of size zero
       // because the disjunctive do not "ignore" them like the cumulative
       // does. That is, the interval [2,2) will be assumed to be in
       // disjunction with [1, 3) for instance. We need to uniformize the
       // handling of interval with size zero.
-      //
-      // TODO(user): improve the condition (see CL147454185).
       std::vector<IntervalVariable> in_disjunction;
+      IntegerValue min_of_demands = kMaxIntegerValue;
+      const IntegerValue capa_max = integer_trail->UpperBound(capacity);
       for (int i = 0; i < vars.size(); ++i) {
-        if (intervals->MinSize(vars[i]) > 0 &&
-            2 * integer_trail->LowerBound(demands[i]) >
-                integer_trail->UpperBound(capacity)) {
+        const IntegerValue size_min = intervals->MinSize(vars[i]);
+        if (size_min == 0) continue;
+        const IntegerValue demand_min = integer_trail->LowerBound(demands[i]);
+        if (2 * demand_min > capa_max) {
           in_disjunction.push_back(vars[i]);
+          min_of_demands = std::min(min_of_demands, demand_min);
+        }
+      }
+
+      // Liftable? We might be able to add one more interval!
+      if (!in_disjunction.empty()) {
+        IntervalVariable lift_var;
+        IntegerValue lift_size(0);
+        for (int i = 0; i < vars.size(); ++i) {
+          const IntegerValue size_min = intervals->MinSize(vars[i]);
+          if (size_min == 0) continue;
+          const IntegerValue demand_min = integer_trail->LowerBound(demands[i]);
+          if (2 * demand_min > capa_max) continue;
+          if (min_of_demands + demand_min > capa_max && size_min > lift_size) {
+            lift_var = vars[i];
+            lift_size = size_min;
+          }
+        }
+        if (lift_size > 0) {
+          in_disjunction.push_back(lift_var);
         }
       }
 
@@ -120,9 +147,11 @@ std::function<void(Model*)> Cumulative(
     }
 
     if (helper == nullptr) {
-      helper = new SchedulingConstraintHelper(vars, model);
-      model->TakeOwnership(helper);
+      helper = intervals->GetOrCreateHelper(vars);
     }
+    SchedulingDemandHelper* demands_helper =
+        new SchedulingDemandHelper(demands, helper, model);
+    model->TakeOwnership(demands_helper);
 
     // For each variables that is after a subset of task ends (i.e. like a
     // makespan objective), we detect it and add a special constraint to
@@ -138,10 +167,18 @@ std::function<void(Model*)> Cumulative(
     //
     // TODO(user): There is a bit of code duplication with the disjunctive
     // precedence propagator. Abstract more?
-    {
+    if (parameters.use_hard_precedences_in_cumulative()) {
+      // The CumulativeIsAfterSubsetConstraint() always reset the helper to the
+      // forward time direction, so it is important to also precompute the
+      // precedence relation using the same direction! This is needed in case
+      // the helper has already been used and set in the other direction.
+      if (!helper->SynchronizeAndSetTimeDirection(true)) {
+        model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+        return;
+      }
+
       std::vector<IntegerVariable> index_to_end_vars;
       std::vector<int> index_to_task;
-      std::vector<PrecedencesPropagator::IntegerPrecedences> before;
       index_to_end_vars.clear();
       for (int t = 0; t < helper->NumTasks(); ++t) {
         const AffineExpression& end_exp = helper->Ends()[t];
@@ -151,32 +188,48 @@ std::function<void(Model*)> Cumulative(
         index_to_end_vars.push_back(end_exp.var);
         index_to_task.push_back(t);
       }
-      model->GetOrCreate<PrecedencesPropagator>()->ComputePrecedences(
-          index_to_end_vars, &before);
-      const int size = before.size();
-      for (int i = 0; i < size;) {
-        const IntegerVariable var = before[i].var;
-        DCHECK_NE(var, kNoIntegerVariable);
 
-        IntegerValue min_offset = kMaxIntegerValue;
+      // TODO(user): This can lead to many constraints. By analyzing a bit more
+      // the precedences, we could restrict that. In particular for cases were
+      // the cumulative is always (bunch of tasks B), T, (bunch of tasks A) and
+      // task T always in the middle, we never need to explicit list the
+      // precedence of a task in B with a task in A.
+      //
+      // TODO(user): If more than one variable are after the same set of
+      // intervals, we should regroup them in a single constraint rather than
+      // having two independent constraint doing the same propagation.
+      std::vector<PrecedencesPropagator::FullIntegerPrecedence>
+          full_precedences;
+      model->GetOrCreate<PrecedencesPropagator>()->ComputeFullPrecedences(
+          !parameters.exploit_all_precedences(), index_to_end_vars,
+          &full_precedences);
+      for (const PrecedencesPropagator::FullIntegerPrecedence& data :
+           full_precedences) {
+        const int size = data.indices.size();
+        if (size <= 1) continue;
+
+        const IntegerVariable var = data.var;
         std::vector<int> subtasks;
-        for (; i < size && before[i].var == var; ++i) {
-          const int t = index_to_task[before[i].index];
+        std::vector<IntegerValue> offsets;
+        IntegerValue sum_of_demand_max(0);
+        for (int i = 0; i < size; ++i) {
+          const int t = index_to_task[data.indices[i]];
           subtasks.push_back(t);
+          sum_of_demand_max += integer_trail->LevelZeroUpperBound(demands[t]);
 
           // We have var >= end_exp.var + offset, so
           // var >= (end_exp.var + end_exp.cte) + (offset - end_exp.cte)
           // var >= task end + new_offset.
           const AffineExpression& end_exp = helper->Ends()[t];
-          min_offset =
-              std::min(min_offset, before[i].offset - end_exp.constant);
+          offsets.push_back(data.offsets[i] - end_exp.constant);
         }
-
-        if (subtasks.size() > 1) {
+        if (sum_of_demand_max > integer_trail->LevelZeroLowerBound(capacity)) {
+          VLOG(2) << "Cumulative precedence constraint! var= " << var
+                  << " #task: " << absl::StrJoin(subtasks, ",");
           CumulativeIsAfterSubsetConstraint* constraint =
-              new CumulativeIsAfterSubsetConstraint(var, min_offset, capacity,
-                                                    demands, subtasks,
-                                                    integer_trail, helper);
+              new CumulativeIsAfterSubsetConstraint(var, capacity, subtasks,
+                                                    offsets, helper,
+                                                    demands_helper, model);
           constraint->RegisterWith(watcher);
           model->TakeOwnership(constraint);
         }
@@ -187,22 +240,22 @@ std::function<void(Model*)> Cumulative(
     // increases the minimum of the start variables, decrease the maximum of the
     // end variables, and increase the minimum of the capacity variable.
     TimeTablingPerTask* time_tabling =
-        new TimeTablingPerTask(demands, capacity, integer_trail, helper);
+        new TimeTablingPerTask(capacity, helper, demands_helper, model);
     time_tabling->RegisterWith(watcher);
     model->TakeOwnership(time_tabling);
 
     // Propagator responsible for applying the Overload Checking filtering rule.
     // It increases the minimum of the capacity variable.
-    if (parameters.use_overload_checker_in_cumulative_constraint()) {
-      AddCumulativeOverloadChecker(demands, capacity, helper, model);
+    if (parameters.use_overload_checker_in_cumulative()) {
+      AddCumulativeOverloadChecker(capacity, helper, demands_helper, model);
     }
 
     // Propagator responsible for applying the Timetable Edge finding filtering
     // rule. It increases the minimum of the start variables and decreases the
     // maximum of the end variables,
-    if (parameters.use_timetable_edge_finding_in_cumulative_constraint()) {
+    if (parameters.use_timetable_edge_finding_in_cumulative()) {
       TimeTableEdgeFinding* time_table_edge_finding =
-          new TimeTableEdgeFinding(demands, capacity, helper, integer_trail);
+          new TimeTableEdgeFinding(capacity, helper, demands_helper, model);
       time_table_edge_finding->RegisterWith(watcher);
       model->TakeOwnership(time_table_edge_finding);
     }
@@ -273,9 +326,9 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
 
         model->Add(ReifiedBoolAnd(consume_condition, consume));
 
-        // TODO(user): this is needed because we currently can't create a
-        // boolean variable if the model is unsat.
-        if (sat_solver->IsModelUnsat()) return;
+        // this is needed because we currently can't create a boolean variable
+        // if the model is unsat.
+        if (sat_solver->ModelIsUnsat()) return;
 
         literals_with_coeff.push_back(
             LiteralWithCoeff(consume, Coefficient(fixed_demands[t].value())));
@@ -285,7 +338,7 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
                                       fixed_capacity, &literals_with_coeff);
 
       // Abort if UNSAT.
-      if (sat_solver->IsModelUnsat()) return;
+      if (sat_solver->ModelIsUnsat()) return;
     }
   };
 }
@@ -306,16 +359,16 @@ std::function<void(Model*)> CumulativeUsingReservoir(
         integer_trail->UpperBound(capacity).value());
 
     std::vector<AffineExpression> times;
-    std::vector<IntegerValue> deltas;
+    std::vector<AffineExpression> deltas;
     std::vector<Literal> presences;
 
     const int num_tasks = vars.size();
     for (int t = 0; t < num_tasks; ++t) {
       CHECK(integer_trail->IsFixed(demands[t]));
       times.push_back(intervals->StartVar(vars[t]));
-      deltas.push_back(integer_trail->LowerBound(demands[t]));
+      deltas.push_back(demands[t]);
       times.push_back(intervals->EndVar(vars[t]));
-      deltas.push_back(-integer_trail->LowerBound(demands[t]));
+      deltas.push_back(demands[t].Negated());
       if (intervals->IsOptional(vars[t])) {
         presences.push_back(intervals->PresenceLiteral(vars[t]));
         presences.push_back(intervals->PresenceLiteral(vars[t]));

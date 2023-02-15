@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,15 @@
 #ifndef OR_TOOLS_SAT_LINEAR_RELAXATION_H_
 #define OR_TOOLS_SAT_LINEAR_RELAXATION_H_
 
+#include <optional>
 #include <vector>
 
-#include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/linear_constraint.h"
-#include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/presolve_util.h"
 
 namespace operations_research {
 namespace sat {
@@ -79,7 +81,8 @@ void AppendBoolOrRelaxation(const ConstraintProto& ct, Model* model,
                             LinearRelaxation* relaxation);
 
 void AppendBoolAndRelaxation(const ConstraintProto& ct, Model* model,
-                             LinearRelaxation* relaxation);
+                             LinearRelaxation* relaxation,
+                             ActivityBoundHelper* activity_helper = nullptr);
 
 void AppendAtMostOneRelaxation(const ConstraintProto& ct, Model* model,
                                LinearRelaxation* relaxation);
@@ -126,34 +129,34 @@ void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
 // -inf <= (Sum Negated(ei) * (ub - implied_ub)) + ax <= ub
 // Where implied_lb and implied_ub are trivial lower and upper bounds of the
 // constraint.
-void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
-                                      bool linearize_enforced_constraints,
-                                      Model* model,
-                                      LinearRelaxation* relaxation);
+void AppendLinearConstraintRelaxation(
+    const ConstraintProto& ct, bool linearize_enforced_constraints,
+    Model* model, LinearRelaxation* relaxation,
+    ActivityBoundHelper* activity_helper = nullptr);
 
-void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
-                             LinearRelaxation* relaxation);
-
-void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
+void AppendSquareRelaxation(const ConstraintProto& ct, Model* m,
                             LinearRelaxation* relaxation);
 
 // Adds linearization of no overlap constraints.
 // It adds an energetic equation linking the duration of all potential tasks to
 // the actual span of the no overlap constraint.
-void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
-                               const ConstraintProto& ct, Model* model,
-                               LinearRelaxation* relaxation);
+void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
+                                              Model* model,
+                                              LinearRelaxation* relaxation);
 
 // Adds linearization of cumulative constraints.The second part adds an
 // energetic equation linking the duration of all potential tasks to the actual
-// max span * capacity of the cumulative constraint.
-void AppendCumulativeRelaxation(const CpModelProto& model_proto,
-                                const ConstraintProto& ct, Model* model,
-                                LinearRelaxation* relaxation);
+// span * capacity of the cumulative constraint.
+void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
+                                               Model* model,
+                                               LinearRelaxation* relaxation);
 
 // Cut generators.
 void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
                             Model* m, LinearRelaxation* relaxation);
+
+void AddSquareCutGenerator(const ConstraintProto& ct, int linearization_level,
+                           Model* m, LinearRelaxation* relaxation);
 
 void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
                             LinearRelaxation* relaxation);
@@ -161,17 +164,41 @@ void AddAllDiffCutGenerator(const ConstraintProto& ct, Model* m,
 void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation);
 
+// Routing relaxation and cut generators.
+
+void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
+                             LinearRelaxation* relaxation);
+
+void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
+                            LinearRelaxation* relaxation);
+
 void AddCircuitCutGenerator(const ConstraintProto& ct, Model* m,
                             LinearRelaxation* relaxation);
 
 void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation);
 
-void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
-                               LinearRelaxation* relaxation);
+// Scheduling relaxations and cut generators.
 
-void AddNoOverlapCutGenerator(const ConstraintProto& ct, Model* m,
-                              LinearRelaxation* relaxation);
+// Adds linearization of cumulative constraints.The second part adds an
+// energetic equation linking the duration of all potential tasks to the actual
+// span * capacity of the cumulative constraint. It uses the makespan to compute
+// the span of the constraint if defined.
+void AddCumulativeRelaxation(const AffineExpression& capacity,
+                             SchedulingConstraintHelper* helper,
+                             SchedulingDemandHelper* demands,
+                             const std::optional<AffineExpression>& makespan,
+                             Model* model, LinearRelaxation* relaxation);
+
+void AddCumulativeCutGenerator(const AffineExpression& capacity,
+                               SchedulingConstraintHelper* helper,
+                               SchedulingDemandHelper* demands,
+                               const std::optional<AffineExpression>& makespan,
+                               Model* m, LinearRelaxation* relaxation);
+
+void AddNoOverlapCutGenerator(SchedulingConstraintHelper* helper,
+                              const std::optional<AffineExpression>& makespan,
+                              Model* m, LinearRelaxation* relaxation);
 
 void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
                                 LinearRelaxation* relaxation);
@@ -180,7 +207,8 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               const ConstraintProto& ct,
                               int linearization_level, Model* model,
-                              LinearRelaxation* relaxation);
+                              LinearRelaxation* relaxation,
+                              ActivityBoundHelper* helper = nullptr);
 
 // Builds the linear relaxation of a CpModelProto.
 LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,

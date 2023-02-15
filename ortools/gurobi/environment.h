@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -637,8 +637,6 @@ extern std::function<int(const char *filename)> GRBreplay;
 extern std::function<int(GRBmodel *model, int sense, double constant,int lnz, int *lind, double *lval,int qnz, int *qrow, int *qcol, double *qval)> GRBsetobjective;
 extern std::function<int(GRBmodel *model, int index, int priority, double weight,double abstol, double reltol, const char *name,double constant, int lnz, int *lind, double *lval)> GRBsetobjectiven;
 extern std::function<void(GRBenv *env, const char *message)> GRBmsg;
-extern std::function<int(GRBenv *env, FILE **logfileP)> GRBgetlogfile;
-extern std::function<int(GRBenv *env, FILE *logfile)> GRBsetlogfile;
 extern std::function<int(GRBenv *env, const char *paramname, int *valueP)> GRBgetintparam;
 extern std::function<int(GRBenv *env, const char *paramname, double *valueP)> GRBgetdblparam;
 extern std::function<int(GRBenv *env, const char *paramname, char *valueP)> GRBgetstrparam;
@@ -679,7 +677,6 @@ extern std::function<int(GRBmodel *model)> GRBtunemodel;
 extern std::function<int(int nummodels, GRBmodel **models,GRBmodel *ignore, GRBmodel *hint)> GRBtunemodels;
 extern std::function<int(GRBmodel *model, int i)> GRBgettuneresult;
 extern std::function<int(GRBmodel *model, int i, char **logP)> GRBgettunelog;
-extern std::function<int(GRBmodel *model, GRBmodel *ignore, GRBmodel *hint)> GRBtunemodeladv;
 extern std::function<int(GRBmodel *model)> GRBsync;
 
 

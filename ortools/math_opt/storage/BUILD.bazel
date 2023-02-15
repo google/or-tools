@@ -1,0 +1,204 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+
+cc_library(
+    name = "model_storage_types",
+    hdrs = ["model_storage_types.h"],
+    deps = [
+        "//ortools/base:intops",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "sorted",
+    hdrs = ["sorted.h"],
+    deps = [
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "sparse_coefficient_map",
+    srcs = ["sparse_coefficient_map.cc"],
+    hdrs = ["sparse_coefficient_map.h"],
+    deps = [
+        ":model_storage_types",
+        "//ortools/base:intops",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/meta:type_traits",
+    ],
+)
+
+cc_library(
+    name = "sparse_matrix",
+    srcs = ["sparse_matrix.cc"],
+    hdrs = ["sparse_matrix.h"],
+    deps = [
+        ":model_storage_types",
+        "//ortools/base:intops",
+        "//ortools/base:map_util",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/meta:type_traits",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "update_trackers",
+    hdrs = ["update_trackers.h"],
+    deps = [
+        ":model_storage_types",
+        "//ortools/base",
+        #"//ortools/base:logging",
+        "//ortools/base:intops",
+        "//ortools/base:stl_util",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
+cc_library(
+    name = "variable_storage",
+    srcs = ["variable_storage.cc"],
+    hdrs = ["variable_storage.h"],
+    deps = [
+        ":model_storage_types",
+        ":range",
+        ":sorted",
+        "//ortools/base:intops",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "objective_storage",
+    srcs = ["objective_storage.cc"],
+    hdrs = ["objective_storage.h"],
+    deps = [
+        ":range",
+        ":sorted",
+        ":sparse_coefficient_map",
+        ":sparse_matrix",
+        "//ortools/base:intops",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+    ],
+)
+
+cc_library(
+    name = "linear_constraint_storage",
+    srcs = ["linear_constraint_storage.cc"],
+    hdrs = ["linear_constraint_storage.h"],
+    deps = [
+        ":model_storage_types",
+        ":range",
+        ":sorted",
+        ":sparse_matrix",
+        "//ortools/base",
+        "//ortools/base:intops",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/meta:type_traits",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "atomic_constraint_storage",
+    hdrs = ["atomic_constraint_storage.h"],
+    deps = [
+        ":model_storage_types",
+        ":range",
+        ":sorted",
+        "//ortools/base",
+        "//ortools/base:intops",
+        "//ortools/base:map_util",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "model_storage",
+    srcs = ["model_storage.cc"],
+    hdrs = ["model_storage.h"],
+    deps = [
+        ":atomic_constraint_storage",
+        ":iterators",
+        ":linear_constraint_storage",
+        ":objective_storage",
+        ":sorted",
+        ":sparse_matrix",
+        ":update_trackers",
+        ":variable_storage",
+        "//ortools/base",
+        #"//ortools/base:logging",
+        "//ortools/base:intops",
+        "//ortools/base:map_util",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/constraints/indicator:storage",
+        "//ortools/math_opt/constraints/quadratic:storage",
+        "//ortools/math_opt/constraints/sos:storage",
+        "//ortools/math_opt/core:model_summary",
+        "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/math_opt/validators:model_validator",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/meta:type_traits",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "range",
+    hdrs = ["range.h"],
+)
+
+cc_library(
+    name = "iterators",
+    hdrs = ["iterators.h"],
+    deps = [":range"],
+)

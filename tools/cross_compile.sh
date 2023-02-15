@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -eo pipefail
 
 function extract() {
@@ -22,7 +35,7 @@ function unpack() {
   if [[  ! -d "${DESTINATION}" ]] ; then
     echo "Downloading ${URL}..."
     local -r ARCHIVE_NAME=$(basename "${URL}")
-    test -f "${ARCHIVE_NAME}" || wget --no-verbose "${URL}"
+    [[ -f "${ARCHIVE_NAME}" ]] || wget --no-verbose "${URL}"
     extract "${ARCHIVE_NAME}"
     rm -f "${ARCHIVE_NAME}"
   fi
@@ -33,7 +46,7 @@ function install_qemu() {
     >&2 echo 'QEMU is disabled !'
     return 0
   fi
-  local -r QEMU_VERSION=${QEMU_VERSION:=5.2.0}
+  local -r QEMU_VERSION=${QEMU_VERSION:=7.0.0}
   local -r QEMU_TARGET=${QEMU_ARCH}-linux-user
 
   if echo "${QEMU_VERSION} ${QEMU_TARGET}" | cmp --silent "${QEMU_INSTALL}/.build" -; then
@@ -53,6 +66,10 @@ function install_qemu() {
   cd ${QEMU_DIR} || exit 2
 
   # Qemu (meson based build) depends on: pkgconf, libglib2.0, python3, ninja
+  if [[ $(lsb_release -is) == "Arch" ]]; then
+    patch -p1 --forward <"${PROJECT_DIR}"/tools/qemu-7.0.0-glibc-2.36.patch || true
+  fi
+
   ./configure \
     --prefix="${QEMU_INSTALL}" \
     --target-list="${QEMU_TARGET}" \
@@ -70,11 +87,7 @@ function install_qemu() {
     --disable-opengl \
     --disable-sdl \
     --disable-virglrenderer \
-    --disable-vte \
-    --enable-modules
-
-  # --static Not supported on Archlinux
-  # so we use --enable-modules
+    --disable-vte
 
   # wrapper on ninja
   make -j8
@@ -96,81 +109,48 @@ function clean_build() {
   mkdir -p "${BUILD_DIR}"
 }
 
-function expand_linaro_config() {
-  #ref: https://releases.linaro.org/components/toolchain/binaries/
-  local -r LINARO_VERSION=7.5-2019.12
-  local -r LINARO_ROOT_URL=https://releases.linaro.org/components/toolchain/binaries/${LINARO_VERSION}
-
-  local -r GCC_VERSION=7.5.0-2019.12
-  local -r GCC_URL=${LINARO_ROOT_URL}/${TARGET}/gcc-linaro-${GCC_VERSION}-x86_64_${TARGET}.tar.xz
-  local -r GCC_RELATIVE_DIR="gcc-linaro-${GCC_VERSION}-x86_64_${TARGET}"
-  unpack "${GCC_URL}" "${GCC_RELATIVE_DIR}"
-
-  local -r SYSROOT_VERSION=2.25-2019.12
-  local -r SYSROOT_URL=${LINARO_ROOT_URL}/${TARGET}/sysroot-glibc-linaro-${SYSROOT_VERSION}-${TARGET}.tar.xz
-  local -r SYSROOT_RELATIVE_DIR=sysroot-glibc-linaro-${SYSROOT_VERSION}-${TARGET}
-  unpack "${SYSROOT_URL}" "${SYSROOT_RELATIVE_DIR}"
-
-  local -r SYSROOT_DIR=${ARCHIVE_DIR}/${SYSROOT_RELATIVE_DIR}
-  local -r STAGING_DIR=${ARCHIVE_DIR}/${SYSROOT_RELATIVE_DIR}-stage
-  local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
-
-  # Write a Toolchain file
-  # note: This is manadatory to use a file in order to have the CMake variable
-  # 'CMAKE_CROSSCOMPILING' set to TRUE.
-  # ref: https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling-for-linux
-  cat >"$TOOLCHAIN_FILE" <<EOL
-set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_PROCESSOR ${TARGET})
-
-set(CMAKE_SYSROOT ${SYSROOT_DIR})
-set(CMAKE_STAGING_PREFIX ${STAGING_DIR})
-
-set(tools ${GCC_DIR})
-set(CMAKE_C_COMPILER \${tools}/bin/${TARGET}-gcc)
-set(CMAKE_CXX_COMPILER \${tools}/bin/${TARGET}-g++)
-
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-EOL
-CMAKE_ADDITIONAL_ARGS+=( -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" )
-QEMU_ARGS+=( -L "${SYSROOT_DIR}" )
-QEMU_ARGS+=( -E LD_LIBRARY_PATH=/lib )
-}
-
 function expand_codescape_config() {
+  # https://www.mips.com/develop/tools/codescape-mips-sdk/mips-toolchain-configurations/
+  # mips-mti: MIPS32R6 and MIPS64R6
+  # mips-img: MIPS32R2 and MIPS64R2
+
   # ref: https://codescape.mips.com/components/toolchain/2020.06-01/downloads.html
+  local -r DATE=2020.06-01
+  local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.MTI.Linux.CentOS-6.x86_64.tar.gz
+  local -r GCC_RELATIVE_DIR="mips-mti-linux-gnu/${DATE}"
+
   # ref: https://codescape.mips.com/components/toolchain/2019.02-04/downloads.html
-  #local -r DATE=2020.06-01
-  local -r DATE=2019.02-04
-  #local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.MTI.Linux.CentOS-6.x86_64.tar.gz
-  local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.IMG.Linux.CentOS-6.x86_64.tar.gz
+  #local -r DATE=2019.02-04
+  #local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.IMG.Linux.CentOS-6.x86_64.tar.gz
+  #local -r GCC_RELATIVE_DIR="mips-img-linux-gnu/${DATE}"
+
   local -r GCC_URL=${CODESCAPE_URL}
-  #local -r GCC_RELATIVE_DIR="mips-mti-linux-gnu/${DATE}"
-  local -r GCC_RELATIVE_DIR="mips-img-linux-gnu/${DATE}"
   unpack "${GCC_URL}" "${GCC_RELATIVE_DIR}"
 
   local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
   local MIPS_FLAGS=""
+  local LIBC_DIR_SUFFIX=""
   local FLAVOUR=""
   case "${TARGET}" in
     "mips64")
-      MIPS_FLAGS="-EB -mabi=64"
-      #FLAVOUR="mips-r2-hard"
+      MIPS_FLAGS="-EB -mips64r6 -mabi=64"
+      #MIPS_FLAGS="-EB -mips64r2 -mabi=64"
       FLAVOUR="mips-r6-hard"
+      #FLAVOUR="mips-r2-hard"
+      LIBC_DIR_SUFFIX="lib64"
       ;;
     "mips64el")
-      MIPS_FLAGS="-EL -mabi=64"
-      #FLAVOUR="mipsel-r2-hard"
+      MIPS_FLAGS="-EL -mips64r6 -mabi=64"
+      #MIPS_FLAGS="-EL -mips64r2 -mabi=64"
       FLAVOUR="mipsel-r6-hard"
+      #FLAVOUR="mipsel-r2-hard"
+      LIBC_DIR_SUFFIX="lib64"
       ;;
     *)
       >&2 echo 'unknown mips platform'
       exit 1 ;;
   esac
-  local -r SYSROOT_DIR=${GCC_DIR}/sysroot/${FLAVOUR}
+  local -r SYSROOT_DIR=${GCC_DIR}/sysroot
   local -r STAGING_DIR=${SYSROOT_DIR}-stage
 
   # Write a Toolchain file
@@ -186,14 +166,17 @@ set(CMAKE_STAGING_PREFIX ${STAGING_DIR})
 
 set(tools ${GCC_DIR})
 
-#set(CMAKE_C_COMPILER \${tools}/bin/mips-mti-linux-gnu-gcc)
-set(CMAKE_C_COMPILER \${tools}/bin/mips-img-linux-gnu-gcc)
-set(CMAKE_C_COMPILER_ARG "${MIPS_FLAGS}")
-
-#set(CMAKE_CXX_COMPILER \${tools}/bin/mips-mti-linux-gnu-g++)
-set(CMAKE_CXX_COMPILER \${tools}/bin/mips-img-linux-gnu-g++)
-set(CMAKE_CXX_FLAGS "${MIPS_FLAGS}")
+# R6
+set(CMAKE_C_COMPILER \${tools}/bin/mips-mti-linux-gnu-gcc)
+set(CMAKE_C_FLAGS "${MIPS_FLAGS}")
+set(CMAKE_CXX_COMPILER \${tools}/bin/mips-mti-linux-gnu-g++)
 set(CMAKE_CXX_FLAGS "${MIPS_FLAGS} -L${SYSROOT_DIR}/usr/lib64")
+
+# R2
+#set(CMAKE_C_COMPILER \${tools}/bin/mips-img-linux-gnu-gcc)
+#set(CMAKE_C_FLAGS "${MIPS_FLAGS}")
+#set(CMAKE_CXX_COMPILER \${tools}/bin/mips-img-linux-gnu-g++)
+#set(CMAKE_CXX_FLAGS "${MIPS_FLAGS}")
 
 set(CMAKE_FIND_ROOT_PATH ${GCC_DIR})
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
@@ -204,9 +187,82 @@ EOL
 
 CMAKE_ADDITIONAL_ARGS+=( -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" )
 QEMU_ARGS+=( -L "${SYSROOT_DIR}/${FLAVOUR}" )
-#local -r LIBC_DIR=${GCC_DIR}/mips-mti-linux-gnu/lib/${FLAVOUR}/lib64
-local -r LIBC_DIR=${GCC_DIR}/mips-img-linux-gnu/lib/${FLAVOUR}/lib64
+local -r LIBC_DIR=${GCC_DIR}/mips-mti-linux-gnu/lib/${FLAVOUR}/${LIBC_DIR_SUFFIX}
+#local -r LIBC_DIR=${GCC_DIR}/mips-img-linux-gnu/lib/${FLAVOUR}/${LIBC_DIR_SUFFIX}
 QEMU_ARGS+=( -E LD_PRELOAD="${LIBC_DIR}/libstdc++.so.6:${LIBC_DIR}/libgcc_s.so.1" )
+}
+
+function expand_bootlin_config() {
+  # ref: https://toolchains.bootlin.com/
+  local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
+
+  case "${TARGET}" in
+    "aarch64")
+      local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--stable-2021.11-1.tar.bz2"
+      local -r GCC_PREFIX="aarch64"
+      ;;
+    "aarch64be")
+      local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64be/tarballs/aarch64be--glibc--stable-2021.11-1.tar.bz2"
+      local -r GCC_PREFIX="aarch64_be"
+      ;;
+    "ppc64le")
+      local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64le-power8/tarballs/powerpc64le-power8--glibc--stable-2021.11-1.tar.bz2"
+      local -r GCC_PREFIX="powerpc64le"
+      ;;
+    "ppc64")
+      local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64-power8/tarballs/powerpc64-power8--glibc--stable-2021.11-1.tar.bz2"
+      local -r GCC_PREFIX="powerpc64"
+      ;;
+    "ppc")
+      #local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-e500mc/tarballs/powerpc-e500mc--glibc--stable-2021.11-1.tar.bz2"
+      local -r POWER_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-440fp/tarballs/powerpc-440fp--glibc--stable-2021.11-1.tar.bz2"
+      local -r GCC_PREFIX="powerpc"
+      ;;
+    *)
+      >&2 echo 'unknown power platform'
+      exit 1 ;;
+  esac
+
+  local -r POWER_RELATIVE_DIR="${TARGET}"
+  unpack "${POWER_URL}" "${POWER_RELATIVE_DIR}"
+  local -r EXTRACT_DIR="${ARCHIVE_DIR}/$(basename ${POWER_URL%.tar.bz2})"
+
+  local -r POWER_DIR=${ARCHIVE_DIR}/${POWER_RELATIVE_DIR}
+  if [[ -d "${EXTRACT_DIR}" ]]; then
+    mv "${EXTRACT_DIR}" "${POWER_DIR}"
+  fi
+
+  local -r SYSROOT_DIR="${POWER_DIR}/${GCC_PREFIX}-buildroot-linux-gnu/sysroot"
+  #local -r STAGING_DIR=${SYSROOT_DIR}-stage
+
+  # Write a Toolchain file
+  # note: This is manadatory to use a file in order to have the CMake variable
+  # 'CMAKE_CROSSCOMPILING' set to TRUE.
+  # ref: https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling-for-linux
+  cat >"${TOOLCHAIN_FILE}" <<EOL
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR ${GCC_PREFIX})
+
+set(CMAKE_SYSROOT ${SYSROOT_DIR})
+#set(CMAKE_STAGING_PREFIX ${STAGING_DIR})
+
+set(tools ${POWER_DIR})
+
+set(CMAKE_C_COMPILER \${tools}/bin/${GCC_PREFIX}-linux-gcc)
+set(CMAKE_C_FLAGS "${POWER_FLAGS}")
+set(CMAKE_CXX_COMPILER \${tools}/bin/${GCC_PREFIX}-linux-g++)
+set(CMAKE_CXX_FLAGS "${POWER_FLAGS} -L${SYSROOT_DIR}/lib")
+
+set(CMAKE_FIND_ROOT_PATH ${POWER_DIR})
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+EOL
+
+CMAKE_ADDITIONAL_ARGS+=( -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" )
+QEMU_ARGS+=( -L "${SYSROOT_DIR}" )
+QEMU_ARGS+=( -E LD_PRELOAD="${SYSROOT_DIR}/usr/lib/libstdc++.so.6:${SYSROOT_DIR}/lib/libgcc_s.so.1" )
 }
 
 function build() {
@@ -263,8 +319,10 @@ DESCRIPTION
 \t* PROJECT: glop or-tools
 \t* TARGET:
 \t\tx86_64
-\t\taarch64-linux-gnu aarch64_be-linux-gnu
-\t\tmips64 mips64el
+\t\taarch64 aarch64be (bootlin)
+\t\tmips64 mips64el (codespace)
+\t\tppc (bootlin)
+\t\tppc64 ppc64le (bootlin)
 
 OPTIONS
 \t-h --help: show this help text
@@ -324,18 +382,27 @@ function main() {
   case ${TARGET} in
     x86_64)
       declare -r QEMU_ARCH=x86_64 ;;
-    aarch64-linux-gnu)
-      expand_linaro_config
+    aarch64)
+      expand_bootlin_config
       declare -r QEMU_ARCH=aarch64 ;;
-    aarch64_be-linux-gnu)
-      expand_linaro_config
-      declare -r QEMU_ARCH=DISABLED ;;
+    aarch64be)
+      expand_bootlin_config
+      declare -r QEMU_ARCH=aarch64_be ;;
     mips64)
       expand_codescape_config
       declare -r QEMU_ARCH=mips64 ;;
     mips64el)
       expand_codescape_config
       declare -r QEMU_ARCH=mips64el ;;
+    ppc64le)
+      expand_bootlin_config
+      declare -r QEMU_ARCH=ppc64le ;;
+    ppc64)
+      expand_bootlin_config
+      declare -r QEMU_ARCH=ppc64 ;;
+    ppc)
+      expand_bootlin_config
+      declare -r QEMU_ARCH=ppc ;;
     *)
       >&2 echo "Unknown TARGET '${TARGET}'..."
       exit 1 ;;

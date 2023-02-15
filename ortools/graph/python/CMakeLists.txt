@@ -1,34 +1,73 @@
-set_property(SOURCE graph.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE graph.i PROPERTY SWIG_MODULE_NAME pywrapgraph)
-set_property(SOURCE graph.i PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
-swig_add_library(pywrapgraph
-  TYPE SHARED
-  LANGUAGE python
-  OUTPUT_DIR ${PYTHON_PROJECT_DIR}/graph
-  SOURCES graph.i)
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-target_include_directories(pywrapgraph PRIVATE ${Python3_INCLUDE_DIRS})
-set_property(TARGET pywrapgraph PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
-target_compile_definitions(pywrapgraph PUBLIC "PY3")
-
+pybind11_add_module(linear_sum_assignment_pybind11 MODULE linear_sum_assignment.cc)
 # note: macOS is APPLE and also UNIX !
+set_target_properties(linear_sum_assignment_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "linear_sum_assignment")
 if(APPLE)
-  set_target_properties(pywrapgraph PROPERTIES
+  set_target_properties(linear_sum_assignment_pybind11 PROPERTIES
     SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs")
-  set_property(TARGET pywrapgraph APPEND PROPERTY
-    LINK_FLAGS "-flat_namespace -undefined suppress")
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
+    LINK_FLAGS "-flat_namespace -undefined suppress"
+    )
 elseif(UNIX)
-  set_target_properties(pywrapgraph PROPERTIES
-    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../${PROJECT_NAME}/.libs")
+  set_target_properties(linear_sum_assignment_pybind11 PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
+    )
 endif()
-target_link_libraries(pywrapgraph PRIVATE ortools::ortools)
+target_link_libraries(linear_sum_assignment_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::linear_sum_assignment_pybind11 ALIAS linear_sum_assignment_pybind11)
 
-# Variable PYTHON_LIBRARIES can contains keyword `optimized`
-# which won't be interpreted inside a generator expression.
-# i.e. we can't use: $<$<PLATFORM_ID:Windows>:${PYTHON_LIBRARIES}>
-# see: https://cmake.org/cmake/help/git-stage/command/target_link_libraries.html#command:target_link_libraries
-if(MSVC)
-  target_link_libraries(pywrapgraph PRIVATE ${Python3_LIBRARIES})
+pybind11_add_module(max_flow_pybind11 MODULE max_flow.cc)
+# note: macOS is APPLE and also UNIX !
+set_target_properties(max_flow_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "max_flow")
+if(APPLE)
+  set_target_properties(max_flow_pybind11 PROPERTIES
+    SUFFIX ".so"
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
+    LINK_FLAGS "-flat_namespace -undefined suppress"
+    )
+elseif(UNIX)
+  set_target_properties(max_flow_pybind11 PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
+    )
+endif()
+target_link_libraries(max_flow_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::max_flow_pybind11 ALIAS max_flow_pybind11)
+
+pybind11_add_module(min_cost_flow_pybind11 MODULE min_cost_flow.cc)
+# note: macOS is APPLE and also UNIX !
+set_target_properties(min_cost_flow_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "min_cost_flow")
+if(APPLE)
+  set_target_properties(min_cost_flow_pybind11 PROPERTIES
+    SUFFIX ".so"
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
+    LINK_FLAGS "-flat_namespace -undefined suppress"
+    )
+elseif(UNIX)
+  set_target_properties(min_cost_flow_pybind11 PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
+    )
+endif()
+target_link_libraries(min_cost_flow_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::min_cost_flow_pybind11 ALIAS min_cost_flow_pybind11)
+
+if(BUILD_TESTING)
+  file(GLOB PYTHON_SRCS "*_test.py")
+  foreach(FILE_NAME IN LISTS PYTHON_SRCS)
+    add_python_test(${FILE_NAME})
+  endforeach()
 endif()

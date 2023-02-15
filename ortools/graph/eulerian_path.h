@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,25 +35,29 @@
 
 namespace operations_research {
 
+namespace internal {
+template <typename Graph>
+bool GraphIsConnected(const Graph& graph);
+}  // namespace internal
+
 // Returns true if a graph is Eulerian, aka all its nodes are of even degree.
 template <typename Graph>
-bool IsEulerianGraph(const Graph& graph) {
+bool IsEulerianGraph(const Graph& graph, bool assume_connectivity = true) {
   typedef typename Graph::NodeIndex NodeIndex;
   for (const NodeIndex node : graph.AllNodes()) {
     if ((graph.OutDegree(node) + graph.InDegree(node)) % 2 != 0) {
       return false;
     }
   }
-  // TODO(user): Check graph connectivity.
-  return true;
+  return assume_connectivity || internal::GraphIsConnected(graph);
 }
 
 // Returns true if a graph is Semi-Eulerian, aka at most two of its nodes are of
 // odd degree.
 // odd_nodes is filled with odd nodes of the graph.
 template <typename NodeIndex, typename Graph>
-bool IsSemiEulerianGraph(const Graph& graph,
-                         std::vector<NodeIndex>* odd_nodes) {
+bool IsSemiEulerianGraph(const Graph& graph, std::vector<NodeIndex>* odd_nodes,
+                         bool assume_connectivity = true) {
   CHECK(odd_nodes != nullptr);
   for (const NodeIndex node : graph.AllNodes()) {
     const int degree = graph.OutDegree(node) + graph.InDegree(node);
@@ -61,8 +65,8 @@ bool IsSemiEulerianGraph(const Graph& graph,
       odd_nodes->push_back(node);
     }
   }
-  // TODO(user): Check graph connectivity.
-  return odd_nodes->size() <= 2;
+  if (odd_nodes->size() > 2) return false;
+  return assume_connectivity || internal::GraphIsConnected(graph);
 }
 
 // Builds an Eulerian path/trail on an undirected graph starting from node root.
@@ -111,12 +115,11 @@ std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph& graph,
 // This function works only on Reverse graphs
 // (cf. ortools/graph/graph.h).
 // Returns an empty tour if either root is invalid or if a tour cannot be built.
-// As of 10/2015, assumes the graph is connected.
 template <typename NodeIndex, typename Graph>
-std::vector<NodeIndex> BuildEulerianTourFromNode(const Graph& graph,
-                                                 NodeIndex root) {
+std::vector<NodeIndex> BuildEulerianTourFromNode(
+    const Graph& graph, NodeIndex root, bool assume_connectivity = true) {
   std::vector<NodeIndex> tour;
-  if (IsEulerianGraph(graph)) {
+  if (IsEulerianGraph(graph, assume_connectivity)) {
     tour = BuildEulerianPathFromNode(graph, root);
   }
   return tour;
@@ -125,26 +128,54 @@ std::vector<NodeIndex> BuildEulerianTourFromNode(const Graph& graph,
 // Same as above but without specifying a start/end root node (node 0 is taken
 // as default root).
 template <typename Graph>
-std::vector<typename Graph::NodeIndex> BuildEulerianTour(const Graph& graph) {
-  return BuildEulerianTourFromNode(graph, 0);
+std::vector<typename Graph::NodeIndex> BuildEulerianTour(
+    const Graph& graph, bool assume_connectivity = true) {
+  return BuildEulerianTourFromNode(graph, 0, assume_connectivity);
 }
 
 // Builds an Eulerian path/trail on an undirected graph.
 // This function works only on Reverse graphs
 // (cf. ortools/graph/graph.h).
 // Returns an empty tour if a tour cannot be built.
-// As of 10/2015, assumes the graph is connected.
 template <typename Graph>
-std::vector<typename Graph::NodeIndex> BuildEulerianPath(const Graph& graph) {
+std::vector<typename Graph::NodeIndex> BuildEulerianPath(
+    const Graph& graph, bool assume_connectivity = true) {
   typedef typename Graph::NodeIndex NodeIndex;
   std::vector<NodeIndex> path;
   std::vector<NodeIndex> roots;
-  if (IsSemiEulerianGraph(graph, &roots)) {
+  if (IsSemiEulerianGraph(graph, &roots, assume_connectivity)) {
     const NodeIndex root = roots.empty() ? 0 : roots.back();
     path = BuildEulerianPathFromNode(graph, root);
   }
   return path;
 }
+
+namespace internal {
+template <typename Graph>
+bool GraphIsConnected(const Graph& graph) {
+  typedef typename Graph::NodeIndex NodeIndex;
+  const NodeIndex n = graph.num_nodes();
+  if (n <= 1) return true;
+  // We use iterative DFS, which is probably the fastest.
+  NodeIndex num_visited = 1;
+  std::vector<NodeIndex> stack = {0};
+  std::vector<bool> visited(n, false);
+  while (!stack.empty()) {
+    const NodeIndex node = stack.back();
+    stack.pop_back();
+    for (auto arc : graph.OutgoingOrOppositeIncomingArcs(node)) {
+      const NodeIndex neigh = graph.Head(arc);
+      if (!visited[neigh]) {
+        visited[neigh] = true;
+        stack.push_back(neigh);
+        if (++num_visited == n) return true;
+      }
+    }
+  }
+  return false;
+}
+}  // namespace internal
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GRAPH_EULERIAN_PATH_H_

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,8 +29,10 @@
 #ifndef OR_TOOLS_LP_DATA_SPARSE_H_
 #define OR_TOOLS_LP_DATA_SPARSE_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/lp_data/lp_types.h"
@@ -288,7 +290,48 @@ SparseMatrix::PopulateFromPermutedMatrix<CompactSparseMatrixView>(
 // of the matrix columns.
 class CompactSparseMatrix {
  public:
+  // When iteration performance matter, getting a ConstView allows the compiler
+  // to do better aliasing analysis and not re-read vectors address all the
+  // time.
+  class ConstView {
+   public:
+    explicit ConstView(const CompactSparseMatrix* matrix)
+        : coefficients_(matrix->coefficients_.data()),
+          rows_(matrix->rows_.data()),
+          starts_(matrix->starts_.data()) {}
+
+    // Functions to iterate on the entries of a given column:
+    // const auto view = compact_matrix.view();
+    // for (const EntryIndex i : view.Column(col)) {
+    //   const RowIndex row = view.EntryRow(i);
+    //   const Fractional coefficient = view.EntryCoefficient(i);
+    // }
+    ::util::IntegerRange<EntryIndex> Column(ColIndex col) const {
+      return ::util::IntegerRange<EntryIndex>(starts_[col.value()],
+                                              starts_[col.value() + 1]);
+    }
+    Fractional EntryCoefficient(EntryIndex i) const {
+      return coefficients_[i.value()];
+    }
+    RowIndex EntryRow(EntryIndex i) const { return rows_[i.value()]; }
+
+    EntryIndex ColumnNumEntries(ColIndex col) const {
+      return starts_[col.value() + 1] - starts_[col.value()];
+    }
+
+    // Returns the scalar product of the given row vector with the column of
+    // index col of this matrix.
+    Fractional ColumnScalarProduct(ColIndex col,
+                                   DenseRow::ConstView vector) const;
+
+   private:
+    const Fractional* const coefficients_;
+    const RowIndex* const rows_;
+    const EntryIndex* const starts_;
+  };
+
   CompactSparseMatrix() {}
+  ConstView view() const { return ConstView(this); }
 
   // Convenient constructors for tests.
   // TODO(user): If this is needed in production code, it can be done faster.
@@ -355,17 +398,8 @@ class CompactSparseMatrix {
     return coefficients_.empty();
   }
 
-  // Functions to iterate on the entries of a given column:
-  // for (const EntryIndex i : compact_matrix_.Column(col)) {
-  //   const RowIndex row = compact_matrix_.EntryRow(i);
-  //   const Fractional coefficient = compact_matrix_.EntryCoefficient(i);
-  // }
-  ::util::IntegerRange<EntryIndex> Column(ColIndex col) const {
-    return ::util::IntegerRange<EntryIndex>(starts_[col], starts_[col + 1]);
-  }
-  Fractional EntryCoefficient(EntryIndex i) const { return coefficients_[i]; }
-  RowIndex EntryRow(EntryIndex i) const { return rows_[i]; }
-
+  // Alternative iteration API compatible with the one from SparseMatrix.
+  // The ConstView alternative should be faster.
   ColumnView column(ColIndex col) const {
     DCHECK_LT(col, num_cols_);
 
@@ -383,13 +417,9 @@ class CompactSparseMatrix {
   }
 
   // Returns the scalar product of the given row vector with the column of index
-  // col of this matrix. This function is declared in the .h for efficiency.
+  // col of this matrix.
   Fractional ColumnScalarProduct(ColIndex col, const DenseRow& vector) const {
-    Fractional result = 0.0;
-    for (const EntryIndex i : Column(col)) {
-      result += EntryCoefficient(i) * vector[RowToColIndex(EntryRow(i))];
-    }
-    return result;
+    return view().ColumnScalarProduct(col, vector.const_view());
   }
 
   // Adds a multiple of the given column of this matrix to the given
@@ -397,10 +427,12 @@ class CompactSparseMatrix {
   // function is declared in the .h for efficiency.
   void ColumnAddMultipleToDenseColumn(ColIndex col, Fractional multiplier,
                                       DenseColumn* dense_column) const {
-    if (multiplier == 0.0) return;
     RETURN_IF_NULL(dense_column);
+    if (multiplier == 0.0) return;
+    const auto entry_rows = rows_.view();
+    const auto entry_coeffs = coefficients_.view();
     for (const EntryIndex i : Column(col)) {
-      (*dense_column)[EntryRow(i)] += multiplier * EntryCoefficient(i);
+      (*dense_column)[entry_rows[i]] += multiplier * entry_coeffs[i];
     }
   }
 
@@ -410,11 +442,12 @@ class CompactSparseMatrix {
   void ColumnAddMultipleToSparseScatteredColumn(ColIndex col,
                                                 Fractional multiplier,
                                                 ScatteredColumn* column) const {
-    if (multiplier == 0.0) return;
     RETURN_IF_NULL(column);
+    if (multiplier == 0.0) return;
+    const auto entry_rows = rows_.view();
+    const auto entry_coeffs = coefficients_.view();
     for (const EntryIndex i : Column(col)) {
-      const RowIndex row = EntryRow(i);
-      column->Add(row, multiplier * EntryCoefficient(i));
+      column->Add(entry_rows[i], multiplier * entry_coeffs[i]);
     }
   }
 
@@ -432,8 +465,10 @@ class CompactSparseMatrix {
                                       DenseColumn* dense_column) const {
     RETURN_IF_NULL(dense_column);
     dense_column->resize(num_rows_, 0.0);
+    const auto entry_rows = rows_.view();
+    const auto entry_coeffs = coefficients_.view();
     for (const EntryIndex i : Column(col)) {
-      (*dense_column)[EntryRow(i)] = EntryCoefficient(i);
+      (*dense_column)[entry_rows[i]] = entry_coeffs[i];
     }
   }
 
@@ -444,9 +479,11 @@ class CompactSparseMatrix {
     RETURN_IF_NULL(dense_column);
     dense_column->resize(num_rows_, 0.0);
     non_zeros->clear();
+    const auto entry_rows = rows_.view();
+    const auto entry_coeffs = coefficients_.view();
     for (const EntryIndex i : Column(col)) {
-      const RowIndex row = EntryRow(i);
-      (*dense_column)[row] = EntryCoefficient(i);
+      const RowIndex row = entry_rows[i];
+      (*dense_column)[row] = entry_coeffs[i];
       non_zeros->push_back(row);
     }
   }
@@ -454,6 +491,11 @@ class CompactSparseMatrix {
   void Swap(CompactSparseMatrix* other);
 
  protected:
+  // Functions to iterate on the entries of a given column.
+  ::util::IntegerRange<EntryIndex> Column(ColIndex col) const {
+    return ::util::IntegerRange<EntryIndex>(starts_[col], starts_[col + 1]);
+  }
+
   // The matrix dimensions, properly updated by full and incremental builders.
   RowIndex num_rows_;
   ColIndex num_cols_;
@@ -468,6 +510,36 @@ class CompactSparseMatrix {
  private:
   DISALLOW_COPY_AND_ASSIGN(CompactSparseMatrix);
 };
+
+inline Fractional CompactSparseMatrix::ConstView::ColumnScalarProduct(
+    ColIndex col, DenseRow::ConstView vector) const {
+  // We expand ourselves since we don't really care about the floating
+  // point order of operation and this seems faster.
+  int i = starts_[col.value()].value();
+  const int end = starts_[col.value() + 1].value();
+  const int shifted_end = end - 3;
+  Fractional result1 = 0.0;
+  Fractional result2 = 0.0;
+  Fractional result3 = 0.0;
+  Fractional result4 = 0.0;
+  for (; i < shifted_end; i += 4) {
+    result1 += coefficients_[i] * vector[RowToColIndex(rows_[i])];
+    result2 += coefficients_[i + 1] * vector[RowToColIndex(rows_[i + 1])];
+    result3 += coefficients_[i + 2] * vector[RowToColIndex(rows_[i + 2])];
+    result4 += coefficients_[i + 3] * vector[RowToColIndex(rows_[i + 3])];
+  }
+  Fractional result = result1 + result2 + result3 + result4;
+  if (i < end) {
+    result += coefficients_[i] * vector[RowToColIndex(rows_[i])];
+    if (i + 1 < end) {
+      result += coefficients_[i + 1] * vector[RowToColIndex(rows_[i + 1])];
+      if (i + 2 < end) {
+        result += coefficients_[i + 2] * vector[RowToColIndex(rows_[i + 2])];
+      }
+    }
+  }
+  return result;
+}
 
 // A matrix view of the basis columns of a CompactSparseMatrix, with basis
 // specified as a RowToColMapping.  This class does not take ownership of the
@@ -746,25 +818,26 @@ class TriangularMatrix : private CompactSparseMatrix {
  private:
   // Internal versions of some Solve() functions to avoid code duplication.
   template <bool diagonal_of_ones>
-  void LowerSolveStartingAtInternal(ColIndex start, DenseColumn* rhs) const;
+  void LowerSolveStartingAtInternal(ColIndex start,
+                                    DenseColumn::View rhs) const;
   template <bool diagonal_of_ones>
-  void UpperSolveInternal(DenseColumn* rhs) const;
+  void UpperSolveInternal(DenseColumn::View rhs) const;
   template <bool diagonal_of_ones>
-  void TransposeLowerSolveInternal(DenseColumn* rhs) const;
+  void TransposeLowerSolveInternal(DenseColumn::View rhs) const;
   template <bool diagonal_of_ones>
-  void TransposeUpperSolveInternal(DenseColumn* rhs) const;
+  void TransposeUpperSolveInternal(DenseColumn::View rhs) const;
   template <bool diagonal_of_ones>
-  void HyperSparseSolveInternal(DenseColumn* rhs,
+  void HyperSparseSolveInternal(DenseColumn::View rhs,
                                 RowIndexVector* non_zero_rows) const;
   template <bool diagonal_of_ones>
   void HyperSparseSolveWithReversedNonZerosInternal(
-      DenseColumn* rhs, RowIndexVector* non_zero_rows) const;
+      DenseColumn::View rhs, RowIndexVector* non_zero_rows) const;
   template <bool diagonal_of_ones>
-  void TransposeHyperSparseSolveInternal(DenseColumn* rhs,
+  void TransposeHyperSparseSolveInternal(DenseColumn::View rhs,
                                          RowIndexVector* non_zero_rows) const;
   template <bool diagonal_of_ones>
   void TransposeHyperSparseSolveWithReversedNonZerosInternal(
-      DenseColumn* rhs, RowIndexVector* non_zero_rows) const;
+      DenseColumn::View rhs, RowIndexVector* non_zero_rows) const;
 
   // Internal function used by the Add*() functions to finish adding
   // a new column to a triangular matrix.

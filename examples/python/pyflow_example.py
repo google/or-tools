@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,7 +14,8 @@
 """MaxFlow and MinCostFlow examples."""
 
 from absl import app
-from ortools.graph import pywrapgraph
+from ortools.graph.python import max_flow
+from ortools.graph.python import min_cost_flow
 
 
 def MaxFlow():
@@ -24,17 +25,16 @@ def MaxFlow():
     heads = [1, 2, 3, 4, 3, 4, 4, 5, 5]
     capacities = [5, 8, 5, 3, 4, 5, 6, 6, 4]
     expected_total_flow = 10
-    max_flow = pywrapgraph.SimpleMaxFlow()
+    smf = max_flow.SimpleMaxFlow()
     for i in range(0, len(tails)):
-        max_flow.AddArcWithCapacity(tails[i], heads[i], capacities[i])
-    if max_flow.Solve(0, 5) == max_flow.OPTIMAL:
-        print('Total flow', max_flow.OptimalFlow(), '/', expected_total_flow)
-        for i in range(max_flow.NumArcs()):
+        smf.add_arc_with_capacity(tails[i], heads[i], capacities[i])
+    if smf.solve(0, 5) == smf.OPTIMAL:
+        print('Total flow', smf.optimal_flow(), '/', expected_total_flow)
+        for i in range(smf.num_arcs()):
             print('From source %d to target %d: %d / %d' %
-                  (max_flow.Tail(i), max_flow.Head(i), max_flow.Flow(i),
-                   max_flow.Capacity(i)))
-        print('Source side min-cut:', max_flow.GetSourceSideMinCut())
-        print('Sink side min-cut:', max_flow.GetSinkSideMinCut())
+                  (smf.tail(i), smf.head(i), smf.flow(i), smf.capacity(i)))
+        print('Source side min-cut:', smf.get_source_side_min_cut())
+        print('Sink side min-cut:', smf.get_sink_side_min_cut())
     else:
         print('There was an issue with the max flow input.')
 
@@ -43,7 +43,7 @@ def MinCostFlow():
     """MinCostFlow simple interface example.
 
   Note that this example is actually a linear sum assignment example and will
-  be more efficiently solved with the pywrapgraph.LinearSumAssignement class.
+  be more efficiently solved with the pywrapgraph.LinearSumAssignment class.
   """
     print('MinCostFlow on 4x4 matrix.')
     num_sources = 4
@@ -51,28 +51,28 @@ def MinCostFlow():
     costs = [[90, 75, 75, 80], [35, 85, 55, 65], [125, 95, 90, 105],
              [45, 110, 95, 115]]
     expected_cost = 275
-    min_cost_flow = pywrapgraph.SimpleMinCostFlow()
+    smcf = min_cost_flow.SimpleMinCostFlow()
     for source in range(0, num_sources):
         for target in range(0, num_targets):
-            min_cost_flow.AddArcWithCapacityAndUnitCost(source,
-                                                        num_sources + target, 1,
-                                                        costs[source][target])
+            smcf.add_arc_with_capacity_and_unit_cost(source,
+                                                     num_sources + target, 1,
+                                                     costs[source][target])
     for node in range(0, num_sources):
-        min_cost_flow.SetNodeSupply(node, 1)
-        min_cost_flow.SetNodeSupply(num_sources + node, -1)
-    status = min_cost_flow.Solve()
-    if status == min_cost_flow.OPTIMAL:
-        print('Total flow', min_cost_flow.OptimalCost(), '/', expected_cost)
-        for i in range(0, min_cost_flow.NumArcs()):
-            if min_cost_flow.Flow(i) > 0:
+        smcf.set_node_supply(node, 1)
+        smcf.set_node_supply(num_sources + node, -1)
+    status = smcf.solve()
+    if status == smcf.OPTIMAL:
+        print('Total flow', smcf.optimal_cost(), '/', expected_cost)
+        for i in range(0, smcf.num_arcs()):
+            if smcf.flow(i) > 0:
                 print('From source %d to target %d: cost %d' %
-                      (min_cost_flow.Tail(i), min_cost_flow.Head(i) -
-                       num_sources, min_cost_flow.UnitCost(i)))
+                      (smcf.tail(i), smcf.head(i) - num_sources,
+                       smcf.unit_cost(i)))
     else:
         print('There was an issue with the min cost flow input.')
 
 
-def main(_):
+def main(_=None):
     MaxFlow()
     MinCostFlow()
 

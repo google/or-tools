@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,15 +19,15 @@
  * print out the solution.
  * \code
  CpModelBuilder cp_model;
- Domain all_animals(0, 20);
- IntVar rabbits = cp_model.NewIntVar(all_animals).WithName("rabbits");
- IntVar pheasants = cp_model.NewIntVar(all_animals).WithName("pheasants");
+ const Domain all_animals(0, 20);
+ const IntVar rabbits = cp_model.NewIntVar(all_animals).WithName("rabbits");
+ const IntVar pheasants = cp_model.NewIntVar(all_animals).WithName("pheasants");
 
- cp_model.AddEquality(LinearExpr::Sum({rabbits, pheasants}), 20);
- cp_model.AddEquality(LinearExpr::ScalProd({rabbits, pheasants}, {4, 2}), 56);
+ cp_model.AddEquality(rabbits + pheasants, 20);
+ cp_model.AddEquality(4 * rabbits + 2 * pheasants, 56);
 
  const CpSolverResponse response = Solve(cp_model.Build());
- if (response.status() == CpSolverStatus::FEASIBLE) {
+ if (response.status() == CpSolverStatus::OPTIMAL) {
    LOG(INFO) << SolutionIntegerValue(response, rabbits)
              << " rabbits, and " << SolutionIntegerValue(response, pheasants)
              << " pheasants.";
@@ -40,8 +40,12 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <iosfwd>
 #include <limits>
+#include <ostream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
@@ -56,8 +60,8 @@ namespace operations_research {
 namespace sat {
 
 class CpModelBuilder;
-class LinearExpr;
 class IntVar;
+class LinearExpr;
 
 /**
  * A Boolean variable.
@@ -149,7 +153,7 @@ class IntVar {
   /// Warning: If you construct an IntVar from a negated BoolVar, this might
   /// create a new variable in the model. Otherwise this just point to the same
   /// underlying variable.
-  IntVar(const BoolVar& var);  // NOLINT(runtime/explicit)
+  explicit IntVar(const BoolVar& var);
 
   /// Cast IntVar -> BoolVar.
   ///
@@ -173,15 +177,14 @@ class IntVar {
   }
 
   // Returns the domain of the variable.
+  // Note that we keep the fully qualified return type as compilation fails with
+  // gcc otherwise.
   ::operations_research::Domain Domain() const;
 
   std::string DebugString() const;
 
   /// Returns the index of the variable in the model. This will be non-negative.
   int index() const { return index_; }
-
-  /// Deprecated. Just do var + cte where needed.
-  LinearExpr AddConstant(int64_t value) const;
 
  private:
   friend class BoolVar;
@@ -240,15 +243,19 @@ class LinearExpr {
   /// Creates an empty linear expression with value zero.
   LinearExpr() = default;
 
+  // NOLINTBEGIN(google-explicit-constructor)
+
   /// Constructs a linear expression from a Boolean variable.
   /// It deals with logical negation correctly.
-  LinearExpr(BoolVar var);  // NOLINT(runtime/explicit)
+  LinearExpr(BoolVar var);
 
   /// Constructs a linear expression from an integer variable.
-  LinearExpr(IntVar var);  // NOLINT(runtime/explicit)
+  LinearExpr(IntVar var);
 
   /// Constructs a constant linear expression.
-  LinearExpr(int64_t constant);  // NOLINT(runtime/explicit)
+  LinearExpr(int64_t constant);
+
+  // NOLINTEND(google-explicit-constructor)
 
   /// Constructs the sum of a list of variables.
   static LinearExpr Sum(absl::Span<const IntVar> vars);
@@ -256,35 +263,19 @@ class LinearExpr {
   /// Constructs the sum of a list of Boolean variables.
   static LinearExpr Sum(absl::Span<const BoolVar> vars);
 
-  /// Constructs the sum of a list of variables.
-  // TODO(user): Remove when the operators + and * are implemented.
-  static LinearExpr Sum(std::initializer_list<IntVar> vars);
-
   /// Constructs the scalar product of variables and coefficients.
-  static LinearExpr ScalProd(absl::Span<const IntVar> vars,
-                             absl::Span<const int64_t> coeffs);
+  static LinearExpr WeightedSum(absl::Span<const IntVar> vars,
+                                absl::Span<const int64_t> coeffs);
 
   /// Constructs the scalar product of Boolean variables and coefficients.
-  static LinearExpr ScalProd(absl::Span<const BoolVar> vars,
-                             absl::Span<const int64_t> coeffs);
-
-  /// Constructs the scalar product of variables and coefficients.
-  // TODO(user): Remove when the operators + and * are implemented.
-  static LinearExpr ScalProd(std::initializer_list<IntVar> vars,
-                             absl::Span<const int64_t> coeffs);
+  static LinearExpr WeightedSum(absl::Span<const BoolVar> vars,
+                                absl::Span<const int64_t> coeffs);
 
   /// Constructs var * coefficient.
   static LinearExpr Term(IntVar var, int64_t coefficient);
 
   /// Constructs bool * coefficient.
   static LinearExpr Term(BoolVar var, int64_t coefficient);
-
-  /// Deprecated. Use Sum() instead.
-  static LinearExpr BooleanSum(absl::Span<const BoolVar> vars);
-
-  /// Deprecated. Use ScalProd() instead.
-  static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
-                                    absl::Span<const int64_t> coeffs);
 
   /// Constructs a linear expr from its proto representation.
   static LinearExpr FromProto(const LinearExpressionProto& proto);
@@ -293,14 +284,6 @@ class LinearExpr {
   LinearExpr& operator+=(const LinearExpr& other);
   LinearExpr& operator-=(const LinearExpr& other);
   LinearExpr& operator*=(int64_t factor);
-
-  // Deprecated. Use operators instead.
-  LinearExpr& AddConstant(int64_t value);
-  LinearExpr& AddVar(IntVar var);
-  LinearExpr& AddVar(BoolVar var);
-  LinearExpr& AddTerm(BoolVar var, int64_t coeff);
-  LinearExpr& AddTerm(IntVar var, int64_t coeff);
-  LinearExpr& AddExpression(const LinearExpr& expr) { return *this += expr; }
 
   /// Returns the vector of variable indices.
   const std::vector<int>& variables() const { return variables_; }
@@ -331,13 +314,7 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
 
 /**
  * A dedicated container for linear expressions with double coefficients.
- *
- * This class helps building and manipulating linear expressions.
- * Note that Not(x) will be silently transformed into 1 - x when added to the
- * linear expression.
- *
- * Furthermore, static methods allows sums and scalar products, with or without
- * an additional constant.
+ * This is currently only usable to define a floating point objective.
  *
  * Usage:
  * \code
@@ -350,14 +327,14 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
   // e2 = x + y + 5
   DoubleLinearExpr e2 = DoubleLinearExpr::Sum({x, y}).AddConstant(5.0);
   // e3 = 2 * x - y
-  DoubleLinearExpr e3 = DoubleLinearExpr::ScalProd({x, y}, {2, -1});
+  DoubleLinearExpr e3 = DoubleLinearExpr::WeightedSum({x, y}, {2, -1});
   DoubleLinearExpr e4(b);  // e4 = b.
   DoubleLinearExpr e5(b.Not());  // e5 = 1 - b.
   // If passing a std::vector<BoolVar>, a specialized method must be called.
   std::vector<BoolVar> bools = {b, Not(c)};
   DoubleLinearExpr e6 = DoubleLinearExpr::Sum(bools);  // e6 = b + 1 - c;
   // e7 = -3.0 * b + 1.5 - 1.5 * c;
-  DoubleLinearExpr e7 = DoubleLinearExpr::ScalProd(bools, {-3.0, 1.5});
+  DoubleLinearExpr e7 = DoubleLinearExpr::WeightedSum(bools, {-3.0, 1.5});
   \endcode
  *  This can be used in the objective definition.
  * \code
@@ -393,8 +370,8 @@ class DoubleLinearExpr {
   DoubleLinearExpr& AddTerm(IntVar var, double coeff);
   DoubleLinearExpr& AddTerm(BoolVar var, double coeff);
 
-  /// Deprecated. Use +=.
-  DoubleLinearExpr& AddConstant(double constant);
+  /// Adds a linear expression to the double linear expression.
+  DoubleLinearExpr& AddExpression(const LinearExpr& exprs, double coeff = 1.0);
 
   /// Adds a constant value to the linear expression.
   DoubleLinearExpr& operator-=(double value);
@@ -414,20 +391,13 @@ class DoubleLinearExpr {
   /// Constructs the sum of a list of Boolean variables.
   static DoubleLinearExpr Sum(absl::Span<const BoolVar> vars);
 
-  /// Constructs the sum of a list of variables.
-  static DoubleLinearExpr Sum(std::initializer_list<IntVar> vars);
-
   /// Constructs the scalar product of variables and coefficients.
-  static DoubleLinearExpr ScalProd(absl::Span<const IntVar> vars,
-                                   absl::Span<const double> coeffs);
+  static DoubleLinearExpr WeightedSum(absl::Span<const IntVar> vars,
+                                      absl::Span<const double> coeffs);
 
   /// Constructs the scalar product of Boolean variables and coefficients.
-  static DoubleLinearExpr ScalProd(absl::Span<const BoolVar> vars,
-                                   absl::Span<const double> coeffs);
-
-  /// Constructs the scalar product of variables and coefficients.
-  static DoubleLinearExpr ScalProd(std::initializer_list<IntVar> vars,
-                                   absl::Span<const double> coeffs);
+  static DoubleLinearExpr WeightedSum(absl::Span<const BoolVar> vars,
+                                      absl::Span<const double> coeffs);
 
   /// Returns the vector of variable indices.
   const std::vector<int>& variables() const { return variables_; }
@@ -558,7 +528,7 @@ class Constraint {
    * (controlled by a literal l) and its negation (controlled by the negation of
    * l).
    *
-   * Important: as of September 2018, only a few constraint support enforcement:
+   * [Important] currently, only a few constraints support enforcement:
    * - bool_or, bool_and, linear: fully supported.
    * - interval: only support a single enforcement literal.
    * - other: no support (but can be added on a per-demand basis).
@@ -662,14 +632,15 @@ class ReservoirConstraint : public Constraint {
    * Adds a mandatory event
    *
    * It will increase the used capacity by `level_change` at time `time`.
+   * `time` must be an affine expression.
    */
   void AddEvent(LinearExpr time, int64_t level_change);
 
   /**
-   * Adds a optional event
+   * Adds an optional event
    *
-   * If `c is_active is true, It will increase the used capacity by
-   * `level_change` at time `c time.
+   * If `is_active` is true, It will increase the used capacity by
+   * `level_change` at time `time. `time` must be an affine expression.
    */
   void AddOptionalEvent(LinearExpr time, int64_t level_change,
                         BoolVar is_active);
@@ -788,8 +759,29 @@ class CpModelBuilder {
   IntervalVar NewOptionalFixedSizeIntervalVar(const LinearExpr& start,
                                               int64_t size, BoolVar presence);
 
+  /// It is sometime convenient when building a model to create a bunch of
+  /// variables that will later be fixed. Instead of doing AddEquality(var,
+  /// value) which add a constraint, these functions modify directly the
+  /// underlying variable domain.
+  ///
+  /// Note that this ignore completely the original variable domain and just fix
+  /// the given variable to the given value, even if it was outside the given
+  /// variable domain. You can still use AddEquality() if this is not what you
+  /// want.
+  void FixVariable(IntVar var, int64_t value);
+  void FixVariable(BoolVar var, bool value);
+
   /// Adds the constraint that at least one of the literals must be true.
   Constraint AddBoolOr(absl::Span<const BoolVar> literals);
+
+  /// Same as AddBoolOr(). Sum literals >= 1.
+  Constraint AddAtLeastOne(absl::Span<const BoolVar> literals);
+
+  /// At most one literal is true. Sum literals <= 1.
+  Constraint AddAtMostOne(absl::Span<const BoolVar> literals);
+
+  /// Exactly one literal is true. Sum literals == 1.
+  Constraint AddExactlyOne(absl::Span<const BoolVar> literals);
 
   /// Adds the constraint that all literals must be true.
   Constraint AddBoolAnd(absl::Span<const BoolVar> literals);
@@ -800,6 +792,12 @@ class CpModelBuilder {
   /// Adds a => b.
   Constraint AddImplication(BoolVar a, BoolVar b) {
     return AddBoolOr({a.Not(), b});
+  }
+
+  /// Adds implication: if all lhs vars are true then all rhs vars must be true.
+  Constraint AddImplication(absl::Span<const BoolVar> lhs,
+                            absl::Span<const BoolVar> rhs) {
+    return AddBoolAnd(rhs).OnlyEnforceIf(lhs);
   }
 
   /// Adds left == right.
@@ -911,17 +909,17 @@ class CpModelBuilder {
    * Adds a reservoir constraint with optional refill/emptying events.
    *
    * Maintain a reservoir level within bounds. The water level starts at 0, and
-   * at any time >= 0, it must be within min_level, and max_level. Furthermore,
-   * this constraints expect all times variables to be >= 0. Given an event
-   * (time, demand, active), if active is true, and if time is assigned a value
-   * t, then the level of the reservoir changes by demand (which is constant) at
-   * time t.
+   * at any time, it must be within [min_level, max_level].
    *
-   * Note that level_min can be > 0, or level_max can be < 0. It just forces
-   * some level_changes to be executed at time 0 to make sure that we are within
-   * those bounds with the executed level_changes. Therefore, at any time t >=
-   * 0: sum(level_changes[i] * actives[i] if times[i] <= t) in [min_level,
-   * max_level]
+   * Given an event (time, level_change, active), if active is true, and if time
+   * is assigned a value t, then the level of the reservoir changes by
+   * level_change (which is constant) at time t. Therefore, at any time t:
+   *
+   *     sum(level_changes[i] * actives[i] if times[i] <= t)
+   *         in [min_level, max_level]
+   *
+   * Note that min level must be <= 0, and the max level must be >= 0.
+   * Please use fixed level_changes to simulate an initial state.
    *
    * It returns a ReservoirConstraint that allows adding optional and non
    * optional events incrementally after construction.
@@ -971,12 +969,6 @@ class CpModelBuilder {
   Constraint AddMinEquality(const LinearExpr& target,
                             std::initializer_list<LinearExpr> exprs);
 
-  // Deprecated, use AddMinEquality.
-  Constraint AddLinMinEquality(const LinearExpr& target,
-                               absl::Span<const LinearExpr> exprs) {
-    return AddMinEquality(target, exprs);
-  }
-
   /// Adds target == max(vars).
   Constraint AddMaxEquality(const LinearExpr& target,
                             absl::Span<const IntVar> vars);
@@ -988,12 +980,6 @@ class CpModelBuilder {
   /// Adds target == max(exprs).
   Constraint AddMaxEquality(const LinearExpr& target,
                             std::initializer_list<LinearExpr> exprs);
-
-  // Deprecated, use AddMaxEquality.
-  Constraint AddLinMaxEquality(const LinearExpr& target,
-                               absl::Span<const LinearExpr> exprs) {
-    return AddMaxEquality(target, exprs);
-  }
 
   /// Adds target = num / denom (integer division rounded towards 0).
   Constraint AddDivisionEquality(const LinearExpr& target,
@@ -1019,6 +1005,11 @@ class CpModelBuilder {
   Constraint AddMultiplicationEquality(const LinearExpr& target,
                                        std::initializer_list<LinearExpr> exprs);
 
+  /// Adds target == left * right.
+  Constraint AddMultiplicationEquality(const LinearExpr& target,
+                                       const LinearExpr& left,
+                                       const LinearExpr& right);
+
   /**
    * Adds a no-overlap constraint that ensures that all present intervals do
    * not overlap in time.
@@ -1041,16 +1032,22 @@ class CpModelBuilder {
   /// Adds a linear minimization objective.
   void Minimize(const LinearExpr& expr);
 
-  /// Adds a linear minimization objective after rescaling of the double
-  /// coefficients.
+  /// Adds a linear floating point minimization objective.
+  /// Note that the coefficients will be internally scaled to integer.
   void Minimize(const DoubleLinearExpr& expr);
 
   /// Adds a linear maximization objective.
   void Maximize(const LinearExpr& expr);
 
-  /// Adds a linear maximization objective after rescaling of the double
-  /// coefficients.
+  /// Adds a linear floating point maximization objective.
+  /// Note that the coefficients will be internally scaled to integer.
   void Maximize(const DoubleLinearExpr& expr);
+
+  /// Removes the objective from the model.
+  void ClearObjective();
+
+  /// Checks whether the model contains an objective.
+  bool HasObjective() const;
 
   /// Adds a decision strategy on a list of integer variables.
   void AddDecisionStrategy(
@@ -1082,8 +1079,7 @@ class CpModelBuilder {
   /// Remove all assumptions from the model.
   void ClearAssumptions();
 
-  const CpModelProto& Build() const { return Proto(); }
-
+  const CpModelProto& Build() const { return cp_model_; }
   const CpModelProto& Proto() const { return cp_model_; }
   CpModelProto* MutableProto() { return &cp_model_; }
 
@@ -1183,17 +1179,13 @@ inline LinearExpr operator-(LinearExpr&& lhs, const LinearExpr& rhs) {
   return std::move(lhs);
 }
 inline LinearExpr operator-(const LinearExpr& lhs, LinearExpr&& rhs) {
-  rhs -= lhs;
+  rhs *= -1;
+  rhs += lhs;
   return std::move(rhs);
 }
 inline LinearExpr operator-(LinearExpr&& lhs, LinearExpr&& rhs) {
-  if (lhs.variables().size() < rhs.variables().size()) {
-    rhs -= std::move(lhs);
-    return std::move(rhs);
-  } else {
-    lhs -= std::move(rhs);
-    return std::move(lhs);
-  }
+  lhs -= std::move(rhs);
+  return std::move(lhs);
 }
 
 inline LinearExpr operator*(LinearExpr expr, int64_t factor) {
@@ -1261,18 +1253,14 @@ inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
 }
 inline DoubleLinearExpr operator-(const DoubleLinearExpr& lhs,
                                   DoubleLinearExpr&& rhs) {
-  rhs -= lhs;
+  rhs *= -1;
+  rhs += lhs;
   return std::move(rhs);
 }
 inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
                                   DoubleLinearExpr&& rhs) {
-  if (lhs.variables().size() < rhs.variables().size()) {
-    rhs -= std::move(lhs);
-    return std::move(rhs);
-  } else {
-    lhs -= std::move(rhs);
-    return std::move(lhs);
-  }
+  lhs -= std::move(rhs);
+  return std::move(lhs);
 }
 
 inline DoubleLinearExpr operator-(DoubleLinearExpr epxr, double rhs) {

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -46,21 +46,20 @@ public class EarlinessTardinessCostSampleSat {
     long largeConstant = 1000;
     IntVar expr = model.newIntVar(0, largeConstant, "expr");
 
-    // First segment: s1 == earlinessCost * (earlinessDate - x).
-    IntVar s1 = model.newIntVar(-largeConstant, largeConstant, "s1");
-    model.addEquality(LinearExpr.scalProd(new IntVar[] {s1, x}, new long[] {1, earlinessCost}),
-        earlinessCost * earlinessDate);
-
-    // Second segment.
-    IntVar s2 = model.newConstant(0);
-
-    // Third segment: s3 == latenessCost * (x - latenessDate).
-    IntVar s3 = model.newIntVar(-largeConstant, largeConstant, "s3");
-    model.addEquality(LinearExpr.scalProd(new IntVar[] {s3, x}, new long[] {1, -latenessCost}),
-        -latenessCost * latenessDate);
-
-    // Link together expr and x through s1, s2, and s3.
-    model.addMaxEquality(expr, new IntVar[] {s1, s2, s3});
+    // Link together expr and the 3 segment.
+    // First segment: y == earlinessCost * (earlinessDate - x).
+    // Second segment: y = 0
+    // Third segment: y == latenessCost * (x - latenessDate).
+    model.addMaxEquality(expr,
+        new LinearExpr[] {LinearExpr.newBuilder()
+                              .addTerm(x, -earlinessCost)
+                              .add(earlinessCost * earlinessDate)
+                              .build(),
+            LinearExpr.constant(0),
+            LinearExpr.newBuilder()
+                .addTerm(x, latenessCost)
+                .add(-latenessCost * latenessDate)
+                .build()});
 
     // Search for x values in increasing order.
     model.addDecisionStrategy(new IntVar[] {x},

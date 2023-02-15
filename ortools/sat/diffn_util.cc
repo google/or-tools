@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,22 @@
 
 #include "ortools/sat/diffn_util.h"
 
+#include <stddef.h>
+
+#include <algorithm>
+#include <ostream>
+#include <utility>
+#include <vector>
+
+#include "absl/container/flat_hash_set.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
+#include "ortools/util/integer_pq.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -471,6 +486,121 @@ std::vector<int> GetIntervalArticulationPoints(
   // Convert articulation point indices to IndexedInterval.index.
   for (int& index : articulation_points) index = (*intervals)[index].index;
   return articulation_points;
+}
+
+void CapacityProfile::Clear() {
+  events_.clear();
+  num_rectangles_added_ = 0;
+}
+
+void CapacityProfile::AddRectangle(IntegerValue x_min, IntegerValue x_max,
+                                   IntegerValue y_min, IntegerValue y_max) {
+  DCHECK_LE(x_min, x_max);
+  if (x_min == x_max) return;
+
+  events_.push_back(
+      StartRectangleEvent(num_rectangles_added_, x_min, y_min, y_max));
+  events_.push_back(EndRectangleEvent(num_rectangles_added_, x_max));
+  ++num_rectangles_added_;
+}
+
+void CapacityProfile::AddMandatoryConsumption(IntegerValue x_min,
+                                              IntegerValue x_max,
+                                              IntegerValue y_height) {
+  DCHECK_LE(x_min, x_max);
+  if (x_min == x_max) return;
+
+  events_.push_back(ChangeMandatoryProfileEvent(x_min, y_height));
+  events_.push_back(ChangeMandatoryProfileEvent(x_max, -y_height));
+}
+
+void CapacityProfile::BuildResidualCapacityProfile(
+    std::vector<CapacityProfile::Rectangle>* result) {
+  std::sort(events_.begin(), events_.end());
+  IntegerPriorityQueue<QueueElement> min_pq(num_rectangles_added_);
+  IntegerPriorityQueue<QueueElement> max_pq(num_rectangles_added_);
+  IntegerValue mandatory_capacity(0);
+
+  result->clear();
+
+  result->push_back({kMinIntegerValue, IntegerValue(0)});
+
+  for (int i = 0; i < events_.size();) {
+    const IntegerValue current_time = events_[i].time;
+    for (; i < events_.size(); ++i) {
+      const Event& event = events_[i];
+      if (event.time != current_time) break;
+
+      switch (events_[i].type) {
+        case START_RECTANGLE: {
+          min_pq.Add({event.index, -event.y_min});
+          max_pq.Add({event.index, event.y_max});
+          break;
+        }
+        case END_RECTANGLE: {
+          min_pq.Remove(event.index);
+          max_pq.Remove(event.index);
+          break;
+        }
+        case CHANGE_MANDATORY_PROFILE: {
+          mandatory_capacity += event.y_min;
+          break;
+        }
+      }
+    }
+
+    DCHECK(!max_pq.IsEmpty() || mandatory_capacity == 0);
+    const IntegerValue new_height =
+        max_pq.IsEmpty()
+            ? IntegerValue(0)
+            : max_pq.Top().value + min_pq.Top().value - mandatory_capacity;
+    if (new_height != result->back().height) {
+      result->push_back({current_time, new_height});
+    }
+  }
+}
+
+IntegerValue CapacityProfile::GetBoundingArea() {
+  std::sort(events_.begin(), events_.end());
+  IntegerPriorityQueue<QueueElement> min_pq(num_rectangles_added_);
+  IntegerPriorityQueue<QueueElement> max_pq(num_rectangles_added_);
+
+  IntegerValue area(0);
+  IntegerValue previous_time = kMinIntegerValue;
+  IntegerValue previous_height(0);
+
+  for (int i = 0; i < events_.size();) {
+    const IntegerValue current_time = events_[i].time;
+    for (; i < events_.size(); ++i) {
+      const Event& event = events_[i];
+      if (event.time != current_time) break;
+
+      switch (event.type) {
+        case START_RECTANGLE: {
+          min_pq.Add({event.index, -event.y_min});
+          max_pq.Add({event.index, event.y_max});
+          break;
+        }
+        case END_RECTANGLE: {
+          min_pq.Remove(event.index);
+          max_pq.Remove(event.index);
+          break;
+        }
+        case CHANGE_MANDATORY_PROFILE: {
+          break;
+        }
+      }
+    }
+    const IntegerValue new_height =
+        max_pq.IsEmpty() ? IntegerValue(0)
+                         : max_pq.Top().value + min_pq.Top().value;
+    if (previous_height != 0) {
+      area += previous_height * (current_time - previous_time);
+    }
+    previous_time = current_time;
+    previous_height = new_height;
+  }
+  return area;
 }
 
 }  // namespace sat

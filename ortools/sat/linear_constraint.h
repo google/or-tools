@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,11 +14,19 @@
 #ifndef OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
 
+#include <algorithm>
+#include <ostream>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -90,10 +98,19 @@ struct LinearExpression {
   std::vector<IntegerValue> coeffs;
   IntegerValue offset = IntegerValue(0);
 
-  // Return the evaluation of the linear expression using the values from
-  // lp_values.
+  // Return[s] the evaluation of the linear expression.
   double LpValue(
       const absl::StrongVector<IntegerVariable, double>& lp_values) const;
+
+  IntegerValue LevelZeroMin(IntegerTrail* integer_trail) const;
+
+  // Returns lower bound of linear expression using variable bounds of the
+  // variables in expression.
+  IntegerValue Min(const IntegerTrail& integer_trail) const;
+
+  // Returns upper bound of linear expression using variable bounds of the
+  // variables in expression.
+  IntegerValue Max(const IntegerTrail& integer_trail) const;
 
   std::string DebugString() const;
 };
@@ -101,18 +118,6 @@ struct LinearExpression {
 // Returns the same expression in the canonical form (all positive
 // coefficients).
 LinearExpression CanonicalizeExpr(const LinearExpression& expr);
-
-// Returns lower bound of linear expression using variable bounds of the
-// variables in expression. Assumes Canonical expression (all positive
-// coefficients).
-IntegerValue LinExprLowerBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail);
-
-// Returns upper bound of linear expression using variable bounds of the
-// variables in expression. Assumes Canonical expression (all positive
-// coefficients).
-IntegerValue LinExprUpperBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail);
 
 // Makes sure that any of our future computation on this constraint will not
 // cause overflow. We use the level zero bounds and use the same definition as
@@ -157,9 +162,16 @@ class LinearConstraintBuilder {
   // Assumes that the 'model' has IntegerEncoder. The bounds can either be
   // specified at construction or during the Build() call.
   explicit LinearConstraintBuilder(const Model* model)
-      : encoder_(*model->Get<IntegerEncoder>()), lb_(0), ub_(0) {}
+      : encoder_(model->Get<IntegerEncoder>()), lb_(0), ub_(0) {}
   LinearConstraintBuilder(const Model* model, IntegerValue lb, IntegerValue ub)
-      : encoder_(*model->Get<IntegerEncoder>()), lb_(lb), ub_(ub) {}
+      : encoder_(model->Get<IntegerEncoder>()), lb_(lb), ub_(ub) {}
+
+  // Warning: this version without encoder cannot be used to add literals, so
+  // one shouldn't call AddLiteralTerm() on it. All other functions works.
+  //
+  // TODO(user): Have a subclass so we can enforce than caller using
+  // AddLiteralTerm() must construct the Builder with an encoder.
+  LinearConstraintBuilder() : encoder_(nullptr), lb_(0), ub_(0) {}
 
   // Adds the corresponding term to the current linear expression.
   void AddConstant(IntegerValue value);
@@ -168,9 +180,18 @@ class LinearConstraintBuilder {
   void AddLinearExpression(const LinearExpression& expr);
   void AddLinearExpression(const LinearExpression& expr, IntegerValue coeff);
 
+  // Add the corresponding decomposed products (obtained from
+  // TryToDecomposeProduct). The code assumes all literals to be in an
+  // exactly_one relation.
+  // It returns false if one literal does not have an integer view, as it
+  // actually calls AddLiteralTerm().
+  ABSL_MUST_USE_RESULT bool AddDecomposedProduct(
+      const std::vector<LiteralValueValue>& product);
+
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
-  ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff);
+  ABSL_MUST_USE_RESULT bool AddLiteralTerm(
+      Literal lit, IntegerValue coeff = IntegerValue(1));
 
   // Add an under linearization of the product of two affine expressions.
   // If at least one of them is fixed, then we add the exact product (which is
@@ -185,12 +206,19 @@ class LinearConstraintBuilder {
   // expression instead. This would depend on the LP value of the left and
   // right.
   void AddQuadraticLowerBound(AffineExpression left, AffineExpression right,
-                              IntegerTrail* integer_trail);
+                              IntegerTrail* integer_trail,
+                              bool* is_quadratic = nullptr);
 
   // Clears all added terms and constants. Keeps the original bounds.
   void Clear() {
     offset_ = IntegerValue(0);
     terms_.clear();
+  }
+
+  // Reset the bounds passed at construction time.
+  void ResetBounds(IntegerValue lb, IntegerValue ub) {
+    lb_ = lb;
+    ub_ = ub;
   }
 
   // Builds and returns the corresponding constraint in a canonical form.
@@ -210,9 +238,9 @@ class LinearConstraintBuilder {
   LinearExpression BuildExpression();
 
  private:
-  const IntegerEncoder& encoder_;
-  const IntegerValue lb_;
-  const IntegerValue ub_;
+  const IntegerEncoder* encoder_;
+  IntegerValue lb_;
+  IntegerValue ub_;
 
   IntegerValue offset_ = IntegerValue(0);
 
@@ -276,7 +304,7 @@ void CleanTermsAndFillConstraint(
   std::sort(terms->begin(), terms->end());
   IntegerVariable previous_var = kNoIntegerVariable;
   IntegerValue current_coeff(0);
-  for (const std::pair<IntegerVariable, IntegerValue> entry : *terms) {
+  for (const std::pair<IntegerVariable, IntegerValue>& entry : *terms) {
     if (previous_var == entry.first) {
       current_coeff += entry.second;
     } else if (previous_var == NegationOf(entry.first)) {

@@ -1,0 +1,388 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// These proto messages are for collecting solve statistics, e.g., during
+// experiments.
+
+syntax = "proto2";
+
+package operations_research.pdlp;
+
+option java_package = "com.google.ortools.pdlp";
+option java_multiple_files = true;
+
+import "ortools/pdlp/solvers.proto";
+
+// Easy-to-compute statistics for the quadratic program.
+message QuadraticProgramStats {
+  optional int64 num_variables = 1;
+  optional int64 num_constraints = 2;
+
+  // Minimum row and column infinity norms of the constraint matrix. All-zero
+  // rows and columns are excluded. If the constraint matrix contains no nonzero
+  // entries, the values returned are 0.0.
+  optional double constraint_matrix_col_min_l_inf_norm = 3;
+  optional double constraint_matrix_row_min_l_inf_norm = 4;
+
+  // The number of (finite) nonzero entries in the constraint matrix.
+  optional int64 constraint_matrix_num_nonzeros = 5;
+
+  // Max/min/mean/l2_norm of absolute values of (finite) elements in constraint
+  // matrix. Explicit zeros are included in the mean, but excluded from the min.
+  // Note that the maximum absolute value is also equal to the maximal row and
+  // column infinity norms of the constraint matrix. If the constraint matrix is
+  // empty, the values returned are 0.0 for the maximum, minimum, and l2_norm,
+  // and NaN for the average.
+  optional double constraint_matrix_abs_max = 6;
+  optional double constraint_matrix_abs_min = 7;
+  optional double constraint_matrix_abs_avg = 8;
+  optional double constraint_matrix_l2_norm = 25;
+
+  // Statistics of the combined vector of the constraint lower and upper bounds.
+  // Given parallel lower and upper bounds vectors, the "combined bounds" vector
+  // takes the maximum absolute value of each pair of bounds, ignoring all non-
+  // finite values. The comment in solvers.proto:TerminationCriteria provides an
+  // example of the combined bounds vector. The min is over the nonzero combined
+  // bounds. If there are no constraints, the values returned are 0 for the
+  // maximum, minimum, and l2 norm and NaN for the average.
+  optional double combined_bounds_max = 9;
+  optional double combined_bounds_min = 10;
+  optional double combined_bounds_avg = 11;
+  optional double combined_bounds_l2_norm = 24;
+
+  // Number of finite variable bound gaps, which are the elementwise difference
+  // between the upper and lower bounds on primal feasible solutions.
+  optional int64 variable_bound_gaps_num_finite = 12;
+
+  // Max/min/mean/l2_norm over all finite variable bound gaps. The min excludes
+  // zero bound gaps (i.e., fixed variables). When there are no finite gaps, the
+  // values returned are 0 for the maximum, minimum, and l2_norm, and NaN for
+  // the average.
+  optional double variable_bound_gaps_max = 13;
+  optional double variable_bound_gaps_min = 14;
+  optional double variable_bound_gaps_avg = 15;
+  optional double variable_bound_gaps_l2_norm = 26;
+
+  // Statistics of the objective vector. The min is over the nonzero terms.
+  optional double objective_vector_abs_max = 16;
+  optional double objective_vector_abs_min = 17;
+  optional double objective_vector_abs_avg = 18;
+  optional double objective_vector_l2_norm = 23;
+
+  optional int64 objective_matrix_num_nonzeros = 19;
+
+  // Max/min/mean/l2_norm of absolute values of elements of the objective
+  // matrix. The min is over nonzero terms. If the objective matrix is empty,
+  // the returned values are 0.0, 0.0, NaN, and 0.0 respectively.
+  optional double objective_matrix_abs_max = 20;
+  optional double objective_matrix_abs_min = 21;
+  optional double objective_matrix_abs_avg = 22;
+  optional double objective_matrix_l2_norm = 27;
+}
+
+// Specifies whether a restart was performed on a given iteration.
+enum RestartChoice {
+  RESTART_CHOICE_UNSPECIFIED = 0;
+  // No restart on this iteration.
+  RESTART_CHOICE_NO_RESTART = 1;
+  // The weighted average of iterates is cleared and reset to the current point.
+  // Note that from a mathematical perspective this can be equivalently viewed
+  // as restarting the algorithm but picking the restart point to be the current
+  // iterate.
+  RESTART_CHOICE_WEIGHTED_AVERAGE_RESET = 2;
+  // The algorithm is restarted at the average of iterates since the last
+  // restart.
+  RESTART_CHOICE_RESTART_TO_AVERAGE = 3;
+}
+
+// Identifies the type of point used to compute the fields in a given proto; see
+// ConvergenceInformation and InfeasibilityInformation.
+enum PointType {
+  POINT_TYPE_UNSPECIFIED = 0;
+  // Current iterate (x_k, y_k).
+  POINT_TYPE_CURRENT_ITERATE = 1;
+  // Difference of iterates (x_{k+1} - x_k, y_{k+1} - y_k).
+  POINT_TYPE_ITERATE_DIFFERENCE = 2;
+  // Average of iterates since the last restart.
+  POINT_TYPE_AVERAGE_ITERATE = 3;
+  // There is no corresponding point.
+  POINT_TYPE_NONE = 4;
+  // Output of presolver.
+  POINT_TYPE_PRESOLVER_SOLUTION = 5;
+}
+
+// Information measuring how close a candidate is to establishing feasibility
+// and optimality; see also TerminationCriteria.
+message ConvergenceInformation {
+  // Type of the candidate point described by this ConvergenceInformation.
+  optional PointType candidate_type = 1;
+
+  // The primal objective. The primal need not be feasible.
+  optional double primal_objective = 2;
+
+  // The dual objective. The dual need not be feasible. The dual objective
+  // includes the contributions from reduced costs.
+  optional double dual_objective = 3;
+
+  // If possible (e.g., when all primal variables have lower and upper bounds),
+  // a correct dual bound. The value is negative infinity if no corrected dual
+  // bound is available.
+  optional double corrected_dual_objective = 4;
+
+  // The maximum violation of any primal constraint, i.e., the l_∞ norm of the
+  // violations.
+  optional double l_inf_primal_residual = 5;
+
+  // The l_2 norm of the violations of primal constraints.
+  optional double l2_primal_residual = 6;
+
+  // The maximum violation of any dual constraint, i.e., the l_∞ norm of the
+  // violations.
+  optional double l_inf_dual_residual = 7;
+
+  // The l_2 norm of the violations of dual constraints.
+  optional double l2_dual_residual = 8;
+
+  // The maximum absolute value of the primal variables, i.e., the l_∞ norm.
+  // This is useful to detect when the primal iterates are diverging. Divergence
+  // of the primal variables could be an algorithmic issue, or indicate that the
+  // dual is infeasible.
+  optional double l_inf_primal_variable = 14;
+
+  // The l_2 norm of the primal variables.
+  optional double l2_primal_variable = 15;
+
+  // The maximum absolute value of the dual variables, i.e., the l_∞ norm. This
+  // is useful to detect when the dual iterates are diverging. Divergence of the
+  // dual variables could be an algorithmic issue, or indicate the primal is
+  // infeasible.
+  optional double l_inf_dual_variable = 16;
+
+  // The l_2 norm of the dual variables.
+  optional double l2_dual_variable = 17;
+
+  reserved 9, 10, 11, 12, 13, 18, 19, 20, 21, 22, 23;
+}
+
+// Information measuring how close a point is to establishing primal or dual
+// infeasibility (i.e. has no solution); see also TerminationCriteria.
+message InfeasibilityInformation {
+  // Let x_ray be the algorithm's estimate of the primal extreme ray where x_ray
+  // is a vector scaled such that its infinity norm is one. A simple and typical
+  // choice of x_ray is x_ray = x / | x |_∞ where x is the current primal
+  // iterate. For this value compute the maximum absolute error in the primal
+  // linear program with the right hand side and finite variable bounds set to
+  // zero. This error refers to both the linear constraints and sign constraints
+  // on the ray.
+  optional double max_primal_ray_infeasibility = 1;
+
+  // The value of the linear part of the primal objective (ignoring additive
+  // constants) evaluated at x_ray, i.e., c' * x_ray where c is the objective
+  // coefficient vector.
+  optional double primal_ray_linear_objective = 2;
+
+  // The l_∞ norm of the vector resulting from taking the quadratic matrix from
+  // primal objective and multiplying it by the primal variables. For linear
+  // programming problems this is zero.
+  optional double primal_ray_quadratic_norm = 3;
+
+  // Let (y_ray, r_ray) be the algorithm's estimate of the dual and reduced cost
+  // extreme ray where (y_ray, r_ray) is a vector scaled such that its infinity
+  // norm is one. A simple and typical choice of y_ray is
+  // (y_ray, r_ray) = (y, r) / max(| y |_∞, | r |_∞) where y is the
+  // current dual iterate and r is the current dual reduced costs.
+  // Consider the quadratic program we are solving but with the objective (both
+  // quadratic and linear terms) set to zero. This forms a linear program
+  // (label this linear program (1)) with no objective. Take the dual of (1) and
+  // compute the maximum absolute value of the constraint error for
+  // (y_ray, r_ray) to obtain the value of max_dual_ray_infeasibility.
+  optional double max_dual_ray_infeasibility = 4;
+
+  // The objective of the linear program labeled (1) in the previous paragraph.
+  optional double dual_ray_objective = 5;
+
+  // Type of the point used to compute the InfeasibilityInformation.
+  optional PointType candidate_type = 6;
+
+  reserved 7, 8;
+}
+
+message PointMetadata {
+  // Type of the point that this metadata corresponds to.
+  optional PointType point_type = 1;
+
+  // Projections of the primal solution onto random planes.
+  repeated double random_primal_projections = 2 [packed = true];
+
+  // Projections of the dual solution onto random planes.
+  repeated double random_dual_projections = 3 [packed = true];
+
+  // The number of primal variables that are not at their bounds.
+  optional int64 active_primal_variable_count = 4;
+
+  // The number of dual variables that are not at their bounds.
+  optional int64 active_dual_variable_count = 5;
+
+  // The number of primal variables that have a different bound status than they
+  // did at the last restart.
+  optional int64 active_primal_variable_change = 6;
+
+  // The number of dual variables that have a different bound status than they
+  // did at the last restart.
+  optional int64 active_dual_variable_change = 7;
+}
+
+// All values in IterationStats assume that the primal quadratic program is a
+// minimization problem and the dual is a maximization problem. Problems should
+// be transformed to this form if they are not already in this form. The dual
+// vector is defined to be the vector of multipliers on the linear constraints,
+// that is, excluding dual multipliers on variable bounds (reduced costs).
+message IterationStats {
+  // The iteration number at which these stats were recorded. By convention,
+  // iteration counts start at 1, and the stats correspond to the solution
+  // *after* the iteration. Therefore stats from iteration 0 are the stats at
+  // the starting point.
+  optional int32 iteration_number = 1;
+
+  // A set of statistics measuring how close a point is to establishing primal
+  // and dual feasibility and optimality. This field is repeated since there
+  // might be several different points that are considered.
+  repeated ConvergenceInformation convergence_information = 2;
+
+  // A set of statistics measuring how close a point is to establishing primal
+  // or dual infeasibility (i.e., has no solution). This field is repeated since
+  // there might be several different points that could establish infeasibility.
+  repeated InfeasibilityInformation infeasibility_information = 3;
+
+  // Auxiliary statistics for each type of point.
+  repeated PointMetadata point_metadata = 11;
+
+  // The cumulative number of passes through the KKT matrix since the start of
+  // the solve. One pass is a multply by the constraint matrix, its transpose
+  // and the matrix that defines the quadratic part of the objective.
+  //
+  // For example, each iteration of mirror saddle prox contributes 2.0 to this
+  // sum. This is a float because it can include fractional passes through the
+  // data. For example, in an active set method we may only use a submatrix with
+  // 20% of the nonzeros of the KKT matrix at each iteration in which case 0.2
+  // would be added to the total.
+  optional double cumulative_kkt_matrix_passes = 4;
+
+  // The total number of rejected steps (e.g., within a line search procedure)
+  // since the start of the solve.
+  optional int32 cumulative_rejected_steps = 5;
+
+  // The amount of time passed since we started solving the problem (see solver
+  // log solve_time_sec) which records total time.
+  optional double cumulative_time_sec = 6;
+
+  // The kind of restart that occurred at this iteration, or NO_RESTART if a
+  // restart did not occur.
+  optional RestartChoice restart_used = 7;
+
+  // Step size used at this iteration. Note that the step size used for the
+  // primal update is step_size / primal_weight, while the one used for the dual
+  // update is step_size * primal_weight.
+  optional double step_size = 8;
+
+  // Primal weight controlling the relation between primal and dual step sizes.
+  // See field 'step_size' for a detailed description.
+  optional double primal_weight = 9;
+
+  map<string, double> method_specific_stats = 10;
+}
+
+enum TerminationReason {
+  TERMINATION_REASON_UNSPECIFIED = 0;
+  TERMINATION_REASON_OPTIMAL = 1;
+  // Note in this situation the dual could be either unbounded or infeasible.
+  TERMINATION_REASON_PRIMAL_INFEASIBLE = 2;
+  // Note in this situation the primal could be either unbounded or infeasible.
+  TERMINATION_REASON_DUAL_INFEASIBLE = 3;
+  TERMINATION_REASON_TIME_LIMIT = 4;
+  TERMINATION_REASON_ITERATION_LIMIT = 5;
+  TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT = 8;
+  TERMINATION_REASON_INTERRUPTED_BY_USER = 12;
+  TERMINATION_REASON_NUMERICAL_ERROR = 6;
+  // Indicates that the solver detected invalid problem data, e.g., inconsistent
+  // bounds.
+  TERMINATION_REASON_INVALID_PROBLEM = 9;
+  // Indicates that an invalid value for the parameters was detected.
+  TERMINATION_REASON_INVALID_PARAMETER = 10;
+  TERMINATION_REASON_OTHER = 7;
+  // Primal or dual infeasibility was detected (e.g. by presolve) but no
+  // certificate is available.
+  TERMINATION_REASON_PRIMAL_OR_DUAL_INFEASIBLE = 11;
+}
+
+message SolveLog {
+  // The name of the optimization problem.
+  optional string instance_name = 1;
+
+  // If solved with PDLP, the parameters for this solve.
+  optional PrimalDualHybridGradientParams params = 14;
+
+  // The reason that the solve terminated.
+  optional TerminationReason termination_reason = 3;
+
+  // Optional extra information about the termination reason.
+  optional string termination_string = 4;
+
+  // The total number of iterations during the solve.
+  optional int32 iteration_count = 5;
+
+  // Time for preprocessing (everything before iteration 0). This is also
+  // included in solve_time_sec.
+  optional double preprocessing_time_sec = 13;
+
+  // The runtime of the solve. Note: This should not be used for comparing
+  // methods unless care is taken to control for noise in runtime measurement.
+  optional double solve_time_sec = 6;
+
+  // The IterationStats for the final iteration of the solver.
+  // NOTE: Regardless of preprocessing (i.e. scaling or presolve) the optimality
+  // or infeasibility information is evaluated with respect to the original
+  // problem.
+  optional IterationStats solution_stats = 8;
+
+  // The type of the output point that the solver returned. The quality of the
+  // point is reported in the corresponding entry of
+  // solution_stats.convergence_information and/or
+  // solution_stats.infeasibility_information. If termination_reason is
+  // TERMINATION_REASON_OPTIMAL, it's guaranteed that the corresponding entry of
+  // solution_stats.convergence_information satisfies the optimality conditions.
+  // Similarly, if termination_reason is either
+  // TERMINATION_REASON_PRIMAL_INFEASIBLE or TERMINATION_REASON_DUAL_INFEASIBLE
+  // the corresponding entry of solution_stats.infeasibility_information
+  // satisifes conditions for declaring primal or dual infeasibility,
+  // respectively.
+  // If termination_reason is anything else, e.g. TERMINATION_REASON_TIME_LIMIT
+  // or TERMINATION_REASON_PRIMAL_OR_DUAL_INFEASIBLE, the solution may not
+  // satisfy the optimality or infeasibility conditions.
+  optional PointType solution_type = 10;
+
+  // A history of iteration stats for the solve. The iteration_number fields
+  // should be in increasing order. The frequency at which these stats should be
+  // recorded is not specified. This field is "more" optional than the others
+  // because it often significantly increases the size of the message, and
+  // because the information may not be available for third-party solvers.
+  repeated IterationStats iteration_stats = 7;
+
+  // Statistics of the original problem.
+  optional QuadraticProgramStats original_problem_stats = 11;
+
+  // Statistics of the problem after preprocessing.
+  optional QuadraticProgramStats preprocessed_problem_stats = 12;
+
+  reserved 2, 9;
+}

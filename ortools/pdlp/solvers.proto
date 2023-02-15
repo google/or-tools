@@ -1,0 +1,405 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package operations_research.pdlp;
+
+option java_package = "com.google.ortools.pdlp";
+option java_multiple_files = true;
+
+import "ortools/glop/parameters.proto";
+
+enum OptimalityNorm {
+  OPTIMALITY_NORM_UNSPECIFIED = 0;
+  OPTIMALITY_NORM_L_INF = 1;  // The infinity norm.
+  OPTIMALITY_NORM_L2 = 2;     // The Euclidean norm.
+}
+
+// A description of solver termination criteria. The criteria are defined in
+// terms of the quantities recorded in IterationStats in solve_log.proto.
+
+// Relevant readings on infeasibility certificates:
+// (1) https://docs.mosek.com/modeling-cookbook/qcqo.html provides references
+// explaining why the primal rays imply dual infeasibility and dual rays imply
+// primal infeasibility.
+// (2) The termination criteria for Mosek's linear programming optimizer
+// https://docs.mosek.com/9.0/pythonfusion/solving-linear.html.
+// (3) The termination criteria for OSQP is in section 3.3 of
+// https://web.stanford.edu/~boyd/papers/pdf/osqp.pdf.
+// (4) The termination criteria for SCS is in section 3.5 of
+// https://arxiv.org/pdf/1312.3039.pdf.
+message TerminationCriteria {
+  // The norm that we are measuring the optimality criteria in.
+  optional OptimalityNorm optimality_norm = 1 [default = OPTIMALITY_NORM_L2];
+
+  // Define CombineBounds(l,u) as a function that takes two equal-length vectors
+  // and returns a vector whose elements are max{|l_i|, |u_i|} where non-finite
+  // values of l_i and u_i are replaced with zero.
+  // For example, CombineBounds([-2, -Inf, 5], [1, 10, 5]) == [2, 10, 5].
+
+  // Recalling the definitions from
+  // https://developers.google.com/optimization/lp/pdlp_math, c is the linear
+  // objective vector, l^c are the constraint lower bounds, and u^c are the
+  // constraint upper bounds. Define b^c = CombineBounds(l^c, u^c).
+
+  // Let p correspond to the norm we are using as specified by optimality_norm.
+  // If the algorithm terminates with termination_reason =
+  // TERMINATION_REASON_OPTIMAL then
+  //
+  // When using DetailedOptimalityCriteria the conditions to declare a solution
+  // optimal are:
+  // | primal_objective - dual_objective | <=
+  //     eps_optimal_objective_gap_absolute +
+  //     eps_optimal_objective_gap_relative *
+  //         ( | primal_objective | + | dual_objective | )
+  // norm(primal_residual, p) <=
+  //     eps_optimal_primal_residual_absolute +
+  //     eps_optimal_primal_residual_relative * norm(b, p)
+  // norm(dual_residual, p) <=
+  //     eps_optimal_dual_residual_absolute +
+  //     eps_optimal_dual_residual_relative * norm(c, p)
+  // It is possible to prove that a solution satisfying the above conditions
+  // also satisfies SCS's optimality conditions (see link above) with
+  // ϵ_pri = ϵ_dual = ϵ_gap = eps_optimal_*_absolute = eps_optimal_*_relative.
+  // (ϵ_pri, ϵ_dual, and ϵ_gap are SCS's parameters).
+  // When using SimpleOptimalityCriteria all the eps_optimal_*_absolute have the
+  // same value eps_optimal_absolute and all the eps_optimal_*_relative have the
+  // same value eps_optimal_relative.
+
+  message SimpleOptimalityCriteria {
+    // Absolute tolerance on the primal residual, dual residual, and objective
+    // gap.
+    optional double eps_optimal_absolute = 1 [default = 1.0e-6];
+    // Relative tolerance on the primal residual, dual residual, and objective
+    // gap.
+    optional double eps_optimal_relative = 2 [default = 1.0e-6];
+  }
+
+  message DetailedOptimalityCriteria {
+    // Absolute tolerance on the primal residual.
+    optional double eps_optimal_primal_residual_absolute = 1 [default = 1.0e-6];
+    // Relative tolerance on the primal residual.
+    optional double eps_optimal_primal_residual_relative = 2 [default = 1.0e-6];
+    // Absolute tolerance on the dual residual.
+    optional double eps_optimal_dual_residual_absolute = 3 [default = 1.0e-6];
+    // Relative tolerance on the dual residual.
+    optional double eps_optimal_dual_residual_relative = 4 [default = 1.0e-6];
+    // Absolute tolerance on the objective gap.
+    optional double eps_optimal_objective_gap_absolute = 5 [default = 1.0e-6];
+    // Relative tolerance on the objective gap.
+    optional double eps_optimal_objective_gap_relative = 6 [default = 1.0e-6];
+  }
+
+  // If none are set explicitly the deprecated eps_optimal_absolute and
+  // eps_optimal_relative are used to construct a SimpleOptimalityCriteria.
+  oneof optimality_criteria {
+    SimpleOptimalityCriteria simple_optimality_criteria = 9;
+    DetailedOptimalityCriteria detailed_optimality_criteria = 10;
+  }
+
+  // Absolute tolerance on primal residual, dual residual, and the objective
+  // gap.
+  // Deprecated, use simple_optimality_criteria instead.
+  // TODO(b/241462829) delete this deprecated field.
+  optional double eps_optimal_absolute = 2
+      [deprecated = true, default = 1.0e-6];
+
+  // Relative tolerance on primal residual, dual residual, and the objective
+  // gap.
+  // Deprecated, use simple_optimality_criteria instead.
+  // TODO(b/241462829) delete this deprecated field.
+  optional double eps_optimal_relative = 3
+      [deprecated = true, default = 1.0e-6];
+
+  // If the following two conditions hold we say that we have obtained an
+  // approximate dual ray, which is an approximate certificate of primal
+  // infeasibility.
+  // (1) dual_ray_objective > 0,
+  // (2) max_dual_ray_infeasibility / dual_ray_objective <=
+  // eps_primal_infeasible.
+  optional double eps_primal_infeasible = 4 [default = 1.0e-8];
+
+  // If the following three conditions hold we say we have obtained an
+  // approximate primal ray, which is an approximate certificate of dual
+  // infeasibility.
+  // (1) primal_ray_linear_objective < 0,
+  // (2) max_primal_ray_infeasibility / (-primal_ray_linear_objective) <=
+  // eps_dual_infeasible
+  // (3) primal_ray_quadratic_norm / (-primal_ray_linear_objective) <=
+  // eps_dual_infeasible.
+  optional double eps_dual_infeasible = 5 [default = 1.0e-8];
+
+  // If termination_reason = TERMINATION_REASON_TIME_LIMIT then the solver has
+  // taken at least time_sec_limit time.
+  optional double time_sec_limit = 6 [default = inf];
+
+  // If termination_reason = TERMINATION_REASON_ITERATION_LIMIT then the solver
+  // has taken at least iterations_limit iterations.
+  optional int32 iteration_limit = 7 [default = 2147483647];
+
+  // If termination_reason = TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT then
+  // cumulative_kkt_matrix_passes is at least kkt_pass_limit.
+  optional double kkt_matrix_pass_limit = 8 [default = inf];
+}
+
+message AdaptiveLinesearchParams {
+  // At the end of each iteration, regardless of whether the step was accepted
+  // or not, the adaptive rule updates the step_size as the minimum of two
+  // potential step sizes defined by the following two exponents.
+
+  // The step size reduction exponent defines a step size given by
+  // (1 - (total_steps_attempted + 1)^(-step_size_reduction_exponent)) *
+  // step_size_limit where step_size_limit is the maximum allowed step size at
+  // the current iteration.
+  optional double step_size_reduction_exponent = 1 [default = 0.3];
+
+  // The step size growth exponent defines a step size given by (1 +
+  // (total_steps_attempted + 1)^(-step_size_growth_exponent)) * step_size_.
+  optional double step_size_growth_exponent = 2 [default = 0.6];
+}
+
+message MalitskyPockParams {
+  // At every inner iteration the algorithm can decide to accept the step size
+  // or to update it to step_size = step_size_downscaling_factor * step_size.
+  // This parameter should lie between 0 and 1. The default is the value used in
+  // Malitsky and Pock (2016).
+  optional double step_size_downscaling_factor = 1 [default = 0.7];
+
+  // Contraction factor used in the linesearch condition of Malitsky and Pock.
+  // A step size is accepted if primal_weight * primal_stepsize *
+  // norm(constraint_matrix' * (next_dual - current_dual)) is less
+  // than linearsearch_contraction_factor * norm(next_dual - current_dual).
+  // The default is the value used in Malitsky and Pock (2016).
+  optional double linesearch_contraction_factor = 2 [default = 0.99];
+
+  // Malitsky and Pock linesearch rule permits an arbitrary choice of the first
+  // step size guess within an interval [m, M]. This parameter determines where
+  // in that interval to pick the step size. In particular, the next stepsize is
+  // given by m + step_size_interpolation*(M - m). The default is the value used
+  // in Malitsky and Pock (2016).
+  optional double step_size_interpolation = 3 [default = 1];
+}
+
+// Parameters for PrimalDualHybridGradient() in primal_dual_hybrid_gradient.h.
+// While the defaults are generally good, it is usually worthwhile to perform a
+// parameter sweep to find good settings for a particular family of problems.
+// The following parameters should be considered for tuning:
+// - restart_strategy (jointly with major_iteration_frequency)
+// - primal_weight_update_smoothing (jointly with initial_primal_weight)
+// - presolve_options.use_glop
+// - l_inf_ruiz_iterations
+// - l2_norm_rescaling
+// In addition, tune num_threads to speed up the solve.
+message PrimalDualHybridGradientParams {
+  enum RestartStrategy {
+    RESTART_STRATEGY_UNSPECIFIED = 0;
+    // No restarts are performed. The average solution is cleared every major
+    // iteration, but the current solution is not changed.
+    NO_RESTARTS = 1;
+    // On every major iteration, the current solution is reset to the average
+    // since the last major iteration.
+    EVERY_MAJOR_ITERATION = 2;
+    // A heuristic that adaptively decides on every major iteration whether to
+    // restart (this is forced approximately on increasing powers-of-two
+    // iterations), and if so to the current or to the average, based on
+    // reduction in a potential function. The rule more or less follows the
+    // description of the adaptive restart scheme in
+    // https://arxiv.org/pdf/2106.04756.pdf.
+    ADAPTIVE_HEURISTIC = 3;
+    // A distance-based restarting scheme that restarts the algorithm whenever
+    // an appropriate potential function is reduced sufficiently. This check
+    // happens at every major iteration.
+    // TODO(user): Cite paper for the restart strategy and definition of the
+    // potential function, when available.
+    ADAPTIVE_DISTANCE_BASED = 4;
+  }
+
+  enum LinesearchRule {
+    LINESEARCH_RULE_UNSPECIFIED = 0;
+    // Applies the heuristic rule presented in Section 3.1 of
+    // https://arxiv.org/pdf/2106.04756.pdf (further generalized to QP). There
+    // is not a proof of convergence for it. It is usually the fastest in
+    // practice but sometimes behaves poorly.
+    ADAPTIVE_LINESEARCH_RULE = 1;
+    // Applies Malitsky & Pock linesearch rule. This guarantees an
+    // ergodic O(1/N) convergence rate https://arxiv.org/pdf/1608.08883.pdf.
+    // This is provably convergent, but only supports linear problems and
+    // quadratic problems with a diagonal objective matrix.
+    MALITSKY_POCK_LINESEARCH_RULE = 2;
+    // Uses a constant step size corresponding to an estimate of the maximum
+    // singular value of the constraint matrix.
+    CONSTANT_STEP_SIZE_RULE = 3;
+  }
+
+  optional TerminationCriteria termination_criteria = 1;
+
+  // The number of threads to use. Must be positive.
+  // Try various values of num_threads, up to the number of physical cores.
+  // Performance may not be monotonically increasing with the number of threads
+  // because of memory bandwidth limitations.
+  optional int32 num_threads = 2 [default = 1];
+
+  // For more efficient parallel computation, the matrices and vectors are
+  // divided (virtually) into num_shards shards. Results are computed
+  // independently for each shard and then combined. As a consequence, the order
+  // of computation, and hence floating point roundoff, depends on the number of
+  // shards so reproducible results require using the same value for num_shards.
+  // However, for efficiency num_shards should a be at least num_threads, and
+  // preferably at least 4*num_threads to allow better load balancing. If
+  // num_shards is positive, the computation will use that many shards.
+  // Otherwise a default that depends on num_threads will be used.
+  optional int32 num_shards = 27 [default = 0];
+
+  // If true, the iteration_stats field of the SolveLog output will be populated
+  // at every iteration. Note that we only compute solution statistics at
+  // termination checks. Setting this parameter to true may substantially
+  // increase the size of the output.
+  optional bool record_iteration_stats = 3;
+
+  // The verbosity of logging.
+  // 0: No informational logging. (Errors are logged.)
+  // 1: Summary statistics only. No iteration-level details.
+  // 2: A table of iteration-level statistics is logged.
+  //    (See ToShortString() in primal_dual_hybrid_gradient.cc).
+  // 3: A more detailed table of iteration-level statistics is logged.
+  //    (See ToString() in primal_dual_hybrid_gradient.cc).
+  // 4: For iteration-level details, prints the statistics of both the average
+  //    (prefixed with A) and the current iterate (prefixed with C). Also prints
+  //    internal algorithmic state and details.
+  // Logging at levels 2-4 also includes messages from level 1.
+  optional int32 verbosity_level = 26 [default = 0];
+
+  // The frequency at which extra work is performed to make major algorithmic
+  // decisions, e.g., performing restarts and updating the primal weight. Major
+  // iterations also trigger a termination check. For best performance using the
+  // NO_RESTARTS or EVERY_MAJOR_ITERATION rule, one should perform a log-scale
+  // grid search over this parameter, for example, over powers of two.
+  // ADAPTIVE_HEURISTIC is mostly insensitive to this value.
+  optional int32 major_iteration_frequency = 4 [default = 64];
+
+  // The frequency (based on a counter reset every major iteration) to check for
+  // termination (involves extra work) and log iteration stats. Termination
+  // checks do not affect algorithmic progress unless termination is triggered.
+  optional int32 termination_check_frequency = 5 [default = 64];
+
+  // NO_RESTARTS and EVERY_MAJOR_ITERATION occasionally outperform the default.
+  // If using a strategy other than ADAPTIVE_HEURISTIC, you must also tune
+  // major_iteration_frequency.
+  optional RestartStrategy restart_strategy = 6 [default = ADAPTIVE_HEURISTIC];
+
+  // This parameter controls exponential smoothing of log(primal_weight) when a
+  // primal weight update occurs (i.e., when the ratio of primal and dual step
+  // sizes is adjusted). At 0.0, the primal weight will be frozen at its initial
+  // value and there will be no dynamic updates in the algorithm. At 1.0, there
+  // is no smoothing in the updates. The default of 0.5 generally performs well,
+  // but has been observed on occasion to trigger unstable swings in the primal
+  // weight. We recommend also trying 0.0 (disabling primal weight updates), in
+  // which case you must also tune initial_primal_weight.
+  optional double primal_weight_update_smoothing = 7 [default = 0.5];
+
+  // The initial value of the primal weight (i.e., the ratio of primal and dual
+  // step sizes). The primal weight remains fixed throughout the solve if
+  // primal_weight_update_smoothing = 0.0. If unset, the default is the ratio of
+  // the norm of the objective vector to the L2 norm of the combined constraint
+  // bounds vector (as defined above). If this ratio is not finite and positive,
+  // then the default is 1.0 instead. For tuning, try powers of 10, for example,
+  // from 10^{-6} to 10^6.
+  optional double initial_primal_weight = 8;
+
+  message PresolveOptions {
+    // If true runs Glop's presolver on the given instance prior to solving.
+    // Note that convergence criteria are still interpreted with respect to the
+    // original problem. Certificates may not be available if presolve detects
+    // infeasibility. Glop's presolver cannot apply to problems with quadratic
+    // objectives or problems with more than 2^31 variables or constraints. It's
+    // often beneficial to enable the presolver, especially on medium-sized
+    // problems. At some larger scales, the presolver can become a serial
+    // bottleneck.
+    optional bool use_glop = 1;
+
+    // Parameters to control glop's presolver. Only used when use_glop is true.
+    // These are merged with and override PDLP's defaults.
+    optional operations_research.glop.GlopParameters glop_parameters = 2;
+  }
+  optional PresolveOptions presolve_options = 16;
+
+  // Number of L_infinity Ruiz rescaling iterations to apply to the constraint
+  // matrix. Zero disables this rescaling pass. Recommended values to try when
+  // tuning are 0, 5, and 10.
+  optional int32 l_inf_ruiz_iterations = 9 [default = 5];
+
+  // If true, applies L_2 norm rescaling after the Ruiz rescaling. Heuristically
+  // this has been found to help convergence.
+  optional bool l2_norm_rescaling = 10 [default = true];
+
+  // For ADAPTIVE_HEURISTIC and ADAPTIVE_DISTANCE_BASED only: A relative
+  // reduction in the potential function by this amount always triggers a
+  // restart. Must be between 0.0 and 1.0.
+  optional double sufficient_reduction_for_restart = 11 [default = 0.1];
+
+  // For ADAPTIVE_HEURISTIC only: A relative reduction in the potential function
+  // by this amount triggers a restart if, additionally, the quality of the
+  // iterates appears to be getting worse. The value must be in the interval
+  // [sufficient_reduction_for_restart, 1). Smaller values make restarts less
+  // frequent, and larger values make them more frequent.
+  optional double necessary_reduction_for_restart = 17 [default = 0.9];
+
+  // Linesearch rule applied at each major iteration.
+  optional LinesearchRule linesearch_rule = 12
+      [default = ADAPTIVE_LINESEARCH_RULE];
+
+  optional AdaptiveLinesearchParams adaptive_linesearch_parameters = 18;
+
+  optional MalitskyPockParams malitsky_pock_parameters = 19;
+
+  // Scaling factor applied to the initial step size (all step sizes if
+  // linesearch_rule == CONSTANT_STEP_SIZE_RULE).
+  optional double initial_step_size_scaling = 25 [default = 1.0];
+
+  reserved 13, 14, 15, 20;
+
+  // Seeds for generating (pseudo-)random projections of iterates during
+  // termination checks. For each seed, the projection of the primal and dual
+  // solutions onto random planes in primal and dual space will be computed and
+  // added the IterationStats if record_iteration_stats is true. The random
+  // planes generated will be determined by the seeds, the primal and dual
+  // dimensions, and num_threads.
+  repeated int32 random_projection_seeds = 28 [packed = true];
+
+  // When computing relative feasibility norms, constraint bounds with absolute
+  // value at least this threshold are treated as infinite, and hence not
+  // included in the relative feasibility norm.
+  // NOTE: This affects only the relative convergence criteria (and problem
+  // statistics LOG()ed at the start of the run). A smaller value makes the
+  // relative convergence criteria stronger.
+  optional double infinite_constraint_bound_threshold = 22 [default = inf];
+
+  // When solving QPs with diagonal objective matrices, this option can be
+  // turned on to enable an experimental solver that avoids linearization of the
+  // quadratic term. The `diagonal_qp_solver_accuracy` parameter controls the
+  // solve accuracy.
+  // TODO(user): Turn this option on by default for quadratic
+  // programs after numerical evaluation.
+  optional bool use_diagonal_qp_trust_region_solver = 23 [default = false];
+
+  // The solve tolerance of the experimental trust region solver for diagonal
+  // QPs, controlling the accuracy of binary search over a one-dimensional
+  // scaling parameter. Smaller values imply smaller relative error of the final
+  // solution vector.
+  // TODO(user): Find an expression for the final relative error.
+  optional double diagonal_qp_trust_region_solver_tolerance = 24
+      [default = 1e-8];
+
+  reserved 21;
+}

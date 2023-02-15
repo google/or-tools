@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,9 +15,9 @@
 #define OR_TOOLS_SAT_SCHEDULING_CONSTRAINTS_H_
 
 #include <cstddef>
+#include <functional>
 #include <vector>
 
-#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -26,6 +26,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -37,7 +38,7 @@ namespace sat {
 // This constraint expects that enforcement_literal <==> bool_or(selectors).
 std::function<void(Model*)> EqualMinOfSelectedVariables(
     Literal enforcement_literal, AffineExpression target,
-    const std::vector<AffineExpression>& vars,
+    const std::vector<AffineExpression>& exprs,
     const std::vector<Literal>& selectors);
 
 // This propagator enforces that the target variable is equal to the max of the
@@ -47,7 +48,7 @@ std::function<void(Model*)> EqualMinOfSelectedVariables(
 // This constraint expects that enforcement_literal <==> bool_or(selectors).u
 std::function<void(Model*)> EqualMaxOfSelectedVariables(
     Literal enforcement_literal, AffineExpression target,
-    const std::vector<AffineExpression>& vars,
+    const std::vector<AffineExpression>& exprs,
     const std::vector<Literal>& selectors);
 
 // This constraint enforces that the target interval is an exact cover of the

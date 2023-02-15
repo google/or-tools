@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,23 +14,34 @@
 #ifndef OR_TOOLS_SAT_UTIL_H_
 #define OR_TOOLS_SAT_UTIL_H_
 
+#include <cmath>
 #include <cstdint>
 #include <deque>
+#include <limits>
+#include <string>
+#include <vector>
 
+#include "ortools/base/logging.h"
+#if !defined(__PORTABLE_PLATFORM__)
+#include "google/protobuf/descriptor.h"
+#endif  // __PORTABLE_PLATFORM__
+#include "absl/container/btree_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/types/span.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/random_engine.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
-
-#if !defined(__PORTABLE_PLATFORM__)
-#include "google/protobuf/descriptor.h"
-#endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {
 namespace sat {
+
+// Prints a positive number with separators for easier reading (ex: 1'348'065).
+std::string FormatCounter(int64_t num);
 
 // Returns a in [0, m) such that a * x = 1 modulo m.
 // If gcd(x, m) != 1, there is no inverse, and it returns 0.
@@ -76,6 +87,39 @@ int64_t ProductWithModularInverse(int64_t coeff, int64_t mod, int64_t rhs);
 //     DomainOf(y).SubtractionWith(y0).InverseMultiplicationBy(-a))
 bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
                                        int64_t& x0, int64_t& y0);
+
+// The argument must be non-negative.
+int64_t FloorSquareRoot(int64_t a);
+int64_t CeilSquareRoot(int64_t a);
+
+// Converts a double to int64_t and cap large magnitudes at kint64min/max.
+// We also arbitrarily returns 0 for NaNs.
+//
+// Note(user): This is similar to SaturatingFloatToInt(), but we use our own
+// since we need to open source it and the code is simple enough.
+int64_t SafeDoubleToInt64(double value);
+
+// Returns the multiple of base closest to value. If there is a tie, we return
+// the one closest to zero. This way we have ClosestMultiple(x) =
+// -ClosestMultiple(-x) which is important for how this is used.
+int64_t ClosestMultiple(int64_t value, int64_t base);
+
+// Given a linear equation "sum coeff_i * X_i <= rhs. We can rewrite it using
+// ClosestMultiple() as "base * new_terms + error <= rhs" where error can be
+// bounded using the provided bounds on each variables. This will return true if
+// the error can be ignored and this equation is completely equivalent to
+// new_terms <= new_rhs.
+//
+// This is useful for cases like 9'999 X + 10'0001 Y <= 155'000 where we have
+// weird coefficient (maybe due to scaling). With a base of 10K, this is
+// equivalent to X + Y <= 15.
+//
+// Preconditions: All coeffs are assumed to be positive. You can easily negate
+// all the negative coeffs and corresponding bounds before calling this.
+bool LinearInequalityCanBeReducedWithClosestMultiple(
+    int64_t base, const std::vector<int64_t>& coeffs,
+    const std::vector<int64_t>& lbs, const std::vector<int64_t>& ubs,
+    int64_t rhs, int64_t* new_rhs);
 
 // The model "singleton" random engine used in the solver.
 //
@@ -142,13 +186,95 @@ void RandomizeDecisionHeuristic(absl::BitGenRef random,
 // relevant_prefix_size is used as a hint when keeping more that this prefix
 // size do not matter. The returned value will always be lower or equal to
 // relevant_prefix_size.
-int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
-                                  int relevant_prefix_size,
-                                  std::vector<Literal>* literals);
+int MoveOneUnprocessedLiteralLast(
+    const absl::btree_set<LiteralIndex>& processed, int relevant_prefix_size,
+    std::vector<Literal>* literals);
 
-// ============================================================================
-// Implementation.
-// ============================================================================
+// Simple DP to compute the maximum reachable value of a "subset sum" under
+// a given bound (inclusive). Note that we abort as soon as the computation
+// become too important.
+//
+// Precondition: Both bound and all added values must be >= 0.
+class MaxBoundedSubsetSum {
+ public:
+  MaxBoundedSubsetSum() { Reset(0); }
+  explicit MaxBoundedSubsetSum(int64_t bound) { Reset(bound); }
+
+  // Resets to an empty set of values.
+  // We look for the maximum sum <= bound.
+  void Reset(int64_t bound);
+
+  // Add a value to the base set for which subset sums will be taken.
+  void Add(int64_t value);
+
+  // Add a choice of values to the base set for which subset sums will be taken.
+  // Note that even if this doesn't include zero, not taking any choices will
+  // also be an option.
+  void AddChoices(absl::Span<const int64_t> choices);
+
+  // Adds [0, coeff, 2 * coeff, ... max_value * coeff].
+  void AddMultiples(int64_t coeff, int64_t max_value);
+
+  // Returns an upper bound (inclusive) on the maximum sum <= bound_.
+  // This might return bound_ if we aborted the computation.
+  int64_t CurrentMax() const { return current_max_; }
+
+  int64_t Bound() const { return bound_; }
+
+ private:
+  // This assumes filtered values.
+  void AddChoicesInternal(absl::Span<const int64_t> values);
+
+  static constexpr int kMaxComplexityPerAdd = 50;
+
+  int64_t gcd_;
+  int64_t bound_;
+  int64_t current_max_;
+  std::vector<int64_t> sums_;
+  std::vector<bool> expanded_sums_;
+  std::vector<int64_t> filtered_values_;
+};
+
+// Use Dynamic programming to solve a single knapsack. This is used by the
+// presolver to simplify variables appearing in a single linear constraint.
+//
+// Complexity is the best of
+// - O(num_variables * num_relevant_values ^ 2) or
+// - O(num_variables * num_relevant_values * max_domain_size).
+class BasicKnapsackSolver {
+ public:
+  // Solves the problem:
+  //   - minimize sum costs * X[i]
+  //   - subject to sum coeffs[i] * X[i] \in rhs, with X[i] \in Domain(i).
+  //
+  // Returns:
+  //   - (solved = false) if complexity is too high.
+  //   - (solved = true, infeasible = true) if proven infeasible.
+  //   - (solved = true, infeasible = false, solution) otherwise.
+  struct Result {
+    bool solved = false;
+    bool infeasible = false;
+    std::vector<int64_t> solution;
+  };
+  Result Solve(const std::vector<Domain>& domains,
+               const std::vector<int64_t>& coeffs,
+               const std::vector<int64_t>& costs, const Domain& rhs);
+
+ private:
+  Result InternalSolve(int64_t num_values, const Domain& rhs);
+
+  // Canonicalized version.
+  std::vector<Domain> domains_;
+  std::vector<int64_t> coeffs_;
+  std::vector<int64_t> costs_;
+
+  // We only need to keep one state with the same activity.
+  struct State {
+    int64_t cost = std::numeric_limits<int64_t>::max();
+    int64_t value = 0;
+  };
+  std::vector<std::vector<State>> var_activity_states_;
+};
 
 // Manages incremental averages.
 class IncrementalAverage {
@@ -229,8 +355,84 @@ class Percentile {
 // regexps.
 //
 // This method is exposed for testing purposes.
-void CompressTuples(absl::Span<const int64_t> domain_sizes, int64_t any_value,
+constexpr int64_t kTableAnyValue = std::numeric_limits<int64_t>::min();
+void CompressTuples(absl::Span<const int64_t> domain_sizes,
                     std::vector<std::vector<int64_t>>* tuples);
+
+// Similar to CompressTuples() but produces a final table where each cell is
+// a set of value. This should result in a table that can still be encoded
+// efficiently in SAT but with less tuples and thus less extra Booleans. Note
+// that if a set of value is empty, it is interpreted at "any" so we can gain
+// some space.
+//
+// The passed tuples vector is used as temporary memory and is detroyed.
+// We interpret kTableAnyValue as an "any" tuple.
+//
+// TODO(user): To reduce memory, we could return some absl::Span in the last
+// layer instead of vector.
+//
+// TODO(user): The final compression is depend on the order of the variables.
+// For instance the table (1,1)(1,2)(1,3),(1,4),(2,3) can either be compressed
+// as (1,*)(2,3) or (1,{1,2,4})({1,3},3). More experiment are needed to devise
+// a better heuristic. It might for example be good to call CompressTuples()
+// first.
+std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
+    absl::Span<const int64_t> domain_sizes,
+    std::vector<std::vector<int64_t>>* tuples);
+
+// ============================================================================
+// Implementation.
+// ============================================================================
+
+inline int64_t SafeDoubleToInt64(double value) {
+  if (std::isnan(value)) return 0;
+  if (value >= static_cast<double>(std::numeric_limits<int64_t>::max())) {
+    return std::numeric_limits<int64_t>::max();
+  }
+  if (value <= static_cast<double>(std::numeric_limits<int64_t>::min())) {
+    return std::numeric_limits<int64_t>::min();
+  }
+  return static_cast<int64_t>(value);
+}
+
+// Tells whether a int128 can be casted to a int64_t that can be negated.
+inline bool IsNegatableInt64(absl::int128 x) {
+  return x <= absl::int128(std::numeric_limits<int64_t>::max()) &&
+         x > absl::int128(std::numeric_limits<int64_t>::min());
+}
+
+// These functions are copied from MathUtils. However, the original ones are
+// incompatible with absl::int128 as MathLimits<absl::int128>::kIsInteger ==
+// false.
+template <typename IntType, bool ceil>
+IntType CeilOrFloorOfRatio(IntType numerator, IntType denominator) {
+  static_assert(std::numeric_limits<IntType>::is_integer,
+                "CeilOfRatio is only defined for integral types");
+  DCHECK_NE(0, denominator) << "Division by zero is not supported.";
+  DCHECK(numerator != std::numeric_limits<IntType>::min() || denominator != -1)
+      << "Dividing " << numerator << "by -1 is not supported: it would SIGFPE";
+
+  const IntType rounded_toward_zero = numerator / denominator;
+  const bool needs_round = (numerator % denominator) != 0;
+  const bool same_sign = (numerator >= 0) == (denominator >= 0);
+
+  if (ceil) {  // Compile-time condition: not an actual branching
+    return rounded_toward_zero + static_cast<IntType>(same_sign && needs_round);
+  } else {
+    return rounded_toward_zero -
+           static_cast<IntType>(!same_sign && needs_round);
+  }
+}
+
+template <typename IntType>
+IntType CeilOfRatio(IntType numerator, IntType denominator) {
+  return CeilOrFloorOfRatio<IntType, true>(numerator, denominator);
+}
+
+template <typename IntType>
+IntType FloorOfRatio(IntType numerator, IntType denominator) {
+  return CeilOrFloorOfRatio<IntType, false>(numerator, denominator);
+}
 
 }  // namespace sat
 }  // namespace operations_research

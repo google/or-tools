@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,7 +14,10 @@
 #include "ortools/graph/max_flow.h"
 
 #include <algorithm>
+#include <limits>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
@@ -64,14 +67,14 @@ SimpleMaxFlow::Status SimpleMaxFlow::Solve(NodeIndex source, NodeIndex sink) {
   if (source >= num_nodes_ || sink >= num_nodes_) {
     return OPTIMAL;
   }
-  underlying_graph_ = absl::make_unique<Graph>(num_nodes_, num_arcs);
+  underlying_graph_ = std::make_unique<Graph>(num_nodes_, num_arcs);
   underlying_graph_->AddNode(source);
   underlying_graph_->AddNode(sink);
   for (int arc = 0; arc < num_arcs; ++arc) {
     underlying_graph_->AddArc(arc_tail_[arc], arc_head_[arc]);
   }
   underlying_graph_->Build(&arc_permutation_);
-  underlying_max_flow_ = absl::make_unique<GenericMaxFlow<Graph>>(
+  underlying_max_flow_ = std::make_unique<GenericMaxFlow<Graph>>(
       underlying_graph_.get(), source, sink);
   for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
     ArcIndex permuted_arc =

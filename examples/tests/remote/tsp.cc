@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google
+// Copyright 2010-2022 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -85,13 +85,13 @@ class RandomMatrix {
     }
   }
   int64_t Distance(RoutingModel::NodeIndex from,
-                 RoutingModel::NodeIndex to) const {
+                   RoutingModel::NodeIndex to) const {
     return matrix_[MatrixIndex(from, to)];
   }
 
  private:
   int64_t MatrixIndex(RoutingModel::NodeIndex from,
-                    RoutingModel::NodeIndex to) const {
+                      RoutingModel::NodeIndex to) const {
     return (from * size_ + to).value();
   }
   std::unique_ptr<int64_t[]> matrix_;
@@ -129,7 +129,8 @@ int main(int argc, char** argv) {
     int64_t forbidden_connections = 0;
     while (forbidden_connections <
            absl::GetFlag(FLAGS_tsp_random_forbidden_connections)) {
-      const int64_t from = randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1);
+      const int64_t from =
+          randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1);
       const int64_t to =
           randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1) + 1;
       if (routing.NextVar(from)->Contains(to)) {

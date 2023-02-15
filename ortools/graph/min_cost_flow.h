@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -381,8 +381,12 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // MakeFeasible returns false if CheckFeasibility() was not called before.
   bool MakeFeasible();
 
-  // Returns the cost of the minimum-cost flow found by the algorithm.
-  CostValue GetOptimalCost() const { return total_flow_cost_; }
+  // Returns the cost of the minimum-cost flow found by the algorithm. This
+  // works in O(num_arcs). This will only work if the last Solve() call was
+  // successful and returned true, otherwise it will return 0. Note that the
+  // computation might overflow, in which case we will cap the cost at
+  // std::numeric_limits<CostValue>::max().
+  CostValue GetOptimalCost();
 
   // Returns the flow on the given arc using the equations given in the
   // comment on residual_arc_capacity_.
@@ -572,9 +576,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // An array representing the scaled unit cost for each arc in graph_.
   ZVector<ArcScaledCostType> scaled_arc_unit_cost_;
-
-  // The total cost of the flow.
-  CostValue total_flow_cost_;
 
   // The status of the problem.
   Status status_;

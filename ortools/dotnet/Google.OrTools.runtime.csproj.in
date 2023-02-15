@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
-    <RuntimeIdentifier>@RUNTIME_IDENTIFIER@</RuntimeIdentifier>
+    @DOTNET_TFM@
+    <RuntimeIdentifier>@DOTNET_RID@</RuntimeIdentifier>
     <AssemblyName>google-ortools-native</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
 
@@ -11,7 +11,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
 
     <!-- Pack Option -->
-    <Title>Google.OrTools @RUNTIME_IDENTIFIER@ v@PROJECT_VERSION@</Title>
+    <Title>Google.OrTools @DOTNET_RID@ v@PROJECT_VERSION@</Title>
     <PackageId>@DOTNET_NATIVE_PROJECT@</PackageId>
 
     <!-- Signing -->
@@ -24,8 +24,11 @@
   <ItemGroup>
     <!-- Native library must be in native directory... -->
     <!-- If ortools is built as a STATIC_LIBRARY (e.g. Windows) then we don't have to include it -->
-    <Content Include="$<TARGET_FILE:google-ortools-native>$<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:;$<TARGET_SONAME_FILE:@PROJECT_NAME@>>">
-      <PackagePath>runtimes/@RUNTIME_IDENTIFIER@/native/%(Filename)%(Extension)</PackagePath>
+    <Content Include="
+      $<TARGET_FILE:google-ortools-native>
+      $<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:;$<TARGET_SONAME_FILE:@PROJECT_NAME@>>
+    ">
+      <PackagePath>runtimes/@DOTNET_RID@/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

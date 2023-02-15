@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,9 @@
 
 #ifndef OR_TOOLS_GLOP_VARIABLE_VALUES_H_
 #define OR_TOOLS_GLOP_VARIABLE_VALUES_H_
+
+#include <string>
+#include <vector>
 
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
@@ -105,14 +108,21 @@ class VariableValues {
 
   // Functions dealing with the primal-infeasible basic variables. A basic
   // variable is primal-infeasible if its infeasibility is stricly greater than
-  // the primal feasibility tolerance. These are exactly the dual "prices" and
-  // are just used during the dual simplex.
+  // the primal feasibility tolerance. These are exactly the dual "prices" once
+  // recalled by the norms. This is only used during the dual simplex.
   //
   // This information is only available after a call to RecomputeDualPrices()
   // and has to be kept in sync by calling UpdateDualPrices() for the rows that
   // changed values.
-  void RecomputeDualPrices();
-  void UpdateDualPrices(const std::vector<RowIndex>& row);
+  //
+  // TODO(user): On some problem like stp3d.mps or pds-100.mps, using different
+  // price like abs(infeasibility) / squared_norms give better result. Some
+  // solver switch according to a criteria like all entry are +1/-1, the column
+  // have no more than 24 non-zero and the average column size is no more than
+  // 6! Understand and implement some variant of this? I think the gain is
+  // mainly because of using sparser vectors?
+  void RecomputeDualPrices(bool put_more_importance_on_norm = false);
+  void UpdateDualPrices(absl::Span<const RowIndex> row);
 
   // The primal phase I objective is related to the primal infeasible
   // information above. The cost of a basic column will be 1 if the variable is
@@ -148,6 +158,10 @@ class VariableValues {
   const RowToColMapping& basis_;
   const VariablesInfo& variables_info_;
   const BasisFactorization& basis_factorization_;
+
+  // This is set by RecomputeDualPrices() so that UpdateDualPrices() use
+  // the same formula.
+  bool put_more_importance_on_norm_ = false;
 
   // The dual prices are a normalized version of the primal infeasibility.
   DualEdgeNorms* dual_edge_norms_;

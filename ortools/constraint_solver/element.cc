@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <numeric>
@@ -88,6 +89,27 @@ class BaseIntExprElement : public BaseIntExpr {
 
  private:
   void UpdateSupports() const;
+  template <typename T>
+  void UpdateElementIndexBounds(T check_value) {
+    const int64_t emin = ExprMin();
+    const int64_t emax = ExprMax();
+    int64_t nmin = emin;
+    int64_t value = ElementValue(nmin);
+    while (nmin < emax && check_value(value)) {
+      nmin++;
+      value = ElementValue(nmin);
+    }
+    if (nmin == emax && check_value(value)) {
+      solver()->Fail();
+    }
+    int64_t nmax = emax;
+    value = ElementValue(nmax);
+    while (nmax >= nmin && check_value(value)) {
+      nmax--;
+      value = ElementValue(nmax);
+    }
+    expr_->SetRange(nmin, nmax);
+  }
 
   mutable int64_t min_;
   mutable int min_support_;
@@ -126,42 +148,21 @@ void BaseIntExprElement::Range(int64_t* mi, int64_t* ma) {
   *ma = max_;
 }
 
-#define UPDATE_BASE_ELEMENT_INDEX_BOUNDS(test) \
-  const int64_t emin = ExprMin();              \
-  const int64_t emax = ExprMax();              \
-  int64_t nmin = emin;                         \
-  int64_t value = ElementValue(nmin);          \
-  while (nmin < emax && test) {                \
-    nmin++;                                    \
-    value = ElementValue(nmin);                \
-  }                                            \
-  if (nmin == emax && test) {                  \
-    solver()->Fail();                          \
-  }                                            \
-  int64_t nmax = emax;                         \
-  value = ElementValue(nmax);                  \
-  while (nmax >= nmin && test) {               \
-    nmax--;                                    \
-    value = ElementValue(nmax);                \
-  }                                            \
-  expr_->SetRange(nmin, nmax);
-
 void BaseIntExprElement::SetMin(int64_t m) {
-  UPDATE_BASE_ELEMENT_INDEX_BOUNDS(value < m);
+  UpdateElementIndexBounds([m](int64_t value) { return value < m; });
 }
 
 void BaseIntExprElement::SetMax(int64_t m) {
-  UPDATE_BASE_ELEMENT_INDEX_BOUNDS(value > m);
+  UpdateElementIndexBounds([m](int64_t value) { return value > m; });
 }
 
 void BaseIntExprElement::SetRange(int64_t mi, int64_t ma) {
   if (mi > ma) {
     solver()->Fail();
   }
-  UPDATE_BASE_ELEMENT_INDEX_BOUNDS((value < mi || value > ma));
+  UpdateElementIndexBounds(
+      [mi, ma](int64_t value) { return value < mi || value > ma; });
 }
-
-#undef UPDATE_BASE_ELEMENT_INDEX_BOUNDS
 
 void BaseIntExprElement::UpdateSupports() const {
   if (initial_update_ || !expr_->Contains(min_support_) ||

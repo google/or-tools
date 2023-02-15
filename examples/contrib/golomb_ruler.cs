@@ -110,9 +110,9 @@ public class GolombRuler
     public static void Main(String[] args)
     {
         int n = 8;
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            n = Convert.ToInt32(args[0]);
+            n = Convert.ToInt32(args[1]);
         }
 
         Solve(n);

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,6 +29,9 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -40,6 +43,7 @@
 #include "ortools/bop/bop_types.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace bop {
@@ -374,7 +378,7 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // constraint infeasible. An "up" direction means that the constraint activity
   // is lower than the lower bound and we need to make the activity move up to
   // fix the infeasibility.
-  DEFINE_INT_TYPE(ConstraintIndexWithDirection, int32_t);
+  DEFINE_STRONG_INDEX_TYPE(ConstraintIndexWithDirection);
   ConstraintIndexWithDirection FromConstraintIndex(ConstraintIndex index,
                                                    bool up) const {
     return ConstraintIndexWithDirection(2 * index.value() + (up ? 1 : 0));
@@ -385,7 +389,7 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   void MakeObjectiveConstraintInfeasible(int delta);
 
   // Local structure to represent the sparse matrix by variable used for fast
-  // update of the contraint values.
+  // update of the constraint values.
   struct ConstraintEntry {
     ConstraintEntry(ConstraintIndex c, int64_t w) : constraint(c), weight(w) {}
     ConstraintIndex constraint;

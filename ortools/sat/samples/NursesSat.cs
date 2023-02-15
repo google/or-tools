@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 // [START import]
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Google.OrTools.Sat;
 // [END import]
@@ -25,7 +26,7 @@ public class NursesSat
     public class SolutionPrinter : CpSolverSolutionCallback
     {
         public SolutionPrinter(int[] allNurses, int[] allDays, int[] allShifts,
-                               Dictionary<Tuple<int, int, int>, IntVar> shifts, int limit)
+                               Dictionary<(int, int, int), BoolVar> shifts, int limit)
         {
             solutionCount_ = 0;
             allNurses_ = allNurses;
@@ -46,8 +47,7 @@ public class NursesSat
                     bool isWorking = false;
                     foreach (int s in allShifts_)
                     {
-                        var key = Tuple.Create(n, d, s);
-                        if (Value(shifts_[key]) == 1L)
+                        if (Value(shifts_[(n, d, s)]) == 1L)
                         {
                             isWorking = true;
                             Console.WriteLine($"  Nurse {n} work shift {s}");
@@ -76,7 +76,7 @@ public class NursesSat
         private int[] allNurses_;
         private int[] allDays_;
         private int[] allShifts_;
-        private Dictionary<Tuple<int, int, int>, IntVar> shifts_;
+        private Dictionary<(int, int, int), BoolVar> shifts_;
         private int solutionLimit_;
     }
     // [END solution_printer]
@@ -96,19 +96,21 @@ public class NursesSat
         // Creates the model.
         // [START model]
         CpModel model = new CpModel();
+        model.Model.Variables.Capacity = numNurses * numDays * numShifts;
         // [END model]
 
         // Creates shift variables.
         // shifts[(n, d, s)]: nurse 'n' works shift 's' on day 'd'.
         // [START variables]
-        Dictionary<Tuple<int, int, int>, IntVar> shifts = new Dictionary<Tuple<int, int, int>, IntVar>();
+        Dictionary<(int, int, int), BoolVar> shifts =
+            new Dictionary<(int, int, int), BoolVar>(numNurses * numDays * numShifts);
         foreach (int n in allNurses)
         {
             foreach (int d in allDays)
             {
                 foreach (int s in allShifts)
                 {
-                    shifts.Add(Tuple.Create(n, d, s), model.NewBoolVar($"shifts_n{n}d{d}s{s}"));
+                    shifts.Add((n, d, s), model.NewBoolVar($"shifts_n{n}d{d}s{s}"));
                 }
             }
         }
@@ -116,17 +118,17 @@ public class NursesSat
 
         // Each shift is assigned to exactly one nurse in the schedule period.
         // [START exactly_one_nurse]
+        List<ILiteral> literals = new List<ILiteral>();
         foreach (int d in allDays)
         {
             foreach (int s in allShifts)
             {
-                IntVar[] x = new IntVar[numNurses];
                 foreach (int n in allNurses)
                 {
-                    var key = Tuple.Create(n, d, s);
-                    x[n] = shifts[key];
+                    literals.Add(shifts[(n, d, s)]);
                 }
-                model.Add(LinearExpr.Sum(x) == 1);
+                model.AddExactlyOne(literals);
+                literals.Clear();
             }
         }
         // [END exactly_one_nurse]
@@ -137,13 +139,12 @@ public class NursesSat
         {
             foreach (int d in allDays)
             {
-                IntVar[] x = new IntVar[numShifts];
                 foreach (int s in allShifts)
                 {
-                    var key = Tuple.Create(n, d, s);
-                    x[s] = shifts[key];
+                    literals.Add(shifts[(n, d, s)]);
                 }
-                model.Add(LinearExpr.Sum(x) <= 1);
+                model.AddAtMostOne(literals);
+                literals.Clear();
             }
         }
         // [END at_most_one_shift]
@@ -163,26 +164,26 @@ public class NursesSat
         {
             maxShiftsPerNurse = minShiftsPerNurse + 1;
         }
+
+        List<IntVar> shiftsWorked = new List<IntVar>();
         foreach (int n in allNurses)
         {
-            IntVar[] numShiftsWorked = new IntVar[numDays * numShifts];
             foreach (int d in allDays)
             {
                 foreach (int s in allShifts)
                 {
-                    var key = Tuple.Create(n, d, s);
-                    numShiftsWorked[d * numShifts + s] = shifts[key];
+                    shiftsWorked.Add(shifts[(n, d, s)]);
                 }
             }
-            model.AddLinearConstraint(LinearExpr.Sum(numShiftsWorked), minShiftsPerNurse, maxShiftsPerNurse);
+            model.AddLinearConstraint(LinearExpr.Sum(shiftsWorked), minShiftsPerNurse, maxShiftsPerNurse);
+            shiftsWorked.Clear();
         }
         // [END assign_nurses_evenly]
 
         // [START parameters]
         CpSolver solver = new CpSolver();
-        solver.StringParameters += "linearization_level:0 ";
         // Tell the solver to enumerate all solutions.
-        solver.StringParameters += "enumerate_all_solutions:true ";
+        solver.StringParameters += "linearization_level:0 " + "enumerate_all_solutions:true ";
         // [END parameters]
 
         // Display the first five solutions.

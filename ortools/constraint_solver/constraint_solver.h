@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -156,6 +156,10 @@ struct StateInfo;
 struct Trail;
 template <class T>
 class SimpleRevFIFO;
+template <typename F>
+class LightIntFunctionElementCt;
+template <typename F>
+class LightIntIntFunctionElementCt;
 
 inline int64_t CpRandomSeed() {
   return absl::GetFlag(FLAGS_cp_random_seed) == -1
@@ -731,6 +735,37 @@ class Solver {
   /// Optimization directions.
   enum OptimizationDirection { NOT_SET, MAXIMIZATION, MINIMIZATION };
 
+#ifndef SWIG
+  /// Search monitor events.
+  enum class MonitorEvent : int {
+    kEnterSearch = 0,
+    kRestartSearch,
+    kExitSearch,
+    kBeginNextDecision,
+    kEndNextDecision,
+    kApplyDecision,
+    kRefuteDecision,
+    kAfterDecision,
+    kBeginFail,
+    kEndFail,
+    kBeginInitialPropagation,
+    kEndInitialPropagation,
+    kAcceptSolution,
+    kAtSolution,
+    kNoMoreSolutions,
+    kLocalOptimum,
+    kAcceptDelta,
+    kAcceptNeighbor,
+    kAcceptUncheckedNeighbor,
+    kIsUncheckedSolutionLimitReached,
+    kPeriodicCheck,
+    kProgressPercent,
+    kAccept,
+    // Dummy event whose underlying int is the number of MonitorEvent enums.
+    kLast,
+  };
+#endif  // SWIG
+
   /// Callback typedefs
   typedef std::function<int64_t(int64_t)> IndexEvaluator1;
   typedef std::function<int64_t(int64_t, int64_t)> IndexEvaluator2;
@@ -761,6 +796,10 @@ class Solver {
 
   /// Stored Parameters.
   ConstraintSolverParameters parameters() const { return parameters_; }
+  // Read-only.
+  const ConstraintSolverParameters& const_parameters() const {
+    return parameters_;
+  }
   /// Create a ConstraintSolverParameters proto with all the default values.
   // TODO(user): Move to constraint_solver_parameters.h.
   static ConstraintSolverParameters DefaultSolverParameters();
@@ -1149,6 +1188,39 @@ class Solver {
   IntExpr* MakeElement(Int64ToIntVar vars, int64_t range_start,
                        int64_t range_end, IntVar* argument);
 #endif  // SWIG
+
+  /// Light versions of function-based elements, in constraint version only,
+  /// well-suited for use within Local Search.
+  /// These constraints are "checking" constraints, only triggered on WhenBound
+  /// events. They provide very little (or no) domain filtering.
+
+  /// Returns a light one-dimension function-based element constraint ensuring
+  /// var == values(index).
+  /// The constraint does not perform bound reduction of the resulting variable
+  /// until the index variable is bound.
+  /// If deep_serialize returns false, the model visitor will not extract all
+  /// possible values from the values function.
+  template <typename F>
+  Constraint* MakeLightElement(F values, IntVar* const var, IntVar* const index,
+                               std::function<bool()> deep_serialize = nullptr) {
+    return RevAlloc(new LightIntFunctionElementCt<F>(
+        this, var, index, std::move(values), std::move(deep_serialize)));
+  }
+
+  /// Light two-dimension function-based element constraint ensuring
+  /// var == values(index1, index2).
+  /// The constraint does not perform bound reduction of the resulting variable
+  /// until the index variables are bound.
+  /// If deep_serialize returns false, the model visitor will not extract all
+  /// possible values from the values function.
+  template <typename F>
+  Constraint* MakeLightElement(F values, IntVar* const var,
+                               IntVar* const index1, IntVar* const index2,
+                               std::function<bool()> deep_serialize = nullptr) {
+    return RevAlloc(new LightIntIntFunctionElementCt<F>(
+        this, var, index1, index2, std::move(values),
+        std::move(deep_serialize)));
+  }
 
   /// Returns the expression expr such that vars[expr] == value.
   /// It assumes that vars are all different.
@@ -3395,6 +3467,7 @@ class ModelVisitor : public BaseObject {
   static const char kDivide[];
   static const char kDurationExpr[];
   static const char kElement[];
+  static const char kLightElementEqual[];
   static const char kElementEqual[];
   static const char kEndExpr[];
   static const char kEquality[];
@@ -3747,8 +3820,6 @@ class SearchMonitor : public BaseObject {
   /// unchecked solutions.
   virtual bool IsUncheckedSolutionLimitReached() { return false; }
 
-  Solver* solver() const { return solver_; }
-
   /// Periodic call to check limits in long running methods.
   virtual void PeriodicCheck();
 
@@ -3760,8 +3831,14 @@ class SearchMonitor : public BaseObject {
   virtual void Accept(ModelVisitor* const visitor) const;
 
   /// Registers itself on the solver such that it gets notified of the search
-  /// and propagation events.
+  /// and propagation events. Override to incrementally install listeners for
+  /// specific events.
   virtual void Install();
+
+  Solver* solver() const { return solver_; }
+
+ protected:
+  void ListenToEvent(Solver::MonitorEvent event);
 
  private:
   Solver* const solver_;
@@ -4146,6 +4223,7 @@ class SolutionCollector : public SearchMonitor {
   SolutionCollector(Solver* const solver, const Assignment* assignment);
   explicit SolutionCollector(Solver* const solver);
   ~SolutionCollector() override;
+  void Install() override;
   std::string DebugString() const override { return "SolutionCollector"; }
 
   /// Add API.
@@ -4291,7 +4369,10 @@ class SearchLimit : public SearchMonitor {
   /// value of true indicates that we have indeed crossed the limit. In
   /// that case, this method will not be called again and the remaining
   /// search will be discarded.
-  virtual bool Check() = 0;
+  bool Check() { return CheckWithOffset(absl::ZeroDuration()); }
+  /// Same as Check() but adds the 'offset' value to the current time when time
+  /// is considered in the limit.
+  virtual bool CheckWithOffset(absl::Duration offset) = 0;
 
   /// This method is called when the search limit is initialized.
   virtual void Init() = 0;
@@ -4311,6 +4392,7 @@ class SearchLimit : public SearchMonitor {
   std::string DebugString() const override {
     return absl::StrFormat("SearchLimit(crossed = %i)", crossed_);
   }
+  void Install() override;
 
  private:
   void TopPeriodicCheck();
@@ -4330,7 +4412,7 @@ class RegularLimit : public SearchLimit {
   void Copy(const SearchLimit* const limit) override;
   SearchLimit* MakeClone() const override;
   RegularLimit* MakeIdenticalClone() const;
-  bool Check() override;
+  bool CheckWithOffset(absl::Duration offset) override;
   void Init() override;
   void ExitSearch() override;
   void UpdateLimits(absl::Duration time, int64_t branches, int64_t failures,
@@ -4347,6 +4429,7 @@ class RegularLimit : public SearchLimit {
   bool IsUncheckedSolutionLimitReached() override;
   int ProgressPercent() override;
   std::string DebugString() const override;
+  void Install() override;
 
   absl::Time AbsoluteSolverDeadline() const {
     return solver_time_at_limit_start_ + duration_limit_;
@@ -4355,7 +4438,7 @@ class RegularLimit : public SearchLimit {
   void Accept(ModelVisitor* const visitor) const override;
 
  private:
-  bool CheckTime();
+  bool CheckTime(absl::Duration offset);
   absl::Duration TimeElapsed();
   static int64_t GetPercent(int64_t value, int64_t offset, int64_t total) {
     return (total > 0 && total < kint64max) ? 100 * (value - offset) / total
@@ -4403,9 +4486,10 @@ class ImprovementSearchLimit : public SearchLimit {
   ~ImprovementSearchLimit() override;
   void Copy(const SearchLimit* const limit) override;
   SearchLimit* MakeClone() const override;
-  bool Check() override;
+  bool CheckWithOffset(absl::Duration offset) override;
   bool AtSolution() override;
   void Init() override;
+  void Install() override;
 
  private:
   IntVar* objective_var_;
@@ -5118,10 +5202,14 @@ class Assignment : public PropagationBaseObject {
 #endif  // #if !defined(SWIG)
   void Save(AssignmentProto* const assignment_proto) const;
 
-  void AddObjective(IntVar* const v);
+  void AddObjective(IntVar* const v) {
+    // Objective can only set once.
+    DCHECK(!HasObjective());
+    objective_element_.Reset(v);
+  }
   void ClearObjective() { objective_element_.Reset(nullptr); }
-  IntVar* Objective() const;
-  bool HasObjective() const { return (objective_element_.Var() != nullptr); }
+  IntVar* Objective() const { return objective_element_.Var(); }
+  bool HasObjective() const { return (Objective() != nullptr); }
   int64_t ObjectiveMin() const;
   int64_t ObjectiveMax() const;
   int64_t ObjectiveValue() const;

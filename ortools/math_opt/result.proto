@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,37 +20,230 @@ import "google/protobuf/duration.proto";
 import "ortools/gscip/gscip.proto";
 import "ortools/math_opt/solution.proto";
 
-// best_dual_bound should always be better (e.g. smaller for minimization) than
-// best_primal_bound.
+
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
+// Problem feasibility status as claimed by the solver (solver is not required
+// to return a certificate for the claim).
+enum FeasibilityStatusProto {
+  // Guard value representing no status.
+  FEASIBILITY_STATUS_UNSPECIFIED = 0;
+
+  // Solver does not claim a status.
+  FEASIBILITY_STATUS_UNDETERMINED = 1;
+
+  // Solver claims the problem is feasible.
+  FEASIBILITY_STATUS_FEASIBLE = 2;
+
+  // Solver claims the problem is infeasible.
+  FEASIBILITY_STATUS_INFEASIBLE = 3;
+}
+
+// Feasibility status of the primal problem and its dual (or the dual of a
+// continuous relaxation) as claimed by the solver. The solver is not required
+// to return a certificate for the claim (e.g. the solver may claim primal
+// feasibility without returning a primal feasible solutuion). This combined
+// status gives a comprehensive description of a solver's claims about
+// feasibility and unboundedness of the solved problem. For instance,
 //
-// We only report nontrivial (finite) values for best_dual_bound and
-// best_primal_bound if the underlying solver claims to have such a bound. Some
-// solvers (e.g. bisco, typically continuous solvers) do not claim a bound
-// even when returning optimal (these methods can terminate without a basis and
-// slightly infeasible primal and dual solutions). MIP solvers will typically
-// report a bound even if their LP solutions are imprecise.
+//   * a feasible status for primal and dual problems indicates the primal is
+//     feasible and bounded and likely has an optimal solution (guaranteed for
+//     problems without non-linear constraints).
+//   * a primal feasible and a dual infeasible status indicates the primal
+//     problem is unbounded (i.e. has arbitrarily good solutions).
+//
+// Note that a dual infeasible status by itself (i.e. accompanied by an
+// undetermined primal status) does not imply the primal problem is unbounded as
+// we could have both problems be infeasible. Also, while a primal and dual
+// feasible status may imply the existence of an optimal solution, it does not
+// guarantee the solver has actually found such optimal solution.
+message ProblemStatusProto {
+  // Status for the primal problem.
+  FeasibilityStatusProto primal_status = 1;
+
+  // Status for the dual problem (or for the dual of a continuous relaxation).
+  FeasibilityStatusProto dual_status = 2;
+
+  // If true, the solver claims the primal or dual problem is infeasible, but
+  // it does not know which (or if both are infeasible). Can be true only when
+  // primal_problem_status = dual_problem_status = kUndetermined. This extra
+  // information is often needed when preprocessing determines there is no
+  // optimal solution to the problem (but can't determine if it is due to
+  // infeasibility, unboundedness, or both).
+  bool primal_or_dual_infeasible = 3;
+}
+
 message SolveStatsProto {
   // Elapsed wall clock time as measured by math_opt, roughly the time inside
   // Solver::Solve(). Note: this does not include work done building the model.
   google.protobuf.Duration solve_time = 1;
 
-  // When no bound is found by the solver, the trivial bound (+inf for
-  // minimization and -inf maximizaiton) is given.
-  //
-  // Note that we can have a primal bound even when we have no feasible
-  // solution, and that the primal bound can better than the best feasible
-  // solution.
+  // Solver claims the optimal value is equal or better (smaller for
+  // minimization and larger for maximization) than best_primal_bound:
+  //   * best_primal_bound is trivial (+inf for minimization and -inf
+  //     maximization) when the solver does not claim to have such bound. This
+  //     may happen for some solvers (e.g. PDLP, typically continuous solvers)
+  //     even when returning optimal (solver could terminate with slightly
+  //     infeasible primal solutions).
+  //   * best_primal_bound can be closer to the optimal value than the objective
+  //     of the best primal feasible solution. In particular, best_primal_bound
+  //     may be non-trivial even when no primal feasible solutions are returned.
   double best_primal_bound = 2;
 
-  // The best proven bound on the object (e.g. through the LP relaxation). When
-  // no bound is found, the trivial bound (-inf minimization and +inf for
-  // maximization) is given.
-  //
-  // Always better than (e.g. for minimization, smaller than) best_primal_bound.
+  // Solver claims the optimal value is equal or worse (larger for
+  // minimization and smaller for maximization) than best_dual_bound:
+  //   * best_dual_bound is always better (smaller for minimization and larger
+  //     for maximization) than best_primal_bound.
+  //   * best_dual_bound is trivial (-inf for minimization and +inf
+  //     maximization) when the solver does not claim to have such bound.
+  //     Similarly to best_primal_bound, this may happen for some solvers even
+  //     when returning optimal. MIP solvers will typically report a bound even
+  //     if it is imprecise.
+  //   * for continuous problems best_dual_bound can be closer to the optimal
+  //     value than the objective of the best dual feasible solution. For MIP
+  //     one of the first non-trivial values for best_dual_bound is often the
+  //     optimal value of the LP relaxation of the MIP.
   double best_dual_bound = 3;
-  int64 simplex_iterations = 4;
-  int64 barrier_iterations = 5;
-  int64 node_count = 6;
+
+  // Feasibility statuses for primal and dual problems.
+  ProblemStatusProto problem_status = 4;
+
+  int64 simplex_iterations = 5;
+
+  int64 barrier_iterations = 6;
+
+  int64 first_order_iterations = 8;
+
+  int64 node_count = 7;
+
+  // Next id: 9
+}
+
+// The reason a call to Solve() terminates.
+enum TerminationReasonProto {
+  TERMINATION_REASON_UNSPECIFIED = 0;
+
+  // A provably optimal solution (up to numerical tolerances) has been found.
+  TERMINATION_REASON_OPTIMAL = 1;
+
+  // The primal problem has no feasible solutions.
+  TERMINATION_REASON_INFEASIBLE = 2;
+
+  // The primal problem is feasible and arbitrarily good solutions can be
+  // found along a primal ray.
+  TERMINATION_REASON_UNBOUNDED = 3;
+
+  // The primal problem is either infeasible or unbounded. More details on the
+  // problem status may be available in solve_stats.problem_status. Note that
+  // Gurobi's unbounded status may be mapped here as explained in
+  // go/mathopt-solver-specific#gurobi-inf-or-unb.
+  TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED = 4;
+
+  // The problem was solved to one of the criteria above (Optimal, Infeasible,
+  // Unbounded, or InfeasibleOrUnbounded), but one or more tolerances was not
+  // met. Some primal/dual solutions/rays be present, but either they will be
+  // slightly infeasible, or (if the problem was nearly optimal) their may be
+  // a gap between the best solution objective and best objective bound.
+  //
+  // Users can still query primal/dual solutions/rays and solution stats, but
+  // they are responsible for dealing with the numerical imprecision.
+  TERMINATION_REASON_IMPRECISE = 5;
+
+  // The optimizer reached some kind of limit and a primal feasible solution
+  // is returned. See SolveResultProto.limit_detail for detailed description of
+  // the kind of limit that was reached.
+  TERMINATION_REASON_FEASIBLE = 9;
+
+  // The optimizer reached some kind of limit and it did not find a primal
+  // feasible solution. See SolveResultProto.limit_detail for detailed
+  // description of the kind of limit that was reached.
+  TERMINATION_REASON_NO_SOLUTION_FOUND = 6;
+
+  // The algorithm stopped because it encountered unrecoverable numerical
+  // error. No solution information is available.
+  TERMINATION_REASON_NUMERICAL_ERROR = 7;
+
+  // The algorithm stopped because of an error not covered by one of the
+  // statuses defined above. No solution information is available.
+  TERMINATION_REASON_OTHER_ERROR = 8;
+}
+
+// When a Solve() stops early with TerminationReasonProto FEASIBLE or
+// NO_SOLUTION_FOUND, the specific limit that was hit.
+enum LimitProto {
+  // Used as a null value when we terminated not from a limit (e.g.
+  // TERMINATION_REASON_OPTIMAL).
+  LIMIT_UNSPECIFIED = 0;
+
+  // The underlying solver does not expose which limit was reached.
+  LIMIT_UNDETERMINED = 1;
+
+  // An iterative algorithm stopped after conducting the maximum number of
+  // iterations (e.g. simplex or barrier iterations).
+  LIMIT_ITERATION = 2;
+
+  // The algorithm stopped after a user-specified computation time.
+  LIMIT_TIME = 3;
+
+  // A branch-and-bound algorithm stopped because it explored a maximum number
+  // of nodes in the branch-and-bound tree.
+  LIMIT_NODE = 4;
+
+  // The algorithm stopped because it found the required number of solutions.
+  // This is often used in MIPs to get the solver to return the first feasible
+  // solution it encounters.
+  LIMIT_SOLUTION = 5;
+
+  // The algorithm stopped because it ran out of memory.
+  LIMIT_MEMORY = 6;
+
+  // The solver was run with a cutoff (e.g. SolveParameters.cutoff_limit was
+  // set) on the objective, indicating that the user did not want any solution
+  // worse than the cutoff, and the solver concluded there were no solutions at
+  // least as good as the cutoff. Typically no further solution information is
+  // provided.
+  LIMIT_CUTOFF = 12;
+
+  // The algorithm stopped because it either found a solution or a bound better
+  // than a limit set by the user (see SolveParameters.objective_limit and
+  // SolveParameters.best_bound_limit).
+  LIMIT_OBJECTIVE = 7;
+
+  // The algorithm stopped because the norm of an iterate became too large.
+  LIMIT_NORM = 8;
+
+  // The algorithm stopped because of an interrupt signal or a user interrupt
+  // request.
+  LIMIT_INTERRUPTED = 9;
+
+  // The algorithm stopped because it was unable to continue making progress
+  // towards the solution.
+  LIMIT_SLOW_PROGRESS = 10;
+
+  // The algorithm stopped due to a limit not covered by one of the above. Note
+  // that LIMIT_UNDETERMINED is used when the reason cannot be determined, and
+  // LIMIT_OTHER is used when the reason is known but does not fit into any of
+  // the above alternatives.
+  //
+  // TerminationProto.detail may contain additional information about the limit.
+  LIMIT_OTHER = 11;
+}
+
+// All information regarding why a call to Solve() terminated.
+message TerminationProto {
+  // Additional information in `limit` when value is TERMINATION_REASON_FEASIBLE
+  // or TERMINATION_REASON_NO_SOLUTION_FOUND, see `limit` for details.
+  TerminationReasonProto reason = 1;
+
+  // Is LIMIT_UNSPECIFIED unless reason is TERMINATION_REASON_FEASIBLE or
+  // TERMINATION_REASON_NO_SOLUTION_FOUND. Not all solvers can always determine
+  // the limit which caused termination, LIMIT_UNDETERMINED is used when the
+  // cause cannot be determined.
+  LimitProto limit = 2;
+
+  // Additional typically solver specific information about termination.
+  string detail = 3;
 }
 
 // The contract of when primal/dual solutions/rays is complex, see
@@ -59,103 +252,42 @@ message SolveStatsProto {
 // Until an exact contract is finalized, it is safest to simply check if a
 // solution/ray is present rather than relying on the termination reason.
 message SolveResultProto {
-  enum TerminationReason {
-    TERMINATION_REASON_UNSPECIFIED = 0;
+  // The reason the solver stopped.
+  TerminationProto termination = 2;
 
-    ////////////////////////////////////////////////////////////////////////////
-    // The optimizer successfully ran to completion.
-    ////////////////////////////////////////////////////////////////////////////
+  //  Basic solutions use, as of Nov 2021:
+  //    * All convex optimization solvers (LP, convex QP) return only one
+  //      solution as a primal dual pair.
+  //    * Only MI(Q)P solvers return more than one solution. MIP solvers do not
+  //      return any dual information, or primal infeasible solutions. Solutions
+  //      are returned in order of best primal objective first. Gurobi solves
+  //      nonconvex QP (integer or continuous) as MIQP.
 
-    // A provably optimal solution (up to numerical tolerances) has been found.
-    OPTIMAL = 1;
+  // The general contract for the order of solutions that future solvers should
+  // implement is to order by:
+  //   1. The solutions with a primal feasible solution, ordered by best primal
+  //      objective first.
+  //   2. The solutions with a dual feasible solution, ordered by best dual
+  //        objective (unknown dual objective is worst)
+  //   3. All remaining solutions can be returned in any order.
+  repeated SolutionProto solutions = 3;
 
-    // The primal problem has no feasible solutions.
-    INFEASIBLE = 2;
+  // Directions of unbounded primal improvement, or equivalently, dual
+  // infeasibility certificates. Typically provided for TerminationReasonProtos
+  // UNBOUNDED and DUAL_INFEASIBLE
+  repeated PrimalRayProto primal_rays = 4;
 
-    // The primal problem is feasible and arbitrarily good solutions can be
-    // found along a primal ray.
-    UNBOUNDED = 3;
+  // Directions of unbounded dual improvement, or equivalently, primal
+  // infeasibility certificates. Typically provided for TerminationReasonProto
+  // INFEASIBLE.
+  repeated DualRayProto dual_rays = 5;
 
-    // A dual problem has been shown to be infeasible. The primal problem is
-    // either infeasible or unbounded, but we do not know which.
-    DUAL_INFEASIBLE = 4;
+  // Statistics on the solve process, e.g. running time, iterations.
+  SolveStatsProto solve_stats = 6;
 
-    // The problem was solved to one of the criteria above (optimal, infeasible,
-    // unbounded, or dual infeasible), but one or more tolerances was not met.
-    // Some primal/dual solutions/rays be present, but either they will be
-    // slightly infeasible, or (if the problem was nearly optimal) their may be
-    // a gap between the best solution objective and best objective bound.
-    //
-    // Users can still query primal/dual solutions/rays and solution stats, but
-    // they are responsible for dealing with the numerical imprecision.
-    IMPRECISE = 5;
-
-    ////////////////////////////////////////////////////////////////////////////
-    // The optimizer reached some kind of limit. Partial solution information
-    // may be available.
-    ////////////////////////////////////////////////////////////////////////////
-
-    // An iterative algorithm stopped after conducting the maximum number of
-    // iterations (e.g. simplex or barrier iterations).
-    ITERATION_LIMIT = 10;
-    // The algorithm stopped after a user-specified computation time.
-    TIME_LIMIT = 11;
-    // A branch-and-bound algorithm stopped because it explored a maximum number
-    // of nodes in the branch-and-bound tree.
-    NODE_LIMIT = 12;
-    // The algorithm stopped because it found the required number of solutions.
-    // This is often used in MIPs to get the solver to return the first feasible
-    // solution it encounters.
-    SOLUTION_LIMIT = 13;
-    // The algorithm stopped because it ran out of memory.
-    MEMORY_LIMIT = 14;
-    // The algorithm stopped because it found a solution better than a minimum
-    // limit set by the user.
-    OBJECTIVE_LIMIT = 15;
-    // The algorithm stopped because the norm of an iterate became too large.
-    NORM_LIMIT = 16;
-    // The algorithm stopped because of an interrupt signal or a user interrupt
-    // request.
-    INTERRUPTED = 17;
-    // The algorithm stopped because it was unable to continue making progress
-    // towards the solution.
-    SLOW_PROGRESS = 18;
-    // Either the algorithm stopped due to a limit not covered by one of the
-    // above or the solver does not provide enough information in its output to
-    // identify the limit.
-    OTHER_LIMIT = 19;
-
-    ////////////////////////////////////////////////////////////////////////////
-    // The optimizer had a problem while optimizing. No solution information is
-    // available.
-    ////////////////////////////////////////////////////////////////////////////
-
-    // The algorithm stopped because it encountered unrecoverable numerical
-    // error.
-    NUMERICAL_ERROR = 30;
-
-    // The algorithm stopped because of an error not covered by one of the
-    // statuses defined above.
-    OTHER_ERROR = 40;
-  }
-
-  repeated string warnings = 1;
-  TerminationReason termination_reason = 2;
-  string termination_detail = 3;
-  // Solutions should be ordered best objective value first.
-  repeated PrimalSolutionProto primal_solutions = 4;
-  // Solutions should be ordered best objective value first.
-  repeated DualSolutionProto dual_solutions = 5;
-  repeated PrimalRayProto primal_rays = 6;
-  repeated DualRayProto dual_rays = 7;
-  // basis[i] corresponds to the primal dual pair:
-  // {primal_solutions[i], dual_solutions[i]}. These fields must have at least
-  // as many elements as basis. Basis will only be populated for LPs, and may
-  // not be populated.
-  // TODO(b/183631989): rename to bases.
-  repeated BasisProto basis = 8;
-  SolveStatsProto solve_stats = 9;
   oneof solver_specific_output {
-    GScipOutput gscip_output = 10;
+    GScipOutput gscip_output = 7;
   }
+
+  reserved 1;  // Deleted fields.
 }

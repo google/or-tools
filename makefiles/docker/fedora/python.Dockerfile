@@ -11,7 +11,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
 RUN make python
 
 FROM build AS test

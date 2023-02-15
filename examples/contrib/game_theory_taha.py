@@ -30,15 +30,9 @@ from ortools.linear_solver import pywraplp
 def main(sol='CBC'):
 
   # Create the solver.
-
-  # using GLPK
-  if sol == 'GLPK':
-    solver = pywraplp.Solver('CoinsGridGLPK',
-                             pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
-  else:
-    # Using CLP
-    solver = pywraplp.Solver('CoinsGridCLP',
-                             pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
+  solver = pywraplp.Solver.CreateSolver(sol)
+  if not solver:
+    return
 
   # data
   rows = 3

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,7 +27,7 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
         {
             foreach (IntVar v in variables_)
             {
-                Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
+                Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
             }
             Console.WriteLine();
         }
@@ -48,7 +48,7 @@ public class ChannelingSampleSat
         IntVar y = model.NewIntVar(0, 10, "y");
 
         // Declare our intermediate boolean variable.
-        IntVar b = model.NewBoolVar("b");
+        BoolVar b = model.NewBoolVar("b");
 
         // Implement b == (x >= 5).
         model.Add(x >= 5).OnlyEnforceIf(b);

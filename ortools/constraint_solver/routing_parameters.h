@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_
 
 #include <string>
+#include <vector>
 
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 
@@ -26,6 +27,11 @@ RoutingSearchParameters DefaultRoutingSearchParameters();
 /// Returns an empty std::string if the routing search parameters are valid, and
 /// a non-empty, human readable error description if they're not.
 std::string FindErrorInRoutingSearchParameters(
+    const RoutingSearchParameters& search_parameters);
+
+/// Returns a list of std::string describing the errors in the routing search
+/// parameters. Returns an empty vector if the parameters are valid.
+std::vector<std::string> FindErrorsInRoutingSearchParameters(
     const RoutingSearchParameters& search_parameters);
 
 }  // namespace operations_research

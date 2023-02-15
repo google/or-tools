@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,34 @@
 
 #include "ortools/sat/lb_tree_search.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <functional>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "absl/random/distributions.h"
+#include "absl/strings/str_cat.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_expr.h"
+#include "ortools/sat/integer_search.h"
+#include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -25,10 +50,13 @@ LbTreeSearch::LbTreeSearch(Model* model)
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       shared_response_(model->GetOrCreate<SharedResponseManager>()),
       sat_decision_(model->GetOrCreate<SatDecisionPolicy>()),
-      search_helper_(model->GetOrCreate<IntegerSearchHelper>()) {
+      search_helper_(model->GetOrCreate<IntegerSearchHelper>()),
+      parameters_(*model->GetOrCreate<SatParameters>()) {
   // We should create this class only in the presence of an objective.
   //
   // TODO(user): Starts with an initial variable score for all variable in
@@ -54,6 +82,8 @@ LbTreeSearch::LbTreeSearch(Model* model)
   search_heuristic_ =
       SequentialSearch({SatSolverHeuristic(model),
                         model->GetOrCreate<SearchHeuristics>()->fixed_search});
+
+  last_logging_time_ = absl::Now();
 }
 
 void LbTreeSearch::UpdateParentObjective(int level) {
@@ -129,30 +159,89 @@ void LbTreeSearch::DebugDisplayTree(NodeIndex root) const {
   LOG(INFO) << "num_nodes: " << num_nodes;
 }
 
+// Here we forgot the whole search tree and restart.
+//
+// The idea is that the heuristic has now more information so it will likely
+// take better decision which will result in a smaller overall tree.
+bool LbTreeSearch::FullRestart() {
+  ++num_full_restarts_;
+  num_decisions_taken_at_last_restart_ = num_decisions_taken_;
+  num_nodes_in_tree_ = 0;
+  nodes_.clear();
+  current_branch_.clear();
+  return sat_solver_->RestoreSolverToAssumptionLevel();
+}
+
+void LbTreeSearch::MarkAsDeletedNodeAndUnreachableSubtree(Node& node) {
+  --num_nodes_in_tree_;
+  node.is_deleted = true;
+  if (sat_solver_->Assignment().LiteralIsTrue(node.literal)) {
+    MarkSubtreeAsDeleted(node.false_child);
+  } else {
+    MarkSubtreeAsDeleted(node.true_child);
+  }
+}
+
+void LbTreeSearch::MarkSubtreeAsDeleted(NodeIndex root) {
+  std::vector<NodeIndex> to_delete{root};
+  for (int i = 0; i < to_delete.size(); ++i) {
+    const NodeIndex n = to_delete[i];
+    if (n >= nodes_.size()) continue;
+
+    --num_nodes_in_tree_;
+    nodes_[n].is_deleted = true;
+
+    to_delete.push_back(nodes_[n].true_child);
+    to_delete.push_back(nodes_[n].false_child);
+  }
+}
+
+std::string LbTreeSearch::SmallProgressString() const {
+  return absl::StrCat(
+      "#nodes:", num_nodes_in_tree_, "/", nodes_.size(),
+      " #rc:", num_rc_detected_, " #decisions:", num_decisions_taken_,
+      " #@root:", num_back_to_root_node_, " #restarts:", num_full_restarts_);
+}
+
 SatSolver::Status LbTreeSearch::Search(
     const std::function<void()>& feasible_solution_observer) {
   if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
     return sat_solver_->UnsatStatus();
   }
 
-  // We currently restart the search tree from scratch a few time. This is to
-  // allow our "pseudo-cost" to kick in and experimentally result in smaller
-  // trees down the road.
+  // We currently restart the search tree from scratch from time to times:
+  // - Initially, every kNumDecisionsBeforeInitialRestarts, for at most
+  //   kMaxNumInitialRestarts times.
+  // - Every time we backtrack to level zero, we count how many nodes are worse
+  //   than the best known objective lower bound. If this is true for more than
+  //   half of the existing nodes, we restart and clear all nodes. If if this
+  //   happens during the initial restarts phase, it reset the above counter and
+  //   uses 1 of the available initial restarts.
+  //
+  // This has 2 advantages:
+  //   - It allows our "pseudo-cost" to kick in and experimentally result in
+  //     smaller trees down the road.
+  //   - It removes large inefficient search trees.
   //
   // TODO(user): a strong branching initial start, or allowing a few decision
   // per nodes might be a better approach.
   //
   // TODO(user): It would also be cool to exploit the reason for the LB increase
   // even more.
-  int64_t restart = 100;
-  int64_t num_restart = 1;
-  const int kNumRestart = 10;
+  const int kMaxNumInitialRestarts = 10;
+  const int64_t kNumDecisionsBeforeInitialRestarts = 1000;
 
   while (!time_limit_->LimitReached() && !shared_response_->ProblemIsSolved()) {
     // This is the current bound we try to improve. We cache it here to avoid
     // getting the lock many times and it is also easier to follow the code if
     // this is assumed constant for one iteration.
     current_objective_lb_ = shared_response_->GetInnerObjectiveLowerBound();
+
+    // If some branches already have a good lower bound, no need to call the LP
+    // on those.
+    watcher_->SetStopPropagationCallback([this] {
+      return integer_trail_->LowerBound(objective_var_) > current_objective_lb_;
+    });
 
     // Propagate upward in the tree the new objective lb.
     if (!current_branch_.empty()) {
@@ -209,11 +298,10 @@ SatSolver::Status LbTreeSearch::Search(
       const IntegerValue bound = nodes_[current_branch_[0]].MinObjective();
       if (bound > current_objective_lb_) {
         shared_response_->UpdateInnerObjectiveBounds(
-            absl::StrCat("lb_tree_search #nodes:", nodes_.size(),
-                         " #rc:", num_rc_detected_),
-            bound, integer_trail_->LevelZeroUpperBound(objective_var_));
+            absl::StrCat("lb_tree_search ", SmallProgressString()), bound,
+            integer_trail_->LevelZeroUpperBound(objective_var_));
         current_objective_lb_ = bound;
-        if (VLOG_IS_ON(2)) DebugDisplayTree(current_branch_[0]);
+        if (VLOG_IS_ON(3)) DebugDisplayTree(current_branch_[0]);
       }
     }
 
@@ -236,14 +324,15 @@ SatSolver::Status LbTreeSearch::Search(
       sat_decision_->UpdateVariableActivityIncrement();
     }
 
-    // Forget the whole tree and restart?
-    if (nodes_.size() > num_restart * restart && num_restart < kNumRestart) {
-      nodes_.clear();
-      current_branch_.clear();
-      if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
-        return sat_solver_->UnsatStatus();
-      }
-      ++num_restart;
+    // Forget the whole tree and restart.
+    // We will do it periodically at the beginning of the search each time we
+    // cross the kNumDecisionsBeforeInitialRestarts decision since the last
+    // restart. This will happen at most kMaxNumInitialRestarts times.
+    if (num_decisions_taken_ >= num_decisions_taken_at_last_restart_ +
+                                    kNumDecisionsBeforeInitialRestarts &&
+        num_full_restarts_ < kMaxNumInitialRestarts) {
+      VLOG(2) << "lb_tree_search initial_restart " << SmallProgressString();
+      if (!FullRestart()) return sat_solver_->UnsatStatus();
     }
 
     // Backtrack if needed.
@@ -262,10 +351,25 @@ SatSolver::Status LbTreeSearch::Search(
     }
 
     // Backtrack the solver.
-    sat_solver_->Backtrack(
-        std::max(0, static_cast<int>(current_branch_.size()) - 1));
-    if (!sat_solver_->FinishPropagation()) {
-      return sat_solver_->UnsatStatus();
+    {
+      int backtrack_level =
+          std::max(0, static_cast<int>(current_branch_.size()) - 1);
+
+      // Periodic backtrack to level zero so we can import bounds.
+      if (num_decisions_taken_ >=
+          num_decisions_taken_at_last_level_zero_ + 10000) {
+        backtrack_level = 0;
+      }
+
+      sat_solver_->Backtrack(backtrack_level);
+      if (!sat_solver_->FinishPropagation()) {
+        return sat_solver_->UnsatStatus();
+      }
+    }
+
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      ++num_back_to_root_node_;
+      num_decisions_taken_at_last_level_zero_ = num_decisions_taken_;
     }
 
     // This will import other workers bound if we are back to level zero.
@@ -273,17 +377,47 @@ SatSolver::Status LbTreeSearch::Search(
       return sat_solver_->UnsatStatus();
     }
 
+    // If the search has not just been restarted (in which case nodes_ would be
+    // empty), and if we are at level zero (either naturally, or if the
+    // backtrack level was set to zero in the above code), let's run a different
+    // heuristic to decide whether to restart the search from scratch or not.
+    //
+    // We ignore small search trees.
+    if (sat_solver_->CurrentDecisionLevel() == 0 && num_nodes_in_tree_ > 50) {
+      // Let's count how many nodes have worse objective bounds than the best
+      // known external objective lower bound.
+      const IntegerValue latest_lb =
+          shared_response_->GetInnerObjectiveLowerBound();
+      int num_nodes = 0;
+      int num_nodes_with_lower_objective = 0;
+      for (const Node& node : nodes_) {
+        if (node.is_deleted) continue;
+        ++num_nodes;
+        if (node.MinObjective() < latest_lb) num_nodes_with_lower_objective++;
+      }
+      DCHECK_EQ(num_nodes_in_tree_, num_nodes);
+      if (num_nodes_with_lower_objective * 2 > num_nodes) {
+        VLOG(2) << "lb_tree_search restart nodes: "
+                << num_nodes_with_lower_objective << "/" << num_nodes << " : "
+                << 100.0 * num_nodes_with_lower_objective / num_nodes << "%"
+                << ", decisions:" << num_decisions_taken_;
+        if (!FullRestart()) return sat_solver_->UnsatStatus();
+      }
+    }
+
     // Dive: Follow the branch with lowest objective.
     // Note that we do not creates new nodes here.
+    //
+    // TODO(user): If we have new information and our current objective bound
+    // is higher than any bound in a whole subtree, we might want to just
+    // restart this subtree exploration?
     while (current_branch_.size() == sat_solver_->CurrentDecisionLevel() + 1) {
       const int level = current_branch_.size() - 1;
       CHECK_EQ(level, sat_solver_->CurrentDecisionLevel());
       Node& node = nodes_[current_branch_[level]];
       node.UpdateObjective(std::max(
           current_objective_lb_, integer_trail_->LowerBound(objective_var_)));
-      if (node.MinObjective() > current_objective_lb_) {
-        break;
-      }
+      if (node.MinObjective() > current_objective_lb_) break;
       CHECK_EQ(node.MinObjective(), current_objective_lb_) << level;
 
       // This will be set to the next node index.
@@ -300,6 +434,7 @@ SatSolver::Status LbTreeSearch::Search(
           n = node.false_child;
           new_lb = node.false_objective;
         }
+        MarkAsDeletedNodeAndUnreachableSubtree(node);
 
         // We jump directly to the subnode.
         // Else we will change the root.
@@ -310,7 +445,7 @@ SatSolver::Status LbTreeSearch::Search(
             nodes_[parent].true_child = n;
             nodes_[parent].UpdateTrueObjective(new_lb);
           } else {
-            CHECK(sat_solver_->Assignment().LiteralIsFalse(
+            DCHECK(sat_solver_->Assignment().LiteralIsFalse(
                 nodes_[parent].literal));
             nodes_[parent].false_child = n;
             nodes_[parent].UpdateFalseObjective(new_lb);
@@ -318,11 +453,15 @@ SatSolver::Status LbTreeSearch::Search(
           if (nodes_[parent].MinObjective() > current_objective_lb_) break;
         }
       } else {
-        // If both lower bound are the same, we pick a random sub-branch.
-        bool choose_true = node.true_objective < node.false_objective;
-        if (node.true_objective == node.false_objective) {
-          choose_true = absl::Bernoulli(*random_, 0.5);
-        }
+        // See if we have better bounds using the current LP state.
+        ExploitReducedCosts(current_branch_[level]);
+
+        // If both lower bound are the same, we pick the literal branch. We do
+        // that because this is the polarity that was chosen by the SAT
+        // heuristic in the first place. We tried random, it doesn't seems to
+        // work as well.
+        num_decisions_taken_++;
+        const bool choose_true = node.true_objective <= node.false_objective;
         if (choose_true) {
           n = node.true_child;
           search_helper_->TakeDecision(node.literal);
@@ -351,6 +490,10 @@ SatSolver::Status LbTreeSearch::Search(
         }
         if (lb > current_objective_lb_) break;
       }
+
+      shared_response_->LogPeriodicMessage(
+          "TreeS", SmallProgressString(),
+          parameters_.log_frequency_in_seconds(), &last_logging_time_);
 
       if (n < nodes_.size()) {
         current_branch_.push_back(n);
@@ -381,82 +524,205 @@ SatSolver::Status LbTreeSearch::Search(
       continue;
     }
 
-    // Increase the size of the tree by exploring a new decision.
-    const LiteralIndex decision =
-        search_helper_->GetDecision(search_heuristic_);
+    // We are about to take a new decision, what we will do is dive until
+    // the objective lower bound increase. we will then create a bunch of new
+    // nodes in the tree.
+    //
+    // By analyzing the reason for the increase, we can create less nodes than
+    // if we just followed the initial heuristic.
+    //
+    // TODO(user): In multithread, this change the behavior a lot since we
+    // dive until we beat the best shared bound. Maybe we shouldn't do that.
+    const int base_level = sat_solver_->CurrentDecisionLevel();
+    while (true) {
+      // TODO(user): We sometimes branch on the objective variable, this should
+      // probably be avoided.
+      const LiteralIndex decision =
+          search_helper_->GetDecision(search_heuristic_);
 
-    // No new decision: search done.
-    if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
-    if (decision == kNoLiteralIndex) {
-      feasible_solution_observer();
-      continue;
+      // No new decision: search done.
+      if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
+      if (decision == kNoLiteralIndex) {
+        feasible_solution_observer();
+        break;
+      }
+
+      num_decisions_taken_++;
+      if (!search_helper_->TakeDecision(Literal(decision))) {
+        return sat_solver_->UnsatStatus();
+      }
+      if (sat_solver_->CurrentDecisionLevel() < base_level) break;
+      if (integer_trail_->LowerBound(objective_var_) > current_objective_lb_) {
+        break;
+      }
+    }
+    if (sat_solver_->CurrentDecisionLevel() <= base_level) continue;
+
+    // Analyse the reason for objective increase. Deduce a set of new nodes to
+    // append to the tree.
+    //
+    // TODO(user): Try to minimize the number of decisions?
+    const std::vector<Literal> reason =
+        integer_trail_->ReasonFor(IntegerLiteral::GreaterOrEqual(
+            objective_var_, integer_trail_->LowerBound(objective_var_)));
+    std::vector<Literal> decisions = ExtractDecisions(base_level, reason);
+
+    // Bump activities.
+    sat_decision_->BumpVariableActivities(reason);
+    sat_decision_->BumpVariableActivities(decisions);
+    sat_decision_->UpdateVariableActivityIncrement();
+
+    // Create one node per new decisions.
+    CHECK_EQ(current_branch_.size(), base_level);
+    for (const Literal d : decisions) {
+      AppendNewNodeToCurrentBranch(d);
     }
 
-    // Create a new node.
-    // Note that the decision will be pushed to the solver on the next loop.
-    const NodeIndex n(nodes_.size());
-    nodes_.emplace_back(Literal(decision),
-                        std::max(current_objective_lb_,
-                                 integer_trail_->LowerBound(objective_var_)));
+    // Update the objective of the last node in the branch since we just
+    // improved that.
     if (!current_branch_.empty()) {
-      const NodeIndex parent = current_branch_.back();
-      if (sat_solver_->Assignment().LiteralIsTrue(nodes_[parent].literal)) {
-        nodes_[parent].true_child = n;
-        nodes_[parent].UpdateTrueObjective(nodes_.back().MinObjective());
+      Node& n = nodes_[current_branch_.back()];
+      if (sat_solver_->Assignment().LiteralIsTrue(n.literal)) {
+        n.UpdateTrueObjective(integer_trail_->LowerBound(objective_var_));
       } else {
-        CHECK(sat_solver_->Assignment().LiteralIsFalse(nodes_[parent].literal));
-        nodes_[parent].false_child = n;
-        nodes_[parent].UpdateFalseObjective(nodes_.back().MinObjective());
+        n.UpdateFalseObjective(integer_trail_->LowerBound(objective_var_));
       }
     }
-    current_branch_.push_back(n);
 
-    // Looking at the reduced costs, we can already have a bound for one of the
-    // branch. Increasing the corresponding objective can save some branches,
-    // and also allow for a more incremental LP solving since we do less back
-    // and forth.
+    // Reset the solver to a correct state since we have a subset of the
+    // current propagation. We backtrack as little as possible.
     //
-    // TODO(user): The code to recover that is a bit convoluted. Alternatively
-    // Maybe we should do a "fast" propagation without the LP in each branch.
-    // That will work as long as we keep these optimal LP constraints around
-    // and propagate them.
+    // The decision level is the number of decision taken.
+    // Decision()[level] is the decision at that level.
+    int backtrack_level = base_level;
+    CHECK_LE(current_branch_.size(), sat_solver_->CurrentDecisionLevel());
+    while (backtrack_level < current_branch_.size() &&
+           sat_solver_->Decisions()[backtrack_level].literal ==
+               nodes_[current_branch_[backtrack_level]].literal) {
+      ++backtrack_level;
+    }
+    sat_solver_->Backtrack(backtrack_level);
+
+    // Update bounds with reduced costs info.
     //
-    // TODO(user): Incorporate this in the heuristic so we choose more Boolean
-    // inside these LP explanations?
-    if (lp_constraint_ != nullptr) {
-      // Note that this return literal EQUIVALENT to the decision, not just
-      // implied by it. We need that for correctness.
-      int num_tests = 0;
-      for (const IntegerLiteral integer_literal :
-           integer_encoder_->GetIntegerLiterals(Literal(decision))) {
-        if (integer_trail_->IsCurrentlyIgnored(integer_literal.var)) continue;
-
-        // To avoid bad corner case. Not sure it ever triggers.
-        if (++num_tests > 10) break;
-
-        // TODO(user): we could consider earlier constraint instead of just
-        // looking at the last one, but experiments didn't really show a big
-        // gain.
-        const auto& cts = lp_constraint_->OptimalConstraints();
-        if (cts.empty()) continue;
-
-        const std::unique_ptr<IntegerSumLE>& rc = cts.back();
-        const std::pair<IntegerValue, IntegerValue> bounds =
-            rc->ConditionalLb(integer_literal, objective_var_);
-        Node& node = nodes_[n];
-        if (bounds.first > node.false_objective) {
-          ++num_rc_detected_;
-          node.UpdateFalseObjective(bounds.first);
-        }
-        if (bounds.second > node.true_objective) {
-          ++num_rc_detected_;
-          node.UpdateTrueObjective(bounds.second);
-        }
-      }
+    // TODO(user): Uses old optimal constraint that we just potentially
+    // backtracked over?
+    //
+    // TODO(user): We could do all at once rather than in O(#decision * #size).
+    for (int i = backtrack_level; i < current_branch_.size(); ++i) {
+      ExploitReducedCosts(current_branch_[i]);
     }
   }
 
   return SatSolver::LIMIT_REACHED;
+}
+
+std::vector<Literal> LbTreeSearch::ExtractDecisions(
+    int base_level, const std::vector<Literal>& conflict) {
+  std::vector<int> num_per_level(sat_solver_->CurrentDecisionLevel() + 1, 0);
+  std::vector<bool> is_marked;
+  for (const Literal l : conflict) {
+    const AssignmentInfo& info = trail_->Info(l.Variable());
+    if (info.level <= base_level) continue;
+    num_per_level[info.level]++;
+    if (info.trail_index >= is_marked.size()) {
+      is_marked.resize(info.trail_index + 1);
+    }
+    is_marked[info.trail_index] = true;
+  }
+
+  std::vector<Literal> result;
+  if (is_marked.empty()) return result;
+  for (int i = is_marked.size() - 1; i >= 0; --i) {
+    if (!is_marked[i]) continue;
+
+    const Literal l = (*trail_)[i];
+    const AssignmentInfo& info = trail_->Info(l.Variable());
+    if (info.level <= base_level) break;
+    if (num_per_level[info.level] == 1) {
+      result.push_back(l);
+      continue;
+    }
+
+    // Expand.
+    num_per_level[info.level]--;
+    for (const Literal new_l : trail_->Reason(l.Variable())) {
+      const AssignmentInfo& new_info = trail_->Info(new_l.Variable());
+      if (new_info.level <= base_level) continue;
+      if (is_marked[new_info.trail_index]) continue;
+      is_marked[new_info.trail_index] = true;
+      num_per_level[new_info.level]++;
+    }
+  }
+
+  // We prefer to keep the same order.
+  std::reverse(result.begin(), result.end());
+  return result;
+}
+
+void LbTreeSearch::AppendNewNodeToCurrentBranch(Literal decision) {
+  const NodeIndex n(nodes_.size());
+  ++num_nodes_in_tree_;
+  nodes_.emplace_back(Literal(decision), current_objective_lb_);
+  if (!current_branch_.empty()) {
+    const NodeIndex parent = current_branch_.back();
+    if (sat_solver_->Assignment().LiteralIsTrue(nodes_[parent].literal)) {
+      nodes_[parent].true_child = n;
+      nodes_[parent].UpdateTrueObjective(nodes_.back().MinObjective());
+    } else {
+      CHECK(sat_solver_->Assignment().LiteralIsFalse(nodes_[parent].literal));
+      nodes_[parent].false_child = n;
+      nodes_[parent].UpdateFalseObjective(nodes_.back().MinObjective());
+    }
+  }
+  current_branch_.push_back(n);
+}
+
+// Looking at the reduced costs, we can already have a bound for one of the
+// branch. Increasing the corresponding objective can save some branches,
+// and also allow for a more incremental LP solving since we do less back
+// and forth.
+//
+// TODO(user): The code to recover that is a bit convoluted. Alternatively
+// Maybe we should do a "fast" propagation without the LP in each branch.
+// That will work as long as we keep these optimal LP constraints around
+// and propagate them.
+//
+// TODO(user): Incorporate this in the heuristic so we choose more Booleans
+// inside these LP explanations?
+void LbTreeSearch::ExploitReducedCosts(NodeIndex n) {
+  if (lp_constraint_ == nullptr) return;
+
+  // TODO(user): we could consider earlier constraints instead of just
+  // looking at the last one, but experiments didn't really show a big
+  // gain.
+  const auto& cts = lp_constraint_->OptimalConstraints();
+  if (cts.empty()) return;
+  const std::unique_ptr<IntegerSumLE>& rc = cts.back();
+
+  // Note that this return literal EQUIVALENT to the node.literal, not just
+  // implied by it. We need that for correctness.
+  int num_tests = 0;
+  Node& node = nodes_[n];
+  CHECK(!sat_solver_->Assignment().LiteralIsAssigned(node.literal));
+  for (const IntegerLiteral integer_literal :
+       integer_encoder_->GetIntegerLiterals(node.literal)) {
+    if (integer_trail_->IsCurrentlyIgnored(integer_literal.var)) continue;
+
+    // To avoid bad corner case. Not sure it ever triggers.
+    if (++num_tests > 10) break;
+
+    const std::pair<IntegerValue, IntegerValue> bounds =
+        rc->ConditionalLb(integer_literal, objective_var_);
+    if (bounds.first > node.false_objective) {
+      ++num_rc_detected_;
+      node.UpdateFalseObjective(bounds.first);
+    }
+    if (bounds.second > node.true_objective) {
+      ++num_rc_detected_;
+      node.UpdateTrueObjective(bounds.second);
+    }
+  }
 }
 
 }  // namespace sat

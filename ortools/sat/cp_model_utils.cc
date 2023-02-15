@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,11 +14,16 @@
 #include "ortools/sat/cp_model_utils.h"
 
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
+#include <string>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -114,6 +119,10 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
     case ConstraintProto::ConstraintCase::kReservoir:
       for (const LinearExpressionProto& time : ct.reservoir().time_exprs()) {
         AddIndices(time.vars(), &output.variables);
+      }
+      for (const LinearExpressionProto& level :
+           ct.reservoir().level_changes()) {
+        AddIndices(level.vars(), &output.variables);
       }
       AddIndices(ct.reservoir().active_literals(), &output.literals);
       break;
@@ -283,6 +292,9 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kReservoir:
       for (int i = 0; i < ct->reservoir().time_exprs_size(); ++i) {
         APPLY_TO_REPEATED_FIELD(reservoir, time_exprs(i)->mutable_vars);
+      }
+      for (int i = 0; i < ct->reservoir().level_changes_size(); ++i) {
+        APPLY_TO_REPEATED_FIELD(reservoir, level_changes(i)->mutable_vars);
       }
       break;
     case ConstraintProto::ConstraintCase::kTable:
@@ -505,14 +517,14 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
 }
 
 int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
-                              const CpSolverResponse& response) {
+                              absl::Span<const int64_t> solution) {
   int64_t objective_value = 0;
   for (int i = 0; i < objective.vars_size(); ++i) {
     int64_t coeff = objective.coeffs(i);
     const int ref = objective.vars(i);
     const int var = PositiveRef(ref);
     if (!RefIsPositive(ref)) coeff = -coeff;
-    objective_value += coeff * response.solution()[var];
+    objective_value += coeff * solution[var];
   }
   return objective_value;
 }
@@ -543,9 +555,8 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
   DCHECK(!linear->domain().empty());
   const int64_t shift = coefficient * expr.offset();
   if (shift != 0) {
-    for (int64_t& d : *linear->mutable_domain()) {
-      d -= shift;
-    }
+    FillDomainInProto(ReadDomainFromProto(*linear).AdditionWith(Domain(-shift)),
+                      linear);
   }
 }
 
@@ -564,6 +575,170 @@ bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
     if (coeff != 0) return false;
   }
   return true;
+}
+
+uint64_t FingerprintExpression(const LinearExpressionProto& lin,
+                               uint64_t seed) {
+  uint64_t fp = seed;
+  if (!lin.vars().empty()) {
+    fp = FingerprintRepeatedField(lin.vars(), fp);
+    fp = FingerprintRepeatedField(lin.coeffs(), fp);
+  }
+  fp = FingerprintSingleField(lin.offset(), fp);
+  return fp;
+}
+
+uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
+  uint64_t fp = seed;
+  for (const IntegerVariableProto& var_proto : model.variables()) {
+    fp = FingerprintRepeatedField(var_proto.domain(), fp);
+  }
+  for (const ConstraintProto& ct : model.constraints()) {
+    if (!ct.enforcement_literal().empty()) {
+      fp = FingerprintRepeatedField(ct.enforcement_literal(), fp);
+    }
+    switch (ct.constraint_case()) {
+      case ConstraintProto::ConstraintCase::kBoolOr:
+        fp = FingerprintRepeatedField(ct.bool_or().literals(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kBoolAnd:
+        fp = FingerprintRepeatedField(ct.bool_and().literals(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kAtMostOne:
+        fp = FingerprintRepeatedField(ct.at_most_one().literals(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kExactlyOne:
+        fp = FingerprintRepeatedField(ct.exactly_one().literals(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kBoolXor:
+        fp = FingerprintRepeatedField(ct.bool_xor().literals(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kIntDiv:
+        fp = FingerprintExpression(ct.int_div().target(), fp);
+        for (const LinearExpressionProto& expr : ct.int_div().exprs()) {
+          fp = FingerprintExpression(expr, fp);
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kIntMod:
+        fp = FingerprintExpression(ct.int_mod().target(), fp);
+        for (const LinearExpressionProto& expr : ct.int_mod().exprs()) {
+          fp = FingerprintExpression(expr, fp);
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kLinMax: {
+        fp = FingerprintExpression(ct.lin_max().target(), fp);
+        for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+          fp = FingerprintExpression(expr, fp);
+        }
+        break;
+      }
+      case ConstraintProto::ConstraintCase::kIntProd:
+        fp = FingerprintExpression(ct.int_prod().target(), fp);
+        for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+          fp = FingerprintExpression(expr, fp);
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kLinear:
+        fp = FingerprintRepeatedField(ct.linear().vars(), fp);
+        fp = FingerprintRepeatedField(ct.linear().coeffs(), fp);
+        fp = FingerprintRepeatedField(ct.linear().domain(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kAllDiff:
+        for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
+          fp = FingerprintExpression(expr, fp);
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kDummyConstraint:
+        break;
+      case ConstraintProto::ConstraintCase::kElement:
+        fp = FingerprintSingleField(ct.element().index(), fp);
+        fp = FingerprintSingleField(ct.element().target(), fp);
+        fp = FingerprintRepeatedField(ct.element().vars(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kCircuit:
+        fp = FingerprintRepeatedField(ct.circuit().heads(), fp);
+        fp = FingerprintRepeatedField(ct.circuit().tails(), fp);
+        fp = FingerprintRepeatedField(ct.circuit().literals(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kRoutes:
+        fp = FingerprintRepeatedField(ct.routes().heads(), fp);
+        fp = FingerprintRepeatedField(ct.routes().tails(), fp);
+        fp = FingerprintRepeatedField(ct.routes().literals(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kInverse:
+        fp = FingerprintRepeatedField(ct.inverse().f_direct(), fp);
+        fp = FingerprintRepeatedField(ct.inverse().f_inverse(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kReservoir:
+        fp = FingerprintSingleField(ct.reservoir().min_level(), fp);
+        fp = FingerprintSingleField(ct.reservoir().max_level(), fp);
+        for (const LinearExpressionProto& expr : ct.reservoir().time_exprs()) {
+          fp = FingerprintExpression(expr, fp);
+        }
+        for (const LinearExpressionProto& expr :
+             ct.reservoir().level_changes()) {
+          fp = FingerprintExpression(expr, fp);
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kTable:
+        fp = FingerprintRepeatedField(ct.table().vars(), fp);
+        fp = FingerprintRepeatedField(ct.table().values(), fp);
+        fp = FingerprintSingleField(ct.table().negated(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kAutomaton:
+        fp = FingerprintSingleField(ct.automaton().starting_state(), fp);
+        fp = FingerprintRepeatedField(ct.automaton().final_states(), fp);
+        fp = FingerprintRepeatedField(ct.automaton().transition_tail(), fp);
+        fp = FingerprintRepeatedField(ct.automaton().transition_head(), fp);
+        fp = FingerprintRepeatedField(ct.automaton().transition_label(), fp);
+        fp = FingerprintRepeatedField(ct.automaton().vars(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kInterval:
+        fp = FingerprintExpression(ct.interval().start(), fp);
+        fp = FingerprintExpression(ct.interval().size(), fp);
+        fp = FingerprintExpression(ct.interval().end(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kNoOverlap:
+        fp = FingerprintRepeatedField(ct.no_overlap().intervals(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kNoOverlap2D:
+        fp = FingerprintRepeatedField(ct.no_overlap_2d().x_intervals(), fp);
+        fp = FingerprintRepeatedField(ct.no_overlap_2d().y_intervals(), fp);
+        break;
+      case ConstraintProto::ConstraintCase::kCumulative:
+        fp = FingerprintRepeatedField(ct.cumulative().intervals(), fp);
+        fp = FingerprintExpression(ct.cumulative().capacity(), fp);
+        for (const LinearExpressionProto& demand : ct.cumulative().demands()) {
+          fp = FingerprintExpression(demand, fp);
+        }
+        break;
+      case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
+        break;
+    }
+  }
+
+  // Fingerprint the objective.
+  if (model.has_objective()) {
+    fp = FingerprintRepeatedField(model.objective().vars());
+    fp = FingerprintRepeatedField(model.objective().coeffs());
+    fp = FingerprintSingleField(model.objective().offset());
+    fp = FingerprintSingleField(model.objective().scaling_factor());
+    fp = FingerprintRepeatedField(model.objective().domain());
+  } else if (model.has_floating_point_objective()) {
+    fp = FingerprintRepeatedField(model.floating_point_objective().vars());
+    fp = FingerprintRepeatedField(model.floating_point_objective().coeffs());
+    fp = FingerprintSingleField(model.floating_point_objective().offset());
+    fp = FingerprintSingleField(model.floating_point_objective().maximize());
+  }
+
+  if (model.has_solution_hint()) {
+    fp = FingerprintRepeatedField(model.solution_hint().vars(), fp);
+    fp = FingerprintRepeatedField(model.solution_hint().values(), fp);
+  }
+
+  // TODO(user): Should we fingerprint decision strategies?
+
+  return fp;
 }
 
 }  // namespace sat

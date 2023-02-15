@@ -10,7 +10,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
 RUN make java
 
 FROM build AS test

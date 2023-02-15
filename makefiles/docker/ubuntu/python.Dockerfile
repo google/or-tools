@@ -1,6 +1,6 @@
 FROM ortools/make:ubuntu_swig AS env
 RUN apt-get update -qq \
-&& apt-get install -yq python3-dev python3-pip \
+&& DEBIAN_FRONTEND=noninteractive apt-get install -yq python3-dev python3-pip \
  python3-wheel python3-venv \
  python3-numpy python3-pandas \
 && apt-get clean \
@@ -12,7 +12,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN make third_party
 RUN make python
 
 FROM build AS test

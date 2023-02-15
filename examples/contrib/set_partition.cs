@@ -171,14 +171,14 @@ public class SetPartition
         int n = 16;
         int num_sets = 2;
 
-        if (args.Length > 0)
-        {
-            n = Convert.ToInt32(args[0]);
-        }
-
         if (args.Length > 1)
         {
-            num_sets = Convert.ToInt32(args[1]);
+            n = Convert.ToInt32(args[1]);
+        }
+
+        if (args.Length > 2)
+        {
+            num_sets = Convert.ToInt32(args[2]);
         }
 
         if (n % num_sets == 0)

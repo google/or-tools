@@ -252,9 +252,9 @@ public class HidatoTable
     public static void Main(String[] args)
     {
         int model = 1;
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
-            model = Convert.ToInt32(args[0]);
+            model = Convert.ToInt32(args[1]);
             Solve(model);
         }
         else

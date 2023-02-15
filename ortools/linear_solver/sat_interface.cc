@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,9 @@
 
 #include <atomic>
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
@@ -24,7 +26,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/linear_solver/sat_proto_solver.h"
+#include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -47,7 +49,7 @@ class SatInterface : public MPSolverInterface {
 
   // ----- Solve -----
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  absl::optional<MPSolutionResponse> DirectlySolveProto(
+  std::optional<MPSolutionResponse> DirectlySolveProto(
       const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   bool InterruptSolve() override;
 
@@ -164,7 +166,7 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-absl::optional<MPSolutionResponse> SatInterface::DirectlySolveProto(
+std::optional<MPSolutionResponse> SatInterface::DirectlySolveProto(
     const MPModelRequest& request, std::atomic<bool>* interrupt) {
   absl::StatusOr<MPSolutionResponse> status_or =
       SatSolveProto(request, interrupt);
@@ -265,7 +267,8 @@ void SatInterface::ExtractNewConstraints() { NonIncrementalChange(); }
 void SatInterface::ExtractObjective() { NonIncrementalChange(); }
 
 void SatInterface::SetParameters(const MPSolverParameters& param) {
-  parameters_.set_num_search_workers(num_threads_);
+  parameters_.Clear();
+  parameters_.set_num_workers(num_threads_);
   SetCommonParameters(param);
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,8 +18,11 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.sat.LinearExprBuilder;
+import com.google.ortools.sat.Literal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.IntStream;
 // [END import]
 
@@ -93,7 +96,7 @@ public class ScheduleRequestsSat {
     // Creates shift variables.
     // shifts[(n, d, s)]: nurse 'n' works shift 's' on day 'd'.
     // [START variables]
-    IntVar[][][] shifts = new IntVar[numNurses][numDays][numShifts];
+    Literal[][][] shifts = new Literal[numNurses][numDays][numShifts];
     for (int n : allNurses) {
       for (int d : allDays) {
         for (int s : allShifts) {
@@ -107,11 +110,11 @@ public class ScheduleRequestsSat {
     // [START exactly_one_nurse]
     for (int d : allDays) {
       for (int s : allShifts) {
-        IntVar[] x = new IntVar[numNurses];
+        List<Literal> nurses = new ArrayList<>();
         for (int n : allNurses) {
-          x[n] = shifts[n][d][s];
+          nurses.add(shifts[n][d][s]);
         }
-        model.addEquality(LinearExpr.sum(x), 1);
+        model.addExactlyOne(nurses);
       }
     }
     // [END exactly_one_nurse]
@@ -120,11 +123,11 @@ public class ScheduleRequestsSat {
     // [START at_most_one_shift]
     for (int n : allNurses) {
       for (int d : allDays) {
-        IntVar[] x = new IntVar[numShifts];
+        List<Literal> work = new ArrayList<>();
         for (int s : allShifts) {
-          x[s] = shifts[n][d][s];
+          work.add(shifts[n][d][s]);
         }
-        model.addLessOrEqual(LinearExpr.sum(x), 1);
+        model.addAtMostOne(work);
       }
     }
     // [END at_most_one_shift]
@@ -142,29 +145,26 @@ public class ScheduleRequestsSat {
       maxShiftsPerNurse = minShiftsPerNurse + 1;
     }
     for (int n : allNurses) {
-      IntVar[] numShiftsWorked = new IntVar[numDays * numShifts];
+      LinearExprBuilder numShiftsWorked = LinearExpr.newBuilder();
       for (int d : allDays) {
         for (int s : allShifts) {
-          numShiftsWorked[d * numShifts + s] = shifts[n][d][s];
+          numShiftsWorked.add(shifts[n][d][s]);
         }
       }
-      model.addLinearConstraint(
-          LinearExpr.sum(numShiftsWorked), minShiftsPerNurse, maxShiftsPerNurse);
+      model.addLinearConstraint(numShiftsWorked, minShiftsPerNurse, maxShiftsPerNurse);
     }
     // [END assign_nurses_evenly]
 
     // [START objective]
-    IntVar[] flatShifts = new IntVar[numNurses * numDays * numShifts];
-    int[] flatShiftRequests = new int[numNurses * numDays * numShifts];
+    LinearExprBuilder obj = LinearExpr.newBuilder();
     for (int n : allNurses) {
       for (int d : allDays) {
         for (int s : allShifts) {
-          flatShifts[n * numDays * numShifts + d * numShifts + s] = shifts[n][d][s];
-          flatShiftRequests[n * numDays * numShifts + d * numShifts + s] = shiftRequests[n][d][s];
+          obj.addTerm(shifts[n][d][s], shiftRequests[n][d][s]);
         }
       }
     }
-    model.maximize(LinearExpr.scalProd(flatShifts, flatShiftRequests));
+    model.maximize(obj);
     // [END objective]
 
     // Creates a solver and solves the model.
@@ -180,7 +180,7 @@ public class ScheduleRequestsSat {
         System.out.printf("Day %d%n", d);
         for (int n : allNurses) {
           for (int s : allShifts) {
-            if (solver.value(shifts[n][d][s]) == 1L) {
+            if (solver.booleanValue(shifts[n][d][s])) {
               if (shiftRequests[n][d][s] == 1) {
                 System.out.printf("  Nurse %d works shift %d (requested).%n", n, s);
               } else {

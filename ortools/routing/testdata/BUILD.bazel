@@ -1,0 +1,46 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+exports_files([
+    "carp_gdb19.dat",  # https://github.com/vidalt/HGS-CARP/blob/master/Instances/CARP/gdb19.dat
+    # https://www.sciencedirect.com/science/article/abs/pii/0305054883900266
+    "carp_gdb19_diferente_deposito.dat",
+    "carp_gdb19_incorrecto_vertices.dat",
+    "carp_gdb19_incorrecto_arireq.dat",
+    "carp_gdb19_incorrecto_arinoreq.dat",
+    "carp_gdb19_incorrecto_vehiculos.dat",
+    "carp_gdb19_incorrecto_capacidad.dat",
+    "carp_gdb19_incorrecto_tipo.dat",
+    "carp_gdb19_incorrecto_coste.dat",
+    "carp_gdb19_incorrecto_deposito.dat",
+    "carp_gdb19_no_arista_req.dat",
+    "carp_gdb19_mixed_arcs.dat",
+    "carp_gdb19_incorrecta_lista_aristas_req.dat",
+    "carp_toy.dat",
+    "nearp_BHW1.dat",
+    "nearp_toy.dat",
+    "pdtsp_prob10b.txt",
+    "pdtsp_prob10b.txt.gz",
+    "solomon_bp_c101.mps",
+    "solomon_bp_c101.pb",
+    "solomon_google2.delivery_at_depot_location.pb.txt",
+    "solomon_google2.delivery_only.pb.txt",
+    "solomon_google2.depot_location.pb.txt",
+    "solomon_google2.pb.txt",
+    "solomon_google2.pickup_at_depot.pb.txt",
+    "solomon.zip",
+    "solomon_check_id.txt",
+    "tsplib_ar9152.tour",
+    "tsplib_ar9152.tsp",
+    "tsplib_Kytojoki_33.vrp",
+])

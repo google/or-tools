@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,14 +14,20 @@
 // [START program]
 // Nurse scheduling problem with shift requests.
 // [START import]
-#include <atomic>
+#include <stdlib.h>
+
+#include <cstdint>
+#include <map>
 #include <numeric>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
-#include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 // [END import]
 
 namespace operations_research {
@@ -115,12 +121,12 @@ void ScheduleRequestsSat() {
   // [START exactly_one_nurse]
   for (int d : all_days) {
     for (int s : all_shifts) {
-      LinearExpr sum;
+      std::vector<BoolVar> nurses;
       for (int n : all_nurses) {
         auto key = std::make_tuple(n, d, s);
-        sum += shifts[key];
+        nurses.push_back(shifts[key]);
       }
-      cp_model.AddEquality(sum, 1);
+      cp_model.AddExactlyOne(nurses);
     }
   }
   // [END exactly_one_nurse]
@@ -129,12 +135,12 @@ void ScheduleRequestsSat() {
   // [START at_most_one_shift]
   for (int n : all_nurses) {
     for (int d : all_days) {
-      LinearExpr sum;
+      std::vector<BoolVar> work;
       for (int s : all_shifts) {
         auto key = std::make_tuple(n, d, s);
-        sum += shifts[key];
+        work.push_back(shifts[key]);
       }
-      cp_model.AddLessOrEqual(sum, 1);
+      cp_model.AddAtMostOne(work);
     }
   }
   // [END at_most_one_shift]

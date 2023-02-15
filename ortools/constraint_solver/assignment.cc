@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -384,19 +385,19 @@ void SequenceVarElement::SetUnperformed(const std::vector<int>& unperformed) {
 bool SequenceVarElement::CheckClassInvariants() {
   absl::flat_hash_set<int> visited;
   for (const int forward_sequence : forward_sequence_) {
-    if (gtl::ContainsKey(visited, forward_sequence)) {
+    if (visited.contains(forward_sequence)) {
       return false;
     }
     visited.insert(forward_sequence);
   }
   for (const int backward_sequence : backward_sequence_) {
-    if (gtl::ContainsKey(visited, backward_sequence)) {
+    if (visited.contains(backward_sequence)) {
       return false;
     }
     visited.insert(backward_sequence);
   }
   for (const int unperformed : unperformed_) {
-    if (gtl::ContainsKey(visited, unperformed)) {
+    if (visited.contains(unperformed)) {
       return false;
     }
     visited.insert(unperformed);
@@ -456,7 +457,7 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
     if (name.empty()) {
       LOG(INFO) << "Cannot save/load variables with empty name"
                 << "; variable will be ignored";
-    } else if (gtl::ContainsKey(*id_to_element_map, name)) {
+    } else if (id_to_element_map->contains(name)) {
       LOG(INFO) << "Cannot save/load variables with duplicate names: " << name
                 << "; variable will be ignored";
     } else {
@@ -874,14 +875,6 @@ void Assignment::SetUnperformed(const SequenceVar* const var,
 
 // ----- Objective -----
 
-void Assignment::AddObjective(IntVar* const v) {
-  // Check if adding twice an objective to the solution.
-  CHECK(!HasObjective());
-  objective_element_.Reset(v);
-}
-
-IntVar* Assignment::Objective() const { return objective_element_.Var(); }
-
 int64_t Assignment::ObjectiveMin() const {
   if (HasObjective()) {
     return objective_element_.Min();
@@ -1054,7 +1047,7 @@ class RestoreAssignment : public DecisionBuilder {
 
   ~RestoreAssignment() override {}
 
-  Decision* Next(Solver* const solver) override {
+  Decision* Next(Solver* const /*solver*/) override {
     assignment_->Restore();
     return nullptr;
   }
@@ -1071,7 +1064,7 @@ class StoreAssignment : public DecisionBuilder {
 
   ~StoreAssignment() override {}
 
-  Decision* Next(Solver* const solver) override {
+  Decision* Next(Solver* const /*solver*/) override {
     assignment_->Store();
     return nullptr;
   }

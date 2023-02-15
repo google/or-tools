@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -109,6 +109,11 @@ class ABSL_MUST_USE_RESULT Cleanup {
   Cleanup& operator=(Cleanup&&) = default;
 
   bool is_released() const { return !storage_.ContainsCallback(); }
+
+  void Invoke() && {
+    CHECK(storage_.ContainsCallback());
+    storage_.InvokeCallback();
+  }
 
  private:
   friend AccessStorage;

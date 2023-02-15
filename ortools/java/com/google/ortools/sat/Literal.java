@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,12 +14,9 @@
 package com.google.ortools.sat;
 
 /** Interface to describe a boolean variable or its negation. */
-public interface Literal {
+public interface Literal extends LinearArgument {
   public int getIndex();
 
   /** Returns the Boolean negation of the current literal. */
   public Literal not();
-
-  /** Returns a short string to describe the literal. */
-  public String getShortString();
 }

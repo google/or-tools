@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,13 +22,12 @@
 #include <cstdint>
 #include <vector>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "examples/cpp/cvrptw_lib.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/routing.h"
@@ -65,8 +64,7 @@ const char* kTime = "Time";
 const char* kCapacity = "Capacity";
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_stops))
       << "Specify an instance size greater than 0.";
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders_per_stop))

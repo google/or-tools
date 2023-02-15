@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,13 +13,18 @@
 
 #include "ortools/lp_data/mps_reader.h"
 
+#include <cmath>
 #include <cstdint>
+#include <limits>
+#include <string>
+#include <vector>
 
 #include "absl/container/btree_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "ortools/base/protobuf_util.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/lp_data/lp_types.h"
 
@@ -35,6 +40,12 @@ class MPSReaderImpl {
   template <class Data>
   absl::Status ParseFile(const std::string& file_name, Data* data,
                          MPSReader::Form form);
+
+  // Loads instance from string. Useful with MapReduce. Automatically detects
+  // the file's format (free or fixed).
+  template <class Data>
+  absl::Status ParseProblemFromString(const std::string& source, Data* data,
+                                      MPSReader::Form form);
 
  private:
   // Number of fields in one line of MPS file.
@@ -82,7 +93,7 @@ class MPSReaderImpl {
 
   // Line processor.
   template <class DataWrapper>
-  absl::Status ProcessLine(const std::string& line, DataWrapper* data);
+  absl::Status ProcessLine(absl::string_view line, DataWrapper* data);
 
   // Process section OBJSENSE in MPS file.
   template <class DataWrapper>
@@ -260,6 +271,10 @@ class DataWrapper<LinearProgram> {
     data_->SetMaximizationProblem(maximize);
   }
 
+  void SetObjectiveOffset(double objective_offset) {
+    data_->SetObjectiveOffset(objective_offset);
+  }
+
   int FindOrCreateConstraint(const std::string& name) {
     return data_->FindOrCreateConstraint(name).value();
   }
@@ -331,6 +346,10 @@ class DataWrapper<MPModelProto> {
   void SetName(const std::string& name) { data_->set_name(name); }
 
   void SetObjectiveDirection(bool maximize) { data_->set_maximize(maximize); }
+
+  void SetObjectiveOffset(double objective_offset) {
+    data_->set_objective_offset(objective_offset);
+  }
 
   int FindOrCreateConstraint(const std::string& name) {
     const auto it = constraint_indices_by_name_.find(name);
@@ -516,13 +535,37 @@ absl::Status MPSReaderImpl::ParseFile(const std::string& file_name, Data* data,
     return ParseFile(file_name, data, MPSReader::FREE);
   }
 
-  // TODO(user): Use the form directly.
   free_form_ = form == MPSReader::FREE;
   Reset();
   DataWrapper<Data> data_wrapper(data);
   data_wrapper.SetUp();
-  for (const std::string& line :
-       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+  File* file = nullptr;
+  RETURN_IF_ERROR(file::Open(file_name, "r", &file, file::Defaults()));
+  for (const absl::string_view line :
+       FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
+    RETURN_IF_ERROR(ProcessLine(line, &data_wrapper));
+  }
+  data_wrapper.CleanUp();
+  DisplaySummary();
+  return absl::OkStatus();
+}
+
+template <class Data>
+absl::Status MPSReaderImpl::ParseProblemFromString(const std::string& source,
+                                                   Data* data,
+                                                   MPSReader::Form form) {
+  if (form == MPSReader::AUTO_DETECT) {
+    if (ParseProblemFromString(source, data, MPSReader::FIXED).ok()) {
+      return absl::OkStatus();
+    }
+    return ParseProblemFromString(source, data, MPSReader::FREE);
+  }
+
+  free_form_ = form == MPSReader::FREE;
+  Reset();
+  DataWrapper<Data> data_wrapper(data);
+  data_wrapper.SetUp();
+  for (absl::string_view line : absl::StrSplit(source, '\n')) {
     RETURN_IF_ERROR(ProcessLine(line, &data_wrapper));
   }
   data_wrapper.CleanUp();
@@ -531,9 +574,11 @@ absl::Status MPSReaderImpl::ParseFile(const std::string& file_name, Data* data,
 }
 
 template <class DataWrapper>
-absl::Status MPSReaderImpl::ProcessLine(const std::string& line,
+absl::Status MPSReaderImpl::ProcessLine(absl::string_view line,
                                         DataWrapper* data) {
   ++line_num_;
+  // Deal with windows end of line characters.
+  absl::ConsumeSuffix(&line, "\r");
   line_ = line;
   if (IsCommentOrBlank()) {
     return absl::OkStatus();  // Skip blank lines and comments.
@@ -847,6 +892,13 @@ absl::Status MPSReaderImpl::StoreRightHandSide(const std::string& row_name,
     const Fractional upper_bound =
         (data->ConstraintUpperBound(row) == kInfinity) ? kInfinity : value;
     data->SetConstraintBounds(row, lower_bound, upper_bound);
+  } else {
+    // We treat minus the right hand side of COST as the objective offset, in
+    // line with what the MPS writer does and what Gurobi's MPS format
+    // expects.
+    Fractional value;
+    ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value));
+    data->SetObjectiveOffset(-value);
   }
   return absl::OkStatus();
 }
@@ -1122,6 +1174,36 @@ absl::Status MPSReader::ParseFile(const std::string& file_name,
 absl::Status MPSReader::ParseFile(const std::string& file_name,
                                   MPModelProto* data, Form form) {
   return MPSReaderImpl().ParseFile(file_name, data, form);
+}
+
+// Loads instance from string. Useful with MapReduce. Automatically detects
+// the file's format (free or fixed).
+absl::Status MPSReader::ParseProblemFromString(const std::string& source,
+                                               LinearProgram* data,
+                                               MPSReader::Form form) {
+  return MPSReaderImpl().ParseProblemFromString(source, data, form);
+}
+
+absl::Status MPSReader::ParseProblemFromString(const std::string& source,
+                                               MPModelProto* data,
+                                               MPSReader::Form form) {
+  return MPSReaderImpl().ParseProblemFromString(source, data, form);
+}
+
+absl::StatusOr<MPModelProto> MpsDataToMPModelProto(
+    const std::string& mps_data) {
+  MPModelProto model;
+  RETURN_IF_ERROR(MPSReaderImpl().ParseProblemFromString(
+      mps_data, &model, MPSReader::AUTO_DETECT));
+  return model;
+}
+
+absl::StatusOr<MPModelProto> MpsFileToMPModelProto(
+    const std::string& mps_file) {
+  MPModelProto model;
+  RETURN_IF_ERROR(
+      MPSReaderImpl().ParseFile(mps_file, &model, MPSReader::AUTO_DETECT));
+  return model;
 }
 
 }  // namespace glop

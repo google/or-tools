@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,9 @@
 
 #include "ortools/bop/bop_lns.h"
 
+#include <algorithm>
 #include <deque>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -34,8 +36,6 @@ namespace bop {
 
 using ::operations_research::glop::ColIndex;
 using ::operations_research::glop::DenseRow;
-using ::operations_research::glop::LinearProgram;
-using ::operations_research::glop::LPSolver;
 using ::operations_research::sat::LinearBooleanConstraint;
 using ::operations_research::sat::LinearBooleanProblem;
 
@@ -70,7 +70,7 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
   state_update_stamp_ = problem_state.update_stamp();
 
   // Load the current problem to the solver.
-  sat_solver_ = absl::make_unique<sat::SatSolver>();
+  sat_solver_ = std::make_unique<sat::SatSolver>();
   const BopOptimizerBase::Status status =
       LoadStateProblemToSatSolver(problem_state, sat_solver_.get());
   if (status != BopOptimizerBase::CONTINUE) return status;
@@ -571,8 +571,8 @@ void RelationGraphBasedNeighborhood::GenerateNeighborhood(
     const sat::Literal literal(
         var, problem_state.solution().Value(VariableIndex(var.value())));
     if (variable_is_relaxed[literal.Variable().value()]) continue;
-    const int index =
-        sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal);
+    int index;
+    sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal, &index);
     if (sat_propagator->CurrentDecisionLevel() > 0) {
       for (int i = index; i < sat_propagator->LiteralTrail().Index(); ++i) {
         if (variable_is_relaxed

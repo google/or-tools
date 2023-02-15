@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2021 Google LLC
+# Copyright 2010-2022 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -43,6 +43,8 @@ def main():
     # Create the mip solver with the SCIP backend.
     solver = pywraplp.Solver.CreateSolver('SCIP')
 
+    if not solver:
+        return
     # [END solver]
 
     # [START program_part2]
@@ -84,7 +86,7 @@ def main():
 
     # [START print_solution]
     if status == pywraplp.Solver.OPTIMAL:
-        num_bins = 0.
+        num_bins = 0
         for j in data['bins']:
             if y[j].solution_value() == 1:
                 bin_items = []
@@ -93,7 +95,7 @@ def main():
                     if x[i, j].solution_value() > 0:
                         bin_items.append(i)
                         bin_weight += data['weights'][i]
-                if bin_weight > 0:
+                if bin_items:
                     num_bins += 1
                     print('Bin number', j)
                     print('  Items packed:', bin_items)

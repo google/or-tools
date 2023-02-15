@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -48,7 +48,7 @@ public class BinPackingProblemSat
         }
 
         // Slack variables.
-        IntVar[] slacks = new IntVar[num_bins];
+        BoolVar[] slacks = new BoolVar[num_bins];
         for (int b = 0; b < num_bins; ++b)
         {
             slacks[b] = model.NewBoolVar(String.Format("slack_{0}", b));
@@ -67,7 +67,7 @@ public class BinPackingProblemSat
             {
                 tmp[i] = x[i, b];
             }
-            model.Add(load[b] == LinearExpr.ScalProd(tmp, sizes));
+            model.Add(load[b] == LinearExpr.WeightedSum(tmp, sizes));
         }
 
         // Place all items.

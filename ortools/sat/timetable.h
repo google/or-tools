@@ -1,4 +1,4 @@
-// Copyright 2010-2021 Google LLC
+// Copyright 2010-2022 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,10 @@
 #include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/util/rev.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -32,7 +35,7 @@ namespace sat {
 // This instantiate one or more ReservoirTimeTabling class to perform the
 // propagation.
 void AddReservoirConstraint(std::vector<AffineExpression> times,
-                            std::vector<IntegerValue> deltas,
+                            std::vector<AffineExpression> deltas,
                             std::vector<Literal> presences, int64_t min_level,
                             int64_t max_level, Model* model);
 
@@ -46,7 +49,7 @@ void AddReservoirConstraint(std::vector<AffineExpression> times,
 class ReservoirTimeTabling : public PropagatorInterface {
  public:
   ReservoirTimeTabling(const std::vector<AffineExpression>& times,
-                       const std::vector<IntegerValue>& deltas,
+                       const std::vector<AffineExpression>& deltas,
                        const std::vector<Literal>& presences,
                        IntegerValue capacity, Model* model);
 
@@ -85,7 +88,7 @@ class ReservoirTimeTabling : public PropagatorInterface {
 
   // Input.
   std::vector<AffineExpression> times_;
-  std::vector<IntegerValue> deltas_;
+  std::vector<AffineExpression> deltas_;
   std::vector<Literal> presences_;
   IntegerValue capacity_;
 
@@ -101,11 +104,14 @@ class ReservoirTimeTabling : public PropagatorInterface {
 
 // A strongly quadratic version of Time Tabling filtering. This propagator
 // is similar to the CumulativeTimeTable propagator of the constraint solver.
+//
+// TODO(user): Use SchedulingDemandHelper. In particular, if we know the task
+// is from a set of fixed alternatives, we might be able to push it more.
 class TimeTablingPerTask : public PropagatorInterface {
  public:
-  TimeTablingPerTask(const std::vector<AffineExpression>& demands,
-                     AffineExpression capacity, IntegerTrail* integer_trail,
-                     SchedulingConstraintHelper* helper);
+  TimeTablingPerTask(AffineExpression capacity,
+                     SchedulingConstraintHelper* helper,
+                     SchedulingDemandHelper* demands, Model* model);
 
   bool Propagate() final;
 
@@ -138,10 +144,13 @@ class TimeTablingPerTask : public PropagatorInterface {
   // Tries to increase the minimum start time of each task according to the
   // current profile. This function can be called after ReverseProfile() and
   // ReverseVariables to update the maximum end time of each task.
-  bool SweepAllTasks(bool is_forward);
+  bool SweepAllTasks();
 
-  // Tries to increase the minimum start time of task_id.
-  bool SweepTask(int task_id);
+  // Tries to increase the minimum start time of task_id. This assumes tasks are
+  // processed by increasing start_min so that the starting profile_index only
+  // increase.
+  bool SweepTask(int task_id, IntegerValue initial_start_min,
+                 IntegerValue conflict_height, int* profile_index);
 
   // Updates the starting time of task_id to right and explain it. The reason is
   // all the mandatory parts contained in [left, right).
@@ -151,10 +160,11 @@ class TimeTablingPerTask : public PropagatorInterface {
   // the mandatory parts that overlap time.
   bool IncreaseCapacity(IntegerValue time, IntegerValue new_min);
 
-  // Explains the state of the profile in the time interval [left, right). The
-  // reason is all the mandatory parts that overlap the interval. The current
-  // reason is not cleared when this method is called.
-  void AddProfileReason(IntegerValue left, IntegerValue right);
+  // Explains the state of the profile in the time interval [left, right) that
+  // allow to push task_id. The reason is all the mandatory parts that overlap
+  // the interval. The current reason is not cleared when this method is called.
+  void AddProfileReason(int task_id, IntegerValue left, IntegerValue right,
+                        IntegerValue capacity_threshold);
 
   IntegerValue CapacityMin() const {
     return integer_trail_->LowerBound(capacity_);
@@ -162,14 +172,6 @@ class TimeTablingPerTask : public PropagatorInterface {
 
   IntegerValue CapacityMax() const {
     return integer_trail_->UpperBound(capacity_);
-  }
-
-  IntegerValue DemandMin(int task_id) const {
-    return integer_trail_->LowerBound(demands_[task_id]);
-  }
-
-  IntegerValue DemandMax(int task_id) const {
-    return integer_trail_->UpperBound(demands_[task_id]);
   }
 
   // Returns true if the tasks is present and has a mantatory part.
@@ -180,31 +182,16 @@ class TimeTablingPerTask : public PropagatorInterface {
   // Number of tasks.
   const int num_tasks_;
 
-  // The demand variables of the tasks.
-  std::vector<AffineExpression> demands_;
-
   // Capacity of the resource.
   const AffineExpression capacity_;
 
-  IntegerTrail* integer_trail_;
   SchedulingConstraintHelper* helper_;
+  SchedulingDemandHelper* demands_;
+  IntegerTrail* integer_trail_;
 
   // Optimistic profile of the resource consumption over time.
   std::vector<ProfileRectangle> profile_;
   IntegerValue profile_max_height_;
-
-  // Reversible starting height of the reduced profile. This corresponds to the
-  // height of the leftmost profile rectangle that can be used for propagation.
-  IntegerValue starting_profile_height_;
-
-  // Reversible sets of tasks to consider for the forward (resp. backward)
-  // propagation. A task with a fixed start do not need to be considered for the
-  // forward pass, same for task with fixed end for the backward pass. It is why
-  // we use two sets.
-  std::vector<int> forward_tasks_to_sweep_;
-  std::vector<int> backward_tasks_to_sweep_;
-  int forward_num_tasks_to_sweep_;
-  int backward_num_tasks_to_sweep_;
 
   // Reversible set (with random access) of tasks to consider for building the
   // profile. The set contains the tasks in the [0, num_profile_tasks_) prefix
@@ -213,6 +200,11 @@ class TimeTablingPerTask : public PropagatorInterface {
   std::vector<int> profile_tasks_;
   std::vector<int> positions_in_profile_tasks_;
   int num_profile_tasks_;
+
+  // Statically computed.
+  // This allow to simplify the profile for common usage.
+  bool has_demand_equal_to_capacity_ = false;
+  IntegerValue initial_max_demand_;
 
   DISALLOW_COPY_AND_ASSIGN(TimeTablingPerTask);
 };
