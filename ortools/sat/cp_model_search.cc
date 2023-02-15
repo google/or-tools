@@ -128,23 +128,14 @@ BooleanOrIntegerLiteral CpModelView::MedianValue(int var) const {
     result.boolean_literal_index = mapping_.Literal(var).NegatedIndex();
   } else if (mapping_.IsInteger(var)) {
     const IntegerVariable variable = mapping_.Integer(var);
-    CHECK_NE(variable, kNoIntegerVariable);
-    CHECK(integer_encoder_.VariableIsFullyEncoded(variable));
-    std::vector<ValueLiteralPair> encoding =
-        integer_encoder_.RawDomainEncoding(variable);
-    std::sort(encoding.begin(), encoding.end(),
-              ValueLiteralPair::CompareByValue());
-    std::vector<Literal> unassigned_sorted_literals;
-    for (const auto& p : encoding) {
-      if (!boolean_assignment_.LiteralIsAssigned(p.literal)) {
-        unassigned_sorted_literals.push_back(p.literal);
-      }
-    }
+    const std::vector<ValueLiteralPair> encoding =
+        integer_encoder_.FullDomainEncoding(variable);
+
     // 5 values -> returns the second.
     // 4 values -> returns the second too.
     // Array is 0 based.
-    const int target = (unassigned_sorted_literals.size() + 1) / 2 - 1;
-    result.boolean_literal_index = unassigned_sorted_literals[target].Index();
+    const int target = (encoding.size() + 1) / 2 - 1;
+    result.boolean_literal_index = encoding[target].literal.Index();
   }
   return result;
 }

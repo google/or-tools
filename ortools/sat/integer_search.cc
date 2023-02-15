@@ -869,11 +869,6 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   }
 
   if (sat_solver_->CurrentDecisionLevel() == 0) {
-    if (!implied_bounds_->EnqueueNewDeductions()) {
-      sat_solver_->NotifyThatModelIsUnsat();
-      return false;
-    }
-
     auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
     for (const auto& cb : level_zero_callbacks->callbacks) {
       if (!cb()) {
@@ -964,7 +959,7 @@ bool IntegerSearchHelper::TakeDecision(Literal decision) {
   // Update the implied bounds each time we enqueue a literal at level zero.
   // This is "almost free", so we might as well do it.
   if (old_level == 0 && sat_solver_->CurrentDecisionLevel() == 1) {
-    implied_bounds_->ProcessIntegerTrail(decision);
+    if (!implied_bounds_->ProcessIntegerTrail(decision)) return false;
     product_detector_->ProcessTrailAtLevelOne();
   }
 

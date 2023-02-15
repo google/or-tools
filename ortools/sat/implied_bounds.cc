@@ -53,32 +53,20 @@ ImpliedBounds::~ImpliedBounds() {
   shared_stats_->AddStats(stats);
 }
 
-void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
-  if (!parameters_.use_implied_bounds()) return;
+bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
+  if (!parameters_.use_implied_bounds()) return true;
   const IntegerVariable var = integer_literal.var;
-
-  // Update our local level-zero bound.
-  if (var >= level_zero_lower_bounds_.size()) {
-    level_zero_lower_bounds_.resize(var.value() + 1, kMinIntegerValue);
-    new_level_zero_bounds_.Resize(var + 1);
-  }
-  level_zero_lower_bounds_[var] = std::max(
-      level_zero_lower_bounds_[var], integer_trail_->LevelZeroLowerBound(var));
 
   // Ignore any Add() with a bound worse than the level zero one.
   // TODO(user): Check that this never happen? it shouldn't.
-  if (integer_literal.bound <= level_zero_lower_bounds_[var]) {
-    return;
-  }
+  const IntegerValue root_lb = integer_trail_->LevelZeroLowerBound(var);
+  if (integer_literal.bound <= root_lb) return true;
 
   // We skip any IntegerLiteral referring to a variable with only two
   // consecutive possible values. This is because, once shifted this will
   // already be a variable in [0, 1] so we shouldn't gain much by substituing
   // it.
-  if (integer_trail_->LevelZeroLowerBound(var) + 1 >=
-      integer_trail_->LevelZeroUpperBound(var)) {
-    return;
-  }
+  if (root_lb + 1 >= integer_trail_->LevelZeroUpperBound(var)) return true;
 
   // Add or update the current bound.
   const auto key = std::make_pair(literal.Index(), var);
@@ -88,7 +76,7 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
       insert_result.first->second = integer_literal.bound;
     } else {
       // No new info.
-      return;
+      return true;
     }
   }
 
@@ -112,23 +100,20 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   // crosses integer_literal.bound.
   const auto it = bounds_.find(std::make_pair(literal.NegatedIndex(), var));
   if (it != bounds_.end()) {
-    if (it->second <= level_zero_lower_bounds_[var]) {
+    if (it->second <= root_lb) {
       // The other bounds is worse than the new level-zero bound which can
       // happen because of lazy update, so here we just remove it.
       bounds_.erase(it);
     } else {
       const IntegerValue deduction =
           std::min(integer_literal.bound, it->second);
-      DCHECK_GT(deduction, level_zero_lower_bounds_[var]);
-      DCHECK_GT(deduction, integer_trail_->LevelZeroLowerBound(var));
+      DCHECK_GT(deduction, root_lb);
 
-      // TODO(user): support Enqueueing level zero fact at a positive level.
-      // That is, do not loose the info on backtrack. This should be doable. It
-      // is also why we return a bool in case of conflict when pushing
-      // deduction.
       ++num_deductions_;
-      level_zero_lower_bounds_[var] = deduction;
-      new_level_zero_bounds_.Set(var);
+      if (!integer_trail_->RootLevelEnqueue(
+              IntegerLiteral::GreaterOrEqual(var, deduction))) {
+        return false;
+      }
 
       VLOG(2) << "Deduction old: "
               << IntegerLiteral::GreaterOrEqual(
@@ -144,7 +129,7 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
         bounds_.erase(std::make_pair(literal.Index(), var));
 
         // No need to update var_to_bounds_ in this case.
-        return;
+        return true;
       }
     }
   }
@@ -157,7 +142,12 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   // constraint using this bound is protected by the variable optional literal.
   // Alternativelly we could disable optional variable when we are at
   // linearization level 2.
-  if (integer_trail_->IsOptional(var)) return;
+  if (integer_trail_->IsOptional(var)) return true;
+
+  // The information below is currently only used for cuts.
+  // So no need to store it if we aren't going to use it.
+  if (parameters_.linearization_level() == 0) return true;
+  if (parameters_.cut_level() == 0) return true;
 
   // If we have a new implied bound and the literal has a view, add it to
   // var_to_bounds_. Note that we might add more than one entry with the same
@@ -183,6 +173,7 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
         {integer_encoder_->GetLiteralView(literal.Negated()),
          integer_literal.bound, false});
   }
+  return true;
 }
 
 const std::vector<ImpliedBoundEntry>& ImpliedBounds::GetImpliedBounds(
@@ -195,11 +186,9 @@ const std::vector<ImpliedBoundEntry>& ImpliedBounds::GetImpliedBounds(
   // is tighter.
   int new_size = 0;
   std::vector<ImpliedBoundEntry>& ref = var_to_bounds_[var];
-  const IntegerValue level_zero_lb = std::max(
-      level_zero_lower_bounds_[var], integer_trail_->LevelZeroLowerBound(var));
-  level_zero_lower_bounds_[var] = level_zero_lb;
+  const IntegerValue root_lb = integer_trail_->LevelZeroLowerBound(var);
   for (const ImpliedBoundEntry& entry : ref) {
-    if (entry.lower_bound <= level_zero_lb) continue;
+    if (entry.lower_bound <= root_lb) continue;
     ref[new_size++] = entry;
   }
   ref.resize(new_size);
@@ -217,15 +206,16 @@ void ImpliedBounds::AddLiteralImpliesVarEqValue(Literal literal,
   literal_to_var_to_value_[literal.Index()][var] = value;
 }
 
-void ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
-  if (!parameters_.use_implied_bounds()) return;
+bool ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
+  if (!parameters_.use_implied_bounds()) return true;
 
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 1);
   tmp_integer_literals_.clear();
   integer_trail_->AppendNewBounds(&tmp_integer_literals_);
   for (const IntegerLiteral lit : tmp_integer_literals_) {
-    Add(first_decision, lit);
+    if (!Add(first_decision, lit)) return false;
   }
+  return true;
 }
 
 void ImpliedBounds::AddElementEncoding(
@@ -247,20 +237,6 @@ ImpliedBounds::GetElementEncodings(IntegerVariable var) {
 const std::vector<IntegerVariable>& ImpliedBounds::GetElementEncodedVariables()
     const {
   return element_encoded_variables_;
-}
-
-bool ImpliedBounds::EnqueueNewDeductions() {
-  CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-  for (const IntegerVariable var :
-       new_level_zero_bounds_.PositionsSetAtLeastOnce()) {
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::GreaterOrEqual(var, level_zero_lower_bounds_[var]),
-            {}, {})) {
-      return false;
-    }
-  }
-  new_level_zero_bounds_.SparseClearAll();
-  return sat_solver_->FinishPropagation();
 }
 
 std::string EncodingStr(const std::vector<ValueLiteralPair>& enc) {

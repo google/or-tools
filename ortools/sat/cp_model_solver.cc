@@ -2748,6 +2748,9 @@ class LnsSolver : public SubSolver {
               "presolve");
         }
         local_response = local_response_manager->GetResponse();
+        // If the solution is found during presolve. solution_info has not been
+        // set in the local_response. We set it manually.
+        local_response.set_solution_info(absl::StrCat(lns_info, " [presolve]"));
         local_response.set_status(presolve_status);
       }
       const std::string solution_info = local_response.solution_info();

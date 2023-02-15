@@ -44,7 +44,7 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
 
   activities_.resize(num_variables, parameters_.initial_variables_activity());
   tie_breakers_.resize(num_variables, 0.0);
-  num_bumps_.resize(num_variables, 0);
+  num_bumps_.clear();
   pq_need_update_for_var_at_trail_index_.IncreaseSize(num_variables);
 
   weighted_sign_.resize(num_variables, 0.0);
@@ -144,7 +144,7 @@ void SatDecisionPolicy::ResetDecisionHeuristic() {
   variable_activity_increment_ = 1.0;
   activities_.assign(num_variables, parameters_.initial_variables_activity());
   tie_breakers_.assign(num_variables, 0.0);
-  num_bumps_.assign(num_variables, 0);
+  num_bumps_.clear();
   var_ordering_.Clear();
 
   polarity_phase_ = 0;
@@ -303,6 +303,9 @@ void SatDecisionPolicy::UpdateWeightedSign(
 void SatDecisionPolicy::BumpVariableActivities(
     const std::vector<Literal>& literals) {
   if (parameters_.use_erwa_heuristic()) {
+    if (num_bumps_.size() != activities_.size()) {
+      num_bumps_.resize(activities_.size(), 0);
+    }
     for (const Literal literal : literals) {
       // Note that we don't really need to bump level 0 variables since they
       // will never be backtracked over. However it is faster to simply bump
@@ -419,6 +422,10 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
 
   DCHECK_LT(target_trail_index, trail_.Index());
   if (parameters_.use_erwa_heuristic()) {
+    if (num_bumps_.size() != activities_.size()) {
+      num_bumps_.resize(activities_.size(), 0);
+    }
+
     // The ERWA parameter between the new estimation of the learning rate and
     // the old one. TODO(user): Expose parameters for these values.
     const double alpha = std::max(0.06, 0.4 - 1e-6 * num_conflicts_);

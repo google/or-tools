@@ -666,6 +666,7 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
 bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   SCOPED_TIME_STAT(&stats_);
   if (Propagate()) return true;
+  if (model_is_unsat_) return false;
 
   ++counters_.num_failures;
   const int conflict_trail_index = trail_->Index();

@@ -245,6 +245,13 @@ class Domain {
   int64_t SmallestValue() const;
 
   /**
+   * Returns the closest value in the domain that is <= (resp. >=) to the input.
+   * Do not change the input if there is no such value.
+   */
+  int64_t ValueAtOrBefore(int64_t input) const;
+  int64_t ValueAtOrAfter(int64_t input) const;
+
+  /**
    * Returns true iff the domain is reduced to a single value.
    * The domain must not be empty.
    */

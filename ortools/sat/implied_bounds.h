@@ -97,7 +97,7 @@ class ImpliedBounds {
   // Not that it checks right aways if there is another bound on the same
   // variable involving literal.Negated(), in which case we can improve the
   // level zero lower bound of the variable.
-  void Add(Literal literal, IntegerLiteral integer_literal);
+  bool Add(Literal literal, IntegerLiteral integer_literal);
 
   // Adds literal => var == value.
   void AddLiteralImpliesVarEqValue(Literal literal, IntegerVariable var,
@@ -108,7 +108,7 @@ class ImpliedBounds {
   //
   // Preconditions: The decision level must be one (CHECKed). And the decision
   // must be equal to first decision (we currently do not CHECK that).
-  void ProcessIntegerTrail(Literal first_decision);
+  bool ProcessIntegerTrail(Literal first_decision);
 
   // Returns all the implied bounds stored for the given variable.
   // Note that only literal with an IntegerView are considered here.
@@ -148,14 +148,6 @@ class ImpliedBounds {
   // is infeasible.
   bool EnqueueNewDeductions();
 
-  // When a literal does not have an integer view, we do not add any
-  // ImpliedBoundEntry. This allows to create missing entries for a literal for
-  // which a view was just created.
-  //
-  // TODO(user): Implement and call when we create new views in the linear
-  // relaxation.
-  void NotifyNewIntegerView(Literal literal) {}
-
  private:
   const SatParameters& parameters_;
   SatSolver* sat_solver_;
@@ -175,16 +167,16 @@ class ImpliedBounds {
   absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>, IntegerValue>
       bounds_;
 
-  // Note(user): The plan is to use these during cut generation, so only the
+  // Note(user): This is currently only used during cut generation, so only the
   // Literal with an IntegerView that can be used in the LP relaxation need to
   // be kept here.
   //
-  // TODO(user): Use inlined vectors.
+  // TODO(user): Use inlined vectors. Even better, we actually only process
+  // all variables at once, so no need to organize it by IntegerVariable even
+  // if that might be more friendly cache-wise.
   std::vector<ImpliedBoundEntry> empty_implied_bounds_;
   absl::StrongVector<IntegerVariable, std::vector<ImpliedBoundEntry>>
       var_to_bounds_;
-
-  // Track the list of variables with some implied bounds.
   SparseBitset<IntegerVariable> has_implied_bounds_;
 
   // Stores implied values per variable.
@@ -199,11 +191,6 @@ class ImpliedBounds {
   const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>
       empty_element_encoding_;
   std::vector<IntegerVariable> element_encoded_variables_;
-
-  // TODO(user): Ideally, this should go away if we manage to push level-zero
-  // fact at a positive level directly.
-  absl::StrongVector<IntegerVariable, IntegerValue> level_zero_lower_bounds_;
-  SparseBitset<IntegerVariable> new_level_zero_bounds_;
 
   // Stats.
   int64_t num_deductions_ = 0;

@@ -946,14 +946,8 @@ inline std::function<void(Model*)> AtMostOneConstraint(
 inline std::function<void(Model*)> ClauseConstraint(
     absl::Span<const Literal> literals) {
   return [=](Model* model) {
-    std::vector<LiteralWithCoeff> cst;
-    cst.reserve(literals.size());
-    for (const Literal l : literals) {
-      cst.emplace_back(l, Coefficient(1));
-    }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(1),
-        /*use_upper_bound=*/false, Coefficient(1), &cst);
+    model->GetOrCreate<SatSolver>()->AddProblemClause(literals,
+                                                      /*is_safe=*/false);
   };
 }
 

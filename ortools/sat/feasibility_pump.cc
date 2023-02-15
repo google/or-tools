@@ -600,7 +600,8 @@ bool FeasibilityPump::PropagationRounding() {
     if (time_limit_->LimitReached()) return false;
     // Get the bounds of the variable.
     const IntegerVariable var = integer_variables_[var_index];
-    const Domain& domain = (*domains_)[var];
+    CHECK(VariableIsPositive(var));
+    const Domain& domain = (*domains_)[GetPositiveOnlyIndex(var)];
 
     const IntegerValue lb = integer_trail_->LowerBound(var);
     const IntegerValue ub = integer_trail_->UpperBound(var);

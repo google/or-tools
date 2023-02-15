@@ -93,15 +93,18 @@ std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
     IntegerVariable var,
     const absl::flat_hash_set<IntegerValue>& encoded_values,
     const Model& model) {
+  CHECK(VariableIsPositive(var));
+  const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+
   const auto* domains = model.Get<IntegerDomains>();
-  if (domains == nullptr || var >= domains->size()) {
+  if (domains == nullptr || index >= domains->size()) {
     return {kMaxIntegerValue, kMinIntegerValue};
   }
 
   // The domain can be large, but the list of values shouldn't, so this
   // runs in O(encoded_values.size());
   IntegerValue min = kMaxIntegerValue;
-  for (const int64_t v : (*domains)[var].Values()) {
+  for (const int64_t v : (*domains)[index].Values()) {
     if (!encoded_values.contains(IntegerValue(v))) {
       min = IntegerValue(v);
       break;
@@ -109,7 +112,8 @@ std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
   }
 
   IntegerValue max = kMinIntegerValue;
-  for (const int64_t v : (*domains)[NegationOf(var)].Values()) {
+  const Domain negated_domain = (*domains)[index].Negation();
+  for (const int64_t v : negated_domain.Values()) {
     if (!encoded_values.contains(IntegerValue(-v))) {
       max = IntegerValue(-v);
       break;
@@ -284,8 +288,7 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
   const auto* encoder = model.Get<IntegerEncoder>();
   if (integer_trail == nullptr || encoder == nullptr) return;
 
-  const absl::btree_map<IntegerValue, Literal>& greater_than_encoding =
-      encoder->PartialGreaterThanEncoding(var);
+  const auto& greater_than_encoding = encoder->PartialGreaterThanEncoding(var);
   if (greater_than_encoding.empty()) return;
 
   // Start by the var >= side.
@@ -297,19 +300,19 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
     lb_constraint.AddTerm(var, IntegerValue(1));
     LiteralIndex prev_literal_index = kNoLiteralIndex;
     for (const auto entry : greater_than_encoding) {
-      if (entry.first <= prev_used_bound) continue;
+      if (entry.value <= prev_used_bound) continue;
 
-      const LiteralIndex literal_index = entry.second.Index();
-      const IntegerValue diff = prev_used_bound - entry.first;
+      const LiteralIndex literal_index = entry.literal.Index();
+      const IntegerValue diff = prev_used_bound - entry.value;
 
       // Skip the entry if the literal doesn't have a view.
-      if (!lb_constraint.AddLiteralTerm(entry.second, diff)) continue;
+      if (!lb_constraint.AddLiteralTerm(entry.literal, diff)) continue;
       if (prev_literal_index != kNoLiteralIndex) {
         // Add var <= prev_var, which is the same as var + not(prev_var) <= 1
         relaxation->at_most_ones.push_back(
             {Literal(literal_index), Literal(prev_literal_index).Negated()});
       }
-      prev_used_bound = entry.first;
+      prev_used_bound = entry.value;
       prev_literal_index = literal_index;
     }
     relaxation->linear_constraints.push_back(lb_constraint.Build());
@@ -324,12 +327,12 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
     lb_constraint.AddTerm(var, IntegerValue(-1));
     for (const auto entry :
          encoder->PartialGreaterThanEncoding(NegationOf(var))) {
-      if (entry.first <= prev_used_bound) continue;
-      const IntegerValue diff = prev_used_bound - entry.first;
+      if (entry.value <= prev_used_bound) continue;
+      const IntegerValue diff = prev_used_bound - entry.value;
 
       // Skip the entry if the literal doesn't have a view.
-      if (!lb_constraint.AddLiteralTerm(entry.second, diff)) continue;
-      prev_used_bound = entry.first;
+      if (!lb_constraint.AddLiteralTerm(entry.literal, diff)) continue;
+      prev_used_bound = entry.value;
     }
     relaxation->linear_constraints.push_back(lb_constraint.Build());
   }

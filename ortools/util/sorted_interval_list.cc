@@ -235,6 +235,30 @@ int64_t Domain::SmallestValue() const {
   return result;
 }
 
+int64_t Domain::ValueAtOrBefore(int64_t input) const {
+  // Because we only compare by start and there is no duplicate starts, this
+  // should be the next interval after the one that has a chance to contains
+  // value.
+  auto it = std::upper_bound(intervals_.begin(), intervals_.end(),
+                             ClosedInterval(input, input));
+  if (it == intervals_.begin()) return input;
+  --it;
+  return input <= it->end ? input : it->end;
+}
+
+int64_t Domain::ValueAtOrAfter(int64_t input) const {
+  // Because we only compare by start and there is no duplicate starts, this
+  // should be the next interval after the one that has a chance to contains
+  // value.
+  auto it = std::upper_bound(intervals_.begin(), intervals_.end(),
+                             ClosedInterval(input, input));
+  if (it == intervals_.end()) return input;
+  const int64_t candidate = it->start;
+  if (it == intervals_.begin()) return candidate;
+  --it;
+  return input <= it->end ? input : candidate;
+}
+
 int64_t Domain::FixedValue() const {
   DCHECK(IsFixed());
   return intervals_.front().start;

@@ -712,13 +712,12 @@ void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
     // It is important to do that first, since otherwise mapping a == literal
     // might creates the underlying >= and <= literals.
     for (int i = 0; i < 2; ++i) {
-      for (const auto value_literal :
+      for (const auto [value1, literal1] :
            encoder->PartialGreaterThanEncoding(var1)) {
-        const IntegerValue value1 = value_literal.first;
         const IntegerValue bound2 = FloorRatio(rhs - value1 * coeff1, coeff2);
         ++num_associations;
         encoder->AssociateToIntegerLiteral(
-            value_literal.second, IntegerLiteral::LowerOrEqual(var2, bound2));
+            literal1, IntegerLiteral::LowerOrEqual(var2, bound2));
       }
       std::swap(var1, var2);
       std::swap(coeff1, coeff2);

@@ -320,8 +320,9 @@ struct AffineExpression {
   IntegerValue constant = IntegerValue(0);
 };
 
-// A model singleton that holds the INITIAL integer variable domains.
-struct IntegerDomains : public absl::StrongVector<IntegerVariable, Domain> {};
+// A model singleton that holds the root level integer variable domains.
+// we just store a single domain for both var and its negation.
+struct IntegerDomains : public absl::StrongVector<PositiveOnlyIndex, Domain> {};
 
 // A model singleton used for debugging. If this is set in the model, then we
 // can check that various derived constraint do not exclude this solution (if it
@@ -374,6 +375,16 @@ struct LiteralValueValue {
   }
 };
 
+// Sometimes we propagate fact with no reason at a positive level, those
+// will automatically be fixed on the next restart.
+//
+// TODO(user): If we change the logic to not restart right away, we probably
+// need to remove duplicates bounds for the same variable.
+struct DelayedRootLevelDeduction {
+  std::vector<Literal> literal_to_fix;
+  std::vector<IntegerLiteral> integer_literal_to_fix;
+};
+
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between
 // the integer variables and such literals which can be created by a call to
@@ -396,7 +407,9 @@ class IntegerEncoder {
  public:
   explicit IntegerEncoder(Model* model)
       : sat_solver_(model->GetOrCreate<SatSolver>()),
-        domains_(model->GetOrCreate<IntegerDomains>()),
+        trail_(model->GetOrCreate<Trail>()),
+        delayed_to_fix_(model->GetOrCreate<DelayedRootLevelDeduction>()),
+        domains_(*model->GetOrCreate<IntegerDomains>()),
         num_created_variables_(0) {}
 
   ~IntegerEncoder() {
@@ -426,23 +439,16 @@ class IntegerEncoder {
   // called.
   bool VariableIsFullyEncoded(IntegerVariable var) const;
 
-  // Computes the full encoding of a variable on which FullyEncodeVariable() has
-  // been called. The returned elements are always sorted by increasing
-  // IntegerValue and we filter values associated to false literals.
+  // Returns the list of literal <=> var == value currently associated to the
+  // given variable. The result is sorted by value. We filter literal at false,
+  // and if a literal is true, then you will get a singleton. To be sure to get
+  // the full set of encoded value, then you should call this at level zero.
   //
-  // Performance note: This function is not particularly fast, however it should
-  // only be required during domain creation.
+  // The FullDomainEncoding() just check VariableIsFullyEncoded() and returns
+  // the same result.
   std::vector<ValueLiteralPair> FullDomainEncoding(IntegerVariable var) const;
-
-  // Same as FullDomainEncoding() but only returns the list of value that are
-  // currently associated to a literal. In particular this has no guarantee to
-  // span the full domain of the given variable (but it might).
   std::vector<ValueLiteralPair> PartialDomainEncoding(
       IntegerVariable var) const;
-
-  // Raw encoding. May be incomplete and is not sorted. Contains all literals,
-  // true or false.
-  std::vector<ValueLiteralPair> RawDomainEncoding(IntegerVariable var) const;
 
   // Returns the "canonical" (i_lit, negation of i_lit) pair. This mainly
   // deal with domain with initial hole like [1,2][5,6] so that if one ask
@@ -478,12 +484,11 @@ class IntegerEncoder {
   void AssociateToIntegerEqualValue(Literal literal, IntegerVariable var,
                                     IntegerValue value);
 
-  // Returns true iff the given integer literal is associated. The second
-  // version returns the associated literal or kNoLiteralIndex. Note that none
-  // of these function call Canonicalize() first for speed, so it is possible
-  // that this returns false even though GetOrCreateAssociatedLiteral() would
-  // not create a new literal.
-  bool LiteralIsAssociated(IntegerLiteral i_lit) const;
+  // Returns kNoLiteralIndex if there is no associated or the associated literal
+  // otherwise.
+  //
+  // Tricky: for domain with hole, like [0,1][5,6], we assume some equivalence
+  // classes, like >=2, >=3, >=4 are all the same as >= 5.
   LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit) const;
   LiteralIndex GetAssociatedEqualityLiteral(IntegerVariable var,
                                             IntegerValue value) const;
@@ -529,15 +534,6 @@ class IntegerEncoder {
     return temp_associated_vars_;
   }
 
-  // This is part of a "hack" to deal with new association involving a fixed
-  // literal. Note that these are only allowed at the decision level zero.
-  const std::vector<IntegerLiteral> NewlyFixedIntegerLiterals() const {
-    return newly_fixed_integer_literals_;
-  }
-  void ClearNewlyFixedIntegerLiterals() {
-    newly_fixed_integer_literals_.clear();
-  }
-
   // If it exists, returns a [0,1] integer variable which is equal to 1 iff the
   // given literal is true. Returns kNoIntegerVariable if such variable does not
   // exist. Note that one can create one by creating a new IntegerVariable and
@@ -561,7 +557,7 @@ class IntegerEncoder {
   // Ex: if 'i' is (x >= 4) and we already created a literal associated to
   // (x >= 2) but not to (x >= 3), we will return the literal associated with
   // (x >= 2).
-  LiteralIndex SearchForLiteralAtOrBefore(IntegerLiteral i,
+  LiteralIndex SearchForLiteralAtOrBefore(IntegerLiteral i_lit,
                                           IntegerValue* bound) const;
 
   // Gets the literal always set to true, make it if it does not exist.
@@ -580,20 +576,14 @@ class IntegerEncoder {
   // Returns the set of Literal associated to IntegerLiteral of the form var >=
   // value. We make a copy, because this can be easily invalidated when calling
   // any function of this class. So it is less efficient but safer.
-  absl::btree_map<IntegerValue, Literal> PartialGreaterThanEncoding(
-      IntegerVariable var) const {
-    if (var >= encoding_by_var_.size()) {
-      return absl::btree_map<IntegerValue, Literal>();
-    }
-    return encoding_by_var_[var];
-  }
+  std::vector<ValueLiteralPair> PartialGreaterThanEncoding(
+      IntegerVariable var) const;
+
+  // Makes sure all element in the >= encoding are non-trivial and canonical.
+  // The input variable must be positive.
+  bool UpdateEncodingOnInitialDomainChange(IntegerVariable var, Domain domain);
 
  private:
-  // Only add the equivalence between i_lit and literal, if there is already an
-  // associated literal with i_lit, this make literal and this associated
-  // literal equivalent.
-  void HalfAssociateGivenLiteral(IntegerLiteral i_lit, Literal literal);
-
   // Adds the implications:
   //    Literal(before) <= associated_lit <= Literal(after).
   // Arguments:
@@ -607,7 +597,9 @@ class IntegerEncoder {
       Literal associated_lit);
 
   SatSolver* sat_solver_;
-  IntegerDomains* domains_;
+  Trail* trail_;
+  DelayedRootLevelDeduction* delayed_to_fix_;
+  const IntegerDomains& domains_;
 
   bool add_implications_ = true;
   int64_t num_created_variables_ = 0;
@@ -616,9 +608,18 @@ class IntegerEncoder {
   // by bound (so we can properly add implications between the literals
   // corresponding to the same variable).
   //
+  // Note that we only keep this for positive variable.
+  // The one for the negation can be infered by it.
+  //
+  // Like                x >= 1     x >= 4     x >= 5
+  // Correspond to       x <= 0     x <= 3     x <= 4
+  // That is            -x >= 0    -x >= -2   -x >= -4
+  //
+  // With potentially stronger <= bound if we fall into domain holes.
+  //
   // TODO(user): Remove the entry no longer needed because of level zero
   // propagations.
-  absl::StrongVector<IntegerVariable, absl::btree_map<IntegerValue, Literal>>
+  absl::StrongVector<PositiveOnlyIndex, absl::btree_map<IntegerValue, Literal>>
       encoding_by_var_;
 
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.
@@ -631,8 +632,6 @@ class IntegerEncoder {
 
   // Used by GetAllAssociatedVariables().
   mutable std::vector<IntegerVariable> temp_associated_vars_;
-
-  std::vector<IntegerLiteral> newly_fixed_integer_literals_;
 
   // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex
   // if there is none.
@@ -660,6 +659,7 @@ class IntegerEncoder {
 
   // Temporary memory used by FullyEncodeVariable().
   std::vector<IntegerValue> tmp_values_;
+  std::vector<ValueLiteralPair> tmp_encoding_;
 
   DISALLOW_COPY_AND_ASSIGN(IntegerEncoder);
 };
@@ -671,9 +671,11 @@ class IntegerTrail : public SatPropagator {
  public:
   explicit IntegerTrail(Model* model)
       : SatPropagator("IntegerTrail"),
+        delayed_to_fix_(model->GetOrCreate<DelayedRootLevelDeduction>()),
         domains_(model->GetOrCreate<IntegerDomains>()),
         encoder_(model->GetOrCreate<IntegerEncoder>()),
         trail_(model->GetOrCreate<Trail>()),
+        sat_solver_(model->GetOrCreate<SatSolver>()),
         parameters_(*model->GetOrCreate<SatParameters>()) {
     model->GetOrCreate<SatSolver>()->AddPropagator(this);
   }
@@ -934,6 +936,15 @@ class IntegerTrail : public SatPropagator {
   ABSL_MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
                                     LazyReasonFunction lazy_reason);
 
+  // Sometimes we infer some root level bounds but we are not at the root level.
+  // In this case, we will update the level-zero bounds right away, but will
+  // delay the current push until the next restart.
+  //
+  // Note that if you want to also push the literal at the current level, then
+  // just calling Enqueue() is enough. Since there is no reason, the literal
+  // will still be recorded properly.
+  ABSL_MUST_USE_RESULT bool RootLevelEnqueue(IntegerLiteral i_lit);
+
   // Enqueues the given literal on the trail.
   // See the comment of Enqueue() for the reason format.
   void EnqueueLiteral(Literal literal, absl::Span<const Literal> literal_reason,
@@ -1028,7 +1039,8 @@ class IntegerTrail : public SatPropagator {
 
   // Return true if we can fix new fact at level zero.
   bool HasPendingRootLevelDeduction() const {
-    return !literal_to_fix_.empty() || !integer_literal_to_fix_.empty();
+    return !delayed_to_fix_->literal_to_fix.empty() ||
+           !delayed_to_fix_->integer_literal_to_fix.empty();
   }
 
  private:
@@ -1170,14 +1182,6 @@ class IntegerTrail : public SatPropagator {
       tmp_var_to_trail_index_in_queue_;
   mutable SparseBitset<BooleanVariable> added_variables_;
 
-  // Sometimes we propagate fact with no reason at a positive level, those
-  // will automatically be fixed on the next restart.
-  //
-  // TODO(user): If we change the logic to not restart right away, we probably
-  // need to not store duplicates bounds for the same variable.
-  std::vector<Literal> literal_to_fix_;
-  std::vector<IntegerLiteral> integer_literal_to_fix_;
-
   // Temporary heap used by RelaxLinearReason();
   struct RelaxHeapEntry {
     int index;
@@ -1212,9 +1216,12 @@ class IntegerTrail : public SatPropagator {
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
   std::vector<ReversibleInterface*> reversible_classes_;
 
+  mutable Domain temp_domain_;
+  DelayedRootLevelDeduction* delayed_to_fix_;
   IntegerDomains* domains_;
   IntegerEncoder* encoder_;
   Trail* trail_;
+  SatSolver* sat_solver_;
   const SatParameters& parameters_;
 
   // Temporary "hash" to keep track of all the conditional enqueue that were

@@ -83,7 +83,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
       if (callback_ != nullptr) callback_(decision);
     }
 
-    implied_bounds_->ProcessIntegerTrail(decision);
+    if (!implied_bounds_->ProcessIntegerTrail(decision)) return false;
     product_detector_->ProcessTrailAtLevelOne();
     integer_trail_->AppendNewBounds(&new_integer_bounds_);
     for (int i = saved_index + 1; i < trail_.Index(); ++i) {

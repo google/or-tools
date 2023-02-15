@@ -26,10 +26,10 @@ def BooleanProductSampleSat():
     y = model.NewBoolVar('y')
     p = model.NewBoolVar('p')
 
-    # x and y implies p, rewrite as not(x and y) or p
+    # x and y implies p, rewrite as not(x and y) or p.
     model.AddBoolOr(x.Not(), y.Not(), p)
 
-    # p implies x and y, expanded into two implication
+    # p implies x and y, expanded into two implications.
     model.AddImplication(p, x)
     model.AddImplication(p, y)
 
