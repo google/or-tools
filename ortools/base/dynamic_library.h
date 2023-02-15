@@ -28,9 +28,8 @@
 #include <dlfcn.h>
 #endif
 
-#define MAX_FUNCTIONS_NOT_FOUND 10
-
 class DynamicLibrary {
+static constexpr size_t kMaxFunctionsNotFound = 10;
  public:
   DynamicLibrary() : library_handle_(nullptr) {}
 
@@ -73,7 +72,7 @@ class DynamicLibrary {
 #endif
     // We don't really need the full list of missing functions,
     // just a few are enough.
-    if (!function_address && functions_not_found_.size() < MAX_FUNCTIONS_NOT_FOUND)
+    if (!function_address && functions_not_found_.size() < kMaxFunctionsNotFound)
         functions_not_found_.push_back(function_name);
 
     return TypeParser<T>::CreateFunction(function_address);
