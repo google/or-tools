@@ -5,7 +5,10 @@ FROM quay.io/pypa/manylinux2014_x86_64:latest AS env
 #############
 RUN yum -y update \
 && yum -y groupinstall 'Development Tools' \
-&& yum -y install wget curl pcre-devel openssl redhat-lsb-core pkgconfig autoconf libtool zlib-devel which \
+&& yum -y install wget curl \
+ pcre2-devel openssl \
+ which redhat-lsb-core \
+ pkgconfig autoconf libtool zlib-devel \
 && yum clean all \
 && rm -rf /var/cache/yum
 

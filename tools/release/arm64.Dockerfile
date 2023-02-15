@@ -12,7 +12,10 @@ FROM quay.io/pypa/manylinux_2_28_aarch64:latest AS env
 #############
 RUN dnf -y update \
 && dnf -y groupinstall 'Development Tools' \
-&& dnf -y install wget curl pcre-devel openssl redhat-lsb-core pkgconfig autoconf libtool zlib-devel which \
+&& dnf -y install wget curl \
+ pcre2-devel openssl \
+ which redhat-lsb-core \
+ pkgconfig autoconf libtool zlib-devel \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 

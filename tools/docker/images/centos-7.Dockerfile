@@ -6,7 +6,10 @@ FROM centos:7 AS env
 #############
 RUN yum -y update \
 && yum -y groupinstall 'Development Tools' \
-&& yum -y install wget curl pcre-devel openssl redhat-lsb-core pkgconfig autoconf libtool zlib-devel which \
+&& yum -y install \
+ wget curl \
+ pcre2-devel openssl redhat-lsb-core \
+ pkgconfig autoconf libtool zlib-devel which \
 && yum clean all \
 && rm -rf /var/cache/yum
 

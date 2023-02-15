@@ -29,7 +29,7 @@ CMD [ "/usr/bin/bash" ]
 # Install SWIG 4.1.1
 FROM base AS swig
 RUN dnf -y update \
-&& dnf -y install pcre-devel \
+&& dnf -y install pcre2-devel \
 && dnf clean all \
 && rm -rf /var/cache/dnf \
 && wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.1.1/swig-4.1.1.tar.gz" \

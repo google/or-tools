@@ -4,21 +4,12 @@ FROM quay.io/pypa/manylinux2014_aarch64:latest AS env
 
 RUN yum -y update \
 && yum -y install \
- autoconf \
  curl wget \
- gawk \
- gcc-c++ \
- git \
- libtool \
- make \
- openssl-devel \
- patch \
- pcre-devel \
- redhat-lsb \
- subversion \
- which \
- zlib-devel \
- unzip zip \
+ git patch \
+ which pkgconfig autoconf libtool \
+ make gcc-c++ \
+ redhat-lsb openssl-devel pcre2-devel \
+ zlib-devel unzip zip \
 && yum clean all \
 && rm -rf /var/cache/yum
 ENTRYPOINT ["/usr/bin/bash", "-c"]
