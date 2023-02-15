@@ -17,6 +17,7 @@
 #include <functional>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "ortools/base/logging.h"
 
@@ -28,6 +29,7 @@
 #endif
 
 class DynamicLibrary {
+static constexpr size_t kMaxFunctionsNotFound = 10;
  public:
   DynamicLibrary() : library_handle_(nullptr) {}
 
@@ -55,6 +57,10 @@ class DynamicLibrary {
 
   bool LibraryIsLoaded() const { return library_handle_ != nullptr; }
 
+  const std::vector<std::string>& FunctionsNotFound() const {
+      return functions_not_found_;
+  }
+
   template <typename T>
   std::function<T> GetFunction(const char* function_name) {
     const void* function_address =
@@ -64,10 +70,10 @@ class DynamicLibrary {
 #else
         dlsym(library_handle_, function_name);
 #endif
-
-    CHECK(function_address != nullptr)
-        << "Error: could not find function " << std::string(function_name)
-        << " in " << library_name_;
+    // We don't really need the full list of missing functions,
+    // just a few are enough.
+    if (!function_address && functions_not_found_.size() < kMaxFunctionsNotFound)
+        functions_not_found_.push_back(function_name);
 
     return TypeParser<T>::CreateFunction(function_address);
   }
@@ -91,6 +97,7 @@ class DynamicLibrary {
  private:
   void* library_handle_ = nullptr;
   std::string library_name_;
+  std::vector<std::string> functions_not_found_;
 
   template <typename T>
   struct TypeParser {};
