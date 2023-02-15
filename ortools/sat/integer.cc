@@ -141,22 +141,26 @@ std::vector<ValueLiteralPair> IntegerEncoder::PartialDomainEncoding(
   if (index >= equality_by_var_.size()) return {};
 
   int new_size = 0;
-  std::vector<ValueLiteralPair>& ref = equality_by_var_[index];
-  for (int i = 0; i < ref.size(); ++i) {
-    const ValueLiteralPair pair = ref[i];
+  std::vector<ValueLiteralPair> result = equality_by_var_[index];
+  for (int i = 0; i < result.size(); ++i) {
+    const ValueLiteralPair pair = result[i];
     if (sat_solver_->Assignment().LiteralIsFalse(pair.literal)) continue;
     if (sat_solver_->Assignment().LiteralIsTrue(pair.literal)) {
-      ref.clear();
-      ref.push_back(pair);
+      result.clear();
+      result.push_back(pair);
       new_size = 1;
       break;
     }
-    ref[new_size++] = pair;
+    result[new_size++] = pair;
   }
-  ref.resize(new_size);
-  std::sort(ref.begin(), ref.end(), ValueLiteralPair::CompareByValue());
+  result.resize(new_size);
+  std::sort(result.begin(), result.end(), ValueLiteralPair::CompareByValue());
 
-  std::vector<ValueLiteralPair> result = ref;
+  if (trail_->CurrentDecisionLevel() == 0) {
+    // We can cleanup the current encoding in this case.
+    equality_by_var_[index] = result;
+  }
+
   if (!VariableIsPositive(var)) {
     std::reverse(result.begin(), result.end());
     for (ValueLiteralPair& ref : result) ref.value = -ref.value;

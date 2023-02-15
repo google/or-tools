@@ -1583,8 +1583,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   if (parameters.optimize_with_core()) {
     // TODO(user): Remove code duplication with the solution_observer in
     // SolveLoadedCpModel().
-    const std::string solution_info = model->Name();
-    const auto solution_observer = [&model_proto, model, solution_info,
+    const auto solution_observer = [&model_proto, model,
                                     shared_response_manager,
                                     best_obj_ub = kMaxIntegerValue]() mutable {
       const std::vector<int64_t> solution =
@@ -1593,7 +1592,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
           ComputeInnerObjective(model_proto.objective(), solution);
       if (obj_ub < best_obj_ub) {
         best_obj_ub = obj_ub;
-        shared_response_manager->NewSolution(solution, solution_info, model);
+        shared_response_manager->NewSolution(solution, model->Name(), model);
       }
     };
 
@@ -1623,9 +1622,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   if (shared_response_manager->ProblemIsSolved()) return;
 
-  const std::string& solution_info = model->Name();
-  auto solution_observer = [&model_proto, model, solution_info,
-                            shared_response_manager,
+  auto solution_observer = [&model_proto, model, shared_response_manager,
                             best_obj_ub = kMaxIntegerValue]() mutable {
     const std::vector<int64_t> solution =
         GetSolutionValues(model_proto, *model);
@@ -1634,10 +1631,10 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
           ComputeInnerObjective(model_proto.objective(), solution);
       if (obj_ub < best_obj_ub) {
         best_obj_ub = obj_ub;
-        shared_response_manager->NewSolution(solution, solution_info, model);
+        shared_response_manager->NewSolution(solution, model->Name(), model);
       }
     } else {
-      shared_response_manager->NewSolution(solution, solution_info, model);
+      shared_response_manager->NewSolution(solution, model->Name(), model);
     }
   };
 
@@ -1654,7 +1651,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
       status = prober.Probe();
       if (status == SatSolver::INFEASIBLE) {
         shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-            solution_info);
+            model->Name());
         break;
       }
       if (status == SatSolver::FEASIBLE) {
@@ -1674,11 +1671,11 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
     }
     if (status == SatSolver::INFEASIBLE) {
       shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-          solution_info);
+          model->Name());
     }
     if (status == SatSolver::ASSUMPTIONS_UNSAT) {
       shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-          solution_info);
+          model->Name());
 
       // Extract a good subset of assumptions and add it to the response.
       auto* time_limit = model->GetOrCreate<TimeLimit>();
@@ -1729,7 +1726,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
     // function above?
     if (status == SatSolver::INFEASIBLE || status == SatSolver::FEASIBLE) {
       shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-          solution_info);
+          model->Name());
     }
   }
 }
@@ -2739,6 +2736,13 @@ class LnsSolver : public SubSolver {
         QuickSolveWithHint(lns_fragment, &local_model);
         SolveLoadedCpModel(lns_fragment, &local_model);
         local_response = local_response_manager->GetResponse();
+        // In case the LNS model is empty after presolve, the solution
+        // repository does not add the solution, and thus does not store the
+        // solution info. In that case, we put it back.
+        if (local_response.solution_info().empty()) {
+          local_response.set_solution_info(
+              absl::StrCat(lns_info, " [presolve]"));
+        }
       } else {
         // TODO(user): Clean this up? when the model is closed by presolve,
         // we don't have a nice api to get the response with stats. That said
@@ -2748,9 +2752,6 @@ class LnsSolver : public SubSolver {
               "presolve");
         }
         local_response = local_response_manager->GetResponse();
-        // If the solution is found during presolve. solution_info has not been
-        // set in the local_response. We set it manually.
-        local_response.set_solution_info(absl::StrCat(lns_info, " [presolve]"));
         local_response.set_status(presolve_status);
       }
       const std::string solution_info = local_response.solution_info();
