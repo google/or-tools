@@ -33,7 +33,7 @@ _OUTPUT_PROTO = flags.DEFINE_string(
 _PARAMS = flags.DEFINE_string(
     'params',
     'num_search_workers:16,log_search_progress:true,max_time_in_seconds:45',
-    'Sat solver parameters.'
+    'Sat solver parameters.',
 )
 _MODEL = flags.DEFINE_string('model', 'rotation',
                              '\'duplicate\' or \'rotation\' or \'optional\'')
