@@ -19,7 +19,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_r
 # Bazel Skylib rules.
 git_repository(
     name = "bazel_skylib",
-    tag = "1.2.1",
+    tag = "1.4.1",
     remote = "https://github.com/bazelbuild/bazel-skylib.git",
 )
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
@@ -28,7 +28,7 @@ bazel_skylib_workspace()
 # Bazel Platforms rules.
 git_repository(
     name = "platforms",
-    tag = "0.0.5",
+    tag = "0.0.6",
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
