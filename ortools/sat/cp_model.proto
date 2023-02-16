@@ -709,9 +709,7 @@ message CpSolverSolution {
 
 // The response returned by a solver trying to solve a CpModelProto.
 //
-// TODO(user): support returning multiple solutions. Look at the Stubby
-// streaming API as we probably wants to get them as they are found.
-// Next id: 30
+// Next id: 31
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -791,6 +789,7 @@ message CpSolverResponse {
 
   // Some statistics about the solve.
   // TODO(user): These are broken in multi-thread.
+  int64 num_integers = 30;
   int64 num_booleans = 10;
   int64 num_conflicts = 11;
   int64 num_branches = 12;

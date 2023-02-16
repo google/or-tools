@@ -109,6 +109,20 @@ void LoadReservoirConstraint(const ConstraintProto& ct, Model* m);
 void LoadRoutesConstraint(const ConstraintProto& ct, Model* m);
 void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m);
 
+// Part of LoadLinearConstraint() that we reuse to load the objective.
+//
+// We split large constraints into a square root number of parts.
+// This is to avoid a bad complexity while propagating them since our
+// algorithm is not in O(num_changes).
+//
+// TODO(user): Alternatively, we could use a O(num_changes) propagation (a
+// bit tricky to implement), or a decomposition into a tree with more than
+// one level. Both requires experimentations.
+void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
+                                         std::vector<IntegerVariable>* vars,
+                                         std::vector<int64_t>* coeffs,
+                                         Model* m);
+
 }  // namespace sat
 }  // namespace operations_research
 
