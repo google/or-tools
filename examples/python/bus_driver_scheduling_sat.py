@@ -37,8 +37,8 @@ _PARAMS = flags.DEFINE_string(
     'params',
     'num_search_workers:16,log_search_progress:true,max_time_in_seconds:30',
     'Sat solver parameters.')
-_INSTANCE = flags.DEFINE_integer('instance', 0, 'Instance to select (0, 1, 2, 3).',
-                                 0, 3)
+_INSTANCE = flags.DEFINE_integer('instance', 0,
+                                 'Instance to select (0, 1, 2, 3).', 0, 3)
 
 SAMPLE_SHIFTS_TINY = [
     #

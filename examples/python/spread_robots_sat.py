@@ -13,6 +13,7 @@
 # limitations under the License.
 """Maximize the minimum of pairwise distances between n robots in a square space."""
 
+import math
 from typing import Sequence
 from absl import app
 from absl import flags
@@ -42,29 +43,22 @@ def spread_robots(num_robots: int, room_size: int, params: str):
     # The specification of the problem is to maximize the minimum euclidian
     # distance between any two robots. Unfortunately, the euclidian distance
     # uses the square root operation which is not defined on integer variables.
-    # To work around, we will create a distance variable, then make sure that
-    # its square value is less than the square of the euclidian distance between
-    # any two robots.
+    # To work around, we will create a min_square_distance variable, then we make
+    # sure that its value is less than the square of the euclidian distance
+    # between any two robots.
     #
     # This encoding has a low precision. To improve the precision, we will scale
-    # the domain of the min distance variable by a constant factor, then multiply
-    # the square of the euclidian distance between two robots by the square of
-    # this constant factor.
+    # the domain of the min_square_distance variable by a constant factor, then
+    # multiply the square of the euclidian distance between two robots by the same
+    # factor.
     #
-    # we create a scaled_min_distance variable with a domain of
-    # [0..scaling * max euclidian distance] such that
+    # we create a scaled_min_square_distance variable with a domain of
+    # [0..scaling * max euclidian distance**2] such that
     #   forall i:
-    #     scaled_min_distance**2 <= scaling_sq * (x_diff_sq[i] + y_diff_sq[i])
-    scaling = 100
-    squaling_sq = scaling**2
-    scaled_room_size = room_size * scaling
-    # Max scaled distance is actually scaling * room_size * sqrt(2).
-    scaled_min_distance = model.NewIntVar(0, 2 * scaled_room_size,
-                                          'scaled_min_distance')
-    scaled_min_square_distance = model.NewIntVar(0, 2 * scaled_room_size**2,
+    #     scaled_min_square_distance <= scaling * (x_diff_sq[i] + y_diff_sq[i])
+    scaling = 1000
+    scaled_min_square_distance = model.NewIntVar(0, 2 * scaling * room_size**2,
                                                  'scaled_min_square_distance')
-    model.AddMultiplicationEquality(scaled_min_square_distance,
-                                    scaled_min_distance, scaled_min_distance)
 
     # Build intermediate variables and get the list of squared distances on
     # each dimension.
@@ -82,10 +76,11 @@ def spread_robots(num_robots: int, room_size: int, params: str):
             model.AddMultiplicationEquality(x_diff_sq, x_diff, x_diff)
             model.AddMultiplicationEquality(y_diff_sq, y_diff, y_diff)
 
-            # We just need to be <= to the real scaled distance as we are
-            # maximizing the min distance.
-            model.Add(scaled_min_square_distance <= x_diff_sq * squaling_sq +
-                      y_diff_sq * squaling_sq)
+            # We just need to be <= to the scaled square distance as we are
+            # maximizing the min distance, which is equivalent as maximizing the min
+            # square distance.
+            model.Add(scaled_min_square_distance <= scaling *
+                      (x_diff_sq + y_diff_sq))
 
     # Naive symmetry breaking.
     for i in range(1, num_robots):
@@ -93,7 +88,7 @@ def spread_robots(num_robots: int, room_size: int, params: str):
         model.Add(y[0] <= y[i])
 
     # Objective
-    model.Maximize(scaled_min_distance)
+    model.Maximize(scaled_min_square_distance)
 
     # Creates a solver and solves the model.
     solver = cp_model.CpSolver()
@@ -105,7 +100,7 @@ def spread_robots(num_robots: int, room_size: int, params: str):
     # Prints the solution.
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         print(f'Spread {num_robots} with a min pairwise distance of'
-              f' {solver.ObjectiveValue() / scaling}')
+              f' {math.sqrt(solver.ObjectiveValue() / scaling)}')
         for i in range(num_robots):
             print(f'robot {i}: x={solver.Value(x[i])} y={solver.Value(y[i])}')
     else:
