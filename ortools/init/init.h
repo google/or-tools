@@ -43,14 +43,15 @@ struct CppFlags {
    * @brief Controls the logging level shown on stderr.
    *
    * By default, the logger will only display ERROR and FATAL logs (value 2 and
-   * 3) to stderr. To display INFO and WARNING logs (value 0 and 1), change the 
+   * 3) to stderr. To display INFO and WARNING logs (value 0 and 1), change the
    * threshold to the min value of the message that should be printed.
    *
    */
   int stderrthreshold = 2;
 
   /**
-   * @brief Controls if time and source code info are used to prefix logging messages.
+   * @brief Controls if time and source code info are used to prefix logging
+   * messages.
    */
   bool log_prefix = false;
 
