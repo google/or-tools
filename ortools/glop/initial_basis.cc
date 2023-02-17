@@ -14,6 +14,7 @@
 #include "ortools/glop/initial_basis.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <queue>
 #include <vector>
