@@ -109,7 +109,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   InitGoogle(argv[0], &argc, &argv, true);
   operations_research::sat::MultiKnapsackSat(absl::GetFlag(FLAGS_size),
                                              absl::GetFlag(FLAGS_params));

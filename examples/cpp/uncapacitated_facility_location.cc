@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
       << "Specify a non-null client size.";
   CHECK_LT(0, absl::GetFlag(FLAGS_fix_cost))
       << "Specify a non-null client size.";
-  absl::SetFlag(&FLAGS_logtostderr, 1);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   operations_research::RunAllExamples(absl::GetFlag(FLAGS_facilities),
                                       absl::GetFlag(FLAGS_clients),
                                       absl::GetFlag(FLAGS_fix_cost));

@@ -56,7 +56,7 @@ void RunConstraintProgrammingExample() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  absl::SetFlag(&FLAGS_logtostderr, 1);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   operations_research::RunConstraintProgrammingExample();
   return EXIT_SUCCESS;
 }

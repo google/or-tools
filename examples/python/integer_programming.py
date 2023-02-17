@@ -119,7 +119,7 @@ def main():
 if __name__ == '__main__':
     pywrapinit.CppBridge.InitLogging('integer_programming.py')
     cpp_flags = pywrapinit.CppFlags()
-    cpp_flags.logtostderr = True
+    cpp_flags.stderrthreshold = 0
     cpp_flags.log_prefix = False
     pywrapinit.CppBridge.SetFlags(cpp_flags)
     main()

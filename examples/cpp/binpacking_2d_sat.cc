@@ -221,7 +221,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

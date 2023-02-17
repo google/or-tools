@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
       "The files must be in Mps or linear_solver.proto format and can be "
       "compressed with gzip.",
       &argc, &argv, true);
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
 
   GlopParameters parameters;
   ReadGlopParameters(&parameters);

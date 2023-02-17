@@ -92,7 +92,7 @@ void MagicSequence(int size) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   InitGoogle(argv[0], &argc, &argv, true);
 
   operations_research::sat::MagicSequence(absl::GetFlag(FLAGS_size));

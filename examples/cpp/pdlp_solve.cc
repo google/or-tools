@@ -124,7 +124,7 @@ void Solve(const std::string& input, const std::string& params_str,
 }  // namespace operations_research::pdlp
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   google::InitGoogleLogging(kUsageStr);
   absl::ParseCommandLine(argc, argv);
 

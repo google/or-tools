@@ -54,7 +54,7 @@ void SolveMaxFlow() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  absl::SetFlag(&FLAGS_logtostderr, 1);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   operations_research::SolveMaxFlow();
   return EXIT_SUCCESS;
 }
