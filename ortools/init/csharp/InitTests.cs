@@ -31,6 +31,7 @@ public class InitTest
     public void CheckFlags()
     {
         Init.CppFlags cpp_flags = new Init.CppFlags();
+        cpp_flags.stderrthreshold = 0;
         cpp_flags.log_prefix = true;
         cpp_flags.cp_model_dump_prefix = "init";
         cpp_flags.cp_model_dump_models = true;

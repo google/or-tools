@@ -28,6 +28,7 @@ class PyWrapInit(unittest.TestCase):
         print('test_cpp_flags')
         cpp_flags = pywrapinit.CppFlags()
         # print(f'{dir(cpp_flags)}')
+        assert hasattr(cpp_flags, 'stderrthreshold')
         assert hasattr(cpp_flags, 'log_prefix')
         assert hasattr(cpp_flags, 'cp_model_dump_prefix')
         assert hasattr(cpp_flags, 'cp_model_dump_models')

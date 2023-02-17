@@ -40,6 +40,7 @@ public final class InitTest {
   public void testFlags() {
     final CppFlags cppFlags = new CppFlags();
     assertNotNull(cppFlags);
+    cppFlags.setStderrthreshold(0);
     cppFlags.setLog_prefix(true);
     cppFlags.setCp_model_dump_prefix("init");
     cppFlags.setCp_model_dump_models(true);

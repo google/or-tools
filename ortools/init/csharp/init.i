@@ -32,7 +32,7 @@
 
 // Expose the flags structure.
 %unignore operations_research::CppFlags;
-%unignore operations_research::CppFlags::logtostderr;
+%unignore operations_research::CppFlags::stderrthreshold;
 %unignore operations_research::CppFlags::log_prefix;
 %unignore operations_research::CppFlags::cp_model_dump_prefix;
 %unignore operations_research::CppFlags::cp_model_dump_models;

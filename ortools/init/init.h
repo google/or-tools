@@ -31,6 +31,7 @@ ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_lns);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_response);
+ABSL_DECLARE_FLAG(int, stderrthreshold);
 
 namespace operations_research {
 
@@ -39,7 +40,17 @@ namespace operations_research {
  */
 struct CppFlags {
   /**
-   * Controls is time and source code info are used to prefix logging messages.
+   * @brief Controls the logging level shown on stderr.
+   *
+   * By default, the logger will only display ERROR and FATAL logs (value 2 and
+   * 3) to stderr. To display INFO and WARNING logs (value 0 and 1), change the 
+   * threshold to the min value of the message that should be printed.
+   *
+   */
+  int stderrthreshold = 2;
+
+  /**
+   * @brief Controls if time and source code info are used to prefix logging messages.
    */
   bool log_prefix = false;
 
@@ -104,6 +115,7 @@ class CppBridge {
    * Sets all the C++ flags contained in the CppFlags structure.
    */
   static void SetFlags(const CppFlags& flags) {
+    absl::SetFlag(&FLAGS_stderrthreshold, flags.stderrthreshold);
     absl::EnableLogPrefix(flags.log_prefix);
     if (!flags.cp_model_dump_prefix.empty()) {
       absl::SetFlag(&FLAGS_cp_model_dump_prefix, flags.cp_model_dump_prefix);
