@@ -158,6 +158,11 @@ void FillSolveStatsInResponse(Model* model, CpSolverResponse* response) {
   response->set_num_conflicts(sat_solver->num_failures());
   response->set_num_binary_propagations(sat_solver->num_propagations());
   response->set_num_restarts(sat_solver->num_restarts());
+
+  response->set_num_integers(
+      integer_trail == nullptr
+          ? 0
+          : integer_trail->NumIntegerVariables().value() / 2);
   response->set_num_integer_propagations(
       integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
 

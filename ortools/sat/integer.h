@@ -416,6 +416,9 @@ class IntegerEncoder {
     VLOG(1) << "#variables created = " << num_created_variables_;
   }
 
+  // Memory optimization: you can call this before encoding variables.
+  void ReserveSpaceForNumVariables(int num_vars);
+
   // Fully encode a variable using its current initial domain.
   // If the variable is already fully encoded, this does nothing.
   //

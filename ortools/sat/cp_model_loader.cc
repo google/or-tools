@@ -14,6 +14,7 @@
 #include "ortools/sat/cp_model_loader.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -201,9 +202,28 @@ void LoadVariables(const CpModelProto& model_proto,
   }
   mapping->integers_.resize(num_proto_variables, kNoIntegerVariable);
 
+  // It is important for memory usage to reserve tight vector has we have many
+  // indexed by IntegerVariable. Unfortunately, we create intermediate
+  // IntegerVariable while loading large linear constraint, or when we have
+  // disjoint LP component. So this is a best effort at a tight upper bound.
+  int reservation_size = var_to_instantiate_as_integer.size();
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+    const int ct_size = ct.linear().vars().size();
+    if (ct_size > 100) {
+      reservation_size += static_cast<int>(std::round(std::sqrt(ct_size)));
+    }
+  }
+  if (model_proto.has_objective()) {
+    reservation_size += 1;  // Objective var.
+    const int ct_size = model_proto.objective().vars().size() + 1;
+    if (ct_size > 100) {
+      reservation_size += static_cast<int>(std::round(std::sqrt(ct_size)));
+    }
+  }
+
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
-  integer_trail->ReserveSpaceForNumVariables(
-      var_to_instantiate_as_integer.size());
+  integer_trail->ReserveSpaceForNumVariables(reservation_size);
   mapping->reverse_integer_map_.resize(2 * var_to_instantiate_as_integer.size(),
                                        -1);
   for (const int i : var_to_instantiate_as_integer) {
@@ -993,6 +1013,61 @@ bool IsPartOfProductEncoding(const ConstraintProto& ct) {
 
 }  // namespace
 
+void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
+                                         std::vector<IntegerVariable>* vars,
+                                         std::vector<int64_t>* coeffs,
+                                         Model* m) {
+  // If we enumerate all solutions, then we want intermediate variables to be
+  // tight independently of what side is required.
+  if (m->GetOrCreate<SatParameters>()->enumerate_all_solutions()) {
+    lb_required = true;
+    ub_required = true;
+  }
+
+  std::vector<IntegerVariable> bucket_sum_vars;
+  std::vector<IntegerVariable> local_vars;
+  std::vector<int64_t> local_coeffs;
+
+  int i = 0;
+  const int num_vars = vars->size();
+  const int num_buckets = static_cast<int>(std::round(std::sqrt(num_vars)));
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  for (int b = 0; b < num_buckets; ++b) {
+    local_vars.clear();
+    local_coeffs.clear();
+    int64_t bucket_lb = 0;
+    int64_t bucket_ub = 0;
+    const int limit = num_vars * (b + 1);
+    for (; i * num_buckets < limit; ++i) {
+      const IntegerVariable var = (*vars)[i];
+      const int64_t coeff = (*coeffs)[i];
+      local_vars.push_back(var);
+      local_coeffs.push_back(coeff);
+      const int64_t term1 = coeff * integer_trail->LowerBound(var).value();
+      const int64_t term2 = coeff * integer_trail->UpperBound(var).value();
+      bucket_lb += std::min(term1, term2);
+      bucket_ub += std::max(term1, term2);
+    }
+
+    const IntegerVariable bucket_sum =
+        integer_trail->AddIntegerVariable(bucket_lb, bucket_ub);
+    bucket_sum_vars.push_back(bucket_sum);
+    local_vars.push_back(bucket_sum);
+    local_coeffs.push_back(-1);
+
+    if (lb_required) {
+      // We have sum bucket_var >= lb, so we need local_vars >= bucket_var.
+      m->Add(WeightedSumGreaterOrEqual(local_vars, local_coeffs, 0));
+    }
+    if (ub_required) {
+      // Similarly, bucket_var <= ub, so we need local_vars <= bucket_var
+      m->Add(WeightedSumLowerOrEqual(local_vars, local_coeffs, 0));
+    }
+  }
+  *vars = bucket_sum_vars;
+  coeffs->assign(bucket_sum_vars.size(), 1);
+}
+
 void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   if (ct.linear().vars().empty()) {
@@ -1029,9 +1104,8 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   }
 
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
-  const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.linear().vars());
-  const std::vector<int64_t> coeffs = ValuesFromProto(ct.linear().coeffs());
+  std::vector<IntegerVariable> vars = mapping->Integers(ct.linear().vars());
+  std::vector<int64_t> coeffs = ValuesFromProto(ct.linear().coeffs());
 
   // Compute the min/max to relax the bounds if needed.
   //
@@ -1092,6 +1166,18 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
                                   IntegerValue(coeffs[1]), vars[1],
                                   IntegerValue(single_value), m);
     }
+  }
+
+  // Note that the domain/enforcement of the main constraint do not change.
+  // Same for the min/sum and max_sum. The intermediate variables are always
+  // equal to the intermediate sum, independently of the enforcement.
+  const bool pseudo_boolean = !HasEnforcementLiteral(ct) &&
+                              ct.linear().domain_size() == 2 && all_booleans;
+  if (ct.linear().vars().size() > 100 && !pseudo_boolean) {
+    const auto& domain = ct.linear().domain();
+    SplitAndLoadIntermediateConstraints(
+        domain.size() > 2 || min_sum < domain[0],
+        domain.size() > 2 || max_sum > domain[1], &vars, &coeffs, m);
   }
 
   if (ct.linear().domain_size() == 2) {

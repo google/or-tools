@@ -62,6 +62,15 @@ std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p) {
   return os;
 }
 
+// TODO(user): Reserve vector index by literals? It is trickier, as we might not
+// know beforehand how many we will need. Consider alternatives to not waste
+// space like using dequeue.
+void IntegerEncoder::ReserveSpaceForNumVariables(int num_vars) {
+  encoding_by_var_.reserve(num_vars);
+  equality_to_associated_literal_.reserve(num_vars);
+  equality_by_var_.reserve(num_vars);
+}
+
 void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
   if (VariableIsFullyEncoded(var)) return;
 
@@ -789,6 +798,7 @@ void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
 void IntegerTrail::ReserveSpaceForNumVariables(int num_vars) {
   // We only store the domain for the positive variable.
   domains_->reserve(num_vars);
+  encoder_->ReserveSpaceForNumVariables(num_vars);
 
   // Because we always create both a variable and its negation.
   const int size = 2 * num_vars;

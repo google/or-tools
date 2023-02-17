@@ -577,6 +577,7 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
     absl::StrAppend(&result, "\nbest_bound: NA");
   }
 
+  absl::StrAppend(&result, "\nintegers: ", response.num_integers());
   absl::StrAppend(&result, "\nbooleans: ", response.num_booleans());
   absl::StrAppend(&result, "\nconflicts: ", response.num_conflicts());
   absl::StrAppend(&result, "\nbranches: ", response.num_branches());
@@ -710,9 +711,9 @@ IntegerVariable GetOrCreateVariableWithTightBound(
   return model->Add(NewIntegerVariable(sum_min, sum_max));
 }
 
-IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
+IntegerVariable GetOrCreateVariableLinkedToSumOf(
     const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
-    Model* model) {
+    bool use_equality, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
     return terms.front().first;
@@ -721,25 +722,42 @@ IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
     return NegationOf(terms.front().first);
   }
 
-  // Create a new variable and link it with the linear terms.
+  // Add var == terms or var >= terms if use_equality = false.
   const IntegerVariable new_var =
       GetOrCreateVariableWithTightBound(terms, model);
+
+  // TODO(user): use the same format, i.e. LinearExpression in both code!
   std::vector<IntegerVariable> vars;
   std::vector<int64_t> coeffs;
-  for (const auto& term : terms) {
-    vars.push_back(term.first);
-    coeffs.push_back(term.second);
+  for (const auto [var, coeff] : terms) {
+    vars.push_back(var);
+    coeffs.push_back(coeff);
   }
   vars.push_back(new_var);
   coeffs.push_back(-1);
-  model->Add(WeightedSumLowerOrEqual(vars, coeffs, 0));
+
+  // We want == 0 or <= 0 if use_equality = false.
+  const bool lb_required = use_equality;
+  const bool ub_required = true;
+  SplitAndLoadIntermediateConstraints(lb_required, ub_required, &vars, &coeffs,
+                                      model);
+
+  // Load the top-level constraint.
+  if (lb_required) {
+    model->Add(WeightedSumGreaterOrEqual(vars, coeffs, 0));
+  }
+  if (ub_required) {
+    model->Add(WeightedSumLowerOrEqual(vars, coeffs, 0));
+  }
+
   return new_var;
 }
 
 }  // namespace
 
 // Adds one LinearProgrammingConstraint per connected component of the model.
-IntegerVariable AddLPConstraints(const CpModelProto& model_proto, Model* m) {
+IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
+                                 const CpModelProto& model_proto, Model* m) {
   const LinearRelaxation relaxation = ComputeLinearRelaxation(model_proto, m);
 
   // The bipartite graph of LP constraints might be disconnected:
@@ -858,8 +876,8 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto, Model* m) {
     // Second pass: Build the cp sub-objectives per component.
     for (int c = 0; c < num_components; ++c) {
       if (component_to_cp_terms[c].empty()) continue;
-      const IntegerVariable sub_obj_var =
-          GetOrCreateVariableGreaterOrEqualToSumOf(component_to_cp_terms[c], m);
+      const IntegerVariable sub_obj_var = GetOrCreateVariableLinkedToSumOf(
+          component_to_cp_terms[c], objective_need_to_be_tight, m);
       top_level_cp_terms.push_back(std::make_pair(sub_obj_var, 1));
       lp_constraints[c]->SetMainObjectiveVariable(sub_obj_var);
       num_components_containing_objective++;
@@ -868,7 +886,8 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto, Model* m) {
 
   const IntegerVariable main_objective_var =
       model_proto.has_objective()
-          ? GetOrCreateVariableGreaterOrEqualToSumOf(top_level_cp_terms, m)
+          ? GetOrCreateVariableLinkedToSumOf(top_level_cp_terms,
+                                             objective_need_to_be_tight, m)
           : kNoIntegerVariable;
 
   // Register LP constraints. Note that this needs to be done after all the
@@ -1406,12 +1425,38 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   }
   if (sat_solver->ModelIsUnsat()) return unsat();
 
+  // We need to know beforehand if the objective var can just be >= terms or
+  // needs to be == terms.
+  bool objective_need_to_be_tight = false;
+  if (model_proto.has_objective() &&
+      !model_proto.objective().domain().empty()) {
+    int64_t min_value = 0;
+    int64_t max_value = 0;
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    const CpObjectiveProto& obj = model_proto.objective();
+    for (int i = 0; i < obj.vars_size(); ++i) {
+      const int64_t coeff = obj.coeffs(i);
+      const IntegerVariable var = mapping->Integer(obj.vars(i));
+      if (coeff > 0) {
+        min_value += coeff * integer_trail->LowerBound(var).value();
+        max_value += coeff * integer_trail->UpperBound(var).value();
+      } else {
+        min_value += coeff * integer_trail->UpperBound(var).value();
+        max_value += coeff * integer_trail->LowerBound(var).value();
+      }
+    }
+    const Domain user_domain = ReadDomainFromProto(model_proto.objective());
+    const Domain automatic_domain = Domain(min_value, max_value);
+    objective_need_to_be_tight = !automatic_domain.IsIncludedIn(user_domain);
+  }
+
   // Create an objective variable and its associated linear constraint if
   // needed.
   IntegerVariable objective_var = kNoIntegerVariable;
   if (parameters.linearization_level() > 0) {
     // Linearize some part of the problem and register LP constraint(s).
-    objective_var = AddLPConstraints(model_proto, model);
+    objective_var =
+        AddLPConstraints(objective_need_to_be_tight, model_proto, model);
   } else if (model_proto.has_objective()) {
     const CpObjectiveProto& obj = model_proto.objective();
     std::vector<std::pair<IntegerVariable, int64_t>> terms;
@@ -1420,10 +1465,11 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
       terms.push_back(
           std::make_pair(mapping->Integer(obj.vars(i)), obj.coeffs(i)));
     }
-    if (parameters.optimize_with_core()) {
+    if (parameters.optimize_with_core() && !objective_need_to_be_tight) {
       objective_var = GetOrCreateVariableWithTightBound(terms, model);
     } else {
-      objective_var = GetOrCreateVariableGreaterOrEqualToSumOf(terms, model);
+      objective_var = GetOrCreateVariableLinkedToSumOf(
+          terms, objective_need_to_be_tight, model);
     }
   }
 
@@ -1466,37 +1512,18 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Intersect the objective domain with the given one if any.
   if (!model_proto.objective().domain().empty()) {
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     const Domain user_domain = ReadDomainFromProto(model_proto.objective());
     const Domain automatic_domain =
-        model->GetOrCreate<IntegerTrail>()->InitialVariableDomain(
-            objective_var);
+        integer_trail->InitialVariableDomain(objective_var);
     VLOG(3) << "Objective offset:" << model_proto.objective().offset()
             << " scaling_factor:" << model_proto.objective().scaling_factor();
     VLOG(3) << "Automatic internal objective domain: " << automatic_domain;
     VLOG(3) << "User specified internal objective domain: " << user_domain;
     CHECK_NE(objective_var, kNoIntegerVariable);
-    const bool ok = model->GetOrCreate<IntegerTrail>()->UpdateInitialDomain(
-        objective_var, user_domain);
-    if (!ok) {
+    if (!integer_trail->UpdateInitialDomain(objective_var, user_domain)) {
       VLOG(2) << "UNSAT due to the objective domain.";
       return unsat();
-    }
-
-    // Make sure the sum take a value inside the objective domain by adding
-    // the other side: objective <= sum terms.
-    //
-    // TODO(user): Use a better condition to detect when this is not useful.
-    if (!automatic_domain.IsIncludedIn(user_domain)) {
-      std::vector<IntegerVariable> vars;
-      std::vector<int64_t> coeffs;
-      const CpObjectiveProto& obj = model_proto.objective();
-      for (int i = 0; i < obj.vars_size(); ++i) {
-        vars.push_back(mapping->Integer(obj.vars(i)));
-        coeffs.push_back(obj.coeffs(i));
-      }
-      vars.push_back(objective_var);
-      coeffs.push_back(-1);
-      model->Add(WeightedSumGreaterOrEqual(vars, coeffs, 0));
     }
   }
 

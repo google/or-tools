@@ -63,6 +63,8 @@ code_sample_py("shift_scheduling_sat")
 
 code_sample_py("single_machine_scheduling_with_setup_release_due_dates_sat")
 
+code_sample_py("spread_robots_sat")
+
 # code_sample_py("steel_mill_slab_sat")  # using pywraplp
 
 code_sample_py("sudoku_sat")
