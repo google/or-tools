@@ -650,7 +650,8 @@ class IntegerEncoder {
       equality_to_associated_literal_;
 
   // Mutable because this is lazily cleaned-up by PartialDomainEncoding().
-  mutable absl::StrongVector<PositiveOnlyIndex, std::vector<ValueLiteralPair>>
+  mutable absl::StrongVector<PositiveOnlyIndex,
+                             absl::InlinedVector<ValueLiteralPair, 2>>
       equality_by_var_;
 
   // Variables that are fully encoded.
@@ -1289,6 +1290,9 @@ class GenericLiteralWatcher : public SatPropagator {
  public:
   explicit GenericLiteralWatcher(Model* model);
   ~GenericLiteralWatcher() final {}
+
+  // Memory optimization: you can call this before registering watchers.
+  void ReserveSpaceForNumVariables(int num_vars);
 
   // On propagate, the registered propagators will be called if they need to
   // until a fixed point is reached. Propagators with low ids will tend to be

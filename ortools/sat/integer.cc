@@ -98,8 +98,7 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
   }
 
   // Mark var and Negation(var) as fully encoded.
-  CHECK_LT(GetPositiveOnlyIndex(var), is_fully_encoded_.size());
-  CHECK(!equality_by_var_[GetPositiveOnlyIndex(var)].empty());
+  DCHECK_LT(GetPositiveOnlyIndex(var), is_fully_encoded_.size());
   is_fully_encoded_[GetPositiveOnlyIndex(var)] = true;
 }
 
@@ -150,7 +149,8 @@ std::vector<ValueLiteralPair> IntegerEncoder::PartialDomainEncoding(
   if (index >= equality_by_var_.size()) return {};
 
   int new_size = 0;
-  std::vector<ValueLiteralPair> result = equality_by_var_[index];
+  std::vector<ValueLiteralPair> result;
+  result.assign(equality_by_var_[index].begin(), equality_by_var_[index].end());
   for (int i = 0; i < result.size(); ++i) {
     const ValueLiteralPair pair = result[i];
     if (sat_solver_->Assignment().LiteralIsFalse(pair.literal)) continue;
@@ -167,7 +167,7 @@ std::vector<ValueLiteralPair> IntegerEncoder::PartialDomainEncoding(
 
   if (trail_->CurrentDecisionLevel() == 0) {
     // We can cleanup the current encoding in this case.
-    equality_by_var_[index] = result;
+    equality_by_var_[index].assign(result.begin(), result.end());
   }
 
   if (!VariableIsPositive(var)) {
@@ -519,7 +519,6 @@ LiteralIndex IntegerEncoder::GetAssociatedLiteral(IntegerLiteral i_lit) const {
   const auto canonical_pair = Canonicalize(i_lit);
   const LiteralIndex result =
       SearchForLiteralAtOrBefore(canonical_pair.first, &bound);
-  //  const LiteralIndex result = SearchForLiteralAtOrBefore(i_lit, &bound);
   if (result != kNoLiteralIndex && bound >= i_lit.bound) {
     return result;
   }
@@ -2034,6 +2033,10 @@ GenericLiteralWatcher::GenericLiteralWatcher(Model* model)
       &id_to_greatest_common_level_since_last_call_);
   integer_trail_->RegisterWatcher(&modified_vars_);
   queue_by_priority_.resize(2);  // Because default priority is 1.
+}
+
+void GenericLiteralWatcher::ReserveSpaceForNumVariables(int num_vars) {
+  var_to_watcher_.reserve(2 * num_vars);
 }
 
 void GenericLiteralWatcher::CallOnNextPropagate(int id) {

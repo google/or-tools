@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -224,6 +225,8 @@ void LoadVariables(const CpModelProto& model_proto,
 
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   integer_trail->ReserveSpaceForNumVariables(reservation_size);
+  m->GetOrCreate<GenericLiteralWatcher>()->ReserveSpaceForNumVariables(
+      reservation_size);
   mapping->reverse_integer_map_.resize(2 * var_to_instantiate_as_integer.size(),
                                        -1);
   for (const int i : var_to_instantiate_as_integer) {
@@ -1013,6 +1016,8 @@ bool IsPartOfProductEncoding(const ConstraintProto& ct) {
 
 }  // namespace
 
+// TODO(user): We could use a smarter way to determine buckets, like putting
+// everyone with the same coeff together if possible and the split is ok.
 void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
                                          std::vector<IntegerVariable>* vars,
                                          std::vector<int64_t>* coeffs,
@@ -1025,6 +1030,7 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
   }
 
   std::vector<IntegerVariable> bucket_sum_vars;
+  std::vector<int64_t> bucket_sum_coeffs;
   std::vector<IntegerVariable> local_vars;
   std::vector<int64_t> local_coeffs;
 
@@ -1037,10 +1043,12 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
     local_coeffs.clear();
     int64_t bucket_lb = 0;
     int64_t bucket_ub = 0;
+    int64_t gcd = 0;
     const int limit = num_vars * (b + 1);
     for (; i * num_buckets < limit; ++i) {
       const IntegerVariable var = (*vars)[i];
       const int64_t coeff = (*coeffs)[i];
+      gcd = std::gcd(gcd, std::abs(coeff));
       local_vars.push_back(var);
       local_coeffs.push_back(coeff);
       const int64_t term1 = coeff * integer_trail->LowerBound(var).value();
@@ -1048,10 +1056,18 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
       bucket_lb += std::min(term1, term2);
       bucket_ub += std::max(term1, term2);
     }
+    if (gcd == 0) continue;
+    if (gcd > 1) {
+      // Everything should be exactly divisible!
+      for (int64_t& ref : local_coeffs) ref /= gcd;
+      bucket_lb /= gcd;
+      bucket_ub /= gcd;
+    }
 
     const IntegerVariable bucket_sum =
         integer_trail->AddIntegerVariable(bucket_lb, bucket_ub);
     bucket_sum_vars.push_back(bucket_sum);
+    bucket_sum_coeffs.push_back(gcd);
     local_vars.push_back(bucket_sum);
     local_coeffs.push_back(-1);
 
@@ -1065,7 +1081,7 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
     }
   }
   *vars = bucket_sum_vars;
-  coeffs->assign(bucket_sum_vars.size(), 1);
+  *coeffs = bucket_sum_coeffs;
 }
 
 void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
