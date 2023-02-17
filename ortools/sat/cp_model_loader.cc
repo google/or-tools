@@ -1034,17 +1034,17 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
   std::vector<IntegerVariable> local_vars;
   std::vector<int64_t> local_coeffs;
 
-  int i = 0;
-  const int num_vars = vars->size();
-  const int num_buckets = static_cast<int>(std::round(std::sqrt(num_vars)));
+  int64_t i = 0;
+  const int64_t num_vars = vars->size();
+  const int64_t num_buckets = static_cast<int>(std::round(std::sqrt(num_vars)));
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
-  for (int b = 0; b < num_buckets; ++b) {
+  for (int64_t b = 0; b < num_buckets; ++b) {
     local_vars.clear();
     local_coeffs.clear();
     int64_t bucket_lb = 0;
     int64_t bucket_ub = 0;
     int64_t gcd = 0;
-    const int limit = num_vars * (b + 1);
+    const int64_t limit = num_vars * (b + 1);
     for (; i * num_buckets < limit; ++i) {
       const IntegerVariable var = (*vars)[i];
       const int64_t coeff = (*coeffs)[i];
