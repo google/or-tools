@@ -15,27 +15,24 @@
 // of the functionalities are fixed (name of parameters, format of the
 // input): see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
 
-#include <limits>
-
-#include "absl/log/initialize.h"
-#include "ortools/base/path.h"
-
 #if defined(__GNUC__)  // Linux or Mac OS X.
 #include <signal.h>
 #endif  // __GNUC__
 
 #include <csignal>
 #include <iostream>
+#include <limits>
 #include <ostream>
 #include <string>
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/log/initialize.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/init_google.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/path.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 #include "ortools/flatzinc/model.h"
