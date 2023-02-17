@@ -176,46 +176,6 @@ add_custom_target(Py${PROJECT_NAME}_proto
     ${PROTO_PYS}
     ${PROJECT_NAMESPACE}::ortools)
 
-###################
-##  Python Test  ##
-###################
-if(BUILD_VENV)
-  search_python_module(NAME virtualenv PACKAGE virtualenv)
-  # venv not working on github runners
-  # search_python_internal_module(NAME venv)
-  # Testing using a vitual environment
-  set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m virtualenv)
-  #set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
-  set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/python/venv)
-  if(WIN32)
-    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/Scripts/python.exe)
-  else()
-    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/bin/python)
-  endif()
-endif()
-
-if(BUILD_TESTING)
-  # add_python_test()
-  # CMake function to generate and build python test.
-  # Parameters:
-  #  the python filename
-  # e.g.:
-  # add_python_test(foo.py)
-  function(add_python_test FILE_NAME)
-    message(STATUS "Configuring test ${FILE_NAME} ...")
-    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
-    get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
-    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-
-    add_test(
-      NAME python_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${FILE_NAME}
-      WORKING_DIRECTORY ${VENV_DIR})
-    message(STATUS "Configuring test ${FILE_NAME} done")
-  endfunction()
-endif()
-
 #######################
 ##  PYTHON WRAPPERS  ##
 #######################
@@ -369,6 +329,19 @@ configure_file(
 install(SCRIPT ${PROJECT_BINARY_DIR}/python/python-install.cmake)
 
 if(BUILD_VENV)
+  search_python_module(NAME virtualenv PACKAGE virtualenv)
+  # venv not working on github runners
+  # search_python_internal_module(NAME venv)
+  # Testing using a vitual environment
+  set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m virtualenv)
+  #set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
+  set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/python/venv)
+  if(WIN32)
+    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/Scripts/python.exe)
+  else()
+    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/bin/python)
+  endif()
+
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
     # Clean previous install otherwise pip install may do nothing
@@ -423,6 +396,31 @@ if(BUILD_PYTHON_DOC)
   else()
     message(WARNING "cmd `pdoc` not found, Python doc generation is disable!")
   endif()
+endif()
+
+###################
+##  Python Test  ##
+###################
+if(BUILD_TESTING)
+  # add_python_test()
+  # CMake function to generate and build python test.
+  # Parameters:
+  #  the python filename
+  # e.g.:
+  # add_python_test(foo.py)
+  function(add_python_test FILE_NAME)
+    message(STATUS "Configuring test ${FILE_NAME} ...")
+    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+    add_test(
+      NAME python_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+    message(STATUS "Configuring test ${FILE_NAME} done")
+  endfunction()
 endif()
 
 #####################
