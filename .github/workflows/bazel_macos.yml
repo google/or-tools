@@ -1,11 +1,6 @@
 name: Bazel MacOS
 
-on:
-  push:
-  pull_request:
-  schedule:
-    # min hours day(month) month day(week)
-    - cron: '0 0 7,22 * *'
+on: [push, pull_request]
 
 jobs:
   bazel:
@@ -13,13 +8,19 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - name: Check java
-        run: java -version
+      - name: Set Java to OpenJDK 17 (Temurin)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Check mvn
+        run: mvn --version
       - name: Install Bazel
         run: |
           brew update
           #brew install bazel
-          bazel --version
+      - name: Check Bazel
+        run: bazel version
       - name: Build
         run: bazel build -c opt --cxxopt=-std=c++20 //ortools/... //examples/...
       - name: Test
