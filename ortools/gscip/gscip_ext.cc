@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 
@@ -25,8 +26,8 @@ namespace operations_research {
 
 namespace {
 
-std::string MaybeExtendName(const std::string& base_name,
-                            const std::string& extension) {
+std::string MaybeExtendName(absl::string_view base_name,
+                            absl::string_view extension) {
   if (base_name.empty()) {
     return "";
   }

@@ -538,7 +538,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddOrConstraint(
 namespace {
 
 absl::Status ValidateSOSData(const GScipSOSData& sos_data,
-                             const std::string& name) {
+                             absl::string_view name) {
   RETURN_ERROR_UNLESS(!sos_data.variables.empty())
       << "Error adding SOS constraint: " << name << ".";
   if (!sos_data.weights.empty()) {

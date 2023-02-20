@@ -17,13 +17,14 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "scip/scip.h"
 #include "scip/type_scip.h"
 
 namespace operations_research {
 
-absl::Status LegacyScipSetSolverSpecificParameters(
-    const std::string& parameters, SCIP* scip);
+absl::Status LegacyScipSetSolverSpecificParameters(absl::string_view parameters,
+                                                   SCIP* scip);
 }
 
 #endif  // OR_TOOLS_GSCIP_LEGACY_SCIP_PARAMS_H_
