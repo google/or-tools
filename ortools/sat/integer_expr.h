@@ -611,7 +611,13 @@ inline void LoadConditionalLinearConstraint(
   }
   if (cst.vars.empty()) {
     if (cst.lb <= 0 && cst.ub >= 0) return;
-    return model->Add(ClauseConstraint(enforcement_literals));
+
+    // The enforcement literals cannot be all at true.
+    std::vector<Literal> clause;
+    for (const Literal lit : enforcement_literals) {
+      clause.push_back(lit.Negated());
+    }
+    return model->Add(ClauseConstraint(clause));
   }
 
   // TODO(user): Remove the conversion!
