@@ -233,6 +233,14 @@ class CpModelPresolver {
   // objective (but with a same trivial lower bound) should help.
   void ExpandObjective();
 
+  // This makes a big difference on the flatzinc mznc2017_aes_opt* problems.
+  // Where, with this, the core based approach can find small cores and close
+  // them quickly.
+  //
+  // TODO(user): Is it by chance or there is a underlying deep reason? try to
+  // merge this with what ExpandObjective() is doing.
+  void ShiftObjectiveWithExactlyOnes();
+
   void ProcessVariableOnlyUsedInEncoding(int var);
   void TryToSimplifyDomain(int var);
 

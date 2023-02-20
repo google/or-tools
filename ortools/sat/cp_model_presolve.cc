@@ -6673,6 +6673,71 @@ void CpModelPresolver::PresolvePureSatPart() {
                  context_->mapping_model);
 }
 
+void CpModelPresolver::ShiftObjectiveWithExactlyOnes() {
+  if (context_->ModelIsUnsat()) return;
+
+  // The objective is already loaded in the context, but we re-canonicalize
+  // it with the latest information.
+  if (!context_->CanonicalizeObjective()) {
+    (void)context_->NotifyThatModelIsUnsat();
+    return;
+  }
+
+  std::vector<int> exos;
+  const int num_constraints = context_->working_model->constraints_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (!ct.enforcement_literal().empty()) continue;
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      exos.push_back(c);
+    }
+  }
+
+  // This is not the same from what we do in ExpandObjective() because we do not
+  // make the minimum cost zero but the second minimum. Note that when we do
+  // that, we still do not degrade the trivial objective bound as we would if we
+  // went any further.
+  //
+  // One reason why this might be beneficial is that it lower the maximum cost
+  // magnitude, making more Booleans with the same cost and thus simplifying
+  // the core optimizer job. I am not 100% sure.
+  //
+  // TODO(user): We need to loop a few time to reach a fixed point. Understand
+  // exactly if there is a fixed-point and how to reach it in a nicer way.
+  int num_shifts = 0;
+  for (int i = 0; i < 3; ++i) {
+    for (const int c : exos) {
+      const ConstraintProto& ct = context_->working_model->constraints(c);
+      const int num_terms = ct.exactly_one().literals().size();
+      if (num_terms <= 1) continue;
+      int64_t min_obj = std::numeric_limits<int64_t>::max();
+      int64_t second_min = std::numeric_limits<int64_t>::max();
+      for (int i = 0; i < num_terms; ++i) {
+        const int literal = ct.exactly_one().literals(i);
+        const int64_t var_obj = context_->ObjectiveCoeff(PositiveRef(literal));
+        const int64_t obj = RefIsPositive(literal) ? var_obj : -var_obj;
+        if (obj < min_obj) {
+          second_min = min_obj;
+          min_obj = obj;
+        } else if (obj < second_min) {
+          second_min = obj;
+        }
+      }
+      if (second_min == 0) continue;
+      ++num_shifts;
+      if (!context_->ShiftCostInExactlyOne(ct.exactly_one().literals(),
+                                           second_min)) {
+        if (context_->ModelIsUnsat()) return;
+        continue;
+      }
+    }
+  }
+  if (num_shifts > 0) {
+    context_->UpdateRuleStats("objective: shifted cost with exactly ones",
+                              num_shifts);
+  }
+}
+
 // Expand the objective expression in some easy cases.
 //
 // The ideas is to look at all the "tight" equality constraints. These should
@@ -6692,6 +6757,13 @@ void CpModelPresolver::ExpandObjective() {
   WallTimer wall_timer;
   wall_timer.Start();
 
+  // The objective is already loaded in the context, but we re-canonicalize
+  // it with the latest information.
+  if (!context_->CanonicalizeObjective()) {
+    (void)context_->NotifyThatModelIsUnsat();
+    return;
+  }
+
   const int num_variables = context_->working_model->variables_size();
   const int num_constraints = context_->working_model->constraints_size();
 
@@ -6699,12 +6771,16 @@ void CpModelPresolver::ExpandObjective() {
   const auto get_index = [](int var, bool to_lb) {
     return 2 * var + (to_lb ? 0 : 1);
   };
+  const auto get_lit_index = [](int lit) {
+    return RefIsPositive(lit) ? 2 * lit : 2 * PositiveRef(lit) + 1;
+  };
   const int num_nodes = 2 * num_variables;
   std::vector<std::vector<int>> index_graph(num_nodes);
 
   // TODO(user): instead compute how much each constraint can be further
   // expanded?
   std::vector<int> index_to_best_c(num_nodes, -1);
+  std::vector<int> index_to_best_size(num_nodes, 0);
 
   // Lets see first if there are "tight" constraint and for which variables.
   // We stop processing constraint if we have too many entries.
@@ -6717,9 +6793,36 @@ void CpModelPresolver::ExpandObjective() {
     if (num_entries > kNumEntriesThreshold) break;
 
     const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (!ct.enforcement_literal().empty()) continue;
+
+    // Deal with exactly one.
+    // An exactly one is always tight on the upper bound of one term.
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      const int num_terms = ct.exactly_one().literals().size();
+      ++num_tight_constraints;
+      num_tight_variables += num_terms;
+      for (int i = 0; i < num_terms; ++i) {
+        if (num_entries > kNumEntriesThreshold) break;
+        const int neg_index = get_lit_index(ct.exactly_one().literals(i)) ^ 1;
+
+        const int old_c = index_to_best_c[neg_index];
+        if (old_c == -1 || num_terms > index_to_best_size[neg_index]) {
+          index_to_best_c[neg_index] = c;
+          index_to_best_size[neg_index] = num_terms;
+        }
+
+        for (int j = 0; j < num_terms; ++j) {
+          if (j == i) continue;
+          const int other_index = get_lit_index(ct.exactly_one().literals(j));
+          ++num_entries;
+          index_graph[neg_index].push_back(other_index);
+        }
+      }
+      continue;
+    }
+
     // Skip everything that is not a linear equality constraint.
-    if (!ct.enforcement_literal().empty() ||
-        ct.constraint_case() != ConstraintProto::kLinear ||
+    if (ct.constraint_case() != ConstraintProto::kLinear ||
         ct.linear().domain().size() != 2 ||
         ct.linear().domain(0) != ct.linear().domain(1)) {
       continue;
@@ -6750,12 +6853,9 @@ void CpModelPresolver::ExpandObjective() {
 
         const int neg_index = index ^ 1;
         const int old_c = index_to_best_c[neg_index];
-        if (old_c == -1 ||
-            num_terms > context_->working_model->constraints(old_c)
-                            .linear()
-                            .vars()
-                            .size()) {
+        if (old_c == -1 || num_terms > index_to_best_size[neg_index]) {
           index_to_best_c[neg_index] = c;
+          index_to_best_size[neg_index] = num_terms;
         }
 
         for (int j = 0; j < num_terms; ++j) {
@@ -6773,12 +6873,9 @@ void CpModelPresolver::ExpandObjective() {
         ++num_tight_variables;
 
         const int old_c = index_to_best_c[index];
-        if (old_c == -1 ||
-            num_terms > context_->working_model->constraints(old_c)
-                            .linear()
-                            .vars()
-                            .size()) {
+        if (old_c == -1 || num_terms > index_to_best_size[index]) {
           index_to_best_c[index] = c;
+          index_to_best_size[index] = num_terms;
         }
 
         for (int j = 0; j < num_terms; ++j) {
@@ -6815,8 +6912,8 @@ void CpModelPresolver::ExpandObjective() {
   //
   // TODO(user): Densify index to only look at variable that can be substituted
   // further.
-  const auto result = util::graph::FastTopologicalSort(index_graph);
-  if (!result.ok()) {
+  const auto topo_order = util::graph::FastTopologicalSort(index_graph);
+  if (!topo_order.ok()) {
     std::vector<std::vector<int>> components;
     FindStronglyConnectedComponents(static_cast<int>(index_graph.size()),
                                     index_graph, &components);
@@ -6847,19 +6944,12 @@ void CpModelPresolver::ExpandObjective() {
     return;
   }
 
-  // The objective is already loaded in the context, but we re-canonicalize
-  // it with the latest information.
-  if (!context_->CanonicalizeObjective()) {
-    (void)context_->NotifyThatModelIsUnsat();
-    return;
-  }
-
   // If the removed variable is now unique, we could remove it if it is implied
   // free. But this should already be done by RemoveSingletonInLinear(), so we
   // don't redo it here.
   int num_expands = 0;
   int num_issues = 0;
-  for (const int index : *result) {
+  for (const int index : *topo_order) {
     if (index_graph[index].empty()) continue;
 
     const int var = index / 2;
@@ -6870,6 +6960,28 @@ void CpModelPresolver::ExpandObjective() {
     if (obj_coeff > 0 == to_lb) {
       const ConstraintProto& ct =
           context_->working_model->constraints(index_to_best_c[index]);
+      if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+        int64_t shift = 0;
+        for (const int lit : ct.exactly_one().literals()) {
+          if (PositiveRef(lit) == var) {
+            shift = RefIsPositive(lit) ? obj_coeff : -obj_coeff;
+            break;
+          }
+        }
+        if (shift == 0) {
+          ++num_issues;
+          continue;
+        }
+        if (!context_->ShiftCostInExactlyOne(ct.exactly_one().literals(),
+                                             shift)) {
+          if (context_->ModelIsUnsat()) return;
+          ++num_issues;
+          continue;
+        }
+        CHECK_EQ(context_->ObjectiveCoeff(var), 0);
+        ++num_expands;
+        continue;
+      }
 
       int64_t objective_coeff_in_expanded_constraint = 0;
       const int num_terms = ct.linear().vars().size();
@@ -10536,6 +10648,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // We re-do a canonicalization with the final linear expression.
   if (context_->working_model->has_objective()) {
     ExpandObjective();
+    if (context_->ModelIsUnsat()) return InfeasibleStatus();
+    ShiftObjectiveWithExactlyOnes();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
     // We re-do a canonicalization with the final linear expression.
