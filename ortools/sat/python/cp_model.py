@@ -1408,14 +1408,14 @@ class CpModel(object):
     """
 
         if max_level < min_level:
-            return ValueError(
+            raise ValueError(
                 'Reservoir constraint must have a max_level >= min_level')
 
         if max_level < 0:
-            return ValueError('Reservoir constraint must have a max_level >= 0')
+            raise ValueError('Reservoir constraint must have a max_level >= 0')
 
         if min_level > 0:
-            return ValueError('Reservoir constraint must have a min_level <= 0')
+            raise ValueError('Reservoir constraint must have a min_level <= 0')
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -1474,14 +1474,14 @@ class CpModel(object):
     """
 
         if max_level < min_level:
-            return ValueError(
+            raise ValueError(
                 'Reservoir constraint must have a max_level >= min_level')
 
         if max_level < 0:
-            return ValueError('Reservoir constraint must have a max_level >= 0')
+            raise ValueError('Reservoir constraint must have a max_level >= 0')
 
         if min_level > 0:
-            return ValueError('Reservoir constraint must have a min_level <= 0')
+            raise ValueError('Reservoir constraint must have a min_level <= 0')
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
