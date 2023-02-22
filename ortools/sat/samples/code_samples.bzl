@@ -79,11 +79,6 @@ def code_sample_java(name):
         name = name + "_java",
         srcs = [name + ".java"],
         main_class = "com.google.ortools.sat.samples." + name,
-        data = [
-            "//ortools/java/com/google/ortools:libjniortools.so",
-            "//ortools/java/com/google/ortools:libjniortools.dylib",
-            "//ortools/java/com/google/ortools:jniortools.dll",
-        ],
         deps = [
             "//ortools/sat/java:sat",
             "//ortools/java/com/google/ortools:Loader",

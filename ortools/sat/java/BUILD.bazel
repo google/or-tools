@@ -44,11 +44,6 @@ ortools_java_wrap_cc(
 java_junit5_test(
     name = "CpModelTest",
     srcs = ["CpModelTest.java"],
-    data = [
-        "//ortools/java/com/google/ortools:jniortools.dll",
-        "//ortools/java/com/google/ortools:libjniortools.dylib",
-        "//ortools/java/com/google/ortools:libjniortools.so",
-    ],
     test_class = "com.google.ortools.sat.CpModelTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
@@ -69,11 +64,6 @@ java_junit5_test(
 java_junit5_test(
     name = "CpSolverTest",
     srcs = ["CpSolverTest.java"],
-    data = [
-        "//ortools/java/com/google/ortools:jniortools.dll",
-        "//ortools/java/com/google/ortools:libjniortools.dylib",
-        "//ortools/java/com/google/ortools:libjniortools.so",
-    ],
     test_class = "com.google.ortools.sat.CpSolverTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
@@ -94,11 +84,6 @@ java_junit5_test(
 java_junit5_test(
     name = "LinearExprTest",
     srcs = ["LinearExprTest.java"],
-    data = [
-        "//ortools/java/com/google/ortools:jniortools.dll",
-        "//ortools/java/com/google/ortools:libjniortools.dylib",
-        "//ortools/java/com/google/ortools:libjniortools.so",
-    ],
     test_class = "com.google.ortools.sat.LinearExprTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",

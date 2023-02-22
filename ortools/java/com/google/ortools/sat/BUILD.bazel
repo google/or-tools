@@ -43,9 +43,7 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/java/com/google/ortools:jniortools.dll",
-        "//ortools/java/com/google/ortools:libjniortools.dylib",
-        "//ortools/java/com/google/ortools:libjniortools.so",
+        "//ortools/java/com/google/ortools:Loader",
         "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
         "//ortools/sat/java:sat",

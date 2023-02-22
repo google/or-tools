@@ -46,11 +46,6 @@ def _java_wrap_cc_impl(ctx):
         if target.label.workspace_root:
             include_path_sets.append(depset([target.label.workspace_root]))
 
-    # Add swig LIB files.
-    swig_base_path = ctx.executable._swig.dirname
-    swig_lib_path = swig_base_path + "/swig.runfiles/swig/Lib"
-    include_path_sets.append(depset([swig_lib_path + "/java", swig_lib_path]))
-
     java_files_dir = ctx.actions.declare_directory("java_files")
 
     swig_args = ctx.actions.args()
@@ -70,9 +65,12 @@ def _java_wrap_cc_impl(ctx):
     if ctx.attr.use_directors:
         generated_c_files.append(outhdr)
 
+    # Add swig LIB files.
+    swig_lib = {'SWIG_LIB': 'external/swig/Lib'}
     ctx.actions.run(
         outputs = generated_c_files + [java_files_dir],
         inputs = depset([src] + ctx.files.swig_includes, transitive = header_sets),
+        env = swig_lib,
         executable = ctx.executable._swig,
         arguments = [swig_args],
         mnemonic = "SwigCompile",
@@ -205,11 +203,6 @@ def ortools_java_wrap_cc(
         name = name,
         srcs = [srcjar],
         deps = java_deps,
-        runtime_deps = [
-            "//ortools/java/com/google/ortools:libjniortools.so",
-            "//ortools/java/com/google/ortools:libjniortools.dylib",
-            "//ortools/java/com/google/ortools:jniortools.dll",
-        ],
         visibility = visibility,
         **kwargs
     )

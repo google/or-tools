@@ -37,11 +37,6 @@ java_junit5_test(
     name = "FlowTest",
     size= "small",
     srcs = ["FlowTest.java"],
-    data = [
-        "//ortools/java/com/google/ortools:jniortools.dll",
-        "//ortools/java/com/google/ortools:libjniortools.dylib",
-        "//ortools/java/com/google/ortools:libjniortools.so",
-    ],
     test_class = "com.google.ortools.graph.FlowTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
