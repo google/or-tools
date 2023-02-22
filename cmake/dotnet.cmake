@@ -179,6 +179,71 @@ elseif(UNIX)
   set_target_properties(google-ortools-native PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
 
+#################
+##  .Net Test  ##
+#################
+if(BUILD_TESTING)
+  # add_dotnet_test()
+  # CMake function to generate and build dotnet test.
+  # Parameters:
+  #  the dotnet filename
+  # e.g.:
+  # add_dotnet_test(FooTests.cs)
+  function(add_dotnet_test FILE_NAME)
+    message(STATUS "Configuring test ${FILE_NAME} ...")
+    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+    set(DOTNET_TEST_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${TEST_NAME})
+    message(STATUS "build path: ${DOTNET_TEST_DIR}")
+
+    configure_file(
+      ${PROJECT_SOURCE_DIR}/ortools/dotnet/Test.csproj.in
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
+      @ONLY)
+
+    add_custom_command(
+      OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_TEST_DIR}
+      COMMAND ${CMAKE_COMMAND} -E copy
+      ${FILE_NAME}
+      ${DOTNET_TEST_DIR}/
+      MAIN_DEPENDENCY ${FILE_NAME}
+      VERBATIM
+      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+
+    add_custom_command(
+      OUTPUT ${DOTNET_TEST_DIR}/timestamp
+      COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+        ${DOTNET_EXECUTABLE} build --nologo -c Release ${TEST_NAME}.csproj
+      COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_DIR}/timestamp
+      DEPENDS
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
+      dotnet_package
+      BYPRODUCTS
+      ${DOTNET_TEST_DIR}/bin
+      ${DOTNET_TEST_DIR}/obj
+      VERBATIM
+      COMMENT "Compiling .Net ${COMPONENT_NAME}/${TEST_NAME}.cs (${DOTNET_TEST_DIR}/timestamp)"
+      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+
+    add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
+      DEPENDS
+      ${DOTNET_TEST_DIR}/timestamp
+      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+
+    add_test(
+      NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+        ${DOTNET_EXECUTABLE} test --nologo -c Release ${TEST_NAME}.csproj
+      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+    message(STATUS "Configuring test ${FILE_NAME} done")
+  endfunction()
+endif()
+
 #######################
 ##  DOTNET WRAPPERS  ##
 #######################
@@ -348,71 +413,6 @@ if(BUILD_DOTNET_DOC)
   else()
     message(WARNING "cmd `doxygen` not found, .Net doc generation is disable!")
   endif()
-endif()
-
-#################
-##  .Net Test  ##
-#################
-if(BUILD_TESTING)
-  # add_dotnet_test()
-  # CMake function to generate and build dotnet test.
-  # Parameters:
-  #  the dotnet filename
-  # e.g.:
-  # add_dotnet_test(FooTests.cs)
-  function(add_dotnet_test FILE_NAME)
-    message(STATUS "Configuring test ${FILE_NAME} ...")
-    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
-    get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
-    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-
-    set(DOTNET_TEST_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${TEST_NAME})
-    message(STATUS "build path: ${DOTNET_TEST_DIR}")
-
-    configure_file(
-      ${PROJECT_SOURCE_DIR}/ortools/dotnet/Test.csproj.in
-      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
-      @ONLY)
-
-    add_custom_command(
-      OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_TEST_DIR}
-      COMMAND ${CMAKE_COMMAND} -E copy
-      ${FILE_NAME}
-      ${DOTNET_TEST_DIR}/
-      MAIN_DEPENDENCY ${FILE_NAME}
-      VERBATIM
-      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
-
-    add_custom_command(
-      OUTPUT ${DOTNET_TEST_DIR}/timestamp
-      COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
-        ${DOTNET_EXECUTABLE} build --nologo -c Release ${TEST_NAME}.csproj
-      COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_DIR}/timestamp
-      DEPENDS
-      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
-      ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
-      dotnet_package
-      BYPRODUCTS
-      ${DOTNET_TEST_DIR}/bin
-      ${DOTNET_TEST_DIR}/obj
-      VERBATIM
-      COMMENT "Compiling .Net ${COMPONENT_NAME}/${TEST_NAME}.cs (${DOTNET_TEST_DIR}/timestamp)"
-      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
-
-    add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
-      DEPENDS
-      ${DOTNET_TEST_DIR}/timestamp
-      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
-
-    add_test(
-      NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
-        ${DOTNET_EXECUTABLE} test --nologo -c Release ${TEST_NAME}.csproj
-      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
-    message(STATUS "Configuring test ${FILE_NAME} done")
-  endfunction()
 endif()
 
 ###################
