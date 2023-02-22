@@ -104,7 +104,12 @@ public class Loader {
   public static synchronized void loadNativeLibraries() {
     if (!loaded) {
       try {
+        // prints the name of the Operating System
+        //System.out.println("OS: " + System.getProperty("os.name"));
+        //System.out.println("Library: " + System.mapLibraryName("jniortools"));
+
         System.loadLibrary("jniortools");
+        loaded = true;
         return;
       } catch (UnsatisfiedLinkError exception) {
         // Do nothing.
