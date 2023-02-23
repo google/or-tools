@@ -32,14 +32,12 @@ jobs:
         include:
           - extras: OFF
             python: OFF
-            publish-or: ON
             java: OFF
             dotnet: OFF
           - sirius: ON
             shared: OFF
             extras: OFF
             python: OFF
-            publish-or: ON
             java: OFF
             dotnet: OFF
 
@@ -74,7 +72,7 @@ jobs:
       - name: install requirements
         run: |
           yum install -y epel-release
-          yum install -y git redhat-lsb-core make wget centos-release-scl scl-utils rpm-build
+          yum install -y git redhat-lsb-core make wget centos-release-scl scl-utils
           yum install -y devtoolset-9
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.13
@@ -127,7 +125,6 @@ jobs:
           cmake --build build --config Release --target all install -j4
 
       - name: Prepare OR-Tools install
-        if: ${{ matrix.publish-or == 'ON' }}
         id: or-install
         run: |
           find build/install/bin -type f ! \( -name 'protoc*' -o -name 'scip' -o -name 'fz' \) -delete
@@ -137,22 +134,6 @@ jobs:
           zip -r $ARCHIVE_PATH ./install
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
-
-      - name: Upload OR-Tools install artifact
-        uses: actions/upload-artifact@v2
-        if: ${{ matrix.publish-or == 'ON' }}
-        with:
-          name: ${{ steps.or-install.outputs.archive_name }}
-          path: ${{ steps.or-install.outputs.archive_path }}
-
-      - name: Publish OR-Tools install asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.publish-or == 'ON' }}
-        uses: actions/upload-release-asset@v1.0.2
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.or-install.outputs.archive_path }}
-          asset_name: ${{ steps.or-install.outputs.archive_name }}
-          asset_content_type: application/zip
 
       - name: Run sirius_interface unittests
         if: ${{ matrix.sirius == 'ON' }}
@@ -172,5 +153,25 @@ jobs:
           cd build
           ctest --output-on-failure -C Release -R cxx_cpp -E 'cxx_cpp_linear_programming'
 
+      - name: Upload OR-Tools install artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.or-install.outputs.archive_name }}
+          path: ${{ steps.or-install.outputs.archive_path }}
 
+  publish_asset:
+    name: Publish release assets
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        if: ${{ env.RELEASE_CREATED == 'true' }}
+        uses: actions/download-artifact@v3
 
+      - name: Publish assets
+        if:  ${{ env.RELEASE_CREATED == 'true' }}
+        uses: alexellis/upload-assets@0.4.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          asset_paths: '["*/*.zip"]'
