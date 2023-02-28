@@ -216,17 +216,6 @@ class LinearExpr:
         raise TypeError(
             f'Unknown expression {expression!r} of type {type(expression)}')
 
-    @classmethod
-    def length(cls, expression: LinearExprT) -> int:
-        if mbh.is_a_number(expression):
-            return 0
-        elif isinstance(expression, Variable):
-            return 1
-        elif isinstance(expression, _WeightedSum):
-            return expression.variable_indices.size
-        raise TypeError(
-            f'Unknown expression {expression!r} of type {type(expression)}')
-
     def __hash__(self):
         return object.__hash__(self)
 
@@ -594,10 +583,10 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
         pos: Union[slice, int, List[int], Tuple[Union[int, slice, List[int]],
                                                 ...]],
     ) -> Union['VariableContainer', Variable]:
-        index_or_slice = self.__variable_indices[pos]
+        index_or_slice: Union[np.int32, npt.NDArray[np.int32]] = (
+            self.__variable_indices[pos])
         if mbh.is_integral(index_or_slice):
-            return Variable(self.__helper, self.__variable_indices[pos], None,
-                            None, None)
+            return Variable(self.__helper, index_or_slice, None, None, None)
         else:
             return VariableContainer(self.__helper, index_or_slice)
 
