@@ -42,7 +42,7 @@ from ortools.linear_solver.python import model_builder_helper as mbh
 from ortools.linear_solver.python import pywrap_model_builder_helper as pwmb
 
 # Custom types.
-NumberT = Union[numbers.Number, np.number, int, float]
+NumberT = Union[numbers.Number, np.number]
 IntegerT = Union[numbers.Integral, np.integer]
 LinearExprT = Union['LinearExpr', NumberT]
 ConstraintT = Union['VarCompVar', 'BoundedLinearExpression', bool]
@@ -50,7 +50,7 @@ ShapeT = Union[IntegerT, Sequence[IntegerT]]
 NumpyFuncT = Callable[[
     'VariableContainer',
     Optional[np.double],
-    Union[npt.NDArray[np.double], Sequence[NumberT], None],
+    Optional[Union[npt.NDArray[np.double], Sequence[NumberT]]],
 ], LinearExprT,]
 
 # Forward solve statuses.
@@ -335,7 +335,7 @@ class _WeightedSum(LinearExpr):
             coefficients: npt.NDArray[np.double],
             constant: np.double = np.double(0.0),
     ):
-        LinearExpr.__init__(self)
+        super().__init__()
         self.__variable_indices: npt.NDArray[np.int32] = variable_indices
         self.__coefficients: npt.NDArray[
             np.double] = mbh.assert_is_a_number_array(coefficients)
@@ -562,7 +562,6 @@ class Variable(LinearExpr):
         return LinearExpr.weighted_sum([self], [arg], constant=0.0)
 
 
-# TODO(user): Type slices.
 _REGISTERED_NUMPY_UFUNCS: Dict[Any, NumpyFuncT] = {}
 
 
@@ -583,6 +582,7 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
         pos: Union[slice, int, List[int], Tuple[Union[int, slice, List[int]],
                                                 ...]],
     ) -> Union['VariableContainer', Variable]:
+        # delegate the treatment of the 'pos' query to __variable_indices.
         index_or_slice: Union[np.int32, npt.NDArray[np.int32]] = (
             self.__variable_indices[pos])
         if mbh.is_integral(index_or_slice):
@@ -639,32 +639,31 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
         return self.__variable_indices.shape[0]
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        if method == '__call__':
-            if ufunc not in _REGISTERED_NUMPY_UFUNCS:
-                return NotImplemented
-            container: Optional[VariableContainer] = None
-            scalar: Optional[NumberT] = None
-            coeffs: npt.NDArray[np.double] = None
-
-            for arg in inputs:
-                if mbh.is_a_number(arg):
-                    scalar = mbh.assert_is_a_number(arg)
-                elif isinstance(arg, self.__class__):
-                    container = arg
-                elif isinstance(arg, (Sequence, np.ndarray)):
-                    coeffs = np.array(arg, dtype=np.double)
-                else:
-                    print(f'not recognized {arg}')
-                    return NotImplemented
-
-            if container is None:
-                return NotImplemented
-            if coeffs is not None:
-                assert container.shape == coeffs.shape
-            function = _REGISTERED_NUMPY_UFUNCS[ufunc]
-            return function(container, scalar, coeffs)
-        else:
+        if method != '__call__':
             return NotImplemented
+        ufunc_impl = _REGISTERED_NUMPY_UFUNCS.get(ufunc)
+        if ufunc_impl is None:
+            return NotImplemented
+        container: Optional[VariableContainer] = None
+        scalar: Optional[NumberT] = None
+        coeffs: Optional[npt.NDArray[np.double]] = None
+
+        for arg in inputs:
+            if mbh.is_a_number(arg):
+                scalar = mbh.assert_is_a_number(arg)
+            elif isinstance(arg, self.__class__):
+                container = arg
+            elif isinstance(arg, (Sequence, np.ndarray)):
+                coeffs = np.array(arg, dtype=np.double)
+            else:
+                return NotImplemented
+
+        if container is None:
+            return NotImplemented
+        if coeffs is not None:
+            assert container.shape == coeffs.shape, (container.shape,
+                                                     coeffs.shape)
+        return ufunc_impl(container, scalar, coeffs)
 
     def __array_function__(self, func: Any, types: Any, args: Any,
                            kwargs: Any) -> LinearExprT:
@@ -673,7 +672,7 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
         return _REGISTERED_NUMPY_UFUNCS[func](*args, **kwargs)
 
 
-def implements(np_function: Any) -> Callable[[NumpyFuncT], NumpyFuncT]:
+def _implements(np_function: Any) -> Callable[[NumpyFuncT], NumpyFuncT]:
     """Register an __array_function__ implementation for VariableContainer objects."""
 
     def decorator(func: NumpyFuncT) -> NumpyFuncT:
@@ -683,7 +682,7 @@ def implements(np_function: Any) -> Callable[[NumpyFuncT], NumpyFuncT]:
     return decorator
 
 
-@implements(np.sum)
+@_implements(np.sum)
 def sum_variable_container(
     container: VariableContainer,
     scalar: Optional[np.double] = None,
@@ -700,7 +699,7 @@ def sum_variable_container(
     )
 
 
-@implements(np.multiply)
+@_implements(np.multiply)
 def multiply_variable_container(
     container: VariableContainer,
     scalar: Optional[np.double] = None,
@@ -716,17 +715,17 @@ def multiply_variable_container(
             constant=0.0,
         )
     if coeffs is not None:
-        assert container.shape == coeffs.shape
+        assert container.shape == coeffs.shape, (container.shape, coeffs.shape)
         return _WeightedSum(
             variable_indices=indices.flatten(),
             coefficients=coeffs.flatten(),
             constant=0.0,
         )
 
-    raise TypeError('Cannot call multiply_variable_container without argument')
+    raise ValueError('Cannot call multiply_variable_container without argument')
 
 
-@implements(np.dot)
+@_implements(np.dot)
 def dot_variable_container(
     container: VariableContainer,
     scalar: Optional[np.double] = None,
@@ -736,7 +735,7 @@ def dot_variable_container(
     indices: npt.NDArray[np.int32] = container.variable_indices
     if coeffs is not None:
         assert scalar is None
-        assert container.shape == coeffs.shape
+        assert container.shape == coeffs.shape, (container.shape, coeffs.shape)
         return _WeightedSum(
             variable_indices=indices.flatten(),
             coefficients=coeffs.flatten(),
@@ -749,7 +748,7 @@ def dot_variable_container(
             constant=0.0,
         )
 
-    raise TypeError('Cannot call dot_variable_container without argument')
+    raise ValueError('Cannot call dot_variable_container without argument')
 
 
 class VarCompVar:
@@ -975,31 +974,29 @@ class ModelBuilder:
                 shape = np.shape(lower_bounds)
             elif shape != np.shape(lower_bounds):
                 raise ValueError(
-                    'ModelBuilder.new_var_array: lower_bounds must be compatible'
-                    ' with shape')
+                    'lower_bounds, upper_bounds, is_integral and shape must have'
+                    ' compatible shapes (when defined)')
 
         if not np.isscalar(upper_bounds):
             if shape is None:
                 shape = np.shape(upper_bounds)
             elif shape != np.shape(upper_bounds):
                 raise ValueError(
-                    'ModelBuilder.new_var_array: ubs must be compatible with shape'
-                    ' or lower_bounds')
+                    'lower_bounds, upper_bounds, is_integral and shape must have'
+                    ' compatible shapes (when defined)')
 
         if not np.isscalar(is_integral):
             if shape is None:
                 shape = np.shape(is_integral)
             elif shape != np.shape(is_integral):
                 raise ValueError(
-                    'ModelBuilder.new_var_array: is_integral must be compatible'
-                    ' with shape, lower_bounds, or upper_bounds')
+                    'lower_bounds, upper_bounds, is_integral and shape must have'
+                    ' compatible shapes (when defined)')
 
         if shape is None:
-            raise ValueError(
-                'ModelBuilder.new_var_array: a shape must be defined')
+            raise ValueError('a shape must be defined')
 
-        if name is None:
-            name = ''
+        name = name or ''
 
         if (np.isscalar(lower_bounds) and np.isscalar(upper_bounds) and
                 np.isscalar(is_integral)):
@@ -1038,23 +1035,21 @@ class ModelBuilder:
                 shape = np.shape(lower_bounds)
             elif shape != np.shape(lower_bounds):
                 raise ValueError(
-                    'ModelBuilder.new_num_var_array: lower_bounds must be compatible'
-                    ' with shape')
+                    'lower_bounds, upper_bounds, and shape must have'
+                    ' compatible shapes (when defined)')
 
         if not np.isscalar(upper_bounds):
             if shape is None:
                 shape = np.shape(upper_bounds)
             elif shape != np.shape(upper_bounds):
                 raise ValueError(
-                    'ModelBuilder.new_num_var_array: ubs must be compatible with shape'
-                    ' or lower_bounds')
+                    'lower_bounds, upper_bounds, and shape must have'
+                    ' compatible shapes (when defined)')
 
         if shape is None:
-            raise ValueError(
-                'ModelBuilder.new_num_var_array: a shape must be defined')
+            raise ValueError('a shape must be defined')
 
-        if name is None:
-            name = ''
+        name = name or ''
 
         if np.isscalar(lower_bounds) and np.isscalar(upper_bounds):
             var_indices = self.__helper.add_var_array(shape, lower_bounds,
@@ -1089,23 +1084,21 @@ class ModelBuilder:
                 shape = np.shape(lower_bounds)
             elif shape != np.shape(lower_bounds):
                 raise ValueError(
-                    'ModelBuilder.new_int_var_array: lower_bounds must be compatible'
-                    ' with shape')
+                    'lower_bounds, upper_bounds, and shape must have'
+                    ' compatible shapes (when defined)')
 
         if not np.isscalar(upper_bounds):
             if shape is None:
                 shape = np.shape(upper_bounds)
             elif shape != np.shape(upper_bounds):
                 raise ValueError(
-                    'ModelBuilder.new_int_var_array: upper_bounds must be compatible'
-                    ' with shape or lower_bounds')
+                    'lower_bounds, upper_bounds, and shape must have'
+                    ' compatible shapes (when defined)')
 
         if shape is None:
-            raise ValueError(
-                'ModelBuilder.new_int_var_array: a shape must be defined')
+            raise ValueError('a shape must be defined')
 
-        if name is None:
-            name = ''
+        name = name or ''
 
         if np.isscalar(lower_bounds) and np.isscalar(upper_bounds):
             var_indices = self.__helper.add_var_array(shape, lower_bounds,
@@ -1131,8 +1124,7 @@ class ModelBuilder:
         if mbh.is_integral(shape):
             shape = [shape]
 
-        if name is None:
-            name = ''
+        name = name or ''
 
         var_indices = self.__helper.add_var_array(shape, 0.0, 1.0, True, name)
         return VariableContainer(self.__helper, var_indices)

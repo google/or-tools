@@ -67,7 +67,7 @@ def main():
     # The amount packed in each bin cannot exceed its capacity.
     for j in data['bins']:
         model.add(
-            np.dot(x[:, j], data['weights']) <= y[j] * data['bin_capacity'])
+            np.dot(x[:, j], data['weights']) <= data['bin_capacity'] * y[j])
     # [END constraints]
 
     # [START objective]
