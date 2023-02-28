@@ -20,7 +20,7 @@
 //
 // solve --solver=scip \
 //       --time_limit=90s \
-//       --logtostderr \
+//       --stderrthreshold=0 \
 //       --linear_solver_enable_verbose_output \
 //       --input=/tmp/foo.mps \
 //       --dump_model=/tmp/foo.model \
@@ -33,7 +33,7 @@
 //
 // solve --solver=sat \
 //       --params="max_time_in_seconds:600, num_search_workers:8"
-//       --logtostderr \
+//       --stderrthreshold=0 \
 //       --input=/tmp/foo.mps \
 //       2>/tmp/foo.err
 //
@@ -42,7 +42,7 @@
 // solve --solver=sat \
 //       --time_limit=10m \
 //       --num_threads=8 \
-//       --logtostderr \
+//       --stderrthreshold=0 \
 //       --input=/tmp/foo.mps \
 //       --dump_model=/tmp/foo.model \
 //       --dump_request=/tmp/foo.request \

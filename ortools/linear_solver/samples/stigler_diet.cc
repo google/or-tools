@@ -320,7 +320,7 @@ void StiglerDiet() {
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   operations_research::StiglerDiet();
   return EXIT_SUCCESS;
 }
