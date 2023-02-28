@@ -208,7 +208,7 @@ jobs:
         shell: bash
         run: |
           cmake --version
-          cmake -S . -B build -DPython3_ROOT_DIR="${{ env.pythonLocation }}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=${{ matrix.build-examples }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }}
+          cmake -S . -B build -DPython3_ROOT_DIR="${{ env.pythonLocation }}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=${{ matrix.build-examples }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DUSE_SIRIUS=${{ matrix.sirius }} -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake" -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }} -DBUILD_FLATZINC=OFF
 
       - name: Build OR-Tools Linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
@@ -249,7 +249,6 @@ jobs:
         id: or-install
         shell: bash
         run: |
-          find build/install/bin -type f ! \( -name 'protoc*' -o -name 'scip*' -o -name 'fz*' \) -delete
           cd build
           ARCHIVE_NAME="ortools_cxx${{ steps.names.outputs.appendix_with_shared }}.zip"
           ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
