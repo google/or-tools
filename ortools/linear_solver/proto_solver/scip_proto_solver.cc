@@ -31,6 +31,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
@@ -277,8 +278,7 @@ absl::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
   std::vector<SCIP_VAR*> vars;
   std::vector<double> vals;
   std::vector<SCIP_CONS*> cons;
-  auto add_abs_constraint =
-      [&](const std::string& name_prefix) -> absl::Status {
+  auto add_abs_constraint = [&](absl::string_view name_prefix) -> absl::Status {
     SCIP_CONS* scip_cons = nullptr;
     CHECK(vars.size() == vals.size());
     const std::string name =
@@ -384,7 +384,7 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   std::vector<SCIP_VAR*> vars;
   std::vector<double> vals;
   std::vector<SCIP_CONS*> cons;
-  auto add_lin_constraint = [&](const std::string& name_prefix,
+  auto add_lin_constraint = [&](absl::string_view name_prefix,
                                 double lower_bound = 0.0,
                                 double upper_bound = 0.0) -> absl::Status {
     SCIP_CONS* scip_cons = nullptr;

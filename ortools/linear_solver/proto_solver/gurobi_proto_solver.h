@@ -18,6 +18,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
@@ -46,7 +47,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
 // "#\n# Gurobi-specific parameters, still part of the
 // comment\n\nThreads=1\nPresolve  2,SolutionLimit=100" This function will
 // process each and every token, even if an intermediate token is unrecognized.
-absl::Status SetSolverSpecificParameters(const std::string& parameters,
+absl::Status SetSolverSpecificParameters(absl::string_view parameters,
                                          GRBenv* gurobi);
 }  // namespace operations_research
 #endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_GUROBI_PROTO_SOLVER_H_

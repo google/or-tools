@@ -27,6 +27,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/status_macros.h"
@@ -222,7 +223,7 @@ int AddMaxConstraint(const MPGeneralConstraintProto& gen_cst,
 }
 }  // namespace
 
-absl::Status SetSolverSpecificParameters(const std::string& parameters,
+absl::Status SetSolverSpecificParameters(absl::string_view parameters,
                                          GRBenv* gurobi) {
   if (parameters.empty()) return absl::OkStatus();
   std::vector<std::string> error_messages;
