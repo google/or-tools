@@ -14,6 +14,8 @@
 """Solve a simple bin packing problem using a MIP solver."""
 # [START program]
 # [START import]
+import numpy as np
+
 from ortools.linear_solver.python import model_builder
 # [END import]
 
@@ -36,6 +38,8 @@ def create_data_model():
 def main():
     # [START data]
     data = create_data_model()
+    num_items = len(data['items'])
+    num_bins = len(data['bins'])
     # [END data]
     # [END program_part1]
 
@@ -48,33 +52,27 @@ def main():
     # [START variables]
     # Variables
     # x[i, j] = 1 if item i is packed in bin j.
-    x = {}
-    for i in data['items']:
-        for j in data['bins']:
-            x[(i, j)] = model.new_bool_var(f'x_{i}_{j}')
+    x = model.new_bool_var_array(shape=[num_items, num_bins], name='x')
 
     # y[j] = 1 if bin j is used.
-    y = {}
-    for j in data['bins']:
-        y[j] = model.new_bool_var(f'y_{j}')
+    y = model.new_bool_var_array(shape=[num_bins], name='y')
     # [END variables]
 
     # [START constraints]
     # Constraints
     # Each item must be in exactly one bin.
     for i in data['items']:
-        model.add(sum(x[i, j] for j in data['bins']) == 1)
+        model.add(np.sum(x[i, :]) == 1)
 
     # The amount packed in each bin cannot exceed its capacity.
     for j in data['bins']:
         model.add(
-            sum(x[(i, j)] * data['weights'][i] for i in data['items']) <= y[j] *
-            data['bin_capacity'])
+            np.dot(x[:, j], data['weights']) <= y[j] * data['bin_capacity'])
     # [END constraints]
 
     # [START objective]
     # Objective: minimize the number of bins used.
-    model.minimize(model_builder.LinearExpr.sum([y[j] for j in data['bins']]))
+    model.minimize(np.sum(y))
     # [END objective]
 
     # [START solve]

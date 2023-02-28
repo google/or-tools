@@ -13,13 +13,19 @@
 
 // A pybind11 wrapper for model_builder_helper.
 
+#include <algorithm>
+#include <complex>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -106,6 +112,38 @@ void BuildModelFromSparseData(
   }
 }
 
+std::vector<std::pair<int, double>> SortedGroupedTerms(
+    const std::vector<int>& indices, const std::vector<double>& coefficients) {
+  CHECK_EQ(indices.size(), coefficients.size());
+  std::vector<std::pair<int, double>> terms;
+  terms.reserve(indices.size());
+  for (int i = 0; i < indices.size(); ++i) {
+    terms.emplace_back(indices[i], coefficients[i]);
+  }
+  std::sort(
+      terms.begin(), terms.end(),
+      [](const std::pair<int, double>& a, const std::pair<int, double>& b) {
+        if (a.first != b.first) return a.first < b.first;
+        if (std::abs(a.second) != std::abs(b.second)) {
+          return std::abs(a.second) < std::abs(b.second);
+        }
+        return a.second < b.second;
+      });
+  int pos = 0;
+  for (int i = 0; i < terms.size(); ++i) {
+    if (i == 0 || terms[i].first != terms[i - 1].first) {
+      if (i != pos) {
+        terms[pos] = terms[i];
+      }
+      pos++;
+    } else {
+      terms[pos].second += terms[i].second;
+    }
+  }
+  terms.resize(pos);
+  return terms;
+}
+
 PYBIND11_MODULE(pywrap_model_builder_helper, m) {
   py::class_<MPModelExportOptions>(m, "MPModelExportOptions")
       .def(py::init<>())
@@ -151,7 +189,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
           arg("objective_coefficients"), arg("constraint_lower_bounds"),
           arg("constraint_upper_bounds"), arg("constraint_matrix"))
       .def("add_var", &ModelBuilderHelper::AddVar)
-      .def("add_var_ndarray",
+      .def("add_var_array",
            [](ModelBuilderHelper* helper, std::vector<size_t> shape, double lb,
               double ub, bool is_integral, absl::string_view name_prefix) {
              int size = shape[0];
@@ -174,17 +212,13 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
              }
              return result;
            })
-      .def("add_var_ndarray_with_bounds",
+      .def("add_var_array_with_bounds",
            [](ModelBuilderHelper* helper, py::array_t<double> lbs,
               py::array_t<double> ubs, py::array_t<bool> are_integral,
               absl::string_view name_prefix) {
              py::buffer_info buf_lbs = lbs.request();
              py::buffer_info buf_ubs = ubs.request();
              py::buffer_info buf_are_integral = are_integral.request();
-             if (buf_lbs.ndim != 1 || buf_ubs.ndim != 1 ||
-                 buf_are_integral.ndim != 1) {
-               throw std::runtime_error("Number of dimensions must be one");
-             }
              const int size = buf_lbs.size;
              if (size != buf_ubs.size || size != buf_are_integral.size) {
                throw std::runtime_error("Input sizes must match");
@@ -222,6 +256,14 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("set_var_objective_coefficient",
            &ModelBuilderHelper::SetVarObjectiveCoefficient, arg("var_index"),
            arg("coeff"))
+      .def("set_objective_coefficients",
+           [](ModelBuilderHelper* helper, const std::vector<int>& indices,
+              const std::vector<double>& coefficients) {
+             for (const auto& [i, c] :
+                  SortedGroupedTerms(indices, coefficients)) {
+               helper->SetVarObjectiveCoefficient(i, c);
+             }
+           })
       .def("set_var_name", &ModelBuilderHelper::SetVarName, arg("var_index"),
            arg("name"))
       .def("add_linear_constraint", &ModelBuilderHelper::AddLinearConstraint)
@@ -233,6 +275,15 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
            arg("ub"))
       .def("add_term_to_constraint", &ModelBuilderHelper::AddConstraintTerm,
            arg("ct_index"), arg("var_index"), arg("coeff"))
+      .def("add_terms_to_constraint",
+           [](ModelBuilderHelper* helper, int ct_index,
+              const std::vector<int>& indices,
+              const std::vector<double>& coefficients) {
+             for (const auto& [i, c] :
+                  SortedGroupedTerms(indices, coefficients)) {
+               helper->AddConstraintTerm(ct_index, i, c);
+             }
+           })
       .def("set_constraint_name", &ModelBuilderHelper::SetConstraintName,
            arg("ct_index"), arg("name"))
       .def("num_variables", &ModelBuilderHelper::num_variables)
@@ -339,7 +390,10 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("dual_value", &ModelSolverHelper::dual_value, arg("ct_index"))
       .def("variable_values",
            [](const ModelSolverHelper& helper) {
-             if (!helper.has_response()) return Eigen::VectorXd();
+             if (!helper.has_response()) {
+               throw std::logic_error(
+                   "Accessing a solution value when none has been found.");
+             }
              const MPSolutionResponse& response = helper.response();
              Eigen::VectorXd vec(response.variable_value_size());
              for (int i = 0; i < response.variable_value_size(); ++i) {
@@ -347,9 +401,26 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
              }
              return vec;
            })
+      .def("expression_value",
+           [](const ModelSolverHelper& helper, const std::vector<int>& indices,
+              const std::vector<double>& coefficients, double constant) {
+             if (!helper.has_response()) {
+               throw std::logic_error(
+                   "Accessing a solution value when none has been found.");
+             }
+             const MPSolutionResponse& response = helper.response();
+             for (int i = 0; i < indices.size(); ++i) {
+               constant +=
+                   response.variable_value(indices[i]) * coefficients[i];
+             }
+             return constant;
+           })
       .def("reduced_costs",
            [](const ModelSolverHelper& helper) {
-             if (!helper.has_response()) return Eigen::VectorXd();
+             if (!helper.has_response()) {
+               throw std::logic_error(
+                   "Accessing a solution value when none has been found.");
+             }
              const MPSolutionResponse& response = helper.response();
              Eigen::VectorXd vec(response.reduced_cost_size());
              for (int i = 0; i < response.reduced_cost_size(); ++i) {
@@ -358,7 +429,10 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
              return vec;
            })
       .def("dual_values", [](const ModelSolverHelper& helper) {
-        if (!helper.has_response()) return Eigen::VectorXd();
+        if (!helper.has_response()) {
+          throw std::logic_error(
+              "Accessing a solution value when none has been found.");
+        }
         const MPSolutionResponse& response = helper.response();
         Eigen::VectorXd vec(response.dual_value_size());
         for (int i = 0; i < response.dual_value_size(); ++i) {

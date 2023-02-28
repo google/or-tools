@@ -14,6 +14,8 @@
 """MIP example that solves an assignment problem."""
 # [START program]
 # [START import]
+import numpy as np
+
 from ortools.linear_solver.python import model_builder
 # [END import]
 
@@ -41,30 +43,23 @@ def main():
     # [START variables]
     # x[i, j] is an array of 0-1 variables, which will be 1
     # if worker i is assigned to task j.
-    x = {}
-    for i in range(num_workers):
-        for j in range(num_tasks):
-            x[i, j] = model.new_bool_var(f'x_{i}_{j}')
+    x = model.new_bool_var_array(shape=[num_workers, num_tasks], name='x')
     # [END variables]
 
     # Constraints
     # [START constraints]
     # Each worker is assigned to at most 1 task.
     for i in range(num_workers):
-        model.add(sum(x[i, j] for j in range(num_tasks)) <= 1)
+        model.add(np.sum(x[i, :]) <= 1)
 
     # Each task is assigned to exactly one worker.
     for j in range(num_tasks):
-        model.add(sum(x[i, j] for i in range(num_workers)) == 1)
+        model.add(np.sum(x[:, j]) == 1)
     # [END constraints]
 
     # Objective
     # [START objective]
-    objective_expr = 0
-    for i in range(num_workers):
-        for j in range(num_tasks):
-            objective_expr += costs[i][j] * x[i, j]
-    model.minimize(objective_expr)
+    model.minimize(np.multiply(x, costs))
     # [END objective]
 
     # [START solve]

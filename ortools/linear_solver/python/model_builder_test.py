@@ -11,13 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for model_builder."""
+"""Tests for ModelBuilder."""
 
 import math
 import numpy as np
+import numpy.testing as np_testing
 import os
 
-from ortools.linear_solver.python import model_builder
+from ortools.linear_solver.python import model_builder as mb
 import unittest
 
 
@@ -29,7 +30,7 @@ class ModelBuilderTest(unittest.TestCase):
     # pylint: disable=too-many-statements
     def run_minimal_linear_example(self, solver_name):
         """Minimal Linear Example."""
-        model = model_builder.ModelBuilder()
+        model = mb.ModelBuilder()
         model.name = 'minimal_linear_example'
         x1 = model.new_num_var(0.0, math.inf, 'x1')
         x2 = model.new_num_var(0.0, math.inf, 'x2')
@@ -54,13 +55,18 @@ class ModelBuilderTest(unittest.TestCase):
         c2 = model.add(2.0 * x1 + 2.0 * x2 + 6.0 * x3 <= 300.0)
         self.assertEqual(-math.inf, c2.lower_bound)
 
-        solver = model_builder.ModelSolver(solver_name)
-        self.assertEqual(model_builder.SolveStatus.OPTIMAL, solver.solve(model))
+        solver = mb.ModelSolver(solver_name)
+        self.assertEqual(mb.SolveStatus.OPTIMAL, solver.solve(model))
 
         # The problem has an optimal solution.
         self.assertAlmostEqual(733.333333 + model.objective_offset,
                                solver.objective_value,
                                places=self.NUM_PLACES)
+        self.assertAlmostEqual(
+            solver.value(10.0 * x1 + 6 * x2 + 4.0 * x3 - 5.5),
+            solver.objective_value,
+            places=self.NUM_PLACES,
+        )
         self.assertAlmostEqual(33.333333,
                                solver.value(x1),
                                places=self.NUM_PLACES)
@@ -120,14 +126,14 @@ BOUNDS
  UP BOUND   X_ONE        4
 ENDATA
 """
-        model = model_builder.ModelBuilder()
+        model = mb.ModelBuilder()
         self.assertTrue(model.import_from_mps_string(mps_data))
         self.assertEqual(model.name, 'SupportedMaximizationProblem')
 
     def test_import_from_mps_file(self):
         path = os.path.dirname(__file__)
         mps_path = f'{path}/../testdata/maximization.mps'
-        model = model_builder.ModelBuilder()
+        model = mb.ModelBuilder()
         self.assertTrue(model.import_from_mps_file(mps_path))
         self.assertEqual(model.name, 'SupportedMaximizationProblem')
 
@@ -140,7 +146,7 @@ ENDATA
       4 y + b2 - 3 b3 <= 2;
       constraint_num2: -4 b1 + b2 - 3 z <= -2;
 """
-        model = model_builder.ModelBuilder()
+        model = mb.ModelBuilder()
         self.assertTrue(model.import_from_lp_string(lp_data))
         self.assertEqual(6, model.num_variables)
         self.assertEqual(3, model.num_constraints)
@@ -151,7 +157,7 @@ ENDATA
     def test_import_from_lp_file(self):
         path = os.path.dirname(__file__)
         lp_path = f'{path}/../testdata/small_model.lp'
-        model = model_builder.ModelBuilder()
+        model = mb.ModelBuilder()
         self.assertTrue(model.import_from_lp_file(lp_path))
         self.assertEqual(6, model.num_variables)
         self.assertEqual(3, model.num_constraints)
@@ -159,8 +165,77 @@ ENDATA
         self.assertEqual(42, model.var_from_index(0).upper_bound)
         self.assertEqual('x', model.var_from_index(0).name)
 
+    def test_class_api(self):
+        model = mb.ModelBuilder()
+        x = model.new_int_var(0, 10, 'x')
+        y = model.new_int_var(1, 10, 'y')
+        z = model.new_int_var(2, 10, 'z')
+        t = model.new_int_var(3, 10, 't')
+
+        e1 = mb.LinearExpr.sum([x, y, z])
+        expected_vars = np.array([0, 1, 2], dtype=np.int32)
+        np_testing.assert_array_equal(expected_vars, e1.variable_indices)
+        np_testing.assert_array_equal(np.array([1, 1, 1], dtype=np.double),
+                                      e1.coefficients)
+        self.assertEqual(e1.constant, 0.0)
+        self.assertEqual(e1.pretty_string(model.helper), 'x + y + z')
+
+        e2 = mb.LinearExpr.sum([e1, 4.0])
+        np_testing.assert_array_equal(expected_vars, e2.variable_indices)
+        np_testing.assert_array_equal(np.array([1, 1, 1], dtype=np.double),
+                                      e2.coefficients)
+        self.assertEqual(e2.constant, 4.0)
+        self.assertEqual(e2.pretty_string(model.helper), 'x + y + z + 4.0')
+
+        e3 = mb.LinearExpr.term(e2, 2)
+        np_testing.assert_array_equal(expected_vars, e3.variable_indices)
+        np_testing.assert_array_equal(np.array([2, 2, 2], dtype=np.double),
+                                      e3.coefficients)
+        self.assertEqual(e3.constant, 8.0)
+        self.assertEqual(e3.pretty_string(model.helper),
+                         '2.0 * x + 2.0 * y + 2.0 * z + 8.0')
+
+        e4 = mb.LinearExpr.weighted_sum([x, t], [-1, 1], constant=2)
+        np_testing.assert_array_equal(np.array([0, 3], dtype=np.int32),
+                                      e4.variable_indices)
+        np_testing.assert_array_equal(np.array([-1, 1], dtype=np.double),
+                                      e4.coefficients)
+        self.assertEqual(e4.constant, 2.0)
+        self.assertEqual(e4.pretty_string(model.helper), '-x + t + 2.0')
+
+        e4b = e4 * 3.0
+        np_testing.assert_array_equal(np.array([0, 3], dtype=np.int32),
+                                      e4b.variable_indices)
+        np_testing.assert_array_equal(np.array([-3, 3], dtype=np.double),
+                                      e4b.coefficients)
+        self.assertEqual(e4b.constant, 6.0)
+        self.assertEqual(e4b.pretty_string(model.helper),
+                         '-3.0 * x + 3.0 * t + 6.0')
+
+        e5 = mb.LinearExpr.sum([e1, -3, e4])
+        np_testing.assert_array_equal(np.array([0, 1, 2, 0, 3], dtype=np.int32),
+                                      e5.variable_indices)
+        np_testing.assert_array_equal(
+            np.array([1, 1, 1, -1, 1], dtype=np.double), e5.coefficients)
+        self.assertEqual(e5.constant, -1.0)
+        self.assertEqual(e5.pretty_string(model.helper),
+                         'x + y + z - x + t - 1.0')
+
+        e6 = mb.LinearExpr.term(x, 2.0, constant=1.0)
+        np_testing.assert_array_equal(np.array([0], dtype=np.int32),
+                                      e6.variable_indices)
+        np_testing.assert_array_equal(np.array([2], dtype=np.double),
+                                      e6.coefficients)
+        self.assertEqual(e6.constant, 1.0)
+
+        e7 = mb.LinearExpr.term(x, 1.0, constant=0.0)
+        self.assertEqual(x, e7)
+
+        e8 = mb.LinearExpr.term(2, 3, constant=4)
+        self.assertEqual(e8, 10)
+
     def test_variables(self):
-        model = model_builder.ModelBuilder()
+        model = mb.ModelBuilder()
         x = model.new_int_var(0.0, 4.0, 'x')
         self.assertEqual(0, x.index)
         self.assertEqual(0.0, x.lower_bound)
@@ -180,31 +255,58 @@ ENDATA
         self.assertNotEqual(x, y)
 
         # array
-        xs = model.new_int_var_ndarray(10, 0.0, 5.0, 'xs_')
+        xs = model.new_int_var_array(shape=10,
+                                     lower_bounds=0.0,
+                                     upper_bounds=5.0,
+                                     name='xs_')
         self.assertEqual(10, xs.size)
         self.assertEqual('xs_4', str(xs[4]))
         lbs = np.array([1.0, 2.0, 3.0])
-        ubs = np.array([3.0, 4.0, 5.0])
-        ys = model.new_int_var_ndarray_with_bounds(lbs, ubs, 'ys_')
+        ubs = [3.0, 4.0, 5.0]
+        ys = model.new_int_var_array(lower_bounds=lbs,
+                                     upper_bounds=ubs,
+                                     name='ys_')
         self.assertEqual('VariableContainer([12 13 14])', str(ys))
-        zs = model.new_int_var_ndarray_with_bounds([1.0, 2.0, 3], [4, 4, 4],
-                                                   'zs_')
+        zs = model.new_int_var_array(lower_bounds=[1.0, 2.0, 3],
+                                     upper_bounds=[4, 4, 4],
+                                     name='zs_')
         self.assertEqual(3, zs.size)
         self.assertEqual((3,), zs.shape)
         self.assertEqual('zs_1', str(zs[1]))
         self.assertEqual('zs_2(index=17, lb=3.0, ub=4.0, integer)', repr(zs[2]))
+        self.assertTrue(zs[2].is_integral)
 
-        bs = model.new_bool_var_ndarray([4, 5], 'bs_')
+        bs = model.new_bool_var_array([4, 5], 'bs_')
         self.assertEqual((4, 5), bs.shape)
         self.assertEqual((5, 4), bs.T.shape)
         self.assertEqual(31, bs.index_at((2, 3)))
         self.assertEqual(20, bs.size)
         self.assertEqual((20,), bs.flatten.shape)
         self.assertEqual((20,), bs.ravel.shape)
+        self.assertTrue(bs[1, 1].is_integral)
 
         # Slices are [lb, ub) closed - open.
         self.assertEqual(5, bs[3, :].size)
         self.assertEqual(6, bs[1:3, 2:5].size)
+
+        sum_bs = np.sum(bs)
+        self.assertEqual(20, sum_bs.variable_indices.size)
+        np_testing.assert_array_equal(sum_bs.variable_indices,
+                                      bs.variable_indices.flatten())
+        np_testing.assert_array_equal(sum_bs.coefficients, np.ones(20))
+        times_bs = np.multiply(bs, 4)
+        np_testing.assert_array_equal(times_bs.variable_indices,
+                                      bs.variable_indices.flatten())
+        np_testing.assert_array_equal(times_bs.coefficients, np.full(20, 4.0))
+        times_bs_rev = np.multiply(4, bs)
+        np_testing.assert_array_equal(times_bs_rev.variable_indices,
+                                      bs.variable_indices.flatten())
+        np_testing.assert_array_equal(times_bs_rev.coefficients,
+                                      np.full(20, 4.0))
+        dot_bs = np.dot(bs[2], np.array([1, 2, 3, 4, 5], dtype=np.double))
+        np_testing.assert_array_equal(dot_bs.variable_indices,
+                                      bs[2].variable_indices)
+        np_testing.assert_array_equal(dot_bs.coefficients, [1, 2, 3, 4, 5])
 
         # Tests the hash method.
         var_set = set()
@@ -213,15 +315,187 @@ ENDATA
         self.assertIn(x_copy, var_set)
         self.assertNotIn(y, var_set)
 
+    def test_numpy_var_arrays(self):
+        model = mb.ModelBuilder()
+
+        x = model.new_var_array(
+            lower_bounds=0.0,
+            upper_bounds=4.0,
+            shape=[2, 3],
+            is_integral=False,
+        )
+        np_testing.assert_array_equal(x.shape, [2, 3])
+
+        y = model.new_var_array(
+            lower_bounds=[[0.0, 1.0, 2.0], [0.0, 0.0, 2.0]],
+            upper_bounds=4.0,
+            is_integral=False,
+            name='y',
+        )
+        np_testing.assert_array_equal(y.shape, [2, 3])
+
+        z = model.new_var_array(
+            lower_bounds=0.0,
+            upper_bounds=[[2.0, 1.0, 2.0], [3.0, 4.0, 2.0]],
+            is_integral=False,
+            name='z',
+        )
+        np_testing.assert_array_equal(z.shape, [2, 3])
+
+        with self.assertRaises(ValueError):
+            x = model.new_var_array(
+                lower_bounds=0.0,
+                upper_bounds=4.0,
+                is_integral=False,
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_var_array(
+                lower_bounds=[0, 0],
+                upper_bounds=[1, 2, 3],
+                is_integral=False,
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_var_array(
+                shape=[2, 3],
+                lower_bounds=0.0,
+                upper_bounds=[1, 2, 3],
+                is_integral=False,
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_var_array(
+                shape=[2, 3],
+                lower_bounds=[1, 2],
+                upper_bounds=4.0,
+                is_integral=False,
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_var_array(
+                shape=[2, 3],
+                lower_bounds=0.0,
+                upper_bounds=4.0,
+                is_integral=[False, True],
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_var_array(
+                lower_bounds=[1, 2],
+                upper_bounds=4.0,
+                is_integral=[False, False, False],
+            )
+
+    def test_numpy_num_var_arrays(self):
+        model = mb.ModelBuilder()
+
+        x = model.new_num_var_array(
+            lower_bounds=0.0,
+            upper_bounds=4.0,
+            shape=[2, 3],
+        )
+        np_testing.assert_array_equal(x.shape, [2, 3])
+
+        y = model.new_num_var_array(
+            lower_bounds=[[0.0, 1.0, 2.0], [0.0, 0.0, 2.0]],
+            upper_bounds=4.0,
+            name='y',
+        )
+        np_testing.assert_array_equal(y.shape, [2, 3])
+
+        z = model.new_num_var_array(
+            lower_bounds=0.0,
+            upper_bounds=[[2.0, 1.0, 2.0], [3.0, 4.0, 2.0]],
+            name='z',
+        )
+        np_testing.assert_array_equal(z.shape, [2, 3])
+
+        with self.assertRaises(ValueError):
+            x = model.new_num_var_array(
+                lower_bounds=0.0,
+                upper_bounds=4.0,
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_num_var_array(
+                lower_bounds=[0, 0],
+                upper_bounds=[1, 2, 3],
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_num_var_array(
+                shape=[2, 3],
+                lower_bounds=0.0,
+                upper_bounds=[1, 2, 3],
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_num_var_array(
+                shape=[2, 3],
+                lower_bounds=[1, 2],
+                upper_bounds=4.0,
+            )
+
+    def test_numpy_int_var_arrays(self):
+        model = mb.ModelBuilder()
+
+        x = model.new_int_var_array(
+            lower_bounds=0.0,
+            upper_bounds=4.0,
+            shape=[2, 3],
+        )
+        np_testing.assert_array_equal(x.shape, [2, 3])
+
+        y = model.new_int_var_array(
+            lower_bounds=[[0.0, 1.0, 2.0], [0.0, 0.0, 2.0]],
+            upper_bounds=4.0,
+            name='y',
+        )
+        np_testing.assert_array_equal(y.shape, [2, 3])
+
+        z = model.new_int_var_array(
+            lower_bounds=0.0,
+            upper_bounds=[[2.0, 1.0, 2.0], [3.0, 4.0, 2.0]],
+            name='z',
+        )
+        np_testing.assert_array_equal(z.shape, [2, 3])
+
+        with self.assertRaises(ValueError):
+            x = model.new_int_var_array(
+                lower_bounds=0.0,
+                upper_bounds=4.0,
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_int_var_array(
+                lower_bounds=[0, 0],
+                upper_bounds=[1, 2, 3],
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_int_var_array(
+                shape=[2, 3],
+                lower_bounds=0.0,
+                upper_bounds=[1, 2, 3],
+            )
+
+        with self.assertRaises(ValueError):
+            x = model.new_int_var_array(
+                shape=[2, 3],
+                lower_bounds=[1, 2],
+                upper_bounds=4.0,
+            )
+
     def test_duplicate_variables(self):
-        model = model_builder.ModelBuilder()
+        model = mb.ModelBuilder()
         x = model.new_int_var(0.0, 4.0, 'x')
         y = model.new_int_var(0.0, 4.0, 'y')
         z = model.new_int_var(0.0, 4.0, 'z')
         model.add(x + 2 * y == x - z)
         model.minimize(x + y + z)
-        solver = model_builder.ModelSolver('scip')
-        self.assertEqual(model_builder.SolveStatus.OPTIMAL, solver.solve(model))
+        solver = mb.ModelSolver('scip')
+        self.assertEqual(mb.SolveStatus.OPTIMAL, solver.solve(model))
 
     def test_issue_3614(self):
         total_number_of_choices = 5 + 1
@@ -235,7 +509,7 @@ ENDATA
 
         bundle_start_idx = len(standalone_features)
         # Model
-        model = model_builder.ModelBuilder()
+        model = mb.ModelBuilder()
         y = {}
         v = {}
         for i in range(total_number_of_choices):
@@ -248,12 +522,12 @@ ENDATA
                                       (feature_bundle_incidence_matrix[(i, 0)] *
                                        y[bundle_start_idx])))
 
-        solver = model_builder.ModelSolver('scip')
+        solver = mb.ModelSolver('scip')
         status = solver.solve(model)
-        self.assertEqual(model_builder.SolveStatus.OPTIMAL, status)
+        self.assertEqual(mb.SolveStatus.OPTIMAL, status)
 
     def test_varcompvar(self):
-        model = model_builder.ModelBuilder()
+        model = mb.ModelBuilder()
         x = model.new_int_var(0.0, 4.0, 'x')
         y = model.new_int_var(0.0, 4.0, 'y')
         ct = x == y

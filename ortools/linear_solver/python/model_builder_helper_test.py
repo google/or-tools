@@ -168,7 +168,7 @@ class PywrapModelBuilderHelperTest(unittest.TestCase):
         self.assertEqual([0], model.constraint_var_indices(1))
         self.assertEqual([2.0], model.constraint_coefficients(1))
 
-        var_array = model.add_var_ndarray([10], 1.0, 5.0, True, 'var_')
+        var_array = model.add_var_array([10], 1.0, 5.0, True, 'var_')
         self.assertEqual(1, var_array.ndim)
         self.assertEqual(10, var_array.size)
         self.assertEqual((10,), var_array.shape)
