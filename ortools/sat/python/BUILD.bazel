@@ -20,9 +20,6 @@ load("@rules_python//python:defs.bzl", "py_library")
 pybind_extension(
     name = "swig_helper",
     srcs = ["swig_helper.cc"],
-    data = [
-        "//ortools/util/python:sorted_interval_list.so",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/sat:cp_model_cc_proto",
@@ -34,12 +31,11 @@ pybind_extension(
 py_test(
     name = "swig_helper_test",
     srcs = ["swig_helper_test.py"],
-    data = [
-        ":swig_helper.so",
-    ],
     deps = [
+        ":swig_helper",
         "//ortools/sat:cp_model_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
+        "//ortools/util/python:sorted_interval_list",
         requirement("absl-py"),
     ],
 )
@@ -47,11 +43,9 @@ py_test(
 py_library(
     name = "cp_model_helper",
     srcs = ["cp_model_helper.py"],
-    data = [
-        ":swig_helper.so",
-    ],
     visibility = ["//visibility:public"],
     deps = [
+        ":swig_helper",
         requirement("numpy"),
     ],
 )
@@ -68,15 +62,13 @@ py_test(
 py_library(
     name = "cp_model",
     srcs = ["cp_model.py"],
-    data = [
-        ":swig_helper.so",
-        "//ortools/util/python:sorted_interval_list.so",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_helper",
+        ":swig_helper",
         "//ortools/sat:cp_model_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 

@@ -13,7 +13,7 @@ index cde1e93..e8dba55 100644
          copts = copts + PYBIND_COPTS + select({
              "@pybind11//:msvc_compiler": [],
              "//conditions:default": [
-@@ -59,6 +63,33 @@ def pybind_extension(
+@@ -59,6 +63,42 @@ def pybind_extension(
          **kwargs
      )
  
@@ -41,6 +41,15 @@ index cde1e93..e8dba55 100644
 +        srcs = [name + ".dll"],
 +        outs = [name + ".pyd"],
 +        cmd = "cp $< $@"
++    )
++
++    native.py_library(
++        name = name,
++        visibility = ["//visibility:public"],
++        data = select({
++            "@platforms//os:windows": [":" + name + ".pyd"],
++            "//conditions:default": [":" + name + ".so"],
++        })
 +    )
 +
 +

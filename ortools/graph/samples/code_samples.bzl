@@ -51,12 +51,10 @@ def code_sample_py(name):
         name = name + "_py3",
         srcs = [name + ".py"],
         main = name + ".py",
-        data = [
-            "//ortools/graph/python:linear_sum_assignment.so",
-            "//ortools/graph/python:min_cost_flow.so",
-            "//ortools/graph/python:max_flow.so",
-        ],
         deps = [
+            "//ortools/graph/python:linear_sum_assignment",
+            "//ortools/graph/python:min_cost_flow",
+            "//ortools/graph/python:max_flow",
             requirement("absl-py"),
             requirement("numpy"),
         ],
@@ -69,12 +67,10 @@ def code_sample_py(name):
         size = "small",
         srcs = [name + ".py"],
         main = name + ".py",
-        data = [
-            "//ortools/graph/python:linear_sum_assignment.so",
-            "//ortools/graph/python:min_cost_flow.so",
-            "//ortools/graph/python:max_flow.so",
-        ],
         deps = [
+            "//ortools/graph/python:linear_sum_assignment",
+            "//ortools/graph/python:min_cost_flow",
+            "//ortools/graph/python:max_flow",
             requirement("absl-py"),
             requirement("numpy"),
         ],
