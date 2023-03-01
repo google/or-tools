@@ -87,7 +87,6 @@ int XPRSsetobjoffset(const XPRSprob& mLp, double value) {
   static int indexes[1] = { -1 };
   double values[1] = { -value };
   XPRSchgobj(mLp, 1, indexes, values);
-  // XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
   return 0;
 }
 
