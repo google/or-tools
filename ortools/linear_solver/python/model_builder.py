@@ -692,8 +692,9 @@ def dot_variable_container(
 ) -> LinearExprT:
     """Implementation of np.dot for VariableContainer objects."""
     if len(container.shape) != 1:
-        raise TypeError(
-            'dot_variable_container only supports 1D variable containers')
+        raise ValueError(
+            'dot_variable_container only supports 1D variable containers (shape ='
+            f' {container.shape}')
     indices: npt.NDArray[np.int32] = container.variable_indices
     if np.isscalar(arg):
         return _WeightedSum(

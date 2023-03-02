@@ -30,8 +30,7 @@ def main():
         [45, 110, 95, 115],
         [50, 100, 90, 100],
     ])
-    num_workers = len(costs)
-    num_tasks = len(costs[0])
+    num_workers, num_tasks = costs.shape
     # [END data_model]
 
     # Solver
