@@ -56,15 +56,3 @@ index cde1e93..e8dba55 100644
  # Builds a pybind11 compatible library. This can be linked to a pybind_extension.
  def pybind_library(
          name,
-diff --git a/pybind11.BUILD b/pybind11.BUILD
-index 15590aa..989dfdf 100644
---- a/pybind11.BUILD
-+++ b/pybind11.BUILD
-@@ -21,6 +21,7 @@ OPTIONS = select({
- INCLUDES = [
-     "include/pybind11/*.h",
-     "include/pybind11/detail/*.h",
-+    "include/pybind11/eigen/*.h",
- ]
- 
- EXCLUDES = [
