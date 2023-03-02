@@ -281,8 +281,7 @@ ENDATA
         self.assertEqual((5, 4), bs.T.shape)
         self.assertEqual(31, bs.index_at((2, 3)))
         self.assertEqual(20, bs.size)
-        self.assertEqual((20,), bs.flatten.shape)
-        self.assertEqual((20,), bs.ravel.shape)
+        self.assertEqual((20,), bs.flatten().shape)
         self.assertTrue(bs[1, 1].is_integral)
 
         # Slices are [lb, ub) closed - open.
@@ -294,15 +293,25 @@ ENDATA
         np_testing.assert_array_equal(sum_bs.variable_indices,
                                       bs.variable_indices.flatten())
         np_testing.assert_array_equal(sum_bs.coefficients, np.ones(20))
-        times_bs = np.multiply(bs, 4)
+
+        sum_bs_cte = np.sum(bs, 2.2)
+        self.assertEqual(20, sum_bs_cte.variable_indices.size)
+        np_testing.assert_array_equal(sum_bs_cte.variable_indices,
+                                      bs.variable_indices.flatten())
+        np_testing.assert_array_equal(sum_bs.coefficients, np.ones(20))
+        self.assertEqual(sum_bs_cte.constant, 2.2)
+
+        times_bs = np.dot(bs[1], 4)
         np_testing.assert_array_equal(times_bs.variable_indices,
-                                      bs.variable_indices.flatten())
-        np_testing.assert_array_equal(times_bs.coefficients, np.full(20, 4.0))
-        times_bs_rev = np.multiply(4, bs)
+                                      bs[1].variable_indices.flatten())
+        np_testing.assert_array_equal(times_bs.coefficients, np.full(5, 4.0))
+
+        times_bs_rev = np.dot(4, bs[2])
         np_testing.assert_array_equal(times_bs_rev.variable_indices,
-                                      bs.variable_indices.flatten())
+                                      bs[2].variable_indices.flatten())
         np_testing.assert_array_equal(times_bs_rev.coefficients,
-                                      np.full(20, 4.0))
+                                      np.full(5, 4.0))
+
         dot_bs = np.dot(bs[2], np.array([1, 2, 3, 4, 5], dtype=np.double))
         np_testing.assert_array_equal(dot_bs.variable_indices,
                                       bs[2].variable_indices)
