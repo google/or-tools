@@ -13,8 +13,7 @@
 
 Google's software suite for combinatorial optimization.
 
-This fork add an improved support for Xpress solver and
-add the interface to the open source [Sirius](https://github.com/rte-france/sirius-solver) solver
+This fork adds an improved support for Xpress solver and the interface to the open source [Sirius](https://github.com/rte-france/sirius-solver) solver
 developed by [RTE](https://www.rte-france.com/).
 
 ## Specificities of this ortools version
@@ -23,10 +22,7 @@ In order to use a version of ortools with the support of Xpress, a valid Xpress 
 Ortools looks for the environment variable `XPRESS` that contains the path of the dynamic libraries of the solver.
 
 ### Using Sirius
-In order to use a version of ortools with the support of Sirius,
-the dynamic library of Sirius must be present on the machine.
-The environment must contain the variable `SIRIUS` set to the path where the `sirius_solver.so` or `sirius_solver.dll`
-can be found.
+In order to use a version of ortools with the support of Sirius, the dynamic library of Sirius must be present on the machine. When using the dynamically linked distribution, file libsirius_solver.so / libsirius_solver.dll is required.
 
 ## Table of Contents
 
