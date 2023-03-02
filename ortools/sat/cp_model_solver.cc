@@ -24,6 +24,7 @@
 #include <random>
 #include <string>
 #include <thread>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -182,6 +183,71 @@ std::string Summarize(const std::string& input) {
                       input.substr(input.size() - half, half));
 }
 
+#if !defined(__PORTABLE_PLATFORM__)
+// We need to print " { " instead of " {\n" to inline our variables like:
+//
+// variables { domain: [0, 1] }
+//
+// instead of
+//
+// variables {
+//   domain: [0, 1] }
+class InlineFieldPrinter
+    : public google::protobuf::TextFormat::FastFieldValuePrinter {
+  void PrintMessageStart(const google::protobuf::Message& /*message*/,
+                         int /*field_index*/, int /*field_count*/,
+                         bool /*single_line_mode*/,
+                         google::protobuf::TextFormat::BaseTextGenerator*
+                             generator) const override {
+    generator->PrintLiteral(" { ");
+  }
+};
+
+class InlineMessagePrinter
+    : public google::protobuf::TextFormat::MessagePrinter {
+ public:
+  InlineMessagePrinter() {
+    printer_.SetSingleLineMode(true);
+    printer_.SetUseShortRepeatedPrimitives(true);
+  }
+
+  void Print(const google::protobuf::Message& message,
+             bool /*single_line_mode*/,
+             google::protobuf::TextFormat::BaseTextGenerator* generator)
+      const override {
+    buffer_.clear();
+    printer_.PrintToString(message, &buffer_);
+    generator->Print(buffer_.data(), buffer_.size());
+  }
+
+ private:
+  google::protobuf::TextFormat::Printer printer_;
+  mutable std::string buffer_;
+};
+
+// Register a InlineFieldPrinter() for all the fields containing the message we
+// want to print in one line.
+void RegisterFieldPrinters(
+    const google::protobuf::Descriptor* descriptor,
+    absl::flat_hash_set<const google::protobuf::Descriptor*>* descriptors,
+    google::protobuf::TextFormat::Printer* printer) {
+  // Recursion stopper.
+  if (!descriptors->insert(descriptor).second) return;
+
+  for (int i = 0; i < descriptor->field_count(); ++i) {
+    const google::protobuf::FieldDescriptor* field = descriptor->field(i);
+    if (field->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
+      if (field->message_type() == IntegerVariableProto::descriptor() ||
+          field->message_type() == LinearExpressionProto::descriptor()) {
+        printer->RegisterFieldValuePrinter(field, new InlineFieldPrinter());
+      } else {
+        RegisterFieldPrinters(field->message_type(), descriptors, printer);
+      }
+    }
+  }
+}
+#endif  // !defined(__PORTABLE_PLATFORM__)
+
 template <class M>
 void DumpModelProto(const M& proto, const std::string& name) {
 #if !defined(__PORTABLE_PLATFORM__)
@@ -189,7 +255,35 @@ void DumpModelProto(const M& proto, const std::string& name) {
     const std::string file = absl::StrCat(
         absl::GetFlag(FLAGS_cp_model_dump_prefix), name, ".pb.txt");
     LOG(INFO) << "Dumping " << name << " text proto to '" << file << "'.";
-    CHECK_OK(file::SetTextProto(file, proto, file::Defaults()));
+
+    // We register a few custom printers to display variables and linear
+    // expression on one line. This is especially nice for variables where it is
+    // easy to recover their indices from the line number now.
+    //
+    // ex:
+    //
+    // variables { domain: [0, 1] }
+    // variables { domain: [0, 1] }
+    // variables { domain: [0, 1] }
+    //
+    // constraints {
+    //   linear {
+    //     vars: [0, 1, 2]
+    //     coeffs: [2, 4, 5 ]
+    //     domain: [11, 11]
+    //   }
+    // }
+    std::string proto_string;
+    google::protobuf::TextFormat::Printer printer;
+    printer.SetUseShortRepeatedPrimitives(true);
+    absl::flat_hash_set<const google::protobuf::Descriptor*> descriptors;
+    RegisterFieldPrinters(CpModelProto::descriptor(), &descriptors, &printer);
+    printer.RegisterMessagePrinter(IntegerVariableProto::descriptor(),
+                                   new InlineMessagePrinter());
+    printer.RegisterMessagePrinter(LinearExpressionProto::descriptor(),
+                                   new InlineMessagePrinter());
+    printer.PrintToString(proto, &proto_string);
+    CHECK_OK(file::SetContents(file, proto_string, file::Defaults()));
   } else {
     const std::string file =
         absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), name, ".bin");
@@ -610,45 +704,153 @@ namespace {
 #if !defined(__PORTABLE_PLATFORM__)
 #endif  // __PORTABLE_PLATFORM__
 
-// This should be called after the model is loaded. It will read the file
+// This should be called on the presolved model. It will read the file
 // specified by --cp_model_load_debug_solution and properly fill the
-// model->Get<DebugSolution>() vector.
-//
-// TODO(user): Note that for now, only the IntegerVariable value are loaded,
-// not the value of the pure Booleans variables.
+// model->Get<DebugSolution>() proto vector.
 void LoadDebugSolution(const CpModelProto& model_proto, Model* model) {
 #if !defined(__PORTABLE_PLATFORM__)
   if (absl::GetFlag(FLAGS_cp_model_load_debug_solution).empty()) return;
-  if (model->Get<DebugSolution>() != nullptr) return;  // Already loaded.
 
   CpSolverResponse response;
-  LOG(INFO) << "Reading solution from '"
-            << absl::GetFlag(FLAGS_cp_model_load_debug_solution) << "'.";
+  SOLVER_LOG(model->GetOrCreate<SolverLogger>(),
+             "Reading debug solution from '",
+             absl::GetFlag(FLAGS_cp_model_load_debug_solution), "'.");
   CHECK_OK(file::GetTextProto(absl::GetFlag(FLAGS_cp_model_load_debug_solution),
                               &response, file::Defaults()));
 
+  // Make sure we load a solution with the same number of variable has in the
+  // presolved model.
+  CHECK_EQ(response.solution().size(), model_proto.variables().size());
+  model->GetOrCreate<SharedResponseManager>()->LoadDebugSolution(
+      response.solution());
+#endif  // __PORTABLE_PLATFORM__
+}
+
+// This both copy the "main" DebugSolution to a local_model and also cache
+// the value of the integer variables in that solution.
+void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
+  auto* shared_response = model->Get<SharedResponseManager>();
+  if (shared_response == nullptr) return;
+  if (shared_response->DebugSolution().empty()) return;
+
+  // Copy the proto values.
+  DebugSolution& debug_sol = *model->GetOrCreate<DebugSolution>();
+  debug_sol.proto_values = shared_response->DebugSolution();
+
+  // Fill the values by integer variable.
+  const int num_integers =
+      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value();
+  debug_sol.ivar_has_value.assign(num_integers, false);
+  debug_sol.ivar_values.assign(num_integers, 0);
+
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
-  auto& debug_solution = *model->GetOrCreate<DebugSolution>();
-  debug_solution.resize(
-      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
-  for (int i = 0; i < response.solution().size(); ++i) {
+  for (int i = 0; i < debug_sol.proto_values.size(); ++i) {
     if (!mapping.IsInteger(i)) continue;
     const IntegerVariable var = mapping.Integer(i);
-    debug_solution[var] = response.solution(i);
-    debug_solution[NegationOf(var)] = -response.solution(i);
+    debug_sol.ivar_has_value[var] = true;
+    debug_sol.ivar_has_value[NegationOf(var)] = true;
+    debug_sol.ivar_values[var] = debug_sol.proto_values[i];
+    debug_sol.ivar_values[NegationOf(var)] = -debug_sol.proto_values[i];
   }
 
   // The objective variable is usually not part of the proto, but it is still
   // nice to have it, so we recompute it here.
   auto* objective_def = model->Get<ObjectiveDefinition>();
-  if (objective_def == nullptr) return;
+  if (objective_def != nullptr) {
+    const IntegerVariable objective_var = objective_def->objective_var;
+    const int64_t objective_value =
+        ComputeInnerObjective(model_proto.objective(), debug_sol.proto_values);
+    debug_sol.ivar_has_value[objective_var] = true;
+    debug_sol.ivar_has_value[NegationOf(objective_var)] = true;
+    debug_sol.ivar_values[objective_var] = objective_value;
+    debug_sol.ivar_values[NegationOf(objective_var)] = -objective_value;
+  }
 
-  const IntegerVariable objective_var = objective_def->objective_var;
-  const int64_t objective_value =
-      ComputeInnerObjective(model_proto.objective(), response.solution());
-  debug_solution[objective_var] = objective_value;
-  debug_solution[NegationOf(objective_var)] = -objective_value;
-#endif  // __PORTABLE_PLATFORM__
+  // We also register a DEBUG callback to check our reasons.
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  const auto checker = [mapping, encoder, debug_sol, model](
+                           absl::Span<const Literal> clause,
+                           absl::Span<const IntegerLiteral> integers) {
+    bool is_satisfied = false;
+    int num_bools = 0;
+    int num_ints = 0;
+    std::vector<std::tuple<Literal, IntegerLiteral, int>> to_print;
+    for (const Literal l : clause) {
+      // First case, this Boolean is mapped.
+      {
+        const int proto_var =
+            mapping.GetProtoVariableFromBooleanVariable(l.Variable());
+        if (proto_var != -1) {
+          to_print.push_back({l, IntegerLiteral(), proto_var});
+          if (debug_sol.proto_values[proto_var] == (l.IsPositive() ? 1 : 0)) {
+            is_satisfied = true;
+            break;
+          }
+          ++num_bools;
+          continue;
+        }
+      }
+
+      // Second case, it is associated to IntVar >= value.
+      // We can use any of them, so if one is false, we use this one.
+      bool all_true = true;
+      for (const IntegerLiteral associated : encoder->GetIntegerLiterals(l)) {
+        const int proto_var = mapping.GetProtoVariableFromIntegerVariable(
+            PositiveVariable(associated.var));
+        if (proto_var == -1) break;
+        int64_t value = debug_sol.proto_values[proto_var];
+        to_print.push_back({l, associated, proto_var});
+
+        if (!VariableIsPositive(associated.var)) value = -value;
+        if (value < associated.bound) {
+          ++num_ints;
+          all_true = false;
+          break;
+        }
+      }
+      if (all_true) {
+        is_satisfied = true;
+        break;
+      }
+    }
+    for (const IntegerLiteral i_lit : integers) {
+      const int proto_var = mapping.GetProtoVariableFromIntegerVariable(
+          PositiveVariable(i_lit.var));
+      if (proto_var == -1) {
+        is_satisfied = true;
+        break;
+      }
+
+      int64_t value = debug_sol.proto_values[proto_var];
+      to_print.push_back({Literal(kNoLiteralIndex), i_lit, proto_var});
+
+      if (!VariableIsPositive(i_lit.var)) value = -value;
+      // Note the sign is inversed, we cannot have all literal false and all
+      // integer literal true.
+      if (value >= i_lit.bound) {
+        is_satisfied = true;
+        break;
+      }
+    }
+    if (!is_satisfied) {
+      LOG(INFO) << "Reason clause is not satisfied by loaded solution:";
+      LOG(INFO) << "Worker '" << model->Name() << "', level="
+                << model->GetOrCreate<SatSolver>()->CurrentDecisionLevel();
+      LOG(INFO) << "literals (neg): " << clause;
+      LOG(INFO) << "integer literals: " << integers;
+      for (const auto [l, i_lit, proto_var] : to_print) {
+        LOG(INFO) << l << " " << i_lit << " var=" << proto_var
+                  << " value_in_sol=" << debug_sol.proto_values[proto_var];
+      }
+    }
+    return is_satisfied;
+  };
+  const auto lit_checker = [checker](absl::Span<const Literal> clause) {
+    return checker(clause, {});
+  };
+
+  model->GetOrCreate<Trail>()->RegisterDebugChecker(lit_checker);
+  model->GetOrCreate<IntegerTrail>()->RegisterDebugChecker(checker);
 }
 
 std::vector<int64_t> GetSolutionValues(const CpModelProto& model_proto,
@@ -1386,12 +1588,16 @@ void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
 //
 // TODO(user): move to cp_model_loader.h/.cc
 void LoadCpModel(const CpModelProto& model_proto, Model* model) {
-  auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
-
   LoadBaseModel(model_proto, model);
+
+  // We want to load the debug solution before the initial propag.
+  // But at this point the objective is not loaded yet, so we will not have
+  // a value for the objective integer variable, so we do it again later.
+  InitializeDebugSolution(model_proto, model);
 
   // Simple function for the few places where we do "return unsat()".
   auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   const auto unsat = [shared_response_manager, sat_solver, model] {
     sat_solver->NotifyThatModelIsUnsat();
     shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
@@ -1637,6 +1843,8 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
       model->TakeOwnership(core);
     }
   }
+
+  InitializeDebugSolution(model_proto, model);
 }
 
 // Solves an already loaded cp_model_proto.
@@ -2941,6 +3149,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (params.share_level_zero_bounds()) {
     shared_bounds_manager = std::make_unique<SharedBoundsManager>(model_proto);
+    shared_bounds_manager->LoadDebugSolution(
+        global_model->GetOrCreate<SharedResponseManager>()->DebugSolution());
   }
 
   std::unique_ptr<SharedRelaxationSolutionRepository>
@@ -3928,6 +4138,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     DetectAndAddSymmetryToProto(params, &new_cp_model_proto, logger);
   }
 
+  LoadDebugSolution(new_cp_model_proto, model);
+
 #if defined(__PORTABLE_PLATFORM__)
   if (/* DISABLES CODE */ (false)) {
     // We ignore the multithreading parameter in this case.
@@ -3953,7 +4165,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     local_model.Register<SharedResponseManager>(shared_response_manager);
 
     LoadCpModel(new_cp_model_proto, &local_model);
-    LoadDebugSolution(new_cp_model_proto, &local_model);
 
     SOLVER_LOG(logger, "");
     SOLVER_LOG(logger, absl::StrFormat("Starting sequential search at %.2fs",

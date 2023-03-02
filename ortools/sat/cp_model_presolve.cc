@@ -4109,6 +4109,14 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
     }
   }
 
+  // Note that the linear relation is stored elsewhere, so it is safe to just
+  // remove such special interval constraint.
+  if (context_->ConstraintVariableGraphIsUpToDate() &&
+      context_->IntervalUsage(c) == 0) {
+    context_->UpdateRuleStats("intervals: removed unused interval");
+    return RemoveConstraint(ct);
+  }
+
   bool changed = false;
   changed |= CanonicalizeLinearExpression(*ct, interval->mutable_start());
   changed |= CanonicalizeLinearExpression(*ct, interval->mutable_size());

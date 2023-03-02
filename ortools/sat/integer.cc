@@ -875,8 +875,12 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
   (*domains_)[index] = domain;
 
   // Update directly the level zero bounds.
-  CHECK_GE(domain.Min(), LowerBound(var));
-  CHECK_LE(domain.Max(), UpperBound(var));
+  DCHECK(
+      ReasonIsValid(IntegerLiteral::LowerOrEqual(var, domain.Max()), {}, {}));
+  DCHECK(
+      ReasonIsValid(IntegerLiteral::GreaterOrEqual(var, domain.Min()), {}, {}));
+  DCHECK_GE(domain.Min(), LowerBound(var));
+  DCHECK_LE(domain.Max(), UpperBound(var));
   vars_[var].current_bound = domain.Min();
   integer_trail_[var.value()].bound = domain.Min();
   vars_[NegationOf(var)].current_bound = -domain.Max();
@@ -1182,6 +1186,7 @@ std::string IntegerTrail::DebugString() {
 }
 
 bool IntegerTrail::RootLevelEnqueue(IntegerLiteral i_lit) {
+  DCHECK(ReasonIsValid(i_lit, {}, {}));
   if (i_lit.bound <= LevelZeroLowerBound(i_lit.var)) return true;
   if (i_lit.bound > LevelZeroUpperBound(i_lit.var)) {
     sat_solver_->NotifyThatModelIsUnsat();
@@ -1340,6 +1345,45 @@ bool IntegerTrail::ReasonIsValid(
   return true;
 }
 
+bool IntegerTrail::ReasonIsValid(
+    IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  if (!ReasonIsValid(literal_reason, integer_reason)) return false;
+  if (debug_checker_ == nullptr) return true;
+
+  std::vector<Literal> clause;
+  clause.assign(literal_reason.begin(), literal_reason.end());
+  std::vector<IntegerLiteral> lits;
+  lits.assign(integer_reason.begin(), integer_reason.end());
+  MergeReasonInto(lits, &clause);
+  if (!debug_checker_(clause, {i_lit})) {
+    LOG(INFO) << "Invalid reason for loaded solution: " << i_lit << " "
+              << literal_reason << " " << integer_reason;
+    return false;
+  }
+  return true;
+}
+
+bool IntegerTrail::ReasonIsValid(
+    Literal lit, absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  if (!ReasonIsValid(literal_reason, integer_reason)) return false;
+  if (debug_checker_ == nullptr) return true;
+
+  std::vector<Literal> clause;
+  clause.assign(literal_reason.begin(), literal_reason.end());
+  clause.push_back(lit);
+  std::vector<IntegerLiteral> lits;
+  lits.assign(integer_reason.begin(), integer_reason.end());
+  MergeReasonInto(lits, &clause);
+  if (!debug_checker_(clause, {})) {
+    LOG(INFO) << "Invalid reason for loaded solution: " << lit << " "
+              << literal_reason << " " << integer_reason;
+    return false;
+  }
+  return true;
+}
+
 void IntegerTrail::EnqueueLiteral(
     Literal literal, absl::Span<const Literal> literal_reason,
     absl::Span<const IntegerLiteral> integer_reason) {
@@ -1352,7 +1396,7 @@ void IntegerTrail::EnqueueLiteralInternal(
     absl::Span<const IntegerLiteral> integer_reason) {
   DCHECK(!trail_->Assignment().LiteralIsAssigned(literal));
   DCHECK(lazy_reason != nullptr ||
-         ReasonIsValid(literal_reason, integer_reason));
+         ReasonIsValid(literal, literal_reason, integer_reason));
   if (integer_search_levels_.empty()) {
     // Level zero. We don't keep any reason.
     trail_->EnqueueWithUnitReason(literal);
@@ -1476,8 +1520,7 @@ bool IntegerTrail::EnqueueInternal(
     absl::Span<const IntegerLiteral> integer_reason,
     int trail_index_with_same_reason) {
   DCHECK(lazy_reason != nullptr ||
-         ReasonIsValid(literal_reason, integer_reason));
-
+         ReasonIsValid(i_lit, literal_reason, integer_reason));
   const IntegerVariable var(i_lit.var);
 
   // No point doing work if the variable is already ignored.
@@ -1695,7 +1738,7 @@ bool IntegerTrail::EnqueueInternal(
 
 bool IntegerTrail::EnqueueAssociatedIntegerLiteral(IntegerLiteral i_lit,
                                                    Literal literal_reason) {
-  DCHECK(ReasonIsValid({literal_reason.Negated()}, {}));
+  DCHECK(ReasonIsValid(i_lit, {literal_reason.Negated()}, {}));
   DCHECK(!IsCurrentlyIgnored(i_lit.var));
 
   // Nothing to do if the bound is not better than the current one.

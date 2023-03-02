@@ -766,13 +766,13 @@ bool LinearConstraintManager::DebugCheckConstraint(
     const LinearConstraint& cut) {
   if (model_->Get<DebugSolution>() == nullptr) return true;
   const auto& debug_solution = *(model_->Get<DebugSolution>());
-  if (debug_solution.empty()) return true;
 
   IntegerValue activity(0);
   for (int i = 0; i < cut.vars.size(); ++i) {
     const IntegerVariable var = cut.vars[i];
     const IntegerValue coeff = cut.coeffs[i];
-    activity += coeff * debug_solution[var];
+    CHECK(debug_solution.ivar_has_value[var]);
+    activity += coeff * debug_solution.ivar_values[var];
   }
   if (activity > cut.ub || activity < cut.lb) {
     LOG(INFO) << cut.DebugString();

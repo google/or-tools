@@ -19,9 +19,11 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <memory>
 #include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
@@ -374,7 +376,12 @@ class Trail {
   }
 
   // Returns the last conflict.
-  absl::Span<const Literal> FailingClause() const { return conflict_; }
+  absl::Span<const Literal> FailingClause() const {
+    if (DEBUG_MODE && debug_checker_ != nullptr) {
+      debug_checker_(conflict_);
+    }
+    return conflict_;
+  }
 
   // Specific SatClause interface so we can update the conflict clause activity.
   // Note that MutableConflict() automatically sets this to nullptr, so we can
@@ -407,6 +414,11 @@ class Trail {
       result += trail_[i].DebugString();
     }
     return result;
+  }
+
+  void RegisterDebugChecker(
+      std::function<bool(absl::Span<const Literal> clause)> checker) {
+    debug_checker_ = std::move(checker);
   }
 
  private:
@@ -452,6 +464,9 @@ class Trail {
 
   // This is used by RegisterPropagator() and Reason().
   std::vector<SatPropagator*> propagators_;
+
+  std::function<bool(absl::Span<const Literal> clause)> debug_checker_ =
+      nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(Trail);
 };
@@ -604,7 +619,15 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   var = ReferenceVarWithSameReason(var);
 
   // Fast-track for cached reason.
-  if (info_[var].type == AssignmentType::kCachedReason) return reasons_[var];
+  if (info_[var].type == AssignmentType::kCachedReason) {
+    if (DEBUG_MODE && debug_checker_ != nullptr) {
+      std::vector<Literal> clause;
+      clause.assign(reasons_[var].begin(), reasons_[var].end());
+      clause.push_back(assignment_.GetTrueLiteralForAssignedVariable(var));
+      debug_checker_(clause);
+    }
+    return reasons_[var];
+  }
 
   const AssignmentInfo& info = info_[var];
   if (info.type == AssignmentType::kUnitReason ||
@@ -617,6 +640,12 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   }
   old_type_[var] = info.type;
   info_[var].type = AssignmentType::kCachedReason;
+  if (DEBUG_MODE && debug_checker_ != nullptr) {
+    std::vector<Literal> clause;
+    clause.assign(reasons_[var].begin(), reasons_[var].end());
+    clause.push_back(assignment_.GetTrueLiteralForAssignedVariable(var));
+    debug_checker_(clause);
+  }
   return reasons_[var];
 }
 

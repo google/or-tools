@@ -902,7 +902,7 @@ void RankingSampleSat() {
         // Makes sure that if j is not performed, all precedences are
         // false.
         cp_model.AddImplication(Not(presences[j]), Not(precedences[i][j]));
-        cp_model.AddImplication(Not(presences[i]), Not(precedences[j][i]));
+        cp_model.AddImplication(Not(presences[j]), Not(precedences[j][i]));
         //  The following bool_or will enforce that for any two intervals:
         //    i precedes j or j precedes i or at least one interval is not
         //        performed.

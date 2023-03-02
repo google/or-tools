@@ -327,8 +327,22 @@ struct IntegerDomains : public absl::StrongVector<PositiveOnlyIndex, Domain> {};
 // A model singleton used for debugging. If this is set in the model, then we
 // can check that various derived constraint do not exclude this solution (if it
 // is a known optimal solution for instance).
-struct DebugSolution
-    : public absl::StrongVector<IntegerVariable, IntegerValue> {};
+struct DebugSolution {
+  // This is the value of all proto variables.
+  // It should be of the same size of the PRESOLVED model and should correspond
+  // to a solution to the presolved model.
+  std::vector<int64_t> proto_values;
+
+  // This is filled from proto_values at load-time, and using the
+  // cp_model_mapping, we cache the solution of the integer-variabls that are
+  // mapped. Note that it is possible that not all integer variable are mapped.
+  //
+  // TODO(user): When this happen we should be able to infer the value of these
+  // derived variable in the solution. For now, we only do that for the
+  // objective variable.
+  absl::StrongVector<IntegerVariable, bool> ivar_has_value;
+  absl::StrongVector<IntegerVariable, IntegerValue> ivar_values;
+};
 
 // A value and a literal.
 struct ValueLiteralPair {
@@ -1047,10 +1061,26 @@ class IntegerTrail : public SatPropagator {
            !delayed_to_fix_->integer_literal_to_fix.empty();
   }
 
+  // If this is set, and in debug mode, we will call this on all conflict to
+  // be checked for potential issue. Usually against a known optimal solution.
+  void RegisterDebugChecker(
+      std::function<bool(absl::Span<const Literal> clause,
+                         absl::Span<const IntegerLiteral> integers)>
+          checker) {
+    debug_checker_ = std::move(checker);
+  }
+
  private:
   // Used for DHECKs to validate the reason given to the public functions above.
   // Tests that all Literal are false. Tests that all IntegerLiteral are true.
   bool ReasonIsValid(absl::Span<const Literal> literal_reason,
+                     absl::Span<const IntegerLiteral> integer_reason);
+
+  // Same as above, but with the literal for which this is the reason for.
+  bool ReasonIsValid(Literal lit, absl::Span<const Literal> literal_reason,
+                     absl::Span<const IntegerLiteral> integer_reason);
+  bool ReasonIsValid(IntegerLiteral i_lit,
+                     absl::Span<const Literal> literal_reason,
                      absl::Span<const IntegerLiteral> integer_reason);
 
   // If the variable has holes in its domain, make sure the literal is
@@ -1233,6 +1263,10 @@ class IntegerTrail : public SatPropagator {
   // we can only use this in heuristics. See ConditionalLowerBound().
   absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>, IntegerValue>
       conditional_lbs_;
+
+  std::function<bool(absl::Span<const Literal> clause,
+                     absl::Span<const IntegerLiteral> integers)>
+      debug_checker_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(IntegerTrail);
 };

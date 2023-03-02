@@ -344,6 +344,13 @@ class SharedResponseManager {
     return &first_solution_solvers_should_stop_;
   }
 
+  // We just store a loaded DebugSolution here. Note that this is supposed to be
+  // stored once and then never change, so we do not need a mutex.
+  void LoadDebugSolution(absl::Span<const int64_t> solution) {
+    debug_solution_.assign(solution.begin(), solution.end());
+  }
+  const std::vector<int64_t>& DebugSolution() const { return debug_solution_; }
+
  private:
   void TestGapLimitsIfNeeded() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void FillObjectiveValuesInResponse(CpSolverResponse* response) const
@@ -422,6 +429,8 @@ class SharedResponseManager {
   std::vector<CpSolverResponse> subsolver_responses_ ABSL_GUARDED_BY(mutex_);
 
   std::atomic<bool> first_solution_solvers_should_stop_ = false;
+
+  std::vector<int64_t> debug_solution_;
 };
 
 // This class manages a pool of lower and upper bounds on a set of variables in
@@ -466,6 +475,13 @@ class SharedBoundsManager {
   void LogStatistics(SolverLogger* logger);
   int NumBoundsExported(const std::string& worker_name);
 
+  // If non-empty, we will check that all bounds update contains this solution.
+  // Note that this might fail once we reach optimality and we might have wrong
+  // bounds, but if it fail before that it can help find bugs.
+  void LoadDebugSolution(absl::Span<const int64_t> solution) {
+    debug_solution_.assign(solution.begin(), solution.end());
+  }
+
  private:
   const int num_variables_;
   const CpModelProto& model_proto_;
@@ -484,6 +500,8 @@ class SharedBoundsManager {
   std::deque<SparseBitset<int>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
   absl::btree_map<std::string, int> bounds_exported_ ABSL_GUARDED_BY(mutex_);
+
+  std::vector<int64_t> debug_solution_;
 };
 
 // This class holds all the binary clauses that were found and shared by the

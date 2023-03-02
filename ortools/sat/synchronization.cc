@@ -799,13 +799,21 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     const int64_t new_ub = new_upper_bounds[i];
     const bool changed_lb = new_lb > old_lb;
     const bool changed_ub = new_ub < old_ub;
-    CHECK_GE(var, 0);
     if (!changed_lb && !changed_ub) continue;
 
+    VLOG(3) << worker_name << " var=" << var << " [" << old_lb << "," << old_ub
+            << "] -> [" << new_lb << "," << new_ub << "]";
+
     if (changed_lb) {
+      if (DEBUG_MODE && !debug_solution_.empty()) {
+        CHECK_LE(new_lb, debug_solution_[var]) << worker_name << " var=" << var;
+      }
       lower_bounds_[var] = new_lb;
     }
     if (changed_ub) {
+      if (DEBUG_MODE && !debug_solution_.empty()) {
+        CHECK_GE(new_ub, debug_solution_[var]) << worker_name << " var=" << var;
+      }
       upper_bounds_[var] = new_ub;
     }
     changed_variables_since_last_synchronize_.Set(var);
@@ -849,6 +857,19 @@ void SharedBoundsManager::FixVariablesFromPartialSolution(
     lower_bounds_[var] = solution[var];
     upper_bounds_[var] = solution[var];
     changed_variables_since_last_synchronize_.Set(var);
+
+    // This is problematic as we might find a different partial solution.
+    // To allow for further investigation, we currently fix it to the debug
+    // solution instead.
+    if (DEBUG_MODE && !debug_solution_.empty()) {
+      if (solution[var] != debug_solution_[var]) {
+        LOG(INFO) << "Fixing to a different solution for var=" << var
+                  << " debug=" << debug_solution_[var]
+                  << " partial=" << solution[var];
+        lower_bounds_[var] = debug_solution_[var];
+        upper_bounds_[var] = debug_solution_[var];
+      }
+    }
   }
 }
 
