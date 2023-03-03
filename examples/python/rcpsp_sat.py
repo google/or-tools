@@ -506,8 +506,7 @@ def SolveRcpsp(problem,
     # Write model to file.
     if proto_file:
         print(f'Writing proto to{proto_file}')
-        with open(proto_file, 'w') as text_file:
-            text_file.write(str(model))
+        model.ExportToFile(proto_file)
 
     # Solve model.
     solver = cp_model.CpSolver()

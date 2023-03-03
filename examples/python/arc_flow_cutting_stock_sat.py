@@ -13,21 +13,27 @@
 """Cutting stock problem with the objective to minimize wasted space."""
 
 
-import argparse
 import collections
 import time
+import numpy as np
 
-from ortools.linear_solver import pywraplp
+from absl import app
+from absl import flags
+from google.protobuf import text_format
+from ortools.linear_solver.python import model_builder as mb
 from ortools.sat.python import cp_model
 
-PARSER = argparse.ArgumentParser()
+FLAGS = flags.FLAGS
 
-PARSER.add_argument(
-    '--solver', default='sat', help='Method used to solve: sat, mip.')
-PARSER.add_argument(
-    '--output_proto_file',
-    default='',
-    help='Output file to write the cp_model proto to.')
+_OUTPUT_PROTO = flags.DEFINE_string(
+    'output_proto', '', 'Output file to write the cp_model proto to.')
+_PARAMS = flags.DEFINE_string(
+    'params',
+    'num_search_workers:8,log_search_progress:true,max_time_in_seconds:10',
+    'Sat solver parameters.')
+_SOLVER = flags.DEFINE_string(
+    'solver', 'sat', 'Method used to solve: sat, mip.')
+
 
 DESIRED_LENGTHS = [
     2490, 3980, 2490, 3980, 2391, 2391, 2391, 596, 596, 596, 2456, 2456, 3018,
@@ -105,7 +111,7 @@ def create_state_graph(items, max_capacity):
     return states, transitions
 
 
-def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file):
+def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file: str, params: str):
     """Solve the cutting stock with arc-flow and the CP-SAT solver."""
     items = regroup_and_count(DESIRED_LENGTHS)
     print('Items:', items)
@@ -173,16 +179,14 @@ def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file):
 
     # Output model proto to file.
     if output_proto_file:
-        output_file = open(output_proto_file, 'w')
-        output_file.write(str(model.Proto()))
-        output_file.close()
+        model.ExportToFile(output_proto_file)
 
     # Solve model.
     solver = cp_model.CpSolver()
+    if params:
+        text_format.Parse(params, solver.parameters)
     solver.parameters.log_search_progress = True
-    solver.parameters.num_search_workers = 8
-    status = solver.Solve(model)
-    print(solver.ResponseStats())
+    solver.Solve(model)
 
 
 def solve_cutting_stock_with_arc_flow_and_mip():
@@ -203,9 +207,7 @@ def solve_cutting_stock_with_arc_flow_and_mip():
     item_coeffs = collections.defaultdict(list)
 
     start_time = time.time()
-    solver = pywraplp.Solver.CreateSolver('cbc')
-    if not solver:
-        return
+    model = mb.ModelBuilder()
 
     objective_vars = []
     objective_coeffs = []
@@ -213,7 +215,7 @@ def solve_cutting_stock_with_arc_flow_and_mip():
     var_index = 0
     for outgoing, incoming, item_index, card in transitions:
         count = items[item_index][1]
-        count_var = solver.IntVar(
+        count_var = model.new_int_var(
             0, count, 'a%i_i%i_f%i_t%i_c%i' % (var_index, item_index, incoming,
                                                outgoing, card))
         var_index += 1
@@ -225,7 +227,7 @@ def solve_cutting_stock_with_arc_flow_and_mip():
     for state_index, state in enumerate(states):
         if state_index == 0:
             continue
-        exit_var = solver.IntVar(0, num_items, 'e%i' % state_index)
+        exit_var = model.new_int_var(0, num_items, 'e%i' % state_index)
         outgoing_vars[state_index].append(exit_var)
         incoming_sink_vars.append(exit_var)
         price = price_usage(state, POSSIBLE_CAPACITIES)
@@ -234,42 +236,45 @@ def solve_cutting_stock_with_arc_flow_and_mip():
 
     # Flow conservation
     for state_index in range(1, len(states)):
-        solver.Add(
-            sum(incoming_vars[state_index]) == sum(outgoing_vars[state_index]))
+        model.add(
+            mb.LinearExpr.sum(incoming_vars[state_index]) == mb.LinearExpr.sum(
+                outgoing_vars[state_index]))
 
     # Flow going out of the source must go in the sink
-    solver.Add(sum(outgoing_vars[0]) == sum(incoming_sink_vars))
+    model.add(
+        mb.LinearExpr.sum(outgoing_vars[0]) == mb.LinearExpr.sum(
+            incoming_sink_vars))
 
     # Items must be placed
     for item_index, size_and_count in enumerate(items):
         num_arcs = len(item_vars[item_index])
-        solver.Add(
-            sum(item_vars[item_index][i] * item_coeffs[item_index][i]
-                for i in range(num_arcs)) == size_and_count[1])
+        model.add(
+            mb.LinearExpr.sum([item_vars[item_index][i] * item_coeffs[item_index][i]
+                for i in range(num_arcs)]) == size_and_count[1])
 
     # Objective is the sum of waste
-    solver.Minimize(
-        sum(objective_vars[i] * objective_coeffs[i]
-            for i in range(len(objective_vars))))
-    solver.EnableOutput()
+    model.minimize(np.dot(objective_vars, objective_coeffs))
 
-    status = solver.Solve()
+    solver = mb.ModelSolver('scip')
+    solver.enable_output(True)
+    status = solver.solve(model)
 
     ### Output the solution.
-    if status == pywraplp.Solver.OPTIMAL:
+    if status == mb.SolveStatus.OPTIMAL or status == mb.SolveStatus.FEASIBLE:
         print('Objective value = %f found in %.2f s' %
-              (solver.Objective().Value(), time.time() - start_time))
+              (solver.objective_value, time.time() - start_time))
     else:
         print('No solution')
 
 
-def main(args):
+def main(_):
     """Main function"""
-    if args.solver == 'sat':
-        solve_cutting_stock_with_arc_flow_and_sat(args.output_proto_file)
+    if _SOLVER.value == 'sat':
+        solve_cutting_stock_with_arc_flow_and_sat(_OUTPUT_PROTO.value,
+                                                  _PARAMS.value)
     else:  # 'mip'
         solve_cutting_stock_with_arc_flow_and_mip()
 
 
 if __name__ == '__main__':
-    main(PARSER.parse_args())
+    app.run(main)

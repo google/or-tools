@@ -20,15 +20,13 @@ import time
 
 from absl import app
 from absl import flags
-from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 
 _PROBLEM = flags.DEFINE_integer('problem', 2, 'Problem id to solve.')
 _BREAK_SYMMETRIES = flags.DEFINE_boolean(
     'break_symmetries', True, 'Break symmetries between equivalent orders.')
 _SOLVER = flags.DEFINE_string(
-    'solver', 'mip_column', 'Method used to solve: sat, sat_table, sat_column, '
-    'mip_column.')
+    'solver', 'sat_column', 'Method used to solve: sat, sat_table, sat_column.')
 
 
 def build_problem(problem_id):
@@ -670,69 +668,6 @@ def steel_mill_slab_with_column_generation(problem):
         print('No solution')
 
 
-def steel_mill_slab_with_mip_column_generation(problem):
-    """Solves the Steel Mill Slab Problem."""
-    ### Load problem.
-    (num_slabs, capacities, _, orders) = build_problem(problem)
-
-    num_orders = len(orders)
-    num_capacities = len(capacities)
-    all_orders = range(len(orders))
-    print('Solving steel mill with %i orders, %i slabs, and %i capacities' %
-          (num_orders, num_slabs, num_capacities - 1))
-
-    # Compute auxiliary data.
-    widths = [x[0] for x in orders]
-    colors = [x[1] for x in orders]
-    max_capacity = max(capacities)
-    loss_array = [
-        min(x for x in capacities if x >= c) - c for c in range(max_capacity +
-                                                                1)
-    ]
-
-    ### Model problem.
-
-    # Generate all valid slabs (columns)
-    unsorted_valid_slabs = collect_valid_slabs_dp(capacities, colors, widths,
-                                                  loss_array)
-    # Sort slab by descending load/loss. Remove duplicates.
-    valid_slabs = sorted(unsorted_valid_slabs,
-                         key=lambda c: 1000 * c[-1] + c[-2])
-    all_valid_slabs = range(len(valid_slabs))
-
-    # create model and decision variables.
-    start_time = time.time()
-    solver = pywraplp.Solver('Steel',
-                             pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
-    selected = [
-        solver.IntVar(0.0, 1.0, 'selected_%i' % i) for i in all_valid_slabs
-    ]
-
-    for order in all_orders:
-        solver.Add(
-            sum(selected[i]
-                for i in all_valid_slabs
-                if valid_slabs[i][order]) == 1)
-
-    # Redundant constraint (sum of loads == sum of widths).
-    solver.Add(
-        sum(selected[i] * valid_slabs[i][-1]
-            for i in all_valid_slabs) == sum(widths))
-
-    # Objective.
-    solver.Minimize(
-        sum(selected[i] * valid_slabs[i][-2] for i in all_valid_slabs))
-
-    status = solver.Solve()
-
-    ### Output the solution.
-    if status == pywraplp.Solver.OPTIMAL:
-        print('Objective value = %f found in %.2f s' %
-              (solver.Objective().Value(), time.time() - start_time))
-    else:
-        print('No solution')
-
-
 def main(_):
     if _SOLVER.value == 'sat':
         steel_mill_slab(_PROBLEM.value, _BREAK_SYMMETRIES.value)
@@ -741,8 +676,8 @@ def main(_):
                                          _BREAK_SYMMETRIES.value)
     elif _SOLVER.value == 'sat_column':
         steel_mill_slab_with_column_generation(_PROBLEM.value)
-    else:  # 'mip_column'
-        steel_mill_slab_with_mip_column_generation(_PROBLEM.value)
+    else:
+        print(f'Unknown model {_SOLVER.value}')
 
 
 if __name__ == '__main__':

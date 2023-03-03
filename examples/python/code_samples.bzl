@@ -16,6 +16,7 @@
 load("@ortools_deps//:requirements.bzl", "requirement")
 
 PYTHON_DEPS = [
+    "//ortools/linear_solver/python:model_builder",
     "//ortools/sat/python:cp_model",
     "//ortools/sat/colab:visualization",
     requirement("absl-py"),
@@ -40,7 +41,7 @@ def code_sample_compile_py(name):
 def code_sample_test_py(name):
     native.py_test(
         name = name + "_py_test",
-        size = "small",
+        size = "medium",
         srcs = [name + ".py"],
         main = name + ".py",
         data = [
