@@ -98,7 +98,7 @@ public final class ModelSolver {
     return helper.getBestObjectiveBound();
   }
 
-  /** Checks that the solver has found a solution, and value of the given variable. */
+  /** Checks that the solver has found a solution, and returns the value of the given variable. */
   public double getValue(Variable var) {
     if (!helper.hasSolution()) {
       throw new ModelSolverException(
@@ -106,7 +106,10 @@ public final class ModelSolver {
     }
     return helper.getVariableValue(var.getIndex());
   }
-  /** Checks that the solver has found a solution, and reduced cost of the given variable. */
+  /**
+   * Checks that the solver has found a solution, and returns the reduced cost of the given
+   * variable.
+   */
   public double getReducedCost(Variable var) {
     if (!helper.hasSolution()) {
       throw new ModelSolverException(
@@ -115,13 +118,26 @@ public final class ModelSolver {
     return helper.getReducedCost(var.getIndex());
   }
 
-  /** Checks that the solver has found a solution, and dual value of the given constraint. */
+  /**
+   * Checks that the solver has found a solution, and returns the ual value of the given constraint.
+   */
   public double getDualValue(LinearConstraint ct) {
     if (!helper.hasSolution()) {
       throw new ModelSolverException(
           "ModelSolver.getDualValue())", "solve() was not called or no solution was found");
     }
     return helper.getDualValue(ct.getIndex());
+  }
+
+  /**
+   * Checks that the solver has found a solution, and returns the activity of the given constraint.
+   */
+  public double getActivity(LinearConstraint ct) {
+    if (!helper.hasSolution()) {
+      throw new ModelSolverException(
+          "ModelSolver.getActivity())", "solve() was not called or no solution was found");
+    }
+    return helper.getActivity(ct.getIndex());
   }
 
   /** Sets the log callback for the solver. */

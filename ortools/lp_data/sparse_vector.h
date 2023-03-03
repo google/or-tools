@@ -34,6 +34,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"

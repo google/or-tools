@@ -160,6 +160,7 @@ class ModelSolverHelper {
   double variable_value(int var_index) const;
   double reduced_cost(int var_index) const;
   double dual_value(int ct_index) const;
+  double activity(int ct_index);
 
   std::string status_string() const;
   double wall_time() const;
@@ -180,6 +181,8 @@ class ModelSolverHelper {
   std::optional<MPModelRequest::SolverType> solver_type_;
   std::optional<double> time_limit_in_second_;
   std::string solver_specific_parameters_;
+  std::optional<const MPModelProto*> model_of_last_solve_;
+  std::vector<double> activities_;
   bool solver_output_ = false;
 };
 

@@ -84,6 +84,10 @@ public final class ModelBuilderTest {
         .isWithin(1e-5)
         .of(4.0 - 1.0 * solver.getDualValue(c0) - 5.0 * solver.getDualValue(c1));
 
+    assertThat(solver.getActivity(c0)).isWithin(1e-5).of(100.0);
+    assertThat(solver.getActivity(c1)).isWithin(1e-5).of(600.0);
+    assertThat(solver.getActivity(c2)).isWithin(1e-5).of(200.0);
+
     assertThat(model.exportToLpString(false)).contains("minimal_linear_example");
     assertThat(model.exportToMpsString(false)).contains("minimal_linear_example");
   }

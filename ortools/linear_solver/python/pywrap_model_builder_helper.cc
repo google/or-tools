@@ -388,6 +388,7 @@ PYBIND11_MODULE(pywrap_model_builder_helper, m) {
       .def("var_value", &ModelSolverHelper::variable_value, arg("var_index"))
       .def("reduced_cost", &ModelSolverHelper::reduced_cost, arg("var_index"))
       .def("dual_value", &ModelSolverHelper::dual_value, arg("ct_index"))
+      .def("activity", &ModelSolverHelper::activity, arg("ct_index"))
       .def("variable_values",
            [](const ModelSolverHelper& helper) {
              if (!helper.has_response()) {

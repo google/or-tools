@@ -168,6 +168,7 @@ class GlobalRefGuard {
 %rename (getVariableValue) operations_research::ModelSolverHelper::variable_value;
 %rename (getReducedCost) operations_research::ModelSolverHelper::reduced_cost;
 %rename (getDualValue) operations_research::ModelSolverHelper::dual_value;
+%rename (getActivity) operations_research::ModelSolverHelper::activity;
 %rename (getStatusString) operations_research::ModelSolverHelper::status_string;
 %rename (getWallTime) operations_research::ModelSolverHelper::wall_time;
 %rename (getUserTime) operations_research::ModelSolverHelper::user_time;

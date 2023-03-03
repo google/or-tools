@@ -97,6 +97,16 @@ class ModelBuilderTest(unittest.TestCase):
                                solver.reduced_cost(x3),
                                places=self.NUM_PLACES)
 
+        self.assertAlmostEqual(100.0,
+                               solver.activity(c0),
+                               places=self.NUM_PLACES)
+        self.assertAlmostEqual(600.0,
+                               solver.activity(c1),
+                               places=self.NUM_PLACES)
+        self.assertAlmostEqual(200.0,
+                               solver.activity(c2),
+                               places=self.NUM_PLACES)
+
         self.assertIn('minimal_linear_example',
                       model.export_to_lp_string(False))
         self.assertIn('minimal_linear_example',

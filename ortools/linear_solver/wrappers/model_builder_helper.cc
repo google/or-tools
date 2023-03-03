@@ -13,7 +13,9 @@
 
 #include "ortools/linear_solver/wrappers/model_builder_helper.h"
 
+#include <cmath>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -340,6 +342,12 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
           MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
     }
   }
+  if (response_->status() == MPSOLVER_OPTIMAL ||
+      response_->status() == MPSOLVER_FEASIBLE) {
+    model_of_last_solve_ = &model.model();
+    activities_.assign(model.num_constraints(),
+                       std::numeric_limits<double>::quiet_NaN());
+  }
 }
 
 void ModelSolverHelper::SetLogCallback(
@@ -408,6 +416,25 @@ double ModelSolverHelper::dual_value(int ct_index) const {
   if (!has_response()) return 0.0;
   if (ct_index >= response_.value().dual_value_size()) return 0.0;
   return response_.value().dual_value(ct_index);
+}
+
+double ModelSolverHelper::activity(int ct_index) {
+  if (!has_response() || ct_index >= activities_.size() ||
+      !model_of_last_solve_.has_value()) {
+    return 0.0;
+  }
+
+  if (std::isnan(activities_[ct_index])) {
+    const MPConstraintProto& ct_proto =
+        model_of_last_solve_.value()->constraint(ct_index);
+    double result = 0.0;
+    for (int i = 0; i < ct_proto.var_index_size(); ++i) {
+      result += response_->variable_value(ct_proto.var_index(i)) *
+                ct_proto.coefficient(i);
+    }
+    activities_[ct_index] = result;
+  }
+  return activities_[ct_index];
 }
 
 std::string ModelSolverHelper::status_string() const {

@@ -694,7 +694,7 @@ def dot_variable_container(
     if len(container.shape) != 1:
         raise ValueError(
             'dot_variable_container only supports 1D variable containers (shape ='
-            f' {container.shape}')
+            f' {container.shape})')
     indices: npt.NDArray[np.int32] = container.variable_indices
     if np.isscalar(arg):
         return _WeightedSum(
@@ -1316,6 +1316,11 @@ class ModelSolver:
         """Returns the dual value of a linear constraint after solve."""
         self.__check_has_feasible_solution()
         return self.__solve_helper.dual_value(ct.index)
+
+    def activity(self, ct: LinearConstraint) -> np.double:
+        """Returns the activity of a linear constraint after solve."""
+        self.__check_has_feasible_solution()
+        return self.__solve_helper.activity(ct.index)
 
     @property
     def objective_value(self) -> np.double:
