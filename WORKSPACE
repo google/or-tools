@@ -117,6 +117,36 @@ git_repository(
     remote = "https://github.com/ERGO-Code/HiGHS.git",
 )
 
+# Swig support
+
+# pcre source code repository
+new_git_repository(
+    name = "pcre2",
+    build_file = "//bazel:pcre2.BUILD",
+    tag = "pcre2-10.42",
+    remote = "https://github.com/PCRE2Project/pcre2.git",
+)
+
+# generate Patch:
+#   Checkout swig
+#   cd Source/CParse && bison -d -o parser.c parser.y
+#   ./autogen.sh
+#   ./configure
+#   make Lib/swigwarn.swg
+#   edit .gitignore and remove parser.h, parser.c, and swigwarn.swg
+#   git add Source/CParse/parser.h Source/CParse/parser.c Lib/swigwarn.swg
+#   git diff --staged Lib Source/CParse > <path to>swig.patch
+# Edit swig.BUILD:
+#   edit version
+new_git_repository(
+    name = "swig",
+    build_file = "//bazel:swig.BUILD",
+    patches = ["//bazel:swig.patch"],
+    patch_args = ["-p1"],
+    tag = "v4.1.1",
+    remote = "https://github.com/swig/swig.git",
+)
+
 # Python
 ## Bazel Python rules.
 git_repository(
@@ -165,37 +195,8 @@ new_git_repository(
 load("@pybind11_bazel//:python_configure.bzl", "python_configure")
 python_configure(name = "local_config_python", python_version = "3")
 
-# Swig support
-
-# pcre source code repository
-new_git_repository(
-    name = "pcre2",
-    build_file = "//bazel:pcre2.BUILD",
-    tag = "pcre2-10.42",
-    remote = "https://github.com/PCRE2Project/pcre2.git",
-)
-
-# generate Patch:
-#   Checkout swig
-#   cd Source/CParse && bison -d -o parser.c parser.y
-#   ./autogen.sh
-#   ./configure
-#   make Lib/swigwarn.swg
-#   edit .gitignore and remove parser.h, parser.c, and swigwarn.swg
-#   git add Source/CParse/parser.h Source/CParse/parser.c Lib/swigwarn.swg
-#   git diff --staged Lib Source/CParse > <path to>swig.patch
-# Edit swig.BUILD:
-#   edit version
-new_git_repository(
-    name = "swig",
-    build_file = "//bazel:swig.BUILD",
-    patches = ["//bazel:swig.patch"],
-    patch_args = ["-p1"],
-    tag = "v4.1.1",
-    remote = "https://github.com/swig/swig.git",
-)
-
 # Java support (with junit 5)
+## Bazel Java rules.
 git_repository(
     name = "rules_jvm_external",
     tag = "4.5",
