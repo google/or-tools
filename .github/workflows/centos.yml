@@ -12,6 +12,7 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ github.token }}
+  RELEASE_CREATED: ${{ github.event_name == 'release' && github.event.action == 'created' }}
 
 jobs:
 
@@ -56,20 +57,10 @@ jobs:
           APPENDIX_WITH_SHARED="${OS}${WITH_SHARED}${WITH_SIRIUS}"
           echo "::set-output name=appendix_with_shared::$APPENDIX_WITH_SHARED"
 
+      # Fill variable ${BRANCH_NAME}
       - uses: nelonoel/branch-name@v1.0.1
 
-      - name: is release created
-        run: |
-          release_created=${{ github.event_name == 'release' && github.event.action == 'created' }}
-          echo "RELEASE_CREATED=$release_created" >> $GITHUB_ENV
-
-      - name: Get release
-        if: ${{ env.RELEASE_CREATED == 'true' }}
-        id: get_release
-        uses:
-          bruceadams/get-release@v1.2.3
-
-      - name: install requirements
+      - name: Install requirements (yum)
         run: |
           yum install -y epel-release
           yum install -y git redhat-lsb-core make wget centos-release-scl scl-utils
