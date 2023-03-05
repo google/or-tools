@@ -8,7 +8,7 @@
   "tags": ["ortools", "cp", "lcg", "int"],
   "stdFlags": ["-a", "-f", "-p", "-r", "-s", "-v"],
   "extraFlags": [
-    ["--params", "Provide parameters interpreted as a text SatParameters proto", "string", ""],
+    ["--params", "Provide parameters interpreted as a text SatParameters proto", "string", ""]
   ],
   "supportsMzn": false,
   "supportsFzn": true,

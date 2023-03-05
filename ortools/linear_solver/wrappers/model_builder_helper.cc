@@ -347,6 +347,8 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
     model_of_last_solve_ = &model.model();
     activities_.assign(model.num_constraints(),
                        std::numeric_limits<double>::quiet_NaN());
+  } else {
+    activities_.clear();
   }
 }
 

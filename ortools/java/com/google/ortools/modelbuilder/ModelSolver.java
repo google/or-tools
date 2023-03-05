@@ -119,7 +119,8 @@ public final class ModelSolver {
   }
 
   /**
-   * Checks that the solver has found a solution, and returns the ual value of the given constraint.
+   * Checks that the solver has found a solution, and returns the dual value of the given
+   * constraint.
    */
   public double getDualValue(LinearConstraint ct) {
     if (!helper.hasSolution()) {
