@@ -1697,6 +1697,11 @@ void GenerateCompletionTimeCutsWithEnergy(
       // duration actually equal to energy / capacity. But to keep the
       // computation in the integer domain, we multiply by capacity
       // everywhere instead.
+      if (AtMinOrMaxInt64(
+              CapAdd(CapProd(sum_duration.value(), sum_duration.value()),
+                     sum_square_duration.value()))) {
+        break;  // Overflow, we exit the loop.
+      }
       const IntegerValue min_contrib =
           (sum_duration * sum_duration + sum_square_duration) / 2 +
           current_start_min * sum_duration * capacity;
