@@ -303,12 +303,8 @@ install(FILES
   ortools/base/strong_int.h
   ortools/base/strong_vector.h
   ortools/base/integral_types.h
-  ortools/base/log_severity.h
   ortools/base/logging.h
-  ortools/base/logging_export.h
-  ortools/base/logging_utilities.h
   ortools/base/macros.h
-  ortools/base/raw_logging.h
   ortools/base/recordio.h
   ortools/base/sysinfo.h
   ortools/base/timer.h
