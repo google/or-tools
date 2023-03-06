@@ -265,7 +265,7 @@ TEST(TspLibParserTest, ParseKytojoki33Depot) {
 
 TEST(TspLibTourParserTest, LoadAllDataSets) {
   static const char kArchive[] =
-      "operations_research_data/TSPLIB95/ALL_tsp.tar.gz";
+      ROOT_DIR "operations_research_data/TSPLIB95/ALL_tsp.tar.gz";
   static const char* kExpectedComments[] = {
       "",
       ": Optimum solution for att48",
@@ -316,7 +316,7 @@ TEST(TspLibTourParserTest, LoadAllDataSets) {
 
 TEST(CVRPToursParserTest, LoadAllDataSets) {
   static const char kArchive[] =
-      "operations_research_data/CVRP/Augerat/A-VRP-sol.zip";
+      ROOT_DIR "operations_research_data/CVRP/Augerat/A-VRP-sol.zip";
   static const int kExpectedCosts[] = {/*opt-A-n32-k5*/ 784,
                                        /*opt-A-n33-k5*/ 661,
                                        /*opt-A-n33-k6*/ 742,
