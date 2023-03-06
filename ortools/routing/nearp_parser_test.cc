@@ -19,6 +19,12 @@
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 
+#if defined(_MSC_VER)
+#define ROOT_DIR "../../../../../../../"
+#else
+#define ROOT_DIR
+#endif  // _MSC_VER
+
 ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
 
 namespace operations_research {
@@ -50,7 +56,7 @@ TEST(NearpParserTest, LoadNonExistingFile) {
 TEST(NearpParserTest, LoadBHW1) {
   std::string file_name =
       file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
-                     "ortools/routing/testdata/nearp_BHW1.dat");
+                     ROOT_DIR "ortools/routing/testdata/nearp_BHW1.dat");
   NearpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.name(), "BHW1");
@@ -91,7 +97,7 @@ TEST(NearpParserTest, LoadBHW1) {
 TEST(NearpParserTest, LoadToy) {
   std::string file_name =
       file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
-                     "ortools/routing/testdata/nearp_toy.dat");
+                     ROOT_DIR "ortools/routing/testdata/nearp_toy.dat");
   NearpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.name(), "Toy");

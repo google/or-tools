@@ -31,6 +31,12 @@
 #include "ortools/base/path.h"
 #include "ortools/base/zipfile.h"
 
+#if defined(_MSC_VER)
+#define ROOT_DIR "../../../../../../../"
+#else
+#define ROOT_DIR
+#endif  // _MSC_VER
+
 ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
 
 namespace operations_research {
@@ -244,9 +250,9 @@ TEST(TspLibParserTest, ParseHCPAdjList) {
 
 TEST(TspLibParserTest, ParseKytojoki33Depot) {
   // This file inverts EDGE_WEIGHT_TYPE and EDGE_WEIGHT_FORMAT.
-  std::string file_name =
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
-                     "ortools/routing/testdata/", "tsplib_Kytojoki_33.vrp");
+  std::string file_name = file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
+                                         ROOT_DIR "ortools/routing/testdata/",
+                                         "tsplib_Kytojoki_33.vrp");
   TspLibParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   // The depot is a new node, given by its coordinates, instead of an existing

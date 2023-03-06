@@ -21,6 +21,12 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/path.h"
 
+#if defined(_MSC_VER)
+#define ROOT_DIR "../../../../../../../"
+#else
+#define ROOT_DIR
+#endif  // _MSC_VER
+
 ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
 
 namespace operations_research {
@@ -35,9 +41,10 @@ TEST(TspTWParserTest, LoadDataSet) {
   const double service_times[] = {250, 0, 0};
   const bool has_coordinates[] = {false, false, true};
   int count = 0;
-  for (const std::string& data : {"ortools/routing/testdata/rc201.0",
-                                  "ortools/routing/testdata/n20w20.001.txt",
-                                  "ortools/routing/testdata/n20w20.002.txt"}) {
+  for (const std::string& data :
+       {ROOT_DIR "ortools/routing/testdata/rc201.0",
+        ROOT_DIR "ortools/routing/testdata/n20w20.001.txt",
+        ROOT_DIR "ortools/routing/testdata/n20w20.002.txt"}) {
     TspTWParser parser;
     EXPECT_TRUE(parser.LoadFile(
         file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), data)));
