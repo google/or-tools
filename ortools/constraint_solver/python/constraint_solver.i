@@ -101,7 +101,6 @@ struct FailureProtect {
   catch (Swig::DirectorException &e) { SWIG_fail; }
 }
 
-
 // ============= Type conversions ==============
 
 // See ./constraint_solver_helpers.i
@@ -115,7 +114,6 @@ PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 PY_CONVERT_HELPER_PTR(LocalSearchFilterManager);
 PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
 PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntExpr);
-
 
 // Actual conversions. This also includes the conversion to std::vector<Class>.
 PY_CONVERT(IntVar);
@@ -265,7 +263,6 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
                            IntVar* const index) {
     return $self->MakeElement(values, index);
   }
-
 
   DecisionBuilder* VarEvalValStrPhase(
       const std::vector<IntVar*>& vars,
@@ -645,7 +642,6 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
     return index;
   }
 }
-
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .i
@@ -2208,4 +2204,3 @@ class PyConstraint(Constraint):
 
 
 }  // %pythoncode
-

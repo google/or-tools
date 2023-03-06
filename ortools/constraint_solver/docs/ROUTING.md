@@ -65,11 +65,11 @@ void SimpleRoutingProgram() {
   // Inspect solution.
   int64_t index = routing.Start(0);
   LOG(INFO) << "Route for Vehicle 0:";
-  int64_t route_distance{0};
+  int64_t route_distance = 0;
   std::ostringstream route;
-  while (routing.IsEnd(index) == false) {
+  while (!routing.IsEnd(index)) {
     route << manager.IndexToNode(index).value() << " -> ";
-    int64_t previous_index = index;
+    const int64_t previous_index = index;
     index = solution->Value(routing.NextVar(index));
     route_distance +=
         routing.GetArcCostForVehicle(previous_index, index, int64_t{0});
@@ -80,7 +80,7 @@ void SimpleRoutingProgram() {
 
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::SimpleRoutingProgram();
   return EXIT_SUCCESS;
 }
@@ -132,17 +132,17 @@ def main():
     assignment = routing.SolveWithParameters(search_parameters)
 
     # Print solution on console.
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
+    print(f'Objective: {assignment.ObjectiveValue()}')
     index = routing.Start(0)
     plan_output = 'Route for vehicle 0:\n'
     route_distance = 0
     while not routing.IsEnd(index):
-        plan_output += '{} -> '.format(manager.IndexToNode(index))
+        plan_output += f'{manager.IndexToNode(index)} -> '
         previous_index = index
         index = assignment.Value(routing.NextVar(index))
         route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
-    plan_output += '{}\n'.format(manager.IndexToNode(index))
-    plan_output += 'Distance of the route: {}m\n'.format(route_distance)
+    plan_output += f'{manager.IndexToNode(index)}\n'
+    plan_output += f'Distance of the route: {route_distance}m\n'
     print(plan_output)
 
 
@@ -225,7 +225,6 @@ public class SimpleRoutingProgram {
 ```
 
 ### .Net code samples
-
 
 ```cs
 using System;

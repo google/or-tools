@@ -66,7 +66,7 @@ def _java_wrap_cc_impl(ctx):
         generated_c_files.append(outhdr)
 
     # Add swig LIB files.
-    swig_lib = {'SWIG_LIB': 'external/swig/Lib'}
+    swig_lib = {"SWIG_LIB": "external/swig/Lib"}
     ctx.actions.run(
         outputs = generated_c_files + [java_files_dir],
         inputs = depset([src] + ctx.files.swig_includes, transitive = header_sets),

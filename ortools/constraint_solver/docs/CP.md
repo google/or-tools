@@ -59,7 +59,7 @@ void SimpleCpProgram() {
 
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char* /*argv*/[]) {
   operations_research::SimpleCpProgram();
   return EXIT_SUCCESS;
 }
@@ -98,16 +98,16 @@ def main():
     solver.NewSearch(decision_builder)
     while solver.NextSolution():
         count += 1
-        solution = 'Solution {}:\n'.format(count)
+        solution = f'Solution {count}:\n'
         for var in [x, y, z]:
-            solution += ' {} = {}'.format(var.Name(), var.Value())
+            solution += f' {var.Name()} = {var.Value()}'
         print(solution)
     solver.EndSearch()
-    print('Number of solutions found: ', count)
+    print(f'Number of solutions found: {count}')
 
     print('Advanced usage:')
-    print('Problem solved in ', solver.WallTime(), 'ms')
-    print('Memory usage: ', pywrapcp.Solver.MemoryUsage(), 'bytes')
+    print(f'Problem solved in {solver.WallTime()}ms')
+    print(f'Memory usage: {pywrapcp.Solver.MemoryUsage()}bytes')
 
 
 if __name__ == '__main__':

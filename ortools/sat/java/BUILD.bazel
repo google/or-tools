@@ -44,11 +44,11 @@ ortools_java_wrap_cc(
 java_junit5_test(
     name = "CpModelTest",
     srcs = ["CpModelTest.java"],
-    test_class = "com.google.ortools.sat.CpModelTest",
     jvm_flags = select({
         "@platforms//os:windows": ["-Djava.library.path=../../../../java/com/google/ortools"],
         "//conditions:default": ["-Djava.library.path=ortools/java/com/google/ortools"],
-      }),
+    }),
+    test_class = "com.google.ortools.sat.CpModelTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
@@ -68,11 +68,11 @@ java_junit5_test(
 java_junit5_test(
     name = "CpSolverTest",
     srcs = ["CpSolverTest.java"],
-    test_class = "com.google.ortools.sat.CpSolverTest",
     jvm_flags = select({
         "@platforms//os:windows": ["-Djava.library.path=../../../../java/com/google/ortools"],
         "//conditions:default": ["-Djava.library.path=ortools/java/com/google/ortools"],
-      }),
+    }),
+    test_class = "com.google.ortools.sat.CpSolverTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
@@ -92,11 +92,11 @@ java_junit5_test(
 java_junit5_test(
     name = "LinearExprTest",
     srcs = ["LinearExprTest.java"],
-    test_class = "com.google.ortools.sat.LinearExprTest",
     jvm_flags = select({
         "@platforms//os:windows": ["-Djava.library.path=../../../../java/com/google/ortools"],
         "//conditions:default": ["-Djava.library.path=ortools/java/com/google/ortools"],
-      }),
+    }),
+    test_class = "com.google.ortools.sat.LinearExprTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",

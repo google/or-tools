@@ -173,7 +173,7 @@ pip_parse(
    requirements = "//bazel:notebook_requirements.txt",
 )
 
-load("@ortools_notebook_deps//:requirements.bzl", 
+load("@ortools_notebook_deps//:requirements.bzl",
      install_notebook_deps="install_deps")
 install_notebook_deps()
 
@@ -238,3 +238,4 @@ contrib_rules_jvm_deps()
 
 load("@contrib_rules_jvm//:setup.bzl", "contrib_rules_jvm_setup")
 contrib_rules_jvm_setup()
+
