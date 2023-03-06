@@ -13,8 +13,14 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
       - name: Check java
         run: java -version
+      - name: Check mvn
+        run: mvn --version
       - name: Install Bazel
         run: |
           choco install bazel
