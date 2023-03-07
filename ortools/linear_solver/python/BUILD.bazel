@@ -32,13 +32,11 @@ pybind_extension(
 py_library(
     name = "model_builder_helper",
     srcs = ["model_builder_helper.py"],
-    data = [
-        ":pywrap_model_builder_helper.so",
-    ],
     visibility = ["//visibility:public"],
     deps = [
-        requirement("numpy"),
+        ":pywrap_model_builder_helper",
         "//ortools/linear_solver:linear_solver_py_pb2",
+        requirement("numpy"),
     ],
 )
 
@@ -46,13 +44,13 @@ py_test(
     name = "model_builder_helper_test",
     srcs = ["model_builder_helper_test.py"],
     data = [
-        ":pywrap_model_builder_helper.so",
         "//ortools/linear_solver/testdata:large_model.mps.gz",
         "//ortools/linear_solver/testdata:maximization.mps",
     ],
     python_version = "PY3",
     deps = [
         ":model_builder_helper",
+        ":pywrap_model_builder_helper",
         requirement("numpy"),
         requirement("scipy"),
     ],
@@ -61,12 +59,10 @@ py_test(
 py_library(
     name = "model_builder",
     srcs = ["model_builder.py"],
-    data = [
-        ":pywrap_model_builder_helper.so",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":model_builder_helper",
+        ":pywrap_model_builder_helper",
         requirement("numpy"),
         "//ortools/linear_solver:linear_solver_py_pb2",
     ],
@@ -76,7 +72,6 @@ py_test(
     name = "model_builder_test",
     srcs = ["model_builder_test.py"],
     data = [
-        ":pywrap_model_builder_helper.so",
         "//ortools/linear_solver/testdata:maximization.mps",
         "//ortools/linear_solver/testdata:small_model.lp",
     ],
@@ -84,6 +79,7 @@ py_test(
     deps = [
         ":model_builder",
         ":model_builder_helper",
+        ":pywrap_model_builder_helper",
         requirement("numpy"),
     ],
 )
