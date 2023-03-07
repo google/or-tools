@@ -22,7 +22,7 @@ jobs:
     container: 'centos:centos7'
     env:
       SIRIUS_RELEASE_TAG: antares-integration-v1.3
-      XPRESS_INSTALL_DIR: xpressmp813/
+      XPRESS_INSTALL_DIR: xpressmp/
       SIRIUS_INSTALL_DIR: sirius_install/
     strategy:
       fail-fast: false
@@ -79,7 +79,7 @@ jobs:
         with:
           repository: rte-france/xpress-mp
           path: ${{ env.XPRESS_INSTALL_DIR }}
-          ref: master
+          ref: "9.0"
           token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: set Xpress variables

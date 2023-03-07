@@ -19,9 +19,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SIRIUS_RELEASE_TAG: ${{ matrix.sirius-release-tag }}
-      XPRESSDIR: ${{ github.workspace }}/xpressmp813
-      XPRESS: ${{ github.workspace }}/xpressmp813/bin
-      XPRS_LIB_PATH: ${{ github.workspace }}/xpressmp813/lib
+      XPRESSDIR: ${{ github.workspace }}/xpressmp
+      XPRESS: ${{ github.workspace }}/xpressmp/bin
+      XPRS_LIB_PATH: ${{ github.workspace }}/xpressmp/lib
       SIRIUS_INSTALL_PATH : ${{ github.workspace }}/sirius_install
       SIRIUS: ${{ github.workspace }}/sirius_install/bin
     strategy:
@@ -154,7 +154,7 @@ jobs:
         with:
           key: ${{ matrix.os }}-${{ matrix.shared }}-${{ matrix.sirius }}-${{ matrix.python-version }}
 
-      - name: setup envoronment
+      - name: setup environment
         uses: ./.github/workflows/setup-env
         with:
           os: ${{ matrix.os }}
@@ -176,7 +176,7 @@ jobs:
         with:
           repository: rte-france/xpress-mp
           path: ${{ env.XPRESSDIR }}
-          ref: master
+          ref: "9.0"
           token: ${{ secrets.ACCESS_TOKEN }}
       - name: Checkout Xpress windows
         if: ${{ startsWith(matrix.os, 'windows') }}
@@ -184,7 +184,7 @@ jobs:
         with:
           repository: rte-france/xpress-mp-temp
           path: ${{ env.XPRESSDIR }}
-          ref: master
+          ref: "9.0"
           token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: set cache variables

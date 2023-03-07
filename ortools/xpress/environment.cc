@@ -73,9 +73,9 @@ std::function<int(XPRSprob prob, int rowstat[], int colstat[])> XPRSgetbasis = n
 std::function<int(XPRSprob prob, const char* filename, const char* flags)> XPRSwriteprob = nullptr;
 std::function<int(XPRSprob prob, char rowtype[], int first, int last)> XPRSgetrowtype = nullptr;
 std::function<int(XPRSprob prob, char coltype[], int first, int last)> XPRSgetcoltype = nullptr;
+std::function<int(XPRSprob prob, int nbounds, const int colind[], const char bndtype[], const double bndval[])> XPRSchgbounds = nullptr;
 std::function<int(XPRSprob prob, double x[], double slack[], double duals[], double djs[])> XPRSgetlpsol = nullptr;
 std::function<int(XPRSprob prob, double x[], double slack[])> XPRSgetmipsol = nullptr;
-std::function<int(XPRSprob prob, int nbounds, const int colind[], const char bndtype[], const double bndval[])> XPRSchgbounds = nullptr;
 std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[])> XPRSchgobj = nullptr;
 std::function<int(XPRSprob prob, int row, int col, double coef)> XPRSchgcoef = nullptr;
 std::function<int(XPRSprob prob, int ncoefs, const int rowind[], const int colind[], const double rowcoef[])> XPRSchgmcoef = nullptr;
@@ -131,9 +131,9 @@ absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSwriteprob, "XPRSwriteprob");
   xpress_dynamic_library->GetFunction(&XPRSgetrowtype, "XPRSgetrowtype");
   xpress_dynamic_library->GetFunction(&XPRSgetcoltype, "XPRSgetcoltype");
+  xpress_dynamic_library->GetFunction(&XPRSchgbounds, "XPRSchgbounds");
   xpress_dynamic_library->GetFunction(&XPRSgetlpsol, "XPRSgetlpsol");
   xpress_dynamic_library->GetFunction(&XPRSgetmipsol, "XPRSgetmipsol");
-  xpress_dynamic_library->GetFunction(&XPRSchgbounds, "XPRSchgbounds");
   xpress_dynamic_library->GetFunction(&XPRSchgobj, "XPRSchgobj");
   xpress_dynamic_library->GetFunction(&XPRSchgcoef, "XPRSchgcoef");
   xpress_dynamic_library->GetFunction(&XPRSchgmcoef, "XPRSchgmcoef");
