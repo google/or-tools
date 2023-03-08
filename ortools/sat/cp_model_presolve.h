@@ -118,7 +118,8 @@ class CpModelPresolver {
   bool PresolveLinMax(ConstraintProto* ct);
   bool PresolveLinMaxWhenAllBoolean(ConstraintProto* ct);
   bool PresolveTable(ConstraintProto* ct);
-
+  void DetectDuplicateIntervals(
+      int c, google::protobuf::RepeatedField<int32_t>* intervals);
   bool PresolveCumulative(ConstraintProto* ct);
   bool PresolveNoOverlap(ConstraintProto* ct);
   bool PresolveNoOverlap2D(int c, ConstraintProto* ct);

@@ -2120,5 +2120,23 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   return true;
 }
 
+int PresolveContext::GetIntervalRepresentative(int index) {
+  const IntervalConstraintProto& interval =
+      working_model->constraints(index).interval();
+  const auto [it, inserted] =
+      interval_representative_.insert({interval.SerializeAsString(), index});
+  if (!inserted && index != it->second) {
+    // In case the "representative" was deleted.
+    if (working_model->constraints(it->second).SerializeAsString() !=
+        it->first) {
+      it->second = index;
+      return index;
+    }
+    UpdateRuleStats("intervals: change duplicate index");
+    return it->second;
+  }
+  return index;
+}
+
 }  // namespace sat
 }  // namespace operations_research

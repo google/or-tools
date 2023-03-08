@@ -20,8 +20,6 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/match.h"
-#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -745,18 +743,84 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
   return fp;
 }
 
-bool WriteModelProtoToFile(const CpModelProto& model,
-                           const std::string& filename) {
-#if defined(__PORTABLE_PLATFORM__)
-  return false;
-#else
-  if (absl::EndsWith(filename, "txt")) {
-    return file::SetTextProto(filename, model, file::Defaults()).ok();
-  } else {
-    return file::SetBinaryProto(filename, model, file::Defaults()).ok();
+#if !defined(__PORTABLE_PLATFORM__)
+namespace {
+
+// We need to print " { " instead of " {\n" to inline our variables like:
+//
+// variables { domain: [0, 1] }
+//
+// instead of
+//
+// variables {
+//   domain: [0, 1] }
+class InlineFieldPrinter
+    : public google::protobuf::TextFormat::FastFieldValuePrinter {
+  void PrintMessageStart(const google::protobuf::Message& /*message*/,
+                         int /*field_index*/, int /*field_count*/,
+                         bool /*single_line_mode*/,
+                         google::protobuf::TextFormat::BaseTextGenerator*
+                             generator) const override {
+    generator->PrintLiteral(" { ");
   }
-#endif
+};
+
+class InlineMessagePrinter
+    : public google::protobuf::TextFormat::MessagePrinter {
+ public:
+  InlineMessagePrinter() {
+    printer_.SetSingleLineMode(true);
+    printer_.SetUseShortRepeatedPrimitives(true);
+  }
+
+  void Print(const google::protobuf::Message& message,
+             bool /*single_line_mode*/,
+             google::protobuf::TextFormat::BaseTextGenerator* generator)
+      const override {
+    buffer_.clear();
+    printer_.PrintToString(message, &buffer_);
+    generator->Print(buffer_.data(), buffer_.size());
+  }
+
+ private:
+  google::protobuf::TextFormat::Printer printer_;
+  mutable std::string buffer_;
+};
+
+// Register a InlineFieldPrinter() for all the fields containing the message we
+// want to print in one line.
+void RegisterFieldPrinters(
+    const google::protobuf::Descriptor* descriptor,
+    absl::flat_hash_set<const google::protobuf::Descriptor*>* descriptors,
+    google::protobuf::TextFormat::Printer* printer) {
+  // Recursion stopper.
+  if (!descriptors->insert(descriptor).second) return;
+
+  for (int i = 0; i < descriptor->field_count(); ++i) {
+    const google::protobuf::FieldDescriptor* field = descriptor->field(i);
+    if (field->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
+      if (field->message_type() == IntegerVariableProto::descriptor() ||
+          field->message_type() == LinearExpressionProto::descriptor()) {
+        printer->RegisterFieldValuePrinter(field, new InlineFieldPrinter());
+      } else {
+        RegisterFieldPrinters(field->message_type(), descriptors, printer);
+      }
+    }
+  }
 }
+
+}  // namespace
+
+void SetupTextFormatPrinter(google::protobuf::TextFormat::Printer* printer) {
+  printer->SetUseShortRepeatedPrimitives(true);
+  absl::flat_hash_set<const google::protobuf::Descriptor*> descriptors;
+  RegisterFieldPrinters(CpModelProto::descriptor(), &descriptors, printer);
+  printer->RegisterMessagePrinter(IntegerVariableProto::descriptor(),
+                                  new InlineMessagePrinter());
+  printer->RegisterMessagePrinter(LinearExpressionProto::descriptor(),
+                                  new InlineMessagePrinter());
+}
+#endif  // !defined(__PORTABLE_PLATFORM__)
 
 }  // namespace sat
 }  // namespace operations_research

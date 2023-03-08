@@ -31,7 +31,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
-#include "google/protobuf/text_format.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
@@ -42,7 +41,6 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -183,114 +181,19 @@ std::string Summarize(const std::string& input) {
                       input.substr(input.size() - half, half));
 }
 
-#if !defined(__PORTABLE_PLATFORM__)
-// We need to print " { " instead of " {\n" to inline our variables like:
-//
-// variables { domain: [0, 1] }
-//
-// instead of
-//
-// variables {
-//   domain: [0, 1] }
-class InlineFieldPrinter
-    : public google::protobuf::TextFormat::FastFieldValuePrinter {
-  void PrintMessageStart(const google::protobuf::Message& /*message*/,
-                         int /*field_index*/, int /*field_count*/,
-                         bool /*single_line_mode*/,
-                         google::protobuf::TextFormat::BaseTextGenerator*
-                             generator) const override {
-    generator->PrintLiteral(" { ");
-  }
-};
-
-class InlineMessagePrinter
-    : public google::protobuf::TextFormat::MessagePrinter {
- public:
-  InlineMessagePrinter() {
-    printer_.SetSingleLineMode(true);
-    printer_.SetUseShortRepeatedPrimitives(true);
-  }
-
-  void Print(const google::protobuf::Message& message,
-             bool /*single_line_mode*/,
-             google::protobuf::TextFormat::BaseTextGenerator* generator)
-      const override {
-    buffer_.clear();
-    printer_.PrintToString(message, &buffer_);
-    generator->Print(buffer_.data(), buffer_.size());
-  }
-
- private:
-  google::protobuf::TextFormat::Printer printer_;
-  mutable std::string buffer_;
-};
-
-// Register a InlineFieldPrinter() for all the fields containing the message we
-// want to print in one line.
-void RegisterFieldPrinters(
-    const google::protobuf::Descriptor* descriptor,
-    absl::flat_hash_set<const google::protobuf::Descriptor*>* descriptors,
-    google::protobuf::TextFormat::Printer* printer) {
-  // Recursion stopper.
-  if (!descriptors->insert(descriptor).second) return;
-
-  for (int i = 0; i < descriptor->field_count(); ++i) {
-    const google::protobuf::FieldDescriptor* field = descriptor->field(i);
-    if (field->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
-      if (field->message_type() == IntegerVariableProto::descriptor() ||
-          field->message_type() == LinearExpressionProto::descriptor()) {
-        printer->RegisterFieldValuePrinter(field, new InlineFieldPrinter());
-      } else {
-        RegisterFieldPrinters(field->message_type(), descriptors, printer);
-      }
-    }
-  }
-}
-#endif  // !defined(__PORTABLE_PLATFORM__)
-
 template <class M>
 void DumpModelProto(const M& proto, const std::string& name) {
-#if !defined(__PORTABLE_PLATFORM__)
+  std::string filename;
   if (absl::GetFlag(FLAGS_cp_model_dump_text_proto)) {
-    const std::string file = absl::StrCat(
-        absl::GetFlag(FLAGS_cp_model_dump_prefix), name, ".pb.txt");
-    LOG(INFO) << "Dumping " << name << " text proto to '" << file << "'.";
-
-    // We register a few custom printers to display variables and linear
-    // expression on one line. This is especially nice for variables where it is
-    // easy to recover their indices from the line number now.
-    //
-    // ex:
-    //
-    // variables { domain: [0, 1] }
-    // variables { domain: [0, 1] }
-    // variables { domain: [0, 1] }
-    //
-    // constraints {
-    //   linear {
-    //     vars: [0, 1, 2]
-    //     coeffs: [2, 4, 5 ]
-    //     domain: [11, 11]
-    //   }
-    // }
-    std::string proto_string;
-    google::protobuf::TextFormat::Printer printer;
-    printer.SetUseShortRepeatedPrimitives(true);
-    absl::flat_hash_set<const google::protobuf::Descriptor*> descriptors;
-    RegisterFieldPrinters(CpModelProto::descriptor(), &descriptors, &printer);
-    printer.RegisterMessagePrinter(IntegerVariableProto::descriptor(),
-                                   new InlineMessagePrinter());
-    printer.RegisterMessagePrinter(LinearExpressionProto::descriptor(),
-                                   new InlineMessagePrinter());
-    printer.PrintToString(proto, &proto_string);
-    CHECK_OK(file::SetContents(file, proto_string, file::Defaults()));
+    filename = absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), name,
+                            ".pb.txt");
+    LOG(INFO) << "Dumping " << name << " text proto to '" << filename << "'.";
   } else {
-    const std::string file =
+    const std::string filename =
         absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), name, ".bin");
-    LOG(INFO) << "Dumping " << name << " binary proto to '" << file << "'.";
-    CHECK_OK(file::SetBinaryProto(file, proto, file::Defaults()));
+    LOG(INFO) << "Dumping " << name << " binary proto to '" << filename << "'.";
   }
-#endif  // !defined(__PORTABLE_PLATFORM__)
+  CHECK(WriteModelProtoToFile(proto, filename));
 }
 
 }  // namespace.
@@ -2946,7 +2849,7 @@ class LnsSolver : public SubSolver {
             absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
                          lns_fragment.name(), ".pb.txt");
         LOG(INFO) << "Dumping LNS model to '" << lns_name << "'.";
-        CHECK_OK(file::SetTextProto(lns_name, lns_fragment, file::Defaults()));
+        CHECK(WriteModelProtoToFile(lns_fragment, lns_name));
       }
 
       std::vector<int> postsolve_mapping;
@@ -3023,7 +2926,7 @@ class LnsSolver : public SubSolver {
                 absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
                              debug_copy.name(), ".pb.txt");
             LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
-            CHECK_OK(file::SetTextProto(name, debug_copy, file::Defaults()));
+            CHECK(WriteModelProtoToFile(debug_copy, name));
           }
           LOG(FATAL) << "Infeasible LNS solution! " << solution_info
                      << " solved with params "
@@ -3651,7 +3554,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           const std::string file = absl::StrCat(
               absl::GetFlag(FLAGS_cp_model_dump_prefix), "response.pb.txt");
           LOG(INFO) << "Dumping response proto to '" << file << "'.";
-          CHECK_OK(file::SetTextProto(file, *response, file::Defaults()));
+          CHECK(WriteModelProtoToFile(*response, file));
         });
   }
 #endif  // __PORTABLE_PLATFORM__

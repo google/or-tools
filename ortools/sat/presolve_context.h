@@ -539,6 +539,9 @@ class PresolveContext {
   // Logs stats to the logger.
   void LogInfo();
 
+  // Return the given index, or the index of an interval with the same data.
+  int GetIntervalRepresentative(int index);
+
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
   TimeLimit* time_limit() { return time_limit_; }
@@ -688,6 +691,9 @@ class PresolveContext {
 
   // Just used to display statistics on the presolve rules that were used.
   absl::flat_hash_map<std::string, int> stats_by_rule_name_;
+
+  // Serialized proto (should be small) to index.
+  absl::flat_hash_map<std::string, int> interval_representative_;
 
   bool model_is_expanded_ = false;
 };

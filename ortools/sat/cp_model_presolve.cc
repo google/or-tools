@@ -704,6 +704,20 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
 
+  int64_t min_offset = std::numeric_limits<int64_t>::max();
+  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+    min_offset = std::min(min_offset, expr.offset());
+  }
+  if (min_offset != std::numeric_limits<int64_t>::max() && min_offset != 0) {
+    LinearArgumentProto* lin_max = ct->mutable_lin_max();
+    lin_max->mutable_target()->set_offset(lin_max->target().offset() -
+                                          min_offset);
+    for (LinearExpressionProto& expr : *(lin_max->mutable_exprs())) {
+      expr.set_offset(expr.offset() - min_offset);
+    }
+    context_->UpdateRuleStats("lin_max: shift offset");
+  }
+
   const LinearExpressionProto& target = ct->lin_max().target();
 
   // x = max(x, xi...) => forall i, x >= xi.
@@ -5218,6 +5232,21 @@ LinearExpressionProto ConstantExpressionProto(int64_t value) {
 }
 }  // namespace
 
+void CpModelPresolver::DetectDuplicateIntervals(
+    int c, google::protobuf::RepeatedField<int32_t>* intervals) {
+  bool changed = false;
+  const int size = intervals->size();
+  for (int i = 0; i < size; ++i) {
+    const int index = (*intervals)[i];
+    const int new_index = context_->GetIntervalRepresentative(index);
+    if (index != new_index) {
+      changed = true;
+      intervals->Set(i, new_index);
+    }
+  }
+  if (changed) context_->UpdateConstraintVariableUsage(c);
+}
+
 bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
@@ -5243,9 +5272,46 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
   }
 
+  // Merge identical intervals if the demand can be merged and is still affine.
+  //
+  // TODO(user): We could also merge if the first entry is constant instead of
+  // the second one. Or if the variable used for the demand is the same.
   {
-    // Filter absent intervals, or zero demands, or demand incompatible with the
-    // capacity.
+    absl::flat_hash_map<int, int> interval_to_i;
+    int new_size = 0;
+    for (int i = 0; i < proto->intervals_size(); ++i) {
+      const auto [it, inserted] =
+          interval_to_i.insert({proto->intervals(i), new_size});
+      if (!inserted) {
+        if (context_->IsFixed(proto->demands(i))) {
+          const int old_index = it->second;
+          proto->mutable_demands(old_index)->set_offset(
+              proto->demands(old_index).offset() +
+              context_->FixedValue(proto->demands(i)));
+          context_->UpdateRuleStats(
+              "cumulative: merged demand of identical interval");
+          continue;
+        } else {
+          context_->UpdateRuleStats(
+              "TODO cumulative: merged demand of identical interval");
+        }
+      }
+      proto->set_intervals(new_size, proto->intervals(i));
+      *proto->mutable_demands(new_size) = proto->demands(i);
+      ++new_size;
+    }
+    if (new_size < proto->intervals_size()) {
+      changed = true;
+      proto->mutable_intervals()->Truncate(new_size);
+      proto->mutable_demands()->erase(
+          proto->mutable_demands()->begin() + new_size,
+          proto->mutable_demands()->end());
+    }
+  }
+
+  // Filter absent intervals, or zero demands, or demand incompatible with the
+  // capacity.
+  {
     int new_size = 0;
     int num_zero_demand_removed = 0;
     int num_zero_size_removed = 0;
@@ -7339,10 +7405,18 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
     case ConstraintProto::kAllDiff:
       return PresolveAllDiff(ct);
     case ConstraintProto::kNoOverlap:
+      DetectDuplicateIntervals(c,
+                               ct->mutable_no_overlap()->mutable_intervals());
       return PresolveNoOverlap(ct);
     case ConstraintProto::kNoOverlap2D:
+      DetectDuplicateIntervals(
+          c, ct->mutable_no_overlap_2d()->mutable_x_intervals());
+      DetectDuplicateIntervals(
+          c, ct->mutable_no_overlap_2d()->mutable_y_intervals());
       return PresolveNoOverlap2D(c, ct);
     case ConstraintProto::kCumulative:
+      DetectDuplicateIntervals(c,
+                               ct->mutable_cumulative()->mutable_intervals());
       return PresolveCumulative(ct);
     case ConstraintProto::kCircuit:
       return PresolveCircuit(ct);

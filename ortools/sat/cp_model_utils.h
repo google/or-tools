@@ -21,11 +21,16 @@
 #include <string>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
-#include "google/protobuf/repeated_field.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#if !defined(__PORTABLE_PLATFORM__)
+#include "google/protobuf/text_format.h"
+#include "ortools/base/helpers.h"
+#endif  // !defined(__PORTABLE_PLATFORM__)
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
+#include "ortools/base/hash.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -216,8 +221,44 @@ uint64_t FingerprintExpression(const LinearExpressionProto& lin, uint64_t seed);
 uint64_t FingerprintModel(const CpModelProto& model,
                           uint64_t seed = kDefaultFingerprintSeed);
 
-bool WriteModelProtoToFile(const CpModelProto& model,
-                           const std::string& filename);
+#if !defined(__PORTABLE_PLATFORM__)
+
+// We register a few custom printers to display variables and linear
+// expression on one line. This is especially nice for variables where it is
+// easy to recover their indices from the line number now.
+//
+// ex:
+//
+// variables { domain: [0, 1] }
+// variables { domain: [0, 1] }
+// variables { domain: [0, 1] }
+//
+// constraints {
+//   linear {
+//     vars: [0, 1, 2]
+//     coeffs: [2, 4, 5 ]
+//     domain: [11, 11]
+//   }
+// }
+void SetupTextFormatPrinter(google::protobuf::TextFormat::Printer* printer);
+#endif  // !defined(__PORTABLE_PLATFORM__)
+
+template <class M>
+bool WriteModelProtoToFile(const M& proto, absl::string_view filename) {
+#if defined(__PORTABLE_PLATFORM__)
+  return false;
+#else   // !defined(__PORTABLE_PLATFORM__)
+  if (absl::EndsWith(filename, "txt")) {
+    std::string proto_string;
+    google::protobuf::TextFormat::Printer printer;
+    SetupTextFormatPrinter(&printer);
+    printer.PrintToString(proto, &proto_string);
+    return file::SetContents(filename, proto_string, file::Defaults()).ok();
+  } else {
+    return file::SetBinaryProto(filename, proto, file::Defaults()).ok();
+  }
+#endif  // !defined(__PORTABLE_PLATFORM__)
+}
 
 }  // namespace sat
 }  // namespace operations_research
