@@ -22,14 +22,20 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/path.h"
 
+#if defined(_MSC_VER)
+#define ROOT_DIR "../../../../../../../"
+#else
+#define ROOT_DIR
+#endif  // _MSC_VER
+
 ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
 
 namespace operations_research {
 namespace {
 TEST(PdTspParserTest, LoadDataSet) {
   for (const std::string& data : {
-           "ortools/routing/testdata/"
-           "pdtsp_prob10b.txt",
+           ROOT_DIR "ortools/routing/testdata/"
+                    "pdtsp_prob10b.txt",
        }) {
     PdTspParser parser;
     EXPECT_TRUE(parser.LoadFile(

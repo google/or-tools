@@ -75,10 +75,16 @@ def code_sample_cc_py(name):
     code_sample_py(name = name)
 
 def code_sample_java(name):
-    native.java_binary(
-        name = name + "_java",
+    native.java_test(
+        name = name + "_java_test",
+        size = "small",
         srcs = [name + ".java"],
         main_class = "com.google.ortools.sat.samples." + name,
+        test_class = "com.google.ortools.sat.samples." + name,
+        jvm_flags = select({
+            "@platforms//os:windows": ["-Djava.library.path=../../../../java/com/google/ortools"],
+            "//conditions:default": ["-Djava.library.path=ortools/java/com/google/ortools"],
+        }),
         deps = [
             "//ortools/sat/java:sat",
             "//ortools/java/com/google/ortools:Loader",
@@ -86,15 +92,5 @@ def code_sample_java(name):
             "//ortools/sat:cp_model_java_proto",
             "//ortools/sat:sat_parameters_java_proto",
             "//ortools/util/java:sorted_interval_list",
-        ],
-    )
-
-    native.sh_test(
-        name = name + "_java_test",
-        size = "small",
-        srcs = ["code_samples_java_test.sh"],
-        args = [name],
-        data = [
-            ":" + name + "_java",
         ],
     )

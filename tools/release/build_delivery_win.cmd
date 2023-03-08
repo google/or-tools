@@ -115,6 +115,8 @@ exit /B 0
 REM Check .Net
 which.exe dotnet || exit 1
 which.exe dotnet | tee.exe -a build.log
+which.exe openssl || exit 1
+which.exe openssl | tee.exe -a build.log
 
 REM Install .Net snk
 echo Install .Net snk | tee.exe -a build.log

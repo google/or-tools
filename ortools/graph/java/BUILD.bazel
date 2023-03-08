@@ -35,12 +35,17 @@ ortools_java_wrap_cc(
 
 java_junit5_test(
     name = "FlowTest",
-    size= "small",
+    size = "small",
     srcs = ["FlowTest.java"],
+    jvm_flags = select({
+        "@platforms//os:windows": ["-Djava.library.path=../../../../java/com/google/ortools"],
+        "//conditions:default": ["-Djava.library.path=ortools/java/com/google/ortools"],
+    }),
+    tags = ["unit"],
     test_class = "com.google.ortools.graph.FlowTest",
     deps = [
-        "//ortools/java/com/google/ortools:Loader",
         "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
         "@maven//:com_google_truth_truth",
         artifact("org.junit.jupiter:junit-jupiter-api"),
         artifact("org.junit.jupiter:junit-jupiter-params"),
@@ -48,5 +53,4 @@ java_junit5_test(
         artifact("org.junit.platform:junit-platform-launcher"),
         artifact("org.junit.platform:junit-platform-reporting"),
     ],
-    tags = ["unit"],
 )

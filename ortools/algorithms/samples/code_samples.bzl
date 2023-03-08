@@ -33,22 +33,18 @@ def code_sample_cc(name):
     )
 
 def code_sample_java(name):
-    native.java_binary(
-        name = name + "_java",
+    native.java_test(
+        name = name + "_java_test",
+        size = "small",
         srcs = [name + ".java"],
         main_class = "com.google.ortools.algorithms.samples." + name,
+        test_class = "com.google.ortools.algorithms.samples." + name,
+        jvm_flags = select({
+            "@platforms//os:windows": ["-Djava.library.path=../../../../java/com/google/ortools"],
+            "//conditions:default": ["-Djava.library.path=ortools/java/com/google/ortools"],
+        }),
         deps = [
             "//ortools/algorithms/java:knapsacksolver",
             "//ortools/java/com/google/ortools:Loader",
-        ],
-    )
-
-    native.sh_test(
-        name = name + "_java_test",
-        size = "small",
-        srcs = ["code_samples_java_test.sh"],
-        args = [name],
-        data = [
-            ":" + name + "_java",
         ],
     )

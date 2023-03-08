@@ -117,54 +117,6 @@ git_repository(
     remote = "https://github.com/ERGO-Code/HiGHS.git",
 )
 
-# Python
-## Bazel Python rules.
-git_repository(
-    name = "rules_python",
-    tag = "0.16.2",
-    remote = "https://github.com/bazelbuild/rules_python.git",
-)
-
-# Create a central external repo, @ortools_deps, that contains Bazel targets for all the
-# third-party packages specified in the python_deps.txt file.
-load("@rules_python//python:pip.bzl", "pip_parse")
-
-pip_parse(
-   name = "ortools_deps",
-   requirements = "//bazel:ortools_requirements.txt",
-)
-
-load("@ortools_deps//:requirements.bzl", "install_deps")
-install_deps()
-
-# Add a second repo @ortools_notebook_deps for jupyter notebooks.
-pip_parse(
-   name = "ortools_notebook_deps",
-   requirements = "//bazel:notebook_requirements.txt",
-)
-
-load("@ortools_notebook_deps//:requirements.bzl", 
-     install_notebook_deps="install_deps")
-install_notebook_deps()
-
-git_repository(
-    name = "pybind11_bazel",
-    commit = "fc56ce8a8b51e3dd941139d329b63ccfea1d304b",
-    patches = ["//patches:pybind11_bazel.patch"],
-    patch_args = ["-p1"],
-    remote = "https://github.com/pybind/pybind11_bazel.git",
-)
-
-new_git_repository(
-    name = "pybind11",
-    build_file = "@pybind11_bazel//:pybind11.BUILD",
-    tag = "v2.10.3",
-    remote = "https://github.com/pybind/pybind11.git",
-)
-
-load("@pybind11_bazel//:python_configure.bzl", "python_configure")
-python_configure(name = "local_config_python", python_version = "3")
-
 # Swig support
 
 # pcre source code repository
@@ -195,7 +147,56 @@ new_git_repository(
     remote = "https://github.com/swig/swig.git",
 )
 
+# Python
+## Bazel Python rules.
+git_repository(
+    name = "rules_python",
+    tag = "0.16.2",
+    remote = "https://github.com/bazelbuild/rules_python.git",
+)
+
+# Create a central external repo, @ortools_deps, that contains Bazel targets for all the
+# third-party packages specified in the python_deps.txt file.
+load("@rules_python//python:pip.bzl", "pip_parse")
+
+pip_parse(
+   name = "ortools_deps",
+   requirements = "//bazel:ortools_requirements.txt",
+)
+
+load("@ortools_deps//:requirements.bzl", "install_deps")
+install_deps()
+
+# Add a second repo @ortools_notebook_deps for jupyter notebooks.
+pip_parse(
+   name = "ortools_notebook_deps",
+   requirements = "//bazel:notebook_requirements.txt",
+)
+
+load("@ortools_notebook_deps//:requirements.bzl",
+     install_notebook_deps="install_deps")
+install_notebook_deps()
+
+git_repository(
+    name = "pybind11_bazel",
+    commit = "fc56ce8a8b51e3dd941139d329b63ccfea1d304b",
+    patches = ["//patches:pybind11_bazel.patch"],
+    patch_args = ["-p1"],
+    remote = "https://github.com/pybind/pybind11_bazel.git",
+)
+
+new_git_repository(
+    name = "pybind11",
+    build_file = "@pybind11_bazel//:pybind11.BUILD",
+    tag = "v2.10.3",
+    remote = "https://github.com/pybind/pybind11.git",
+)
+
+load("@pybind11_bazel//:python_configure.bzl", "python_configure")
+python_configure(name = "local_config_python", python_version = "3")
+
 # Java support (with junit 5)
+## Bazel Java rules.
 git_repository(
     name = "rules_jvm_external",
     tag = "4.5",
@@ -237,3 +238,4 @@ contrib_rules_jvm_deps()
 
 load("@contrib_rules_jvm//:setup.bzl", "contrib_rules_jvm_setup")
 contrib_rules_jvm_setup()
+

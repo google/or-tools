@@ -57,8 +57,8 @@ class DataModel(object):  # pylint: disable=too-many-instance-attributes
                 674, 1016, 868, 1210
             ],
             [
-                776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278,
-                1164, 1130, 788, 1552, 754
+                776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164,
+                1130, 788, 1552, 754
             ],
             [
                 696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628,
@@ -93,8 +93,8 @@ class DataModel(object):  # pylint: disable=too-many-instance-attributes
                 764, 730, 388, 1152, 354
             ],
             [
-                502, 594, 1278, 514, 400, 776, 1004, 468, 810, 536, 878, 0,
-                114, 308, 650, 274, 844
+                502, 594, 1278, 514, 400, 776, 1004, 468, 810, 536, 878, 0, 114,
+                308, 650, 274, 844
             ],
             [
                 388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0,
@@ -109,8 +109,8 @@ class DataModel(object):  # pylint: disable=too-many-instance-attributes
                 536, 342, 0, 764, 194
             ],
             [
-                776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152,
-                274, 388, 422, 764, 0, 798
+                776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274,
+                388, 422, 764, 0, 798
             ],
             [
                 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844,
@@ -338,13 +338,12 @@ class SVG(object):
         line_style = (
             r'style="stroke-width:{sz};stroke:{fg};fill:none"').format(
                 sz=size, fg=fg_color)
-        print(
-            r'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" {style}/>'.format(
-                x1=position_1[0],
-                y1=position_1[1],
-                x2=position_2[0],
-                y2=position_2[1],
-                style=line_style))
+        print(r'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" {style}/>'.format(
+            x1=position_1[0],
+            y1=position_1[1],
+            x2=position_2[0],
+            y2=position_2[1],
+            style=line_style))
 
     @staticmethod
     def draw_polyline(position_1, position_2, size, fg_color, colorname):
@@ -388,12 +387,7 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
     """Generate Problem as svg file to stdout."""
 
     # pylint: disable=too-many-arguments
-    def __init__(self,
-                 args,
-                 data,
-                 manager=None,
-                 routing=None,
-                 assignment=None):
+    def __init__(self, args, data, manager=None, routing=None, assignment=None):
         """Initializes the printer."""
         self._args = args
         self._data = data
@@ -650,8 +644,8 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
                 is_start = 1
             else:
                 position = [
-                    x + y for x, y in zip(
-                        loc, [self._radius * 0, self._radius * 1.8])
+                    x + y
+                    for x, y in zip(loc, [self._radius * 0, self._radius * 1.8])
                 ]
             self._svg.draw_text('[{t_min}]'.format(t_min=time_window[0]),
                                 position, self._radius * 0.75, 'white', color)
@@ -688,8 +682,8 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
             self.draw_demands()
         if self._args['time_windows'] or self._args['resources']:
             self.draw_time_windows()
-        if ((self._args['time_windows'] or self._args['resources'])
-                and self._args['solution']):
+        if ((self._args['time_windows'] or self._args['resources']) and
+                self._args['solution']):
             self.draw_tw_routes()
         self._svg.footer()
 
@@ -786,8 +780,7 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
         to_node = manager.IndexToNode(to_index)
         return data.distance_matrix[from_node][to_node]
 
-    distance_callback_index = routing.RegisterTransitCallback(
-        distance_callback)
+    distance_callback_index = routing.RegisterTransitCallback(distance_callback)
 
     # Register time callback
     def time_callback(from_index, to_index):
@@ -921,8 +914,7 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
             routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
     else:
         search_parameters.first_solution_strategy = (
-            routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
-        )
+            routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION)
 
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)

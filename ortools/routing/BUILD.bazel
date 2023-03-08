@@ -272,6 +272,10 @@ cc_test(
     name = "solution_serializer_test",
     size = "small",
     srcs = ["solution_serializer_test.cc"],
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":solution_serializer",
         "//ortools/base",

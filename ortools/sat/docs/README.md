@@ -39,7 +39,7 @@ The Python interface to the CP-SAT solver is implemented using two classes.
 *   The **CpModel** class proposes modeling methods that creates variables, or
     add constraints. This class completely hides the underlying *CpModelProto*
     used to store the model.
-*   The **CpSolver** class encapsulates the solve API. and offers helpers to
+*   The **CpSolver** class encapsulates the solve API and offers helpers to
     access the solution found by the solve.
 
 ```python
