@@ -31,5 +31,6 @@ target_include_directories(${NAME} PUBLIC
 target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
+  protobuf::libprotobuf
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>)
 #add_library(${PROJECT_NAME}::glpk ALIAS ${NAME})
