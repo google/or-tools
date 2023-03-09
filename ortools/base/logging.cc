@@ -36,4 +36,8 @@ void FixFlagsAndEnvironmentForSwig() {
   absl::EnableLogPrefix(false);
 }
 
+void KeepAbslSymbols() {
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+}
+
 }  // namespace operations_research

@@ -113,7 +113,10 @@ cc_library(
         "-DUSE_PDLP",
         "-DUSE_SCIP",
         "-DUSE_HIGHS",
-    ],
+    ] + select({
+        ":with_glpk": ["-DUSE_GLPK"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":linear_solver_cc_proto",
         ":scip_with_glop",
@@ -150,7 +153,8 @@ cc_library(
         "//ortools/util:fp_utils",
         "//ortools/util:lazy_mutable_copy",
     ] + select({
-        ":with_glpk": ["@glpk//:glpk"],
+        ":with_glpk": ["@glpk//:glpk", 
+        "//ortools/glpk:glpk_env_deleter"],
         "//conditions:default": [],
     }),
 )
