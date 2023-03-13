@@ -68,8 +68,13 @@ function publish_java() {
     echo "JAVA_HOME: ${JAVA_HOME}" | tee -a publish.log
     command -v mvn
     command -v mvn | xargs echo "mvn: " | tee -a publish.log
-    java -version | tee -a publish.log
-    java -version 2>&1 | head -n 1 | grep 1.8
+    echo "Check java version..."
+    java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a publish.log
+    if [[ ${PLATFORM} == "arm64" ]]; then
+      java -version 2>&1 | head -n 1 | grep "11\.0"
+    else
+      java -version 2>&1 | head -n 1 | grep "1\.8"
+    fi
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
   command -v openssl
@@ -122,6 +127,7 @@ function main() {
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  local -r PLATFORM=$(uname -m)
 
   mkdir -p export
   case ${1} in
@@ -130,7 +136,7 @@ function main() {
       exit ;;
     all)
       publish_java
-      publish_python
+      #publish_python
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"
