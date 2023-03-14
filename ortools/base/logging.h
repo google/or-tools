@@ -52,15 +52,4 @@ enum LogSeverity {
 };
 }  // namespace google
 
-// Implementation of the `AbslStringify` interface. This adds `DebugString()`
-// to the sink. Do not rely on exact format.
-namespace google {
-namespace protobuf {
-template <typename Sink>
-void AbslStringify(Sink& sink, const Message& msg) {
-  sink.Append(msg.DebugString());
-}
-}  // namespace protobuf
-}  // namespace google
-
 #endif  // OR_TOOLS_BASE_LOGGING_H_
