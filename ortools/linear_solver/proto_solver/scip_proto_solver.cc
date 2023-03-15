@@ -442,11 +442,11 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
     vars = {scip_resultant_var};
     vals = {1};
     if (gen_cst.has_min_constraint()) {
-      RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_constant"),
-                                         -kInfinity, minmax.constant()));
+      RETURN_IF_ERROR(
+          add_lin_constraint("_ineq_constant", -kInfinity, minmax.constant()));
     } else {
-      RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_constant"),
-                                         minmax.constant(), kInfinity));
+      RETURN_IF_ERROR(
+          add_lin_constraint("_ineq_constant", minmax.constant(), kInfinity));
     }
   }
   for (SCIP_CONS* scip_cons : cons) {
