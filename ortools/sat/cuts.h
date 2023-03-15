@@ -102,6 +102,8 @@ struct CutData {
   bool AppendOneTerm(IntegerVariable var, IntegerValue coeff, double lp_value,
                      IntegerValue lb, IntegerValue ub);
 
+  std::string DebugString() const;
+
   IntegerValue rhs;
   std::vector<CutTerm> terms;
 

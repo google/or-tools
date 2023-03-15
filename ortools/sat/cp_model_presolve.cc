@@ -3507,8 +3507,8 @@ void CpModelPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
   //
   // TODO(user): More generally, if we ignore term that set everything else to
   // zero, we can preprocess the constraint left and then add them back. So we
-  // can do all our other reduction like normal GCD or mor advanced ones like DP
-  // based or approximate GCD.
+  // can do all our other reduction like normal GCD or more advanced ones like
+  // DP based or approximate GCD.
   if (min_magnitude <= second_threshold) {
     // Compute max_magnitude for the term <= second_threshold.
     int64_t max_magnitude_left = 0;
@@ -3522,7 +3522,7 @@ void CpModelPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
         max_magnitude_left = std::max(max_magnitude_left, magnitude);
         const int64_t bound_diff =
             context_->MaxOf(arg.vars(i)) - context_->MinOf(arg.vars(i));
-        activity_when_coeff_are_one += magnitude;
+        activity_when_coeff_are_one += bound_diff;
         max_activity_left += magnitude * bound_diff;
       }
     }
@@ -6753,7 +6753,6 @@ void CpModelPresolver::ShiftObjectiveWithExactlyOnes() {
   // The objective is already loaded in the context, but we re-canonicalize
   // it with the latest information.
   if (!context_->CanonicalizeObjective()) {
-    (void)context_->NotifyThatModelIsUnsat();
     return;
   }
 
@@ -6834,7 +6833,6 @@ void CpModelPresolver::ExpandObjective() {
   // The objective is already loaded in the context, but we re-canonicalize
   // it with the latest information.
   if (!context_->CanonicalizeObjective()) {
-    (void)context_->NotifyThatModelIsUnsat();
     return;
   }
 
@@ -8996,7 +8994,6 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
   DCHECK(RefIsPositive(var));
   DCHECK(context_->ConstraintVariableGraphIsUpToDate());
   if (context_->ModelIsUnsat()) return;
-  if (context_->keep_all_feasible_solutions) return;
   if (context_->IsFixed(var)) return;
   if (context_->VariableWasRemoved(var)) return;
   if (!context_->ModelIsExpanded()) return;
@@ -9081,7 +9078,11 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
   } else {
     // Dual argument. The one with a negative cost can be transformed to
     // an exactly one.
+    // Tricky: if there is a cost, we don't want the objective to be
+    // constraining to be able to do that.
     if (context_->keep_all_feasible_solutions) return;
+    if (cost != 0 && context_->ObjectiveDomainIsConstraining()) return;
+
     if (RefIsPositive(c1_ref) == (cost < 0)) {
       cost_shift = RefIsPositive(c1_ref) ? cost : -cost;
       literals = ct1.at_most_one().literals();
@@ -10735,10 +10736,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
     // We re-do a canonicalization with the final linear expression.
-    if (!context_->CanonicalizeObjective()) {
-      (void)context_->NotifyThatModelIsUnsat();
-    }
-    if (context_->ModelIsUnsat()) return InfeasibleStatus();
+    if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
     context_->WriteObjectiveToProto();
   }
 

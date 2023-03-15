@@ -455,6 +455,7 @@ SatSolver::Status LbTreeSearch::Search(
       } else {
         // See if we have better bounds using the current LP state.
         ExploitReducedCosts(current_branch_[level]);
+        if (node.MinObjective() > current_objective_lb_) break;
 
         // If both lower bound are the same, we pick the literal branch. We do
         // that because this is the polarity that was chosen by the SAT

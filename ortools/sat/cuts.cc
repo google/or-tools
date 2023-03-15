@@ -47,7 +47,18 @@ namespace sat {
 
 std::string CutTerm::DebugString() const {
   return absl::StrCat("coeff=", coeff.value(), " lp=", lp_value,
-                      " range=", bound_diff.value());
+                      " range=", bound_diff.value(), " expr=[",
+                      expr_coeffs[0].value(), ",", expr_coeffs[1].value(), "]",
+                      " * [V", expr_vars[0].value(), ",V", expr_vars[1].value(),
+                      "]", " + ", expr_offset.value());
+}
+
+std::string CutData::DebugString() const {
+  std::string result = absl::StrCat("CutData rhs=", rhs.value(), "\n");
+  for (const CutTerm& term : terms) {
+    absl::StrAppend(&result, term.DebugString(), "\n");
+  }
+  return result;
 }
 
 bool CutTerm::Complement(IntegerValue* rhs) {
@@ -792,7 +803,9 @@ bool IntegerRoundingCutHelper::ComputeCut(
           ib_processor->GetCachedImpliedBoundInfo(
               term.expr_coeffs[0] > 0 ? NegationOf(term.expr_vars[0])
                                       : term.expr_vars[0]);
-      const IntegerValue lb = -term.expr_offset;
+      // we have (var + offset) \in [0, bound_diff] so the lb of -var is
+      // -(bound_diff - offset).
+      const IntegerValue lb = term.expr_offset - term.bound_diff;
       const IntegerValue bound_diff = info.implied_bound - lb;
       // We do not want overflow when computing f().
       if (ProdOverflow(factor_t, CapProdI(term.coeff, bound_diff))) {

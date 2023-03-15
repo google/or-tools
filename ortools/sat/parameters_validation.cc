@@ -104,6 +104,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(num_workers);
   TEST_NON_NEGATIVE(num_search_workers);
   TEST_NON_NEGATIVE(min_num_lns_workers);
+  TEST_NON_NEGATIVE(num_shared_tree_workers);
   TEST_NON_NEGATIVE(interleave_batch_size);
   TEST_NON_NEGATIVE(probing_deterministic_time_limit);
   TEST_NON_NEGATIVE(presolve_probing_deterministic_time_limit);
@@ -121,6 +122,16 @@ std::string ValidateParameters(const SatParameters& params) {
 
   if (params.num_search_workers() >= 1 && params.num_workers() >= 1) {
     return "Do not specify both num_search_workers and num_workers";
+  }
+
+  if (params.has_num_shared_tree_workers() &&
+      params.num_shared_tree_workers() + params.min_num_lns_workers() >
+          params.num_workers() + params.num_search_workers()) {
+    return "Cannot have more shared tree + lns workers than total workers";
+  }
+
+  if (params.use_shared_tree_search()) {
+    return "use_shared_tree_search must only be set on workers' parameters";
   }
 
   if (params.enumerate_all_solutions() && params.interleave_search()) {

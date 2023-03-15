@@ -1614,7 +1614,9 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   // We also do not propagate back any domain restriction from the objective to
   // the variables if any.
   for (const auto& entry : tmp_entries_) {
-    if (!CanonicalizeOneObjectiveVariable(entry.first)) return false;
+    if (!CanonicalizeOneObjectiveVariable(entry.first)) {
+      return NotifyThatModelIsUnsat("canonicalize objective one term");
+    }
   }
 
   Domain implied_domain(0);
@@ -1651,7 +1653,9 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
       entry.second /= gcd;
     }
     objective_domain_ = objective_domain_.InverseMultiplicationBy(gcd);
-    if (objective_domain_.IsEmpty()) return false;
+    if (objective_domain_.IsEmpty()) {
+      return NotifyThatModelIsUnsat("empty objective domain");
+    }
 
     objective_offset_ /= static_cast<double>(gcd);
     objective_scaling_factor_ *= static_cast<double>(gcd);
@@ -1675,9 +1679,15 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
         offset / absl::int128(objective_integer_scaling_factor_));
     objective_integer_after_offset_ = static_cast<int64_t>(
         offset % absl::int128(objective_integer_scaling_factor_));
+
+    // It is important to update the implied_domain for the "is constraining"
+    // test below.
+    implied_domain = implied_domain.InverseMultiplicationBy(gcd);
   }
 
-  if (objective_domain_.IsEmpty()) return false;
+  if (objective_domain_.IsEmpty()) {
+    return NotifyThatModelIsUnsat("empty objective domain");
+  }
 
   // Detect if the objective domain do not limit the "optimal" objective value.
   // If this is true, then we can apply any reduction that reduce the objective
