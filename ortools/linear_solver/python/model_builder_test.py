@@ -513,7 +513,7 @@ ENDATA
         z = model.new_int_var(0.0, 4.0, 'z')
         model.add(x + 2 * y == x - z)
         model.minimize(x + y + z)
-        solver = mb.ModelSolver('scip')
+        solver = mb.ModelSolver('sat')
         self.assertEqual(mb.SolveStatus.OPTIMAL, solver.solve(model))
 
     def test_issue_3614(self):
@@ -541,7 +541,7 @@ ENDATA
                                       (feature_bundle_incidence_matrix[(i, 0)] *
                                        y[bundle_start_idx])))
 
-        solver = mb.ModelSolver('scip')
+        solver = mb.ModelSolver('sat')
         status = solver.solve(model)
         self.assertEqual(mb.SolveStatus.OPTIMAL, status)
 
