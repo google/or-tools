@@ -184,7 +184,8 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
       // may be the case if we do a fixed_search.
 
       // To store equivalent variables in randomized search.
-      std::vector<VarValue> active_refs;
+      TopN<int, int64_t> top_n_vars(
+          parameters.search_randomization_tolerance());
 
       int t_index = 0;  // Index in strategy.transformations().
       for (int i = 0; i < strategy.variables().size(); ++i) {
@@ -243,29 +244,18 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
             !parameters.randomize_search()) {
           break;
         } else if (parameters.randomize_search()) {
-          if (value <=
-              candidate_value + parameters.search_randomization_tolerance()) {
-            active_refs.push_back({ref, value});
-          }
+          // We keep the top N of 'minimal' values, thus the negation.
+          top_n_vars.Add(ref, -value);
         }
       }
 
       if (candidate_value == std::numeric_limits<int64_t>::max()) continue;
       if (parameters.randomize_search()) {
-        CHECK(!active_refs.empty());
-        const IntegerValue threshold(
-            candidate_value + parameters.search_randomization_tolerance());
-        auto is_above_tolerance = [threshold](const VarValue& entry) {
-          return entry.value > threshold;
-        };
-        // Remove all values above tolerance.
-        active_refs.erase(std::remove_if(active_refs.begin(), active_refs.end(),
-                                         is_above_tolerance),
-                          active_refs.end());
-        const int winner = absl::Uniform<int>(*random, 0, active_refs.size());
-        candidate = active_refs[winner].ref;
+        const auto& elements = top_n_vars.UnorderedElements();
+        candidate = elements[absl::Uniform<int>(*random, 0, elements.size())];
       }
 
+      // TODO(user): Randomize value selection.
       DecisionStrategyProto::DomainReductionStrategy selection =
           strategy.domain_reduction_strategy();
       if (!RefIsPositive(candidate)) {
@@ -615,6 +605,8 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   // like if there is no lp, or everything is already linearized at level 1.
   std::vector<std::string> names;
 
+  const int num_workers_to_generate =
+      base_params.num_workers() - base_params.num_shared_tree_workers();
   // We use the default if empty.
   if (base_params.subsolvers().empty()) {
     names.push_back("default_lp");
@@ -634,14 +626,14 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     // Do not add objective_lb_search if core is active and num_workers <= 16.
     if (cp_model.has_objective() &&
         (cp_model.objective().vars().size() == 1 ||  // core is not active
-         base_params.num_workers() > 16)) {
+         num_workers_to_generate > 16)) {
       names.push_back("objective_lb_search");
     }
     names.push_back("probing");
-    if (base_params.num_workers() >= 20) {
+    if (num_workers_to_generate >= 20) {
       names.push_back("probing_max_lp");
     }
-    if (base_params.num_workers() >= 24) {
+    if (num_workers_to_generate >= 24) {
       names.push_back("objective_lb_search_max_lp");
     }
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
@@ -747,8 +739,9 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   if (cp_model.has_objective() && !cp_model.objective().vars().empty()) {
     // If there is an objective, the extra workers will use LNS.
     // Make sure we have at least min_num_lns_workers() of them.
-    const int target = std::max(
-        1, base_params.num_workers() - base_params.min_num_lns_workers());
+    const int target =
+        std::max(base_params.num_shared_tree_workers() > 0 ? 0 : 1,
+                 num_workers_to_generate - base_params.min_num_lns_workers());
     if (!base_params.interleave_search() && result.size() > target) {
       result.resize(target);
     }
@@ -758,7 +751,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     const bool need_extra_workers =
         !base_params.interleave_search() &&
         (base_params.use_rins_lns() || base_params.use_feasibility_pump());
-    int target = base_params.num_workers();
+    int target = num_workers_to_generate;
     if (need_extra_workers && target > 4) {
       if (target <= 8) {
         target -= 1;
@@ -784,7 +777,16 @@ std::vector<SatParameters> GetFirstSolutionParams(
   int num_random_qr = 0;
   while (result.size() < num_params_to_generate) {
     SatParameters new_params = base_params;
-    const int base_seed = base_params.random_seed();
+
+    // Set up randomization.
+    new_params.set_randomize_search(true);
+    new_params.set_random_seed(
+        ValidSumSeed(base_params.random_seed(), result.size()));
+    new_params.set_search_randomization_tolerance(10);
+    const double sat_randomization_ratio = 0.02;
+    new_params.set_random_branches_ratio(sat_randomization_ratio);
+    new_params.set_random_polarity_ratio(sat_randomization_ratio);
+
     if (num_random <= num_random_qr) {  // Random search.
       // Alternate between automatic search and fixed search (if defined).
       //
@@ -795,17 +797,11 @@ std::vector<SatParameters> GetFirstSolutionParams(
       } else {
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
       }
-      new_params.set_randomize_search(true);
-      new_params.set_search_randomization_tolerance(num_random + 1);
-      new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random + 1));
       new_params.set_name(absl::StrCat("random_", num_random));
       num_random++;
     } else {  // Random quick restart.
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
-      new_params.set_randomize_search(true);
-      new_params.set_search_randomization_tolerance(num_random_qr + 1);
-      new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random_qr));
       new_params.set_name(absl::StrCat("random_quick_restart_", num_random_qr));
       num_random_qr++;
     }
@@ -814,5 +810,31 @@ std::vector<SatParameters> GetFirstSolutionParams(
   return result;
 }
 
+std::vector<SatParameters> GetWorkSharingParams(
+    const SatParameters& base_params, const CpModelProto& cp_model,
+    int num_params_to_generate) {
+  std::vector<SatParameters> result;
+  // TODO(user): We could support assumptions, it's just not implemented.
+  if (!cp_model.assumptions().empty()) return result;
+  if (num_params_to_generate <= 0) return result;
+  int num_workers = 0;
+  while (result.size() < num_params_to_generate) {
+    // TODO(user): Make the base parameters configurable.
+    SatParameters new_params = base_params;
+    std::string name = "shared_";
+    const int base_seed = base_params.random_seed();
+    new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_workers + 1));
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_use_shared_tree_search(true);
+    new_params.set_linearization_level(0);
+    std::string lp_tags[] = {"no", "default", "max"};
+    absl::StrAppend(&name, lp_tags[new_params.linearization_level()], "_lp_",
+                    num_workers);
+    new_params.set_name(name);
+    num_workers++;
+    result.push_back(new_params);
+  }
+  return result;
+}
 }  // namespace sat
 }  // namespace operations_research

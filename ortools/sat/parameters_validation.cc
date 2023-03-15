@@ -147,6 +147,7 @@ std::string ValidateParameters(const SatParameters& params) {
       "probing_max_lp",
       "probing_no_lp",
       "probing",
+      "pseudo_costs",
       "quick_restart_max_lp",
       "quick_restart_no_lp",
       "quick_restart",

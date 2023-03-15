@@ -106,6 +106,12 @@ std::vector<SatParameters> GetFirstSolutionParams(
     const SatParameters& base_params, const CpModelProto& cp_model,
     int num_params_to_generate);
 
+// Returns a vector of num_params_to_generate set of parameters to specify
+// solvers that cooperatively explore a search tree.
+std::vector<SatParameters> GetWorkSharingParams(
+    const SatParameters& base_params, const CpModelProto& cp_model,
+    int num_params_to_generate);
+
 }  // namespace sat
 }  // namespace operations_research
 

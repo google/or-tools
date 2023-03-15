@@ -579,8 +579,8 @@ class IntegerEncoder {
 
   // Gets the literal always set to true, make it if it does not exist.
   Literal GetTrueLiteral() {
-    DCHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
     if (literal_index_true_ == kNoLiteralIndex) {
+      DCHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
       const Literal literal_true =
           Literal(sat_solver_->NewBooleanVariable(), true);
       literal_index_true_ = literal_true.Index();

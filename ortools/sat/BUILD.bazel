@@ -250,6 +250,7 @@ cc_library(
         ":simplification",
         ":subsolver",
         ":synchronization",
+        ":work_assignment",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:stl_util",
@@ -1123,6 +1124,7 @@ cc_library(
         ":model",
         ":sat_parameters_cc_proto",
         ":synchronization",
+        ":util",
         "//ortools/glop:revised_simplex",
         "//ortools/util:logging",
         "@com_google_absl//absl/container:btree",
@@ -1614,6 +1616,32 @@ cc_library(
     deps = [
         ":util",
         "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "work_assignment",
+    srcs = ["work_assignment.cc"],
+    hdrs = ["work_assignment.h"],
+    deps = [
+        ":cp_model_mapping",
+        ":cp_model_utils",
+        ":integer",
+        ":integer_search",
+        ":model",
+        ":sat_base",
+        ":sat_parameters_cc_proto",
+        ":sat_solver",
+        ":synchronization",
+        ":util",
+        "//ortools/util:time_limit",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/types:span",
     ],
 )

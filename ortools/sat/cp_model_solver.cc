@@ -91,6 +91,7 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -1800,8 +1801,13 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
     }
   } else if (!model_proto.has_objective()) {
     while (true) {
-      status = ResetAndSolveIntegerProblem(
-          mapping.Literals(model_proto.assumptions()), model);
+      if (parameters.use_shared_tree_search()) {
+        auto* subtree_worker = model->GetOrCreate<SharedTreeWorker>();
+        status = subtree_worker->Search(solution_observer);
+      } else {
+        status = ResetAndSolveIntegerProblem(
+            mapping.Literals(model_proto.assumptions()), model);
+      }
       if (status != SatSolver::Status::FEASIBLE) break;
       solution_observer();
       if (!parameters.enumerate_all_solutions()) break;
@@ -1847,6 +1853,9 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
       } else {
         status = model->Mutable<CoreBasedOptimizer>()->Optimize();
       }
+    } else if (parameters.use_shared_tree_search()) {
+      auto* subtree_worker = model->GetOrCreate<SharedTreeWorker>();
+      status = subtree_worker->Search(solution_observer);
     } else {
       // TODO(user): This parameter breaks the splitting in chunk of a Solve().
       // It should probably be moved into another SubSolver altogether.
@@ -2336,18 +2345,37 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
 
 #if !defined(__PORTABLE_PLATFORM__)
 
-// Small wrapper to simplify the constructions of the two SubSolver below.
+// Small wrapper containing all the shared classes between our subsolver
+// threads. Note that all these classes can also be retrieved with something
+// like global_model->GetOrCreate<Class>() but it is not thread-safe to do so.
+//
+// All the classes here should be thread-safe, or at least safe in the way they
+// are accessed. For instance the model_proto will be kept constant for the
+// whole duration of the solve.
 struct SharedClasses {
-  CpModelProto const* model_proto;
-  WallTimer* wall_timer;
-  ModelSharedTimeLimit* time_limit;
-  SharedBoundsManager* bounds;
-  SharedResponseManager* response;
-  SharedRelaxationSolutionRepository* relaxation_solutions;
-  SharedLPSolutionRepository* lp_solutions;
-  SharedIncompleteSolutionManager* incomplete_solutions;
-  SharedClausesManager* clauses;
-  Model* global_model;
+  SharedClasses(const CpModelProto* proto, Model* global_model)
+      : model_proto(proto),
+        wall_timer(global_model->GetOrCreate<WallTimer>()),
+        time_limit(global_model->GetOrCreate<ModelSharedTimeLimit>()),
+        logger(global_model->GetOrCreate<SolverLogger>()),
+        stats(global_model->GetOrCreate<SharedStatistics>()),
+        response(global_model->GetOrCreate<SharedResponseManager>()),
+        shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()) {}
+
+  // These are never nullptr.
+  const CpModelProto* const model_proto;
+  WallTimer* const wall_timer;
+  ModelSharedTimeLimit* const time_limit;
+  SolverLogger* const logger;
+  SharedStatistics* const stats;
+  SharedResponseManager* const response;
+  SharedTreeManager* const shared_tree_manager;
+
+  // These can be nullptr depending on the options.
+  std::unique_ptr<SharedBoundsManager> bounds;
+  std::unique_ptr<SharedLPSolutionRepository> lp_solutions;
+  std::unique_ptr<SharedIncompleteSolutionManager> incomplete_solutions;
+  std::unique_ptr<SharedClausesManager> clauses;
 
   bool SearchIsDone() {
     if (response->ProblemIsSolved()) return true;
@@ -2381,32 +2409,31 @@ class FullProblemSolver : public SubSolver {
       local_model_->Register<SharedResponseManager>(shared->response);
     }
 
-    if (shared->relaxation_solutions != nullptr) {
-      local_model_->Register<SharedRelaxationSolutionRepository>(
-          shared->relaxation_solutions);
-    }
-
     if (shared->lp_solutions != nullptr) {
-      local_model_->Register<SharedLPSolutionRepository>(shared->lp_solutions);
+      local_model_->Register<SharedLPSolutionRepository>(
+          shared->lp_solutions.get());
     }
 
     if (shared->incomplete_solutions != nullptr) {
       local_model_->Register<SharedIncompleteSolutionManager>(
-          shared->incomplete_solutions);
+          shared->incomplete_solutions.get());
     }
 
     if (shared->bounds != nullptr) {
-      local_model_->Register<SharedBoundsManager>(shared->bounds);
+      local_model_->Register<SharedBoundsManager>(shared->bounds.get());
     }
 
     if (shared->clauses != nullptr) {
-      local_model_->Register<SharedClausesManager>(shared->clauses);
+      local_model_->Register<SharedClausesManager>(shared->clauses.get());
+    }
+
+    if (local_parameters.use_shared_tree_search()) {
+      local_model_->Register<SharedTreeManager>(shared->shared_tree_manager);
     }
 
     // TODO(user): For now we do not count LNS statistics. We could easily
     // by registering the SharedStatistics class with LNS local model.
-    local_model_->Register<SharedStatistics>(
-        shared->global_model->GetOrCreate<SharedStatistics>());
+    local_model_->Register<SharedStatistics>(shared_->stats);
   }
 
   ~FullProblemSolver() override {
@@ -2442,9 +2469,9 @@ class FullProblemSolver : public SubSolver {
         // at the same time.
         if (shared_->bounds != nullptr) {
           RegisterVariableBoundsLevelZeroExport(
-              *shared_->model_proto, shared_->bounds, local_model_.get());
+              *shared_->model_proto, shared_->bounds.get(), local_model_.get());
           RegisterVariableBoundsLevelZeroImport(
-              *shared_->model_proto, shared_->bounds, local_model_.get());
+              *shared_->model_proto, shared_->bounds.get(), local_model_.get());
         }
 
         // Note that this is done after the loading, so we will never export
@@ -2454,9 +2481,9 @@ class FullProblemSolver : public SubSolver {
           const int id = shared_->clauses->RegisterNewId();
           shared_->clauses->SetWorkerNameForId(id, local_model_->Name());
 
-          RegisterClausesLevelZeroImport(id, shared_->clauses,
+          RegisterClausesLevelZeroImport(id, shared_->clauses.get(),
                                          local_model_.get());
-          RegisterClausesExport(id, shared_->clauses, local_model_.get());
+          RegisterClausesExport(id, shared_->clauses.get(), local_model_.get());
         }
 
         if (local_model_->GetOrCreate<SatParameters>()->repair_hint()) {
@@ -2605,24 +2632,20 @@ class FeasibilityPumpSolver : public SubSolver {
       local_model_->Register<SharedResponseManager>(shared->response);
     }
 
-    if (shared->relaxation_solutions != nullptr) {
-      local_model_->Register<SharedRelaxationSolutionRepository>(
-          shared->relaxation_solutions);
-    }
-
     if (shared->lp_solutions != nullptr) {
-      local_model_->Register<SharedLPSolutionRepository>(shared->lp_solutions);
+      local_model_->Register<SharedLPSolutionRepository>(
+          shared->lp_solutions.get());
     }
 
     if (shared->incomplete_solutions != nullptr) {
       local_model_->Register<SharedIncompleteSolutionManager>(
-          shared->incomplete_solutions);
+          shared->incomplete_solutions.get());
     }
 
     // Level zero variable bounds sharing.
     if (shared_->bounds != nullptr) {
       RegisterVariableBoundsLevelZeroImport(
-          *shared_->model_proto, shared_->bounds, local_model_.get());
+          *shared_->model_proto, shared_->bounds.get(), local_model_.get());
     }
   }
 
@@ -2995,7 +3018,6 @@ class LnsSolver : public SubSolver {
       generator_->AddSolveData(data);
 
       if (VLOG_IS_ON(1) && display_lns_info) {
-        auto* logger = shared_->global_model->GetOrCreate<SolverLogger>();
         std::string s = absl::StrCat("              LNS ", name(), ":");
         if (new_solution) {
           const double base_obj = ScaleObjectiveValue(
@@ -3016,8 +3038,8 @@ class LnsSolver : public SubSolver {
               neighborhood.variables_that_can_be_fixed_to_local_optimum.size(),
               "]");
         }
-        SOLVER_LOG(logger, s, " [d:", data.difficulty, ", id:", task_id,
-                   ", dtime:", data.deterministic_time, "/",
+        SOLVER_LOG(shared_->logger, s, " [d:", data.difficulty,
+                   ", id:", task_id, ", dtime:", data.deterministic_time, "/",
                    data.deterministic_limit,
                    ", status:", ProtoEnumToString<CpSolverStatus>(data.status),
                    ", #calls:", generator_->num_calls(),
@@ -3049,57 +3071,38 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       << "Enumerating all solutions in parallel is not supported.";
   if (global_model->GetOrCreate<TimeLimit>()->LimitReached()) return;
 
-  std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
+  SharedClasses shared(&model_proto, global_model);
+
   if (params.share_level_zero_bounds()) {
-    shared_bounds_manager = std::make_unique<SharedBoundsManager>(model_proto);
-    shared_bounds_manager->LoadDebugSolution(
+    shared.bounds = std::make_unique<SharedBoundsManager>(model_proto);
+    shared.bounds->LoadDebugSolution(
         global_model->GetOrCreate<SharedResponseManager>()->DebugSolution());
   }
 
-  std::unique_ptr<SharedRelaxationSolutionRepository>
-      shared_relaxation_solutions;
-
-  auto shared_lp_solutions = std::make_unique<SharedLPSolutionRepository>(
+  shared.lp_solutions = std::make_unique<SharedLPSolutionRepository>(
       /*num_solutions_to_keep=*/10);
-  global_model->Register<SharedLPSolutionRepository>(shared_lp_solutions.get());
+  global_model->Register<SharedLPSolutionRepository>(shared.lp_solutions.get());
 
   // We currently only use the feasiblity pump if it is enabled and some other
   // parameters are not on.
-  std::unique_ptr<SharedIncompleteSolutionManager> shared_incomplete_solutions;
   const bool use_feasibility_pump =
       params.use_feasibility_pump() && params.linearization_level() > 0 &&
       !params.use_lns_only() && !params.interleave_search();
   if (use_feasibility_pump) {
-    shared_incomplete_solutions =
+    shared.incomplete_solutions =
         std::make_unique<SharedIncompleteSolutionManager>();
     global_model->Register<SharedIncompleteSolutionManager>(
-        shared_incomplete_solutions.get());
+        shared.incomplete_solutions.get());
   }
 
   // Set up synchronization mode in parallel.
   const bool always_synchronize =
       !params.interleave_search() || params.num_workers() <= 1;
+  shared.response->SetSynchronizationMode(always_synchronize);
 
-  std::unique_ptr<SharedClausesManager> shared_clauses;
   if (params.share_binary_clauses()) {
-    shared_clauses = std::make_unique<SharedClausesManager>(always_synchronize);
+    shared.clauses = std::make_unique<SharedClausesManager>(always_synchronize);
   }
-
-  SharedResponseManager* shared_response_manager =
-      global_model->GetOrCreate<SharedResponseManager>();
-  shared_response_manager->SetSynchronizationMode(always_synchronize);
-
-  SharedClasses shared;
-  shared.model_proto = &model_proto;
-  shared.wall_timer = global_model->GetOrCreate<WallTimer>();
-  shared.time_limit = global_model->GetOrCreate<ModelSharedTimeLimit>();
-  shared.bounds = shared_bounds_manager.get();
-  shared.response = shared_response_manager;
-  shared.relaxation_solutions = shared_relaxation_solutions.get();
-  shared.lp_solutions = shared_lp_solutions.get();
-  shared.incomplete_solutions = shared_incomplete_solutions.get();
-  shared.clauses = shared_clauses.get();
-  shared.global_model = global_model;
 
   // The list of all the SubSolver that will be used in this parallel search.
   std::vector<std::unique_ptr<SubSolver>> subsolvers;
@@ -3112,9 +3115,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         shared.response->MutableSolutionsRepository()->Synchronize();
         if (shared.bounds != nullptr) {
           shared.bounds->Synchronize();
-        }
-        if (shared.relaxation_solutions != nullptr) {
-          shared.relaxation_solutions->Synchronize();
         }
         if (shared.lp_solutions != nullptr) {
           shared.lp_solutions->Synchronize();
@@ -3142,6 +3142,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         "first_solution", local_params,
         /*split_in_chunks=*/false, &shared));
   } else {
+    for (const SatParameters& local_params : GetWorkSharingParams(
+             params, model_proto, params.num_shared_tree_workers())) {
+      subsolvers.push_back(std::make_unique<FullProblemSolver>(
+          local_params.name(), local_params,
+          /*split_in_chunks=*/params.interleave_search(), &shared));
+      num_full_problem_solvers++;
+    }
     for (const SatParameters& local_params :
          GetDiverseSetOfParameters(params, model_proto)) {
       // TODO(user): This is currently not supported here.
@@ -3163,7 +3170,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
   // Synchronize() is called before any LNS neighborhood solvers.
   auto unique_helper = std::make_unique<NeighborhoodGeneratorHelper>(
-      &model_proto, &params, shared.response, shared.bounds);
+      &model_proto, &params, shared.response, shared.bounds.get());
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
@@ -3181,16 +3188,16 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // RINS.
     incomplete_subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<RelaxationInducedNeighborhoodGenerator>(
-            helper, shared.response, shared.relaxation_solutions,
-            shared.lp_solutions, /*incomplete_solutions=*/nullptr,
+            helper, shared.response, nullptr, shared.lp_solutions.get(),
+            /*incomplete_solutions=*/nullptr,
             absl::StrCat("rins_lns_", local_params.name())),
         local_params, helper, &shared));
 
     // RENS.
     incomplete_subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<RelaxationInducedNeighborhoodGenerator>(
-            helper, /*response_manager=*/nullptr, shared.relaxation_solutions,
-            shared.lp_solutions, shared.incomplete_solutions,
+            helper, /*response_manager=*/nullptr, nullptr,
+            shared.lp_solutions.get(), shared.incomplete_solutions.get(),
             absl::StrCat("rens_lns_", local_params.name())),
         local_params, helper, &shared));
   }

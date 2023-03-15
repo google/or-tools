@@ -872,6 +872,8 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
   if (old_domain == domain) return true;
 
   if (domain.IsEmpty()) return false;
+  const bool lb_changed = domain.Min() > old_domain.Min();
+  const bool ub_changed = domain.Max() < old_domain.Max();
   (*domains_)[index] = domain;
 
   // Update directly the level zero bounds.
@@ -885,6 +887,12 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
   integer_trail_[var.value()].bound = domain.Min();
   vars_[NegationOf(var)].current_bound = -domain.Max();
   integer_trail_[NegationOf(var).value()].bound = -domain.Max();
+
+  // Do not forget to update the watchers.
+  for (SparseBitset<IntegerVariable>* bitset : watchers_) {
+    if (lb_changed) bitset->Set(var);
+    if (ub_changed) bitset->Set(NegationOf(var));
+  }
 
   // Update the encoding.
   return encoder_->UpdateEncodingOnInitialDomainChange(var, domain);

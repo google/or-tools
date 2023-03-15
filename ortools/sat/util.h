@@ -380,6 +380,61 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
     absl::Span<const int64_t> domain_sizes,
     std::vector<std::vector<int64_t>>* tuples);
 
+// Keep the top n elements from a stream of elements.
+//
+// TODO(user): We could use gtl::TopN when/if it gets open sourced. Note that
+// we might be slighlty faster here since we use an indirection and don't move
+// the Element class around as much.
+template <typename Element, typename Score>
+class TopN {
+ public:
+  explicit TopN(int n) : n_(n) {}
+
+  void Clear() {
+    heap_.clear();
+    elements_.clear();
+  }
+
+  void Add(Element e, Score score) {
+    if (heap_.size() < n_) {
+      const int index = elements_.size();
+      heap_.push_back({index, score});
+      elements_.push_back(std::move(e));
+      if (heap_.size() == n_) {
+        // TODO(user): We could delay that on the n + 1 push.
+        std::make_heap(heap_.begin(), heap_.end());
+      }
+    } else {
+      if (score <= heap_.front().score) return;
+      const int index_to_replace = heap_.front().index;
+      elements_[index_to_replace] = std::move(e);
+
+      // If needed, we could be faster here with an update operation.
+      std::pop_heap(heap_.begin(), heap_.end());
+      heap_.back() = {index_to_replace, score};
+      std::push_heap(heap_.begin(), heap_.end());
+    }
+  }
+
+  bool empty() const { return elements_.empty(); }
+
+  const std::vector<Element>& UnorderedElements() const { return elements_; }
+
+ private:
+  const int n_;
+
+  // We keep a heap of the n highest score.
+  struct HeapElement {
+    int index;  // in elements_;
+    Score score;
+    bool operator<(const HeapElement& other) const {
+      return score > other.score;
+    }
+  };
+  std::vector<HeapElement> heap_;
+  std::vector<Element> elements_;
+};
+
 // ============================================================================
 // Implementation.
 // ============================================================================

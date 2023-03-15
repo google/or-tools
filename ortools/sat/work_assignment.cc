@@ -1,0 +1,595 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "ortools/sat/work_assignment.h"
+
+#include <math.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <utility>
+#include <vector>
+
+#include "absl/log/check.h"
+#include "absl/random/distributions.h"
+#include "absl/random/random.h"
+#include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
+#include "ortools/base/logging.h"
+#include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_search.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
+#include "ortools/util/time_limit.h"
+
+namespace operations_research::sat {
+
+Literal ProtoLiteral::Decode(CpModelMapping* mapping,
+                             IntegerEncoder* encoder) const {
+  DCHECK_LT(proto_var_, mapping->NumProtoVariables());
+  if (mapping->IsBoolean(proto_var_)) {
+    return mapping->Literal(proto_var_);
+  }
+  return encoder->GetOrCreateAssociatedLiteral(DecodeInteger(mapping));
+}
+
+IntegerLiteral ProtoLiteral::DecodeInteger(CpModelMapping* mapping) const {
+  const int positive_var = PositiveRef(proto_var_);
+  if (!mapping->IsInteger(positive_var)) {
+    return IntegerLiteral();
+  }
+  if (proto_var_ < 0) {
+    return IntegerLiteral::LowerOrEqual(mapping->Integer(positive_var), -lb_);
+  }
+  return IntegerLiteral::GreaterOrEqual(mapping->Integer(positive_var), lb_);
+}
+
+std::optional<ProtoLiteral> ProtoLiteral::EncodeInteger(
+    IntegerLiteral literal, CpModelMapping* mapping) {
+  IntegerVariable positive_var = PositiveVariable(literal.var);
+  const int model_var =
+      mapping->GetProtoVariableFromIntegerVariable(positive_var);
+  if (model_var == -1) {
+    return std::nullopt;
+  }
+  ProtoLiteral result{
+      literal.var == positive_var ? model_var : NegatedRef(model_var),
+      literal.bound};
+  DCHECK_EQ(result.DecodeInteger(mapping), literal);
+  DCHECK_EQ(result.Negated().DecodeInteger(mapping), literal.Negated());
+  return result;
+}
+std::optional<ProtoLiteral> ProtoLiteral::Encode(Literal literal,
+                                                 CpModelMapping* mapping,
+                                                 IntegerEncoder* encoder) {
+  if (literal.Index() == kNoLiteralIndex) {
+    return std::nullopt;
+  }
+  int model_var =
+      mapping->GetProtoVariableFromBooleanVariable(literal.Variable());
+  if (model_var != -1) {
+    CHECK(mapping->IsBoolean(model_var));
+    ProtoLiteral result{
+        literal.IsPositive() ? model_var : NegatedRef(model_var),
+        literal.IsPositive() ? 1 : 0};
+    DCHECK_EQ(result.Decode(mapping, encoder), literal);
+    DCHECK_EQ(result.Negated().Decode(mapping, encoder), literal.Negated());
+    return result;
+  }
+  for (auto int_lit : encoder->GetIntegerLiterals(literal)) {
+    auto result = EncodeInteger(int_lit, mapping);
+    if (result.has_value()) {
+      DCHECK_EQ(result->DecodeInteger(mapping), int_lit);
+      DCHECK_EQ(result->Negated().DecodeInteger(mapping), int_lit.Negated());
+      return result;
+    }
+  }
+  return std::nullopt;
+}
+
+void ProtoTrail::PushLevel(const ProtoLiteral& decision,
+                           IntegerValue objective_lb, int node_id) {
+  CHECK_GT(node_id, 0);
+  decision_indexes_.push_back(literals_.size());
+  literals_.push_back(decision);
+  node_ids_.push_back(node_id);
+  if (!level_to_objective_lbs_.empty()) {
+    objective_lb = std::max(level_to_objective_lbs_.back(), objective_lb);
+  }
+  level_to_objective_lbs_.push_back(objective_lb);
+}
+
+void ProtoTrail::SetLevelImplied(int level) {
+  DCHECK_GE(level, 1);
+  DCHECK_LE(level, decision_indexes_.size());
+  SetObjectiveLb(level - 1, ObjectiveLb(level));
+  decision_indexes_.erase(decision_indexes_.begin() + level - 1);
+  level_to_objective_lbs_.erase(level_to_objective_lbs_.begin() + level - 1);
+}
+
+void ProtoTrail::Clear() {
+  decision_indexes_.clear();
+  literals_.clear();
+  level_to_objective_lbs_.clear();
+  node_ids_.clear();
+}
+
+void ProtoTrail::SetObjectiveLb(int level, IntegerValue objective_lb) {
+  if (level == 0) return;
+  level_to_objective_lbs_[level - 1] =
+      std::max(objective_lb, level_to_objective_lbs_[level - 1]);
+}
+
+absl::Span<const int> ProtoTrail::NodeIds(int level) const {
+  DCHECK_LE(level, decision_indexes_.size());
+  int start = level == 0 ? 0 : decision_indexes_[level - 1];
+  int end = level == decision_indexes_.size() ? node_ids_.size()
+                                              : decision_indexes_[level];
+  return absl::MakeSpan(node_ids_.data() + start, end - start);
+}
+
+absl::Span<const ProtoLiteral> ProtoTrail::Implications(int level) const {
+  DCHECK_LE(level, decision_indexes_.size());
+  int start = level == 0 ? 0 : decision_indexes_[level - 1] + 1;
+  int end = level == decision_indexes_.size() ? node_ids_.size()
+                                              : decision_indexes_[level];
+  return absl::MakeSpan(literals_.data() + start, end - start);
+}
+
+SharedTreeManager::SharedTreeManager(Model* model)
+    : num_workers_(
+          model->GetOrCreate<SatParameters>()->num_shared_tree_workers()),
+      shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
+      num_splits_wanted_(num_workers_ - 1),
+      max_nodes_(128 * num_workers_) {
+  // Create the root node with a fake literal.
+  nodes_.push_back({.literal = ProtoLiteral()});
+  unassigned_leaves_.reserve(num_workers_);
+  unassigned_leaves_.push_back(&nodes_.back());
+  to_close_.reserve(max_nodes_);
+  to_update_.reserve(max_nodes_);
+}
+
+int SharedTreeManager::SplitsToGeneratePerWorker() const {
+  absl::MutexLock mutex_lock(&mu_);
+  return std::min<int>((num_splits_wanted_ + num_workers_ - 1) / num_workers_,
+                       max_nodes_ - static_cast<int>(nodes_.size()));
+}
+
+bool SharedTreeManager::SyncTree(ProtoTrail& path) {
+  absl::MutexLock mutex_lock(&mu_);
+  std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
+  if (nodes.back().first->closed) {
+    path.Clear();
+    return false;
+  }
+  // We don't rely on these being empty, but we expect them to be.
+  DCHECK(to_close_.empty());
+  DCHECK(to_update_.empty());
+  int prev_level = -1;
+  for (const auto& [node, level] : nodes) {
+    if (level == prev_level) {
+      to_close_.push_back(GetSibling(node));
+    }
+    if (level > 0 && node->objective_lb < path.ObjectiveLb(level)) {
+      node->objective_lb = path.ObjectiveLb(level);
+      to_update_.push_back(node->parent);
+    }
+    prev_level = level;
+  }
+  ProcessNodeChanges();
+  return true;
+}
+
+void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
+  absl::MutexLock mutex_lock(&mu_);
+  std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
+  if (nodes.back().first->children[0] != nullptr) {
+    LOG_IF(WARNING, nodes.size() > 1)
+        << "Cannot resplit previously split node @ " << nodes.back().second
+        << "/" << nodes.size();
+    return;
+  }
+  if (nodes_.size() >= max_nodes_) {
+    VLOG(1) << "Too many nodes to accept split";
+    return;
+  }
+  if (num_splits_wanted_ <= 0) {
+    VLOG(1) << "Enough splits for now";
+    return;
+  }
+  if (path.MaxLevel() > log2(max_nodes_)) {
+    VLOG(1) << "Tree too unbalanced to accept split";
+    return;
+  }
+  VLOG_EVERY_N(1, 10) << unassigned_leaves_.size() << " unassigned leaves, "
+                      << nodes_.size() << " subtrees, " << num_splits_wanted_
+                      << " splits wanted";
+  Split(nodes, decision);
+  auto [new_leaf, level] = nodes.back();
+  path.PushLevel(new_leaf->literal, new_leaf->objective_lb, new_leaf->id);
+}
+
+void SharedTreeManager::ReplaceTree(ProtoTrail& path) {
+  absl::MutexLock mutex_lock(&mu_);
+  std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
+  if (nodes.back().first->children[0] == nullptr &&
+      !nodes.back().first->closed && nodes.size() > 1) {
+    VLOG(1) << "Returning leaf to be replaced";
+    unassigned_leaves_.push_back(nodes.back().first);
+  }
+  path.Clear();
+  while (!unassigned_leaves_.empty()) {
+    const int i = num_leaves_assigned_++ % unassigned_leaves_.size();
+    std::swap(unassigned_leaves_[i], unassigned_leaves_.back());
+    Node* leaf = unassigned_leaves_.back();
+    unassigned_leaves_.pop_back();
+    if (!leaf->closed && leaf->children[0] == nullptr) {
+      AssignLeaf(path, leaf);
+      return;
+    }
+  }
+  VLOG(1) << "Assigning root because no unassigned leaves are available";
+  // TODO(user): Investigate assigning a random leaf so workers can still
+  // improve shared tree bounds.
+}
+
+SharedTreeManager::Node* SharedTreeManager::GetSibling(Node* node) {
+  if (node == nullptr || node->parent == nullptr) return nullptr;
+  if (node->parent->children[0] != node) {
+    return node->parent->children[0];
+  }
+  return node->parent->children[1];
+}
+
+void SharedTreeManager::Split(std::vector<std::pair<Node*, int>>& nodes,
+                              ProtoLiteral lit) {
+  const auto [parent, level] = nodes.back();
+  DCHECK_EQ(parent->children[0], nullptr);
+  DCHECK_EQ(parent->children[1], nullptr);
+  parent->children[0] = MakeSubtree(parent, lit);
+  parent->children[1] = MakeSubtree(parent, lit.Negated());
+  nodes.push_back(std::make_pair(parent->children[0], level + 1));
+  unassigned_leaves_.push_back(parent->children[1]);
+  --num_splits_wanted_;
+}
+
+SharedTreeManager::Node* SharedTreeManager::MakeSubtree(Node* parent,
+                                                        ProtoLiteral literal) {
+  nodes_.push_back(Node{.literal = literal,
+                        .objective_lb = parent->objective_lb,
+                        .parent = parent,
+                        .id = static_cast<int>(nodes_.size())});
+  return &nodes_.back();
+}
+
+void SharedTreeManager::ProcessNodeChanges() {
+  while (!to_close_.empty() || !to_update_.empty()) {
+    while (!to_close_.empty()) {
+      Node* node = to_close_.back();
+      CHECK_NE(node, nullptr);
+      to_close_.pop_back();
+      if (node->closed) continue;
+      node->closed = true;
+      // If we are closing a leaf, try to maintain the same number of leaves;
+      num_splits_wanted_ += (node->children[0] == nullptr);
+      for (Node* child : node->children) {
+        if (child == nullptr || child->closed) continue;
+        to_close_.push_back(child);
+      }
+      if (node->parent != nullptr) {
+        to_update_.push_back(node->parent);
+        GetSibling(node)->implied = true;
+      } else {
+        shared_response_manager_->NotifyThatImprovingProblemIsInfeasible(
+            "shared_tree_manager");
+      }
+    }
+    if (to_update_.empty()) break;
+    Node* node = to_update_.back();
+    to_update_.pop_back();
+    while (node != nullptr && !node->closed && node->children[0] != nullptr) {
+      bool has_open_child = false;
+      IntegerValue child_bound = kMaxIntegerValue;
+      for (const Node* child : node->children) {
+        if (child->closed) continue;
+        has_open_child = true;
+        child_bound = std::min(child->objective_lb, child_bound);
+      }
+      if (!has_open_child) {
+        to_close_.push_back(node);
+      } else if (child_bound > node->objective_lb) {
+        node->objective_lb = child_bound;
+        if (node->parent == nullptr) {
+          shared_response_manager_->UpdateInnerObjectiveBounds(
+              "shared_tree_manager", node->objective_lb, kMaxIntegerValue);
+          node->objective_lb =
+              shared_response_manager_->GetInnerObjectiveLowerBound();
+        }
+      } else {
+        break;
+      }
+      node = node->parent;
+    }
+  }
+}
+
+std::vector<std::pair<SharedTreeManager::Node*, int>>
+SharedTreeManager::GetAssignedNodes(const ProtoTrail& path) {
+  std::vector<std::pair<Node*, int>> nodes({std::make_pair(&nodes_[0], 0)});
+  for (int i = 0; i <= path.MaxLevel(); ++i) {
+    for (int id : path.NodeIds(i)) {
+      if (id != -1) {
+        DCHECK_EQ(nodes.back().first, nodes_[id].parent);
+        nodes.push_back(std::make_pair(&nodes_[id], i));
+      }
+    }
+  }
+  return nodes;
+}
+
+void SharedTreeManager::CloseTree(ProtoTrail& path, int level) {
+  absl::MutexLock mutex_lock(&mu_);
+  Node* node = &nodes_[path.NodeIds(level).front()];
+  VLOG(1) << "Closing subtree at level " << level;
+  DCHECK(to_close_.empty());
+  to_close_.push_back(node);
+  ProcessNodeChanges();
+  path.Clear();
+}
+
+void SharedTreeManager::AssignLeaf(ProtoTrail& path, Node* leaf) {
+  if (leaf == &nodes_[0]) {
+    path.Clear();
+    return;
+  }
+  AssignLeaf(path, leaf->parent);
+  path.PushLevel(leaf->literal, leaf->objective_lb, leaf->id);
+  if (leaf->implied) {
+    path.SetLevelImplied(path.MaxLevel());
+  }
+}
+
+SharedTreeWorker::SharedTreeWorker(Model* model)
+    : parameters_(model->GetOrCreate<SatParameters>()),
+      shared_response_(model->GetOrCreate<SharedResponseManager>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
+      manager_(model->GetOrCreate<SharedTreeManager>()),
+      mapping_(model->GetOrCreate<CpModelMapping>()),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      encoder_(model->GetOrCreate<IntegerEncoder>()),
+      objective_(model->Get<ObjectiveDefinition>()),
+      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      helper_(model->GetOrCreate<IntegerSearchHelper>()),
+      heuristics_(model->GetOrCreate<SearchHeuristics>()) {}
+
+const std::vector<Literal>& SharedTreeWorker::DecisionReason(int level) {
+  reason_.clear();
+  for (int i = 1; i <= level; ++i) {
+    reason_.push_back(DecodeDecision(assigned_tree_.Decision(i)).Negated());
+  }
+  return reason_;
+}
+
+bool SharedTreeWorker::AddImplications(
+    absl::Span<const ProtoLiteral> implied_literals) {
+  const int level = sat_solver_->CurrentDecisionLevel();
+  // Level 0 implications are unit clauses and are synced elsewhere.
+  if (level == 0) return false;
+  if (level > assigned_tree_.MaxLevel()) {
+    return false;
+  }
+  bool added_clause = false;
+  for (const ProtoLiteral& impl : implied_literals) {
+    Literal lit(DecodeDecision(impl));
+    if (sat_solver_->Assignment().LiteralIsFalse(lit)) {
+      VLOG(1) << "Closing subtree via impl at " << level + 1
+              << " assigned=" << assigned_tree_.MaxLevel();
+      integer_trail_->ReportConflict(DecisionReason(level), {});
+      manager_->CloseTree(assigned_tree_, level);
+      return true;
+    }
+    if (!sat_solver_->Assignment().LiteralIsTrue(lit)) {
+      added_clause = true;
+      integer_trail_->EnqueueLiteral(lit, DecisionReason(level), {});
+      VLOG(1) << "Learned shared clause";
+    }
+  }
+  if (objective_ != nullptr) {
+    const IntegerValue obj_lb =
+        integer_trail_->LowerBound(objective_->objective_var);
+    const IntegerValue obj_ub =
+        integer_trail_->UpperBound(objective_->objective_var);
+    if (obj_ub < assigned_tree_.ObjectiveLb(level)) {
+      integer_trail_->ReportConflict(DecisionReason(level), {});
+      manager_->CloseTree(assigned_tree_, level);
+      return true;
+    }
+    if (obj_lb < assigned_tree_.ObjectiveLb(level)) {
+      integer_trail_->EnqueueLiteral(
+          encoder_->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+              objective_->objective_var, assigned_tree_.ObjectiveLb(level))),
+          DecisionReason(level), {});
+      VLOG(1) << "Learned shared objective clause";
+      return true;
+    } else {
+      assigned_tree_.SetObjectiveLb(level, obj_lb);
+    }
+  }
+  return added_clause;
+}
+
+bool SharedTreeWorker::SyncWithLocalTrail() {
+  const int level = sat_solver_->CurrentDecisionLevel();
+  if (level > assigned_tree_.MaxLevel()) {
+    return true;
+  }
+  const int initial_trail_index = trail_->Index();
+  bool added_clause = AddImplications(assigned_tree_.Implications(level));
+  while (level + 1 <= assigned_tree_.MaxLevel()) {
+    const ProtoLiteral& shared_lit = assigned_tree_.Decision(level + 1);
+    Literal decision(DecodeDecision(shared_lit));
+    if (sat_solver_->Assignment().LiteralIsTrue(decision)) {
+      AddImplications(assigned_tree_.Implications(level + 1));
+      added_clause = true;
+      assigned_tree_.SetLevelImplied(level + 1);
+      continue;
+    } else if (sat_solver_->Assignment().LiteralIsFalse(Literal(decision))) {
+      VLOG(1) << "Closing subtree at " << level + 1
+              << " assigned=" << assigned_tree_.MaxLevel();
+      manager_->CloseTree(assigned_tree_, level + 1);
+      sat_solver_->Backtrack(0);
+      return false;
+    }
+    break;
+  }
+  return !added_clause && initial_trail_index == trail_->Index();
+}
+
+LiteralIndex SharedTreeWorker::NextDecision() {
+  const auto& decision_policy =
+      heuristics_->decision_policies[heuristics_->policy_index];
+  const int next_level = sat_solver_->CurrentDecisionLevel() + 1;
+  if (next_level == assigned_tree_.MaxLevel() + 1 && splits_wanted_ > 0) {
+    VLOG(1) << "Try split! " << parameters_->name();
+    Literal decision(helper_->GetDecision(decision_policy));
+    std::optional<ProtoLiteral> shared_lit = EncodeDecision(decision);
+    if (shared_lit.has_value() && !sat_solver_->Assignment().LiteralIsAssigned(
+                                      Literal(DecodeDecision(*shared_lit)))) {
+      manager_->ProposeSplit(assigned_tree_, *shared_lit);
+      --splits_wanted_;
+    }
+    return decision.Index();
+  } else if (next_level <= assigned_tree_.MaxLevel()) {
+    VLOG(1) << "Following shared trail depth=" << next_level << " "
+            << parameters_->name();
+    const ProtoLiteral shared_lit = assigned_tree_.Decision(next_level);
+    Literal decision(DecodeDecision(shared_lit));
+    CHECK(!sat_solver_->Assignment().LiteralIsFalse(decision))
+        << " at depth " << next_level << " " << parameters_->name();
+    CHECK(!sat_solver_->Assignment().LiteralIsTrue(decision));
+    return decision.Index();
+  }
+  if (objective_ == nullptr) return helper_->GetDecision(decision_policy);
+  // If the current node is close to the global lower bound, maybe try to
+  // improve it.
+  const IntegerValue root_obj_lb =
+      integer_trail_->LevelZeroLowerBound(objective_->objective_var);
+  const IntegerValue root_obj_ub =
+      integer_trail_->LevelZeroUpperBound(objective_->objective_var);
+  const IntegerValue obj_split =
+      root_obj_lb + absl::LogUniform<int64_t>(
+                        *random_, 0, (root_obj_ub - root_obj_lb).value());
+  const double kObjectiveSplitProbability = 0.5;
+  return helper_->GetDecision([&]() -> BooleanOrIntegerLiteral {
+    IntegerValue obj_lb = integer_trail_->LowerBound(objective_->objective_var);
+    IntegerValue obj_ub = integer_trail_->UpperBound(objective_->objective_var);
+    if (obj_lb > obj_split || obj_ub <= obj_split ||
+        next_level > assigned_tree_.MaxLevel() + 1 ||
+        absl::Bernoulli(*random_, 1 - kObjectiveSplitProbability)) {
+      return decision_policy();
+    }
+    return BooleanOrIntegerLiteral(
+        IntegerLiteral::LowerOrEqual(objective_->objective_var, obj_split));
+  });
+}
+
+SatSolver::Status SharedTreeWorker::Search(
+    const std::function<void()>& feasible_solution_observer) {
+  // Inside GetAssociatedLiteral if a literal becomes fixed at level 0 during
+  // Search,the code checks it is at level 0 when decoding the literal, but
+  // the fixed literals are cached, so we can create them now to avoid a
+  // crash.
+  sat_solver_->Backtrack(0);
+  encoder_->GetTrueLiteral();
+  encoder_->GetFalseLiteral();
+  std::vector<Literal> clause;
+  while (!time_limit_->LimitReached() && !shared_response_->ProblemIsSolved()) {
+    if (!sat_solver_->FinishPropagation()) {
+      return sat_solver_->UnsatStatus();
+    }
+    const int level = sat_solver_->CurrentDecisionLevel();
+    if (level == 0) {
+      splits_wanted_ = manager_->SplitsToGeneratePerWorker();
+      VLOG(1) << "Splits wanted: " << splits_wanted_ << " "
+              << parameters_->name();
+      manager_->SyncTree(assigned_tree_);
+      // If we have no assignment, try to get one.
+      // We also want to ensure unassigned nodes have their lower bounds bumped
+      // periodically, so workers need to occasionally replace open trees.
+      // TODO(user): Ideally we should use some metric to replace a
+      // subtree when the worker is doing badly.
+      if (assigned_tree_.MaxLevel() == 0 || absl::Bernoulli(*random_, 1e-2)) {
+        manager_->ReplaceTree(assigned_tree_);
+      }
+      VLOG(1) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
+              << parameters_->name();
+    }
+    if (heuristics_->restart_policies[heuristics_->policy_index]()) {
+      heuristics_->policy_index = (heuristics_->policy_index + 1) %
+                                  heuristics_->decision_policies.size();
+      sat_solver_->Backtrack(0);
+      continue;
+    }
+    if (!helper_->BeforeTakingDecision()) {
+      return sat_solver_->UnsatStatus();
+    }
+    if (time_limit_->LimitReached() || shared_response_->ProblemIsSolved()) {
+      break;
+    }
+    if (!SyncWithLocalTrail()) continue;
+    Literal decision(NextDecision());
+    if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
+    if (decision.Index() == kNoLiteralIndex) {
+      feasible_solution_observer();
+      if (objective_ == nullptr) return SatSolver::FEASIBLE;
+      const IntegerValue objective =
+          integer_trail_->LowerBound(objective_->objective_var);
+      sat_solver_->Backtrack(0);
+      if (!integer_trail_->Enqueue(
+              IntegerLiteral::LowerOrEqual(objective_->objective_var,
+                                           objective - 1),
+              {}, {})) {
+        return SatSolver::INFEASIBLE;
+      }
+
+      continue;
+    }
+    DCHECK(!sat_solver_->Assignment().LiteralIsFalse(decision));
+    DCHECK(!sat_solver_->Assignment().LiteralIsTrue(decision));
+    if (!helper_->TakeDecision(decision)) {
+      return sat_solver_->UnsatStatus();
+    }
+  }
+
+  return SatSolver::LIMIT_REACHED;
+}
+
+Literal SharedTreeWorker::DecodeDecision(ProtoLiteral lit) {
+  return lit.Decode(mapping_, encoder_);
+}
+
+std::optional<ProtoLiteral> SharedTreeWorker::EncodeDecision(Literal decision) {
+  return ProtoLiteral::Encode(decision, mapping_, encoder_);
+}
+
+}  // namespace operations_research::sat

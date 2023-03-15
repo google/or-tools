@@ -31,6 +31,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -219,7 +220,7 @@ class LinearConstraintManager {
 
   // Sparse representation of the objective coeffs indexed by positive variables
   // indices. Important: We cannot use a dense representation here in the corner
-  // case where we have many indepedent LPs. Alternatively, we could share a
+  // case where we have many independent LPs. Alternatively, we could share a
   // dense vector between all LinearConstraintManager.
   double sum_of_squared_objective_coeffs_ = 0.0;
   absl::flat_hash_map<IntegerVariable, double> objective_map_;
@@ -238,59 +239,6 @@ class LinearConstraintManager {
   double constraint_active_count_increase_ = 1.0;
 
   int32_t num_deletable_constraints_ = 0;
-};
-
-// Keep the top n elements from a stream of elements.
-//
-// TODO(user): We could use gtl::TopN when/if it gets open sourced. Note that
-// we might be slighlty faster here since we use an indirection and don't move
-// the Element class around as much.
-template <typename Element>
-class TopN {
- public:
-  explicit TopN(int n) : n_(n) {}
-
-  void Clear() {
-    heap_.clear();
-    elements_.clear();
-  }
-
-  void Add(Element e, double score) {
-    if (heap_.size() < n_) {
-      const int index = elements_.size();
-      heap_.push_back({index, score});
-      elements_.push_back(std::move(e));
-      if (heap_.size() == n_) {
-        // TODO(user): We could delay that on the n + 1 push.
-        std::make_heap(heap_.begin(), heap_.end());
-      }
-    } else {
-      if (score <= heap_.front().score) return;
-      const int index_to_replace = heap_.front().index;
-      elements_[index_to_replace] = std::move(e);
-
-      // If needed, we could be faster here with an update operation.
-      std::pop_heap(heap_.begin(), heap_.end());
-      heap_.back() = {index_to_replace, score};
-      std::push_heap(heap_.begin(), heap_.end());
-    }
-  }
-
-  const std::vector<Element>& UnorderedElements() const { return elements_; }
-
- private:
-  const int n_;
-
-  // We keep a heap of the n lowest score.
-  struct HeapElement {
-    int index;  // in elements_;
-    double score;
-    const double operator<(const HeapElement& other) const {
-      return score > other.score;
-    }
-  };
-  std::vector<HeapElement> heap_;
-  std::vector<Element> elements_;
 };
 
 // Before adding cuts to the global pool, it is a classical thing to only keep
@@ -318,7 +266,7 @@ class TopNCuts {
     std::string name;
     LinearConstraint cut;
   };
-  TopN<CutCandidate> cuts_;
+  TopN<CutCandidate, double> cuts_;
 };
 
 }  // namespace sat
