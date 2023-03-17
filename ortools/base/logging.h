@@ -20,6 +20,7 @@
 
 #include "absl/base/log_severity.h"
 #include "absl/flags/declare.h"
+#include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"

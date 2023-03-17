@@ -16,7 +16,8 @@ workspace(name = "com_google_ortools")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 
-# Bazel Skylib rules.
+# Bazel Extensions
+## Bazel Skylib rules.
 git_repository(
     name = "bazel_skylib",
     tag = "1.4.1",
@@ -25,29 +26,12 @@ git_repository(
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 bazel_skylib_workspace()
 
-# Bazel Platforms rules.
+## Bazel Platforms rules.
 git_repository(
     name = "platforms",
     tag = "0.0.6",
     remote = "https://github.com/bazelbuild/platforms.git",
 )
-
-# Abseil-cpp
-git_repository(
-    name = "com_google_absl",
-    tag = "20230125.0",
-    remote = "https://github.com/abseil/abseil-cpp.git",
-)
-
-# Protobuf
-git_repository(
-    name = "com_google_protobuf",
-    tag = "v22.2",
-    remote = "https://github.com/protocolbuffers/protobuf.git",
-)
-# Load common dependencies.
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-protobuf_deps()
 
 # ZLIB
 new_git_repository(
@@ -238,4 +222,21 @@ contrib_rules_jvm_deps()
 
 load("@contrib_rules_jvm//:setup.bzl", "contrib_rules_jvm_setup")
 contrib_rules_jvm_setup()
+
+# Abseil-cpp
+git_repository(
+    name = "com_google_absl",
+    tag = "20230125.0",
+    remote = "https://github.com/abseil/abseil-cpp.git",
+)
+
+# Protobuf
+git_repository(
+    name = "com_google_protobuf",
+    tag = "v22.2",
+    remote = "https://github.com/protocolbuffers/protobuf.git",
+)
+# Load common dependencies.
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+protobuf_deps()
 
