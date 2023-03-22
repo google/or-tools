@@ -14,6 +14,17 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
+    name = "binary_search",
+    srcs = [],
+    hdrs = ["binary_search.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:dump_vars",
+        "@com_google_absl//absl/numeric:int128",
+    ],
+)
+
+cc_library(
     name = "hungarian",
     srcs = ["hungarian.cc"],
     hdrs = ["hungarian.h"],
