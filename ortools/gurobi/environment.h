@@ -422,6 +422,7 @@ extern std::function<int(void *cbdata, int lazylen, const int *lazyind,const dou
 #define GRB_FEASRELAX_CARDINALITY 2
 extern std::function<int(GRBmodel *model, int *numnzP, int *vbeg, int *vind,double *vval, int start, int len)> GRBgetvars;
 extern std::function<int(GRBmodel *model)> GRBoptimize;
+extern std::function<int(GRBmodel *model)> GRBcomputeIIS;
 #define MALLOCCB_ARGS size_t size, void *syscbusrdata
 #define CALLOCCB_ARGS size_t nmemb, size_t size, void *syscbusrdata
 #define REALLOCCB_ARGS void *ptr, size_t size, void *syscbusrdata

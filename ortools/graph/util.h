@@ -130,7 +130,7 @@ class UndirectedAdjacencyListsOfDirectedGraph {
 
 // Computes the weakly connected components of a directed graph that
 // provides the OutgoingOrOppositeIncomingArcs() API, and returns them
-// as a mapping from node to component index. See GetConnectedComponens().
+// as a mapping from node to component index. See GetConnectedComponents().
 template <class Graph>
 std::vector<int> GetWeaklyConnectedComponents(const Graph& graph) {
   return GetConnectedComponents(
