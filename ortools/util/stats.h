@@ -72,12 +72,6 @@
 #include <string>
 #include <vector>
 
-#ifdef HAS_PERF_SUBSYSTEM
-#include "absl/strings/str_replace.h"
-#include "exegesis/exegesis/itineraries/perf_subsystem.h"
-#include "ortools/util/time_limit.h"
-#endif  // HAS_PERF_SUBSYSTEM
-
 #include "absl/strings/string_view.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/timer.h"
@@ -349,35 +343,6 @@ class DisabledScopedTimeDistributionUpdater {
  private:
   DISALLOW_COPY_AND_ASSIGN(DisabledScopedTimeDistributionUpdater);
 };
-
-#ifdef HAS_PERF_SUBSYSTEM
-// Helper classes to count instructions during execution of a block of code and
-// add print the results to logs.
-//
-// Note: To enable instruction counting on machines running Debian, execute the
-// following commands to modify the permissions.
-//   sudo echo "1" > /proc/sys/kernel/perf_event_paranoid
-//   sudo echo "0" > /proc/sys/kernel/kptr_restrict
-class EnabledScopedInstructionCounter {
- public:
-  explicit EnabledScopedInstructionCounter(absl::string_view name,
-                                           TimeLimit* time_limit);
-  EnabledScopedInstructionCounter(const EnabledScopedInstructionCounter&) =
-      delete;
-  EnabledScopedInstructionCounter& operator=(
-      const EnabledScopedInstructionCounter&) = delete;
-  ~EnabledScopedInstructionCounter();
-
-  // Used only for testing.
-  double ReadInstructionCount() { return ending_count_ - starting_count_; }
-
- private:
-  TimeLimit* time_limit_;
-  std::string name_;
-  double starting_count_;
-  double ending_count_;
-};
-#endif  // HAS_PERF_SUBSYSTEM
 
 class DisabledScopedInstructionCounter {
  public:

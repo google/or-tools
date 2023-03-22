@@ -241,19 +241,4 @@ std::string IntegerDistribution::ValueAsString() const {
                          max_, Average(), StdDeviation(), sum_);
 }
 
-#ifdef HAS_PERF_SUBSYSTEM
-EnabledScopedInstructionCounter::EnabledScopedInstructionCounter(
-    absl::string_view name, TimeLimit* time_limit)
-    : time_limit_(time_limit), name_(name) {
-  starting_count_ =
-      time_limit_ != nullptr ? time_limit_->ReadInstructionCounter() : 0;
-}
-
-EnabledScopedInstructionCounter::~EnabledScopedInstructionCounter() {
-  ending_count_ =
-      time_limit_ != nullptr ? time_limit_->ReadInstructionCounter() : 0;
-  LOG(INFO) << name_ << ", Instructions: " << ending_count_ - starting_count_;
-}
-#endif  // HAS_PERF_SUBSYSTEM
-
 }  // namespace operations_research

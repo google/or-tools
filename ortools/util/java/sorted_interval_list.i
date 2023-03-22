@@ -25,6 +25,12 @@
 
 %module operations_research;
 
+%extend operations_research::SortedDisjointIntervalList {
+  void insertInterval(int64_t start, int64_t end) {
+    $self->InsertInterval(start, end);
+  }
+}
+
 %ignoreall
 
 %unignore operations_research;
@@ -34,17 +40,10 @@
 %ignore operations_research::SortedDisjointIntervalList::SortedDisjointIntervalList(const std::vector<ClosedInterval>&);
 %unignore operations_research::SortedDisjointIntervalList::~SortedDisjointIntervalList;
 
-//%rename (insertInterval) operations_research::SortedDisjointIntervalList::InsertInterval;
 %rename (insertIntervals) operations_research::SortedDisjointIntervalList::InsertIntervals;
 %rename (numIntervals) operations_research::SortedDisjointIntervalList::NumIntervals;
 %rename (buildComplementOnInterval) operations_research::SortedDisjointIntervalList::BuildComplementOnInterval;
 %rename (toString) operations_research::SortedDisjointIntervalList::DebugString;
-
-%extend operations_research::SortedDisjointIntervalList {
-  void insertInterval(int64_t start, int64_t end) {
-    $self->InsertInterval(start, end);
-  }
-}
 
 // Make the SWIG-generated constructor public.
 // This is necessary as it will be called from the sat package.

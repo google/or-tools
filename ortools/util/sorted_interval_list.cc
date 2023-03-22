@@ -383,8 +383,16 @@ Domain Domain::AdditionWith(const Domain& domain) const {
   result.intervals_.reserve(a.size() * b.size());
   for (const ClosedInterval& i : a) {
     for (const ClosedInterval& j : b) {
-      result.intervals_.push_back(
-          {CapAdd(i.start, j.start), CapAdd(i.end, j.end)});
+      if (i.start > 0 && j.start > 0) {
+        if (AddOverflows(i.start, j.start)) continue;  // empty.
+        result.intervals_.push_back({i.start + j.start, CapAdd(i.end, j.end)});
+      } else if (i.end < 0 && j.end < 0) {
+        if (AddOverflows(i.end, j.end)) continue;  // empty.
+        result.intervals_.push_back({CapAdd(i.start, j.start), i.end + j.end});
+      } else {
+        result.intervals_.push_back(
+            {CapAdd(i.start, j.start), CapAdd(i.end, j.end)});
+      }
     }
   }
 

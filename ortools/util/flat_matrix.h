@@ -20,7 +20,6 @@
 // vector had a fixed size: vector<vector<>> has much worse performance in a
 // highly concurrent setting, because it does a lot of memory allocations.
 
-#include <memory>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -51,6 +50,39 @@ class FlatMatrix {
     return {array_.data() + row * num_cols_, num_cols_};
   }
 
+  // All the elements of the FlatMatrix.
+  absl::Span<T> all_elements() { return absl::MakeSpan(array_); }
+  absl::Span<const T> all_elements() const {
+    return absl::MakeConstSpan(array_);
+  }
+
+  // To iterate over the rows of the FlatMatrix. Example:
+  //   FlatMatrix<double> matrix(23, 45);
+  //   for (absl::Span<const double> row : matrix.rows()) {
+  //     LOG(INFO) << DUMP_VARS(row);
+  //   }
+  class ConstRowsIterator {
+   public:
+    typedef T value_type;
+    ConstRowsIterator(const T* ptr, size_t row, size_t row_size);
+    absl::Span<const T> operator*() const { return {ptr_, row_size_}; }
+    ConstRowsIterator& operator++();
+    bool operator!=(const ConstRowsIterator& rhs) const;
+
+   private:
+    const T* ptr_;
+    size_t row_;
+    const size_t row_size_;
+  };
+  struct ConstRows {
+    typedef absl::Span<const T> value_type;
+    typedef ConstRowsIterator const_iterator;
+    ConstRowsIterator begin() const;
+    ConstRowsIterator end() const;
+    FlatMatrix* matrix = nullptr;
+  };
+  ConstRows rows() { return {.matrix = this}; }
+
  private:
   // Those are non-const only to support the assignment operators.
   size_t num_rows_;
@@ -59,6 +91,42 @@ class FlatMatrix {
   // memory block, but we'd need to define the copy constructor.
   std::vector<T> array_;
 };
+
+// Implementation of the templates.
+template <typename T>
+FlatMatrix<T>::ConstRowsIterator::ConstRowsIterator(const T* ptr, size_t row,
+                                                    size_t row_size)
+    : ptr_(ptr), row_(row), row_size_(row_size) {}
+
+template <typename T>
+typename FlatMatrix<T>::ConstRowsIterator&
+FlatMatrix<T>::ConstRowsIterator::operator++() {
+  ptr_ += row_size_;
+  ++row_;
+  return *this;
+}
+
+template <typename T>
+bool FlatMatrix<T>::ConstRowsIterator::operator!=(
+    const ConstRowsIterator& rhs) const {
+  return std::tie(ptr_, row_, row_size_) !=
+         std::tie(rhs.ptr_, rhs.row_, rhs.row_size_);
+}
+
+template <typename T>
+typename FlatMatrix<T>::ConstRowsIterator FlatMatrix<T>::ConstRows::begin()
+    const {
+  return ConstRowsIterator(matrix->array_.data(), /*row=*/0,
+                           /*row_size=*/matrix->num_cols_);
+}
+
+template <typename T>
+typename FlatMatrix<T>::ConstRowsIterator FlatMatrix<T>::ConstRows::end()
+    const {
+  return ConstRowsIterator(matrix->array_.data() + matrix->array_.size(),
+                           /*row=*/matrix->num_rows_,
+                           /*row_size=*/matrix->num_cols_);
+}
 
 }  // namespace operations_research
 
