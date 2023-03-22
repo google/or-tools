@@ -46,11 +46,10 @@ TEST(CorrectedDualTest, SimpleLpWithSuboptimalDual) {
   const int num_shards = 10;
   ShardedQuadraticProgram sharded_qp(TestLp(), num_threads, num_shards);
 
-  Eigen::VectorXd primal_solution(4), dual_solution(4);
   // Set the primal variables that have primal gradients at their bounds, so
   // that the primal gradients are reduced costs.
-  primal_solution << 0, 0, 6, 2.5;
-  dual_solution << -2, 0, 2.375, 1;
+  const Eigen::VectorXd primal_solution{{0, 0, 6, 2.5}};
+  const Eigen::VectorXd dual_solution{{-2, 0, 2.375, 1}};
   const ConvergenceInformation stats = ComputeScaledConvergenceInformation(
       PrimalDualHybridGradientParams(), sharded_qp, primal_solution,
       dual_solution,
@@ -71,9 +70,8 @@ TEST(CorrectedDualTest, SimpleLpWithVariableFarFromBoundAsResiduals) {
   const int num_shards = 10;
   ShardedQuadraticProgram sharded_qp(TestLp(), num_threads, num_shards);
 
-  Eigen::VectorXd primal_solution(4), dual_solution(4);
-  primal_solution << 0, 0, 2, 2.5;
-  dual_solution << -2, 0, 2.375, 1;
+  const Eigen::VectorXd primal_solution{{0, 0, 2, 2.5}};
+  const Eigen::VectorXd dual_solution{{-2, 0, 2.375, 1}};
   PrimalDualHybridGradientParams params;
   params.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(true);
   const ConvergenceInformation stats = ComputeScaledConvergenceInformation(
@@ -93,9 +91,8 @@ TEST(CorrectedDualTest, SimpleLpWithVariableFarFromBoundAsReducedCosts) {
   const int num_shards = 10;
   ShardedQuadraticProgram sharded_qp(TestLp(), num_threads, num_shards);
 
-  Eigen::VectorXd primal_solution(4), dual_solution(4);
-  primal_solution << 0, 0, 2, 2.5;
-  dual_solution << -2, 0, 2.375, 1;
+  const Eigen::VectorXd primal_solution{{0, 0, 2, 2.5}};
+  const Eigen::VectorXd dual_solution{{-2, 0, 2.375, 1}};
   PrimalDualHybridGradientParams params;
   params.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(false);
   const ConvergenceInformation stats = ComputeScaledConvergenceInformation(
@@ -116,9 +113,8 @@ TEST(CorrectedDualObjective, QpSuboptimal) {
   ShardedQuadraticProgram sharded_qp(TestDiagonalQp1(), num_threads,
                                      num_shards);
 
-  Eigen::VectorXd primal_solution(2), dual_solution(1);
-  dual_solution << -3;
-  primal_solution << -2.0, 2.0;
+  const Eigen::VectorXd primal_solution{{-2.0, 2.0}};
+  const Eigen::VectorXd dual_solution{{-3}};
   const ConvergenceInformation stats = ComputeScaledConvergenceInformation(
       PrimalDualHybridGradientParams(), sharded_qp, primal_solution,
       dual_solution,
@@ -169,11 +165,10 @@ TEST(ReducedCostsTest, SimpleLp) {
   const int num_shards = 10;
   ShardedQuadraticProgram sharded_qp(TestLp(), num_threads, num_shards);
 
-  Eigen::VectorXd primal_solution(4), dual_solution(4);
   // Use a primal solution at the relevant bounds, to ensure handling as
   // reduced costs.
-  primal_solution << 0.0, -2.0, 6.0, 3.5;
-  dual_solution << 1.0, 0.0, 0.0, -2.0;
+  const Eigen::VectorXd primal_solution{{0.0, -2.0, 6.0, 3.5}};
+  const Eigen::VectorXd dual_solution{{1.0, 0.0, 0.0, -2.0}};
   // c is: [5.5, -2, -1, 1]
   // -A^T y is: [-2, -1, 2, -4]
   // c - A^T y is: [3.5, -3.0, 1.0, -3.0].
@@ -191,9 +186,8 @@ TEST(ReducedCostsTest, SimpleLpWithGapResiduals) {
   const int num_shards = 10;
   ShardedQuadraticProgram sharded_qp(TestLp(), num_threads, num_shards);
 
-  Eigen::VectorXd primal_solution(4), dual_solution(4);
-  primal_solution = Eigen::VectorXd::Zero(4);
-  dual_solution << 1.0, 0.0, 0.0, -1.0;
+  const Eigen::VectorXd primal_solution1 = Eigen::VectorXd::Zero(4);
+  const Eigen::VectorXd dual_solution{{1.0, 0.0, 0.0, -1.0}};
   PrimalDualHybridGradientParams params_true, params_false;
   params_true.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(
       true);
@@ -207,20 +201,20 @@ TEST(ReducedCostsTest, SimpleLpWithGapResiduals) {
   // `handle_some_primal_gradients_on_finite_bounds_as_residuals` is true and as
   // a reduced cost otherwise.
   EXPECT_THAT(
-      ReducedCosts(params_true, sharded_qp, primal_solution, dual_solution),
+      ReducedCosts(params_true, sharded_qp, primal_solution1, dual_solution),
       ElementsAre(0.0, 0.0, 0.0, 0.0));
   EXPECT_THAT(
-      ReducedCosts(params_false, sharded_qp, primal_solution, dual_solution),
+      ReducedCosts(params_false, sharded_qp, primal_solution1, dual_solution),
       ElementsAre(0.0, 0.0, -0.5, -2.0));
   // The primal variables are closer to the bound, c - A^T y is handled as a
   // reduced cost regardless of the value of
   // `handle_some_primal_gradients_on_finite_bounds_as_residuals`.
-  primal_solution << 0.0, 0.0, 4.0, 3.0;
+  const Eigen::VectorXd primal_solution2{{0.0, 0.0, 4.0, 3.0}};
   EXPECT_THAT(
-      ReducedCosts(params_true, sharded_qp, primal_solution, dual_solution),
+      ReducedCosts(params_true, sharded_qp, primal_solution2, dual_solution),
       ElementsAre(0.0, 0.0, -0.5, -2.0));
   EXPECT_THAT(
-      ReducedCosts(params_false, sharded_qp, primal_solution, dual_solution),
+      ReducedCosts(params_false, sharded_qp, primal_solution2, dual_solution),
       ElementsAre(0.0, 0.0, -0.5, -2.0));
 }
 
@@ -230,9 +224,8 @@ TEST(ReducedCostsTest, SimpleQp) {
   ShardedQuadraticProgram sharded_qp(TestDiagonalQp1(), num_threads,
                                      num_shards);
 
-  Eigen::VectorXd primal_solution(2), dual_solution(1);
-  primal_solution << 1.0, 2.0;
-  dual_solution << 0.0;
+  const Eigen::VectorXd primal_solution{{1.0, 2.0}};
+  const Eigen::VectorXd dual_solution{{0.0}};
   PrimalDualHybridGradientParams params_true, params_false;
   params_true.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(
       true);

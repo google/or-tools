@@ -116,6 +116,8 @@ enum PointType {
   POINT_TYPE_NONE = 4;
   // Output of presolver.
   POINT_TYPE_PRESOLVER_SOLUTION = 5;
+  // Combined solution from primal and dual feasibility polishing.
+  POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION = 6;
 }
 
 // Information measuring how close a candidate is to establishing feasibility
@@ -293,7 +295,7 @@ message IterationStats {
   optional int32 cumulative_rejected_steps = 5;
 
   // The amount of time passed since we started solving the problem (see solver
-  // log solve_time_sec) which records total time.
+  // log `solve_time_sec` which records total time).
   optional double cumulative_time_sec = 6;
 
   // The kind of restart that occurred at this iteration, or NO_RESTART if a
@@ -338,6 +340,29 @@ enum TerminationReason {
   TERMINATION_REASON_PRIMAL_OR_DUAL_INFEASIBLE = 11;
 }
 
+enum PolishingPhaseType {
+  POLISHING_PHASE_TYPE_UNSPECIFIED = 0;
+  POLISHING_PHASE_TYPE_PRIMAL_FEASIBILITY = 1;
+  POLISHING_PHASE_TYPE_DUAL_FEASIBILITY = 2;
+}
+
+// Details about one primal feasibility or dual feasibility polishing phase
+// within a solve with `use_feasibility_polishing`. See `SolveLog` for
+// descriptions of the fields with the same name.
+message FeasibilityPolishingDetails {
+  optional PolishingPhaseType polishing_phase_type = 1;
+  // The iteration count for the main iteration when this feasibility polishing
+  // phase was triggered.
+  optional int32 main_iteration_count = 2;
+  optional PrimalDualHybridGradientParams params = 3;
+  optional TerminationReason termination_reason = 4;
+  optional int32 iteration_count = 5;
+  optional double solve_time_sec = 6;
+  optional IterationStats solution_stats = 7;
+  optional PointType solution_type = 8;
+  repeated IterationStats iteration_stats = 9;
+}
+
 message SolveLog {
   // The name of the optimization problem.
   optional string instance_name = 1;
@@ -351,18 +376,25 @@ message SolveLog {
   // Optional extra information about the termination reason.
   optional string termination_string = 4;
 
-  // The total number of iterations during the solve.
+  // The total number of iterations during the solve. For a solve with
+  // `use_feasibility_polishing` this count includes the iterations from
+  // the feasibility polishing phases.
   optional int32 iteration_count = 5;
 
   // Time for preprocessing (everything before iteration 0). This is also
-  // included in solve_time_sec.
+  // included in `solve_time_sec`.
   optional double preprocessing_time_sec = 13;
 
   // The runtime of the solve. Note: This should not be used for comparing
   // methods unless care is taken to control for noise in runtime measurement.
+  // For a solve with `use_feasibility_polishing` this count includes the
+  // iterations from the feasibility polishing phases.
   optional double solve_time_sec = 6;
 
-  // The IterationStats for the final iteration of the solver.
+  // The `IterationStats` for the final iteration of the solver. For a solve
+  // with `use_feasibility_polishing`, the work metrics (iteration_count,
+  // cumulative_kkt_matrix_passes, etc.) will include the work done in the
+  // feasibility polishing phases.
   // NOTE: Regardless of preprocessing (i.e. scaling or presolve) the optimality
   // or infeasibility information is evaluated with respect to the original
   // problem.
@@ -389,6 +421,9 @@ message SolveLog {
   // recorded is not specified. This field is "more" optional than the others
   // because it often significantly increases the size of the message, and
   // because the information may not be available for third-party solvers.
+  // For a solve with `use_feasibility_polishing`, these iteration stats will
+  // only reflect the work done in the main iterations (not the feasibility
+  // polishing phases).
   repeated IterationStats iteration_stats = 7;
 
   // Statistics of the original problem.
@@ -396,6 +431,10 @@ message SolveLog {
 
   // Statistics of the problem after preprocessing.
   optional QuadraticProgramStats preprocessed_problem_stats = 12;
+
+  // If solving with `use_feasibility_polishing`, details about the primal and
+  // dual feasibility polishing phases.
+  repeated FeasibilityPolishingDetails feasibility_polishing_details = 15;
 
   reserved 2, 9;
 }

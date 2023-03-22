@@ -91,9 +91,10 @@ int NumShards(const int num_threads, const int num_shards) {
   return num_threads == 1 ? 1 : 4 * num_threads;
 }
 
-std::string ToString(const ConvergenceInformation& convergence_information,
-                     const RelativeConvergenceInformation& relative_information,
-                     const OptimalityNorm residual_norm) {
+std::string ConvergenceInformationString(
+    const ConvergenceInformation& convergence_information,
+    const RelativeConvergenceInformation& relative_information,
+    const OptimalityNorm residual_norm) {
   constexpr absl::string_view kFormatStr =
       "%#12.6g %#12.6g %#12.6g | %#12.6g %#12.6g %#12.6g | %#12.6g %#12.6g | "
       "%#12.6g %#12.6g";
@@ -143,7 +144,7 @@ std::string ToString(const ConvergenceInformation& convergence_information,
   }
 }
 
-std::string ToShortString(
+std::string ConvergenceInformationShortString(
     const ConvergenceInformation& convergence_information,
     const RelativeConvergenceInformation& relative_information,
     const OptimalityNorm residual_norm) {
@@ -177,85 +178,109 @@ std::string ToShortString(
   }
 }
 
-// Returns a string describing `iter_stats`, based on the
+void LogInfoWithoutPrefix(absl::string_view message) {
+  LOG(INFO).NoPrefix() << message;
+}
+
+// Logs a description of `iter_stats`, based on the
 // `iter_stats.convergence_information` entry with
 // `.candidate_type()==preferred_candidate` if one exists, otherwise based on
 // the first value, if any. `termination_criteria.optimality_norm` determines
 // which residual norms from `iter_stats.convergence_information` are used.
-std::string ToString(const IterationStats& iter_stats,
-                     const TerminationCriteria& termination_criteria,
-                     const QuadraticProgramBoundNorms& bound_norms,
-                     PointType preferred_candidate) {
+void LogIterationStats(int verbosity_level, bool use_feasibility_polishing,
+                       IterationType iteration_type,
+                       const IterationStats& iter_stats,
+                       const TerminationCriteria& termination_criteria,
+                       const QuadraticProgramBoundNorms& bound_norms,
+                       PointType preferred_candidate) {
   std::string iteration_string =
-      absl::StrFormat("%6d %8.1f %6.1f", iter_stats.iteration_number(),
-                      iter_stats.cumulative_kkt_matrix_passes(),
-                      iter_stats.cumulative_time_sec());
+      verbosity_level >= 3
+          ? absl::StrFormat("%6d %8.1f %6.1f", iter_stats.iteration_number(),
+                            iter_stats.cumulative_kkt_matrix_passes(),
+                            iter_stats.cumulative_time_sec())
+          : absl::StrFormat("%6d %6.1f", iter_stats.iteration_number(),
+                            iter_stats.cumulative_time_sec());
   auto convergence_information =
       GetConvergenceInformation(iter_stats, preferred_candidate);
   if (!convergence_information.has_value() &&
       iter_stats.convergence_information_size() > 0) {
     convergence_information = iter_stats.convergence_information(0);
   }
+  const char* phase_string = [&]() {
+    if (use_feasibility_polishing) {
+      switch (iteration_type) {
+        case IterationType::kNormal:
+          return "n ";
+        case IterationType::kPrimalFeasibility:
+          return "p ";
+        case IterationType::kDualFeasibility:
+          return "d ";
+        case IterationType::kNormalTermination:
+        case IterationType::kFeasibilityPolishingTermination:
+        case IterationType::kPresolveTermination:
+          return "t ";
+      }
+    } else {
+      return "";
+    }
+  }();
   if (convergence_information.has_value()) {
+    const char* iterate_string = [&]() {
+      if (verbosity_level >= 4) {
+        switch (convergence_information->candidate_type()) {
+          case POINT_TYPE_CURRENT_ITERATE:
+            return "C ";
+          case POINT_TYPE_AVERAGE_ITERATE:
+            return "A ";
+          case POINT_TYPE_ITERATE_DIFFERENCE:
+            return "D ";
+          case POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION:
+            return "F ";
+          default:
+            return "? ";
+        }
+      } else {
+        return "";
+      }
+    }();
     const RelativeConvergenceInformation relative_information =
         ComputeRelativeResiduals(
             EffectiveOptimalityCriteria(termination_criteria),
             *convergence_information, bound_norms);
-    return absl::StrCat(iteration_string, " | ",
-                        ToString(*convergence_information, relative_information,
-                                 termination_criteria.optimality_norm()));
+    std::string convergence_string =
+        verbosity_level >= 3
+            ? ConvergenceInformationString(
+                  *convergence_information, relative_information,
+                  termination_criteria.optimality_norm())
+            : ConvergenceInformationShortString(
+                  *convergence_information, relative_information,
+                  termination_criteria.optimality_norm());
+    LogInfoWithoutPrefix(absl::StrCat(phase_string, iterate_string,
+                                      iteration_string, " | ",
+                                      convergence_string));
   }
-  return iteration_string;
+  LogInfoWithoutPrefix(absl::StrCat(
+      phase_string, verbosity_level >= 4 ? "? " : "", iteration_string));
 }
 
-std::string ToShortString(const IterationStats& iter_stats,
-                          const TerminationCriteria& termination_criteria,
-                          const QuadraticProgramBoundNorms& bound_norms,
-                          PointType preferred_candidate) {
-  std::string iteration_string =
-      absl::StrFormat("%6d %6.1f", iter_stats.iteration_number(),
-                      iter_stats.cumulative_time_sec());
-  auto convergence_information =
-      GetConvergenceInformation(iter_stats, preferred_candidate);
-  if (!convergence_information.has_value() &&
-      iter_stats.convergence_information_size() > 0) {
-    convergence_information = iter_stats.convergence_information(0);
-  }
-  if (convergence_information.has_value()) {
-    const RelativeConvergenceInformation relative_information =
-        ComputeRelativeResiduals(
-            EffectiveOptimalityCriteria(termination_criteria),
-            *convergence_information, bound_norms);
-    return absl::StrCat(
-        iteration_string, " | ",
-        ToShortString(*convergence_information, relative_information,
-                      termination_criteria.optimality_norm()));
-  }
-  return iteration_string;
-}
-
-// Returns a label string corresponding to the format of `ToString()`.
-std::string ConvergenceInformationLabelString() {
-  return absl::StrFormat(
-      "%12s %12s %12s | %12s %12s %12s | %12s %12s | %12s %12s", "rel_prim_res",
-      "rel_dual_res", "rel_gap", "prim_resid", "dual_resid", "obj_gap",
-      "prim_obj", "dual_obj", "prim_var_l2", "dual_var_l2");
-}
-
-std::string ConvergenceInformationLabelShortString() {
-  return absl::StrFormat("%10s %10s %10s | %10s %10s", "rel_p_res", "rel_d_res",
-                         "rel_gap", "prim_obj", "dual_obj");
-}
-
-std::string IterationStatsLabelString() {
-  return absl::StrCat(
-      absl::StrFormat("%6s %8s %6s", "iter#", "kkt_pass", "time"), " | ",
-      ConvergenceInformationLabelString());
-}
-
-std::string IterationStatsLabelShortString() {
-  return absl::StrCat(absl::StrFormat("%6s %6s", "iter#", "time"), " | ",
-                      ConvergenceInformationLabelShortString());
+void LogIterationStatsHeader(int verbosity_level,
+                             bool use_feasibility_polishing) {
+  std::string work_labels =
+      verbosity_level >= 3
+          ? absl::StrFormat("%6s %8s %6s", "iter#", "kkt_pass", "time")
+          : absl::StrFormat("%6s %6s", "iter#", "time");
+  std::string convergence_labels =
+      verbosity_level >= 3
+          ? absl::StrFormat(
+                "%12s %12s %12s | %12s %12s %12s | %12s %12s | %12s %12s",
+                "rel_prim_res", "rel_dual_res", "rel_gap", "prim_resid",
+                "dual_resid", "obj_gap", "prim_obj", "dual_obj", "prim_var_l2",
+                "dual_var_l2")
+          : absl::StrFormat("%10s %10s %10s | %10s %10s", "rel_p_res",
+                            "rel_d_res", "rel_gap", "prim_obj", "dual_obj");
+  LogInfoWithoutPrefix(absl::StrCat(use_feasibility_polishing ? "f " : "",
+                                    verbosity_level >= 4 ? "I " : "",
+                                    work_labels, " | ", convergence_labels));
 }
 
 enum class InnerStepOutcome {
@@ -317,7 +342,10 @@ class PreprocessSolver {
   // nullptr if an iterate of that type is not available. For the iterate types
   // that are available, uses the primal and dual vectors to compute solution
   // statistics and adds them to the stats proto.
+  // `full_stats` is used for checking work-based termination criteria,
+  // but `stats` is updated with convergence information.
   // NOTE: The primal and dual input pairs should be scaled solutions.
+  // TODO(user): Move this long argument list into a struct.
   std::optional<TerminationReasonAndPointType>
   UpdateIterationStatsAndCheckTermination(
       const PrimalDualHybridGradientParams& params,
@@ -328,14 +356,19 @@ class PreprocessSolver {
       const VectorXd* working_primal_delta, const VectorXd* working_dual_delta,
       const VectorXd& last_primal_start_point,
       const VectorXd& last_dual_start_point,
-      const std::atomic<bool>* interrupt_solve, IterationStats& stats) const;
+      const std::atomic<bool>* interrupt_solve, IterationType iteration_type,
+      const IterationStats& full_stats, IterationStats& stats) const;
 
-  // Returns the solution statistics for the primal and dual input pair, which
-  // should be a scaled solution.
-  ConvergenceInformation ComputeConvergenceInformationFromWorkingSolution(
+  // Computes solution statistics for the primal and dual input pair, which
+  // should be a scaled solution. If `convergence_information != nullptr`,
+  // populates it with convergence information, and similarly if
+  // `infeasibility_information != nullptr`, populates it with infeasibility
+  // information.
+  void ComputeConvergenceAndInfeasibilityFromWorkingSolution(
       const PrimalDualHybridGradientParams& params,
       const VectorXd& working_primal, const VectorXd& working_dual,
-      PointType candidate_type) const;
+      PointType candidate_type, ConvergenceInformation* convergence_information,
+      InfeasibilityInformation* infeasibility_information) const;
 
   // Returns a `SolverResult` for the original problem, given a `SolverResult`
   // from the scaled or preprocessed problem. Also computes the reduced costs.
@@ -348,8 +381,32 @@ class PreprocessSolver {
     return sharded_qp_;
   }
 
-  // Returns elapsed time (including preprocessing) in seconds.
-  double GetElapsedTime() const { return timer_.Get(); }
+  // Swaps `variable_lower_bounds` and `variable_upper_bounds` with the ones on
+  // the sharded quadratic program.
+  void SwapVariableBounds(VectorXd& variable_lower_bounds,
+                          VectorXd& variable_upper_bounds) {
+    sharded_qp_.SwapVariableBounds(variable_lower_bounds,
+                                   variable_upper_bounds);
+  }
+
+  // Swaps `constraint_lower_bounds` and `constraint_upper_bounds` with the ones
+  // on the sharded quadratic program.
+  void SwapConstraintBounds(VectorXd& constraint_lower_bounds,
+                            VectorXd& constraint_upper_bounds) {
+    sharded_qp_.SwapConstraintBounds(constraint_lower_bounds,
+                                     constraint_upper_bounds);
+  }
+
+  // Swaps `objective` with the objective vector on the quadratic program.
+  // Swapping `objective_matrix` is not yet supported because it hasn't been
+  // needed.
+  void SwapObjectiveVector(VectorXd& objective) {
+    sharded_qp_.SwapObjectiveVector(objective);
+  }
+
+  const QuadraticProgramBoundNorms& OriginalBoundNorms() const {
+    return original_bound_norms_;
+  }
 
  private:
   struct PresolveInfo {
@@ -397,18 +454,6 @@ class PreprocessSolver {
   PrimalAndDualSolution RecoverOriginalSolution(
       PrimalAndDualSolution working_solution) const;
 
-  // Adds one entry of convergence information and infeasibility information to
-  // `stats` using the input solutions. `primal_solution` and `dual_solution`
-  // are solutions for `sharded_qp`. `col_scaling_vec` and `row_scaling_vec` are
-  // used to implicitly unscale `sharded_qp` when computing the relevant
-  // information.
-  void AddConvergenceAndInfeasibilityInformation(
-      const PrimalDualHybridGradientParams& params,
-      const VectorXd& primal_solution, const VectorXd& dual_solution,
-      const ShardedQuadraticProgram& sharded_qp,
-      const VectorXd& col_scaling_vec, const VectorXd& row_scaling_vec,
-      PointType candidate_type, IterationStats& stats) const;
-
   // Adds one entry of `PointMetadata` to `stats` using the input solutions.
   void AddPointMetadata(const PrimalDualHybridGradientParams& params,
                         const VectorXd& primal_solution,
@@ -442,7 +487,6 @@ class PreprocessSolver {
   VectorXd col_scaling_vec_;
   VectorXd row_scaling_vec_;
 
-  WallTimer timer_;
   IterationStatsCallback iteration_stats_callback_;
 };
 
@@ -454,7 +498,7 @@ class Solver {
                   VectorXd starting_primal_solution,
                   VectorXd starting_dual_solution, double initial_step_size,
                   double initial_primal_weight,
-                  const PreprocessSolver* preprocess_solver);
+                  PreprocessSolver* preprocess_solver);
 
   // Not copyable or movable (because there are const members).
   Solver(const Solver&) = delete;
@@ -476,7 +520,8 @@ class Solver {
   // `solve_log` should contain initial problem statistics.
   // On return, `SolveResult.reduced_costs` will be empty, and the solution will
   // be to the preprocessed/scaled problem.
-  SolverResult Solve(const std::atomic<bool>* interrupt_solve,
+  SolverResult Solve(IterationType iteration_type,
+                     const std::atomic<bool>* interrupt_solve,
                      SolveLog solve_log);
 
  private:
@@ -496,6 +541,29 @@ class Solver {
   // cause infinite and NaN values.
   constexpr static double kDivergentMovement = 1.0e100;
 
+  // Attempts to solve primal and dual feasibility subproblems starting at the
+  // average iterate, for at most `iteration_limit` iterations each. If
+  // successful, returns a `SolverResult`, otherwise nullopt. Appends
+  // information about the polishing phases to
+  // `solve_log.feasibility_polishing_details`.
+  std::optional<SolverResult> TryFeasibilityPolishing(
+      int iteration_limit, const std::atomic<bool>* interrupt_solve,
+      SolveLog& solve_log);
+
+  // Tries to find primal feasibility, adds the solve log details to
+  // `solve_log.feasibility_polishing_details`, and returns the result.
+  SolverResult TryPrimalPolishing(VectorXd starting_primal_solution,
+                                  int iteration_limit,
+                                  const std::atomic<bool>* interrupt_solve,
+                                  SolveLog& solve_log);
+
+  // Tries to find dual feasibility, adds the solve log details to
+  // `solve_log.feasibility_polishing_details`, and returns the result.
+  SolverResult TryDualPolishing(VectorXd starting_dual_solution,
+                                int iteration_limit,
+                                const std::atomic<bool>* interrupt_solve,
+                                SolveLog& solve_log);
+
   NextSolutionAndDelta ComputeNextPrimalSolution(double primal_step_size) const;
 
   NextSolutionAndDelta ComputeNextDualSolution(
@@ -510,6 +578,10 @@ class Solver {
 
   // Creates all the simple-to-compute statistics in stats.
   IterationStats CreateSimpleIterationStats(RestartChoice restart_used) const;
+
+  // Returns the total work so far from the main iterations and feasibility
+  // polishing phases.
+  IterationStats TotalWorkSoFar(const SolveLog& solve_log) const;
 
   RestartChoice ChooseRestartToApply(bool is_major_iteration);
 
@@ -546,8 +618,10 @@ class Solver {
   void ApplyRestartChoice(RestartChoice restart_to_apply);
 
   std::optional<SolverResult> MajorIterationAndTerminationCheck(
-      bool force_numerical_termination,
-      const std::atomic<bool>* interrupt_solve, SolveLog& solve_log);
+      IterationType iteration_type, bool force_numerical_termination,
+      const std::atomic<bool>* interrupt_solve,
+      const IterationStats& work_from_feasibility_polishing,
+      SolveLog& solve_log);
 
   bool ShouldDoAdaptiveRestartHeuristic(double candidate_normalized_gap) const;
 
@@ -588,7 +662,7 @@ class Solver {
   double step_size_;
   double primal_weight_;
 
-  const PreprocessSolver* preprocess_solver_;
+  PreprocessSolver* preprocess_solver_;
 
   // For Malitsky-Pock linesearch only: `step_size_` / previous_step_size
   double ratio_last_two_step_sizes_;
@@ -598,6 +672,11 @@ class Solver {
   // For adaptive restarts only.
   double normalized_gap_at_last_restart_ =
       std::numeric_limits<double>::infinity();
+
+  // `preprocessing_time_sec_` is added to the current value of `timer_` when
+  // computing `cumulative_time_sec` in iteration stats.
+  double preprocessing_time_sec_;
+  WallTimer timer_;
   int iterations_completed_;
   int num_rejected_steps_;
   // A cache of `constraint_matrix.transpose() * current_dual_solution_`.
@@ -634,8 +713,13 @@ SolverResult ErrorSolverResult(const TerminationReason reason,
   return SolverResult{.solve_log = error_log};
 }
 
+// If `check_excessively_small_values`, in addition to checking for extreme
+// values that PDLP can't handle, also check for extremely small constraint
+// bounds, variable bound gaps, and objective vector values that PDLP can handle
+// but that cause problems for other code such as glop's presolve.
 std::optional<SolverResult> CheckProblemStats(
-    const QuadraticProgramStats& problem_stats) {
+    const QuadraticProgramStats& problem_stats,
+    bool check_excessively_small_values) {
   const double kExcessiveInputValue = 1e50;
   const double kExcessivelySmallInputValue = 1e-50;
   const double kMaxDynamicRange = 1e20;
@@ -690,6 +774,17 @@ std::optional<SolverResult> CheckProblemStats(
                      problem_stats.combined_bounds_max(),
                      " which exceeds limit of ", kExcessiveInputValue, "."));
   }
+  if (check_excessively_small_values &&
+      problem_stats.combined_bounds_min() > 0 &&
+      problem_stats.combined_bounds_min() < kExcessivelySmallInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Combined constraint bounds vector has a non-zero with "
+                     "absolute value ",
+                     problem_stats.combined_bounds_min(),
+                     " which is less than the limit of ",
+                     kExcessivelySmallInputValue, "."));
+  }
   if (problem_stats.combined_bounds_max() >
       kMaxDynamicRange * problem_stats.combined_bounds_min()) {
     LOG(WARNING)
@@ -710,6 +805,17 @@ std::optional<SolverResult> CheckProblemStats(
                      problem_stats.variable_bound_gaps_max(),
                      " which exceeds limit of ", kExcessiveInputValue, "."));
   }
+  if (check_excessively_small_values &&
+      problem_stats.variable_bound_gaps_min() > 0 &&
+      problem_stats.variable_bound_gaps_min() < kExcessivelySmallInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Variable bound gaps vector has a finite non-zero with "
+                     "absolute value ",
+                     problem_stats.variable_bound_gaps_min(),
+                     " which is less than the limit of ",
+                     kExcessivelySmallInputValue, "."));
+  }
   if (problem_stats.variable_bound_gaps_max() >
       kMaxDynamicRange * problem_stats.variable_bound_gaps_min()) {
     LOG(WARNING) << "Variable bound gap vector has largest absolute value "
@@ -728,6 +834,16 @@ std::optional<SolverResult> CheckProblemStats(
         absl::StrCat("Objective vector has a non-zero with absolute value ",
                      problem_stats.objective_vector_abs_max(),
                      " which exceeds limit of ", kExcessiveInputValue, "."));
+  }
+  if (check_excessively_small_values &&
+      problem_stats.objective_vector_abs_min() > 0 &&
+      problem_stats.objective_vector_abs_min() < kExcessivelySmallInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Objective vector has a non-zero with absolute value ",
+                     problem_stats.objective_vector_abs_min(),
+                     " which is less than the limit of ",
+                     kExcessivelySmallInputValue, "."));
   }
   if (problem_stats.objective_vector_abs_max() >
       kMaxDynamicRange * problem_stats.objective_vector_abs_min()) {
@@ -814,6 +930,8 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
     std::optional<PrimalAndDualSolution> initial_solution,
     const std::atomic<bool>* interrupt_solve,
     IterationStatsCallback iteration_stats_callback) {
+  WallTimer timer;
+  timer.Start();
   SolveLog solve_log;
   if (Qp().problem_name.has_value()) {
     solve_log.set_instance_name(*Qp().problem_name);
@@ -823,7 +941,8 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
       ComputeStats(sharded_qp_, params.infinite_constraint_bound_threshold());
   const QuadraticProgramStats& original_problem_stats =
       solve_log.original_problem_stats();
-  if (auto maybe_result = CheckProblemStats(original_problem_stats);
+  if (auto maybe_result = CheckProblemStats(
+          original_problem_stats, params.presolve_options().use_glop());
       maybe_result.has_value()) {
     return *maybe_result;
   }
@@ -839,10 +958,10 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
       params.presolve_options().use_glop() ? "presolving and " : "",
       "rescaling:");
   if (params.verbosity_level() >= 1) {
-    LOG(INFO) << "Problem stats before " << preprocessing_string;
+    LogInfoWithoutPrefix(
+        absl::StrCat("Problem stats before ", preprocessing_string));
     LogQuadraticProgramStats(solve_log.original_problem_stats());
   }
-  timer_.Start();
   iteration_stats_callback_ = std::move(iteration_stats_callback);
   std::optional<TerminationReason> maybe_terminate =
       ApplyPresolveIfEnabled(params, &initial_solution);
@@ -853,18 +972,14 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
     // may be non-zero, but that's OK since we don't promise to produce a
     // meaningful solution in that case.
     IterationStats iteration_stats;
-    iteration_stats.set_cumulative_time_sec(GetElapsedTime());
+    iteration_stats.set_cumulative_time_sec(timer.Get());
     solve_log.set_preprocessing_time_sec(iteration_stats.cumulative_time_sec());
     VectorXd working_primal = ZeroVector(sharded_qp_.PrimalSharder());
     VectorXd working_dual = ZeroVector(sharded_qp_.DualSharder());
-    PrimalAndDualSolution original = RecoverOriginalSolution(
-        {.primal_solution = working_primal, .dual_solution = working_dual});
-    AddConvergenceAndInfeasibilityInformation(
-        params, original.primal_solution, original.dual_solution,
-        presolve_info_->sharded_original_qp,
-        presolve_info_->trivial_col_scaling_vec,
-        presolve_info_->trivial_row_scaling_vec, POINT_TYPE_PRESOLVER_SOLUTION,
-        iteration_stats);
+    ComputeConvergenceAndInfeasibilityFromWorkingSolution(
+        params, working_primal, working_dual, POINT_TYPE_PRESOLVER_SOLUTION,
+        iteration_stats.add_convergence_information(),
+        iteration_stats.add_infeasibility_information());
     std::optional<TerminationReasonAndPointType> earned_termination =
         CheckIterateTerminationCriteria(params.termination_criteria(),
                                         iteration_stats, original_bound_norms_,
@@ -915,7 +1030,8 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
   *solve_log.mutable_preprocessed_problem_stats() =
       ComputeStats(sharded_qp_, params.infinite_constraint_bound_threshold());
   if (params.verbosity_level() >= 1) {
-    LOG(INFO) << "Problem stats after " << preprocessing_string;
+    LogInfoWithoutPrefix(
+        absl::StrCat("Problem stats after ", preprocessing_string));
     LogQuadraticProgramStats(solve_log.preprocessed_problem_stats());
   }
 
@@ -958,16 +1074,13 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
   const double primal_weight = InitialPrimalWeight(
       params, solve_log.preprocessed_problem_stats().objective_vector_l2_norm(),
       solve_log.preprocessed_problem_stats().combined_bounds_l2_norm());
-  solve_log.set_preprocessing_time_sec(GetElapsedTime());
 
   Solver solver(params, starting_primal_solution, starting_dual_solution,
                 step_size, primal_weight, this);
-  SolverResult result = solver.Solve(interrupt_solve, std::move(solve_log));
+  solve_log.set_preprocessing_time_sec(timer.Get());
+  SolverResult result = solver.Solve(IterationType::kNormal, interrupt_solve,
+                                     std::move(solve_log));
   return ConstructOriginalSolverResult(params, std::move(result));
-}
-
-void LogInfoWithoutPrefix(absl::string_view message) {
-  LOG(INFO).NoPrefix() << message;
 }
 
 glop::GlopParameters PreprocessSolver::PreprocessorParameters(
@@ -1085,53 +1198,50 @@ void PreprocessSolver::ComputeAndApplyRescaling(
 
 void PreprocessSolver::LogQuadraticProgramStats(
     const QuadraticProgramStats& stats) {
-  LOG(INFO) << absl::StrFormat(
-                   "There are %i variables, %i constraints, and %i ",
-                   stats.num_variables(), stats.num_constraints(),
-                   stats.constraint_matrix_num_nonzeros())
-            << "constraint matrix nonzeros.";
+  LogInfoWithoutPrefix(
+      absl::StrFormat("There are %i variables, %i constraints, and %i "
+                      "constraint matrix nonzeros.",
+                      stats.num_variables(), stats.num_constraints(),
+                      stats.constraint_matrix_num_nonzeros()));
   if (Qp().constraint_matrix.nonZeros() > 0) {
-    LOG(INFO) << "Absolute values of nonzero constraint matrix elements: "
-              << absl::StrFormat("largest=%f, smallest=%f, avg=%f",
-                                 stats.constraint_matrix_abs_max(),
-                                 stats.constraint_matrix_abs_min(),
-                                 stats.constraint_matrix_abs_avg());
-    LOG(INFO) << "Constraint matrix, infinity norm: "
-              << absl::StrFormat("max(row & col)=%f, min_col=%f, min_row=%f",
-                                 stats.constraint_matrix_abs_max(),
-                                 stats.constraint_matrix_col_min_l_inf_norm(),
-                                 stats.constraint_matrix_row_min_l_inf_norm());
-    LOG(INFO) << "Constraint bounds statistics (max absolute value per row): "
-              << absl::StrFormat("largest=%f, smallest=%f, avg=%f, l2_norm=%f",
-                                 stats.combined_bounds_max(),
-                                 stats.combined_bounds_min(),
-                                 stats.combined_bounds_avg(),
-                                 stats.combined_bounds_l2_norm());
+    LogInfoWithoutPrefix(absl::StrFormat(
+        "Absolute values of nonzero constraint matrix elements: largest=%f, "
+        "smallest=%f, avg=%f",
+        stats.constraint_matrix_abs_max(), stats.constraint_matrix_abs_min(),
+        stats.constraint_matrix_abs_avg()));
+    LogInfoWithoutPrefix(
+        absl::StrFormat("Constraint matrix, infinity norm: max(row & col)=%f, "
+                        "min_col=%f, min_row=%f",
+                        stats.constraint_matrix_abs_max(),
+                        stats.constraint_matrix_col_min_l_inf_norm(),
+                        stats.constraint_matrix_row_min_l_inf_norm()));
+    LogInfoWithoutPrefix(absl::StrFormat(
+        "Constraint bounds statistics (max absolute value per row): "
+        "largest=%f, smallest=%f, avg=%f, l2_norm=%f",
+        stats.combined_bounds_max(), stats.combined_bounds_min(),
+        stats.combined_bounds_avg(), stats.combined_bounds_l2_norm()));
   }
   if (!IsLinearProgram(Qp())) {
-    LOG(INFO) << absl::StrFormat(
+    LogInfoWithoutPrefix(absl::StrFormat(
         "There are %i nonzero diagonal coefficients in the objective matrix.",
-        stats.objective_matrix_num_nonzeros());
-    LOG(INFO) << "Absolute values of nonzero objective matrix elements: "
-              << absl::StrFormat("largest=%f, smallest=%f, avg=%f",
-                                 stats.objective_matrix_abs_max(),
-                                 stats.objective_matrix_abs_min(),
-                                 stats.objective_matrix_abs_avg());
+        stats.objective_matrix_num_nonzeros()));
+    LogInfoWithoutPrefix(absl::StrFormat(
+        "Absolute values of nonzero objective matrix elements: largest=%f, "
+        "smallest=%f, avg=%f",
+        stats.objective_matrix_abs_max(), stats.objective_matrix_abs_min(),
+        stats.objective_matrix_abs_avg()));
   }
-  LOG(INFO) << "Absolute values of objective vector elements: "
-            << absl::StrFormat("largest=%f, smallest=%f, avg=%f, l2_norm=%f",
-                               stats.objective_vector_abs_max(),
-                               stats.objective_vector_abs_min(),
-                               stats.objective_vector_abs_avg(),
-                               stats.objective_vector_l2_norm());
-
-  LOG(INFO) << "Gaps between variable upper and lower bounds: "
-            << absl::StrFormat(
-                   "#finite=%i of %i, largest=%f, smallest=%f, avg=%f",
-                   stats.variable_bound_gaps_num_finite(),
-                   stats.num_variables(), stats.variable_bound_gaps_max(),
-                   stats.variable_bound_gaps_min(),
-                   stats.variable_bound_gaps_avg());
+  LogInfoWithoutPrefix(absl::StrFormat(
+      "Absolute values of objective vector elements: largest=%f, smallest=%f, "
+      "avg=%f, l2_norm=%f",
+      stats.objective_vector_abs_max(), stats.objective_vector_abs_min(),
+      stats.objective_vector_abs_avg(), stats.objective_vector_l2_norm()));
+  LogInfoWithoutPrefix(absl::StrFormat(
+      "Gaps between variable upper and lower bounds: #finite=%i of %i, "
+      "largest=%f, smallest=%f, avg=%f",
+      stats.variable_bound_gaps_num_finite(), stats.num_variables(),
+      stats.variable_bound_gaps_max(), stats.variable_bound_gaps_min(),
+      stats.variable_bound_gaps_avg()));
 }
 
 double PreprocessSolver::InitialPrimalWeight(
@@ -1207,27 +1317,6 @@ PrimalAndDualSolution PreprocessSolver::RecoverOriginalSolution(
   } else {
     return working_solution;
   }
-}
-
-void PreprocessSolver::AddConvergenceAndInfeasibilityInformation(
-    const PrimalDualHybridGradientParams& params,
-    const VectorXd& primal_solution, const VectorXd& dual_solution,
-    const ShardedQuadraticProgram& sharded_qp, const VectorXd& col_scaling_vec,
-    const VectorXd& row_scaling_vec, PointType candidate_type,
-    IterationStats& stats) const {
-  const TerminationCriteria::DetailedOptimalityCriteria criteria =
-      EffectiveOptimalityCriteria(params.termination_criteria());
-  *stats.add_convergence_information() = ComputeConvergenceInformation(
-      params, sharded_qp, col_scaling_vec, row_scaling_vec, primal_solution,
-      dual_solution,
-      EpsilonRatio(criteria.eps_optimal_primal_residual_absolute(),
-                   criteria.eps_optimal_primal_residual_relative()),
-      EpsilonRatio(criteria.eps_optimal_dual_residual_absolute(),
-                   criteria.eps_optimal_dual_residual_relative()),
-      candidate_type);
-  *stats.add_infeasibility_information() = ComputeInfeasibilityInformation(
-      params, sharded_qp, col_scaling_vec, row_scaling_vec, primal_solution,
-      dual_solution, candidate_type);
 }
 
 void SetActiveSetInformation(const ShardedQuadraticProgram& sharded_qp,
@@ -1330,103 +1419,65 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
     const VectorXd* working_dual_average, const VectorXd* working_primal_delta,
     const VectorXd* working_dual_delta, const VectorXd& last_primal_start_point,
     const VectorXd& last_dual_start_point,
-    const std::atomic<bool>* interrupt_solve, IterationStats& stats) const {
-  if (presolve_info_.has_value()) {
-    {  // This block exists to destroy `original_current` to save RAM.
-      PrimalAndDualSolution original_current =
-          RecoverOriginalSolution({.primal_solution = working_primal_current,
-                                   .dual_solution = working_dual_current});
-      AddConvergenceAndInfeasibilityInformation(
-          params, original_current.primal_solution,
-          original_current.dual_solution, presolve_info_->sharded_original_qp,
-          presolve_info_->trivial_col_scaling_vec,
-          presolve_info_->trivial_row_scaling_vec, POINT_TYPE_CURRENT_ITERATE,
-          stats);
-    }
-    if (working_primal_average != nullptr && working_dual_average != nullptr) {
-      PrimalAndDualSolution original_average =
-          RecoverOriginalSolution({.primal_solution = *working_primal_average,
-                                   .dual_solution = *working_dual_average});
-      AddConvergenceAndInfeasibilityInformation(
-          params, original_average.primal_solution,
-          original_average.dual_solution, presolve_info_->sharded_original_qp,
-          presolve_info_->trivial_col_scaling_vec,
-          presolve_info_->trivial_row_scaling_vec, POINT_TYPE_AVERAGE_ITERATE,
-          stats);
-    }
-  } else {
-    AddConvergenceAndInfeasibilityInformation(
-        params, working_primal_current, working_dual_current, sharded_qp_,
-        col_scaling_vec_, row_scaling_vec_, POINT_TYPE_CURRENT_ITERATE, stats);
-    if (working_primal_average != nullptr && working_dual_average != nullptr) {
-      AddConvergenceAndInfeasibilityInformation(
-          params, *working_primal_average, *working_dual_average, sharded_qp_,
-          col_scaling_vec_, row_scaling_vec_, POINT_TYPE_AVERAGE_ITERATE,
-          stats);
-    }
-  }
+    const std::atomic<bool>* interrupt_solve,
+    const IterationType iteration_type, const IterationStats& full_stats,
+    IterationStats& stats) const {
+  ComputeConvergenceAndInfeasibilityFromWorkingSolution(
+      params, working_primal_current, working_dual_current,
+      POINT_TYPE_CURRENT_ITERATE, stats.add_convergence_information(),
+      stats.add_infeasibility_information());
   AddPointMetadata(params, working_primal_current, working_dual_current,
                    POINT_TYPE_CURRENT_ITERATE, last_primal_start_point,
                    last_dual_start_point, stats);
   if (working_primal_average != nullptr && working_dual_average != nullptr) {
+    ComputeConvergenceAndInfeasibilityFromWorkingSolution(
+        params, *working_primal_average, *working_dual_average,
+        POINT_TYPE_AVERAGE_ITERATE, stats.add_convergence_information(),
+        stats.add_infeasibility_information());
     AddPointMetadata(params, *working_primal_average, *working_dual_average,
                      POINT_TYPE_AVERAGE_ITERATE, last_primal_start_point,
                      last_dual_start_point, stats);
   }
   if (working_primal_delta != nullptr && working_dual_delta != nullptr) {
-    if (presolve_info_.has_value()) {
-      PrimalAndDualSolution original_delta =
-          RecoverOriginalSolution({.primal_solution = *working_primal_delta,
-                                   .dual_solution = *working_dual_delta});
-      *stats.add_infeasibility_information() = ComputeInfeasibilityInformation(
-          params, presolve_info_->sharded_original_qp,
-          presolve_info_->trivial_col_scaling_vec,
-          presolve_info_->trivial_row_scaling_vec,
-          original_delta.primal_solution, original_delta.dual_solution,
-          POINT_TYPE_ITERATE_DIFFERENCE);
-    } else {
-      *stats.add_infeasibility_information() = ComputeInfeasibilityInformation(
-          params, sharded_qp_, col_scaling_vec_, row_scaling_vec_,
-          *working_primal_delta, *working_dual_delta,
-          POINT_TYPE_ITERATE_DIFFERENCE);
-    }
+    ComputeConvergenceAndInfeasibilityFromWorkingSolution(
+        params, *working_primal_delta, *working_dual_delta,
+        POINT_TYPE_ITERATE_DIFFERENCE, nullptr,
+        stats.add_infeasibility_information());
     AddPointMetadata(params, *working_primal_delta, *working_dual_delta,
                      POINT_TYPE_ITERATE_DIFFERENCE, last_primal_start_point,
                      last_dual_start_point, stats);
   }
   constexpr int kLogEvery = 15;
   static std::atomic_int log_counter{0};
-  if (params.verbosity_level() >= 4) {
+  if (params.verbosity_level() >= 2) {
     if (log_counter == 0) {
-      LogInfoWithoutPrefix(absl::StrCat("I ", IterationStatsLabelString()));
+      LogIterationStatsHeader(params.verbosity_level(),
+                              params.use_feasibility_polishing());
     }
-    LogInfoWithoutPrefix(absl::StrCat(
-        "A ", ToString(stats, params.termination_criteria(),
-                       original_bound_norms_, POINT_TYPE_AVERAGE_ITERATE)));
-    LogInfoWithoutPrefix(absl::StrCat(
-        "C ", ToString(stats, params.termination_criteria(),
-                       original_bound_norms_, POINT_TYPE_CURRENT_ITERATE)));
-  } else if (params.verbosity_level() >= 3) {
-    if (log_counter == 0) {
-      LogInfoWithoutPrefix(IterationStatsLabelString());
+    LogIterationStats(params.verbosity_level(),
+                      params.use_feasibility_polishing(), iteration_type, stats,
+                      params.termination_criteria(), original_bound_norms_,
+                      POINT_TYPE_AVERAGE_ITERATE);
+    if (params.verbosity_level() >= 4) {
+      // If the convergence information doesn't contain an average iterate, the
+      // previous `LogIterationStats()` will report some other iterate (usually
+      // the current one) so don't repeat logging it.
+      if (GetConvergenceInformation(stats, POINT_TYPE_AVERAGE_ITERATE) !=
+          std::nullopt) {
+        LogIterationStats(params.verbosity_level(),
+                          params.use_feasibility_polishing(), iteration_type,
+                          stats, params.termination_criteria(),
+                          original_bound_norms_, POINT_TYPE_CURRENT_ITERATE);
+      }
     }
-    LogInfoWithoutPrefix(ToString(stats, params.termination_criteria(),
-                                  original_bound_norms_,
-                                  POINT_TYPE_AVERAGE_ITERATE));
-  } else if (params.verbosity_level() >= 2) {
-    if (log_counter == 0) {
-      LogInfoWithoutPrefix(IterationStatsLabelShortString());
-    }
-    LogInfoWithoutPrefix(ToShortString(stats, params.termination_criteria(),
-                                       original_bound_norms_,
-                                       POINT_TYPE_AVERAGE_ITERATE));
   }
   if (++log_counter >= kLogEvery) {
     log_counter = 0;
   }
   if (iteration_stats_callback_ != nullptr) {
     iteration_stats_callback_(
-        {.termination_criteria = params.termination_criteria(),
+        {.iteration_type = iteration_type,
+         .termination_criteria = params.termination_criteria(),
          .iteration_stats = stats,
          .bound_norms = original_bound_norms_});
   }
@@ -1437,15 +1488,15 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
       termination.has_value()) {
     return termination;
   }
-  return CheckSimpleTerminationCriteria(params.termination_criteria(), stats,
-                                        interrupt_solve);
+  return CheckSimpleTerminationCriteria(params.termination_criteria(),
+                                        full_stats, interrupt_solve);
 }
 
-ConvergenceInformation
-PreprocessSolver::ComputeConvergenceInformationFromWorkingSolution(
+void PreprocessSolver::ComputeConvergenceAndInfeasibilityFromWorkingSolution(
     const PrimalDualHybridGradientParams& params,
     const VectorXd& working_primal, const VectorXd& working_dual,
-    PointType candidate_type) const {
+    PointType candidate_type, ConvergenceInformation* convergence_information,
+    InfeasibilityInformation* infeasibility_information) const {
   const TerminationCriteria::DetailedOptimalityCriteria criteria =
       EffectiveOptimalityCriteria(params.termination_criteria());
   const double primal_epsilon_ratio =
@@ -1457,16 +1508,33 @@ PreprocessSolver::ComputeConvergenceInformationFromWorkingSolution(
   if (presolve_info_.has_value()) {
     PrimalAndDualSolution original = RecoverOriginalSolution(
         {.primal_solution = working_primal, .dual_solution = working_dual});
-    return ComputeConvergenceInformation(
-        params, presolve_info_->sharded_original_qp,
-        presolve_info_->trivial_col_scaling_vec,
-        presolve_info_->trivial_row_scaling_vec, original.primal_solution,
-        original.dual_solution, primal_epsilon_ratio, dual_epsilon_ratio,
-        candidate_type);
+    if (convergence_information != nullptr) {
+      *convergence_information = ComputeConvergenceInformation(
+          params, presolve_info_->sharded_original_qp,
+          presolve_info_->trivial_col_scaling_vec,
+          presolve_info_->trivial_row_scaling_vec, original.primal_solution,
+          original.dual_solution, primal_epsilon_ratio, dual_epsilon_ratio,
+          candidate_type);
+    }
+    if (infeasibility_information != nullptr) {
+      *infeasibility_information = ComputeInfeasibilityInformation(
+          params, presolve_info_->sharded_original_qp,
+          presolve_info_->trivial_col_scaling_vec,
+          presolve_info_->trivial_row_scaling_vec, original.primal_solution,
+          original.dual_solution, candidate_type);
+    }
   } else {
-    return ComputeConvergenceInformation(
-        params, sharded_qp_, col_scaling_vec_, row_scaling_vec_, working_primal,
-        working_dual, primal_epsilon_ratio, dual_epsilon_ratio, candidate_type);
+    if (convergence_information != nullptr) {
+      *convergence_information = ComputeConvergenceInformation(
+          params, sharded_qp_, col_scaling_vec_, row_scaling_vec_,
+          working_primal, working_dual, primal_epsilon_ratio,
+          dual_epsilon_ratio, candidate_type);
+    }
+    if (infeasibility_information != nullptr) {
+      *infeasibility_information = ComputeInfeasibilityInformation(
+          params, sharded_qp_, col_scaling_vec_, row_scaling_vec_,
+          working_primal, working_dual, candidate_type);
+    }
   }
 }
 
@@ -1501,29 +1569,48 @@ SolverResult PreprocessSolver::ConstructOriginalSolverResult(
     CoefficientWiseQuotientInPlace(
         col_scaling_vec_, sharded_qp_.PrimalSharder(), result.reduced_costs);
   }
+  IterationType iteration_type;
+  switch (result.solve_log.solution_type()) {
+    case POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION:
+      iteration_type = IterationType::kFeasibilityPolishingTermination;
+      break;
+    case POINT_TYPE_PRESOLVER_SOLUTION:
+      iteration_type = IterationType::kPresolveTermination;
+      break;
+    default:
+      iteration_type = IterationType::kNormalTermination;
+      break;
+  }
   if (iteration_stats_callback_ != nullptr) {
     iteration_stats_callback_(
-        {.termination_criteria = params.termination_criteria(),
+        {.iteration_type = iteration_type,
+         .termination_criteria = params.termination_criteria(),
          .iteration_stats = result.solve_log.solution_stats(),
          .bound_norms = original_bound_norms_});
   }
 
   if (params.verbosity_level() >= 1) {
-    LOG(INFO) << "Termination reason: "
-              << TerminationReason_Name(result.solve_log.termination_reason());
-    LOG(INFO) << "Solution point type: "
-              << PointType_Name(result.solve_log.solution_type());
-    LOG(INFO) << "Final solution stats:";
-    LOG(INFO) << IterationStatsLabelString();
-    LOG(INFO) << ToString(result.solve_log.solution_stats(),
-                          params.termination_criteria(), original_bound_norms_,
-                          result.solve_log.solution_type());
+    LogInfoWithoutPrefix(absl::StrCat(
+        "Termination reason: ",
+        TerminationReason_Name(result.solve_log.termination_reason())));
+    LogInfoWithoutPrefix(
+        absl::StrCat("Solution point type: ",
+                     PointType_Name(result.solve_log.solution_type())));
+    LogInfoWithoutPrefix("Final solution stats:");
+    LogIterationStatsHeader(params.verbosity_level(),
+                            params.use_feasibility_polishing());
+    LogIterationStats(params.verbosity_level(),
+                      params.use_feasibility_polishing(), iteration_type,
+                      result.solve_log.solution_stats(),
+                      params.termination_criteria(), original_bound_norms_,
+                      result.solve_log.solution_type());
     const auto& convergence_info = GetConvergenceInformation(
         result.solve_log.solution_stats(), result.solve_log.solution_type());
     if (convergence_info.has_value()) {
       if (std::isfinite(convergence_info->corrected_dual_objective())) {
-        LOG(INFO) << "Dual objective after infeasibility correction: "
-                  << convergence_info->corrected_dual_objective();
+        LogInfoWithoutPrefix(
+            absl::StrCat("Dual objective after infeasibility correction: ",
+                         convergence_info->corrected_dual_objective()));
       }
     }
   }
@@ -1534,7 +1621,7 @@ Solver::Solver(const PrimalDualHybridGradientParams& params,
                VectorXd starting_primal_solution,
                VectorXd starting_dual_solution, const double initial_step_size,
                const double initial_primal_weight,
-               const PreprocessSolver* preprocess_solver)
+               PreprocessSolver* preprocess_solver)
     : params_(params),
       current_primal_solution_(std::move(starting_primal_solution)),
       current_dual_solution_(std::move(starting_dual_solution)),
@@ -1673,7 +1760,7 @@ IterationStats Solver::CreateSimpleIterationStats(
   stats.set_cumulative_kkt_matrix_passes(iterations_completed_ +
                                          num_kkt_passes_per_rejected_step *
                                              num_rejected_steps_);
-  stats.set_cumulative_time_sec(preprocess_solver_->GetElapsedTime());
+  stats.set_cumulative_time_sec(preprocessing_time_sec_ + timer_.Get());
   stats.set_restart_used(restart_used);
   stats.set_step_size(step_size_);
   stats.set_primal_weight(primal_weight_);
@@ -1889,9 +1976,11 @@ double Solver::ComputeNewPrimalWeight() const {
   const double new_primal_weight =
       std::exp(smoothing_param * std::log(unsmoothed_new_primal_weight) +
                (1.0 - smoothing_param) * std::log(primal_weight_));
-  LOG_IF(INFO, params_.verbosity_level() >= 4)
-      << "New computed primal weight is " << new_primal_weight
-      << " at iteration " << iterations_completed_;
+  if (params_.verbosity_level() >= 4) {
+    LogInfoWithoutPrefix(absl::StrCat("New computed primal weight is ",
+                                      new_primal_weight, " at iteration ",
+                                      iterations_completed_));
+  }
   return new_primal_weight;
 }
 
@@ -1931,14 +2020,18 @@ void Solver::ApplyRestartChoice(const RestartChoice restart_to_apply) {
     case RESTART_CHOICE_NO_RESTART:
       return;
     case RESTART_CHOICE_WEIGHTED_AVERAGE_RESET:
-      LOG_IF(INFO, params_.verbosity_level() >= 4)
-          << "Restarted to current on iteration " << iterations_completed_
-          << " after " << primal_average_.NumTerms() << " iterations";
+      if (params_.verbosity_level() >= 4) {
+        LogInfoWithoutPrefix(absl::StrCat(
+            "Restarted to current on iteration ", iterations_completed_,
+            " after ", primal_average_.NumTerms(), " iterations"));
+      }
       break;
     case RESTART_CHOICE_RESTART_TO_AVERAGE:
-      LOG_IF(INFO, params_.verbosity_level() >= 4)
-          << "Restarted to average on iteration " << iterations_completed_
-          << " after " << primal_average_.NumTerms() << " iterations";
+      if (params_.verbosity_level() >= 4) {
+        LogInfoWithoutPrefix(absl::StrCat(
+            "Restarted to average on iteration ", iterations_completed_,
+            " after ", primal_average_.NumTerms(), " iterations"));
+      }
       current_primal_solution_ = primal_average_.ComputeAverage();
       current_dual_solution_ = dual_average_.ComputeAverage();
       current_dual_product_ = TransposedMatrixVectorProduct(
@@ -1975,8 +2068,42 @@ void Solver::ApplyRestartChoice(const RestartChoice restart_to_apply) {
                /*dest=*/last_dual_start_point_);
 }
 
+// Adds the work (`iteration_number`, `cumulative_kkt_matrix_passes`,
+// `cumulative_rejected_steps`, and `cumulative_time_sec`) from
+// `additional_work_stats` to `stats` and returns the result.
+// `stats` is intentionally passed by value.
+IterationStats AddWorkStats(IterationStats stats,
+                            const IterationStats& additional_work_stats) {
+  stats.set_iteration_number(stats.iteration_number() +
+                             additional_work_stats.iteration_number());
+  stats.set_cumulative_kkt_matrix_passes(
+      stats.cumulative_kkt_matrix_passes() +
+      additional_work_stats.cumulative_kkt_matrix_passes());
+  stats.set_cumulative_rejected_steps(
+      stats.cumulative_rejected_steps() +
+      additional_work_stats.cumulative_rejected_steps());
+  stats.set_cumulative_time_sec(stats.cumulative_time_sec() +
+                                additional_work_stats.cumulative_time_sec());
+  return stats;
+}
+
+// Accumulates and returns the work (`iteration_number`,
+// `cumulative_kkt_matrix_passes`, `cumulative_rejected_steps`, and
+// `cumulative_time_sec`) from `solve_log.feasibility_polishing_details`.
+IterationStats WorkFromFeasiblityPolishing(const SolveLog& solve_log) {
+  IterationStats result;
+  for (const FeasibilityPolishingDetails& feasibility_polishing_detail :
+       solve_log.feasibility_polishing_details()) {
+    result = AddWorkStats(std::move(result),
+                          feasibility_polishing_detail.solution_stats());
+  }
+  return result;
+}
+
 std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
-    bool force_numerical_termination, const std::atomic<bool>* interrupt_solve,
+    const IterationType iteration_type, const bool force_numerical_termination,
+    const std::atomic<bool>* interrupt_solve,
+    const IterationStats& work_from_feasibility_polishing,
     SolveLog& solve_log) {
   const int major_iteration_cycle =
       iterations_completed_ % params_.major_iteration_frequency();
@@ -1988,10 +2115,12 @@ std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
                                     ? RESTART_CHOICE_NO_RESTART
                                     : ChooseRestartToApply(is_major_iteration);
   IterationStats stats = CreateSimpleIterationStats(restart);
+  IterationStats full_work_stats =
+      AddWorkStats(stats, work_from_feasibility_polishing);
   const bool check_termination =
       major_iteration_cycle % params_.termination_check_frequency() == 0 ||
-      CheckSimpleTerminationCriteria(params_.termination_criteria(), stats,
-                                     interrupt_solve)
+      CheckSimpleTerminationCriteria(params_.termination_criteria(),
+                                     full_work_stats, interrupt_solve)
           .has_value() ||
       force_numerical_termination;
   // We check termination on every major iteration.
@@ -2014,16 +2143,18 @@ std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
                                                  : nullptr,
                 current_dual_delta_.size() > 0 ? &current_dual_delta_ : nullptr,
                 last_primal_start_point_, last_dual_start_point_,
-                interrupt_solve, stats);
+                interrupt_solve, iteration_type, full_work_stats, stats);
     if (params_.record_iteration_stats()) {
       *solve_log.add_iteration_stats() = stats;
     }
     // We've terminated.
     if (maybe_termination_reason.has_value()) {
+      IterationStats terminating_full_stats =
+          AddWorkStats(stats, work_from_feasibility_polishing);
       return PickSolutionAndConstructSolverResult(
-          std::move(primal_average), std::move(dual_average), stats,
-          maybe_termination_reason->reason, maybe_termination_reason->type,
-          std::move(solve_log));
+          std::move(primal_average), std::move(dual_average),
+          terminating_full_stats, maybe_termination_reason->reason,
+          maybe_termination_reason->type, std::move(solve_log));
     }
   } else if (params_.record_iteration_stats()) {
     // Record simple iteration stats only.
@@ -2041,8 +2172,10 @@ void Solver::ResetAverageToCurrent() {
 }
 
 void Solver::LogNumericalTermination() const {
-  LOG(WARNING) << "Forced numerical termination at iteration "
-               << iterations_completed_;
+  if (params_.verbosity_level() >= 2) {
+    LogInfoWithoutPrefix(absl::StrCat(
+        "Forced numerical termination at iteration ", iterations_completed_));
+  }
 }
 
 void Solver::LogInnerIterationLimitHit() const {
@@ -2241,8 +2374,292 @@ InnerStepOutcome Solver::TakeConstantSizeStep() {
   return InnerStepOutcome::kSuccessful;
 }
 
-SolverResult Solver::Solve(const std::atomic<bool>* interrupt_solve,
+IterationStats Solver::TotalWorkSoFar(const SolveLog& solve_log) const {
+  IterationStats stats = CreateSimpleIterationStats(RESTART_CHOICE_NO_RESTART);
+  IterationStats full_stats =
+      AddWorkStats(stats, WorkFromFeasiblityPolishing(solve_log));
+  return full_stats;
+}
+
+FeasibilityPolishingDetails BuildFeasibilityPolishingDetails(
+    PolishingPhaseType phase_type, int iteration_count,
+    const PrimalDualHybridGradientParams& params, const SolveLog& solve_log) {
+  FeasibilityPolishingDetails details;
+  details.set_polishing_phase_type(phase_type);
+  details.set_main_iteration_count(iteration_count);
+  *details.mutable_params() = params;
+  details.set_termination_reason(solve_log.termination_reason());
+  details.set_iteration_count(solve_log.iteration_count());
+  details.set_solve_time_sec(solve_log.solve_time_sec());
+  *details.mutable_solution_stats() = solve_log.solution_stats();
+  details.set_solution_type(solve_log.solution_type());
+  absl::c_copy(solve_log.iteration_stats(),
+               google::protobuf::RepeatedPtrFieldBackInserter(
+                   details.mutable_iteration_stats()));
+  return details;
+}
+
+// Note: `TERMINATION_REASON_INTERRUPTED_BY_USER` is treated as a work limit
+// (that was determined in real-time by the user).
+bool TerminationReasonIsWorkLimit(const TerminationReason reason) {
+  return reason == TERMINATION_REASON_ITERATION_LIMIT ||
+         reason == TERMINATION_REASON_TIME_LIMIT ||
+         reason == TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT ||
+         reason == TERMINATION_REASON_INTERRUPTED_BY_USER;
+}
+
+std::optional<SolverResult> Solver::TryFeasibilityPolishing(
+    const int iteration_limit, const std::atomic<bool>* interrupt_solve,
+    SolveLog& solve_log) {
+  TerminationCriteria::DetailedOptimalityCriteria optimality_criteria =
+      EffectiveOptimalityCriteria(params_.termination_criteria());
+
+  VectorXd average_primal = PrimalAverage();
+  VectorXd average_dual = DualAverage();
+
+  ConvergenceInformation first_convergence_info;
+  preprocess_solver_->ComputeConvergenceAndInfeasibilityFromWorkingSolution(
+      params_, average_primal, average_dual, POINT_TYPE_AVERAGE_ITERATE,
+      &first_convergence_info, nullptr);
+
+  if (!ObjectiveGapMet(optimality_criteria, first_convergence_info)) {
+    if (params_.verbosity_level() >= 2) {
+      LogInfoWithoutPrefix(
+          "Skipping feasibility polishing because the objective gap "
+          "is too large.");
+    }
+    return std::nullopt;
+  }
+
+  if (params_.verbosity_level() >= 2) {
+    LogInfoWithoutPrefix("Starting primal feasibility polishing");
+  }
+  SolverResult primal_result = TryPrimalPolishing(
+      std::move(average_primal), iteration_limit, interrupt_solve, solve_log);
+
+  if (params_.verbosity_level() >= 2) {
+    LogInfoWithoutPrefix(absl::StrCat(
+        "Primal feasibility polishing termination reason: ",
+        TerminationReason_Name(primal_result.solve_log.termination_reason())));
+  }
+  if (TerminationReasonIsWorkLimit(
+          primal_result.solve_log.termination_reason())) {
+    return std::nullopt;
+  } else if (primal_result.solve_log.termination_reason() !=
+             TERMINATION_REASON_OPTIMAL) {
+    // Note: `TERMINATION_REASON_PRIMAL_INFEASIBLE` could happen normally, but
+    // we haven't ensured that the correct solution is returned in that case, so
+    // we ignore the polishing result indicating infeasibility.
+    // `TERMINATION_REASON_NUMERICAL_ERROR` can occur, but would be surprising
+    // and interesting. Other termination reasons are probably bugs.
+    LOG(WARNING) << "Primal feasibility polishing terminated with error "
+                 << primal_result.solve_log.termination_reason();
+    return std::nullopt;
+  }
+
+  if (params_.verbosity_level() >= 2) {
+    LogInfoWithoutPrefix("Starting dual feasibility polishing");
+  }
+  SolverResult dual_result = TryDualPolishing(
+      std::move(average_dual), iteration_limit, interrupt_solve, solve_log);
+
+  if (params_.verbosity_level() >= 2) {
+    LogInfoWithoutPrefix(absl::StrCat(
+        "Dual feasibility polishing termination reason: ",
+        TerminationReason_Name(dual_result.solve_log.termination_reason())));
+  }
+
+  if (TerminationReasonIsWorkLimit(
+          dual_result.solve_log.termination_reason())) {
+    return std::nullopt;
+  } else if (dual_result.solve_log.termination_reason() !=
+             TERMINATION_REASON_OPTIMAL) {
+    // Note: The comment in the corresponding location when checking the
+    // termination reason for primal feasibility polishing applies here
+    // too.
+    LOG(WARNING) << "Dual feasibility polishing terminated with error "
+                 << dual_result.solve_log.termination_reason();
+    return std::nullopt;
+  }
+
+  IterationStats full_stats = TotalWorkSoFar(solve_log);
+  preprocess_solver_->ComputeConvergenceAndInfeasibilityFromWorkingSolution(
+      params_, primal_result.primal_solution, dual_result.dual_solution,
+      POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
+      full_stats.add_convergence_information(), nullptr);
+  if (params_.verbosity_level() >= 2) {
+    LogInfoWithoutPrefix("solution stats for polished solution:");
+    LogIterationStatsHeader(params_.verbosity_level(),
+                            /*use_feasibility_polishing=*/true);
+    LogIterationStats(params_.verbosity_level(),
+                      /*use_feasibility_polishing=*/true,
+                      IterationType::kFeasibilityPolishingTermination,
+                      full_stats, params_.termination_criteria(),
+                      preprocess_solver_->OriginalBoundNorms(),
+                      POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION);
+  }
+  std::optional<TerminationReasonAndPointType> earned_termination =
+      CheckIterateTerminationCriteria(params_.termination_criteria(),
+                                      full_stats,
+                                      preprocess_solver_->OriginalBoundNorms(),
+                                      /*force_numerical_termination=*/false);
+  if (earned_termination.has_value()) {
+    return ConstructSolverResult(std::move(primal_result.primal_solution),
+                                 std::move(dual_result.dual_solution),
+                                 full_stats, earned_termination->reason,
+                                 POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
+                                 solve_log);
+  }
+  // Note: A typical termination check would now call
+  // `CheckSimpleTerminationCriteria`. However, there is no obvious iterate to
+  // use for a `SolverResult`. Instead, allow the main iteration loop to notice
+  // if the termination criteria checking has caused us to meet the simple
+  // termination criteria. This would be a rare case anyway, since dual
+  // feasibility polishing didn't terminate because of a work limit, and
+  // `full_stats` is created shortly after `TryDualPolishing` returned.
+  return std::nullopt;
+}
+
+TerminationCriteria ReduceWorkLimitsByPreviousWork(
+    TerminationCriteria criteria, const int iteration_limit,
+    const IterationStats& previous_work) {
+  criteria.set_iteration_limit(std::max(
+      0, std::min(iteration_limit, criteria.iteration_limit() -
+                                       previous_work.iteration_number())));
+  criteria.set_kkt_matrix_pass_limit(
+      std::max(0.0, criteria.kkt_matrix_pass_limit() -
+                        previous_work.cumulative_kkt_matrix_passes()));
+  criteria.set_time_sec_limit(std::max(
+      0.0, criteria.time_sec_limit() - previous_work.cumulative_time_sec()));
+  return criteria;
+}
+
+SolverResult Solver::TryPrimalPolishing(
+    VectorXd starting_primal_solution, const int iteration_limit,
+    const std::atomic<bool>* interrupt_solve, SolveLog& solve_log) {
+  PrimalDualHybridGradientParams primal_feasibility_params = params_;
+  *primal_feasibility_params.mutable_termination_criteria() =
+      ReduceWorkLimitsByPreviousWork(params_.termination_criteria(),
+                                     iteration_limit,
+                                     TotalWorkSoFar(solve_log));
+
+  // This will save the original objective after the swap.
+  VectorXd objective;
+  SetZero(ShardedWorkingQp().PrimalSharder(), objective);
+  preprocess_solver_->SwapObjectiveVector(objective);
+
+  TerminationCriteria::DetailedOptimalityCriteria criteria =
+      EffectiveOptimalityCriteria(params_.termination_criteria());
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  criteria.set_eps_optimal_dual_residual_absolute(kInfinity);
+  criteria.set_eps_optimal_dual_residual_relative(kInfinity);
+  criteria.set_eps_optimal_objective_gap_absolute(kInfinity);
+  criteria.set_eps_optimal_objective_gap_relative(kInfinity);
+  *primal_feasibility_params.mutable_termination_criteria()
+       ->mutable_detailed_optimality_criteria() = criteria;
+  // TODO(user): Evaluate disabling primal weight updates for this primal
+  // feasibility problem.
+  VectorXd primal_feasibility_starting_dual;
+  SetZero(ShardedWorkingQp().DualSharder(), primal_feasibility_starting_dual);
+  Solver primal_solver(primal_feasibility_params,
+                       std::move(starting_primal_solution),
+                       std::move(primal_feasibility_starting_dual), step_size_,
+                       primal_weight_, preprocess_solver_);
+  SolveLog primal_solve_log;
+  // Stop `timer_`, since the time in `primal_solver.Solve()` will be recorded
+  // by its timer.
+  timer_.Stop();
+  SolverResult primal_result = primal_solver.Solve(
+      IterationType::kPrimalFeasibility, interrupt_solve, primal_solve_log);
+  timer_.Start();
+  // Restore the original objective.
+  preprocess_solver_->SwapObjectiveVector(objective);
+
+  *solve_log.add_feasibility_polishing_details() =
+      BuildFeasibilityPolishingDetails(
+          POLISHING_PHASE_TYPE_PRIMAL_FEASIBILITY, iterations_completed_,
+          primal_feasibility_params, primal_result.solve_log);
+  return primal_result;
+}
+
+VectorXd MapFiniteValuesToZero(const Sharder& sharder, const VectorXd& input) {
+  VectorXd output(input.size());
+  const auto make_finite_values_zero = [](const double x) {
+    return std::isfinite(x) ? 0.0 : x;
+  };
+  sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
+    shard(output) = shard(input).unaryExpr(make_finite_values_zero);
+  });
+  return output;
+}
+
+SolverResult Solver::TryDualPolishing(VectorXd starting_dual_solution,
+                                      const int iteration_limit,
+                                      const std::atomic<bool>* interrupt_solve,
+                                      SolveLog& solve_log) {
+  PrimalDualHybridGradientParams dual_feasibility_params = params_;
+  *dual_feasibility_params.mutable_termination_criteria() =
+      ReduceWorkLimitsByPreviousWork(params_.termination_criteria(),
+                                     iteration_limit,
+                                     TotalWorkSoFar(solve_log));
+
+  // These will initially contain the homogenous variable and constraint
+  // bounds, but will contain the original variable and constraint bounds
+  // after the swap.
+  VectorXd constraint_lower_bounds = MapFiniteValuesToZero(
+      ShardedWorkingQp().DualSharder(), WorkingQp().constraint_lower_bounds);
+  VectorXd constraint_upper_bounds = MapFiniteValuesToZero(
+      ShardedWorkingQp().DualSharder(), WorkingQp().constraint_upper_bounds);
+  VectorXd variable_lower_bounds = MapFiniteValuesToZero(
+      ShardedWorkingQp().PrimalSharder(), WorkingQp().variable_lower_bounds);
+  VectorXd variable_upper_bounds = MapFiniteValuesToZero(
+      ShardedWorkingQp().PrimalSharder(), WorkingQp().variable_upper_bounds);
+  preprocess_solver_->SwapConstraintBounds(constraint_lower_bounds,
+                                           constraint_upper_bounds);
+  preprocess_solver_->SwapVariableBounds(variable_lower_bounds,
+                                         variable_upper_bounds);
+
+  TerminationCriteria::DetailedOptimalityCriteria criteria =
+      EffectiveOptimalityCriteria(params_.termination_criteria());
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  criteria.set_eps_optimal_primal_residual_absolute(kInfinity);
+  criteria.set_eps_optimal_primal_residual_relative(kInfinity);
+  criteria.set_eps_optimal_objective_gap_absolute(kInfinity);
+  criteria.set_eps_optimal_objective_gap_relative(kInfinity);
+  *dual_feasibility_params.mutable_termination_criteria()
+       ->mutable_detailed_optimality_criteria() = criteria;
+  // TODO(user): Evaluate disabling primal weight updates for this dual
+  // feasibility problem.
+  VectorXd dual_feasibility_starting_primal;
+  SetZero(ShardedWorkingQp().PrimalSharder(), dual_feasibility_starting_primal);
+  Solver dual_solver(dual_feasibility_params,
+                     std::move(dual_feasibility_starting_primal),
+                     std::move(starting_dual_solution), step_size_,
+                     primal_weight_, preprocess_solver_);
+  SolveLog dual_solve_log;
+  // Stop `timer_`, since the time in `dual_solver.Solve()` will be recorded
+  // by its timer.
+  timer_.Stop();
+  SolverResult dual_result = dual_solver.Solve(IterationType::kDualFeasibility,
+                                               interrupt_solve, dual_solve_log);
+  timer_.Start();
+  // Restore the original bounds.
+  preprocess_solver_->SwapConstraintBounds(constraint_lower_bounds,
+                                           constraint_upper_bounds);
+  preprocess_solver_->SwapVariableBounds(variable_lower_bounds,
+                                         variable_upper_bounds);
+  *solve_log.add_feasibility_polishing_details() =
+      BuildFeasibilityPolishingDetails(
+          POLISHING_PHASE_TYPE_DUAL_FEASIBILITY, iterations_completed_,
+          dual_feasibility_params, dual_result.solve_log);
+  return dual_result;
+}
+
+SolverResult Solver::Solve(const IterationType iteration_type,
+                           const std::atomic<bool>* interrupt_solve,
                            SolveLog solve_log) {
+  preprocessing_time_sec_ = solve_log.preprocessing_time_sec();
+  timer_.Start();
   last_primal_start_point_ =
       CloneVector(current_primal_solution_, ShardedWorkingQp().PrimalSharder());
   last_dual_start_point_ =
@@ -2259,17 +2676,45 @@ SolverResult Solver::Solve(const std::atomic<bool>* interrupt_solve,
   // issues. We may or may not have found the optimal solution.
   bool force_numerical_termination = false;
 
+  int next_feasibility_polishing_iteration = 100;
+
   num_rejected_steps_ = 0;
 
+  IterationStats work_from_feasibility_polishing =
+      WorkFromFeasiblityPolishing(solve_log);
   for (iterations_completed_ = 0;; ++iterations_completed_) {
     // This code performs the logic of the major iterations and termination
     // checks. It may modify the current solution and primal weight (e.g., when
     // performing a restart).
     const std::optional<SolverResult> maybe_result =
-        MajorIterationAndTerminationCheck(force_numerical_termination,
-                                          interrupt_solve, solve_log);
+        MajorIterationAndTerminationCheck(
+            iteration_type, force_numerical_termination, interrupt_solve,
+            work_from_feasibility_polishing, solve_log);
     if (maybe_result.has_value()) {
       return maybe_result.value();
+    }
+
+    if (params_.use_feasibility_polishing() &&
+        iteration_type == IterationType::kNormal &&
+        iterations_completed_ >= next_feasibility_polishing_iteration) {
+      // The total number of iterations in feasibility polishing is at most
+      // `4 * iterations_completed_ / kFeasibilityIterationFraction`.
+      // One factor of two is because there are both primal and dual feasibility
+      // polishing phases, and the other factor of two is because
+      // `next_feasibility_polishing_iteration` increases by a factor of 2 each
+      // feasibility polishing phase, so the sum of iteration limits is at most
+      // twice the last value.
+      const int kFeasibilityIterationFraction = 8;
+      const std::optional<SolverResult> feasibility_result =
+          TryFeasibilityPolishing(
+              iterations_completed_ / kFeasibilityIterationFraction,
+              interrupt_solve, solve_log);
+      if (feasibility_result.has_value()) {
+        return *feasibility_result;
+      }
+      next_feasibility_polishing_iteration *= 2;
+      // Update work to include new feasibility phases.
+      work_from_feasibility_polishing = WorkFromFeasiblityPolishing(solve_log);
     }
 
     // TODO(user): If we use a step rule that could reject many steps in a
@@ -2336,6 +2781,11 @@ SolverResult PrimalDualHybridGradient(
   if (qp.objective_scaling_factor == 0) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
                              "The objective scaling factor cannot be zero.");
+  }
+  if (params.use_feasibility_polishing() && !IsLinearProgram(qp)) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PARAMETER,
+        "use_feasibility_polishing is only implemented for linear programs.");
   }
   PreprocessSolver solver(std::move(qp), params);
   return solver.PreprocessAndSolve(params, std::move(initial_solution),

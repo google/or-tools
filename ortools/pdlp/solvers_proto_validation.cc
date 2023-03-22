@@ -26,6 +26,9 @@ namespace operations_research::pdlp {
 using ::absl::InvalidArgumentError;
 using ::absl::OkStatus;
 
+const double kTinyDouble = 1.0e-50;
+const double kHugeDouble = 1.0e50;
+
 absl::Status CheckNonNegative(const double value,
                               const absl::string_view name) {
   if (std::isnan(value)) {
@@ -134,10 +137,11 @@ absl::Status ValidateMalitskyPockParams(const MalitskyPockParams& params) {
   if (std::isnan(params.step_size_downscaling_factor())) {
     return InvalidArgumentError("step_size_downscaling_factor is NAN");
   }
-  if (params.step_size_downscaling_factor() <= 0 ||
+  if (params.step_size_downscaling_factor() <= kTinyDouble ||
       params.step_size_downscaling_factor() >= 1) {
     return InvalidArgumentError(
-        "step_size_downscaling_factor must be between 0 and 1 exclusive");
+        absl::StrCat("step_size_downscaling_factor must be between ",
+                     kTinyDouble, " and 1 exclusive"));
   }
   if (std::isnan(params.linesearch_contraction_factor())) {
     return InvalidArgumentError("linesearch_contraction_factor is NAN");
@@ -150,8 +154,11 @@ absl::Status ValidateMalitskyPockParams(const MalitskyPockParams& params) {
   if (std::isnan(params.step_size_interpolation())) {
     return InvalidArgumentError("step_size_interpolation is NAN");
   }
-  if (params.step_size_interpolation() < 0) {
-    return InvalidArgumentError("step_size_interpolation must be non-negative");
+  if (params.step_size_interpolation() < 0 ||
+      params.step_size_interpolation() >= kHugeDouble) {
+    return InvalidArgumentError(absl::StrCat(
+        "step_size_interpolation must be non-negative and less than ",
+        kHugeDouble));
   }
   return OkStatus();
 }
@@ -194,9 +201,11 @@ absl::Status ValidatePrimalDualHybridGradientParams(
     return InvalidArgumentError("initial_primal_weight is NAN");
   }
   if (params.has_initial_primal_weight() &&
-      params.initial_primal_weight() <= 0) {
+      (params.initial_primal_weight() <= kTinyDouble ||
+       params.initial_primal_weight() >= kHugeDouble)) {
     return InvalidArgumentError(
-        "initial_primal_weight must be positive if specified");
+        absl::StrCat("initial_primal_weight must be between ", kTinyDouble,
+                     " and ", kHugeDouble, " if specified"));
   }
   if (params.l_inf_ruiz_iterations() < 0) {
     return InvalidArgumentError("l_inf_ruiz_iterations must be non-negative");
@@ -238,8 +247,11 @@ absl::Status ValidatePrimalDualHybridGradientParams(
   if (std::isnan(params.initial_step_size_scaling())) {
     return InvalidArgumentError("initial_step_size_scaling is NAN");
   }
-  if (params.initial_step_size_scaling() <= 0.0) {
-    return InvalidArgumentError("initial_step_size_scaling must be positive");
+  if (params.initial_step_size_scaling() <= kTinyDouble ||
+      params.initial_step_size_scaling() >= kHugeDouble) {
+    return InvalidArgumentError(
+        absl::StrCat("initial_step_size_scaling must be between ", kTinyDouble,
+                     " and ", kHugeDouble));
   }
 
   if (std::isnan(params.infinite_constraint_bound_threshold())) {
@@ -256,6 +268,18 @@ absl::Status ValidatePrimalDualHybridGradientParams(
   if (params.diagonal_qp_trust_region_solver_tolerance() < 0.0) {
     return InvalidArgumentError(
         "diagonal_qp_trust_region_solver_tolerance must be non-negative");
+  }
+  if (params.use_feasibility_polishing() &&
+      params.handle_some_primal_gradients_on_finite_bounds_as_residuals()) {
+    return InvalidArgumentError(
+        "use_feasibility_polishing requires "
+        "!handle_some_primal_gradients_on_finite_bounds_as_residuals");
+  }
+  if (params.use_feasibility_polishing() &&
+      params.presolve_options().use_glop()) {
+    return InvalidArgumentError(
+        "use_feasibility_polishing and glop presolve can not be used "
+        "together.");
   }
   return OkStatus();
 }

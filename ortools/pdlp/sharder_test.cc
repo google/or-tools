@@ -189,8 +189,7 @@ TEST(SharderTest, UniformSharderFromOtherZeroElementSharder) {
 }
 
 TEST(ParallelSumOverShards, SmallExample) {
-  VectorXd vec(3);
-  vec << 1, 2, 3;
+  const VectorXd vec{{1, 2, 3}};
   Sharder sharder(vec.size(), /*num_shards=*/2, nullptr);
   const double sum = sharder.ParallelSumOverShards(
       [&vec](const Shard& shard) { return shard(vec).sum(); });
@@ -198,8 +197,7 @@ TEST(ParallelSumOverShards, SmallExample) {
 }
 
 TEST(ParallelSumOverShards, SmallExampleUsingVectorBlock) {
-  VectorXd vec(3);
-  vec << 1, 2, 3;
+  VectorXd vec{{1, 2, 3}};
   auto vec_block = vec.segment(1, 2);
   Sharder sharder(vec_block.size(), /*num_shards=*/2, nullptr);
   const double sum = sharder.ParallelSumOverShards(
@@ -208,9 +206,7 @@ TEST(ParallelSumOverShards, SmallExampleUsingVectorBlock) {
 }
 
 TEST(ParallelSumOverShards, SmallExampleUsingConstVectorBlock) {
-  VectorXd vec(3);
-  vec << 1, 2, 3;
-  const VectorXd& const_vec = vec;
+  const VectorXd const_vec{{1, 2, 3}};
   auto vec_block = const_vec.segment(1, 2);
   Sharder sharder(vec_block.size(), /*num_shards=*/2, nullptr);
   const double sum = sharder.ParallelSumOverShards(
@@ -237,8 +233,7 @@ TEST(ParallelSumOverShards, SmallExampleUsingDiagonalMatrixMultiplication) {
 }
 
 TEST(ParallelTrueForAllShards, SmallTrueExample) {
-  VectorXd vec(3);
-  vec << 1, 2, 3;
+  const VectorXd vec{{1, 2, 3}};
   Sharder sharder(vec.size(), /*num_shards=*/2, nullptr);
   const bool result = sharder.ParallelTrueForAllShards(
       [&vec](const Shard& shard) { return (shard(vec).array() > 0.0).all(); });
@@ -246,8 +241,7 @@ TEST(ParallelTrueForAllShards, SmallTrueExample) {
 }
 
 TEST(ParallelTrueForAllShards, SmallFalseExample) {
-  VectorXd vec(3);
-  vec << 1, 2, 3;
+  const VectorXd vec{{1, 2, 3}};
   Sharder sharder(vec.size(), /*num_shards=*/2, nullptr);
   const bool result = sharder.ParallelTrueForAllShards(
       [&vec](const Shard& shard) { return (shard(vec).array() < 2.5).all(); });
@@ -258,16 +252,14 @@ TEST(MatrixVectorProductTest, SmallExample) {
   Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t> mat =
       TestSparseMatrix();
   Sharder sharder(mat, /*num_shards=*/3, nullptr);
-  VectorXd vec(3);
-  vec << 1, 2, 3;
+  const VectorXd vec{{1, 2, 3}};
   VectorXd ans = TransposedMatrixVectorProduct(mat, vec, sharder);
   EXPECT_THAT(ans, ElementsAre(6.0, -0.5, 6.0, 19));
 }
 
 TEST(SetZeroTest, SmallExample) {
   Sharder sharder(3, /*num_shards=*/2, nullptr);
-  VectorXd vec(2);
-  vec << 1, 7;
+  VectorXd vec{{1, 7}};
   SetZero(sharder, vec);
   EXPECT_THAT(vec, ElementsAre(0.0, 0.0, 0.0));
 }
@@ -284,33 +276,30 @@ TEST(OnesVectorTest, SmallExample) {
 
 TEST(AddScaledVectorTest, SmallExample) {
   Sharder sharder(3, /*num_shards=*/2, nullptr);
-  VectorXd vec1(3), vec2(3);
-  vec1 << 4, 5, 20;
-  vec2 << 1, 7, 3;
+  VectorXd vec1{{4, 5, 20}};
+  const VectorXd vec2{{1, 7, 3}};
   AddScaledVector(2.0, vec2, sharder, /*dest=*/vec1);
   EXPECT_THAT(vec1, ElementsAre(6, 19, 26));
 }
 
 TEST(AssignVectorTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec1, vec2(3);
-  vec2 << 1, 7, 3;
+  VectorXd vec1;
+  const VectorXd vec2{{1, 7, 3}};
   AssignVector(vec2, sharder, /*dest=*/vec1);
   EXPECT_THAT(vec1, ElementsAre(1, 7, 3));
 }
 
 TEST(CloneVectorTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec(3);
-  vec << 1, 7, 3;
+  const VectorXd vec{{1, 7, 3}};
   EXPECT_THAT(CloneVector(vec, sharder), ElementsAre(1, 7, 3));
 }
 
 TEST(CoefficientWiseProductInPlaceTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec1(3), vec2(3);
-  vec1 << 4, 5, 20;
-  vec2 << 1, 2, 3;
+  VectorXd vec1{{4, 5, 20}};
+  const VectorXd vec2{{1, 2, 3}};
   CoefficientWiseProductInPlace(/*scale=*/vec2, sharder,
                                 /*dest=*/vec1);
   EXPECT_THAT(vec1, ElementsAre(4, 10, 60));
@@ -318,9 +307,8 @@ TEST(CoefficientWiseProductInPlaceTest, SmallExample) {
 
 TEST(CoefficientWiseQuotientInPlaceTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec1(3), vec2(3);
-  vec1 << 4, 6, 20;
-  vec2 << 1, 2, 5;
+  VectorXd vec1{{4, 6, 20}};
+  const VectorXd vec2{{1, 2, 5}};
   CoefficientWiseQuotientInPlace(/*scale=*/vec2, sharder,
                                  /*dest=*/vec1);
   EXPECT_THAT(vec1, ElementsAre(4, 3, 4));
@@ -328,17 +316,15 @@ TEST(CoefficientWiseQuotientInPlaceTest, SmallExample) {
 
 TEST(DotTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec1(3), vec2(3);
-  vec1 << 1, 2, 3;
-  vec2 << 4, 5, 6;
+  const VectorXd vec1{{1, 2, 3}};
+  const VectorXd vec2{{4, 5, 6}};
   double ans = Dot(vec1, vec2, sharder);
   EXPECT_THAT(ans, DoubleNear(4 + 10 + 18, 1.0e-13));
 }
 
 TEST(LInfNormTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec(3);
-  vec << -1, 2, -3;
+  const VectorXd vec{{-1, 2, -3}};
   double ans = LInfNorm(vec, sharder);
   EXPECT_EQ(ans, 3);
 }
@@ -352,8 +338,7 @@ TEST(LInfNormTest, EmptyExample) {
 
 TEST(L1NormTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec(3);
-  vec << -1, 2, -3;
+  const VectorXd vec{{-1, 2, -3}};
   double ans = L1Norm(vec, sharder);
   EXPECT_EQ(ans, 6);
 }
@@ -367,66 +352,54 @@ TEST(L1NormTest, EmptyExample) {
 
 TEST(SquaredNormTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec(3);
-  vec << 1, 2, 3;
+  const VectorXd vec{{1, 2, 3}};
   double ans = SquaredNorm(vec, sharder);
   EXPECT_THAT(ans, DoubleNear(1 + 4 + 9, 1.0e-13));
 }
 
 TEST(NormTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec(3);
-  vec << 1, 2, 3;
+  const VectorXd vec{{1, 2, 3}};
   double ans = Norm(vec, sharder);
   EXPECT_THAT(ans, DoubleNear(std::sqrt(1 + 4 + 9), 1.0e-13));
 }
 
 TEST(SquaredDistanceTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec1(3);
-  VectorXd vec2(3);
-  vec1 << 1, 1, 1;
-  vec2 << 1, 2, 3;
+  const VectorXd vec1{{1, 1, 1}};
+  const VectorXd vec2{{1, 2, 3}};
   double ans = SquaredDistance(vec1, vec2, sharder);
   EXPECT_THAT(ans, DoubleNear(5, 1.0e-13));
 }
 
 TEST(DistanceTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec1(3);
-  VectorXd vec2(3);
-  vec1 << 1, 1, 1;
-  vec2 << 1, 2, 3;
+  const VectorXd vec1{{1, 1, 1}};
+  const VectorXd vec2{{1, 2, 3}};
   double ans = Distance(vec1, vec2, sharder);
   EXPECT_THAT(ans, DoubleNear(std::sqrt(5), 1.0e-13));
 }
 
 TEST(ScaledLInfNormTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec(3);
-  VectorXd scale(3);
-  vec << -1, 2, -3;
-  scale << 4, 6, 1;
+  const VectorXd vec{{-1, 2, -3}};
+  const VectorXd scale{{4, 6, 1}};
   double ans = ScaledLInfNorm(vec, scale, sharder);
   EXPECT_EQ(ans, 12);
 }
 
 TEST(ScaledSquaredNormTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec(3);
-  VectorXd scale(3);
-  vec << -1, 2, -3;
-  scale << 4, 6, 1;
+  const VectorXd vec{{-1, 2, -3}};
+  const VectorXd scale{{4, 6, 1}};
   double ans = ScaledSquaredNorm(vec, scale, sharder);
   EXPECT_EQ(ans, 169);
 }
 
 TEST(ScaledNormTest, SmallExample) {
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
-  VectorXd vec(3);
-  VectorXd scale(3);
-  vec << -1, 2, -3;
-  scale << 4, 6, 1;
+  const VectorXd vec{{-1, 2, -3}};
+  const VectorXd scale{{4, 6, 1}};
   double ans = ScaledNorm(vec, scale, sharder);
   EXPECT_EQ(ans, std::sqrt(169));
 }
@@ -435,10 +408,8 @@ TEST(ScaledColLInfNorm, SmallExample) {
   Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t> mat =
       TestSparseMatrix();
   Sharder sharder(mat, /*num_shards=*/3, nullptr);
-  VectorXd row_scaling_vec(3);
-  VectorXd col_scaling_vec(4);
-  row_scaling_vec << 1, -2, 1;
-  col_scaling_vec << 1, 2, -1, -1;
+  const VectorXd row_scaling_vec{{1, -2, 1}};
+  const VectorXd col_scaling_vec{{1, 2, -1, -1}};
   VectorXd answer =
       ScaledColLInfNorm(mat, row_scaling_vec, col_scaling_vec, sharder);
   EXPECT_THAT(answer, ElementsAre(7, 1, 6, 5));
@@ -448,10 +419,8 @@ TEST(ScaledColL2Norm, SmallExample) {
   Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t> mat =
       TestSparseMatrix();
   Sharder sharder(mat, /*num_shards=*/3, nullptr);
-  VectorXd row_scaling_vec(3);
-  VectorXd col_scaling_vec(4);
-  row_scaling_vec << 1, -2, 1;
-  col_scaling_vec << 1, 2, -1, -1;
+  const VectorXd row_scaling_vec{{1, -2, 1}};
+  const VectorXd col_scaling_vec{{1, 2, -1, -1}};
   VectorXd answer =
       ScaledColL2Norm(mat, row_scaling_vec, col_scaling_vec, sharder);
   EXPECT_THAT(answer, ElementsAre(std::sqrt(54), 1.0, 6.0, std::sqrt(41)));

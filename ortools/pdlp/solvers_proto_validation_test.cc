@@ -72,6 +72,8 @@ void TestDetailedOptimalityCriteriaFieldValidation(
       full_field_name);
 }
 
+// TODO(user): Consider breaking the validations up into separate
+// tests to reduce the risk of accidentally using data from another test.
 TEST(ValidateTerminationCriteria, BadEpsOptimalAbsolute) {
   TestTerminationCriteriaValidation("eps_optimal_absolute: -1.0",
                                     "eps_optimal_absolute");
@@ -302,6 +304,12 @@ TEST(ValidateMalitskyPockParams, BadDownscalingFactor) {
   const absl::Status status_nan = ValidateMalitskyPockParams(params_nan);
   EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_nan.message(), HasSubstr("step_size_downscaling_factor"));
+
+  MalitskyPockParams params_tiny;
+  params_tiny.set_step_size_downscaling_factor(1.0e-300);
+  const absl::Status status_tiny = ValidateMalitskyPockParams(params_tiny);
+  EXPECT_EQ(status_tiny.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_tiny.message(), HasSubstr("step_size_downscaling_factor"));
 }
 
 TEST(ValidateMalitskyPockParams, BadContractionFactor) {
@@ -340,6 +348,12 @@ TEST(ValidateMalitskyPockParams, BadStepSizeInterpolation) {
   const absl::Status status_nan = ValidateMalitskyPockParams(params_nan);
   EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_nan.message(), HasSubstr("step_size_interpolation"));
+
+  MalitskyPockParams params_huge;
+  params_huge.set_step_size_interpolation(1.0e300);
+  const absl::Status status_huge = ValidateMalitskyPockParams(params_huge);
+  EXPECT_EQ(status_huge.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_huge.message(), HasSubstr("step_size_interpolation"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams, DefaultIsValid) {
@@ -439,6 +453,20 @@ TEST(ValidatePrimalDualHybridGradientParams, BadInitialPrimalWeight) {
       ValidatePrimalDualHybridGradientParams(params_nan);
   EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_nan.message(), HasSubstr("initial_primal_weight"));
+
+  PrimalDualHybridGradientParams params_tiny;
+  params_tiny.set_initial_primal_weight(1.0e-300);
+  const absl::Status status_tiny =
+      ValidatePrimalDualHybridGradientParams(params_tiny);
+  EXPECT_EQ(status_tiny.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_tiny.message(), HasSubstr("initial_primal_weight"));
+
+  PrimalDualHybridGradientParams params_huge;
+  params_huge.set_initial_primal_weight(1.0e300);
+  const absl::Status status_huge =
+      ValidatePrimalDualHybridGradientParams(params_huge);
+  EXPECT_EQ(status_huge.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_huge.message(), HasSubstr("initial_primal_weight"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams, BadLInfRuizIterations) {
@@ -554,6 +582,20 @@ TEST(ValidatePrimalDualHybridGradientParams, BadInitialStepSizeScaling) {
       ValidatePrimalDualHybridGradientParams(params_nan);
   EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_nan.message(), HasSubstr("initial_step_size_scaling"));
+
+  PrimalDualHybridGradientParams params_tiny;
+  params_tiny.set_initial_step_size_scaling(1.0e-300);
+  const absl::Status status_tiny =
+      ValidatePrimalDualHybridGradientParams(params_tiny);
+  EXPECT_EQ(status_tiny.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_tiny.message(), HasSubstr("initial_step_size_scaling"));
+
+  PrimalDualHybridGradientParams params_huge;
+  params_huge.set_initial_step_size_scaling(1.0e300);
+  const absl::Status status_huge =
+      ValidatePrimalDualHybridGradientParams(params_huge);
+  EXPECT_EQ(status_huge.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_huge.message(), HasSubstr("initial_step_size_scaling"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams,
@@ -594,6 +636,35 @@ TEST(ValidatePrimalDualHybridGradientParams,
   EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_nan.message(),
               HasSubstr("diagonal_qp_trust_region_solver_tolerance"));
+}
+
+TEST(ValidatePrimalDualHybridGradientParams, FeasibilityPolishingValidOptions) {
+  PrimalDualHybridGradientParams params;
+  params.set_use_feasibility_polishing(true);
+  params.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(false);
+  params.mutable_presolve_options()->set_use_glop(false);
+  const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
+  EXPECT_TRUE(status.ok()) << status;
+}
+TEST(ValidatePrimalDualHybridGradientParams, FeasibilityPolishingAndResiduals) {
+  PrimalDualHybridGradientParams params;
+  params.set_use_feasibility_polishing(true);
+  params.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(true);
+  params.mutable_presolve_options()->set_use_glop(false);
+  const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("use_feasibility_polishing"));
+}
+
+TEST(ValidatePrimalDualHybridGradientParams,
+     FeasibilityPolishingAndGlopPresolve) {
+  PrimalDualHybridGradientParams params;
+  params.set_use_feasibility_polishing(true);
+  params.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(false);
+  params.mutable_presolve_options()->set_use_glop(true);
+  const absl::Status status = ValidatePrimalDualHybridGradientParams(params);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("use_feasibility_polishing"));
 }
 
 }  // namespace

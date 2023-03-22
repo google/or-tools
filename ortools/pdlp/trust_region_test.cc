@@ -54,18 +54,15 @@ TEST_P(TrustRegion, SolvesWithoutVariableBounds) {
   // min x + y
   // ||(x - 2.0, y - (-5.0))||_2 <= sqrt(2)
   // [x*, y*] = [1.0, -6.0]
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2);
-  variable_lower_bounds << -kInfinity, -kInfinity;
-  variable_upper_bounds << kInfinity, kInfinity;
-  center_point << 2.0, -5.0;
-  objective_vector << 1.0, 1.0;
+  const VectorXd variable_lower_bounds{{-kInfinity, -kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0}};
+  const VectorXd objective_vector{{1.0, 1.0}};
   const double target_radius = std::sqrt(2.0);
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(2);
-  expected_solution << 1.0, -6.0;
+  const VectorXd expected_solution{{1.0, -6.0}};
   const double expected_objective_value = -2.0;
 
   if (GetParam()) {
@@ -91,18 +88,15 @@ TEST_P(TrustRegion, SolvesWithVariableBounds) {
   // ||(x - 2.0, y - (-5.0), z - 1.0)||_2 <= sqrt(2.0)
   // x >= 2.0
   // [x*, y*, z*] = [2.0, -4.0, 0.0]
-  VectorXd variable_lower_bounds(3), variable_upper_bounds(3), center_point(3),
-      objective_vector(3);
-  variable_lower_bounds << 2.0, -kInfinity, -kInfinity;
-  variable_upper_bounds << kInfinity, kInfinity, kInfinity;
-  center_point << 2.0, -5.0, 1.0;
-  objective_vector << 1.0, -1.0, 1.0;
+  const VectorXd variable_lower_bounds{{2.0, -kInfinity, -kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0, 1.0}};
+  const VectorXd objective_vector{{1.0, -1.0, 1.0}};
   const double target_radius = std::sqrt(2.0);
 
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(3);
-  expected_solution << 2.0, -4.0, 0.0;
+  const VectorXd expected_solution{{2.0, -4.0, 0.0}};
   const double expected_objective_value = -2.0;
 
   if (GetParam()) {
@@ -130,18 +124,15 @@ TEST_P(TrustRegion, SolvesAtVariableBounds) {
   // x >= 2.0, y <= -5.0
   // [x*, y*] = [2.0, -5.0]
   // The bound constraints block movement from the center point.
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2);
-  variable_lower_bounds << 2.0, -kInfinity;
-  variable_upper_bounds << kInfinity, -5.0;
-  center_point << 2.0, -5.0;
-  objective_vector << 1.0, -1.0;
+  const VectorXd variable_lower_bounds{{2.0, -kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity, -5.0}};
+  const VectorXd center_point{{2.0, -5.0}};
+  const VectorXd objective_vector{{1.0, -1.0}};
   const double target_radius = 1.0;
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(2);
-  expected_solution << 2.0, -5.0;
+  const VectorXd expected_solution{{2.0, -5.0}};
   const double expected_objective_value = 0.0;
 
   if (GetParam()) {
@@ -171,18 +162,15 @@ TEST_P(TrustRegion, SolvesWithInactiveRadius) {
   // [x*, y*, z*] = [2.0, -5.0, 0.5]
   // This is a corner case where the radius constraint is not active at the
   // solution.
-  VectorXd variable_lower_bounds(3), variable_upper_bounds(3), center_point(3),
-      objective_vector(3);
-  variable_lower_bounds << 2.0, -kInfinity, 0.5;
-  variable_upper_bounds << kInfinity, -5.0, kInfinity;
-  center_point << 2.0, -5.0, 1.0;
-  objective_vector << 1.0, -1.0, 1.0;
+  const VectorXd variable_lower_bounds{{2.0, -kInfinity, 0.5}};
+  const VectorXd variable_upper_bounds{{kInfinity, -5.0, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0, 1.0}};
+  const VectorXd objective_vector{{1.0, -1.0, 1.0}};
   const double target_radius = 1.0;
 
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(3);
-  expected_solution << 2.0, -5.0, 0.5;
+  const VectorXd expected_solution{{2.0, -5.0, 0.5}};
   const double expected_objective_value = -0.5;
 
   if (GetParam()) {
@@ -210,18 +198,15 @@ TEST_P(TrustRegion, SolvesWithInfiniteRadius) {
   // ||(x - 2.0, y - (-5.0), z - 1.0)||_2 <= Infinity
   // x >= 2.0, y <= -5.0, z >= 0.5
   // [x*, y*, z*] = [2.0, -5.0, 0.5]
-  VectorXd variable_lower_bounds(3), variable_upper_bounds(3), center_point(3),
-      objective_vector(3);
-  variable_lower_bounds << 2.0, -kInfinity, 0.5;
-  variable_upper_bounds << kInfinity, -5.0, kInfinity;
-  center_point << 2.0, -5.0, 1.0;
-  objective_vector << 1.0, -1.0, 1.0;
+  const VectorXd variable_lower_bounds{{2.0, -kInfinity, 0.5}};
+  const VectorXd variable_upper_bounds{{kInfinity, -5.0, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0, 1.0}};
+  const VectorXd objective_vector{{1.0, -1.0, 1.0}};
   const double target_radius = kInfinity;
 
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(3);
-  expected_solution << 2.0, -5.0, 0.5;
+  const VectorXd expected_solution{{2.0, -5.0, 0.5}};
   const double expected_objective_value = -0.5;
 
   if (GetParam()) {
@@ -251,18 +236,15 @@ TEST_P(TrustRegion, SolvesWithMixedObjective) {
   // [x*, y*] = [1.0, 0.5]
   // We take a positive step in all coordinates. Only the first coordinate
   // hits its bound.
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2);
-  variable_lower_bounds << 1.0, 0.0;
-  variable_upper_bounds << kInfinity, kInfinity;
-  center_point << 2.0, 1.0;
-  objective_vector << 2.0, 1.0;
+  const VectorXd variable_lower_bounds{{1.0, 0.0}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, 1.0}};
+  const VectorXd objective_vector{{2.0, 1.0}};
   const double target_radius = std::sqrt(1.25);
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(2);
-  expected_solution << 1.0, 0.5;
+  const VectorXd expected_solution{{1.0, 0.5}};
   const double expected_objective_value = -2.5;
 
   if (GetParam()) {
@@ -288,18 +270,15 @@ TEST_P(TrustRegion, SolvesWithZeroObjectiveNoBounds) {
   // min 0*x
   // ||(x - 2.0)||_2 <= 1
   // x* = 2.0
-  VectorXd variable_lower_bounds(1), variable_upper_bounds(1), center_point(1),
-      objective_vector(1);
-  variable_lower_bounds << -kInfinity;
-  variable_upper_bounds << kInfinity;
-  center_point << 2.0;
-  objective_vector << 0.0;
+  const VectorXd variable_lower_bounds{{-kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity}};
+  const VectorXd center_point{{2.0}};
+  const VectorXd objective_vector{{0.0}};
   const double target_radius = 1.0;
 
   Sharder sharder(/*num_elements=*/1, /*num_shards=*/1, nullptr);
 
-  VectorXd expected_solution(1);
-  expected_solution << 2.0;
+  const VectorXd expected_solution{{2.0}};
   const double expected_objective_value = 0.0;
 
   if (GetParam()) {
@@ -336,19 +315,16 @@ TEST_P(TrustRegionWithWeights, SolvesWithoutVariableBounds) {
   // ||(x - 2.0, y - (-5.0))||_W <= sqrt(3)
   // norm_weights = [1.0, 2.0]
   // [x*, y*] = [1.0, -6.0]
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2), norm_weights(2);
-  variable_lower_bounds << -kInfinity, -kInfinity;
-  variable_upper_bounds << kInfinity, kInfinity;
-  center_point << 2.0, -5.0;
-  objective_vector << 1.0, 2.0;
-  norm_weights << 1.0, 2.0;
+  const VectorXd variable_lower_bounds{{-kInfinity, -kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0}};
+  const VectorXd objective_vector{{1.0, 2.0}};
+  const VectorXd norm_weights{{1.0, 2.0}};
   const double target_radius = std::sqrt(3.0);
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(2);
-  expected_solution << 1.0, -6.0;
+  const VectorXd expected_solution{{1.0, -6.0}};
   const double expected_objective_value = -3.0;
 
   if (GetParam()) {
@@ -375,19 +351,16 @@ TEST_P(TrustRegionWithWeights, SolvesWithVariableBounds) {
   // x >= 2.0
   // norm_weights = [0.5, 2.0, 3.0]
   // [x*, y*, z*] = [2.0, -4.0, 0.0]
-  VectorXd variable_lower_bounds(3), variable_upper_bounds(3), center_point(3),
-      objective_vector(3), norm_weights(3);
-  variable_lower_bounds << 2.0, -kInfinity, -kInfinity;
-  variable_upper_bounds << kInfinity, kInfinity, kInfinity;
-  center_point << 2.0, -5.0, 1.0;
-  objective_vector << 0.5, -2.0, 3.0;
-  norm_weights << 0.5, 2.0, 3.0;
+  const VectorXd variable_lower_bounds{{2.0, -kInfinity, -kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0, 1.0}};
+  const VectorXd objective_vector{{0.5, -2.0, 3.0}};
+  const VectorXd norm_weights{{0.5, 2.0, 3.0}};
   const double target_radius = std::sqrt(5.0);
 
   Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(3);
-  expected_solution << 2.0, -4.0, 0.0;
+  const VectorXd expected_solution{{2.0, -4.0, 0.0}};
   const double expected_objective_value = -5.0;
 
   if (GetParam()) {
@@ -416,19 +389,16 @@ TEST_P(TrustRegionWithWeights, SolvesWithVariableThatHitsBounds) {
   // norm_weights = [0.5, 2.0]
   // We take a positive step in all coordinates. Only the first coordinate
   // hits its bound.
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2), norm_weights(2);
-  variable_lower_bounds << 1.0, 0.0;
-  variable_upper_bounds << kInfinity, kInfinity;
-  center_point << 2.0, 1.0;
-  objective_vector << 1.0, 2.0;
-  norm_weights << 0.5, 2.0;
+  const VectorXd variable_lower_bounds{{1.0, 0.0}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, 1.0}};
+  const VectorXd objective_vector{{1.0, 2.0}};
+  const VectorXd norm_weights{{0.5, 2.0}};
   const double target_radius = 1;
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(2);
-  expected_solution << 1.0, 0.5;
+  const VectorXd expected_solution{{1.0, 0.5}};
   const double expected_objective_value = -2.0;
 
   if (GetParam()) {
@@ -460,19 +430,16 @@ TEST_P(TrustRegionWithWeights, SolvesWithLargeWeight) {
   // norm_weights = [500.0, 2.0]
   // We take a positive step in all coordinates. Only the first coordinate
   // hits its bound. The large norm weight stresses the code.
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2), norm_weights(2);
-  variable_lower_bounds << 1.0, 0.0;
-  variable_upper_bounds << kInfinity, kInfinity;
-  center_point << 2.0, 1.0;
-  objective_vector << 1000.0, 2.0;
-  norm_weights << 500.0, 2.0;
+  const VectorXd variable_lower_bounds{{1.0, 0.0}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, 1.0}};
+  const VectorXd objective_vector{{1000.0, 2.0}};
+  const VectorXd norm_weights{{500.0, 2.0}};
   const double target_radius = std::sqrt(500.5);
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
 
-  VectorXd expected_solution(2);
-  expected_solution << 1.0, 0.5;
+  const VectorXd expected_solution{{1.0, 0.5}};
   const double expected_objective_value = -1001.0;
 
   if (GetParam()) {
@@ -500,13 +467,11 @@ TEST(TrustRegionDeathTest, CheckFailsWithNonPositiveWeights) {
   // min x + y
   // ||(x - 2.0, y - (-5.0))||_2 <= sqrt(2)
   // [x*, y*] = [1.0, -6.0]
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2), norm_weights(2);
-  variable_lower_bounds << -kInfinity, -kInfinity;
-  variable_upper_bounds << kInfinity, kInfinity;
-  center_point << 2.0, -5.0;
-  objective_vector << 1.0, 1.0;
-  norm_weights << 0.0, 1.0;
+  const VectorXd variable_lower_bounds{{-kInfinity, -kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0}};
+  const VectorXd objective_vector{{1.0, 1.0}};
+  const VectorXd norm_weights{{0.0, 1.0}};
   const double target_radius = std::sqrt(2.0);
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
@@ -522,13 +487,11 @@ TEST(TrustRegionDeathTest, CheckFailsWithNonPositiveWeightsForDiagonalSolver) {
   // min x + y
   // ||(x - 2.0, y - (-5.0))||_2 <= sqrt(2)
   // [x*, y*] = [1.0, -6.0]
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2), norm_weights(2);
-  variable_lower_bounds << -kInfinity, -kInfinity;
-  variable_upper_bounds << kInfinity, kInfinity;
-  center_point << 2.0, -5.0;
-  objective_vector << 1.0, 1.0;
-  norm_weights << 0.0, 1.0;
+  const VectorXd variable_lower_bounds{{-kInfinity, -kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0}};
+  const VectorXd objective_vector{{1.0, 1.0}};
+  const VectorXd norm_weights{{0.0, 1.0}};
   const double target_radius = std::sqrt(2.0);
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
@@ -546,12 +509,10 @@ TEST(TrustRegionDeathTest, CheckFailsWithNegativeRadius) {
   // min x + y
   // ||(x - 2.0, y - (-5.0))||_2 <= sqrt(2)
   // [x*, y*] = [1.0, -6.0]
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2);
-  variable_lower_bounds << -kInfinity, -kInfinity;
-  variable_upper_bounds << kInfinity, kInfinity;
-  center_point << 2.0, -5.0;
-  objective_vector << 1.0, 1.0;
+  const VectorXd variable_lower_bounds{{-kInfinity, -kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0}};
+  const VectorXd objective_vector{{1.0, 1.0}};
   const double target_radius = -std::sqrt(2.0);
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
@@ -567,12 +528,10 @@ TEST(TrustRegionDeathTest, CheckFailsWithNegativeRadiusForDiagonalSolver) {
   // min x + y
   // ||(x - 2.0, y - (-5.0))||_2 <= sqrt(2)
   // [x*, y*] = [1.0, -6.0]
-  VectorXd variable_lower_bounds(2), variable_upper_bounds(2), center_point(2),
-      objective_vector(2);
-  variable_lower_bounds << -kInfinity, -kInfinity;
-  variable_upper_bounds << kInfinity, kInfinity;
-  center_point << 2.0, -5.0;
-  objective_vector << 1.0, 1.0;
+  const VectorXd variable_lower_bounds{{-kInfinity, -kInfinity}};
+  const VectorXd variable_upper_bounds{{kInfinity, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0}};
+  const VectorXd objective_vector{{1.0, 1.0}};
   const double target_radius = -std::sqrt(2.0);
 
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2, nullptr);
@@ -620,9 +579,8 @@ INSTANTIATE_TEST_SUITE_P(
 TEST_P(ComputeLocalizedLagrangianBoundsTest, ZeroGapAtOptimal) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  VectorXd primal_solution(4), dual_solution(4);
-  primal_solution << -1.0, 8.0, 1.0, 2.5;
-  dual_solution << -2.0, 0.0, 2.375, 2.0 / 3.0;
+  const VectorXd primal_solution{{-1.0, 8.0, 1.0, 2.5}};
+  const VectorXd dual_solution{{-2.0, 0.0, 2.375, 2.0 / 3.0}};
 
   const auto [primal_dual_norm, use_diagonal_qp_solver] = GetParam();
 
@@ -645,9 +603,8 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, OptimalInBoundRange) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
   // x_3 has a lower bound of 2.5.
-  VectorXd primal_solution(4);
-  primal_solution << 0.0, 0.0, 0.0, 3.0;
-  VectorXd dual_solution = VectorXd::Zero(4);
+  const VectorXd primal_solution{{0.0, 0.0, 0.0, 3.0}};
+  const VectorXd dual_solution = VectorXd::Zero(4);
 
   const auto [primal_dual_norm, use_diagonal_qp_solver] = GetParam();
 
@@ -681,9 +638,8 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, OptimalNotInBoundRange) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
   // x_3 has a lower bound of 2.5.
-  VectorXd primal_solution(4);
-  primal_solution << 0.0, 0.0, 0.0, 3.0;
-  VectorXd dual_solution = VectorXd::Zero(4);
+  const VectorXd primal_solution{{0.0, 0.0, 0.0, 3.0}};
+  const VectorXd dual_solution = VectorXd::Zero(4);
 
   const auto [primal_dual_norm, use_diagonal_qp_solver] = GetParam();
 
@@ -739,9 +695,8 @@ TEST(ComputeLocalizedLagrangianBoundsTest, ProcessesPrimalWeight) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
   // x_3 has a lower bound of 2.5.
-  VectorXd primal_solution(4);
-  primal_solution << 0.0, 0.0, 0.0, 3.0;
-  VectorXd dual_solution = VectorXd::Zero(4);
+  const VectorXd primal_solution{{0.0, 0.0, 0.0, 3.0}};
+  const VectorXd dual_solution = VectorXd::Zero(4);
 
   LocalizedLagrangianBounds bounds = ComputeLocalizedLagrangianBounds(
       lp, primal_solution, dual_solution, PrimalDualNorm::kMaxNorm,
@@ -768,13 +723,11 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, AcceptsCachedProducts) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
   // x_3 has a lower bound of 2.5.
-  VectorXd primal_solution(4);
-  primal_solution << 0.0, 0.0, 0.0, 3.0;
-  VectorXd dual_solution = VectorXd::Zero(4);
+  const VectorXd primal_solution{{0.0, 0.0, 0.0, 3.0}};
+  const VectorXd dual_solution = VectorXd::Zero(4);
 
-  VectorXd primal_product(4);
-  primal_product << 6.0, 0.0, 0.0, -3.0;
-  VectorXd dual_product = VectorXd::Zero(4);
+  const VectorXd primal_product{{6.0, 0.0, 0.0, -3.0}};
+  const VectorXd dual_product = VectorXd::Zero(4);
 
   const auto [primal_dual_norm, use_diagonal_qp_solver] = GetParam();
 
@@ -807,13 +760,13 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest, AcceptsCachedProducts) {
 // s.t. 0 <= x <= 1 (as a constraint, not variable bound).
 QuadraticProgram OneDimLp() {
   QuadraticProgram lp(1, 1);
-  lp.constraint_lower_bounds << 0;
-  lp.constraint_upper_bounds << 1;
-  lp.variable_lower_bounds << -kInfinity;
-  lp.variable_upper_bounds << kInfinity;
+  lp.constraint_lower_bounds = VectorXd{{0}};
+  lp.constraint_upper_bounds = VectorXd{{1}};
+  lp.variable_lower_bounds = VectorXd{{-kInfinity}};
+  lp.variable_upper_bounds = VectorXd{{kInfinity}};
   std::vector<Eigen::Triplet<double, int64_t>> triplets = {{0, 0, 1}};
   lp.constraint_matrix.setFromTriplets(triplets.begin(), triplets.end());
-  lp.objective_vector << 1.0;
+  lp.objective_vector = VectorXd{{1.0}};
   return lp;
 }
 
@@ -822,18 +775,18 @@ QuadraticProgram OneDimLp() {
 // s.t. 0 <= x <= 1 (as a constraint, not variable bound).
 QuadraticProgram OneDimQp() {
   QuadraticProgram qp(1, 1);
-  qp.constraint_lower_bounds << 0;
-  qp.constraint_upper_bounds << 1;
-  qp.variable_lower_bounds << -kInfinity;
-  qp.variable_upper_bounds << kInfinity;
+  qp.constraint_lower_bounds = VectorXd{{0}};
+  qp.constraint_upper_bounds = VectorXd{{1}};
+  qp.variable_lower_bounds = VectorXd{{-kInfinity}};
+  qp.variable_upper_bounds = VectorXd{{kInfinity}};
   std::vector<Eigen::Triplet<double, int64_t>> constraint_matrix_triplets = {
       {0, 0, 1}};
   qp.constraint_matrix.setFromTriplets(constraint_matrix_triplets.begin(),
                                        constraint_matrix_triplets.end());
   qp.objective_matrix.emplace();
   qp.objective_matrix->resize(1);
-  qp.objective_matrix->diagonal() << 2;
-  qp.objective_vector << 1;
+  qp.objective_matrix->diagonal() = VectorXd{{2}};
+  qp.objective_vector = VectorXd{{1}};
   return qp;
 }
 
@@ -870,19 +823,14 @@ struct TestProblemData {
 // Generates the problem data corresponding to `OneDimLp()` as raw vectors with
 // center point [x, y] = [0, -1].
 TestProblemData GenerateTestLpProblemData(const double primal_weight) {
-  VectorXd objective_vector(2), center_point(2), norm_weights(2),
-      variable_lower_bounds(2), variable_upper_bounds(2);
-  objective_vector << 2, -1;
-  center_point << 0, -1;
-  norm_weights << 0.5 * primal_weight, 0.5 / primal_weight;
-  variable_lower_bounds.fill(-kInfinity);
-  variable_upper_bounds.fill(kInfinity);
-  return {.objective_vector = objective_vector,
-          .objective_matrix_diagonal = VectorXd::Zero(2),
-          .center_point = center_point,
-          .variable_lower_bounds = variable_lower_bounds,
-          .variable_upper_bounds = variable_upper_bounds,
-          .norm_weights = norm_weights};
+  return {
+      .objective_vector = VectorXd{{2, -1}},
+      .objective_matrix_diagonal = VectorXd::Zero(2),
+      .center_point = VectorXd{{0, -1}},
+      .variable_lower_bounds = VectorXd{{-kInfinity, -kInfinity}},
+      .variable_upper_bounds = VectorXd{{kInfinity, kInfinity}},
+      .norm_weights = VectorXd{{0.5 * primal_weight, 0.5 / primal_weight}},
+  };
 }
 
 // Generates the problem data corresponding to `OneDimQp()` as raw vectors with
@@ -898,9 +846,8 @@ TestProblemData GenerateTestQpProblemData(const double primal_weight) {
 TEST_P(ComputeLocalizedLagrangianBoundsTest, NormsBehaveDifferently) {
   ShardedQuadraticProgram lp(OneDimLp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  VectorXd primal_solution = VectorXd::Zero(1);
-  VectorXd dual_solution(1);
-  dual_solution << -1;  // The upper bound is active.
+  const VectorXd primal_solution = VectorXd::Zero(1);
+  const VectorXd dual_solution{{-1}};  // The upper bound is active.
 
   // The primal gradient is [2], and the dual gradient is [1]. Hence, the norm
   // of the gradient is sqrt(5).
@@ -942,9 +889,8 @@ TEST_P(ComputeLocalizedLagrangianBoundsTest,
        NormsBehaveDifferentlyWithLargePrimalWeight) {
   ShardedQuadraticProgram lp(OneDimLp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  VectorXd primal_solution = VectorXd::Zero(1);
-  VectorXd dual_solution(1);
-  dual_solution << -1;  // The upper bound is active.
+  const VectorXd primal_solution = VectorXd::Zero(1);
+  const VectorXd dual_solution{{-1}};  // The upper bound is active.
 
   // The primal gradient is [2], and the dual gradient is [1].
 
@@ -1089,9 +1035,8 @@ TEST(DiagonalTrustRegionSolverTest,
 TEST(ComputeLocalizedLagrangianBoundsTest, SolvesForTestQpUnitWeight) {
   ShardedQuadraticProgram qp(OneDimQp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  VectorXd primal_solution = VectorXd::Zero(1);
-  VectorXd dual_solution(1);
-  dual_solution << -1;  // The upper bound is active.
+  const VectorXd primal_solution = VectorXd::Zero(1);
+  const VectorXd dual_solution{{-1}};  // The upper bound is active.
 
   // The primal gradient is [2], and the dual gradient is [1]. Hence, the norm
   // of the gradient is sqrt(5).

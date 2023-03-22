@@ -41,9 +41,8 @@ using ::testing::IsNan;
 TEST(ShardedWeightedAverageTest, SimpleAverage) {
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2,
                   /*thread_pool=*/nullptr);
-  Eigen::VectorXd vec1(2), vec2(2);
-  vec1 << 4, 1;
-  vec2 << 1, 7;
+  Eigen::VectorXd vec1{{4, 1}};
+  Eigen::VectorXd vec2{{1, 7}};
 
   ShardedWeightedAverage average(&sharder);
   average.Add(vec1, 1.0);
@@ -62,8 +61,7 @@ TEST(ShardedWeightedAverageTest, SimpleAverage) {
 TEST(ShardedWeightedAverageTest, MoveConstruction) {
   Sharder sharder(/*num_elements=*/2, /*num_shards=*/2,
                   /*thread_pool=*/nullptr);
-  Eigen::VectorXd vec(2);
-  vec << 4, 1;
+  const Eigen::VectorXd vec{{4, 1}};
 
   ShardedWeightedAverage average(&sharder);
   average.Add(vec, 2.0);
@@ -77,9 +75,8 @@ TEST(ShardedWeightedAverageTest, MoveAssignment) {
                    /*thread_pool=*/nullptr);
   Sharder sharder2(/*num_elements=*/3, /*num_shards=*/2,
                    /*thread_pool=*/nullptr);
-  Eigen::VectorXd vec1(2), vec2(2);
-  vec1 << 4, 1;
-  vec2 << 0, 3;
+  Eigen::VectorXd vec1{{4, 1}};
+  Eigen::VectorXd vec2{{0, 3}};
 
   ShardedWeightedAverage average1(&sharder1);
   average1.Add(vec1, 2.0);
@@ -108,8 +105,7 @@ TEST(ShardedWeightedAverageTest, AveragesEqualWithoutRoundoff) {
                   /*thread_pool=*/nullptr);
   ShardedWeightedAverage average(&sharder);
   EXPECT_THAT(average.ComputeAverage(), ElementsAre(0, 0, 0, 0));
-  VectorXd data(4);
-  data << 1.0, 1.0 / 3, 3.0 / 7, 3.14159;
+  Eigen::VectorXd data{{1.0, 1.0 / 3, 3.0 / 7, 3.14159}};
   average.Add(data, 341.45);
   EXPECT_THAT(average.ComputeAverage(), ElementsAreArray(data));
   average.Add(data, 1.4134);
@@ -124,8 +120,7 @@ TEST(ShardedWeightedAverageTest, AddsZeroWeight) {
 
   ShardedWeightedAverage average(&sharder);
   ASSERT_FALSE(average.HasNonzeroWeight());
-  VectorXd data(1);
-  data << 1.0;
+  Eigen::VectorXd data{{1.0}};
   average.Add(data, 0.0);
   EXPECT_FALSE(average.HasNonzeroWeight());
   EXPECT_THAT(average.ComputeAverage(), ElementsAre(0.0));
@@ -237,7 +232,7 @@ TEST(ProblemStatsTest, TestDiagonalQp1) {
 TEST(ProblemStatsTest, ModifiedTestDiagonalQp1) {
   QuadraticProgram orig_qp = TestDiagonalQp1();
   // A case where `objective_matrix_num_nonzeros` doesn't match the dimension.
-  orig_qp.objective_matrix->diagonal() << 2.0, 0.0;
+  orig_qp.objective_matrix->diagonal() = Eigen::VectorXd{{2.0, 0.0}};
   ShardedQuadraticProgram qp(orig_qp, 2, 2);
   const QuadraticProgramStats stats = ComputeStats(qp);
 
@@ -354,9 +349,8 @@ TEST(ProblemStatsTest, EmptyLp) {
 // Rescaling divides the scaling vectors by sqrt(norms).
 TEST(LInfRuizRescaling, OneIteration) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
-  VectorXd row_scaling_vec(4), col_scaling_vec(4);
-  row_scaling_vec << 1, 2, 1, 3;
-  col_scaling_vec << 0, 1, 2, -1;
+  Eigen::VectorXd row_scaling_vec{{1, 2, 1, 3}};
+  Eigen::VectorXd col_scaling_vec{{0, 1, 2, -1}};
   LInfRuizRescaling(lp, /*num_iterations=*/1, row_scaling_vec, col_scaling_vec);
   EXPECT_THAT(row_scaling_vec, ElementsAre(1 / std::sqrt(2), 1.0, 1.0, 1.0));
   EXPECT_THAT(col_scaling_vec,
@@ -369,9 +363,8 @@ TEST(LInfRuizRescaling, OneIteration) {
 // sqrt(101) sqrt(13)]. Rescaling divides the scaling vectors by sqrt(norms).
 TEST(L2RuizRescaling, OneIteration) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
-  VectorXd row_scaling_vec(4), col_scaling_vec(4);
-  row_scaling_vec << 1, 2, 1, 3;
-  col_scaling_vec << 0, 1, 2, -1;
+  Eigen::VectorXd row_scaling_vec{{1, 2, 1, 3}};
+  Eigen::VectorXd col_scaling_vec{{0, 1, 2, -1}};
   L2NormRescaling(lp, row_scaling_vec, col_scaling_vec);
   EXPECT_THAT(row_scaling_vec, ElementsAre(1.0 / std::pow(3.0, 0.5), 1.0, 1.0,
                                            3.0 / std::pow(90.0, 0.25)));
@@ -401,10 +394,9 @@ TEST(L2RuizRescaling, OneIterationNonSquare) {
 // converge to have col LInf norm 1 and row LInf norm 1.
 TEST(LInfRuizRescaling, Convergence) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
-  VectorXd row_scaling_vec(4), col_scaling_vec(4);
   VectorXd col_norm(4), row_norm(4);
-  row_scaling_vec << 1, 1, 1, 1;
-  col_scaling_vec << 1, 1, 1, 1;
+  Eigen::VectorXd row_scaling_vec{{1, 1, 1, 1}};
+  Eigen::VectorXd col_scaling_vec{{1, 1, 1, 1}};
   LInfRuizRescaling(lp, /*num_iterations=*/20, row_scaling_vec,
                     col_scaling_vec);
   col_norm = ScaledColLInfNorm(lp.Qp().constraint_matrix, row_scaling_vec,
@@ -446,9 +438,8 @@ TEST(ComputePrimalGradientTest, CorrectForLp) {
   // computations.
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  VectorXd primal_solution(4), dual_solution(4);
-  primal_solution << 0.0, 0.0, 0.0, 3.0;
-  dual_solution << -1.0, 0.0, 1.0, 1.0;
+  const Eigen::VectorXd primal_solution{{0.0, 0.0, 0.0, 3.0}};
+  const Eigen::VectorXd dual_solution{{-1.0, 0.0, 1.0, 1.0}};
 
   const LagrangianPart primal_part = ComputePrimalGradient(
       lp, primal_solution, lp.TransposedConstraintMatrix() * dual_solution);
@@ -466,9 +457,8 @@ TEST(ComputeDualGradientTest, CorrectForLp) {
   // computations.
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  VectorXd primal_solution(4), dual_solution(4);
-  primal_solution << 0.0, 0.0, 0.0, 3.0;
-  dual_solution << -1.0, 0.0, 1.0, 1.0;
+  const Eigen::VectorXd primal_solution{{0.0, 0.0, 0.0, 3.0}};
+  const Eigen::VectorXd dual_solution{{-1.0, 0.0, 1.0, 1.0}};
 
   const LagrangianPart dual_part = ComputeDualGradient(
       lp, dual_solution, lp.Qp().constraint_matrix * primal_solution);
@@ -492,9 +482,8 @@ TEST(ComputeDualGradientTest, CorrectOnTwoSidedConstraints) {
   ShardedQuadraticProgram sharded_qp(std::move(qp), /*num_threads=*/2,
                                      /*num_shards=*/2);
 
-  VectorXd primal_solution(4), dual_solution(4);
-  primal_solution << 0.0, 0.0, 0.0, 3.0;
-  dual_solution << 0.0, 0.0, 0.0, -1.0;
+  const Eigen::VectorXd primal_solution{{0.0, 0.0, 0.0, 3.0}};
+  const Eigen::VectorXd dual_solution{{0.0, 0.0, 0.0, -1.0}};
 
   const LagrangianPart dual_part =
       ComputeDualGradient(sharded_qp, dual_solution,
@@ -528,9 +517,8 @@ TEST(ComputePrimalGradientTest, CorrectForQp) {
   ShardedQuadraticProgram qp(TestDiagonalQp1(), /*num_threads=*/2,
                              /*num_shards=*/2);
 
-  VectorXd primal_solution(2), dual_solution(1);
-  primal_solution << 1.0, 2.0;
-  dual_solution << -2.0;
+  const Eigen::VectorXd primal_solution{{1.0, 2.0}};
+  const Eigen::VectorXd dual_solution{{-2.0}};
 
   const LagrangianPart primal_part = ComputePrimalGradient(
       qp, primal_solution, qp.TransposedConstraintMatrix() * dual_solution);
@@ -548,9 +536,8 @@ TEST(ComputeDualGradientTest, CorrectForQp) {
   ShardedQuadraticProgram qp(TestDiagonalQp1(), /*num_threads=*/2,
                              /*num_shards=*/2);
 
-  VectorXd primal_solution(2), dual_solution(1);
-  primal_solution << 1.0, 2.0;
-  dual_solution << -2.0;
+  const Eigen::VectorXd primal_solution{{1.0, 2.0}};
+  const Eigen::VectorXd dual_solution{{-2.0}};
 
   const LagrangianPart dual_part = ComputeDualGradient(
       qp, dual_solution, qp.Qp().constraint_matrix * primal_solution);
@@ -579,9 +566,8 @@ TEST(EstimateSingularValuesTest, CorrectForTestLp) {
 TEST(EstimateSingularValuesTest, CorrectForTestLpWithActivePrimalSubspace) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  VectorXd primal_solution(4);
   // Chosen so x_1 is at its bound, and all other variables are not at bounds.
-  primal_solution << 0.0, -2.0, 0.0, 3.0;
+  const Eigen::VectorXd primal_solution{{0.0, -2.0, 0.0, 3.0}};
   // The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
   // so the projected matrix is [ 2 1 2; 1 1 0; 4 0 0; 0 1.5 -1].
   std::mt19937 random(1);
@@ -595,10 +581,9 @@ TEST(EstimateSingularValuesTest, CorrectForTestLpWithActivePrimalSubspace) {
 TEST(EstimateSingularValuesTest, CorrectForTestLpWithActiveDualSubspace) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  VectorXd dual_solution(4);
   // Chosen so the second dual is at its bound, and all other duals are not at
   // bounds.
-  dual_solution << 1.0, 0.0, 1.0, 3.0;
+  const Eigen::VectorXd dual_solution{{1.0, 0.0, 1.0, 3.0}};
   // The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
   // so the projected matrix is [ 2 1 1 2; 4 0 0 0; 0 0 1.5 -1].
   std::mt19937 random(1);
@@ -612,12 +597,11 @@ TEST(EstimateSingularValuesTest, CorrectForTestLpWithActiveDualSubspace) {
 TEST(EstimateSingularValuesTest, CorrectForTestLpWithBothActiveSubspaces) {
   ShardedQuadraticProgram lp(TestLp(), /*num_threads=*/2, /*num_shards=*/2);
 
-  VectorXd primal_solution(4), dual_solution(4);
   // Chosen so x_1 is at its bound, and all other variables are not at bounds.
-  primal_solution << 0.0, -2.0, 0.0, 3.0;
+  const Eigen::VectorXd primal_solution{{0.0, -2.0, 0.0, 3.0}};
   // Chosen so the second dual is at its bound, and all other duals are not at
   // bounds.
-  dual_solution << 1.0, 0.0, 1.0, 3.0;
+  const Eigen::VectorXd dual_solution{{1.0, 0.0, 1.0, 3.0}};
   // The `TestLp()` matrix is [ 2 1 1 2; 1 0 1 0; 4 0 0 0; 0 0 1.5 -1],
   // so the projected matrix is [ 2 1 2; 4 0 0; 0 1.5 -1].
   std::mt19937 random(1);
@@ -649,8 +633,7 @@ TEST(EstimateSingularValuesTest, CorrectForDiagonalLp) {
 TEST(ProjectToPrimalVariableBoundsTest, TestLp) {
   ShardedQuadraticProgram qp(TestLp(), /*num_threads=*/2,
                              /*num_shards=*/2);
-  VectorXd primal(4);
-  primal << -3, -3, 5, 5;
+  Eigen::VectorXd primal{{-3, -3, 5, 5}};
   ProjectToPrimalVariableBounds(qp, primal);
   EXPECT_THAT(primal, ElementsAre(-3, -2, 5, 3.5));
 }
@@ -658,8 +641,7 @@ TEST(ProjectToPrimalVariableBoundsTest, TestLp) {
 TEST(ProjectToDualVariableBoundsTest, TestLp) {
   ShardedQuadraticProgram qp(TestLp(), /*num_threads=*/2,
                              /*num_shards=*/2);
-  VectorXd dual(4);
-  dual << 1, 1, -1, -1;
+  Eigen::VectorXd dual{{1, 1, -1, -1}};
   ProjectToDualVariableBounds(qp, dual);
   EXPECT_THAT(dual, ElementsAre(1, 0, 0, -1));
 }

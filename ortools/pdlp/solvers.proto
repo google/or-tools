@@ -198,7 +198,7 @@ message MalitskyPockParams {
   // Contraction factor used in the linesearch condition of Malitsky and Pock.
   // A step size is accepted if primal_weight * primal_stepsize *
   // norm(constraint_matrix' * (next_dual - current_dual)) is less
-  // than linearsearch_contraction_factor * norm(next_dual - current_dual).
+  // than linesearch_contraction_factor * norm(next_dual - current_dual).
   // The default is the value used in Malitsky and Pock (2016).
   optional double linesearch_contraction_factor = 2 [default = 0.99];
 
@@ -439,6 +439,35 @@ message PrimalDualHybridGradientParams {
   // TODO(user): Find an expression for the final relative error.
   optional double diagonal_qp_trust_region_solver_tolerance = 24
       [default = 1.0e-8];
+
+  // If true, periodically runs feasibility polishing, which attempts to move
+  // from latest average iterate to one that is closer to feasibility (i.e., has
+  // smaller primal and dual residuals) while probably increasing the objective
+  // gap. This is useful primarily when the feasibility tolerances are fairly
+  // tight and the objective gap tolerance is somewhat looser. Note that this
+  // does not change the termination criteria, but rather can help achieve the
+  // termination criteria more quickly when the objective gap is not as
+  // important as feasibility.
+  //
+  // `use_feasibility_polishing` cannot be used with glop presolve, and requires
+  // `handle_some_primal_gradients_on_finite_bounds_as_residuals == false`.
+  // `use_feasibility_polishing` can only be used with linear programs.
+  //
+  // Feasibility polishing runs two separate phases, primal feasibility and dual
+  // feasibility. The primal feasibility phase runs PDHG on the primal
+  // feasibility problem (obtained by changing the objective vector to all
+  // zeros), using the average primal iterate and zero dual (which is optimal
+  // for the primal feasibility problem) as the initial solution. The dual
+  // feasibility phase runs PDHG on the dual feasibility problem (obtained by
+  // changing all finite variable and constraint bounds to zero), using the
+  // average dual iterate and zero primal (which is optimal for the dual
+  // feasibility problem) as the initial solution. The primal solution from the
+  // primal feasibility phase and dual solution from the dual feasibility phase
+  // are then combined (forming a solution of type
+  // `POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION`) and checked against the
+  // termination criteria.
+  //
+  optional bool use_feasibility_polishing = 30 [default = false];
 
   reserved 13, 14, 15, 20, 21;
 }

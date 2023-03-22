@@ -27,7 +27,6 @@
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/log/check.h"
-#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
@@ -49,6 +48,7 @@
 namespace operations_research::pdlp {
 namespace {
 
+using ::Eigen::VectorXd;
 using ::operations_research::glop::ConstraintStatus;
 using ::operations_research::glop::VariableStatus;
 using ::testing::_;
@@ -57,12 +57,42 @@ using ::testing::AnyOf;
 using ::testing::DoubleNear;
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::Ge;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::Not;
+using ::testing::Pair;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAre;
 
 const double kInfinity = std::numeric_limits<double>::infinity();
+
+}  // namespace
+
+// ITERATION_TYPE_CONSIDER_CASE(x) expands to print the iteration type x to *os.
+// Using this macro prevents typos in the strings.
+#define ITERATION_TYPE_CONSIDER_CASE(x) \
+  case IterationType::x:                \
+    *os << #x;                          \
+    break
+
+// NOTE: `PrintTo(IterationType, std::ostream*)` needs to be in the same
+// namespace as `IterationType`.
+void PrintTo(IterationType iteration_type, std::ostream* os) {
+  switch (iteration_type) {
+    ITERATION_TYPE_CONSIDER_CASE(kNormal);
+    ITERATION_TYPE_CONSIDER_CASE(kPrimalFeasibility);
+    ITERATION_TYPE_CONSIDER_CASE(kDualFeasibility);
+    ITERATION_TYPE_CONSIDER_CASE(kNormalTermination);
+    ITERATION_TYPE_CONSIDER_CASE(kPresolveTermination);
+    ITERATION_TYPE_CONSIDER_CASE(kFeasibilityPolishingTermination);
+  }
+}
+
+#undef ITERATION_TYPE_CONSIDER_CASE
+
+namespace {
+
 PrimalDualHybridGradientParams CreateSolverParams(
     const int iteration_limit, const double eps_optimal_absolute,
     const bool enable_scaling, const int num_threads,
@@ -521,11 +551,10 @@ TEST_P(PrimalDualHybridGradientDiagonalQPTest, QpWarmStart) {
   // and dual optimal solutions are about the same.
   params.set_primal_weight_update_smoothing(0.0);
 
-  PrimalAndDualSolution initial_solution;
-  initial_solution.primal_solution.resize(2);
-  initial_solution.primal_solution << 0.999, 0.001;
-  initial_solution.dual_solution.resize(1);
-  initial_solution.dual_solution << -0.999;
+  const PrimalAndDualSolution initial_solution = {
+      .primal_solution{{0.999, 0.001}},
+      .dual_solution{{-0.999}},
+  };
   SolverResult output = PrimalDualHybridGradient(TestDiagonalQp1(), params,
                                                  std::move(initial_solution));
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
@@ -545,9 +574,9 @@ TEST_P(PrimalDualHybridGradientLPTest, LpWithoutConstraints) {
                                    /*eps_optimal_absolute=*/1.0e-6);
 
   QuadraticProgram qp(3, 0);
-  qp.variable_lower_bounds << -1, -kInfinity, -2;
-  qp.variable_upper_bounds << kInfinity, 4, 10;
-  qp.objective_vector << 1, -1, 2;
+  qp.variable_lower_bounds = Eigen::VectorXd{{-1, -kInfinity, -2}};
+  qp.variable_upper_bounds = Eigen::VectorXd{{kInfinity, 4, 10}};
+  qp.objective_vector = Eigen::VectorXd{{1, -1, 2}};
 
   SolverResult output = PrimalDualHybridGradient(qp, params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
@@ -569,8 +598,8 @@ TEST_P(PrimalDualHybridGradientLPTest, LpWithoutVariables) {
                                    /*eps_optimal_absolute=*/1.0e-6);
 
   QuadraticProgram qp(0, 3);
-  qp.constraint_lower_bounds << -1, -kInfinity, -2;
-  qp.constraint_upper_bounds << kInfinity, 4, 10;
+  qp.constraint_lower_bounds = Eigen::VectorXd{{-1, -kInfinity, -2}};
+  qp.constraint_upper_bounds = Eigen::VectorXd{{kInfinity, 4, 10}};
 
   SolverResult output = PrimalDualHybridGradient(qp, params);
   VerifyTerminationReasonAndIterationCountForFixture(params, output);
@@ -590,9 +619,9 @@ TEST_P(PrimalDualHybridGradientLPTest, LpWithOnlyFixedVariable) {
                                    /*eps_optimal_absolute=*/0.0);
 
   QuadraticProgram qp(1, 0);
-  qp.variable_lower_bounds << 1;
-  qp.variable_upper_bounds << 1;
-  qp.objective_vector << 1;
+  qp.variable_lower_bounds = Eigen::VectorXd{{1}};
+  qp.variable_upper_bounds = Eigen::VectorXd{{1}};
+  qp.objective_vector = Eigen::VectorXd{{1}};
 
   SolverResult output = PrimalDualHybridGradient(qp, params);
   EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
@@ -609,8 +638,8 @@ TEST_P(PrimalDualHybridGradientLPTest, InfeasibleLpWithoutVariables) {
                                    /*eps_optimal_absolute=*/1.0e-6);
 
   QuadraticProgram qp(0, 1);
-  qp.constraint_lower_bounds << -1;
-  qp.constraint_upper_bounds << -1;
+  qp.constraint_lower_bounds = Eigen::VectorXd{{-1}};
+  qp.constraint_upper_bounds = Eigen::VectorXd{{-1}};
 
   SolverResult output = PrimalDualHybridGradient(qp, params);
   EXPECT_EQ(output.solve_log.termination_reason(),
@@ -1003,10 +1032,10 @@ TEST(PrimalDualHybridGradientTest, ProjectInitialPointDualBounds) {
   params.mutable_termination_criteria()->set_iteration_limit(iteration_limit);
   // This initial solution doesn't satisfy the dual variable bounds. The solver
   // should project it to a valid dual solution.
-  PrimalAndDualSolution initial_solution;
-  initial_solution.primal_solution = Eigen::VectorXd(2);
-  initial_solution.primal_solution << 1.0, 0.0;
-  initial_solution.dual_solution = -Eigen::VectorXd::Ones(2);
+  const PrimalAndDualSolution initial_solution = {
+      .primal_solution{{1.0, 0.0}},
+      .dual_solution = -VectorXd::Ones(2),
+  };
   SolverResult output_nonzero_init = PrimalDualHybridGradient(
       SmallInitializationLp(), params, initial_solution);
   EXPECT_EQ(output_nonzero_init.solve_log.iteration_stats().size(),
@@ -1104,11 +1133,51 @@ TEST(PrimalDualHybridGradientTest, DetectsExcessiveConstraintUpperBound) {
             TERMINATION_REASON_INVALID_PROBLEM);
 }
 
+TEST(PrimalDualHybridGradientTest,
+     ExcessivelySmallConstraintUpperBoundOkWithoutPresolve) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_upper_bounds[1] = 1.0e-60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST(PrimalDualHybridGradientTest,
+     DetectsExcessivelySmallConstraintUpperBoundWithPresolve) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_upper_bounds[1] = 1.0e-60;
+  PrimalDualHybridGradientParams params;
+  params.mutable_presolve_options()->set_use_glop(true);
+  SolverResult output = PrimalDualHybridGradient(qp, params);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
 TEST(PrimalDualHybridGradientTest, DetectsExcessiveConstraintLowerBound) {
   QuadraticProgram qp = TestLp();
   qp.constraint_lower_bounds[2] = -1.0e60;
   SolverResult output =
       PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest,
+     ExcessivelySmallConstraintLowerBoundOkWithoutPresolve) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_lower_bounds[2] = 1.0e-60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST(PrimalDualHybridGradientTest,
+     DetectsExcessivelySmallConstraintLowerBoundWithPresolve) {
+  QuadraticProgram qp = TestLp();
+  qp.constraint_lower_bounds[2] = 1.0e-60;
+  PrimalDualHybridGradientParams params;
+  params.mutable_presolve_options()->set_use_glop(true);
+  SolverResult output = PrimalDualHybridGradient(qp, params);
   EXPECT_EQ(output.solve_log.termination_reason(),
             TERMINATION_REASON_INVALID_PROBLEM);
 }
@@ -1131,6 +1200,28 @@ TEST(PrimalDualHybridGradientTest, DetectsExcessiveVariableBoundGap) {
             TERMINATION_REASON_INVALID_PROBLEM);
 }
 
+TEST(PrimalDualHybridGradientTest,
+     ExcessivelySmallVariableBoundGapOkWithoutPresolve) {
+  QuadraticProgram qp = TestLp();
+  qp.variable_lower_bounds[1] = 0.0;
+  qp.variable_upper_bounds[1] = 1.0e-60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST(PrimalDualHybridGradientTest,
+     DetectsExcessivelySmallVariableBoundGapWithPresolve) {
+  QuadraticProgram qp = TestLp();
+  qp.variable_lower_bounds[1] = 0.0;
+  qp.variable_upper_bounds[1] = 1.0e-60;
+  PrimalDualHybridGradientParams params;
+  params.mutable_presolve_options()->set_use_glop(true);
+  SolverResult output = PrimalDualHybridGradient(qp, params);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
 TEST(PrimalDualHybridGradientTest, DetectsNanInObjectiveVector) {
   QuadraticProgram qp = TestLp();
   qp.objective_vector[3] = std::numeric_limits<double>::quiet_NaN();
@@ -1145,6 +1236,26 @@ TEST(PrimalDualHybridGradientTest, DetectsExcessiveObjectiveVector) {
   qp.objective_vector[3] = -1.0e60;
   SolverResult output =
       PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest,
+     ExcessivelySmallObjectiveVectorOkWithoutPresolve) {
+  QuadraticProgram qp = TestLp();
+  qp.objective_vector[3] = 1.0e-60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST(PrimalDualHybridGradientTest,
+     DetectsExcessivelySmallObjectiveVectorWithPresolve) {
+  QuadraticProgram qp = TestLp();
+  qp.objective_vector[3] = 1.0e-60;
+  PrimalDualHybridGradientParams params;
+  params.mutable_presolve_options()->set_use_glop(true);
+  SolverResult output = PrimalDualHybridGradient(qp, params);
   EXPECT_EQ(output.solve_log.termination_reason(),
             TERMINATION_REASON_INVALID_PROBLEM);
 }
@@ -1169,11 +1280,10 @@ TEST(PrimalDualHybridGradientTest, DetectsExcessiveObjectiveMatrix) {
 
 TEST(PrimalDualHybridGradientTest, DetectsNanInInitialPrimalSolution) {
   QuadraticProgram qp = TestLp();
-  PrimalAndDualSolution initial_solution = {
+  const PrimalAndDualSolution initial_solution = {
       .primal_solution =
-          Eigen::VectorXd{
-              {1.0, std::numeric_limits<double>::quiet_NaN(), 1.0, 1.0}},
-      .dual_solution = Eigen::VectorXd{{1.0, 1.0, 1.0, 1.0}},
+          VectorXd{{1.0, std::numeric_limits<double>::quiet_NaN(), 1.0, 1.0}},
+      .dual_solution = VectorXd{{1.0, 1.0, 1.0, 1.0}},
   };
   SolverResult output = PrimalDualHybridGradient(
       qp, PrimalDualHybridGradientParams(), initial_solution);
@@ -1184,9 +1294,9 @@ TEST(PrimalDualHybridGradientTest, DetectsNanInInitialPrimalSolution) {
 TEST(PrimalDualHybridGradientTest,
      DetectsExcessiveValueInInitialPrimalSolution) {
   QuadraticProgram qp = TestLp();
-  PrimalAndDualSolution initial_solution = {
-      .primal_solution = Eigen::VectorXd{{1.0, 1.0e100, 1.0, 1.0}},
-      .dual_solution = Eigen::VectorXd{{1.0, 1.0, 1.0, 1.0}},
+  const PrimalAndDualSolution initial_solution = {
+      .primal_solution = VectorXd{{1.0, 1.0e100, 1.0, 1.0}},
+      .dual_solution = VectorXd{{1.0, 1.0, 1.0, 1.0}},
   };
 
   SolverResult output = PrimalDualHybridGradient(
@@ -1197,9 +1307,9 @@ TEST(PrimalDualHybridGradientTest,
 
 TEST(PrimalDualHybridGradientTest, DetectsIncorrectSizeInitialPrimalSolution) {
   QuadraticProgram qp = TestLp();
-  PrimalAndDualSolution initial_solution = {
-      .primal_solution = Eigen::VectorXd{{1.0, 1.0, 1.0}},
-      .dual_solution = Eigen::VectorXd{{1.0, 1.0, 1.0, 1.0}},
+  const PrimalAndDualSolution initial_solution = {
+      .primal_solution = VectorXd{{1.0, 1.0, 1.0}},
+      .dual_solution = VectorXd{{1.0, 1.0, 1.0, 1.0}},
   };
 
   SolverResult output = PrimalDualHybridGradient(
@@ -1210,11 +1320,10 @@ TEST(PrimalDualHybridGradientTest, DetectsIncorrectSizeInitialPrimalSolution) {
 
 TEST(PrimalDualHybridGradientTest, DetectsNanInInitialDualSolution) {
   QuadraticProgram qp = TestLp();
-  PrimalAndDualSolution initial_solution = {
-      .primal_solution = Eigen::VectorXd{{1.0, 1.0, 1.0, 1.0}},
+  const PrimalAndDualSolution initial_solution = {
+      .primal_solution = VectorXd{{1.0, 1.0, 1.0, 1.0}},
       .dual_solution =
-          Eigen::VectorXd{
-              {1.0, std::numeric_limits<double>::quiet_NaN(), 1.0, 1.0}},
+          VectorXd{{1.0, std::numeric_limits<double>::quiet_NaN(), 1.0, 1.0}},
   };
   SolverResult output = PrimalDualHybridGradient(
       qp, PrimalDualHybridGradientParams(), initial_solution);
@@ -1224,9 +1333,9 @@ TEST(PrimalDualHybridGradientTest, DetectsNanInInitialDualSolution) {
 
 TEST(PrimalDualHybridGradientTest, DetectsExcessiveValueInInitialDualSolution) {
   QuadraticProgram qp = TestLp();
-  PrimalAndDualSolution initial_solution = {
-      .primal_solution = Eigen::VectorXd{{1.0, 1.0, 1.0, 1.0}},
-      .dual_solution = Eigen::VectorXd{{1.0, 1.0e100, 1.0, 1.0}},
+  const PrimalAndDualSolution initial_solution = {
+      .primal_solution = VectorXd{{1.0, 1.0, 1.0, 1.0}},
+      .dual_solution = VectorXd{{1.0, 1.0e100, 1.0, 1.0}},
   };
 
   SolverResult output = PrimalDualHybridGradient(
@@ -1237,9 +1346,9 @@ TEST(PrimalDualHybridGradientTest, DetectsExcessiveValueInInitialDualSolution) {
 
 TEST(PrimalDualHybridGradientTest, DetectsIncorrectSizeInitialDualSolution) {
   QuadraticProgram qp = TestLp();
-  PrimalAndDualSolution initial_solution = {
-      .primal_solution = Eigen::VectorXd{{1.0, 1.0, 1.0, 1.0}},
-      .dual_solution = Eigen::VectorXd{{1.0, 1.0, 1.0}},
+  const PrimalAndDualSolution initial_solution = {
+      .primal_solution = VectorXd{{1.0, 1.0, 1.0, 1.0}},
+      .dual_solution = VectorXd{{1.0, 1.0, 1.0}},
   };
 
   SolverResult output = PrimalDualHybridGradient(
@@ -1256,6 +1365,16 @@ TEST(PrimalDualHybridGradientTest, DetectsZeroObjectiveScalingFactor) {
       PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
   EXPECT_EQ(output.solve_log.termination_reason(),
             TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsFeasibilityPolishingForQp) {
+  QuadraticProgram qp = TestDiagonalQp1();
+  PrimalDualHybridGradientParams params;
+  params.set_use_feasibility_polishing(true);
+
+  SolverResult output = PrimalDualHybridGradient(qp, params);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PARAMETER);
 }
 
 TEST(PrimalDualHybridGradientTest, ChecksTerminationAtCorrectFrequency) {
@@ -1308,17 +1427,15 @@ TEST(PrimalDualHybridGradientTest, CallsCallback) {
   // The callback should be called at every termination check, that is, at
   // iterations 0, 5, 10, 15, and 16, and additionally when returning the final
   // solution.
-  CHECK_EQ(callback_count, 6);
+  EXPECT_EQ(callback_count, 6);
 }
 
 // Returns the unique solution of `TinyLp`.
 PrimalAndDualSolution TinyLpSolution() {
-  PrimalAndDualSolution solution;
-  solution.primal_solution.resize(4);
-  solution.primal_solution << 1.0, 0.0, 6.0, 2.0;
-  solution.dual_solution.resize(3);
-  solution.dual_solution << 0.5, 4.0, 0.0;
-  return solution;
+  return PrimalAndDualSolution{
+      .primal_solution{{1.0, 0.0, 6.0, 2.0}},
+      .dual_solution{{0.5, 4.0, 0.0}},
+  };
 }
 
 TEST(PrimalDualHybridGradientTest, WarmStartedAtOptimum) {
@@ -1346,7 +1463,7 @@ TEST(PrimalDualHybridGradientTest, NoMovementWhenStartedAtOptimum) {
   params.set_l2_norm_rescaling(false);
   params.set_l_inf_ruiz_iterations(0);
 
-  PrimalAndDualSolution initial_solution = TinyLpSolution();
+  const PrimalAndDualSolution initial_solution = TinyLpSolution();
   SolverResult output =
       PrimalDualHybridGradient(TinyLp(), params, initial_solution);
   EXPECT_THAT(output.primal_solution, ElementsAre(1, 0, 6, 2));
@@ -1482,12 +1599,330 @@ TEST(PrimalDualHybridGradientTest, DetailedTerminationCriteria) {
               EigenArrayNear<double>({0.0, 1.5, -3.5, 0.0}, 1.0e-4));
 }
 
+// `FeasibilityPolishingTest` sets `params_` for feasibility polishing, and to
+// avoid PDLP features that disrupt a simple analysis of the performance with
+// and without feasibility polishing (primal weight adjustments, dynamic step
+// sizes, and restarts). It also sets termination criteria with a relaxed
+// objective gap tolerance.
+class FeasibilityPolishingTest : public ::testing::Test {
+ protected:
+  FeasibilityPolishingTest() {
+    params_.set_linesearch_rule(
+        PrimalDualHybridGradientParams::CONSTANT_STEP_SIZE_RULE);
+    auto* opt_criteria = params_.mutable_termination_criteria()
+                             ->mutable_detailed_optimality_criteria();
+    opt_criteria->set_eps_optimal_primal_residual_absolute(1.0e-6);
+    opt_criteria->set_eps_optimal_primal_residual_relative(1.0e-6);
+    opt_criteria->set_eps_optimal_dual_residual_absolute(1.0e-6);
+    opt_criteria->set_eps_optimal_dual_residual_relative(1.0e-6);
+    opt_criteria->set_eps_optimal_objective_gap_absolute(1.0e-2);
+    opt_criteria->set_eps_optimal_objective_gap_relative(1.0e-2);
+    params_.mutable_termination_criteria()->set_iteration_limit(500);
+    params_.set_handle_some_primal_gradients_on_finite_bounds_as_residuals(
+        false);
+    params_.set_primal_weight_update_smoothing(0.0);
+    params_.set_use_feasibility_polishing(true);
+  }
+
+  PrimalDualHybridGradientParams params_;
+};
+
+// `FeasibilityPolishingPrimalTest` contains a very simple `lp_` that requires
+// roughly 2500 iterations without feasibility polishing because the dual is
+// slow to converge, but with feasibility polishing solves the first time it
+// attempts polishing.
+class FeasibilityPolishingPrimalTest : public FeasibilityPolishingTest {
+ protected:
+  FeasibilityPolishingPrimalTest() : lp_(2, 1) {
+    // min x_1 + 1.001 x_2 s.t. x_1 + x_2 = 1
+    lp_.objective_offset = 0;
+    lp_.objective_vector = VectorXd{{1.0, 1.001}};
+    lp_.variable_lower_bounds = VectorXd{{-1, -1}};
+    lp_.variable_upper_bounds = VectorXd{{kInfinity, kInfinity}};
+    lp_.constraint_lower_bounds = VectorXd{{1}};
+    lp_.constraint_upper_bounds = VectorXd{{1}};
+    lp_.constraint_matrix.coeffRef(0, 0) = 1.0;
+    lp_.constraint_matrix.coeffRef(0, 1) = 1.0;
+    lp_.constraint_matrix.makeCompressed();
+  }
+
+  QuadraticProgram lp_;
+};
+
+// `FeasibilityPolishingDualTest` contains the dual of the lp from
+// `FeasibilityPolishingPrimalTest` with the lower bounds on the variables
+// changed to zero. It requires roughly 2500 iterations without feasibility
+// polishing because the primal is slow to converge, but with feasibility
+// polishing solves the first time it attempts polishing.
+class FeasibilityPolishingDualTest : public FeasibilityPolishingTest {
+ protected:
+  FeasibilityPolishingDualTest() : lp_(1, 2) {
+    // min -y s.t. y <= 1, y <= 1.001, y free
+    lp_.objective_offset = 0;
+    lp_.objective_vector = VectorXd{{-1.0}};
+    lp_.variable_lower_bounds = VectorXd{{-kInfinity}};
+    lp_.variable_upper_bounds = VectorXd{{kInfinity}};
+    lp_.constraint_lower_bounds = VectorXd{{-kInfinity, -kInfinity}};
+    lp_.constraint_upper_bounds = VectorXd{{1, 1.001}};
+    lp_.constraint_matrix.coeffRef(0, 0) = 1.0;
+    lp_.constraint_matrix.coeffRef(1, 0) = 1.0;
+    lp_.constraint_matrix.makeCompressed();
+  }
+
+  QuadraticProgram lp_;
+};
+
+TEST_F(FeasibilityPolishingPrimalTest, FeasibilityPolishingSolvesFaster) {
+  // Without feasibility polishing, PDHG requires roughly 2500 iterations.
+  params_.set_use_feasibility_polishing(false);
+  SolverResult base_output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(base_output.solve_log.termination_reason(),
+            TERMINATION_REASON_ITERATION_LIMIT);
+
+  // With feasibility polishing, PDHG solves the first time it attempts
+  // polishing.
+  params_.set_use_feasibility_polishing(true);
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST_F(FeasibilityPolishingDualTest, FeasibilityPolishingSolvesFaster) {
+  // Without feasibility polishing, PDHG requires roughly 2500 iterations.
+  params_.set_use_feasibility_polishing(false);
+  SolverResult base_output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(base_output.solve_log.termination_reason(),
+            TERMINATION_REASON_ITERATION_LIMIT);
+
+  // With feasibility polishing, PDHG solves the first time it attempts
+  // polishing.
+  params_.set_use_feasibility_polishing(true);
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest, FeasibilityPolishingFindsValidSolution) {
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+  VerifyObjectiveValues(output, 1.0, 1.0e-2);
+  ASSERT_EQ(output.primal_solution.size(), 2);
+  // The optimal solution is {1, 0}. However, the relaxed optimality tolerance
+  // accepts many solutions, so just check feasibility (in addition to the
+  // objective value check above).
+  EXPECT_THAT(output.primal_solution[0] + output.primal_solution[1],
+              DoubleNear(1.0, 1.0e-6));
+  EXPECT_GE(output.primal_solution[0], 0.0);
+  EXPECT_GE(output.primal_solution[1], 0.0);
+
+  ASSERT_EQ(output.dual_solution.size(), 1);
+  // Dual feasibility.
+  EXPECT_LE(output.dual_solution[0], 1.0);
+  // Dual optimality.
+  EXPECT_GE(output.dual_solution[0], 1.0 - 1e-2);
+
+  EXPECT_THAT(output.reduced_costs,
+              EigenArrayNear<double>({1.0 - output.dual_solution[0],
+                                      1.001 - output.dual_solution[0]},
+                                     1.0e-12));
+}
+
+TEST_F(FeasibilityPolishingPrimalTest, FeasibilityPolishingDetailsInLog) {
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+
+  int primal_optimal_count = 0;
+  int dual_optimal_count = 0;
+  for (const auto& phase : output.solve_log.feasibility_polishing_details()) {
+    switch (phase.polishing_phase_type()) {
+      case POLISHING_PHASE_TYPE_PRIMAL_FEASIBILITY: {
+        if (phase.termination_reason() == TERMINATION_REASON_OPTIMAL) {
+          ++primal_optimal_count;
+        }
+        break;
+      }
+      case POLISHING_PHASE_TYPE_DUAL_FEASIBILITY: {
+        if (phase.termination_reason() == TERMINATION_REASON_OPTIMAL) {
+          ++dual_optimal_count;
+        }
+        break;
+      }
+      default: {
+        ADD_FAILURE() << "Unexpected polishing_phase_type: "
+                      << phase.polishing_phase_type();
+        break;
+      }
+    }
+    EXPECT_TRUE(phase.has_solution_stats());
+    EXPECT_EQ(phase.solution_stats().iteration_number(),
+              phase.iteration_count());
+  }
+  EXPECT_GE(primal_optimal_count, 1);
+  EXPECT_GE(dual_optimal_count, 1);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       FeasibilityPolishingUsesInfiniteTolerances) {
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+
+  for (const auto& phase : output.solve_log.feasibility_polishing_details()) {
+    switch (phase.polishing_phase_type()) {
+      case POLISHING_PHASE_TYPE_PRIMAL_FEASIBILITY: {
+        EXPECT_TRUE(phase.params()
+                        .termination_criteria()
+                        .has_detailed_optimality_criteria());
+        const auto& criteria = phase.params()
+                                   .termination_criteria()
+                                   .detailed_optimality_criteria();
+        EXPECT_EQ(criteria.eps_optimal_objective_gap_absolute(), kInfinity);
+        EXPECT_EQ(criteria.eps_optimal_objective_gap_relative(), kInfinity);
+        EXPECT_EQ(criteria.eps_optimal_dual_residual_absolute(), kInfinity);
+        EXPECT_EQ(criteria.eps_optimal_dual_residual_relative(), kInfinity);
+        break;
+      }
+      case POLISHING_PHASE_TYPE_DUAL_FEASIBILITY: {
+        EXPECT_TRUE(phase.params()
+                        .termination_criteria()
+                        .has_detailed_optimality_criteria());
+        const auto& criteria = phase.params()
+                                   .termination_criteria()
+                                   .detailed_optimality_criteria();
+        EXPECT_EQ(criteria.eps_optimal_objective_gap_absolute(), kInfinity);
+        EXPECT_EQ(criteria.eps_optimal_objective_gap_relative(), kInfinity);
+        EXPECT_EQ(criteria.eps_optimal_primal_residual_absolute(), kInfinity);
+        EXPECT_EQ(criteria.eps_optimal_primal_residual_relative(), kInfinity);
+        break;
+      }
+      default: {
+        ADD_FAILURE() << "Unexpected polishing_phase_type: "
+                      << phase.polishing_phase_type();
+        break;
+      }
+    }
+  }
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       FeasibilityPolishingWorkStatsAreCorrect) {
+  params_.set_record_iteration_stats(true);
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+
+  int total_feasibility_iterations = 0;
+  double total_feasibility_time = 0.0;
+  for (const auto& phase : output.solve_log.feasibility_polishing_details()) {
+    EXPECT_TRUE(phase.has_solution_stats());
+    EXPECT_EQ(phase.solution_stats().iteration_number(),
+              phase.iteration_count());
+    // For at least one of these, `phase.iteration_count() > 0`, because
+    // `total_feasibility_iterations` is verified to be >= 1 below.
+    EXPECT_GE(phase.iteration_count(), 0);
+    EXPECT_LE(phase.iteration_count(), phase.main_iteration_count() / 4);
+    total_feasibility_iterations += phase.iteration_count();
+    total_feasibility_time += phase.solve_time_sec();
+  }
+  ASSERT_THAT(output.solve_log.iteration_stats(), Not(IsEmpty()));
+  const auto& last_stats = output.solve_log.iteration_stats(
+      output.solve_log.iteration_stats_size() - 1);
+  EXPECT_GE(total_feasibility_iterations, 1);
+  EXPECT_GE(last_stats.iteration_number(), 1);
+  // This checks that `iteration_count()` includes both the main and feasiblity
+  // iterations, and that `iteration_stats.iteration_number()` does not include
+  // work from feasibility iterations.
+  EXPECT_EQ(last_stats.iteration_number() + total_feasibility_iterations,
+            output.solve_log.iteration_count());
+  EXPECT_GT(total_feasibility_time, 0.0);
+  EXPECT_GT(last_stats.cumulative_time_sec(), 0.0);
+  // This is an approximate check that `solve_time_sec()` includes both the main
+  // and feasiblity iterations, and that `iteration_stats.cumulative_time_sec()`
+  // does not include time from feasibility iterations. We don't expect equality
+  // because some clock time can pass while switching between phases.
+  EXPECT_LE(total_feasibility_time + last_stats.cumulative_time_sec(),
+            output.solve_log.solve_time_sec());
+}
+
+TEST_F(FeasibilityPolishingPrimalTest, FeasibilityObjectivesAreZero) {
+  params_.set_record_iteration_stats(true);
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+
+  int primal_convergence_info_count = 0;
+  int dual_convergence_info_count = 0;
+  for (const auto& phase : output.solve_log.feasibility_polishing_details()) {
+    for (const auto& iter_stats : phase.iteration_stats()) {
+      for (const auto& convergence : iter_stats.convergence_information()) {
+        switch (phase.polishing_phase_type()) {
+          case POLISHING_PHASE_TYPE_PRIMAL_FEASIBILITY: {
+            ++primal_convergence_info_count;
+            EXPECT_EQ(convergence.primal_objective(), 0.0);
+            break;
+          }
+          case POLISHING_PHASE_TYPE_DUAL_FEASIBILITY: {
+            ++dual_convergence_info_count;
+            EXPECT_EQ(convergence.dual_objective(), 0.0);
+            break;
+          }
+          default: {
+            ADD_FAILURE() << "Unexpected polishing_phase_type: "
+                          << phase.polishing_phase_type();
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // These checks both verify that the previous objective tests were actually
+  // applied, and that iteration stats (and their convergence info) are logged.
+  EXPECT_GE(primal_convergence_info_count, 1);
+  EXPECT_GE(dual_convergence_info_count, 1);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest, CallsCallbackForAllThreePhases) {
+  absl::flat_hash_map<IterationType, int> callback_count;
+  bool polishing_termination_is_last = false;
+  SolverResult output = PrimalDualHybridGradient(
+      lp_, params_, /*interrupt_solve=*/nullptr,
+      [&](const IterationCallbackInfo& callback_info) {
+        ++callback_count[callback_info.iteration_type];
+        polishing_termination_is_last =
+            callback_info.iteration_type ==
+            IterationType::kFeasibilityPolishingTermination;
+      });
+  EXPECT_TRUE(polishing_termination_is_last);
+  EXPECT_THAT(
+      callback_count,
+      UnorderedElementsAre(
+          Pair(IterationType::kPrimalFeasibility, Ge(1)),
+          Pair(IterationType::kDualFeasibility, Ge(1)),
+          Pair(IterationType::kNormal, Ge(1)),
+          Pair(IterationType::kFeasibilityPolishingTermination, Ge(1))));
+}
+
+TEST_F(FeasibilityPolishingTest, IterationLimitIncludesFeasibilityPhases) {
+  params_.mutable_termination_criteria()->set_iteration_limit(300);
+  params_.set_record_iteration_stats(true);
+  SolverResult output = PrimalDualHybridGradient(TinyLp(), params_);
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+  int feasibility_polishing_iterations = 0;
+  for (const auto& phase : output.solve_log.feasibility_polishing_details()) {
+    feasibility_polishing_iterations += phase.iteration_count();
+  }
+  // `feasibility_polishing_iterations` should at least include 12 iterations
+  // from the first failed primal feasibility polishing attempt.
+  EXPECT_GE(feasibility_polishing_iterations, 12);
+  ASSERT_THAT(output.solve_log.iteration_stats(), Not(IsEmpty()));
+  const IterationStats& last_stats = output.solve_log.iteration_stats(
+      output.solve_log.iteration_stats_size() - 1);
+  EXPECT_EQ(last_stats.iteration_number() + feasibility_polishing_iterations,
+            output.solve_log.iteration_count());
+}
+
 // Verifies that the primal and dual solution satisfy the bounds constraints.
 // This function uses ASSERTS rather than EXPECTs because it's used with large
 // QPs that would spam the logs otherwise.
 void VerifyBoundConstraints(const QuadraticProgram& qp,
-                            const Eigen::VectorXd primal_solution,
-                            const Eigen::VectorXd dual_solution) {
+                            const VectorXd primal_solution,
+                            const VectorXd dual_solution) {
   for (int64_t i = 0; i < primal_solution.size(); ++i) {
     ASSERT_TRUE(std::isfinite(primal_solution[i]))
         << i << " " << primal_solution[i];
@@ -1651,11 +2086,10 @@ TEST(PresolveTest, PresolveParametersAreUsed) {
 
 TEST(ComputeStatusesTest, AtOptimum) {
   QuadraticProgram lp = TestLp();
-  PrimalAndDualSolution solution;
-  solution.primal_solution.resize(4);
-  solution.primal_solution << -1, 8, 1, 2.5;
-  solution.dual_solution.resize(4);
-  solution.dual_solution << -2, 0, 2.375, 2.0 / 3;
+  const PrimalAndDualSolution solution = {
+      .primal_solution{{-1, 8, 1, 2.5}},
+      .dual_solution{{-2, 0, 2.375, 2.0 / 3}},
+  };
   glop::ProblemSolution glop_solution = internal::ComputeStatuses(lp, solution);
   EXPECT_THAT(
       glop_solution.constraint_statuses,
@@ -1672,11 +2106,10 @@ TEST(ComputeStatusesTest, CoverMoreCases) {
   QuadraticProgram lp = TestLp();
   lp.variable_upper_bounds[3] = 2.5;
   lp.variable_upper_bounds[1] = 8;
-  PrimalAndDualSolution solution;
-  solution.primal_solution.resize(4);
-  solution.primal_solution << -1, 8, 1, 2.5;
-  solution.dual_solution.resize(4);
-  solution.dual_solution << -2, 0, 2.375, -1;
+  const PrimalAndDualSolution solution = {
+      .primal_solution{{-1, 8, 1, 2.5}},
+      .dual_solution{{-2, 0, 2.375, -1}},
+  };
   glop::ProblemSolution glop_solution = internal::ComputeStatuses(lp, solution);
   EXPECT_THAT(
       glop_solution.constraint_statuses,
