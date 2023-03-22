@@ -85,6 +85,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(mip_check_precision);
   TEST_IS_FINITE(mip_max_valid_magnitude);
   TEST_IS_FINITE(mip_drop_tolerance);
+  TEST_IS_FINITE(shared_tree_worker_objective_split_probability);
 
   TEST_NOT_NAN(max_time_in_seconds);
   TEST_NOT_NAN(max_deterministic_time);
@@ -94,8 +95,10 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(mip_max_activity_exponent, 1, 62);
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
   TEST_IN_RANGE(solution_pool_size, 1, std::numeric_limits<int32_t>::max());
+  TEST_IN_RANGE(shared_tree_worker_objective_split_probability, 0.0, 1.0);
 
   TEST_POSITIVE(glucose_decay_increment_period);
+  TEST_POSITIVE(shared_tree_max_nodes_per_worker);
 
   TEST_NON_NEGATIVE(mip_wanted_precision);
   TEST_NON_NEGATIVE(max_time_in_seconds);
@@ -104,7 +107,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(num_workers);
   TEST_NON_NEGATIVE(num_search_workers);
   TEST_NON_NEGATIVE(min_num_lns_workers);
-  TEST_NON_NEGATIVE(num_shared_tree_workers);
+  TEST_NON_NEGATIVE(shared_tree_num_workers);
   TEST_NON_NEGATIVE(interleave_batch_size);
   TEST_NON_NEGATIVE(probing_deterministic_time_limit);
   TEST_NON_NEGATIVE(presolve_probing_deterministic_time_limit);
@@ -124,8 +127,8 @@ std::string ValidateParameters(const SatParameters& params) {
     return "Do not specify both num_search_workers and num_workers";
   }
 
-  if (params.has_num_shared_tree_workers() &&
-      params.num_shared_tree_workers() + params.min_num_lns_workers() >
+  if (params.has_shared_tree_num_workers() &&
+      params.shared_tree_num_workers() + params.min_num_lns_workers() >
           params.num_workers() + params.num_search_workers()) {
     return "Cannot have more shared tree + lns workers than total workers";
   }

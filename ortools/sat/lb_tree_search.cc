@@ -699,7 +699,7 @@ void LbTreeSearch::ExploitReducedCosts(NodeIndex n) {
   // gain.
   const auto& cts = lp_constraint_->OptimalConstraints();
   if (cts.empty()) return;
-  const std::unique_ptr<IntegerSumLE>& rc = cts.back();
+  const std::unique_ptr<IntegerSumLE128>& rc = cts.back();
 
   // Note that this return literal EQUIVALENT to the node.literal, not just
   // implied by it. We need that for correctness.

@@ -79,7 +79,10 @@ class ScatteredIntegerVector {
   bool Add(glop::ColIndex col, IntegerValue value);
 
   // Similar to Add() but for multiplier * terms.
-  // Returns false in case of overflow.
+  //
+  // Returns false if we encountered any integer overflow. If the template bool
+  // is false, we do not check for a bit of extra speed.
+  template <bool check_overflow = true>
   bool AddLinearExpressionMultiple(
       IntegerValue multiplier,
       const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms);
@@ -238,12 +241,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::string Statistics() const;
 
   // Important: this is only temporarily valid.
-  IntegerSumLE* LatestOptimalConstraintOrNull() const {
+  IntegerSumLE128* LatestOptimalConstraintOrNull() const {
     if (optimal_constraints_.empty()) return nullptr;
     return optimal_constraints_.back().get();
   }
 
-  const std::vector<std::unique_ptr<IntegerSumLE>>& OptimalConstraints() const {
+  const std::vector<std::unique_ptr<IntegerSumLE128>>& OptimalConstraints()
+      const {
     return optimal_constraints_;
   }
 
@@ -329,13 +333,23 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
       bool take_objective_into_account,
       const std::vector<std::pair<glop::RowIndex, double>>& lp_multipliers,
-      glop::Fractional* scaling, int max_pow = 62) const;
+      IntegerValue* scaling,
+      int64_t overflow_cap = std::numeric_limits<int64_t>::max()) const;
+
+  // Can we have an overflow if we scale each coefficients with
+  // std::round(std::ldexp(coeff, power)) ?
+  bool ScalingCanOverflow(
+      int power, bool take_objective_into_account,
+      const std::vector<std::pair<glop::RowIndex, double>>& multipliers,
+      int64_t overflow_cap) const;
 
   // Computes from an integer linear combination of the integer rows of the LP a
   // new constraint of the form "sum terms <= upper_bound". All computation are
   // exact here.
   //
-  // Returns false if we encountered any integer overflow.
+  // Returns false if we encountered any integer overflow. If the template bool
+  // is false, we do not check for a bit of extra speed.
+  template <bool check_overflow = true>
   bool ComputeNewLinearConstraint(
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers,
@@ -360,8 +374,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       IntegerValue upper_bound, LinearConstraint* result);
 
   // Compute the implied lower bound of the given linear expression using the
-  // current variable bound. Return kMinIntegerValue in case of overflow.
-  IntegerValue GetImpliedLowerBound(const LinearConstraint& terms) const;
+  // current variable bound.
+  absl::int128 GetImpliedLowerBound(const LinearConstraint& terms) const;
 
   // Fills integer_reason_ with the reason for the implied lower bound of the
   // given linear expression. We relax the reason if we have some slack.
@@ -497,13 +511,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerLiteral> deductions_;
   std::vector<IntegerLiteral> deductions_reason_;
 
-  // Repository of IntegerSumLE that needs to be kept around for the lazy
+  // Repository of IntegerSumLE128 that needs to be kept around for the lazy
   // reasons. Those are new integer constraint that are created each time we
   // solve the LP to a dual-feasible solution. Propagating these constraints
   // both improve the objective lower bound but also perform reduced cost
   // fixing.
   int rev_optimal_constraints_size_ = 0;
-  std::vector<std::unique_ptr<IntegerSumLE>> optimal_constraints_;
+  std::vector<std::unique_ptr<IntegerSumLE128>> optimal_constraints_;
 
   // Last OPTIMAL solution found by a call to the underlying LP solver.
   // On IncrementalPropagate(), if the bound updates do not invalidate this
@@ -565,6 +579,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Some stats on the LP statuses encountered.
   int64_t num_solves_ = 0;
+  mutable int64_t num_adjusts_ = 0;
+  mutable int64_t num_prevent_overflows_ = 0;
+  mutable int64_t num_scaling_issues_ = 0;
   std::vector<int64_t> num_solves_by_status_;
 };
 
@@ -599,10 +616,12 @@ class LinearProgrammingConstraintCollection
 bool PossibleOverflow(const IntegerTrail& integer_trail,
                       const LinearConstraint& constraint);
 
-// Reduce the coefficient of the constraint so that we cannot have overflow
+// Reduces the coefficient of the constraint so that we cannot have overflow
 // in the propagation of the given linear constraint. Note that we may loose
 // some strength by doing so.
-void PreventOverflow(const IntegerTrail& integer_trail,
+//
+// Returns true if we changed the constraint.
+bool PreventOverflow(const IntegerTrail& integer_trail,
                      LinearConstraint* constraint);
 
 }  // namespace sat

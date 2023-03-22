@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <limits>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -40,10 +42,11 @@
 namespace operations_research {
 namespace sat {
 
-IntegerSumLE::IntegerSumLE(const std::vector<Literal>& enforcement_literals,
-                           const std::vector<IntegerVariable>& vars,
-                           const std::vector<IntegerValue>& coeffs,
-                           IntegerValue upper, Model* model)
+template <bool use_int128>
+LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
+    const std::vector<Literal>& enforcement_literals,
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<IntegerValue>& coeffs, IntegerValue upper, Model* model)
     : enforcement_literals_(enforcement_literals),
       upper_bound_(upper),
       trail_(model->GetOrCreate<Trail>()),
@@ -75,7 +78,8 @@ IntegerSumLE::IntegerSumLE(const std::vector<Literal>& enforcement_literals,
   rev_lb_fixed_vars_ = IntegerValue(0);
 }
 
-void IntegerSumLE::FillIntegerReason() {
+template <bool use_int128>
+void LinearConstraintPropagator<use_int128>::FillIntegerReason() {
   integer_reason_.clear();
   reason_coeffs_.clear();
   const int num_vars = vars_.size();
@@ -88,7 +92,20 @@ void IntegerSumLE::FillIntegerReason() {
   }
 }
 
-std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
+namespace {
+IntegerValue CappedCast(absl::int128 input, IntegerValue cap) {
+  if (input >= absl::int128(cap.value())) {
+    return cap;
+  }
+  return IntegerValue(static_cast<int64_t>(input));
+}
+
+}  // namespace
+
+// NOTE(user): This is only used with int128, so we code only a single version.
+template <bool use_int128>
+std::pair<IntegerValue, IntegerValue>
+LinearConstraintPropagator<use_int128>::ConditionalLb(
     IntegerLiteral integer_literal, IntegerVariable target_var) const {
   // The code below is wrong if integer_literal and target_var are the same.
   // In this case we return the trival bounds.
@@ -106,22 +123,22 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
   IntegerValue var_coeff;
 
   bool target_var_present_negatively = false;
-  IntegerValue target_coeff;
+  absl::int128 target_coeff;
 
   // Warning: It is important to do the computation like the propagation is
   // doing it to be sure we don't have overflow, since this is what we check
   // when creating constraints.
-  IntegerValue implied_lb(0);
+  absl::int128 lb_128 = 0;
   for (int i = 0; i < vars_.size(); ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     if (var == NegationOf(target_var)) {
-      target_coeff = coeff;
+      target_coeff = absl::int128(coeff.value());
       target_var_present_negatively = true;
     }
 
     const IntegerValue lb = integer_trail_->LowerBound(var);
-    implied_lb += coeff * lb;
+    lb_128 += absl::int128(coeff.value()) * absl::int128(lb.value());
     if (PositiveVariable(var) == PositiveVariable(integer_literal.var)) {
       var_coeff = coeff;
       literal_var_present = true;
@@ -135,17 +152,17 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
 
   // The upper bound on NegationOf(target_var) are lb(-target) + slack / coeff.
   // So the lower bound on target_var is ub - slack / coeff.
-  const IntegerValue slack = upper_bound_ - implied_lb;
+  const absl::int128 slack128 = absl::int128(upper_bound_.value()) - lb_128;
   const IntegerValue target_lb = integer_trail_->LowerBound(target_var);
   const IntegerValue target_ub = integer_trail_->UpperBound(target_var);
-  if (slack <= 0) {
+  if (slack128 <= 0) {
     // TODO(user): If there is a conflict (negative slack) we can be more
     // precise.
     return {target_ub, target_ub};
   }
 
   const IntegerValue target_diff = target_ub - target_lb;
-  const IntegerValue delta = std::min(slack / target_coeff, target_diff);
+  const IntegerValue delta = CappedCast(slack128 / target_coeff, target_diff);
 
   // A literal means var >= bound.
   if (literal_var_present_positively) {
@@ -155,10 +172,11 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
     const IntegerValue diff = std::max(
         IntegerValue(0), integer_literal.bound -
                              integer_trail_->LowerBound(integer_literal.var));
-    const IntegerValue tighter_slack =
-        std::max(IntegerValue(0), slack - var_coeff * diff);
+    const absl::int128 tighter_slack =
+        std::max(absl::int128(0), slack128 - absl::int128(var_coeff.value()) *
+                                                 absl::int128(diff.value()));
     const IntegerValue tighter_delta =
-        std::min(tighter_slack / target_coeff, target_diff);
+        CappedCast(tighter_slack / target_coeff, target_diff);
     return {target_ub - delta, target_ub - tighter_delta};
   } else {
     // We have var_coeff * -var in the expression, the literal is var >= bound.
@@ -167,15 +185,17 @@ std::pair<IntegerValue, IntegerValue> IntegerSumLE::ConditionalLb(
     const IntegerValue diff = std::max(
         IntegerValue(0), integer_trail_->UpperBound(integer_literal.var) -
                              integer_literal.bound + 1);
-    const IntegerValue tighter_slack =
-        std::max(IntegerValue(0), slack - var_coeff * diff);
+    const absl::int128 tighter_slack =
+        std::max(absl::int128(0), slack128 - absl::int128(var_coeff.value()) *
+                                                 absl::int128(diff.value()));
     const IntegerValue tighter_delta =
-        std::min(tighter_slack / target_coeff, target_diff);
+        CappedCast(tighter_slack / target_coeff, target_diff);
     return {target_ub - tighter_delta, target_ub - delta};
   }
 }
 
-bool IntegerSumLE::Propagate() {
+template <bool use_int128>
+bool LinearConstraintPropagator<use_int128>::Propagate() {
   // Reified case: If any of the enforcement_literals are false, we ignore the
   // constraint.
   int num_unassigned_enforcement_literal = 0;
@@ -194,6 +214,7 @@ bool IntegerSumLE::Propagate() {
 
   // Save the current sum of fixed variables.
   if (is_registered_) {
+    CHECK(!use_int128);
     rev_integer_value_repository_->SaveState(&rev_lb_fixed_vars_);
   } else {
     rev_num_fixed_vars_ = 0;
@@ -201,6 +222,7 @@ bool IntegerSumLE::Propagate() {
   }
 
   // Compute the new lower bound and update the reversible structures.
+  absl::int128 lb_128 = 0;
   IntegerValue lb_unfixed_vars = IntegerValue(0);
   const int num_vars = vars_.size();
   for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
@@ -208,6 +230,11 @@ bool IntegerSumLE::Propagate() {
     const IntegerValue coeff = coeffs_[i];
     const IntegerValue lb = integer_trail_->LowerBound(var);
     const IntegerValue ub = integer_trail_->UpperBound(var);
+    if (use_int128) {
+      lb_128 += absl::int128(lb.value()) * absl::int128(coeff.value());
+      continue;
+    }
+
     if (lb != ub) {
       max_variations_[i] = (ub - lb) * coeff;
       lb_unfixed_vars += lb * coeff;
@@ -223,9 +250,24 @@ bool IntegerSumLE::Propagate() {
   time_limit_->AdvanceDeterministicTime(
       static_cast<double>(num_vars - rev_num_fixed_vars_) * 1e-9);
 
+  // If use_int128 is true, the slack or propagation slack can be larger than
+  // this. To detect overflow with capped arithmetic, it is important the slack
+  // used in our algo never exceed this value.
+  const absl::int128 max_slack = std::numeric_limits<int64_t>::max() - 1;
+
   // Conflict?
-  const IntegerValue slack =
-      upper_bound_ - (rev_lb_fixed_vars_ + lb_unfixed_vars);
+  IntegerValue slack;
+  absl::int128 slack128;
+  if (use_int128) {
+    slack128 = absl::int128(upper_bound_.value()) - lb_128;
+    if (slack128 < 0) {
+      // It is fine if we don't relax as much as possible.
+      // Note that RelaxLinearReason() is overflow safe.
+      slack = static_cast<int>(std::max(-max_slack, slack128));
+    }
+  } else {
+    slack = upper_bound_ - (rev_lb_fixed_vars_ + lb_unfixed_vars);
+  }
   if (slack < 0) {
     FillIntegerReason();
     integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs_,
@@ -248,15 +290,31 @@ bool IntegerSumLE::Propagate() {
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
   for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
-    if (max_variations_[i] <= slack) continue;
+    if (!use_int128 && max_variations_[i] <= slack) continue;
 
     // TODO(user): If the new ub fall into an hole of the variable, we can
     // actually relax the reason more by computing a better slack.
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
-    const IntegerValue div = slack / coeff;
-    const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
-    const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
+    const IntegerValue lb = integer_trail_->LowerBound(var);
+
+    IntegerValue new_ub;
+    IntegerValue propagation_slack;
+    if (use_int128) {
+      const absl::int128 coeff128 = absl::int128(coeff.value());
+      const absl::int128 div128 = slack128 / coeff128;
+      const IntegerValue ub = integer_trail_->UpperBound(var);
+      if (absl::int128(lb.value()) + div128 >= absl::int128(ub.value())) {
+        continue;
+      }
+      new_ub = lb + IntegerValue(static_cast<int64_t>(div128));
+      propagation_slack = static_cast<int64_t>(
+          std::min(max_slack, (div128 + 1) * coeff128 - slack128 - 1));
+    } else {
+      const IntegerValue div = slack / coeff;
+      new_ub = lb + div;
+      propagation_slack = (div + 1) * coeff - slack - 1;
+    }
     if (!integer_trail_->Enqueue(
             IntegerLiteral::LowerOrEqual(var, new_ub),
             /*lazy_reason=*/[this, propagation_slack](
@@ -293,39 +351,66 @@ bool IntegerSumLE::Propagate() {
   return true;
 }
 
-bool IntegerSumLE::PropagateAtLevelZero() {
+template <bool use_int128>
+bool LinearConstraintPropagator<use_int128>::PropagateAtLevelZero() {
   // TODO(user): Deal with enforcements. It is just a bit of code to read the
   // value of the literals at level zero.
   if (!enforcement_literals_.empty()) return true;
 
   // Compute the new lower bound and update the reversible structures.
+  absl::int128 lb_128 = 0;
   IntegerValue min_activity = IntegerValue(0);
   const int num_vars = vars_.size();
   for (int i = 0; i < num_vars; ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
-    const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
-    max_variations_[i] = (ub - lb) * coeff;
-    min_activity += lb * coeff;
+    if (use_int128) {
+      lb_128 += absl::int128(lb.value()) * absl::int128(coeff.value());
+    } else {
+      const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
+      max_variations_[i] = (ub - lb) * coeff;
+      min_activity += lb * coeff;
+    }
   }
   time_limit_->AdvanceDeterministicTime(static_cast<double>(num_vars * 1e-9));
 
   // Conflict?
-  const IntegerValue slack = upper_bound_ - min_activity;
-  if (slack < 0) {
-    return integer_trail_->ReportConflict({}, {});
+  IntegerValue slack;
+  absl::int128 slack128;
+  if (use_int128) {
+    slack128 = absl::int128(upper_bound_.value()) - lb_128;
+    if (slack128 < 0) {
+      return integer_trail_->ReportConflict({}, {});
+    }
+  } else {
+    slack = upper_bound_ - min_activity;
+    if (slack < 0) {
+      return integer_trail_->ReportConflict({}, {});
+    }
   }
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
   for (int i = 0; i < num_vars; ++i) {
-    if (max_variations_[i] <= slack) continue;
+    if (!use_int128 && max_variations_[i] <= slack) continue;
 
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
-    const IntegerValue div = slack / coeff;
-    const IntegerValue new_ub = integer_trail_->LevelZeroLowerBound(var) + div;
+    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+
+    IntegerValue new_ub;
+    if (use_int128) {
+      const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
+      const absl::int128 div128 = slack128 / absl::int128(coeff.value());
+      if (absl::int128(lb.value()) + div128 >= absl::int128(ub.value())) {
+        continue;
+      }
+      new_ub = lb + IntegerValue(static_cast<int64_t>(div128));
+    } else {
+      const IntegerValue div = slack / coeff;
+      new_ub = lb + div;
+    }
     if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
                                  {})) {
       return false;
@@ -335,7 +420,9 @@ bool IntegerSumLE::PropagateAtLevelZero() {
   return true;
 }
 
-void IntegerSumLE::RegisterWith(GenericLiteralWatcher* watcher) {
+template <bool use_int128>
+void LinearConstraintPropagator<use_int128>::RegisterWith(
+    GenericLiteralWatcher* watcher) {
   is_registered_ = true;
   const int id = watcher->Register(this);
   for (const IntegerVariable& var : vars_) {
@@ -350,6 +437,10 @@ void IntegerSumLE::RegisterWith(GenericLiteralWatcher* watcher) {
   }
   watcher->RegisterReversibleInt(id, &rev_num_fixed_vars_);
 }
+
+// Explicit declaration.
+template class LinearConstraintPropagator<true>;
+template class LinearConstraintPropagator<false>;
 
 LevelZeroEquality::LevelZeroEquality(IntegerVariable target,
                                      const std::vector<IntegerVariable>& vars,

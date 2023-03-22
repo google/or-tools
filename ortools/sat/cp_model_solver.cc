@@ -3143,7 +3143,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         /*split_in_chunks=*/false, &shared));
   } else {
     for (const SatParameters& local_params : GetWorkSharingParams(
-             params, model_proto, params.num_shared_tree_workers())) {
+             params, model_proto, params.shared_tree_num_workers())) {
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
           /*split_in_chunks=*/params.interleave_search(), &shared));

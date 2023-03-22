@@ -606,7 +606,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   std::vector<std::string> names;
 
   const int num_workers_to_generate =
-      base_params.num_workers() - base_params.num_shared_tree_workers();
+      base_params.num_workers() - base_params.shared_tree_num_workers();
   // We use the default if empty.
   if (base_params.subsolvers().empty()) {
     names.push_back("default_lp");
@@ -740,7 +740,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     // If there is an objective, the extra workers will use LNS.
     // Make sure we have at least min_num_lns_workers() of them.
     const int target =
-        std::max(base_params.num_shared_tree_workers() > 0 ? 0 : 1,
+        std::max(base_params.shared_tree_num_workers() > 0 ? 0 : 1,
                  num_workers_to_generate - base_params.min_num_lns_workers());
     if (!base_params.interleave_search() && result.size() > target) {
       result.resize(target);
@@ -777,16 +777,7 @@ std::vector<SatParameters> GetFirstSolutionParams(
   int num_random_qr = 0;
   while (result.size() < num_params_to_generate) {
     SatParameters new_params = base_params;
-
-    // Set up randomization.
-    new_params.set_randomize_search(true);
-    new_params.set_random_seed(
-        ValidSumSeed(base_params.random_seed(), result.size()));
-    new_params.set_search_randomization_tolerance(10);
-    const double sat_randomization_ratio = 0.02;
-    new_params.set_random_branches_ratio(sat_randomization_ratio);
-    new_params.set_random_polarity_ratio(sat_randomization_ratio);
-
+    const int base_seed = base_params.random_seed();
     if (num_random <= num_random_qr) {  // Random search.
       // Alternate between automatic search and fixed search (if defined).
       //
@@ -797,11 +788,17 @@ std::vector<SatParameters> GetFirstSolutionParams(
       } else {
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
       }
+      new_params.set_randomize_search(true);
+      new_params.set_search_randomization_tolerance(num_random + 1);
+      new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random + 1));
       new_params.set_name(absl::StrCat("random_", num_random));
       num_random++;
     } else {  // Random quick restart.
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+      new_params.set_randomize_search(true);
+      new_params.set_search_randomization_tolerance(num_random_qr + 1);
+      new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random_qr));
       new_params.set_name(absl::StrCat("random_quick_restart_", num_random_qr));
       num_random_qr++;
     }
@@ -826,10 +823,17 @@ std::vector<SatParameters> GetWorkSharingParams(
     new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_workers + 1));
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_shared_tree_search(true);
-    new_params.set_linearization_level(0);
+
+    // These settings don't make sense with shared tree search, turn them off as
+    // they can break things.
+    new_params.set_optimize_with_core(false);
+    new_params.set_optimize_with_lb_tree_search(false);
+    new_params.set_optimize_with_max_hs(false);
+
     std::string lp_tags[] = {"no", "default", "max"};
-    absl::StrAppend(&name, lp_tags[new_params.linearization_level()], "_lp_",
-                    num_workers);
+    absl::StrAppend(&name,
+                    lp_tags[std::min(new_params.linearization_level(), 3)],
+                    "_lp_", num_workers);
     new_params.set_name(name);
     num_workers++;
     result.push_back(new_params);

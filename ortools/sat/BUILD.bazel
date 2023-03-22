@@ -167,6 +167,27 @@ cc_library(
 )
 
 cc_library(
+    name = "constraint_violation",
+    srcs = ["constraint_violation.cc"],
+    hdrs = ["constraint_violation.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":sat_parameters_cc_proto",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/port:proto_utils",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "parameters_validation",
     srcs = ["parameters_validation.cc"],
     hdrs = ["parameters_validation.h"],
@@ -1095,6 +1116,7 @@ cc_library(
         ":model",
         ":util",
         ":zero_half_cuts",
+        "//ortools/algorithms:binary_search",
         "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/glop:parameters_cc_proto",

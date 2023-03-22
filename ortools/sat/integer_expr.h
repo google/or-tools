@@ -45,7 +45,17 @@ namespace sat {
 // The complexity is in O(num_variables) at each propagation.
 //
 // Note that we assume that there can be NO integer overflow. This must be
-// checked at model validation time before this is even created.
+// checked at model validation time before this is even created. If
+// use_int128 is true, then we actually do the computations that could overflow
+// in 128 bits, so that we can deal with constraints that might overflow (like
+// the one scaled from the LP relaxation). Note that we still use some
+// preconditions, such that for each variable the difference between their
+// bounds fit on an int64_t.
+//
+// TODO(user): Technically we could still have an int128 overflow since we
+// sum n terms that cannot overflow but can still be pretty close to the limit.
+// Make sure this never happens! For most problem though, because the variable
+// bounds will be smaller than 10^9, we are pretty safe.
 //
 // TODO(user): If one has many such constraint, it will be more efficient to
 // propagate all of them at once rather than doing it one at the time.
@@ -55,16 +65,17 @@ namespace sat {
 // TODO(user): When the variables are Boolean, use directly the pseudo-Boolean
 // constraint implementation. But we do need support for enforcement literals
 // there.
-class IntegerSumLE : public PropagatorInterface {
+template <bool use_int128 = false>
+class LinearConstraintPropagator : public PropagatorInterface {
  public:
   // If refied_literal is kNoLiteralIndex then this is a normal constraint,
   // otherwise we enforce the implication refied_literal => constraint is true.
   // Note that we don't do the reverse implication here, it is usually done by
-  // another IntegerSumLE constraint on the negated variables.
-  IntegerSumLE(const std::vector<Literal>& enforcement_literals,
-               const std::vector<IntegerVariable>& vars,
-               const std::vector<IntegerValue>& coeffs,
-               IntegerValue upper_bound, Model* model);
+  // another LinearConstraintPropagator constraint on the negated variables.
+  LinearConstraintPropagator(const std::vector<Literal>& enforcement_literals,
+                             const std::vector<IntegerVariable>& vars,
+                             const std::vector<IntegerValue>& coeffs,
+                             IntegerValue upper_bound, Model* model);
 
   // We propagate:
   // - If the sum of the individual lower-bound is > upper_bound, we fail.
@@ -120,6 +131,9 @@ class IntegerSumLE : public PropagatorInterface {
   std::vector<IntegerLiteral> integer_reason_;
   std::vector<IntegerValue> reason_coeffs_;
 };
+
+using IntegerSumLE = LinearConstraintPropagator<false>;
+using IntegerSumLE128 = LinearConstraintPropagator<true>;
 
 // This assumes target = SUM_i coeffs[i] * vars[i], and detects that the target
 // must be of the form (a*X + b).

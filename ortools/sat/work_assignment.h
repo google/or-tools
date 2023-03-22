@@ -20,6 +20,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -135,6 +136,7 @@ class SharedTreeManager {
   SharedTreeManager(const SharedTreeManager&) = delete;
 
   int NumWorkers() const { return num_workers_; }
+  int NumNodes() const ABSL_LOCKS_EXCLUDED(mu_);
 
   // Returns the number of splits each worker should propose this restart.
   int SplitsToGeneratePerWorker() const;
@@ -160,7 +162,7 @@ class SharedTreeManager {
     IntegerValue objective_lb = kMinIntegerValue;
     Node* parent = nullptr;
     std::array<Node*, 2> children = {nullptr, nullptr};
-    // A node's id is its index in `nodes_`
+    // A node's id is related to its index in `nodes_`, see `node_id_offset_`.
     int id;
     bool closed = false;
     bool implied = false;
@@ -171,14 +173,20 @@ class SharedTreeManager {
   Node* MakeSubtree(Node* parent, ProtoLiteral literal)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void ProcessNodeChanges() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
-  std::vector<std::pair<Node*, int>> GetAssignedNodes(const ProtoTrail& path)
+  std::vector<std::pair<Node*, int>> GetAssignedNodes(ProtoTrail& path)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void AssignLeaf(ProtoTrail& path, Node* leaf)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  void Restart() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  std::string ShortStatus() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
 
   mutable absl::Mutex mu_;
+  const SatParameters& params_;
   const int num_workers_;
   SharedResponseManager* const shared_response_manager_;
+
+  // Stores the node id of the root, this is used to handle global restarts.
+  int node_id_offset_ ABSL_GUARDED_BY(mu_) = 0;
 
   // Stores the nodes in the search tree.
   std::deque<Node> nodes_ ABSL_GUARDED_BY(mu_);
@@ -188,15 +196,18 @@ class SharedTreeManager {
   // leaves.
   int num_splits_wanted_;
 
-  // We limit the total nodes generated to cap the RAM usage and communication
-  // overhead. If we exceed this, workers return to being portfolio workers.
-  int max_nodes_;
+  // We limit the total nodes generated per restart to cap the RAM usage and
+  // communication overhead. If we exceed this, we will restart the shared tree.
+  const int max_nodes_;
   int num_leaves_assigned_ ABSL_GUARDED_BY(mu_) = 0;
 
   // Temporary vectors used to maintain the state of the tree when nodes are
   // closed and/or children are updated.
   std::vector<Node*> to_close_ ABSL_GUARDED_BY(mu_);
   std::vector<Node*> to_update_ ABSL_GUARDED_BY(mu_);
+
+  int64_t num_restarts_ ABSL_GUARDED_BY(mu_) = 0;
+  int64_t num_syncs_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
 };
 
 class SharedTreeWorker {
