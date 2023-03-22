@@ -34,9 +34,6 @@ target_include_directories(${NAME} PRIVATE
 target_link_libraries(${NAME} PRIVATE
   ZLIB::ZLIB
   absl::base
-  absl::log
-  absl::log_flags
-  absl::log_initialize
   absl::strings
   absl::str_format
   protobuf::libprotobuf
