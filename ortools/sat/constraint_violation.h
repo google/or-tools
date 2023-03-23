@@ -18,6 +18,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 
 namespace operations_research {
