@@ -14,8 +14,9 @@
 # Home of CP/SAT solver (which includes SAT, max-SAT and PB problems).
 #
 
-load("@rules_cc//cc:defs.bzl", "cc_proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 
 package(
@@ -34,8 +35,8 @@ cc_proto_library(
 
 py_proto_library(
     name = "sat_parameters_py_pb2",
-    srcs = ["sat_parameters.proto"],
     visibility = ["//visibility:public"],
+    deps = [":sat_parameters_proto"],
 )
 
 java_proto_library(
@@ -66,8 +67,8 @@ cc_proto_library(
 
 py_proto_library(
     name = "cp_model_py_pb2",
-    srcs = ["cp_model.proto"],
     visibility = ["//visibility:public"],
+    deps = [":cp_model_proto"],
 )
 
 java_proto_library(

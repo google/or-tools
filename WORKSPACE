@@ -33,6 +33,12 @@ git_repository(
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
+git_repository(
+    name = "rules_proto",
+    tag = "5.3.0-21.7",
+    remote = "https://github.com/bazelbuild/rules_proto.git",
+)
+
 # ZLIB
 new_git_repository(
     name = "zlib",
@@ -135,9 +141,12 @@ new_git_repository(
 ## Bazel Python rules.
 git_repository(
     name = "rules_python",
-    tag = "0.16.2",
+    tag = "0.20.0",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
+
+load("@rules_python//python:repositories.bzl", "py_repositories")
+py_repositories()
 
 # Create a central external repo, @ortools_deps, that contains Bazel targets for all the
 # third-party packages specified in the python_deps.txt file.

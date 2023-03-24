@@ -12,7 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -339,8 +339,8 @@ cc_proto_library(
 
 py_proto_library(
     name = "optional_boolean_py_pb2",
-    srcs = ["optional_boolean.proto"],
     visibility = ["//visibility:public"],
+    deps = [":optional_boolean_proto"],
 )
 
 cc_library(
