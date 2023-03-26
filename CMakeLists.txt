@@ -176,6 +176,14 @@ if(BUILD_LP_PARSER)
   message(STATUS "Build re2: ${BUILD_re2}")
 endif()
 
+if(BUILD_TESTING)
+  CMAKE_DEPENDENT_OPTION(BUILD_googletest "Build googletest" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build googletest: ${BUILD_googletest}")
+else()
+  set(BUILD_googletest OFF)
+endif()
+
 # Optional third party solvers (enabled by default)
 ## COIN-OR Solvers (Cbc, Clp)
 CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" ON "BUILD_CXX" OFF)
