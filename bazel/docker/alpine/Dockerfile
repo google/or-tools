@@ -4,7 +4,7 @@ FROM alpine:edge AS env
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN apk add --no-cache git build-base linux-headers zlib-dev
-RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing bazel4
+RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing bazel6
 
 # Install OpenJDK17
 # note: default-jvm will now point to java-17-openjdk
