@@ -2197,22 +2197,22 @@ class CpSolver(object):
     def Solve(self, model, solution_callback=None):
         """Solves a problem and passes each solution to the callback if not null."""
         with self.__lock:
-            solve_wrapper = swig_helper.SolveWrapper()
+            self.__solve_wrapper = swig_helper.SolveWrapper()
 
         swig_helper.SolveWrapper.SetSerializedParameters(
-            self.parameters.SerializeToString(), solve_wrapper)
+            self.parameters.SerializeToString(), self.__solve_wrapper)
         if solution_callback is not None:
-            solve_wrapper.AddSolutionCallback(solution_callback)
+            self.__solve_wrapper.AddSolutionCallback(solution_callback)
 
         if self.log_callback is not None:
-            solve_wrapper.AddLogCallback(self.log_callback)
+            self.__solve_wrapper.AddLogCallback(self.log_callback)
 
         self.__solution = cp_model_pb2.CpSolverResponse.FromString(
             swig_helper.SolveWrapper.SerializedSolve(
-                model.Proto().SerializeToString(), solve_wrapper))
+                model.Proto().SerializeToString(), self.__solve_wrapper))
 
         if solution_callback is not None:
-            solve_wrapper.ClearSolutionCallback(solution_callback)
+            self.__solve_wrapper.ClearSolutionCallback(solution_callback)
 
         with self.__lock:
             self.__solve_wrapper = None
