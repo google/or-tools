@@ -69,3 +69,15 @@ index 2e38c1bac..0c26a97f4 100644
    ${protobuf_BINARY_DIR}
    ${protobuf_SOURCE_DIR}/src)
  
+diff --git a/src/google/protobuf/port.h b/src/google/protobuf/port.h
+index 9ca45d966..6bbf1d164 100644
+--- a/src/google/protobuf/port.h
++++ b/src/google/protobuf/port.h
+@@ -38,6 +38,7 @@
+ 
+ #include <cassert>
+ #include <cstddef>
++#include <cstdint>
+ #include <new>
+ #include <string>
+ #include <type_traits>
