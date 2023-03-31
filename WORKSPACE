@@ -34,12 +34,19 @@ git_repository(
 )
 
 git_repository(
+  name = "rules_cc",
+  tag = "0.0.6",
+  remote = "https://github.com/bazelbuild/rules_cc.git",
+)
+
+git_repository(
     name = "rules_proto",
     tag = "5.3.0-21.7",
     remote = "https://github.com/bazelbuild/rules_proto.git",
 )
 
-# ZLIB
+#Dependencies
+## ZLIB
 new_git_repository(
     name = "zlib",
     build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
@@ -47,11 +54,29 @@ new_git_repository(
     remote = "https://github.com/madler/zlib.git",
 )
 
+## Re2
 git_repository(
     name = "com_google_re2",
     tag = "2022-04-01",
     remote = "https://github.com/google/re2.git",
 )
+
+## Abseil-cpp
+git_repository(
+    name = "com_google_absl",
+    tag = "20230125.0",
+    remote = "https://github.com/abseil/abseil-cpp.git",
+)
+
+## Protobuf
+git_repository(
+    name = "com_google_protobuf",
+    tag = "v22.2",
+    remote = "https://github.com/protocolbuffers/protobuf.git",
+)
+# Load common dependencies.
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+protobuf_deps()
 
 git_repository(
     name = "com_google_googletest",
@@ -231,21 +256,4 @@ contrib_rules_jvm_deps()
 
 load("@contrib_rules_jvm//:setup.bzl", "contrib_rules_jvm_setup")
 contrib_rules_jvm_setup()
-
-# Abseil-cpp
-git_repository(
-    name = "com_google_absl",
-    tag = "20230125.0",
-    remote = "https://github.com/abseil/abseil-cpp.git",
-)
-
-# Protobuf
-git_repository(
-    name = "com_google_protobuf",
-    tag = "v22.2",
-    remote = "https://github.com/protocolbuffers/protobuf.git",
-)
-# Load common dependencies.
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-protobuf_deps()
 
