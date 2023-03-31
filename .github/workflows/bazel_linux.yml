@@ -27,8 +27,9 @@ jobs:
           echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
           sudo apt-get update
           sudo apt-get install bazel
-          bazel --version
+      - name: Check Bazel
+        run: bazel version
       - name: Build
-        run: bazel build -c opt --cxxopt=-std=c++17 //ortools/... //examples/...
+        run: bazel build -c opt --cxxopt=-std=c++17 --subcommands=true //ortools/... //examples/...
       - name: Test
         run: bazel test -c opt --cxxopt=-std=c++17 --test_output=errors //ortools/... //examples/...

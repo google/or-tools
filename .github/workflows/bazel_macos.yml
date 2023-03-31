@@ -19,7 +19,8 @@ jobs:
       - name: Install Bazel
         run: |
           brew update
-          #brew install bazel
+          brew unlink bazelisk
+          brew install bazel
       - name: Check Bazel
         run: bazel version
       - name: Build
