@@ -1,3 +1,4 @@
+# ref: https://github.com/actions/runner-images
 name: Bazel Linux
 
 on:
@@ -12,8 +13,8 @@ jobs:
   bazel:
     runs-on: ubuntu-latest
     env:
-      CC:  gcc-10
-      CXX: g++-10
+      CC:  gcc-12
+      CXX: g++-12
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -28,6 +29,6 @@ jobs:
           sudo apt-get install bazel
           bazel --version
       - name: Build
-        run: bazel build -c opt --cxxopt=-std=c++20 //ortools/... //examples/...
+        run: bazel build -c opt --cxxopt=-std=c++17 //ortools/... //examples/...
       - name: Test
-        run: bazel test -c opt --cxxopt=-std=c++20 --test_output=errors //ortools/... //examples/...
+        run: bazel test -c opt --cxxopt=-std=c++17 --test_output=errors //ortools/... //examples/...
