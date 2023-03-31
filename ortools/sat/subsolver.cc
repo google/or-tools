@@ -41,11 +41,17 @@ namespace {
 // if no SubSolver can generate a new task.
 //
 // For now we use a really basic logic: call the least frequently called.
-int NextSubsolverToSchedule(
-    const std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-    const std::vector<int64_t>& num_generated_tasks) {
+int NextSubsolverToSchedule(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
+                            const std::vector<int64_t>& num_generated_tasks) {
   int best = -1;
   for (int i = 0; i < subsolvers.size(); ++i) {
+    if (subsolvers[i] == nullptr) continue;
+    if (subsolvers[i]->IsDone()) {
+      // We can free the memory used by this solver for good.
+      VLOG(1) << "Deleting " << subsolvers[i]->name();
+      subsolvers[i].reset();
+      continue;
+    }
     if (subsolvers[i]->TaskIsAvailable()) {
       if (best == -1 || num_generated_tasks[i] < num_generated_tasks[best]) {
         best = i;
@@ -57,12 +63,15 @@ int NextSubsolverToSchedule(
 }
 
 void SynchronizeAll(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
-  for (const auto& subsolver : subsolvers) subsolver->Synchronize();
+  for (const auto& subsolver : subsolvers) {
+    if (subsolver == nullptr) continue;
+    subsolver->Synchronize();
+  }
 }
 
 }  // namespace
 
-void SequentialLoop(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
+void SequentialLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
   int64_t task_id = 0;
   std::vector<int64_t> num_generated_tasks(subsolvers.size(), 0);
   while (true) {
@@ -78,23 +87,20 @@ void SequentialLoop(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
 
 // On portable platform, we don't support multi-threading for now.
 
-void NonDeterministicLoop(
-    const std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-    int num_threads) {
+void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
+                          int num_threads) {
   SequentialLoop(subsolvers);
 }
 
-void DeterministicLoop(
-    const std::vector<std::unique_ptr<SubSolver>>& subsolvers, int num_threads,
-    int batch_size) {
+void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
+                       int num_threads, int batch_size) {
   SequentialLoop(subsolvers);
 }
 
 #else  // __PORTABLE_PLATFORM__
 
-void DeterministicLoop(
-    const std::vector<std::unique_ptr<SubSolver>>& subsolvers, int num_threads,
-    int batch_size) {
+void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
+                       int num_threads, int batch_size) {
   CHECK_GT(num_threads, 0);
   CHECK_GT(batch_size, 0);
   if (batch_size == 1) {
@@ -137,9 +143,8 @@ void DeterministicLoop(
   }
 }
 
-void NonDeterministicLoop(
-    const std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-    const int num_threads) {
+void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
+                          const int num_threads) {
   CHECK_GT(num_threads, 0);
   if (num_threads == 1) {
     return SequentialLoop(subsolvers);

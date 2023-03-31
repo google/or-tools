@@ -133,15 +133,16 @@ class ModelRandomGenerator : public absl::BitGenRef {
   // case since the SatParameters is set first before the solver is created. We
   // also never really need to change the seed afterwards, it is just used to
   // diversify solves with identical parameters on different Model objects.
-  explicit ModelRandomGenerator(Model* model)
+  explicit ModelRandomGenerator(const SatParameters& params)
       : absl::BitGenRef(deterministic_random_) {
-    const auto& params = *model->GetOrCreate<SatParameters>();
     deterministic_random_.seed(params.random_seed());
     if (params.use_absl_random()) {
       absl_random_ = absl::BitGen(absl::SeedSeq({params.random_seed()}));
       absl::BitGenRef::operator=(absl::BitGenRef(absl_random_));
     }
   }
+  explicit ModelRandomGenerator(Model* model)
+      : ModelRandomGenerator(*model->GetOrCreate<SatParameters>()) {}
 
   // This is just used to display ABSL_RANDOM_SALT_OVERRIDE in the log so that
   // it is possible to reproduce a failure more easily while looking at a solver

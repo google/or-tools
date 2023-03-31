@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_ALGORITHMS_BINARY_SEARCH_H_
 #define OR_TOOLS_ALGORITHMS_BINARY_SEARCH_H_
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 
@@ -73,6 +74,46 @@ Point BinarySearch(Point x_true, Point x_false, std::function<bool(Point)> f);
 // See examples in the unit test.
 template <class Point>
 Point BinarySearchMidpoint(Point x, Point y);
+
+// Returns the minimum of a convex function on a discrete set of sorted points.
+// It is an error to call this with an empty set of points.
+//
+// We assume the function is "unimodal" with potentially more than one minimum.
+// That is strictly decreasing, then have a minimum that can have many points,
+// and then is strictly increasing. In this case if we have two points with
+// exactly the same value, one of the minimum is always between the two. We will
+// only return one of the minimum.
+//
+// Note that if we allow for non strictly decreasing/increasing, then you have
+// corner cases where one need to check all points to find the minimum. For
+// instance, if the function is constant except at one point where it is lower.
+//
+// The usual algorithm to optimize such a function is a ternary search. However
+// here we assume calls to f() are expensive, and we try to minimize those. So
+// we use a slightly different algorithm than:
+// https://en.wikipedia.org/wiki/Ternary_search
+//
+// TODO(user): Some relevant optimizations:
+// - Abort early if we know a lower bound on the min.
+// - Seed with a starting point if we know one.
+// - We technically do not need the points to be sorted and can use
+//   linear-time median computation to speed this up.
+//
+// TODO(user): replace std::function by absl::AnyInvocable here and in
+// BinarySearch().
+template <class Point, class Value>
+std::pair<Point, Value> ConvexMinimum(absl::Span<const Point> sorted_points,
+                                      std::function<Value(Point)> f);
+
+// Internal part of ConvexMinimum() that can also be used directly in some
+// situation when we already know some value of f(). This assumes that we
+// already have a current_min candidate that is either before or after all the
+// points in sorted_points.
+template <class Point, class Value>
+std::pair<Point, Value> ConvexMinimum(bool is_to_the_right,
+                                      std::pair<Point, Value> current_min,
+                                      absl::Span<const Point> sorted_points,
+                                      std::function<Value(Point)> f);
 
 // _____________________________________________________________________________
 // Implementation.
@@ -178,6 +219,84 @@ Point BinarySearch(Point x_true, Point x_false, std::function<bool(Point)> f) {
       x_false = x;
     }
   }
+}
+
+template <class Point, class Value>
+std::pair<Point, Value> ConvexMinimum(absl::Span<const Point> sorted_points,
+                                      std::function<Value(Point)> f) {
+  DCHECK(!sorted_points.empty());
+  if (sorted_points.size() == 1) {
+    return {sorted_points[0], f(sorted_points[0])};
+  }
+
+  // Starts by splitting interval in two with two queries and getting some info.
+  // Note the current min will be outside the interval.
+  bool is_to_the_right;
+  std::pair<Point, Value> current_min;
+  {
+    DCHECK_GE(sorted_points.size(), 2);
+    const int i = sorted_points.size() / 2;
+    const Value v = f(sorted_points[i]);
+    const int before_i = i - 1;
+    const Value before_v = f(sorted_points[before_i]);
+    if (before_v == v) return {sorted_points[before_i], before_v};
+    if (before_v < v) {
+      // Note that we exclude before_i from the span.
+      current_min = {sorted_points[before_i], before_v};
+      is_to_the_right = true;
+      sorted_points = sorted_points.subspan(0, std::max(0, before_i));
+    } else {
+      is_to_the_right = false;
+      current_min = {sorted_points[i], v};
+      sorted_points = sorted_points.subspan(i + 1);
+    }
+  }
+  if (sorted_points.empty()) return current_min;
+  return ConvexMinimum<Point, Value>(is_to_the_right, current_min,
+                                     sorted_points, std::move(f));
+}
+
+template <class Point, class Value>
+std::pair<Point, Value> ConvexMinimum(bool is_to_the_right,
+                                      std::pair<Point, Value> current_min,
+                                      absl::Span<const Point> sorted_points,
+                                      std::function<Value(Point)> f) {
+  DCHECK(!sorted_points.empty());
+  while (sorted_points.size() > 1) {
+    const int i = sorted_points.size() / 2;
+    const Value v = f(sorted_points[i]);
+    if (v >= current_min.second) {
+      // If the midpoint is no better than our current minimum, then the
+      // global min must lie between our midpoint and our current min.
+      if (is_to_the_right) {
+        sorted_points = sorted_points.subspan(i + 1);
+      } else {
+        sorted_points = sorted_points.subspan(0, i);
+      }
+    } else {
+      // v < current_min.second, we cannot decide, so we use a second value
+      // close to v like in the initial step.
+      DCHECK_GT(i, 0);
+      const int before_i = i - 1;
+      const Value before_v = f(sorted_points[before_i]);
+      if (before_v == v) return {sorted_points[before_i], before_v};
+      if (before_v < v) {
+        current_min = {sorted_points[before_i], before_v};
+        is_to_the_right = true;
+        sorted_points = sorted_points.subspan(0, std::max(0, before_i));
+      } else {
+        is_to_the_right = false;
+        current_min = {sorted_points[i], v};
+        sorted_points = sorted_points.subspan(i + 1);
+      }
+    }
+  }
+
+  if (!sorted_points.empty()) {
+    const Value v = f(sorted_points[0]);
+    if (v <= current_min.second) return {sorted_points[0], v};
+  }
+  return current_min;
 }
 
 }  // namespace operations_research

@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <map>
 #include <ostream>
@@ -235,6 +236,28 @@ int64_t Domain::SmallestValue() const {
   return result;
 }
 
+// TODO(user): Use std::upper_bound() like in ValueAtOrBefore() ?
+int64_t Domain::ClosestValue(int64_t wanted) const {
+  DCHECK(!IsEmpty());
+  if (wanted <= intervals_[0].start) {
+    return intervals_[0].start;
+  }
+  int64_t best_point;
+  int64_t best_distance;
+  for (const ClosedInterval interval : intervals_) {
+    if (interval.start <= wanted && wanted <= interval.end) {
+      return wanted;
+    } else if (interval.start >= wanted) {
+      return CapSub(interval.start, wanted) <= best_distance ? interval.start
+                                                             : best_point;
+    } else {
+      best_point = interval.end;
+      best_distance = CapSub(wanted, interval.end);
+    }
+  }
+  return best_point;
+}
+
 int64_t Domain::ValueAtOrBefore(int64_t input) const {
   // Because we only compare by start and there is no duplicate starts, this
   // should be the next interval after the one that has a chance to contains
@@ -273,6 +296,21 @@ bool Domain::Contains(int64_t value) const {
   if (it == intervals_.begin()) return false;
   --it;
   return value <= it->end;
+}
+
+// TODO(user): Deal with overflow.
+int64_t Domain::Distance(int64_t value) const {
+  int64_t min_distance = std::numeric_limits<int64_t>::max();
+  for (const ClosedInterval interval : intervals_) {
+    if (value >= interval.start && value <= interval.end) return 0;
+    if (interval.start > value) {
+      min_distance = std::min(min_distance, interval.start - value);
+      break;
+    } else {
+      min_distance = value - interval.end;
+    }
+  }
+  return min_distance;
 }
 
 bool Domain::IsIncludedIn(const Domain& domain) const {

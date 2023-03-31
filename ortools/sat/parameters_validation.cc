@@ -89,6 +89,7 @@ std::string ValidateParameters(const SatParameters& params) {
 
   TEST_NOT_NAN(max_time_in_seconds);
   TEST_NOT_NAN(max_deterministic_time);
+  TEST_NOT_NAN(feasibility_jump_decay);
 
   // TODO(user): Consider using annotations directly in the proto for these
   // validation. It is however not open sourced.
@@ -96,6 +97,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
   TEST_IN_RANGE(solution_pool_size, 1, std::numeric_limits<int32_t>::max());
   TEST_IN_RANGE(shared_tree_worker_objective_split_probability, 0.0, 1.0);
+  TEST_IN_RANGE(feasibility_jump_decay, 0.0, 1.0);
 
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
@@ -111,6 +113,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(interleave_batch_size);
   TEST_NON_NEGATIVE(probing_deterministic_time_limit);
   TEST_NON_NEGATIVE(presolve_probing_deterministic_time_limit);
+  TEST_NON_NEGATIVE(linearization_level);
 
   if (params.enumerate_all_solutions() &&
       (params.num_search_workers() > 1 || params.num_workers() > 1)) {

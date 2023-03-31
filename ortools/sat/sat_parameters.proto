@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 240
+// NEXT TAG: 245
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -1062,6 +1062,19 @@ message SatParameters {
   // "Automatic Logic-Based Benders Decomposition with MiniZinc"
   // http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/view/14489
   optional bool optimize_with_max_hs = 85 [default = false];
+
+  // Parameters for an heuristic similar to the one described in the paper:
+  // "Feasibility Jump: an LP-free Lagrangian MIP heuristic", Bjørnar
+  // Luteberget, Giorgio Sartor, 2023, Mathematical Programming Computation.
+  //
+  // The test_feasibility_jump is used to only enable this for benchmarking.
+  optional bool test_feasibility_jump = 240 [default = false];
+  optional double feasibility_jump_decay = 242 [default = 1.0];
+  optional bool feasibility_jump_start_with_objective = 243 [default = false];
+
+  // Use a local search worker based on constraint violations to find improving
+  // solutions.
+  optional bool use_violation_ls = 244 [default = false];
 
   // Enables experimental workstealing-like shared tree search.
   // If non-zero, start this many complete worker threads to explore a shared

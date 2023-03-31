@@ -184,8 +184,7 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
       // may be the case if we do a fixed_search.
 
       // To store equivalent variables in randomized search.
-      TopN<int, int64_t> top_n_vars(
-          parameters.search_randomization_tolerance());
+      std::vector<VarValue> active_refs;
 
       int t_index = 0;  // Index in strategy.transformations().
       for (int i = 0; i < strategy.variables().size(); ++i) {
@@ -244,18 +243,29 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
             !parameters.randomize_search()) {
           break;
         } else if (parameters.randomize_search()) {
-          // We keep the top N of 'minimal' values, thus the negation.
-          top_n_vars.Add(ref, -value);
+          if (value <=
+              candidate_value + parameters.search_randomization_tolerance()) {
+            active_refs.push_back({ref, value});
+          }
         }
       }
 
       if (candidate_value == std::numeric_limits<int64_t>::max()) continue;
       if (parameters.randomize_search()) {
-        const auto& elements = top_n_vars.UnorderedElements();
-        candidate = elements[absl::Uniform<int>(*random, 0, elements.size())];
+        CHECK(!active_refs.empty());
+        const IntegerValue threshold(
+            candidate_value + parameters.search_randomization_tolerance());
+        auto is_above_tolerance = [threshold](const VarValue& entry) {
+          return entry.value > threshold;
+        };
+        // Remove all values above tolerance.
+        active_refs.erase(std::remove_if(active_refs.begin(), active_refs.end(),
+                                         is_above_tolerance),
+                          active_refs.end());
+        const int winner = absl::Uniform<int>(*random, 0, active_refs.size());
+        candidate = active_refs[winner].ref;
       }
 
-      // TODO(user): Randomize value selection.
       DecisionStrategyProto::DomainReductionStrategy selection =
           strategy.domain_reduction_strategy();
       if (!RefIsPositive(candidate)) {
@@ -832,7 +842,7 @@ std::vector<SatParameters> GetWorkSharingParams(
 
     std::string lp_tags[] = {"no", "default", "max"};
     absl::StrAppend(&name,
-                    lp_tags[std::min(new_params.linearization_level(), 3)],
+                    lp_tags[std::min(new_params.linearization_level(), 2)],
                     "_lp_", num_workers);
     new_params.set_name(name);
     num_workers++;

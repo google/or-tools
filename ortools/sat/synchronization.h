@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SYNCHRONIZATION_H_
 #define OR_TOOLS_SAT_SYNCHRONIZATION_H_
 
+#include <atomic>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -467,6 +468,10 @@ class SharedBoundsManager {
   void GetChangedBounds(int id, std::vector<int>* variables,
                         std::vector<int64_t>* new_lower_bounds,
                         std::vector<int64_t>* new_upper_bounds);
+
+  // This should not be called too often as it lock the class for
+  // O(num_variables) time.
+  void UpdateDomains(std::vector<Domain>* domains);
 
   // Publishes any new bounds so that GetChangedBounds() will reflect the latest
   // state.

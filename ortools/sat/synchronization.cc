@@ -919,6 +919,15 @@ void SharedBoundsManager::GetChangedBounds(
   id_to_changed_variables_[id].ClearAll();
 }
 
+void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {
+  absl::MutexLock mutex_lock(&mutex_);
+  CHECK_EQ(domains->size(), synchronized_lower_bounds_.size());
+  for (int var = 0; var < domains->size(); ++var) {
+    (*domains)[var] = (*domains)[var].IntersectionWith(Domain(
+        synchronized_lower_bounds_[var], synchronized_upper_bounds_[var]));
+  }
+}
+
 void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(&mutex_);
   if (!bounds_exported_.empty()) {

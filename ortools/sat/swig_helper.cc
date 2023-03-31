@@ -13,6 +13,7 @@
 
 #include "ortools/sat/swig_helper.h"
 
+#include <atomic>
 #include <functional>
 #include <string>
 

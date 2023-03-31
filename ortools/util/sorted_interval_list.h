@@ -245,6 +245,12 @@ class Domain {
   int64_t SmallestValue() const;
 
   /**
+   * Returns the value closest to the given point.
+   * If there is a tie, pick larger one.
+   */
+  int64_t ClosestValue(int64_t wanted) const;
+
+  /**
    * Returns the closest value in the domain that is <= (resp. >=) to the input.
    * Do not change the input if there is no such value.
    */
@@ -268,6 +274,11 @@ class Domain {
    * Returns true iff value is in Domain.
    */
   bool Contains(int64_t value) const;
+
+  /**
+   * Returns the distance from the value to the domain.
+   */
+  int64_t Distance(int64_t value) const;
 
   /**
    * Returns true iff D is included in the given domain.

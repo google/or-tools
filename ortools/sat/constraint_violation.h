@@ -20,6 +20,7 @@
 
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -33,7 +34,7 @@ class LinearIncrementalEvaluator {
   LinearIncrementalEvaluator() = default;
 
   // Returns the index of the new constraint.
-  int NewConstraint(int64_t lb, int64_t ub);
+  int NewConstraint(Domain domain);
 
   // Incrementaly build the constraint.
   void AddEnforcementLiteral(int ct_index, int lit);
@@ -43,14 +44,45 @@ class LinearIncrementalEvaluator {
 
   // Compute activities and query violations.
   void ComputeInitialActivities(absl::Span<const int64_t> solution);
-  void Update(int var, int64_t old_value, int64_t new_value);
+  void Update(int var, int64_t delta);
+  int64_t Activity(int ct_index) const;
+  bool IsEnforced(int ct_index) const;
   int64_t Violation(int ct_index) const;
 
-  // Update constraint bounds.
-  void ResetBounds(int ct_index, int64_t lb, int64_t ub);
+  bool AppearsInViolatedConstraints(int var) const;
+
+  // Intersect constraint bounds with [lb..ub].
+  void ReduceBounds(int ct_index, int64_t lb, int64_t ub);
 
   // Model getters.
-  int num_constraints() const { return activities_.size(); }
+  int num_constraints() const { return num_constraints_; }
+
+  // Returns the weighted sum of the violation.
+  // Note that weights might have more entries than the number of constraints.
+  double WeightedViolation(absl::Span<const double> weights) const;
+
+  // Computes how much the weighted violation will change if var was changed
+  // from its old value by += delta.
+  double WeightedViolationDelta(absl::Span<const double> weights, int var,
+                                int64_t delta) const;
+
+  // The violation for each constraints is a piecewise linear function. This
+  // computes and aggregate all the breakpoints for the given variable and its
+  // domain.
+  //
+  // Note that it should only be called with non-fixed and non-empty domain. We
+  // also exclude the current_value from the set of breakpoints.
+  std::vector<int64_t> SlopeBreakpoints(int var, int64_t current_value,
+                                        const Domain& var_domain) const;
+
+  // AffectedVariableOnUpdate() return the set of variables that have at least
+  // one constraint in common with the given variable. One need to call
+  // PrecomputeTransposedView() after all the constraint have been added for
+  // this to work.
+  void PrecomputeTransposedView();
+  std::vector<int> AffectedVariableOnUpdate(int var);
+  std::vector<int> ConstraintsToAffectedVariables(
+      absl::Span<const int> ct_indices);
 
  private:
   // Cell in the sparse matrix.
@@ -65,22 +97,33 @@ class LinearIncrementalEvaluator {
     bool positive;  // bool_var or its negation.
   };
 
-  // Model data.
-  std::vector<int> num_enforcement_literals_;
-  std::vector<int64_t> lower_bounds_;
-  std::vector<int64_t> upper_bounds_;
+  void ComputeAndCacheDistance(int ct_index);
 
-  // Column major data.
-  std::vector<std::vector<Entry>> var_entries_;
-  std::vector<std::vector<LiteralEntry>> literal_entries_;
+  // Constraint indexed data (static).
+  int num_constraints_ = 0;
+  std::vector<Domain> domains_;
   std::vector<int64_t> offsets_;
 
-  // Dynamic data.
+  // Variable indexed data.
+  std::vector<std::vector<Entry>> var_entries_;
+  std::vector<std::vector<LiteralEntry>> literal_entries_;
+
+  // Transposed view data (only variables).
+  std::vector<int> row_buffer_;
+  std::vector<absl::Span<const int>> rows_;
+  std::vector<int> tmp_row_sizes_;
+  std::vector<bool> tmp_in_result_;
+
+  // Constraint indexed data (dynamic).
   std::vector<int64_t> activities_;
-  std::vector<int> num_true_enforcement_literals_;
+  std::vector<int64_t> distances_;
+  std::vector<int> num_false_enforcement_;
 };
 
 // View of a generic (non linear) constraint for the LsEvaluator.
+//
+// TODO(user): Do we add a Update(solution, var, new_value) method ?
+// TODO(user): Do we want to support Update(solutions, vars, new_values) ?
 class CompiledConstraint {
  public:
   explicit CompiledConstraint(const ConstraintProto& proto);
@@ -92,36 +135,96 @@ class CompiledConstraint {
   // is not violated..
   virtual int64_t Violation(absl::Span<const int64_t> solution) = 0;
 
-  // Violations are stored in a stack for each constraint.
-  int64_t current_violation() const { return violations_.back(); }
-  void push_violation(int64_t v) { violations_.push_back(v); }
-  void pop_violation() { violations_.pop_back(); }
-  void clear_violations() { violations_.clear(); }
+  void CacheViolation(absl::Span<const int64_t> solution);
 
-  const ConstraintProto& proto() const { return proto_; }
+  // Cache the violation of a constraint.
+  int64_t violation() const;
+
+  const ConstraintProto& proto() const;
 
  private:
   const ConstraintProto& proto_;
-  std::vector<int64_t> violations_;
+  int64_t violation_ = -1;
 };
 
 // Evaluation container for the local search.
+//
+// TODO(user): Ideas for constraint generated moves or sequences of moves?
 class LsEvaluator {
  public:
   // The model must outlive this class.
   explicit LsEvaluator(const CpModelProto& model);
 
-  // Overwrites the bounds of the objective.
-  void SetObjectiveBounds(int64_t lb, int64_t ub);
+  // For now, we don't support all constraints. You can still use the class, but
+  // it is not because there is no violation that the solution will be feasible
+  // in this case.
+  //
+  // TODO(user): On the miplib, some presolve add all_diff constraints which are
+  // not actually needed to be maintained here to have a feasible solution. Find
+  // a fix for that.
+  bool ModelIsSupported() const { return model_is_supported_; }
+
+  // Intersects the domain of the objective with [lb..ub].
+  void ReduceObjectiveBounds(int64_t lb, int64_t ub);
 
   // Sets the current solution, and compute violations for each constraints.
   void ComputeInitialViolations(absl::Span<const int64_t> solution);
 
+  // Recompute the violations of non linear constraints.
+  void UpdateNonLinearViolations();
+
   // Update the value of one variable and recompute violations.
-  void UpdateVariableValueAndRecomputeViolations(int var, int64_t value);
+  void UpdateVariableValueAndRecomputeViolations(int var, int64_t value,
+                                                 bool focus_on_linear = false);
 
   // Simple summation metric for the constraint and objective violations.
   int64_t SumOfViolations();
+
+  // Returns the objective activity in the current state.
+  int64_t ObjectiveActivity() const;
+
+  // The number of "internal" constraints in the evaluator. This might not
+  // be the same as the number of initial constraint of the model.
+  int NumLinearConstraints() const;
+  int NumNonLinearConstraints() const;
+  int NumEvaluatorConstraints() const;
+  int NumInfeasibleConstraints() const;
+
+  // Returns the weighted sum of violation. The weights must have the same
+  // size as NumEvaluatorConstraints().
+  //
+  // TODO(user): consider non-linear constraints.
+  int64_t Violation(int c) const;
+  double WeightedViolation(absl::Span<const double> weights) const;
+  double WeightedViolationDelta(absl::Span<const double> weights, int var,
+                                int64_t delta) const;
+
+  // Returns a sorted list of relevant breakpoint in order to find the minimum
+  // delta for a given variable. Note that we shouldn't call this on a binary
+  // variable, since there is only two values to look at.
+  //
+  // TODO(user): consider non-linear constraints.
+  std::vector<int64_t> SlopeBreakpoints(int var,
+                                        const Domain& var_domain) const {
+    return linear_evaluator_.SlopeBreakpoints(var, current_solution_[var],
+                                              var_domain);
+  }
+
+  LinearIncrementalEvaluator* MutableLinearEvaluator() {
+    return &linear_evaluator_;
+  }
+
+  // Returns the set of variables appearing in a violated constraint.
+  std::vector<int> VariablesInViolatedConstraints() const;
+
+  // Counters: number of times UpdateVariableValueAndRecomputeViolations() has
+  // been called.
+  int64_t num_deltas_computed() const { return num_deltas_computed_; }
+
+  // Access the solution stored. Useful for debugging.
+  const std::vector<int64_t>& current_solution() const {
+    return current_solution_;
+  }
 
  private:
   void CompileConstraintsAndObjective();
@@ -131,7 +234,10 @@ class LsEvaluator {
   LinearIncrementalEvaluator linear_evaluator_;
   std::vector<std::unique_ptr<CompiledConstraint>> constraints_;
   std::vector<std::vector<int>> var_to_constraint_graph_;
-  std::vector<int64_t> current_solution_;
+  // We need the mutable to evaluate a move.
+  mutable std::vector<int64_t> current_solution_;
+  bool model_is_supported_ = true;
+  mutable int64_t num_deltas_computed_ = 0;
 };
 
 }  // namespace sat

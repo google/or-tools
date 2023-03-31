@@ -65,6 +65,7 @@
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/drat_proof_handler.h"
+#include "ortools/sat/feasibility_jump.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -2378,7 +2379,11 @@ struct SharedClasses {
   std::unique_ptr<SharedClausesManager> clauses;
 
   bool SearchIsDone() {
-    if (response->ProblemIsSolved()) return true;
+    if (response->ProblemIsSolved()) {
+      // This is for cases where the time limit is checked more often.
+      time_limit->Stop();
+      return true;
+    }
     if (time_limit->LimitReached()) return true;
     return false;
   }
@@ -2393,8 +2398,8 @@ class FullProblemSolver : public SubSolver {
       : SubSolver(name, stop_at_first_solution ? FIRST_SOLUTION : FULL_PROBLEM),
         shared_(shared),
         split_in_chunks_(split_in_chunks),
-        local_model_(std::make_unique<Model>(name)),
-        stop_at_first_solution_(stop_at_first_solution) {
+        stop_at_first_solution_(stop_at_first_solution),
+        local_model_(std::make_unique<Model>(name)) {
     // Setup the local model parameters and time limit.
     *(local_model_->GetOrCreate<SatParameters>()) = local_parameters;
     shared_->time_limit->UpdateLocalLimit(
@@ -2442,16 +2447,33 @@ class FullProblemSolver : public SubSolver {
     shared_->response->AppendResponseToBeMerged(response);
   }
 
+  bool IsDone() override {
+    {
+      absl::MutexLock mutex_lock(&mutex_);
+      if (!previous_task_is_completed_) return false;
+    }
+
+    if (stop_at_first_solution_ &&
+        *shared_->response->first_solution_solvers_should_stop()) {
+      return true;
+    }
+    return false;
+  }
+
   bool TaskIsAvailable() override {
+    // Tricky: we don't want this in IsDone() otherwise the order of destruction
+    // is unclear, and currently we always report the stats of the last
+    // destroyed full solver (i.e. the probing one !).
+    //
+    // TODO(user): This do not make much sense.
     if (shared_->SearchIsDone()) return false;
 
     absl::MutexLock mutex_lock(&mutex_);
-    if (stop_at_first_solution_) {
-      return shared_->response->SolutionsRepository().NumSolutions() == 0 &&
-             previous_task_is_completed_;
-    } else {
-      return previous_task_is_completed_;
+    if (previous_task_is_completed_) {
+      if (solving_first_chunk_) return true;
+      if (split_in_chunks_) return true;
     }
+    return false;
   }
 
   std::function<void()> GenerateTask(int64_t /*task_id*/) override {
@@ -2515,30 +2537,11 @@ class FullProblemSolver : public SubSolver {
 
       const double saved_dtime = time_limit->GetElapsedDeterministicTime();
       SolveLoadedCpModel(*shared_->model_proto, local_model_.get());
-      {
-        absl::MutexLock mutex_lock(&mutex_);
-        deterministic_time_since_last_synchronize_ +=
-            time_limit->GetElapsedDeterministicTime() - saved_dtime;
-      }
 
-      // Abort if the problem is solved.
-      if (shared_->SearchIsDone()) {
-        shared_->time_limit->Stop();
-        return;
-      }
-
-      // In this mode, we allow to generate more task.
-      if (split_in_chunks_) {
-        absl::MutexLock mutex_lock(&mutex_);
-        previous_task_is_completed_ = true;
-        return;
-      }
-
-      // Once a solver is done clear its memory and do not wait for the
-      // destruction of the SubSolver. This is important because the full solve
-      // might not be done at all, for instance this might have been configured
-      // with stop_after_first_solution.
-      local_model_.reset();
+      absl::MutexLock mutex_lock(&mutex_);
+      previous_task_is_completed_ = true;
+      deterministic_time_since_last_synchronize_ +=
+          time_limit->GetElapsedDeterministicTime() - saved_dtime;
     };
   }
 
@@ -2554,11 +2557,6 @@ class FullProblemSolver : public SubSolver {
   }
 
   std::string StatisticsString() const override {
-    // The local model may have been deleted at the end of GenerateTask.
-    // Do not crash in this case.
-    // TODO(user): Revisit this case.
-    if (local_model_ == nullptr) return std::string();
-
     // Padding.
     const std::string p4(4, ' ');
     const std::string p6(6, ' ');
@@ -2603,6 +2601,7 @@ class FullProblemSolver : public SubSolver {
  private:
   SharedClasses* shared_;
   const bool split_in_chunks_;
+  const bool stop_at_first_solution_;
   std::unique_ptr<Model> local_model_;
 
   // The first chunk is special. It is the one in which we load the model and
@@ -2613,7 +2612,6 @@ class FullProblemSolver : public SubSolver {
   double deterministic_time_since_last_synchronize_ ABSL_GUARDED_BY(mutex_) =
       0.0;
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
-  bool stop_at_first_solution_;
 };
 
 class FeasibilityPumpSolver : public SubSolver {
@@ -2656,12 +2654,11 @@ class FeasibilityPumpSolver : public SubSolver {
   }
 
   std::function<void()> GenerateTask(int64_t /*task_id*/) override {
+    {
+      absl::MutexLock mutex_lock(&mutex_);
+      previous_task_is_completed_ = false;
+    }
     return [this]() {
-      {
-        absl::MutexLock mutex_lock(&mutex_);
-        if (!previous_task_is_completed_) return;
-        previous_task_is_completed_ = false;
-      }
       {
         absl::MutexLock mutex_lock(&mutex_);
         if (solving_first_chunk_) {
@@ -3083,11 +3080,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       /*num_solutions_to_keep=*/10);
   global_model->Register<SharedLPSolutionRepository>(shared.lp_solutions.get());
 
+  const bool testing = params.use_lns_only() || params.test_feasibility_jump();
+
   // We currently only use the feasiblity pump if it is enabled and some other
   // parameters are not on.
-  const bool use_feasibility_pump =
-      params.use_feasibility_pump() && params.linearization_level() > 0 &&
-      !params.use_lns_only() && !params.interleave_search();
+  const bool use_feasibility_pump = params.use_feasibility_pump() &&
+                                    params.linearization_level() > 0 &&
+                                    !testing && !params.interleave_search();
   if (use_feasibility_pump) {
     shared.incomplete_solutions =
         std::make_unique<SharedIncompleteSolutionManager>();
@@ -3128,19 +3127,21 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       }));
 
   int num_full_problem_solvers = 0;
-  if (params.use_lns_only()) {
+  if (testing) {
     // Register something to find a first solution. Note that this is mainly
     // used for experimentation, and using no LP ususally result in a faster
     // first solution.
     //
     // TODO(user): merge code with standard solver. Just make sure that all
     // full solvers die after the first solution has been found.
-    SatParameters local_params = params;
-    local_params.set_stop_after_first_solution(true);
-    local_params.set_linearization_level(0);
-    subsolvers.push_back(std::make_unique<FullProblemSolver>(
-        "first_solution", local_params,
-        /*split_in_chunks=*/false, &shared));
+    if (!params.test_feasibility_jump()) {
+      SatParameters local_params = params;
+      local_params.set_stop_after_first_solution(true);
+      local_params.set_linearization_level(0);
+      subsolvers.push_back(std::make_unique<FullProblemSolver>(
+          "first_solution", local_params,
+          /*split_in_chunks=*/false, &shared));
+    }
   } else {
     for (const SatParameters& local_params : GetWorkSharingParams(
              params, model_proto, params.shared_tree_num_workers())) {
@@ -3179,7 +3180,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   local_params.set_name("default");
   // TODO(user): for now this is not deterministic so we disable it on
   // interleave search. Fix.
-  if (params.use_rins_lns() && !params.interleave_search()) {
+  if (!testing && params.use_rins_lns() && !params.interleave_search()) {
     // Note that we always create the SharedLPSolutionRepository. This meets
     // the requirement of having at least one of
     // SharedRelaxationSolutionRepository or SharedLPSolutionRepository to
@@ -3201,6 +3202,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             absl::StrCat("rens_lns_", local_params.name())),
         local_params, helper, &shared));
   }
+  if (params.use_violation_ls() && !params.interleave_search()) {
+    SatParameters local_params = params;
+    local_params.set_random_seed(params.random_seed());
+    incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
+        "violation_ls", SubSolver::INCOMPLETE, model_proto, local_params,
+        shared.time_limit, shared.response, shared.bounds.get(), shared.stats));
+  }
 
   // Adds first solution subsolvers.
   //
@@ -3219,16 +3227,32 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   //
   // TODO(user): Check with interleave_search.
   if (!model_proto.has_objective() || model_proto.objective().vars().empty() ||
-      !params.interleave_search()) {
+      !params.interleave_search() || params.test_feasibility_jump()) {
     const int max_num_incomplete_solvers_running_before_the_first_solution =
         params.num_workers() <= 8 ? 1 : (params.num_workers() <= 16 ? 2 : 3);
     const int num_reserved_incomplete_solvers = std::min<int>(
         max_num_incomplete_solvers_running_before_the_first_solution,
         incomplete_subsolvers.size());
-    const int num_first_solution_subsolvers = params.num_workers() -
-                                              num_full_problem_solvers -
-                                              num_reserved_incomplete_solvers;
+    const int num_available = params.num_workers() - num_full_problem_solvers -
+                              num_reserved_incomplete_solvers;
 
+    // TODO(user): FeasibilityJumpSolver are split in chunk as so we could
+    // schedule more than the available number of threads. They will just be
+    // interleaved. We will get an higher diversity, but use more memory.
+    const int num_feasibility_jump =
+        params.test_feasibility_jump() ? num_available : num_available / 2;
+    const int num_first_solution_subsolvers =
+        num_available - num_feasibility_jump;
+    for (int i = 0; i < num_feasibility_jump; ++i) {
+      SatParameters local_params = params;
+      local_params.set_random_seed(params.random_seed() + i);
+      local_params.set_feasibility_jump_start_with_objective((i % 2) == 1);
+      local_params.set_feasibility_jump_decay(((i / 2) % 2) == 1 ? 0.95 : 1.0);
+      incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
+          absl::StrCat("jump", i), SubSolver::FIRST_SOLUTION, model_proto,
+          local_params, shared.time_limit, shared.response, shared.bounds.get(),
+          shared.stats));
+    }
     for (const SatParameters& local_params : GetFirstSolutionParams(
              params, model_proto, num_first_solution_subsolvers)) {
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
@@ -3246,7 +3270,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   incomplete_subsolvers.clear();
 
   //  Add incomplete subsolvers that require an objective.
-  if (model_proto.has_objective() && !model_proto.objective().vars().empty()) {
+  if (model_proto.has_objective() && !model_proto.objective().vars().empty() &&
+      !params.test_feasibility_jump()) {
     // Enqueue all the possible LNS neighborhood subsolvers.
     // Each will have their own metrics.
     subsolvers.push_back(std::make_unique<LnsSolver>(
@@ -3421,6 +3446,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     if (params.log_subsolver_statistics()) {
       bool first = true;
       for (const auto& subsolver : subsolvers) {
+        if (subsolver == nullptr) continue;
         const std::string stats = subsolver->StatisticsString();
         if (stats.empty()) continue;
         if (first) {
@@ -4055,7 +4081,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // We ignore the multithreading parameter in this case.
 #else   // __PORTABLE_PLATFORM__
   if (params.num_workers() > 1 || params.interleave_search() ||
-      !params.subsolvers().empty()) {
+      !params.subsolvers().empty() || params.test_feasibility_jump()) {
     SolveCpModelParallel(new_cp_model_proto, model);
 #endif  // __PORTABLE_PLATFORM__
   } else if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
