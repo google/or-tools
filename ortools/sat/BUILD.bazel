@@ -35,24 +35,22 @@ cc_proto_library(
 
 py_proto_library(
     name = "sat_parameters_py_pb2",
-    visibility = ["//visibility:public"],
     deps = [":sat_parameters_proto"],
 )
 
 java_proto_library(
     name = "sat_parameters_java_proto",
-    visibility = ["//visibility:public"],
     deps = [":sat_parameters_proto"],
-)
-
-cc_proto_library(
-    name = "boolean_problem_cc_proto",
-    deps = [":boolean_problem_proto"],
 )
 
 proto_library(
     name = "boolean_problem_proto",
     srcs = ["boolean_problem.proto"],
+)
+
+cc_proto_library(
+    name = "boolean_problem_cc_proto",
+    deps = [":boolean_problem_proto"],
 )
 
 proto_library(
@@ -67,7 +65,6 @@ cc_proto_library(
 
 py_proto_library(
     name = "cp_model_py_pb2",
-    visibility = ["//visibility:public"],
     deps = [":cp_model_proto"],
 )
 
@@ -277,7 +274,7 @@ cc_library(
         ":drat_checker",
         ":drat_proof_handler",
         ":feasibility_jump",
-        ":feasibility_pump",	
+        ":feasibility_pump",
         ":integer",
         ":integer_expr",
         ":integer_search",

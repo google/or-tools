@@ -11,8 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,8 +30,7 @@ cc_proto_library(
 
 py_proto_library(
     name = "solve_log_py_pb2",
-    srcs = ["solve_log.proto"],
-    deps = [":solvers_py_pb2"],
+    deps = [":solve_log_proto"],
 )
 
 proto_library(
@@ -46,8 +46,9 @@ cc_proto_library(
 
 py_proto_library(
     name = "solvers_py_pb2",
-    srcs = ["solvers.proto"],
-    deps = ["//ortools/glop:parameters_py_pb2"],
+    deps = [
+      ":solvers_proto",
+    ],
 )
 
 cc_library(

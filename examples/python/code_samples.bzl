@@ -13,7 +13,7 @@
 
 """Helper macro to compile and test code samples."""
 
-load("@ortools_deps//:requirements.bzl", "requirement")
+load("@pip_deps//:requirements.bzl", "requirement")
 
 PYTHON_DEPS = [
     "//ortools/linear_solver/python:model_builder",

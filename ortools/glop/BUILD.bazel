@@ -11,8 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -233,6 +234,11 @@ cc_library(
 
 # Glop parameters.
 
+proto_library(
+    name = "parameters_proto",
+    srcs = ["parameters.proto"],
+)
+
 cc_proto_library(
     name = "parameters_cc_proto",
     deps = [":parameters_proto"],
@@ -240,12 +246,7 @@ cc_proto_library(
 
 py_proto_library(
     name = "parameters_py_pb2",
-    srcs = ["parameters.proto"],
-)
-
-proto_library(
-    name = "parameters_proto",
-    srcs = ["parameters.proto"],
+    deps = [":parameters_proto"],
 )
 
 # Dual edge norms.

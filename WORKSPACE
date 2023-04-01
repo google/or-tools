@@ -175,16 +175,15 @@ git_repository(
 load("@rules_python//python:repositories.bzl", "py_repositories")
 py_repositories()
 
-# Create a central external repo, @ortools_deps, that contains Bazel targets for all the
+# Create a central external repo, @pip_deps, that contains Bazel targets for all the
 # third-party packages specified in the python_deps.txt file.
 load("@rules_python//python:pip.bzl", "pip_parse")
-
 pip_parse(
-   name = "ortools_deps",
+   name = "pip_deps",
    requirements = "//bazel:ortools_requirements.txt",
 )
 
-load("@ortools_deps//:requirements.bzl", "install_deps")
+load("@pip_deps//:requirements.bzl", "install_deps")
 install_deps()
 
 # Add a second repo @ortools_notebook_deps for jupyter notebooks.
