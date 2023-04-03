@@ -26,7 +26,6 @@ def code_sample_cc(name):
             "//ortools/graph:linear_assignment",
             "//ortools/graph:max_flow",
             "//ortools/graph:min_cost_flow",
-            "//ortools/graph:shortestpaths",
         ],
     )
 
@@ -42,7 +41,6 @@ def code_sample_cc(name):
             "//ortools/graph:linear_assignment",
             "//ortools/graph:max_flow",
             "//ortools/graph:min_cost_flow",
-            "//ortools/graph:shortestpaths",
         ],
     )
 
