@@ -31,6 +31,7 @@
 #define OR_TOOLS_LP_DATA_SPARSE_VECTOR_H_
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <string>

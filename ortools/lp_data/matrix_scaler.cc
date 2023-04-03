@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
