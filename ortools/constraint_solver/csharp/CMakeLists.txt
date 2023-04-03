@@ -13,7 +13,8 @@
 
 set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME operations_research_constraint_solver)
-set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
 set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS
   -namespace ${DOTNET_PROJECT}.ConstraintSolver
   -dllimport google-ortools-native)

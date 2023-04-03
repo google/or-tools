@@ -13,7 +13,8 @@
 
 set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME main)
-set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
 set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.constraintsolver)
 swig_add_library(jniconstraint_solver

@@ -13,7 +13,8 @@
 
 set_property(SOURCE linear_solver.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE linear_solver.i PROPERTY SWIG_MODULE_NAME main)
-set_property(SOURCE linear_solver.i PROPERTY COMPILE_DEFINITIONS ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+set_property(SOURCE linear_solver.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
 set_property(SOURCE linear_solver.i PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.linearsolver)
 swig_add_library(jnilinear_solver
@@ -30,7 +31,8 @@ target_link_libraries(jnilinear_solver PRIVATE ortools::ortools)
 
 set_property(SOURCE modelbuilder.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE modelbuilder.i PROPERTY SWIG_MODULE_NAME main)
-set_property(SOURCE modelbuilder.i PROPERTY COMPILE_DEFINITIONS ${OR_TOOLS_COMPILE_DEFINITIONS})
+set_property(SOURCE modelbuilder.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
 set_property(SOURCE modelbuilder.i PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.modelbuilder)
 swig_add_library(jnimodelbuilder
