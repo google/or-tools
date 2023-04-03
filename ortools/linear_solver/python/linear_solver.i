@@ -203,7 +203,6 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     }
   }
 
-
   static double Infinity() { return operations_research::MPSolver::infinity(); }
   void SetTimeLimit(int64_t x) { $self->set_time_limit(x); }
   int64_t WallTime() const { return $self->wall_time(); }

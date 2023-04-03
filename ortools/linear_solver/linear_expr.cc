@@ -14,6 +14,7 @@
 #include "ortools/linear_solver/linear_expr.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <limits>
 #include <ostream>
 #include <string>
