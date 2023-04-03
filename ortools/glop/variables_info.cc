@@ -13,6 +13,7 @@
 
 #include "ortools/glop/variables_info.h"
 
+#include <cstdlib>
 #include <utility>
 
 namespace operations_research {

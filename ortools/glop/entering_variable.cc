@@ -14,6 +14,7 @@
 #include "ortools/glop/entering_variable.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <limits>
 #include <queue>
 #include <vector>

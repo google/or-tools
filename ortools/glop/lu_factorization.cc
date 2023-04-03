@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdlib>
 #include <vector>
 
 #include "ortools/lp_data/lp_types.h"

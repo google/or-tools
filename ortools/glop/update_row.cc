@@ -13,6 +13,7 @@
 
 #include "ortools/glop/update_row.h"
 
+#include <cstdlib>
 #include <string>
 
 #include "ortools/lp_data/lp_utils.h"

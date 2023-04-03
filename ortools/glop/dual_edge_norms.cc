@@ -13,6 +13,8 @@
 
 #include "ortools/glop/dual_edge_norms.h"
 
+#include <cstdlib>
+
 #include "ortools/lp_data/lp_utils.h"
 
 namespace operations_research {
