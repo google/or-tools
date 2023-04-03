@@ -72,6 +72,8 @@ git_repository(
 git_repository(
     name = "com_google_protobuf",
     tag = "v22.2",
+    patches = ["//patches:protobuf-v22.2.patch"],
+    patch_args = ["-p1"],
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
