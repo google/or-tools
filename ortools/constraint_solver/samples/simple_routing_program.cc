@@ -15,6 +15,7 @@
 // [START import]
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <sstream>
 
 #include "ortools/constraint_solver/routing.h"
@@ -73,11 +74,11 @@ void SimpleRoutingProgram() {
   // Inspect solution.
   int64_t index = routing.Start(0);
   LOG(INFO) << "Route for Vehicle 0:";
-  int64_t route_distance{0};
+  int64_t route_distance = 0;
   std::ostringstream route;
-  while (routing.IsEnd(index) == false) {
+  while (!routing.IsEnd(index)) {
     route << manager.IndexToNode(index).value() << " -> ";
-    int64_t previous_index = index;
+    const int64_t previous_index = index;
     index = solution->Value(routing.NextVar(index));
     route_distance +=
         routing.GetArcCostForVehicle(previous_index, index, int64_t{0});

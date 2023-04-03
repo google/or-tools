@@ -116,19 +116,19 @@ def print_solution(data, manager, routing, solution):
     total_distance = 0
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        plan_output = f'Route for vehicle {vehicle_id}:\n'
         route_distance = 0
         while not routing.IsEnd(index):
-            plan_output += ' {} ->'.format(manager.IndexToNode(index))
+            plan_output += f' {manager.IndexToNode(index)} ->'
             previous_index = index
             index = solution.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {}\n'.format(manager.IndexToNode(index))
-        plan_output += 'Distance of the route: {}m\n'.format(route_distance)
+        plan_output += f' {manager.IndexToNode(index)}\n'
+        plan_output += f'Distance of the route: {route_distance}m\n'
         print(plan_output)
         total_distance += route_distance
-    print('Total Distance of all routes: {}m'.format(total_distance))
+    print(f'Total Distance of all routes: {total_distance}m')
 
 # [END solution_printer]
 

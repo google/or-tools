@@ -49,18 +49,18 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(manager, routing, solution):
     """Prints solution on console."""
-    print('Objective: {} miles'.format(solution.ObjectiveValue()))
+    print(f'Objective: {solution.ObjectiveValue()} miles')
     index = routing.Start(0)
     plan_output = 'Route for vehicle 0:\n'
     route_distance = 0
     while not routing.IsEnd(index):
-        plan_output += ' {} ->'.format(manager.IndexToNode(index))
+        plan_output += f' {manager.IndexToNode(index)} ->'
         previous_index = index
         index = solution.Value(routing.NextVar(index))
         route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
-    plan_output += ' {}\n'.format(manager.IndexToNode(index))
+    plan_output += f' {manager.IndexToNode(index)}\n'
     print(plan_output)
-    plan_output += 'Route distance: {}miles\n'.format(route_distance)
+    plan_output += f'Route distance: {route_distance}miles\n'
     # [END solution_printer]
 
 

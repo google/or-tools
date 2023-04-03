@@ -92,7 +92,8 @@ void Tsp() {
   // Define cost of each arc.
   // [START arc_cost]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
+      [&data, &manager](const int64_t from_index,
+                        const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();

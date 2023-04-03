@@ -72,17 +72,17 @@ def main():
 
     # Print solution on console.
     # [START print_solution]
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
+    print(f'Objective: {assignment.ObjectiveValue()}')
     index = routing.Start(0)
     plan_output = 'Route for vehicle 0:\n'
     route_distance = 0
     while not routing.IsEnd(index):
-        plan_output += '{} -> '.format(manager.IndexToNode(index))
+        plan_output += f'{manager.IndexToNode(index)} -> '
         previous_index = index
         index = assignment.Value(routing.NextVar(index))
         route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
-    plan_output += '{}\n'.format(manager.IndexToNode(index))
-    plan_output += 'Distance of the route: {}m\n'.format(route_distance)
+    plan_output += f'{manager.IndexToNode(index)}\n'
+    plan_output += f'Distance of the route: {route_distance}m\n'
     print(plan_output)
     # [END print_solution]
 

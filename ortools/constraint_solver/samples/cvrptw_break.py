@@ -202,18 +202,17 @@ def add_time_window_constraints(routing, manager, data, time_evaluator_index):
 # [START solution_printer]
 def print_solution(data, manager, routing, assignment):  # pylint:disable=too-many-locals
     """Prints assignment on console."""
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
+    print(f'Objective: {assignment.ObjectiveValue()}')
 
     print('Breaks:')
     intervals = assignment.IntervalVarContainer()
     for i in range(intervals.Size()):
         brk = intervals.Element(i)
         if brk.PerformedValue() == 1:
-            print('{}: Start({}) Duration({})'.format(brk.Var().Name(),
-                                                      brk.StartValue(),
-                                                      brk.DurationValue()))
+            print(f'{brk.Var().Name()}:'
+                  f' Start({brk.StartValue()}) Duration({brk.DurationValue()})')
         else:
-            print('{}: Unperformed'.format(brk.Var().Name()))
+            print(f'{brk.Var().Name()}: Unperformed')
 
     total_distance = 0
     total_load = 0
@@ -222,37 +221,40 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
     time_dimension = routing.GetDimensionOrDie('Time')
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        plan_output = f'Route for vehicle {vehicle_id}:\n'
         distance = 0
         while not routing.IsEnd(index):
             load_var = capacity_dimension.CumulVar(index)
             time_var = time_dimension.CumulVar(index)
             slack_var = time_dimension.SlackVar(index)
-            plan_output += ' {0} Load({1}) Time({2},{3}) Slack({4},{5}) ->'.format(
-                manager.IndexToNode(index), assignment.Value(load_var),
-                assignment.Min(time_var), assignment.Max(time_var),
-                assignment.Min(slack_var), assignment.Max(slack_var))
+            node = manager.IndexToNode(index)
+            plan_output += (
+                f' {node}'
+                f' Load({assignment.Value(load_var)})'
+                f' Time({assignment.Min(time_var)}, {assignment.Max(time_var)})'
+                f' Slack({assignment.Min(slack_var)}, {assignment.Max(slack_var)})'
+                ' ->')
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             distance += routing.GetArcCostForVehicle(previous_index, index,
                                                      vehicle_id)
         load_var = capacity_dimension.CumulVar(index)
         time_var = time_dimension.CumulVar(index)
-        plan_output += ' {0} Load({1}) Time({2},{3})\n'.format(
-            manager.IndexToNode(index), assignment.Value(load_var),
-            assignment.Min(time_var), assignment.Max(time_var))
-        plan_output += 'Distance of the route: {0}m\n'.format(distance)
-        plan_output += 'Load of the route: {}\n'.format(
-            assignment.Value(load_var))
-        plan_output += 'Time of the route: {}\n'.format(
-            assignment.Value(time_var))
+        node = manager.IndexToNode(index)
+        plan_output += (
+            f' {node}'
+            f' Load({assignment.Value(load_var)})'
+            f' Time({assignment.Min(time_var)}, {assignment.Max(time_var)})\n')
+        plan_output += f'Distance of the route: {distance}m\n'
+        plan_output += f'Load of the route: {assignment.Value(load_var)}\n'
+        plan_output += f'Time of the route: {assignment.Value(time_var)}\n'
         print(plan_output)
         total_distance += distance
         total_load += assignment.Value(load_var)
         total_time += assignment.Value(time_var)
-    print('Total Distance of all routes: {0}m'.format(total_distance))
-    print('Total Load of all routes: {}'.format(total_load))
-    print('Total Time of all routes: {0}min'.format(total_time))
+    print(f'Total Distance of all routes: {total_distance}m')
+    print(f'Total Load of all routes: {total_load}')
+    print(f'Total Time of all routes: {total_time}min')
     # [END solution_printer]
 
 
