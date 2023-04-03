@@ -27,11 +27,14 @@
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "ortools/math_opt/solution.pb.h"
+#include "ortools/math_opt/sparse_containers.pb.h"
 
 extern "C" {
 #include <glpk.h>
@@ -54,6 +57,9 @@ class GlpkSolver : public SolverInterface {
       const CallbackRegistrationProto& callback_registration, Callback cb,
       SolveInterrupter* interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
+  absl::StatusOr<InfeasibleSubsystemResultProto> InfeasibleSubsystem(
+      const SolveParametersProto& parameters, MessageCallback message_cb,
+      SolveInterrupter* interrupter) override;
 
  private:
   // The columns of the GPLK problem.
@@ -192,6 +198,14 @@ class GlpkSolver : public SolverInterface {
 
   // Returns an error if the current thread is no thread_id_.
   absl::Status CheckCurrentThread();
+
+  // Returns an "infeasible" result if the model has integer variables with
+  // empty bounds.
+  //
+  // Integer variables' bounds have to be rounded when passed to GLPK. Thus when
+  // the bounds don't contain an integer point (e.g. lb:3.5 ub:3.6) we end up
+  // with inverted bounds (e.g. lb:4 ub:3).
+  std::optional<SolveResultProto> EmptyIntegerBoundsResult();
 
   // Id of the thread where GlpkSolver was called.
   const std::thread::id thread_id_;

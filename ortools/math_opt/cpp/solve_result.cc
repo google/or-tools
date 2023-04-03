@@ -379,6 +379,11 @@ bool SolveResult::has_primal_feasible_solution() const {
           SolutionStatus::kFeasible);
 }
 
+const PrimalSolution& SolveResult::best_primal_solution() const {
+  CHECK(has_primal_feasible_solution());
+  return *solutions.front().primal_solution;
+}
+
 double SolveResult::best_objective_bound() const {
   return solve_stats.best_dual_bound;
 }
@@ -386,6 +391,11 @@ double SolveResult::best_objective_bound() const {
 double SolveResult::objective_value() const {
   CHECK(has_primal_feasible_solution());
   return solutions[0].primal_solution->objective_value;
+}
+
+double SolveResult::objective_value(const Objective objective) const {
+  CHECK(has_primal_feasible_solution());
+  return solutions[0].primal_solution->get_objective_value(objective);
 }
 
 bool SolveResult::bounded() const {

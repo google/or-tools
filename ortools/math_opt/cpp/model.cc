@@ -22,24 +22,27 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "absl/log/check.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
+#include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"
 #include "ortools/math_opt/constraints/sos/sos1_constraint.h"
 #include "ortools/math_opt/constraints/sos/sos2_constraint.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/update_tracker.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
+#include "ortools/math_opt/storage/linear_expression_data.h"
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 #include "ortools/math_opt/storage/sparse_matrix.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -71,8 +74,9 @@ LinearConstraint Model::AddLinearConstraint(
   const LinearConstraintId constraint = storage()->AddLinearConstraint(
       bounded_expr.lower_bound_minus_offset(),
       bounded_expr.upper_bound_minus_offset(), name);
-  for (auto [variable, coef] : bounded_expr.expression.raw_terms()) {
-    storage()->set_linear_constraint_coefficient(constraint, variable, coef);
+  for (const auto& [variable, coef] : bounded_expr.expression.terms()) {
+    storage()->set_linear_constraint_coefficient(constraint,
+                                                 variable.typed_id(), coef);
   }
   return LinearConstraint(storage(), constraint);
 }
@@ -138,76 +142,133 @@ std::vector<LinearConstraint> Model::SortedLinearConstraints() const {
 void Model::SetObjective(const LinearExpression& objective,
                          const bool is_maximize) {
   CheckOptionalModel(objective.storage());
-  storage()->clear_objective();
-  storage()->set_is_maximize(is_maximize);
-  storage()->set_objective_offset(objective.offset());
-  for (auto [var, coef] : objective.raw_terms()) {
-    storage()->set_linear_objective_coefficient(var, coef);
+  storage()->clear_objective(kPrimaryObjectiveId);
+  storage()->set_is_maximize(kPrimaryObjectiveId, is_maximize);
+  storage()->set_objective_offset(kPrimaryObjectiveId, objective.offset());
+  for (const auto& [var, coef] : objective.terms()) {
+    storage()->set_linear_objective_coefficient(kPrimaryObjectiveId,
+                                                var.typed_id(), coef);
   }
 }
 
 void Model::SetObjective(const QuadraticExpression& objective,
                          const bool is_maximize) {
   CheckOptionalModel(objective.storage());
-  storage()->clear_objective();
-  storage()->set_is_maximize(is_maximize);
-  storage()->set_objective_offset(objective.offset());
-  for (auto [var, coef] : objective.raw_linear_terms()) {
-    storage()->set_linear_objective_coefficient(var, coef);
+  storage()->clear_objective(kPrimaryObjectiveId);
+  storage()->set_is_maximize(kPrimaryObjectiveId, is_maximize);
+  storage()->set_objective_offset(kPrimaryObjectiveId, objective.offset());
+  for (const auto& [var, coef] : objective.linear_terms()) {
+    storage()->set_linear_objective_coefficient(kPrimaryObjectiveId,
+                                                var.typed_id(), coef);
   }
-  for (auto [vars, coef] : objective.raw_quadratic_terms()) {
-    storage()->set_quadratic_objective_coefficient(vars.first, vars.second,
-                                                   coef);
+  for (const auto& [vars, coef] : objective.quadratic_terms()) {
+    storage()->set_quadratic_objective_coefficient(
+        kPrimaryObjectiveId, vars.typed_id().first, vars.typed_id().second,
+        coef);
   }
 }
 
 void Model::AddToObjective(const LinearExpression& objective_terms) {
   CheckOptionalModel(objective_terms.storage());
-  storage()->set_objective_offset(objective_terms.offset() +
-                                  storage()->objective_offset());
-  for (auto [var, coef] : objective_terms.raw_terms()) {
+  storage()->set_objective_offset(
+      kPrimaryObjectiveId,
+      objective_terms.offset() +
+          storage()->objective_offset(kPrimaryObjectiveId));
+  for (const auto& [var, coef] : objective_terms.terms()) {
     storage()->set_linear_objective_coefficient(
-        var, coef + storage()->linear_objective_coefficient(var));
+        kPrimaryObjectiveId, var.typed_id(),
+        coef + storage()->linear_objective_coefficient(kPrimaryObjectiveId,
+                                                       var.typed_id()));
   }
 }
 
 void Model::AddToObjective(const QuadraticExpression& objective_terms) {
   CheckOptionalModel(objective_terms.storage());
-  storage()->set_objective_offset(objective_terms.offset() +
-                                  storage()->objective_offset());
-  for (auto [var, coef] : objective_terms.raw_linear_terms()) {
+  storage()->set_objective_offset(
+      kPrimaryObjectiveId,
+      objective_terms.offset() +
+          storage()->objective_offset(kPrimaryObjectiveId));
+  for (const auto& [var, coef] : objective_terms.linear_terms()) {
     storage()->set_linear_objective_coefficient(
-        var, coef + storage()->linear_objective_coefficient(var));
+        kPrimaryObjectiveId, var.typed_id(),
+        coef + storage()->linear_objective_coefficient(kPrimaryObjectiveId,
+                                                       var.typed_id()));
   }
-  for (auto [vars, coef] : objective_terms.raw_quadratic_terms()) {
+  for (const auto& [vars, coef] : objective_terms.quadratic_terms()) {
     storage()->set_quadratic_objective_coefficient(
-        vars.first, vars.second,
-        coef + storage()->quadratic_objective_coefficient(vars.first,
-                                                          vars.second));
+        kPrimaryObjectiveId, vars.typed_id().first, vars.typed_id().second,
+        coef + storage()->quadratic_objective_coefficient(
+                   kPrimaryObjectiveId, vars.typed_id().first,
+                   vars.typed_id().second));
   }
 }
 
 LinearExpression Model::ObjectiveAsLinearExpression() const {
-  CHECK_EQ(storage()->num_quadratic_objective_terms(), 0)
+  CHECK_EQ(storage()->num_quadratic_objective_terms(kPrimaryObjectiveId), 0)
       << "The objective function contains quadratic terms and cannot be "
          "represented as a LinearExpression";
-  LinearExpression result = storage()->objective_offset();
-  for (const auto& [v, coef] : storage()->linear_objective()) {
+  LinearExpression result = storage()->objective_offset(kPrimaryObjectiveId);
+  for (const auto& [v, coef] :
+       storage()->linear_objective(kPrimaryObjectiveId)) {
     result += Variable(storage(), v) * coef;
   }
   return result;
 }
 
 QuadraticExpression Model::ObjectiveAsQuadraticExpression() const {
-  QuadraticExpression result = storage()->objective_offset();
-  for (const auto& [v, coef] : storage()->linear_objective()) {
+  QuadraticExpression result = storage()->objective_offset(kPrimaryObjectiveId);
+  for (const auto& [v, coef] :
+       storage()->linear_objective(kPrimaryObjectiveId)) {
     result += Variable(storage(), v) * coef;
   }
-  for (const auto& [v1, v2, coef] : storage()->quadratic_objective_terms()) {
+  for (const auto& [v1, v2, coef] :
+       storage()->quadratic_objective_terms(kPrimaryObjectiveId)) {
     result +=
         QuadraticTerm(Variable(storage(), v1), Variable(storage(), v2), coef);
   }
   return result;
+}
+
+std::vector<Objective> Model::AuxiliaryObjectives() const {
+  std::vector<Objective> result;
+  result.reserve(num_auxiliary_objectives());
+  for (const AuxiliaryObjectiveId id : storage()->AuxiliaryObjectives()) {
+    result.push_back(auxiliary_objective(id));
+  }
+  return result;
+}
+
+std::vector<Objective> Model::SortedAuxiliaryObjectives() const {
+  std::vector<Objective> result = AuxiliaryObjectives();
+  std::sort(result.begin(), result.end(),
+            [](const Objective& l, const Objective& r) {
+              return l.typed_id() < r.typed_id();
+            });
+  return result;
+}
+
+void Model::SetObjective(const Objective objective,
+                         const LinearExpression& expression,
+                         const bool is_maximize) {
+  CheckModel(objective.storage());
+  CheckOptionalModel(expression.storage());
+  storage()->clear_objective(objective.typed_id());
+  set_is_maximize(objective, is_maximize);
+  set_objective_offset(objective, expression.offset());
+  for (const auto [var, coef] : expression.terms()) {
+    set_objective_coefficient(objective, var, coef);
+  }
+}
+
+void Model::AddToObjective(Objective objective,
+                           const LinearExpression& expression) {
+  CheckModel(objective.storage());
+  CheckOptionalModel(expression.storage());
+  set_objective_offset(objective, objective.offset() + expression.offset());
+  for (const auto [var, coef] : expression.terms()) {
+    set_objective_coefficient(objective, var,
+                              objective.coefficient(var) + coef);
+  }
 }
 
 ModelProto Model::ExportModel() const { return storage()->ExportModel(); }
@@ -225,9 +286,22 @@ std::ostream& operator<<(std::ostream& ostr, const Model& model) {
   if (!model.name().empty()) ostr << " " << model.name();
   ostr << ":\n";
 
-  ostr << " Objective:\n"
-       << (model.is_maximize() ? "  maximize " : "  minimize ")
-       << model.ObjectiveAsQuadraticExpression() << "\n";
+  if (model.num_auxiliary_objectives() == 0) {
+    ostr << " Objective:\n"
+         << (model.is_maximize() ? "  maximize " : "  minimize ")
+         << model.ObjectiveAsQuadraticExpression() << "\n";
+  } else {
+    ostr << " Objectives:\n";
+    const auto stream_objective = [](std::ostream& ostr, const Objective obj) {
+      ostr << "  " << obj << " (priority " << obj.priority()
+           << "): " << (obj.maximize() ? "maximize " : "minimize ")
+           << obj.AsQuadraticExpression() << "\n";
+    };
+    stream_objective(ostr, model.primary_objective());
+    for (const Objective obj : model.SortedAuxiliaryObjectives()) {
+      stream_objective(ostr, obj);
+    }
+  }
 
   ostr << " Linear constraints:\n";
   for (const LinearConstraint constraint : model.SortedLinearConstraints()) {
@@ -241,6 +315,14 @@ std::ostream& operator<<(std::ostream& ostr, const Model& model) {
          model.SortedQuadraticConstraints()) {
       ostr << "  " << constraint << ": "
            << constraint.AsBoundedQuadraticExpression() << "\n";
+    }
+  }
+
+  if (model.num_second_order_cone_constraints() > 0) {
+    ostr << " Second-order cone constraints:\n";
+    for (const SecondOrderConeConstraint constraint :
+         model.SortedSecondOrderConeConstraints()) {
+      ostr << "  " << constraint << ": " << constraint.ToString() << "\n";
     }
   }
 
@@ -305,8 +387,9 @@ QuadraticConstraint Model::AddQuadraticConstraint(
   }
   SparseSymmetricMatrix quadratic_terms;
   for (const auto& [var_ids, coeff] :
-       bounded_expr.expression.raw_quadratic_terms()) {
-    quadratic_terms.set(var_ids.first, var_ids.second, coeff);
+       bounded_expr.expression.quadratic_terms()) {
+    quadratic_terms.set(var_ids.typed_id().first, var_ids.typed_id().second,
+                        coeff);
   }
   const QuadraticConstraintId id =
       storage()->AddAtomicConstraint(QuadraticConstraintData{
@@ -319,6 +402,27 @@ QuadraticConstraint Model::AddQuadraticConstraint(
   return QuadraticConstraint(storage(), id);
 }
 
+// --------------------- Second-order cone constraints -------------------------
+
+SecondOrderConeConstraint Model::AddSecondOrderConeConstraint(
+    const std::vector<LinearExpression>& arguments_to_norm,
+    const LinearExpression& upper_bound, const absl::string_view name) {
+  CheckOptionalModel(upper_bound.storage());
+  std::vector<LinearExpressionData> arguments_to_norm_data;
+  arguments_to_norm_data.reserve(arguments_to_norm.size());
+  for (const LinearExpression& expr : arguments_to_norm) {
+    CheckOptionalModel(expr.storage());
+    arguments_to_norm_data.push_back(FromLinearExpression(expr));
+  }
+  const SecondOrderConeConstraintId id =
+      storage()->AddAtomicConstraint(SecondOrderConeConstraintData{
+          .upper_bound = FromLinearExpression(upper_bound),
+          .arguments_to_norm = std::move(arguments_to_norm_data),
+          .name = std::string(name),
+      });
+  return SecondOrderConeConstraint(storage(), id);
+}
+
 // --------------------------- SOS1 constraints --------------------------------
 
 namespace {
@@ -326,14 +430,13 @@ namespace {
 template <typename SosData>
 SosData MakeSosData(const std::vector<LinearExpression>& expressions,
                     std::vector<double> weights, const absl::string_view name) {
-  std::vector<typename SosData::LinearExpression> storage_expressions;
+  std::vector<LinearExpressionData> storage_expressions;
   storage_expressions.reserve(expressions.size());
   for (const LinearExpression& expr : expressions) {
-    typename SosData::LinearExpression& storage_expr =
-        storage_expressions.emplace_back();
+    LinearExpressionData& storage_expr = storage_expressions.emplace_back();
     storage_expr.offset = expr.offset();
-    for (const auto [var, coeff] : expr.raw_terms()) {
-      storage_expr.terms[var] = coeff;
+    for (const auto& [var, coeff] : expr.terms()) {
+      storage_expr.coeffs.set(var.typed_id(), coeff);
     }
   }
   return SosData(std::move(storage_expressions), std::move(weights),

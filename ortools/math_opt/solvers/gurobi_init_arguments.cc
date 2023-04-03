@@ -15,7 +15,6 @@
 
 #include <optional>
 #include <string>
-#include <type_traits>
 
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"

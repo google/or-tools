@@ -28,6 +28,8 @@
 
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/core/solver.h"
+#include "ortools/math_opt/cpp/infeasible_subsystem_arguments.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/infeasible_subsystem_result.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/cpp/parameters.h"             // IWYU pragma: export
 #include "ortools/math_opt/cpp/solve_arguments.h"        // IWYU pragma: export
@@ -49,7 +51,7 @@ namespace math_opt {
 // solution was found.
 //
 // Memory model: the returned SolveResult owns its own memory (for solutions,
-// solve stats, etc.), EXPECT for a pointer back to the model. As a result:
+// solve stats, etc.), EXCEPT for a pointer back to the model. As a result:
 //  * Keep the model alive to access SolveResult,
 //  * Avoid unnecessarily copying SolveResult,
 //  * The result is generally accessible after mutating the model, but some care
@@ -62,6 +64,27 @@ namespace math_opt {
 absl::StatusOr<SolveResult> Solve(const Model& model, SolverType solver_type,
                                   const SolveArguments& solve_args = {},
                                   const SolverInitArguments& init_args = {});
+
+// Computes an infeasible subsystem of the input model.
+//
+// A Status error will be returned if the inputs are invalid or there is an
+// unexpected failure in an underlying solver or for some internal math_opt
+// errors. Otherwise, check InfeasibleSubsystemResult::feasibility to see if an
+// infeasible subsystem was found.
+//
+// Memory model: the returned InfeasibleSubsystemResult owns its own memory (for
+// subsystems, solve stats, etc.), EXCEPT for a pointer back to the model. As a
+// result:
+//  * Keep the model alive to access InfeasibleSubsystemResult,
+//  * Avoid unnecessarily copying InfeasibleSubsystemResult,
+//  * The result is generally accessible after mutating the model, but some care
+//    is needed if variables or linear constraints are added or deleted.
+//
+// Thread-safety: this method is safe to call concurrently on the same Model.
+absl::StatusOr<InfeasibleSubsystemResult> InfeasibleSubsystem(
+    const Model& model, SolverType solver_type,
+    const InfeasibleSubsystemArguments& infeasible_subsystem_args = {},
+    const SolverInitArguments& init_args = {});
 
 // Incremental solve of a model.
 //
@@ -173,6 +196,10 @@ class IncrementalSolver {
   // This is an advanced API, most users should use Solve().
   absl::StatusOr<SolveResult> SolveWithoutUpdate(
       const SolveArguments& arguments = {}) const;
+
+  SolverType solver_type() const { return solver_type_; }
+
+  // TODO(b/273961536): Add InfeasibleSubsystem() member function.
 
  private:
   IncrementalSolver(SolverType solver_type, SolverInitArguments init_args,

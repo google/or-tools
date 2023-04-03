@@ -17,6 +17,7 @@ cc_binary(
     name = "mathopt_solve",
     srcs = ["mathopt_solve_main.cc"],
     deps = [
+        ":file_format_flags",
         "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/math_opt:parameters_cc_proto",
@@ -26,6 +27,7 @@ cc_binary(
         "//ortools/math_opt/io:mps_converter",
         "//ortools/math_opt/io:names_removal",
         "//ortools/math_opt/io:proto_converter",
+        "//ortools/math_opt/labs:solution_feasibility_checker",
         "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:glpk_solver",
@@ -38,5 +40,46 @@ cc_binary(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_binary(
+    name = "mathopt_convert",
+    srcs = ["mathopt_convert_main.cc"],
+    deps = [
+        ":file_format_flags",
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/io:names_removal",
+        "//ortools/util:status_macros",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "file_format_flags",
+    srcs = ["file_format_flags.cc"],
+    hdrs = ["file_format_flags.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:status_macros",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt/io:lp_converter",
+        "//ortools/math_opt/io:mps_converter",
+        "//ortools/math_opt/io:proto_converter",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
     ],
 )

@@ -91,13 +91,9 @@ CallbackData::CallbackData(const ModelStorage* storage,
 
 absl::Status CallbackRegistration::CheckModelStorage(
     const ModelStorage* const expected_storage) const {
-  RETURN_IF_ERROR(
-      internal::CheckModelStorage(/*storage=*/mip_node_filter.storage(),
-                                  /*expected_storage=*/expected_storage))
+  RETURN_IF_ERROR(mip_node_filter.CheckModelStorage(expected_storage))
       << "invalid mip_node_filter";
-  RETURN_IF_ERROR(
-      internal::CheckModelStorage(/*storage=*/mip_solution_filter.storage(),
-                                  /*expected_storage=*/expected_storage))
+  RETURN_IF_ERROR(mip_solution_filter.CheckModelStorage(expected_storage))
       << "invalid mip_solution_filter";
   return absl::OkStatus();
 }
@@ -125,9 +121,11 @@ absl::Status CallbackResult::CheckModelStorage(
         << "invalid new_constraints";
   }
   for (const VariableMap<double>& solution : suggested_solutions) {
-    RETURN_IF_ERROR(internal::CheckModelStorage(
-        /*storage=*/solution.storage(), /*expected_storage=*/expected_storage))
-        << "invalid suggested_solutions";
+    for (const auto& [v, _] : solution) {
+      RETURN_IF_ERROR(internal::CheckModelStorage(
+          /*storage=*/v.storage(), /*expected_storage=*/expected_storage))
+          << "invalid variable " << v << " in suggested_solutions";
+    }
   }
   return absl::OkStatus();
 }

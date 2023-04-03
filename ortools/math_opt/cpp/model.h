@@ -24,19 +24,21 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "absl/log/check.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"  // IWYU pragma: export
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"  // IWYU pragma: export
+#include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"  // IWYU pragma: export
 #include "ortools/math_opt/constraints/sos/sos1_constraint.h"  // IWYU pragma: export
 #include "ortools/math_opt/constraints/sos/sos2_constraint.h"  // IWYU pragma: export
 #include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/objective.h"          // IWYU pragma: export
 #include "ortools/math_opt/cpp/update_tracker.h"     // IWYU pragma: export
 #include "ortools/math_opt/cpp/variable_and_expressions.h"  // IWYU pragma: export
 #include "ortools/math_opt/model.pb.h"         // IWYU pragma: export
@@ -411,6 +413,64 @@ class Model {
   inline std::vector<QuadraticConstraint> SortedQuadraticConstraints() const;
 
   //////////////////////////////////////////////////////////////////////////////
+  // SecondOrderConeConstraint methods
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Adds a second-order cone constraint to the model of the form
+  //    ||arguments_to_norm||₂ ≤ upper_bound.
+  //
+  // Usage:
+  //   Model model = ...;
+  //   const Variable x = ...;
+  //   const Variable y = ...;
+  //   model.AddSecondOrderConeConstraint({x, y}, 1.0, "soc");
+  //   model.AddSecondOrderConeConstraint({1.0, 3 * y - x}, 2 * x);
+  SecondOrderConeConstraint AddSecondOrderConeConstraint(
+      const std::vector<LinearExpression>& arguments_to_norm,
+      const LinearExpression& upper_bound, absl::string_view name = "");
+
+  // Removes a second-order cone constraint from the model.
+  //
+  // It is an error to use any reference to this second-order cone constraint
+  // after this operation. Runs in O(#linear terms appearing in constraint).
+  inline void DeleteSecondOrderConeConstraint(
+      SecondOrderConeConstraint constraint);
+
+  // The number of second-order cone constraints in the model.
+  //
+  // Equal to the number of second-order cone constraints created minus the
+  // number of second-order cone constraints deleted.
+  inline int64_t num_second_order_cone_constraints() const;
+
+  // The returned id of the next call to AddSecondOrderConeConstraint.
+  inline int64_t next_second_order_cone_constraint_id() const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_second_order_cone_constraint(int64_t id) const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_second_order_cone_constraint(
+      SecondOrderConeConstraintId id) const;
+
+  // Will CHECK if has_second_order_cone_constraint(id) is false.
+  inline SecondOrderConeConstraint second_order_cone_constraint(
+      int64_t id) const;
+
+  // Will CHECK if has_second_order_cone_constraint(id) is false.
+  inline SecondOrderConeConstraint second_order_cone_constraint(
+      SecondOrderConeConstraintId id) const;
+
+  // Returns all the existing (created and not deleted) second-order cone
+  // constraints in the model in an arbitrary order.
+  inline std::vector<SecondOrderConeConstraint> SecondOrderConeConstraints()
+      const;
+
+  // Returns all the existing (created and not deleted) second-order cone
+  // constraints in the model sorted by id.
+  inline std::vector<SecondOrderConeConstraint>
+  SortedSecondOrderConeConstraints() const;
+
+  //////////////////////////////////////////////////////////////////////////////
   // Sos1Constraint methods
   //////////////////////////////////////////////////////////////////////////////
 
@@ -642,6 +702,11 @@ class Model {
   LinearExpression ObjectiveAsLinearExpression() const;
   QuadraticExpression ObjectiveAsQuadraticExpression() const;
 
+  // Returns an object referring to the primary objective in the model. Can be
+  // used with the multi-objective API in the same way that an auxiliary
+  // objective can be.
+  inline Objective primary_objective() const;
+
   // Returns 0.0 if this variable has no linear objective coefficient.
   inline double objective_coefficient(Variable variable) const;
 
@@ -661,8 +726,9 @@ class Model {
   inline void set_objective_coefficient(Variable first_variable,
                                         Variable second_variable, double value);
 
-  // Equivalent to calling set_linear_coefficient(v, 0.0) for every variable
-  // with nonzero objective coefficient.
+  // Sets the objective offset, linear terms, and quadratic terms of the
+  // objective to zero. The name, direction, and priority are unchanged.
+  // Equivalent to SetObjective(0.0, is_maximize()).
   //
   // Runs in O(#linear and quadratic objective terms with nonzero coefficient).
   inline void clear_objective();
@@ -682,6 +748,103 @@ class Model {
 
   // Prefer set_maximize() and set_minimize() above for more readable code.
   inline void set_is_maximize(bool is_maximize);
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Auxiliary objective methods
+  //
+  // This is an API for creating and deleting auxiliary objectives. To modify
+  // them, use the multi-objective API below.
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Adds an empty (== 0) auxiliary minimization objective to the model.
+  inline Objective AddAuxiliaryObjective(int64_t priority,
+                                         absl::string_view name = {});
+  // Adds `expression` as an auxiliary objective to the model.
+  inline Objective AddAuxiliaryObjective(const LinearExpression& expression,
+                                         bool is_maximize, int64_t priority,
+                                         absl::string_view name = {});
+  // Adds `expression` as an auxiliary maximization objective to the model.
+  inline Objective AddMaximizationObjective(const LinearExpression& expression,
+                                            int64_t priority,
+                                            absl::string_view name = {});
+  // Adds `expression` as an auxiliary minimization objective to the model.
+  inline Objective AddMinimizationObjective(const LinearExpression& expression,
+                                            int64_t priority,
+                                            absl::string_view name = {});
+
+  // Removes an auxiliary objective from the model.
+  //
+  // It is an error to use any reference to this auxiliary objective after this
+  // operation. Runs in O(1) time.
+  //
+  // Will CHECK-fail if `objective` is from another model, has already been
+  // deleted, or is a primary objective.
+  inline void DeleteAuxiliaryObjective(Objective objective);
+
+  // The number of auxiliary objectives in the model.
+  //
+  // Equal to the number of auxiliary objectives created minus the number of
+  // auxiliary objectives deleted.
+  inline int64_t num_auxiliary_objectives() const;
+
+  // The returned id of the next call to AddAuxiliaryObjectve.
+  inline int64_t next_auxiliary_objective_id() const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_auxiliary_objective(int64_t id) const;
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_auxiliary_objective(AuxiliaryObjectiveId id) const;
+
+  // Will CHECK if has_auxiliary_objective(id) is false.
+  inline Objective auxiliary_objective(int64_t id) const;
+
+  // Will CHECK if has_auxiliary_objective(id) is false.
+  inline Objective auxiliary_objective(AuxiliaryObjectiveId id) const;
+
+  // Returns all the existing (created and not deleted) auxiliary objectives in
+  // the model in an arbitrary order.
+  std::vector<Objective> AuxiliaryObjectives() const;
+
+  // Returns all the existing (created and not deleted) auxiliary objectives in
+  // the model sorted by id.
+  std::vector<Objective> SortedAuxiliaryObjectives() const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Multi-objective methods
+  //
+  // This is an API for setting objective properties (for either primary or
+  // auxiliary objectives). Only linear objectives are supported through this
+  // API. To query objective properties, use the methods on `Objective`.
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Sets `objective` to be maximizing `expression`.
+  inline void Maximize(Objective objective, const LinearExpression& expression);
+  // Sets `objective` to be minimizing `expression`.
+  inline void Minimize(Objective objective, const LinearExpression& expression);
+  // Sets the objective to optimize the provided expression.
+  void SetObjective(Objective objective, const LinearExpression& expression,
+                    bool is_maximize);
+
+  // Adds the provided expression terms to the objective.
+  void AddToObjective(Objective objective, const LinearExpression& expression);
+
+  // Sets the priority for an objective (lower is more important). `priority`
+  // must be nonnegative.
+  inline void set_objective_priority(Objective objective, int64_t priority);
+
+  // Setting a value to 0.0 will delete the variable from the underlying sparse
+  // representation (and has no effect if the variable is not present).
+  inline void set_objective_coefficient(Objective objective, Variable variable,
+                                        double value);
+
+  inline void set_objective_offset(Objective objective, double value);
+
+  inline void set_maximize(Objective objective);
+  inline void set_minimize(Objective objective);
+
+  // Prefer set_maximize() and set_minimize() above for more readable code.
+  inline void set_is_maximize(Objective objective, bool is_maximize);
 
   // Returns a proto representation of the optimization model.
   //
@@ -1027,6 +1190,53 @@ std::vector<QuadraticConstraint> Model::SortedQuadraticConstraints() const {
   return SortedAtomicConstraints<QuadraticConstraint>(*storage());
 }
 
+// --------------------- Second-order cone constraints -------------------------
+
+void Model::DeleteSecondOrderConeConstraint(
+    const SecondOrderConeConstraint constraint) {
+  CheckModel(constraint.storage());
+  storage()->DeleteAtomicConstraint(constraint.typed_id());
+}
+
+int64_t Model::num_second_order_cone_constraints() const {
+  return storage()->num_constraints<SecondOrderConeConstraintId>();
+}
+
+int64_t Model::next_second_order_cone_constraint_id() const {
+  return storage()->next_constraint_id<SecondOrderConeConstraintId>().value();
+}
+
+bool Model::has_second_order_cone_constraint(const int64_t id) const {
+  return has_second_order_cone_constraint(SecondOrderConeConstraintId(id));
+}
+
+bool Model::has_second_order_cone_constraint(
+    const SecondOrderConeConstraintId id) const {
+  return storage()->has_constraint(id);
+}
+
+SecondOrderConeConstraint Model::second_order_cone_constraint(
+    const int64_t id) const {
+  return second_order_cone_constraint(SecondOrderConeConstraintId(id));
+}
+
+SecondOrderConeConstraint Model::second_order_cone_constraint(
+    const SecondOrderConeConstraintId id) const {
+  CHECK(has_second_order_cone_constraint(id))
+      << "No second-order cone constraint with id: " << id.value();
+  return SecondOrderConeConstraint(storage(), id);
+}
+
+std::vector<SecondOrderConeConstraint> Model::SecondOrderConeConstraints()
+    const {
+  return AtomicConstraints<SecondOrderConeConstraint>(*storage());
+}
+
+std::vector<SecondOrderConeConstraint> Model::SortedSecondOrderConeConstraints()
+    const {
+  return SortedAtomicConstraints<SecondOrderConeConstraint>(*storage());
+}
+
 // --------------------------- SOS1 constraints --------------------------------
 
 void Model::DeleteSos1Constraint(const Sos1Constraint constraint) {
@@ -1205,23 +1415,30 @@ void Model::AddToObjective(const LinearTerm objective) {
   AddToObjective(LinearExpression(objective));
 }
 
+Objective Model::primary_objective() const {
+  return Objective::Primary(storage());
+}
+
 double Model::objective_coefficient(const Variable variable) const {
   CheckModel(variable.storage());
-  return storage()->linear_objective_coefficient(variable.typed_id());
+  return storage()->linear_objective_coefficient(kPrimaryObjectiveId,
+                                                 variable.typed_id());
 }
 
 double Model::objective_coefficient(const Variable first_variable,
                                     const Variable second_variable) const {
   CheckModel(first_variable.storage());
   CheckModel(second_variable.storage());
-  return storage()->quadratic_objective_coefficient(first_variable.typed_id(),
+  return storage()->quadratic_objective_coefficient(kPrimaryObjectiveId,
+                                                    first_variable.typed_id(),
                                                     second_variable.typed_id());
 }
 
 void Model::set_objective_coefficient(const Variable variable,
                                       const double value) {
   CheckModel(variable.storage());
-  storage()->set_linear_objective_coefficient(variable.typed_id(), value);
+  storage()->set_linear_objective_coefficient(kPrimaryObjectiveId,
+                                              variable.typed_id(), value);
 }
 
 void Model::set_objective_coefficient(const Variable first_variable,
@@ -1230,15 +1447,18 @@ void Model::set_objective_coefficient(const Variable first_variable,
   CheckModel(first_variable.storage());
   CheckModel(second_variable.storage());
   storage()->set_quadratic_objective_coefficient(
-      first_variable.typed_id(), second_variable.typed_id(), value);
+      kPrimaryObjectiveId, first_variable.typed_id(),
+      second_variable.typed_id(), value);
 }
 
-void Model::clear_objective() { storage()->clear_objective(); }
+void Model::clear_objective() {
+  storage()->clear_objective(kPrimaryObjectiveId);
+}
 
 bool Model::is_objective_coefficient_nonzero(const Variable variable) const {
   CheckModel(variable.storage());
   return storage()->is_linear_objective_coefficient_nonzero(
-      variable.typed_id());
+      kPrimaryObjectiveId, variable.typed_id());
 }
 
 bool Model::is_objective_coefficient_nonzero(
@@ -1246,23 +1466,140 @@ bool Model::is_objective_coefficient_nonzero(
   CheckModel(first_variable.storage());
   CheckModel(second_variable.storage());
   return storage()->is_quadratic_objective_coefficient_nonzero(
-      first_variable.typed_id(), second_variable.typed_id());
+      kPrimaryObjectiveId, first_variable.typed_id(),
+      second_variable.typed_id());
 }
 
-double Model::objective_offset() const { return storage()->objective_offset(); }
+double Model::objective_offset() const {
+  return storage()->objective_offset(kPrimaryObjectiveId);
+}
 
 void Model::set_objective_offset(const double value) {
-  storage()->set_objective_offset(value);
+  storage()->set_objective_offset(kPrimaryObjectiveId, value);
 }
 
-bool Model::is_maximize() const { return storage()->is_maximize(); }
+bool Model::is_maximize() const {
+  return storage()->is_maximize(kPrimaryObjectiveId);
+}
 
-void Model::set_maximize() { storage()->set_maximize(); }
+void Model::set_maximize() { storage()->set_maximize(kPrimaryObjectiveId); }
 
-void Model::set_minimize() { storage()->set_minimize(); }
+void Model::set_minimize() { storage()->set_minimize(kPrimaryObjectiveId); }
 
 void Model::set_is_maximize(const bool is_maximize) {
-  storage()->set_is_maximize(is_maximize);
+  storage()->set_is_maximize(kPrimaryObjectiveId, is_maximize);
+}
+
+// -------------------------- Auxiliary objectives -----------------------------
+
+Objective Model::AddAuxiliaryObjective(const int64_t priority,
+                                       const absl::string_view name) {
+  return Objective::Auxiliary(storage(),
+                              storage()->AddAuxiliaryObjective(priority, name));
+}
+
+Objective Model::AddAuxiliaryObjective(const LinearExpression& expression,
+                                       const bool is_maximize,
+                                       const int64_t priority,
+                                       const absl::string_view name) {
+  const Objective obj = AddAuxiliaryObjective(priority, name);
+  SetObjective(obj, expression, is_maximize);
+  return obj;
+}
+
+Objective Model::AddMaximizationObjective(const LinearExpression& expression,
+                                          const int64_t priority,
+                                          const absl::string_view name) {
+  return AddAuxiliaryObjective(expression, /*is_maximize=*/true, priority,
+                               name);
+}
+
+Objective Model::AddMinimizationObjective(const LinearExpression& expression,
+                                          const int64_t priority,
+                                          const absl::string_view name) {
+  return AddAuxiliaryObjective(expression, /*is_maximize=*/false, priority,
+                               name);
+}
+
+void Model::DeleteAuxiliaryObjective(const Objective objective) {
+  CheckModel(objective.storage());
+  CHECK(!objective.is_primary()) << "cannot delete primary objective";
+  const AuxiliaryObjectiveId id = *objective.typed_id();
+  CHECK(storage()->has_auxiliary_objective(id))
+      << "cannot delete unrecognized auxiliary objective id: " << id;
+  storage()->DeleteAuxiliaryObjective(id);
+}
+
+int64_t Model::num_auxiliary_objectives() const {
+  return storage()->num_auxiliary_objectives();
+}
+
+int64_t Model::next_auxiliary_objective_id() const {
+  return storage()->next_auxiliary_objective_id().value();
+}
+
+bool Model::has_auxiliary_objective(const int64_t id) const {
+  return has_auxiliary_objective(AuxiliaryObjectiveId(id));
+}
+
+bool Model::has_auxiliary_objective(const AuxiliaryObjectiveId id) const {
+  return storage()->has_auxiliary_objective(id);
+}
+
+Objective Model::auxiliary_objective(const int64_t id) const {
+  return auxiliary_objective(AuxiliaryObjectiveId(id));
+}
+
+Objective Model::auxiliary_objective(const AuxiliaryObjectiveId id) const {
+  CHECK(has_auxiliary_objective(id))
+      << "unrecognized auxiliary objective id: " << id;
+  return Objective::Auxiliary(storage(), id);
+}
+
+// ---------------------------- Multi-objective --------------------------------
+
+void Model::Maximize(const Objective objective,
+                     const LinearExpression& expression) {
+  SetObjective(objective, expression, /*is_maximize=*/true);
+}
+
+void Model::Minimize(const Objective objective,
+                     const LinearExpression& expression) {
+  SetObjective(objective, expression, /*is_maximize=*/false);
+}
+
+void Model::set_objective_priority(const Objective objective,
+                                   const int64_t priority) {
+  CheckModel(objective.storage());
+  storage()->set_objective_priority(objective.typed_id(), priority);
+}
+
+void Model::set_objective_coefficient(const Objective objective,
+                                      const Variable variable,
+                                      const double value) {
+  CheckModel(objective.storage());
+  CheckModel(variable.storage());
+  storage()->set_linear_objective_coefficient(objective.typed_id(),
+                                              variable.typed_id(), value);
+}
+
+void Model::set_objective_offset(const Objective objective,
+                                 const double value) {
+  CheckModel(objective.storage());
+  storage()->set_objective_offset(objective.typed_id(), value);
+}
+
+void Model::set_maximize(const Objective objective) {
+  set_is_maximize(objective, /*is_maximize=*/true);
+}
+
+void Model::set_minimize(const Objective objective) {
+  set_is_maximize(objective, /*is_maximize=*/false);
+}
+
+void Model::set_is_maximize(const Objective objective, const bool is_maximize) {
+  CheckModel(objective.storage());
+  storage()->set_is_maximize(objective.typed_id(), is_maximize);
 }
 
 void Model::CheckOptionalModel(const ModelStorage* const other_storage) const {

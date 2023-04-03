@@ -13,7 +13,6 @@
 
 #include "ortools/math_opt/solvers/cp_sat_solver.h"
 
-#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdint>
@@ -25,6 +24,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -32,10 +32,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
@@ -47,6 +47,7 @@
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/io/proto_converter.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -113,6 +114,10 @@ std::vector<std::string> SetSolveParameters(
     request.set_solver_time_limit_seconds(absl::ToDoubleSeconds(
         util_time::DecodeGoogleApiProto(parameters.time_limit()).value()));
   }
+  if (parameters.has_iteration_limit()) {
+    warnings.push_back(
+        "The iteration_limit parameter is not supported for CP-SAT.");
+  }
   if (parameters.has_node_limit()) {
     warnings.push_back("The node_limit parameter is not supported for CP-SAT.");
   }
@@ -167,7 +172,7 @@ std::vector<std::string> SetSolveParameters(
   }
   if (parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
     warnings.push_back(
-        absl::StrCat("Setting the LP Algorithm (was set to ",
+        absl::StrCat("Setting lp_algorithm (was set to ",
                      ProtoEnumToString(parameters.lp_algorithm()),
                      ") is not supported for CP_SAT solver"));
   }
@@ -421,7 +426,7 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
 
   std::function<void(const std::string&)> logging_callback;
   if (message_cb != nullptr) {
-    logging_callback = [&](const std::string& message) {
+    logging_callback = [&](absl::string_view message) {
       message_cb(absl::StrSplit(message, '\n'));
     };
   }
@@ -546,6 +551,13 @@ InvertedBounds CpSatSolver::ListInvertedBounds() const {
   }
 
   return inverted_bounds;
+}
+
+absl::StatusOr<InfeasibleSubsystemResultProto> CpSatSolver::InfeasibleSubsystem(
+    const SolveParametersProto& parameters, MessageCallback message_cb,
+    SolveInterrupter* const interrupter) {
+  return absl::UnimplementedError(
+      "CPSAT does not provide a method to compute an infeasible subsystem");
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_CP_SAT, CpSatSolver::New);

@@ -1,0 +1,42 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Proto messages specific to GLPK.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+// GLPK specific parameters for solving.
+//
+// Fields are optional to enable to capture user intention; if they set
+// explicitly a value to then no generic solve parameters will overwrite this
+// parameter. User specified solver specific parameters have priority on generic
+// parameters.
+message GlpkParametersProto {
+  // Compute the primal or dual unbound ray when the variable (structural or
+  // auxiliary) causing the unboundness is identified (see glp_get_unbnd_ray()).
+  //
+  // The unset value is equivalent to false.
+  //
+  // Rays are only available when solving linear programs, they are not
+  // available for MIPs. On top of that they are only available when using a
+  // simplex algorithm with the presolve disabled.
+  //
+  // A primal ray can only be built if the chosen LP algorithm is
+  // LP_ALGORITHM_PRIMAL_SIMPLEX. Same for a dual ray and
+  // LP_ALGORITHM_DUAL_SIMPLEX.
+  //
+  // The computation involves the basis factorization to be available which may
+  // lead to extra computations/errors.
+  optional bool compute_unbound_rays_if_possible = 1;
+}

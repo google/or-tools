@@ -20,6 +20,7 @@
 namespace operations_research {
 namespace math_opt {
 
+absl::Status ValidateFeasibilityStatus(const FeasibilityStatusProto& status);
 absl::Status ValidateProblemStatus(const ProblemStatusProto& status);
 absl::Status ValidateSolveStats(const SolveStatsProto& solve_stats);
 

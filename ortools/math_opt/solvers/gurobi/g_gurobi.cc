@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
@@ -60,6 +61,77 @@ int GurobiCallback(GRBmodel* const model, void* const cbdata, const int where,
   }
   return kGrbOk;
 }
+
+// A class for handling callback management (setting/unsetting) and their
+// associated errors. Users create this handler to register their callback, do
+// something, then call `Flush()` to flush errors returned from the callback,
+// and then finally call `Release()` to clear the registered callback. This
+// class uses RAII to attempt to automatically clear the callback if your code
+// returns prior to calling `Release()` manually, but note that this does not
+// propagate any errors if it fails.
+
+// A typical use case would be:
+//
+// ASSIGN_OR_RETURN(const auto scope, ScopedCallback::New(this, std::move(cb)));
+// const int error = GRBxxx(gurobi_model_);
+// RETURN_IF_ERROR(scope->Flush());
+// RETURN_IF_ERROR(ToStatus(error));
+// return scope->Release();
+class ScopedCallback {
+ public:
+  ScopedCallback(const ScopedCallback&) = delete;
+  ScopedCallback& operator=(const ScopedCallback&) = delete;
+  ScopedCallback(ScopedCallback&&) = delete;
+  ScopedCallback& operator=(ScopedCallback&&) = delete;
+
+  // Returned object retains a pointer to `gurobi`, which must not be null.
+  static absl::StatusOr<std::unique_ptr<ScopedCallback>> New(
+      Gurobi* const gurobi, Gurobi::Callback cb) {
+    CHECK(gurobi != nullptr);
+    auto scope = absl::WrapUnique(new ScopedCallback(gurobi));
+    if (cb != nullptr) {
+      scope->user_cb_data_.user_cb = std::move(cb);
+      scope->user_cb_data_.gurobi = gurobi;
+      RETURN_IF_ERROR(gurobi->ToStatus(GRBsetcallbackfunc(
+          gurobi->model(), GurobiCallback, &scope->user_cb_data_)));
+      scope->needs_cleanup_ = true;
+    }
+    return scope;
+  }
+
+  // Propagates any errors returned from the callback.
+  absl::Status Flush() {
+    const absl::Status status = std::move(user_cb_data_.status);
+    user_cb_data_.status = absl::OkStatus();
+    return status;
+  }
+
+  // Clears the registered callback.
+  absl::Status Release() {
+    if (needs_cleanup_) {
+      needs_cleanup_ = false;
+      return gurobi_->ToStatus(
+          GRBsetcallbackfunc(gurobi_->model(), nullptr, nullptr));
+    }
+    return absl::OkStatus();
+  }
+
+  ~ScopedCallback() {
+    if (const absl::Status s = Flush(); !s.ok()) {
+      LOG(ERROR) << "Error returned from callback: " << s;
+    }
+    if (const absl::Status s = Release(); !s.ok()) {
+      LOG(ERROR) << "Error cleaning up callback: " << s;
+    }
+  }
+
+ private:
+  explicit ScopedCallback(Gurobi* const gurobi) : gurobi_(gurobi) {}
+
+  bool needs_cleanup_ = false;
+  Gurobi* gurobi_;
+  UserCallbackData user_cb_data_;
+};
 
 }  // namespace
 
@@ -454,35 +526,26 @@ absl::Status Gurobi::UpdateModel() {
 }
 
 absl::Status Gurobi::Optimize(Callback cb) {
-  bool needs_cb_cleanup = false;
-  UserCallbackData user_cb_data;
-  if (cb != nullptr) {
-    user_cb_data.user_cb = std::move(cb);
-    user_cb_data.gurobi = this;
-    RETURN_IF_ERROR(ToStatus(
-        GRBsetcallbackfunc(gurobi_model_, GurobiCallback, &user_cb_data)));
-    needs_cb_cleanup = true;
-  }
+  ASSIGN_OR_RETURN(const auto scope, ScopedCallback::New(this, std::move(cb)));
+  const int error = GRBoptimize(gurobi_model_);
+  RETURN_IF_ERROR(scope->Flush());
+  RETURN_IF_ERROR(ToStatus(error));
+  return scope->Release();
+}
 
-  // Failsafe to try and clear the callback if there is another error. We cannot
-  // raise an error in a destructor, we can only log it.
-  auto callback_cleanup = absl::MakeCleanup([&]() {
-    if (needs_cb_cleanup) {
-      int error = GRBsetcallbackfunc(gurobi_model_, nullptr, nullptr);
-      if (error != kGrbOk) {
-        LOG(ERROR) << "Error cleaning up callback";
-      }
-    }
-  });
-  absl::Status solve_status = ToStatus(GRBoptimize(gurobi_model_));
-  RETURN_IF_ERROR(user_cb_data.status) << "Error in Optimize callback.";
-  RETURN_IF_ERROR(solve_status);
-  if (needs_cb_cleanup) {
-    needs_cb_cleanup = false;
-    RETURN_IF_ERROR(
-        ToStatus(GRBsetcallbackfunc(gurobi_model_, nullptr, nullptr)));
+absl::StatusOr<bool> Gurobi::ComputeIIS(Callback cb) {
+  ASSIGN_OR_RETURN(const auto scope, ScopedCallback::New(this, std::move(cb)));
+  const int error = GRBcomputeIIS(gurobi_model_);
+  RETURN_IF_ERROR(scope->Flush());
+  if (error == GRB_ERROR_IIS_NOT_INFEASIBLE) {
+    RETURN_IF_ERROR(scope->Release());
+    return false;
+  } else if (error == kGrbOk) {
+    RETURN_IF_ERROR(scope->Release());
+    return true;
   }
-  return absl::OkStatus();
+  RETURN_IF_ERROR(ToStatus(error));
+  return scope->Release();
 }
 
 bool Gurobi::IsAttrAvailable(const char* name) const {
@@ -621,6 +684,20 @@ absl::Status Gurobi::SetCharAttrList(const char* const name,
   return ToStatus(GRBsetcharattrlist(gurobi_model_, name, len,
                                      const_cast<int*>(ind.data()),
                                      const_cast<char*>(new_values.data())));
+}
+
+absl::StatusOr<int> Gurobi::GetIntAttrElement(const char* const name,
+                                              const int element) const {
+  int value;
+  RETURN_IF_ERROR(
+      ToStatus(GRBgetintattrelement(gurobi_model_, name, element, &value)));
+  return value;
+}
+
+absl::Status Gurobi::SetIntAttrElement(const char* const name,
+                                       const int element, const int new_value) {
+  return ToStatus(
+      GRBsetintattrelement(gurobi_model_, name, element, new_value));
 }
 
 absl::StatusOr<double> Gurobi::GetDoubleAttrElement(const char* const name,

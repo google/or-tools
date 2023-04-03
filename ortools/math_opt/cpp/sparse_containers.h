@@ -17,6 +17,8 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_SPARSE_CONTAINERS_H_
 #define OR_TOOLS_MATH_OPT_CPP_SPARSE_CONTAINERS_H_
 
+#include <cstdint>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -26,6 +28,7 @@
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/cpp/basis_status.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
+#include "ortools/math_opt/cpp/objective.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
@@ -46,11 +49,30 @@ namespace operations_research::math_opt {
 //
 // Note that the values of vars_proto.values are not checked (it may have NaNs).
 absl::StatusOr<VariableMap<double>> VariableValuesFromProto(
-    const ModelStorage* const model, const SparseDoubleVectorProto& vars_proto);
+    const ModelStorage* model, const SparseDoubleVectorProto& vars_proto);
 
 // Returns the proto equivalent of variable_values.
 SparseDoubleVectorProto VariableValuesToProto(
     const VariableMap<double>& variable_values);
+
+// Returns an absl::flat_hash_map<Objective, double> equivalent to
+// `aux_obj_proto`.
+//
+// Requires that (or returns a status error):
+//  * The keys of `aux_obj_proto` correspond to objectives in `model`.
+//
+// Note that the values of `aux_obj_proto` are not checked (it may have NaNs).
+absl::StatusOr<absl::flat_hash_map<Objective, double>>
+AuxiliaryObjectiveValuesFromProto(
+    const ModelStorage* model,
+    const google::protobuf::Map<int64_t, double>& aux_obj_proto);
+
+// Returns the proto equivalent of auxiliary_obj_values.
+//
+// Requires that (or will CHECK-fail):
+//  * The keys of `aux_obj_values` all correspond to auxiliary objectives.
+google::protobuf::Map<int64_t, double> AuxiliaryObjectiveValuesToProto(
+    const absl::flat_hash_map<Objective, double>& aux_obj_values);
 
 // Returns the LinearConstraintMap<double> equivalent to `lin_cons_proto`.
 //
@@ -63,8 +85,7 @@ SparseDoubleVectorProto VariableValuesToProto(
 // Note that the values of lin_cons_proto.values are not checked (it may have
 // NaNs).
 absl::StatusOr<LinearConstraintMap<double>> LinearConstraintValuesFromProto(
-    const ModelStorage* const model,
-    const SparseDoubleVectorProto& lin_cons_proto);
+    const ModelStorage* model, const SparseDoubleVectorProto& lin_cons_proto);
 
 // Returns the proto equivalent of linear_constraint_values.
 SparseDoubleVectorProto LinearConstraintValuesToProto(
@@ -79,8 +100,7 @@ SparseDoubleVectorProto LinearConstraintValuesToProto(
 //  * basis_proto.ids has elements that are variables in `model`.
 //  * basis_proto.values does not contain UNSPECIFIED and has valid enum values.
 absl::StatusOr<VariableMap<BasisStatus>> VariableBasisFromProto(
-    const ModelStorage* const model,
-    const SparseBasisStatusVector& basis_proto);
+    const ModelStorage* model, const SparseBasisStatusVector& basis_proto);
 
 // Returns the proto equivalent of basis_values.
 SparseBasisStatusVector VariableBasisToProto(
@@ -95,8 +115,7 @@ SparseBasisStatusVector VariableBasisToProto(
 //  * basis_proto.ids has elements that are linear constraints in `model`.
 //  * basis_proto.values does not contain UNSPECIFIED and has valid enum values.
 absl::StatusOr<LinearConstraintMap<BasisStatus>> LinearConstraintBasisFromProto(
-    const ModelStorage* const model,
-    const SparseBasisStatusVector& basis_proto);
+    const ModelStorage* model, const SparseBasisStatusVector& basis_proto);
 
 // Returns the proto equivalent of basis_values.
 SparseBasisStatusVector LinearConstraintBasisToProto(

@@ -47,6 +47,21 @@ class PrinterMessageCallbackImpl {
   const std::string prefix_;
 };
 
+class VectorMessageCallbackImpl {
+ public:
+  explicit VectorMessageCallbackImpl(std::vector<std::string>* const sink)
+      : sink_(ABSL_DIE_IF_NULL(sink)) {}
+
+  void Call(const std::vector<std::string>& messages) {
+    const absl::MutexLock lock(&mutex_);
+    sink_->insert(sink_->end(), messages.begin(), messages.end());
+  }
+
+ private:
+  absl::Mutex mutex_;
+  std::vector<std::string>* const sink_;
+};
+
 }  // namespace
 
 MessageCallback PrinterMessageCallback(std::ostream& output_stream,
@@ -56,6 +71,16 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
   // it uses an absl::Mutex that is not.
   const auto impl =
       std::make_shared<PrinterMessageCallbackImpl>(output_stream, prefix);
+  return
+      [=](const std::vector<std::string>& messages) { impl->Call(messages); };
+}
+
+MessageCallback VectorMessageCallback(std::vector<std::string>* sink) {
+  CHECK(sink != nullptr);
+  // Here we must use an std::shared_ptr since std::function requires that its
+  // input is copyable. And VectorMessageCallbackImpl can't be copyable since it
+  // uses an absl::Mutex that is not.
+  const auto impl = std::make_shared<VectorMessageCallbackImpl>(sink);
   return
       [=](const std::vector<std::string>& messages) { impl->Call(messages); };
 }

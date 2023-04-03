@@ -81,6 +81,7 @@ cc_library(
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/constraints/indicator:validator",
         "//ortools/math_opt/constraints/quadratic:validator",
+        "//ortools/math_opt/constraints/second_order_cone:validator",
         "//ortools/math_opt/constraints/sos:validator",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
@@ -215,6 +216,21 @@ cc_library(
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
+        "@com_google_absl//absl/status",
+    ],
+)
+
+cc_library(
+    name = "infeasible_subsystem_validator",
+    srcs = ["infeasible_subsystem_validator.cc"],
+    hdrs = ["infeasible_subsystem_validator.h"],
+    deps = [
+        ":ids_validator",
+        ":solve_stats_validator",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt/core:model_summary",
         "@com_google_absl//absl/status",
     ],
 )

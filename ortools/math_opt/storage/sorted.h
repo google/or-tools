@@ -25,7 +25,7 @@
 namespace operations_research::math_opt {
 
 template <typename T>
-std::vector<T> SortedElements(const absl::flat_hash_set<T>& elements) {
+std::vector<T> SortedSetElements(const absl::flat_hash_set<T>& elements) {
   std::vector<T> result(elements.begin(), elements.end());
   absl::c_sort(result);
   return result;

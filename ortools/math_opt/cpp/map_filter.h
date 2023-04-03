@@ -21,7 +21,9 @@
 #include <initializer_list>
 #include <optional>
 
-#include "ortools/math_opt/cpp/id_set.h"
+#include "absl/algorithm/container.h"
+#include "ortools/base/status_macros.h"
+#include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
 
@@ -89,13 +91,17 @@ struct MapFilter {
   //   filter.emplace(decision_vars.begin(), decision_vars.end());
   //
   // Prefer using MakeSkipAllFilter() or MakeKeepKeysFilter() when appropriate.
-  std::optional<IdSet<KeyType>> filtered_keys;
+  std::optional<absl::flat_hash_set<KeyType>> filtered_keys;
 
-  // Returns the model of filtered keys. It returns a non-null value if and only
-  // if the filtered_keys is set and non-empty.
-  inline const ModelStorage* storage() const;
+  // Returns a failure if the keys don't belong to the input expected_storage
+  // (which must not be nullptr).
+  inline absl::Status CheckModelStorage(
+      const ModelStorage* expected_storage) const;
 
   // Returns the proto corresponding to this filter.
+  //
+  // The caller should use CheckModelStorage() as this function does not check
+  // internal consistency of the referenced variables and constraints.
   SparseVectorFilterProto Proto() const;
 };
 
@@ -159,23 +165,32 @@ MapFilter<KeyType> MakeKeepKeysFilter(std::initializer_list<KeyType> keys) {
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename KeyType>
-const ModelStorage* MapFilter<KeyType>::storage() const {
-  return filtered_keys ? filtered_keys->storage() : nullptr;
+absl::Status MapFilter<KeyType>::CheckModelStorage(
+    const ModelStorage* expected_storage) const {
+  if (!filtered_keys.has_value()) {
+    return absl::OkStatus();
+  }
+  for (const KeyType& k : filtered_keys.value()) {
+    RETURN_IF_ERROR(internal::CheckModelStorage(
+        /*storage=*/k.storage(),
+        /*expected_storage=*/expected_storage));
+  }
+  return absl::OkStatus();
 }
 
 template <typename KeyType>
 SparseVectorFilterProto MapFilter<KeyType>::Proto() const {
   SparseVectorFilterProto ret;
   ret.set_skip_zero_values(skip_zero_values);
-  if (filtered_keys) {
+  if (filtered_keys.has_value()) {
     ret.set_filter_by_ids(true);
-    const auto filtered_ids = ret.mutable_filtered_ids();
-    filtered_ids->Reserve(filtered_keys->size());
-    for (const auto id : filtered_keys->raw_set()) {
-      filtered_ids->Add(id.value());
+    auto& filtered_ids = *ret.mutable_filtered_ids();
+    filtered_ids.Reserve(static_cast<int>(filtered_keys.value().size()));
+    for (const auto k : filtered_keys.value()) {
+      filtered_ids.Add(k.typed_id().value());
     }
     // Iteration on the set is random but we want the proto to be stable.
-    std::sort(filtered_ids->begin(), filtered_ids->end());
+    absl::c_sort(filtered_ids);
   }
   return ret;
 }

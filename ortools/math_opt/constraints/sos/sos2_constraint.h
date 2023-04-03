@@ -25,7 +25,6 @@
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/sos/util.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
-#include "ortools/math_opt/cpp/id_map.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
 
@@ -72,11 +71,6 @@ class Sos2Constraint {
   const ModelStorage* storage_;
   Sos2ConstraintId id_;
 };
-
-// Implements the API of std::unordered_map<Sos2Constraint, V>, but forbids
-// Sos2Constraints from different models in the same map.
-template <typename V>
-using Sos2ConstraintMap = IdMap<Sos2Constraint, V>;
 
 // Streams the name of the constraint, as registered upon constraint creation,
 // or a short default if none was provided.

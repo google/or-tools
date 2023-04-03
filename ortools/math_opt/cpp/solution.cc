@@ -67,6 +67,11 @@ absl::StatusOr<PrimalSolution> PrimalSolution::FromProto(
       VariableValuesFromProto(model, primal_solution_proto.variable_values()),
       _ << "invalid variable_values");
   primal_solution.objective_value = primal_solution_proto.objective_value();
+  OR_ASSIGN_OR_RETURN3(
+      primal_solution.auxiliary_objective_values,
+      AuxiliaryObjectiveValuesFromProto(
+          model, primal_solution_proto.auxiliary_objective_values()),
+      _ << "invalid auxiliary_objective_values");
   const std::optional<SolutionStatus> feasibility_status =
       EnumFromProto(primal_solution_proto.feasibility_status());
   if (!feasibility_status.has_value()) {
@@ -80,8 +85,24 @@ PrimalSolutionProto PrimalSolution::Proto() const {
   PrimalSolutionProto result;
   *result.mutable_variable_values() = VariableValuesToProto(variable_values);
   result.set_objective_value(objective_value);
+  *result.mutable_auxiliary_objective_values() =
+      AuxiliaryObjectiveValuesToProto(auxiliary_objective_values);
   result.set_feasibility_status(EnumToProto(feasibility_status));
   return result;
+}
+
+double PrimalSolution::get_objective_value(const Objective objective) const {
+  if (!variable_values.empty()) {
+    // Here we assume all keys are in the same storage. As PrimalSolution is not
+    // properly encapsulated, we can't maintain a ModelStorage pointer and
+    // iterating on all keys would have a too high cost.
+    CHECK_EQ(variable_values.begin()->first.storage(), objective.storage());
+  }
+  if (!objective.is_primary()) {
+    CHECK(auxiliary_objective_values.contains(objective));
+    return auxiliary_objective_values.at(objective);
+  }
+  return objective_value;
 }
 
 absl::StatusOr<PrimalRay> PrimalRay::FromProto(
@@ -178,14 +199,18 @@ absl::StatusOr<Basis> Basis::FromProto(const ModelStorage* model,
 
 absl::Status Basis::CheckModelStorage(
     const ModelStorage* const expected_storage) const {
-  RETURN_IF_ERROR(
-      internal::CheckModelStorage(/*storage=*/variable_status.storage(),
-                                  /*expected_storage=*/expected_storage))
-      << "invalid variable_status";
-  RETURN_IF_ERROR(
-      internal::CheckModelStorage(/*storage=*/constraint_status.storage(),
-                                  /*expected_storage=*/expected_storage))
-      << "invalid constraint_status";
+  for (const auto& [v, _] : variable_status) {
+    RETURN_IF_ERROR(
+        internal::CheckModelStorage(/*storage=*/v.storage(),
+                                    /*expected_storage=*/expected_storage))
+        << "invalid variable " << v << " in variable_status";
+  }
+  for (const auto& [c, _] : constraint_status) {
+    RETURN_IF_ERROR(
+        internal::CheckModelStorage(/*storage=*/c.storage(),
+                                    /*expected_storage=*/expected_storage))
+        << "invalid constraint " << c << " in constraint_status";
+  }
   return absl::OkStatus();
 }
 

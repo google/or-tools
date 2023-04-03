@@ -19,12 +19,12 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/synchronization/mutex.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/concurrent_calls_guard.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -102,6 +102,22 @@ class Solver {
     SolveInterrupter* interrupter = nullptr;
   };
 
+  // Arguments used when calling InfeasibleSubsystem().
+  struct InfeasibleSubsystemArgs {
+    SolveParametersProto parameters;
+
+    // An optional callback for messages emitted by the solver.
+    //
+    // When set it enables the solver messages and ignores the `enable_output`
+    // in solve parameters; messages are redirected to the callback and not
+    // printed on stdout/stderr/logs anymore.
+    MessageCallback message_callback = nullptr;
+
+    // An optional interrupter that the solver can use to interrupt the solve
+    // early.
+    SolveInterrupter* interrupter = nullptr;
+  };
+
   // A shortcut for calling Solver::New() and then Solver::Solve().
   static absl::StatusOr<SolveResultProto> NonIncrementalSolve(
       const ModelProto& model, SolverTypeProto solver_type,
@@ -133,6 +149,18 @@ class Solver {
   // destroying the previous one first even if they use Gurobi with a single-use
   // license).
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update);
+
+  // Computes an infeasible subsystem of `model`.
+  absl::StatusOr<InfeasibleSubsystemResultProto> InfeasibleSubsystem(
+      const InfeasibleSubsystemArgs& infeasible_subsystem_args);
+
+  // A shortcut for calling Solver::New() and then
+  // Solver()::InfeasibleSubsystem()
+  static absl::StatusOr<InfeasibleSubsystemResultProto>
+  NonIncrementalInfeasibleSubsystem(
+      const ModelProto& model, SolverTypeProto solver_type,
+      const InitArgs& init_args,
+      const InfeasibleSubsystemArgs& infeasible_subsystem_args);
 
  private:
   Solver(std::unique_ptr<SolverInterface> underlying_solver,

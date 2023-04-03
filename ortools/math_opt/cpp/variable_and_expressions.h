@@ -102,11 +102,10 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/string_view.h"
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/math_opt/cpp/id_map.h"     // IWYU pragma: export
 #include "ortools/math_opt/cpp/key_types.h"  // IWYU pragma: export
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
@@ -152,10 +151,8 @@ class Variable {
   VariableId id_;
 };
 
-// Implements the API of std::unordered_map<Variable, V>, but forbids Variables
-// from different models in the same map.
 template <typename V>
-using VariableMap = IdMap<Variable, V>;
+using VariableMap = absl::flat_hash_map<Variable, V>;
 
 inline std::ostream& operator<<(std::ostream& ostr, const Variable& variable);
 
@@ -200,15 +197,18 @@ class QuadraticExpression;
 class LinearExpression {
  public:
   // For unit testing purpose, we define optional counters. We have to
-  // explicitly define default constructors in that case.
+  // explicitly define the default constructor, copy constructor and assignment
+  // operators in that case. Else we use the defaults.
 #ifndef MATH_OPT_USE_EXPRESSION_COUNTERS
   LinearExpression() = default;
+  LinearExpression(const LinearExpression& other) = default;
 #else   // MATH_OPT_USE_EXPRESSION_COUNTERS
   LinearExpression();
   LinearExpression(const LinearExpression& other);
-  LinearExpression(LinearExpression&& other);
-  LinearExpression& operator=(const LinearExpression& other);
 #endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
+  // We have to define a custom move constructor as we need to reset storage_ to
+  // nullptr.
+  inline LinearExpression(LinearExpression&& other);
   // Usually users should use the overloads of operators to build linear
   // expressions. For example, assuming `x` and `y` are Variable, then `x + 2*y
   // + 5` will build a LinearExpression automatically.
@@ -217,6 +217,10 @@ class LinearExpression {
   inline LinearExpression(double offset);           // NOLINT
   inline LinearExpression(Variable variable);       // NOLINT
   inline LinearExpression(const LinearTerm& term);  // NOLINT
+  LinearExpression& operator=(const LinearExpression& other) = default;
+  // We have to define a custom move assignment operator as we need to reset
+  // storage_ to nullptr.
+  inline LinearExpression& operator=(LinearExpression&& other);
 
   inline LinearExpression& operator+=(const LinearExpression& other);
   inline LinearExpression& operator+=(const LinearTerm& term);
@@ -320,19 +324,18 @@ class LinearExpression {
   // Compute the numeric value of this expression when variables are substituted
   // by their values in variable_values.
   //
-  // Will CHECK fail the underlying model storage is different or if a variable
-  // in terms() is missing from variables_values.
+  // Will CHECK fail if a variable in terms() is missing from variables_values.
   double Evaluate(const VariableMap<double>& variable_values) const;
 
   // Compute the numeric value of this expression when variables are substituted
   // by their values in variable_values, or zero if missing from the map.
   //
-  // Will CHECK fail the underlying model storage is different.
+  // This function won't check that the variables in the input map are indeed in
+  // the same model as the ones of the expression.
   double EvaluateWithDefaultZero(
       const VariableMap<double>& variable_values) const;
 
   inline const ModelStorage* storage() const;
-  inline const absl::flat_hash_map<VariableId, double>& raw_terms() const;
 
 #ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
   static thread_local int num_calls_default_constructor_;
@@ -349,6 +352,14 @@ class LinearExpression {
                                   const LinearExpression& expression);
   friend QuadraticExpression;
 
+  // Sets the storage_ to the input value if nullptr, else CHECKs that it is
+  // equal. Also CHECKs that the input value is not nullptr.
+  inline void SetOrCheckStorage(const ModelStorage* storage);
+
+  // Invariants:
+  // * nullptr, if terms_ is empty
+  // * equal to Variable::storage() of each key of terms_, else
+  const ModelStorage* storage_ = nullptr;
   VariableMap<double> terms_;
   double offset_ = 0.0;
 };
@@ -711,10 +722,8 @@ inline QuadraticTerm operator*(LinearTerm lhs, LinearTerm rhs);
 inline QuadraticTerm operator*(QuadraticTerm lhs, double rhs);
 inline QuadraticTerm operator/(QuadraticTerm lhs, double rhs);
 
-// Implements the API of std::unordered_map<QuadraticTermKey, V>, but forbids
-// QuadraticTermKeys from different models in the same map.
 template <typename V>
-using QuadraticTermMap = IdMap<QuadraticTermKey, V>;
+using QuadraticTermMap = absl::flat_hash_map<QuadraticTermKey, V>;
 
 // This class represents a sum of quadratic terms, linear terms, and constant
 // offset. For example: "3*x*y + 2*x + 1".
@@ -732,14 +741,19 @@ using QuadraticTermMap = IdMap<QuadraticTermKey, V>;
 // invariant in any class or friend method.
 class QuadraticExpression {
  public:
+  // For unit testing purpose, we define optional counters. We have to
+  // explicitly define the default constructor, copy constructor and assignment
+  // operators in that case. Else we use the defaults.
 #ifndef MATH_OPT_USE_EXPRESSION_COUNTERS
   QuadraticExpression() = default;
+  QuadraticExpression(const QuadraticExpression& other) = default;
 #else   // MATH_OPT_USE_EXPRESSION_COUNTERS
   QuadraticExpression();
   QuadraticExpression(const QuadraticExpression& other);
-  QuadraticExpression(QuadraticExpression&& other);
-  QuadraticExpression& operator=(const QuadraticExpression& other);
 #endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
+  // We have to define a custom move constructor as we need to reset storage_ to
+  // nullptr.
+  inline QuadraticExpression(QuadraticExpression&& other);
   // Users should prefer the default constructor and operator overloads to build
   // expressions.
   inline QuadraticExpression(
@@ -750,15 +764,14 @@ class QuadraticExpression {
   inline QuadraticExpression(const LinearTerm& term);     // NOLINT
   inline QuadraticExpression(LinearExpression expr);      // NOLINT
   inline QuadraticExpression(const QuadraticTerm& term);  // NOLINT
+  QuadraticExpression& operator=(const QuadraticExpression& other) = default;
+  // We have to define a custom move assignment operator as we need to reset
+  // storage_ to nullptr.
+  inline QuadraticExpression& operator=(QuadraticExpression&& other);
 
   inline double offset() const;
   inline const VariableMap<double>& linear_terms() const;
   inline const QuadraticTermMap<double>& quadratic_terms() const;
-
-  inline const absl::flat_hash_map<VariableId, double>& raw_linear_terms()
-      const;
-  inline const absl::flat_hash_map<QuadraticProductId, double>&
-  raw_quadratic_terms() const;
 
   inline QuadraticExpression& operator+=(double value);
   inline QuadraticExpression& operator+=(Variable variable);
@@ -903,15 +916,15 @@ class QuadraticExpression {
   // Compute the numeric value of this expression when variables are substituted
   // by their values in variable_values.
   //
-  // Will CHECK fail if the underlying model storage is different, or if a
-  // variable in linear_terms() or quadratic_terms() is missing from
-  // variables_values.
+  // Will CHECK fail if a variable in linear_terms() or quadratic_terms() is
+  // missing from variables_values.
   double Evaluate(const VariableMap<double>& variable_values) const;
 
   // Compute the numeric value of this expression when variables are substituted
   // by their values in variable_values, or zero if missing from the map.
   //
-  // Will CHECK fail the underlying model storage is different.
+  // This function won't check that the variables in the input map are indeed in
+  // the same model as the ones of the expression.
   double EvaluateWithDefaultZero(
       const VariableMap<double>& variable_values) const;
 
@@ -931,8 +944,16 @@ class QuadraticExpression {
   friend QuadraticExpression operator-(QuadraticExpression expr);
   friend std::ostream& operator<<(std::ostream& ostr,
                                   const QuadraticExpression& expr);
-  inline void CheckModelsAgree();
 
+  // Sets the storage_ to the input value if nullptr, else CHECKs that it is
+  // equal. Also CHECKs that the input value is not nullptr.
+  inline void SetOrCheckStorage(const ModelStorage* storage);
+
+  // Invariants:
+  // * nullptr, if both quadratic_terms_ and linear_terms_ are empty
+  // * equal to Variable::storage() of each key of linear_terms_ and
+  //   QuadraticTermKey::storage() of each key of quadratic_terms_, else
+  const ModelStorage* storage_ = nullptr;
   QuadraticTermMap<double> quadratic_terms_;
   VariableMap<double> linear_terms_;
   double offset_ = 0.0;
@@ -1342,6 +1363,33 @@ LinearTerm operator/(Variable variable, const double coefficient) {
 // LinearExpression
 ////////////////////////////////////////////////////////////////////////////////
 
+void LinearExpression::SetOrCheckStorage(const ModelStorage* const storage) {
+  CHECK(storage != nullptr) << internal::kKeyHasNullModelStorage;
+  if (storage_ == nullptr) {
+    storage_ = storage;
+    return;
+  }
+  CHECK_EQ(storage, storage_) << internal::kObjectsFromOtherModelStorage;
+}
+
+LinearExpression::LinearExpression(LinearExpression&& other)
+    : storage_(std::exchange(other.storage_, nullptr)),
+      terms_(std::move(other.terms_)),
+      offset_(std::exchange(other.offset_, 0.0)) {
+  other.terms_.clear();
+#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
+  ++num_calls_move_constructor_;
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
+}
+
+LinearExpression& LinearExpression::operator=(LinearExpression&& other) {
+  storage_ = std::exchange(other.storage_, nullptr);
+  terms_ = std::move(other.terms_);
+  other.terms_.clear();
+  offset_ = std::exchange(other.offset_, 0.0);
+  return *this;
+}
+
 LinearExpression::LinearExpression(std::initializer_list<LinearTerm> terms,
                                    const double offset)
     : offset_(offset) {
@@ -1349,6 +1397,7 @@ LinearExpression::LinearExpression(std::initializer_list<LinearTerm> terms,
   ++num_calls_initializer_list_constructor_;
 #endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   for (const auto& term : terms) {
+    SetOrCheckStorage(term.variable.storage());
     // The same variable may appear multiple times in the input list; we must
     // accumulate the coefficients.
     terms_[term.variable] += term.coefficient;
@@ -1366,7 +1415,7 @@ LinearExpression::LinearExpression(const LinearTerm& term)
 
 LinearExpression operator-(LinearExpression expr) {
   expr.offset_ = -expr.offset_;
-  for (auto term : expr.terms_) {
+  for (auto& term : expr.terms_) {
     term.second = -term.second;
   }
   return expr;
@@ -1520,17 +1569,27 @@ LinearExpression operator/(LinearExpression lhs, const double rhs) {
 }
 
 LinearExpression& LinearExpression::operator+=(const LinearExpression& other) {
-  terms_.Add(other.terms_);
+  // Here we know that each key in other.terms_ has already been checked and
+  // thus we don't need to compare in the loop. Of course this only applies if
+  // the other has terms.
+  if (!other.terms_.empty()) {
+    SetOrCheckStorage(other.storage());
+    for (const auto& [v, coeff] : other.terms_) {
+      terms_[v] += coeff;
+    }
+  }
   offset_ += other.offset_;
   return *this;
 }
 
 LinearExpression& LinearExpression::operator+=(const LinearTerm& term) {
+  SetOrCheckStorage(term.variable.storage());
   terms_[term.variable] += term.coefficient;
   return *this;
 }
 
 LinearExpression& LinearExpression::operator+=(const Variable variable) {
+  SetOrCheckStorage(variable.storage());
   return *this += LinearTerm(variable, 1.0);
 }
 
@@ -1540,17 +1599,25 @@ LinearExpression& LinearExpression::operator+=(const double value) {
 }
 
 LinearExpression& LinearExpression::operator-=(const LinearExpression& other) {
-  terms_.Subtract(other.terms_);
+  // See operator+=.
+  if (!other.terms_.empty()) {
+    SetOrCheckStorage(other.storage());
+    for (const auto& [v, coeff] : other.terms_) {
+      terms_[v] -= coeff;
+    }
+  }
   offset_ -= other.offset_;
   return *this;
 }
 
 LinearExpression& LinearExpression::operator-=(const LinearTerm& term) {
+  SetOrCheckStorage(term.variable.storage());
   terms_[term.variable] -= term.coefficient;
   return *this;
 }
 
 LinearExpression& LinearExpression::operator-=(const Variable variable) {
+  SetOrCheckStorage(variable.storage());
   return *this -= LinearTerm(variable, 1.0);
 }
 
@@ -1561,7 +1628,7 @@ LinearExpression& LinearExpression::operator-=(const double value) {
 
 LinearExpression& LinearExpression::operator*=(const double value) {
   offset_ *= value;
-  for (auto term : terms_) {
+  for (auto& term : terms_) {
     term.second *= value;
   }
   return *this;
@@ -1569,7 +1636,7 @@ LinearExpression& LinearExpression::operator*=(const double value) {
 
 LinearExpression& LinearExpression::operator/=(const double value) {
   offset_ /= value;
-  for (auto term : terms_) {
+  for (auto& term : terms_) {
     term.second /= value;
   }
   return *this;
@@ -1640,14 +1707,7 @@ const VariableMap<double>& LinearExpression::terms() const { return terms_; }
 
 double LinearExpression::offset() const { return offset_; }
 
-const ModelStorage* LinearExpression::storage() const {
-  return terms_.storage();
-}
-
-const absl::flat_hash_map<VariableId, double>& LinearExpression::raw_terms()
-    const {
-  return terms_.raw_map();
-}
+const ModelStorage* LinearExpression::storage() const { return storage_; }
 
 ////////////////////////////////////////////////////////////////////////////////
 // VariablesEquality
@@ -2057,6 +2117,38 @@ QuadraticTermKey QuadraticTerm::GetKey() const {
 // QuadraticExpression (no arithmetic)
 ////////////////////////////////////////////////////////////////////////////////
 
+void QuadraticExpression::SetOrCheckStorage(const ModelStorage* const storage) {
+  CHECK(storage != nullptr) << internal::kKeyHasNullModelStorage;
+  if (storage_ == nullptr) {
+    storage_ = storage;
+    return;
+  }
+  CHECK_EQ(storage, storage_) << internal::kObjectsFromOtherModelStorage;
+}
+
+QuadraticExpression::QuadraticExpression(QuadraticExpression&& other)
+    : storage_(std::exchange(other.storage_, nullptr)),
+      quadratic_terms_(std::move(other.quadratic_terms_)),
+      linear_terms_(std::move(other.linear_terms_)),
+      offset_(std::exchange(other.offset_, 0.0)) {
+  other.quadratic_terms_.clear();
+  other.linear_terms_.clear();
+#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
+  ++num_calls_move_constructor_;
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
+}
+
+QuadraticExpression& QuadraticExpression::operator=(
+    QuadraticExpression&& other) {
+  storage_ = std::exchange(other.storage_, nullptr);
+  quadratic_terms_ = std::move(other.quadratic_terms_);
+  other.quadratic_terms_.clear();
+  linear_terms_ = std::move(other.linear_terms_);
+  other.linear_terms_.clear();
+  offset_ = std::exchange(other.offset_, 0.0);
+  return *this;
+}
+
 QuadraticExpression::QuadraticExpression(
     const std::initializer_list<QuadraticTerm> quadratic_terms,
     const std::initializer_list<LinearTerm> linear_terms, const double offset)
@@ -2065,12 +2157,14 @@ QuadraticExpression::QuadraticExpression(
   ++num_calls_initializer_list_constructor_;
 #endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   for (const LinearTerm& term : linear_terms) {
+    SetOrCheckStorage(term.variable.storage());
     linear_terms_[term.variable] += term.coefficient;
   }
   for (const QuadraticTerm& term : quadratic_terms) {
-    quadratic_terms_[term.GetKey()] += term.coefficient();
+    const QuadraticTermKey key = term.GetKey();
+    SetOrCheckStorage(key.storage());
+    quadratic_terms_[key] += term.coefficient();
   }
-  CheckModelsAgree();
 }
 
 QuadraticExpression::QuadraticExpression(const double offset)
@@ -2083,7 +2177,8 @@ QuadraticExpression::QuadraticExpression(const LinearTerm& term)
     : QuadraticExpression({}, {term}, 0.0) {}
 
 QuadraticExpression::QuadraticExpression(LinearExpression expr)
-    : linear_terms_(std::move(expr.terms_)),
+    : storage_(std::exchange(expr.storage_, nullptr)),
+      linear_terms_(std::move(expr.terms_)),
       offset_(std::exchange(expr.offset_, 0.0)) {
 #ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
   ++num_calls_linear_expression_constructor_;
@@ -2093,22 +2188,7 @@ QuadraticExpression::QuadraticExpression(LinearExpression expr)
 QuadraticExpression::QuadraticExpression(const QuadraticTerm& term)
     : QuadraticExpression({term}, {}, 0.0) {}
 
-void QuadraticExpression::CheckModelsAgree() {
-  const ModelStorage* const quadratic_model = quadratic_terms_.storage();
-  const ModelStorage* const linear_model = linear_terms_.storage();
-  if ((linear_model != nullptr) && (quadratic_model != nullptr) &&
-      (quadratic_model != linear_model)) {
-    LOG(FATAL) << internal::kObjectsFromOtherModelStorage;
-  }
-}
-
-const ModelStorage* QuadraticExpression::storage() const {
-  if (quadratic_terms().storage()) {
-    return quadratic_terms().storage();
-  } else {
-    return linear_terms().storage();
-  }
-}
+const ModelStorage* QuadraticExpression::storage() const { return storage_; }
 
 double QuadraticExpression::offset() const { return offset_; }
 
@@ -2118,16 +2198,6 @@ const VariableMap<double>& QuadraticExpression::linear_terms() const {
 
 const QuadraticTermMap<double>& QuadraticExpression::quadratic_terms() const {
   return quadratic_terms_;
-}
-
-const absl::flat_hash_map<VariableId, double>&
-QuadraticExpression::raw_linear_terms() const {
-  return linear_terms_.raw_map();
-}
-
-const absl::flat_hash_map<QuadraticProductId, double>&
-QuadraticExpression::raw_quadratic_terms() const {
-  return quadratic_terms_.raw_map();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2253,10 +2323,10 @@ QuadraticTerm operator-(QuadraticTerm term) {
 // NOTE: A friend of QuadraticExpression, but does not touch variables
 QuadraticExpression operator-(QuadraticExpression expr) {
   expr.offset_ = -expr.offset_;
-  for (auto term : expr.linear_terms_) {
+  for (auto& term : expr.linear_terms_) {
     term.second = -term.second;
   }
-  for (auto term : expr.quadratic_terms_) {
+  for (auto& term : expr.quadratic_terms_) {
     term.second = -term.second;
   }
   return expr;
@@ -2505,38 +2575,51 @@ QuadraticExpression& QuadraticExpression::operator+=(const double value) {
 }
 
 QuadraticExpression& QuadraticExpression::operator+=(const Variable variable) {
+  SetOrCheckStorage(variable.storage());
   linear_terms_[variable] += 1;
-  CheckModelsAgree();
   return *this;
 }
 
 QuadraticExpression& QuadraticExpression::operator+=(const LinearTerm& term) {
+  SetOrCheckStorage(term.variable.storage());
   linear_terms_[term.variable] += term.coefficient;
-  CheckModelsAgree();
   return *this;
 }
 
 QuadraticExpression& QuadraticExpression::operator+=(
     const LinearExpression& expr) {
   offset_ += expr.offset();
-  linear_terms_.Add(expr.terms());
-  CheckModelsAgree();
+  // See comment in LinearExpression::operator+=.
+  if (!expr.terms().empty()) {
+    SetOrCheckStorage(expr.storage());
+    for (const auto& [v, coeff] : expr.terms()) {
+      linear_terms_[v] += coeff;
+    }
+  }
   return *this;
 }
 
 QuadraticExpression& QuadraticExpression::operator+=(
     const QuadraticTerm& term) {
-  quadratic_terms_[term.GetKey()] += term.coefficient();
-  CheckModelsAgree();
+  const QuadraticTermKey key = term.GetKey();
+  SetOrCheckStorage(key.storage());
+  quadratic_terms_[key] += term.coefficient();
   return *this;
 }
 
 QuadraticExpression& QuadraticExpression::operator+=(
     const QuadraticExpression& expr) {
   offset_ += expr.offset();
-  linear_terms_.Add(expr.linear_terms());
-  quadratic_terms_.Add(expr.quadratic_terms());
-  CheckModelsAgree();
+  // See comment in LinearExpression::operator+=.
+  if (!expr.linear_terms().empty() || !expr.quadratic_terms().empty()) {
+    SetOrCheckStorage(expr.storage());
+    for (const auto& [v, coeff] : expr.linear_terms()) {
+      linear_terms_[v] += coeff;
+    }
+    for (const auto& [k, coeff] : expr.quadratic_terms()) {
+      quadratic_terms_[k] += coeff;
+    }
+  }
   return *this;
 }
 
@@ -2547,38 +2630,51 @@ QuadraticExpression& QuadraticExpression::operator-=(const double value) {
 }
 
 QuadraticExpression& QuadraticExpression::operator-=(const Variable variable) {
+  SetOrCheckStorage(variable.storage());
   linear_terms_[variable] -= 1;
-  CheckModelsAgree();
   return *this;
 }
 
 QuadraticExpression& QuadraticExpression::operator-=(const LinearTerm& term) {
+  SetOrCheckStorage(term.variable.storage());
   linear_terms_[term.variable] -= term.coefficient;
-  CheckModelsAgree();
   return *this;
 }
 
 QuadraticExpression& QuadraticExpression::operator-=(
     const LinearExpression& expr) {
   offset_ -= expr.offset();
-  linear_terms_.Subtract(expr.terms());
-  CheckModelsAgree();
+  // See comment in LinearExpression::operator+=.
+  if (!expr.terms().empty()) {
+    SetOrCheckStorage(expr.storage());
+    for (const auto& [v, coeff] : expr.terms()) {
+      linear_terms_[v] -= coeff;
+    }
+  }
   return *this;
 }
 
 QuadraticExpression& QuadraticExpression::operator-=(
     const QuadraticTerm& term) {
-  quadratic_terms_[term.GetKey()] -= term.coefficient();
-  CheckModelsAgree();
+  const QuadraticTermKey key = term.GetKey();
+  SetOrCheckStorage(key.storage());
+  quadratic_terms_[key] -= term.coefficient();
   return *this;
 }
 
 QuadraticExpression& QuadraticExpression::operator-=(
     const QuadraticExpression& expr) {
   offset_ -= expr.offset();
-  linear_terms_.Subtract(expr.linear_terms());
-  quadratic_terms_.Subtract(expr.quadratic_terms());
-  CheckModelsAgree();
+  // See comment in LinearExpression::operator+=.
+  if (!expr.linear_terms().empty() || !expr.quadratic_terms().empty()) {
+    SetOrCheckStorage(expr.storage());
+    for (const auto& [v, coeff] : expr.linear_terms()) {
+      linear_terms_[v] -= coeff;
+    }
+    for (const auto& [k, coeff] : expr.quadratic_terms()) {
+      quadratic_terms_[k] -= coeff;
+    }
+  }
   return *this;
 }
 
@@ -2591,10 +2687,10 @@ QuadraticTerm& QuadraticTerm::operator*=(const double value) {
 
 QuadraticExpression& QuadraticExpression::operator*=(const double value) {
   offset_ *= value;
-  for (auto term : linear_terms_) {
+  for (auto& term : linear_terms_) {
     term.second *= value;
   }
-  for (auto term : quadratic_terms_) {
+  for (auto& term : quadratic_terms_) {
     term.second *= value;
   }
   // NOTE: Not adding/removing/altering variables in expression, just modifying
@@ -2611,10 +2707,10 @@ QuadraticTerm& QuadraticTerm::operator/=(const double value) {
 
 QuadraticExpression& QuadraticExpression::operator/=(const double value) {
   offset_ /= value;
-  for (auto term : linear_terms_) {
+  for (auto& term : linear_terms_) {
     term.second /= value;
   }
-  for (auto term : quadratic_terms_) {
+  for (auto& term : quadratic_terms_) {
     term.second /= value;
   }
   // NOTE: Not adding/removing/altering variables in expression, just modifying

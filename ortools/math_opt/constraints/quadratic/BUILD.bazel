@@ -18,16 +18,15 @@ cc_library(
     srcs = ["quadratic_constraint.cc"],
     hdrs = ["quadratic_constraint.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:intops",
         "//ortools/math_opt/constraints/util:model_util",
-        "//ortools/math_opt/cpp:id_map",
         "//ortools/math_opt/cpp:key_types",
         "//ortools/math_opt/cpp:variable_and_expressions",
         "//ortools/math_opt/storage:model_storage",
-        "//ortools/math_opt/storage:model_storage_types",
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "//ortools/math_opt/storage:sparse_matrix",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
     ],
 )
 

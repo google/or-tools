@@ -19,17 +19,18 @@
 #include <type_traits>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "absl/log/check.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/model.pb.h"
+#include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
-namespace operations_research {
-namespace math_opt {
+namespace operations_research::math_opt {
 
 inline int NumVariables(const VariablesProto& variables) {
   return variables.ids_size();
@@ -89,7 +90,7 @@ class SparseVectorFilterPredicate {
   // non-optimized builds it will CHECK that this is the case. It updates an
   // internal counter when filtering by ids.
   template <typename Value>
-  bool AcceptsAndUpdate(const int64_t id, const Value& value);
+  bool AcceptsAndUpdate(int64_t id, const Value& value);
 
  private:
   const SparseVectorFilterProto& filter_;
@@ -105,19 +106,39 @@ class SparseVectorFilterPredicate {
 #endif  // NDEBUG
 };
 
+// Applies filter to each element of input and returns the elements that remain.
+//
+// TODO(b/261603235): this function is not very efficient, decide if this
+// matters.
+SparseDoubleVectorProto FilterSparseVector(
+    const SparseDoubleVectorProto& input,
+    const SparseVectorFilterProto& filter);
+
+// Applies the primal, dual and reduced costs filters from model_solve_params
+// to the primal solution variable values, dual solution dual values, and dual
+// solution reduced costs, respectively, and overwriting these values with
+// the results.
+//
+// Warning: solution is modified in place.
+//
+// TODO(b/261603235): this function is not very efficient, decide if this
+// matters.
+void ApplyAllFilters(const ModelSolveParametersProto& model_solve_params,
+                     SolutionProto& solution);
+
 // Returns the callback_registration.request_registration as a set of enums.
 absl::flat_hash_set<CallbackEventProto> EventSet(
     const CallbackRegistrationProto& callback_registration);
 
 // Sets the reason to TERMINATION_REASON_FEASIBLE if feasible = true and
 // TERMINATION_REASON_NO_SOLUTION_FOUND otherwise.
-TerminationProto TerminateForLimit(const LimitProto limit, bool feasible,
+TerminationProto TerminateForLimit(LimitProto limit, bool feasible,
                                    absl::string_view detail = {});
 
-TerminationProto FeasibleTermination(const LimitProto limit,
+TerminationProto FeasibleTermination(LimitProto limit,
                                      absl::string_view detail = {});
 
-TerminationProto NoSolutionFoundTermination(const LimitProto limit,
+TerminationProto NoSolutionFoundTermination(LimitProto limit,
                                             absl::string_view detail = {});
 
 TerminationProto TerminateForReason(TerminationReasonProto reason,
@@ -134,6 +155,7 @@ struct SupportedProblemStructures {
   SupportType multi_objectives = SupportType::kNotSupported;
   SupportType quadratic_objectives = SupportType::kNotSupported;
   SupportType quadratic_constraints = SupportType::kNotSupported;
+  SupportType second_order_cone_constraints = SupportType::kNotSupported;
   SupportType sos1_constraints = SupportType::kNotSupported;
   SupportType sos2_constraints = SupportType::kNotSupported;
   SupportType indicator_constraints = SupportType::kNotSupported;
@@ -195,7 +217,6 @@ bool SparseVectorFilterPredicate::AcceptsAndUpdate(const int64_t id,
   return id == filter_.filtered_ids(next_filtered_id_index_);
 }
 
-}  // namespace math_opt
-}  // namespace operations_research
+}  // namespace operations_research::math_opt
 
 #endif  // OR_TOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_

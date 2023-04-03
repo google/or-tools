@@ -21,13 +21,13 @@
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -135,6 +135,24 @@ class SolverInterface {
   // The implementation should assume the input ModelUpdate is valid and is free
   // to assert if this is not the case.
   virtual absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) = 0;
+
+  // Computes a infeasible subsystem of the model (including all updates).
+  //
+  // All input arguments are ensured (by solver.cc) to be valid. Furthermore,
+  // since all parameters are references or functions (which could be a lambda
+  // expression), the implementation should not keep a reference or copy of
+  // them, as they may become invalid reference after the invocation if this
+  // function.
+  //
+  // The parameters `message_cb` and `interrupter` are optional. They are
+  // nullptr when not set.
+  //
+  // When parameter `message_cb` is not null and the underlying solver does not
+  // supports message callbacks, it must return an InvalidArgumentError with the
+  // message internal::kMessageCallbackNotSupported.
+  virtual absl::StatusOr<InfeasibleSubsystemResultProto> InfeasibleSubsystem(
+      const SolveParametersProto& parameters, MessageCallback message_cb,
+      SolveInterrupter* interrupter) = 0;
 };
 
 class AllSolversRegistry {

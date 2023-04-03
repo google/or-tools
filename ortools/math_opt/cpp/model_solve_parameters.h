@@ -24,8 +24,10 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/map_filter.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/cpp/solution.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -95,6 +97,24 @@ struct ModelSolveParameters {
   // solution_hints for details.
   struct SolutionHint {
     VariableMap<double> variable_values;
+    LinearConstraintMap<double> dual_values;
+
+    // Returns a failure if the referenced variables and constraints don't
+    // belong to the input expected_storage (which must not be nullptr).
+    absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
+
+    // Returns the proto equivalent of this object.
+    //
+    // The caller should use CheckModelStorage() as this function does not check
+    // internal consistency of the referenced variables and constraints.
+    SolutionHintProto Proto() const;
+
+    // Returns the hint corresponding to this proto and the given model.
+    //
+    // This can be useful when loading a hint from another format, e.g. with
+    // MPModelProtoSolutionHintToMathOptHint().
+    static absl::StatusOr<SolutionHint> FromProto(
+        const Model& model, const SolutionHintProto& hint_proto);
   };
 
   // Optional solution hints. If set, they are expected to consist of

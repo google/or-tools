@@ -31,7 +31,6 @@ absl::StatusOr<std::string> ModelProtoToMps(const ModelProto& model);
 // Reads an MPS file and converts it to a ModelProto (like MpsToModelProto
 // above, but takes a file name instead of the file contents and reads the file.
 //
-//
 // The file can be stored as plain text or gzipped (with the .gz extension).
 //
 absl::StatusOr<ModelProto> ReadMpsFile(absl::string_view filename);

@@ -83,9 +83,9 @@
 #include <ostream>
 #include <type_traits>
 
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "absl/log/check.h"
 
 namespace operations_research::math_opt {
 

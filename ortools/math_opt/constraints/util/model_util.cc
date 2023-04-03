@@ -15,28 +15,28 @@
 
 #include <utility>
 
+#include "ortools/math_opt/cpp/variable_and_expressions.h"
+#include "ortools/math_opt/storage/linear_expression_data.h"
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 
 namespace operations_research::math_opt {
 
 LinearExpression ToLinearExpression(const ModelStorage& storage,
-                                    const SparseCoefficientMap& coeffs,
-                                    const double offset) {
-  LinearExpression expr = offset;
-  for (const auto [var_id, coeff] : coeffs.terms()) {
+                                    const LinearExpressionData& expr_data) {
+  LinearExpression expr = expr_data.offset;
+  for (const auto [var_id, coeff] : expr_data.coeffs.terms()) {
     expr += coeff * Variable(&storage, var_id);
   }
   return expr;
 }
 
-std::pair<SparseCoefficientMap, double> FromLinearExpression(
-    const LinearExpression& expression) {
+LinearExpressionData FromLinearExpression(const LinearExpression& expression) {
   SparseCoefficientMap coeffs;
   for (const auto [var, coeff] : expression.terms()) {
     coeffs.set(var.typed_id(), coeff);
   }
-  return {coeffs, expression.offset()};
+  return {.coeffs = std::move(coeffs), .offset = expression.offset()};
 }
 
 }  // namespace operations_research::math_opt

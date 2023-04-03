@@ -17,18 +17,21 @@
 #include <optional>
 #include <sstream>
 #include <string>
-#include <type_traits>
 #include <utility>
 
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/cpp/enums.h"
 #include "ortools/math_opt/parameters.pb.h"
+#include "ortools/math_opt/solvers/glpk.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/status_macros.h"
@@ -72,6 +75,12 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
       return "cp_sat";
     case SolverType::kGlpk:
       return "glpk";
+    case SolverType::kEcos:
+      return "ecos";
+    case SolverType::kScs:
+      return "scs";
+    case SolverType::kHighs:
+      return "highs";
   }
   return std::nullopt;
 }
@@ -79,7 +88,8 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
 absl::Span<const SolverType> Enum<SolverType>::AllValues() {
   static constexpr SolverType kSolverTypeValues[] = {
       SolverType::kGscip, SolverType::kGurobi, SolverType::kGlop,
-      SolverType::kCpSat, SolverType::kGlpk,
+      SolverType::kCpSat, SolverType::kGlpk,   SolverType::kEcos,
+      SolverType::kScs,   SolverType::kHighs,
   };
   return absl::MakeConstSpan(kSolverTypeValues);
 }
@@ -102,6 +112,8 @@ std::optional<absl::string_view> Enum<LPAlgorithm>::ToOptString(
       return "dual_simplex";
     case LPAlgorithm::kBarrier:
       return "barrier";
+    case LPAlgorithm::kFirstOrder:
+      return "first_order";
   }
   return std::nullopt;
 }
@@ -111,6 +123,7 @@ absl::Span<const LPAlgorithm> Enum<LPAlgorithm>::AllValues() {
       LPAlgorithm::kPrimalSimplex,
       LPAlgorithm::kDualSimplex,
       LPAlgorithm::kBarrier,
+      LPAlgorithm::kFirstOrder,
   };
   return absl::MakeConstSpan(kLPAlgorithmValues);
 }
@@ -176,6 +189,24 @@ GurobiParameters GurobiParameters::FromProto(
   return result;
 }
 
+GlpkParametersProto GlpkParameters::Proto() const {
+  GlpkParametersProto result;
+  if (compute_unbound_rays_if_possible.has_value()) {
+    result.set_compute_unbound_rays_if_possible(
+        compute_unbound_rays_if_possible.value());
+  }
+  return result;
+}
+
+GlpkParameters GlpkParameters::FromProto(const GlpkParametersProto& proto) {
+  GlpkParameters result;
+  if (proto.has_compute_unbound_rays_if_possible()) {
+    result.compute_unbound_rays_if_possible =
+        proto.compute_unbound_rays_if_possible();
+  }
+  return result;
+}
+
 SolveParametersProto SolveParameters::Proto() const {
   SolveParametersProto result;
   result.set_enable_output(enable_output);
@@ -225,6 +256,7 @@ SolveParametersProto SolveParameters::Proto() const {
   *result.mutable_gurobi() = gurobi.Proto();
   *result.mutable_glop() = glop;
   *result.mutable_cp_sat() = cp_sat;
+  *result.mutable_glpk() = glpk.Proto();
   return result;
 }
 
@@ -281,6 +313,7 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   result.gurobi = GurobiParameters::FromProto(proto.gurobi());
   result.glop = proto.glop();
   result.cp_sat = proto.cp_sat();
+  result.glpk = GlpkParameters::FromProto(proto.glpk());
   return result;
 }
 

@@ -14,21 +14,37 @@
 #ifndef OR_TOOLS_MATH_OPT_IO_PROTO_CONVERTER_H_
 #define OR_TOOLS_MATH_OPT_IO_PROTO_CONVERTER_H_
 
+#include <optional>
+
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/model.pb.h"
+#include "ortools/math_opt/model_parameters.pb.h"
 
 namespace operations_research::math_opt {
 
 // Returns a ModelProto equivalent to the input linear_solver Model. The input
-// MPModelProto must be valid, as checked by `FindErrorInMPModelProto`.
+// MPModelProto must be valid, as checked by `FindErrorInMPModelProto()`.
 //
 // The linear_solver Model stores all general constraints (e.g., quadratic, SOS)
 // in a single repeated field, while ModelProto stores then in separate maps.
 // The output constraint maps will each be populated with consecutive indices
 // starting from 0 (hence the indices may change).
+//
+// MPModelProto can contain an optional `solution_hint` which is ignored by this
+// function. In MathOpt the hints are parameters passed to the solve functions
+// instead of being in the model. The `MPModelProtoSolutionHintToMathOptHint()`
+// function can be used to extract it.
 absl::StatusOr<ModelProto> MPModelProtoToMathOptModel(
     const MPModelProto& model);
+
+// Returns the optional `model.solution_hint` as a MathOpt hint. Returns nullopt
+// if no hint is set on the input model or if the hint is empty.
+//
+// The input MPModelProto must be valid, as checked by
+// `FindErrorInMPModelProto()`.
+absl::StatusOr<std::optional<SolutionHintProto>>
+MPModelProtoSolutionHintToMathOptHint(const MPModelProto& model);
 
 // Returns a linear_solver MPModelProto equivalent to the input math_opt Model.
 // The input Model must be in a valid state, as checked by `ValidateModel`.

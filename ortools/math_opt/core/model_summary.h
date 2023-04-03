@@ -25,11 +25,11 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "absl/log/check.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/model.pb.h"
@@ -125,8 +125,6 @@ class IdNameBiMap {
       nonempty_name_to_id_;
 };
 
-// TODO(b/232619901): In the guide for how to add new constraints, include how
-// this class must updated.
 struct ModelSummary {
   explicit ModelSummary(bool check_names = true);
   static absl::StatusOr<ModelSummary> Create(const ModelProto& model,
@@ -138,6 +136,7 @@ struct ModelSummary {
   IdNameBiMap auxiliary_objectives;
   IdNameBiMap linear_constraints;
   IdNameBiMap quadratic_constraints;
+  IdNameBiMap second_order_cone_constraints;
   IdNameBiMap sos1_constraints;
   IdNameBiMap sos2_constraints;
   IdNameBiMap indicator_constraints;

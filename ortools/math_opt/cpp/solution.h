@@ -25,6 +25,7 @@
 #include "ortools/math_opt/cpp/basis_status.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/linear_constraint.h"
+#include "ortools/math_opt/cpp/objective.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/result.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/solution.pb.h"
@@ -72,8 +73,16 @@ struct PrimalSolution {
   // Returns the proto equivalent of this.
   PrimalSolutionProto Proto() const;
 
+  // Returns the value for the given `objective`.
+  //
+  // Will CHECK-fail if `objective` has been deleted, or if it is from the is
+  // from the wrong model (however, if the solution has no variables, this CHECK
+  // will not occur due to an implementation detail of the struct).
+  double get_objective_value(Objective objective) const;
+
   VariableMap<double> variable_values;
   double objective_value = 0.0;
+  absl::flat_hash_map<Objective, double> auxiliary_objective_values;
 
   SolutionStatus feasibility_status = SolutionStatus::kUndetermined;
 };
@@ -146,10 +155,10 @@ struct DualSolution {
   SolutionStatus feasibility_status = SolutionStatus::kUndetermined;
 };
 
-// A direction of unbounded improvement to the dual of an optimization,
+// A direction of unbounded improvement to the dual of an optimization
 // problem; equivalently, a certificate of primal infeasibility.
 //
-// E.g. consider the primal dual pair linear program pair:
+// E.g. consider the primal dual linear program pair:
 //    (Primal)              (Dual)
 //    min c * x             max b * y
 //    s.t. A * x >= b       s.t. y * A + r = c
@@ -243,8 +252,8 @@ struct Basis {
 //   1. MIP solvers return only a primal solution.
 //   2. Simplex LP solvers often return a basis and the primal and dual
 //      solutions associated to this basis.
-//   3. Other continuous solvers often return a primal and dual solution
-//      solution that are connected in a solver-dependent form.
+//   3. Other continuous solvers often return a primal and dual solution that
+//      are connected in a solver-dependent form.
 struct Solution {
   // Returns the Solution equivalent of solution_proto.
   //

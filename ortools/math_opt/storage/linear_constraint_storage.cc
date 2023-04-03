@@ -130,12 +130,12 @@ LinearConstraintStorage::UpdateResult LinearConstraintStorage::Update(
   }
   absl::c_sort(result.deleted);
 
-  for (const LinearConstraintId c : SortedElements(diff.lower_bounds)) {
+  for (const LinearConstraintId c : SortedSetElements(diff.lower_bounds)) {
     result.updates.mutable_lower_bounds()->add_ids(c.value());
     result.updates.mutable_lower_bounds()->add_values(lower_bound(c));
   }
 
-  for (const LinearConstraintId c : SortedElements(diff.upper_bounds)) {
+  for (const LinearConstraintId c : SortedSetElements(diff.upper_bounds)) {
     result.updates.mutable_upper_bounds()->add_ids(c.value());
     result.updates.mutable_upper_bounds()->add_values(upper_bound(c));
   }

@@ -26,6 +26,8 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -35,14 +37,10 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "google/protobuf/map.h"
-#include "absl/log/check.h"
 #include "ortools/base/cleanup.h"
-#include "absl/log/die_if_null.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/gscip/gscip.pb.h"
@@ -56,6 +54,7 @@
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_submatrix.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -63,7 +62,7 @@
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/solvers/gscip_solver_callback.h"
-#include "ortools/math_opt/solvers/gscip_solver_message_callback_handler.h"
+#include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
@@ -681,41 +680,47 @@ absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
         util_time::DecodeGoogleApiProto(solve_parameters.time_limit()).value(),
         &result);
   }
-
-  if (solve_parameters.has_threads()) {
-    GScipSetMaxNumThreads(solve_parameters.threads(), &result);
-  }
-
-  if (solve_parameters.has_relative_gap_tolerance()) {
-    (*result.mutable_real_params())["limits/gap"] =
-        solve_parameters.relative_gap_tolerance();
-  }
-
-  if (solve_parameters.has_absolute_gap_tolerance()) {
-    (*result.mutable_real_params())["limits/absgap"] =
-        solve_parameters.absolute_gap_tolerance();
+  if (solve_parameters.has_iteration_limit()) {
+    warnings.push_back("parameter iteration_limit not supported for gSCIP.");
   }
   if (solve_parameters.has_node_limit()) {
     (*result.mutable_long_params())["limits/totalnodes"] =
         solve_parameters.node_limit();
   }
-
+  if (solve_parameters.has_cutoff_limit()) {
+    result.set_objective_limit(solve_parameters.cutoff_limit());
+  }
   if (solve_parameters.has_objective_limit()) {
     warnings.push_back("parameter objective_limit not supported for gSCIP.");
   }
   if (solve_parameters.has_best_bound_limit()) {
     warnings.push_back("parameter best_bound_limit not supported for gSCIP.");
   }
-
-  if (solve_parameters.has_cutoff_limit()) {
-    result.set_objective_limit(solve_parameters.cutoff_limit());
-  }
-
   if (solve_parameters.has_solution_limit()) {
     (*result.mutable_int_params())["limits/solutions"] =
         solve_parameters.solution_limit();
   }
-
+  // GScip has also GScipSetOutputEnabled() but this changes the log
+  // level. Setting `silence_output` sets the `quiet` field on the default
+  // message handler of SCIP which removes the output. Here it is important to
+  // use this rather than changing the log level so that if the user provides
+  // a MessageCallback function they do get some messages even when
+  // `enable_output` is false.
+  result.set_silence_output(!solve_parameters.enable_output());
+  if (solve_parameters.has_threads()) {
+    GScipSetMaxNumThreads(solve_parameters.threads(), &result);
+  }
+  if (solve_parameters.has_random_seed()) {
+    GScipSetRandomSeed(&result, solve_parameters.random_seed());
+  }
+  if (solve_parameters.has_absolute_gap_tolerance()) {
+    (*result.mutable_real_params())["limits/absgap"] =
+        solve_parameters.absolute_gap_tolerance();
+  }
+  if (solve_parameters.has_relative_gap_tolerance()) {
+    (*result.mutable_real_params())["limits/gap"] =
+        solve_parameters.relative_gap_tolerance();
+  }
   if (solve_parameters.has_solution_pool_size()) {
     result.set_num_solutions(solve_parameters.solution_pool_size());
     // We must set limits/maxsol (the internal solution pool) and
@@ -729,20 +734,8 @@ absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
         solve_parameters.solution_pool_size();
   }
 
-  // GScip has also GScipSetOutputEnabled() but this changes the log
-  // level. Setting `silence_output` sets the `quiet` field on the default
-  // message handler of SCIP which removes the output. Here it is important to
-  // use this rather than changing the log level so that if the user registers
-  // for CALLBACK_EVENT_MESSAGE they do get some messages even when
-  // `enable_output` is false.
-  result.set_silence_output(!solve_parameters.enable_output());
-
-  if (solve_parameters.has_random_seed()) {
-    GScipSetRandomSeed(&result, solve_parameters.random_seed());
-  }
-
   if (solve_parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
-    char alg;
+    char alg = 's';
     switch (solve_parameters.lp_algorithm()) {
       case LP_ALGORITHM_PRIMAL_SIMPLEX:
         alg = 'p';
@@ -751,7 +744,16 @@ absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
         alg = 'd';
         break;
       case LP_ALGORITHM_BARRIER:
+        // As SCIP is configured in ortools, this is an error, since we are not
+        // connected to any LP solver that runs barrier.
+        warnings.push_back(
+            "parameter lp_algorithm with value BARRIER is not supported for "
+            "gSCIP in ortools.");
         alg = 'c';
+        break;
+      case LP_ALGORITHM_FIRST_ORDER:
+        warnings.push_back(
+            "parameter lp_algorithm with value FIRST_ORDER is not supported.");
         break;
       default:
         LOG(FATAL) << "LPAlgorithm: "
@@ -760,16 +762,15 @@ absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
     }
     (*result.mutable_char_params())["lp/initalgorithm"] = alg;
   }
-
+  if (solve_parameters.presolve() != EMPHASIS_UNSPECIFIED) {
+    result.set_presolve(ConvertMathOptEmphasis(solve_parameters.presolve()));
+  }
   if (solve_parameters.cuts() != EMPHASIS_UNSPECIFIED) {
     result.set_separating(ConvertMathOptEmphasis(solve_parameters.cuts()));
   }
   if (solve_parameters.heuristics() != EMPHASIS_UNSPECIFIED) {
     result.set_heuristics(
         ConvertMathOptEmphasis(solve_parameters.heuristics()));
-  }
-  if (solve_parameters.presolve() != EMPHASIS_UNSPECIFIED) {
-    result.set_presolve(ConvertMathOptEmphasis(solve_parameters.presolve()));
   }
   if (solve_parameters.scaling() != EMPHASIS_UNSPECIFIED) {
     int scaling_value;
@@ -803,13 +804,13 @@ absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
 
 namespace {
 
-std::string JoinDetails(const std::string& gscip_detail,
-                        const std::string& math_opt_detail) {
+std::string JoinDetails(absl::string_view gscip_detail,
+                        absl::string_view math_opt_detail) {
   if (gscip_detail.empty()) {
-    return math_opt_detail;
+    return std::string(math_opt_detail);
   }
   if (math_opt_detail.empty()) {
-    return gscip_detail;
+    return std::string(gscip_detail);
   }
   return absl::StrCat(gscip_detail, "; ", math_opt_detail);
 }
@@ -1083,11 +1084,9 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
       GScipSolverCallbackHandler::RegisterIfNeeded(callback_registration, cb,
                                                    start, gscip_->scip());
 
-  std::unique_ptr<GScipSolverMessageCallbackHandler> message_cb_handler;
-  if (message_cb != nullptr) {
-    message_cb_handler =
-        std::make_unique<GScipSolverMessageCallbackHandler>(message_cb);
-  }
+  BufferedMessageCallback buffered_message_callback(std::move(message_cb));
+  auto message_cb_cleanup = absl::MakeCleanup(
+      [&buffered_message_callback]() { buffered_message_callback.Flush(); });
 
   ASSIGN_OR_RETURN(auto gscip_parameters, MergeParameters(parameters));
 
@@ -1115,15 +1114,21 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
   RETURN_IF_ERROR(ListInvalidIndicators().ToStatus());
 
-  ASSIGN_OR_RETURN(GScipResult gscip_result,
-                   gscip_->Solve(gscip_parameters,
-                                 /*legacy_params=*/"",
-                                 message_cb_handler != nullptr
-                                     ? message_cb_handler->MessageHandler()
-                                     : nullptr));
+  GScipMessageHandler gscip_msg_cb = nullptr;
+  if (buffered_message_callback.has_user_message_callback()) {
+    gscip_msg_cb = [&buffered_message_callback](
+                       const auto, const absl::string_view message) {
+      buffered_message_callback.OnMessage(message);
+    };
+  }
 
-  // Flushes the last unfinished message as early as possible.
-  message_cb_handler.reset();
+  ASSIGN_OR_RETURN(
+      GScipResult gscip_result,
+      gscip_->Solve(gscip_parameters,
+                    /*legacy_params=*/"", std::move(gscip_msg_cb)));
+
+  // Flush the potential last unfinished line.
+  std::move(message_cb_cleanup).Invoke();
 
   if (callback_handler) {
     RETURN_IF_ERROR(callback_handler->Flush());
@@ -1421,6 +1426,13 @@ SCIP_RETCODE GScipSolver::InterruptEventHandler::TryCallInterruptIfNeeded(
     default:
       return SCIPinterruptSolve(gscip->scip());
   }
+}
+
+absl::StatusOr<InfeasibleSubsystemResultProto> GScipSolver::InfeasibleSubsystem(
+    const SolveParametersProto& parameters, MessageCallback message_cb,
+    SolveInterrupter* const interrupter) {
+  return absl::UnimplementedError(
+      "SCIP does not provide a method to compute an infeasible subsystem");
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_GSCIP, GScipSolver::New)
