@@ -551,7 +551,7 @@ TEST_P(PrimalDualHybridGradientDiagonalQPTest, QpWarmStart) {
   // and dual optimal solutions are about the same.
   params.set_primal_weight_update_smoothing(0.0);
 
-  const PrimalAndDualSolution initial_solution {
+  const PrimalAndDualSolution initial_solution = {
       .primal_solution = Eigen::VectorXd{{0.999, 0.001}},
       .dual_solution = Eigen::VectorXd{{-0.999}},
   };
