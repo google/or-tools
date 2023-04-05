@@ -19,15 +19,15 @@
 #define OR_TOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
 
 #include <cstdint>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <utility>
 
-#include "absl/strings/string_view.h"
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
-#include "ortools/math_opt/cpp/id_map.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
@@ -79,10 +79,8 @@ class LinearConstraint {
   LinearConstraintId id_;
 };
 
-// Implements the API of std::unordered_map<LinearConstraint, V>, but forbids
-// LinearConstraints from different models in the same map.
 template <typename V>
-using LinearConstraintMap = IdMap<LinearConstraint, V>;
+using LinearConstraintMap = absl::flat_hash_map<LinearConstraint, V>;
 
 // Streams the name of the constraint, as registered upon constraint creation,
 // or a short default if none was provided.

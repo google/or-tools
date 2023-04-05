@@ -13,7 +13,13 @@
 
 #include "ortools/math_opt/cpp/sparse_containers.h"
 
+#include <cstdint>
 #include <optional>
+
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_map.h"
+#include "google/protobuf/map.h"
+#include "ortools/base/status_builder.h"
 
 namespace operations_research::math_opt {
 namespace {
@@ -27,12 +33,12 @@ absl::Status CheckSparseVectorProto(const SparseVectorProtoType& vec) {
 }
 
 template <typename Key>
-absl::StatusOr<IdMap<Key, BasisStatus>> BasisVectorFromProto(
+absl::StatusOr<absl::flat_hash_map<Key, BasisStatus>> BasisVectorFromProto(
     const ModelStorage* const model,
     const SparseBasisStatusVector& basis_proto) {
   using IdType = typename Key::IdType;
-  absl::flat_hash_map<IdType, BasisStatus> raw_map;
-  raw_map.reserve(basis_proto.ids_size());
+  absl::flat_hash_map<Key, BasisStatus> map;
+  map.reserve(basis_proto.ids_size());
   for (const auto& [id, basis_status_proto_int] : MakeView(basis_proto)) {
     const auto basis_status_proto =
         static_cast<BasisStatusProto>(basis_status_proto_int);
@@ -42,18 +48,22 @@ absl::StatusOr<IdMap<Key, BasisStatus>> BasisVectorFromProto(
       return util::InvalidArgumentErrorBuilder()
              << "basis status not specified for id " << id;
     }
-    raw_map[IdType(id)] = *basis_status;
+    map[Key(model, IdType(id))] = *basis_status;
   }
-  return IdMap<Key, BasisStatus>(model, std::move(raw_map));
+  return map;
 }
 
 template <typename Key>
-SparseDoubleVectorProto IdMapToProto(const IdMap<Key, double>& id_map) {
+SparseDoubleVectorProto MapToProto(
+    const absl::flat_hash_map<Key, double>& id_map) {
   using IdType = typename Key::IdType;
+  std::vector<std::pair<IdType, double>> sorted_entries;
+  sorted_entries.reserve(id_map.size());
+  for (const auto& [k, v] : id_map) {
+    sorted_entries.emplace_back(k.typed_id(), v);
+  }
+  absl::c_sort(sorted_entries);
   SparseDoubleVectorProto result;
-  std::vector<std::pair<IdType, double>> sorted_entries(
-      id_map.raw_map().begin(), id_map.raw_map().end());
-  std::sort(sorted_entries.begin(), sorted_entries.end());
   for (const auto& [id, val] : sorted_entries) {
     result.add_ids(id.value());
     result.add_values(val);
@@ -62,13 +72,16 @@ SparseDoubleVectorProto IdMapToProto(const IdMap<Key, double>& id_map) {
 }
 
 template <typename Key>
-SparseBasisStatusVector BasisIdMapToProto(
-    const IdMap<Key, BasisStatus>& basis_map) {
+SparseBasisStatusVector BasisMapToProto(
+    const absl::flat_hash_map<Key, BasisStatus>& basis_map) {
   using IdType = typename Key::IdType;
+  std::vector<std::pair<IdType, BasisStatus>> sorted_entries;
+  sorted_entries.reserve(basis_map.size());
+  for (const auto& [k, v] : basis_map) {
+    sorted_entries.emplace_back(k.typed_id(), v);
+  }
+  absl::c_sort(sorted_entries);
   SparseBasisStatusVector result;
-  std::vector<std::pair<IdType, BasisStatus>> sorted_entries(
-      basis_map.raw_map().begin(), basis_map.raw_map().end());
-  std::sort(sorted_entries.begin(), sorted_entries.end());
   for (const auto& [id, val] : sorted_entries) {
     result.add_ids(id.value());
     result.add_values(EnumToProto(val));
@@ -105,12 +118,39 @@ absl::StatusOr<VariableMap<double>> VariableValuesFromProto(
     const SparseDoubleVectorProto& vars_proto) {
   RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
   RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
-  return VariableMap<double>(model, MakeView(vars_proto).as_map<VariableId>());
+  return MakeView(vars_proto).as_map<Variable>(model);
 }
 
 SparseDoubleVectorProto VariableValuesToProto(
     const VariableMap<double>& variable_values) {
-  return IdMapToProto(variable_values);
+  return MapToProto(variable_values);
+}
+
+absl::StatusOr<absl::flat_hash_map<Objective, double>>
+AuxiliaryObjectiveValuesFromProto(
+    const ModelStorage* const model,
+    const google::protobuf::Map<int64_t, double>& aux_obj_proto) {
+  absl::flat_hash_map<Objective, double> result;
+  for (const auto [raw_id, value] : aux_obj_proto) {
+    const AuxiliaryObjectiveId id(raw_id);
+    if (!model->has_auxiliary_objective(id)) {
+      return util::InvalidArgumentErrorBuilder()
+             << "no auxiliary objective with id " << raw_id << " exists";
+    }
+    result[Objective::Auxiliary(model, id)] = value;
+  }
+  return result;
+}
+
+google::protobuf::Map<int64_t, double> AuxiliaryObjectiveValuesToProto(
+    const absl::flat_hash_map<Objective, double>& aux_obj_values) {
+  google::protobuf::Map<int64_t, double> result;
+  for (const auto& [objective, value] : aux_obj_values) {
+    CHECK(objective.id().has_value())
+        << "encountered primary objective in auxiliary objective value map";
+    result[objective.id().value()] = value;
+  }
+  return result;
 }
 
 absl::StatusOr<LinearConstraintMap<double>> LinearConstraintValuesFromProto(
@@ -118,13 +158,12 @@ absl::StatusOr<LinearConstraintMap<double>> LinearConstraintValuesFromProto(
     const SparseDoubleVectorProto& lin_cons_proto) {
   RETURN_IF_ERROR(CheckSparseVectorProto(lin_cons_proto));
   RETURN_IF_ERROR(LinearConstraintIdsExist(model, lin_cons_proto.ids()));
-  return LinearConstraintMap<double>(
-      model, MakeView(lin_cons_proto).as_map<LinearConstraintId>());
+  return MakeView(lin_cons_proto).as_map<LinearConstraint>(model);
 }
 
 SparseDoubleVectorProto LinearConstraintValuesToProto(
     const LinearConstraintMap<double>& linear_constraint_values) {
-  return IdMapToProto(linear_constraint_values);
+  return MapToProto(linear_constraint_values);
 }
 
 absl::StatusOr<VariableMap<BasisStatus>> VariableBasisFromProto(
@@ -137,7 +176,7 @@ absl::StatusOr<VariableMap<BasisStatus>> VariableBasisFromProto(
 
 SparseBasisStatusVector VariableBasisToProto(
     const VariableMap<BasisStatus>& basis_values) {
-  return BasisIdMapToProto(basis_values);
+  return BasisMapToProto(basis_values);
 }
 
 absl::StatusOr<LinearConstraintMap<BasisStatus>> LinearConstraintBasisFromProto(
@@ -150,7 +189,7 @@ absl::StatusOr<LinearConstraintMap<BasisStatus>> LinearConstraintBasisFromProto(
 
 SparseBasisStatusVector LinearConstraintBasisToProto(
     const LinearConstraintMap<BasisStatus>& basis_values) {
-  return BasisIdMapToProto(basis_values);
+  return BasisMapToProto(basis_values);
 }
 
 }  // namespace operations_research::math_opt

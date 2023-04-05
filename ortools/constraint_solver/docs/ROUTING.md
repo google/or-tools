@@ -21,6 +21,7 @@ and .Net. Each language have different requirements for the code samples.
 ```cpp
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <sstream>
 
 #include "ortools/constraint_solver/routing.h"

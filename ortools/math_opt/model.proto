@@ -145,6 +145,25 @@ message QuadraticConstraintProto {
   string name = 5;
 }
 
+// A single second-order cone constraint of the form:
+//
+//    ||`arguments_to_norm`||_2 <= `upper_bound`,
+//
+// where `upper_bound` and each element of `arguments_to_norm` are linear
+// expressions.
+//
+// If a variable involved in this constraint is deleted, it is treated as if it
+// were set to zero.
+message SecondOrderConeConstraintProto {
+  LinearExpressionProto upper_bound = 1;
+  repeated LinearExpressionProto arguments_to_norm = 2;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // `ModelProto.second_order_cone_constraints` and
+  // `SecondOrderConeConstraintUpdatesProto.new_constraints`.
+  string name = 3;
+}
+
 // Data for representing a single SOS1 or SOS2 constraint.
 //
 // If a variable involved in this constraint is deleted, it is treated as if it
@@ -167,11 +186,14 @@ message SosConstraintProto {
 }
 
 // Data for representing a single indicator constraint of the form:
-//  Variable(indicator_id) = (activate_on_zero ? 0 : 1) --> expression sense rhs
+//    Variable(indicator_id) = (activate_on_zero ? 0 : 1) ⇒
+//    lower_bound <= expression <= upper_bound.
 //
-// If a variable involved in this constraint is deleted, it is treated as if it
-// were set to zero. In particular, deleting the indicator variable means that
-// the indicator constraint is vacuous.
+// If a variable involved in this constraint (either the indicator, or appearing
+// in `expression`) is deleted, it is treated as if it were set to zero. In
+// particular, deleting the indicator variable means that the indicator
+// constraint is vacuous if `activate_on_zero` is false, and that it is
+// equivalent to a linear constraint if `activate_on_zero` is true.
 message IndicatorConstraintProto {
   // An ID corresponding to a binary variable, or unset. If unset, the indicator
   // constraint is ignored. If set, we require that:
@@ -214,6 +236,7 @@ message IndicatorConstraintProto {
 //   - A number of constraints types, including:
 //     * Linear constraints
 //     * Quadratic constraints
+//     * Second-order cone constraints
 //     * Logical constraints
 //       > SOS1 and SOS2 constraints
 //       > Indicator constraints
@@ -258,6 +281,9 @@ message ModelProto {
 
   // Quadratic constraints in the model.
   map<int64, QuadraticConstraintProto> quadratic_constraints = 6;
+
+  // Second-order cone constraints in the model.
+  map<int64, SecondOrderConeConstraintProto> second_order_cone_constraints = 11;
 
   // SOS1 constraints in the model, which constrain that at most one
   // `expression` can be nonzero. The optional `weights` entries are an

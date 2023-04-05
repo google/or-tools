@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -35,8 +36,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/cleanup.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
@@ -48,10 +47,12 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -61,6 +62,8 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -281,7 +284,8 @@ void GlopSolver::UpdateLinearConstraintBounds(
 
 absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
     const SolveParametersProto& solve_parameters,
-    const bool setting_initial_basis, const bool has_message_callback) {
+    const bool setting_initial_basis, const bool has_message_callback,
+    const bool is_maximization) {
   // Validate first the user specific Glop parameters.
   RETURN_IF_ERROR(ValidateGlopParameters(solve_parameters.glop()))
       << "invalid SolveParametersProto.glop value";
@@ -394,11 +398,32 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
   if (solve_parameters.has_cutoff_limit()) {
     warnings.push_back("GLOP does not support 'cutoff_limit' parameter");
   }
+  // Solver stops once optimal objective is proven strictly greater than limit.
+  // limit.
+  const auto set_upper_limit_if_missing = [&result](const double limit) {
+    if (!result.has_objective_upper_limit()) {
+      result.set_objective_upper_limit(limit);
+    }
+  };
+  // Solver stops once optimal objective is proven strictly less than limit.
+  const auto set_lower_limit_if_missing = [&result](const double limit) {
+    if (!result.has_objective_lower_limit()) {
+      result.set_objective_lower_limit(limit);
+    }
+  };
   if (solve_parameters.has_objective_limit()) {
-    warnings.push_back("GLOP does not support 'objective_limit' parameter");
+    if (is_maximization) {
+      set_upper_limit_if_missing(solve_parameters.objective_limit());
+    } else {
+      set_lower_limit_if_missing(solve_parameters.objective_limit());
+    }
   }
   if (solve_parameters.has_best_bound_limit()) {
-    warnings.push_back("GLOP does not support 'best_bound_limit' parameter");
+    if (is_maximization) {
+      set_lower_limit_if_missing(solve_parameters.best_bound_limit());
+    } else {
+      set_upper_limit_if_missing(solve_parameters.best_bound_limit());
+    }
   }
   if (solve_parameters.has_solution_limit()) {
     warnings.push_back("GLOP does not support 'solution_limit' parameter");
@@ -807,7 +832,8 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
       MergeSolveParameters(
           parameters,
           /*setting_initial_basis=*/model_parameters.has_initial_basis(),
-          /*has_message_callback=*/message_cb != nullptr));
+          /*has_message_callback=*/message_cb != nullptr,
+          linear_program_.IsMaximizationProblem()));
   lp_solver_.SetParameters(glop_parameters);
 
   if (model_parameters.has_initial_basis()) {
@@ -834,7 +860,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
     // all in the cleanup below.
     CHECK_EQ(lp_solver_.GetSolverLogger().NumInfoLoggingCallbacks(), 0);
     lp_solver_.GetSolverLogger().AddInfoLoggingCallback(
-        [&](const std::string& message) {
+        [&](absl::string_view message) {
           message_cb(absl::StrSplit(message, '\n'));
         });
   }
@@ -910,6 +936,13 @@ absl::StatusOr<bool> GlopSolver::Update(const ModelUpdateProto& model_update) {
   linear_program_.CleanUp();
 
   return true;
+}
+
+absl::StatusOr<InfeasibleSubsystemResultProto> GlopSolver::InfeasibleSubsystem(
+    const SolveParametersProto& parameters, MessageCallback message_cb,
+    SolveInterrupter* interrupter) {
+  return absl::UnimplementedError(
+      "GLOP does not implement a method to compute an infeasible subsystem");
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_GLOP, GlopSolver::New)

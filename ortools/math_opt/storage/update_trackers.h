@@ -23,8 +23,8 @@
 
 #include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/synchronization/mutex.h"
 #include "absl/log/check.h"
+#include "absl/synchronization/mutex.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/storage/model_storage_types.h"

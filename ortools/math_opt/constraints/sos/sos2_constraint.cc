@@ -15,15 +15,17 @@
 
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
+#include "ortools/math_opt/storage/linear_expression_data.h"
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/sparse_coefficient_map.h"
 
 namespace operations_research::math_opt {
 
 LinearExpression Sos2Constraint::Expression(int index) const {
-  const Sos2ConstraintData::LinearExpression storage_expr =
+  const LinearExpressionData& storage_expr =
       storage_->constraint_data(id_).expression(index);
   LinearExpression out_expr = storage_expr.offset;
-  for (const auto [var_id, coeff] : storage_expr.terms) {
+  for (const auto [var_id, coeff] : storage_expr.coeffs.terms()) {
     out_expr += coeff * Variable(storage_, var_id);
   }
   return out_expr;

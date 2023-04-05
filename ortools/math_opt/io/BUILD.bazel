@@ -20,11 +20,10 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:status_macros",
-        # Only needed for linear_solver/model_validator.h, we should break that
-        # target up.
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:sparse_vector_view",
@@ -48,7 +47,6 @@ cc_library(
         "//ortools/linear_solver:model_exporter",
         "//ortools/lp_data:mps_reader",
         "//ortools/math_opt:model_cc_proto",
-        "//ortools/util:file_util",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
     ],
@@ -61,5 +59,19 @@ cc_library(
     deps = [
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
+    ],
+)
+
+cc_library(
+    name = "lp_converter",
+    srcs = ["lp_converter.cc"],
+    hdrs = ["lp_converter.h"],
+    deps = [
+        ":proto_converter",
+        "//ortools/base:status_macros",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_exporter",
+        "//ortools/math_opt:model_cc_proto",
+        "@com_google_absl//absl/status:statusor",
     ],
 )

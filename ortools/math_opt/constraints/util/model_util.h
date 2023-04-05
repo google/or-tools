@@ -14,14 +14,14 @@
 #ifndef OR_TOOLS_MATH_OPT_CONSTRAINTS_UTIL_MODEL_UTIL_H_
 #define OR_TOOLS_MATH_OPT_CONSTRAINTS_UTIL_MODEL_UTIL_H_
 
-#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
+#include "ortools/math_opt/storage/linear_expression_data.h"
 #include "ortools/math_opt/storage/model_storage.h"
-#include "ortools/math_opt/storage/sparse_coefficient_map.h"
 
 namespace operations_research::math_opt {
 
@@ -33,12 +33,10 @@ constexpr absl::string_view kDeletedConstraintDefaultDescription =
 // Converts data from "raw ID" format to a LinearExpression, in the C++ API,
 // associated with `storage`.
 LinearExpression ToLinearExpression(const ModelStorage& storage,
-                                    const SparseCoefficientMap& coeffs,
-                                    double offset);
+                                    const LinearExpressionData& expr_data);
 
 // Converts a `LinearExpression` to the associated "raw ID" format.
-std::pair<SparseCoefficientMap, double> FromLinearExpression(
-    const LinearExpression& expression);
+LinearExpressionData FromLinearExpression(const LinearExpression& expression);
 
 template <typename IdType>
 std::vector<Variable> AtomicConstraintNonzeroVariables(

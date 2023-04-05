@@ -88,12 +88,12 @@ std::vector<std::vector<int64_t>> ComputeEuclideanDistanceMatrix(
   std::vector<std::vector<int64_t>> distances =
       std::vector<std::vector<int64_t>>(
           locations.size(), std::vector<int64_t>(locations.size(), int64_t{0}));
-  for (int fromNode = 0; fromNode < locations.size(); fromNode++) {
-    for (int toNode = 0; toNode < locations.size(); toNode++) {
-      if (fromNode != toNode)
-        distances[fromNode][toNode] = static_cast<int64_t>(
-            std::hypot((locations[toNode][0] - locations[fromNode][0]),
-                       (locations[toNode][1] - locations[fromNode][1])));
+  for (int from_node = 0; from_node < locations.size(); from_node++) {
+    for (int to_node = 0; to_node < locations.size(); to_node++) {
+      if (from_node != to_node)
+        distances[from_node][to_node] = static_cast<int64_t>(
+            std::hypot((locations[to_node][0] - locations[from_node][0]),
+                       (locations[to_node][1] - locations[from_node][1])));
     }
   }
   return distances;
@@ -113,9 +113,9 @@ void PrintSolution(const RoutingIndexManager& manager,
   LOG(INFO) << "Route:";
   int64_t distance{0};
   std::stringstream route;
-  while (routing.IsEnd(index) == false) {
+  while (!routing.IsEnd(index)) {
     route << manager.IndexToNode(index).value() << " -> ";
-    int64_t previous_index = index;
+    const int64_t previous_index = index;
     index = solution.Value(routing.NextVar(index));
     distance += routing.GetArcCostForVehicle(previous_index, index, int64_t{0});
   }
@@ -147,8 +147,8 @@ void Tsp() {
   // [START transit_callback]
   const auto distance_matrix = ComputeEuclideanDistanceMatrix(data.locations);
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&distance_matrix, &manager](int64_t from_index,
-                                   int64_t to_index) -> int64_t {
+      [&distance_matrix, &manager](const int64_t from_index,
+                                   const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();

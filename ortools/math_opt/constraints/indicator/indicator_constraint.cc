@@ -18,6 +18,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
@@ -27,7 +28,10 @@ namespace operations_research::math_opt {
 
 BoundedLinearExpression IndicatorConstraint::ImpliedConstraint() const {
   const IndicatorConstraintData& data = storage()->constraint_data(id_);
-  LinearExpression expr = ToLinearExpression(*storage_, data.linear_terms, 0.0);
+  // NOTE: The following makes a copy of `data.linear_terms`. This can be made
+  // more efficient if the need arises.
+  LinearExpression expr = ToLinearExpression(
+      *storage_, {.coeffs = data.linear_terms, .offset = 0.0});
   return data.lower_bound <= std::move(expr) <= data.upper_bound;
 }
 

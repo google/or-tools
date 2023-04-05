@@ -22,11 +22,11 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "absl/log/check.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
@@ -54,18 +54,24 @@ absl::StatusOr<std::unique_ptr<ModelStorage>> ModelStorage::FromModelProto(
   // sure duplicated names don't fail.
   RETURN_IF_ERROR(ValidateModel(model_proto, /*check_names=*/false).status());
 
-  auto storage = std::make_unique<ModelStorage>(model_proto.name());
+  auto storage = std::make_unique<ModelStorage>(model_proto.name(),
+                                                model_proto.objective().name());
 
   // Add variables.
   storage->AddVariables(model_proto.variables());
 
   // Set the objective.
-  storage->set_is_maximize(model_proto.objective().maximize());
-  storage->set_objective_offset(model_proto.objective().offset());
+  storage->set_is_maximize(kPrimaryObjectiveId,
+                           model_proto.objective().maximize());
+  storage->set_objective_offset(kPrimaryObjectiveId,
+                                model_proto.objective().offset());
   storage->UpdateLinearObjectiveCoefficients(
-      model_proto.objective().linear_coefficients());
+      kPrimaryObjectiveId, model_proto.objective().linear_coefficients());
   storage->UpdateQuadraticObjectiveCoefficients(
-      model_proto.objective().quadratic_coefficients());
+      kPrimaryObjectiveId, model_proto.objective().quadratic_coefficients());
+
+  // Set the auxiliary objectives.
+  storage->AddAuxiliaryObjectives(model_proto.auxiliary_objectives());
 
   // Add linear constraints.
   storage->AddLinearConstraints(model_proto.linear_constraints());
@@ -78,6 +84,10 @@ absl::StatusOr<std::unique_ptr<ModelStorage>> ModelStorage::FromModelProto(
   storage->quadratic_constraints_.AddConstraints(
       model_proto.quadratic_constraints());
 
+  // Add SOC constraints.
+  storage->soc_constraints_.AddConstraints(
+      model_proto.second_order_cone_constraints());
+
   // Add SOS constraints.
   storage->sos1_constraints_.AddConstraints(model_proto.sos1_constraints());
   storage->sos2_constraints_.AddConstraints(model_proto.sos2_constraints());
@@ -89,19 +99,34 @@ absl::StatusOr<std::unique_ptr<ModelStorage>> ModelStorage::FromModelProto(
   return storage;
 }
 
+void ModelStorage::UpdateObjective(const ObjectiveId id,
+                                   const ObjectiveUpdatesProto& update) {
+  if (update.has_direction_update()) {
+    set_is_maximize(id, update.direction_update());
+  }
+  if (update.has_priority_update()) {
+    set_objective_priority(id, update.priority_update());
+  }
+  if (update.has_offset_update()) {
+    set_objective_offset(id, update.offset_update());
+  }
+  UpdateLinearObjectiveCoefficients(id, update.linear_coefficients());
+  UpdateQuadraticObjectiveCoefficients(id, update.quadratic_coefficients());
+}
+
 void ModelStorage::UpdateLinearObjectiveCoefficients(
-    const SparseDoubleVectorProto& coefficients) {
+    const ObjectiveId id, const SparseDoubleVectorProto& coefficients) {
   for (const auto [var_id, value] : MakeView(coefficients)) {
-    set_linear_objective_coefficient(VariableId(var_id), value);
+    set_linear_objective_coefficient(id, VariableId(var_id), value);
   }
 }
 
 void ModelStorage::UpdateQuadraticObjectiveCoefficients(
-    const SparseDoubleMatrixProto& coefficients) {
+    const ObjectiveId id, const SparseDoubleMatrixProto& coefficients) {
   for (int i = 0; i < coefficients.row_ids_size(); ++i) {
     // This call is valid since this is an upper triangular matrix; there is no
     // duplicated terms.
-    set_quadratic_objective_coefficient(VariableId(coefficients.row_ids(i)),
+    set_quadratic_objective_coefficient(id, VariableId(coefficients.row_ids(i)),
                                         VariableId(coefficients.column_ids(i)),
                                         coefficients.coefficients(i));
   }
@@ -132,10 +157,14 @@ std::unique_ptr<ModelStorage> ModelStorage::Clone(
   // Update the next ids so that the clone does not reused any deleted id from
   // the original.
   clone.value()->ensure_next_variable_id_at_least(next_variable_id());
+  clone.value()->ensure_next_auxiliary_objective_id_at_least(
+      next_auxiliary_objective_id());
   clone.value()->ensure_next_linear_constraint_id_at_least(
       next_linear_constraint_id());
   clone.value()->ensure_next_constraint_id_at_least(
       next_constraint_id<QuadraticConstraintId>());
+  clone.value()->ensure_next_constraint_id_at_least(
+      next_constraint_id<SecondOrderConeConstraintId>());
   clone.value()->ensure_next_constraint_id_at_least(
       next_constraint_id<Sos1ConstraintId>());
   clone.value()->ensure_next_constraint_id_at_least(
@@ -172,7 +201,7 @@ void ModelStorage::DeleteVariable(const VariableId id) {
   const auto& trackers = update_trackers_.GetUpdatedTrackers();
   // Reuse output of GetUpdatedTrackers() only once to ensure a consistent view,
   // do not call UpdateAndGetLinearConstraintDiffs() etc.
-  objective_.DeleteVariable(
+  objectives_.DeleteVariable(
       id,
       MakeUpdateDataFieldRange<&UpdateTrackerData::dirty_objective>(trackers));
   linear_constraints_.DeleteVariable(
@@ -180,6 +209,7 @@ void ModelStorage::DeleteVariable(const VariableId id) {
       MakeUpdateDataFieldRange<&UpdateTrackerData::dirty_linear_constraints>(
           trackers));
   quadratic_constraints_.DeleteVariable(id);
+  soc_constraints_.DeleteVariable(id);
   sos1_constraints_.DeleteVariable(id);
   sos2_constraints_.DeleteVariable(id);
   indicator_constraints_.DeleteVariable(id);
@@ -232,17 +262,38 @@ std::vector<LinearConstraintId> ModelStorage::SortedLinearConstraints() const {
   return linear_constraints_.SortedLinearConstraints();
 }
 
+void ModelStorage::AddAuxiliaryObjectives(
+    const google::protobuf::Map<int64_t, ObjectiveProto>& objectives) {
+  for (const int64_t raw_id : SortedMapKeys(objectives)) {
+    const AuxiliaryObjectiveId id = AuxiliaryObjectiveId(raw_id);
+    ensure_next_auxiliary_objective_id_at_least(id);
+    const ObjectiveProto& proto = objectives.at(raw_id);
+    AddAuxiliaryObjective(proto.priority(), proto.name());
+    set_is_maximize(id, proto.maximize());
+    set_objective_offset(id, proto.offset());
+    for (const auto [raw_var_id, coeff] :
+         MakeView(proto.linear_coefficients())) {
+      set_linear_objective_coefficient(id, VariableId(raw_var_id), coeff);
+    }
+  }
+}
+
 ModelProto ModelStorage::ExportModel() const {
   ModelProto result;
   result.set_name(name_);
   *result.mutable_variables() = variables_.Proto();
-  *result.mutable_objective() = objective_.Proto();
+  {
+    auto [primary, auxiliary] = objectives_.Proto();
+    *result.mutable_objective() = std::move(primary);
+    *result.mutable_auxiliary_objectives() = std::move(auxiliary);
+  }
   {
     auto [constraints, matrix] = linear_constraints_.Proto();
     *result.mutable_linear_constraints() = std::move(constraints);
     *result.mutable_linear_constraint_matrix() = std::move(matrix);
   }
   *result.mutable_quadratic_constraints() = quadratic_constraints_.Proto();
+  *result.mutable_second_order_cone_constraints() = soc_constraints_.Proto();
   *result.mutable_sos1_constraints() = sos1_constraints_.Proto();
   *result.mutable_sos2_constraints() = sos2_constraints_.Proto();
   *result.mutable_indicator_constraints() = indicator_constraints_.Proto();
@@ -256,10 +307,11 @@ ModelStorage::UpdateTrackerData::ExportModelUpdate(
   // ExportModelUpdate().
 
   if (storage.variables_.diff_is_empty(dirty_variables) &&
-      storage.objective_.diff_is_empty(dirty_objective) &&
+      storage.objectives_.diff_is_empty(dirty_objective) &&
       storage.linear_constraints_.diff_is_empty(dirty_linear_constraints) &&
       storage.quadratic_constraints_.diff_is_empty(
           dirty_quadratic_constraints) &&
+      storage.soc_constraints_.diff_is_empty(dirty_soc_constraints) &&
       storage.sos1_constraints_.diff_is_empty(dirty_sos1_constraints) &&
       storage.sos2_constraints_.diff_is_empty(dirty_sos2_constraints) &&
       storage.indicator_constraints_.diff_is_empty(
@@ -299,6 +351,10 @@ ModelStorage::UpdateTrackerData::ExportModelUpdate(
   *result.mutable_quadratic_constraint_updates() =
       storage.quadratic_constraints_.Update(dirty_quadratic_constraints);
 
+  // Second-order cone constraint updates
+  *result.mutable_second_order_cone_constraint_updates() =
+      storage.soc_constraints_.Update(dirty_soc_constraints);
+
   // SOS constraint updates
   *result.mutable_sos1_constraint_updates() =
       storage.sos1_constraints_.Update(dirty_sos1_constraints);
@@ -310,8 +366,12 @@ ModelStorage::UpdateTrackerData::ExportModelUpdate(
       storage.indicator_constraints_.Update(dirty_indicator_constraints);
 
   // Update the objective
-  *result.mutable_objective_updates() = storage.objective_.Update(
-      dirty_objective, dirty_variables.deleted, new_variables);
+  {
+    auto [primary, auxiliary] = storage.objectives_.Update(
+        dirty_objective, dirty_variables.deleted, new_variables);
+    *result.mutable_objective_updates() = std::move(primary);
+    *result.mutable_auxiliary_objectives_updates() = std::move(auxiliary);
+  }
   // Note: Named returned value optimization (NRVO) does not apply here.
   return {std::move(result)};
 }
@@ -319,12 +379,13 @@ ModelStorage::UpdateTrackerData::ExportModelUpdate(
 void ModelStorage::UpdateTrackerData::AdvanceCheckpoint(
     const ModelStorage& storage) {
   storage.variables_.AdvanceCheckpointInDiff(dirty_variables);
-  storage.objective_.AdvanceCheckpointInDiff(dirty_variables.checkpoint,
-                                             dirty_objective);
+  storage.objectives_.AdvanceCheckpointInDiff(dirty_variables.checkpoint,
+                                              dirty_objective);
   storage.linear_constraints_.AdvanceCheckpointInDiff(
       dirty_variables.checkpoint, dirty_linear_constraints);
   storage.quadratic_constraints_.AdvanceCheckpointInDiff(
       dirty_quadratic_constraints);
+  storage.soc_constraints_.AdvanceCheckpointInDiff(dirty_soc_constraints);
   storage.sos1_constraints_.AdvanceCheckpointInDiff(dirty_sos1_constraints);
   storage.sos2_constraints_.AdvanceCheckpointInDiff(dirty_sos2_constraints);
   storage.indicator_constraints_.AdvanceCheckpointInDiff(
@@ -333,8 +394,9 @@ void ModelStorage::UpdateTrackerData::AdvanceCheckpoint(
 
 UpdateTrackerId ModelStorage::NewUpdateTracker() {
   return update_trackers_.NewUpdateTracker(
-      variables_, linear_constraints_, quadratic_constraints_,
-      sos1_constraints_, sos2_constraints_, indicator_constraints_);
+      variables_, objectives_, linear_constraints_, quadratic_constraints_,
+      soc_constraints_, sos1_constraints_, sos2_constraints_,
+      indicator_constraints_);
 }
 
 void ModelStorage::DeleteUpdateTracker(const UpdateTrackerId update_tracker) {
@@ -363,6 +425,13 @@ absl::Status ModelStorage::ApplyUpdateProto(
     }
     RETURN_IF_ERROR(
         summary.variables.SetNextFreeId(variables_.next_id().value()));
+    for (const AuxiliaryObjectiveId id : SortedAuxiliaryObjectives()) {
+      RETURN_IF_ERROR(
+          summary.auxiliary_objectives.Insert(id.value(), objective_name(id)))
+          << "invalid auxiliary objective id in model";
+    }
+    RETURN_IF_ERROR(summary.auxiliary_objectives.SetNextFreeId(
+        objectives_.next_id().value()));
     for (const LinearConstraintId id : SortedLinearConstraints()) {
       RETURN_IF_ERROR(summary.linear_constraints.Insert(
           id.value(), linear_constraint_name(id)))
@@ -377,6 +446,13 @@ absl::Status ModelStorage::ApplyUpdateProto(
     }
     RETURN_IF_ERROR(summary.quadratic_constraints.SetNextFreeId(
         quadratic_constraints_.next_id().value()));
+    for (const auto id : SortedConstraints<SecondOrderConeConstraintId>()) {
+      RETURN_IF_ERROR(summary.second_order_cone_constraints.Insert(
+          id.value(), soc_constraints_.data(id).name))
+          << "invalid second-order cone constraint id in model";
+    }
+    RETURN_IF_ERROR(summary.second_order_cone_constraints.SetNextFreeId(
+        soc_constraints_.next_id().value()));
     for (const Sos1ConstraintId id : SortedConstraints<Sos1ConstraintId>()) {
       RETURN_IF_ERROR(summary.sos1_constraints.Insert(
           id.value(), constraint_data(id).name()))
@@ -408,12 +484,20 @@ absl::Status ModelStorage::ApplyUpdateProto(
   for (const int64_t v_id : update_proto.deleted_variable_ids()) {
     DeleteVariable(VariableId(v_id));
   }
+  for (const int64_t o_id :
+       update_proto.auxiliary_objectives_updates().deleted_objective_ids()) {
+    DeleteAuxiliaryObjective(AuxiliaryObjectiveId(o_id));
+  }
   for (const int64_t c_id : update_proto.deleted_linear_constraint_ids()) {
     DeleteLinearConstraint(LinearConstraintId(c_id));
   }
   for (const int64_t c_id :
        update_proto.quadratic_constraint_updates().deleted_constraint_ids()) {
     DeleteAtomicConstraint(QuadraticConstraintId(c_id));
+  }
+  for (const int64_t c_id : update_proto.second_order_cone_constraint_updates()
+                                .deleted_constraint_ids()) {
+    DeleteAtomicConstraint(SecondOrderConeConstraintId(c_id));
   }
   for (const int64_t c_id :
        update_proto.sos1_constraint_updates().deleted_constraint_ids()) {
@@ -454,9 +538,13 @@ absl::Status ModelStorage::ApplyUpdateProto(
 
   // Add the new variables and constraints.
   AddVariables(update_proto.new_variables());
+  AddAuxiliaryObjectives(
+      update_proto.auxiliary_objectives_updates().new_objectives());
   AddLinearConstraints(update_proto.new_linear_constraints());
   quadratic_constraints_.AddConstraints(
       update_proto.quadratic_constraint_updates().new_constraints());
+  soc_constraints_.AddConstraints(
+      update_proto.second_order_cone_constraint_updates().new_constraints());
   sos1_constraints_.AddConstraints(
       update_proto.sos1_constraint_updates().new_constraints());
   sos2_constraints_.AddConstraints(
@@ -464,17 +552,14 @@ absl::Status ModelStorage::ApplyUpdateProto(
   indicator_constraints_.AddConstraints(
       update_proto.indicator_constraint_updates().new_constraints());
 
-  // Update the objective.
-  if (update_proto.objective_updates().has_direction_update()) {
-    set_is_maximize(update_proto.objective_updates().direction_update());
+  // Update the primary objective.
+  UpdateObjective(kPrimaryObjectiveId, update_proto.objective_updates());
+
+  // Update the auxiliary objectives.
+  for (const auto& [raw_id, objective_update] :
+       update_proto.auxiliary_objectives_updates().objective_updates()) {
+    UpdateObjective(AuxiliaryObjectiveId(raw_id), objective_update);
   }
-  if (update_proto.objective_updates().has_offset_update()) {
-    set_objective_offset(update_proto.objective_updates().offset_update());
-  }
-  UpdateLinearObjectiveCoefficients(
-      update_proto.objective_updates().linear_coefficients());
-  UpdateQuadraticObjectiveCoefficients(
-      update_proto.objective_updates().quadratic_coefficients());
 
   // Update the linear constraints' coefficients.
   UpdateLinearConstraintCoefficients(

@@ -58,8 +58,8 @@ cc_proto_library(
 
 py_proto_library(
     name = "linear_solver_py_pb2",
-    deps = [":linear_solver_proto"],
     visibility = ["//visibility:public"],
+    deps = [":linear_solver_proto"],
 )
 
 # You can include the interfaces to different solvers by invoking '--define'
@@ -77,8 +77,8 @@ cc_library(
         "gurobi_interface.cc",
         "highs_interface.cc",
         "linear_expr.cc",
-        "linear_solver_callback.cc",
         "linear_solver.cc",
+        "linear_solver_callback.cc",
         "lpi_glop.cpp",
         "pdlp_interface.cc",
         "sat_interface.cc",

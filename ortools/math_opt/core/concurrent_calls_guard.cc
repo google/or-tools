@@ -14,10 +14,10 @@
 #include "ortools/math_opt/core/concurrent_calls_guard.h"
 
 #include "absl/base/thread_annotations.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/log/check.h"
 
 namespace operations_research::math_opt {
 

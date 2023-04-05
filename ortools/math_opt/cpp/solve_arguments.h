@@ -49,7 +49,7 @@ struct SolveArguments {
   //   // To print messages to stdout with a prefix.
   //   ASSIGN_OR_RETURN(
   //     const SolveResult result,
-  //     Solve(model, SOLVER_TYPE_GLOP,
+  //     Solve(model, SolverType::kGlop,
   //           { .message_callback = PrinterMessageCallback(std::cout,
   //                                                        "logs| "); });
   MessageCallback message_callback = nullptr;
@@ -79,7 +79,7 @@ struct SolveArguments {
   //   });
   //
   //   ASSIGN_OR_RETURN(const SolveResult result,
-  //                    Solve(model, SOLVER_TYPE_GLOP,
+  //                    Solve(model, SolverType::kGlop,
   //                          { .interrupter = interrupter.get() });
   //
   SolveInterrupter* interrupter = nullptr;

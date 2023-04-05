@@ -25,15 +25,16 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "absl/log/check.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/indicator/storage.h"  // IWYU pragma: export
 #include "ortools/math_opt/constraints/quadratic/storage.h"  // IWYU pragma: export
+#include "ortools/math_opt/constraints/second_order_cone/storage.h"
 #include "ortools/math_opt/constraints/sos/storage.h"  // IWYU pragma: export
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -101,9 +102,9 @@ namespace math_opt {
 //       -std::numeric_limits<double>::infinity, 1.5, "c");
 //   model.set_linear_constraint_coefficient(x, c, 1.0);
 //   model.set_linear_constraint_coefficient(y, c, 1.0);
-//   model.set_linear_objective_coefficient(x, 2.0);
-//   model.set_linear_objective_coefficient(y, 1.0);
-//   model.set_maximize();
+//   model.set_linear_objective_coefficient(kPrimaryObjectiveId, x, 2.0);
+//   model.set_linear_objective_coefficient(kPrimaryObjectiveId, y, 1.0);
+//   model.set_maximize(kPrimaryObjectiveId);
 //
 // Now, export to a proto describing the model:
 //
@@ -146,7 +147,7 @@ namespace math_opt {
 // ModelStorage::AdvanceCheckpoint(). Note that, for newly initialized models,
 // before the first checkpoint, there is no additional memory overhead from
 // tracking changes. See
-// docs/ortools/math_opt/docs/model_building_complexity.md
+// g3doc/ortools/math_opt/g3doc/model_building_complexity.md
 // for details.
 //
 // On bad input:
@@ -171,7 +172,8 @@ class ModelStorage {
       const ModelProto& model_proto);
 
   // Creates an empty minimization problem.
-  explicit ModelStorage(absl::string_view name = "") : name_(name) {}
+  inline explicit ModelStorage(absl::string_view model_name = "",
+                               absl::string_view primary_objective_name = "");
 
   ModelStorage(const ModelStorage&) = delete;
   ModelStorage& operator=(const ModelStorage&) = delete;
@@ -340,35 +342,46 @@ class ModelStorage {
       VariableId variable) const;
 
   //////////////////////////////////////////////////////////////////////////////
-  // Objective
+  // Objectives
+  //
+  // The primary ObjectiveId is `PrimaryObjectiveId`. All auxiliary objectives
+  // are referenced by their corresponding `AuxiliaryObjectiveId`.
   //////////////////////////////////////////////////////////////////////////////
 
-  inline bool is_maximize() const;
-  inline double objective_offset() const;
+  inline bool is_maximize(ObjectiveId id) const;
+  inline int64_t objective_priority(ObjectiveId id) const;
+  inline double objective_offset(ObjectiveId id) const;
   // Returns 0.0 if this variable has no linear objective coefficient.
-  inline double linear_objective_coefficient(VariableId variable) const;
+  inline double linear_objective_coefficient(ObjectiveId id,
+                                             VariableId variable) const;
   // The ordering of the input variables does not matter.
   inline double quadratic_objective_coefficient(
-      VariableId first_variable, VariableId second_variable) const;
+      ObjectiveId id, VariableId first_variable,
+      VariableId second_variable) const;
   inline bool is_linear_objective_coefficient_nonzero(
-      VariableId variable) const;
+      ObjectiveId id, VariableId variable) const;
   // The ordering of the input variables does not matter.
   inline bool is_quadratic_objective_coefficient_nonzero(
-      VariableId first_variable, VariableId second_variable) const;
+      ObjectiveId id, VariableId first_variable,
+      VariableId second_variable) const;
+  inline const std::string& objective_name(ObjectiveId id) const;
 
-  inline void set_is_maximize(bool is_maximize);
-  inline void set_maximize();
-  inline void set_minimize();
-  inline void set_objective_offset(double value);
+  inline void set_is_maximize(ObjectiveId id, bool is_maximize);
+  inline void set_maximize(ObjectiveId id);
+  inline void set_minimize(ObjectiveId id);
+  inline void set_objective_priority(ObjectiveId id, int64_t value);
+  inline void set_objective_offset(ObjectiveId id, double value);
 
   // Setting a value to 0.0 will delete the variable from the underlying sparse
   // representation (and has no effect if the variable is not present).
-  inline void set_linear_objective_coefficient(VariableId variable,
+  inline void set_linear_objective_coefficient(ObjectiveId id,
+                                               VariableId variable,
                                                double value);
   // Setting a value to 0.0 will delete the variable pair from the underlying
   // sparse representation (and has no effect if the pair is not present).
   // The ordering of the input variables does not matter.
-  inline void set_quadratic_objective_coefficient(VariableId first_variable,
+  inline void set_quadratic_objective_coefficient(ObjectiveId id,
+                                                  VariableId first_variable,
                                                   VariableId second_variable,
                                                   double value);
 
@@ -376,20 +389,71 @@ class ModelStorage {
   // variable with nonzero objective coefficient.
   //
   // Runs in O(# nonzero linear/quadratic objective terms).
-  inline void clear_objective();
+  inline void clear_objective(ObjectiveId id);
 
   // The variables with nonzero linear objective coefficients.
-  inline const absl::flat_hash_map<VariableId, double>& linear_objective()
-      const;
+  inline const absl::flat_hash_map<VariableId, double>& linear_objective(
+      ObjectiveId id) const;
 
-  inline int64_t num_quadratic_objective_terms() const;
+  inline int64_t num_quadratic_objective_terms(ObjectiveId id) const;
 
   // The variable pairs with nonzero quadratic objective coefficients. The keys
   // are ordered such that .first <= .second. All values are nonempty.
   //
   // TODO(b/233630053) do no allocate the result, expose an iterator API.
   inline std::vector<std::tuple<VariableId, VariableId, double>>
-  quadratic_objective_terms() const;
+  quadratic_objective_terms(ObjectiveId id) const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Auxiliary objectives
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Adds an auxiliary objective to the model and returns its id.
+  //
+  // The returned ids begin at zero and increase by one with each call to
+  // AddAuxiliaryObjective. Deleted ids are NOT reused. If no auxiliary
+  // objectives are deleted, the ids in the model will be consecutive.
+  //
+  // Objectives are minimized by default; you can change the sense via, e.g.,
+  // `set_is_maximize()`.
+  inline AuxiliaryObjectiveId AddAuxiliaryObjective(
+      int64_t priority, absl::string_view name = "");
+
+  // Removes an auxiliary objective from the model.
+  //
+  // It is an error to use a deleted auxiliary objective id as input to any
+  // subsequent function calls on the model. Runs in O(#variables in the
+  // auxiliary objective).
+  inline void DeleteAuxiliaryObjective(AuxiliaryObjectiveId id);
+
+  // The number of auxiliary objectives in the model.
+  //
+  // Equal to the number of auxiliary objectives created minus the number of
+  // auxiliary objectives deleted.
+  inline int num_auxiliary_objectives() const;
+
+  // The returned id of the next call to AddAuxiliaryObjective.
+  //
+  // Equal to the number of auxiliary objectives created.
+  inline AuxiliaryObjectiveId next_auxiliary_objective_id() const;
+
+  // Sets the next auxiliary objective id to be the maximum of
+  // next_auxiliary_objective_id() and id.
+  inline void ensure_next_auxiliary_objective_id_at_least(
+      AuxiliaryObjectiveId id);
+
+  // Returns true if this id has been created and not yet deleted.
+  inline bool has_auxiliary_objective(AuxiliaryObjectiveId id) const;
+
+  // The AuxiliaryObjectiveIds in use (not deleted), order not defined.
+  inline std::vector<AuxiliaryObjectiveId> AuxiliaryObjectives() const;
+
+  // Returns a sorted vector of all existing (not deleted) auxiliary objectives
+  // in the model.
+  //
+  // Runs in O(n log(n)), where n is the number of auxiliary objectives
+  // returned.
+  inline std::vector<AuxiliaryObjectiveId> SortedAuxiliaryObjectives() const;
 
   //////////////////////////////////////////////////////////////////////////////
   // Atomic Constraints
@@ -573,19 +637,22 @@ class ModelStorage {
  private:
   struct UpdateTrackerData {
     UpdateTrackerData(
-        const VariableStorage& variables,
+        const VariableStorage& variables, const ObjectiveStorage& objectives,
         const LinearConstraintStorage& linear_constraints,
         const AtomicConstraintStorage<QuadraticConstraintData>&
             quadratic_constraints,
+        const AtomicConstraintStorage<SecondOrderConeConstraintData>
+            soc_constraints,
         const AtomicConstraintStorage<Sos1ConstraintData>& sos1_constraints,
         const AtomicConstraintStorage<Sos2ConstraintData>& sos2_constraints,
         const AtomicConstraintStorage<IndicatorConstraintData>&
             indicator_constraints)
         : dirty_variables(variables),
-          dirty_objective(variables.next_id()),
+          dirty_objective(objectives, variables.next_id()),
           dirty_linear_constraints(linear_constraints,
                                    dirty_variables.checkpoint),
           dirty_quadratic_constraints(quadratic_constraints),
+          dirty_soc_constraints(soc_constraints),
           dirty_sos1_constraints(sos1_constraints),
           dirty_sos2_constraints(sos2_constraints),
           dirty_indicator_constraints(indicator_constraints) {}
@@ -619,6 +686,8 @@ class ModelStorage {
     LinearConstraintStorage::Diff dirty_linear_constraints;
     AtomicConstraintStorage<QuadraticConstraintData>::Diff
         dirty_quadratic_constraints;
+    AtomicConstraintStorage<SecondOrderConeConstraintData>::Diff
+        dirty_soc_constraints;
     AtomicConstraintStorage<Sos1ConstraintData>::Diff dirty_sos1_constraints;
     AtomicConstraintStorage<Sos2ConstraintData>::Diff dirty_sos2_constraints;
     AtomicConstraintStorage<IndicatorConstraintData>::Diff
@@ -641,21 +710,27 @@ class ModelStorage {
         update_trackers_.GetUpdatedTrackers());
   }
 
-  // Ids must be greater or equal to next_variable_id_.
+  // Ids must be greater or equal to `next_variable_id()`.
   void AddVariables(const VariablesProto& variables);
 
-  // Ids must be greater or equal to next_linear_constraint_id_.
+  // Ids must be greater or equal to `next_auxiliary_objective_id()`.
+  void AddAuxiliaryObjectives(
+      const google::protobuf::Map<int64_t, ObjectiveProto>& objectives);
+
+  // Ids must be greater or equal to `next_linear_constraint_id()`.
   void AddLinearConstraints(const LinearConstraintsProto& linear_constraints);
+
+  void UpdateObjective(ObjectiveId id, const ObjectiveUpdatesProto& update);
 
   // Updates the objective linear coefficients. The coefficients of variables
   // not in the input are kept as-is.
   void UpdateLinearObjectiveCoefficients(
-      const SparseDoubleVectorProto& coefficients);
+      ObjectiveId id, const SparseDoubleVectorProto& coefficients);
 
   // Updates the objective quadratic coefficients. The coefficients of the pairs
   // of variables not in the input are kept as-is.
   void UpdateQuadraticObjectiveCoefficients(
-      const SparseDoubleMatrixProto& coefficients);
+      ObjectiveId id, const SparseDoubleMatrixProto& coefficients);
 
   // Updates the linear constraints' coefficients. The coefficients of
   // (constraint, variable) pairs not in the input are kept as-is.
@@ -675,10 +750,11 @@ class ModelStorage {
   std::string name_;
 
   VariableStorage variables_;
-  ObjectiveStorage objective_;
+  ObjectiveStorage objectives_;
   LinearConstraintStorage linear_constraints_;
 
   AtomicConstraintStorage<QuadraticConstraintData> quadratic_constraints_;
+  AtomicConstraintStorage<SecondOrderConeConstraintData> soc_constraints_;
   AtomicConstraintStorage<Sos1ConstraintData> sos1_constraints_;
   AtomicConstraintStorage<Sos2ConstraintData> sos2_constraints_;
   AtomicConstraintStorage<IndicatorConstraintData> indicator_constraints_;
@@ -691,6 +767,10 @@ class ModelStorage {
 // Inlined function implementations
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+ModelStorage::ModelStorage(const absl::string_view model_name,
+                           const absl::string_view primary_objective_name)
+    : name_(model_name), objectives_(primary_objective_name) {}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Variables
@@ -844,74 +924,142 @@ std::vector<LinearConstraintId> ModelStorage::linear_constraints_with_variable(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Objective
+// Objectives
 ////////////////////////////////////////////////////////////////////////////////
 
-bool ModelStorage::is_maximize() const { return objective_.maximize(); }
+bool ModelStorage::is_maximize(const ObjectiveId id) const {
+  return objectives_.maximize(id);
+}
 
-double ModelStorage::objective_offset() const { return objective_.offset(); }
+int64_t ModelStorage::objective_priority(const ObjectiveId id) const {
+  return objectives_.priority(id);
+}
+
+double ModelStorage::objective_offset(const ObjectiveId id) const {
+  return objectives_.offset(id);
+}
 
 double ModelStorage::linear_objective_coefficient(
-    const VariableId variable) const {
-  return objective_.linear_term(variable);
+    const ObjectiveId id, const VariableId variable) const {
+  return objectives_.linear_term(id, variable);
 }
 
 double ModelStorage::quadratic_objective_coefficient(
-    const VariableId first_variable, const VariableId second_variable) const {
-  return objective_.quadratic_term(first_variable, second_variable);
+    const ObjectiveId id, const VariableId first_variable,
+    const VariableId second_variable) const {
+  return objectives_.quadratic_term(id, first_variable, second_variable);
 }
 
 bool ModelStorage::is_linear_objective_coefficient_nonzero(
-    const VariableId variable) const {
-  return objective_.linear_terms().contains(variable);
+    const ObjectiveId id, const VariableId variable) const {
+  return objectives_.linear_terms(id).contains(variable);
 }
 
 bool ModelStorage::is_quadratic_objective_coefficient_nonzero(
-    const VariableId first_variable, const VariableId second_variable) const {
-  return objective_.quadratic_terms().get(first_variable, second_variable) !=
+    const ObjectiveId id, const VariableId first_variable,
+    const VariableId second_variable) const {
+  return objectives_.quadratic_terms(id).get(first_variable, second_variable) !=
          0.0;
 }
 
-void ModelStorage::set_is_maximize(const bool is_maximize) {
-  objective_.set_maximize(is_maximize, UpdateAndGetObjectiveDiffs());
+const std::string& ModelStorage::objective_name(const ObjectiveId id) const {
+  return objectives_.name(id);
 }
 
-void ModelStorage::set_maximize() { set_is_maximize(true); }
-
-void ModelStorage::set_minimize() { set_is_maximize(false); }
-
-void ModelStorage::set_objective_offset(const double value) {
-  objective_.set_offset(value, UpdateAndGetObjectiveDiffs());
+void ModelStorage::set_is_maximize(const ObjectiveId id,
+                                   const bool is_maximize) {
+  objectives_.set_maximize(id, is_maximize, UpdateAndGetObjectiveDiffs());
 }
 
-void ModelStorage::set_linear_objective_coefficient(const VariableId variable,
+void ModelStorage::set_maximize(const ObjectiveId id) {
+  set_is_maximize(id, true);
+}
+
+void ModelStorage::set_minimize(const ObjectiveId id) {
+  set_is_maximize(id, false);
+}
+
+void ModelStorage::set_objective_priority(const ObjectiveId id,
+                                          const int64_t value) {
+  objectives_.set_priority(id, value, UpdateAndGetObjectiveDiffs());
+}
+
+void ModelStorage::set_objective_offset(const ObjectiveId id,
+                                        const double value) {
+  objectives_.set_offset(id, value, UpdateAndGetObjectiveDiffs());
+}
+
+void ModelStorage::set_linear_objective_coefficient(const ObjectiveId id,
+                                                    const VariableId variable,
                                                     const double value) {
-  objective_.set_linear_term(variable, value, UpdateAndGetObjectiveDiffs());
+  objectives_.set_linear_term(id, variable, value,
+                              UpdateAndGetObjectiveDiffs());
 }
 
 void ModelStorage::set_quadratic_objective_coefficient(
-    const VariableId first_variable, const VariableId second_variable,
-    const double value) {
-  objective_.set_quadratic_term(first_variable, second_variable, value,
-                                UpdateAndGetObjectiveDiffs());
+    const ObjectiveId id, const VariableId first_variable,
+    const VariableId second_variable, const double value) {
+  objectives_.set_quadratic_term(id, first_variable, second_variable, value,
+                                 UpdateAndGetObjectiveDiffs());
 }
 
-void ModelStorage::clear_objective() {
-  objective_.Clear(UpdateAndGetObjectiveDiffs());
+void ModelStorage::clear_objective(const ObjectiveId id) {
+  objectives_.Clear(id, UpdateAndGetObjectiveDiffs());
 }
 
-const absl::flat_hash_map<VariableId, double>& ModelStorage::linear_objective()
-    const {
-  return objective_.linear_terms();
+const absl::flat_hash_map<VariableId, double>& ModelStorage::linear_objective(
+    const ObjectiveId id) const {
+  return objectives_.linear_terms(id);
 }
 
-int64_t ModelStorage::num_quadratic_objective_terms() const {
-  return objective_.quadratic_terms().nonzeros();
+int64_t ModelStorage::num_quadratic_objective_terms(
+    const ObjectiveId id) const {
+  return objectives_.quadratic_terms(id).nonzeros();
 }
 
 std::vector<std::tuple<VariableId, VariableId, double>>
-ModelStorage::quadratic_objective_terms() const {
-  return objective_.quadratic_terms().Terms();
+ModelStorage::quadratic_objective_terms(const ObjectiveId id) const {
+  return objectives_.quadratic_terms(id).Terms();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Auxiliary objectives
+////////////////////////////////////////////////////////////////////////////////
+
+AuxiliaryObjectiveId ModelStorage::AddAuxiliaryObjective(
+    const int64_t priority, const absl::string_view name) {
+  return objectives_.AddAuxiliaryObjective(priority, name);
+}
+
+void ModelStorage::DeleteAuxiliaryObjective(const AuxiliaryObjectiveId id) {
+  objectives_.Delete(id, UpdateAndGetObjectiveDiffs());
+}
+
+int ModelStorage::num_auxiliary_objectives() const {
+  return static_cast<int>(objectives_.num_auxiliary_objectives());
+}
+
+AuxiliaryObjectiveId ModelStorage::next_auxiliary_objective_id() const {
+  return objectives_.next_id();
+}
+
+void ModelStorage::ensure_next_auxiliary_objective_id_at_least(
+    const AuxiliaryObjectiveId id) {
+  objectives_.ensure_next_id_at_least(id);
+}
+
+bool ModelStorage::has_auxiliary_objective(
+    const AuxiliaryObjectiveId id) const {
+  return objectives_.contains(id);
+}
+
+std::vector<AuxiliaryObjectiveId> ModelStorage::AuxiliaryObjectives() const {
+  return objectives_.AuxiliaryObjectives();
+}
+
+std::vector<AuxiliaryObjectiveId> ModelStorage::SortedAuxiliaryObjectives()
+    const {
+  return objectives_.SortedAuxiliaryObjectives();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1027,6 +1175,28 @@ constexpr typename AtomicConstraintStorage<QuadraticConstraintData>::Diff
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         QuadraticConstraintData>() {
   return &UpdateTrackerData::dirty_quadratic_constraints;
+}
+
+// ----------------------- Second-order cone constraints -----------------------
+
+template <>
+inline AtomicConstraintStorage<SecondOrderConeConstraintData>&
+ModelStorage::constraint_storage() {
+  return soc_constraints_;
+}
+
+template <>
+inline const AtomicConstraintStorage<SecondOrderConeConstraintData>&
+ModelStorage::constraint_storage() const {
+  return soc_constraints_;
+}
+
+template <>
+constexpr typename AtomicConstraintStorage<SecondOrderConeConstraintData>::Diff
+    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
+        SecondOrderConeConstraintData>() {
+  return &UpdateTrackerData::dirty_soc_constraints;
 }
 
 // ----------------------------- SOS1 constraints ------------------------------

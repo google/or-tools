@@ -22,7 +22,6 @@
 #include "ortools/lp_data/mps_reader.h"
 #include "ortools/math_opt/io/proto_converter.h"
 #include "ortools/math_opt/model.pb.h"
-#include "ortools/util/file_util.h"
 
 namespace operations_research::math_opt {
 

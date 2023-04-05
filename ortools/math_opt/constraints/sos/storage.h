@@ -21,16 +21,14 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
-#include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/atomic_constraint_storage.h"
-#include "ortools/math_opt/storage/model_storage_types.h"
-#include "ortools/math_opt/storage/sorted.h"
+#include "ortools/math_opt/storage/linear_expression_data.h"
+#include "ortools/math_opt/storage/sparse_coefficient_map.h"
 
 namespace operations_research::math_opt {
 namespace internal {
@@ -51,14 +49,9 @@ class SosConstraintData {
                          std::is_same<ConstraintId, Sos2ConstraintId>>,
       "ID type may only be Sos1ConstraintId or Sos2ConstraintId");
 
-  struct LinearExpression {
-    absl::flat_hash_map<VariableId, double> terms;
-    double offset = 0.0;
-  };
-
   // `weights` must either be empty or the same length as `expressions`. If it
   // is empty, default weights of 1, 2, ... will be used.
-  SosConstraintData(std::vector<LinearExpression> expressions,
+  SosConstraintData(std::vector<LinearExpressionData> expressions,
                     std::vector<double> weights, std::string name)
       : expressions_(std::move(expressions)), name_(std::move(name)) {
     if (!weights.empty()) {
@@ -80,7 +73,7 @@ class SosConstraintData {
     AssertInbounds(index);
     return weights_.has_value() ? (*weights_)[index] : index + 1;
   }
-  const LinearExpression& expression(const int index) const {
+  const LinearExpressionData& expression(const int index) const {
     AssertInbounds(index);
     return expressions_[index];
   }
@@ -96,7 +89,7 @@ class SosConstraintData {
   // If present, length must be the same as that of `expressions_`.
   // If absent, default weights of 1, 2, ... are used.
   std::optional<std::vector<double>> weights_;
-  std::vector<LinearExpression> expressions_;
+  std::vector<LinearExpressionData> expressions_;
   std::string name_;
 };
 
@@ -128,13 +121,8 @@ SosConstraintData<ConstraintId> SosConstraintData<ConstraintId>::FromProto(
   SosConstraintData data;
   data.name_ = in_proto.name();
   for (int i = 0; i < num_expressions; ++i) {
-    LinearExpression& expression = data.expressions_.emplace_back();
-    const LinearExpressionProto& proto_expression = in_proto.expressions(i);
-    expression.offset = proto_expression.offset();
-    for (int j = 0; j < proto_expression.ids_size(); ++j) {
-      expression.terms.insert({VariableId(proto_expression.ids(j)),
-                               proto_expression.coefficients(j)});
-    }
+    data.expressions_.push_back(
+        LinearExpressionData::FromProto(in_proto.expressions(i)));
   }
   // Otherwise proto has default weights, so leave data.weights_ as unset.
   if (!in_proto.weights().empty()) {
@@ -152,13 +140,7 @@ SosConstraintData<ConstraintId>::Proto() const {
   ProtoType constraint;
   constraint.set_name(name());
   for (int i = 0; i < num_expressions(); ++i) {
-    const LinearExpression& expr = expression(i);
-    LinearExpressionProto& proto_expr = *constraint.add_expressions();
-    proto_expr.set_offset(expr.offset);
-    for (const VariableId id : SortedMapKeys(expr.terms)) {
-      proto_expr.add_ids(id.value());
-      proto_expr.add_coefficients(expr.terms.at(id));
-    }
+    *constraint.add_expressions() = expression(i).Proto();
   }
   if (weights_.has_value()) {
     for (int i = 0; i < num_expressions(); ++i) {
@@ -172,8 +154,8 @@ template <typename ConstraintId>
 std::vector<VariableId> SosConstraintData<ConstraintId>::RelatedVariables()
     const {
   absl::flat_hash_set<VariableId> vars;
-  for (const LinearExpression& expression : expressions_) {
-    for (const auto [var, _] : expression.terms) {
+  for (const LinearExpressionData& expression : expressions_) {
+    for (const auto [var, _] : expression.coeffs.terms()) {
       vars.insert(var);
     }
   }
@@ -182,8 +164,8 @@ std::vector<VariableId> SosConstraintData<ConstraintId>::RelatedVariables()
 
 template <typename ConstraintId>
 void SosConstraintData<ConstraintId>::DeleteVariable(const VariableId var) {
-  for (LinearExpression& expression : expressions_) {
-    expression.terms.erase(var);
+  for (LinearExpressionData& expression : expressions_) {
+    expression.coeffs.erase(var);
   }
 }
 

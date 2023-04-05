@@ -18,7 +18,6 @@
 #include <optional>
 #include <utility>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -26,7 +25,19 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver.h"
+#include "ortools/math_opt/cpp/callback.h"
+#include "ortools/math_opt/cpp/enums.h"
+#include "ortools/math_opt/cpp/infeasible_subsystem_arguments.h"
+#include "ortools/math_opt/cpp/infeasible_subsystem_result.h"
 #include "ortools/math_opt/cpp/model.h"
+#include "ortools/math_opt/cpp/model_solve_parameters.h"
+#include "ortools/math_opt/cpp/parameters.h"
+#include "ortools/math_opt/cpp/solve_arguments.h"
+#include "ortools/math_opt/cpp/solve_result.h"
+#include "ortools/math_opt/cpp/solver_init_arguments.h"
+#include "ortools/math_opt/cpp/streamable_solver_init_arguments.h"
+#include "ortools/math_opt/cpp/update_tracker.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/util/status_macros.h"
 
@@ -106,6 +117,21 @@ absl::StatusOr<SolveResult> Solve(const Model& model,
                    Solver::New(EnumToProto(solver_type), model.ExportModel(),
                                ToSolverInitArgs(init_args)));
   return CallSolve(*solver, model.storage(), solve_args);
+}
+
+absl::StatusOr<InfeasibleSubsystemResult> InfeasibleSubsystem(
+    const Model& model, const SolverType solver_type,
+    const InfeasibleSubsystemArguments& infeasible_subsystem_args,
+    const SolverInitArguments& init_args) {
+  ASSIGN_OR_RETURN(
+      const InfeasibleSubsystemResultProto result_proto,
+      Solver::NonIncrementalInfeasibleSubsystem(
+          model.ExportModel(), EnumToProto(solver_type),
+          ToSolverInitArgs(init_args),
+          {.parameters = infeasible_subsystem_args.parameters.Proto(),
+           .message_callback = infeasible_subsystem_args.message_callback,
+           .interrupter = infeasible_subsystem_args.interrupter}));
+  return InfeasibleSubsystemResult::FromProto(model.storage(), result_proto);
 }
 
 absl::StatusOr<std::unique_ptr<IncrementalSolver>> IncrementalSolver::New(

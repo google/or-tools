@@ -472,6 +472,17 @@ class Gurobi {
   // Calls GRBterminate().
   void Terminate();
 
+  // Calls GRBcomputeIIS().
+  //
+  // Returns:
+  // * a status if Gurobi errors,
+  // * false if Gurobi determines that the model is feasible, or
+  // * true otherwise (e.g., infeasibility is proven or a limit is reached).
+  // setup/teardown, and true otherwise.
+  //
+  // The callback, if specified, is set before solving and cleared after.
+  absl::StatusOr<bool> ComputeIIS(Callback cb = nullptr);
+
   //////////////////////////////////////////////////////////////////////////////
   // Attributes
   //////////////////////////////////////////////////////////////////////////////
@@ -513,6 +524,9 @@ class Gurobi {
                                 absl::Span<const char> new_values);
   absl::Status SetCharAttrList(const char* name, absl::Span<const int> ind,
                                absl::Span<const char> new_values);
+
+  absl::StatusOr<int> GetIntAttrElement(const char* name, int element) const;
+  absl::Status SetIntAttrElement(const char* name, int element, int new_value);
 
   absl::StatusOr<double> GetDoubleAttrElement(const char* name,
                                               int element) const;
@@ -556,6 +570,10 @@ class Gurobi {
   // Typically not needed.
   GRBmodel* model() const { return gurobi_model_; }
 
+  absl::Status ToStatus(
+      int grb_err, absl::StatusCode code = absl::StatusCode::kInvalidArgument,
+      absl::SourceLocation loc = absl::SourceLocation::current()) const;
+
  private:
   // optional_owned_primary_env can be null, model and model_env cannot.
   Gurobi(GRBenvUniquePtr optional_owned_primary_env, GRBmodel* model,
@@ -563,10 +581,6 @@ class Gurobi {
   // optional_owned_primary_env can be null, primary_env cannot.
   static absl::StatusOr<std::unique_ptr<Gurobi>> New(
       GRBenvUniquePtr optional_owned_primary_env, GRBenv* primary_env);
-
-  absl::Status ToStatus(
-      int grb_err, absl::StatusCode code = absl::StatusCode::kInvalidArgument,
-      absl::SourceLocation loc = absl::SourceLocation::current()) const;
 
   const GRBenvUniquePtr owned_primary_env_;
   // Invariant: Not null.

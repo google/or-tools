@@ -36,32 +36,36 @@
 namespace operations_research {
 namespace math_opt {
 
-// The solvers wrapped by MathOpt.
+// The solvers supported by MathOpt.
 enum class SolverType {
-  // Solving Constraint Integer Programs (SCIP) solver.
+  // Solving Constraint Integer Programs (SCIP) solver (third party).
   //
-  // It supports both MIPs and LPs. No dual data for LPs is returned though. To
-  // solve LPs, kGlop should be preferred.
+  // Supports LP, MIP, and nonconvex integer quadratic problems. No dual data
+  // for LPs is returned though. Prefer GLOP for LPs.
   kGscip = SOLVER_TYPE_GSCIP,
 
-  // Gurobi solver.
+  // Gurobi solver (third party).
   //
-  // It supports both MIPs and LPs.
+  // Supports LP, MIP, and nonconvex integer quadratic problems. Generally the
+  // fastest option, but has special licensing, see go/gurobi-google for
+  // details.
   kGurobi = SOLVER_TYPE_GUROBI,
 
-  // Google's Glop linear solver.
+  // Google's Glop solver.
   //
-  // It only solves LPs.
+  // Supports LP with primal and dual simplex methods.
   kGlop = SOLVER_TYPE_GLOP,
 
   // Google's CP-SAT solver.
   //
-  // It supports solving IPs and can scale MIPs to solve them as IPs.
+  // Supports problems where all variables are integer and bounded (or implied
+  // to be after presolve). Experimental support to rescale and discretize
+  // problems with continuous variables.
   kCpSat = SOLVER_TYPE_CP_SAT,
 
-  // GNU Linear Programming Kit (GLPK).
+  // GNU Linear Programming Kit (GLPK) (third party).
   //
-  // It supports both MIPs and LPs.
+  // Supports MIP and LP.
   //
   // Thread-safety: GLPK use thread-local storage for memory allocations. As a
   // consequence when using IncrementalSolver, the user must make sure that
@@ -78,6 +82,20 @@ enum class SolverType {
   // for details.
   kGlpk = SOLVER_TYPE_GLPK,
 
+  // The Embedded Conic Solver (ECOS).
+  //
+  // Supports LP and SOCP problems. Uses interior point methods (barrier).
+  kEcos = SOLVER_TYPE_ECOS,
+
+  // The Splitting Conic Solver (SCS) (third party).
+  //
+  // Supports LP and SOCP problems. Uses a first-order method.
+  kScs = SOLVER_TYPE_SCS,
+
+  // The HiGHS Solver (third party).
+  //
+  // Supports LP and MIP problems (convex QPs are unimplemented).
+  kHighs = SOLVER_TYPE_HIGHS,
 };
 
 MATH_OPT_DEFINE_ENUM(SolverType, SOLVER_TYPE_UNSPECIFIED);
@@ -107,7 +125,14 @@ enum class LPAlgorithm {
   // Can typically give both primal and dual solutions. Some implementations can
   // also produce rays on unbounded/infeasible problems. A basis is not given
   // unless the underlying solver does "crossover" and finishes with simplex.
-  kBarrier = LP_ALGORITHM_BARRIER
+  kBarrier = LP_ALGORITHM_BARRIER,
+
+  // An algorithm based around a first-order method. These will typically
+  // produce both primal and dual solutions, and potentially also certificates
+  // of primal and/or dual infeasibility. First-order methods typically will
+  // provide solutions with lower accuracy, so users should take care to set
+  // solution quality parameters (e.g., tolerances) and to validate solutions.
+  kFirstOrder = LP_ALGORITHM_FIRST_ORDER,
 };
 
 MATH_OPT_DEFINE_ENUM(LPAlgorithm, LP_ALGORITHM_UNSPECIFIED);
@@ -126,7 +151,7 @@ std::string AbslUnparseFlag(LPAlgorithm value);
 // Effort level applied to an optional task while solving (see SolveParameters
 // for use).
 //
-// Typically used as a std::optional<Emphasis>. It used to configure a solver
+// Typically used as a std::optional<Emphasis>. It's used to configure a solver
 // feature as follows:
 //  * If a solver doesn't support the feature, only nullopt will always be
 //    valid, any other setting will give an invalid argument error (some solvers
@@ -183,11 +208,39 @@ struct GurobiParameters {
   bool empty() const { return param_values.empty(); }
 };
 
+// GLPK specific parameters for solving.
+//
+// Fields are optional to enable capturing user intention; if the user
+// explicitly sets a value, then no generic solve parameters will overwrite this
+// parameter. User specified solver specific parameters have priority over
+// generic parameters.
+struct GlpkParameters {
+  // Compute the primal or dual unbound ray when the variable (structural or
+  // auxiliary) causing the unboundness is identified (see glp_get_unbnd_ray()).
+  //
+  // The unset value is equivalent to false.
+  //
+  // Rays are only available when solving linear programs, they are not
+  // available for MIPs. On top of that they are only available when using a
+  // simplex algorithm with the presolve disabled.
+  //
+  // A primal ray can only be built if the chosen LP algorithm is
+  // LPAlgorithm::kPrimalSimplex. Same for a dual ray and
+  // LPAlgorithm::kDualSimplex.
+  //
+  // The computation involves the basis factorization to be available which may
+  // lead to extra computations/errors.
+  std::optional<bool> compute_unbound_rays_if_possible = std::nullopt;
+
+  GlpkParametersProto Proto() const;
+  static GlpkParameters FromProto(const GlpkParametersProto& proto);
+};
+
 // Parameters to control a single solve.
 //
-// Contains both parameters common to all solvers e.g. time_limit, and
+// Contains both parameters common to all solvers, e.g. time_limit, and
 // parameters for a specific solver, e.g. gscip. If a value is set in both
-// common and solver specific field, the solver specific setting is used.
+// common and solver specific fields, the solver specific setting is used.
 //
 // The common parameters that are optional and unset indicate that the solver
 // default is used.
@@ -253,9 +306,9 @@ struct SolveParameters {
 
   // The solver stops early after finding this many feasible solutions, with
   // termination reason kFeasible and limit kSolution. Must be greater than
-  // zero if set. It is often used get the solver to stop on the first feasible
-  // solution found. Note that there is no guarantee on the objective value for
-  // any of the returned solutions.
+  // zero if set. It is often used to get the solver to stop on the first
+  // feasible solution found. Note that there is no guarantee on the objective
+  // value for any of the returned solutions.
   //
   // Solvers will typically not return more solutions than the solution limit,
   // but this is not enforced by MathOpt, see also b/214041169.
@@ -351,6 +404,8 @@ struct SolveParameters {
   GurobiParameters gurobi;
   glop::GlopParameters glop;
   sat::SatParameters cp_sat;
+
+  GlpkParameters glpk;
 
   SolveParametersProto Proto() const;
   static absl::StatusOr<SolveParameters> FromProto(

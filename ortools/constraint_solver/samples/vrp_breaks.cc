@@ -89,7 +89,7 @@ void PrintSolution(const RoutingIndexManager& manager,
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
     int64_t index = routing.Start(vehicle_id);
     std::stringstream route;
-    while (routing.IsEnd(index) == false) {
+    while (!routing.IsEnd(index)) {
       const IntVar* time_var = time_dimension.CumulVar(index);
       route << manager.IndexToNode(index).value() << " Time("
             << solution.Value(time_var) << ") -> ";
@@ -128,7 +128,8 @@ void VrpBreaks() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
+      [&data, &manager](const int64_t from_index,
+                        const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
         int from_node = manager.IndexToNode(from_index).value();
         int to_node = manager.IndexToNode(to_index).value();

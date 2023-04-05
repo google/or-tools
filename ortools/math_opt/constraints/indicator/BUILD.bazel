@@ -20,7 +20,6 @@ cc_library(
     deps = [
         "//ortools/base:intops",
         "//ortools/math_opt/constraints/util:model_util",
-        "//ortools/math_opt/cpp:id_map",
         "//ortools/math_opt/cpp:variable_and_expressions",
         "//ortools/math_opt/storage:model_storage",
         "@com_google_absl//absl/strings",

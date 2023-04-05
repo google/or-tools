@@ -24,6 +24,11 @@
 //      mathopt_solve --input_file model.pb --solve_parameters 'threads: 4'
 //  * Specify the file format:
 //      mathopt_solve --input_file model --format=mathopt
+// MOE: begin_strip
+//  * Solve a MIPLIB problem:
+//      mathopt_solve --input_file
+//      /google/src/head/depot/operations_research_data/MIP_MIPLIB/miplib2017/10teams.mps.gz
+// MOE: end_strip
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -49,26 +54,12 @@
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/cpp/statistics.h"
-#include "ortools/math_opt/io/mps_converter.h"
 #include "ortools/math_opt/io/names_removal.h"
 #include "ortools/math_opt/io/proto_converter.h"
+#include "ortools/math_opt/labs/solution_feasibility_checker.h"
 #include "ortools/math_opt/parameters.pb.h"
+#include "ortools/math_opt/tools/file_format_flags.h"
 #include "ortools/util/status_macros.h"
-
-inline constexpr absl::string_view kMathOptBinaryFormat = "mathopt";
-inline constexpr absl::string_view kMathOptTextFormat = "mathopt_txt";
-inline constexpr absl::string_view kLinearSolverBinaryFormat = "linear_solver";
-inline constexpr absl::string_view kLinearSolverTextFormat =
-    "linear_solver_txt";
-inline constexpr absl::string_view kMPSFormat = "mps";
-inline constexpr absl::string_view kAutoFormat = "auto";
-
-inline constexpr absl::string_view kPbExt = ".pb";
-inline constexpr absl::string_view kProtoExt = ".proto";
-inline constexpr absl::string_view kPbTxtExt = ".pb.txt";
-inline constexpr absl::string_view kTextProtoExt = ".textproto";
-inline constexpr absl::string_view kMPSExt = ".mps";
-inline constexpr absl::string_view kMPSGzipExt = ".mps.gz";
 
 namespace {
 
@@ -86,35 +77,21 @@ ABSL_FLAG(std::string, input_file, "",
           "the file containing the model to solve; use --format to specify the "
           "file format");
 ABSL_FLAG(
-    std::string, format, "auto",
+    std::optional<operations_research::math_opt::FileFormat>, format,
+    std::nullopt,
     absl::StrCat(
-        "the format of the --input_file; possible values:\n",
-        //
-        "* ", kMathOptBinaryFormat, ": for a MathOpt ModelProto in binary\n",
-        //
-        "* ", kMathOptTextFormat, ": when the proto is in text\n",
-        //
-        "* ", kLinearSolverBinaryFormat,
-        ": for a LinearSolver MPModelProto in binary\n",
-        //
-        "* ", kLinearSolverTextFormat, ": when the proto is in text\n",
-        //
-        "* ", kMPSFormat, ": for MPS file (which can be GZiped)\n",
-        //
-        "* ", kAutoFormat, ": to guess the format from the file extension:\n",
-        //
-        "  - '", kPbExt, "', '", kProtoExt, "': ", kMathOptBinaryFormat, "\n",
-        //
-        "  - '", kPbTxtExt, "', '", kTextProtoExt, "': ", kMathOptTextFormat,
-        "\n",
-        //
-        "  - '", kMPSExt, "', '", kMPSGzipExt, "': ", kMPSFormat));
+        "the format of the --input_file; possible values:",
+        operations_research::math_opt::OptionalFormatFlagPossibleValuesList()));
 ABSL_FLAG(
     std::vector<std::string>, update_files, {},
     absl::StrCat(
         "the file containing ModelUpdateProto to apply to the --input_file; "
         "when this flag is used, the --format must be either ",
-        kMathOptBinaryFormat, " or  ", kMathOptTextFormat));
+        AbslUnparseFlag(
+            operations_research::math_opt::FileFormat::kMathOptBinary),
+        " or  ",
+        AbslUnparseFlag(
+            operations_research::math_opt::FileFormat::kMathOptText)));
 
 ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
           operations_research::math_opt::SolverType::kGscip,
@@ -138,74 +115,51 @@ ABSL_FLAG(bool, names, true,
 ABSL_FLAG(bool, ranges, false,
           "prints statistics about the ranges of the model values");
 ABSL_FLAG(bool, print_model, false, "prints the model to stdout");
+ABSL_FLAG(bool, lp_relaxation, false,
+          "relax all integer variables to continuous");
+ABSL_FLAG(
+    bool, check_solutions, false,
+    "check the solutions feasibility; use --absolute_constraint_tolerance, "
+    "--integrality_tolerance, and --nonzero_tolerance values for tolerances");
+ABSL_FLAG(double, absolute_constraint_tolerance,
+          operations_research::math_opt::FeasibilityCheckerOptions{}
+              .absolute_constraint_tolerance,
+          "feasibility tolerance for constraints and variables bounds");
+ABSL_FLAG(double, integrality_tolerance,
+          operations_research::math_opt::FeasibilityCheckerOptions{}
+              .integrality_tolerance,
+          "feasibility tolerance for variables' integrality");
+ABSL_FLAG(
+    double, nonzero_tolerance,
+    operations_research::math_opt::FeasibilityCheckerOptions{}
+        .nonzero_tolerance,
+    "tolerance for checking if a value is nonzero (e.g., in SOS constraints)");
 
-namespace operations_research {
-namespace math_opt {
+namespace operations_research::math_opt {
 namespace {
 
-// Returned the guessed format (one of the kXxxFormat constant) from the file
-// extension; or nullopt.
-std::optional<absl::string_view> FormatFromFilePath(
-    const absl::string_view file_path) {
-  const std::vector<std::pair<absl::string_view, absl::string_view>>
-      extension_to_format = {
-          {kPbExt, kMathOptBinaryFormat},  {kProtoExt, kMathOptBinaryFormat},
-          {kPbTxtExt, kMathOptTextFormat}, {kTextProtoExt, kMathOptTextFormat},
-          {kMPSExt, kMPSFormat},           {kMPSGzipExt, kMPSFormat},
-      };
-
-  for (const auto& [ext, format] : extension_to_format) {
-    if (absl::EndsWith(file_path, ext)) {
-      return format;
-    }
-  }
-
-  return std::nullopt;
-}
-
-// Returns the ModelProto read from the given file. The format must not be
-// kAutoFormat; other invalid values will be reported as QFATAL log mentioning
-// the --format flag.
-absl::StatusOr<ModelProto> ReadModel(const absl::string_view file_path,
-                                     const absl::string_view format) {
-  if (format == kMathOptBinaryFormat) {
-    return file::GetBinaryProto<ModelProto>(file_path, file::Defaults());
-  }
-  if (format == kMathOptTextFormat) {
-    return file::GetTextProto<ModelProto>(file_path, file::Defaults());
-  }
-  if (format == kLinearSolverBinaryFormat ||
-      format == kLinearSolverTextFormat) {
-    ASSIGN_OR_RETURN(
-        MPModelProto linear_solver_model,
-        format == kLinearSolverBinaryFormat
-            ? file::GetBinaryProto<MPModelProto>(file_path, file::Defaults())
-            : file::GetTextProto<MPModelProto>(file_path, file::Defaults()));
-    return MPModelProtoToMathOptModel(linear_solver_model);
-  }
-  if (format == kMPSFormat) {
-    return ReadMpsFile(file_path);
-  }
-  LOG(QFATAL) << "Unsupported value of --format: " << format;
-}
-
 // Returns the ModelUpdateProto read from the given file. The format must be
-// kMathOptBinaryFormat or kMathOptTextFormat; other values will generate an
-// error.
+// kMathOptBinary or kMathOptText; other values will generate an error.
 absl::StatusOr<ModelUpdateProto> ReadModelUpdate(
-    const absl::string_view file_path, const absl::string_view format) {
-  if (format == kMathOptBinaryFormat) {
-    return file::GetBinaryProto<ModelUpdateProto>(file_path, file::Defaults());
+    const absl::string_view file_path, const FileFormat format) {
+  switch (format) {
+    case FileFormat::kMathOptBinary:
+      return file::GetBinaryProto<ModelUpdateProto>(file_path,
+                                                    file::Defaults());
+    case FileFormat::kMathOptText:
+      return file::GetTextProto<ModelUpdateProto>(file_path, file::Defaults());
+    default:
+      return util::InternalErrorBuilder() << "invalid format " << format;
   }
-  if (format == kMathOptTextFormat) {
-    return file::GetTextProto<ModelUpdateProto>(file_path, file::Defaults());
-  }
-  return absl::InternalError(
-      absl::StrCat("invalid format in ReadModelUpdate(): ", format));
 }
 
 // Prints the summary of the solve result.
-absl::Status PrintSummary(const SolveResult& result) {
+//
+// If feasibility_check_tolerances is not nullopt then a check of feasibility of
+// solution is done with the provided tolerances.
+absl::Status PrintSummary(const Model& model, const SolveResult& result,
+                          const std::optional<FeasibilityCheckerOptions>
+                              feasibility_check_tolerances) {
   std::cout << "Solve finished:\n"
             << "  termination: " << result.termination << "\n"
             << "  solve time: " << result.solve_stats.solve_time
@@ -220,6 +174,21 @@ absl::Status PrintSummary(const SolveResult& result) {
     std::cout << "  solution #" << (i + 1) << " objective: ";
     if (solution.primal_solution.has_value()) {
       std::cout << solution.primal_solution->objective_value;
+      if (feasibility_check_tolerances.has_value()) {
+        OR_ASSIGN_OR_RETURN3(
+            const ModelSubset broken_constraints,
+            CheckPrimalSolutionFeasibility(
+                model, solution.primal_solution->variable_values,
+                *feasibility_check_tolerances),
+            _ << "failed to check the primal solution feasibility of solution #"
+              << (i + 1));
+        if (!broken_constraints.empty()) {
+          std::cout << " (numerically infeasible: " << broken_constraints
+                    << ')';
+        } else {
+          std::cout << " (numerically feasible)";
+        }
+      }
     } else {
       std::cout << "n/a";
     }
@@ -236,28 +205,27 @@ absl::Status RunSolver() {
   }
 
   // Parses --format.
-  std::string format = absl::GetFlag(FLAGS_format);
-  if (format == kAutoFormat) {
-    const std::optional<absl::string_view> guessed_format =
-        FormatFromFilePath(input_file_path);
-    if (!guessed_format) {
-      LOG(QFATAL) << "Can't guess the format from the file extension, please "
-                     "use --format to specify the file format explicitly.";
+  const FileFormat format = [&]() {
+    const std::optional<FileFormat> format =
+        FormatFromFlagOrFilePath(absl::GetFlag(FLAGS_format), input_file_path);
+    if (format.has_value()) {
+      return *format;
     }
-    format = *guessed_format;
-  }
+    LOG(QFATAL) << "Can't guess the format from the file extension, please "
+                   "use --format to specify the file format explicitly.";
+  }();
   // We deal with input validation in the ReadModel() function.
 
   // Read the model and the optional updates.
   const std::vector<std::string> update_file_paths =
       absl::GetFlag(FLAGS_update_files);
-  if (!update_file_paths.empty() && format != kMathOptBinaryFormat &&
-      format != kMathOptTextFormat) {
+  if (!update_file_paths.empty() && format != FileFormat::kMathOptBinary &&
+      format != FileFormat::kMathOptText) {
     LOG(QFATAL) << "Can't use --update_files with a input of format " << format
                 << ".";
   }
 
-  OR_ASSIGN_OR_RETURN3(ModelProto model_proto,
+  OR_ASSIGN_OR_RETURN3((auto [model_proto, optional_hint]),
                        ReadModel(input_file_path, format),
                        _ << "failed to read " << input_file_path);
 
@@ -283,6 +251,11 @@ absl::Status RunSolver() {
     RETURN_IF_ERROR(model->ApplyUpdateProto(update))
         << "failed to apply the update file: " << update_file_paths[u];
   }
+  if (absl::GetFlag(FLAGS_lp_relaxation)) {
+    for (const Variable v : model->Variables()) {
+      model->set_continuous(v);
+    }
+  }
 
   if (absl::GetFlag(FLAGS_ranges)) {
     std::cout << "Ranges of finite non-zero values in the model:\n"
@@ -299,6 +272,14 @@ absl::Status RunSolver() {
   SolveParameters solve_parameters = absl::GetFlag(FLAGS_solve_parameters);
   solve_parameters.time_limit = absl::GetFlag(FLAGS_time_limit);
   SolveArguments solve_args = {.parameters = solve_parameters};
+  if (optional_hint.has_value()) {
+    OR_ASSIGN_OR_RETURN3(ModelSolveParameters::SolutionHint hint,
+                         ModelSolveParameters::SolutionHint::FromProto(
+                             *model, optional_hint.value()),
+                         _ << "invalid solution hint");
+    solve_args.model_parameters.solution_hints.push_back(std::move(hint));
+    std::cout << "Using the solution hint from the MPModelProto." << std::endl;
+  }
   if (absl::GetFlag(FLAGS_solver_logs)) {
     solve_args.message_callback = PrinterMessageCallback(std::cout, "logs| ");
   }
@@ -307,14 +288,23 @@ absl::Status RunSolver() {
       Solve(*model, absl::GetFlag(FLAGS_solver_type), solve_args),
       _ << "the solver failed");
 
-  RETURN_IF_ERROR(PrintSummary(result));
+  const FeasibilityCheckerOptions feasiblity_checker_options = {
+      .absolute_constraint_tolerance =
+          absl::GetFlag(FLAGS_absolute_constraint_tolerance),
+      .integrality_tolerance = absl::GetFlag(FLAGS_integrality_tolerance),
+      .nonzero_tolerance = absl::GetFlag(FLAGS_nonzero_tolerance),
+  };
+  RETURN_IF_ERROR(
+      PrintSummary(*model, result,
+                   absl::GetFlag(FLAGS_check_solutions)
+                       ? std::make_optional(feasiblity_checker_options)
+                       : std::nullopt));
 
   return absl::OkStatus();
 }
 
 }  // namespace
-}  // namespace math_opt
-}  // namespace operations_research
+}  // namespace operations_research::math_opt
 
 int main(int argc, char* argv[]) {
   InitGoogle(argv[0], &argc, &argv, /*remove_flags=*/true);

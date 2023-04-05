@@ -128,9 +128,13 @@ class SparseVectorView {
   int values_size() const { return values_.size(); }
   const T& values(int index) const { return values_[index]; }
 
-  // It should be possible to construct an IndexType from an integer
-  template <typename IndexType>
-  absl::flat_hash_map<IndexType, T> as_map();
+  // Returns the map corresponding to this sparse vector.
+  //
+  // It should be possible to construct KeyType::IdType from an int64_t and
+  // KeyType from a Storage pointer and the build id. See cpp/key_types.h for
+  // details.
+  template <typename KeyType, typename Storage>
+  absl::flat_hash_map<KeyType, T> as_map(const Storage* storage);
 
  private:
   absl::Span<const int64_t> ids_;
@@ -233,13 +237,15 @@ typename SparseVectorView<T>::const_iterator SparseVectorView<T>::end() const {
 }
 
 template <typename T>
-template <typename IndexType>
-absl::flat_hash_map<IndexType, T> SparseVectorView<T>::as_map() {
-  absl::flat_hash_map<IndexType, T> result;
+template <typename KeyType, typename Storage>
+absl::flat_hash_map<KeyType, T> SparseVectorView<T>::as_map(
+    const Storage* storage) {
+  absl::flat_hash_map<KeyType, T> result;
   CHECK_EQ(ids_size(), values_size());
   result.reserve(ids_size());
   for (const auto& [id, value] : *this) {
-    gtl::InsertOrDie(&result, IndexType(id), value);
+    gtl::InsertOrDie(&result, KeyType(storage, typename KeyType::IdType(id)),
+                     value);
   }
   return result;
 }

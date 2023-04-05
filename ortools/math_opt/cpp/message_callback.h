@@ -19,6 +19,7 @@
 
 #include <functional>
 #include <iostream>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -48,6 +49,16 @@ using MessageCallback = std::function<void(const std::vector<std::string>&)>;
 //   args.message_callback = PrinterMessageCallback(std::cerr, "solver logs> ");
 MessageCallback PrinterMessageCallback(std::ostream& output_stream = std::cout,
                                        absl::string_view prefix = "");
+
+// Returns a message callback function that aggregates all messages in the
+// provided vector.
+//
+// Usage:
+//
+//   std::vector<std::string> msgs;
+//   SolveArguments args;
+//   args.message_callback = VectorMessageCallback(&msgs);
+MessageCallback VectorMessageCallback(std::vector<std::string>* sink);
 
 }  // namespace operations_research::math_opt
 

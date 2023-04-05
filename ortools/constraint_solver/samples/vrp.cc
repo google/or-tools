@@ -82,9 +82,9 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
     int64_t distance{0};
     std::stringstream route;
-    while (routing.IsEnd(index) == false) {
+    while (!routing.IsEnd(index)) {
       route << manager.IndexToNode(index).value() << " -> ";
-      int64_t previous_index = index;
+      const int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
       distance += routing.GetArcCostForVehicle(previous_index, index,
                                                int64_t{vehicle_id});
@@ -120,7 +120,8 @@ void Vrp() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
+      [&data, &manager](const int64_t from_index,
+                        const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();

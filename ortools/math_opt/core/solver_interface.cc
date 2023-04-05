@@ -20,12 +20,13 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/status/status.h"
+#include "absl/log/check.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/ascii.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/math_opt/model.pb.h"
@@ -34,6 +35,7 @@
 
 namespace operations_research {
 namespace math_opt {
+namespace {}  // namespace
 
 AllSolversRegistry* AllSolversRegistry::Instance() {
   static AllSolversRegistry* const instance = new AllSolversRegistry;
@@ -66,7 +68,8 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> AllSolversRegistry::Create(
       name = absl::StrCat("unknown(", static_cast<int>(solver_type), ")");
     }
     return util::InvalidArgumentErrorBuilder()
-           << "solver type " << name << " is not registered";
+           << "solver type " << name << " is not registered"
+           << ", support for this solver has not been compiled";
   }
   return (*factory)(model, init_args);
 }

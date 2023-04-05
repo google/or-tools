@@ -13,22 +13,17 @@
 
 #include "ortools/math_opt/core/solver.h"
 
-#include <stdint.h>
-
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "absl/base/thread_annotations.h"
+#include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/synchronization/mutex.h"
-#include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/concurrent_calls_guard.h"
@@ -36,11 +31,13 @@
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
 #include "ortools/math_opt/core/solver_debug.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
+#include "ortools/math_opt/validators/infeasible_subsystem_validator.h"
 #include "ortools/math_opt/validators/model_parameters_validator.h"
 #include "ortools/math_opt/validators/model_validator.h"
 #include "ortools/math_opt/validators/result_validator.h"
@@ -66,8 +63,8 @@ absl::Status ToInternalError(const absl::Status original) {
 // previous call to one of them failed.
 absl::Status PreviousFatalFailureOccurred() {
   return absl::InvalidArgumentError(
-      "a previous call to Solve() or Update() failed, the Solver can't be used "
-      "anymore");
+      "a previous call to Solve(), InfeasibleSubsystem(), or Update() failed, "
+      "the Solver can't be used anymore");
 }
 
 }  // namespace
@@ -185,6 +182,48 @@ absl::StatusOr<bool> Solver::Update(const ModelUpdateProto& model_update) {
   fatal_failure_occurred_ = false;
 
   return true;
+}
+
+absl::StatusOr<InfeasibleSubsystemResultProto> Solver::InfeasibleSubsystem(
+    const InfeasibleSubsystemArgs& infeasible_subsystem_args) {
+  ASSIGN_OR_RETURN(const auto guard,
+                   ConcurrentCallsGuard::TryAcquire(concurrent_calls_tracker_));
+
+  if (fatal_failure_occurred_) {
+    return PreviousFatalFailureOccurred();
+  }
+  CHECK(underlying_solver_ != nullptr);
+
+  // We will reset it in code paths where no error occur.
+  fatal_failure_occurred_ = true;
+
+  RETURN_IF_ERROR(ValidateSolveParameters(infeasible_subsystem_args.parameters))
+      << "invalid parameters";
+
+  ASSIGN_OR_RETURN(const InfeasibleSubsystemResultProto result,
+                   underlying_solver_->InfeasibleSubsystem(
+                       infeasible_subsystem_args.parameters,
+                       infeasible_subsystem_args.message_callback,
+                       infeasible_subsystem_args.interrupter));
+
+  // We consider errors in `result` to be internal errors, but
+  // `ValidateInfeasibleSubsystemResult()` will return an InvalidArgumentError.
+  // So here we convert the error.
+  RETURN_IF_ERROR(ToInternalError(
+      ValidateInfeasibleSubsystemResult(result, model_summary_)));
+
+  fatal_failure_occurred_ = false;
+  return result;
+}
+
+absl::StatusOr<InfeasibleSubsystemResultProto>
+Solver::NonIncrementalInfeasibleSubsystem(
+    const ModelProto& model, const SolverTypeProto solver_type,
+    const InitArgs& init_args,
+    const InfeasibleSubsystemArgs& infeasible_subsystem_args) {
+  ASSIGN_OR_RETURN(std::unique_ptr<Solver> solver,
+                   Solver::New(solver_type, model, init_args));
+  return solver->InfeasibleSubsystem(infeasible_subsystem_args);
 }
 
 namespace internal {

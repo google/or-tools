@@ -361,7 +361,7 @@ class PreprocessSolver {
       const VectorXd& last_primal_start_point,
       const VectorXd& last_dual_start_point,
       const std::atomic<bool>* interrupt_solve, IterationType iteration_type,
-      const IterationStats& full_stats, IterationStats& stats) const;
+      const IterationStats& full_stats, IterationStats& stats);
 
   // Computes solution statistics for the primal and dual input pair, which
   // should be a scaled solution. If `convergence_information != nullptr`,
@@ -491,6 +491,8 @@ class PreprocessSolver {
   VectorXd col_scaling_vec_;
   VectorXd row_scaling_vec_;
 
+  // A counter used to trigger writing iteration headers.
+  int log_counter_ = 0;
   IterationStatsCallback iteration_stats_callback_;
 };
 
@@ -1425,7 +1427,7 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
     const VectorXd& last_dual_start_point,
     const std::atomic<bool>* interrupt_solve,
     const IterationType iteration_type, const IterationStats& full_stats,
-    IterationStats& stats) const {
+    IterationStats& stats) {
   ComputeConvergenceAndInfeasibilityFromWorkingSolution(
       params, working_primal_current, working_dual_current,
       POINT_TYPE_CURRENT_ITERATE, stats.add_convergence_information(),
@@ -1452,9 +1454,8 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
                      last_dual_start_point, stats);
   }
   constexpr int kLogEvery = 15;
-  static std::atomic_int log_counter{0};
   if (params.verbosity_level() >= 2) {
-    if (log_counter == 0) {
+    if (log_counter_ == 0) {
       LogIterationStatsHeader(params.verbosity_level(),
                               params.use_feasibility_polishing());
     }
@@ -1475,8 +1476,8 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
       }
     }
   }
-  if (++log_counter >= kLogEvery) {
-    log_counter = 0;
+  if (++log_counter_ >= kLogEvery) {
+    log_counter_ = 0;
   }
   if (iteration_stats_callback_ != nullptr) {
     iteration_stats_callback_(

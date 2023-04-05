@@ -102,15 +102,15 @@ VariableStorage::UpdateResult VariableStorage::Update(const Diff& diff) const {
     result.deleted.Add(v.value());
   }
   absl::c_sort(result.deleted);
-  for (const VariableId v : SortedElements(diff.lower_bounds)) {
+  for (const VariableId v : SortedSetElements(diff.lower_bounds)) {
     result.updates.mutable_lower_bounds()->add_ids(v.value());
     result.updates.mutable_lower_bounds()->add_values(lower_bound(v));
   }
-  for (const VariableId v : SortedElements(diff.upper_bounds)) {
+  for (const VariableId v : SortedSetElements(diff.upper_bounds)) {
     result.updates.mutable_upper_bounds()->add_ids(v.value());
     result.updates.mutable_upper_bounds()->add_values(upper_bound(v));
   }
-  for (const VariableId v : SortedElements(diff.integer)) {
+  for (const VariableId v : SortedSetElements(diff.integer)) {
     result.updates.mutable_integers()->add_ids(v.value());
     result.updates.mutable_integers()->add_values(is_integer(v));
   }

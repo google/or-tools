@@ -233,7 +233,7 @@ JUNIT_JUPITER_VERSION = "5.9.2"
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 maven_install(
     artifacts = [
-        "net.java.dev.jna:jna:aar:5.12.1",
+        "net.java.dev.jna:jna:aar:5.13.0",
         "com.google.truth:truth:0.32",
         "org.junit.platform:junit-platform-launcher:%s" % JUNIT_PLATFORM_VERSION,
         "org.junit.platform:junit-platform-reporting:%s" % JUNIT_PLATFORM_VERSION,

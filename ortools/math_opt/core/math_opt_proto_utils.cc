@@ -19,16 +19,18 @@
 #include <string>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
+#include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
@@ -66,6 +68,42 @@ SparseVectorFilterPredicate::SparseVectorFilterPredicate(
     CHECK(std::adjacent_find(ids.begin(), ids.end(),
                              std::greater_equal<int64_t>()) == ids.end())
         << "The input filter.filtered_ids must be strictly increasing.";
+  }
+}
+
+SparseDoubleVectorProto FilterSparseVector(
+    const SparseDoubleVectorProto& input,
+    const SparseVectorFilterProto& filter) {
+  SparseDoubleVectorProto result;
+  SparseVectorFilterPredicate predicate(filter);
+  for (const auto [id, val] : MakeView(input)) {
+    if (predicate.AcceptsAndUpdate(id, val)) {
+      result.add_ids(id);
+      result.add_values(val);
+    }
+  }
+  return result;
+}
+
+void ApplyAllFilters(const ModelSolveParametersProto& model_solve_params,
+                     SolutionProto& solution) {
+  if (model_solve_params.has_variable_values_filter() &&
+      solution.has_primal_solution()) {
+    *solution.mutable_primal_solution()->mutable_variable_values() =
+        FilterSparseVector(solution.primal_solution().variable_values(),
+                           model_solve_params.variable_values_filter());
+  }
+  if (model_solve_params.has_dual_values_filter() &&
+      solution.has_dual_solution()) {
+    *solution.mutable_dual_solution()->mutable_dual_values() =
+        FilterSparseVector(solution.dual_solution().dual_values(),
+                           model_solve_params.dual_values_filter());
+  }
+  if (model_solve_params.has_reduced_costs_filter() &&
+      solution.has_dual_solution()) {
+    *solution.mutable_dual_solution()->mutable_reduced_costs() =
+        FilterSparseVector(solution.dual_solution().reduced_costs(),
+                           model_solve_params.reduced_costs_filter());
   }
 }
 
@@ -145,7 +183,7 @@ absl::Status ModelIsSupported(const ModelProto& model,
   if (const SupportType support = support_menu.multi_objectives;
       support != SupportType::kSupported) {
     if (!model.auxiliary_objectives().empty()) {
-      return error_status("multi objectives", support);
+      return error_status("multiple objectives", support);
     }
   }
   if (const SupportType support = support_menu.quadratic_objectives;
@@ -163,6 +201,12 @@ absl::Status ModelIsSupported(const ModelProto& model,
       support != SupportType::kSupported) {
     if (!model.quadratic_constraints().empty()) {
       return error_status("quadratic constraints", support);
+    }
+  }
+  if (const SupportType support = support_menu.second_order_cone_constraints;
+      support != SupportType::kSupported) {
+    if (!model.second_order_cone_constraints().empty()) {
+      return error_status("second-order cone constraints", support);
     }
   }
   if (const SupportType support = support_menu.sos1_constraints;
@@ -240,6 +284,12 @@ bool UpdateIsSupported(const ModelUpdateProto& update,
   if (support_menu.quadratic_constraints != SupportType::kSupported) {
     if (contains_new_or_deleted_constraints(
             update.quadratic_constraint_updates())) {
+      return false;
+    }
+  }
+  if (support_menu.second_order_cone_constraints != SupportType::kSupported) {
+    if (contains_new_or_deleted_constraints(
+            update.second_order_cone_constraint_updates())) {
       return false;
     }
   }

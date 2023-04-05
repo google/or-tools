@@ -15,7 +15,7 @@ package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "basic_example",
-    srcs = ["basic_example_mo.cc"],
+    srcs = ["basic_example.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -28,7 +28,7 @@ cc_binary(
 
 cc_binary(
     name = "cocktail_hour",
-    srcs = ["cocktail_hour_mo.cc"],
+    srcs = ["cocktail_hour.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
@@ -45,7 +45,7 @@ cc_binary(
 
 cc_binary(
     name = "linear_programming",
-    srcs = ["linear_programming_mo.cc"],
+    srcs = ["linear_programming.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -59,7 +59,7 @@ cc_binary(
 
 cc_binary(
     name = "integer_programming",
-    srcs = ["integer_programming_mo.cc"],
+    srcs = ["integer_programming.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -72,7 +72,7 @@ cc_binary(
 
 cc_binary(
     name = "cutting_stock",
-    srcs = ["cutting_stock_mo.cc"],
+    srcs = ["cutting_stock.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -86,7 +86,7 @@ cc_binary(
 
 cc_binary(
     name = "facility_lp_benders",
-    srcs = ["facility_lp_benders_mo.cc"],
+    srcs = ["facility_lp_benders.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -110,7 +110,7 @@ cc_binary(
 
 cc_binary(
     name = "lagrangian_relaxation",
-    srcs = ["lagrangian_relaxation_mo.cc"],
+    srcs = ["lagrangian_relaxation.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:container_logging",
@@ -130,7 +130,7 @@ cc_binary(
 
 cc_binary(
     name = "tsp",
-    srcs = ["tsp_mo.cc"],
+    srcs = ["tsp.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -141,5 +141,63 @@ cc_binary(
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "linear_regression",
+    srcs = ["linear_regression.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:gurobi_solver",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/status",
+    ],
+)
+
+cc_binary(
+    name = "advanced_linear_programming",
+    srcs = ["advanced_linear_programming.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_binary(
+    name = "time_indexed_scheduling",
+    srcs = ["time_indexed_scheduling.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:cp_sat_solver",
+        "//ortools/math_opt/solvers:gscip_solver",
+        "//ortools/math_opt/solvers:gurobi_solver",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_binary(
+    name = "graph_coloring",
+    srcs = ["graph_coloring.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:cp_sat_solver",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
     ],
 )

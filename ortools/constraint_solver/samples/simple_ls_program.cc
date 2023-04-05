@@ -29,13 +29,12 @@ class OneVarLns : public BaseLns {
   explicit OneVarLns(const std::vector<IntVar*>& vars)
       : BaseLns(vars), index_(0) {}
 
-  ~OneVarLns() override {}
+  ~OneVarLns() override = default;
 
   void InitFragments() override { index_ = 0; }
 
   bool NextFragment() override {
-    const int size = Size();
-    if (index_ < size) {
+    if (index_ < Size()) {
       AppendToFragment(index_);
       ++index_;
       return true;
@@ -55,7 +54,7 @@ class MoveOneVar : public IntVarLocalSearchOperator {
         variable_index_(0),
         move_up_(false) {}
 
-  ~MoveOneVar() override {}
+  ~MoveOneVar() override = default;
 
  protected:
   // Make a neighbor assigning one variable to its target value.
@@ -88,7 +87,7 @@ class SumFilter : public IntVarLocalSearchFilter {
   explicit SumFilter(const std::vector<IntVar*>& vars)
       : IntVarLocalSearchFilter(vars), sum_(0) {}
 
-  ~SumFilter() override {}
+  ~SumFilter() override = default;
 
   void OnSynchronize(const Assignment* delta) override {
     sum_ = 0;
@@ -200,7 +199,7 @@ void SolveProblem(SolveType solve_type) {
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   operations_research::SolveProblem(operations_research::LNS);
   operations_research::SolveProblem(operations_research::LS);
   operations_research::SolveProblem(operations_research::LS_WITH_FILTER);

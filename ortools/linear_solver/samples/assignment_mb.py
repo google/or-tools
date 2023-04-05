@@ -42,7 +42,7 @@ def main():
     # [START variables]
     # x[i, j] is an array of 0-1 variables, which will be 1
     # if worker i is assigned to task j.
-    x = model.new_bool_var_array(shape=[num_workers, num_tasks], name='x')
+    x = model.new_bool_var_array(shape=[num_workers, num_tasks], name='x')  # pytype: disable=wrong-arg-types  # numpy-scalars
     # [END variables]
 
     # Constraints

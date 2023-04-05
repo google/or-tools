@@ -110,7 +110,7 @@ Here some dev-note concerning this `POM.xml`.
   <dependency>
     <groupId>net.java.dev.jna</groupId>
     <artifactId>jna-platform</artifactId>
-    <version>5.12.1</version>
+    <version>5.13.0</version>
   </dependency>
   ```
 

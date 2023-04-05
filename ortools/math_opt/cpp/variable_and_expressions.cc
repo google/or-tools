@@ -35,20 +35,8 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 LinearExpression::LinearExpression() { ++num_calls_default_constructor_; }
 
 LinearExpression::LinearExpression(const LinearExpression& other)
-    : terms_(other.terms_), offset_(other.offset_) {
+    : storage_(other.storage_), terms_(other.terms_), offset_(other.offset_) {
   ++num_calls_copy_constructor_;
-}
-
-LinearExpression::LinearExpression(LinearExpression&& other)
-    : terms_(std::move(other.terms_)),
-      offset_(std::exchange(other.offset_, 0.0)) {
-  ++num_calls_move_constructor_;
-}
-
-LinearExpression& LinearExpression::operator=(const LinearExpression& other) {
-  terms_ = other.terms_;
-  offset_ = other.offset_;
-  return *this;
 }
 
 ABSL_CONST_INIT thread_local int
@@ -70,29 +58,22 @@ void LinearExpression::ResetCounters() {
 
 double LinearExpression::Evaluate(
     const VariableMap<double>& variable_values) const {
-  if (variable_values.storage() != nullptr && storage() != nullptr) {
-    CHECK_EQ(variable_values.storage(), storage())
-        << internal::kObjectsFromOtherModelStorage;
-  }
   double result = offset_;
-  for (const auto& variable : terms_.SortedKeys()) {
-    result += terms_.raw_map().at(variable.typed_id()) *
-              variable_values.raw_map().at(variable.typed_id());
+  for (const auto& variable : SortedKeys(terms_)) {
+    const auto found = variable_values.find(variable);
+    CHECK(found != variable_values.end())
+        << internal::kObjectsFromOtherModelStorage;
+    result += terms_.at(variable) * found->second;
   }
   return result;
 }
 
 double LinearExpression::EvaluateWithDefaultZero(
     const VariableMap<double>& variable_values) const {
-  if (variable_values.storage() != nullptr && storage() != nullptr) {
-    CHECK_EQ(variable_values.storage(), storage())
-        << internal::kObjectsFromOtherModelStorage;
-  }
   double result = offset_;
-  for (const auto& variable : terms_.SortedKeys()) {
+  for (const auto& variable : SortedKeys(terms_)) {
     result +=
-        terms_.raw_map().at(variable.typed_id()) *
-        gtl::FindWithDefault(variable_values.raw_map(), variable.typed_id());
+        terms_.at(variable) * gtl::FindWithDefault(variable_values, variable);
   }
   return result;
 }
@@ -103,7 +84,7 @@ std::ostream& operator<<(std::ostream& ostr,
   //  - make sure to quote the variable name so that we support:
   //    * variable names contains +, -, ...
   //    * variable names resembling anonymous variable names.
-  const std::vector<Variable> sorted_variables = expression.terms_.SortedKeys();
+  const std::vector<Variable> sorted_variables = SortedKeys(expression.terms_);
   bool first = true;
   for (const auto v : sorted_variables) {
     const double coeff = expression.terms_.at(v);
@@ -136,41 +117,37 @@ std::ostream& operator<<(std::ostream& ostr,
 
 double QuadraticExpression::Evaluate(
     const VariableMap<double>& variable_values) const {
-  if (variable_values.storage() != nullptr && storage() != nullptr) {
-    CHECK_EQ(variable_values.storage(), storage())
-        << internal::kObjectsFromOtherModelStorage;
-  }
   double result = offset();
-  for (const auto& variable : linear_terms_.SortedKeys()) {
-    result += linear_terms_.raw_map().at(variable.typed_id()) *
-              variable_values.raw_map().at(variable.typed_id());
+  for (const auto& variable : SortedKeys(linear_terms_)) {
+    const auto found = variable_values.find(variable);
+    CHECK(found != variable_values.end())
+        << internal::kObjectsFromOtherModelStorage;
+    result += linear_terms_.at(variable) * found->second;
   }
-  for (const auto& variables : quadratic_terms_.SortedKeys()) {
-    result += quadratic_terms_.raw_map().at(variables.typed_id()) *
-              variable_values.raw_map().at(variables.typed_id().first) *
-              variable_values.raw_map().at(variables.typed_id().second);
+  for (const auto& variables : SortedKeys(quadratic_terms_)) {
+    const auto found_first = variable_values.find(variables.first());
+    CHECK(found_first != variable_values.end())
+        << internal::kObjectsFromOtherModelStorage;
+    const auto found_second = variable_values.find(variables.second());
+    CHECK(found_second != variable_values.end())
+        << internal::kObjectsFromOtherModelStorage;
+    result += quadratic_terms_.at(variables) * found_first->second *
+              found_second->second;
   }
   return result;
 }
 
 double QuadraticExpression::EvaluateWithDefaultZero(
     const VariableMap<double>& variable_values) const {
-  if (variable_values.storage() != nullptr && storage() != nullptr) {
-    CHECK_EQ(variable_values.storage(), storage())
-        << internal::kObjectsFromOtherModelStorage;
-  }
   double result = offset();
-  for (const auto& variable : linear_terms_.SortedKeys()) {
-    result +=
-        linear_terms_.raw_map().at(variable.typed_id()) *
-        gtl::FindWithDefault(variable_values.raw_map(), variable.typed_id());
+  for (const auto& variable : SortedKeys(linear_terms_)) {
+    result += linear_terms_.at(variable) *
+              gtl::FindWithDefault(variable_values, variable);
   }
-  for (const auto& variables : quadratic_terms_.SortedKeys()) {
-    result += quadratic_terms_.raw_map().at(variables.typed_id()) *
-              gtl::FindWithDefault(variable_values.raw_map(),
-                                   variables.typed_id().first) *
-              gtl::FindWithDefault(variable_values.raw_map(),
-                                   variables.typed_id().second);
+  for (const auto& variables : SortedKeys(quadratic_terms_)) {
+    result += quadratic_terms_.at(variables) *
+              gtl::FindWithDefault(variable_values, variables.first()) *
+              gtl::FindWithDefault(variable_values, variables.second());
   }
   return result;
 }
@@ -180,23 +157,21 @@ std::ostream& operator<<(std::ostream& ostr, const QuadraticExpression& expr) {
   // for desired improvements for LinearExpression streaming which are also
   // applicable here.
   bool first = true;
-  for (const auto v : expr.quadratic_terms().SortedKeys()) {
-    const double coeff = expr.quadratic_terms().at(v);
+  for (const auto vs : SortedKeys(expr.quadratic_terms())) {
+    const double coeff = expr.quadratic_terms().at(vs);
     if (coeff != 0) {
       ostr << LeadingCoefficientFormatter(coeff, first);
       first = false;
     }
-    const Variable first_variable(expr.quadratic_terms().storage(),
-                                  v.typed_id().first);
-    const Variable second_variable(expr.quadratic_terms().storage(),
-                                   v.typed_id().second);
+    const Variable first_variable = vs.first();
+    const Variable second_variable = vs.second();
     if (first_variable == second_variable) {
       ostr << first_variable << "²";
     } else {
       ostr << first_variable << "*" << second_variable;
     }
   }
-  for (const auto v : expr.linear_terms().SortedKeys()) {
+  for (const auto v : SortedKeys(expr.linear_terms())) {
     const double coeff = expr.linear_terms().at(v);
     if (coeff != 0) {
       ostr << LeadingCoefficientFormatter(coeff, first) << v;
@@ -228,25 +203,11 @@ std::ostream& operator<<(std::ostream& ostr,
 QuadraticExpression::QuadraticExpression() { ++num_calls_default_constructor_; }
 
 QuadraticExpression::QuadraticExpression(const QuadraticExpression& other)
-    : quadratic_terms_(other.quadratic_terms_),
+    : storage_(other.storage_),
+      quadratic_terms_(other.quadratic_terms_),
       linear_terms_(other.linear_terms_),
       offset_(other.offset_) {
   ++num_calls_copy_constructor_;
-}
-
-QuadraticExpression::QuadraticExpression(QuadraticExpression&& other)
-    : quadratic_terms_(std::move(other.quadratic_terms_)),
-      linear_terms_(std::move(other.linear_terms_)),
-      offset_(std::exchange(other.offset_, 0.0)) {
-  ++num_calls_move_constructor_;
-}
-
-QuadraticExpression& QuadraticExpression::operator=(
-    const QuadraticExpression& other) {
-  quadratic_terms_ = other.quadratic_terms_;
-  linear_terms_ = other.linear_terms_;
-  offset_ = other.offset_;
-  return *this;
 }
 
 ABSL_CONST_INIT thread_local int

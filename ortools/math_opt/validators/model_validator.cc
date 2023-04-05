@@ -23,6 +23,7 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/constraints/indicator/validator.h"
 #include "ortools/math_opt/constraints/quadratic/validator.h"
+#include "ortools/math_opt/constraints/second_order_cone/validator.h"
 #include "ortools/math_opt/constraints/sos/validator.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -249,6 +250,9 @@ absl::StatusOr<ModelSummary> ValidateModel(const ModelProto& model,
   RETURN_IF_ERROR(ValidateConstraintMap(model.quadratic_constraints(),
                                         model_summary.variables))
       << "ModelProto.quadratic_constraints invalid";
+  RETURN_IF_ERROR(ValidateConstraintMap(model.second_order_cone_constraints(),
+                                        model_summary.variables))
+      << "ModelProto.second_order_cone_constraints invalid";
   RETURN_IF_ERROR(
       ValidateConstraintMap(model.sos1_constraints(), model_summary.variables))
       << "ModelProto.sos1_constraints invalid";
@@ -308,6 +312,11 @@ absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
       model_summary.variables))
       << "ModelUpdateProto.quadratic_constraint_updates.new_constraints "
          "invalid";
+  RETURN_IF_ERROR(ValidateConstraintMap(
+      model_update.second_order_cone_constraint_updates().new_constraints(),
+      model_summary.variables))
+      << "ModelUpdateProto.second_order_cone_constraint_updates.new_"
+         "constraints invalid";
   RETURN_IF_ERROR(ValidateConstraintMap(
       model_update.sos1_constraint_updates().new_constraints(),
       model_summary.variables))

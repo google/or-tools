@@ -120,6 +120,7 @@ public class Loader {
         // Load the native library
         System.load(tempPath.resolve(RESOURCE_PATH)
                         .resolve(System.mapLibraryName("jniortools"))
+                        .toAbsolutePath()
                         .toString());
         loaded = true;
       } catch (IOException e) {

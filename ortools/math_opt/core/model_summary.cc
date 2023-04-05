@@ -21,11 +21,11 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "absl/log/check.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
@@ -122,6 +122,7 @@ ModelSummary::ModelSummary(const bool check_names)
       auxiliary_objectives(check_names),
       linear_constraints(check_names),
       quadratic_constraints(check_names),
+      second_order_cone_constraints(check_names),
       sos1_constraints(check_names),
       sos2_constraints(check_names),
       indicator_constraints(check_names) {}
@@ -149,6 +150,10 @@ absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
   RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       {}, model.quadratic_constraints(), summary.quadratic_constraints))
       << "ModelProto.quadratic_constraints are invalid";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
+      {}, model.second_order_cone_constraints(),
+      summary.second_order_cone_constraints))
+      << "ModelProto.second_order_cone_constraints are invalid";
   RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       {}, model.sos1_constraints(), summary.sos1_constraints))
       << "ModelProto.sos1_constraints are invalid";
@@ -185,6 +190,12 @@ absl::Status ModelSummary::Update(const ModelUpdateProto& model_update) {
       model_update.quadratic_constraint_updates().new_constraints(),
       quadratic_constraints))
       << "invalid quadratic constraints";
+  RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
+      model_update.second_order_cone_constraint_updates()
+          .deleted_constraint_ids(),
+      model_update.second_order_cone_constraint_updates().new_constraints(),
+      second_order_cone_constraints))
+      << "invalid second-order cone constraints";
   RETURN_IF_ERROR(internal::UpdateBiMapFromMappedData(
       model_update.sos1_constraint_updates().deleted_constraint_ids(),
       model_update.sos1_constraint_updates().new_constraints(),

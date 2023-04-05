@@ -14,7 +14,6 @@
 #include "ortools/math_opt/validators/solve_stats_validator.h"
 
 #include <cmath>
-#include <limits>
 #include <string>
 
 #include "absl/status/status.h"
@@ -29,7 +28,6 @@
 
 namespace operations_research {
 namespace math_opt {
-namespace {
 
 absl::Status ValidateFeasibilityStatus(const FeasibilityStatusProto& status) {
   if (!FeasibilityStatusProto_IsValid(status)) {
@@ -41,7 +39,6 @@ absl::Status ValidateFeasibilityStatus(const FeasibilityStatusProto& status) {
   }
   return absl::OkStatus();
 }
-}  // namespace
 
 absl::Status ValidateProblemStatus(const ProblemStatusProto& status) {
   RETURN_IF_ERROR(ValidateFeasibilityStatus(status.primal_status()))

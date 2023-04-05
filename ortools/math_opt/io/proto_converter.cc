@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <iterator>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -40,11 +41,9 @@ namespace operations_research {
 namespace math_opt {
 namespace {
 
-constexpr double kInf = std::numeric_limits<double>::infinity();
-
 absl::Status IsSupported(const MPModelProto& model) {
   std::string validity_string = FindErrorInMPModelProto(model);
-  if (validity_string.length() > 0) {
+  if (!validity_string.empty()) {
     return absl::InvalidArgumentError(validity_string);
   }
   for (const MPGeneralConstraintProto& general_constraint :
@@ -54,9 +53,6 @@ absl::Status IsSupported(const MPModelProto& model) {
           general_constraint.has_indicator_constraint())) {
       return absl::InvalidArgumentError("Unsupported general constraint");
     }
-  }
-  if (model.solution_hint().var_index_size() > 0) {
-    return absl::InvalidArgumentError("Solution Hint not supported");
   }
   return absl::OkStatus();
 }
@@ -368,9 +364,34 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
   return output;
 }
 
+absl::StatusOr<std::optional<SolutionHintProto>>
+MPModelProtoSolutionHintToMathOptHint(const MPModelProto& model) {
+  std::string validity_string = FindErrorInMPModelProto(model);
+  if (!validity_string.empty()) {
+    return absl::InvalidArgumentError(validity_string);
+  }
+
+  if (model.solution_hint().var_index_size() == 0) {
+    return std::nullopt;
+  }
+
+  SolutionHintProto hint;
+  auto& variable_values = *hint.mutable_variable_values();
+  LinearTermsFromMPModelToMathOpt(
+      model.solution_hint().var_index(), model.solution_hint().var_value(),
+      *variable_values.mutable_ids(), *variable_values.mutable_values());
+
+  return hint;
+}
+
 absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
     const ::operations_research::math_opt::ModelProto& model) {
   RETURN_IF_ERROR(ValidateModel(model).status());
+  if (!model.second_order_cone_constraints().empty()) {
+    return absl::InvalidArgumentError(
+        "translating models with second-order cone constraints is not "
+        "supported");
+  }
 
   const bool vars_have_name = model.variables().names_size() > 0;
   const bool constraints_have_name =
