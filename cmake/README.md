@@ -63,21 +63,20 @@ Dockers \[Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu\]x
 <a href="docs/ci.md">CI</a> |
 </nav>
 
-OR-Tools comes with a CMake based build ([CMakeLists.txt](../CMakeLists.txt))
+OR-Tools comes with a CMake-based build ([CMakeLists.txt](../CMakeLists.txt))
 that can be used on a wide range of platforms (the "C" stands for
 cross-platform). If you don't have CMake installed already, you can download it
 for free from <http://www.cmake.org/>.
 
 CMake works by generating native Makefiles or build projects that can be used in
 the compiler environment of your choice.<br>You can either build OR-Tools with
-CMake as a standalone project or it can be incorporated into an existing CMake
- project.
+CMake as a standalone project or incorporate it into an existing CMake project.
 
 ## Requirement
 You'll need:
 
 * `CMake >= 3.18`.
-* A C++20 compiler (gcc 8 or above)
+* A C++20 compiler (GCC 10 or above)
 
 ## Solvers supported
 
@@ -94,19 +93,19 @@ Here the list of supported solvers:
 * SCIP
 * XPRESS\*
 
-\*: these solvers are disable by default.
+\*: these solvers are disabled by default.
 
 ## Dependencies
 
-OR-Tools depends on several mandatory libraries. You can compile them all at
-configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
-compile few of them using the options below (see [CMake Options](#cmake-options)
-below).
+OR-Tools depends on several mandatory librariess, either as infrastructure or as
+optimization solvers. You can either compile them all at configure time using
+the option `-DBUILD_DEPS=ON` (`OFF` by default) or compile some of them using
+the options below (see [CMake Options](#cmake-options) below).
 
-*   ZLIB (`BUILD_ZLIB`),
+*   zlib (`BUILD_ZLIB`),
 *   Google Abseil-cpp (`BUILD_absl`),
 *   Google Protobuf (`BUILD_Protobuf`),
-*   COIN-OR solvers,
+*   COIN-OR solvers:
     *   COIN-OR CoinUtils (`BUILD_CoinUtils`),
     *   COIN-OR Osi (`BUILD_Osi`),
     *   COIN-OR Clp (`BUILD_Clp`),
@@ -115,26 +114,24 @@ below).
         note: You can disable the support of COIN-OR solvers
         (i.e. Cbc and Clp solver) by using `-DUSE_COINOR=OFF` (`ON` by default).
 *   HIGHS (`BUILD_HIGHS`),<br>
-    note: You must enable the support of HiGHS solver
-    by using `-DUSE_HIGHS=ON` (`OFF` by default).
+    note: You must enable the support of HiGHS solver by using `-DUSE_HIGHS=ON`
+    (`OFF` by default).
 *   SCIP (`BUILD_SCIP`),<br>
-    note: You can disable the support of SCIP solver
-    by using `-DUSE_SCIP=OFF` (`ON` by default).<br>
-    warning: While OR-Tools ships with SCIP, please consult the
-    [SCIP license](https://scipopt.org/index.php#license) to ensure that you are
-    complying with it.
+    note: You can disable the support of SCIP solver by using `-DUSE_SCIP=OFF`
+    (`ON` by default).
 
 OR-Tools can also optionally (disabled by default i.e. `OFF`) be compiled with
 support for the following third-party solvers:
 
-* GLPK (`BUILD_GLPK`),<br>
-  note: You must enable the support of GLPK solver
-  by using `-DUSE_GLPK=ON` (`OFF` by default).
-* CPLEX (`USE_CPLEX`),
-* XPRESS (`USE_XPRESS`)
+*   GLPK (`BUILD_GLPK`),<br>
+    note: You must enable the support of GLPK solver by using `-DUSE_GLPK=ON`
+    (`OFF` by default).
+*   CPLEX (`USE_CPLEX`),
+*   XPRESS (`USE_XPRESS`)
 
-**warning: Since CPLEX and XPRESS solvers require license and are proprietary,
-we can't test it on public CI and support can be broken.**
+**warning: Since these solvers are either proprietary (and require a specific
+license) or available under the GPL, we can't test them on public CI and their
+support may be broken.**
 
 ### Enabling CPLEX Support
 
@@ -158,11 +155,12 @@ option at configure time.
 
 ## CMake Options
 
-There are several options that can be passed to CMake to modify how the code is built.<br>
-For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.
+There are several options that can be passed to CMake to modify how the code
+is built.<br>
+To set these options and parameters, use `-D<Parameter_name>=<value>`.
 
 All CMake options are passed at configure time, i.e., by running <br>
-`cmake -S. -B<your_chosen_build_directory>  -DOPTION_ONE=ON -DOPTION_TWO=OFF ...` <br>
+`cmake -S. -B<your_chosen_build_directory> -DOPTION_ONE=ON -DOPTION_TWO=OFF ...` <br>
 before running `cmake --build <your_chosen_build_directory>`<br>
 
 For example, to generate build files including dependencies in a new
@@ -297,9 +295,8 @@ automatically to your target as needed.
 
 #### Using add_subdirectory
 
-The recommendations below are similar to those for using CMake within the
-googletest framework
-(<https://github.com/google/googletest/blob/main/googletest/README.md#incorporating-into-an-existing-cmake-project>)
+The recommendations below are similar to those for using CMake
+[within the googletest framework](https://github.com/google/googletest/blob/main/googletest/README.md#incorporating-into-an-existing-cmake-project)
 
 Thus, you can use the CMake command
 [`add_subdirectory()`](https://cmake.org/cmake/help/latest/command/add_subdirectory.html)
@@ -338,7 +335,7 @@ FetchContent_Declare(
   GIT_TAG        main
 )
 
-# After the following call, the CMake targets defined by or-tools
+# After the following call, the CMake targets defined by OR-Tools
 # will be defined and available to the rest of the build
 FetchContent_MakeAvailable(or-tools)
 
@@ -346,5 +343,5 @@ add_executable(myapp main.cpp)
 target_link_libraries(myapp ortools::ortools)
 ```
 
-note: You may need to use the option `-DBUILD_DEPS=ON` to get all or-tools
+note: You may need to use the option `-DBUILD_DEPS=ON` to get all the OR-Tools
 dependencies as well.

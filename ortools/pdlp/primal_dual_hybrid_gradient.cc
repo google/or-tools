@@ -2325,11 +2325,14 @@ InnerStepOutcome Solver::TakeAdaptiveStep() {
     // Our step sizes are a factor 1 - (`total_steps_attempted` + 1)^(-
     // `step_size_reduction_exponent`) smaller than they could be as a margin to
     // reduce rejected steps.
+    // The std::isinf() test protects against NAN if std::pow() == 1.0.
     const double first_term =
-        (1 - std::pow(total_steps_attempted + 1.0,
-                      -params_.adaptive_linesearch_parameters()
-                           .step_size_reduction_exponent())) *
-        step_size_limit;
+        std::isinf(step_size_limit)
+            ? step_size_limit
+            : (1 - std::pow(total_steps_attempted + 1.0,
+                            -params_.adaptive_linesearch_parameters()
+                                 .step_size_reduction_exponent())) *
+                  step_size_limit;
     const double second_term =
         (1 + std::pow(total_steps_attempted + 1.0,
                       -params_.adaptive_linesearch_parameters()

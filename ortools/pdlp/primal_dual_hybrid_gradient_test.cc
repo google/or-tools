@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -26,6 +27,7 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -1006,7 +1008,7 @@ TEST(PrimalDualHybridGradientTest, HasRandomProjectionsIfRequested) {
   for (const auto& stats : output.solve_log.iteration_stats()) {
     for (const auto& metadata : stats.point_metadata()) {
       // There isn't much we can say about the random projection values, so just
-      // check that the right number are present.
+      // check that the right numbers are present.
       EXPECT_THAT(metadata.random_primal_projections(), SizeIs(2));
       EXPECT_THAT(metadata.random_dual_projections(), SizeIs(2));
     }
@@ -1834,9 +1836,10 @@ TEST_F(FeasibilityPolishingPrimalTest,
   EXPECT_GT(total_feasibility_time, 0.0);
   EXPECT_GT(last_stats.cumulative_time_sec(), 0.0);
   // This is an approximate check that `solve_time_sec()` includes both the main
-  // and feasiblity iterations, and that `iteration_stats.cumulative_time_sec()`
-  // does not include time from feasibility iterations. We don't expect equality
-  // because some clock time can pass while switching between phases.
+  // and feasibility iterations, and that
+  // `iteration_stats.cumulative_time_sec()` does not include time from
+  // feasibility iterations. We don't expect equality because some clock time
+  // can pass while switching between phases.
   EXPECT_LE(total_feasibility_time + last_stats.cumulative_time_sec(),
             output.solve_log.solve_time_sec());
 }

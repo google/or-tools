@@ -148,6 +148,7 @@ cc_test(
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",

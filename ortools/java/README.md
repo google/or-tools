@@ -44,7 +44,7 @@ supported platform targeted and containing the native libraries.
 * A java maven package `com.google.ortools:ortools-java` depending on the native
 package and containing the Java code.
 
-[`platform` names](https://github.com/java-native-access/jna/blob/cc1acdac02e4d0dda93ba01bbe3a3435b8933dab/test/com/sun/jna/PlatformTest.java#L31-L100)
+[`platform` names](https://github.com/java-native-access/jna/blob/5.13.0/test/com/sun/jna/PlatformTest.java#L31-L103)
 come from the JNA project (Java Native Access) which will be use to find at
 runtime on which platform the code is currently running.
 
