@@ -493,6 +493,7 @@ class PreprocessSolver {
 
   // A counter used to trigger writing iteration headers.
   int log_counter_ = 0;
+  absl::Time time_of_last_log_ = absl::InfinitePast();
   IterationStatsCallback iteration_stats_callback_;
 };
 
@@ -1454,7 +1455,11 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
                      last_dual_start_point, stats);
   }
   constexpr int kLogEvery = 15;
-  if (params.verbosity_level() >= 2) {
+  absl::Time logging_time = absl::Now();
+  if (params.verbosity_level() >= 2 &&
+      (params.log_interval_seconds() == 0.0 ||
+       logging_time - time_of_last_log_ >=
+           absl::Seconds(params.log_interval_seconds()))) {
     if (log_counter_ == 0) {
       LogIterationStatsHeader(params.verbosity_level(),
                               params.use_feasibility_polishing());
@@ -1475,9 +1480,10 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
                           original_bound_norms_, POINT_TYPE_CURRENT_ITERATE);
       }
     }
-  }
-  if (++log_counter_ >= kLogEvery) {
-    log_counter_ = 0;
+    time_of_last_log_ = logging_time;
+    if (++log_counter_ >= kLogEvery) {
+      log_counter_ = 0;
+    }
   }
   if (iteration_stats_callback_ != nullptr) {
     iteration_stats_callback_(

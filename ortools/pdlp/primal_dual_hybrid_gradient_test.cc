@@ -1917,30 +1917,6 @@ TEST_F(FeasibilityPolishingTest, IterationLimitIncludesFeasibilityPhases) {
             output.solve_log.iteration_count());
 }
 
-// Verifies that the primal and dual solution satisfy the bounds constraints.
-// This function uses ASSERTS rather than EXPECTs because it's used with large
-// QPs that would spam the logs otherwise.
-void VerifyBoundConstraints(const QuadraticProgram& qp,
-                            const VectorXd primal_solution,
-                            const VectorXd dual_solution) {
-  for (int64_t i = 0; i < primal_solution.size(); ++i) {
-    ASSERT_TRUE(std::isfinite(primal_solution[i]))
-        << i << " " << primal_solution[i];
-    ASSERT_GE(primal_solution[i], qp.variable_lower_bounds[i]);
-    ASSERT_LE(primal_solution[i], qp.variable_upper_bounds[i]);
-  }
-  for (int i = 0; i < dual_solution.size(); ++i) {
-    ASSERT_TRUE(std::isfinite(dual_solution[i]))
-        << i << " " << dual_solution[i];
-    if (!std::isfinite(qp.constraint_lower_bounds[i])) {
-      ASSERT_LE(dual_solution[i], 0);
-    }
-    if (!std::isfinite(qp.constraint_upper_bounds[i])) {
-      ASSERT_GE(dual_solution[i], 0);
-    }
-  }
-}
-
 // This test doesn't attempt to check what is logged. Rather, it just verifies
 // that the code succeeds at each verbosity level. Other than having the
 // verbosity level as a parameter, and fixing the other parameters, it is the
