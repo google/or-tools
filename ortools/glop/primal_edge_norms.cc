@@ -14,6 +14,7 @@
 #include "ortools/glop/primal_edge_norms.h"
 
 #include <algorithm>
+#include <cstdlib>
 
 #include "ortools/base/timer.h"
 #include "ortools/lp_data/lp_utils.h"

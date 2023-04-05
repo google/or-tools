@@ -14,6 +14,7 @@
 #include "ortools/glop/reduced_costs.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <random>
 
 #ifdef OMP

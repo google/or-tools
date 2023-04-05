@@ -163,6 +163,8 @@
 #include "ortools/port/proto_utils.h"
 
 ABSL_DECLARE_FLAG(bool, linear_solver_enable_verbose_output);
+ABSL_DECLARE_FLAG(bool, log_verification_errors);
+ABSL_DECLARE_FLAG(bool, verify_solution);
 
 namespace operations_research {
 

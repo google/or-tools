@@ -299,6 +299,13 @@ message PrimalDualHybridGradientParams {
   // Logging at levels 2-4 also includes messages from level 1.
   optional int32 verbosity_level = 26 [default = 0];
 
+  // Time between iteration-level statistics logging (if `verbosity_level > 1`).
+  // Since iteration-level statistics are only generated when performing
+  // termination checks, logs will be generated from next termination check
+  // after `log_interval_seconds` have elapsed. Should be >= 0.0. 0.0 (the
+  // default) means log statistics at every termination check.
+  optional double log_interval_seconds = 31 [default = 0.0];
+
   // The frequency at which extra work is performed to make major algorithmic
   // decisions, e.g., performing restarts and updating the primal weight. Major
   // iterations also trigger a termination check. For best performance using the

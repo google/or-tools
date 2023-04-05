@@ -173,6 +173,12 @@ absl::Status ValidatePrimalDualHybridGradientParams(
   if (params.verbosity_level() < 0) {
     return InvalidArgumentError("verbosity_level must be non-negative");
   }
+  if (params.log_interval_seconds() < 0.0) {
+    return InvalidArgumentError("log_interval_seconds must be non-negative");
+  }
+  if (std::isnan(params.log_interval_seconds())) {
+    return InvalidArgumentError("log_interval_seconds is NAN");
+  }
   if (params.major_iteration_frequency() <= 0) {
     return InvalidArgumentError("major_iteration_frequency must be positive");
   }

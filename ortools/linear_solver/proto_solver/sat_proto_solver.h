@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
 
+#include <atomic>
 #include <functional>
 #include <string>
 

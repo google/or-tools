@@ -14,6 +14,7 @@
 #include "ortools/lp_data/sparse.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <initializer_list>
 #include <string>
 #include <utility>

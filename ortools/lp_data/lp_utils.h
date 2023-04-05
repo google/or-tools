@@ -17,6 +17,7 @@
 #define OR_TOOLS_LP_DATA_LP_UTILS_H_
 
 #include <cmath>
+#include <cstdlib>
 
 #include "ortools/base/accurate_sum.h"
 #include "ortools/lp_data/lp_types.h"

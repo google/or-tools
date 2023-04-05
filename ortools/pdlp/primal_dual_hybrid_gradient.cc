@@ -33,6 +33,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
@@ -258,9 +260,11 @@ void LogIterationStats(int verbosity_level, bool use_feasibility_polishing,
     LogInfoWithoutPrefix(absl::StrCat(phase_string, iterate_string,
                                       iteration_string, " | ",
                                       convergence_string));
+  } else {
+    // No convergence information, just log the basic work stats.
+    LogInfoWithoutPrefix(absl::StrCat(
+        phase_string, verbosity_level >= 4 ? "? " : "", iteration_string));
   }
-  LogInfoWithoutPrefix(absl::StrCat(
-      phase_string, verbosity_level >= 4 ? "? " : "", iteration_string));
 }
 
 void LogIterationStatsHeader(int verbosity_level,

@@ -116,6 +116,8 @@ ABSL_FLAG(std::string, sol_file, "",
           "If non-empty, output the best solution in Miplib .sol format.");
 
 ABSL_DECLARE_FLAG(bool, verify_solution);  // Defined in ./linear_solver.cc
+ABSL_DECLARE_FLAG(bool,
+                  log_verification_errors);  // Defined in ./linear_solver.cc
 ABSL_DECLARE_FLAG(
     bool,
     linear_solver_enable_verbose_output);  // Defined in ./linear_solver.cc
@@ -239,10 +241,12 @@ MPSolutionResponse LocalSolve(const MPModelRequest& request_proto) {
   // a verification step here.
   if ((status == MPSolver::OPTIMAL || status == MPSolver::FEASIBLE) &&
       !absl::GetFlag(FLAGS_verify_solution)) {
-    LOG(INFO) << "Verifying the solution";
-    solver.VerifySolution(/*tolerance=*/MPSolverParameters().GetDoubleParam(
-                              MPSolverParameters::PRIMAL_TOLERANCE),
-                          /*log_errors=*/true);
+    const bool verified =
+        solver.VerifySolution(/*tolerance=*/MPSolverParameters().GetDoubleParam(
+                                  MPSolverParameters::PRIMAL_TOLERANCE),
+                              absl::GetFlag(FLAGS_log_verification_errors));
+    LOG(INFO) << "The solution "
+              << (verified ? "was verified." : "didn't pass verification.");
   }
 
   // If the solver is a MIP, print the number of nodes.

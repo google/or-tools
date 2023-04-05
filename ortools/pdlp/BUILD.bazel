@@ -47,7 +47,7 @@ cc_proto_library(
 py_proto_library(
     name = "solvers_py_pb2",
     deps = [
-      ":solvers_proto",
+        ":solvers_proto",
     ],
 )
 

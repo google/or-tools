@@ -14,11 +14,11 @@
 # Utilities to load native libraries in java or-tools.
 cc_binary(
     name = "libjniortools.so",
-    target_compatible_with = select({
-      "@platforms//os:linux": [],
-      "//conditions:default": ["@platforms//:incompatible"],
-    }),
     linkshared = True,
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/algorithms/java:knapsacksolver_cc",
@@ -32,11 +32,11 @@ cc_binary(
 
 cc_binary(
     name = "libjniortools.dylib",
-    target_compatible_with = select({
-      "@platforms//os:osx": [],
-      "//conditions:default": ["@platforms//:incompatible"],
-    }),
     linkshared = True,
+    target_compatible_with = select({
+        "@platforms//os:osx": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/algorithms/java:knapsacksolver_cc",
@@ -50,11 +50,11 @@ cc_binary(
 
 cc_binary(
     name = "jniortools.dll",
-    target_compatible_with = select({
-      "@platforms//os:windows": [],
-      "//conditions:default": ["@platforms//:incompatible"],
-    }),
     linkshared = True,
+    target_compatible_with = select({
+        "@platforms//os:windows": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/algorithms/java:knapsacksolver_cc",
@@ -71,9 +71,9 @@ java_library(
     srcs = ["Loader.java"],
     visibility = ["//visibility:public"],
     runtime_deps = select({
-      "@platforms//os:linux": ["//ortools/java/com/google/ortools:libjniortools.so"],
-      "@platforms//os:osx": ["//ortools/java/com/google/ortools:libjniortools.dylib"],
-      "@platforms//os:windows": ["//ortools/java/com/google/ortools:jniortools.dll"],
+        "@platforms//os:linux": ["//ortools/java/com/google/ortools:libjniortools.so"],
+        "@platforms//os:osx": ["//ortools/java/com/google/ortools:libjniortools.dylib"],
+        "@platforms//os:windows": ["//ortools/java/com/google/ortools:jniortools.dll"],
     }),
     deps = [
         "@maven//:net_java_dev_jna_jna",

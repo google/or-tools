@@ -386,6 +386,22 @@ TEST(ValidatePrimalDualHybridGradientParams, BadVerbosityLevel) {
   EXPECT_THAT(status.message(), HasSubstr("verbosity_level"));
 }
 
+TEST(ValidatePrimalDualHybridGradientParams, BadLogIntervalSeconds) {
+  PrimalDualHybridGradientParams params_negative;
+  params_negative.set_log_interval_seconds(-1.0);
+  const absl::Status status_negative =
+      ValidatePrimalDualHybridGradientParams(params_negative);
+  EXPECT_EQ(status_negative.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_negative.message(), HasSubstr("log_interval_seconds"));
+
+  PrimalDualHybridGradientParams params_nan;
+  params_nan.set_log_interval_seconds(std::numeric_limits<double>::quiet_NaN());
+  const absl::Status status_nan =
+      ValidatePrimalDualHybridGradientParams(params_nan);
+  EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_nan.message(), HasSubstr("log_interval_seconds"));
+}
+
 TEST(ValidatePrimalDualHybridGradientParams, BadMajorIterationFrequency) {
   PrimalDualHybridGradientParams params;
   params.set_major_iteration_frequency(0);

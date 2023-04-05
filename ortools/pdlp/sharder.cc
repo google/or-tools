@@ -78,17 +78,22 @@ Sharder::Sharder(const int64_t num_elements, const int num_shards,
     return;
   }
   CHECK_GE(num_shards, 1);
-  shard_starts_.reserve(
-      std::min(static_cast<int64_t>(num_shards), num_elements) + 1);
-  shard_masses_.reserve(
-      std::min(static_cast<int64_t>(num_shards), num_elements));
-  for (int shard = 0; shard < num_shards; ++shard) {
-    const int64_t this_shard_start = ((num_elements * shard) / num_shards);
-    const int64_t next_shard_start =
-        ((num_elements * (shard + 1)) / num_shards);
-    if (next_shard_start - this_shard_start > 0) {
-      shard_starts_.push_back(this_shard_start);
-      shard_masses_.push_back(next_shard_start - this_shard_start);
+  shard_starts_.reserve(std::min(int64_t{num_shards}, num_elements) + 1);
+  shard_masses_.reserve(std::min(int64_t{num_shards}, num_elements));
+  if (num_shards >= num_elements) {
+    for (int64_t element = 0; element < num_elements; ++element) {
+      shard_starts_.push_back(static_cast<int>(element));
+      shard_masses_.push_back(1);
+    }
+  } else {
+    for (int shard = 0; shard < num_shards; ++shard) {
+      const int64_t this_shard_start = ((num_elements * shard) / num_shards);
+      const int64_t next_shard_start =
+          ((num_elements * (shard + 1)) / num_shards);
+      if (next_shard_start - this_shard_start > 0) {
+        shard_starts_.push_back(this_shard_start);
+        shard_masses_.push_back(next_shard_start - this_shard_start);
+      }
     }
   }
   shard_starts_.push_back(num_elements);

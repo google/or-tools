@@ -18,6 +18,7 @@
 #include <sstream>
 #include <vector>
 
+#include "ortools/base/init_google.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -146,7 +147,8 @@ void Tsp() {
 
 }  // namespace operations_research
 
-int main(int /*argc*/, char* /*argv*/[]) {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::Tsp();
   return EXIT_SUCCESS;
 }
