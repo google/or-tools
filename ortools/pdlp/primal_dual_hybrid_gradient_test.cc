@@ -551,9 +551,9 @@ TEST_P(PrimalDualHybridGradientDiagonalQPTest, QpWarmStart) {
   // and dual optimal solutions are about the same.
   params.set_primal_weight_update_smoothing(0.0);
 
-  const PrimalAndDualSolution initial_solution = {
-      .primal_solution{{0.999, 0.001}},
-      .dual_solution{{-0.999}},
+  const PrimalAndDualSolution initial_solution {
+      .primal_solution = Eigen::VectorXd{{0.999, 0.001}},
+      .dual_solution = Eigen::VectorXd{{-0.999}},
   };
   SolverResult output = PrimalDualHybridGradient(TestDiagonalQp1(), params,
                                                  std::move(initial_solution));
@@ -1033,7 +1033,7 @@ TEST(PrimalDualHybridGradientTest, ProjectInitialPointDualBounds) {
   // This initial solution doesn't satisfy the dual variable bounds. The solver
   // should project it to a valid dual solution.
   const PrimalAndDualSolution initial_solution = {
-      .primal_solution{{1.0, 0.0}},
+      .primal_solution = Eigen::VectorXd{{1.0, 0.0}},
       .dual_solution = -VectorXd::Ones(2),
   };
   SolverResult output_nonzero_init = PrimalDualHybridGradient(
@@ -1433,8 +1433,8 @@ TEST(PrimalDualHybridGradientTest, CallsCallback) {
 // Returns the unique solution of `TinyLp`.
 PrimalAndDualSolution TinyLpSolution() {
   return PrimalAndDualSolution{
-      .primal_solution{{1.0, 0.0, 6.0, 2.0}},
-      .dual_solution{{0.5, 4.0, 0.0}},
+      .primal_solution = Eigen::VectorXd{{1.0, 0.0, 6.0, 2.0}},
+      .dual_solution = Eigen::VectorXd{{0.5, 4.0, 0.0}},
   };
 }
 
@@ -2063,8 +2063,8 @@ TEST(PresolveTest, PresolveParametersAreUsed) {
 TEST(ComputeStatusesTest, AtOptimum) {
   QuadraticProgram lp = TestLp();
   const PrimalAndDualSolution solution = {
-      .primal_solution{{-1, 8, 1, 2.5}},
-      .dual_solution{{-2, 0, 2.375, 2.0 / 3}},
+      .primal_solution = Eigen::VectorXd{{-1, 8, 1, 2.5}},
+      .dual_solution = Eigen::VectorXd{{-2, 0, 2.375, 2.0 / 3}},
   };
   glop::ProblemSolution glop_solution = internal::ComputeStatuses(lp, solution);
   EXPECT_THAT(
@@ -2083,8 +2083,8 @@ TEST(ComputeStatusesTest, CoverMoreCases) {
   lp.variable_upper_bounds[3] = 2.5;
   lp.variable_upper_bounds[1] = 8;
   const PrimalAndDualSolution solution = {
-      .primal_solution{{-1, 8, 1, 2.5}},
-      .dual_solution{{-2, 0, 2.375, -1}},
+      .primal_solution = Eigen::VectorXd{{-1, 8, 1, 2.5}},
+      .dual_solution = Eigen::VectorXd{{-2, 0, 2.375, -1}},
   };
   glop::ProblemSolution glop_solution = internal::ComputeStatuses(lp, solution);
   EXPECT_THAT(
