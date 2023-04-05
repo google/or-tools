@@ -173,7 +173,7 @@ cc_library(
         ":cp_model_cc_proto",
         ":cp_model_utils",
         ":sat_parameters_cc_proto",
-	":util",
+        ":util",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/port:proto_utils",

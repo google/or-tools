@@ -39,6 +39,10 @@ namespace operations_research::sat {
 // "Feasibility Jump: an LP-free Lagrangian MIP heuristic", Bjørnar
 // Luteberget, Giorgio Sartor, 2023, Mathematical Programming Computation.
 //
+// This is basically a Guided local search (GLS) with a nice algo to know what
+// value an integer variable should move to (its jump value). For binary, it
+// can only be swapped, so the situation is easier.
+//
 // TODO(user): If we have more than one of these solver, we might want to share
 // the evaluator memory between them. Right now we basically keep a copy of the
 // model and its transpose for each FeasibilityJumpSolver.
@@ -96,7 +100,9 @@ class FeasibilityJumpSolver : public SubSolver {
   std::function<void()> GenerateTask(int64_t /*task_id*/) final;
 
  private:
-  void Initialize(const CpModelProto& cp_model_proto);
+  void Initialize();
+  void RestartFromDefaultSolution();
+  std::string OneLineStats() const;
 
   // Linear only.
   void RecomputeJump(int var);
@@ -107,9 +113,8 @@ class FeasibilityJumpSolver : public SubSolver {
   bool DoSomeLinearIterations();
   bool DoSomeGeneralIterations();
 
-  // Return false if we have no infeasibility and the solution is feasible.
-  bool UpdateLinearConstraintWeights();
-  bool UpdateAllConstraintWeights();
+  // Return the number of infeasible constraints.
+  int UpdateConstraintWeights(bool linear_mode);
 
   const CpModelProto& cp_model_;
   SatParameters params_;
@@ -119,8 +124,10 @@ class FeasibilityJumpSolver : public SubSolver {
   SharedStatistics* shared_stats_;
   ModelRandomGenerator random_;
 
-  // We don't support all type of model.
-  // This will be set to false in Initialize() or later if we don't.
+  // Synchronization Booleans.
+  //
+  // Note that we don't fully support all type of model, and we will abort by
+  // setting the model_is_supported_ bool to false when we detect this.
   bool is_initialized_ = false;
   std::atomic<bool> model_is_supported_ = true;
   std::atomic<bool> task_generated_ = false;
@@ -128,13 +135,11 @@ class FeasibilityJumpSolver : public SubSolver {
   std::unique_ptr<LsEvaluator> evaluator_;
   std::vector<Domain> var_domains_;
 
-  // The current base solution and its violation (lower is better).
-  double solution_score_;
-  std::vector<int64_t> solution_;
-
-  // For each variable a value different from the current one in the solution
-  // (except if the variable is fixed), and the associated weighted feasibility
-  // violation change.
+  // For each variable, we store:
+  // - A jump value, which is different from the current solution, except for
+  //   fixed variable.
+  // - The associated weighted feasibility violation change if we take this
+  //   jump.
   std::vector<bool> jump_need_recomputation_;
   std::vector<int64_t> jump_values_;
   std::vector<double> jump_deltas_;
@@ -142,19 +147,28 @@ class FeasibilityJumpSolver : public SubSolver {
   // The score of a solution is just the sum of infeasibility of each
   // constraints weighted by these scores.
   std::vector<double> weights_;
-  std::vector<int> last_infeasible_constraints_;
 
-  // We use an exponentially decaying constraint weight like for SAT activities.
+  // The current weighted violation (lower is better).
+  double solution_score_;
+
+  // Depending on the options, we use an exponentially decaying constraint
+  // weight like for SAT activities.
   double bump_value_ = 1.0;
 
-  // Sparse list of jump with a delta <= 0.0.
+  // Sparse list of jump with a potential delta <= 0.0.
+  // We lazily recompute the exact delta as we randomly pick variable from here.
   std::vector<bool> in_good_jumps_;
   std::vector<int> good_jumps_;
 
+  // We restart each time our local deterministic time crosses this.
+  double dtime_restart_threshold_ = 0.0;
+
+  std::vector<int> tmp_constraints_;
   std::vector<int64_t> tmp_breakpoints_;
 
   // Statistics
   absl::Time last_logging_time_;
+  int64_t num_restarts_ = 0;
   int64_t num_batches_ = 0;
   int64_t num_jumps_ = 0;
   int64_t num_computed_jumps_ = 0;

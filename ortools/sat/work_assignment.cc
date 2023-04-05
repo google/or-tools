@@ -198,8 +198,6 @@ SharedTreeManager::SharedTreeManager(Model* model)
            shared_response_manager_->GetInnerObjectiveLowerBound()});
   unassigned_leaves_.reserve(num_workers_);
   unassigned_leaves_.push_back(&nodes_.back());
-  to_close_.reserve(max_nodes_);
-  to_update_.reserve(max_nodes_);
 }
 
 int SharedTreeManager::NumNodes() const {
