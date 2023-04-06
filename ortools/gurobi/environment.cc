@@ -423,6 +423,7 @@ absl::StatusOr<GRBenv*> GetGurobiEnv() {
   GRBenv* env = nullptr;
 
   if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) {
+    LOG(ERROR) << "Could not create Gurobi environment, error: " << GRBgeterrormsg(env);
     return absl::FailedPreconditionError(
         absl::StrCat("Found the Gurobi shared library, but could not create "
                      "Gurobi environment: is Gurobi licensed on this machine?",
