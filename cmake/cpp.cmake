@@ -81,6 +81,7 @@ if(MSVC)
     "/MP" # Build with multiple processes
     "/Zc:preprocessor" # Enable preprocessor conformance mode
     "/DNDEBUG"
+    "/fp:precise"
     )
   # MSVC warning suppressions
   list(APPEND OR_TOOLS_COMPILE_OPTIONS

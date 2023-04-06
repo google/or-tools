@@ -22,25 +22,26 @@
 #ifndef OR_TOOLS_UTIL_FP_UTILS_H_
 #define OR_TOOLS_UTIL_FP_UTILS_H_
 
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <limits>
+#include <numeric>  // must be call before fenv_access see: https://github.com/microsoft/STL/issues/2613
+#include <vector>
+
+#include "absl/log/check.h"
+
 #if defined(_MSC_VER)
 #pragma fenv_access(on)  // NOLINT
 #else
-#include <fenv.h>  // NOLINT
+#include <cfenv>  // NOLINT
 #endif
 
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
 
-#include <stdlib.h>
-
-#include <algorithm>
-#include <cmath>
-#include <limits>
-#include <vector>
-
 #include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 
 #if defined(_MSC_VER)
 static inline double isnan(double value) { return _isnan(value); }
@@ -229,8 +230,7 @@ double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
 // scaling_factor to have the maximum absolute error on the original sum.
 void ComputeScalingErrors(const std::vector<double>& input,
                           const std::vector<double>& lb,
-                          const std::vector<double>& ub,
-                          const double scaling_factor,
+                          const std::vector<double>& ub, double scaling_factor,
                           double* max_relative_coeff_error,
                           double* max_scaled_sum_error);
 
@@ -250,15 +250,15 @@ inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
 // This is a fast implementation of the C99 function ilogb for normalized
 // doubles with the caveat that it returns -1023 for zero, and 1024 for infinity
 // an NaNs.
-int fast_ilogb(const double value);
+int fast_ilogb(double value);
 
 // This is a fast implementation of the C99 function scalbn, with the caveat
 // that it works on normalized numbers and if the result underflows, overflows,
 // or is applied to a NaN or an +-infinity, the result is undefined behavior.
 // Note that the version of the function that takes a reference, modifies the
 // given value.
-double fast_scalbn(const double value, const int exponent);
-void fast_scalbn_inplace(double& mutable_value, const int exponent);
+double fast_scalbn(double value, int exponent);
+void fast_scalbn_inplace(double& mutable_value, int exponent);
 
 }  // namespace operations_research
 
