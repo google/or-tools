@@ -15,7 +15,6 @@
 // OR-Tools solution to the N-queens problem.
 package com.google.ortools.constraintsolver.samples;
 // [START import]
-// [END import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
