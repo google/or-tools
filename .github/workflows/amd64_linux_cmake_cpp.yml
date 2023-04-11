@@ -1,0 +1,35 @@
+name: amd64 Linux CMake C++
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+       matrix:
+         build: [
+           ["Unix Makefiles", "Release"],
+           ["Ninja", "Release"],
+           ["Ninja Multi-Config", "Release"]
+         ]
+       fail-fast: false
+    env:
+      GENERATOR: ${{ matrix.build[0] }}
+      BUILD_TYPE: ${{ matrix.build[1] }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Ninja
+      run: |
+        sudo apt-get update
+        sudo apt-get install ninja-build
+    - name: Check cmake
+      run: cmake --version
+    - name: Configure
+      run: cmake -S. -Bbuild -G "$GENERATOR" -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DBUILD_DEPS=ON -DCMAKE_INSTALL_PREFIX=install
+    - name: Build
+      run: cmake --build build --config "$BUILD_TYPE" --target all -v
+    - name: Test
+      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --config "$BUILD_TYPE" --target test -v
+    - name: Install
+      run: cmake --build build --config "$BUILD_TYPE" --target install -v

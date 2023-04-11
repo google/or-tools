@@ -1,0 +1,26 @@
+name: amd64 MacOS Make C++
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  make:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install brew Make
+      run: |
+        brew install make
+        echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
+    - name: Check make
+      run: make --version
+    - name: Check system
+      run: make detect_port
+    - name: Check C++
+      run: make detect_cpp
+    - name: Build C++
+      run: make cpp JOBS=4
+    - name: Test C++
+      run: make test_cpp
+    - name: Create archive
+      run: make archive_cpp

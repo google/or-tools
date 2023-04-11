@@ -1,0 +1,34 @@
+name: amd64 Windows Make .Net
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  make:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ilammy/msvc-dev-cmd@v1
+      # Install .NET SDKs
+    - name: Setup .NET Core 3.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    - name: Setup .NET 6.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    - name: Check dotnet
+      run: dotnet --info
+    - name: Check make
+      run: tools\make --version
+    - name: Check system
+      run: tools\make detect_port
+    - name: Check .Net
+      run: tools\make detect_dotnet
+    - name: Build C++ and .NET
+      run: tools\make dotnet JOBS=4
+    - name: Test .Net
+      run: tools\make test_dotnet -j4
+    - name: Create nuget packages
+      run: tools\make package_dotnet
