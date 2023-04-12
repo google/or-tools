@@ -36,9 +36,11 @@ you can download it for free from <https://bazel.build/>.
 please use the Makefile or CMake based build instead.**
 
 ## Requirement
+
 You'll need:
 
-* `Bazel >= 4.0`.
+* `Bazel >= 5.4.0`.
+* A compiler with C++17 support.
 
 ## Solvers supported
 
@@ -64,7 +66,7 @@ OR-Tools depends on several mandatory libraries.
 
 ## Compilation
 
-You must compile OR-Tools using C++20:
+You must compile OR-Tools using at least C++17 (C++20 on windows):
 
 *   on UNIX:
 
