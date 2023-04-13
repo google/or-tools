@@ -14,14 +14,14 @@
 # limitations under the License.
 
 # [START program]
-"""Simple Vehicles Routing Problem (VRP).
+"""Simple Vehicle Routing Problem (VRP).
 
-   This is a sample using the routing library python wrapper to solve a VRP
-   problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+This is a sample using the routing library Python wrapper to solve a VRP
+instance.
+A description of the problem can be found here:
+http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters.
+Distances are in meters.
 """
 
 # [START import]
@@ -75,19 +75,19 @@ def print_solution(data, manager, routing, assignment):
     total_distance = 0
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        plan_output = f'Route for vehicle {vehicle_id}:\n'
         route_distance = 0
         while not routing.IsEnd(index):
-            plan_output += ' {} ->'.format(manager.IndexToNode(index))
+            plan_output += f' {manager.IndexToNode(index)} ->'
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {}\n'.format(manager.IndexToNode(index))
-        plan_output += 'Distance of the route: {}m\n'.format(route_distance)
+        plan_output += f' {manager.IndexToNode(index)}\n'
+        plan_output += f'Distance of the route: {route_distance}m\n'
         print(plan_output)
         total_distance += route_distance
-    print('Total Distance of all routes: {}m'.format(total_distance))
+    print(f'Total Distance of all routes: {total_distance}m')
 
 # [END solution_printer]
 

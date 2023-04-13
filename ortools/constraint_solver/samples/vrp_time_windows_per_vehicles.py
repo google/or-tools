@@ -76,12 +76,12 @@ def print_solution(manager, routing, assignment):
         if assignment.Value(routing.NextVar(index)) == index:
             node = manager.IndexToNode(index)
             if node > 16:
-              original = node
-              while original > 16:
-                original = original - 16
-              dropped_nodes += f' {node}({original})'
+                original = node
+                while original > 16:
+                    original = original - 16
+                dropped_nodes += f' {node}({original})'
             else:
-              dropped_nodes += f' {node}'
+                dropped_nodes += f' {node}'
     print(dropped_nodes)
     # Display routes
     time_dimension = routing.GetDimensionOrDie('Time')
@@ -94,12 +94,12 @@ def print_solution(manager, routing, assignment):
             time_var = time_dimension.CumulVar(index)
             node = manager.IndexToNode(index)
             if node > 16:
-              original = node
-              while original > 16:
-                original = original - 16
-              plan_output += f'{node}({original})'
+                original = node
+                while original > 16:
+                    original = original - 16
+                plan_output += f'{node}({original})'
             else:
-              plan_output += f'{node}'
+                plan_output += f'{node}'
             plan_output += f' Time:{assignment.Value(time_var)} -> '
             if start_time == 0:
                 start_time = assignment.Value(time_var)
@@ -126,9 +126,9 @@ def main():
     # Create the routing index manager.
     # [START index_manager]
     manager = pywrapcp.RoutingIndexManager(
-            1 + 16*4, # number of locations
-            data['num_vehicles'],
-            data['depot'])
+        1 + 16 * 4,  # number of locations
+        data['num_vehicles'],
+        data['depot'])
     # [END index_manager]
 
     # Create Routing Model.
@@ -147,9 +147,9 @@ def main():
         # since our matrix is 17x17 map duplicated node to original one to
         # retrieve the travel time
         while from_node > 16:
-            from_node = from_node - 16;
+            from_node = from_node - 16
         while to_node > 16:
-            to_node = to_node - 16;
+            to_node = to_node - 16
         # add service of 25min for each location (except depot)
         service_time = 0
         if from_node != data['depot']:
@@ -184,35 +184,35 @@ def main():
         routing.VehicleVar(index_0).SetValues([-1, 0])
 
         # Vehicle 1 location TW: [11am, 1pm]
-        index_1 = manager.NodeToIndex(location_idx+16*1)
+        index_1 = manager.NodeToIndex(location_idx + 16 * 1)
         time_dimension.CumulVar(index_1).SetRange(660, 780)
         routing.VehicleVar(index_1).SetValues([-1, 1])
 
         # Vehicle 2 location TW: [1pm, 3pm]
-        index_2 = manager.NodeToIndex(location_idx+16*2)
+        index_2 = manager.NodeToIndex(location_idx + 16 * 2)
         time_dimension.CumulVar(index_2).SetRange(780, 900)
         routing.VehicleVar(index_2).SetValues([-1, 2])
 
         # Vehicle 3 location TW: [3pm, 5pm]
-        index_3 = manager.NodeToIndex(location_idx+16*3)
+        index_3 = manager.NodeToIndex(location_idx + 16 * 3)
         time_dimension.CumulVar(index_3).SetRange(900, 1020)
         routing.VehicleVar(index_3).SetValues([-1, 3])
 
         # Add Disjunction so only one node among duplicate is visited
-        penalty = 100_000 # Give solver strong incentive to visit one node
+        penalty = 100_000  # Give solver strong incentive to visit one node
         routing.AddDisjunction([index_0, index_1, index_2, index_3], penalty, 1)
 
     # Add time window constraints for each vehicle start node.
     depot_idx = data['depot']
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(480, 1020) # (8am, 5pm)
+        time_dimension.CumulVar(index).SetRange(480, 1020)  # (8am, 5pm)
 
     # Add time window constraints for each vehicle end node.
     depot_idx = data['depot']
     for vehicle_id in range(data['num_vehicles']):
         index = routing.End(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(480, 1020) # (8am, 5pm)
+        time_dimension.CumulVar(index).SetRange(480, 1020)  # (8am, 5pm)
     # [END time_windows_constraint]
 
     # Instantiate route start and end times to produce feasible times.

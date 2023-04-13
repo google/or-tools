@@ -67,9 +67,13 @@ def main():
     print(v_ends)
 
     print('\nNodes:')
-    print('| locations | manager.GetNumberOfNodes | manager.GetNumberOfIndices | routing.nodes | routing.Size |')
+    print(
+        '| locations | manager.GetNumberOfNodes | manager.GetNumberOfIndices | routing.nodes | routing.Size |'
+    )
     print('|---|---|---|---|---|')
-    print(f'| {locations} | {manager.GetNumberOfNodes()} | {manager.GetNumberOfIndices()} | {routing.nodes()} | {routing.Size()} |')
+    print(
+        f'| {locations} | {manager.GetNumberOfNodes()} | {manager.GetNumberOfIndices()} | {routing.nodes()} | {routing.Size()} |'
+    )
 
     print('\nLocations:')
     print('| node | index | routing.IsStart | routing.IsEnd |')
@@ -83,16 +87,22 @@ def main():
         )
 
     print('\nStart/End:')
-    print('| vehicle | Start/end | node | index | routing.IsStart | routing.IsEnd |')
+    print(
+        '| vehicle | Start/end | node | index | routing.IsStart | routing.IsEnd |'
+    )
     print('|---|---|---|---|---|---|')
     for v in range(manager.GetNumberOfVehicles()):
         start_index = routing.Start(v)
         start_node = manager.IndexToNode(start_index)
-        print(f'| {v} | start | {start_node} | {start_index} | {routing.IsStart(start_index)} | {routing.IsEnd(start_index)} |')
+        print(
+            f'| {v} | start | {start_node} | {start_index} | {routing.IsStart(start_index)} | {routing.IsEnd(start_index)} |'
+        )
     for v in range(manager.GetNumberOfVehicles()):
         end_index = routing.End(v)
         end_node = manager.IndexToNode(end_index)
-        print(f'| {v} | end  | {end_node} | {end_index} | {routing.IsStart(end_index)} | {routing.IsEnd(end_index)} |')
+        print(
+            f'| {v} | end  | {end_node} | {end_index} | {routing.IsStart(end_index)} | {routing.IsEnd(end_index)} |'
+        )
 
 
 if __name__ == '__main__':

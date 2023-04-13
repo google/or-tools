@@ -87,9 +87,9 @@ def print_solution(routes, cumul_data):
             end_time = cumul_data[i][j][1]
             route_str += ' -> ' + str(route[j]) + \
                          ' Time(' + str(start_time) + ', ' + str(end_time) + ')'
-        route_str += '\n  Route time: {} min\n\n'.format(start_time)
+        route_str += f'\n  Route time: {start_time}min\n\n'
         total_time += cumul_data[i][len(route) - 1][0]
-    route_str += 'Total time: {} min'.format(total_time)
+    route_str += f'Total time: {total_time}min'
     print(route_str)
 
 # [END solution_printer]

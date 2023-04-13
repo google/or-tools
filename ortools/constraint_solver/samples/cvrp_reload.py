@@ -42,7 +42,6 @@
    into account in `create_distance_evaluator()`.
 """
 
-
 from functools import partial
 
 from ortools.constraint_solver import pywrapcp
@@ -163,6 +162,7 @@ def create_distance_evaluator(data):
 
 def add_distance_dimension(routing, manager, data, distance_evaluator_index):
     """Add Global Span constraint"""
+    del manager
     distance = 'Distance'
     routing.AddDimension(
         distance_evaluator_index,
@@ -227,7 +227,8 @@ def create_time_evaluator(data):
             travel_time = 0
         else:
             travel_time = manhattan_distance(
-                    data['locations'][from_node], data['locations'][to_node]) / data['vehicle_speed']
+                data['locations'][from_node],
+                data['locations'][to_node]) / data['vehicle_speed']
         return travel_time
 
     _total_time = {}
@@ -239,8 +240,8 @@ def create_time_evaluator(data):
                 _total_time[from_node][to_node] = 0
             else:
                 _total_time[from_node][to_node] = int(
-                    service_time(data, from_node) + travel_time(
-                        data, from_node, to_node))
+                    service_time(data, from_node) +
+                    travel_time(data, from_node, to_node))
 
     def time_evaluator(manager, from_node, to_node):
         """Returns the total time between the two nodes"""
@@ -310,20 +311,21 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
         while not routing.IsEnd(index):
             load_var = capacity_dimension.CumulVar(index)
             time_var = time_dimension.CumulVar(index)
-            plan_output += ' {0} Load({1}) Time({2},{3}) ->'.format(
-                manager.IndexToNode(index),
-                assignment.Value(load_var),
-                assignment.Min(time_var), assignment.Max(time_var))
+            plan_output += (
+                f' {manager.IndexToNode(index)} '
+                f'Load({assignment.Value(load_var)}) '
+                f'Time({assignment.Min(time_var)},{assignment.Max(time_var)}) ->'
+            )
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             distance += routing.GetArcCostForVehicle(previous_index, index,
                                                      vehicle_id)
         load_var = capacity_dimension.CumulVar(index)
         time_var = time_dimension.CumulVar(index)
-        plan_output += ' {0} Load({1}) Time({2},{3})\n'.format(
-            manager.IndexToNode(index),
-            assignment.Value(load_var),
-            assignment.Min(time_var), assignment.Max(time_var))
+        plan_output += (
+            f' {manager.IndexToNode(index)} '
+            f'Load({assignment.Value(load_var)}) '
+            f'Time({assignment.Min(time_var)},{assignment.Max(time_var)})\n')
         plan_output += f'Distance of the route: {distance}m\n'
         plan_output += f'Load of the route: {assignment.Value(load_var)}\n'
         plan_output += f'Time of the route: {assignment.Value(time_var)}min\n'
@@ -331,9 +333,9 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
         total_distance += distance
         total_load += assignment.Value(load_var)
         total_time += assignment.Value(time_var)
-    print('Total Distance of all routes: {}m'.format(total_distance))
-    print('Total Load of all routes: {}'.format(total_load))
-    print('Total Time of all routes: {}min'.format(total_time))
+    print(f'Total Distance of all routes: {total_distance}m')
+    print(f'Total Load of all routes: {total_load}')
+    print(f'Total Time of all routes: {total_time}min')
 
 
 ########

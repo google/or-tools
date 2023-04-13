@@ -79,8 +79,8 @@ def print_solution(manager, routing, solution):
         plan_output += f'Distance of the route: {route_distance}m\n'
         total_distance += route_distance
         print(plan_output)
-    print('Total distance of all routes: {}m'.format(total_distance))
-    print('Total token of all routes: {}'.format(total_token))
+    print(f'Total distance of all routes: {total_distance}m')
+    print(f'Total token of all routes: {total_token}')
 
 
 def main():

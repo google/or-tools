@@ -23,7 +23,6 @@
    Distances are in meters.
 """
 
-
 from functools import partial
 
 from ortools.constraint_solver import pywrapcp
@@ -74,8 +73,8 @@ def create_data_model():
 #######################
 def manhattan_distance(position_1, position_2):
     """Computes the Manhattan distance between two points"""
-    return (
-        abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
+    return (abs(position_1[0] - position_2[0]) +
+            abs(position_1[1] - position_2[1]))
 
 
 def create_distance_evaluator(data):
@@ -126,33 +125,31 @@ def add_capacity_constraints(routing, data, demand_evaluator_index):
 ###########
 def print_solution(data, routing, manager, assignment):  # pylint:disable=too-many-locals
     """Prints assignment on console"""
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
+    print(f'Objective: {assignment.ObjectiveValue()}')
     total_distance = 0
     total_load = 0
     capacity_dimension = routing.GetDimensionOrDie('Capacity')
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        plan_output = f'Route for vehicle {vehicle_id}:\n'
         distance = 0
         while not routing.IsEnd(index):
             load_var = capacity_dimension.CumulVar(index)
-            plan_output += ' {} Load({}) -> '.format(
-                manager.IndexToNode(index), assignment.Value(load_var))
+            plan_output += (f' {manager.IndexToNode(index)} '
+                            f'Load({assignment.Value(load_var)}) -> ')
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             distance += routing.GetArcCostForVehicle(previous_index, index,
                                                      vehicle_id)
         load_var = capacity_dimension.CumulVar(index)
-        plan_output += ' {0} Load({1})\n'.format(
-            manager.IndexToNode(index), assignment.Value(load_var))
-        plan_output += 'Distance of the route: {}m\n'.format(distance)
-        plan_output += 'Load of the route: {}\n'.format(
-            assignment.Value(load_var))
+        plan_output += f' {manager.IndexToNode(index)} Load({assignment.Value(load_var)})\n'
+        plan_output += f'Distance of the route: {distance}m\n'
+        plan_output += f'Load of the route: {assignment.Value(load_var)}\n'
         print(plan_output)
         total_distance += distance
         total_load += assignment.Value(load_var)
-    print('Total Distance of all routes: {}m'.format(total_distance))
-    print('Total Load of all routes: {}'.format(total_load))
+    print(f'Total Distance of all routes: {total_distance}m')
+    print(f'Total Load of all routes: {total_load}')
 
 
 ########

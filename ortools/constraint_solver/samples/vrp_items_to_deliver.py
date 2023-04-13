@@ -35,42 +35,42 @@ def create_data_model():
     # [START demands_capacities]
     # Need 11 X and 13 Y
     data['providers_x'] = [
-        0, # start
-        -11, # end
-        2, # X supply 1
-        2, # X supply 2
-        4, # X supply 3
-        4, # X supply 4
-        4, # X supply 5
-        5, # X supply 6
-        1, # X/Y supply 1
-        2, # X/Y supply 2
-        2, # X/Y supply 3
-        0, # Y supply 1
-        0, # Y supply 2
-        0, # Y supply 3
-        0, # Y supply 4
-        0, # Y supply 5
-        0, # Y supply 6
+        0,  # start
+        -11,  # end
+        2,  # X supply 1
+        2,  # X supply 2
+        4,  # X supply 3
+        4,  # X supply 4
+        4,  # X supply 5
+        5,  # X supply 6
+        1,  # X/Y supply 1
+        2,  # X/Y supply 2
+        2,  # X/Y supply 3
+        0,  # Y supply 1
+        0,  # Y supply 2
+        0,  # Y supply 3
+        0,  # Y supply 4
+        0,  # Y supply 5
+        0,  # Y supply 6
     ]
     data['providers_y'] = [
-        0, # start
-        -13, # ends
-        0, # X supply 1
-        0, # X supply 2
-        0, # X supply 3
-        0, # X supply 4
-        0, # X supply 5
-        0, # X supply 6
-        3, # X/Y supply 1
-        2, # X/Y supply 2
-        1, # X/Y supply 3
-        3, # Y supply 1
-        3, # Y supply 2
-        3, # Y supply 3
-        3, # Y supply 4
-        3, # Y supply 5
-        5, # Y supply 6
+        0,  # start
+        -13,  # ends
+        0,  # X supply 1
+        0,  # X supply 2
+        0,  # X supply 3
+        0,  # X supply 4
+        0,  # X supply 5
+        0,  # X supply 6
+        3,  # X/Y supply 1
+        2,  # X/Y supply 2
+        1,  # X/Y supply 3
+        3,  # Y supply 1
+        3,  # Y supply 2
+        3,  # Y supply 3
+        3,  # Y supply 4
+        3,  # Y supply 5
+        5,  # Y supply 6
     ]
     data['vehicle_capacities_x'] = [15] * data['num_vehicles']
     data['vehicle_capacities_y'] = [15] * data['num_vehicles']
@@ -83,28 +83,28 @@ def create_data_model():
             468, 776, 662
         ],
         [
-            548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480,
-            674, 1016, 868, 1210
+            548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674,
+            1016, 868, 1210
         ],
         [
             776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164,
             1130, 788, 1552, 754
         ],
         [
-            696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628,
-            822, 1164, 560, 1358
+            696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628, 822,
+            1164, 560, 1358
         ],
         [
-            582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514,
-            708, 1050, 674, 1244
+            582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514, 708,
+            1050, 674, 1244
         ],
         [
             274, 502, 502, 650, 536, 0, 228, 308, 194, 240, 582, 776, 662, 628,
             514, 1050, 708
         ],
         [
-            502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890,
-            856, 514, 1278, 480
+            502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890, 856,
+            514, 1278, 480
         ],
         [
             194, 354, 810, 502, 388, 308, 536, 0, 342, 388, 730, 468, 354, 320,
@@ -127,12 +127,12 @@ def create_data_model():
             308, 650, 274, 844
         ],
         [
-            388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0,
-            194, 536, 388, 730
+            388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0, 194,
+            536, 388, 730
         ],
         [
-            354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194,
-            0, 342, 422, 536
+            354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194, 0,
+            342, 422, 536
         ],
         [
             468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536,
@@ -209,8 +209,8 @@ def main():
     # Create the routing index manager.
     # [START index_manager]
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
-                                           data['num_vehicles'],
-                                           data['starts'], data['ends'])
+                                           data['num_vehicles'], data['starts'],
+                                           data['ends'])
     # [END index_manager]
 
     # Create Routing Model.
@@ -248,6 +248,7 @@ def main():
     distance_dimension = routing.GetDimensionOrDie(dimension_name)
     # Minimize the longest road
     distance_dimension.SetGlobalSpanCostCoefficient(100)
+
     # [END distance_constraint]
 
     # Add Capacity constraint.
@@ -258,7 +259,8 @@ def main():
         from_node = manager.IndexToNode(from_index)
         return data['providers_x'][from_node]
 
-    demand_callback_x_index = routing.RegisterUnaryTransitCallback(demand_callback_x)
+    demand_callback_x_index = routing.RegisterUnaryTransitCallback(
+        demand_callback_x)
     routing.AddDimensionWithVehicleCapacity(
         demand_callback_x_index,
         0,  # null capacity slack
@@ -272,7 +274,8 @@ def main():
         from_node = manager.IndexToNode(from_index)
         return data['providers_y'][from_node]
 
-    demand_callback_y_index = routing.RegisterUnaryTransitCallback(demand_callback_y)
+    demand_callback_y_index = routing.RegisterUnaryTransitCallback(
+        demand_callback_y)
     routing.AddDimensionWithVehicleCapacity(
         demand_callback_y_index,
         0,  # null capacity slack
@@ -290,8 +293,12 @@ def main():
         ends.append(routing.End(v))
 
     node_end = data['ends'][0]
-    solver.Add(solver.Sum([load_x_dim.CumulVar(l) for l in ends]) >= -data['providers_x'][node_end])
-    solver.Add(solver.Sum([load_y_dim.CumulVar(l) for l in ends]) >= -data['providers_y'][node_end])
+    solver.Add(
+        solver.Sum([load_x_dim.CumulVar(l)
+                    for l in ends]) >= -data['providers_x'][node_end])
+    solver.Add(
+        solver.Sum([load_y_dim.CumulVar(l)
+                    for l in ends]) >= -data['providers_y'][node_end])
     #solver.Add(load_y_dim.CumulVar(end) >= -data['providers_y'][node_end])
 
     # Allow to freely drop any nodes.

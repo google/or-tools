@@ -136,30 +136,31 @@ def print_solution(data, manager, routing, solution):
 
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        plan_output = f'Route for vehicle {vehicle_id}:\n'
         route_distance = 0
         while not routing.IsEnd(index):
             one_var = dim_one.CumulVar(index)
             one_slack_var = dim_one.SlackVar(index)
             two_var = dim_two.CumulVar(index)
             two_slack_var = dim_two.SlackVar(index)
-            plan_output += ' N:{0} one:({1},{2}) two:({3},{4}) -> '.format(
-                manager.IndexToNode(index), solution.Value(one_var),
-                solution.Value(one_slack_var), solution.Value(two_var),
-                solution.Value(two_slack_var))
+            plan_output += (
+                f' N:{manager.IndexToNode(index)}'
+                f' one:({solution.Value(one_var)}, {solution.Value(one_slack_var)})'
+                f' two:({solution.Value(two_var)}, {solution.Value(two_slack_var)})'
+                ' -> ')
             previous_index = index
             index = solution.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
         one_var = dim_one.CumulVar(index)
         two_var = dim_two.CumulVar(index)
-        plan_output += 'N:{0} one:{1} two:{2}\n'.format(
-            manager.IndexToNode(index), solution.Value(one_var),
-            solution.Value(two_var))
-        plan_output += 'Distance of the route: {}m\n'.format(route_distance)
+        plan_output += (f'N:{manager.IndexToNode(index)}'
+                        f' one:{solution.Value(one_var)}'
+                        f' two:{solution.Value(two_var)}\n')
+        plan_output += f'Distance of the route: {route_distance}m\n'
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
-    print('Maximum of the route distances: {}m'.format(max_route_distance))
+    print(f'Maximum of the route distances: {max_route_distance}m')
 
 # [END solution_printer]
 

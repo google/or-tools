@@ -109,10 +109,8 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(
-            len(data['time_matrix']),
-            data['num_vehicles'],
-            data['depot'])
+    manager = pywrapcp.RoutingIndexManager(len(data['time_matrix']),
+                                           data['num_vehicles'], data['depot'])
     # [END index_manager]
 
     # Create Routing Model.
@@ -165,13 +163,15 @@ def main():
     # Add a break lasting 5 minutes, start between 25 and 45 minutes after route start
     for v in range(manager.GetNumberOfVehicles()):
         start_var = time_dimension.CumulVar(routing.Start(v))
-        break_start = routing.solver().Sum([routing.solver().IntVar(25, 45), start_var])
+        break_start = routing.solver().Sum(
+            [routing.solver().IntVar(25, 45), start_var])
 
         break_intervals = [
-            routing.solver().FixedDurationIntervalVar(
-                break_start, 5, 'Break for vehicle {}'.format(v))
+            routing.solver().FixedDurationIntervalVar(break_start, 5,
+                                                      f'Break for vehicle {v}')
         ]
-        time_dimension.SetBreakIntervalsOfVehicle(break_intervals, v, node_visit_transit)
+        time_dimension.SetBreakIntervalsOfVehicle(break_intervals, v,
+                                                  node_visit_transit)
     # [END break_constraint]
 
     # Setting first solution heuristic.

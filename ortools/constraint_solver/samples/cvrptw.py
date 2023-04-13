@@ -86,8 +86,8 @@ def create_data_model():
 #######################
 def manhattan_distance(position_1, position_2):
     """Computes the Manhattan distance between two points"""
-    return (
-        abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
+    return (abs(position_1[0] - position_2[0]) +
+            abs(position_1[1] - position_2[1]))
 
 
 def create_distance_evaluator(data):
@@ -145,8 +145,9 @@ def create_time_evaluator(data):
         if from_node == to_node:
             travel_time = 0
         else:
-            travel_time = manhattan_distance(data['locations'][from_node], data[
-                'locations'][to_node]) / data['vehicle_speed']
+            travel_time = manhattan_distance(
+                data['locations'][from_node],
+                data['locations'][to_node]) / data['vehicle_speed']
         return travel_time
 
     _total_time = {}
@@ -158,8 +159,8 @@ def create_time_evaluator(data):
                 _total_time[from_node][to_node] = 0
             else:
                 _total_time[from_node][to_node] = int(
-                    service_time(data, from_node) + travel_time(
-                        data, from_node, to_node))
+                    service_time(data, from_node) +
+                    travel_time(data, from_node, to_node))
 
     def time_evaluator(manager, from_node, to_node):
         """Returns the total time between the two nodes"""
@@ -210,18 +211,18 @@ def print_solution(manager, routing, assignment):  # pylint:disable=too-many-loc
     total_time = 0
     for vehicle_id in range(manager.GetNumberOfVehicles()):
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        plan_output = f'Route for vehicle {vehicle_id}:\n'
         distance = 0
         while not routing.IsEnd(index):
             load_var = capacity_dimension.CumulVar(index)
             time_var = time_dimension.CumulVar(index)
             slack_var = time_dimension.SlackVar(index)
-            plan_output += ' {0} Load({1}) Time({2},{3}) Slack({4},{5}) ->'.format(
-                manager.IndexToNode(index),
-                assignment.Value(load_var),
-                assignment.Min(time_var),
-                assignment.Max(time_var),
-                assignment.Min(slack_var), assignment.Max(slack_var))
+            plan_output += (
+                f' {manager.IndexToNode(index)} '
+                f'Load({assignment.Value(load_var)}) '
+                f'Time({assignment.Min(time_var)},{assignment.Max(time_var)}) '
+                f'Slack({assignment.Min(slack_var)},{assignment.Max(slack_var)}) ->'
+            )
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             distance += routing.GetArcCostForVehicle(previous_index, index,
@@ -229,22 +230,20 @@ def print_solution(manager, routing, assignment):  # pylint:disable=too-many-loc
         load_var = capacity_dimension.CumulVar(index)
         time_var = time_dimension.CumulVar(index)
         slack_var = time_dimension.SlackVar(index)
-        plan_output += ' {0} Load({1}) Time({2},{3})\n'.format(
-            manager.IndexToNode(index),
-            assignment.Value(load_var),
-            assignment.Min(time_var), assignment.Max(time_var))
-        plan_output += 'Distance of the route: {0}m\n'.format(distance)
-        plan_output += 'Load of the route: {}\n'.format(
-            assignment.Value(load_var))
-        plan_output += 'Time of the route: {}\n'.format(
-            assignment.Value(time_var))
+        plan_output += (
+            f' {manager.IndexToNode(index)} '
+            f'Load({assignment.Value(load_var)}) '
+            f'Time({assignment.Min(time_var)},{assignment.Max(time_var)})\n')
+        plan_output += f'Distance of the route: {distance}m\n'
+        plan_output += f'Load of the route: {assignment.Value(load_var)}\n'
+        plan_output += f'Time of the route: {assignment.Value(time_var)}\n'
         print(plan_output)
         total_distance += distance
         total_load += assignment.Value(load_var)
         total_time += assignment.Value(time_var)
-    print('Total Distance of all routes: {0}m'.format(total_distance))
-    print('Total Load of all routes: {}'.format(total_load))
-    print('Total Time of all routes: {0}min'.format(total_time))
+    print(f'Total Distance of all routes: {total_distance}m')
+    print(f'Total Load of all routes: {total_load}')
+    print(f'Total Time of all routes: {total_time}min')
     # [END solution_printer]
 
 

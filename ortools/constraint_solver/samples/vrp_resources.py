@@ -82,22 +82,22 @@ def print_solution(data, manager, routing, solution):
     total_time = 0
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        plan_output = f'Route for vehicle {vehicle_id}:\n'
         while not routing.IsEnd(index):
             time_var = time_dimension.CumulVar(index)
-            plan_output += '{0} Time({1},{2}) -> '.format(
-                manager.IndexToNode(index), solution.Min(time_var),
-                solution.Max(time_var))
+            plan_output += (
+                f'{manager.IndexToNode(index)}'
+                f' Time({solution.Min(time_var)}, {solution.Max(time_var)})'
+                ' -> ')
             index = solution.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
-        plan_output += '{0} Time({1},{2})\n'.format(manager.IndexToNode(index),
-                                                    solution.Min(time_var),
-                                                    solution.Max(time_var))
-        plan_output += 'Time of the route: {}min\n'.format(
-            solution.Min(time_var))
+        plan_output += (
+            f'{manager.IndexToNode(index)}'
+            f' Time({solution.Min(time_var)},{solution.Max(time_var)})\n')
+        plan_output += f'Time of the route: {solution.Min(time_var)}min\n'
         print(plan_output)
         total_time += solution.Min(time_var)
-    print('Total time of all routes: {}min'.format(total_time))
+    print(f'Total time of all routes: {total_time}min')
     # [END solution_printer]
 
 
