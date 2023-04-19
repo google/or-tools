@@ -863,7 +863,8 @@ void CplexInterface::ExtractNewConstraints() {
 
     CPXDIM newCons = total - offset;
     CPXDIM const cols = CPXXgetnumcols(mEnv, mLp);
-    DCHECK_EQ(last_variable_index_, cols);
+    CHECK(last_variable_index_ == 0 ||
+          last_variable_index_ == cols);
     CPXDIM const chunk = 10;  // max number of rows to add in one shot
 
     // Update indices of new constraints _before_ actually extracting
@@ -950,7 +951,8 @@ void CplexInterface::ExtractObjective() {
   //       any non-zero duplicates.
 
   CPXDIM const cols = CPXXgetnumcols(mEnv, mLp);
-  DCHECK_EQ(last_variable_index_, cols);
+  CHECK(last_variable_index_ == 0 ||
+        last_variable_index_ == cols);
 
   unique_ptr<CPXDIM[]> ind(new CPXDIM[cols]);
   unique_ptr<double[]> val(new double[cols]);
