@@ -40,7 +40,6 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
-#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -3202,7 +3201,11 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             absl::StrCat("rens_lns_", local_params.name())),
         local_params, helper, &shared));
   }
-  if (params.use_violation_ls() && !params.interleave_search()) {
+
+  const bool feasibility_jump_possible =
+      !params.interleave_search() &&
+      helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
+  if (params.use_violation_ls() && feasibility_jump_possible) {
     SatParameters local_params = params;
     local_params.set_random_seed(params.random_seed());
     local_params.set_feasibility_jump_decay(0.95);
@@ -3241,10 +3244,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // schedule more than the available number of threads. They will just be
     // interleaved. We will get an higher diversity, but use more memory.
     const int num_feasibility_jump =
-        params.interleave_search()
-            ? 0
-            : (params.test_feasibility_jump() ? num_available
-                                              : num_available / 2);
+        feasibility_jump_possible
+            ? (params.test_feasibility_jump() ? num_available
+                                              : num_available / 2)
+            : 0;
     const int num_first_solution_subsolvers =
         num_available - num_feasibility_jump;
     for (int i = 0; i < num_feasibility_jump; ++i) {

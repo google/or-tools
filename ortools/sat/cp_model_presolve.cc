@@ -14,11 +14,9 @@
 #include "ortools/sat/cp_model_presolve.h"
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <deque>
-#include <iostream>
 #include <limits>
 #include <numeric>
 #include <string>
@@ -32,14 +30,15 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/vlog_is_on.h"
 #include "ortools/graph/topologicalsorter.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/clause.h"
@@ -867,6 +866,61 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
       }
     }
     if (abort) return changed;
+  }
+
+  // Checks if the affine target domain is constraining.
+  bool affine_target_domain_contains_max_domain = false;
+  if (ExpressionContainsSingleRef(target)) {  // target = +/- var.
+    int64_t infered_min = std::numeric_limits<int64_t>::min();
+    int64_t infered_max = std::numeric_limits<int64_t>::min();
+    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+      infered_min = std::max(infered_min, context_->MinOf(expr));
+      infered_max = std::max(infered_max, context_->MaxOf(expr));
+    }
+    Domain rhs_domain;
+    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+      rhs_domain = rhs_domain.UnionWith(
+          context_->DomainSuperSetOf(expr).IntersectionWith(
+              {infered_min, infered_max}));
+    }
+
+    // Checks if all values from the max(exprs) belong in the domain of the
+    // target.
+    // Note that the target is +/-var.
+    DCHECK_EQ(std::abs(target.coeffs(0)), 1);
+    const Domain target_domain =
+        target.coeffs(0) == 1 ? context_->DomainOf(target.vars(0))
+                              : context_->DomainOf(target.vars(0)).Negation();
+    affine_target_domain_contains_max_domain =
+        rhs_domain.IsIncludedIn(target_domain);
+  }
+
+  // If the target is not used, and safe, we can remove the constraint.
+  if (affine_target_domain_contains_max_domain &&
+      context_->VariableIsUniqueAndRemovable(target.vars(0))) {
+    context_->UpdateRuleStats("lin_max: unused affine target");
+    context_->MarkVariableAsRemoved(target.vars(0));
+    *context_->mapping_model->add_constraints() = *ct;
+    return RemoveConstraint(ct);
+  }
+
+  // If the target is only used in the objective, and safe, we can simplify the
+  // constraint.
+  if (affine_target_domain_contains_max_domain &&
+      context_->VariableWithCostIsUniqueAndRemovable(target.vars(0)) &&
+      (target.coeffs(0) > 0) ==
+          (context_->ObjectiveCoeff(target.vars(0)) > 0)) {
+    context_->UpdateRuleStats("lin_max: rewrite with precedences");
+    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+      LinearConstraintProto* prec =
+          context_->working_model->add_constraints()->mutable_linear();
+      prec->add_domain(0);
+      prec->add_domain(std::numeric_limits<int64_t>::max());
+      AddLinearExpressionToLinearConstraint(target, 1, prec);
+      AddLinearExpressionToLinearConstraint(expr, -1, prec);
+    }
+    *context_->mapping_model->add_constraints() = *ct;
+    return RemoveConstraint(ct);
   }
 
   // Deal with fixed target case.
@@ -5111,7 +5165,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   return changed;
 }
 
-bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
+bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) {
     return false;
   }

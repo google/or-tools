@@ -187,10 +187,14 @@ absl::Span<const ProtoLiteral> ProtoTrail::Implications(int level) const {
 
 SharedTreeManager::SharedTreeManager(Model* model)
     : params_(*model->GetOrCreate<SatParameters>()),
-      num_workers_(params_.shared_tree_num_workers()),
+      num_workers_(std::max(1, params_.shared_tree_num_workers())),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       num_splits_wanted_(num_workers_ - 1),
-      max_nodes_(num_workers_ * params_.shared_tree_max_nodes_per_worker()) {
+      max_nodes_(params_.shared_tree_max_nodes_per_worker() >=
+                         std::numeric_limits<int>::max() / num_workers_
+                     ? std::numeric_limits<int>::max()
+                     : num_workers_ *
+                           params_.shared_tree_max_nodes_per_worker()) {
   // Create the root node with a fake literal.
   nodes_.push_back(
       {.literal = ProtoLiteral(),
@@ -597,7 +601,10 @@ LiteralIndex SharedTreeWorker::NextDecision() {
     CHECK(!sat_solver_->Assignment().LiteralIsTrue(decision));
     return decision.Index();
   }
-  if (objective_ == nullptr) return helper_->GetDecision(decision_policy);
+  if (objective_ == nullptr ||
+      objective_->objective_var == kNoIntegerVariable) {
+    return helper_->GetDecision(decision_policy);
+  }
   // If the current node is close to the global lower bound, maybe try to
   // improve it.
   const IntegerValue root_obj_lb =
@@ -631,6 +638,8 @@ SatSolver::Status SharedTreeWorker::Search(
   sat_solver_->Backtrack(0);
   encoder_->GetTrueLiteral();
   encoder_->GetFalseLiteral();
+  const bool has_objective =
+      objective_ != nullptr && objective_->objective_var != kNoIntegerVariable;
   std::vector<Literal> clause;
   while (!time_limit_->LimitReached()) {
     if (!sat_solver_->FinishPropagation()) {
@@ -667,7 +676,7 @@ SatSolver::Status SharedTreeWorker::Search(
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (decision.Index() == kNoLiteralIndex) {
       feasible_solution_observer();
-      if (objective_ == nullptr) return SatSolver::FEASIBLE;
+      if (!has_objective) return SatSolver::FEASIBLE;
       const IntegerValue objective =
           integer_trail_->LowerBound(objective_->objective_var);
       sat_solver_->Backtrack(0);

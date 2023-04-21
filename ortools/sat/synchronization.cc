@@ -35,13 +35,14 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
-#include "absl/status/status.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
@@ -54,7 +55,6 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
-#include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, cp_model_dump_solutions, false,
           "DEBUG ONLY. If true, all the intermediate solution will be dumped "
@@ -665,7 +665,7 @@ void SharedResponseManager::NewSolution(
       if (obj.scaling_factor() < 0) {
         std::swap(lb, ub);
       }
-      RegisterSolutionFound(solution_message);
+      RegisterSolutionFound(solution_message, num_solutions_);
       SOLVER_LOG(logger_, ProgressMessage(absl::StrCat(num_solutions_),
                                           wall_timer_.Get(), best, lb, ub,
                                           solution_message));
@@ -733,9 +733,12 @@ std::string ExtractSubSolverName(const std::string& improvement_info) {
 }
 
 void SharedResponseManager::RegisterSolutionFound(
-    const std::string& improvement_info) {
+    const std::string& improvement_info, int solution_rank) {
   if (improvement_info.empty()) return;
-  primal_improvements_count_[ExtractSubSolverName(improvement_info)]++;
+  const std::string subsolver_name = ExtractSubSolverName(improvement_info);
+  primal_improvements_count_[subsolver_name]++;
+  primal_improvements_min_rank_.insert({subsolver_name, solution_rank});
+  primal_improvements_max_rank_[subsolver_name] = solution_rank;
 }
 
 void SharedResponseManager::RegisterObjectiveBoundImprovement(
@@ -748,9 +751,13 @@ void SharedResponseManager::DisplayImprovementStatistics() {
   absl::MutexLock mutex_lock(&mutex_);
   if (!primal_improvements_count_.empty()) {
     SOLVER_LOG(logger_, "");
-    SOLVER_LOG(logger_, "Solutions found per subsolver:");
+    SOLVER_LOG(logger_, "Solutions found per subsolver (", num_solutions_,
+               "):");
     for (const auto& entry : primal_improvements_count_) {
-      SOLVER_LOG(logger_, "  '", entry.first, "': ", entry.second);
+      const int min_rank = primal_improvements_min_rank_[entry.first];
+      const int max_rank = primal_improvements_max_rank_[entry.first];
+      SOLVER_LOG(logger_, "  '", entry.first, "':", entry.second, "     rank:[",
+                 min_rank, ",", max_rank, "]");
     }
   }
   if (!dual_improvements_count_.empty()) {

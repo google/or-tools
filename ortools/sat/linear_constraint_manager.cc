@@ -107,7 +107,7 @@ void LinearConstraintManager::RescaleActiveCounts(const double scaling_factor) {
     constraint_infos_[i].active_count *= scaling_factor;
   }
   constraint_active_count_increase_ *= scaling_factor;
-  VLOG(2) << "Rescaled active counts by " << scaling_factor;
+  VLOG(3) << "Rescaled active counts by " << scaling_factor;
 }
 
 bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
@@ -148,7 +148,7 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
   lp_constraints_.resize(new_size);
   solution_state->statuses.resize(num_cols + glop::ColIndex(new_size));
   if (num_removed_constraints > 0) {
-    VLOG(2) << "Removed " << num_removed_constraints << " constraints";
+    VLOG(3) << "Removed " << num_removed_constraints << " constraints";
   }
   return num_removed_constraints > 0;
 }
@@ -171,18 +171,22 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
     const ConstraintIndex ct_index = equiv_constraints_[key];
     if (constraint_infos_[ct_index].constraint.vars == ct.vars &&
         constraint_infos_[ct_index].constraint.coeffs == ct.coeffs) {
-      if (added != nullptr) *added = false;
+      bool tightened = false;
       if (ct.lb > constraint_infos_[ct_index].constraint.lb) {
+        tightened = true;
         if (constraint_infos_[ct_index].is_in_lp) current_lp_is_changed_ = true;
         constraint_infos_[ct_index].constraint.lb = ct.lb;
-        if (added != nullptr) *added = true;
       }
       if (ct.ub < constraint_infos_[ct_index].constraint.ub) {
+        tightened = true;
         if (constraint_infos_[ct_index].is_in_lp) current_lp_is_changed_ = true;
         constraint_infos_[ct_index].constraint.ub = ct.ub;
-        if (added != nullptr) *added = true;
       }
-      ++num_merged_constraints_;
+      if (added != nullptr) *added = tightened;
+      if (tightened) {
+        ++num_merged_constraints_;
+        FillActivityRange(&constraint_infos_[ct_index]);
+      }
       return ct_index;
     }
   }
@@ -192,6 +196,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   ConstraintInfo ct_info;
   ct_info.constraint = std::move(ct);
   ct_info.l2_norm = ComputeL2Norm(ct_info.constraint);
+  FillActivityRange(&ct_info);
   ct_info.hash = key;
   equiv_constraints_[key] = ct_index;
   ct_info.active_count = constraint_active_count_increase_;
@@ -246,7 +251,7 @@ bool LinearConstraintManager::AddCut(
 
   // Only add cut with sufficient efficacy.
   if (violation / l2_norm < 1e-5) {
-    VLOG(2) << "BAD Cut '" << type_name << "'"
+    VLOG(3) << "BAD Cut '" << type_name << "'"
             << " size=" << ct.vars.size()
             << " max_magnitude=" << ComputeInfinityNorm(ct)
             << " norm=" << l2_norm << " violation=" << violation
@@ -328,7 +333,7 @@ void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
   }
 
   if (num_deleted_constraints > 0) {
-    VLOG(2) << "Constraint manager cleanup: #deleted:"
+    VLOG(3) << "Constraint manager cleanup: #deleted:"
             << num_deleted_constraints;
   }
   num_deletable_constraints_ -= num_deleted_constraints;
@@ -507,6 +512,28 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   }
 
   return term_changed;
+}
+
+void LinearConstraintManager::FillActivityRange(ConstraintInfo* info) {
+  IntegerValue min_sum(0);
+  IntegerValue max_sum(0);
+  const int num_terms = info->constraint.vars.size();
+  for (int i = 0; i < num_terms; ++i) {
+    const IntegerVariable var = info->constraint.vars[i];
+    const IntegerValue coeff = info->constraint.coeffs[i];
+    const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+    const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+    if (coeff > 0.0) {
+      min_sum += coeff * lb;
+      max_sum += coeff * ub;
+    } else {
+      min_sum += coeff * ub;
+      max_sum += coeff * lb;
+    }
+  }
+  const IntegerValue tight_lb = std::max(min_sum, info->constraint.lb);
+  const IntegerValue tight_ub = std::min(max_sum, info->constraint.ub);
+  info->activity_range = CapSub(tight_ub.value(), tight_lb.value());
 }
 
 bool LinearConstraintManager::ChangeLp(

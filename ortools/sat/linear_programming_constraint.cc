@@ -292,6 +292,7 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // Fill integer_lp_.
   integer_lp_.clear();
   infinity_norms_.clear();
+  ct_bound_diff_.clear();
   const auto& all_constraints = constraint_manager_.AllConstraints();
   for (const auto index : constraint_manager_.LpConstraints()) {
     const LinearConstraint& ct = all_constraints[index].constraint;
@@ -321,8 +322,9 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
       new_ct.terms.push_back({GetMirrorVariable(var), coeff});
     }
     infinity_norms_.push_back(infinity_norm);
+    ct_bound_diff_.push_back(all_constraints[index].activity_range);
 
-    // Important to keep lp_data_ "clean".
+    // It is important to keep lp_data_ "clean".
     DCHECK(std::is_sorted(new_ct.terms.begin(), new_ct.terms.end()));
   }
 
@@ -889,8 +891,10 @@ bool LinearProgrammingConstraint::PreprocessCut(LinearConstraint* cut) {
 
     const IntegerValue slack{CapSub(cut->ub.value(), min_sum.value())};
     if (!min_sum_overflow && !AtMinOrMaxInt64(slack.value())) {
-      // TODO(user): raise conflict or report UNSAT.
-      if (slack < 0) return false;  // Always false.
+      if (slack < 0) {
+        problem_proven_infeasible_by_cuts_ = true;
+        return false;
+      }
 
       if (trail_->CurrentDecisionLevel() == 0 && max_range > slack) {
         bool newly_fixed = false;
@@ -936,6 +940,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   IntegerValue cut_ub;
   if (!ComputeNewLinearConstraint(integer_multipliers, &tmp_scattered_vector_,
                                   &cut_ub)) {
+    ++num_cut_overflows_;
     VLOG(1) << "Issue, overflow!";
     return false;
   }
@@ -988,6 +993,8 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // TODO(user): Keep track of the potential overflow here.
   if (!base_ct_.FillFromLinearConstraint(cut_, expanded_lp_solution_,
                                          integer_trail_)) {
+    ++num_cut_overflows_;
+    VLOG(1) << "Issue, overflow!";
     return false;
   }
 
@@ -1019,8 +1026,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     CutTerm entry;
     entry.coeff = IntTypeAbs(coeff);
     entry.lp_value = 0.0;
-    entry.bound_diff =
-        CapSub(integer_lp_[row].ub.value(), integer_lp_[row].lb.value());
+    entry.bound_diff = ct_bound_diff_[row];
     entry.expr_vars[0] =
         first_slack + 2 * IntegerVariable(tmp_slack_rows_.size());
     entry.expr_coeffs[1] = 0;
@@ -1650,10 +1656,14 @@ bool LinearProgrammingConstraint::Propagate() {
       // TODO(user): Refactor so that they are just normal cut generators?
       const int level = trail_->CurrentDecisionLevel();
       if (trail_->CurrentDecisionLevel() == 0) {
+        problem_proven_infeasible_by_cuts_ = false;
         if (parameters_.add_objective_cut()) AddObjectiveCut();
         if (parameters_.add_mir_cuts()) AddMirCuts();
         if (parameters_.add_cg_cuts()) AddCGCuts();
         if (parameters_.add_zero_half_cuts()) AddZeroHalfCuts();
+        if (problem_proven_infeasible_by_cuts_) {
+          return integer_trail_->ReportConflict({});
+        }
       }
 
       // Try to add cuts.
@@ -2316,6 +2326,11 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
     tmp_lp_multipliers_.push_back({row, value});
   }
 
+  // In this case, the LP lower bound match the basic objective "constraint"
+  // propagation. That is there is an LP solution with all objective variable at
+  // their current best bound. There is no need to do more work here.
+  if (tmp_lp_multipliers_.empty()) return true;
+
   IntegerValue scaling = 0;
   tmp_integer_multipliers_ = ScaleLpMultiplier(
       /*take_objective_into_account=*/true, tmp_lp_multipliers_, &scaling);
@@ -2613,8 +2628,8 @@ std::string LinearProgrammingConstraint::Statistics() const {
                   FormatCounter(total_num_simplex_iterations_), "\n");
   absl::StrAppend(&result, "  total num cut propagation: ",
                   FormatCounter(total_num_cut_propagations_), "\n");
-  absl::StrAppend(&result, "  total num prevent overflow: ",
-                  FormatCounter(num_prevent_overflows_), "\n");
+  absl::StrAppend(&result, "  total num cut overflow: ",
+                  FormatCounter(num_cut_overflows_), "\n");
   absl::StrAppend(&result, "  total num adjust: ", FormatCounter(num_adjusts_),
                   "\n");
   absl::StrAppend(&result, "  total num scaling issues: ",

@@ -31,18 +31,18 @@
 #include "absl/random/random.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
-#include "ortools/base/integral_types.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -358,7 +358,8 @@ class SharedResponseManager {
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void UpdateGapIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  void RegisterSolutionFound(const std::string& improvement_info)
+  void RegisterSolutionFound(const std::string& improvement_info,
+                             int solution_rank)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void RegisterObjectiveBoundImprovement(const std::string& improvement_info)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -423,6 +424,11 @@ class SharedResponseManager {
   // Used for statistics of the improvements found by workers.
   absl::btree_map<std::string, int> primal_improvements_count_
       ABSL_GUARDED_BY(mutex_);
+  absl::btree_map<std::string, int> primal_improvements_min_rank_
+      ABSL_GUARDED_BY(mutex_);
+  absl::btree_map<std::string, int> primal_improvements_max_rank_
+      ABSL_GUARDED_BY(mutex_);
+
   absl::btree_map<std::string, int> dual_improvements_count_
       ABSL_GUARDED_BY(mutex_);
 

@@ -24,6 +24,7 @@
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -55,7 +56,7 @@ class PresolveContext;
 // bunch of places.
 class SavedLiteral {
  public:
-  SavedLiteral() {}
+  SavedLiteral() = default;
   explicit SavedLiteral(int ref) : ref_(ref) {}
   int Get(PresolveContext* context) const;
 
@@ -70,7 +71,7 @@ class SavedLiteral {
 // general affine for the linear1 involving an absolute value.
 class SavedVariable {
  public:
-  SavedVariable() {}
+  SavedVariable() = default;
   explicit SavedVariable(int ref) : ref_(ref) {}
   int Get() const;
 

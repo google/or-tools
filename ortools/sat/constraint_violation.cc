@@ -17,13 +17,17 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
@@ -85,6 +89,7 @@ int LinearIncrementalEvaluator::NewConstraint(Domain domain) {
   activities_.push_back(0);
   num_false_enforcement_.push_back(0);
   distances_.push_back(0);
+  is_violated_.push_back(false);
   return num_constraints_++;
 }
 
@@ -156,12 +161,12 @@ void LinearIncrementalEvaluator::ComputeInitialActivities(
 
   // Resets the activity as the offset and the number of false enforcement to 0.
   activities_ = offsets_;
+  in_last_affected_variables_.resize(columns_.size(), false);
   num_false_enforcement_.assign(num_constraints_, 0);
-  row_update_will_not_impact_deltas_.assign(num_constraints_, false);
 
   // Update these numbers for all columns.
   for (int var = 0; var < columns_.size(); ++var) {
-    const VarData& data = columns_[var];
+    const SpanData& data = columns_[var];
     const int64_t value = solution[var];
 
     int i = data.start;
@@ -186,6 +191,7 @@ void LinearIncrementalEvaluator::ComputeInitialActivities(
   // Cache violations (not counting enforcement).
   for (int c = 0; c < num_constraints_; ++c) {
     distances_[c] = domains_[c].Distance(activities_[c]);
+    is_violated_[c] = Violation(c) > 0;
   }
 }
 
@@ -195,61 +201,351 @@ void LinearIncrementalEvaluator::Update(int var, int64_t delta) {
   DCHECK_NE(delta, 0);
   if (var >= columns_.size()) return;
 
-  const VarData& data = columns_[var];
+  const SpanData& data = columns_[var];
   int i = data.start;
   for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     if (delta == 1) {
       num_false_enforcement_[c]--;
       DCHECK_GE(num_false_enforcement_[c], 0);
-
-      // A transition 3 -> 2 or 2 -> 1 with a distance of zero can be ignored.
-      row_update_will_not_impact_deltas_[c] =
-          num_false_enforcement_[c] >= 2 ||
-          (num_false_enforcement_[c] == 1 && distances_[c] == 0);
     } else {
       num_false_enforcement_[c]++;
-
-      // A transition 2 -> 3 or 1 -> 2 with a distance of zero can be ignored.
-      row_update_will_not_impact_deltas_[c] =
-          num_false_enforcement_[c] >= 3 ||
-          (num_false_enforcement_[c] == 2 && distances_[c] == 0);
     }
+    is_violated_[c] = Violation(c) > 0;
   }
   for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     if (delta == -1) {
       num_false_enforcement_[c]--;
       DCHECK_GE(num_false_enforcement_[c], 0);
-
-      // A transition 3 -> 2 or 2 -> 1 with a distance of zero can be ignored.
-      row_update_will_not_impact_deltas_[c] =
-          num_false_enforcement_[c] >= 2 ||
-          (num_false_enforcement_[c] == 1 && distances_[c] == 0);
     } else {
       num_false_enforcement_[c]++;
-
-      // A transition 2 -> 3 or 1 -> 2 with a distance of zero can be ignored.
-      row_update_will_not_impact_deltas_[c] =
-          num_false_enforcement_[c] >= 3 ||
-          (num_false_enforcement_[c] == 2 && distances_[c] == 0);
     }
+    is_violated_[c] = Violation(c) > 0;
   }
   int j = data.linear_start;
   for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
     const int c = ct_buffer_[i];
     const int64_t coeff = coeff_buffer_[j];
     activities_[c] += coeff * delta;
-
-    const int64_t old_distance = distances_[c];
     distances_[c] = domains_[c].Distance(activities_[c]);
+    is_violated_[c] = Violation(c) > 0;
+  }
+}
 
-    // If this constraint enforcement was >= 2, then the change
-    // in activity cannot impact any deltas. Or if enforcement
-    // is >= 1 and the distance before and after is the same.
-    row_update_will_not_impact_deltas_[c] =
-        num_false_enforcement_[c] >= 2 ||
-        (num_false_enforcement_[c] >= 1 && distances_[c] == old_distance);
+void LinearIncrementalEvaluator::ClearAffectedVariables() {
+  in_last_affected_variables_.resize(columns_.size(), false);
+  for (const int var : last_affected_variables_) {
+    in_last_affected_variables_[var] = false;
+  }
+  last_affected_variables_.clear();
+}
+
+void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
+    int c, double weight_delta, absl::Span<const int64_t> solution,
+    absl::Span<const int64_t> jump_values, absl::Span<double> jump_scores) {
+  if (c >= rows_.size()) return;
+
+  DCHECK_EQ(num_false_enforcement_[c], 0);
+  const SpanData& data = rows_[c];
+
+  // Update enforcement part, all change are 0 -> 1 transition and decrease
+  // by this.
+  const double enforcement_change =
+      weight_delta * static_cast<double>(distances_[c]);
+  if (enforcement_change != 0.0) {
+    int i = data.start;
+    const int end = data.num_pos_literal + data.num_neg_literal;
+    dtime_ += end;
+    for (int k = 0; k < end; ++k, ++i) {
+      const int var = row_var_buffer_[i];
+      jump_scores[var] -= enforcement_change;
+      if (!in_last_affected_variables_[var]) {
+        last_affected_variables_.push_back(var);
+      }
+    }
+  }
+
+  // Update linear part.
+  int i = data.start + data.num_pos_literal + data.num_neg_literal;
+  int j = data.linear_start;
+  dtime_ += 2 * data.num_linear_entries;
+  const int64_t old_distance = distances_[c];
+  for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
+    const int var = row_var_buffer_[i];
+    const int64_t coeff = row_coeff_buffer_[j];
+    const int64_t delta = jump_values[var] - solution[var];
+    const int64_t new_distance =
+        domains_[c].Distance(activities_[c] + coeff * delta);
+    jump_scores[var] +=
+        weight_delta * static_cast<double>(new_distance - old_distance);
+    if (!in_last_affected_variables_[var]) {
+      last_affected_variables_.push_back(var);
+    }
+  }
+}
+
+void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
+    int c, double weight, absl::Span<const int64_t> solution,
+    absl::Span<const int64_t> jump_values, absl::Span<double> jump_scores) {
+  const SpanData& data = rows_[c];
+
+  // Everyone else had a zero cost transition that now become enforced ->
+  // unenforced.
+  const double weight_time_violation =
+      weight * static_cast<double>(distances_[c]);
+  if (weight_time_violation > 0.0) {
+    int i = data.start;
+    const int end = data.num_pos_literal + data.num_neg_literal;
+    dtime_ += end;
+    for (int k = 0; k < end; ++k, ++i) {
+      const int var = row_var_buffer_[i];
+      jump_scores[var] -= weight_time_violation;
+      if (!in_last_affected_variables_[var]) {
+        last_affected_variables_.push_back(var);
+      }
+    }
+  }
+
+  // Update linear part! It was zero and is now a diff.
+  {
+    int i = data.start + data.num_pos_literal + data.num_neg_literal;
+    int j = data.linear_start;
+    dtime_ += 2 * data.num_linear_entries;
+    const int64_t old_distance = distances_[c];
+    for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
+      const int var = row_var_buffer_[i];
+      const int64_t coeff = row_coeff_buffer_[j];
+      const int64_t delta = jump_values[var] - solution[var];
+      const int64_t new_distance =
+          domains_[c].Distance(activities_[c] + coeff * delta);
+      jump_scores[var] +=
+          weight * static_cast<double>(new_distance - old_distance);
+      if (!in_last_affected_variables_[var]) {
+        last_affected_variables_.push_back(var);
+      }
+    }
+  }
+}
+
+void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
+    int c, double weight, absl::Span<const int64_t> solution,
+    absl::Span<const int64_t> jump_values, absl::Span<double> jump_scores) {
+  const SpanData& data = rows_[c];
+
+  // Everyone else had a enforced -> unenforced transition that now become zero.
+  const double weight_time_violation =
+      weight * static_cast<double>(distances_[c]);
+  if (weight_time_violation > 0.0) {
+    int i = data.start;
+    const int end = data.num_pos_literal + data.num_neg_literal;
+    dtime_ += end;
+    for (int k = 0; k < end; ++k, ++i) {
+      const int var = row_var_buffer_[i];
+      jump_scores[var] += weight_time_violation;
+      if (!in_last_affected_variables_[var]) {
+        last_affected_variables_.push_back(var);
+      }
+    }
+  }
+
+  // Update linear part! It had a diff and is now zero.
+  {
+    int i = data.start + data.num_pos_literal + data.num_neg_literal;
+    int j = data.linear_start;
+    dtime_ += 2 * data.num_linear_entries;
+    const int64_t old_distance = distances_[c];
+    for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
+      const int var = row_var_buffer_[i];
+      const int64_t coeff = row_coeff_buffer_[j];
+      const int64_t delta = jump_values[var] - solution[var];
+      const int64_t new_distance =
+          domains_[c].Distance(activities_[c] + coeff * delta);
+      jump_scores[var] -=
+          weight * static_cast<double>(new_distance - old_distance);
+      if (!in_last_affected_variables_[var]) {
+        last_affected_variables_.push_back(var);
+      }
+    }
+  }
+}
+
+// We just need to modifie the old/new transition that decrease the number of
+// enforcement literal at false.
+void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
+    int c, double score_change, absl::Span<const int64_t> jump_values,
+    absl::Span<double> jump_scores) {
+  if (score_change == 0.0) return;
+
+  const SpanData& data = rows_[c];
+  int i = data.start;
+  dtime_ += data.num_pos_literal;
+  for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
+    const int var = row_var_buffer_[i];
+    if (jump_values[var] == 1) {
+      jump_scores[var] += score_change;
+      if (!in_last_affected_variables_[var]) {
+        last_affected_variables_.push_back(var);
+      }
+    }
+  }
+  dtime_ += data.num_neg_literal;
+  for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
+    const int var = row_var_buffer_[i];
+    if (jump_values[var] == 0) {
+      jump_scores[var] += score_change;
+      if (!in_last_affected_variables_[var]) {
+        last_affected_variables_.push_back(var);
+      }
+    }
+  }
+}
+
+void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
+    int c, double weight, int64_t activity_delta,
+    absl::Span<const int64_t> solution, absl::Span<const int64_t> jump_values,
+    absl::Span<double> jump_scores) {
+  if (activity_delta == 0) return;
+  const SpanData& data = rows_[c];
+
+  // Enforcement is always enforced -> unforced.
+  // So it was -weight_time_distance and is now -weight_time_new_distance.
+  const double delta =
+      -weight * static_cast<double>(
+                    domains_[c].Distance(activities_[c] + activity_delta) -
+                    distances_[c]);
+  if (delta != 0.0) {
+    int i = data.start;
+    const int end = data.num_pos_literal + data.num_neg_literal;
+    dtime_ += end;
+    for (int k = 0; k < end; ++k, ++i) {
+      const int var = row_var_buffer_[i];
+      jump_scores[var] += delta;
+      if (!in_last_affected_variables_[var]) {
+        last_affected_variables_.push_back(var);
+      }
+    }
+  }
+
+  // Update linear part.
+  {
+    int i = data.start + data.num_pos_literal + data.num_neg_literal;
+    int j = data.linear_start;
+    dtime_ += 2 * data.num_linear_entries;
+    const int64_t old_a_minus_new_a =
+        distances_[c] - domains_[c].Distance(activities_[c] + activity_delta);
+    for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
+      const int var = row_var_buffer_[i];
+      const int64_t coeff = row_coeff_buffer_[j];
+      const int64_t delta = jump_values[var] - solution[var];
+      const int64_t old_b =
+          domains_[c].Distance(activities_[c] + coeff * delta);
+      const int64_t new_b =
+          domains_[c].Distance(activities_[c] + activity_delta + coeff * delta);
+
+      // The old score was:
+      //   weight * static_cast<double>(old_b - old_a);
+      // the new score is
+      //   weight * static_cast<double>(new_b - new_a); so the diff is:
+      jump_scores[var] +=
+          weight * static_cast<double>(old_a_minus_new_a + new_b - old_b);
+      if (!in_last_affected_variables_[var]) {
+        last_affected_variables_.push_back(var);
+      }
+    }
+  }
+}
+
+void LinearIncrementalEvaluator::UpdateVariableAndScores(
+    int var, int64_t delta, absl::Span<const int64_t> solution,
+    absl::Span<const double> weights, absl::Span<const int64_t> jump_values,
+    absl::Span<double> jump_scores) {
+  DCHECK(!creation_phase_);
+  DCHECK_NE(delta, 0);
+  if (var >= columns_.size()) return;
+
+  const SpanData& data = columns_[var];
+  int i = data.start;
+  for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
+    const int c = ct_buffer_[i];
+    if (delta == 1) {
+      num_false_enforcement_[c]--;
+      DCHECK_GE(num_false_enforcement_[c], 0);
+      if (num_false_enforcement_[c] == 0) {
+        UpdateScoreOnNewlyEnforced(c, weights[c], solution, jump_values,
+                                   jump_scores);
+      } else if (num_false_enforcement_[c] == 1) {
+        const double enforcement_change =
+            weights[c] * static_cast<double>(distances_[c]);
+        UpdateScoreOfEnforcementIncrease(c, enforcement_change, jump_values,
+                                         jump_scores);
+      }
+    } else {
+      num_false_enforcement_[c]++;
+      if (num_false_enforcement_[c] == 1) {
+        UpdateScoreOnNewlyUnenforced(c, weights[c], solution, jump_values,
+                                     jump_scores);
+      } else if (num_false_enforcement_[c] == 2) {
+        const double enforcement_change =
+            weights[c] * static_cast<double>(distances_[c]);
+        UpdateScoreOfEnforcementIncrease(c, -enforcement_change, jump_values,
+                                         jump_scores);
+      }
+    }
+    is_violated_[c] = Violation(c) > 0;
+  }
+  for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
+    const int c = ct_buffer_[i];
+    if (delta == -1) {
+      num_false_enforcement_[c]--;
+      DCHECK_GE(num_false_enforcement_[c], 0);
+      if (num_false_enforcement_[c] == 0) {
+        UpdateScoreOnNewlyEnforced(c, weights[c], solution, jump_values,
+                                   jump_scores);
+      } else if (num_false_enforcement_[c] == 1) {
+        const double enforcement_change =
+            weights[c] * static_cast<double>(distances_[c]);
+        UpdateScoreOfEnforcementIncrease(c, enforcement_change, jump_values,
+                                         jump_scores);
+      }
+    } else {
+      num_false_enforcement_[c]++;
+      if (num_false_enforcement_[c] == 1) {
+        UpdateScoreOnNewlyUnenforced(c, weights[c], solution, jump_values,
+                                     jump_scores);
+      } else if (num_false_enforcement_[c] == 2) {
+        const double enforcement_change =
+            weights[c] * static_cast<double>(distances_[c]);
+        UpdateScoreOfEnforcementIncrease(c, -enforcement_change, jump_values,
+                                         jump_scores);
+      }
+    }
+    is_violated_[c] = Violation(c) > 0;
+  }
+  int j = data.linear_start;
+  for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
+    const int c = ct_buffer_[i];
+    const int64_t coeff = coeff_buffer_[j];
+
+    if (num_false_enforcement_[c] == 1) {
+      // Only the 1 -> 0 are impacted.
+      // This is the same as the 1->2 transition, but the old 1->0 needs to
+      // be changed from - weight * distance to - weight * new_distance.
+      const int64_t new_distance =
+          domains_[c].Distance(activities_[c] + coeff * delta);
+      if (new_distance != distances_[c]) {
+        UpdateScoreOfEnforcementIncrease(
+            c, -weights[c] * static_cast<double>(distances_[c] - new_distance),
+            jump_values, jump_scores);
+      }
+    } else if (num_false_enforcement_[c] == 0) {
+      UpdateScoreOnActivityChange(c, weights[c], coeff * delta, solution,
+                                  jump_values, jump_scores);
+    }
+
+    activities_[c] += coeff * delta;
+    distances_[c] = domains_[c].Distance(activities_[c]);
+    is_violated_[c] = Violation(c) > 0;
   }
 }
 
@@ -259,6 +555,10 @@ int64_t LinearIncrementalEvaluator::Activity(int c) const {
 
 int64_t LinearIncrementalEvaluator::Violation(int c) const {
   return num_false_enforcement_[c] > 0 ? 0 : distances_[c];
+}
+
+bool LinearIncrementalEvaluator::IsViolated(int c) const {
+  return is_violated_[c];
 }
 
 void LinearIncrementalEvaluator::ReduceBounds(int c, int64_t lb, int64_t ub) {
@@ -286,7 +586,7 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
     absl::Span<const double> weights, int var, int64_t delta) const {
   DCHECK_NE(delta, 0);
   if (var >= columns_.size()) return 0.0;
-  const VarData& data = columns_[var];
+  const SpanData& data = columns_[var];
 
   int i = data.start;
   double result = 0.0;
@@ -319,7 +619,7 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
   }
 
   int j = data.linear_start;
-  dtime_ += data.num_linear_entries;
+  dtime_ += 2 * data.num_linear_entries;
   for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
     const int c = ct_buffer_[i];
     if (num_false_enforcement_[c] > 0) continue;
@@ -346,7 +646,7 @@ std::vector<int64_t> LinearIncrementalEvaluator::SlopeBreakpoints(
   std::vector<int64_t> result = var_domain.FlattenedIntervals();
   if (var_domain.Size() <= 2 || var >= columns_.size()) return result;
 
-  const VarData& data = columns_[var];
+  const SpanData& data = columns_[var];
   int i = data.start + data.num_pos_literal + data.num_neg_literal;
   int j = data.linear_start;
   for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
@@ -390,20 +690,50 @@ void LinearIncrementalEvaluator::PrecomputeCompactView() {
   creation_phase_ = false;
   if (num_constraints_ == 0) return;
 
+  // Compute the total size.
+  // Note that at this point the constraint indices are not "encoded" yet.
+  int total_size = 0;
+  int total_linear_size = 0;
+  tmp_row_sizes_.assign(num_constraints_, 0);
+  tmp_row_num_positive_literals_.assign(num_constraints_, 0);
+  tmp_row_num_negative_literals_.assign(num_constraints_, 0);
+  tmp_row_num_linear_entries_.assign(num_constraints_, 0);
+  for (const auto& column : literal_entries_) {
+    total_size += column.size();
+    for (const auto [c, is_positive] : column) {
+      tmp_row_sizes_[c]++;
+      if (is_positive) {
+        tmp_row_num_positive_literals_[c]++;
+      } else {
+        tmp_row_num_negative_literals_[c]++;
+      }
+    }
+  }
+  for (const auto& column : var_entries_) {
+    total_size += column.size();
+    total_linear_size += column.size();
+    for (const auto& entry : column) {
+      tmp_row_sizes_[entry.ct_index]++;
+      tmp_row_num_linear_entries_[entry.ct_index]++;
+    }
+  }
+
   // Compactify for faster WeightedViolationDelta().
+  ct_buffer_.reserve(total_size);
+  coeff_buffer_.reserve(total_linear_size);
   columns_.resize(std::max(literal_entries_.size(), var_entries_.size()));
   for (int var = 0; var < columns_.size(); ++var) {
     columns_[var].start = static_cast<int>(ct_buffer_.size());
     columns_[var].linear_start = static_cast<int>(coeff_buffer_.size());
     if (var < literal_entries_.size()) {
-      for (const auto [c, positive] : literal_entries_[var]) {
-        if (positive) {
+      for (const auto [c, is_positive] : literal_entries_[var]) {
+        if (is_positive) {
           columns_[var].num_pos_literal++;
           ct_buffer_.push_back(c);
         }
       }
-      for (const auto [c, positive] : literal_entries_[var]) {
-        if (!positive) {
+      for (const auto [c, is_positive] : literal_entries_[var]) {
+        if (!is_positive) {
           columns_[var].num_neg_literal++;
           ct_buffer_.push_back(c);
         }
@@ -418,101 +748,74 @@ void LinearIncrementalEvaluator::PrecomputeCompactView() {
     }
   }
 
-  // Compute the total size.
-  // Note that at this point the constraint indices are not "encoded" yet.
-  int total_size = 0;
-  tmp_row_sizes_.assign(num_constraints_, 0);
-  for (auto& column : literal_entries_) {
-    for (auto& entry : column) {
-      total_size++;
-      tmp_row_sizes_[entry.ct_index]++;
-    }
-  }
-  for (auto& column : var_entries_) {
-    for (auto& entry : column) {
-      total_size++;
-      tmp_row_sizes_[entry.ct_index]++;
-    }
-  }
-  row_buffer_.resize(total_size);
-
-  // Corner case, some constraints but no entry !? we need size 1 for MakeSpan()
-  // below not to crash.
-  //
-  // TODO(user): we should probably filter empty constraint before here (this
-  // only happens in test).
-  if (total_size == 0) row_buffer_.resize(1);
-
-  // transform tmp_row_sizes_ to starts in the buffer.
-  // Initialize the spans.
-  int offset = 0;
-  rows_.resize(num_constraints_);
-  for (int c = 0; c < num_constraints_; ++c) {
-    const int start = offset;
-    offset += tmp_row_sizes_[c];
-    rows_[c] = absl::MakeSpan(&row_buffer_[start], tmp_row_sizes_[c]);
-    tmp_row_sizes_[c] = start;
-  }
-  DCHECK_EQ(offset, total_size);
-
-  // Copy data.
-  for (int var = 0; var < literal_entries_.size(); ++var) {
-    for (const auto [c, _] : literal_entries_[var]) {
-      row_buffer_[tmp_row_sizes_[c]++] = var;
-    }
-  }
-  for (int var = 0; var < var_entries_.size(); ++var) {
-    for (const auto [c, _] : var_entries_[var]) {
-      row_buffer_[tmp_row_sizes_[c]++] = var;
-    }
-  }
-
   // We do not need var_entries_ or literal_entries_ anymore.
   //
   // TODO(user): We could delete them before. But at the time of this
   // optimization, I didn't want to change the behavior of the algorithm at all.
   gtl::STLClearObject(&var_entries_);
   gtl::STLClearObject(&literal_entries_);
+
+  // Initialize the SpanData.
+  // Transform tmp_row_sizes_ to starts in the row_var_buffer_.
+  // Transform tmp_row_num_linear_entries_ to starts in the row_coeff_buffer_.
+  int offset = 0;
+  int linear_offset = 0;
+  rows_.resize(num_constraints_);
+  for (int c = 0; c < num_constraints_; ++c) {
+    rows_[c].num_pos_literal = tmp_row_num_positive_literals_[c];
+    rows_[c].num_neg_literal = tmp_row_num_negative_literals_[c];
+    rows_[c].num_linear_entries = tmp_row_num_linear_entries_[c];
+
+    rows_[c].start = offset;
+    offset += tmp_row_sizes_[c];
+    tmp_row_sizes_[c] = rows_[c].start;
+
+    rows_[c].linear_start = linear_offset;
+    linear_offset += tmp_row_num_linear_entries_[c];
+    tmp_row_num_linear_entries_[c] = rows_[c].linear_start;
+  }
+  DCHECK_EQ(offset, total_size);
+  DCHECK_EQ(linear_offset, total_linear_size);
+
+  // Copy data.
+  row_var_buffer_.resize(total_size);
+  row_coeff_buffer_.resize(total_linear_size);
+  for (int var = 0; var < columns_.size(); ++var) {
+    const SpanData& data = columns_[var];
+    int i = data.start;
+    for (int k = 0; k < data.num_pos_literal; ++i, ++k) {
+      const int c = ct_buffer_[i];
+      row_var_buffer_[tmp_row_sizes_[c]++] = var;
+    }
+  }
+  for (int var = 0; var < columns_.size(); ++var) {
+    const SpanData& data = columns_[var];
+    int i = data.start + data.num_pos_literal;
+    for (int k = 0; k < data.num_neg_literal; ++i, ++k) {
+      const int c = ct_buffer_[i];
+      row_var_buffer_[tmp_row_sizes_[c]++] = var;
+    }
+  }
+  for (int var = 0; var < columns_.size(); ++var) {
+    const SpanData& data = columns_[var];
+    int i = data.start + data.num_pos_literal + data.num_neg_literal;
+    int j = data.linear_start;
+    for (int k = 0; k < data.num_linear_entries; ++i, ++j, ++k) {
+      const int c = ct_buffer_[i];
+      row_var_buffer_[tmp_row_sizes_[c]++] = var;
+      row_coeff_buffer_[tmp_row_num_linear_entries_[c]++] = coeff_buffer_[j];
+    }
+  }
+
+  cached_deltas_.assign(columns_.size(), 0);
+  cached_scores_.assign(columns_.size(), 0);
 }
 
-// TODO(user): Depending on the status of an enforced constraint, we might not
-// need to recompute data. We do a bit of that but we could do more.
-std::vector<int> LinearIncrementalEvaluator::AffectedVariableOnUpdate(int var) {
-  std::vector<int> result;
-  if (var >= columns_.size()) return result;
-  tmp_in_result_.resize(columns_.size(), false);
+bool LinearIncrementalEvaluator::ViolationChangeIsConvex(int var) const {
   for (const int c : VarToConstraints(var)) {
-    if (row_update_will_not_impact_deltas_[c]) continue;
-    for (const int affected : rows_[c]) {
-      if (!tmp_in_result_[affected]) {
-        tmp_in_result_[affected] = true;
-        result.push_back(affected);
-      }
-    }
+    if (domains_[c].intervals().size() > 2) return false;
   }
-  for (const int var : result) tmp_in_result_[var] = false;
-  return result;
-}
-
-// Note that this is meant to be called on weight update and as such only on
-// enforced constraint. No need to check row_update_will_not_impact_deltas_.
-std::vector<int> LinearIncrementalEvaluator::ConstraintsToAffectedVariables(
-    absl::Span<const int> ct_indices) {
-  std::vector<int> result;
-  tmp_in_result_.resize(columns_.size(), false);
-  for (const int c : ct_indices) {
-    // This is needed since constraint indices can refer to more general
-    // constraint than linear ones.
-    if (c >= rows_.size()) continue;
-    for (const int affected : rows_[c]) {
-      if (!tmp_in_result_[affected]) {
-        tmp_in_result_[affected] = true;
-        result.push_back(affected);
-      }
-    }
-  }
-  for (const int var : result) tmp_in_result_[var] = false;
-  return result;
+  return true;
 }
 
 // ----- CompiledConstraint -----
@@ -520,38 +823,50 @@ std::vector<int> LinearIncrementalEvaluator::ConstraintsToAffectedVariables(
 CompiledConstraint::CompiledConstraint(const ConstraintProto& ct_proto)
     : ct_proto_(ct_proto) {}
 
-void CompiledConstraint::CacheViolation(absl::Span<const int64_t> solution) {
-  violation_ = Violation(solution);
+void CompiledConstraint::InitializeViolation(
+    absl::Span<const int64_t> solution) {
+  violation_ = ComputeViolation(solution);
 }
 
-int64_t CompiledConstraint::violation() const {
-  DCHECK_GE(violation_, 0);
-  return violation_;
+void CompiledConstraint::PerformMove(
+    int var, int64_t old_value,
+    absl::Span<const int64_t> solution_with_new_value) {
+  violation_ += ViolationDelta(var, old_value, solution_with_new_value);
 }
 
-const ConstraintProto& CompiledConstraint::ct_proto() const {
-  return ct_proto_;
+int64_t CompiledConstraint::ViolationDelta(int /*var*/, int64_t /*old_value*/,
+                                           absl::Span<const int64_t> solution) {
+  return ComputeViolation(solution) - violation_;
+}
+
+// ----- CompiledBoolXorConstraint -----
+
+CompiledBoolXorConstraint::CompiledBoolXorConstraint(
+    const ConstraintProto& ct_proto)
+    : CompiledConstraint(ct_proto) {}
+
+int64_t CompiledBoolXorConstraint::ComputeViolation(
+    absl::Span<const int64_t> solution) {
+  int64_t sum_of_literals = 0;
+  for (const int lit : ct_proto().bool_xor().literals()) {
+    sum_of_literals += LiteralValue(lit, solution);
+  }
+  return 1 - (sum_of_literals % 2);
+}
+
+int64_t CompiledBoolXorConstraint::ViolationDelta(
+    int /*var*/, int64_t /*old_value*/,
+    absl::Span<const int64_t> /*solution_with_new_value*/) {
+  return violation() == 0 ? 1 : -1;
 }
 
 // ----- CompiledLinMaxConstraint -----
-
-// The violation of a lin_max constraint is:
-// - the sum(max(0, expr_value - target_value) forall expr). This part will be
-//   maintained by the linear part.
-// - target_value - max(expressions) if positive.
-class CompiledLinMaxConstraint : public CompiledConstraint {
- public:
-  explicit CompiledLinMaxConstraint(const ConstraintProto& ct_proto);
-  ~CompiledLinMaxConstraint() override = default;
-
-  int64_t Violation(absl::Span<const int64_t> solution) override;
-};
 
 CompiledLinMaxConstraint::CompiledLinMaxConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraint(ct_proto) {}
 
-int64_t CompiledLinMaxConstraint::Violation(
+int64_t CompiledLinMaxConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().lin_max().target(), solution);
@@ -565,21 +880,11 @@ int64_t CompiledLinMaxConstraint::Violation(
 
 // ----- CompiledIntProdConstraint -----
 
-// The violation of an int_prod constraint is
-//     abs(value(target) - prod(value(expr)).
-class CompiledIntProdConstraint : public CompiledConstraint {
- public:
-  explicit CompiledIntProdConstraint(const ConstraintProto& ct_proto);
-  ~CompiledIntProdConstraint() override = default;
-
-  int64_t Violation(absl::Span<const int64_t> solution) override;
-};
-
 CompiledIntProdConstraint::CompiledIntProdConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraint(ct_proto) {}
 
-int64_t CompiledIntProdConstraint::Violation(
+int64_t CompiledIntProdConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().int_prod().target(), solution);
@@ -592,21 +897,11 @@ int64_t CompiledIntProdConstraint::Violation(
 
 // ----- CompiledIntDivConstraint -----
 
-// The violation of an int_div constraint is
-//     abs(value(target) - value(expr0) / value(expr1)).
-class CompiledIntDivConstraint : public CompiledConstraint {
- public:
-  explicit CompiledIntDivConstraint(const ConstraintProto& ct_proto);
-  ~CompiledIntDivConstraint() override = default;
-
-  int64_t Violation(absl::Span<const int64_t> solution) override;
-};
-
 CompiledIntDivConstraint::CompiledIntDivConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraint(ct_proto) {}
 
-int64_t CompiledIntDivConstraint::Violation(
+int64_t CompiledIntDivConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().int_div().target(), solution);
@@ -618,24 +913,11 @@ int64_t CompiledIntDivConstraint::Violation(
 
 // ----- CompiledAllDiffConstraint -----
 
-// The violation of a all_diff is the number of unordered pairs of expressions
-// with the same value.
-class CompiledAllDiffConstraint : public CompiledConstraint {
- public:
-  explicit CompiledAllDiffConstraint(const ConstraintProto& ct_proto);
-  ~CompiledAllDiffConstraint() override = default;
-
-  int64_t Violation(absl::Span<const int64_t> solution) override;
-
- private:
-  std::vector<int64_t> values_;
-};
-
 CompiledAllDiffConstraint::CompiledAllDiffConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraint(ct_proto) {}
 
-int64_t CompiledAllDiffConstraint::Violation(
+int64_t CompiledAllDiffConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   values_.clear();
   for (const LinearExpressionProto& expr : ct_proto().all_diff().exprs()) {
@@ -688,62 +970,45 @@ int64_t ComputeOverloadArea(
     const int64_t max_end = std::max(start + size, end);
     if (start >= max_end) continue;
 
-    events.push_back({start, demand});
-    events.push_back({max_end, -demand});
+    events.emplace_back(start, demand);
+    events.emplace_back(max_end, -demand);
   }
 
   if (events.empty()) return 0;
   std::sort(events.begin(), events.end(),
             [](const std::pair<int64_t, int64_t>& e1,
                const std::pair<int64_t, int64_t>& e2) {
-              return e1.first < e2.first ||
-                     (e1.first == e2.first && e1.second < e2.second);
+              return e1.first < e2.first;
             });
+
   int64_t overload = 0;
   int64_t current_load = 0;
-  int64_t previous_load = 0;
   int64_t previous_time = events.front().first;
-
   for (int i = 0; i < events.size();) {
-    if (previous_load > max_capacity) {
-      overload =
-          CapAdd(overload, CapProd(CapSub(previous_load, max_capacity),
-                                   CapSub(events[i].first, previous_time)));
+    // At this point, current_load is the load at previous_time.
+    const int64_t time = events[i].first;
+    if (current_load > max_capacity) {
+      overload = CapAdd(
+          overload, CapProd(current_load - max_capacity, time - previous_time));
     }
-    const int start_index = i;
-    while (i < events.size() && events[i].first == events[start_index].first) {
+    while (i < events.size() && events[i].first == time) {
       current_load += events[i].second;
       i++;
     }
-    CHECK_GE(current_load, 0);
-    previous_time = events[start_index].first;
-    previous_load = current_load;
+    DCHECK_GE(current_load, 0);
+    previous_time = time;
   }
-  CHECK_EQ(current_load, 0);
+  DCHECK_EQ(current_load, 0);
   return overload;
 }
 
 }  // namespace
 
-// The violation of a no_overlap is the sum of overloads over time.
-class CompiledNoOverlapConstraint : public CompiledConstraint {
- public:
-  explicit CompiledNoOverlapConstraint(const ConstraintProto& ct_proto,
-                                       const CpModelProto& cp_model);
-  ~CompiledNoOverlapConstraint() override = default;
-
-  int64_t Violation(absl::Span<const int64_t> solution) override;
-
- private:
-  const CpModelProto& cp_model_;
-  std::vector<std::pair<int64_t, int64_t>> events_;
-};
-
 CompiledNoOverlapConstraint::CompiledNoOverlapConstraint(
     const ConstraintProto& ct_proto, const CpModelProto& cp_model)
     : CompiledConstraint(ct_proto), cp_model_(cp_model) {}
 
-int64_t CompiledNoOverlapConstraint::Violation(
+int64_t CompiledNoOverlapConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   return ComputeOverloadArea(ct_proto().no_overlap().intervals(), {}, cp_model_,
                              solution, 1, events_);
@@ -751,25 +1016,11 @@ int64_t CompiledNoOverlapConstraint::Violation(
 
 // ----- CompiledCumulativeConstraint -----
 
-// The violation of a cumulative is the sum of overloads over time.
-class CompiledCumulativeConstraint : public CompiledConstraint {
- public:
-  explicit CompiledCumulativeConstraint(const ConstraintProto& ct_proto,
-                                        const CpModelProto& cp_model);
-  ~CompiledCumulativeConstraint() override = default;
-
-  int64_t Violation(absl::Span<const int64_t> solution) override;
-
- private:
-  const CpModelProto& cp_model_;
-  std::vector<std::pair<int64_t, int64_t>> events_;
-};
-
 CompiledCumulativeConstraint::CompiledCumulativeConstraint(
     const ConstraintProto& ct_proto, const CpModelProto& cp_model)
     : CompiledConstraint(ct_proto), cp_model_(cp_model) {}
 
-int64_t CompiledCumulativeConstraint::Violation(
+int64_t CompiledCumulativeConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   return ComputeOverloadArea(
       ct_proto().cumulative().intervals(), ct_proto().cumulative().demands(),
@@ -777,10 +1028,172 @@ int64_t CompiledCumulativeConstraint::Violation(
       ExprValue(ct_proto().cumulative().capacity(), solution), events_);
 }
 
+// ----- CompiledCircuitConstraint -----
+
+// The violation of a circuit has three parts:
+//   1. Flow imbalance, maintained by the linear part.
+//   2. The number of non-skipped SCCs in the graph minus 1.
+//   3. The number of non-skipped SCCs that cannot be reached from any other
+//      component minus 1.
+//
+// #3 is not necessary for correctness, but makes the function much smoother.
+//
+// The only difference between single and multi circuit is flow balance at the
+// depot, so we use the same compiled constraint for both.
+class CompiledCircuitConstraint : public CompiledConstraint {
+ public:
+  explicit CompiledCircuitConstraint(const ConstraintProto& ct_proto);
+  ~CompiledCircuitConstraint() override = default;
+
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
+
+ private:
+  struct SccOutput {
+    void emplace_back(const int* start, const int* end);
+    void reset(int num_nodes);
+
+    int num_components = 0;
+    std::vector<bool> skipped;
+    std::vector<int> root;
+  };
+  void UpdateGraph(absl::Span<const int64_t> solution);
+  absl::Span<const int> literals_;
+  absl::Span<const int> tails_;
+  absl::Span<const int> heads_;
+  // Stores the currently active arcs per tail node.
+  std::vector<std::vector<int>> graph_;
+  SccOutput sccs_;
+  std::vector<bool> has_in_arc_;
+  StronglyConnectedComponentsFinder<int, std::vector<std::vector<int>>,
+                                    SccOutput>
+      scc_finder_;
+};
+
+void CompiledCircuitConstraint::SccOutput::emplace_back(int const* start,
+                                                        int const* end) {
+  const int root_node = *start;
+  const int size = end - start;
+  if (size == 1) {
+    skipped[root_node] = true;
+  } else {
+    ++num_components;
+  }
+  for (; start != end; ++start) {
+    root[*start] = root_node;
+  }
+}
+void CompiledCircuitConstraint::SccOutput::reset(int num_nodes) {
+  num_components = 0;
+  root.clear();
+  root.resize(num_nodes);
+  skipped.clear();
+  skipped.resize(num_nodes);
+}
+
+CompiledCircuitConstraint::CompiledCircuitConstraint(
+    const ConstraintProto& ct_proto)
+    : CompiledConstraint(ct_proto) {
+  const bool routes = ct_proto.has_routes();
+  tails_ = routes ? ct_proto.routes().tails() : ct_proto.circuit().tails();
+  heads_ = absl::MakeConstSpan(routes ? ct_proto.routes().heads()
+                                      : ct_proto.circuit().heads());
+  literals_ = absl::MakeConstSpan(routes ? ct_proto.routes().literals()
+                                         : ct_proto.circuit().literals());
+  graph_.resize(*absl::c_max_element(tails_) + 1);
+}
+
+void CompiledCircuitConstraint::UpdateGraph(
+    absl::Span<const int64_t> solution) {
+  for (std::vector<int>& edges : graph_) {
+    edges.clear();
+  }
+  for (int i = 0; i < tails_.size(); ++i) {
+    if (!LiteralValue(literals_[i], solution)) continue;
+    graph_[tails_[i]].push_back(heads_[i]);
+  }
+}
+int64_t CompiledCircuitConstraint::ComputeViolation(
+    absl::Span<const int64_t> solution) {
+  const int num_nodes = graph_.size();
+  sccs_.reset(num_nodes);
+  UpdateGraph(solution);
+  scc_finder_.FindStronglyConnectedComponents(num_nodes, graph_, &sccs_);
+  // Skipping all nodes causes off-by-one errors below, so it's simpler to
+  // handle explicitly.
+  if (sccs_.num_components == 0) return 0;
+  // Count the number of SCCs that have inbound cross-component arcs
+  // as a smoother measure of progress towards strong connectivity.
+  int num_half_connected_components = 0;
+  has_in_arc_.clear();
+  has_in_arc_.resize(num_nodes, false);
+  for (int tail = 0; tail < graph_.size(); ++tail) {
+    if (sccs_.skipped[tail]) continue;
+    for (const int head : graph_[tail]) {
+      const int head_root = sccs_.root[head];
+      if (sccs_.root[tail] == head_root) continue;
+      if (has_in_arc_[head_root]) continue;
+      if (sccs_.skipped[head_root]) continue;
+      has_in_arc_[head_root] = true;
+      ++num_half_connected_components;
+    }
+  }
+  const int64_t violation = sccs_.num_components - 1 + sccs_.num_components -
+                            num_half_connected_components - 1 +
+                            (ct_proto().has_routes() ? sccs_.skipped[0] : 0);
+  VLOG(2) << "#SCCs=" << sccs_.num_components << " #nodes=" << num_nodes
+          << " #half_connected_components=" << num_half_connected_components
+          << " violation=" << violation;
+  return violation;
+}
+
+void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
+                               const ConstraintProto& ct_proto) {
+  const bool routes = ct_proto.has_routes();
+  auto heads = routes ? ct_proto.routes().heads() : ct_proto.circuit().heads();
+  auto tails = routes ? ct_proto.routes().tails() : ct_proto.circuit().tails();
+  auto literals =
+      routes ? ct_proto.routes().literals() : ct_proto.circuit().literals();
+
+  std::vector<std::vector<int>> inflow_lits;
+  std::vector<std::vector<int>> outflow_lits;
+  for (int i = 0; i < heads.size(); ++i) {
+    if (heads[i] >= inflow_lits.size()) {
+      inflow_lits.resize(heads[i] + 1);
+    }
+    inflow_lits[heads[i]].push_back(literals[i]);
+    if (tails[i] >= outflow_lits.size()) {
+      outflow_lits.resize(tails[i] + 1);
+    }
+    outflow_lits[tails[i]].push_back(literals[i]);
+  }
+  if (routes) {
+    const int depot_net_flow = linear_evaluator.NewConstraint({0, 0});
+    for (const int lit : inflow_lits[0]) {
+      linear_evaluator.AddTerm(depot_net_flow, lit, 1);
+    }
+    for (const int lit : outflow_lits[0]) {
+      linear_evaluator.AddTerm(depot_net_flow, lit, -1);
+    }
+  }
+  for (int i = routes ? 1 : 0; i < inflow_lits.size(); ++i) {
+    const int inflow_ct = linear_evaluator.NewConstraint({1, 1});
+    for (const int lit : inflow_lits[i]) {
+      linear_evaluator.AddLiteral(inflow_ct, lit);
+    }
+  }
+  for (int i = routes ? 1 : 0; i < outflow_lits.size(); ++i) {
+    const int outflow_ct = linear_evaluator.NewConstraint({1, 1});
+    for (const int lit : outflow_lits[i]) {
+      linear_evaluator.AddLiteral(outflow_ct, lit);
+    }
+  }
+}
+
 // ----- LsEvaluator -----
 
 LsEvaluator::LsEvaluator(const CpModelProto& model) : model_(model) {
   var_to_constraint_graph_.resize(model_.variables_size());
+  jump_value_optimal_.resize(model_.variables_size(), true);
   CompileConstraintsAndObjective();
   BuildVarConstraintGraph();
 }
@@ -807,6 +1220,25 @@ void LsEvaluator::BuildVarConstraintGraph() {
   // Remove duplicates.
   for (std::vector<int>& deps : var_to_constraint_graph_) {
     gtl::STLSortAndRemoveDuplicates(&deps);
+  }
+
+  // Scan the model to decide if a variable is linked to a convex evaluation.
+  jump_value_optimal_.resize(model_.variables_size());
+  for (int i = 0; i < model_.variables_size(); ++i) {
+    if (!var_to_constraint_graph_[i].empty()) {
+      jump_value_optimal_[i] = false;
+      continue;
+    }
+
+    const IntegerVariableProto& var_proto = model_.variables(i);
+    if (var_proto.domain_size() == 2 && var_proto.domain(0) == 0 &&
+        var_proto.domain(1) == 1) {
+      // Boolean variables violation change is always convex.
+      jump_value_optimal_[i] = true;
+      continue;
+    }
+
+    jump_value_optimal_[i] = linear_evaluator_.ViolationChangeIsConvex(i);
   }
 }
 
@@ -868,6 +1300,10 @@ void LsEvaluator::CompileConstraintsAndObjective() {
         }
         break;
       }
+      case ConstraintProto::ConstraintCase::kBoolXor: {
+        constraints_.emplace_back(new CompiledBoolXorConstraint(ct));
+        break;
+      }
       case ConstraintProto::ConstraintCase::kAllDiff: {
         constraints_.emplace_back(new CompiledAllDiffConstraint(ct));
         break;
@@ -920,6 +1356,11 @@ void LsEvaluator::CompileConstraintsAndObjective() {
         constraints_.emplace_back(new CompiledCumulativeConstraint(ct, model_));
         break;
       }
+      case ConstraintProto::ConstraintCase::kCircuit:
+      case ConstraintProto::ConstraintCase::kRoutes:
+        constraints_.emplace_back(new CompiledCircuitConstraint(ct));
+        AddCircuitFlowConstraints(linear_evaluator_, ct);
+        break;
       default:
         VLOG(1) << "Not implemented: " << ct.constraint_case();
         model_is_supported_ = false;
@@ -933,7 +1374,7 @@ void LsEvaluator::CompileConstraintsAndObjective() {
 
 void LsEvaluator::ReduceObjectiveBounds(int64_t lb, int64_t ub) {
   if (!model_.has_objective()) return;
-  linear_evaluator_.ReduceBounds(/*ct_index=*/0, lb, ub);
+  linear_evaluator_.ReduceBounds(/*c=*/0, lb, ub);
 }
 
 void LsEvaluator::ComputeInitialViolations(absl::Span<const int64_t> solution) {
@@ -944,32 +1385,43 @@ void LsEvaluator::ComputeInitialViolations(absl::Span<const int64_t> solution) {
 
   // Generic constraints.
   for (const auto& ct : constraints_) {
-    ct->CacheViolation(current_solution_);
+    ct->InitializeViolation(current_solution_);
   }
 }
 
-void LsEvaluator::UpdateNonLinearViolations() {
+void LsEvaluator::UpdateAllNonLinearViolations() {
   // Generic constraints.
   for (const auto& ct : constraints_) {
-    ct->CacheViolation(current_solution_);
+    ct->InitializeViolation(current_solution_);
   }
 }
 
-void LsEvaluator::UpdateVariableValueAndRecomputeViolations(
-    int var, int64_t new_value, bool focus_on_linear) {
-  DCHECK(RefIsPositive(var));
+void LsEvaluator::UpdateNonLinearViolations(int var, int64_t new_value) {
   const int64_t old_value = current_solution_[var];
   if (old_value == new_value) return;
 
-  // Linear part.
-  linear_evaluator_.Update(var, new_value - old_value);
   current_solution_[var] = new_value;
-  if (focus_on_linear) return;
-
-  // Non linear part.
   for (const int ct_index : var_to_constraint_graph_[var]) {
-    constraints_[ct_index]->CacheViolation(current_solution_);
+    constraints_[ct_index]->PerformMove(var, old_value, current_solution_);
   }
+  current_solution_[var] = old_value;
+}
+
+void LsEvaluator::UpdateLinearScores(int var, int64_t value,
+                                     absl::Span<const double> weights,
+                                     absl::Span<const int64_t> jump_values,
+                                     absl::Span<double> jump_scores) {
+  DCHECK(RefIsPositive(var));
+  const int64_t old_value = current_solution_[var];
+  if (old_value == value) return;
+
+  linear_evaluator_.UpdateVariableAndScores(var, value - old_value,
+                                            current_solution_, weights,
+                                            jump_values, jump_scores);
+}
+
+void LsEvaluator::UpdateVariableValue(int var, int64_t new_value) {
+  current_solution_[var] = new_value;
 }
 
 int64_t LsEvaluator::SumOfViolations() {
@@ -978,18 +1430,20 @@ int64_t LsEvaluator::SumOfViolations() {
   // Process the linear part.
   for (int i = 0; i < linear_evaluator_.num_constraints(); ++i) {
     evaluation += linear_evaluator_.Violation(i);
+    DCHECK_GE(linear_evaluator_.Violation(i), 0);
   }
 
   // Process the generic constraint part.
   for (const auto& ct : constraints_) {
     evaluation += ct->violation();
+    DCHECK_GE(ct->violation(), 0);
   }
   return evaluation;
 }
 
 int64_t LsEvaluator::ObjectiveActivity() const {
   DCHECK(model_.has_objective());
-  return linear_evaluator_.Activity(/*ct_index=*/0);
+  return linear_evaluator_.Activity(/*c=*/0);
 }
 
 int LsEvaluator::NumLinearConstraints() const {
@@ -1028,6 +1482,15 @@ int64_t LsEvaluator::Violation(int c) const {
   }
 }
 
+bool LsEvaluator::IsViolated(int c) const {
+  if (c < linear_evaluator_.num_constraints()) {
+    return linear_evaluator_.IsViolated(c);
+  } else {
+    return constraints_[c - linear_evaluator_.num_constraints()]->violation() >
+           0;
+  }
+}
+
 double LsEvaluator::WeightedViolation(absl::Span<const double> weights) const {
   DCHECK_EQ(weights.size(), NumEvaluatorConstraints());
   double violations = linear_evaluator_.WeightedViolation(weights);
@@ -1040,28 +1503,30 @@ double LsEvaluator::WeightedViolation(absl::Span<const double> weights) const {
   return violations;
 }
 
-double LsEvaluator::WeightedViolationDelta(absl::Span<const double> weights,
-                                           int var, int64_t delta) const {
-  DCHECK_LT(var, current_solution_.size());
-  ++num_deltas_computed_;
-  double violation_delta =
-      linear_evaluator_.WeightedViolationDelta(weights, var, delta);
-
+double LsEvaluator::WeightedNonLinearViolationDelta(
+    absl::Span<const double> weights, int var, int64_t delta) const {
+  const int64_t old_value = current_solution_[var];
+  double violation_delta = 0;
   // We change the mutable solution here, are restore it after the evaluation.
   current_solution_[var] += delta;
   const int num_linear_constraints = linear_evaluator_.num_constraints();
   for (const int ct_index : var_to_constraint_graph_[var]) {
     DCHECK_LT(ct_index, constraints_.size());
-    const int64_t ct_eval_before = constraints_[ct_index]->violation();
-    const int64_t ct_eval_after =
-        constraints_[ct_index]->Violation(current_solution_);
-    violation_delta += static_cast<double>(ct_eval_after - ct_eval_before) *
-                       weights[ct_index + num_linear_constraints];
+    const int64_t delta = constraints_[ct_index]->ViolationDelta(
+        var, old_value, current_solution_);
+    violation_delta +=
+        static_cast<double>(delta) * weights[ct_index + num_linear_constraints];
   }
   // Restore.
   current_solution_[var] -= delta;
-
   return violation_delta;
+}
+
+double LsEvaluator::WeightedViolationDelta(absl::Span<const double> weights,
+                                           int var, int64_t delta) const {
+  DCHECK_LT(var, current_solution_.size());
+  return linear_evaluator_.WeightedViolationDelta(weights, var, delta) +
+         WeightedNonLinearViolationDelta(weights, var, delta);
 }
 
 // TODO(user): Speed-up:
@@ -1085,6 +1550,11 @@ std::vector<int> LsEvaluator::VariablesInViolatedConstraints() const {
 
   gtl::STLSortAndRemoveDuplicates(&variables);
   return variables;
+}
+
+bool LsEvaluator::VariableOnlyInLinearConstraintWithConvexViolationChange(
+    int var) const {
+  return jump_value_optimal_[var];
 }
 
 }  // namespace sat

@@ -438,6 +438,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerValue objective_infinity_norm_ = IntegerValue(0);
   absl::StrongVector<glop::RowIndex, LinearConstraintInternal> integer_lp_;
   absl::StrongVector<glop::RowIndex, IntegerValue> infinity_norms_;
+  absl::StrongVector<glop::RowIndex, IntegerValue> ct_bound_diff_;
 
   // Underlying LP solver API.
   glop::GlopParameters simplex_params_;
@@ -455,6 +456,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   FlowCoverCutHelper flow_cover_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
 
+  bool problem_proven_infeasible_by_cuts_ = false;
   CutData base_ct_;
   LinearConstraint cut_;
   LinearConstraint saved_cut_;
@@ -580,7 +582,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Some stats on the LP statuses encountered.
   int64_t num_solves_ = 0;
   mutable int64_t num_adjusts_ = 0;
-  mutable int64_t num_prevent_overflows_ = 0;
+  mutable int64_t num_cut_overflows_ = 0;
   mutable int64_t num_scaling_issues_ = 0;
   std::vector<int64_t> num_solves_by_status_;
 };

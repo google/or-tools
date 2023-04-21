@@ -17,6 +17,7 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -24,9 +25,9 @@
 
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/vlog_is_on.h"
 #include "ortools/sat/constraint_violation.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/integer.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
@@ -64,14 +65,8 @@ class FeasibilityJumpSolver : public SubSolver {
         shared_stats_(shared_stats),
         random_(params_) {}
 
-  ~FeasibilityJumpSolver() override {
-    if (!VLOG_IS_ON(1)) return;
-    std::vector<std::pair<std::string, int64_t>> stats;
-    stats.push_back({"fs_jump/num_jumps", num_jumps_});
-    stats.push_back({"fs_jump/num_computed_jumps", num_computed_jumps_});
-    stats.push_back({"fs_jump/num_updates", num_weight_updates_});
-    shared_stats_->AddStats(stats);
-  }
+  // If VLOG_IS_ON(1), it will export a bunch of statistics.
+  ~FeasibilityJumpSolver() override;
 
   // No synchronization needed for TaskIsAvailable().
   void Synchronize() final {}
@@ -105,13 +100,19 @@ class FeasibilityJumpSolver : public SubSolver {
   std::string OneLineStats() const;
 
   // Linear only.
+  bool JumpIsUpToDate(int var);  // Debug.
   void RecomputeJump(int var);
-  void MarkJumpForRecomputation(int var);
   void RecomputeAllJumps();
+  void MarkJumpsThatNeedsToBeRecomputed(int changed_var);
 
   // Moves.
   bool DoSomeLinearIterations();
   bool DoSomeGeneralIterations();
+
+  // Returns true if an improving move was found.
+  bool ScanAllVariables(absl::Span<const int64_t> solution, bool linear_mode,
+                        int* improving_var, int64_t* improving_value,
+                        double* improving_delta, bool* time_limit_crossed);
 
   // Return the number of infeasible constraints.
   int UpdateConstraintWeights(bool linear_mode);
@@ -134,6 +135,7 @@ class FeasibilityJumpSolver : public SubSolver {
 
   std::unique_ptr<LsEvaluator> evaluator_;
   std::vector<Domain> var_domains_;
+  std::vector<bool> var_has_two_values_;
 
   // For each variable, we store:
   // - A jump value, which is different from the current solution, except for
@@ -142,37 +144,46 @@ class FeasibilityJumpSolver : public SubSolver {
   //   jump.
   std::vector<bool> jump_need_recomputation_;
   std::vector<int64_t> jump_values_;
-  std::vector<double> jump_deltas_;
+  std::vector<double> jump_scores_;
 
   // The score of a solution is just the sum of infeasibility of each
-  // constraints weighted by these scores.
+  // constraint weighted by these scores.
   std::vector<double> weights_;
-
-  // The current weighted violation (lower is better).
-  double solution_score_;
 
   // Depending on the options, we use an exponentially decaying constraint
   // weight like for SAT activities.
   double bump_value_ = 1.0;
 
-  // Sparse list of jump with a potential delta <= 0.0.
-  // We lazily recompute the exact delta as we randomly pick variable from here.
+  // Sparse list of jumps with a potential delta < 0.0.
+  // If jump_need_recomputation_[var] is true, we lazily recompute the exact
+  // delta as we randomly pick variables from here.
   std::vector<bool> in_good_jumps_;
   std::vector<int> good_jumps_;
 
   // We restart each time our local deterministic time crosses this.
   double dtime_restart_threshold_ = 0.0;
+  int64_t update_restart_threshold_ = 0;
 
-  std::vector<int> tmp_constraints_;
   std::vector<int64_t> tmp_breakpoints_;
 
   // Statistics
   absl::Time last_logging_time_;
-  int64_t num_restarts_ = 0;
   int64_t num_batches_ = 0;
-  int64_t num_jumps_ = 0;
-  int64_t num_computed_jumps_ = 0;
+  int64_t num_linear_evals_ = 0;
+  int64_t num_general_evals_ = 0;
+  int64_t num_general_moves_ = 0;
+  int64_t num_linear_moves_ = 0;
+  int64_t num_partial_scans_ = 0;
+  int64_t num_repairs_with_full_scan_ = 0;
+  int64_t num_restarts_ = 0;
+  int64_t num_solutions_imported_ = 0;
   int64_t num_weight_updates_ = 0;
+
+  // Temporary storage.
+  std::vector<int> tmp_to_scan_;
+
+  // Info on the last solution loaded.
+  int64_t last_solution_rank_ = std::numeric_limits<int64_t>::max();
 };
 
 }  // namespace operations_research::sat

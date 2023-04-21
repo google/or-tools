@@ -207,9 +207,8 @@ int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
 }  // namespace
 
 // Compute the max of each expression, and assign it to the target expr (which
-// must be of the form +ref or -ref);
-// We only support post-solving the case were the target is unassigned,
-// but everything else is fixed.
+// must be of the form +ref or -ref); We only support post-solving the case
+// where all expression are fixed and correct.
 void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   int64_t max_value = std::numeric_limits<int64_t>::min();
   for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
@@ -217,9 +216,8 @@ void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   }
   const int target_ref = GetSingleRefFromExpression(ct.lin_max().target());
   const int target_var = PositiveRef(target_ref);
-  (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
-      Domain(RefIsPositive(target_ref) ? max_value : -max_value));
-  CHECK(!(*domains)[target_var].IsEmpty());
+  (*domains)[target_var] =
+      Domain(RefIsPositive(target_ref) ? max_value : -max_value);
 }
 
 // We only support 3 cases in the presolve currently.

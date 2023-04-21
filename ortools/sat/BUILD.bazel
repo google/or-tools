@@ -176,6 +176,7 @@ cc_library(
         ":util",
         "//ortools/base",
         "//ortools/base:hash",
+        "//ortools/graph:strongly_connected_components",
         "//ortools/port:proto_utils",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",

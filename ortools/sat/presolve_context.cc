@@ -1916,6 +1916,18 @@ bool PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
 
   // Note that the domain never include the offset, so we need to update it.
   if (offset != 0) AddToObjectiveOffset(offset);
+
+  // When we shift the cost using an exactly one, our objective implied bounds
+  // might be more or less precise. If the objective domain is not constraining
+  // (and thus just constraining the upper bound), we relax it to make sure its
+  // stay "non constraining".
+  //
+  // TODO(user): This is a bit hacky, find a nicer way.
+  if (!objective_domain_is_constraining_) {
+    objective_domain_ =
+        Domain(std::numeric_limits<int64_t>::min(), objective_domain_.Max());
+  }
+
   return true;
 }
 

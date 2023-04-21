@@ -52,6 +52,12 @@ class LinearConstraintManager {
  public:
   struct ConstraintInfo {
     LinearConstraint constraint;
+
+    // For a boxed constraint, this is the constraint rhs - lhs. For a one sided
+    // constraint, we first use trivial activity bound to compute tight rhs and
+    // lhs and then use the same formula.
+    IntegerValue activity_range;
+
     double l2_norm = 0.0;
     int64_t inactive_count = 0;
     double objective_parallelism = 0.0;
@@ -169,7 +175,7 @@ class LinearConstraintManager {
 
   // Helper method to compute objective parallelism for a given constraint. This
   // also lazily computes objective norm.
-  void ComputeObjectiveParallelism(const ConstraintIndex ct_index);
+  void ComputeObjectiveParallelism(ConstraintIndex ct_index);
 
   // Multiplies all active counts and the increment counter by the given
   // 'scaling_factor'. This should be called when at least one of the active
@@ -179,6 +185,8 @@ class LinearConstraintManager {
   // Removes some deletable constraints with low active counts. For now, we
   // don't remove any constraints which are already in LP.
   void PermanentlyRemoveSomeConstraints();
+
+  void FillActivityRange(ConstraintInfo* info);
 
   const SatParameters& sat_parameters_;
   const IntegerTrail& integer_trail_;
