@@ -1193,7 +1193,7 @@ TEST(PrimalDualHybridGradientTest, DetectsNanInVariableBound) {
             TERMINATION_REASON_INVALID_PROBLEM);
 }
 
-TEST(PrimalDualHybridGradientTest, DetectsExcessiveVariableBoundGap) {
+TEST(PrimalDualHybridGradientTest, DetectsExcessiveVariableBound) {
   QuadraticProgram qp = TestLp();
   qp.variable_lower_bounds[3] = -1.0e60;
   SolverResult output =
@@ -1203,7 +1203,7 @@ TEST(PrimalDualHybridGradientTest, DetectsExcessiveVariableBoundGap) {
 }
 
 TEST(PrimalDualHybridGradientTest,
-     ExcessivelySmallVariableBoundGapOkWithoutPresolve) {
+     ExcessivelySmallVariableBoundOkWithoutPresolve) {
   QuadraticProgram qp = TestLp();
   qp.variable_lower_bounds[1] = 0.0;
   qp.variable_upper_bounds[1] = 1.0e-60;
@@ -1213,7 +1213,7 @@ TEST(PrimalDualHybridGradientTest,
 }
 
 TEST(PrimalDualHybridGradientTest,
-     DetectsExcessivelySmallVariableBoundGapWithPresolve) {
+     DetectsExcessivelySmallVariableBoundWithPresolve) {
   QuadraticProgram qp = TestLp();
   qp.variable_lower_bounds[1] = 0.0;
   qp.variable_upper_bounds[1] = 1.0e-60;

@@ -285,6 +285,9 @@ QuadraticProgramStats ComputeStats(
   VectorInfo combined_bounds_info = CombinedBoundsInfo(
       qp.Qp().constraint_lower_bounds, qp.Qp().constraint_upper_bounds,
       qp.DualSharder(), infinite_constraint_bound_threshold);
+  VectorInfo combined_variable_bounds_info = CombinedBoundsInfo(
+      qp.Qp().variable_lower_bounds, qp.Qp().variable_upper_bounds,
+      qp.PrimalSharder(), kInfinity);
   VectorInfo obj_vec_info =
       ComputeVectorInfo(qp.Qp().objective_vector, qp.PrimalSharder());
   VectorInfo gaps_info =
@@ -307,6 +310,14 @@ QuadraticProgramStats ComputeStats(
   program_stats.set_combined_bounds_min(combined_bounds_info.smallest);
   program_stats.set_combined_bounds_avg(combined_bounds_info.average);
   program_stats.set_combined_bounds_l2_norm(combined_bounds_info.l2_norm);
+  program_stats.set_combined_variable_bounds_max(
+      combined_variable_bounds_info.largest);
+  program_stats.set_combined_variable_bounds_min(
+      combined_variable_bounds_info.smallest);
+  program_stats.set_combined_variable_bounds_avg(
+      combined_variable_bounds_info.average);
+  program_stats.set_combined_variable_bounds_l2_norm(
+      combined_variable_bounds_info.l2_norm);
   program_stats.set_variable_bound_gaps_num_finite(
       gaps_info.num_finite_nonzero + gaps_info.num_zero);
   program_stats.set_variable_bound_gaps_max(gaps_info.largest);

@@ -27,6 +27,7 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
+#include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -35,6 +36,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
@@ -800,28 +802,38 @@ std::optional<SolverResult> CheckProblemStats(
         << " and smallest non-zero absolute value "
         << problem_stats.combined_bounds_min() << "; performance may suffer.";
   }
-  if (std::isnan(problem_stats.variable_bound_gaps_l2_norm())) {
+  if (std::isnan(problem_stats.combined_variable_bounds_l2_norm())) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
                              "Variable bounds vector has a NAN.");
   }
-  if (problem_stats.variable_bound_gaps_max() > kExcessiveInputValue) {
+  if (problem_stats.combined_variable_bounds_max() > kExcessiveInputValue) {
     return ErrorSolverResult(
         TERMINATION_REASON_INVALID_PROBLEM,
-        absl::StrCat("Variable bound gaps vector has a finite non-zero with "
+        absl::StrCat("Combined variable bounds vector has a non-zero with "
                      "absolute value ",
-                     problem_stats.variable_bound_gaps_max(),
+                     problem_stats.combined_variable_bounds_max(),
                      " which exceeds limit of ", kExcessiveInputValue, "."));
   }
   if (check_excessively_small_values &&
-      problem_stats.variable_bound_gaps_min() > 0 &&
-      problem_stats.variable_bound_gaps_min() < kExcessivelySmallInputValue) {
+      problem_stats.combined_variable_bounds_min() > 0 &&
+      problem_stats.combined_variable_bounds_min() <
+          kExcessivelySmallInputValue) {
     return ErrorSolverResult(
         TERMINATION_REASON_INVALID_PROBLEM,
-        absl::StrCat("Variable bound gaps vector has a finite non-zero with "
+        absl::StrCat("Combined variable bounds vector has a non-zero with "
                      "absolute value ",
-                     problem_stats.variable_bound_gaps_min(),
+                     problem_stats.combined_variable_bounds_min(),
                      " which is less than the limit of ",
                      kExcessivelySmallInputValue, "."));
+  }
+  if (problem_stats.combined_variable_bounds_max() >
+      kMaxDynamicRange * problem_stats.combined_variable_bounds_min()) {
+    LOG(WARNING)
+        << "Combined variable bounds vector has largest absolute value "
+        << problem_stats.combined_variable_bounds_max()
+        << " and smallest non-zero absolute value "
+        << problem_stats.combined_variable_bounds_min()
+        << "; performance may suffer.";
   }
   if (problem_stats.variable_bound_gaps_max() >
       kMaxDynamicRange * problem_stats.variable_bound_gaps_min()) {
@@ -1707,7 +1719,7 @@ Solver::NextSolutionAndDelta Solver::ComputeNextDualSolution(
              extrapolation_factor * shard(next_primal_solution.delta));
       });
   // TODO(user): Refactor this multiplication so that we only do one matrix
-  // vector mutiply for the primal variable. This only applies to Malitsky and
+  // vector multiply for the primal variable. This only applies to Malitsky and
   // Pock and not to the adaptive step size rule.
   ShardedWorkingQp().TransposedConstraintMatrixSharder().ParallelForEachShard(
       [&](const Sharder::Shard& shard) {

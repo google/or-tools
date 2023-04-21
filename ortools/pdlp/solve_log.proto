@@ -57,6 +57,16 @@ message QuadraticProgramStats {
   optional double combined_bounds_avg = 11;
   optional double combined_bounds_l2_norm = 24;
 
+  // Statistics of the combined vector of the variable lower and upper bounds.
+  // See the comment before `combined_bounds_max` for a description of the
+  // "combined bounds" vector. The min is over the nonzero combined bounds. If
+  // there are no variables, the values returned are 0 for the maximum, minimum,
+  // and l2 norm and NaN for the average.
+  optional double combined_variable_bounds_max = 28;
+  optional double combined_variable_bounds_min = 29;
+  optional double combined_variable_bounds_avg = 30;
+  optional double combined_variable_bounds_l2_norm = 31;
+
   // Number of finite variable bound gaps, which are the elementwise difference
   // between the upper and lower bounds on primal feasible solutions.
   optional int64 variable_bound_gaps_num_finite = 12;
