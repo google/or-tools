@@ -36,8 +36,8 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def on_solution_callback(self):
         current_time = time.time()
-        print('Solution %i, time = %f s' %
-              (self.__solution_count, current_time - self.__start_time))
+        print(f'Solution {self.__solution_count}, '
+              f'time = {current_time - self.__start_time} s')
         self.__solution_count += 1
 
         all_queens = range(len(self.__queens))
@@ -65,7 +65,7 @@ def main(board_size):
     # There are `board_size` number of variables, one for a queen in each column
     # of the board. The value of each variable is the row that the queen is in.
     queens = [
-        model.NewIntVar(0, board_size - 1, 'x%i' % i) for i in range(board_size)
+        model.NewIntVar(0, board_size - 1, f'x_{i}') for i in range(board_size)
     ]
     # [END variables]
 

@@ -28,10 +28,10 @@ class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
 
     def on_solution_callback(self):
-        print('Solution %i' % self.__solution_count)
-        print('  objective value = %i' % self.ObjectiveValue())
+        print(f'Solution {self.__solution_count}')
+        print(f'  objective value = {self.ObjectiveValue()}')
         for v in self.__variables:
-            print('  %s = %i' % (v, self.Value(v)), end=' ')
+            print(f'  {v}={self.Value(v)}', end=' ')
         print()
         self.__solution_count += 1
 
@@ -71,8 +71,8 @@ def SolveAndPrintIntermediateSolutionsSampleSat():
     status = solver.Solve(model, solution_printer)
     # [END solve]
 
-    print('Status = %s' % solver.StatusName(status))
-    print('Number of solutions found: %i' % solution_printer.solution_count())
+    print(f'Status = {solver.StatusName(status)}')
+    print(f'Number of solutions found: {solution_printer.solution_count()}')
 
 
 SolveAndPrintIntermediateSolutionsSampleSat()

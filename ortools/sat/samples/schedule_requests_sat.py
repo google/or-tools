@@ -55,8 +55,7 @@ def main():
     for n in all_nurses:
         for d in all_days:
             for s in all_shifts:
-                shifts[(n, d,
-                        s)] = model.NewBoolVar('shift_n%id%is%i' % (n, d, s))
+                shifts[(n, d, s)] = model.NewBoolVar(f'shift_n{n}_d{d}_s{s}')
     # [END variables]
 
     # Each shift is assigned to exactly one nurse in .
@@ -128,9 +127,9 @@ def main():
     # Statistics.
     # [START statistics]
     print('\nStatistics')
-    print('  - conflicts: %i' % solver.NumConflicts())
-    print('  - branches : %i' % solver.NumBranches())
-    print('  - wall time: %f s' % solver.WallTime())
+    print(f'  - conflicts: {solver.NumConflicts()}')
+    print(f'  - branches : {solver.NumBranches()}')
+    print(f'  - wall time: {solver.WallTime()}s')
     # [END statistics]
 
 

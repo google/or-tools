@@ -40,9 +40,9 @@ def non_linear_sat():
     status = solver.Solve(model)
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print('x = %i' % solver.Value(x))
-        print('y = %i' % solver.Value(y))
-        print('s = %i' % solver.Value(area))
+        print(f'x = {solver.Value(x)}')
+        print(f'y = {solver.Value(y)}')
+        print(f's = {solver.Value(area)}')
     else:
         print('No solution found.')
 

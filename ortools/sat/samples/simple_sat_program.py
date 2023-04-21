@@ -47,9 +47,9 @@ def SimpleSatProgram():
 
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print('x = %i' % solver.Value(x))
-        print('y = %i' % solver.Value(y))
-        print('z = %i' % solver.Value(z))
+        print(f'x = {solver.Value(x)}')
+        print(f'y = {solver.Value(y)}')
+        print(f'z = {solver.Value(z)}')
     else:
         print('No solution found.')
     # [END print_solution]

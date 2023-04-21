@@ -40,7 +40,7 @@ def RankTasks(model, starts, presences, ranks):
             if i == j:
                 precedences[(i, j)] = presences[i]
             else:
-                prec = model.NewBoolVar('%i before %i' % (i, j))
+                prec = model.NewBoolVar(f'{i} before {j}')
                 precedences[(i, j)] = prec
                 model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec)
 
@@ -92,25 +92,25 @@ def RankingSampleSat():
 
     # Creates intervals, half of them are optional.
     for t in all_tasks:
-        start = model.NewIntVar(0, horizon, 'start_%i' % t)
+        start = model.NewIntVar(0, horizon, f'start[{t}]')
         duration = t + 1
-        end = model.NewIntVar(0, horizon, 'end_%i' % t)
+        end = model.NewIntVar(0, horizon, f'end[{t}]')
         if t < num_tasks // 2:
             interval = model.NewIntervalVar(start, duration, end,
-                                            'interval_%i' % t)
+                                            f'interval[{t}]')
             presence = True
         else:
-            presence = model.NewBoolVar('presence_%i' % t)
+            presence = model.NewBoolVar(f'presence[{t}]')
             interval = model.NewOptionalIntervalVar(start, duration, end,
                                                     presence,
-                                                    'o_interval_%i' % t)
+                                                    f'o_interval[{t}]')
         starts.append(start)
         ends.append(end)
         intervals.append(interval)
         presences.append(presence)
 
         # Ranks = -1 if and only if the tasks is not performed.
-        ranks.append(model.NewIntVar(-1, num_tasks - 1, 'rank_%i' % t))
+        ranks.append(model.NewIntVar(-1, num_tasks - 1, f'rank[{t}]'))
 
     # Adds NoOverlap constraint.
     model.AddNoOverlap(intervals)
@@ -137,17 +137,17 @@ def RankingSampleSat():
 
     if status == cp_model.OPTIMAL:
         # Prints out the makespan and the start times and ranks of all tasks.
-        print('Optimal cost: %i' % solver.ObjectiveValue())
-        print('Makespan: %i' % solver.Value(makespan))
+        print(f'Optimal cost: {solver.ObjectiveValue()}')
+        print(f'Makespan: {solver.Value(makespan)}')
         for t in all_tasks:
             if solver.Value(presences[t]):
-                print('Task %i starts at %i with rank %i' %
-                      (t, solver.Value(starts[t]), solver.Value(ranks[t])))
+                print(f'Task {t} starts at {solver.Value(starts[t])} '
+                      f'with rank {solver.Value(ranks[t])}')
             else:
-                print('Task %i in not performed and ranked at %i' %
-                      (t, solver.Value(ranks[t])))
+                print(f'Task {t} in not performed '
+                      f'and ranked at {solver.Value(ranks[t])}')
     else:
-        print('Solver exited with nonoptimal status: %i' % status)
+        print(f'Solver exited with nonoptimal status: {status}')
 
 
 RankingSampleSat()

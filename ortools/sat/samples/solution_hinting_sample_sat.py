@@ -52,8 +52,8 @@ def SolutionHintingSampleSat():
     status = solver.Solve(model, solution_printer)
     # [END solve]
 
-    print('Status = %s' % solver.StatusName(status))
-    print('Number of solutions found: %i' % solution_printer.solution_count())
+    print(f'Status = {solver.StatusName(status)}')
+    print(f'Number of solutions found: {solution_printer.solution_count()}')
 
 
 SolutionHintingSampleSat()

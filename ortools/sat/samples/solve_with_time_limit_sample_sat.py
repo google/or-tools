@@ -39,9 +39,9 @@ def SolveWithTimeLimitSampleSat():
     status = solver.Solve(model)
 
     if status == cp_model.OPTIMAL:
-        print('x = %i' % solver.Value(x))
-        print('y = %i' % solver.Value(y))
-        print('z = %i' % solver.Value(z))
+        print(f'x = {solver.Value(x)}')
+        print(f'y = {solver.Value(y)}')
+        print(f'z = {solver.Value(z)}')
 
 
 SolveWithTimeLimitSampleSat()

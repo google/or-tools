@@ -36,13 +36,13 @@ def BinpackingProblemSat():
     for i in all_items:
         num_copies = items[i][1]
         for b in all_bins:
-            x[(i, b)] = model.NewIntVar(0, num_copies, 'x_%i_%i' % (i, b))
+            x[(i, b)] = model.NewIntVar(0, num_copies, f'x[{i},{b}]')
 
     # Load variables.
-    load = [model.NewIntVar(0, bin_capacity, 'load_%i' % b) for b in all_bins]
+    load = [model.NewIntVar(0, bin_capacity, f'load[{b}]') for b in all_bins]
 
     # Slack variables.
-    slacks = [model.NewBoolVar('slack_%i' % b) for b in all_bins]
+    slacks = [model.NewBoolVar(f'slack[{b}]') for b in all_bins]
 
     # Links load and x.
     for b in all_bins:
@@ -66,13 +66,13 @@ def BinpackingProblemSat():
     # Solves and prints out the solution.
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
-    print('Solve status: %s' % solver.StatusName(status))
+    print(f'Solve status: {solver.StatusName(status)}')
     if status == cp_model.OPTIMAL:
-        print('Optimal objective value: %i' % solver.ObjectiveValue())
+        print(f'Optimal objective value: {solver.ObjectiveValue()}')
     print('Statistics')
-    print('  - conflicts : %i' % solver.NumConflicts())
-    print('  - branches  : %i' % solver.NumBranches())
-    print('  - wall time : %f s' % solver.WallTime())
+    print(f'  - conflicts : {solver.NumConflicts()}')
+    print(f'  - branches  : {solver.NumBranches()}')
+    print(f'  - wall time : {solver.WallTime()}s')
 
 
 BinpackingProblemSat()

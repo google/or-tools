@@ -29,7 +29,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print('%s=%i' % (v, self.Value(v)), end=' ')
+            print(f'{v}={self.Value(v)}', end=' ')
         print()
 
     def solution_count(self):
@@ -67,8 +67,8 @@ def SearchForAllSolutionsSampleSat():
     status = solver.Solve(model, solution_printer)
     # [END solve]
 
-    print('Status = %s' % solver.StatusName(status))
-    print('Number of solutions found: %i' % solution_printer.solution_count())
+    print(f'Status = {solver.StatusName(status)}')
+    print(f'Number of solutions found: {solution_printer.solution_count()}')
 
 
 SearchForAllSolutionsSampleSat()

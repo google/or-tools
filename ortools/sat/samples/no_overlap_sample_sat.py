@@ -58,12 +58,12 @@ def NoOverlapSampleSat():
 
     if status == cp_model.OPTIMAL:
         # Print out makespan and the start times for all tasks.
-        print('Optimal Schedule Length: %i' % solver.ObjectiveValue())
-        print('Task 0 starts at %i' % solver.Value(start_0))
-        print('Task 1 starts at %i' % solver.Value(start_1))
-        print('Task 2 starts at %i' % solver.Value(start_2))
+        print(f'Optimal Schedule Length: {solver.ObjectiveValue()}')
+        print(f'Task 0 starts at {solver.Value(start_0)}')
+        print(f'Task 1 starts at {solver.Value(start_1)}')
+        print(f'Task 2 starts at {solver.Value(start_2)}')
     else:
-        print('Solver exited with nonoptimal status: %i' % status)
+        print(f'Solver exited with nonoptimal status: {status}')
 
 
 NoOverlapSampleSat()
