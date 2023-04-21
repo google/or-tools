@@ -233,7 +233,6 @@ cc_library(
 )
 
 # Glop parameters.
-
 proto_library(
     name = "parameters_proto",
     srcs = ["parameters.proto"],

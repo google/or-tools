@@ -18,13 +18,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"
 
 namespace operations_research {
 namespace bop {
 
-SatCoreBasedOptimizer::SatCoreBasedOptimizer(const std::string& name)
+SatCoreBasedOptimizer::SatCoreBasedOptimizer(absl::string_view name)
     : BopOptimizerBase(name),
       state_update_stamp_(ProblemState::kInitialStampValue),
       initialized_(false),

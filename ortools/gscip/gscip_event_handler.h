@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "ortools/gscip/gscip.h"
 #include "scip/type_event.h"
 
@@ -96,11 +97,12 @@ class GScipEventHandler {
 
   // Registers this event handler to the given GScip.
   //
-  // This function CHECKs that this handler has not been previously registered.
+  // This function returns an internal Status error if this handler has already
+  // been registered.
   //
   // The given GScip won't own this handler but will keep a pointer to it that
   // will be used during the solve.
-  void Register(GScip* gscip);
+  absl::Status Register(GScip* gscip);
 
   // Initialization of the event handler. Called after the problem was
   // transformed.

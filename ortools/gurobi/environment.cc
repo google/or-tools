@@ -32,6 +32,7 @@ namespace operations_research {
 bool GurobiIsCorrectlyInstalled() {
   absl::StatusOr<GRBenv*> status = GetGurobiEnv();
   if (!status.ok() || status.value() == nullptr) {
+    LOG(WARNING) << status.status();
     return false;
   }
 

@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <complex>
+#include <cstdlib>
 #include <limits>
 #include <optional>
 #include <stdexcept>

@@ -89,9 +89,10 @@ static SCIP_DECL_EVENTFREE(EventFree) {
 
 namespace operations_research {
 
-void GScipEventHandler::Register(GScip* const gscip) {
-  CHECK_EQ(gscip_, nullptr) << "Already registered.";
-  CHECK_EQ(event_handler_, nullptr);
+absl::Status GScipEventHandler::Register(GScip* const gscip) {
+  if (gscip_ != nullptr || event_handler_ != nullptr) {
+    return absl::InternalError("Already registered");
+  }
 
   gscip_ = gscip;
 
@@ -100,17 +101,21 @@ void GScipEventHandler::Register(GScip* const gscip) {
   event_handler_data->gscip = gscip;
   event_handler_data->handler = this;
 
-  CHECK_OK(SCIP_TO_STATUS(SCIPincludeEventhdlrBasic(
+  RETURN_IF_SCIP_ERROR(SCIPincludeEventhdlrBasic(
       gscip->scip(), &event_handler_, description_.name.c_str(),
-      description_.description.c_str(), EventExec, event_handler_data)));
-  CHECK_NE(event_handler_, nullptr);
+      description_.description.c_str(), EventExec, event_handler_data));
+  if (event_handler_ == nullptr) {
+    // This is only defensive: SCIP should return a SCIP error above instead.
+    return absl::InternalError("SCIP failed to create event handler");
+  }
 
-  CHECK_OK(SCIP_TO_STATUS(
-      SCIPsetEventhdlrInit(gscip->scip(), event_handler_, EventInit)));
-  CHECK_OK(SCIP_TO_STATUS(
-      SCIPsetEventhdlrExit(gscip->scip(), event_handler_, EventExit)));
-  CHECK_OK(SCIP_TO_STATUS(
-      SCIPsetEventhdlrFree(gscip->scip(), event_handler_, EventFree)));
+  RETURN_IF_SCIP_ERROR(
+      SCIPsetEventhdlrInit(gscip->scip(), event_handler_, EventInit));
+  RETURN_IF_SCIP_ERROR(
+      SCIPsetEventhdlrExit(gscip->scip(), event_handler_, EventExit));
+  RETURN_IF_SCIP_ERROR(
+      SCIPsetEventhdlrFree(gscip->scip(), event_handler_, EventFree));
+  return absl::OkStatus();
 }
 
 SCIP_RETCODE GScipEventHandler::CatchEvent(const SCIP_EVENTTYPE event_type) {

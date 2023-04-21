@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
@@ -125,7 +126,7 @@ class MainLpPreprocessor : public Preprocessor {
   // Runs the given preprocessor and push it on preprocessors_ for the postsolve
   // step when needed.
   void RunAndPushIfRelevant(std::unique_ptr<Preprocessor> preprocessor,
-                            const std::string& name, TimeLimit* time_limit,
+                            absl::string_view name, TimeLimit* time_limit,
                             LinearProgram* lp);
 
   // Stack of preprocessors currently applied to the lp that needs postsolve.

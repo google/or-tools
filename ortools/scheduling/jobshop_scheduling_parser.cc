@@ -21,6 +21,7 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
@@ -538,13 +539,13 @@ void JsspParser::ProcessEarlyTardyLine(const std::string& line) {
   }
 }
 
-int JsspParser::strtoint32(const std::string& word) {
+int JsspParser::strtoint32(absl::string_view word) {
   int result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }
 
-int64_t JsspParser::strtoint64(const std::string& word) {
+int64_t JsspParser::strtoint64(absl::string_view word) {
   int64_t result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;

@@ -18,6 +18,7 @@
 #include <string>
 
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
 
@@ -74,8 +75,8 @@ class JsspParser {
 
   void SetJobs(int job_count);
   void SetMachines(int machine_count);
-  int strtoint32(const std::string& word);
-  int64_t strtoint64(const std::string& word);
+  int strtoint32(absl::string_view word);
+  int64_t strtoint64(absl::string_view word);
 
   JsspInputProblem problem_;
   int declared_machine_count_ = -1;

@@ -32,6 +32,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
@@ -45,7 +46,7 @@ namespace bop {
 // TODO(user): Merge this with the code in sat/optimization.cc
 class SatCoreBasedOptimizer : public BopOptimizerBase {
  public:
-  explicit SatCoreBasedOptimizer(const std::string& name);
+  explicit SatCoreBasedOptimizer(absl::string_view name);
   ~SatCoreBasedOptimizer() override;
 
  protected:

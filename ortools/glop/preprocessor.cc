@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
@@ -146,7 +147,7 @@ bool MainLpPreprocessor::Run(LinearProgram* lp) {
 #undef RUN_PREPROCESSOR
 
 void MainLpPreprocessor::RunAndPushIfRelevant(
-    std::unique_ptr<Preprocessor> preprocessor, const std::string& name,
+    std::unique_ptr<Preprocessor> preprocessor, absl::string_view name,
     TimeLimit* time_limit, LinearProgram* lp) {
   RETURN_IF_NULL(preprocessor);
   RETURN_IF_NULL(time_limit);

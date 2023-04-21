@@ -96,6 +96,7 @@ absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
       break;
     default:
       response.set_status(MPSOLVER_NOT_SOLVED);
+      break;
   }
   if (pdhg_result.solve_log.has_termination_string()) {
     response.set_status_str(pdhg_result.solve_log.termination_string());
