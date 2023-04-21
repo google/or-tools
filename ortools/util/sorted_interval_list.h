@@ -228,6 +228,20 @@ class Domain {
   int64_t Size() const;
 
   /**
+   * Returns true if the domain has just two values. This often mean a non-fixed
+   * Boolean variable.
+   */
+  bool HasTwoValues() const {
+    if (intervals_.size() == 1) {
+      return intervals_[0].end == intervals_[0].start + 1;
+    } else if (intervals_.size() == 2) {
+      return intervals_[0].end == intervals_[0].start &&
+             intervals_[1].end == intervals_[1].start;
+    }
+    return false;
+  }
+
+  /**
    * Returns the min value of the domain.
    * The domain must not be empty.
    */
