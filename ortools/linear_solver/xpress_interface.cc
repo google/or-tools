@@ -19,6 +19,10 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <sstream>
+#include <istream>
+#include <fstream>
+#include <cctype>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
@@ -35,41 +39,161 @@ extern "C" {
 #define STRINGIFY2(X) #X
 #define STRINGIFY(X) STRINGIFY2(X)
 
-void printError(const XPRSprob& mLp, int line) {
-  char errmsg[512];
-  XPRSgetlasterror(mLp, errmsg);
-  VLOG(0) << absl::StrFormat("Function line %d did not execute correctly: %s\n",
-                             line, errmsg);
-  exit(0);
+extern "C" {
+  static void XPRS_CC
+  cbmessage(XPRSprob, void *cbdata, char const *msg, int msglen, int msgtype)
+  {
+    if (msgtype < 0) {
+      // msgtype < 0 is a request to flush all output.
+      LOG(INFO) << std::flush;
+      LOG(WARNING) << std::flush;
+      LOG(ERROR) << std::flush;
+    }
+    else if (msglen > 0 || msg) { // Empty lines have msglen=0, msg!=NULL
+      switch (msgtype) {
+      case 1: /* info */ LOG(INFO) << msg << std::endl; break;
+      case 2: /* unused */ break;
+      case 3: /* warn */ LOG(WARNING) << msg << std::endl; break;
+      case 4: /* error */ LOG(ERROR) << msg << std::endl; break;
+      }
+    }
+  }
 }
 
-int XPRSgetnumcols(const XPRSprob& mLp) {
-  int nCols = 0;
-  XPRSgetintattrib(mLp, XPRS_COLS, &nCols);
-  return nCols;
-}
+namespace {
+  // Get the solver version for prob as string.
+  std::string getSolverVersion(XPRSprob const &prob) {
+    // XPRS_VERSION gives the version number as MAJOR*100 + RELEASE.
+    // It does not include the build number.
+    int version;
+    if ( !prob || XPRSgetintcontrol(prob, XPRS_VERSION, &version) )
+      return "XPRESS library version unknown";
 
-int XPRSgetnumrows(const XPRSprob& mLp) {
-  int nRows = 0;
-  XPRSgetintattrib(mLp, XPRS_ROWS, &nRows);
-  return nRows;
-}
+    int const major = version / 100;
+    version -= major * 100;
+    int const release = version;
 
-int XPRSgetitcnt(const XPRSprob& mLp) {
-  int nIters = 0;
-  XPRSgetintattrib(mLp, XPRS_SIMPLEXITER, &nIters);
-  return nIters;
-}
+    return absl::StrFormat("XPRESS library version %d.%02d", major, release);
+  }
+  
+  // Apply the specified name=value setting to prob.
+  bool readParameter(XPRSprob const &prob, std::string const &name, std::string const &value)
+  {
+    // We cannot set empty parameters.
+    if (!value.size()) {
+      LOG(DFATAL) << "Empty value for parameter '" << name << "' in "
+                  << getSolverVersion(prob);
+      return false;
+    }
 
-int XPRSgetnodecnt(const XPRSprob& mLp) {
-  int nNodes = 0;
-  XPRSgetintattrib(mLp, XPRS_NODES, &nNodes);
-  return nNodes;
-}
+    // Figure out the type of the control.
+    int id, type;
+    if (XPRSgetcontrolinfo(prob, name.c_str(), &id, &type) ||
+        type == XPRS_TYPE_NOTDEFINED)
+    {
+      LOG(DFATAL) << "Unknown parameter '" << name << "' in "
+                  << getSolverVersion(prob);
+      return false;
+    }
 
-int XPRSsetobjoffset(const XPRSprob& mLp, double value) {
-  XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
-  return 0;
+    // Depending on the type, parse the text in value and apply it.
+    std::stringstream v(value);
+    v.imbue(std::locale("C"));
+    switch (type) {
+    case XPRS_TYPE_INT:
+    {
+      int i;
+      v >> i;
+      if (!v.eof()) {
+        LOG(DFATAL) << "Failed to parse value '" << value
+                    << "' for int parameter '" << name << "' in "
+                    << getSolverVersion(prob);
+        return false;
+      }
+      if (XPRSsetintcontrol(prob, id, i)) {
+        LOG(DFATAL) << "Failed to set int parameter '" << name
+                    << "' to " << value << " (" << i << ") in "
+                    << getSolverVersion(prob);
+        return false;
+      }
+    }
+    break;
+    case XPRS_TYPE_INT64:
+    {
+      XPRSint64 i;
+      v >> i;
+      if (!v.eof()) {
+        LOG(DFATAL) << "Failed to parse value '" << value
+                    << "' for int64 parameter '" << name << "' in "
+                    << getSolverVersion(prob);
+        return false;
+      }
+      if (XPRSsetintcontrol64(prob, id, i)) {
+        LOG(DFATAL) << "Failed to set int64 parameter '" << name
+                    << "' to " << value << " (" << i << ") in "
+                    << getSolverVersion(prob);
+        return false;
+      }
+    }
+    break;
+    case XPRS_TYPE_DOUBLE:
+    {
+      double d;
+      v >> d;
+      if (!v.eof()) {
+        LOG(DFATAL) << "Failed to parse value '" << value
+                    << "' for dbl parameter '" << name << "' in "
+                    << getSolverVersion(prob);
+        return false;
+      }
+      if (XPRSsetdblcontrol(prob, id, d)) {
+        LOG(DFATAL) << "Failed to set double parameter '" << name
+                    << "' to " << value << " (" << d << ") in "
+                    << getSolverVersion(prob);
+        return false;
+      }
+    }
+    break;
+    default:
+      // Note that string parameters are not supported at the moment since
+      // we don't want to deal with potential encoding or escaping issues.
+      LOG(DFATAL) << "Unsupported parameter type " << type
+                  << " for parameter '" << name << "' in "
+                  << getSolverVersion(prob);
+      return false;
+    }
+    
+    return true;
+  }
+
+  int XPRSgetnumcols(const XPRSprob& mLp) {
+    int nCols = 0;
+    XPRSgetintattrib(mLp, XPRS_ORIGINALCOLS, &nCols);
+    return nCols;
+  }
+
+  int XPRSgetnumrows(const XPRSprob& mLp) {
+    int nRows = 0;
+    XPRSgetintattrib(mLp, XPRS_ORIGINALROWS, &nRows);
+    return nRows;
+  }
+
+  int XPRSgetitcnt(const XPRSprob& mLp) {
+    int nIters = 0;
+    XPRSgetintattrib(mLp, XPRS_SIMPLEXITER, &nIters);
+    return nIters;
+  }
+
+  int XPRSgetnodecnt(const XPRSprob& mLp) {
+    int nNodes = 0;
+    XPRSgetintattrib(mLp, XPRS_NODES, &nNodes);
+    return nNodes;
+  }
+
+  int XPRSsetobjoffset(const XPRSprob& mLp, double value) {
+    XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
+    return 0;
+  }
 }
 
 enum XPRS_BASIS_STATUS {
@@ -81,7 +205,7 @@ enum XPRS_BASIS_STATUS {
 
 // In case we need to return a double but don't have a value for that
 // we just return a NaN.
-#if !defined(CPX_NAN)
+#if !defined(XPRS_NAN)
 #define XPRS_NAN std::numeric_limits<double>::quiet_NaN()
 #endif
 
@@ -158,19 +282,19 @@ class XpressInterface : public MPSolverInterface {
   // Query problem type.
   // Remember that problem type is a static property that is set
   // in the constructor and never changed.
-  virtual bool IsContinuous() const { return IsLP(); }
-  virtual bool IsLP() const { return !mMip; }
-  virtual bool IsMIP() const { return mMip; }
+  bool IsContinuous() const override { return IsLP(); }
+  bool IsLP() const override { return !mMip; }
+  bool IsMIP() const override { return mMip; }
 
-  virtual void ExtractNewVariables();
-  virtual void ExtractNewConstraints();
-  virtual void ExtractObjective();
+  void ExtractNewVariables() override;
+  void ExtractNewConstraints() override;
+  void ExtractObjective() override;
 
-  virtual std::string SolverVersion() const;
+  std::string SolverVersion() const override;
 
-  virtual void* underlying_solver() { return reinterpret_cast<void*>(mLp); }
+  void* underlying_solver() override { return reinterpret_cast<void*>(mLp); }
 
-  virtual double ComputeExactConditionNumber() const {
+  double ComputeExactConditionNumber() const override {
     if (!IsContinuous()) {
       LOG(DFATAL) << "ComputeExactConditionNumber not implemented for"
                   << " XPRESS_MIXED_INTEGER_PROGRAMMING";
@@ -183,16 +307,23 @@ class XpressInterface : public MPSolverInterface {
     return 0.0;
   }
 
+  bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
+  bool InterruptSolve() override {
+    if (mLp)
+      XPRSinterrupt(mLp, XPRS_STOP_USER);
+    return true;
+  }
+
  protected:
   // Set all parameters in the underlying solver.
-  virtual void SetParameters(MPSolverParameters const& param);
+  void SetParameters(MPSolverParameters const& param) override;
   // Set each parameter in the underlying solver.
-  virtual void SetRelativeMipGap(double value);
-  virtual void SetPrimalTolerance(double value);
-  virtual void SetDualTolerance(double value);
-  virtual void SetPresolveMode(int value);
-  virtual void SetScalingMode(int value);
-  virtual void SetLpAlgorithm(int value);
+  void SetRelativeMipGap(double value) override;
+  void SetPrimalTolerance(double value) override;
+  void SetDualTolerance(double value) override;
+  void SetPresolveMode(int value) override;
+  void SetScalingMode(int value) override;
+  void SetLpAlgorithm(int value) override;
 
   virtual bool ReadParameterFile(std::string const& filename);
   virtual std::string ValidFileExtensionForParameterFile() const;
@@ -209,6 +340,8 @@ class XpressInterface : public MPSolverInterface {
 
   // Transform XPRESS basis status to MPSolver basis status.
   static MPSolver::BasisStatus xformBasisStatus(int xpress_basis_status);
+
+  bool readParameters(std::istream &is, char sep);
 
  private:
   XPRSprob mLp;
@@ -377,21 +510,7 @@ XpressInterface::~XpressInterface() {
 }
 
 std::string XpressInterface::SolverVersion() const {
-  // We prefer XPRSversionnumber() over XPRSversion() since the
-  // former will never pose any encoding issues.
-  int version = 0;
-  CHECK_STATUS(XPRSgetintcontrol(mLp, XPRS_VERSION, &version));
-
-  int const major = version / 1000000;
-  version -= major * 1000000;
-  int const release = version / 10000;
-  version -= release * 10000;
-  int const mod = version / 100;
-  version -= mod * 100;
-  int const fix = version;
-
-  return absl::StrFormat("XPRESS library version %d.%02d.%02d.%02d", major,
-                         release, mod, fix);
+  return getSolverVersion(mLp);
 }
 
 // ------ Model modifications and extraction -----
@@ -495,22 +614,14 @@ void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
   } else if (lb > XPRS_MINUSINFINITY && ub < XPRS_PLUSINFINITY) {
     // Both bounds are finite -> this is a ranged constraint
     // The value of a ranged constraint is allowed to be in
-    //   [ rhs[i], rhs[i]+rngval[i] ]
-    // see also the reference documentation for XPRSnewrows()
-    if (ub < lb) {
-      // The bounds for the constraint are contradictory. XPRESS models
-      // a range constraint l <= ax <= u as
-      //    ax = l + v
-      // where v is an auxiliary variable the range of which is controlled
-      // by l and u: if l < u then v in [0, u-l]
-      //             else          v in [u-l, 0]
-      // (the range is specified as the rngval[] argument to XPRSnewrows).
-      // Thus XPRESS cannot represent range constraints with contradictory
-      // bounds and we must error out here.
-      CHECK_STATUS(-1);
+    //   [ rhs-rngval, rhs ]
+    // Xpress does not support contradictory bounds. Instead the sign on
+    // rndval is always ignored.
+    if ( lb > ub ) {
+      LOG(DFATAL) << "XPRESS does not support contradictory bounds on range constraints! [" << lb << ", " << ub << "] will be converted to " << ub << ", " << (ub - std::abs(ub - lb)) << "]";
     }
     rhs = ub;
-    range = ub - lb;
+    range = std::abs(ub - lb); // This happens implicitly by XPRSaddrows() and XPRSloadlp()
     sense = 'R';
   } else if (ub < XPRS_PLUSINFINITY || (std::abs(ub) == XPRS_PLUSINFINITY &&
                                         std::abs(lb) > XPRS_PLUSINFINITY)) {
@@ -528,21 +639,17 @@ void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
     // Lower and upper bound are both infinite.
     // This is used for example in .mps files to specify alternate
     // objective functions.
-    // Note that the case lb==ub was already handled above, so we just
-    // pick the bound with larger magnitude and create a constraint for it.
-    // Note that we replace the infinite bound by XPRS_PLUSINFINITY since
-    // bounds with larger magnitude may cause other XPRESS functions to
-    // fail (for example the export to LP files).
-    DCHECK_GT(std::abs(lb), XPRS_PLUSINFINITY);
-    DCHECK_GT(std::abs(ub), XPRS_PLUSINFINITY);
-    if (std::abs(lb) > std::abs(ub)) {
-      rhs = (lb < 0) ? -XPRS_PLUSINFINITY : XPRS_PLUSINFINITY;
-      sense = 'G';
-    } else {
-      rhs = (ub < 0) ? -XPRS_PLUSINFINITY : XPRS_PLUSINFINITY;
-      sense = 'L';
-    }
+    // A free row is denoted by sense 'N' and we can specify arbitrary
+    // right-hand sides since they are ignored anyway. We just pick the
+    // bound with smaller absolute value.
+    DCHECK_GE(std::abs(lb), XPRS_PLUSINFINITY);
+    DCHECK_GE(std::abs(ub), XPRS_PLUSINFINITY);
+    if (std::abs(lb) < std::abs(ub))
+      rhs = lb;
+    else
+      rhs = ub;
     range = 0.0;
+    sense = 'N';
   }
 }
 
@@ -566,9 +673,18 @@ void XpressInterface::SetConstraintBounds(int index, double lb, double ub) {
       char sense;
       double range, rhs;
       MakeRhs(lb, ub, rhs, sense, range);
-      CHECK_STATUS(XPRSchgrhs(mLp, 1, &index, &lb));
-      CHECK_STATUS(XPRSchgrowtype(mLp, 1, &index, &sense));
-      CHECK_STATUS(XPRSchgrhsrange(mLp, 1, &index, &range));
+      if (sense == 'R') {
+        // Rather than doing the complicated analysis required for
+        // XPRSchgrhsrange(), we first convert the row into an 'L' row
+        // with defined rhs and then change the range value.
+        CHECK_STATUS(XPRSchgrowtype(mLp, 1, &index, "L"));
+        CHECK_STATUS(XPRSchgrhs(mLp, 1, &index, &rhs));
+        CHECK_STATUS(XPRSchgrhsrange(mLp, 1, &index, &range));
+      }
+      else {
+        CHECK_STATUS(XPRSchgrowtype(mLp, 1, &index, &sense));
+        CHECK_STATUS(XPRSchgrhs(mLp, 1, &index, &rhs));
+      }
     } else {
       // Constraint is not yet extracted. It is sufficient to mark the
       // modeling object as "out of sync"
@@ -1028,8 +1144,6 @@ void XpressInterface::ExtractNewConstraints() {
       unique_ptr<double[]> rhs(new double[chunk]);
       unique_ptr<char const*[]> name(new char const*[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
-      unique_ptr<int[]> rngind(new int[chunk]);
-      bool haveRanges = false;
 
       // Loop over the new constraints, collecting rows for up to
       // CHUNK constraints into the arrays so that adding constraints
@@ -1038,6 +1152,7 @@ void XpressInterface::ExtractNewConstraints() {
         // Collect up to CHUNK constraints into the arrays.
         int nextRow = 0;
         int nextNz = 0;
+        bool haveRanges = false;
         for (/* nothing */; c < newCons && nextRow < chunk; ++c, ++nextRow) {
           MPConstraint const* const ct = solver_->constraints_[offset + c];
 
@@ -1052,7 +1167,6 @@ void XpressInterface::ExtractNewConstraints() {
           MakeRhs(ct->lb(), ct->ub(), rhs[nextRow], sense[nextRow],
                   rngval[nextRow]);
           haveRanges = haveRanges || (rngval[nextRow] != 0.0);
-          rngind[nextRow] = offset + c;
 
           // Setup left-hand side of constraint.
           rmatbeg[nextRow] = nextNz;
@@ -1073,12 +1187,8 @@ void XpressInterface::ExtractNewConstraints() {
         }
         if (nextRow > 0) {
           CHECK_STATUS(XPRSaddrows(mLp, nextRow, nextNz, sense.get(), rhs.get(),
-                                   rngval.get(), rmatbeg.get(), rmatind.get(),
-                                   rmatval.get()));
-          if (haveRanges) {
-            CHECK_STATUS(
-                XPRSchgrhsrange(mLp, nextRow, rngind.get(), rngval.get()));
-          }
+                                   haveRanges ? rngval.get() : 0,
+                                   rmatbeg.get(), rmatind.get(), rmatval.get()));
         }
       }
     } catch (...) {
@@ -1209,14 +1319,77 @@ void XpressInterface::SetLpAlgorithm(int value) {
   }
 }
 
+bool XpressInterface::readParameters(std::istream &is, char sep) {
+  // - parameters must be specified as NAME=VALUE
+  // - settings must be separated by sep
+  // - any whitespace is ignored
+  // - string parameters are not supported
+
+  std::string name(""), value("");
+  bool inValue = false;
+
+  while (is) {
+    int c = is.get();
+    if (is.eof())
+      break;
+    if (c == '=') {
+      if (inValue) {
+        LOG(DFATAL) << "Failed to parse parameters in " << SolverVersion();
+        return false;
+      }
+      inValue = true;
+    }
+    else if (c == sep) {
+      // End of parameter setting
+      if (name.size() == 0 && value.size() == 0) {
+        // Ok to have empty "lines".
+        continue;
+      }
+      else if (name.size() == 0) {
+        LOG(DFATAL) << "Parameter setting without name in " << SolverVersion();
+      }
+      else if (!readParameter(mLp, name, value))
+        return false;
+
+      // Reset for parsing the next parameter setting.
+      name = "";
+      value = "";
+      inValue = false;
+    }
+    else if (std::isspace(c)) {
+      continue;
+    }
+    else if (inValue) {
+      value += (char)c;
+    }
+    else {
+      name += (char)c;
+    }
+  }
+  if (inValue)
+    return readParameter(mLp, name, value);
+
+  return true;
+}
+
 bool XpressInterface::ReadParameterFile(std::string const& filename) {
   // Return true on success and false on error.
-  LOG(DFATAL) << "ReadParameterFile not implemented for XPRESS interface";
-  return false;
+  std::ifstream s(filename);
+  if ( !s )
+    return false;
+  return readParameters(s, '\n');
 }
 
 std::string XpressInterface::ValidFileExtensionForParameterFile() const {
   return ".prm";
+}
+
+bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& parameters) {
+  if (parameters.empty()) {
+    return true;
+  }
+  std::stringstream s(parameters);
+  return readParameters(s, ';');
 }
 
 MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
@@ -1247,20 +1420,15 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   // Extract the model to be solved.
   // If we don't support incremental extraction and the low-level modeling
-  // is out of sync then we have to re-extract everything. Note that this
-  // will lose MIP starts or advanced basis information from a previous
-  // solve.
+  // is out of sync then we have to re-extract everything.
   if (!supportIncrementalExtraction && sync_status_ == MUST_RELOAD) Reset();
   ExtractModel();
   VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
 
-  // Set log level.
-  XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, quiet() ? 0 : 1);
+  // Enable log output.
+  if (!quiet())
+    XPRSaddcbmessage(mLp, cbmessage, nullptr, 0);
   // Set parameters.
-  // NOTE: We must invoke SetSolverSpecificParametersAsString() _first_.
-  //       Its current implementation invokes ReadParameterFile() which in
-  //       turn invokes XPRSreadcopyparam(). The latter will _overwrite_
-  //       all current parameter settings in the environment.
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
   SetParameters(param);
@@ -1268,15 +1436,14 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
     // In Xpress, a time limit should usually have a negative sign. With a
     // positive sign, the solver will only stop when a solution has been found.
-    CHECK_STATUS(XPRSsetdblcontrol(mLp, XPRS_MAXTIME,
+    CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_MAXTIME,
                                    -1.0 * solver_->time_limit_in_secs()));
   }
 
-  // Solve.
-  // Do not CHECK_STATUS here since some errors (for example CPXERR_NO_MEMORY)
-  // still allow us to query useful information.
   timer.Restart();
-
+  // Solve.
+  // Do not CHECK_STATUS here since some errors still allow us to query useful
+  // information.
   int xpressstat = 0;
   if (mMip) {
     if (this->maximize_)
@@ -1293,7 +1460,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   }
 
   // Disable screen output right after solve
-  XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, 0);
+  XPRSremovecbmessage(mLp, cbmessage, nullptr);
 
   if (status) {
     VLOG(1) << absl::StrFormat("Failed to optimize MIP. Error %d", status);
