@@ -39,6 +39,9 @@ def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
     solver.Minimize(x1 + 2 * x2)
     solver.Add(3 * x1 + 2 * x2 >= 17)
 
+    # Add a random, infeasible solution hint
+    solver.SetHint([x1, x2], [1.0, 0.0])
+
     SolveAndPrint(solver, [x1, x2])
 
 

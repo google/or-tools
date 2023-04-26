@@ -1078,6 +1078,43 @@ ENDATA
     EXPECT_NEAR(c2->dual_value(), 0, 1e-8);
     EXPECT_NEAR(c3->dual_value(), 0.6, 1e-8);
   }
+
+  TEST(XpressInterface, SetHint) {
+    // Once a solution is added to XPRESS, it is actually impossible to get it
+    // back using the API
+    // This test is a simple one that adds a hint and makes sure everything is OK
+    // (it is a copy of the previous one but with integer variables)
+    // The logs should contain line "User solution (USER_HINT) stored."
+    UNITTEST_INIT_MIP();
+
+    double inf = solver.infinity();
+    MPVariable* x = solver.MakeIntVar(0, inf, "x");
+    MPVariable* y = solver.MakeIntVar(0, inf, "y");
+    MPObjective* obj = solver.MutableObjective();
+    obj->SetCoefficient(x, 1);
+    obj->SetCoefficient(y, 2);
+    obj->SetMaximization();
+    MPConstraint* c1 = solver.MakeRowConstraint(-inf, 1);
+    c1->SetCoefficient(x, -1);
+    c1->SetCoefficient(y, 1);
+    MPConstraint* c2 = solver.MakeRowConstraint(-inf, 12);
+    c2->SetCoefficient(x, 3);
+    c2->SetCoefficient(y, 2);
+    MPConstraint* c3 = solver.MakeRowConstraint(-inf, 12);
+    c3->SetCoefficient(x, 2);
+    c3->SetCoefficient(y, 3);
+
+    std::vector<std::pair<const MPVariable*, double>> hint{{{x, 1.}, {y, 1.}}};
+    solver.SetHint(hint);
+
+    solver.EnableOutput();
+    solver.Solve();
+
+    EXPECT_NEAR(obj->Value(), 6.0, 1e-8);
+    EXPECT_NEAR(x->solution_value(), 2.0, 1e-8);
+    EXPECT_NEAR(y->solution_value(), 2.0, 1e-8);
+  }
+
 }  // namespace operations_research
 
 int main(int argc, char** argv) {

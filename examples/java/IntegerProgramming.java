@@ -45,6 +45,9 @@ public class IntegerProgramming {
     ct.setCoefficient(x1, 3);
     ct.setCoefficient(x2, 2);
 
+    // Add a random, infeasible solution hint
+    solver.setHint(new MPVariable[]{x1, x2}, new double[]{1., 0.});
+
     final MPSolver.ResultStatus resultStatus = solver.solve();
 
     // Check that the problem has an optimal solution.

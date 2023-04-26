@@ -74,6 +74,7 @@ std::function<int(XPRSprob prob, const char* filename, const char* flags)> XPRSw
 std::function<int(XPRSprob prob, char rowtype[], int first, int last)> XPRSgetrowtype = nullptr;
 std::function<int(XPRSprob prob, char coltype[], int first, int last)> XPRSgetcoltype = nullptr;
 std::function<int(XPRSprob prob, int nbounds, const int colind[], const char bndtype[], const double bndval[])> XPRSchgbounds = nullptr;
+std::function<int(XPRSprob prob, int length, const double solval[], const int colind[], const char* name)> XPRSaddmipsol = nullptr;
 std::function<int(XPRSprob prob, double x[], double slack[], double duals[], double djs[])> XPRSgetlpsol = nullptr;
 std::function<int(XPRSprob prob, double x[], double slack[])> XPRSgetmipsol = nullptr;
 std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[])> XPRSchgobj = nullptr;
@@ -132,6 +133,7 @@ absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSgetrowtype, "XPRSgetrowtype");
   xpress_dynamic_library->GetFunction(&XPRSgetcoltype, "XPRSgetcoltype");
   xpress_dynamic_library->GetFunction(&XPRSchgbounds, "XPRSchgbounds");
+  xpress_dynamic_library->GetFunction(&XPRSaddmipsol, "XPRSaddmipsol");
   xpress_dynamic_library->GetFunction(&XPRSgetlpsol, "XPRSgetlpsol");
   xpress_dynamic_library->GetFunction(&XPRSgetmipsol, "XPRSgetmipsol");
   xpress_dynamic_library->GetFunction(&XPRSchgobj, "XPRSchgobj");

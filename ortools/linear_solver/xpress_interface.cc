@@ -222,6 +222,9 @@ class XpressInterface : public MPSolverInterface {
     mRstat.clear();
     sync_status_ = MUST_RELOAD;
   }
+  // Adds a new feasible, infeasible or partial MIP solution for the problem to the Optimizer.
+  // The hint is read in the MPSolver where the user set it using SetHint()
+  void AddSolutionHintToOptimizer();
 
  private:
   XPRSprob mLp;
@@ -1619,6 +1622,9 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
       CHECK_STATUS(XPRSloadbasis(mLp, initRstat.data(), initCstat.data()));
   }
 
+  // Set the hint (if any)
+  this->AddSolutionHintToOptimizer();
+
   // Solve.
   // Do not CHECK_STATUS here since some errors (for example CPXERR_NO_MEMORY)
   // still allow us to query useful information.
@@ -1909,6 +1915,25 @@ void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char *sMsg, int nLen,
 			break;
 		}
 	}
+}
+
+void XpressInterface::AddSolutionHintToOptimizer() {
+  // Currently the XPRESS API does not handle clearing out previous hints
+  const std::size_t len = solver_->solution_hint_.size();
+  if (len == 0) {
+    // hint is empty, do nothing
+    return;
+  }
+  unique_ptr<int[]> colind(new int[len]);
+  unique_ptr<double[]> val(new double[len]);
+
+  for (std::size_t i  = 0; i < len ; ++i) {
+    colind[i] = solver_->solution_hint_[i].first->index();
+    val[i] = solver_->solution_hint_[i].second;
+  }
+  if (int status = XPRSaddmipsol(mLp, len, val.get(), colind.get(), "USER_HINT")) {
+    LOG(WARNING) << "Failed to set solution hint.";
+  }
 }
 
 }  // namespace operations_research
