@@ -343,7 +343,7 @@ namespace operations_research {
 		// type of extracted variables here.
 
 		if (!supportIncrementalExtraction &&
-			!(slowUpdates && SlowSetVariableInteger)) {
+			!(slowUpdates & SlowSetVariableInteger)) {
 			InvalidateModelSynchronization();
 		}
 		else {

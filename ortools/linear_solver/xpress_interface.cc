@@ -748,8 +748,7 @@ void XpressInterface::SetVariableInteger(int var_index, bool integer) {
   // (supportIncrementalExtraction is true) then we MUST change the
   // type of extracted variables here.
 
-  if (!supportIncrementalExtraction && !slowUpdates &&
-      !SlowSetVariableInteger) {
+  if (!supportIncrementalExtraction && !(slowUpdates & SlowSetVariableInteger)) {
     InvalidateModelSynchronization();
   } else {
     if (mMip) {
