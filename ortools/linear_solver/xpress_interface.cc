@@ -1846,7 +1846,7 @@ struct ScopedLocale {
     auto matchingParamIter = targetMap.find(paramAndValuePair.first);  \
     if (matchingParamIter != targetMap.end()) {                        \
       const auto convertedValue = converter(paramAndValuePair.second); \
-      LOG(INFO) << "Setting parameter " << paramAndValuePair.first     \
+      VLOG(1) << "Setting parameter " << paramAndValuePair.first       \
                 << " to value " << convertedValue << std::endl;        \
       setter(mLp, matchingParamIter->second, convertedValue);          \
       continue;                                                        \
