@@ -1627,8 +1627,8 @@ class MPSolverInterface {
     return std::nullopt;
   }
 
-  // Writes the model using the solver internal write function.  Currently only
-  // available for GurobiInterface.
+  // Writes the model using the solver internal write function.
+  // May throw a MPSWriteError
   virtual void Write(const std::string& filename);
 
   // ----- Model modifications and extraction -----

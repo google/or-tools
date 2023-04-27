@@ -22,6 +22,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/MPSWriteError.h"
 
 #if defined(USE_SIRIUS)
 
@@ -1406,7 +1407,7 @@ namespace operations_research {
 		VLOG(1) << "Writing Sirius MPS \"" << filename << "\".";
 		const int status = SRSwritempsprob(mLp->problem_mps, filename.c_str());
 		if (status) {
-			LOG(WARNING) << "Failed to write MPS.";
+                  throw MPSWriteError("Failed to write MPS.");
 		}
 	}
 
