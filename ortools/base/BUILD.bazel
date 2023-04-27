@@ -114,6 +114,15 @@ cc_library(
 )
 
 cc_library(
+    name = "callback",
+    hdrs = [
+        "callback.h",
+        "to_callback.h",
+    ],
+    deps = [":base"],
+)
+
+cc_library(
     name = "case",
     srcs = ["case.cc"],
     hdrs = ["case.h"],
@@ -516,6 +525,7 @@ cc_library(
     srcs = ["threadpool.cc"],
     hdrs = ["threadpool.h"],
     deps = [
+        ":callback",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/synchronization",
     ],
