@@ -1121,7 +1121,7 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const& param) {
       varindices[i] = solver_->solution_hint_[i].first->index();
       values[i] = solver_->solution_hint_[i].second;
     }
-    CPXaddmipstarts (mEnv, mLp, 1, sol_count, beg, varindices, values, NULL, NULL);
+    CPXXaddmipstarts (mEnv, mLp, 1, sol_count, beg, varindices, values, NULL, NULL);
   }
   // Set parameters.
   // NOTE: We must invoke SetSolverSpecificParametersAsString() _first_.
