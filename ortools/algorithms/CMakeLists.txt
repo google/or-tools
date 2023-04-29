@@ -13,8 +13,18 @@
 
 file(GLOB _SRCS "*.h" "*.cc")
 list(REMOVE_ITEM _SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/binary_indexed_tree_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/binary_search_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/dense_doubly_linked_list_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/duplicate_remover_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/dynamic_partition_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/dynamic_permutation_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/find_graph_symmetries_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/hungarian_test.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/hungarian_test.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/knapsack_solver_for_cuts_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/knapsack_solver_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/sparse_permutation_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/weighted_set_covering_test.cc
   )
 
 set(NAME ${PROJECT_NAME}_algorithms)

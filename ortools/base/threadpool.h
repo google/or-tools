@@ -22,6 +22,8 @@
 #include <thread>  // NOLINT
 #include <vector>
 
+#include "ortools/base/callback.h"
+
 namespace operations_research {
 class ThreadPool {
  public:
@@ -32,6 +34,7 @@ class ThreadPool {
   void Schedule(std::function<void()> closure);
   std::function<void()> GetNextTask();
   void SetQueueCapacity(int capacity);
+  void Add(Closure* closure);
 
  private:
   const int num_workers_;

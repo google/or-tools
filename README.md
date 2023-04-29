@@ -31,8 +31,8 @@ portable software suite for solving combinatorial optimization problems.
 
 The suite contains:
 
-*   A constraint programming solver;
-*   Two linear programming solvers;
+*   Two constraint programming solver (CP* and CP-SAT);
+*   Two linear programming solvers (Glop and PDLP);
 *   Wrappers around commercial and other open source solvers, including mixed
     integer solvers;
 *   Bin packing and knapsack algorithms;
@@ -40,8 +40,7 @@ The suite contains:
 *   Graph algorithms (shortest paths, min cost flow, max flow, linear sum
     assignment).
 
-We wrote OR-Tools in C++, but also provide wrappers in Python, C# and
-Java.
+We wrote OR-Tools in C++, but provide wrappers in Python, C# and Java.
 
 ## Codemap
 
