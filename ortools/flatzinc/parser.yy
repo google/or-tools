@@ -691,6 +691,9 @@ annotation:
     $$ = Annotation::Empty();
   }
 }
+| '[' ']' {
+  $$ = Annotation::Empty();
+}
 
 //---------------------------------------------------------------------------
 // Parsing solve declaration.
