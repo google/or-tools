@@ -595,7 +595,7 @@ TEST_F(FindSymmetriesTest, DirectedHypercube) {
     // The equivalence classes are the nodes with the same hamming weight.
     std::vector<std::vector<int>> nodes_by_hamming_weight(dimension + 1);
     for (int i = 0; i < num_nodes; ++i) {
-      nodes_by_hamming_weight[__builtin_popcount(i)].push_back(i);
+      nodes_by_hamming_weight[absl::popcount(i)].push_back(i);
     }
     std::vector<std::string> expected_equivalence_classes;
     for (const std::vector<int>& nodes : nodes_by_hamming_weight) {
