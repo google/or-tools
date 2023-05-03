@@ -894,8 +894,23 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
 }
 
 std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
+  int64_t int128_overflow = 0;
   for (int v = 0; v < model.variables_size(); ++v) {
     RETURN_IF_NOT_EMPTY(ValidateIntegerVariable(model, v));
+
+    const auto& domain = model.variables(v).domain();
+    const int64_t min = domain[0];
+    const int64_t max = domain[domain.size() - 1];
+    int128_overflow = CapAdd(
+        int128_overflow, std::max({std::abs(min), std::abs(max), max - min}));
+  }
+
+  // We require this precondition so that we can take any linear combination of
+  // variable with coefficient in int64_t and compute the activity on an int128
+  // with no overflow. This is useful during cut computation.
+  if (int128_overflow == std::numeric_limits<int64_t>::max()) {
+    return "The sum of all variable domains do not fit on an int64_t. This is "
+           "needed to prevent overflows.";
   }
 
   // We need to validate the intervals used first, so we add these constraints
@@ -1302,29 +1317,17 @@ class ConstraintChecker {
         const auto& yi = *enforced_intervals_xy[i].second;
         const auto& xj = *enforced_intervals_xy[j].first;
         const auto& yj = *enforced_intervals_xy[j].second;
-	if (ct.no_overlap_2d().boxes_with_null_area_can_overlap()) {
-	  if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj) &&
-	      !IntervalIsEmpty(xi) && !IntervalIsEmpty(xj) &&
-	      !IntervalIsEmpty(yi) && !IntervalIsEmpty(yj)) {
-	    VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
-		    << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
-		    << IntervalEnd(yi) << "]) and " << j << "(x=["
-		    << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
-		    << IntervalStart(yj) << ", " << IntervalEnd(yj)
-		    << "]) are not disjoint.";
-	    return false;
-	  }
-	} else {
-	  if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj)) {
-	    VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
-		    << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
-		    << IntervalEnd(yi) << "]) and " << j << "(x=["
-		    << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
-		    << IntervalStart(yj) << ", " << IntervalEnd(yj)
-		    << "]) are not disjoint.";
-	    return false;
-	  }
-	}
+        if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj) &&
+            !IntervalIsEmpty(xi) && !IntervalIsEmpty(xj) &&
+            !IntervalIsEmpty(yi) && !IntervalIsEmpty(yj)) {
+          VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
+                  << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
+                  << IntervalEnd(yi) << "]) and " << j << "(x=["
+                  << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
+                  << IntervalStart(yj) << ", " << IntervalEnd(yj)
+                  << "]) are not disjoint.";
+          return false;
+        }
       }
     }
     return true;

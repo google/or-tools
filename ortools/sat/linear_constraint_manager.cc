@@ -185,7 +185,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
       if (added != nullptr) *added = tightened;
       if (tightened) {
         ++num_merged_constraints_;
-        FillActivityRange(&constraint_infos_[ct_index]);
+        FillDerivedFields(&constraint_infos_[ct_index]);
       }
       return ct_index;
     }
@@ -196,7 +196,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   ConstraintInfo ct_info;
   ct_info.constraint = std::move(ct);
   ct_info.l2_norm = ComputeL2Norm(ct_info.constraint);
-  FillActivityRange(&ct_info);
+  FillDerivedFields(&ct_info);
   ct_info.hash = key;
   equiv_constraints_[key] = ct_index;
   ct_info.active_count = constraint_active_count_increase_;
@@ -411,16 +411,13 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
     ct->coeffs.resize(new_size);
   }
 
-  // Relax the bound if needed, note that this doesn't require a change to
-  // the equiv map.
-  if (min_sum >= ct->lb) ct->lb = kMinIntegerValue;
-  if (max_sum <= ct->ub) ct->ub = kMaxIntegerValue;
-
   // Clear constraints that are always true.
   // We rely on the deletion code to remove them eventually.
-  if (ct->lb == kMinIntegerValue && ct->ub == kMaxIntegerValue) {
+  if (min_sum >= ct->lb && max_sum <= ct->ub) {
     ct->vars.clear();
     ct->coeffs.clear();
+    ct->lb = 0;
+    ct->ub = 0;
     return true;
   }
 
@@ -429,16 +426,17 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   //
   // TODO(user): We could cover more case of coefficient strenghtening. For
   // example, if whe have 15 * X + 3 * Y >= 19, coeff of X can be reduced to 13.
-  if (ct->ub != kMaxIntegerValue) {
+  if (max_sum > ct->ub) {
     const IntegerValue threshold = max_sum - ct->ub;
     const IntegerValue second_threshold = std::max(
         CeilRatio(threshold, IntegerValue(2)), threshold - min_magnitude);
     if (max_magnitude > second_threshold) {
-      if (ct->lb != kMinIntegerValue) {
+      if (min_sum < ct->lb) {
         ++num_split_constraints_;
       } else {
         term_changed = true;
         ++num_coeff_strenghtening_;
+        ct->lb = kMinIntegerValue;
         const int num_terms = ct->vars.size();
         for (int i = 0; i < num_terms; ++i) {
           // In all cases, we reason on a transformed constraint where the term
@@ -472,15 +470,16 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
     }
   }
 
-  if (ct->lb != kMinIntegerValue) {
+  if (min_sum < ct->lb) {
     const IntegerValue threshold = ct->lb - min_sum;
     const IntegerValue second_threshold = std::max(
         CeilRatio(threshold, IntegerValue(2)), threshold - min_magnitude);
     if (max_magnitude > second_threshold) {
-      if (ct->ub != kMaxIntegerValue) {
+      if (max_sum > ct->ub) {
         ++num_split_constraints_;
       } else {
         term_changed = true;
+        ct->ub = kMaxIntegerValue;
         ++num_coeff_strenghtening_;
         const int num_terms = ct->vars.size();
         for (int i = 0; i < num_terms; ++i) {
@@ -514,7 +513,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   return term_changed;
 }
 
-void LinearConstraintManager::FillActivityRange(ConstraintInfo* info) {
+void LinearConstraintManager::FillDerivedFields(ConstraintInfo* info) {
   IntegerValue min_sum(0);
   IntegerValue max_sum(0);
   const int num_terms = info->constraint.vars.size();
@@ -531,9 +530,12 @@ void LinearConstraintManager::FillActivityRange(ConstraintInfo* info) {
       max_sum += coeff * lb;
     }
   }
-  const IntegerValue tight_lb = std::max(min_sum, info->constraint.lb);
-  const IntegerValue tight_ub = std::min(max_sum, info->constraint.ub);
-  info->activity_range = CapSub(tight_ub.value(), tight_lb.value());
+  info->constraint.lb = std::max(min_sum, info->constraint.lb);
+  info->constraint.ub = std::min(max_sum, info->constraint.ub);
+  CHECK_NE(CapSub(info->constraint.ub.value(), info->constraint.lb.value()),
+           std::numeric_limits<int64_t>::max());
+  info->lb_is_trivial = min_sum >= info->constraint.lb;
+  info->ub_is_trivial = max_sum <= info->constraint.ub;
 }
 
 bool LinearConstraintManager::ChangeLp(
@@ -570,6 +572,7 @@ bool LinearConstraintManager::ChangeLp(
       constraint_infos_[i].objective_parallelism_computed = false;
       constraint_infos_[i].l2_norm =
           ComputeL2Norm(constraint_infos_[i].constraint);
+      FillDerivedFields(&constraint_infos_[i]);
 
       if (constraint_infos_[i].is_in_lp) current_lp_is_changed_ = true;
       equiv_constraints_.erase(constraint_infos_[i].hash);
@@ -759,7 +762,7 @@ bool LinearConstraintManager::ChangeLp(
   }
   if (num_added > 0) {
     // We update the solution sate to match the new LP size.
-    VLOG(2) << "Added " << num_added << " constraints.";
+    VLOG(3) << "Added " << num_added << " constraints.";
     solution_state->statuses.resize(solution_state->statuses.size() + num_added,
                                     glop::VariableStatus::BASIC);
   }

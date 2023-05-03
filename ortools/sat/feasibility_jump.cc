@@ -26,6 +26,7 @@
 
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
+#include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -53,6 +54,7 @@ FeasibilityJumpSolver::~FeasibilityJumpSolver() {
   stats.push_back({"fs_jump/num_linear_moves_repaired_with_full_scan",
                    num_repairs_with_full_scan_});
   stats.push_back({"fs_jump/num_linear_moves_done", num_linear_moves_});
+  stats.push_back({"fs_jump/num_perbubations_applied", num_perturbations_});
   stats.push_back({"fs_jump/num_solutions_imported", num_solutions_imported_});
   stats.push_back(
       {"fs_jump/num_variables_partially_scanned", num_partial_scans_});
@@ -62,17 +64,20 @@ FeasibilityJumpSolver::~FeasibilityJumpSolver() {
 
 void FeasibilityJumpSolver::Initialize() {
   is_initialized_ = true;
-  evaluator_ = std::make_unique<LsEvaluator>(cp_model_);
+  evaluator_ = std::make_unique<LsEvaluator>(
+      linear_model_->model_proto(), linear_model_->ignored_constraints(),
+      linear_model_->additional_constraints());
 
   // Note that we ignore evaluator_->ModelIsSupported() assuming that the subset
   // of constraints might be enough for feasibility. We will abort as soon as
   // a solution that is supposed to be feasible do not pass the full model
   // validation.
-  const int num_variables = cp_model_.variables().size();
+  const int num_variables = linear_model_->model_proto().variables().size();
   var_domains_.resize(num_variables);
   var_has_two_values_.resize(num_variables);
   for (int var = 0; var < num_variables; ++var) {
-    var_domains_[var] = ReadDomainFromProto(cp_model_.variables(var));
+    var_domains_[var] =
+        ReadDomainFromProto(linear_model_->model_proto().variables(var));
     var_has_two_values_[var] = var_domains_[var].HasTwoValues();
   }
 }
@@ -110,59 +115,75 @@ int64_t RandomValueNearMax(const Domain& domain, double range_ratio,
                                absl::LogUniform<int64_t>(random, 0, range));
 }
 
-int64_t RandomValueNearZero(const Domain& domain, double range_ratio,
-                            absl::BitGenRef random) {
-  if (domain.Min() >= 0) {
+int64_t RandomValueNearValue(const Domain& domain, int64_t value,
+                             double range_ratio, absl::BitGenRef random) {
+  DCHECK(!domain.IsFixed());
+
+  if (domain.Min() >= value) {
     return RandomValueNearMin(domain, range_ratio, random);
   }
-  if (domain.Max() <= 0) {
+
+  if (domain.Max() <= value) {
     return RandomValueNearMax(domain, range_ratio, random);
   }
-  const Domain positive_domain = domain.IntersectionWith({0, domain.Max()});
-  const double choose_positive_probability =
-      static_cast<double>(positive_domain.Size()) /
-      static_cast<double>(domain.Size());
-  if (absl::Bernoulli(random, choose_positive_probability)) {
-    return RandomValueNearMin(positive_domain, range_ratio, random);
+
+  // Split up or down, and choose value in split domain.
+  const Domain greater_domain =
+      domain.IntersectionWith({value + 1, domain.Max()});
+  const double choose_greater_probability =
+      static_cast<double>(greater_domain.Size()) /
+      static_cast<double>(domain.Size() - 1);
+  if (absl::Bernoulli(random, choose_greater_probability)) {
+    return RandomValueNearMin(greater_domain, range_ratio, random);
   } else {
-    return RandomValueNearMax(domain.IntersectionWith({domain.Min(), 0}),
-                              range_ratio, random);
+    return RandomValueNearMax(
+        domain.IntersectionWith({domain.Min(), value - 1}), range_ratio,
+        random);
   }
 }
 
 }  // namespace
 
 void FeasibilityJumpSolver::RestartFromDefaultSolution() {
-  const int num_variables = cp_model_.variables().size();
+  const int num_variables = linear_model_->model_proto().variables().size();
   const double default_value_probability =
-      1.0 - params_.feasibility_jump_var_randomization_ratio();
-  const double pertubation_ratio =
+      1.0 - params_.feasibility_jump_var_randomization_probability();
+  const double range_ratio =
       params_.feasibility_jump_var_perburbation_range_ratio();
 
   // Starts with values closest to zero.
   std::vector<int64_t> solution(num_variables);
   for (int var = 0; var < num_variables; ++var) {
+    if (var_domains_[var].IsFixed()) {
+      solution[var] = var_domains_[var].FixedValue();
+      continue;
+    }
+
     if (num_batches_ == 0 ||
         absl::Bernoulli(random_, default_value_probability)) {
       solution[var] = var_domains_[var].SmallestValue();
     } else {
       solution[var] =
-          RandomValueNearZero(var_domains_[var], pertubation_ratio, random_);
+          RandomValueNearValue(var_domains_[var], 0, range_ratio, random_);
     }
   }
 
-  if (cp_model_.has_objective() &&
-      params_.feasibility_jump_start_with_objective()) {
-    const int num_terms = cp_model_.objective().vars().size();
+  // Use objective half of the time (if the model has one).
+  if (linear_model_->model_proto().has_objective() &&
+      absl::Bernoulli(random_, 0.5)) {
+    const int num_terms =
+        linear_model_->model_proto().objective().vars().size();
     for (int i = 0; i < num_terms; ++i) {
-      const int var = cp_model_.objective().vars(i);
-      if (cp_model_.objective().coeffs(i) > 0) {
+      const int var = linear_model_->model_proto().objective().vars(i);
+      if (var_domains_[var].IsFixed()) continue;
+
+      if (linear_model_->model_proto().objective().coeffs(i) > 0) {
         if (num_batches_ == 0 ||
             absl::Bernoulli(random_, default_value_probability)) {
           solution[var] = var_domains_[var].Min();
         } else {
           solution[var] =
-              RandomValueNearMin(var_domains_[var], pertubation_ratio, random_);
+              RandomValueNearMin(var_domains_[var], range_ratio, random_);
         }
       } else {
         if (num_batches_ == 0 ||
@@ -170,7 +191,7 @@ void FeasibilityJumpSolver::RestartFromDefaultSolution() {
           solution[var] = var_domains_[var].Max();
         } else {
           solution[var] =
-              RandomValueNearMax(var_domains_[var], pertubation_ratio, random_);
+              RandomValueNearMax(var_domains_[var], range_ratio, random_);
         }
       }
     }
@@ -181,12 +202,39 @@ void FeasibilityJumpSolver::RestartFromDefaultSolution() {
   weights_.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
 }
 
+void FeasibilityJumpSolver::PerturbateCurrentSolution() {
+  const int num_variables = linear_model_->model_proto().variables().size();
+  const double pertubation_probability =
+      params_.feasibility_jump_var_randomization_probability();
+  const double perturbation_ratio =
+      params_.feasibility_jump_var_perburbation_range_ratio();
+  std::vector<int64_t> solution = evaluator_->current_solution();
+  for (int var = 0; var < num_variables; ++var) {
+    if (var_domains_[var].IsFixed()) continue;
+    if (absl::Bernoulli(random_, pertubation_probability)) {
+      solution[var] = RandomValueNearValue(var_domains_[var], solution[var],
+                                           perturbation_ratio, random_);
+    }
+  }
+  evaluator_->ComputeInitialViolations(solution);
+
+  // Starts with weights at one.
+  weights_.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
+}
+
 std::string FeasibilityJumpSolver::OneLineStats() const {
-  // Restarts or solutions imported.
-  const std::string restart_str =
-      num_solutions_imported_ == 0
-          ? absl::StrCat(" #restarts:", num_restarts_)
-          : absl::StrCat(" #solutions_imported:", num_solutions_imported_);
+  // Restarts, perturbations, and solutions imported.
+  std::string restart_str;
+  if (num_restarts_ > 1) {
+    absl::StrAppend(&restart_str, " #restarts:", num_restarts_ - 1);
+  }
+  if (num_solutions_imported_ > 0) {
+    absl::StrAppend(&restart_str,
+                    " #solutions_imported:", num_solutions_imported_);
+  }
+  if (num_perturbations_ > 0) {
+    absl::StrAppend(&restart_str, " #perturbations:", num_perturbations_);
+  }
 
   // Moves and evaluations in the general iterations.
   const std::string general_str =
@@ -238,6 +286,14 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
         last_solution_rank_ = solution.rank;
         VLOG(2) << name() << " import a solution with value " << solution.rank;
         ++num_solutions_imported_;
+        num_batches_before_perturbation_ =
+            params_.violation_ls_perturbation_frequency();
+      } else if (num_batches_before_perturbation_ <= 0) {
+        // TODO(user): Tune the improvement constant, maybe use luby.
+        num_batches_before_perturbation_ =
+            params_.violation_ls_perturbation_frequency();
+        ++num_perturbations_;
+        PerturbateCurrentSolution();
       }
     } else {
       // Restart?  Note that we always "restart" the first time.
@@ -245,8 +301,14 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
           evaluator_->MutableLinearEvaluator()->DeterministicTime();
       if (dtime >= dtime_restart_threshold_ &&
           num_weight_updates_ >= update_restart_threshold_) {
-        ++num_restarts_;
-        RestartFromDefaultSolution();
+        if (num_restarts_ == 0 || params_.feasibility_jump_enable_restarts()) {
+          ++num_restarts_;
+          RestartFromDefaultSolution();
+        } else if (params_.feasibility_jump_var_randomization_probability() >
+                   0.0) {
+          ++num_perturbations_;
+          PerturbateCurrentSolution();
+        }
 
         // We use luby restart with a base of 1 deterministic unit.
         // We also block the restart if there was not enough weight update.
@@ -256,15 +318,19 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
         // can just use number of batch for the luby restart.
         // TODO(user): Maybe have one worker with very low restart
         // rate.
-        dtime_restart_threshold_ = dtime + 1.0 * SUniv(num_restarts_);
+        dtime_restart_threshold_ =
+            dtime + 1.0 * SUniv(num_restarts_ + num_perturbations_);
         update_restart_threshold_ = num_weight_updates_ + 10;
       }
     }
 
     // Between chunk, we synchronize bounds.
-    const IntegerValue lb = shared_response_->GetInnerObjectiveLowerBound();
-    const IntegerValue ub = shared_response_->GetInnerObjectiveUpperBound();
-    evaluator_->ReduceObjectiveBounds(lb.value(), ub.value());
+    if (linear_model_->model_proto().has_objective()) {
+      const IntegerValue lb = shared_response_->GetInnerObjectiveLowerBound();
+      const IntegerValue ub = shared_response_->GetInnerObjectiveUpperBound();
+      if (ub < lb) return;  // Search is finished.
+      evaluator_->ReduceObjectiveBounds(lb.value(), ub.value());
+    }
 
     // Update the variable domains with the last information.
     // It is okay to be in O(num_variables) here since we only do that between
@@ -296,14 +362,19 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     // Search for feasible solution.
     if (DoSomeLinearIterations() && DoSomeGeneralIterations()) {
       // Checks for infeasibility induced by the non supported constraints.
-      if (SolutionIsFeasible(cp_model_, evaluator_->current_solution())) {
+      if (SolutionIsFeasible(linear_model_->model_proto(),
+                             evaluator_->current_solution())) {
         shared_response_->NewSolution(
             evaluator_->current_solution(),
             absl::StrCat(name(), "(", OneLineStats(), ")"));
+        num_batches_before_perturbation_ =
+            params_.violation_ls_perturbation_frequency();
       } else {
         shared_response_->LogMessage(name(), "infeasible solution. Aborting.");
         model_is_supported_ = false;
       }
+    } else {
+      --num_batches_before_perturbation_;
     }
 
     // Update dtime.

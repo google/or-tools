@@ -432,13 +432,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     IntegerValue lb;
     IntegerValue ub;
     LinearExpression terms;
+    bool lb_is_trivial = false;
+    bool ub_is_trivial = false;
   };
   LinearExpression integer_objective_;
   IntegerValue integer_objective_offset_ = IntegerValue(0);
   IntegerValue objective_infinity_norm_ = IntegerValue(0);
   absl::StrongVector<glop::RowIndex, LinearConstraintInternal> integer_lp_;
   absl::StrongVector<glop::RowIndex, IntegerValue> infinity_norms_;
-  absl::StrongVector<glop::RowIndex, IntegerValue> ct_bound_diff_;
 
   // Underlying LP solver API.
   glop::GlopParameters simplex_params_;

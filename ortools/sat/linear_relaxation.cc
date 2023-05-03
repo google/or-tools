@@ -22,7 +22,9 @@
 
 #include "absl/base/attributes.h"
 #include "absl/container/btree_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -37,7 +39,6 @@
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
-#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/routing_cuts.h"
@@ -46,46 +47,14 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_constraints.h"
 #include "ortools/sat/scheduling_cuts.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
-
-bool AppendFullEncodingRelaxation(IntegerVariable var, const Model& model,
-                                  LinearRelaxation* relaxation) {
-  const auto* encoder = model.Get<IntegerEncoder>();
-  if (encoder == nullptr) return false;
-  if (!encoder->VariableIsFullyEncoded(var)) return false;
-
-  const auto& encoding = encoder->FullDomainEncoding(var);
-  const IntegerValue var_min = model.Get<IntegerTrail>()->LowerBound(var);
-
-  LinearConstraintBuilder at_least_one(&model, IntegerValue(1),
-                                       kMaxIntegerValue);
-  LinearConstraintBuilder encoding_ct(&model, var_min, var_min);
-  encoding_ct.AddTerm(var, IntegerValue(1));
-
-  // Create the constraint if all literal have a view.
-  std::vector<Literal> at_most_one;
-
-  for (const auto value_literal : encoding) {
-    const Literal lit = value_literal.literal;
-    const IntegerValue delta = value_literal.value - var_min;
-    DCHECK_GE(delta, IntegerValue(0));
-    at_most_one.push_back(lit);
-    if (!at_least_one.AddLiteralTerm(lit, IntegerValue(1))) return false;
-    if (delta != IntegerValue(0)) {
-      if (!encoding_ct.AddLiteralTerm(lit, -delta)) return false;
-    }
-  }
-
-  relaxation->linear_constraints.push_back(at_least_one.Build());
-  relaxation->linear_constraints.push_back(encoding_ct.Build());
-  relaxation->at_most_ones.push_back(at_most_one);
-  return true;
-}
 
 namespace {
 
@@ -1215,7 +1184,7 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
 // TODO(user): In full generality, we could encode all the constraint as an LP.
 // TODO(user): Add unit tests for this method.
 // TODO(user): Remove and merge with model loading.
-void TryToLinearizeConstraint(const CpModelProto& model_proto,
+void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
                               const ConstraintProto& ct,
                               int linearization_level, Model* model,
                               LinearRelaxation* relaxation,

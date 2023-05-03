@@ -292,7 +292,6 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // Fill integer_lp_.
   integer_lp_.clear();
   infinity_norms_.clear();
-  ct_bound_diff_.clear();
   const auto& all_constraints = constraint_manager_.AllConstraints();
   for (const auto index : constraint_manager_.LpConstraints()) {
     const LinearConstraint& ct = all_constraints[index].constraint;
@@ -301,18 +300,17 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     LinearConstraintInternal& new_ct = integer_lp_.back();
     new_ct.lb = ct.lb;
     new_ct.ub = ct.ub;
+    new_ct.lb_is_trivial = all_constraints[index].lb_is_trivial;
+    new_ct.ub_is_trivial = all_constraints[index].ub_is_trivial;
     const int size = ct.vars.size();
-    IntegerValue infinity_norm(0);
     if (ct.lb > ct.ub) {
       VLOG(1) << "Trivial infeasible bound in an LP constraint";
       return false;
     }
-    if (ct.lb > kMinIntegerValue) {
-      infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.lb));
-    }
-    if (ct.ub < kMaxIntegerValue) {
-      infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.ub));
-    }
+
+    IntegerValue infinity_norm = 0;
+    infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.lb));
+    infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.ub));
     new_ct.terms.reserve(size);
     for (int i = 0; i < size; ++i) {
       // We only use positive variable inside this class.
@@ -322,7 +320,6 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
       new_ct.terms.push_back({GetMirrorVariable(var), coeff});
     }
     infinity_norms_.push_back(infinity_norm);
-    ct_bound_diff_.push_back(all_constraints[index].activity_range);
 
     // It is important to keep lp_data_ "clean".
     DCHECK(std::is_sorted(new_ct.terms.begin(), new_ct.terms.end()));
@@ -357,6 +354,12 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
 
   for (const LinearConstraintInternal& ct : integer_lp_) {
     const ConstraintIndex row = lp_data_.CreateNewConstraint();
+
+    // Note that we use the bounds even if they are trivial.
+    //
+    // TODO(user): This seems good for things like sum bool <= 1 since setting
+    // the slack in [0, 1] can lead to bound flip in the simplex. However if the
+    // bound is large, maybe it make more sense to use +/- infinity.
     lp_data_.SetConstraintBounds(row, ToDouble(ct.lb), ToDouble(ct.ub));
     for (const auto& term : ct.terms) {
       lp_data_.SetCoefficient(row, term.first, ToDouble(term.second));
@@ -1010,9 +1013,6 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // If all value are integer, we will not be able to cut anything.
   if (!some_relevant_positions) return false;
 
-  ImpliedBoundsProcessor* ib_processor =
-      some_ints ? &implied_bounds_processor_ : nullptr;
-
   // Add constraint slack.
   const IntegerVariable first_slack(expanded_lp_solution_.size());
   CHECK_EQ(first_slack.value() % 2, 0);
@@ -1026,7 +1026,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     CutTerm entry;
     entry.coeff = IntTypeAbs(coeff);
     entry.lp_value = 0.0;
-    entry.bound_diff = ct_bound_diff_[row];
+    entry.bound_diff = integer_lp_[row].ub - integer_lp_[row].lb;
     entry.expr_vars[0] =
         first_slack + 2 * IntegerVariable(tmp_slack_rows_.size());
     entry.expr_coeffs[1] = 0;
@@ -1044,45 +1044,66 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     tmp_slack_rows_.push_back(row);
   }
 
+  // If the base constraint is infeasible, we can abort right away.
+  // TODO(user): Merge with PreprocessCut().
+  {
+    absl::int128 min_sum = 0;
+    for (const CutTerm& term : base_ct_.terms) {
+      if (term.coeff < 0.0) {
+        min_sum += absl::int128(term.coeff.value()) *
+                   absl::int128(term.bound_diff.value());
+      }
+    }
+    if (min_sum > base_ct_.rhs) {
+      problem_proven_infeasible_by_cuts_ = true;
+      return false;
+    }
+  }
+
+  ImpliedBoundsProcessor* ib_processor =
+      some_ints ? &implied_bounds_processor_ : nullptr;
+
   // Try integer rounding heuristic to find cut.
-  RoundingOptions options;
-  options.max_scaling = parameters_.max_integer_rounding_scaling();
+  {
+    RoundingOptions options;
+    options.max_scaling = parameters_.max_integer_rounding_scaling();
+    options.use_ib_before_heuristic = false;
+    if (integer_rounding_cut_helper_.ComputeCut(options, base_ct_,
+                                                ib_processor)) {
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_R"), integer_rounding_cut_helper_.Info(),
+          first_slack, integer_rounding_cut_helper_.cut());
+    }
 
-  options.use_ib_before_heuristic = false;
-  if (integer_rounding_cut_helper_.ComputeCut(options, base_ct_,
-                                              ib_processor)) {
-    at_least_one_added |= PostprocessAndAddCut(
-        absl::StrCat(name, "_R"), integer_rounding_cut_helper_.Info(),
-        first_slack, integer_rounding_cut_helper_.cut());
-  }
+    options.use_ib_before_heuristic = true;
+    options.prefer_positive_ib = false;
+    if (ib_processor != nullptr && integer_rounding_cut_helper_.ComputeCut(
+                                       options, base_ct_, ib_processor)) {
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_RB"), integer_rounding_cut_helper_.Info(),
+          first_slack, integer_rounding_cut_helper_.cut());
+    }
 
-  options.use_ib_before_heuristic = true;
-  options.prefer_positive_ib = false;
-  if (ib_processor != nullptr && integer_rounding_cut_helper_.ComputeCut(
-                                     options, base_ct_, ib_processor)) {
-    at_least_one_added |= PostprocessAndAddCut(
-        absl::StrCat(name, "_RB"), integer_rounding_cut_helper_.Info(),
-        first_slack, integer_rounding_cut_helper_.cut());
-  }
-
-  options.use_ib_before_heuristic = true;
-  options.prefer_positive_ib = true;
-  if (ib_processor != nullptr && integer_rounding_cut_helper_.ComputeCut(
-                                     options, base_ct_, ib_processor)) {
-    at_least_one_added |= PostprocessAndAddCut(
-        absl::StrCat(name, "_RBP"), integer_rounding_cut_helper_.Info(),
-        first_slack, integer_rounding_cut_helper_.cut());
+    options.use_ib_before_heuristic = true;
+    options.prefer_positive_ib = true;
+    if (ib_processor != nullptr && integer_rounding_cut_helper_.ComputeCut(
+                                       options, base_ct_, ib_processor)) {
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_RBP"), integer_rounding_cut_helper_.Info(),
+          first_slack, integer_rounding_cut_helper_.cut());
+    }
   }
 
   // Try cover approach to find cut.
-  if (cover_cut_helper_.MakeAllTermsPositive(&base_ct_)) {
-    if (cover_cut_helper_.TrySimpleKnapsack(base_ct_, ib_processor)) {
+  // TODO(user): We could modify base_ct_ directly rather than storing a copy.
+  {
+    cover_cut_helper_.PreprocessAndStoreBaseConstraint(base_ct_);
+    if (cover_cut_helper_.TrySimpleKnapsack(ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
-          absl::StrCat(name, "_KB"), cover_cut_helper_.Info(), first_slack,
+          absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_slack,
           cover_cut_helper_.cut());
     }
-    if (cover_cut_helper_.TryWithLetchfordSouliLifting(base_ct_,
-                                                       ib_processor)) {
+    if (cover_cut_helper_.TryWithLetchfordSouliLifting(ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
           absl::StrCat(name, "_KL"), cover_cut_helper_.Info(), first_slack,
           cover_cut_helper_.cut());
@@ -1281,7 +1302,8 @@ void LinearProgrammingConstraint::AddObjectiveCut() {
   }
 
   // Try knapsack.
-  if (cover_cut_helper_.TrySimpleKnapsack(base_ct_)) {
+  cover_cut_helper_.PreprocessAndStoreBaseConstraint(base_ct_);
+  if (cover_cut_helper_.TrySimpleKnapsack()) {
     constraint_manager_.AddCut(cover_cut_helper_.cut(), "Objective_K",
                                expanded_lp_solution_);
   }
@@ -2041,10 +2063,10 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
     // status since in most situation we do want the constraint we add to be
     // tight under the current LP solution. Only for infeasible problem we might
     // not have access to the status.
-    if (lp_multi > 0.0 && integer_lp_[row].ub >= kMaxIntegerValue) {
+    if (lp_multi > 0.0 && integer_lp_[row].ub_is_trivial) {
       continue;
     }
-    if (lp_multi < 0.0 && integer_lp_[row].lb <= kMinIntegerValue) {
+    if (lp_multi < 0.0 && integer_lp_[row].lb_is_trivial) {
       continue;
     }
 

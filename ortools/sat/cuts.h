@@ -67,9 +67,11 @@ struct CutTerm {
 
   std::string DebugString() const;
 
-  // Returns false and do nothing if this would cause an overflow.
-  // Otherwise do the subtitution X -> (1 - X') and update the rhs.
-  bool Complement(IntegerValue* rhs);
+  // Do the subtitution X -> (1 - X') and update the rhs.
+  //
+  // Our precondition on the sum of variable domains fitting an int64_t should
+  // ensure that this can never overflow.
+  void Complement(absl::int128* rhs);
 
   // Each term is of the form coeff * X where X is a variable with given
   // lp_value and with a domain in [0, bound_diff]. Note X is always >= 0.
@@ -104,7 +106,9 @@ struct CutData {
 
   std::string DebugString() const;
 
-  IntegerValue rhs;
+  // Note that we use a 128 bit rhs so we can freely complement variable without
+  // running into overflow.
+  absl::int128 rhs;
   std::vector<CutTerm> terms;
 
   // This sorts terms and fill both num_relevant_entries and max_magnitude.
@@ -461,15 +465,19 @@ class CoverCutHelper {
   // Complements term to make sure all coeff are positive, returns false on
   // overflow.
   //
-  // Important: This must be called on the input of both Try*() functions. It
-  // is separated as an optimization to share the loop rather than do it in
-  // both functions.
-  bool MakeAllTermsPositive(CutData* cut);
+  // Important: This must be called before both Try*() functions. It is
+  // separated as an optimization to share the loop rather than do it in both
+  // functions.
+  void PreprocessAndStoreBaseConstraint(const CutData& cut);
 
   // Try to find a cut with a knapsack heuristic.
   // If this returns true, you can get the cut via cut().
-  bool TrySimpleKnapsack(const CutData& input,
-                         ImpliedBoundsProcessor* ib_processor = nullptr);
+  //
+  // This uses a lifting procedure similar to what is described in "Lifting the
+  // Knapsack Cover Inequalities for the Knapsack Polytope", Adam N. Letchfod,
+  // Georgia Souli. In particular the section "Lifting via mixed-integer
+  // rounding".
+  bool TrySimpleKnapsack(ImpliedBoundsProcessor* ib_processor = nullptr);
 
   // Applies the lifting procedure described in "On Lifted Cover Inequalities: A
   // New Lifting Procedure with Unusual Properties", Adam N. Letchford, Georgia
@@ -497,7 +505,7 @@ class CoverCutHelper {
   //   f(a) + f(b), so it is always good to use implied bounds of the form X =
   //   bound * B + Slack.
   bool TryWithLetchfordSouliLifting(
-      const CutData& input, ImpliedBoundsProcessor* ib_processor = nullptr);
+      ImpliedBoundsProcessor* ib_processor = nullptr);
 
   // If successful, info about the last generated cut.
   const LinearConstraint& cut() const { return cut_; }
@@ -508,9 +516,18 @@ class CoverCutHelper {
   void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
 
  private:
+  void InitializeCut();
+
   // This looks at base_ct_ and reoder the terms so that the first ones are in
   // the cover. return zero if no interesting cover was found.
-  int GetCoverSize(int relevant_size, IntegerValue* rhs);
+  int GetCoverSizeForBooleans(int relevant_size);
+  int GetCoverSize(int relevant_size);
+  int MinimizeCover(int cover_size, absl::int128 slack);
+
+  // The base constraint used to derive cut, with an int128 rhs.
+  // This is initialized by PreprocessAndStoreBaseConstraint().
+  absl::int128 input_rhs_;
+  CutData input_ct_;
 
   // Here to reuse memory.
   CutData base_ct_;
@@ -524,6 +541,9 @@ class CoverCutHelper {
   int64_t total_num_lifting_ = 0;
   int64_t total_num_ibs_ = 0;
   int64_t total_num_overflow_abort_ = 0;
+  int64_t total_num_mir_ = 0;
+  int64_t total_num_cover_ = 0;
+  int64_t total_num_ls_ = 0;
 
   // Stores the cut for output.
   LinearConstraint cut_;

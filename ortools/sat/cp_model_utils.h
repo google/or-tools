@@ -21,14 +21,14 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#if !defined(__PORTABLE_PLATFORM__)
+#include "absl/log/check.h"
+#include "absl/strings/match.h"
+#include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/options.h"
+#if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
-#include "absl/container/flat_hash_set.h"
-#include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/hash.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -258,6 +258,58 @@ bool WriteModelProtoToFile(const M& proto, absl::string_view filename) {
     return file::SetBinaryProto(filename, proto, file::Defaults()).ok();
   }
 #endif  // !defined(__PORTABLE_PLATFORM__)
+}
+
+// hashing support.
+//
+// Currently limited to a few inner types of ConstraintProto.
+inline bool operator==(const BoolArgumentProto& lhs,
+                       const BoolArgumentProto& rhs) {
+  if (absl::MakeConstSpan(lhs.literals()) !=
+      absl::MakeConstSpan(rhs.literals())) {
+    return false;
+  }
+  if (lhs.literals_size() != rhs.literals_size()) return false;
+  for (int i = 0; i < lhs.literals_size(); ++i) {
+    if (lhs.literals(i) != rhs.literals(i)) return false;
+  }
+  return true;
+}
+
+template <typename H>
+H AbslHashValue(H h, const BoolArgumentProto& m) {
+  for (const int lit : m.literals()) {
+    h = H::combine(std::move(h), lit);
+  }
+  return h;
+}
+
+inline bool operator==(const LinearConstraintProto& lhs,
+                       const LinearConstraintProto& rhs) {
+  if (absl::MakeConstSpan(lhs.vars()) != absl::MakeConstSpan(rhs.vars())) {
+    return false;
+  }
+  if (absl::MakeConstSpan(lhs.coeffs()) != absl::MakeConstSpan(rhs.coeffs())) {
+    return false;
+  }
+  if (absl::MakeConstSpan(lhs.domain()) != absl::MakeConstSpan(rhs.domain())) {
+    return false;
+  }
+  return true;
+}
+
+template <typename H>
+H AbslHashValue(H h, const LinearConstraintProto& m) {
+  for (const int var : m.vars()) {
+    h = H::combine(std::move(h), var);
+  }
+  for (const int64_t coeff : m.coeffs()) {
+    h = H::combine(std::move(h), coeff);
+  }
+  for (const int64_t bound : m.domain()) {
+    h = H::combine(std::move(h), bound);
+  }
+  return h;
 }
 
 }  // namespace sat

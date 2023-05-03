@@ -101,12 +101,15 @@ std::string ValidateParameters(const SatParameters& params) {
 
   // Feasibility jump.
   TEST_NOT_NAN(feasibility_jump_decay);
-  TEST_NOT_NAN(feasibility_jump_var_randomization_ratio);
+  TEST_NOT_NAN(feasibility_jump_var_randomization_probability);
   TEST_NOT_NAN(feasibility_jump_var_perburbation_range_ratio);
   TEST_IN_RANGE(feasibility_jump_max_num_values_scanned, 2, 1'000'000'000);
   TEST_IN_RANGE(feasibility_jump_decay, 0.0, 1.0);
-  TEST_IN_RANGE(feasibility_jump_var_randomization_ratio, 0.0, 1.0);
+  TEST_IN_RANGE(feasibility_jump_var_randomization_probability, 0.0, 1.0);
   TEST_IN_RANGE(feasibility_jump_var_perburbation_range_ratio, 0.0, 1.0);
+
+  // Violation ls.
+  TEST_IN_RANGE(violation_ls_perturbation_frequency, 1, 1000000000);
 
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);

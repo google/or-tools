@@ -42,7 +42,7 @@ class LinearIncrementalEvaluator {
   // In case of duplicate variables on the same constraint, the code assumes
   // constraints are built in-order as it checks for duplication.
   void AddEnforcementLiteral(int ct_index, int lit);
-  void AddLiteral(int ct_index, int lit);
+  void AddLiteral(int ct_index, int lit, int64_t coeff = 1);
   void AddTerm(int ct_index, int var, int64_t coeff, int64_t offset = 0);
   void AddOffset(int ct_index, int64_t offset);
   void AddLinearExpression(int ct_index, const LinearExpressionProto& expr,
@@ -263,6 +263,10 @@ class LsEvaluator {
   // The model must outlive this class.
   explicit LsEvaluator(const CpModelProto& model);
 
+  LsEvaluator(const CpModelProto& model,
+              const std::vector<bool>& ignored_constraints,
+              const std::vector<ConstraintProto>& additional_constraints);
+
   // For now, we don't support all constraints. You can still use the class, but
   // it is not because there is no violation that the solution will be feasible
   // in this case.
@@ -335,9 +339,12 @@ class LsEvaluator {
 
  private:
   void CompileConstraintsAndObjective();
+  void CompileOneConstraint(const ConstraintProto& ct_proto);
   void BuildVarConstraintGraph();
 
   const CpModelProto& model_;
+  std::vector<bool> ignored_constraints_;
+  const std::vector<ConstraintProto> additional_constraints_;
   LinearIncrementalEvaluator linear_evaluator_;
   std::vector<std::unique_ptr<CompiledConstraint>> constraints_;
   std::vector<std::vector<int>> var_to_constraint_graph_;

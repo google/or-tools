@@ -28,8 +28,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/sat/linear_model.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
@@ -3205,13 +3207,29 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   const bool feasibility_jump_possible =
       !params.interleave_search() &&
       helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
-  if (params.use_violation_ls() && feasibility_jump_possible) {
-    SatParameters local_params = params;
-    local_params.set_random_seed(params.random_seed());
-    local_params.set_feasibility_jump_decay(0.95);
-    incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
-        "violation_ls", SubSolver::INCOMPLETE, model_proto, local_params,
-        shared.time_limit, shared.response, shared.bounds.get(), shared.stats));
+  const LinearModel* linear_model = global_model->Get<LinearModel>();
+  if (params.use_violation_ls() && feasibility_jump_possible &&
+      model_proto.has_objective()) {
+    if (params.test_feasibility_jump()) {
+      for (int i = 0; i < params.num_workers(); ++i) {
+        SatParameters local_params = params;
+        local_params.set_random_seed(params.random_seed() + i);
+        local_params.set_feasibility_jump_decay(((i / 2) % 2) == 1 ? 0.95
+                                                                   : 1.0);
+        incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
+            absl::StrCat("violation_ls_", i), SubSolver::INCOMPLETE,
+            linear_model, local_params, shared.time_limit, shared.response,
+            shared.bounds.get(), shared.stats));
+      }
+    } else {
+      SatParameters local_params = params;
+      local_params.set_random_seed(params.random_seed());
+      local_params.set_feasibility_jump_decay(0.95);
+      incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
+          "violation_ls", SubSolver::INCOMPLETE, linear_model, local_params,
+          shared.time_limit, shared.response, shared.bounds.get(),
+          shared.stats));
+    }
   }
 
   // Adds first solution subsolvers.
@@ -3234,9 +3252,12 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       !params.interleave_search() || params.test_feasibility_jump()) {
     const int max_num_incomplete_solvers_running_before_the_first_solution =
         params.num_workers() <= 8 ? 1 : (params.num_workers() <= 16 ? 2 : 3);
-    const int num_reserved_incomplete_solvers = std::min<int>(
-        max_num_incomplete_solvers_running_before_the_first_solution,
-        incomplete_subsolvers.size());
+    const int num_reserved_incomplete_solvers =
+        params.test_feasibility_jump()
+            ? 0
+            : std::min<int>(
+                  max_num_incomplete_solvers_running_before_the_first_solution,
+                  incomplete_subsolvers.size());
     const int num_available = params.num_workers() - num_full_problem_solvers -
                               num_reserved_incomplete_solvers;
 
@@ -3246,18 +3267,66 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     const int num_feasibility_jump =
         feasibility_jump_possible
             ? (params.test_feasibility_jump() ? num_available
-                                              : num_available / 2)
+                                              : (num_available + 1) / 2)
             : 0;
     const int num_first_solution_subsolvers =
         num_available - num_feasibility_jump;
+
+    // TODO(user): Limit number of options:
+    //   - remove the restart/no_restart options and improve restart heuristics?
+    //   - randomly select random or no randoms?
     for (int i = 0; i < num_feasibility_jump; ++i) {
       SatParameters local_params = params;
       local_params.set_random_seed(params.random_seed() + i);
-      local_params.set_feasibility_jump_start_with_objective((i % 2) == 1);
-      local_params.set_feasibility_jump_decay(((i / 2) % 2) == 1 ? 0.95 : 1.0);
+      std::string name;
+      switch (i) {
+        case 0: {  // Use defaults.
+          local_params.set_feasibility_jump_decay(1.0);
+          local_params.set_feasibility_jump_var_randomization_probability(0.0);
+          name = "jump";
+          break;
+        }
+        case 1: {  // Adds randomized values on restart and decay.
+          local_params.set_feasibility_jump_decay(0.95);
+          local_params.set_feasibility_jump_var_randomization_probability(0.05);
+          name = "jump_decay_random_values_on_restarts_0";
+          break;
+        }
+        case 2: {  // Adds perturbation and decay.
+          local_params.set_feasibility_jump_decay(0.95);
+          local_params.set_feasibility_jump_var_randomization_probability(0.05);
+          local_params.set_feasibility_jump_enable_restarts(false);
+          name = "jump_decay_random_perturbations_0";
+          break;
+        }
+        case 3: {  // Disable restarts and perturbations.
+          local_params.set_feasibility_jump_var_randomization_probability(0.0);
+          local_params.set_feasibility_jump_enable_restarts(false);
+          name = "jump_no_restarts";
+          break;
+        }
+        case 4: {  // Adds decay and disable restarts and perturbations.
+          local_params.set_feasibility_jump_decay(0.95);
+          local_params.set_feasibility_jump_var_randomization_probability(0.0);
+          local_params.set_feasibility_jump_enable_restarts(false);
+          name = "jump_decay_no_restarts";
+          break;
+        }
+        default: {  // Alternate random_restarts and random_perturbations.
+          const int index = (i - 3) / 2;  // starts at 1.
+          local_params.set_feasibility_jump_decay(0.95);
+          local_params.set_feasibility_jump_var_randomization_probability(0.05);
+          if (i % 2 == 0) {  // Adds randomized restart and decay.
+            name = absl::StrCat("jump_decay_random_values_on_restarts_", index);
+          } else {  // Adds perturbation and decay.
+            local_params.set_feasibility_jump_enable_restarts(false);
+            name = absl::StrCat("jump_decay_random_perturbations_", index);
+          }
+        }
+      }
       incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
-          absl::StrCat("jump", i), SubSolver::FIRST_SOLUTION, model_proto,
-          local_params, shared.time_limit, shared.response, shared.bounds.get(),
+          name, SubSolver::FIRST_SOLUTION, linear_model, local_params,
+          shared.time_limit, shared.response, shared.bounds.get(),
           shared.stats));
     }
     for (const SatParameters& local_params : GetFirstSolutionParams(
@@ -4082,6 +4151,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   LoadDebugSolution(new_cp_model_proto, model);
+
+  // Linear model (used by feasibility_jump and violation_ls)
+  if (params.num_workers() > 1 || params.test_feasibility_jump() ||
+      params.use_violation_ls()) {
+    LinearModel* linear_model = new LinearModel(new_cp_model_proto);
+    model->TakeOwnership(linear_model);
+    model->Register(linear_model);
+    linear_model->Initialize();
+  }
 
 #if defined(__PORTABLE_PLATFORM__)
   if (/* DISABLES CODE */ (false)) {

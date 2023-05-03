@@ -20,14 +20,12 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/vlog_is_on.h"
 #include "ortools/sat/constraint_violation.h"
-#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/linear_model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
@@ -50,14 +48,13 @@ namespace operations_research::sat {
 class FeasibilityJumpSolver : public SubSolver {
  public:
   FeasibilityJumpSolver(const std::string name, SubSolver::SubsolverType type,
-                        const CpModelProto& cp_model_proto,
-                        SatParameters params,
+                        const LinearModel* linear_model, SatParameters params,
                         ModelSharedTimeLimit* shared_time_limit,
                         SharedResponseManager* shared_response,
                         SharedBoundsManager* shared_bounds,
                         SharedStatistics* shared_stats)
       : SubSolver(name, type),
-        cp_model_(cp_model_proto),
+        linear_model_(linear_model),
         params_(params),
         shared_time_limit_(shared_time_limit),
         shared_response_(shared_response),
@@ -97,6 +94,7 @@ class FeasibilityJumpSolver : public SubSolver {
  private:
   void Initialize();
   void RestartFromDefaultSolution();
+  void PerturbateCurrentSolution();
   std::string OneLineStats() const;
 
   // Linear only.
@@ -117,7 +115,7 @@ class FeasibilityJumpSolver : public SubSolver {
   // Return the number of infeasible constraints.
   int UpdateConstraintWeights(bool linear_mode);
 
-  const CpModelProto& cp_model_;
+  const LinearModel* linear_model_;
   SatParameters params_;
   ModelSharedTimeLimit* shared_time_limit_;
   SharedResponseManager* shared_response_;
@@ -163,6 +161,7 @@ class FeasibilityJumpSolver : public SubSolver {
   // We restart each time our local deterministic time crosses this.
   double dtime_restart_threshold_ = 0.0;
   int64_t update_restart_threshold_ = 0;
+  int num_batches_before_perturbation_;
 
   std::vector<int64_t> tmp_breakpoints_;
 
@@ -174,6 +173,7 @@ class FeasibilityJumpSolver : public SubSolver {
   int64_t num_general_moves_ = 0;
   int64_t num_linear_moves_ = 0;
   int64_t num_partial_scans_ = 0;
+  int64_t num_perturbations_ = 0;
   int64_t num_repairs_with_full_scan_ = 0;
   int64_t num_restarts_ = 0;
   int64_t num_solutions_imported_ = 0;

@@ -51,18 +51,18 @@ namespace sat {
 class LinearConstraintManager {
  public:
   struct ConstraintInfo {
+    // Note that this constraint always contains "tight" lb/ub, some of these
+    // bound might be trivial level zero bounds, and one can know this by
+    // looking at lb_is_trivial/ub_is_trivial.
     LinearConstraint constraint;
-
-    // For a boxed constraint, this is the constraint rhs - lhs. For a one sided
-    // constraint, we first use trivial activity bound to compute tight rhs and
-    // lhs and then use the same formula.
-    IntegerValue activity_range;
 
     double l2_norm = 0.0;
     int64_t inactive_count = 0;
     double objective_parallelism = 0.0;
     bool objective_parallelism_computed = false;
     bool is_in_lp = false;
+    bool ub_is_trivial = false;
+    bool lb_is_trivial = false;
     size_t hash;
     double current_score = 0.0;
 
@@ -186,7 +186,8 @@ class LinearConstraintManager {
   // don't remove any constraints which are already in LP.
   void PermanentlyRemoveSomeConstraints();
 
-  void FillActivityRange(ConstraintInfo* info);
+  // Make sure the lb/ub are tight and fill lb_is_trivial/ub_is_trivial.
+  void FillDerivedFields(ConstraintInfo* info);
 
   const SatParameters& sat_parameters_;
   const IntegerTrail& integer_trail_;

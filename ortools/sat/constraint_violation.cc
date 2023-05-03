@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -103,18 +102,22 @@ void LinearIncrementalEvaluator::AddEnforcementLiteral(int ct_index, int lit) {
       {.ct_index = ct_index, .positive = RefIsPositive(lit)});
 }
 
-void LinearIncrementalEvaluator::AddLiteral(int ct_index, int lit) {
+void LinearIncrementalEvaluator::AddLiteral(int ct_index, int lit,
+                                            int64_t coeff) {
   DCHECK(creation_phase_);
   if (RefIsPositive(lit)) {
-    AddTerm(ct_index, lit, 1, 0);
+    AddTerm(ct_index, lit, coeff, 0);
   } else {
-    AddTerm(ct_index, PositiveRef(lit), -1, 1);
+    AddTerm(ct_index, PositiveRef(lit), -coeff, coeff);
   }
 }
 
 void LinearIncrementalEvaluator::AddTerm(int ct_index, int var, int64_t coeff,
                                          int64_t offset) {
   DCHECK(creation_phase_);
+  DCHECK_GE(var, 0);
+  if (coeff == 0) return;
+
   if (var_entries_.size() <= var) {
     var_entries_.resize(var + 1);
   }
@@ -141,6 +144,7 @@ void LinearIncrementalEvaluator::AddLinearExpression(
   DCHECK(creation_phase_);
   AddOffset(ct_index, expr.offset() * multiplier);
   for (int i = 0; i < expr.vars_size(); ++i) {
+    if (expr.coeffs(i) * multiplier == 0) continue;
     AddTerm(ct_index, expr.vars(i), expr.coeffs(i) * multiplier);
   }
 }
@@ -558,7 +562,7 @@ int64_t LinearIncrementalEvaluator::Violation(int c) const {
 }
 
 bool LinearIncrementalEvaluator::IsViolated(int c) const {
-  return is_violated_[c];
+  return Violation(c) > 0;
 }
 
 void LinearIncrementalEvaluator::ReduceBounds(int c, int64_t lb, int64_t ub) {
@@ -1169,10 +1173,10 @@ void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
   if (routes) {
     const int depot_net_flow = linear_evaluator.NewConstraint({0, 0});
     for (const int lit : inflow_lits[0]) {
-      linear_evaluator.AddTerm(depot_net_flow, lit, 1);
+      linear_evaluator.AddLiteral(depot_net_flow, lit, 1);
     }
     for (const int lit : outflow_lits[0]) {
-      linear_evaluator.AddTerm(depot_net_flow, lit, -1);
+      linear_evaluator.AddLiteral(depot_net_flow, lit, -1);
     }
   }
   for (int i = routes ? 1 : 0; i < inflow_lits.size(); ++i) {
@@ -1192,6 +1196,19 @@ void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
 // ----- LsEvaluator -----
 
 LsEvaluator::LsEvaluator(const CpModelProto& model) : model_(model) {
+  ignored_constraints_.resize(model.constraints_size(), false);
+  var_to_constraint_graph_.resize(model_.variables_size());
+  jump_value_optimal_.resize(model_.variables_size(), true);
+  CompileConstraintsAndObjective();
+  BuildVarConstraintGraph();
+}
+
+LsEvaluator::LsEvaluator(
+    const CpModelProto& model, const std::vector<bool>& ignored_constraints,
+    const std::vector<ConstraintProto>& additional_constraints)
+    : model_(model),
+      ignored_constraints_(ignored_constraints),
+      additional_constraints_(additional_constraints) {
   var_to_constraint_graph_.resize(model_.variables_size());
   jump_value_optimal_.resize(model_.variables_size(), true);
   CompileConstraintsAndObjective();
@@ -1242,6 +1259,115 @@ void LsEvaluator::BuildVarConstraintGraph() {
   }
 }
 
+void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
+  switch (ct.constraint_case()) {
+    case ConstraintProto::ConstraintCase::kBoolOr: {
+      // Encoding using enforcement literal is slightly more efficient.
+      const int ct_index = linear_evaluator_.NewConstraint(Domain(1, 1));
+      for (const int lit : ct.enforcement_literal()) {
+        linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
+      }
+      for (const int lit : ct.bool_or().literals()) {
+        linear_evaluator_.AddEnforcementLiteral(ct_index, NegatedRef(lit));
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kBoolAnd: {
+      const int num_literals = ct.bool_and().literals_size();
+      const int ct_index =
+          linear_evaluator_.NewConstraint(Domain(num_literals));
+      for (const int lit : ct.enforcement_literal()) {
+        linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
+      }
+      for (const int lit : ct.bool_and().literals()) {
+        linear_evaluator_.AddLiteral(ct_index, lit);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kAtMostOne: {
+      DCHECK(ct.enforcement_literal().empty());
+      const int ct_index = linear_evaluator_.NewConstraint({0, 1});
+      for (const int lit : ct.at_most_one().literals()) {
+        linear_evaluator_.AddLiteral(ct_index, lit);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kExactlyOne: {
+      DCHECK(ct.enforcement_literal().empty());
+      const int ct_index = linear_evaluator_.NewConstraint({1, 1});
+      for (const int lit : ct.exactly_one().literals()) {
+        linear_evaluator_.AddLiteral(ct_index, lit);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kBoolXor: {
+      constraints_.emplace_back(new CompiledBoolXorConstraint(ct));
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kAllDiff: {
+      constraints_.emplace_back(new CompiledAllDiffConstraint(ct));
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kLinMax: {
+      // This constraint is split into linear precedences and its max
+      // maintenance.
+      const LinearExpressionProto& target = ct.lin_max().target();
+      for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+        const int64_t max_value =
+            ExprMax(target, model_) - ExprMin(expr, model_);
+        const int precedence_index =
+            linear_evaluator_.NewConstraint({0, max_value});
+        linear_evaluator_.AddLinearExpression(precedence_index, target, 1);
+        linear_evaluator_.AddLinearExpression(precedence_index, expr, -1);
+      }
+
+      // Penalty when target > all expressions.
+      constraints_.emplace_back(new CompiledLinMaxConstraint(ct));
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kIntProd: {
+      constraints_.emplace_back(new CompiledIntProdConstraint(ct));
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kIntDiv: {
+      constraints_.emplace_back(new CompiledIntDivConstraint(ct));
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kLinear: {
+      const Domain domain = ReadDomainFromProto(ct.linear());
+      const int ct_index = linear_evaluator_.NewConstraint(domain);
+      for (const int lit : ct.enforcement_literal()) {
+        linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
+      }
+      for (int i = 0; i < ct.linear().vars_size(); ++i) {
+        const int var = ct.linear().vars(i);
+        const int64_t coeff = ct.linear().coeffs(i);
+        linear_evaluator_.AddTerm(ct_index, var, coeff);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kNoOverlap: {
+      CompiledNoOverlapConstraint* no_overlap =
+          new CompiledNoOverlapConstraint(ct, model_);
+      constraints_.emplace_back(no_overlap);
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kCumulative: {
+      constraints_.emplace_back(new CompiledCumulativeConstraint(ct, model_));
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kCircuit:
+    case ConstraintProto::ConstraintCase::kRoutes:
+      constraints_.emplace_back(new CompiledCircuitConstraint(ct));
+      AddCircuitFlowConstraints(linear_evaluator_, ct);
+      break;
+    default:
+      VLOG(1) << "Not implemented: " << ct.constraint_case();
+      model_is_supported_ = false;
+      break;
+  }
+}
+
 void LsEvaluator::CompileConstraintsAndObjective() {
   constraints_.clear();
 
@@ -1259,113 +1385,13 @@ void LsEvaluator::CompileConstraintsAndObjective() {
     }
   }
 
-  for (const ConstraintProto& ct : model_.constraints()) {
-    switch (ct.constraint_case()) {
-      case ConstraintProto::ConstraintCase::kBoolOr: {
-        // Encoding using enforcement literal is sligthly more efficient.
-        const int ct_index = linear_evaluator_.NewConstraint(Domain(1, 1));
-        for (const int lit : ct.enforcement_literal()) {
-          linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
-        }
-        for (const int lit : ct.bool_or().literals()) {
-          linear_evaluator_.AddEnforcementLiteral(ct_index, NegatedRef(lit));
-        }
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kBoolAnd: {
-        const int num_literals = ct.bool_and().literals_size();
-        const int ct_index =
-            linear_evaluator_.NewConstraint(Domain(num_literals));
-        for (const int lit : ct.enforcement_literal()) {
-          linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
-        }
-        for (const int lit : ct.bool_and().literals()) {
-          linear_evaluator_.AddLiteral(ct_index, lit);
-        }
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kAtMostOne: {
-        DCHECK(ct.enforcement_literal().empty());
-        const int ct_index = linear_evaluator_.NewConstraint({0, 1});
-        for (const int lit : ct.at_most_one().literals()) {
-          linear_evaluator_.AddLiteral(ct_index, lit);
-        }
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kExactlyOne: {
-        DCHECK(ct.enforcement_literal().empty());
-        const int ct_index = linear_evaluator_.NewConstraint({1, 1});
-        for (const int lit : ct.exactly_one().literals()) {
-          linear_evaluator_.AddLiteral(ct_index, lit);
-        }
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kBoolXor: {
-        constraints_.emplace_back(new CompiledBoolXorConstraint(ct));
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kAllDiff: {
-        constraints_.emplace_back(new CompiledAllDiffConstraint(ct));
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kLinMax: {
-        // This constraint is split into linear precedences and its max
-        // maintenance.
-        const LinearExpressionProto& target = ct.lin_max().target();
-        for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
-          const int64_t max_value =
-              ExprMax(target, model_) - ExprMin(expr, model_);
-          const int precedence_index =
-              linear_evaluator_.NewConstraint({0, max_value});
-          linear_evaluator_.AddLinearExpression(precedence_index, target, 1);
-          linear_evaluator_.AddLinearExpression(precedence_index, expr, -1);
-        }
+  for (int c = 0; c < model_.constraints_size(); ++c) {
+    if (ignored_constraints_[c]) continue;
+    CompileOneConstraint(model_.constraints(c));
+  }
 
-        // Penalty when target > all expressions.
-        constraints_.emplace_back(new CompiledLinMaxConstraint(ct));
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kIntProd: {
-        constraints_.emplace_back(new CompiledIntProdConstraint(ct));
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kIntDiv: {
-        constraints_.emplace_back(new CompiledIntDivConstraint(ct));
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kLinear: {
-        const Domain domain = ReadDomainFromProto(ct.linear());
-        const int ct_index = linear_evaluator_.NewConstraint(domain);
-        for (const int lit : ct.enforcement_literal()) {
-          linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
-        }
-        for (int i = 0; i < ct.linear().vars_size(); ++i) {
-          const int var = ct.linear().vars(i);
-          const int64_t coeff = ct.linear().coeffs(i);
-          linear_evaluator_.AddTerm(ct_index, var, coeff);
-        }
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kNoOverlap: {
-        CompiledNoOverlapConstraint* no_overlap =
-            new CompiledNoOverlapConstraint(ct, model_);
-        constraints_.emplace_back(no_overlap);
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kCumulative: {
-        constraints_.emplace_back(new CompiledCumulativeConstraint(ct, model_));
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kCircuit:
-      case ConstraintProto::ConstraintCase::kRoutes:
-        constraints_.emplace_back(new CompiledCircuitConstraint(ct));
-        AddCircuitFlowConstraints(linear_evaluator_, ct);
-        break;
-      default:
-        VLOG(1) << "Not implemented: " << ct.constraint_case();
-        model_is_supported_ = false;
-        break;
-    }
+  for (const ConstraintProto& ct : additional_constraints_) {
+    CompileOneConstraint(ct);
   }
 
   // Make sure we have access to the data in an efficient way.

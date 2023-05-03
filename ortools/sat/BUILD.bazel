@@ -198,6 +198,7 @@ cc_library(
         ":cp_model_checker",
         ":cp_model_utils",
         ":integer",
+        ":linear_model",
         ":sat_parameters_cc_proto",
         ":subsolver",
         ":synchronization",
@@ -209,6 +210,22 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "linear_model",
+    srcs = ["linear_model.cc"],
+    hdrs = ["linear_model.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -281,6 +298,7 @@ cc_library(
         ":integer_search",
         ":intervals",
         ":lb_tree_search",
+        ":linear_model",
         ":linear_programming_constraint",
         ":linear_relaxation",
         ":max_hs",
