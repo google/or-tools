@@ -211,7 +211,7 @@ const GScipConstraintOptions& DefaultGScipConstraintOptions() {
 }
 
 absl::Status GScip::SetParams(const GScipParameters& params,
-                              const std::string& legacy_params) {
+                              absl::string_view legacy_params) {
   if (params.has_silence_output()) {
     SCIPsetMessagehdlrQuiet(scip_, params.silence_output());
   }

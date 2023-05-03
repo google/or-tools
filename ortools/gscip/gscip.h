@@ -368,7 +368,7 @@ class GScip {
   absl::Status CleanUp();
 
   absl::Status SetParams(const GScipParameters& params,
-                         const std::string& legacy_params);
+                         absl::string_view legacy_params);
   absl::Status FreeTransform();
 
   // Replaces +/- inf by +/- ScipInf(), fails when |d| is in [ScipInf(), inf).

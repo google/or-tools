@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "ortools/gscip/gscip.h"
 #include "scip/scip.h"
 #include "scip/scip_prob.h"
@@ -71,7 +72,7 @@ GScipLinearRange GScipLe(const GScipLinearExpr left,
 // in terms.
 absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
                                 const std::vector<GScipLinearExpr>& terms,
-                                const std::string& name = "");
+                                absl::string_view name = "");
 
 // Adds the constraint resultant = minimum(terms). Supports unbounded variables
 // in terms.
@@ -90,7 +91,7 @@ struct GScipIndicatorRangeConstraint {
 // Supports unbounded variables in indicator_range.range.variables.
 absl::Status GScipCreateIndicatorRange(
     GScip* gscip, const GScipIndicatorRangeConstraint& indicator_range,
-    const std::string& name = "",
+    absl::string_view name = "",
     const GScipConstraintOptions& options = GScipConstraintOptions());
 
 // WARNING: DO NOT CHANGE THE OBJECTIVE DIRECTION AFTER CALLING THIS METHOD.
@@ -102,7 +103,7 @@ absl::Status GScipCreateIndicatorRange(
 absl::Status GScipAddQuadraticObjectiveTerm(
     GScip* gscip, std::vector<SCIP_Var*> quadratic_variables1,
     std::vector<SCIP_Var*> quadratic_variables2,
-    std::vector<double> quadratic_coefficients, const std::string& name = "");
+    std::vector<double> quadratic_coefficients, absl::string_view name = "");
 
 }  // namespace operations_research
 

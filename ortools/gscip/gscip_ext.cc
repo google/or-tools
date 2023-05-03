@@ -81,7 +81,7 @@ absl::Status GScipCreateAbs(GScip* gscip, SCIP_Var* x, SCIP_Var* abs_x,
 
 absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
                                 const std::vector<GScipLinearExpr>& terms,
-                                const std::string& name) {
+                                absl::string_view name) {
   // TODO(user): it may be better to write this in terms of the disjuntive
   // constraint, we need to support disjunctions in gscip.h to do this.
   //
@@ -149,7 +149,7 @@ absl::Status GScipCreateMinimum(GScip* gscip, const GScipLinearExpr& resultant,
 absl::Status GScipAddQuadraticObjectiveTerm(
     GScip* gscip, std::vector<SCIP_Var*> quadratic_variables1,
     std::vector<SCIP_Var*> quadratic_variables2,
-    std::vector<double> quadratic_coefficients, const std::string& name) {
+    std::vector<double> quadratic_coefficients, absl::string_view name) {
   constexpr double kInf = std::numeric_limits<double>::infinity();
   auto obj_term =
       gscip->AddVariable(-kInf, kInf, 1.0, GScipVarType::kContinuous,
@@ -178,7 +178,7 @@ absl::Status GScipAddQuadraticObjectiveTerm(
 
 absl::Status GScipCreateIndicatorRange(
     GScip* gscip, const GScipIndicatorRangeConstraint& indicator_range,
-    const std::string& name, const GScipConstraintOptions& options) {
+    absl::string_view name, const GScipConstraintOptions& options) {
   if (std::isfinite(indicator_range.range.upper_bound)) {
     GScipIndicatorConstraint ub_constraint;
     ub_constraint.upper_bound = indicator_range.range.upper_bound;
