@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
@@ -102,7 +103,8 @@ void DenseIntDuplicateRemover::AppendAndLazilyRemoveDuplicates(
   // expensive, we only perform it every kCheckPeriod, and to compensate we
   // multiply the probability by the same amount.
   constexpr int kCheckPeriod = 8;
-  static_assert(absl::popcount(kCheckPeriod) == 1, "must be power of two");
+  static_assert(absl::popcount(unsigned(kCheckPeriod)) == 1,
+                "must be power of two");
   const size_t size = container->size();
   if (size & (kCheckPeriod - 1)) return;
   if (size >= 2 * n_ ||
