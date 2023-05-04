@@ -17,24 +17,30 @@
 #include <cmath>
 #include <cstdlib>
 #include <memory>
-#include <stack>
 #include <string>
-#include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
+#include "google/protobuf/text_format.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/version.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
+#include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
+#include "ortools/glop/variables_info.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/util/fp_utils.h"
+#include "ortools/util/logging.h"
 
-// TODO(user): abstract this in some way to the port directory.
 #ifndef __PORTABLE_PLATFORM__
+// TODO(user): abstract this in some way to the port directory.
 #include "ortools/util/file_util.h"
 #endif
 
