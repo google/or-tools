@@ -103,12 +103,8 @@ void DenseIntDuplicateRemover::AppendAndLazilyRemoveDuplicates(
   // expensive, we only perform it every kCheckPeriod, and to compensate we
   // multiply the probability by the same amount.
   constexpr int kCheckPeriod = 8;
-<<<<<<< HEAD
-  // static_assert(absl::popcount(kCheckPeriod) == 1, "must be power of two");
-=======
-  static_assert(absl::popcount(unsigned(kCheckPeriod)) == 1,
+  static_assert(absl::popcount(static_cast<unsigned>(kCheckPeriod)) == 1,
                 "must be power of two");
->>>>>>> b52afae4a09f8e08f7c605c489df8ae7b2a61a18
   const size_t size = container->size();
   if (size & (kCheckPeriod - 1)) return;
   if (size >= 2 * n_ ||
