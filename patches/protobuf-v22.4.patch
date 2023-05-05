@@ -27,7 +27,7 @@ index 2e38c1bac..0c26a97f4 100644
  set(protobuf_WITH_ZLIB_DEFAULT ON)
  option(protobuf_WITH_ZLIB "Build with zlib support" ${protobuf_WITH_ZLIB_DEFAULT})
 @@ -189,24 +197,16 @@ endif()
- 
+
  set(_protobuf_FIND_ZLIB)
  if (protobuf_WITH_ZLIB)
 -  find_package(ZLIB)
@@ -59,16 +59,16 @@ index 2e38c1bac..0c26a97f4 100644
 +  set(ZLIB_LIBRARIES ZLIB::ZLIB)
 +  set(_protobuf_FIND_ZLIB "if(NOT ZLIB_FOUND AND NOT TARGET ZLIB::ZLIB)\n  find_package(ZLIB REQUIRED)\nendif()")
  endif (protobuf_WITH_ZLIB)
- 
+
  if (HAVE_ZLIB)
 @@ -332,7 +332,6 @@ else (MSVC)
  endif (MSVC)
- 
+
  include_directories(
 -  ${ZLIB_INCLUDE_DIRECTORIES}
    ${protobuf_BINARY_DIR}
    ${protobuf_SOURCE_DIR}/src)
- 
+
 diff --git a/build_defs/cpp_opts.bzl b/build_defs/cpp_opts.bzl
 index f95c3e257..5a32371da 100644
 --- a/build_defs/cpp_opts.bzl
@@ -85,43 +85,12 @@ index f95c3e257..5a32371da 100644
      "//conditions:default": [
          "-lpthread",
          "-lm",
-diff --git a/python/internal.bzl b/python/internal.bzl
-index d9ba37ef8..6596a2d39 100644
---- a/python/internal.bzl
-+++ b/python/internal.bzl
-@@ -1,5 +1,11 @@
- # Internal helpers for building the Python protobuf runtime.
- 
-+def _remove_cross_repo_path(path):
-+    components = path.split("/")
-+    if components[0] == "..":
-+        return "/".join(components[2:])
-+    return path
-+
- def _internal_copy_files_impl(ctx):
-     strip_prefix = ctx.attr.strip_prefix
-     if strip_prefix[-1] != "/":
-@@ -7,10 +13,11 @@ def _internal_copy_files_impl(ctx):
- 
-     src_dests = []
-     for src in ctx.files.srcs:
--        if src.short_path[:len(strip_prefix)] != strip_prefix:
-+        short_path = _remove_cross_repo_path(src.short_path)
-+        if short_path[:len(strip_prefix)] != strip_prefix:
-             fail("Source does not start with %s: %s" %
--                 (strip_prefix, src.short_path))
--        dest = ctx.actions.declare_file(src.short_path[len(strip_prefix):])
-+                 (strip_prefix, short_path))
-+        dest = ctx.actions.declare_file(short_path[len(strip_prefix):])
-         src_dests.append([src, dest])
- 
-     if ctx.attr.is_windows:
 diff --git a/src/google/protobuf/port.h b/src/google/protobuf/port.h
 index 9ca45d966..6bbf1d164 100644
 --- a/src/google/protobuf/port.h
 +++ b/src/google/protobuf/port.h
 @@ -38,6 +38,7 @@
- 
+
  #include <cassert>
  #include <cstddef>
 +#include <cstdint>

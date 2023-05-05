@@ -103,9 +103,9 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v22.2"
+    GIT_TAG "v22.4"
     GIT_SUBMODULES ""
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v22.2.patch")
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v22.4.patch")
   FetchContent_MakeAvailable(protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
