@@ -830,7 +830,7 @@ absl::StatusOr<GScipHintResult> GScip::SuggestHint(
 }
 
 absl::StatusOr<GScipResult> GScip::Solve(
-    const GScipParameters& params, const std::string& legacy_params,
+    const GScipParameters& params, absl::string_view legacy_params,
     const GScipMessageHandler message_handler) {
   // A four step process:
   //  1. Apply parameters.

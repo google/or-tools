@@ -20,6 +20,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/path.h"
 #include "ortools/scheduling/rcpsp.pb.h"
 #include "ortools/util/filelineiter.h"
@@ -601,13 +602,13 @@ void RcpspParser::ProcessPattersonLine(const std::string& line) {
   }
 }
 
-int RcpspParser::strtoint32(const std::string& word) {
+int RcpspParser::strtoint32(absl::string_view word) {
   int result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }
 
-int64_t RcpspParser::strtoint64(const std::string& word) {
+int64_t RcpspParser::strtoint64(absl::string_view word) {
   int64_t result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;

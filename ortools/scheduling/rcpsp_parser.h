@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/scheduling/rcpsp.pb.h"
 
@@ -63,8 +64,8 @@ class RcpspParser {
   // Sets the number of declared tasks, and initialize data structures
   // accordingly.
   void SetNumDeclaredTasks(int t);
-  int strtoint32(const std::string& word);
-  int64_t strtoint64(const std::string& word);
+  int strtoint32(absl::string_view word);
+  int64_t strtoint64(absl::string_view word);
 
   std::string basedata_;
   int64_t seed_;

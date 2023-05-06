@@ -73,7 +73,7 @@ GScipLinearRange GScipLe(const GScipLinearExpr left,
 }
 
 absl::Status GScipCreateAbs(GScip* gscip, SCIP_Var* x, SCIP_Var* abs_x,
-                            const std::string& name) {
+                            absl::string_view name) {
   return GScipCreateMaximum(
       gscip, GScipLinearExpr(abs_x),
       {GScipLinearExpr(x), GScipNegate(GScipLinearExpr(x))}, name);
@@ -137,7 +137,7 @@ absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
 
 absl::Status GScipCreateMinimum(GScip* gscip, const GScipLinearExpr& resultant,
                                 const std::vector<GScipLinearExpr>& terms,
-                                const std::string& name) {
+                                absl::string_view name) {
   std::vector<GScipLinearExpr> negated_terms;
   negated_terms.reserve(terms.size());
   for (const GScipLinearExpr& e : terms) {

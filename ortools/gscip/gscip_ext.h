@@ -43,7 +43,7 @@ namespace operations_research {
 // Adds the constraint y = abs(x). May create auxiliary variables. Supports
 // unbounded x.
 absl::Status GScipCreateAbs(GScip* gscip, SCIP_Var* x, SCIP_Var* abs_x,
-                            const std::string& name = "");
+                            absl::string_view name = "");
 
 // TODO(user): delete this type and the methods below, use a generic version
 // templated on the variable type that supports operator overloads.
@@ -78,7 +78,7 @@ absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
 // in terms.
 absl::Status GScipCreateMinimum(GScip* gscip, const GScipLinearExpr& resultant,
                                 const std::vector<GScipLinearExpr>& terms,
-                                const std::string& name = "");
+                                absl::string_view name = "");
 
 // Models the constraint z = 1 => lb <= ax <= ub
 // If negate_indicator, then instead: z = 0 => lb <= ax <= ub

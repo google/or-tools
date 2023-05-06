@@ -144,7 +144,7 @@ class GScip {
   // this will be reflected in the value of GScipResult::gscip_output::status.
   absl::StatusOr<GScipResult> Solve(
       const GScipParameters& params = GScipParameters(),
-      const std::string& legacy_params = "",
+      absl::string_view legacy_params = "",
       GScipMessageHandler message_handler = nullptr);
 
   // ///////////////////////////////////////////////////////////////////////////
