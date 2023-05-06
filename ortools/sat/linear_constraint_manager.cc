@@ -70,7 +70,7 @@ std::string LinearConstraintManager::Statistics() const {
                     FormatCounter(num_shortened_constraints_), "\n");
   }
   if (num_split_constraints_ > 0) {
-    absl::StrAppend(&result, "  split constraints: ",
+    absl::StrAppend(&result, "  splitable constraint: ",
                     FormatCounter(num_split_constraints_), "\n");
   }
   if (num_coeff_strenghtening_ > 0) {
@@ -80,6 +80,10 @@ std::string LinearConstraintManager::Statistics() const {
   if (num_simplifications_ > 0) {
     absl::StrAppend(&result, "  num simplifications: ",
                     FormatCounter(num_simplifications_), "\n");
+  }
+  if (num_constraint_updates_ > 0) {
+    absl::StrAppend(&result, "  num constraint updates: ",
+                    FormatCounter(num_constraint_updates_), "\n");
   }
   absl::StrAppend(&result, "  total cuts added: ", FormatCounter(num_cuts_),
                   " (out of ", FormatCounter(num_add_cut_calls_), " calls)\n");
@@ -202,6 +206,28 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   ct_info.active_count = constraint_active_count_increase_;
   constraint_infos_.push_back(std::move(ct_info));
   return ct_index;
+}
+
+bool LinearConstraintManager::UpdateConstraintLb(glop::RowIndex index_in_lp,
+                                                 IntegerValue new_lb) {
+  const ConstraintIndex index = lp_constraints_[index_in_lp.value()];
+  ConstraintInfo& info = constraint_infos_[index];
+  if (new_lb <= info.constraint.lb) return false;
+  ++num_constraint_updates_;
+  current_lp_is_changed_ = true;
+  info.constraint.lb = new_lb;
+  return true;
+}
+
+bool LinearConstraintManager::UpdateConstraintUb(glop::RowIndex index_in_lp,
+                                                 IntegerValue new_ub) {
+  const ConstraintIndex index = lp_constraints_[index_in_lp.value()];
+  ConstraintInfo& info = constraint_infos_[index];
+  if (new_ub >= info.constraint.ub) return false;
+  ++num_constraint_updates_;
+  current_lp_is_changed_ = true;
+  info.constraint.ub = new_ub;
+  return true;
 }
 
 void LinearConstraintManager::ComputeObjectiveParallelism(
@@ -421,91 +447,63 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
     return true;
   }
 
-  // TODO(user): Split constraint in two if it is boxed and there is possible
-  // reduction?
-  //
-  // TODO(user): We could cover more case of coefficient strenghtening. For
-  // example, if whe have 15 * X + 3 * Y >= 19, coeff of X can be reduced to 13.
-  if (max_sum > ct->ub) {
-    const IntegerValue threshold = max_sum - ct->ub;
-    const IntegerValue second_threshold = std::max(
-        CeilRatio(threshold, IntegerValue(2)), threshold - min_magnitude);
-    if (max_magnitude > second_threshold) {
-      if (min_sum < ct->lb) {
-        ++num_split_constraints_;
-      } else {
-        term_changed = true;
-        ++num_coeff_strenghtening_;
-        ct->lb = kMinIntegerValue;
-        const int num_terms = ct->vars.size();
-        for (int i = 0; i < num_terms; ++i) {
-          // In all cases, we reason on a transformed constraint where the term
-          // is max_value - |coeff| * positive_X. If we change coeff, and
-          // retransform the constraint, we need to change the rhs by the
-          // constant term left.
-          const IntegerValue coeff = ct->coeffs[i];
-          if (coeff > threshold) {
-            const IntegerVariable var = ct->vars[i];
-            const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
-            ct->coeffs[i] = threshold;
-            ct->ub -= (coeff - threshold) * ub;
-          } else if (coeff > second_threshold && coeff < threshold) {
-            const IntegerVariable var = ct->vars[i];
-            const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
-            ct->coeffs[i] = second_threshold;
-            ct->ub -= (coeff - second_threshold) * ub;
-          } else if (coeff < -threshold) {
-            const IntegerVariable var = ct->vars[i];
-            const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
-            ct->coeffs[i] = -threshold;
-            ct->ub -= (coeff + threshold) * lb;
-          } else if (coeff < -second_threshold && coeff > -threshold) {
-            const IntegerVariable var = ct->vars[i];
-            const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
-            ct->coeffs[i] = -second_threshold;
-            ct->ub -= (coeff + second_threshold) * lb;
-          }
-        }
-      }
+  // Make sure bounds are finite.
+  ct->lb = std::max(ct->lb, min_sum);
+  ct->ub = std::min(ct->ub, max_sum);
+
+  // The variable can be shifted and complemented so we have constraints of
+  // the form:
+  // ... + |coeff| * X  >= threshold_ub
+  // ... + |coeff| * X' >= threshold_lb
+  // In both case if coeff is big, we can reduce it and update the rhs
+  // accordingly.
+  const IntegerValue threshold_ub = max_sum - ct->ub;
+  const IntegerValue threshold_lb = ct->lb - min_sum;
+  const IntegerValue threshold = std::max(threshold_lb, threshold_ub);
+  CHECK_GT(threshold, 0);  // Since we aborted for trivial constraint.
+
+  // TODO(user): In some case, we could split the constraint to reduce one of
+  // them further. But not sure that is a good thing.
+  if (threshold_ub > 0 && threshold_lb > 0 && threshold_lb != threshold_ub) {
+    if (max_magnitude > std::min(threshold_lb, threshold_ub)) {
+      ++num_split_constraints_;
     }
   }
 
-  if (min_sum < ct->lb) {
-    const IntegerValue threshold = ct->lb - min_sum;
-    const IntegerValue second_threshold = std::max(
-        CeilRatio(threshold, IntegerValue(2)), threshold - min_magnitude);
-    if (max_magnitude > second_threshold) {
-      if (max_sum > ct->ub) {
-        ++num_split_constraints_;
-      } else {
-        term_changed = true;
-        ct->ub = kMaxIntegerValue;
-        ++num_coeff_strenghtening_;
-        const int num_terms = ct->vars.size();
-        for (int i = 0; i < num_terms; ++i) {
-          const IntegerValue coeff = ct->coeffs[i];
-          if (coeff > threshold) {
-            const IntegerVariable var = ct->vars[i];
-            const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
-            ct->coeffs[i] = threshold;
-            ct->lb -= (coeff - threshold) * lb;
-          } else if (coeff > second_threshold && coeff < threshold) {
-            const IntegerVariable var = ct->vars[i];
-            const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
-            ct->coeffs[i] = second_threshold;
-            ct->lb -= (coeff - second_threshold) * lb;
-          } else if (coeff < -threshold) {
-            const IntegerVariable var = ct->vars[i];
-            const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
-            ct->coeffs[i] = -threshold;
-            ct->lb -= (coeff + threshold) * ub;
-          } else if (coeff < -second_threshold && coeff > -threshold) {
-            const IntegerVariable var = ct->vars[i];
-            const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
-            ct->coeffs[i] = -second_threshold;
-            ct->lb -= (coeff + second_threshold) * ub;
-          }
-        }
+  // TODO(user): For constraint with both bound, we could reduce further for
+  // coefficient between threshold - min_magnitude and min(t_lb, t_ub).
+  const IntegerValue second_threshold = std::max(
+      {CeilRatio(threshold, IntegerValue(2)), threshold - min_magnitude,
+       std::min(threshold_lb, threshold_ub)});
+  if (max_magnitude > second_threshold) {
+    term_changed = true;
+    ++num_coeff_strenghtening_;
+    const int num_terms = ct->vars.size();
+    for (int i = 0; i < num_terms; ++i) {
+      // In all cases, we reason on a transformed constraint where the term
+      // is max_value - |coeff| * positive_X. If we change coeff, and
+      // retransform the constraint, we need to change the rhs by the
+      // constant term left.
+      const IntegerValue coeff = ct->coeffs[i];
+      const IntegerVariable var = ct->vars[i];
+      const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+      const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+      if (coeff > threshold) {
+        ct->coeffs[i] = threshold;
+        ct->ub -= (coeff - threshold) * ub;
+        ct->lb -= (coeff - threshold) * lb;
+      } else if (coeff > second_threshold && coeff < threshold) {
+        ct->coeffs[i] = second_threshold;
+        ct->ub -= (coeff - second_threshold) * ub;
+        ct->lb -= (coeff - second_threshold) * lb;
+      } else if (coeff < -threshold) {
+        ct->coeffs[i] = -threshold;
+        ct->ub -= (coeff + threshold) * lb;
+        ct->lb -= (coeff + threshold) * ub;
+      } else if (coeff < -second_threshold && coeff > -threshold) {
+        ct->coeffs[i] = -second_threshold;
+        ct->ub -= (coeff + second_threshold) * lb;
+        ct->lb -= (coeff + second_threshold) * ub;
       }
     }
   }

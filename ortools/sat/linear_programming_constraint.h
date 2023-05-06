@@ -277,14 +277,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Analyzes the result of an LP Solution. Returns false on conflict.
   bool AnalyzeLp();
 
-  // Returns false if some terms cannot be removed because of overflow. If this
-  // happends the cut is left in a non-usable state and we should abort its
-  // processing.
-  bool RemoveFixedTerms(LinearConstraint* cut);
-
   // Does some basic preprocessing of a cut candidate. Returns false if we
   // should abort processing this candidate.
-  bool PreprocessCut(LinearConstraint* cut);
+  bool PreprocessCut(IntegerVariable first_slack, CutData* cut);
 
   // Add a "MIR" cut obtained by first taking the linear combination of the
   // row of the matrix according to "integer_multipliers" and then trying
@@ -331,7 +326,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Note that this will loose some precision, but our subsequent computation
   // will still be exact as it will work for any set of multiplier.
   std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
-      bool take_objective_into_account,
+      bool take_objective_into_account, bool ignore_trivial_constraints,
       const std::vector<std::pair<glop::RowIndex, double>>& lp_multipliers,
       IntegerValue* scaling,
       int64_t overflow_cap = std::numeric_limits<int64_t>::max()) const;
@@ -426,6 +421,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // of the LP.
   LinearConstraintManager constraint_manager_;
 
+  // We do not want to add too many cut during each generation round.
+  TopNCuts top_n_cuts_ = TopNCuts(10);
+
   // Initial problem in integer form.
   // We always sort the inner vectors by increasing glop::ColIndex.
   struct LinearConstraintInternal {
@@ -498,7 +496,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   Model* model_;
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
-  SatSolver* sat_solver_;
   Trail* trail_;
   IntegerEncoder* integer_encoder_;
   ModelRandomGenerator* random_;

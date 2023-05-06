@@ -104,6 +104,10 @@ class LinearConstraintManager {
               const absl::StrongVector<IntegerVariable, double>& lp_solution,
               std::string extra_info = "");
 
+  // These must be level zero bounds.
+  bool UpdateConstraintLb(glop::RowIndex index_in_lp, IntegerValue new_lb);
+  bool UpdateConstraintUb(glop::RowIndex index_in_lp, IntegerValue new_ub);
+
   // The objective is used as one of the criterion to score cuts.
   // The more a cut is parallel to the objective, the better its score is.
   //
@@ -210,6 +214,7 @@ class LinearConstraintManager {
   // constraints.
   absl::flat_hash_map<size_t, ConstraintIndex> equiv_constraints_;
 
+  int64_t num_constraint_updates_ = 0;
   int64_t num_simplifications_ = 0;
   int64_t num_merged_constraints_ = 0;
   int64_t num_shortened_constraints_ = 0;

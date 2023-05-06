@@ -104,6 +104,11 @@ struct CutData {
   bool AppendOneTerm(IntegerVariable var, IntegerValue coeff, double lp_value,
                      IntegerValue lb, IntegerValue ub);
 
+  // These functions transform the cut by complementation.
+  bool AllCoefficientsArePositive() const;
+  void ComplementForPositiveCoefficients();
+  void ComplementForSmallerLpValues();
+
   std::string DebugString() const;
 
   // Note that we use a 128 bit rhs so we can freely complement variable without
@@ -256,7 +261,7 @@ struct FlowInfo {
 struct SingleNodeFlow {
   bool empty() const { return in_flow.empty() && out_flow.empty(); }
   void clear() {
-    demand = IntegerValue(0);
+    demand = 0;
     in_flow.clear();
     out_flow.clear();
     num_bool = 0;
@@ -265,7 +270,7 @@ struct SingleNodeFlow {
   }
   std::string DebugString() const;
 
-  IntegerValue demand;
+  absl::int128 demand;
   std::vector<FlowInfo> in_flow;
   std::vector<FlowInfo> out_flow;
 
@@ -277,12 +282,12 @@ struct SingleNodeFlow {
 
 class FlowCoverCutHelper {
  public:
+  ~FlowCoverCutHelper();
+
   // Extract a SingleNodeFlow relaxation from the base_ct and try to generate
   // a cut from it.
   bool ComputeFlowCoverRelaxationAndGenerateCut(
-      const LinearConstraint& base_ct,
-      const absl::StrongVector<IntegerVariable, double>& lp_values,
-      IntegerTrail* integer_trail, ImpliedBoundsProcessor* ib_helper);
+      const CutData& base_ct, ImpliedBoundsProcessor* ib_helper);
 
   // Try to generate a cut for the given single node flow problem. Returns true
   // if a cut was generated. It can be accessed by cut().
@@ -299,24 +304,21 @@ class FlowCoverCutHelper {
                         num_out_bin_);
   }
 
+  void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
+
  private:
   // Try to extract a nice SingleNodeFlow relaxation for the given upper bounded
   // linear constraint.
-  bool ComputeFlowCoverRelaxation(
-      const LinearConstraint& base_ct,
-      const absl::StrongVector<IntegerVariable, double>& lp_values,
-      SingleNodeFlow* snf, IntegerTrail* integer_trail,
-      ImpliedBoundsProcessor* ib_helper);
+  bool ComputeFlowCoverRelaxation(const CutData& base_ct, SingleNodeFlow* snf,
+                                  ImpliedBoundsProcessor* ib_helper);
 
   // Helpers used by ComputeFlowCoverRelaxation() to convert one linear term.
-  bool TryXminusLB(IntegerVariable var, double lp_value, IntegerValue lb,
-                   IntegerValue ub, IntegerValue coeff,
-                   ImpliedBoundsProcessor* ib_helper,
+  bool TryXminusLB(const CutTerm& term, ImpliedBoundsProcessor* ib_helper,
                    SingleNodeFlow* result) const;
-  bool TryUBminusX(IntegerVariable var, double lp_value, IntegerValue lb,
-                   IntegerValue ub, IntegerValue coeff,
-                   ImpliedBoundsProcessor* ib_helper,
+  bool TryUBminusX(const CutTerm& term, ImpliedBoundsProcessor* ib_helper,
                    SingleNodeFlow* result) const;
+  void FinishAndAddFlowInfo(const CutTerm& term, FlowInfo* info,
+                            SingleNodeFlow* result) const;
 
   // Temporary memory to avoid reallocating the vector.
   SingleNodeFlow snf_;
@@ -332,6 +334,10 @@ class FlowCoverCutHelper {
 
   LinearConstraintBuilder cut_builder_;
   LinearConstraint cut_;
+
+  // Stats.
+  SharedStatistics* shared_stats_ = nullptr;
+  int64_t num_aborts_ = 0;
 };
 
 // Visible for testing. Returns a function f on integers such that:
@@ -462,26 +468,19 @@ class CoverCutHelper {
  public:
   ~CoverCutHelper();
 
-  // Complements term to make sure all coeff are positive, returns false on
-  // overflow.
-  //
-  // Important: This must be called before both Try*() functions. It is
-  // separated as an optimization to share the loop rather than do it in both
-  // functions.
-  void PreprocessAndStoreBaseConstraint(const CutData& cut);
-
-  // Try to find a cut with a knapsack heuristic.
-  // If this returns true, you can get the cut via cut().
+  // Try to find a cut with a knapsack heuristic. This assumes an input with all
+  // coefficients positive. If this returns true, you can get the cut via cut().
   //
   // This uses a lifting procedure similar to what is described in "Lifting the
   // Knapsack Cover Inequalities for the Knapsack Polytope", Adam N. Letchfod,
   // Georgia Souli. In particular the section "Lifting via mixed-integer
   // rounding".
-  bool TrySimpleKnapsack(ImpliedBoundsProcessor* ib_processor = nullptr);
+  bool TrySimpleKnapsack(const CutData& input_ct,
+                         ImpliedBoundsProcessor* ib_processor = nullptr);
 
   // Applies the lifting procedure described in "On Lifted Cover Inequalities: A
   // New Lifting Procedure with Unusual Properties", Adam N. Letchford, Georgia
-  // Souli.
+  // Souli. This assumes an input with all coefficients positive.
   //
   // The algo is pretty simple, given a cover C for a given rhs. We compute
   // a rational weight p/q so that sum_C min(w_i, p/q) = rhs. Note that q is
@@ -505,7 +504,7 @@ class CoverCutHelper {
   //   f(a) + f(b), so it is always good to use implied bounds of the form X =
   //   bound * B + Slack.
   bool TryWithLetchfordSouliLifting(
-      ImpliedBoundsProcessor* ib_processor = nullptr);
+      const CutData& input_ct, ImpliedBoundsProcessor* ib_processor = nullptr);
 
   // If successful, info about the last generated cut.
   const LinearConstraint& cut() const { return cut_; }
@@ -516,18 +515,13 @@ class CoverCutHelper {
   void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
 
  private:
-  void InitializeCut();
+  void InitializeCut(const CutData& input_ct);
 
   // This looks at base_ct_ and reoder the terms so that the first ones are in
   // the cover. return zero if no interesting cover was found.
   int GetCoverSizeForBooleans(int relevant_size);
   int GetCoverSize(int relevant_size);
   int MinimizeCover(int cover_size, absl::int128 slack);
-
-  // The base constraint used to derive cut, with an int128 rhs.
-  // This is initialized by PreprocessAndStoreBaseConstraint().
-  absl::int128 input_rhs_;
-  CutData input_ct_;
 
   // Here to reuse memory.
   CutData base_ct_;
@@ -542,6 +536,7 @@ class CoverCutHelper {
   int64_t total_num_ibs_ = 0;
   int64_t total_num_overflow_abort_ = 0;
   int64_t total_num_mir_ = 0;
+  int64_t total_num_bumps_ = 0;
   int64_t total_num_cover_ = 0;
   int64_t total_num_ls_ = 0;
 

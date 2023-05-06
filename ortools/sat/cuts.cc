@@ -55,7 +55,6 @@ void AbslStringify(Sink& sink, absl::int128 v) {
 namespace operations_research {
 namespace sat {
 
-
 std::string CutTerm::DebugString() const {
   return absl::StrCat("coeff=", coeff.value(), " lp=", lp_value,
                       " range=", bound_diff.value(), " expr=[",
@@ -96,13 +95,8 @@ bool CutData::AppendOneTerm(IntegerVariable var, IntegerValue coeff,
   if (coeff == 0) return true;
   const IntegerValue bound_diff = ub - lb;
 
-  // Complement the variable so that it is always closer to its lb.
-  bool complement = false;
-  const double lb_dist = std::abs(lp_value - ToDouble(lb));
-  const double ub_dist = std::abs(lp_value - ToDouble(ub));
-  if (ub_dist < lb_dist) {
-    complement = true;
-  }
+  // Complement the variable so that it is has a positive coefficient.
+  const bool complement = coeff < 0;
 
   // See formula below, the constant term is either coeff * lb or coeff * ub.
   rhs -= absl::int128(coeff.value()) *
@@ -174,6 +168,27 @@ bool CutData::FillFromParallelVectors(
     }
   }
 
+  return true;
+}
+
+void CutData::ComplementForPositiveCoefficients() {
+  for (CutTerm& term : terms) {
+    if (term.coeff >= 0) continue;
+    term.Complement(&rhs);
+  }
+}
+
+void CutData::ComplementForSmallerLpValues() {
+  for (CutTerm& term : terms) {
+    if (term.lp_value <= term.LpDistToMaxValue()) continue;
+    term.Complement(&rhs);
+  }
+}
+
+bool CutData::AllCoefficientsArePositive() const {
+  for (const CutTerm& term : terms) {
+    if (term.coeff < 0) return false;
+  }
   return true;
 }
 
@@ -252,6 +267,8 @@ void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, IntegerValue t,
   }
 }
 
+// TODO(user): Divide by gcd first to avoid possible overflow in the
+// conversion? it is however unlikely given that our coeffs should be small.
 bool CutDataBuilder::ConvertToLinearConstraint(const CutData& cut,
                                                LinearConstraint* output) {
   tmp_map_.clear();
@@ -324,6 +341,57 @@ absl::int128 ApplyToInt128(const std::function<IntegerValue(IntegerValue)>& f,
   const absl::int128 result =
       k * absl::int128(f(divisor).value()) + absl::int128(f(rest).value());
   return result;
+}
+
+// Apply f() to the cut with a potential improvement for one Boolean:
+//
+// If we have a Boolean X, and a cut: terms + a * X <= b;
+// By setting X to true or false, we have two inequalities:
+//   terms <= b      if X == 0
+//   terms <= b - a  if X == 1
+// We can apply f to both inequalities and recombine:
+//   f(terms) <= f(b) * (1 - X) + f(b - a) * X
+// Which change the final coeff of X from f(a) to [f(b) - f(b - a)].
+// This can only improve the cut since f(b) >= f(b - a) + f(a)
+int ApplyWithPotentialBump(const std::function<IntegerValue(IntegerValue)>& f,
+                           const IntegerValue divisor, CutData* cut) {
+  int bump_index = -1;
+  double bump_score = -1.0;
+  IntegerValue bump_coeff;
+  const IntegerValue remainder = PositiveRemainder(cut->rhs, divisor);
+  const IntegerValue f_remainder = f(remainder);
+  cut->rhs = ApplyToInt128(f, divisor, cut->rhs);
+  for (int i = 0; i < cut->terms.size(); ++i) {
+    CutTerm& entry = cut->terms[i];
+    const IntegerValue f_coeff = f(entry.coeff);
+    if (entry.bound_diff == 1) {
+      // TODO(user): we probably don't need int128 here, but we need
+      // t * (remainder - entry.coeff) not to overflow, and we can't really be
+      // sure.
+      const IntegerValue alternative =
+          entry.coeff > 0
+              ? f_remainder - f(remainder - entry.coeff)
+              : f_remainder - IntegerValue(static_cast<int64_t>(ApplyToInt128(
+                                  f, divisor,
+                                  absl::int128(remainder.value()) -
+                                      absl::int128(entry.coeff.value()))));
+      DCHECK_GE(alternative, f_coeff);
+      if (alternative > f_coeff) {
+        const double score = ToDouble(alternative - f_coeff) * entry.lp_value;
+        if (score > bump_score) {
+          bump_index = i;
+          bump_score = score;
+          bump_coeff = alternative;
+        }
+      }
+    }
+    entry.coeff = f_coeff;
+  }
+  if (bump_index >= 0) {
+    cut->terms[bump_index].coeff = bump_coeff;
+    return 1;
+  }
+  return 0;
 }
 
 }  // namespace
@@ -658,6 +726,10 @@ bool IntegerRoundingCutHelper::ComputeCut(
     const IntegerValue magnitude = IntTypeAbs(entry.coeff);
     if (magnitude <= remainder_threshold) continue;
     divisors_.push_back(magnitude);
+
+    // If we have too many divisor to try, restrict to the first ones which
+    // should correspond to the highest lp values.
+    if (divisors_.size() > 50) break;
   }
   if (divisors_.empty()) return false;
   gtl::STLSortAndRemoveDuplicates(&divisors_, std::greater<IntegerValue>());
@@ -934,40 +1006,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
     if (total_num_final_complements_ == saved) break;
   }
 
-  // Apply f() to the best_cut_ with a potential improvement for one Boolean:
-  //
-  // If we have a Boolean X, and a cut: terms + a * X <= b;
-  // By setting X to true or false, we have two inequalities:
-  //   terms <= b      if X == 0
-  //   terms <= b - a  if X == 1
-  // We can apply f to both inequalities and recombine:
-  //   f(terms) <= f(b) * (1 - X) + f(b - a) * X
-  // Which change the final coeff of X from f(a) to [f(b) - f(b - a)].
-  // This can only improve the cut since f(b) >= f(b - a) + f(a)
-  //
-  // Note that we re-Canonicalize after our possible complementation so that the
-  // "improvement" is applied to larger lp_value first.
-  best_cut_.Canonicalize();
-  bool improved = false;
-  const IntegerValue remainder = PositiveRemainder(best_cut_.rhs, best_divisor);
-  const IntegerValue f_remainder = f(remainder);
-  best_cut_.rhs = ApplyToInt128(f, best_divisor, best_cut_.rhs);
-  for (CutTerm& entry : best_cut_.terms) {
-    const IntegerValue f_coeff = f(entry.coeff);
-    if (!improved && entry.bound_diff == 1 &&
-        !ProdOverflow(factor_t, CapSubI(remainder, entry.coeff))) {
-      const IntegerValue alternative = f_remainder - f(remainder - entry.coeff);
-      DCHECK_GE(alternative, f_coeff);
-      if (alternative > f_coeff) {
-        ++total_num_bumps_;
-        improved = true;
-        entry.coeff = alternative;
-        continue;
-      }
-    }
-    entry.coeff = f_coeff;
-  }
-
+  total_num_bumps_ += ApplyWithPotentialBump(f, best_divisor, &best_cut_);
   if (!cut_builder_.ConvertToLinearConstraint(best_cut_, &cut_)) {
     ++total_num_overflow_abort_;
     return false;
@@ -982,6 +1021,7 @@ CoverCutHelper::~CoverCutHelper() {
   stats.push_back({"cover_cut/num_overflows", total_num_overflow_abort_});
   stats.push_back({"cover_cut/num_lifting", total_num_lifting_});
   stats.push_back({"cover_cut/num_implied_bounds", total_num_ibs_});
+  stats.push_back({"cover_cut/num_bumps", total_num_bumps_});
   stats.push_back({"cover_cut/num_generated_c", total_num_cover_});
   stats.push_back({"cover_cut/num_generated_l", total_num_ls_});
   stats.push_back({"cover_cut/num_generated_m", total_num_mir_});
@@ -1143,27 +1183,20 @@ int CoverCutHelper::GetCoverSizeForBooleans(int relevant_size) {
   return MinimizeCover(cover_size, slack);
 }
 
-void CoverCutHelper::PreprocessAndStoreBaseConstraint(const CutData& cut) {
-  // Make sure each coeff is positive.
-  input_ct_ = cut;
-  for (CutTerm& term : input_ct_.terms) {
-    if (term.coeff >= 0) continue;
-    term.Complement(&input_ct_.rhs);
-  }
+void CoverCutHelper::InitializeCut(const CutData& input_ct) {
+  cut_.Clear();
+  num_lifting_ = 0;
+  base_ct_ = input_ct;
 
   // We should have dealt with an infeasible constraint before.
   // Note that because of our scaling, it is unlikely we will overflow int128.
-  CHECK_GE(input_ct_.rhs, 0);
+  CHECK_GE(base_ct_.rhs, 0);
+  DCHECK(base_ct_.AllCoefficientsArePositive());
 }
 
-void CoverCutHelper::InitializeCut() {
-  cut_.Clear();
-  num_lifting_ = 0;
-  base_ct_ = input_ct_;
-}
-
-bool CoverCutHelper::TrySimpleKnapsack(ImpliedBoundsProcessor* ib_processor) {
-  InitializeCut();
+bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
+                                       ImpliedBoundsProcessor* ib_processor) {
+  InitializeCut(input_ct);
 
   // Tricky: This only work because the cut absl128 rhs is not changed by these
   // operations.
@@ -1252,31 +1285,29 @@ bool CoverCutHelper::TrySimpleKnapsack(ImpliedBoundsProcessor* ib_processor) {
                                          max_scaling);
   }
 
-  // TODO(user): Also do the "bump" for Boolean like for MIR cut.
-  // TODO(user): Divide by gcd first to avoid possible overflow in the
-  // conversion? it is however unlikely given that our coeff should be small.
-  base_ct_.rhs = ApplyToInt128(f, best_coeff, base_ct_.rhs);
-  for (int i = 0; i < base_ct_.terms.size(); ++i) {
-    CutTerm& term = base_ct_.terms[i];
-    term.coeff = f(term.coeff);
-    if (i >= cover_size && term.coeff != 0) ++num_lifting_;
-  }
+  total_num_bumps_ += ApplyWithPotentialBump(f, best_coeff, &base_ct_);
   if (!cut_builder_.ConvertToLinearConstraint(base_ct_, &cut_)) {
     ++total_num_overflow_abort_;
     return false;
   }
 
+  // Update counters.
+  for (int i = cover_size; i < base_ct_.terms.size(); ++i) {
+    if (base_ct_.terms[i].coeff != 0) ++num_lifting_;
+  }
+  total_num_lifting_ += num_lifting_;
   if (best_coeff == max_coeff_in_cover) {
     ++total_num_cover_;
   } else {
     ++total_num_mir_;
   }
+
   return true;
 }
 
 bool CoverCutHelper::TryWithLetchfordSouliLifting(
-    ImpliedBoundsProcessor* ib_processor) {
-  InitializeCut();
+    const CutData& input_ct, ImpliedBoundsProcessor* ib_processor) {
+  InitializeCut(input_ct);
 
   // Perform IB expansion with no restriction, all coeff should still be
   // positive.
@@ -1750,25 +1781,56 @@ bool ImpliedBoundsProcessor::TryToExpandWithLowerImpliedbound(
   return true;
 }
 
+FlowCoverCutHelper::~FlowCoverCutHelper() {
+  if (!VLOG_IS_ON(1)) return;
+  if (shared_stats_ == nullptr) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"flow_cover/num_aborts", num_aborts_});
+  shared_stats_->AddStats(stats);
+}
+
 std::string SingleNodeFlow::DebugString() const {
   return absl::StrCat("#in:", in_flow.size(), " #out:", out_flow.size(),
-                      " demand:", demand.value(), " #bool:", num_bool,
+                      " demand:", demand, " #bool:", num_bool,
                       " #lb:", num_to_lb, " #ub:", num_to_ub);
 }
 
-bool FlowCoverCutHelper::TryXminusLB(IntegerVariable var, double lp_value,
-                                     IntegerValue lb, IntegerValue ub,
-                                     IntegerValue coeff,
+// The flow info of a linear term is always the same.
+void FlowCoverCutHelper::FinishAndAddFlowInfo(const CutTerm& term,
+                                              FlowInfo* info,
+                                              SingleNodeFlow* result) const {
+  const IntegerValue positive_coeff = IntTypeAbs(term.coeff);
+  info->capacity = positive_coeff * term.bound_diff;
+  info->flow_lp_value = ToDouble(positive_coeff) * term.lp_value;
+  info->flow_expr.var = term.expr_vars[0];
+  info->flow_expr.coeff = positive_coeff * term.expr_coeffs[0];
+  info->flow_expr.constant = positive_coeff * term.expr_offset;
+  if (term.coeff > 0) {
+    result->in_flow.push_back(*info);
+  } else {
+    result->out_flow.push_back(*info);
+  }
+}
+
+bool FlowCoverCutHelper::TryXminusLB(const CutTerm& term,
                                      ImpliedBoundsProcessor* ib_helper,
                                      SingleNodeFlow* result) const {
+  // We want an implied upper bound on the term.
   const ImpliedBoundsProcessor::BestImpliedBoundInfo ib =
-      ib_helper->GetCachedImpliedBoundInfo(NegationOf(var));
+      ib_helper->GetCachedImpliedBoundInfo(term.expr_coeffs[0] > 0
+                                               ? NegationOf(term.expr_vars[0])
+                                               : term.expr_vars[0]);
   if (ib.bool_var == kNoIntegerVariable) return false;
-  if (ib.implied_bound != -lb) return false;
 
-  // We have -var >= (ub - lb) bool - ub;
-  // so (var - lb) <= -(ub - lb) * bool + ub - lb;
-  // and (var - lb) <= bound_diff * (1 - bool).
+  // We want the implied_bound to force the term to zero.
+  // - If coeff > 0, -x >= implied_bound, so c * x <=  -c * implied_bound
+  // - If coeff < 0, x >= implied_bound, so c * x <=  c * implied_bound
+  if (term.expr_offset != IntTypeAbs(term.expr_coeffs[0]) * ib.implied_bound) {
+    return false;
+  }
+
+  // Note that the meaning is reversed since bool at true implies flow at zero
+  // and we want the opposite.
   FlowInfo info;
   if (ib.is_positive) {
     info.bool_lp_value = 1 - ib.bool_lp_value;
@@ -1780,154 +1842,96 @@ bool FlowCoverCutHelper::TryXminusLB(IntegerVariable var, double lp_value,
     info.bool_expr.var = ib.bool_var;
     info.bool_expr.coeff = 1;
   }
-  info.capacity = IntTypeAbs(coeff) * (ub - lb);
-  info.flow_lp_value = ToDouble(IntTypeAbs(coeff)) * (lp_value - ToDouble(lb));
-  info.flow_expr.var = var;
-  info.flow_expr.coeff = IntTypeAbs(coeff);
-  info.flow_expr.constant = -lb * IntTypeAbs(coeff);
 
-  // We use (var - lb) so sign is preserved
-  result->demand -= coeff * lb;
-  if (coeff > 0) {
-    result->in_flow.push_back(info);
-  } else {
-    result->out_flow.push_back(info);
-  }
+  FinishAndAddFlowInfo(term, &info, result);
   return true;
 }
 
-bool FlowCoverCutHelper::TryUBminusX(IntegerVariable var, double lp_value,
-                                     IntegerValue lb, IntegerValue ub,
-                                     IntegerValue coeff,
+bool FlowCoverCutHelper::TryUBminusX(const CutTerm& term,
                                      ImpliedBoundsProcessor* ib_helper,
                                      SingleNodeFlow* result) const {
-  const ImpliedBoundsProcessor::BestImpliedBoundInfo ib =
-      ib_helper->GetCachedImpliedBoundInfo(var);
-  if (ib.bool_var == kNoIntegerVariable) return false;
-  if (ib.implied_bound != ub) return false;
-
-  // We have var >= (ub - lb) bool + lb.
-  // so ub - var <= ub - (ub - lb) * bool - lb.
-  // and (ub - var) <= bound_diff * (1 - bool).
-  FlowInfo info;
-  if (ib.is_positive) {
-    info.bool_lp_value = 1 - ib.bool_lp_value;
-    info.bool_expr.var = ib.bool_var;
-    info.bool_expr.coeff = -1;
-    info.bool_expr.constant = 1;
-  } else {
-    info.bool_lp_value = ib.bool_lp_value;
-    info.bool_expr.var = ib.bool_var;
-    info.bool_expr.coeff = 1;
-  }
-  info.capacity = IntTypeAbs(coeff) * (ub - lb);
-  info.flow_lp_value = ToDouble(IntTypeAbs(coeff)) * (ToDouble(ub) - lp_value);
-  info.flow_expr.var = var;
-  info.flow_expr.coeff = -IntTypeAbs(coeff);
-  info.flow_expr.constant = ub * IntTypeAbs(coeff);
-
-  // We reverse the sign because we use (ub - var) here.
-  // So coeff * var = -coeff * (ub - var) + coeff * ub;
-  result->demand -= coeff * ub;
-  if (coeff > 0) {
-    result->out_flow.push_back(info);
-  } else {
-    result->in_flow.push_back(info);
-  }
-  return true;
+  CutTerm copy = term;
+  copy.Complement(&result->demand);
+  if (TryXminusLB(copy, ib_helper, result)) return true;
+  copy.Complement(&result->demand);
+  return false;
 }
 
 bool FlowCoverCutHelper::ComputeFlowCoverRelaxationAndGenerateCut(
-    const LinearConstraint& base_ct,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
-    IntegerTrail* integer_trail, ImpliedBoundsProcessor* ib_helper) {
-  if (!ComputeFlowCoverRelaxation(base_ct, lp_values, &snf_, integer_trail,
-                                  ib_helper)) {
+    const CutData& base_ct, ImpliedBoundsProcessor* ib_helper) {
+  if (!ComputeFlowCoverRelaxation(base_ct, &snf_, ib_helper)) {
     return false;
   }
   return GenerateCut(snf_);
 }
 
 bool FlowCoverCutHelper::ComputeFlowCoverRelaxation(
-    const LinearConstraint& base_ct,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
-    SingleNodeFlow* snf, IntegerTrail* integer_trail,
+    const CutData& base_ct, SingleNodeFlow* snf,
     ImpliedBoundsProcessor* ib_helper) {
   snf->clear();
-  snf->demand = base_ct.ub;
-  const int size = base_ct.vars.size();
-  for (int i = 0; i < size; ++i) {
-    // We can either use (X - LB) or (UB - X) for a variable in [0, capacity].
-    const IntegerVariable var = base_ct.vars[i];
-    const IntegerValue coeff = base_ct.coeffs[i];
+  snf->demand = base_ct.rhs;
+  for (const CutTerm& term : base_ct.terms) {
+    // We do not support complex terms, but we shouldn't get any.
+    if (term.expr_coeffs[1] != 0) {
+      ++num_aborts_;
+      return false;
+    }
 
     // Hack: abort if coefficient in the base constraint are too large.
-    if (IntTypeAbs(coeff) > 1'000'000) return false;
+    // Otherwise we can generate cut with coeff too large as well...
+    if (IntTypeAbs(term.coeff) > 1'000'000) return false;
 
-    const IntegerValue lb = integer_trail->LevelZeroLowerBound(var);
-    const IntegerValue ub = integer_trail->LevelZeroUpperBound(var);
-    const IntegerValue capacity(
-        CapProd(IntTypeAbs(coeff).value(), (ub - lb).value()));
-    if (capacity >= kMaxIntegerValue) return false;
-    if (lb == ub) {
-      // Fixed variable shouldn't really appear here.
-      snf->demand -= coeff * lb;
+    // Fixed variable shouldn't really appear here.
+    if (term.bound_diff == 0) {
       continue;
     }
 
+    // We can either use (X - LB) or (UB - X) for a variable in [0, capacity].
+    const IntegerValue capacity(
+        CapProdI(IntTypeAbs(term.coeff), term.bound_diff));
+    if (capacity >= kMaxIntegerValue) return false;
+
     // We have a Boolean, this is an easy case.
-    if (ub - lb == 1) {
+    if (term.bound_diff == 1) {
       ++snf->num_bool;
       FlowInfo info;
-      info.bool_lp_value = (lp_values[var] - ToDouble(lb));
-      info.capacity = capacity;
-      info.bool_expr.var = var;
-      info.bool_expr.coeff = 1;
-      info.bool_expr.constant = -lb;
-
-      info.flow_lp_value = ToDouble(capacity) * info.bool_lp_value;
-      info.flow_expr.var = var;
-      info.flow_expr.coeff = info.capacity;
-      info.flow_expr.constant = -lb * info.capacity;
-
-      // coeff * x = coeff * (x - lb) + coeff * lb;
-      snf->demand -= coeff * lb;
-      if (coeff > 0) {
-        snf->in_flow.push_back(info);
-      } else {
-        snf->out_flow.push_back(info);
-      }
+      info.bool_lp_value = term.lp_value;
+      info.bool_expr.var = term.expr_vars[0];
+      info.bool_expr.coeff = term.expr_coeffs[0];
+      info.bool_expr.constant = term.expr_offset;
+      FinishAndAddFlowInfo(term, &info, snf);
       continue;
     }
 
     // TODO(user): Improve our logic to decide what implied bounds to use. We
     // rely on the best implied bounds, not necessarily one implying var at its
     // level zero bound like we need here.
-    const double lp = lp_values[var];
-    const bool prefer_lb = (lp - ToDouble(lb)) > (ToDouble(ub) - lp);
+    const bool prefer_lb = term.lp_value > term.LpDistToMaxValue();
     if (prefer_lb) {
-      if (TryXminusLB(var, lp, lb, ub, coeff, ib_helper, snf)) {
+      if (TryXminusLB(term, ib_helper, snf)) {
         ++snf->num_to_lb;
         continue;
       }
-      if (TryUBminusX(var, lp, lb, ub, coeff, ib_helper, snf)) {
+      if (TryUBminusX(term, ib_helper, snf)) {
         ++snf->num_to_ub;
         continue;
       }
     } else {
-      if (TryUBminusX(var, lp, lb, ub, coeff, ib_helper, snf)) {
+      if (TryUBminusX(term, ib_helper, snf)) {
         ++snf->num_to_ub;
         continue;
       }
-      if (TryXminusLB(var, lp, lb, ub, coeff, ib_helper, snf)) {
+      if (TryXminusLB(term, ib_helper, snf)) {
         ++snf->num_to_lb;
         continue;
       }
     }
 
-    // Abort.
-    // TODO(user): Technically we can always use a arc usage Boolean fixed to 1.
-    return false;
+    // Ignore term.
+    if (term.coeff < 0) {
+      CutTerm copy = term;
+      copy.Complement(&snf->demand);
+    }
   }
 
   return true;
@@ -1936,7 +1940,14 @@ bool FlowCoverCutHelper::ComputeFlowCoverRelaxation(
 // Reference: "Lifted flow cover inequalities for mixed 0-1 integer programs".
 // Zonghao Gu, George L. Nemhauser, Martin W.P. Savelsbergh. 1999.
 bool FlowCoverCutHelper::GenerateCut(const SingleNodeFlow& data) {
-  if (data.empty()) return false;
+  // TODO(user): Support int128 demand.
+  if (data.empty() ||
+      data.demand > absl::int128(std::numeric_limits<int64_t>::max()) ||
+      data.demand < absl::int128(std::numeric_limits<int64_t>::min())) {
+    ++num_aborts_;
+    return false;
+  }
+  IntegerValue demand = static_cast<int64_t>(data.demand);
   const double tolerance = 1e-2;
 
   // We are looking for two subsets CI (in-flow subset) and CO (out-flow subset)
@@ -1968,7 +1979,7 @@ bool FlowCoverCutHelper::GenerateCut(const SingleNodeFlow& data) {
     }
 
     // This is the best slack we can hope for.
-    slack = sum_in - sum_out - data.demand;
+    slack = sum_in - sum_out - demand;
   }
   if (slack <= 0) return false;
 
@@ -2070,7 +2081,7 @@ bool FlowCoverCutHelper::GenerateCut(const SingleNodeFlow& data) {
   }
 
   // TODO(user): Lift the cut.
-  cut_ = cut_builder_.BuildConstraint(-data.demand, kMaxIntegerValue);
+  cut_ = cut_builder_.BuildConstraint(-demand, kMaxIntegerValue);
   return true;
 }
 
