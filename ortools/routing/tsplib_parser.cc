@@ -26,6 +26,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/path.h"
@@ -143,7 +144,7 @@ static int64_t Max3DDistance(const Coordinates3<double>& from,
 }
 
 std::shared_ptr<zipfile::ZipArchive> OpenZipArchiveIfItExists(
-    const std::string& file_name) {
+    absl::string_view file_name) {
   const absl::string_view archive_name = file::Dirname(file_name);
   if (file::Extension(archive_name) == "zip") {
     return zipfile::OpenZipArchive(archive_name);

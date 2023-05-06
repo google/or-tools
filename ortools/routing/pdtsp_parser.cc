@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/gzipfile.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/numbers.h"
@@ -30,7 +31,7 @@ namespace {
 
 using absl::ByAnyChar;
 
-File* OpenReadOnly(const std::string& file_name) {
+File* OpenReadOnly(absl::string_view file_name) {
   File* file = nullptr;
   if (file::Open(file_name, "r", &file, file::Defaults()).ok() &&
       file::Extension(file_name) == "gz") {

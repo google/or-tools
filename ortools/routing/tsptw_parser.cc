@@ -21,6 +21,7 @@
 
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/path.h"
@@ -47,7 +48,7 @@ double Euc2DDistance(const Coordinates2<double>& from,
 constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
 std::shared_ptr<zipfile::ZipArchive> OpenZipArchiveIfItExists(
-    const std::string& file_name) {
+    absl::string_view file_name) {
   const absl::string_view archive_name = file::Dirname(file_name);
   if (file::Extension(archive_name) == "zip") {
     return zipfile::OpenZipArchive(archive_name);

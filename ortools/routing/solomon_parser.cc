@@ -20,6 +20,7 @@
 
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -40,7 +41,7 @@ bool SolomonParser::LoadFile(const std::string& file_name) {
   return ParseFile(file_name);
 }
 
-bool SolomonParser::LoadFile(const std::string& file_name,
+bool SolomonParser::LoadFile(absl::string_view file_name,
                              const std::string& archive_name) {
   Initialize();
   if (!absl::StartsWith(archive_name, "/")) {
