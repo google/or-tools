@@ -85,23 +85,6 @@ index f95c3e257..5a32371da 100644
      "//conditions:default": [
          "-lpthread",
          "-lm",
-diff --git a/python/internal.bzl b/python/internal.bzl
-index af87aed78..ce4a6e2ee 100644
---- a/python/internal.bzl
-+++ b/python/internal.bzl
-@@ -2,6 +2,12 @@
- Internal helpers for building the Python protobuf runtime.
- """
- 
-+def _remove_cross_repo_path(path):
-+    components = path.split("/")
-+    if components[0] == "..":
-+        return "/".join(components[2:])
-+    return path
-+
- def _remove_cross_repo_path(path):
-     components = path.split("/")
-     if components[0] == "..":
 diff --git a/src/google/protobuf/port.h b/src/google/protobuf/port.h
 index 9ca45d966..6bbf1d164 100644
 --- a/src/google/protobuf/port.h
