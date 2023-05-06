@@ -92,7 +92,7 @@ struct QuadraticProgram {
 
   // Initializes the quadratic program with `num_variables` variables and
   // `num_constraints` constraints. Lower and upper bounds are set to negative
-  // and positive infinity, repectively. `objective_matrix` is cleared. All
+  // and positive infinity, respectively. `objective_matrix` is cleared. All
   // other matrices and vectors are set to zero. Resets the optional names
   // (`program_name`, `variable_names`, and `constraint_names`).
   // `objective_offset` is set to 0 and `objective_scaling_factor` is set to 1.
