@@ -174,6 +174,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -461,7 +462,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // Returns context concatenated with information about a given arc
   // in a human-friendly way.
-  std::string DebugString(const std::string& context, ArcIndex arc) const;
+  std::string DebugString(absl::string_view context, ArcIndex arc) const;
 
   // Resets the first_admissible_arc_ array to the first incident arc of each
   // node.

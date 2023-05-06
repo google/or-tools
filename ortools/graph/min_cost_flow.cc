@@ -23,6 +23,7 @@
 
 #include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/graph.h"
@@ -288,7 +289,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 std::string
 GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::DebugString(
-    const std::string& context, ArcIndex arc) const {
+    absl::string_view context, ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
   // Reduced cost is computed directly without calling ReducedCost to avoid

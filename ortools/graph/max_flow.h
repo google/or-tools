@@ -128,6 +128,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -451,7 +452,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 
   // Returns context concatenated with information about arc
   // in a human-friendly way.
-  std::string DebugString(const std::string& context, ArcIndex arc) const;
+  std::string DebugString(absl::string_view context, ArcIndex arc) const;
 
   // Initializes the container active_nodes_.
   void InitializeActiveNodeContainer();

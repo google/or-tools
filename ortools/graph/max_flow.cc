@@ -21,6 +21,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
 
@@ -333,7 +334,7 @@ bool GenericMaxFlow<Graph>::CheckRelabelPrecondition(NodeIndex node) const {
 }
 
 template <typename Graph>
-std::string GenericMaxFlow<Graph>::DebugString(const std::string& context,
+std::string GenericMaxFlow<Graph>::DebugString(absl::string_view context,
                                                ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);

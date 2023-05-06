@@ -184,7 +184,7 @@ class SVector;
 // need bigger indices.
 //
 // Note: The type can be unsigned, except for the graphs with reverse arcs
-// where the ArcIndexType must be signed, but not necessarly the NodeIndexType.
+// where the ArcIndexType must be signed, but not necessarily the NodeIndexType.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t,
           bool HasReverseArcs = false>
 class BaseGraph {
@@ -472,6 +472,8 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ReverseArcListGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
+  static_assert(std::is_signed_v<ArcIndexType>, "ArcIndexType must be signed");
+
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
   using Base::arc_capacity_;
   using Base::const_capacities_;
@@ -560,6 +562,8 @@ class ReverseArcListGraph
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ReverseArcStaticGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
+  static_assert(std::is_signed_v<ArcIndexType>, "ArcIndexType must be signed");
+
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
   using Base::arc_capacity_;
   using Base::const_capacities_;
