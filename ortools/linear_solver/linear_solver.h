@@ -532,9 +532,12 @@ class MPSolver {
    * Returns MPSOLVER_MODEL_IS_VALID if the model is valid, and another status
    * otherwise (currently only MPSOLVER_MODEL_INVALID and MPSOLVER_INFEASIBLE).
    * If the model isn't valid, populates "error_message".
+   * If `clear_names` is true (the default), clears all names, otherwise returns
+   * MPSOLVER_MODEL_INVALID if there are duplicates (non-empty) names.
    */
   MPSolverResponseStatus LoadModelFromProto(const MPModelProto& input_model,
-                                            std::string* error_message);
+                                            std::string* error_message,
+                                            bool clear_names = true);
   /**
    * Loads model from protocol buffer.
    *
@@ -938,8 +941,13 @@ class MPSolver {
   static int64_t global_num_constraints_ ABSL_GUARDED_BY(global_count_mutex_);
 #endif
 
+  enum ModelProtoNamesPolicy {
+    DEFAULT_CLEAR_NAMES = 0,
+    INVALID_MODEL_ON_DUPLICATE_NONEMPTY_NAMES = 1,
+    DIE_ON_DUPLICATE_NONEMPTY_NAMES = 2,
+  };
   MPSolverResponseStatus LoadModelFromProtoInternal(
-      const MPModelProto& input_model, bool clear_names,
+      const MPModelProto& input_model, ModelProtoNamesPolicy name_policy,
       bool check_model_validity, std::string* error_message);
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);

@@ -74,6 +74,7 @@ class PdlpInterface : public MPSolverInterface {
 
   std::string SolverVersion() const override;
   void* underlying_solver() override;
+  bool InterruptSolve() override;
 
   void ExtractNewVariables() override;
   void ExtractNewConstraints() override;
@@ -95,16 +96,18 @@ class PdlpInterface : public MPSolverInterface {
 
   pdlp::PrimalDualHybridGradientParams parameters_;
   pdlp::SolveLog solve_log_;
+  std::atomic<bool> interrupt_solver_;
 };
 
 PdlpInterface::PdlpInterface(MPSolver* const solver)
-    : MPSolverInterface(solver) {}
+    : MPSolverInterface(solver), interrupt_solver_(false) {}
 
 PdlpInterface::~PdlpInterface() {}
 
 MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
   // Reset extraction as this interface is not incremental yet.
   Reset();
+  interrupt_solver_ = false;
   ExtractModel();
 
   SetParameters(param);
@@ -141,8 +144,8 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
     LOG(QFATAL) << "Error converting parameters to text format: "
                 << parameters_.DebugString();
   }
-  absl::StatusOr<MPSolutionResponse> response =
-      PdlpSolveProto(request, /*relax_integer_variables=*/true);
+  absl::StatusOr<MPSolutionResponse> response = PdlpSolveProto(
+      request, /*relax_integer_variables=*/true, &interrupt_solver_);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with PDLP: " << response.status();
@@ -151,10 +154,18 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  result_status_ = static_cast<MPSolver::ResultStatus>(response->status());
-  LOG_IF(DFATAL, !response->has_solver_specific_info()) << *response;
-  if (!solve_log_.ParseFromString(response->solver_specific_info())) {
-    LOG(DFATAL) << "Unable to parse PDLP's SolveLog from solver_specific_info";
+  if (response->status() == MPSOLVER_CANCELLED_BY_USER) {
+    // MPSOLVER_CANCELLED_BY_USER is only for when the solver didn't have time
+    // to return a proper status, and is not convertible to an MPSolver status.
+    result_status_ = MPSolver::NOT_SOLVED;
+  } else {
+    result_status_ = static_cast<MPSolver::ResultStatus>(response->status());
+  }
+  if (response->has_solver_specific_info()) {
+    if (!solve_log_.ParseFromString(response->solver_specific_info())) {
+      LOG(DFATAL)
+          << "Unable to parse PDLP's SolveLog from solver_specific_info";
+    }
   }
 
   if (response->status() == MPSOLVER_FEASIBLE ||
@@ -261,6 +272,11 @@ std::string PdlpInterface::SolverVersion() const { return "PDLP Solver"; }
 // TODO(user): Consider returning the SolveLog here, as it could be essential
 // for interpreting the PDLP solution.
 void* PdlpInterface::underlying_solver() { return nullptr; }
+
+bool PdlpInterface::InterruptSolve() {
+  interrupt_solver_ = true;
+  return true;
+}
 
 void PdlpInterface::ExtractNewVariables() { NonIncrementalChange(); }
 

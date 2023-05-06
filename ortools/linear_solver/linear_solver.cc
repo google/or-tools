@@ -670,16 +670,20 @@ MPConstraint* MPSolver::LookupConstraintOrNull(
 // ----- Methods using protocol buffers -----
 
 MPSolverResponseStatus MPSolver::LoadModelFromProto(
-    const MPModelProto& input_model, std::string* error_message) {
+    const MPModelProto& input_model, std::string* error_message,
+    bool clear_names) {
   Clear();
 
   // The variable and constraint names are dropped, because we allow
   // duplicate names in the proto (they're not considered as 'ids'),
   // unlike the MPSolver C++ API which crashes if there are duplicate names.
   // Clearing the names makes the MPSolver generate unique names.
-  return LoadModelFromProtoInternal(input_model, /*clear_names=*/true,
-                                    /*check_model_validity=*/true,
-                                    error_message);
+  return LoadModelFromProtoInternal(
+      input_model,
+      /*name_policy=*/
+      clear_names ? DEFAULT_CLEAR_NAMES
+                  : INVALID_MODEL_ON_DUPLICATE_NONEMPTY_NAMES,
+      /*check_model_validity=*/true, error_message);
 }
 
 MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
@@ -690,29 +694,125 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
   GenerateVariableNameIndex();
   GenerateConstraintNameIndex();
 
-  return LoadModelFromProtoInternal(input_model, /*clear_names=*/false,
-                                    /*check_model_validity=*/true,
-                                    error_message);
+  return LoadModelFromProtoInternal(
+      input_model, /*name_policy=*/DIE_ON_DUPLICATE_NONEMPTY_NAMES,
+      /*check_model_validity=*/true, error_message);
 }
 
+namespace {
+// Iterates over all the variable names. See usage.
+class MPVariableNamesIterator {
+ public:
+  explicit MPVariableNamesIterator(const MPModelProto& model) : model_(model) {}
+  int index() const { return index_; }
+  absl::string_view name() const { return model_.variable(index_).name(); }
+  static std::string DescribeIndex(int index) {
+    return absl::StrFormat("variable[%d]", index);
+  }
+  void Advance() { ++index_; }
+  bool AtEnd() const { return index_ == model_.variable_size(); }
+
+ private:
+  const MPModelProto& model_;
+  int index_ = 0;
+};
+
+// Iterates over all the constraint and general_constaint names. See usage.
+class MPConstraintNamesIterator {
+ public:
+  explicit MPConstraintNamesIterator(const MPModelProto& model)
+      : model_(model),
+        // To iterate both on the constraint[] and the general_constraint[]
+        // field, we use the bit trick that i ≥ 0 corresponds to constraint[i],
+        // and i < 0 corresponds to general_constraint[~i = -i-1].
+        index_(model_.constraint().empty() ? ~0 : 0) {}
+  int index() const { return index_; }
+  absl::string_view name() const {
+    return index_ >= 0 ? model_.constraint(index_).name()
+                       // As of 2023-04, the only names of MPGeneralConstraints
+                       // that are actually ingested are the
+                       // MPIndicatorConstraint.constraint.name.
+                       : model_.general_constraint(~index_)
+                             .indicator_constraint()
+                             .constraint()
+                             .name();
+  }
+  static std::string DescribeIndex(int index) {
+    return index >= 0
+               ? absl::StrFormat("constraint[%d]", index)
+               : absl::StrFormat(
+                     "general_constraint[%d].indicator_constraint.constraint",
+                     ~index);
+  }
+  void Advance() {
+    if (index_ >= 0) {
+      if (++index_ == model_.constraint_size()) index_ = ~0;
+    } else {
+      --index_;
+    }
+  }
+  bool AtEnd() const { return ~index_ == model_.general_constraint_size(); }
+
+ private:
+  const MPModelProto& model_;
+  int index_ = 0;
+};
+
+// Looks at the `name` field of all the given MPModelProto fields, and if there
+// is a duplicate name, returns a descriptive error message.
+// If no duplicate is found, returns the empty string.
+template <class NameIterator>
+std::string FindDuplicateNamesError(NameIterator name_iterator) {
+  absl::flat_hash_map<absl::string_view, int> name_to_index;
+  for (; !name_iterator.AtEnd(); name_iterator.Advance()) {
+    if (name_iterator.name().empty()) continue;
+    const int index =
+        name_to_index.insert({name_iterator.name(), name_iterator.index()})
+            .first->second;
+    if (index != name_iterator.index()) {
+      return absl::StrFormat(
+          "Duplicate name '%s' in %s.name() and %s.name()",
+          name_iterator.name(), NameIterator::DescribeIndex(index),
+          NameIterator::DescribeIndex(name_iterator.index()));
+    }
+  }
+  return "";  // No duplicate found.
+}
+}  // namespace
+
 MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
-    const MPModelProto& input_model, bool clear_names,
+    const MPModelProto& input_model, ModelProtoNamesPolicy name_policy,
     bool check_model_validity, std::string* error_message) {
   CHECK(error_message != nullptr);
+  std::string error;
   if (check_model_validity) {
-    const std::string error = FindErrorInMPModelProto(input_model);
-    if (!error.empty()) {
-      *error_message = error;
+    error = FindErrorInMPModelProto(input_model);
+  }
+  // We preemptively check for duplicate names even for the
+  // DIE_ON_DUPLICATE_NONEMPTY_NAMES policy, because it yields more informative
+  // error messages than if we wait for InsertIfNotPresent() to crash.
+  if (error.empty() && name_policy != DEFAULT_CLEAR_NAMES) {
+    error = FindDuplicateNamesError(MPVariableNamesIterator(input_model));
+    if (error.empty()) {
+      error = FindDuplicateNamesError(MPConstraintNamesIterator(input_model));
+    }
+    if (!error.empty() && name_policy == DIE_ON_DUPLICATE_NONEMPTY_NAMES) {
+      LOG(FATAL) << error;
+    }
+  }
+  const bool clear_names = name_policy == DEFAULT_CLEAR_NAMES;
+
+  if (!error.empty()) {
+    *error_message = error;
+    LOG_IF(INFO, OutputIsEnabled())
+        << "Invalid model given to LoadModelFromProto(): " << error;
+    if (absl::GetFlag(FLAGS_mpsolver_bypass_model_validation)) {
       LOG_IF(INFO, OutputIsEnabled())
-          << "Invalid model given to LoadModelFromProto(): " << error;
-      if (absl::GetFlag(FLAGS_mpsolver_bypass_model_validation)) {
-        LOG_IF(INFO, OutputIsEnabled())
-            << "Ignoring the model error(s) because of"
-            << " --mpsolver_bypass_model_validation.";
-      } else {
-        return absl::StrContains(error, "Infeasible") ? MPSOLVER_INFEASIBLE
-                                                      : MPSOLVER_MODEL_INVALID;
-      }
+          << "Ignoring the model error(s) because of"
+          << " --mpsolver_bypass_model_validation.";
+    } else {
+      return absl::StrContains(error, "Infeasible") ? MPSOLVER_INFEASIBLE
+                                                    : MPSOLVER_MODEL_INVALID;
     }
   }
 
@@ -927,7 +1027,7 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
   }
   std::string error_message;
   response->set_status(solver.LoadModelFromProtoInternal(
-      optional_model->get(), /*clear_names=*/true,
+      optional_model->get(), /*name_policy=*/DEFAULT_CLEAR_NAMES,
       /*check_model_validity=*/false, &error_message));
   // Even though we don't re-check model validity here, there can be some
   // problems found by LoadModelFromProto, eg. unsupported features.
