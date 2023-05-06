@@ -15,17 +15,18 @@
 
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
-#include "google/protobuf/descriptor.h"
+#include "absl/strings/string_view.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
+#include "google/protobuf/json/json.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/json_util.h"
-#include "ortools/base/file.h"
 #include "ortools/base/gzipstring.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/options.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {
@@ -45,7 +46,7 @@ absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
 }
 
 bool ReadFileToProto(absl::string_view filename,
-                     google::protobuf::Message* proto) {
+                     google::protobuf::Message* proto, bool allow_partial) {
   std::string data;
   CHECK_OK(file::GetContents(filename, &data, file::Defaults()));
   // Try decompressing it.
@@ -67,7 +68,8 @@ bool ReadFileToProto(absl::string_view filename,
   // the case that the proto version changed and some fields are dropped.
   // We just fail when the difference is too large.
   constexpr double kMaxBinaryProtoParseShrinkFactor = 2;
-  if (proto->ParseFromString(data)) {
+  if (proto->ParsePartialFromString(data) &&
+      (allow_partial || proto->IsInitialized())) {
     // NOTE(user): When using ParseFromString() from a generic
     // google::protobuf::Message, like we do here, all fields are stored, even
     // if they are unknown in the underlying proto type. Unless we explicitly
@@ -83,7 +85,9 @@ bool ReadFileToProto(absl::string_view filename,
       return true;
     }
   }
-  if (google::protobuf::TextFormat::ParseFromString(data, proto)) {
+  google::protobuf::TextFormat::Parser text_parser;
+  text_parser.AllowPartialMessage(allow_partial);
+  if (text_parser.ParseFromString(data, proto)) {
     VLOG(1) << "ReadFileToProto(): input is a text proto";
     return true;
   }

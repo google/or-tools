@@ -18,6 +18,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
@@ -144,7 +145,7 @@ class FileGraphExporter : public GraphExporter {
   void WriteFooter() override { Append(syntax_->Footer()); }
 
  private:
-  void Append(const std::string& str) {
+  void Append(absl::string_view str) {
     file::WriteString(file_, str, file::Defaults()).IgnoreError();
   }
 
