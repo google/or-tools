@@ -331,6 +331,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 #if defined(_MSC_VER)  // Windows
       potential_paths.push_back(
           absl::StrCat(gurobi_home_from_env, "\\bin\\gurobi", lib, ".dll"));
+      potential_paths.push_back(absl::StrCat("gurobi", lib, ".dll"));
 #elif defined(__APPLE__)  // OS X
       potential_paths.push_back(
           absl::StrCat(gurobi_home_from_env, "/lib/libgurobi", lib, ".dylib"));
