@@ -93,7 +93,7 @@ class FeasibilityJumpSolver : public SubSolver {
 
  private:
   void Initialize();
-  void RestartFromDefaultSolution();
+  void ResetCurrentSolution();
   void PerturbateCurrentSolution();
   std::string OneLineStats() const;
 

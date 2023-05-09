@@ -562,12 +562,15 @@ int64_t LinearIncrementalEvaluator::Violation(int c) const {
 }
 
 bool LinearIncrementalEvaluator::IsViolated(int c) const {
-  return Violation(c) > 0;
+  DCHECK_EQ(is_violated_[c], Violation(c) > 0);
+  return is_violated_[c];
 }
 
-void LinearIncrementalEvaluator::ReduceBounds(int c, int64_t lb, int64_t ub) {
+bool LinearIncrementalEvaluator::ReduceBounds(int c, int64_t lb, int64_t ub) {
+  if (domains_[c].Min() >= lb && domains_[c].Max() <= ub) return false;
   domains_[c] = domains_[c].IntersectionWith(Domain(lb, ub));
   distances_[c] = domains_[c].Distance(activities_[c]);
+  return true;
 }
 
 double LinearIncrementalEvaluator::WeightedViolation(
@@ -1398,14 +1401,16 @@ void LsEvaluator::CompileConstraintsAndObjective() {
   linear_evaluator_.PrecomputeCompactView();
 }
 
-void LsEvaluator::ReduceObjectiveBounds(int64_t lb, int64_t ub) {
-  if (!model_.has_objective()) return;
-  linear_evaluator_.ReduceBounds(/*c=*/0, lb, ub);
+bool LsEvaluator::ReduceObjectiveBounds(int64_t lb, int64_t ub) {
+  if (!model_.has_objective()) return false;
+  return linear_evaluator_.ReduceBounds(/*c=*/0, lb, ub);
 }
 
-void LsEvaluator::ComputeInitialViolations(absl::Span<const int64_t> solution) {
+void LsEvaluator::OverwriteCurrentSolution(absl::Span<const int64_t> solution) {
   current_solution_.assign(solution.begin(), solution.end());
+}
 
+void LsEvaluator::ComputeAllViolations() {
   // Linear constraints.
   linear_evaluator_.ComputeInitialActivities(current_solution_);
 

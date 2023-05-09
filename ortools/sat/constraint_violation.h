@@ -86,7 +86,8 @@ class LinearIncrementalEvaluator {
   bool VarIsConsistent(int var) const;
 
   // Intersect constraint bounds with [lb..ub].
-  void ReduceBounds(int c, int64_t lb, int64_t ub);
+  // It returns true if a reduction of the domain took place.
+  bool ReduceBounds(int c, int64_t lb, int64_t ub);
 
   // Model getters.
   int num_constraints() const { return num_constraints_; }
@@ -277,10 +278,14 @@ class LsEvaluator {
   bool ModelIsSupported() const { return model_is_supported_; }
 
   // Intersects the domain of the objective with [lb..ub].
-  void ReduceObjectiveBounds(int64_t lb, int64_t ub);
+  // It returns true if a reduction of the domain took place.
+  bool ReduceObjectiveBounds(int64_t lb, int64_t ub);
 
-  // Sets the current solution, and computes violations for each constraint.
-  void ComputeInitialViolations(absl::Span<const int64_t> solution);
+  // Overwrites the current solution.
+  void OverwriteCurrentSolution(absl::Span<const int64_t> solution);
+
+  // Computes the violations of all constraints.
+  void ComputeAllViolations();
 
   // Recompute the violations of non linear constraints.
   void UpdateAllNonLinearViolations();
@@ -335,6 +340,10 @@ class LsEvaluator {
   // Access the solution stored.
   const std::vector<int64_t>& current_solution() const {
     return current_solution_;
+  }
+
+  std::vector<int64_t>* mutable_current_solution() {
+    return &current_solution_;
   }
 
  private:

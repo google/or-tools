@@ -144,15 +144,18 @@ int64_t RandomValueNearValue(const Domain& domain, int64_t value,
 
 }  // namespace
 
-void FeasibilityJumpSolver::RestartFromDefaultSolution() {
+void FeasibilityJumpSolver::ResetCurrentSolution() {
   const int num_variables = linear_model_->model_proto().variables().size();
   const double default_value_probability =
       1.0 - params_.feasibility_jump_var_randomization_probability();
   const double range_ratio =
       params_.feasibility_jump_var_perburbation_range_ratio();
+  std::vector<int64_t>& solution = *evaluator_->mutable_current_solution();
+
+  // Resize the solution if needed.
+  solution.resize(num_variables);
 
   // Starts with values closest to zero.
-  std::vector<int64_t> solution(num_variables);
   for (int var = 0; var < num_variables; ++var) {
     if (var_domains_[var].IsFixed()) {
       solution[var] = var_domains_[var].FixedValue();
@@ -196,7 +199,6 @@ void FeasibilityJumpSolver::RestartFromDefaultSolution() {
       }
     }
   }
-  evaluator_->ComputeInitialViolations(solution);
 
   // Starts with weights at one.
   weights_.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
@@ -208,7 +210,7 @@ void FeasibilityJumpSolver::PerturbateCurrentSolution() {
       params_.feasibility_jump_var_randomization_probability();
   const double perturbation_ratio =
       params_.feasibility_jump_var_perburbation_range_ratio();
-  std::vector<int64_t> solution = evaluator_->current_solution();
+  std::vector<int64_t>& solution = *evaluator_->mutable_current_solution();
   for (int var = 0; var < num_variables; ++var) {
     if (var_domains_[var].IsFixed()) continue;
     if (absl::Bernoulli(random_, pertubation_probability)) {
@@ -216,10 +218,6 @@ void FeasibilityJumpSolver::PerturbateCurrentSolution() {
                                            perturbation_ratio, random_);
     }
   }
-  evaluator_->ComputeInitialViolations(solution);
-
-  // Starts with weights at one.
-  weights_.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
 }
 
 std::string FeasibilityJumpSolver::OneLineStats() const {
@@ -246,7 +244,7 @@ std::string FeasibilityJumpSolver::OneLineStats() const {
   // Improving jumps and infeasible constraints.
   const int num_infeasible_cts = evaluator_->NumInfeasibleConstraints();
   const std::string non_solution_str =
-      good_jumps_.empty() && num_infeasible_cts == 0
+      num_infeasible_cts == 0
           ? ""
           : absl::StrCat(" #good_lin_moves:", FormatCounter(good_jumps_.size()),
                          " #inf_cts:",
@@ -267,6 +265,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     // to scan the whole model, so we want to do this part in parallel.
     if (!is_initialized_) Initialize();
 
+    bool should_recompute_violations = false;
+    bool reset_weights = false;
+
     // In incomplete mode, query the starting solution for the shared response
     // manager.
     if (type() == SubSolver::INCOMPLETE) {
@@ -277,10 +278,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       const SharedSolutionRepository<int64_t>::Solution solution =
           repo.GetRandomBiasedSolution(random_);
       if (solution.rank < last_solution_rank_) {
-        evaluator_->ComputeInitialViolations(solution.variable_values);
-
-        // Reset weights for each new solution.
-        weights_.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
+        evaluator_->OverwriteCurrentSolution(solution.variable_values);
+        should_recompute_violations = true;
+        reset_weights = true;
 
         // Update last solution rank.
         last_solution_rank_ = solution.rank;
@@ -294,6 +294,8 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
             params_.violation_ls_perturbation_frequency();
         ++num_perturbations_;
         PerturbateCurrentSolution();
+        should_recompute_violations = true;
+        reset_weights = true;
       }
     } else {
       // Restart?  Note that we always "restart" the first time.
@@ -303,11 +305,15 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
           num_weight_updates_ >= update_restart_threshold_) {
         if (num_restarts_ == 0 || params_.feasibility_jump_enable_restarts()) {
           ++num_restarts_;
-          RestartFromDefaultSolution();
+          ResetCurrentSolution();
+          should_recompute_violations = true;
+          reset_weights = true;
         } else if (params_.feasibility_jump_var_randomization_probability() >
                    0.0) {
-          ++num_perturbations_;
           PerturbateCurrentSolution();
+          ++num_perturbations_;
+          should_recompute_violations = true;
+          reset_weights = true;
         }
 
         // We use luby restart with a base of 1 deterministic unit.
@@ -329,7 +335,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       const IntegerValue lb = shared_response_->GetInnerObjectiveLowerBound();
       const IntegerValue ub = shared_response_->GetInnerObjectiveUpperBound();
       if (ub < lb) return;  // Search is finished.
-      evaluator_->ReduceObjectiveBounds(lb.value(), ub.value());
+      if (evaluator_->ReduceObjectiveBounds(lb.value(), ub.value())) {
+        should_recompute_violations = true;
+      }
     }
 
     // Update the variable domains with the last information.
@@ -344,19 +352,24 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
     // Checks the current solution is compatible with updated domains.
     {
-      std::vector<int64_t> fixed_solution = evaluator_->current_solution();
-
       // Make sure the solution is within the potentially updated domain.
-      bool some_values_have_changed = false;
-      for (int var = 0; var < fixed_solution.size(); ++var) {
-        const int64_t old_value = evaluator_->current_solution()[var];
-        fixed_solution[var] =
-            var_domains_[var].ClosestValue(fixed_solution[var]);
-        some_values_have_changed |= old_value != fixed_solution[var];
+      std::vector<int64_t>& current_solution =
+          *evaluator_->mutable_current_solution();
+      for (int var = 0; var < current_solution.size(); ++var) {
+        const int64_t old_value = current_solution[var];
+        const int64_t new_value = var_domains_[var].ClosestValue(old_value);
+        if (new_value != old_value) {
+          current_solution[var] = new_value;
+          should_recompute_violations = true;
+        }
       }
-      if (some_values_have_changed) {
-        evaluator_->ComputeInitialViolations(fixed_solution);
-      }
+    }
+
+    if (should_recompute_violations) {
+      evaluator_->ComputeAllViolations();
+    }
+    if (reset_weights) {
+      weights_.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
     }
 
     // Search for feasible solution.
