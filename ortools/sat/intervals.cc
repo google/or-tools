@@ -771,7 +771,7 @@ void SchedulingDemandHelper::CacheAllEnergyValues() {
         !integer_trail_->IsFixed(demands_[t]) && !helper_->SizeIsFixed(t);
     cached_energies_max_[t] = std::min(
         {SimpleEnergyMax(t), LinearEnergyMax(t), DecomposedEnergyMax(t)});
-    CHECK_NE(cached_energies_min_[t], kMaxIntegerValue);
+    CHECK_NE(cached_energies_max_[t], kMaxIntegerValue);
   }
 }
 
