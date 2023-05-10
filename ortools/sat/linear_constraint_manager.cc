@@ -276,7 +276,7 @@ bool LinearConstraintManager::AddCut(
   const double l2_norm = ComputeL2Norm(ct);
 
   // Only add cut with sufficient efficacy.
-  if (violation / l2_norm < 1e-5) {
+  if (violation / l2_norm < 1e-4) {
     VLOG(3) << "BAD Cut '" << type_name << "'"
             << " size=" << ct.vars.size()
             << " max_magnitude=" << ComputeInfinityNorm(ct)

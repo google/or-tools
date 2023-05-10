@@ -165,6 +165,35 @@ void ScatteredIntegerVector::ConvertToLinearConstraint(
   result->ub = upper_bound;
 }
 
+void ScatteredIntegerVector::ConvertToCutData(
+    absl::int128 rhs, const std::vector<IntegerVariable>& integer_variables,
+    const std::vector<double>& lp_solution, IntegerTrail* integer_trail,
+    CutData* result) {
+  result->terms.clear();
+  result->rhs = rhs;
+  if (is_sparse_) {
+    std::sort(non_zeros_.begin(), non_zeros_.end());
+    for (const glop::ColIndex col : non_zeros_) {
+      const IntegerValue coeff = dense_vector_[col];
+      if (coeff == 0) continue;
+      const IntegerVariable var = integer_variables[col.value()];
+      CHECK(result->AppendOneTerm(var, coeff, lp_solution[col.value()],
+                                  integer_trail->LevelZeroLowerBound(var),
+                                  integer_trail->LevelZeroUpperBound(var)));
+    }
+  } else {
+    const int size = dense_vector_.size();
+    for (glop::ColIndex col(0); col < size; ++col) {
+      const IntegerValue coeff = dense_vector_[col];
+      if (coeff == 0) continue;
+      const IntegerVariable var = integer_variables[col.value()];
+      CHECK(result->AppendOneTerm(var, coeff, lp_solution[col.value()],
+                                  integer_trail->LevelZeroLowerBound(var),
+                                  integer_trail->LevelZeroUpperBound(var)));
+    }
+  }
+}
+
 std::vector<std::pair<glop::ColIndex, IntegerValue>>
 ScatteredIntegerVector::GetTerms() {
   std::vector<std::pair<glop::ColIndex, IntegerValue>> result;
@@ -356,12 +385,14 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   for (const LinearConstraintInternal& ct : integer_lp_) {
     const ConstraintIndex row = lp_data_.CreateNewConstraint();
 
-    // Note that we use the bounds even if they are trivial.
-    //
-    // TODO(user): This seems good for things like sum bool <= 1 since setting
-    // the slack in [0, 1] can lead to bound flip in the simplex. However if the
-    // bound is large, maybe it make more sense to use +/- infinity.
-    lp_data_.SetConstraintBounds(row, ToDouble(ct.lb), ToDouble(ct.ub));
+    // TODO(user): Using trivial bound might be good for things like
+    // sum bool <= 1 since setting the slack in [0, 1] can lead to bound flip in
+    // the simplex. However if the bound is large, maybe it make more sense to
+    // use +/- infinity.
+    const double infinity = std::numeric_limits<double>::infinity();
+    lp_data_.SetConstraintBounds(
+        row, ct.lb_is_trivial ? -infinity : ToDouble(ct.lb),
+        ct.ub_is_trivial ? +infinity : ToDouble(ct.ub));
     for (const auto& term : ct.terms) {
       lp_data_.SetCoefficient(row, term.first, ToDouble(term.second));
     }
@@ -831,12 +862,31 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
   return true;
 }
 
-// TODO(user): We could also strengthen the coefficients.
+// Note that since we call this on the constraint with slack, we actually have
+// linear expression == rhs, we can use this to propagate more!
+//
+// TODO(user): Also propagate on -cut ? in practice we already do that in many
+// places were we try to generate the cut on -cut... But we coould do it sooner
+// and more cleanly here.
 bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
                                                 CutData* cut) {
   // Because of complement, all coeffs and all terms are positive after this.
   cut->ComplementForPositiveCoefficients();
   if (cut->rhs < 0) {
+    problem_proven_infeasible_by_cuts_ = true;
+    return false;
+  }
+
+  // Limited DP to compute first few reachable values.
+  // Note that all coeff are positive.
+  reachable_.Reset();
+  for (const CutTerm& term : cut->terms) {
+    reachable_.Add(term.coeff.value());
+  }
+
+  // Extra propag since we know it is actually an equality constraint.
+  if (cut->rhs < absl::int128(reachable_.LastValue()) &&
+      !reachable_.MightBeReachable(static_cast<int64_t>(cut->rhs))) {
     problem_proven_infeasible_by_cuts_ = true;
     return false;
   }
@@ -847,9 +897,27 @@ bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
     const absl::int128 magnitude128 = term.coeff.value();
     const absl::int128 range =
         absl::int128(term.bound_diff.value()) * magnitude128;
+
+    IntegerValue new_diff = term.bound_diff;
     if (range > cut->rhs) {
-      // Update the term bound_diff.
-      term.bound_diff = static_cast<int64_t>(cut->rhs / magnitude128);
+      new_diff = static_cast<int64_t>(cut->rhs / magnitude128);
+    }
+    {
+      // Extra propag since we know it is actually an equality constraint.
+      absl::int128 rest128 =
+          cut->rhs - absl::int128(new_diff.value()) * magnitude128;
+      while (rest128 < absl::int128(reachable_.LastValue()) &&
+             !reachable_.MightBeReachable(static_cast<int64_t>(rest128))) {
+        ++total_num_eq_propagations_;
+        CHECK_GT(new_diff, 0);
+        --new_diff;
+        rest128 += magnitude128;
+      }
+    }
+
+    if (new_diff < term.bound_diff) {
+      term.bound_diff = new_diff;
+
       const IntegerVariable var = term.expr_vars[0];
       if (var < first_slack) {
         // Normal variable.
@@ -940,19 +1008,16 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     return false;
   }
 
-  // Important: because we use integer_multipliers below, we cannot just
-  // divide by GCD or call PreventOverflow() here.
+  // Important: because we use integer_multipliers below to create the slack,
+  // we cannot try to adjust this linear combination easily.
   //
   // TODO(user): the conversion col_index -> IntegerVariable is slow and could
   // in principle be removed. Easy for cuts, but not so much for
   // implied_bounds_processor_. Note that in theory this could allow us to
   // use Literal directly without the need to have an IntegerVariable for them.
-  tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_, cut_ub,
-                                                  &cut_);
-
-  // TODO(user): Remove one conversion step.
-  CHECK(base_ct_.FillFromLinearConstraint(cut_, expanded_lp_solution_,
-                                          integer_trail_));
+  tmp_scattered_vector_.ConvertToCutData(cut_ub.value(), integer_variables_,
+                                         lp_solution_, integer_trail_,
+                                         &base_ct_);
 
   // If there are no integer (all Booleans), no need to try implied bounds
   // heurititics. By setting this to nullptr, we are a bit faster.
@@ -1006,6 +1071,9 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // This also make all coefficients positive.
   if (!PreprocessCut(first_slack, &base_ct_)) return false;
 
+  // We cannot cut sum Bool <= 1.
+  if (base_ct_.rhs == 1) return false;
+
   // Constraint with slack should be tight.
   if (DEBUG_MODE) {
     double activity = 0.0;
@@ -1033,6 +1101,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   }
 
   // Try cover approach to find cut.
+  // TODO(user): Share common computation between two kinds.
   {
     DCHECK(base_ct_.AllCoefficientsArePositive());
 
@@ -1206,7 +1275,7 @@ void LinearProgrammingConstraint::AddCGCuts() {
       tmp_integer_multipliers_ = ScaleLpMultiplier(
           /*take_objective_into_account=*/false,
           /*ignore_trivial_constraints=*/old_gomory, tmp_lp_multipliers_,
-          &scaling, int64_t{1} << 52);
+          &scaling);
       if (scaling != 0) {
         AddCutFromConstraints("CG", tmp_integer_multipliers_);
       }
@@ -2633,6 +2702,8 @@ std::string LinearProgrammingConstraint::Statistics() const {
                   FormatCounter(total_num_simplex_iterations_), "\n");
   absl::StrAppend(&result, "  total num cut propagation: ",
                   FormatCounter(total_num_cut_propagations_), "\n");
+  absl::StrAppend(&result, "  total num eq cut propagation: ",
+                  FormatCounter(total_num_eq_propagations_), "\n");
   absl::StrAppend(&result, "  total num cut overflow: ",
                   FormatCounter(num_cut_overflows_), "\n");
   absl::StrAppend(&result, "  total num adjust: ", FormatCounter(num_adjusts_),

@@ -97,6 +97,11 @@ class ScatteredIntegerVector {
       const std::vector<IntegerVariable>& integer_variables,
       IntegerValue upper_bound, LinearConstraint* result);
 
+  void ConvertToCutData(absl::int128 rhs,
+                        const std::vector<IntegerVariable>& integer_variables,
+                        const std::vector<double>& lp_solution,
+                        IntegerTrail* integer_trail, CutData* result);
+
   // Similar to ConvertToLinearConstraint().
   std::vector<std::pair<glop::ColIndex, IntegerValue>> GetTerms();
 
@@ -575,7 +580,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // As we form candidate form cuts, sometimes we can propagate level zero
   // bounds with them.
+  FirstFewValues<10> reachable_;
   int64_t total_num_cut_propagations_ = 0;
+  int64_t total_num_eq_propagations_ = 0;
 
   // Some stats on the LP statuses encountered.
   int64_t num_solves_ = 0;

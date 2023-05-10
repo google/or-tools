@@ -1117,15 +1117,15 @@ int CoverCutHelper::GetCoverSizeForBooleans(int relevant_size) {
   // Sorting can be slow, so we start by splitting the vector in 3 parts
   // [can always be in cover, candidates, can never be in cover].
   int part1 = 0;
-  const double threshold = 1.0 / static_cast<double>(relevant_size);
+  const double threshold = 1.0 - 1.0 / static_cast<double>(relevant_size);
   for (int i = 0; i < relevant_size;) {
-    const double dist = base_ct_.terms[i].LpDistToMaxValue();
-    if (dist < threshold) {
+    const double lp_value = base_ct_.terms[i].lp_value;
+    if (lp_value >= threshold) {
       // Move to part 1.
       std::swap(base_ct_.terms[i], base_ct_.terms[part1]);
       ++i;
       ++part1;
-    } else if (dist < 0.9999) {
+    } else if (lp_value >= 0.001) {
       // Keep in part 2.
       ++i;
     } else {
@@ -1134,16 +1134,16 @@ int CoverCutHelper::GetCoverSizeForBooleans(int relevant_size) {
       std::swap(base_ct_.terms[i], base_ct_.terms[relevant_size]);
     }
   }
+
+  // Sort by decreasing Lp value.
   std::sort(base_ct_.terms.begin() + part1,
             base_ct_.terms.begin() + relevant_size,
             [](const CutTerm& a, const CutTerm& b) {
-              const double dist_a = a.LpDistToMaxValue();
-              const double dist_b = b.LpDistToMaxValue();
-              if (dist_a == dist_b) {
+              if (a.lp_value == b.lp_value) {
                 // Prefer low coefficients if the distance is the same.
                 return a.coeff < b.coeff;
               }
-              return dist_a < dist_b;
+              return a.lp_value > b.lp_value;
             });
 
   double activity = 0.0;

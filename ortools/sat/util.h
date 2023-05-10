@@ -34,6 +34,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/random_engine.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
@@ -234,6 +235,65 @@ class MaxBoundedSubsetSum {
   std::vector<int64_t> sums_;
   std::vector<bool> expanded_sums_;
   std::vector<int64_t> filtered_values_;
+};
+
+// Simple DP to keep the set of the first n reachable value (n > 1).
+//
+// TODO(user): Maybe modulo some prime number we can keep more info.
+// TODO(user): Another common case is a bunch of really small values and larger
+// ones, so we could bound the sum of the small values and keep the first few
+// reachable by the big ones. This is similar to some presolve transformations.
+template <int n>
+class FirstFewValues {
+ public:
+  FirstFewValues() { Reset(); }
+
+  void Reset() {
+    reachable_.fill(std::numeric_limits<int64_t>::max());
+    reachable_[0] = 0;
+    new_reachable_[0] = 0;
+  }
+
+  // We assume the given positive value can be added as many time as wanted.
+  //
+  // TODO(user): Implement Add() with an upper bound on the multiplicity.
+  void Add(const int64_t positive_value) {
+    DCHECK_GT(positive_value, 0);
+    if (positive_value >= reachable_.back()) return;
+
+    // We copy from reachable_[i] to new_reachable_[j].
+    // The position zero is already copied.
+    int i = 1;
+    int j = 1;
+    for (int base = 0; j < n && base < n; ++base) {
+      const int64_t candidate = CapAdd(new_reachable_[base], positive_value);
+      while (j < n && i < n && reachable_[i] < candidate) {
+        new_reachable_[j++] = reachable_[i++];
+      }
+      if (j < n) {
+        // Eliminate duplicates.
+        while (i < n && reachable_[i] == candidate) i++;
+
+        // insert candidate in its final place.
+        new_reachable_[j++] = candidate;
+      }
+    }
+    std::swap(reachable_, new_reachable_);
+  }
+
+  // Returns true iff sum might be expressible as a weighted sum of the added
+  // value. Any sum >= LastValue() is always considered potentially reachable.
+  bool MightBeReachable(int64_t sum) const {
+    if (sum >= reachable_.back()) return true;
+    return std::binary_search(reachable_.begin(), reachable_.end(), sum);
+  }
+
+  const std::array<int64_t, n>& reachable() const { return reachable_; }
+  int64_t LastValue() const { return reachable_.back(); }
+
+ private:
+  std::array<int64_t, n> reachable_;
+  std::array<int64_t, n> new_reachable_;
 };
 
 // Use Dynamic programming to solve a single knapsack. This is used by the
