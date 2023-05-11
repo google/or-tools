@@ -45,7 +45,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/scheduling_constraints.h"
 #include "ortools/sat/scheduling_cuts.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
@@ -767,11 +766,12 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   if (num_variable_energies + num_optionals == 0) return;
 
   LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
+  int num_intervals_added = 0;
   for (int index = 0; index < num_intervals; ++index) {
     if (helper->IsAbsent(index)) continue;
     if (helper->IsOptional(index)) {
       const IntegerValue energy_min = demands_helper->EnergyMin(index);
-      DCHECK_GT(energy_min, 0);
+      if (energy_min == 0) continue;
       if (!lc.AddLiteralTerm(helper->PresenceLiteral(index), energy_min)) {
         return;
       }
@@ -790,12 +790,14 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
                                   integer_trail);
       }
     }
+    ++num_intervals_added;
   }
+  if (num_intervals_added == 0) return;
 
   // Create and link span_start and span_end to the starts and ends of the
   // tasks.
   //
-  // TODO(lperron): In some cases, we could have only one task that can be
+  // TODO(user): In some cases, we could have only one task that can be
   // first.
   const AffineExpression span_start = min_of_starts;
   const AffineExpression span_end =

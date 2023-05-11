@@ -1125,7 +1125,6 @@ cc_library(
         ":routing_cuts",
         ":sat_base",
         ":sat_parameters_cc_proto",
-        ":scheduling_constraints",
         ":scheduling_cuts",
         "//ortools/base",
         "//ortools/base:iterator_adaptors",
@@ -1409,22 +1408,6 @@ cc_library(
         "//ortools/base",
         "//ortools/util:rev",
         "//ortools/util:sort",
-        "//ortools/util:strong_integers",
-        "@com_google_absl//absl/container:flat_hash_map",
-    ],
-)
-
-cc_library(
-    name = "scheduling_constraints",
-    srcs = ["scheduling_constraints.cc"],
-    hdrs = ["scheduling_constraints.h"],
-    deps = [
-        ":integer",
-        ":intervals",
-        ":model",
-        ":sat_base",
-        ":sat_solver",
-        "//ortools/base",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_map",
     ],

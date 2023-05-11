@@ -97,6 +97,7 @@ void ZeroHalfCutHelper::AddOneConstraint(
   // to cancel them and because of that the efficacity of a generated cut will
   // be limited.
   if (magnitude > kMaxInputConstraintMagnitude) return;
+  if (binary_row.cols.empty()) return;
 
   // TODO(user): experiment with the best value. probably only tight rows are
   // best? and we could use the basis status rather than recomputing the
@@ -119,9 +120,8 @@ void ZeroHalfCutHelper::AddOneConstraint(
   }
 }
 
-void ZeroHalfCutHelper::SymmetricDifference(
-    std::function<bool(int)> extra_condition, const std::vector<int>& a,
-    std::vector<int>* b) {
+void ZeroHalfCutHelper::SymmetricDifference(const std::vector<int>& a,
+                                            std::vector<int>* b) {
   for (const int v : *b) tmp_marked_[v] = true;
   for (const int v : a) {
     if (tmp_marked_[v]) {
@@ -138,32 +138,11 @@ void ZeroHalfCutHelper::SymmetricDifference(
   int new_size = 0;
   for (const int v : *b) {
     if (tmp_marked_[v]) {
-      if (extra_condition(v)) {
-        (*b)[new_size++] = v;
-      }
+      (*b)[new_size++] = v;
       tmp_marked_[v] = false;
     }
   }
   b->resize(new_size);
-}
-
-void ZeroHalfCutHelper::ProcessSingletonColumns() {
-  for (const int singleton_col : singleton_cols_) {
-    if (col_to_rows_[singleton_col].empty()) continue;
-    CHECK_EQ(col_to_rows_[singleton_col].size(), 1);
-    const int row = col_to_rows_[singleton_col][0];
-    int new_size = 0;
-    auto& mutable_cols = rows_[row].cols;
-    for (const int col : mutable_cols) {
-      if (col == singleton_col) continue;
-      mutable_cols[new_size++] = col;
-    }
-    CHECK_LT(new_size, mutable_cols.size());
-    mutable_cols.resize(new_size);
-    col_to_rows_[singleton_col].clear();
-    rows_[row].slack += shifted_lp_values_[singleton_col];
-  }
-  singleton_cols_.clear();
 }
 
 // This is basically one step of a Gaussian elimination with the given pivot.
@@ -181,8 +160,7 @@ void ZeroHalfCutHelper::EliminateVarUsingRow(int eliminated_col,
     if (other_row == eliminated_row) continue;
     col_to_rows_[eliminated_col][new_size++] = other_row;
 
-    SymmetricDifference([](int i) { return true; }, rows_[eliminated_row].cols,
-                        &rows_[other_row].cols);
+    SymmetricDifference(rows_[eliminated_row].cols, &rows_[other_row].cols);
 
     // Update slack & parity.
     rows_[other_row].rhs_parity ^= rows_[eliminated_row].rhs_parity;
@@ -210,26 +188,26 @@ void ZeroHalfCutHelper::EliminateVarUsingRow(int eliminated_col,
   col_to_rows_[eliminated_col].resize(new_size);
 
   // Then update the col representation of the matrix.
-  //
-  // Note that we remove from the col-wise representation any rows with a large
-  // slack.
   {
     int new_size = 0;
     for (const int other_col : rows_[eliminated_row].cols) {
       if (other_col == eliminated_col) continue;
-      const int old_size = col_to_rows_[other_col].size();
-      rows_[eliminated_row].cols[new_size++] = other_col;
-      SymmetricDifference(
-          [this](int i) { return rows_[i].slack < kSlackThreshold; },
-          col_to_rows_[eliminated_col], &col_to_rows_[other_col]);
-      if (old_size != 1 && col_to_rows_[other_col].size() == 1) {
-        singleton_cols_.push_back(other_col);
+      SymmetricDifference(col_to_rows_[eliminated_col],
+                          &col_to_rows_[other_col]);
+      if (col_to_rows_[other_col].size() == 1) {
+        CHECK_EQ(col_to_rows_[other_col][0], eliminated_row);
+
+        // Eliminate new singleton column right away.
+        col_to_rows_[other_col].clear();
+        rows_[eliminated_row].slack += shifted_lp_values_[other_col];
+        continue;
       }
+      rows_[eliminated_row].cols[new_size++] = other_col;
     }
     rows_[eliminated_row].cols.resize(new_size);
   }
 
-  // Clear col.
+  // Clear col since it is now singleton.
   col_to_rows_[eliminated_col].clear();
   rows_[eliminated_row].slack += shifted_lp_values_[eliminated_col];
 }
@@ -238,10 +216,22 @@ std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>>
 ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator* random) {
   std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>> result;
 
-  // Initialize singleton_cols_.
-  singleton_cols_.clear();
-  for (int col = 0; col < col_to_rows_.size(); ++col) {
-    if (col_to_rows_[col].size() == 1) singleton_cols_.push_back(col);
+  // Remove singleton column from the picture.
+  const int num_cols = col_to_rows_.size();
+  for (int singleton_col = 0; singleton_col < num_cols; ++singleton_col) {
+    if (col_to_rows_[singleton_col].size() != 1) continue;
+
+    const int row = col_to_rows_[singleton_col][0];
+    int new_size = 0;
+    auto& mutable_cols = rows_[row].cols;
+    for (const int col : mutable_cols) {
+      if (col == singleton_col) continue;
+      mutable_cols[new_size++] = col;
+    }
+    CHECK_LT(new_size, mutable_cols.size());
+    mutable_cols.resize(new_size);
+    col_to_rows_[singleton_col].clear();
+    rows_[row].slack += shifted_lp_values_[singleton_col];
   }
 
   // Process rows by increasing size, but randomize if same size.
@@ -253,8 +243,6 @@ ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator* random) {
   });
 
   for (const int row : to_process) {
-    ProcessSingletonColumns();
-
     if (rows_[row].cols.empty()) continue;
     if (rows_[row].slack > 1e-6) continue;
     if (rows_[row].multipliers.size() > kMaxAggregationSize) continue;

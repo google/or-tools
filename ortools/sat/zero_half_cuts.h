@@ -91,14 +91,10 @@ class ZeroHalfCutHelper {
   //
   // Like std::set_symmetric_difference, but use a vector<bool> instead of sort.
   // This assumes tmp_marked_ to be all false. We don't DCHECK it here for
-  // speed, but it DCHECKed on each EliminateVarUsingRow() call. In addition,
-  // the result is filtered using the extra_condition function.
-  void SymmetricDifference(std::function<bool(int)> extra_condition,
-                           const std::vector<int>& a, std::vector<int>* b);
+  // speed, but it DCHECKed on each EliminateVarUsingRow() call.
+  void SymmetricDifference(const std::vector<int>& a, std::vector<int>* b);
 
  private:
-  void ProcessSingletonColumns();
-
   // As we combine rows, when the activity of a combination get too far away
   // from its bound, we just discard it. Note that the row will still be there
   // but its index will not appear in the col-wise representation of the matrix.
