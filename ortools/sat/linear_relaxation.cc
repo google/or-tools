@@ -739,12 +739,6 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   const int num_intervals = helper->NumTasks();
   demands_helper->CacheAllEnergyValues();
 
-  std::vector<Literal> presence_literals;
-  std::vector<AffineExpression> starts;
-  std::vector<AffineExpression> ends;
-  std::vector<Literal> clause;
-  std::vector<int> active_interval_indices;
-  bool at_least_one_interval_is_present = false;
   IntegerValue min_of_starts = kMaxIntegerValue;
   IntegerValue max_of_ends = kMinIntegerValue;
   int num_variable_energies = 0;
@@ -752,52 +746,38 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   for (int index = 0; index < num_intervals; ++index) {
     if (helper->IsAbsent(index)) continue;
-
-    if (helper->IsOptional(index)) {
-      if (demands_helper->EnergyMin(index) == 0) continue;
+    if (helper->IsOptional(index) && demands_helper->EnergyMin(index) >= 0) {
       num_optionals++;
-      const Literal task_lit = helper->PresenceLiteral(index);
-      presence_literals.push_back(task_lit);
-      clause.push_back(task_lit);
-    } else {
-      at_least_one_interval_is_present = true;
-      presence_literals.push_back(
-          model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral());
     }
-    active_interval_indices.push_back(index);
-
     min_of_starts = std::min(min_of_starts, helper->StartMin(index));
     max_of_ends = std::max(max_of_ends, helper->EndMax(index));
-
     if (!helper->SizeIsFixed(index) || !demands_helper->DemandIsFixed(index)) {
       num_variable_energies++;
     }
-
-    starts.push_back(helper->Starts()[index]);
-    ends.push_back(helper->Ends()[index]);
   }
 
   VLOG(2) << "Span [" << min_of_starts << ".." << max_of_ends << "] with "
           << num_optionals << " optional intervals, and "
           << num_variable_energies << " variable energy tasks out of "
-          << num_intervals << " intervals";
+          << num_intervals << " intervals"
+          << (makespan.has_value() ? ", and 1 makespan" : "");
 
-  // If nothing is variable, the linear relaxation will already be enforced by
-  // the scheduling propagators.
+  // If nothing is variable, the linear relaxation will already be enforced
+  // by the scheduling propagators.
   if (num_variable_energies + num_optionals == 0) return;
 
   LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-  for (const int i : active_interval_indices) {
-    if (helper->IsOptional(i)) {
-      const IntegerValue energy_min = demands_helper->EnergyMin(i);
+  for (int index = 0; index < num_intervals; ++index) {
+    if (helper->IsAbsent(index)) continue;
+    if (helper->IsOptional(index)) {
+      const IntegerValue energy_min = demands_helper->EnergyMin(index);
       DCHECK_GT(energy_min, 0);
-      if (!lc.AddLiteralTerm(helper->PresenceLiteral(i), energy_min)) {
+      if (!lc.AddLiteralTerm(helper->PresenceLiteral(index), energy_min)) {
         return;
       }
-
     } else {
       const std::vector<LiteralValueValue>& product =
-          demands_helper->DecomposedEnergies()[i];
+          demands_helper->DecomposedEnergies()[index];
       if (!product.empty()) {
         // The energy is defined if the vector is not empty.
         if (!lc.AddDecomposedProduct(product)) return;
@@ -805,43 +785,23 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
         // The energy is not a decomposed product, but it could still be
         // constant or linear. If not, a McCormick relaxation will be
         // introduced. AddQuadraticLowerBound() supports all cases.
-        lc.AddQuadraticLowerBound(helper->Sizes()[i],
-                                  demands_helper->Demands()[i], integer_trail);
+        lc.AddQuadraticLowerBound(helper->Sizes()[index],
+                                  demands_helper->Demands()[index],
+                                  integer_trail);
       }
     }
   }
 
-  auto* sat_solver = model->GetOrCreate<SatSolver>();
-  const Literal cumulative_is_not_empty =
-      at_least_one_interval_is_present
-          ? model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral()
-          : Literal(model->Add(NewBooleanVariable()), true);
-  if (!at_least_one_interval_is_present) {
-    for (const Literal task_lit : clause) {
-      sat_solver->AddBinaryClause(task_lit.Negated(), cumulative_is_not_empty);
-    }
-    clause.push_back(cumulative_is_not_empty.Negated());
-    sat_solver->AddProblemClause(clause, /*is_safe=*/false);
-  }
-
   // Create and link span_start and span_end to the starts and ends of the
   // tasks.
-  const IntegerVariable span_start =
-      integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
-  model->Add(EqualMinOfSelectedVariables(cumulative_is_not_empty, span_start,
-                                         starts, presence_literals));
-
+  //
+  // TODO(lperron): In some cases, we could have only one task that can be
+  // first.
+  const AffineExpression span_start = min_of_starts;
   const AffineExpression span_end =
-      makespan.has_value()
-          ? makespan.value()
-          : integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
-  if (!makespan.has_value()) {
-    model->Add(EqualMaxOfSelectedVariables(cumulative_is_not_empty, span_end,
-                                           ends, presence_literals));
-  }
+      makespan.has_value() ? makespan.value() : max_of_ends;
   lc.AddTerm(span_end, -integer_trail->UpperBound(capacity));
   lc.AddTerm(span_start, integer_trail->UpperBound(capacity));
-
   relaxation->linear_constraints.push_back(lc.Build());
 }
 
