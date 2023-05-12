@@ -748,11 +748,11 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
     if (helper->IsOptional(index) && demands_helper->EnergyMin(index) >= 0) {
       num_optionals++;
     }
-    min_of_starts = std::min(min_of_starts, helper->StartMin(index));
-    max_of_ends = std::max(max_of_ends, helper->EndMax(index));
     if (!helper->SizeIsFixed(index) || !demands_helper->DemandIsFixed(index)) {
       num_variable_energies++;
     }
+    min_of_starts = std::min(min_of_starts, helper->StartMin(index));
+    max_of_ends = std::max(max_of_ends, helper->EndMax(index));
   }
 
   VLOG(2) << "Span [" << min_of_starts << ".." << max_of_ends << "] with "

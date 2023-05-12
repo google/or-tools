@@ -1317,16 +1317,28 @@ class ConstraintChecker {
         const auto& yi = *enforced_intervals_xy[i].second;
         const auto& xj = *enforced_intervals_xy[j].first;
         const auto& yj = *enforced_intervals_xy[j].second;
-        if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj) &&
-            !IntervalIsEmpty(xi) && !IntervalIsEmpty(xj) &&
-            !IntervalIsEmpty(yi) && !IntervalIsEmpty(yj)) {
-          VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
-                  << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
-                  << IntervalEnd(yi) << "]) and " << j << "(x=["
-                  << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
-                  << IntervalStart(yj) << ", " << IntervalEnd(yj)
-                  << "]) are not disjoint.";
-          return false;
+        if (ct.no_overlap_2d().boxes_with_null_area_can_overlap()) {
+          if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj) &&
+              !IntervalIsEmpty(xi) && !IntervalIsEmpty(xj) &&
+              !IntervalIsEmpty(yi) && !IntervalIsEmpty(yj)) {
+            VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
+                    << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
+                    << IntervalEnd(yi) << "]) and " << j << "(x=["
+                    << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
+                    << IntervalStart(yj) << ", " << IntervalEnd(yj)
+                    << "]) are not disjoint.";
+            return false;
+          }
+        } else {
+          if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj)) {
+            VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
+                    << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
+                    << IntervalEnd(yi) << "]) and " << j << "(x=["
+                    << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
+                    << IntervalStart(yj) << ", " << IntervalEnd(yj)
+                    << "]) are not disjoint.";
+            return false;
+          }
         }
       }
     }
