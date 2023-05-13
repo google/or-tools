@@ -106,7 +106,7 @@ class LinearIncrementalEvaluator {
   // domain.
   //
   // Note that if the domain contains less than two values, we return an empty
-  // vector. This fonction is not meant to be used for such domains.
+  // vector. This function is not meant to be used for such domains.
   std::vector<int64_t> SlopeBreakpoints(int var, int64_t current_value,
                                         const Domain& var_domain) const;
 
@@ -115,6 +115,14 @@ class LinearIncrementalEvaluator {
 
   double DeterministicTime() const {
     return 5e-9 * static_cast<double>(dtime_);
+  }
+
+  int64_t ObjectiveDelta(int var, int64_t delta) const {
+    if (var >= var_entries_.size()) return 0;
+    const std::vector<Entry>& data = var_entries_[var];
+    if (data.empty()) return 0;
+    if (data[0].ct_index != 0) return 0;
+    return data[0].coefficient * delta;
   }
 
  private:
@@ -308,6 +316,11 @@ class LsEvaluator {
 
   // Returns the objective activity in the current state.
   int64_t ObjectiveActivity() const;
+
+  int64_t ObjectiveDelta(int var, int64_t delta) const {
+    return model_.has_objective() ? linear_evaluator_.ObjectiveDelta(var, delta)
+                                  : 0;
+  }
 
   // The number of "internal" constraints in the evaluator. This might not
   // be the same as the number of initial constraints of the model.

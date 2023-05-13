@@ -1579,7 +1579,6 @@ std::vector<int> LsEvaluator::VariablesInViolatedConstraints() const {
     }
   }
 
-  gtl::STLSortAndRemoveDuplicates(&variables);
   return variables;
 }
 

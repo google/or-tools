@@ -115,6 +115,11 @@ class FeasibilityJumpSolver : public SubSolver {
   // Return the number of infeasible constraints.
   int UpdateConstraintWeights(bool linear_mode);
 
+  // Returns true if changing this variable to its jump value reduces weighted
+  // violation, or has no impact on weighted violation but reduces the
+  // objective.
+  bool IsGood(int var) const;
+
   const LinearModel* linear_model_;
   SatParameters params_;
   ModelSharedTimeLimit* shared_time_limit_;

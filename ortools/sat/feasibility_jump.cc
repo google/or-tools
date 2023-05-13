@@ -404,15 +404,12 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
   };
 }
 
-namespace {
-
-// We only consider strictly improving moves in the algorithm
-//
-// TODO(user): Maybe we can do some move with delta == 0, but it is probably
-// better to just update the weight if only such moves are left.
-bool IsGood(double delta) { return delta < 0.0; }
-
-}  // namespace
+bool FeasibilityJumpSolver::IsGood(int var) const {
+  if (jump_scores_[var] < 0.0) return true;
+  if (jump_scores_[var] > 0.0) return false;
+  const int64_t delta = jump_values_[var] - evaluator_->current_solution()[var];
+  return evaluator_->ObjectiveDelta(var, delta) < 0;
+}
 
 void FeasibilityJumpSolver::RecomputeJump(int var) {
   const std::vector<int64_t>& solution = evaluator_->current_solution();
@@ -448,7 +445,7 @@ void FeasibilityJumpSolver::RecomputeJump(int var) {
                           : std::numeric_limits<double>::infinity();
     if (v1 < 0.0) {
       // Point p1 is improving. Look for best before it.
-      // Note that we can exclue all point after solution[var] since it is
+      // Note that we can exclude all point after solution[var] since it is
       // worse and we assume convexity.
       const Domain dom = var_domains_[var].IntersectionWith(
           Domain(std::numeric_limits<int64_t>::min(), p1 - 1));
@@ -489,7 +486,10 @@ void FeasibilityJumpSolver::RecomputeJump(int var) {
       } else {
         // We have no improving point, result is either p1 or p2. This is the
         // most common scenario, and require no breakpoint computation!
-        if (v1 < v2) {
+        // Choose the direction which increases violation the least,
+        // disambiguating by best objective.
+        if (v1 < v2 || (v1 == v2 && evaluator_->ObjectiveDelta(
+                                        var, p1 - solution[var]) < 0)) {
           best_jump = {p1, v1};
         } else {
           best_jump = {p2, v2};
@@ -502,7 +502,7 @@ void FeasibilityJumpSolver::RecomputeJump(int var) {
     jump_scores_[var] = best_jump.second;
   }
 
-  if (IsGood(jump_scores_[var]) && !in_good_jumps_[var]) {
+  if (IsGood(var) && !in_good_jumps_[var]) {
     in_good_jumps_[var] = true;
     good_jumps_.push_back(var);
   }
@@ -568,7 +568,7 @@ int FeasibilityJumpSolver::UpdateConstraintWeights(bool linear_mode) {
     // already be correct.
     if (!jump_need_recomputation_[var] && var_has_two_values_[var]) {
       DCHECK(JumpIsUpToDate(var));
-      if (IsGood(jump_scores_[var]) && !in_good_jumps_[var]) {
+      if (IsGood(var) && !in_good_jumps_[var]) {
         in_good_jumps_[var] = true;
         good_jumps_.push_back(var);
       }
@@ -642,6 +642,7 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
       int best_index = -1;
       int64_t best_value = 0;
       double best_score = 0.0;
+      int64_t best_obj_delta = 0;
       int num_improving_jump_tested = 0;
       while (!good_jumps_.empty() && num_improving_jump_tested < 5) {
         const int index = absl::Uniform<int>(
@@ -655,7 +656,7 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
           DCHECK(JumpIsUpToDate(var));
         }
 
-        if (!IsGood(jump_scores_[var])) {
+        if (!IsGood(var)) {
           // Lazily remove.
           in_good_jumps_[var] = false;
           good_jumps_[index] = good_jumps_.back();
@@ -665,17 +666,21 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
         }
 
         ++num_improving_jump_tested;
-        if (jump_scores_[var] <= best_score) {
+        const int64_t obj_delta = 0;
+        // evaluator_->ObjectiveDelta(var, jump_values_[var] - solution[var]);
+        if (std::make_pair(jump_scores_[var], obj_delta) <
+            std::make_pair(best_score, best_obj_delta)) {
           best_var = var;
           best_index = index;
           best_value = jump_values_[var];
           best_score = jump_scores_[var];
+          best_obj_delta = obj_delta;
         }
       }
 
       if (good_jumps_.empty()) {
         // TODO(user): Re-enable the code. It can be a bit slow currently
-        // especially since in many situation it doesn't achieve anything.
+        // especially since in many situations it doesn't achieve anything.
         if (true) break;
 
         bool time_limit_crossed = false;
@@ -759,7 +764,7 @@ void FeasibilityJumpSolver::MarkJumpsThatNeedsToBeRecomputed(int changed_var) {
     // already be correct.
     if (var_has_two_values_[var]) {
       DCHECK(JumpIsUpToDate(var));
-      if (IsGood(jump_scores_[var]) && !in_good_jumps_[var]) {
+      if (IsGood(var) && !in_good_jumps_[var]) {
         in_good_jumps_[var] = true;
         good_jumps_.push_back(var);
       }
@@ -861,7 +866,7 @@ bool FeasibilityJumpSolver::ScanAllVariables(absl::Span<const int64_t> solution,
       }
 
       const double delta = jump_scores_[var];
-      if (IsGood(delta)) {
+      if (IsGood(var)) {
         *improving_var = var;
         *improving_value = jump_values_[var];
         *improving_delta = delta;
