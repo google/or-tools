@@ -19,17 +19,12 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/util.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -53,6 +48,8 @@ class NonOverlappingRectanglesDisjunctivePropagator
 
  private:
   bool PropagateTwoBoxes();
+  bool PropagateZeroAreaBoxes();
+  bool CheckTwoBoxes(int box1, int box2);
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       bool fast_propagation, const SchedulingConstraintHelper& x,
       SchedulingConstraintHelper* y);
@@ -65,12 +62,14 @@ class NonOverlappingRectanglesDisjunctivePropagator
   GenericLiteralWatcher* watcher_;
   int fast_id_;  // Propagator id of the "fast" version.
 
-  std::vector<IndexedInterval> indexed_intervals_;
+  std::vector<IndexedInterval> indexed_boxes_;
   std::vector<std::vector<int>> events_overlapping_boxes_;
 
   absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes_;
   std::vector<absl::Span<int>> boxes_to_propagate_;
   std::vector<absl::Span<int>> disjoint_boxes_;
+  std::vector<int> zero_area_boxes_;
+  std::vector<int> non_zero_area_boxes_;
 
   DisjunctiveOverloadChecker overload_checker_;
   DisjunctiveDetectablePrecedences forward_detectable_precedences_;
@@ -79,6 +78,8 @@ class NonOverlappingRectanglesDisjunctivePropagator
   DisjunctiveNotLast backward_not_last_;
   DisjunctiveEdgeFinding forward_edge_finding_;
   DisjunctiveEdgeFinding backward_edge_finding_;
+
+  bool has_zero_area_boxes_ = false;
 
   NonOverlappingRectanglesDisjunctivePropagator(
       const NonOverlappingRectanglesDisjunctivePropagator&) = delete;
@@ -99,12 +100,9 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
     const std::vector<IntervalVariable>& x,
     const std::vector<IntervalVariable>& y, bool is_strict) {
   return [=](Model* model) {
-    SchedulingConstraintHelper* x_helper =
-        new SchedulingConstraintHelper(x, model);
-    SchedulingConstraintHelper* y_helper =
-        new SchedulingConstraintHelper(y, model);
-    model->TakeOwnership(x_helper);
-    model->TakeOwnership(y_helper);
+    IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
+    SchedulingConstraintHelper* x_helper = repository->GetOrCreateHelper(x);
+    SchedulingConstraintHelper* y_helper = repository->GetOrCreateHelper(y);
 
     NonOverlappingRectanglesDisjunctivePropagator* constraint =
         new NonOverlappingRectanglesDisjunctivePropagator(is_strict, x_helper,

@@ -21,7 +21,6 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
@@ -33,7 +32,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/timetable.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
@@ -225,10 +223,18 @@ NonOverlappingRectanglesDisjunctivePropagator::
       forward_not_last_(true, &x_),
       backward_not_last_(false, &x_),
       forward_edge_finding_(true, &x_),
-      backward_edge_finding_(false, &x_) {}
+      backward_edge_finding_(false, &x_) {
+  // Checks the presence of potential zero area boxes.
+  for (int b = 0; b < global_x_.NumTasks(); ++b) {
+    if (global_x_.SizeMin(b) == 0 || global_y_.SizeMin(b) == 0) {
+      has_zero_area_boxes_ = true;
+      break;
+    }
+  }
+}
 
 NonOverlappingRectanglesDisjunctivePropagator::
-    ~NonOverlappingRectanglesDisjunctivePropagator() {}
+    ~NonOverlappingRectanglesDisjunctivePropagator() = default;
 
 void NonOverlappingRectanglesDisjunctivePropagator::Register(
     int fast_priority, int slow_priority) {
@@ -260,14 +266,14 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 
   // Compute relevant boxes, the one with a mandatory part of y. Because we will
   // need to sort it this way, we consider them by increasing start max.
-  indexed_intervals_.clear();
+  indexed_boxes_.clear();
   const std::vector<TaskTime>& temp = y->TaskByDecreasingStartMax();
   for (int i = temp.size(); --i >= 0;) {
     const int box = temp[i].task_index;
-    if (!strict_ && (x.SizeMin(box) == 0 || y->SizeMin(box) == 0)) continue;
-
     // Ignore absent boxes.
     if (x.IsAbsent(box) || y->IsAbsent(box)) continue;
+
+    if (!strict_ && (x.SizeMin(box) == 0 || y->SizeMin(box) == 0)) continue;
 
     // Ignore boxes where the relevant presence literal is only on the y
     // dimension, or if both intervals are optionals with different literals.
@@ -280,13 +286,13 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     const IntegerValue start_max = temp[i].time;
     const IntegerValue end_min = y->EndMin(box);
     if (start_max < end_min) {
-      indexed_intervals_.push_back({box, start_max, end_min});
+      indexed_boxes_.push_back({box, start_max, end_min});
     }
   }
 
   // Less than 2 boxes, no propagation.
-  if (indexed_intervals_.size() < 2) return true;
-  ConstructOverlappingSets(/*already_sorted=*/true, &indexed_intervals_,
+  if (indexed_boxes_.size() < 2) return true;
+  ConstructOverlappingSets(/*already_sorted=*/true, &indexed_boxes_,
                            &events_overlapping_boxes_);
 
   // Split lists of boxes into disjoint set of boxes (w.r.t. overlap).
@@ -374,6 +380,10 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   // We can actually swap dimensions to propagate vertically.
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       fast_propagation, global_y_, &global_x_));
+
+  if (!fast_propagation && has_zero_area_boxes_ && strict_) {
+    RETURN_IF_FALSE(PropagateZeroAreaBoxes());
+  }
 
   // If two boxes must overlap but do not have a mandatory line/column that
   // crosses both of them, then the code above do not see it. So we manually
@@ -467,6 +477,124 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateTwoBoxes() {
       return true;
     }
   }
+}
+
+bool NonOverlappingRectanglesDisjunctivePropagator::PropagateZeroAreaBoxes() {
+  // Extra propagation code for zero-area boxes in strict mode.
+  zero_area_boxes_.clear();
+  non_zero_area_boxes_.clear();
+  for (int b = 0; b < global_x_.NumTasks(); ++b) {
+    if (!global_x_.IsPresent(b) || !global_y_.IsPresent(b)) continue;
+    if (global_x_.SizeMax(b) == 0 || global_y_.SizeMax(b) == 0) {
+      zero_area_boxes_.push_back(b);
+    } else {
+      non_zero_area_boxes_.push_back(b);
+    }
+  }
+  if (zero_area_boxes_.empty()) {
+    return true;
+  }
+  for (const int nz : non_zero_area_boxes_) {
+    for (const int z : zero_area_boxes_) {
+      if (!CheckTwoBoxes(z, nz)) return false;
+    }
+  }
+  for (int i1 = 0; i1 + 1 < zero_area_boxes_.size(); ++i1) {
+    for (int i2 = i1 + 1; i2 < zero_area_boxes_.size(); ++i2) {
+      if (!CheckTwoBoxes(i1, i2)) return false;
+    }
+  }
+
+  return true;
+}
+
+bool NonOverlappingRectanglesDisjunctivePropagator::CheckTwoBoxes(int box1,
+                                                                  int box2) {
+  const int state = (global_x_.EndMin(box1) <= global_x_.StartMax(box2)) +
+                    2 * (global_x_.EndMin(box2) <= global_x_.StartMax(box1)) +
+                    4 * (global_y_.EndMin(box1) <= global_y_.StartMax(box2)) +
+                    8 * (global_y_.EndMin(box2) <= global_y_.StartMax(box1));
+
+  global_x_.ClearOtherHelper();
+  global_y_.ClearOtherHelper();
+
+  auto clear_and_add_mandatory_overlap_reason =
+      [box1, box2](SchedulingConstraintHelper* helper) {
+        helper->ClearReason();
+        helper->AddPresenceReason(box1);
+        helper->AddPresenceReason(box2);
+        helper->AddReasonForBeingBefore(box1, box2);
+        helper->AddReasonForBeingBefore(box2, box1);
+      };
+
+  const auto left_box_before_right_box_on_first_dimension =
+      [&clear_and_add_mandatory_overlap_reason](int left, int right,
+                                                SchedulingConstraintHelper* x,
+                                                SchedulingConstraintHelper* y) {
+        // left box pushes right box.
+        const IntegerValue left_end_min = x->EndMin(left);
+        if (left_end_min > x->StartMin(right)) {
+          x->ClearReason();
+          x->AddPresenceReason(left);
+          x->AddPresenceReason(right);
+          x->AddReasonForBeingBefore(left, right);
+          x->AddEndMinReason(left, left_end_min);
+          // left and right must overlap on y.
+          clear_and_add_mandatory_overlap_reason(y);
+          // Propagate with the complete reason.
+          x->ImportOtherReasons(*y);
+          RETURN_IF_FALSE(x->IncreaseStartMin(right, left_end_min));
+        }
+
+        // right box pushes left box.
+        const IntegerValue right_start_max = x->StartMax(right);
+        if (right_start_max < x->EndMax(left)) {
+          x->ClearReason();
+          x->AddPresenceReason(left);
+          x->AddPresenceReason(right);
+          x->AddReasonForBeingBefore(left, right);
+          x->AddStartMaxReason(right, right_start_max);
+          // left and right must overlap on y.
+          clear_and_add_mandatory_overlap_reason(y);
+          // Propagate with the complete reason.
+          x->ImportOtherReasons(*y);
+          RETURN_IF_FALSE(x->DecreaseEndMax(left, right_start_max));
+        }
+
+        return true;
+      };
+  switch (state) {
+    case 0: {
+      clear_and_add_mandatory_overlap_reason(&global_x_);
+      clear_and_add_mandatory_overlap_reason(&global_y_);
+      global_x_.ImportOtherReasons(global_y_);
+      return global_x_.ReportConflict();
+    }
+    case 1: {  // box2 after box1 on x.
+      RETURN_IF_FALSE(left_box_before_right_box_on_first_dimension(
+          box1, box2, &global_x_, &global_y_));
+      break;
+    }
+    case 2: {  // box1 after box2 on x.
+      RETURN_IF_FALSE(left_box_before_right_box_on_first_dimension(
+          box2, box1, &global_x_, &global_y_));
+      break;
+    }
+    case 4: {  // box2 after box1 on y.
+      RETURN_IF_FALSE(left_box_before_right_box_on_first_dimension(
+          box1, box2, &global_y_, &global_x_));
+      break;
+    }
+    case 8: {  // box1 after box2 on y.
+      RETURN_IF_FALSE(left_box_before_right_box_on_first_dimension(
+          box2, box1, &global_y_, &global_x_));
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+  return true;
 }
 
 #undef RETURN_IF_FALSE
