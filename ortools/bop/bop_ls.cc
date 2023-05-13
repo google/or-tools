@@ -24,6 +24,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"
@@ -39,7 +40,7 @@ using ::operations_research::sat::LinearObjective;
 // LocalSearchOptimizer
 //------------------------------------------------------------------------------
 
-LocalSearchOptimizer::LocalSearchOptimizer(const std::string& name,
+LocalSearchOptimizer::LocalSearchOptimizer(absl::string_view name,
                                            int max_num_decisions,
                                            absl::BitGenRef random,
                                            sat::SatSolver* sat_propagator)

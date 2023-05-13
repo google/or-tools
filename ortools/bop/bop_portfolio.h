@@ -71,7 +71,7 @@ class PortfolioOptimizer : public BopOptimizerBase {
   PortfolioOptimizer(const ProblemState& problem_state,
                      const BopParameters& parameters,
                      const BopSolverOptimizerSet& optimizer_set,
-                     const std::string& name);
+                     absl::string_view name);
   ~PortfolioOptimizer() override;
 
   bool ShouldBeRun(const ProblemState& problem_state) const override {

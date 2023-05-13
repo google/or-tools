@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/basictypes.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -42,7 +43,7 @@ namespace bop {
 // should be under a given Hamming distance of the current solution.
 class BopCompleteLNSOptimizer : public BopOptimizerBase {
  public:
-  BopCompleteLNSOptimizer(const std::string& name,
+  BopCompleteLNSOptimizer(absl::string_view name,
                           const BopConstraintTerms& objective_terms);
   ~BopCompleteLNSOptimizer() final;
 
@@ -103,7 +104,7 @@ class BopAdaptiveLNSOptimizer : public BopOptimizerBase {
  public:
   // Takes ownership of the given neighborhood_generator.
   // The sat_propagator is assumed to contains the current problem.
-  BopAdaptiveLNSOptimizer(const std::string& name, bool use_lp_to_guide_sat,
+  BopAdaptiveLNSOptimizer(absl::string_view name, bool use_lp_to_guide_sat,
                           NeighborhoodGenerator* neighborhood_generator,
                           sat::SatSolver* sat_propagator);
   ~BopAdaptiveLNSOptimizer() final;

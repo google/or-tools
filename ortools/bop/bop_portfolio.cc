@@ -23,6 +23,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_fs.h"
@@ -66,7 +67,7 @@ void BuildObjectiveTerms(const LinearBooleanProblem& problem,
 //------------------------------------------------------------------------------
 PortfolioOptimizer::PortfolioOptimizer(
     const ProblemState& problem_state, const BopParameters& parameters,
-    const BopSolverOptimizerSet& optimizer_set, const std::string& name)
+    const BopSolverOptimizerSet& optimizer_set, absl::string_view name)
     : BopOptimizerBase(name),
       random_(parameters.random_seed()),
       state_update_stamp_(ProblemState::kInitialStampValue),

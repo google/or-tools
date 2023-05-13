@@ -23,6 +23,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/commandlineflags.h"
@@ -80,7 +81,7 @@ void DenseRowToBopSolution(const DenseRow& values, BopSolution* solution) {
 //------------------------------------------------------------------------------
 
 GuidedSatFirstSolutionGenerator::GuidedSatFirstSolutionGenerator(
-    const std::string& name, Policy policy)
+    absl::string_view name, Policy policy)
     : BopOptimizerBase(name),
       policy_(policy),
       abort_(false),
@@ -214,7 +215,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 // BopRandomFirstSolutionGenerator
 //------------------------------------------------------------------------------
 BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
-    const std::string& name, const BopParameters& parameters,
+    absl::string_view name, const BopParameters& parameters,
     sat::SatSolver* sat_propagator, absl::BitGenRef random)
     : BopOptimizerBase(name),
       random_(random),
@@ -344,7 +345,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
 // LinearRelaxation
 //------------------------------------------------------------------------------
 LinearRelaxation::LinearRelaxation(const BopParameters& parameters,
-                                   const std::string& name)
+                                   absl::string_view name)
     : BopOptimizerBase(name),
       parameters_(parameters),
       state_update_stamp_(ProblemState::kInitialStampValue),
