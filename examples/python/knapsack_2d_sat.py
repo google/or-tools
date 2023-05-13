@@ -118,6 +118,10 @@ def solve_with_duplicate_items(data, max_height, max_width):
             model.NewIntervalVar(y_starts[i], item_heights[i] * is_used[i],
                                  y_ends[i], f'y_interval{i}'))
 
+        # Unused boxes are fixed at (0.0).
+        model.Add(x_starts[i] == 0).OnlyEnforceIf(is_used[i].Not())
+        model.Add(y_starts[i] == 0).OnlyEnforceIf(is_used[i].Not())
+
     # Constraints.
 
     ## Only one of non-rotated/rotated pair can be used.
@@ -132,7 +136,7 @@ def solve_with_duplicate_items(data, max_height, max_width):
 
     # Output proto to file.
     if _OUTPUT_PROTO.value:
-        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        print(f'Writing proto to {_OUTPUT_PROTO.value}')
         with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
@@ -144,7 +148,7 @@ def solve_with_duplicate_items(data, max_height, max_width):
     status = solver.Solve(model)
 
     # Report solution.
-    if status == cp_model.OPTIMAL:
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         used = {i for i in range(num_items) if solver.BooleanValue(is_used[i])}
         data = pd.DataFrame({
             'x_start': [solver.Value(x_starts[i]) for i in used],
@@ -207,6 +211,9 @@ def solve_with_duplicate_optional_items(data, max_height, max_width):
         y_intervals.append(
             model.NewOptionalFixedSizeIntervalVar(y_starts[i], item_heights[i],
                                                   is_used[i], f'y_interval{i}'))
+        # Unused boxes are fixed at (0.0).
+        model.Add(x_starts[i] == 0).OnlyEnforceIf(is_used[i].Not())
+        model.Add(y_starts[i] == 0).OnlyEnforceIf(is_used[i].Not())
 
     # Constraints.
 
@@ -222,7 +229,7 @@ def solve_with_duplicate_optional_items(data, max_height, max_width):
 
     # Output proto to file.
     if _OUTPUT_PROTO.value:
-        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        print(f'Writing proto to {_OUTPUT_PROTO.value}')
         with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
@@ -234,7 +241,7 @@ def solve_with_duplicate_optional_items(data, max_height, max_width):
     status = solver.Solve(model)
 
     # Report solution.
-    if status == cp_model.OPTIMAL:
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         used = {i for i in range(num_items) if solver.BooleanValue(is_used[i])}
         data = pd.DataFrame({
             'x_start': [solver.Value(x_starts[i]) for i in used],
@@ -318,8 +325,12 @@ def solve_with_rotations(data, max_height, max_width):
         ### Define height and width according to the state.
         dim1 = item_widths[i]
         dim2 = item_heights[i]
+        # Unused boxes are fixed at (0.0).
         model.Add(x_sizes[i] == 0).OnlyEnforceIf(not_selected)
         model.Add(y_sizes[i] == 0).OnlyEnforceIf(not_selected)
+        model.Add(x_starts[i] == 0).OnlyEnforceIf(not_selected)
+        model.Add(y_starts[i] == 0).OnlyEnforceIf(not_selected)
+        # Sizes are fixed by the rotation.
         model.Add(x_sizes[i] == dim1).OnlyEnforceIf(no_rotation)
         model.Add(y_sizes[i] == dim2).OnlyEnforceIf(no_rotation)
         model.Add(x_sizes[i] == dim2).OnlyEnforceIf(rotated)
@@ -335,7 +346,7 @@ def solve_with_rotations(data, max_height, max_width):
 
     # Output proto to file.
     if _OUTPUT_PROTO.value:
-        print('Writing proto to %s' % _OUTPUT_PROTO.value)
+        print(f'Writing proto to {_OUTPUT_PROTO.value}')
         with open(_OUTPUT_PROTO.value, 'w') as text_file:
             text_file.write(str(model))
 
@@ -347,7 +358,7 @@ def solve_with_rotations(data, max_height, max_width):
     status = solver.Solve(model)
 
     # Report solution.
-    if status == cp_model.OPTIMAL:
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         used = {i for i in range(num_items) if solver.BooleanValue(is_used[i])}
         data = pd.DataFrame({
             'x_start': [solver.Value(x_starts[i]) for i in used],
