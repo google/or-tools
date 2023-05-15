@@ -1,8 +1,16 @@
 diff --git a/build_defs.bzl b/build_defs.bzl
-index cde1e93..e8dba55 100644
+index cde1e93..993b538 100644
 --- a/build_defs.bzl
 +++ b/build_defs.bzl
-@@ -41,6 +41,10 @@ def pybind_extension(
+@@ -35,12 +35,19 @@ def pybind_extension(
+         linkopts = [],
+         tags = [],
+         deps = [],
++        py_deps = [],
++        visibility = None,
+         **kwargs):
+     # Mark common dependencies as required for build_cleaner.
+     tags = tags + ["req_dep=%s" % dep for dep in PYBIND_DEPS]
  
      native.cc_binary(
          name = name + ".so",
@@ -10,10 +18,11 @@ index cde1e93..e8dba55 100644
 +          "@platforms//os:windows": ["@platforms//:incompatible"],
 +          "//conditions:default": [],
 +        }),
++        visibility = visibility,
          copts = copts + PYBIND_COPTS + select({
              "@pybind11//:msvc_compiler": [],
              "//conditions:default": [
-@@ -59,6 +63,42 @@ def pybind_extension(
+@@ -59,6 +66,45 @@ def pybind_extension(
          **kwargs
      )
  
@@ -29,6 +38,7 @@ index cde1e93..e8dba55 100644
 +        linkshared = 1,
 +        tags = tags,
 +        deps = deps + PYBIND_DEPS,
++        visibility = visibility,
 +        **kwargs
 +    )
 +
@@ -40,16 +50,18 @@ index cde1e93..e8dba55 100644
 +        }),
 +        srcs = [name + ".dll"],
 +        outs = [name + ".pyd"],
-+        cmd = "cp $< $@"
++        cmd = "cp $< $@",
++        visibility = visibility,
 +    )
 +
 +    native.py_library(
 +        name = name,
-+        visibility = ["//visibility:public"],
 +        data = select({
 +            "@platforms//os:windows": [":" + name + ".pyd"],
 +            "//conditions:default": [":" + name + ".so"],
-+        })
++        }),
++        deps = py_deps,
++        visibility = visibility,
 +    )
 +
 +
