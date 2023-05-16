@@ -21,9 +21,6 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_constraints.h"
@@ -355,7 +352,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   //
   // Important: IncreaseStartMin() and DecreaseEndMax() can be called on an
   // optional interval whose presence is still unknown and push a bound
-  // conditionned on its presence. The functions will do the correct thing
+  // conditioned on its presence. The functions will do the correct thing
   // depending on whether or not the start_min/end_max are optional variables
   // whose presence implies the interval presence.
   ABSL_MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue value);
@@ -397,6 +394,8 @@ class SchedulingConstraintHelper : public PropagatorInterface,
     map_to_other_helper_ = map_to_other_helper;
     event_for_other_helper_ = event;
   }
+
+  bool HasOtherHelper() const { return other_helper_ != nullptr; }
 
   void ClearOtherHelper() { other_helper_ = nullptr; }
 
@@ -451,7 +450,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   std::vector<AffineExpression> minus_starts_;
   std::vector<AffineExpression> minus_ends_;
 
-  // This is used by SetLevel() to dected untrail.
+  // This is used by SetLevel() to detect untrail.
   int previous_level_ = 0;
 
   // The caches of all relevant interval values.

@@ -47,9 +47,9 @@ class NonOverlappingRectanglesDisjunctivePropagator
   void Register(int fast_priority, int slow_priority);
 
  private:
-  bool PropagateTwoBoxes();
+  bool PropagateOnXWhenOnlyTwoBoxes();
   bool PropagateZeroAreaBoxes();
-  bool PropagateNullAreaBoxUsingAnother(int null_box, int box);
+  bool PropagateTwoBoxes(int box1, int box2);
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       bool fast_propagation, const SchedulingConstraintHelper& x,
       SchedulingConstraintHelper* y);
@@ -68,7 +68,9 @@ class NonOverlappingRectanglesDisjunctivePropagator
   absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes_;
   std::vector<absl::Span<int>> boxes_to_propagate_;
   std::vector<absl::Span<int>> disjoint_boxes_;
-  std::vector<int> zero_area_boxes_;
+  std::vector<int> horizontal_zero_area_boxes_;
+  std::vector<int> vertical_zero_area_boxes_;
+  std::vector<int> point_zero_area_boxes_;
   std::vector<int> non_zero_area_boxes_;
 
   DisjunctiveOverloadChecker overload_checker_;
