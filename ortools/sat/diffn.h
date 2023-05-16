@@ -49,7 +49,7 @@ class NonOverlappingRectanglesDisjunctivePropagator
  private:
   bool PropagateTwoBoxes();
   bool PropagateZeroAreaBoxes();
-  bool CheckTwoBoxes(int box1, int box2);
+  bool PropagateNullAreaBoxUsingAnother(int null_box, int box);
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       bool fast_propagation, const SchedulingConstraintHelper& x,
       SchedulingConstraintHelper* y);

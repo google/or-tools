@@ -479,6 +479,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateTwoBoxes() {
   }
 }
 
+// TODO(user): Use box splitting to speed up.
 bool NonOverlappingRectanglesDisjunctivePropagator::PropagateZeroAreaBoxes() {
   // Extra propagation code for zero-area boxes in strict mode.
   zero_area_boxes_.clear();
@@ -496,35 +497,43 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateZeroAreaBoxes() {
   }
   for (const int nz : non_zero_area_boxes_) {
     for (const int z : zero_area_boxes_) {
-      if (!CheckTwoBoxes(z, nz)) return false;
+      if (!PropagateNullAreaBoxUsingAnother(z, nz)) return false;
     }
   }
+
+  // TODO(user): We can differentiate between vertical and horizontal boxes.
+  //                This is the only combination worth checking.
   for (int i1 = 0; i1 + 1 < zero_area_boxes_.size(); ++i1) {
     for (int i2 = i1 + 1; i2 < zero_area_boxes_.size(); ++i2) {
-      if (!CheckTwoBoxes(i1, i2)) return false;
+      if (!PropagateNullAreaBoxUsingAnother(i1, i2)) return false;
     }
   }
 
   return true;
 }
 
-bool NonOverlappingRectanglesDisjunctivePropagator::CheckTwoBoxes(int box1,
-                                                                  int box2) {
-  const int state = (global_x_.EndMin(box1) <= global_x_.StartMax(box2)) +
-                    2 * (global_x_.EndMin(box2) <= global_x_.StartMax(box1)) +
-                    4 * (global_y_.EndMin(box1) <= global_y_.StartMax(box2)) +
-                    8 * (global_y_.EndMin(box2) <= global_y_.StartMax(box1));
+bool NonOverlappingRectanglesDisjunctivePropagator::
+    PropagateNullAreaBoxUsingAnother(int null_box, int box) {
+  const int state =
+      // null_box can be left of box.
+      (global_x_.EndMin(null_box) <= global_x_.StartMax(box)) +
+      // null_box can be right of box.
+      2 * (global_x_.EndMin(box) <= global_x_.StartMax(null_box)) +
+      // null_box can be below box.
+      4 * (global_y_.EndMin(null_box) <= global_y_.StartMax(box)) +
+      // null_box can be up of box.
+      8 * (global_y_.EndMin(box) <= global_y_.StartMax(null_box));
 
   global_x_.ClearOtherHelper();
   global_y_.ClearOtherHelper();
 
   auto clear_and_add_mandatory_overlap_reason =
-      [box1, box2](SchedulingConstraintHelper* helper) {
+      [null_box, box](SchedulingConstraintHelper* helper) {
         helper->ClearReason();
-        helper->AddPresenceReason(box1);
-        helper->AddPresenceReason(box2);
-        helper->AddReasonForBeingBefore(box1, box2);
-        helper->AddReasonForBeingBefore(box2, box1);
+        helper->AddPresenceReason(null_box);
+        helper->AddPresenceReason(box);
+        helper->AddReasonForBeingBefore(null_box, box);
+        helper->AddReasonForBeingBefore(box, null_box);
       };
 
   const auto left_box_before_right_box_on_first_dimension =
@@ -564,30 +573,30 @@ bool NonOverlappingRectanglesDisjunctivePropagator::CheckTwoBoxes(int box1,
         return true;
       };
   switch (state) {
-    case 0: {
+    case 0: {  // Conflict. The two boxes must overlap.
       clear_and_add_mandatory_overlap_reason(&global_x_);
       clear_and_add_mandatory_overlap_reason(&global_y_);
       global_x_.ImportOtherReasons(global_y_);
       return global_x_.ReportConflict();
     }
-    case 1: {  // box2 after box1 on x.
+    case 1: {  // box can only be after null_box on x.
       RETURN_IF_FALSE(left_box_before_right_box_on_first_dimension(
-          box1, box2, &global_x_, &global_y_));
+          null_box, box, &global_x_, &global_y_));
       break;
     }
-    case 2: {  // box1 after box2 on x.
+    case 2: {  // null_box an only be after box on x.
       RETURN_IF_FALSE(left_box_before_right_box_on_first_dimension(
-          box2, box1, &global_x_, &global_y_));
+          box, null_box, &global_x_, &global_y_));
       break;
     }
-    case 4: {  // box2 after box1 on y.
+    case 4: {  // box an only be after null_box on y.
       RETURN_IF_FALSE(left_box_before_right_box_on_first_dimension(
-          box1, box2, &global_y_, &global_x_));
+          null_box, box, &global_y_, &global_x_));
       break;
     }
-    case 8: {  // box1 after box2 on y.
+    case 8: {  // null_box an only be after box on y.
       RETURN_IF_FALSE(left_box_before_right_box_on_first_dimension(
-          box2, box1, &global_y_, &global_x_));
+          box, null_box, &global_y_, &global_x_));
       break;
     }
     default: {
