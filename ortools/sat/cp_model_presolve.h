@@ -250,9 +250,19 @@ class CpModelPresolver {
 
   void MergeNoOverlapConstraints();
 
+  // Assumes that all [constraint_index, multiple] in block are linear
+  // constraint that contains multiple * common_part and perform the
+  // substitution.
+  void RemoveCommonPart(
+      const absl::flat_hash_map<int, int64_t>& common_var_coeff_map,
+      const std::vector<std::pair<int, int64_t>>& block);
+
   // Try to identify many linear constraints that share a common linear
-  // expression.
-  void FindBigLinearOverlap();
+  // expression. We have two slightly different heuristic.
+  //
+  // TODO(user): consolidate them.
+  void FindBigHorizontalLinearOverlap();
+  void FindBigVerticalLinearOverlap();
 
   // Heuristic to merge clauses that differ in only one literal.
   // The idea is to regroup a bunch of clauses into a single bool_and.

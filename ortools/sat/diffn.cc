@@ -269,14 +269,12 @@ bool LeftBoxBeforeRightBoxOnFirstDimension(int left, int right,
 // Note that x_ and y_ must be initialized with enough intervals when passed
 // to the disjunctive propagators.
 NonOverlappingRectanglesDisjunctivePropagator::
-    NonOverlappingRectanglesDisjunctivePropagator(bool strict,
-                                                  SchedulingConstraintHelper* x,
+    NonOverlappingRectanglesDisjunctivePropagator(SchedulingConstraintHelper* x,
                                                   SchedulingConstraintHelper* y,
                                                   Model* model)
     : global_x_(*x),
       global_y_(*y),
       x_(x->NumTasks(), model),
-      strict_(strict),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       overload_checker_(&x_),
       forward_detectable_precedences_(true, &x_),
@@ -284,7 +282,9 @@ NonOverlappingRectanglesDisjunctivePropagator::
       forward_not_last_(true, &x_),
       backward_not_last_(false, &x_),
       forward_edge_finding_(true, &x_),
-      backward_edge_finding_(false, &x_) {
+      backward_edge_finding_(false, &x_),
+      pairwise_propagation_(model->GetOrCreate<SatParameters>()
+                                ->use_pairwise_reasoning_in_no_overlap_2d()) {
   // Checks the presence of potential zero area boxes.
   for (int b = 0; b < global_x_.NumTasks(); ++b) {
     if (global_x_.SizeMin(b) == 0 || global_y_.SizeMin(b) == 0) {
@@ -330,8 +330,6 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     const int box = temp[i].task_index;
     // Ignore absent boxes.
     if (x.IsAbsent(box) || y->IsAbsent(box)) continue;
-
-    if (!strict_ && (x.SizeMin(box) == 0 || y->SizeMin(box) == 0)) continue;
 
     // Ignore boxes where the relevant presence literal is only on the y
     // dimension, or if both intervals are optionals with different literals.
@@ -439,26 +437,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       fast_propagation, global_y_, &global_x_));
 
-  if (!fast_propagation && has_zero_area_boxes_ && strict_) {
-    RETURN_IF_FALSE(PropagateZeroAreaBoxes());
-  }
-
-  // If two boxes must overlap but do not have a mandatory line/column that
-  // crosses both of them, then the code above do not see it. So we manually
-  // propagate this case.
-  //
-  // TODO(user): Since we are at it, do more propagation even if no conflict?
-  // This rarely propagate, so disabled for now. Investigate if it is worth
-  // it.
-  if (/*DISABLES CODE*/ (false) && watcher_->GetCurrentId() != fast_id_) {
-    const int num_boxes = global_x_.NumTasks();
-    for (int box1 = 0; box1 < num_boxes; ++box1) {
-      if (!global_x_.IsPresent(box1)) continue;
-      for (int box2 = box1 + 1; box2 < num_boxes; ++box2) {
-        if (!global_x_.IsPresent(box2)) continue;
-        RETURN_IF_FALSE(PropagateTwoBoxes(box1, box2));
-      }
-    }
+  if (!fast_propagation && (has_zero_area_boxes_ || pairwise_propagation_)) {
+    RETURN_IF_FALSE(PropagateAllPairsOfBoxes());
   }
 
   return true;
@@ -492,9 +472,10 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 }
 
 // TODO(user): Use box splitting to speed up.
-bool NonOverlappingRectanglesDisjunctivePropagator::PropagateZeroAreaBoxes() {
-  // Extra propagation code for zero-area boxes in strict mode.
-  DCHECK(strict_);
+bool NonOverlappingRectanglesDisjunctivePropagator::PropagateAllPairsOfBoxes() {
+  // Extra propagation code for zero-area boxes, and for all pairs of boxes in
+  // pairwise_propagation_ mode.
+  DCHECK(pairwise_propagation_ || has_zero_area_boxes_);
   horizontal_zero_area_boxes_.clear();
   vertical_zero_area_boxes_.clear();
   point_zero_area_boxes_.clear();
@@ -515,11 +496,17 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateZeroAreaBoxes() {
       non_zero_area_boxes_.push_back(b);
     }
   }
-  if (horizontal_zero_area_boxes_.empty() &&
-      vertical_zero_area_boxes_.empty() && point_zero_area_boxes_.empty()) {
-    return true;
+
+  if (pairwise_propagation_) {
+    for (int i1 = 0; i1 + 1 < non_zero_area_boxes_.size(); ++i1) {
+      for (int i2 = i1 + 1; i2 < non_zero_area_boxes_.size(); ++i2) {
+        RETURN_IF_FALSE(PropagateTwoBoxes(non_zero_area_boxes_[i1],
+                                          non_zero_area_boxes_[i2]));
+      }
+    }
   }
 
+  // Propagates zero area boxes against non-zero area boxes.
   for (const int nz : non_zero_area_boxes_) {
     for (const int z : horizontal_zero_area_boxes_) {
       RETURN_IF_FALSE(PropagateTwoBoxes(z, nz));
@@ -532,11 +519,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateZeroAreaBoxes() {
     }
   }
 
-  if (horizontal_zero_area_boxes_.empty() ||
-      vertical_zero_area_boxes_.empty()) {
-    return true;
-  }
-
+  // Propagates vertical zero area boxes against horizontal zero area boxes.
   for (const int i1 : horizontal_zero_area_boxes_) {
     for (const int i2 : vertical_zero_area_boxes_) {
       RETURN_IF_FALSE(PropagateTwoBoxes(i1, i2));

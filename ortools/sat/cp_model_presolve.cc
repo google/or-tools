@@ -5173,7 +5173,6 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   const NoOverlap2DConstraintProto& proto = ct->no_overlap_2d();
   const int initial_num_boxes = proto.x_intervals_size();
 
-  bool has_zero_sizes = false;
   bool x_constant = true;
   bool y_constant = true;
 
@@ -5190,12 +5189,6 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
       continue;
     }
 
-    if (proto.boxes_with_null_area_can_overlap() &&
-        (context_->SizeMax(x_interval_index) == 0 ||
-         context_->SizeMax(y_interval_index) == 0)) {
-      if (proto.boxes_with_null_area_can_overlap()) continue;
-      has_zero_sizes = true;
-    }
     ct->mutable_no_overlap_2d()->set_x_intervals(new_size, x_interval_index);
     ct->mutable_no_overlap_2d()->set_y_intervals(new_size, y_interval_index);
     bounding_boxes.push_back(
@@ -5232,7 +5225,7 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
-  if (!has_zero_sizes && (x_constant || y_constant)) {
+  if (x_constant || y_constant) {
     context_->UpdateRuleStats(
         "no_overlap_2d: a dimension is constant, splitting into many no "
         "overlaps");
@@ -8420,7 +8413,7 @@ void CpModelPresolver::DetectDuplicateConstraints() {
         expr->add_coeffs(1);
       }
     }
-    SOLVER_LOG(logger_, "[AllDiffInferrence]",
+    SOLVER_LOG(logger_, "[AllDiffInference]",
                " #different=", different_vars.size(), " #cliques=", num_cliques,
                " #size=", cumulative_size, " time=", local_time.Get(), "s");
   }
@@ -8659,6 +8652,278 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
              " time=", wall_timer.Get(), "s");
 }
 
+// TODO(user): Also substitute if this appear in the objective?
+// TODO(user): In some case we only need common_part <= new_var.
+void CpModelPresolver::RemoveCommonPart(
+    const absl::flat_hash_map<int, int64_t>& common_var_coeff_map,
+    const std::vector<std::pair<int, int64_t>>& block) {
+  int new_var;
+  int64_t gcd = 0;
+  int64_t offset = 0;
+
+  // If the common part is expressable via one of the constraint in the block as
+  // == gcd * X + offset, we can just use this variable instead of creating a
+  // new variable.
+  int definiting_equation = -1;
+  for (const auto [c, multiple] : block) {
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (ct.linear().vars().size() != common_var_coeff_map.size() + 1) continue;
+    if (ct.linear().domain(0) != ct.linear().domain(1)) continue;
+    if (!ct.enforcement_literal().empty()) continue;
+    if (std::abs(multiple) != 1) continue;
+    context_->UpdateRuleStats(
+        "linear matrix: defining equation for common rectangle");
+    definiting_equation = c;
+
+    // Find the missing term and its coefficient.
+    int64_t coeff = 0;
+    const int num_terms = ct.linear().vars().size();
+    for (int k = 0; k < num_terms; ++k) {
+      if (common_var_coeff_map.contains(ct.linear().vars(k))) continue;
+      new_var = ct.linear().vars(k);
+      coeff = ct.linear().coeffs(k);
+      break;
+    }
+    CHECK_NE(coeff, 0);
+
+    // We have multiple * common + coeff * X = constant.
+    // So common = multiple^-1 * constant - multiple^-1 * coeff * X;
+    gcd = -multiple * coeff;
+    offset = multiple * ct.linear().domain(0);
+    break;
+  }
+
+  // We need a new variable and defining equation.
+  if (definiting_equation == -1) {
+    offset = 0;
+    int64_t min_activity = 0;
+    int64_t max_activity = 0;
+    std::vector<std::pair<int, int64_t>> common_part;
+    for (const auto [var, coeff] : common_var_coeff_map) {
+      common_part.push_back({var, coeff});
+      gcd = std::gcd(gcd, std::abs(coeff));
+      if (coeff > 0) {
+        min_activity += coeff * context_->MinOf(var);
+        max_activity += coeff * context_->MaxOf(var);
+      } else {
+        min_activity += coeff * context_->MaxOf(var);
+        max_activity += coeff * context_->MinOf(var);
+      }
+    }
+
+    // Create new variable.
+    new_var =
+        context_->NewIntVar(Domain(min_activity / gcd, max_activity / gcd));
+
+    // Create new linear constraint sum common_part = new_var
+    auto* new_linear =
+        context_->working_model->add_constraints()->mutable_linear();
+    std::sort(common_part.begin(), common_part.end());
+    for (const auto [var, coeff] : common_part) {
+      new_linear->add_vars(var);
+      new_linear->add_coeffs(coeff / gcd);
+    }
+    new_linear->add_vars(new_var);
+    new_linear->add_coeffs(-1);
+    new_linear->add_domain(0);
+    new_linear->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
+  }
+
+  // Replace in each constraint the common part by gcd * multiple * new_var !
+  for (const auto [c, multiple] : block) {
+    if (c == definiting_equation) continue;
+
+    auto* mutable_linear =
+        context_->working_model->mutable_constraints(c)->mutable_linear();
+    const int num_terms = mutable_linear->vars().size();
+    int new_size = 0;
+    bool new_var_already_seen = false;
+    for (int k = 0; k < num_terms; ++k) {
+      if (common_var_coeff_map.contains(mutable_linear->vars(k))) {
+        CHECK_EQ(common_var_coeff_map.at(mutable_linear->vars(k)) * multiple,
+                 mutable_linear->coeffs(k));
+        continue;
+      }
+
+      // Tricky: the new variable can already be present in this expression!
+      int64_t new_coeff = mutable_linear->coeffs(k);
+      if (mutable_linear->vars(k) == new_var) {
+        new_var_already_seen = true;
+        new_coeff += gcd * multiple;
+        if (new_coeff == 0) continue;
+      }
+
+      mutable_linear->set_vars(new_size, mutable_linear->vars(k));
+      mutable_linear->set_coeffs(new_size, new_coeff);
+      ++new_size;
+    }
+    mutable_linear->mutable_vars()->Truncate(new_size);
+    mutable_linear->mutable_coeffs()->Truncate(new_size);
+    if (!new_var_already_seen) {
+      mutable_linear->add_vars(new_var);
+      mutable_linear->add_coeffs(gcd * multiple);
+    }
+    if (offset != 0) {
+      FillDomainInProto(ReadDomainFromProto(*mutable_linear)
+                            .AdditionWith(Domain(-offset * multiple)),
+                        mutable_linear);
+    }
+    context_->UpdateConstraintVariableUsage(c);
+  }
+}
+
+// This helps on neos-5045105-creuse.pb.gz for instance.
+void CpModelPresolver::FindBigVerticalLinearOverlap() {
+  if (context_->time_limit()->LimitReached()) return;
+  if (context_->ModelIsUnsat()) return;
+  if (context_->params().presolve_inclusion_work_limit() == 0) return;
+
+  WallTimer wall_timer;
+  wall_timer.Start();
+
+  absl::flat_hash_map<int, int64_t> coeff_map;
+
+  int64_t work_done = 0;
+  int64_t num_blocks = 0;
+  int64_t nz_reduction = 0;
+  const int64_t kMaxWork = 1e7;
+  for (int x = 0; x < context_->working_model->variables().size(); ++x) {
+    if (work_done > kMaxWork) break;
+
+    bool in_enforcement = false;
+    std::vector<int> linear_cts;
+    work_done += context_->VarToConstraints(x).size();
+    for (const int c : context_->VarToConstraints(x)) {
+      if (c < 0) continue;
+      const ConstraintProto& ct = context_->working_model->constraints(c);
+      if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+
+      const int num_terms = ct.linear().vars().size();
+      if (num_terms < 2) continue;
+      work_done += num_terms;
+      bool is_canonical = true;
+      for (int k = 0; k < num_terms; ++k) {
+        if (!RefIsPositive(ct.linear().vars(k))) {
+          is_canonical = false;
+          break;
+        }
+      }
+      if (!is_canonical) continue;
+
+      // We don't care about enforcement literal, but we don't want x inside.
+      work_done += ct.enforcement_literal().size();
+      for (const int lit : ct.enforcement_literal()) {
+        if (PositiveRef(lit) == x) {
+          in_enforcement = true;
+          break;
+        }
+      }
+      if (in_enforcement) break;
+
+      linear_cts.push_back(c);
+    }
+
+    // If a Boolean is used in enforcement, we prefer not to combine it with
+    // others. TODO(user): more generally ignore Boolean or only replace if
+    // there is a big non-zero improvement.
+    if (in_enforcement) continue;
+    if (linear_cts.size() < 10) continue;
+
+    // For determinism.
+    std::sort(linear_cts.begin(), linear_cts.end());
+    std::shuffle(linear_cts.begin(), linear_cts.end(), *context_->random());
+
+    // Now it is almost the same algo as for FindBigHorizontalLinearOverlap().
+    // We greedely compute a "common" rectangle using the first constraint
+    // as a "base" one. Note that if a aX + bY appear in the majority of
+    // constraint, we have a good chance to find this block since we start by
+    // a random constraint.
+    coeff_map.clear();
+
+    std::vector<std::pair<int, int64_t>> block;
+    std::vector<std::pair<int, int64_t>> common_part;
+    for (const int c : linear_cts) {
+      const ConstraintProto& ct = context_->working_model->constraints(c);
+      const int num_terms = ct.linear().vars().size();
+      work_done += num_terms;
+
+      // Compute the coeff of x.
+      int64_t x_coeff = 0;
+      for (int k = 0; k < num_terms; ++k) {
+        if (ct.linear().vars(k) == x) {
+          x_coeff = ct.linear().coeffs(k);
+          break;
+        }
+      }
+      if (x_coeff == 0) continue;
+
+      if (block.empty()) {
+        // This is our base constraint.
+        coeff_map.clear();
+        for (int k = 0; k < num_terms; ++k) {
+          coeff_map[ct.linear().vars(k)] = ct.linear().coeffs(k);
+        }
+        if (coeff_map.size() < 2) continue;
+        block.push_back({c, x_coeff});
+        continue;
+      }
+
+      // We are looking for a common divisor of coeff_map and this constraint.
+      const int64_t gcd =
+          std::gcd(std::abs(coeff_map.at(x)), std::abs(x_coeff));
+      const int64_t multiple_base = coeff_map.at(x) / gcd;
+      const int64_t multiple_ct = x_coeff / gcd;
+      common_part.clear();
+      for (int k = 0; k < num_terms; ++k) {
+        const int64_t coeff = ct.linear().coeffs(k);
+        if (coeff % multiple_ct != 0) continue;
+
+        const auto it = coeff_map.find(ct.linear().vars(k));
+        if (it == coeff_map.end()) continue;
+        if (it->second % multiple_base != 0) continue;
+        if (it->second / multiple_base != coeff / multiple_ct) continue;
+
+        common_part.push_back({ct.linear().vars(k), coeff / multiple_ct});
+      }
+
+      // Skip bad constraint.
+      if (common_part.size() < 2) continue;
+
+      // Update common part.
+      block.push_back({c, x_coeff});
+      coeff_map.clear();
+      for (const auto [var, coeff] : common_part) {
+        coeff_map[var] = coeff;
+      }
+    }
+
+    // We have a candidate.
+    const int64_t saved_nz = block.size() * common_part.size()  // removed
+                             - block.size()  // replaced by new_var
+                             -
+                             (1 + common_part.size());  // new_var = common_part
+    if (saved_nz < 20) continue;
+
+    // Fix multiples, currently this contain the coeff of x for each constraint.
+    const int64_t base_x = coeff_map.at(x);
+    for (auto& [c, multipier] : block) {
+      CHECK_EQ(multipier % base_x, 0);
+      multipier /= base_x;
+    }
+
+    // Introduce new_var = common_part and perform the substitution.
+    ++num_blocks;
+    nz_reduction += saved_nz;
+    context_->UpdateRuleStats("linear matrix: common vertical rectangle");
+    RemoveCommonPart(coeff_map, block);
+  }
+  DCHECK(context_->ConstraintVariableUsageIsConsistent());
+  SOLVER_LOG(logger_, "[FindBigVerticalLinearOverlap]", " #blocks=", num_blocks,
+             " #nz_reduction=", nz_reduction, " #work_done=", work_done,
+             " time=", wall_timer.Get(), "s");
+}
+
 // Note that internally, we already split long linear into smaller chunk, so
 // it should be beneficial to identify common part between many linear
 // constraint.
@@ -8666,7 +8931,7 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
 // Note(user): This was made to work on var-smallemery-m6j6.pb.gz, but applies
 // to quite a few miplib problem. Try to improve the heuristics and algorithm to
 // be faster and detect larger block.
-void CpModelPresolver::FindBigLinearOverlap() {
+void CpModelPresolver::FindBigHorizontalLinearOverlap() {
   if (context_->time_limit()->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
@@ -8718,7 +8983,8 @@ void CpModelPresolver::FindBigLinearOverlap() {
     // Note that because we construct it incrementally, we need the first two
     // constraint to have an overlap of at least half this.
     int saved_nz = 100;
-    std::vector<int> block = {i};
+    std::vector<int> used_sorted_linear = {i};
+    std::vector<std::pair<int, int64_t>> block = {{c, 1}};
     std::vector<std::pair<int, int64_t>> common_part;
 
     for (int j = 0; j < sorted_linear.size(); ++j) {
@@ -8749,7 +9015,8 @@ void CpModelPresolver::FindBigLinearOverlap() {
       const int64_t new_saved_nz = block.size() * (common_part.size() - 1) - 2;
       if (new_saved_nz > saved_nz) {
         saved_nz = new_saved_nz;
-        block.push_back(j);
+        used_sorted_linear.push_back(j);
+        block.push_back({other_c, 1});
         coeff_map.clear();
         for (const auto [var, coeff] : common_part) {
           coeff_map[var] = coeff;
@@ -8760,80 +9027,22 @@ void CpModelPresolver::FindBigLinearOverlap() {
     // Introduce a new variable = common_part.
     // Use it in all linear constraint.
     //
-    // TODO(user): In some case we only need common_part <= new_var.
-    //
-    // TODO(user): If the common part is expressable via one of the constraint
-    // in the block as == other terms, we could just use these instead of
-    // creating a new variable?
+    // TODO(user): Given our heuristic above, it is maybe possible to extend
+    // this block vertically.
     if (block.size() > 1) {
-      context_->UpdateRuleStats("linear matrix: common rectangle");
+      context_->UpdateRuleStats("linear matrix: common horizontal rectangle");
       ++num_blocks;
       nz_reduction += saved_nz;
-
-      int64_t gcd = 0;
-      int64_t min_activity = 0;
-      int64_t max_activity = 0;
-      common_part.clear();
-      for (const auto [var, coeff] : coeff_map) {
-        common_part.push_back({var, coeff});
-        gcd = std::gcd(gcd, std::abs(coeff));
-        if (coeff > 0) {
-          min_activity += coeff * context_->MinOf(var);
-          max_activity += coeff * context_->MaxOf(var);
-        } else {
-          min_activity += coeff * context_->MaxOf(var);
-          max_activity += coeff * context_->MinOf(var);
-        }
-      }
-
-      // Create new variable.
-      const int new_var =
-          context_->NewIntVar(Domain(min_activity / gcd, max_activity / gcd));
-
-      // Create new linear constraint sum common_part = new_var
-      auto* new_linear =
-          context_->working_model->add_constraints()->mutable_linear();
-      std::sort(common_part.begin(), common_part.end());
-      for (const auto [var, coeff] : common_part) {
-        new_linear->add_vars(var);
-        new_linear->add_coeffs(coeff / gcd);
-      }
-      new_linear->add_vars(new_var);
-      new_linear->add_coeffs(-1);
-      new_linear->add_domain(0);
-      new_linear->add_domain(0);
-      context_->UpdateNewConstraintsVariableUsage();
-
-      // Replace in each constraint the common part by gcd * new_var !
-      for (const int j : block) {
-        const int c = sorted_linear[j];
-        sorted_linear[j] = -1;  // Clear.
-        auto* mutable_linear =
-            context_->working_model->mutable_constraints(c)->mutable_linear();
-        const int num_terms = mutable_linear->vars().size();
-        int new_size = 0;
-        for (int k = 0; k < num_terms; ++k) {
-          if (coeff_map.contains(mutable_linear->vars(k))) continue;
-          mutable_linear->set_vars(new_size, mutable_linear->vars(k));
-          mutable_linear->set_coeffs(new_size, mutable_linear->coeffs(k));
-          ++new_size;
-        }
-        CHECK_EQ(new_size, num_terms - common_part.size());
-        mutable_linear->mutable_vars()->Truncate(new_size);
-        mutable_linear->mutable_coeffs()->Truncate(new_size);
-        mutable_linear->add_vars(new_var);
-        mutable_linear->add_coeffs(gcd);
-
-        context_->UpdateConstraintVariableUsage(c);
-      }
+      RemoveCommonPart(coeff_map, block);
+      for (const int i : used_sorted_linear) sorted_linear[i] = -1;
     }
   }
 
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
-  SOLVER_LOG(logger_, "[FindBigLinearOverlap]", " #blocks=", num_blocks,
-             " #saved_nz=", nz_reduction, " #linears=", sorted_linear.size(),
-             " #work_done=", work_done, "/", work_limit,
-             " time=", wall_timer.Get(), "s");
+  SOLVER_LOG(logger_, "[FindBigHorizontalLinearOverlap]",
+             " #blocks=", num_blocks, " #saved_nz=", nz_reduction,
+             " #linears=", sorted_linear.size(), " #work_done=", work_done, "/",
+             work_limit, " time=", wall_timer.Get(), "s");
 }
 
 void CpModelPresolver::ExtractEncodingFromLinear() {
@@ -10272,8 +10481,6 @@ void ModelCopy::CopyAndMapNoOverlap2D(const ConstraintProto& ct) {
   // Note that we don't copy names or enforcement_literal (not supported) here.
   auto* new_ct =
       context_->working_model->add_constraints()->mutable_no_overlap_2d();
-  new_ct->set_boxes_with_null_area_can_overlap(
-      ct.no_overlap_2d().boxes_with_null_area_can_overlap());
 
   const int num_intervals = ct.no_overlap_2d().x_intervals().size();
   new_ct->mutable_x_intervals()->Reserve(num_intervals);
@@ -10749,7 +10956,10 @@ CpSolverStatus CpModelPresolver::Presolve() {
     DetectDuplicateConstraints();
     DetectDominatedLinearConstraints();
     ProcessSetPPC();
-    if (context_->params().find_big_linear_overlap()) FindBigLinearOverlap();
+    if (context_->params().find_big_linear_overlap()) {
+      FindBigVerticalLinearOverlap();
+      FindBigHorizontalLinearOverlap();
+    }
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
     // We do that after the duplicate, SAT and SetPPC constraints.

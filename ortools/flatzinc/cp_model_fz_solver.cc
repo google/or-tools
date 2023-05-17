@@ -14,8 +14,6 @@
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 
 #include <algorithm>
-#include <atomic>
-#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -24,31 +22,18 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
-#include "absl/synchronization/mutex.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/threadpool.h"
-#include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/model.h"
-#include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
-#include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/cumulative.h"
-#include "ortools/sat/disjunctive.h"
-#include "ortools/sat/integer.h"
-#include "ortools/sat/integer_expr.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/optimization.h"
-#include "ortools/sat/sat_solver.h"
-#include "ortools/sat/table.h"
 #include "ortools/util/logging.h"
 
 ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 50,
@@ -69,7 +54,6 @@ struct VarOrValue {
 // Returns the true/false literal corresponding to a CpModelProto variable.
 int TrueLiteral(int var) { return var; }
 int FalseLiteral(int var) { return -var - 1; }
-int NegatedCpModelVariable(int var) { return -var - 1; }
 
 // Helper class to convert a flatzinc model to a CpModelProto.
 struct CpModelProtoWithMapping {
@@ -92,12 +76,26 @@ struct CpModelProtoWithMapping {
   std::vector<int> CreateIntervals(const std::vector<int>& starts,
                                    const std::vector<VarOrValue>& sizes);
 
+  // Create and return the indices of the IntervalConstraint corresponding
+  // to the flatzinc "interval" specified by a start var and a size var.
+  // This method will cache intervals with the key <start, size>.
+  // This interval will be optional if the size can be 0.
+  // It also adds a constraint linking the enforcement literal with the size,
+  // stating that the interval will be performed if and only if the size is
+  // greater than 0.
+  std::vector<int> CreateNonZeroOrOptionalIntervals(
+      const std::vector<int>& starts, const std::vector<VarOrValue>& sizes);
+
   // Create and return the index of the optional IntervalConstraint
   // corresponding to the flatzinc "interval" specified by a start var, the
   // size_var, and the Boolean opt_var. This method will cache intervals with
   // the key <start, size, opt_var>. If opt_var == kNoVar, the interval will not
   // be optional.
   int GetOrCreateOptionalInterval(int start_var, VarOrValue size, int opt_var);
+
+  // Get or Create a literal that implies the variable is > 0.
+  // Its negation implies the variable is == 0.
+  int NonZeroLiteralFrom(VarOrValue size);
 
   // Adds a constraint to the model, add the enforcement literal if it is
   // different from kNoVar, and returns a ptr to the ConstraintProto.
@@ -130,6 +128,7 @@ struct CpModelProtoWithMapping {
       start_size_opt_tuple_to_interval;
   absl::flat_hash_map<std::tuple<int, int64_t, int>, int>
       start_fixed_size_opt_tuple_to_interval;
+  absl::flat_hash_map<int, int> var_to_lit_implies_greater_than_zero;
 };
 
 int CpModelProtoWithMapping::LookupConstant(int64_t value) {
@@ -301,6 +300,57 @@ std::vector<int> CpModelProtoWithMapping::CreateIntervals(
         GetOrCreateOptionalInterval(starts[i], sizes[i], kNoVar));
   }
   return intervals;
+}
+
+std::vector<int> CpModelProtoWithMapping::CreateNonZeroOrOptionalIntervals(
+    const std::vector<int>& starts, const std::vector<VarOrValue>& sizes) {
+  std::vector<int> intervals;
+  for (int i = 0; i < starts.size(); ++i) {
+    const int opt_var = NonZeroLiteralFrom(sizes[i]);
+    intervals.push_back(
+        GetOrCreateOptionalInterval(starts[i], sizes[i], opt_var));
+  }
+  return intervals;
+}
+
+int CpModelProtoWithMapping::NonZeroLiteralFrom(VarOrValue size) {
+  if (size.var == kNoVar) {
+    return LookupConstant(size.value > 0);
+  }
+  const auto it = var_to_lit_implies_greater_than_zero.find(size.var);
+  if (it != var_to_lit_implies_greater_than_zero.end()) {
+    return it->second;
+  }
+
+  const IntegerVariableProto& var_proto = proto.variables(size.var);
+  const Domain domain = ReadDomainFromProto(var_proto);
+  DCHECK_GE(domain.Min(), 0);
+  if (domain.Min() > 0) return LookupConstant(1);
+  if (domain.Max() == 0) {
+    return LookupConstant(0);
+  }
+
+  const int var_greater_than_zero_lit = proto.variables_size();
+  IntegerVariableProto* lit_proto = proto.add_variables();
+  lit_proto->add_domain(0);
+  lit_proto->add_domain(1);
+
+  ConstraintProto* is_greater =
+      AddEnforcedConstraint(TrueLiteral(var_greater_than_zero_lit));
+  is_greater->mutable_linear()->add_vars(size.var);
+  is_greater->mutable_linear()->add_coeffs(1);
+  const Domain positive = domain.IntersectionWith({1, domain.Max()});
+  FillDomainInProto(positive, is_greater->mutable_linear());
+
+  ConstraintProto* is_null =
+      AddEnforcedConstraint(FalseLiteral(var_greater_than_zero_lit));
+  is_null->mutable_linear()->add_vars(size.var);
+  is_null->mutable_linear()->add_coeffs(1);
+  is_null->mutable_linear()->add_domain(0);
+  is_null->mutable_linear()->add_domain(0);
+
+  var_to_lit_implies_greater_than_zero[size.var] = var_greater_than_zero_lit;
+  return var_greater_than_zero_lit;
 }
 
 void CpModelProtoWithMapping::FillAMinusBInDomain(
@@ -832,19 +882,22 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       }
     }
   } else if (fz_ct.type == "fzn_diffn" || fz_ct.type == "fzn_diffn_nonstrict") {
+    const bool is_strict = fz_ct.type == "fzn_diffn";
     const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
     const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
     const std::vector<VarOrValue> dx = LookupVarsOrValues(fz_ct.arguments[2]);
     const std::vector<VarOrValue> dy = LookupVarsOrValues(fz_ct.arguments[3]);
-    const std::vector<int> x_intervals = CreateIntervals(x, dx);
-    const std::vector<int> y_intervals = CreateIntervals(y, dy);
+    const std::vector<int> x_intervals =
+        is_strict ? CreateIntervals(x, dx)
+                  : CreateNonZeroOrOptionalIntervals(x, dx);
+    const std::vector<int> y_intervals =
+        is_strict ? CreateIntervals(y, dy)
+                  : CreateNonZeroOrOptionalIntervals(y, dy);
     auto* arg = ct->mutable_no_overlap_2d();
     for (int i = 0; i < x.size(); ++i) {
       arg->add_x_intervals(x_intervals[i]);
       arg->add_y_intervals(y_intervals[i]);
     }
-    arg->set_boxes_with_null_area_can_overlap(fz_ct.type ==
-                                              "fzn_diffn_nonstrict");
   } else if (fz_ct.type == "ortools_network_flow" ||
              fz_ct.type == "ortools_network_flow_cost") {
     // Note that we leave ct empty here (with just the name set).
@@ -1202,12 +1255,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // Fill the objective.
   if (fz_model.objective() != nullptr) {
     CpObjectiveProto* objective = m.proto.mutable_objective();
-    objective->add_coeffs(1);
     if (fz_model.maximize()) {
       objective->set_scaling_factor(-1);
-      objective->add_vars(
-          NegatedCpModelVariable(m.fz_var_to_index[fz_model.objective()]));
+      objective->add_coeffs(-1);
+      objective->add_vars(m.fz_var_to_index[fz_model.objective()]);
     } else {
+      objective->add_coeffs(1);
       objective->add_vars(m.fz_var_to_index[fz_model.objective()]);
     }
   }

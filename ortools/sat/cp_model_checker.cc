@@ -569,7 +569,7 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
   if (ct.enforcement_literal().empty() &&
       MinOfExpression(model, arg.size()) < 0) {
     return absl::StrCat(
-        "The size of an performed interval must be >= 0 in constraint: ",
+        "The size of a performed interval must be >= 0 in constraint: ",
         ProtobufDebugString(ct));
   }
   AppendToOverflowValidator(arg.size(), &for_overflow_validation);
@@ -1302,10 +1302,7 @@ class ConstraintChecker {
       for (int i = 0; i < num_intervals; ++i) {
         const ConstraintProto& x = model.constraints(arg.x_intervals(i));
         const ConstraintProto& y = model.constraints(arg.y_intervals(i));
-        if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y) &&
-            (!arg.boxes_with_null_area_can_overlap() ||
-             (!IntervalIsEmpty(x.interval()) &&
-              !IntervalIsEmpty(y.interval())))) {
+        if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y)) {
           enforced_intervals_xy.push_back({&x.interval(), &y.interval()});
         }
       }
@@ -1318,11 +1315,6 @@ class ConstraintChecker {
         const auto& xj = *enforced_intervals_xy[j].first;
         const auto& yj = *enforced_intervals_xy[j].second;
         if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj)) {
-          if (ct.no_overlap_2d().boxes_with_null_area_can_overlap() &&
-              (IntervalIsEmpty(xi) || IntervalIsEmpty(xj) ||
-               IntervalIsEmpty(yi) || IntervalIsEmpty(yj))) {
-            continue;
-          }
           VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
                   << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
                   << IntervalEnd(yi) << "]) and " << j << "(x=["

@@ -138,11 +138,15 @@ message NoOverlapConstraintProto {
 // The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap.
 // Furthermore, one box is optional if at least one of the x or y interval is
 // optional.
+//
+// Note that the case of boxes of size zero is special. The following cases
+// violate the constraint:
+//   - a point box inside a box with a non zero area
+//   - a line box overlapping a box with a non zero area
+//   - one vertical line box crossing an horizontal line box.
 message NoOverlap2DConstraintProto {
   repeated int32 x_intervals = 1;
   repeated int32 y_intervals = 2;  // Same size as x_intervals.
-  bool boxes_with_null_area_can_overlap = 3;
-  // TODO(user): Add optional areas as repeated LinearExpressionProto.
 }
 
 // The sum of the demands of the intervals at each interval point cannot exceed
