@@ -45,7 +45,7 @@ setup(
     install_requires=[
         'absl-py >= 0.13',
         'numpy >= 1.13.3',
-        'protobuf >= 4.22.1',
+        'protobuf >= 4.23.1',
         'scipy >= 1.10.0',
     ],
     package_data={
