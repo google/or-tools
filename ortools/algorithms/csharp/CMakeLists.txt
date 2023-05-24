@@ -13,7 +13,8 @@
 
 set_property(SOURCE knapsack_solver.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE knapsack_solver.i PROPERTY SWIG_MODULE_NAME operations_research_algorithms)
-set_property(SOURCE knapsack_solver.i PROPERTY COMPILE_DEFINITIONS ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+set_property(SOURCE knapsack_solver.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE knapsack_solver.i PROPERTY COMPILE_OPTIONS
   -namespace ${DOTNET_PROJECT}.Algorithms
   -dllimport google-ortools-native)
