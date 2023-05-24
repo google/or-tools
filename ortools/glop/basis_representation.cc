@@ -50,7 +50,7 @@ EtaMatrix::EtaMatrix(ColIndex eta_col, const ScatteredColumn& direction)
   }
 }
 
-EtaMatrix::~EtaMatrix() {}
+EtaMatrix::~EtaMatrix() = default;
 
 void EtaMatrix::LeftSolve(DenseRow* y) const {
   RETURN_IF_NULL(y);
@@ -192,7 +192,7 @@ BasisFactorization::BasisFactorization(
   SetParameters(parameters_);
 }
 
-BasisFactorization::~BasisFactorization() {}
+BasisFactorization::~BasisFactorization() = default;
 
 void BasisFactorization::Clear() {
   SCOPED_TIME_STAT(&stats_);

@@ -53,7 +53,7 @@ class VariableValues {
                  DynamicMaximum<RowIndex>* dual_prices);
 
   // Getters for the variable values.
-  const Fractional Get(ColIndex col) const { return variable_values_[col]; }
+  Fractional Get(ColIndex col) const { return variable_values_[col]; }
   const DenseRow& GetDenseRow() const { return variable_values_; }
 
   // Sets the value of a non-basic variable to the exact value implied by its

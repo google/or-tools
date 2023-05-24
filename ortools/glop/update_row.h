@@ -67,7 +67,7 @@ class UpdateRow {
   const ScatteredRow& GetUnitRowLeftInverse() const;
 
   // Returns true if ComputeUpdateRow() was called since the last Invalidate().
-  const bool IsComputedFor(RowIndex leaving_row) const {
+  bool IsComputedFor(RowIndex leaving_row) const {
     return update_row_computed_for_ == leaving_row;
   }
 
@@ -79,9 +79,7 @@ class UpdateRow {
   // later should be quicker.
   const DenseRow& GetCoefficients() const;
   const ColIndexVector& GetNonZeroPositions() const;
-  const Fractional GetCoefficient(ColIndex col) const {
-    return coefficient_[col];
-  }
+  Fractional GetCoefficient(ColIndex col) const { return coefficient_[col]; }
 
   // Computes the update row including all position and fill output with it.
   // We only use this when ComputeUnitRowLeftInverse() has already been called

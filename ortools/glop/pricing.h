@@ -126,7 +126,7 @@ class DynamicMaximum {
   // In particular, the threshold only increase until the heap becomes empty and
   // is recomputed from scratch by GetMaximum().
   struct HeapElement {
-    HeapElement() {}
+    HeapElement() = default;
     HeapElement(Index i, Fractional v) : index(i), value(v) {}
 
     Index index;
@@ -134,7 +134,7 @@ class DynamicMaximum {
 
     // We want a min-heap: tops_.top() actually represents the k-th value, not
     // the max.
-    const double operator<(const HeapElement& other) const {
+    double operator<(const HeapElement& other) const {
       return value > other.value;
     }
   };

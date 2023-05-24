@@ -101,7 +101,7 @@ namespace glop {
 // given step will only correspond to a subset of the initial indices.
 class MatrixNonZeroPattern {
  public:
-  MatrixNonZeroPattern() {}
+  MatrixNonZeroPattern() = default;
 
   // Releases the memory used by this class.
   void Clear();
@@ -206,7 +206,7 @@ class MatrixNonZeroPattern {
 // Empty columns (i.e. with degree 0) are not stored in the queue.
 class ColumnPriorityQueue {
  public:
-  ColumnPriorityQueue() {}
+  ColumnPriorityQueue() = default;
 
   // Releases the memory used by this class.
   void Clear();
@@ -238,7 +238,7 @@ class ColumnPriorityQueue {
 // reuses the memory of the columns that are no longer needed.
 class SparseMatrixWithReusableColumnMemory {
  public:
-  SparseMatrixWithReusableColumnMemory() {}
+  SparseMatrixWithReusableColumnMemory() = default;
 
   // Resets the repository to num_cols empty columns.
   void Reset(ColIndex num_cols);
@@ -274,7 +274,7 @@ class SparseMatrixWithReusableColumnMemory {
 // decomposition.
 class Markowitz {
  public:
-  Markowitz() {}
+  Markowitz() = default;
 
   // Computes the full factorization with P, Q, L and U.
   //

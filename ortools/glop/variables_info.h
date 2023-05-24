@@ -127,7 +127,7 @@ class VariablesInfo {
   const DenseRow& GetVariableLowerBounds() const { return lower_bounds_; }
   const DenseRow& GetVariableUpperBounds() const { return upper_bounds_; }
 
-  const ColIndex GetNumberOfColumns() const { return matrix_.num_cols(); }
+  ColIndex GetNumberOfColumns() const { return matrix_.num_cols(); }
 
   // Changes whether or not a non-basic boxed variable is 'relevant' and will be
   // returned as such by GetIsRelevantBitRow().
