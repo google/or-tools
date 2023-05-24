@@ -412,15 +412,13 @@ Assignment::Assignment(const Assignment* const copy)
       int_var_container_(copy->int_var_container_),
       interval_var_container_(copy->interval_var_container_),
       sequence_var_container_(copy->sequence_var_container_),
-      objective_element_(copy->objective_element_) {}
+      objective_elements_(copy->objective_elements_) {}
 
-Assignment::Assignment(Solver* const s)
-    : PropagationBaseObject(s), objective_element_(nullptr) {}
-
+Assignment::Assignment(Solver* solver) : PropagationBaseObject(solver) {}
 Assignment::~Assignment() {}
 
 void Assignment::Clear() {
-  objective_element_.Reset(nullptr);
+  objective_elements_.clear();
   int_var_container_.Clear();
   interval_var_container_.Clear();
   sequence_var_container_.Clear();
@@ -430,8 +428,8 @@ void Assignment::Store() {
   int_var_container_.Store();
   interval_var_container_.Store();
   sequence_var_container_.Store();
-  if (HasObjective()) {
-    objective_element_.Store();
+  for (IntVarElement& objective_element : objective_elements_) {
+    objective_element.Store();
   }
 }
 
@@ -541,18 +539,19 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
            SequenceContainer>(assignment_proto, &sequence_var_container_,
                               &AssignmentProto::sequence_var_assignment_size,
                               &AssignmentProto::sequence_var_assignment);
-  if (assignment_proto.has_objective()) {
-    const IntVarAssignment& objective = assignment_proto.objective();
+  for (int i = 0; i < assignment_proto.objective_size(); ++i) {
+    const IntVarAssignment& objective = assignment_proto.objective(i);
     const std::string& objective_id = objective.var_id();
-    CHECK(!objective_id.empty());
-    if (HasObjective() && objective_id == Objective()->name()) {
+    DCHECK(!objective_id.empty());
+    if (HasObjectiveFromIndex(i) &&
+        objective_id == ObjectiveFromIndex(i)->name()) {
       const int64_t obj_min = objective.min();
       const int64_t obj_max = objective.max();
-      SetObjectiveRange(obj_min, obj_max);
+      SetObjectiveRangeFromIndex(i, obj_min, obj_max);
       if (objective.active()) {
-        ActivateObjective();
+        ActivateObjectiveFromIndex(i);
       } else {
-        DeactivateObjective();
+        DeactivateObjectiveFromIndex(i);
       }
     }
   }
@@ -599,17 +598,14 @@ void Assignment::Save(AssignmentProto* const assignment_proto) const {
   RealSave<SequenceVar, SequenceVarElement, SequenceVarAssignment,
            SequenceContainer>(assignment_proto, sequence_var_container_,
                               &AssignmentProto::add_sequence_var_assignment);
-  if (HasObjective()) {
-    const IntVar* objective = Objective();
-    const std::string& name = objective->name();
+  for (int i = 0; i < objective_elements_.size(); ++i) {
+    const std::string& name = ObjectiveFromIndex(i)->name();
     if (!name.empty()) {
-      IntVarAssignment* objective = assignment_proto->mutable_objective();
+      IntVarAssignment* objective = assignment_proto->add_objective();
       objective->set_var_id(name);
-      const int64_t obj_min = ObjectiveMin();
-      const int64_t obj_max = ObjectiveMax();
-      objective->set_min(obj_min);
-      objective->set_max(obj_max);
-      objective->set_active(ActivatedObjective());
+      objective->set_min(ObjectiveMinFromIndex(i));
+      objective->set_max(ObjectiveMaxFromIndex(i));
+      objective->set_active(ActivatedObjectiveFromIndex(i));
     }
   }
 }
@@ -631,10 +627,13 @@ std::string Assignment::DebugString() const {
       interval_var_container_, &out);
   RealDebugString<SequenceContainer, SequenceVarElement>(
       sequence_var_container_, &out);
-  if (HasObjective() && objective_element_.Activated()) {
-    out += objective_element_.DebugString();
+  std::vector<std::string> objective_str;
+  for (const IntVarElement& objective_element : objective_elements_) {
+    if (objective_element.Activated()) {
+      objective_str.push_back(objective_element.DebugString());
+    }
   }
-  out += ")";
+  absl::StrAppendFormat(&out, "%s)", absl::StrJoin(objective_str, ", "));
   return out;
 }
 
@@ -873,60 +872,6 @@ void Assignment::SetUnperformed(const SequenceVar* const var,
   sequence_var_container_.MutableElement(var)->SetUnperformed(unperformed);
 }
 
-// ----- Objective -----
-
-int64_t Assignment::ObjectiveMin() const {
-  if (HasObjective()) {
-    return objective_element_.Min();
-  }
-  return 0;
-}
-
-int64_t Assignment::ObjectiveMax() const {
-  if (HasObjective()) {
-    return objective_element_.Max();
-  }
-  return 0;
-}
-
-int64_t Assignment::ObjectiveValue() const {
-  if (HasObjective()) {
-    return objective_element_.Value();
-  }
-  return 0;
-}
-
-bool Assignment::ObjectiveBound() const {
-  if (HasObjective()) {
-    return objective_element_.Bound();
-  }
-  return true;
-}
-
-void Assignment::SetObjectiveMin(int64_t m) {
-  if (HasObjective()) {
-    objective_element_.SetMin(m);
-  }
-}
-
-void Assignment::SetObjectiveMax(int64_t m) {
-  if (HasObjective()) {
-    objective_element_.SetMax(m);
-  }
-}
-
-void Assignment::SetObjectiveRange(int64_t l, int64_t u) {
-  if (HasObjective()) {
-    objective_element_.SetRange(l, u);
-  }
-}
-
-void Assignment::SetObjectiveValue(int64_t value) {
-  if (HasObjective()) {
-    objective_element_.SetValue(value);
-  }
-}
-
 void Assignment::Activate(const IntVar* const var) {
   int_var_container_.MutableElement(var)->Activate();
 }
@@ -963,25 +908,6 @@ bool Assignment::Activated(const SequenceVar* const var) const {
   return sequence_var_container_.Element(var).Activated();
 }
 
-void Assignment::ActivateObjective() {
-  if (HasObjective()) {
-    objective_element_.Activate();
-  }
-}
-
-void Assignment::DeactivateObjective() {
-  if (HasObjective()) {
-    objective_element_.Deactivate();
-  }
-}
-
-bool Assignment::ActivatedObjective() const {
-  if (HasObjective()) {
-    return objective_element_.Activated();
-  }
-  return true;
-}
-
 bool Assignment::Contains(const IntVar* const var) const {
   return int_var_container_.Contains(var);
 }
@@ -998,8 +924,16 @@ void Assignment::CopyIntersection(const Assignment* assignment) {
   int_var_container_.CopyIntersection(assignment->int_var_container_);
   interval_var_container_.CopyIntersection(assignment->interval_var_container_);
   sequence_var_container_.CopyIntersection(assignment->sequence_var_container_);
-  if (objective_element_.Var() == assignment->objective_element_.Var()) {
-    objective_element_ = assignment->objective_element_;
+  for (int i = 0; i < objective_elements_.size(); i++) {
+    if (i >= assignment->objective_elements_.size() ||
+        // TODO(user): The current behavior is to copy the objective "prefix"
+        // which fits the notion of lexicographic objectives well. Reconsider if
+        // multiple objectives are used in another context.
+        objective_elements_[i].Var() !=
+            assignment->objective_elements_[i].Var()) {
+      break;
+    }
+    objective_elements_[i] = assignment->objective_elements_[i];
   }
 }
 
@@ -1008,7 +942,7 @@ void Assignment::Copy(const Assignment* assignment) {
   int_var_container_.Copy(assignment->int_var_container_);
   interval_var_container_.Copy(assignment->interval_var_container_);
   sequence_var_container_.Copy(assignment->sequence_var_container_);
-  objective_element_ = assignment->objective_element_;
+  objective_elements_ = assignment->objective_elements_;
 }
 
 void SetAssignmentFromAssignment(Assignment* target_assignment,

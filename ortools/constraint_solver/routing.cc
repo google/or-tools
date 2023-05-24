@@ -38,6 +38,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/functional/bind_front.h"
+#include "absl/log/check.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -748,7 +749,8 @@ SweepArranger* RoutingModel::sweep_arranger() const {
 }
 
 void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
-    const RoutingModel& routing_model, int num_neighbors) {
+    const RoutingModel& routing_model, int num_neighbors,
+    bool add_vehicle_starts_to_neighbors) {
   // TODO(user): consider checking search limits.
   const int size = routing_model.Size();
   node_index_to_neighbors_by_cost_class_.clear();
@@ -797,6 +799,8 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
                        cost_nodes.begin() + num_neighbors - 1,
                        cost_nodes.end());
       cost_nodes.resize(num_neighbors);
+      // Make sure the order of the n first element is always the same.
+      std::sort(cost_nodes.begin(), cost_nodes.end());
 
       auto& node_neighbors =
           node_index_to_neighbors_by_cost_class_[node_index][cost_class];
@@ -815,7 +819,7 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
       // prune arcs going from node to start for instance.
       for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
         const int vehicle_start = routing_model.Start(vehicle);
-        node_neighbors->Set(vehicle_start);
+        if (add_vehicle_starts_to_neighbors) node_neighbors->Set(vehicle_start);
         node_index_to_neighbors_by_cost_class_[vehicle_start][cost_class]->Set(
             node_index);
       }
@@ -824,18 +828,39 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
 }
 
 const RoutingModel::NodeNeighborsByCostClass*
-RoutingModel::GetOrCreateNodeNeighborsByCostClass(int num_neighbors) {
+RoutingModel::GetOrCreateNodeNeighborsByCostClass(
+    double neighbors_ratio, int64_t min_neighbors, double& neighbors_ratio_used,
+    bool add_vehicle_starts_to_neighbors) {
+  const int64_t num_non_start_end_nodes = Size() - vehicles();
+  neighbors_ratio_used = neighbors_ratio;
+  int num_neighbors = std::max(
+      min_neighbors,
+      MathUtil::FastInt64Round(neighbors_ratio * num_non_start_end_nodes));
+  if (neighbors_ratio == 1 || num_neighbors >= num_non_start_end_nodes - 1) {
+    neighbors_ratio_used = 1;
+    num_neighbors = Size();
+  }
+  return GetOrCreateNodeNeighborsByCostClass(num_neighbors,
+                                             add_vehicle_starts_to_neighbors);
+}
+
+const RoutingModel::NodeNeighborsByCostClass*
+RoutingModel::GetOrCreateNodeNeighborsByCostClass(
+    int num_neighbors, bool add_vehicle_starts_to_neighbors) {
+  const NodeNeighborsParameters params = {num_neighbors,
+                                          add_vehicle_starts_to_neighbors};
   std::unique_ptr<NodeNeighborsByCostClass>* node_neighbors_by_cost_class_ptr =
-      gtl::FindOrNull(node_neighbors_by_cost_class_per_size_, num_neighbors);
+      gtl::FindOrNull(node_neighbors_by_cost_class_per_size_, params);
   if (node_neighbors_by_cost_class_ptr != nullptr) {
     return node_neighbors_by_cost_class_ptr->get();
   }
   std::unique_ptr<NodeNeighborsByCostClass>& node_neighbors_by_cost_class =
       node_neighbors_by_cost_class_per_size_
-          .insert(std::make_pair(num_neighbors,
+          .insert(std::make_pair(params,
                                  std::make_unique<NodeNeighborsByCostClass>()))
           .first->second;
-  node_neighbors_by_cost_class->ComputeNeighbors(*this, num_neighbors);
+  node_neighbors_by_cost_class->ComputeNeighbors(
+      *this, num_neighbors, add_vehicle_starts_to_neighbors);
   return node_neighbors_by_cost_class.get();
 }
 
@@ -1176,7 +1201,7 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
   // uselessly caching ReturnZero.
   cache_callbacks_ = (nodes_ <= parameters.max_callback_cache_size());
 
-  VLOG(1) << "Model parameters:\n" << parameters.DebugString();
+  VLOG(1) << "Model parameters:\n" << parameters;
   ConstraintSolverParameters solver_parameters =
       parameters.has_solver_parameters() ? parameters.solver_parameters()
                                          : Solver::DefaultSolverParameters();
@@ -1816,6 +1841,23 @@ void RoutingModel::SetFixedCostOfVehicle(int64_t cost, int vehicle) {
   CHECK_LT(vehicle, vehicles_);
   DCHECK_GE(cost, 0);
   fixed_cost_of_vehicle_[vehicle] = cost;
+}
+
+void RoutingModel::SetPathEnergyCostOfVehicle(const std::string& force,
+                                              const std::string& distance,
+                                              int64_t unit_cost, int vehicle) {
+  DCHECK_LE(0, vehicle);
+  DCHECK_LT(vehicle, vehicles_);
+  DCHECK_LE(0, unit_cost);
+  // When unit_cost is 0, the path energy cost is 0, we can avoid useless
+  // computations.
+  if (unit_cost == 0) return;
+  std::vector<int64_t>& vehicle_unit_costs =
+      force_distance_to_vehicle_unit_costs_[std::make_pair(force, distance)];
+  if (vehicle_unit_costs.size() < vehicles_) {
+    vehicle_unit_costs.resize(vehicles_, 0);
+  }
+  vehicle_unit_costs[vehicle] = unit_cost;
 }
 
 void RoutingModel::SetAmortizedCostFactorsOfAllVehicles(
@@ -3017,6 +3059,46 @@ void RoutingModel::CloseModelWithParameters(
   for (int i = 0; i < same_vehicle_costs_.size(); ++i) {
     cost_elements.push_back(CreateSameVehicleCost(i));
   }
+  // Energy costs
+  {
+    for (const auto& [force_distance, vehicle_unit_costs] :
+         force_distance_to_vehicle_unit_costs_) {
+      std::vector<IntVar*> vehicle_costs(vehicles_, nullptr);
+
+      for (int vehicle = 0; vehicle < vehicles_; ++vehicle) {
+        const int64_t cost_ub =
+            vehicle_unit_costs[vehicle] == 0 ? 0 : kint64max;
+        vehicle_costs[vehicle] = solver_->MakeIntVar(0, cost_ub);
+        cost_elements.push_back(vehicle_costs[vehicle]);
+        AddWeightedVariableMinimizedByFinalizer(vehicle_costs[vehicle],
+                                                vehicle_unit_costs[vehicle]);
+      }
+
+      const RoutingDimension* force_dimension =
+          GetMutableDimension(force_distance.first);
+      DCHECK_NE(force_dimension, nullptr);
+      const RoutingDimension* distance_dimension =
+          GetMutableDimension(force_distance.second);
+      DCHECK_NE(distance_dimension, nullptr);
+      if (force_dimension == nullptr || distance_dimension == nullptr) continue;
+
+      Solver::PathEnergyCostConstraintSpecification specification{
+          .nexts = Nexts(),
+          .paths = VehicleVars(),
+          .forces = force_dimension->cumuls(),
+          .distances = distance_dimension->transits(),
+          .path_unit_costs = vehicle_unit_costs,
+          .path_used_when_empty = vehicle_used_when_empty_,
+          .path_starts = paths_metadata_.Starts(),
+          .path_ends = paths_metadata_.Ends(),
+          .costs = vehicle_costs,
+      };
+
+      solver_->AddConstraint(
+          solver_->MakePathEnergyCostConstraint(specification));
+    }
+  }
+  // cost_ is the sum of cost_elements.
   cost_ = solver_->MakeSum(cost_elements)->Var();
   cost_->set_name("Cost");
 
@@ -3306,8 +3388,10 @@ class AtSolutionCallbackMonitor : public SearchMonitor {
 }  // namespace
 
 void RoutingModel::AddAtSolutionCallback(std::function<void()> callback) {
-  AddSearchMonitor(solver_->RevAlloc(
-      new AtSolutionCallbackMonitor(solver_.get(), std::move(callback))));
+  AtSolutionCallbackMonitor* const monitor = solver_->RevAlloc(
+      new AtSolutionCallbackMonitor(solver_.get(), std::move(callback)));
+  at_solution_monitors_.push_back(monitor);
+  AddSearchMonitor(monitor);
 }
 
 const Assignment* RoutingModel::Solve(const Assignment* assignment) {
@@ -3352,10 +3436,15 @@ void MakeAllUnperformedInAssignment(const RoutingModel* model,
 
 bool RoutingModel::AppendAssignmentIfFeasible(
     const Assignment& assignment,
-    std::vector<std::unique_ptr<Assignment>>* assignments) {
+    std::vector<std::unique_ptr<Assignment>>* assignments,
+    bool call_at_solution_monitors) {
   tmp_assignment_->CopyIntersection(&assignment);
-  solver_->Solve(restore_tmp_assignment_, collect_one_assignment_,
-                 GetOrCreateLimit());
+  std::vector<SearchMonitor*> monitors = call_at_solution_monitors
+                                             ? at_solution_monitors_
+                                             : std::vector<SearchMonitor*>();
+  monitors.push_back(collect_one_assignment_);
+  monitors.push_back(GetOrCreateLimit());
+  solver_->Solve(restore_tmp_assignment_, monitors);
   if (collect_one_assignment_->solution_count() == 1) {
     assignments->push_back(std::make_unique<Assignment>(solver_.get()));
     assignments->back()->Copy(collect_one_assignment_->solution(0));
@@ -3394,7 +3483,7 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
     std::vector<const Assignment*>* solutions) {
   const int64_t start_time_ms = solver_->wall_time();
   QuietCloseModelWithParameters(parameters);
-  VLOG(1) << "Search parameters:\n" << parameters.DebugString();
+  VLOG(1) << "Search parameters:\n" << parameters;
   if (solutions != nullptr) solutions->clear();
   if (status_ == ROUTING_INVALID) {
     return nullptr;
@@ -3469,7 +3558,7 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
         // solver does not manage to build something better.
         Assignment unperformed(solver_.get());
         MakeAllUnperformedInAssignment(this, &unperformed);
-        if (AppendAssignmentIfFeasible(unperformed, &solution_pool) &&
+        if (AppendAssignmentIfFeasible(unperformed, &solution_pool, false) &&
             parameters.log_search()) {
           LogSolution(parameters, "All Unperformed Solution",
                       solution_pool.back()->ObjectiveValue(), start_time_ms);
@@ -4675,6 +4764,19 @@ LocalSearchOperator* RoutingModel::CreateMakeInactiveOperator() {
 
 void RoutingModel::CreateNeighborhoodOperators(
     const RoutingSearchParameters& parameters) {
+  double neighbors_ratio_used = 1;
+  const NodeNeighborsByCostClass* neighbors_by_cost_class =
+      GetOrCreateNodeNeighborsByCostClass(
+          parameters.ls_operator_neighbors_ratio(),
+          parameters.ls_operator_min_neighbors(), neighbors_ratio_used,
+          /*add_vehicle_starts_to_neighbors=*/false);
+  const auto get_neighbors = [neighbors_by_cost_class, this](
+                                 int64_t node,
+                                 int64_t start) -> const std::vector<int>& {
+    return neighbors_by_cost_class->GetNeighborsOfNodeForCostClass(
+        GetCostClassIndexOfVehicle(VehicleIndex(start)).value(), node);
+  };
+
   local_search_operators_.clear();
   local_search_operators_.resize(LOCAL_SEARCH_OPERATOR_COUNTER, nullptr);
   {
@@ -4711,8 +4813,12 @@ void RoutingModel::CreateNeighborhoodOperators(
   }
 
   // Other operators defined in the CP solver.
-  local_search_operators_[RELOCATE] = CreateCPOperator<Relocate>();
-  local_search_operators_[EXCHANGE] = CreateCPOperator<Exchange>();
+  local_search_operators_[RELOCATE] =
+      CreateOperatorWithNeighborsRatio<Relocate>(neighbors_ratio_used,
+                                                 get_neighbors);
+  local_search_operators_[EXCHANGE] =
+      CreateOperatorWithNeighborsRatio<Exchange>(neighbors_ratio_used,
+                                                 get_neighbors);
   local_search_operators_[CROSS] = CreateCPOperator<Cross>();
   local_search_operators_[TWO_OPT] = CreateCPOperator<TwoOpt>();
   local_search_operators_[RELOCATE_AND_MAKE_ACTIVE] =
@@ -4740,13 +4846,15 @@ void RoutingModel::CreateNeighborhoodOperators(
       CreatePairOperator<PairRelocateOperator>();
   std::vector<LocalSearchOperator*> light_relocate_pair_operators;
   light_relocate_pair_operators.push_back(
-      CreateOperator<LightPairRelocateOperator>(
-          pickup_delivery_pairs_, [this](int64_t start) {
+      CreateOperatorWithNeighborsRatio<LightPairRelocateOperator>(
+          neighbors_ratio_used, get_neighbors, pickup_delivery_pairs_,
+          [this](int64_t start) {
             return vehicle_pickup_delivery_policy_[VehicleIndex(start)] ==
                    RoutingModel::PICKUP_AND_DELIVERY_LIFO;
           }));
   light_relocate_pair_operators.push_back(
-      CreatePairOperator<GroupPairAndRelocateOperator>());
+      CreatePairOperator<GroupPairAndRelocateOperator>(neighbors_ratio_used,
+                                                       get_neighbors));
   local_search_operators_[LIGHT_RELOCATE_PAIR] =
       solver_->ConcatenateOperators(light_relocate_pair_operators);
   local_search_operators_[EXCHANGE_PAIR] = solver_->ConcatenateOperators(
@@ -4755,16 +4863,17 @@ void RoutingModel::CreateNeighborhoodOperators(
   local_search_operators_[EXCHANGE_RELOCATE_PAIR] =
       CreatePairOperator<PairExchangeRelocateOperator>();
   local_search_operators_[RELOCATE_NEIGHBORS] =
-      CreateOperator<MakeRelocateNeighborsOperator>(
+      CreateOperatorWithNeighborsRatio<MakeRelocateNeighborsOperator>(
+          neighbors_ratio_used, get_neighbors,
           absl::bind_front(&RoutingModel::GetHomogeneousCost, this));
   local_search_operators_[NODE_PAIR_SWAP] = solver_->ConcatenateOperators(
       {CreatePairOperator<IndexPairSwapActiveOperator>(),
        CreatePairOperator<PairNodeSwapActiveOperator<true>>(),
        CreatePairOperator<PairNodeSwapActiveOperator<false>>()});
   local_search_operators_[RELOCATE_SUBTRIP] =
-      CreatePairOperator<RelocateSubtrip>();
+      CreatePairOperator<RelocateSubtrip>(neighbors_ratio_used, get_neighbors);
   local_search_operators_[EXCHANGE_SUBTRIP] =
-      CreatePairOperator<ExchangeSubtrip>();
+      CreatePairOperator<ExchangeSubtrip>(neighbors_ratio_used, get_neighbors);
 
   const auto arc_cost_for_path_start =
       [this](int64_t before_node, int64_t after_node, int64_t start_index) {
@@ -5111,12 +5220,62 @@ RoutingModel::CreateLocalSearchFilters(
   // As of 10/2021, TypeRegulationsFilter assumes pickup and delivery
   // constraints are enforced, therefore PickupDeliveryFilter must be
   // called first.
+  ++priority;
   if (!pickup_delivery_pairs_.empty()) {
-    ++priority;
     filter_events.push_back(
         {MakePickupDeliveryFilter(*this, pickup_delivery_pairs_,
                                   vehicle_pickup_delivery_policy_),
          kAccept, priority});
+  }
+  if (options.filter_objective) {
+    const int num_vehicles = vehicles();
+    for (const auto& [force_distance, unit_costs] :
+         force_distance_to_vehicle_unit_costs_) {
+      const auto& [force, distance] = force_distance;
+      const RoutingDimension* force_dimension = GetMutableDimension(force);
+      DCHECK_NE(force_dimension, nullptr);
+      if (force_dimension == nullptr) continue;
+      std::vector<int> force_class(num_vehicles);
+      std::vector<const std::function<int64_t(int64_t)>*> force_evaluators;
+      for (int v = 0; v < num_vehicles; ++v) {
+        const int c = force_dimension->vehicle_to_class(v);
+        force_class[v] = c;
+        if (c >= force_evaluators.size()) {
+          force_evaluators.resize(c + 1, nullptr);
+        }
+        if (force_evaluators[c] == nullptr) {
+          force_evaluators[c] = &(force_dimension->GetUnaryTransitEvaluator(v));
+          DCHECK(force_evaluators[c] != nullptr);
+          if (force_evaluators[c] == nullptr) continue;
+        }
+      }
+      const RoutingDimension* distance_dimension =
+          GetMutableDimension(distance);
+      DCHECK_NE(distance_dimension, nullptr);
+      if (distance_dimension == nullptr) continue;
+      std::vector<int> distance_class(num_vehicles);
+      std::vector<const std::function<int64_t(int64_t, int64_t)>*>
+          distance_evaluators;
+      for (int v = 0; v < num_vehicles; ++v) {
+        const int c = distance_dimension->vehicle_to_class(v);
+        distance_class[v] = c;
+        if (c >= distance_evaluators.size())
+          distance_evaluators.resize(c + 1, nullptr);
+        if (distance_evaluators[c] == nullptr) {
+          distance_evaluators[c] =
+              &(distance_dimension->GetBinaryTransitEvaluator(v));
+        }
+      }
+      auto checker = std::make_unique<PathEnergyCostChecker>(
+          path_state_reference, std::move(force_class),
+          std::move(force_evaluators), std::move(distance_class),
+          std::move(distance_evaluators), unit_costs, vehicle_used_when_empty_);
+      filter_events.push_back(
+          {MakePathEnergyCostFilter(solver(), std::move(checker),
+                                    absl::StrCat(force_dimension->name(),
+                                                 distance_dimension->name())),
+           kAccept, priority});
+    }
   }
 
   if (HasTypeRegulations()) {

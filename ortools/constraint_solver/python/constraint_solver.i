@@ -112,8 +112,7 @@ PY_CONVERT_HELPER_PTR(SequenceVar);
 PY_CONVERT_HELPER_PTR(LocalSearchOperator);
 PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 PY_CONVERT_HELPER_PTR(LocalSearchFilterManager);
-PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
-PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntExpr);
+PY_CONVERT_HELPER_INTEXPR_AND_INTVAR();
 
 // Actual conversions. This also includes the conversion to std::vector<Class>.
 PY_CONVERT(IntVar);

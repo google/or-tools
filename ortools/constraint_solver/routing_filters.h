@@ -14,6 +14,9 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
 
+#include <functional>
+#include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -77,6 +80,42 @@ LocalSearchFilter* MakeResourceAssignmentFilter(
 
 /// Returns a filter checking the current solution using CP propagation.
 IntVarLocalSearchFilter* MakeCPFeasibilityFilter(RoutingModel* routing_model);
+
+class PathEnergyCostChecker {
+ public:
+  PathEnergyCostChecker(
+      const PathState* path_state, std::vector<int> force_class,
+      std::vector<const std::function<int64_t(int64_t)>*> force_per_class,
+      std::vector<int> distance_class,
+      std::vector<const std::function<int64_t(int64_t, int64_t)>*>
+          distance_per_class,
+      std::vector<int64_t> path_unit_costs,
+      std::vector<bool> path_has_cost_when_empty);
+  bool Check();
+  void Commit();
+  int64_t CommittedCost() const { return committed_total_cost_; }
+  int64_t AcceptedCost() const { return accepted_total_cost_; }
+
+ private:
+  int64_t ComputePathCost(int64_t path_start) const;
+  const PathState* const path_state_;
+  const std::vector<int> force_class_;
+  const std::vector<int> distance_class_;
+  const std::vector<const std::function<int64_t(int64_t)>*> force_per_class_;
+  const std::vector<const std::function<int64_t(int64_t, int64_t)>*>
+      distance_per_class_;
+  const std::vector<int64_t> path_unit_costs_;
+  const std::vector<bool> path_has_cost_when_empty_;
+
+  // Incremental cost computation.
+  int64_t committed_total_cost_;
+  int64_t accepted_total_cost_;
+  std::vector<int64_t> committed_path_cost_;
+};
+
+LocalSearchFilter* MakePathEnergyCostFilter(
+    Solver* solver, std::unique_ptr<PathEnergyCostChecker> checker,
+    const std::string& dimension_name);
 
 /// Appends dimension-based filters to the given list of filters using a path
 /// state.

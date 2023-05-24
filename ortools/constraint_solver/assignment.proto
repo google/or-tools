@@ -57,7 +57,7 @@ message AssignmentProto {
   repeated IntVarAssignment int_var_assignment = 1;
   repeated IntervalVarAssignment interval_var_assignment = 2;
   repeated SequenceVarAssignment sequence_var_assignment = 6;
-  IntVarAssignment objective = 3;
+  repeated IntVarAssignment objective = 3;
   WorkerInfo worker_info = 4;
   bool is_valid = 5;
 }

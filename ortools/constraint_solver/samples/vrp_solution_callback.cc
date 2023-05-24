@@ -79,16 +79,16 @@ void print_solution(const RoutingIndexManager& routing_manager,
                     const RoutingModel& routing_model) {
   LOG(INFO) << "################";
   LOG(INFO) << "Solution objective: " << routing_model.CostVar()->Value();
-  int64_t total_distance{0};
+  int64_t total_distance = 0;
   for (int vehicle_id = 0; vehicle_id < routing_manager.num_vehicles();
        ++vehicle_id) {
     int64_t index = routing_model.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64_t route_distance{0};
+    int64_t route_distance = 0;
     std::stringstream route;
-    while (routing_model.IsEnd(index) == false) {
+    while (!routing_model.IsEnd(index)) {
       route << " " << routing_manager.IndexToNode(index).value() << " ->";
-      int64_t previous_index = index;
+      const int64_t previous_index = index;
       index = routing_model.NextVar(index)->Value();
       route_distance += routing_model.GetArcCostForVehicle(
           previous_index, index, int64_t{vehicle_id});
@@ -114,10 +114,10 @@ struct SolutionCallback {
         max_solution(max_solution) {
     objectives.reserve(max_solution);
   }
-  ~SolutionCallback() = default;
+  ~SolutionCallback() {}
 
   void Run() {
-    int64_t objective = routing_model.CostVar()->Value();
+    const int64_t objective = routing_model.CostVar()->Value();
     if (objectives.empty() || objective < objectives.back()) {
       objectives.push_back(objective);
       print_solution(routing_manager, routing_model);
@@ -128,7 +128,7 @@ struct SolutionCallback {
     }
   }
 
-  std::vector<int64_t> objectives = {};
+  std::vector<int64_t> objectives{};
 
  private:
   int64_t counter = 0;
@@ -155,11 +155,11 @@ void VrpSolutionCallback() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing_model.RegisterTransitCallback(
-      [&data, &routing_manager](int64_t from_index,
-                                int64_t to_index) -> int64_t {
+      [&data, &routing_manager](const int64_t from_index,
+                                const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
-        auto from_node = routing_manager.IndexToNode(from_index).value();
-        auto to_node = routing_manager.IndexToNode(to_index).value();
+        const int from_node = routing_manager.IndexToNode(from_index).value();
+        const int to_node = routing_manager.IndexToNode(to_index).value();
         return data.distance_matrix[from_node][to_node];
       });
   // [END transit_callback]

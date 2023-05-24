@@ -59,10 +59,10 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 
 PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
                  RoutingModelParameters,
-                 ::operations_research::RoutingModelParameters)
+                 operations_research::RoutingModelParameters)
 PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
                  RoutingSearchParameters,
-                 ::operations_research::RoutingSearchParameters)
+                 operations_research::RoutingSearchParameters)
 
 // Wrap routing_types.h, routing_parameters.h according to the SWIG styleguide.
 %ignoreall

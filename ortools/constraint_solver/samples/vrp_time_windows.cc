@@ -86,7 +86,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
     int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for vehicle " << vehicle_id << ":";
     std::ostringstream route;
-    while (routing.IsEnd(index) == false) {
+    while (!routing.IsEnd(index)) {
       auto time_var = time_dimension.CumulVar(index);
       route << manager.IndexToNode(index).value() << " Time("
             << solution.Min(time_var) << ", " << solution.Max(time_var)
@@ -127,10 +127,11 @@ void VrpTimeWindows() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
+      [&data, &manager](const int64_t from_index,
+                        const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to time matrix NodeIndex.
-        auto from_node = manager.IndexToNode(from_index).value();
-        auto to_node = manager.IndexToNode(to_index).value();
+        const int from_node = manager.IndexToNode(from_index).value();
+        const int to_node = manager.IndexToNode(to_index).value();
         return data.time_matrix[from_node][to_node];
       });
   // [END transit_callback]
@@ -142,7 +143,7 @@ void VrpTimeWindows() {
 
   // Add Time constraint.
   // [START time_constraint]
-  std::string time{"Time"};
+  const std::string time = "Time";
   routing.AddDimension(transit_callback_index,  // transit callback index
                        int64_t{30},             // allow waiting time
                        int64_t{30},             // maximum time per vehicle
@@ -151,13 +152,14 @@ void VrpTimeWindows() {
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie(time);
   // Add time window constraints for each location except depot.
   for (int i = 1; i < data.time_windows.size(); ++i) {
-    int64_t index = manager.NodeToIndex(RoutingIndexManager::NodeIndex(i));
+    const int64_t index =
+        manager.NodeToIndex(RoutingIndexManager::NodeIndex(i));
     time_dimension.CumulVar(index)->SetRange(data.time_windows[i].first,
                                              data.time_windows[i].second);
   }
   // Add time window constraints for each vehicle start node.
   for (int i = 0; i < data.num_vehicles; ++i) {
-    int64_t index = routing.Start(i);
+    const int64_t index = routing.Start(i);
     time_dimension.CumulVar(index)->SetRange(data.time_windows[0].first,
                                              data.time_windows[0].second);
   }

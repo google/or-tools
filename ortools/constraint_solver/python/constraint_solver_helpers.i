@@ -29,18 +29,20 @@ PyObject* PyObjFrom<int64_t>(const int64_t& c) { return PyLong_FromLongLong(c); 
 %}
 
 // Conversion of IntExpr* and IntVar* are a bit special because of the two
-// possible casts from IntExpr and Constraint.
-%define PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(Class)
+// possible casts from IntExpr and Constraint. We define them here because
+// they are used by both constraint_solver.i and routing.i, but need to
+// be defined at a point where IntVar/IntExpr are known.
+%define PY_CONVERT_HELPER_INTEXPR_AND_INTVAR()
 %{
 template<>
-bool PyObjAs(PyObject *py_obj, operations_research::Class** var) {
+bool PyObjAs(PyObject *py_obj, operations_research::IntExpr** var) {
   // First, try to interpret the python object as an IntExpr.
   operations_research::IntExpr* t;
   if (SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(&t),
                       SWIGTYPE_p_operations_research__IntExpr,
                       SWIG_POINTER_EXCEPTION) >= 0) {
     if (t == nullptr) return false;
-    *var = t->Var();
+    *var = t;
     return true;
   }
   // Then, try to interpret it as a Constraint.
@@ -54,6 +56,13 @@ bool PyObjAs(PyObject *py_obj, operations_research::Class** var) {
   }
   // Give up.
   return false;
+}
+template<>
+bool PyObjAs(PyObject *py_obj, operations_research::IntVar** var) {
+  operations_research::IntExpr* tmp_expr;
+  if (!PyObjAs(py_obj, &tmp_expr)) return false;
+  *var = tmp_expr->Var();
+  return true;
 }
 %}
 %enddef

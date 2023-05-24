@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <deque>
 #include <functional>
 #include <iterator>
@@ -2663,20 +2664,19 @@ int64_t ComputeBestVehicleToResourceAssignment(
     }
   }
 
-  // We may need to apply some cost scaling when using SimpleMinCostFlow:
-  // 3 * max_arc_cost * num_nodes must be ≤ kint64max.
-  // To do that, we first find the maximum arc cost.
+  // We may need to apply some cost scaling when using SimpleMinCostFlow.
+  // With our graph it seems having 4 * max_arc_cost * num_nodes ≤ kint64max is
+  // sufficient. To do that, we first find the maximum arc cost.
   int64_t max_arc_cost = 0;
   for (const std::vector<int64_t>* costs : vi_to_resource_cost) {
     if (costs->empty()) continue;
     max_arc_cost = std::max(max_arc_cost, *absl::c_max_element(*costs));
   }
-  // To avoid potential int64_t overflows, we tweak the above formula to:
-  // max_acceptable_arc_cost = kint64max / (3 * num_nodes) - 1.
+  // To avoid potential int64_t overflows, we slightly tweak the above formula.
   // NOTE(user): SimpleMinCostFlow always adds a sink and source node (we
   // probably shouldn't add a sink/source node ourselves in the graph).
   const int real_num_nodes = 4 + num_vehicles + num_resources;
-  const int64_t max_acceptable_arc_cost = kint64max / (3 * real_num_nodes) - 1;
+  const int64_t max_acceptable_arc_cost = kint64max / (4 * real_num_nodes) - 1;
   // We use a power of 2 for the cost scaling factor, to have clean (in)accuracy
   // properties. Note also that we must round *down* the costs.
   int cost_right_shift = 0;

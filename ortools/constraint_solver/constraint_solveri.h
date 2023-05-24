@@ -1319,6 +1319,9 @@ class PathOperator : public IntVarLocalSearchOperator {
     /// 'start_empty_path_class' can be nullptr in which case no symmetries will
     /// be removed.
     std::function<int(int64_t)> start_empty_path_class;
+    /// Callback returning neighbors of a node on a path starting at start_node.
+    std::function<const std::vector<int>&(/*node=*/int, /*start_node=*/int)>
+        get_neighbors;
   };
   /// Builds an instance of PathOperator from next and path variables.
   PathOperator(const std::vector<IntVar*>& next_vars,
@@ -1327,11 +1330,12 @@ class PathOperator : public IntVarLocalSearchOperator {
   PathOperator(const std::vector<IntVar*>& next_vars,
                const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
                bool skip_locally_optimal_paths, bool accept_path_end_base,
-               std::function<int(int64_t)> start_empty_path_class)
-      : PathOperator(
-            next_vars, path_vars,
-            {number_of_base_nodes, skip_locally_optimal_paths,
-             accept_path_end_base, std::move(start_empty_path_class)}) {}
+               std::function<int(int64_t)> start_empty_path_class,
+               std::function<const std::vector<int>&(int, int)> get_neighbors)
+      : PathOperator(next_vars, path_vars,
+                     {number_of_base_nodes, skip_locally_optimal_paths,
+                      accept_path_end_base, std::move(start_empty_path_class),
+                      std::move(get_neighbors)}) {}
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
   void Reset() override;
@@ -1562,6 +1566,17 @@ class PathOperator : public IntVarLocalSearchOperator {
   bool CheckChainValidity(int64_t before_chain, int64_t chain_end,
                           int64_t exclude) const;
 
+  bool HasNeighbors() const {
+    return iteration_parameters_.get_neighbors != nullptr;
+  }
+
+  int GetNeighborForBaseNode(int64_t base_index) const {
+    DCHECK(HasNeighbors());
+    return iteration_parameters_.get_neighbors(
+        BaseNode(base_index),
+        StartNode(base_index))[calls_per_base_node_[base_index]];
+  }
+
   const int number_of_nexts_;
   const bool ignore_path_vars_;
   int next_base_to_increment_;
@@ -1576,7 +1591,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   bool CheckEnds() const {
     const int base_node_size = base_nodes_.size();
     for (int i = base_node_size - 1; i >= 0; --i) {
-      if (base_nodes_[i] != end_nodes_[i]) {
+      if (base_nodes_[i] != end_nodes_[i] || calls_per_base_node_[0] > 0) {
         return true;
       }
     }
@@ -1594,6 +1609,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::vector<int> base_sibling_alternatives_;
   std::vector<int> end_nodes_;
   std::vector<int> base_paths_;
+  std::vector<int> calls_per_base_node_;
   std::vector<int64_t> path_starts_;
   std::vector<int64_t> path_ends_;
   std::vector<bool> inactives_;
@@ -1618,6 +1634,13 @@ LocalSearchOperator* MakeLocalSearchOperator(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class);
+
+template <class T>
+LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_neighbors);
 
 /// Classes to which this template function can be applied to as of 04/2014.
 /// Usage: LocalSearchOperator* op = MakeLocalSearchOperator<Relocate>(...);

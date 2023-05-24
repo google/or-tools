@@ -224,62 +224,64 @@ class MapDomain : public Constraint {
 
 // ----- Lex constraint -----
 
-class LexicalLess : public Constraint {
+class LexicalLessOrEqual : public Constraint {
  public:
-  LexicalLess(Solver* const s, const std::vector<IntVar*>& left,
-              const std::vector<IntVar*>& right, bool strict)
+  LexicalLessOrEqual(Solver* const s, std::vector<IntVar*> left,
+                     std::vector<IntVar*> right, std::vector<int64_t> offsets)
       : Constraint(s),
-        left_(left),
-        right_(right),
+        left_(std::move(left)),
+        right_(std::move(right)),
         active_var_(0),
-        strict_(strict),
+        offsets_(std::move(offsets)),
+        demon_added_(offsets_.size(), false),
         demon_(nullptr) {
-    CHECK_EQ(left.size(), right.size());
+    CHECK_EQ(left_.size(), right_.size());
+    CHECK_EQ(offsets_.size(), right_.size());
+    CHECK(std::all_of(offsets_.begin(), offsets_.end(),
+                      [](int step) { return step > 0; }));
   }
 
-  ~LexicalLess() override {}
+  ~LexicalLessOrEqual() override = default;
 
   void Post() override {
     const int position = JumpEqualVariables(0);
     active_var_.SetValue(solver(), position);
     if (position < left_.size()) {
       demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-      left_[position]->WhenRange(demon_);
-      right_[position]->WhenRange(demon_);
+      AddDemon(position);
     }
   }
 
   void InitialPropagate() override {
     const int position = JumpEqualVariables(active_var_.Value());
-    if (position >= left_.size()) {
-      if (strict_) {
-        solver()->Fail();
-      }
-      return;
-    }
+    if (position >= left_.size()) return;
     if (position != active_var_.Value()) {
-      left_[position]->WhenRange(demon_);
-      right_[position]->WhenRange(demon_);
+      AddDemon(position);
       active_var_.SetValue(solver(), position);
     }
     const int next_non_equal = JumpEqualVariables(position + 1);
-    if ((strict_ && next_non_equal == left_.size()) ||
-        (next_non_equal < left_.size() &&
-         left_[next_non_equal]->Min() > right_[next_non_equal]->Max())) {
-      // We need to be strict if we are the last in the array, or if
-      // the next one is impossible.
-      left_[position]->SetMax(right_[position]->Max() - 1);
-      right_[position]->SetMin(left_[position]->Min() + 1);
+    if (next_non_equal < left_.size() &&
+        left_[next_non_equal]->Min() > right_[next_non_equal]->Max()) {
+      // We need to be strict if at next_non_equal, left is above right.
+      left_[position]->SetMax(
+          CapSub(right_[position]->Max(), offsets_[position]));
+      right_[position]->SetMin(
+          CapAdd(left_[position]->Min(), offsets_[position]));
     } else {
       left_[position]->SetMax(right_[position]->Max());
       right_[position]->SetMin(left_[position]->Min());
+    }
+    // Adding demons for the next position as it may trigger changes at the
+    // active position (if the next position becomes invalid for instance).
+    if (next_non_equal < left_.size()) {
+      AddDemon(next_non_equal);
     }
   }
 
   std::string DebugString() const override {
     return absl::StrFormat(
-        "%s([%s], [%s])", strict_ ? "LexicalLess" : "LexicalLessOrEqual",
-        JoinDebugStringPtr(left_, ", "), JoinDebugStringPtr(right_, ", "));
+        "LexicalLessOrEqual([%s], [%s], [%s])", JoinDebugStringPtr(left_, ", "),
+        JoinDebugStringPtr(right_, ", "), absl::StrJoin(offsets_, ", "));
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -288,25 +290,33 @@ class LexicalLess : public Constraint {
                                                left_);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kRightArgument,
                                                right_);
-    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, strict_);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument, offsets_);
     visitor->EndVisitConstraint(ModelVisitor::kLexLess, this);
   }
 
  private:
   int JumpEqualVariables(int start_position) const {
     int position = start_position;
-    while (position < left_.size() && left_[position]->Bound() &&
-           right_[position]->Bound() &&
-           left_[position]->Min() == right_[position]->Min()) {
+    while (position < left_.size() &&
+           left_[position]->Max() <= right_[position]->Min() &&
+           CapSub(right_[position]->Max(), CapSub(offsets_[position], 1)) <=
+               left_[position]->Min()) {
       position++;
     }
     return position;
+  }
+  void AddDemon(int position) {
+    if (demon_added_.Value(position)) return;
+    left_[position]->WhenRange(demon_);
+    right_[position]->WhenRange(demon_);
+    demon_added_.SetValue(solver(), position, true);
   }
 
   std::vector<IntVar*> left_;
   std::vector<IntVar*> right_;
   NumericalRev<int> active_var_;
-  const bool strict_;
+  std::vector<int64_t> offsets_;
+  RevArray<bool> demon_added_;
   Demon* demon_;
 };
 
@@ -544,12 +554,40 @@ Constraint* Solver::MakeMapDomain(IntVar* const var,
 
 Constraint* Solver::MakeLexicalLess(const std::vector<IntVar*>& left,
                                     const std::vector<IntVar*>& right) {
-  return RevAlloc(new LexicalLess(this, left, right, true));
+  std::vector<IntVar*> adjusted_left = left;
+  adjusted_left.push_back(MakeIntConst(1));
+  std::vector<IntVar*> adjusted_right = right;
+  adjusted_right.push_back(MakeIntConst(0));
+  return MakeLexicalLessOrEqualWithOffsets(
+      std::move(adjusted_left), std::move(adjusted_right),
+      std::vector<int64_t>(left.size() + 1, 1));
 }
 
 Constraint* Solver::MakeLexicalLessOrEqual(const std::vector<IntVar*>& left,
                                            const std::vector<IntVar*>& right) {
-  return RevAlloc(new LexicalLess(this, left, right, false));
+  return MakeLexicalLessOrEqualWithOffsets(
+      left, right, std::vector<int64_t>(left.size(), 1));
+}
+
+Constraint* Solver::MakeLexicalLessOrEqualWithOffsets(
+    std::vector<IntVar*> left, std::vector<IntVar*> right,
+    std::vector<int64_t> offsets) {
+  return RevAlloc(new LexicalLessOrEqual(this, std::move(left),
+                                         std::move(right), std::move(offsets)));
+}
+
+Constraint* Solver::MakeIsLexicalLessOrEqualWithOffsetsCt(
+    std::vector<IntVar*> left, std::vector<IntVar*> right,
+    std::vector<int64_t> offsets, IntVar* boolvar) {
+  std::vector<IntVar*> adjusted_left = std::move(left);
+  adjusted_left.insert(adjusted_left.begin(), boolvar);
+  std::vector<IntVar*> adjusted_right = std::move(right);
+  adjusted_right.insert(adjusted_right.begin(), MakeIntConst(1));
+  std::vector<int64_t> adjusted_offsets = std::move(offsets);
+  adjusted_offsets.insert(adjusted_offsets.begin(), 1);
+  return MakeLexicalLessOrEqualWithOffsets(std::move(adjusted_left),
+                                           std::move(adjusted_right),
+                                           std::move(adjusted_offsets));
 }
 
 Constraint* Solver::MakeInversePermutationConstraint(

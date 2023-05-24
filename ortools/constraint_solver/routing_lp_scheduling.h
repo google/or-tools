@@ -589,7 +589,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     sat::Model model;
     model.Add(sat::NewSatParameters(parameters_));
     response_ = sat::SolveCpModel(model_, &model);
-    VLOG(2) << response_.DebugString();
+    VLOG(2) << response_;
     if (response_.status() == sat::CpSolverStatus::OPTIMAL ||
         (response_.status() == sat::CpSolverStatus::FEASIBLE &&
          !model_.has_floating_point_objective())) {

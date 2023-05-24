@@ -105,6 +105,8 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_local_cheapest_insertion_expensive_chain_lns(BOOL_FALSE);
   o->set_use_global_cheapest_insertion_close_nodes_lns(BOOL_FALSE);
   o->set_use_local_cheapest_insertion_close_nodes_lns(BOOL_FALSE);
+  p.set_ls_operator_neighbors_ratio(1);
+  p.set_ls_operator_min_neighbors(1);
   p.set_use_multi_armed_bandit_concatenate_operators(false);
   p.set_multi_armed_bandit_compound_operator_memory_coefficient(0.04);
   p.set_multi_armed_bandit_compound_operator_exploration_coefficient(1e12);
@@ -249,6 +251,17 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
     errors.emplace_back(StrCat(
         "Invalid cheapest_insertion_ls_operator_min_neighbors: ", min_neighbors,
         ". Must be greater or equal to 1."));
+  }
+  if (const double ratio = search_parameters.ls_operator_neighbors_ratio();
+      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
+    errors.emplace_back(StrCat("Invalid ls_operator_neighbors_ratio: ", ratio));
+  }
+  if (const int32_t min_neighbors =
+          search_parameters.ls_operator_min_neighbors();
+      min_neighbors < 1) {
+    errors.emplace_back(
+        StrCat("Invalid ls_operator_min_neighbors: ", min_neighbors,
+               ". Must be greater or equal to 1."));
   }
   if (const int32_t num_arcs =
           search_parameters.relocate_expensive_chain_num_arcs_to_consider();

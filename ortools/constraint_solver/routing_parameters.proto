@@ -35,7 +35,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 53
+// Next ID: 55
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -396,6 +396,12 @@ message RoutingSearchParameters {
     OptionalBoolean use_local_cheapest_insertion_close_nodes_lns = 32;
   }
   LocalSearchNeighborhoodOperators local_search_operators = 3;
+
+  // Neighbors ratio and minimum number of neighbors considered in local
+  // search operators (see cheapest_insertion_first_solution_neighbors_ratio
+  // and cheapest_insertion_first_solution_min_neighbors for more information).
+  double ls_operator_neighbors_ratio = 53;
+  int32 ls_operator_min_neighbors = 54;
 
   // If true, the solver will use multi-armed bandit concatenate operators. It
   // dynamically chooses the next neighbor operator in order to get the best

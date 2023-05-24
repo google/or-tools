@@ -33,15 +33,15 @@ namespace operations_research {
 // [START solution_printer]
 void PrintSolution(const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
-  int64_t max_route_distance{0};
+  int64_t max_route_distance = 0;
   for (int vehicle_id = 0; vehicle_id < manager.num_vehicles(); ++vehicle_id) {
     int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64_t route_distance{0};
+    int64_t route_distance = 0;
     std::stringstream route;
-    while (routing.IsEnd(index) == false) {
+    while (!routing.IsEnd(index)) {
       route << manager.IndexToNode(index).value() << " -> ";
-      int64_t previous_index = index;
+      const int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
       route_distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
           previous_index, index, int64_t{vehicle_id});
@@ -77,7 +77,11 @@ void VrpGlobalSpan() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [](int64_t from_index, int64_t to_index) -> int64_t { return 1; });
+      [](int64_t from_index, int64_t to_index) -> int64_t {
+        (void)from_index;
+        (void)to_index;
+        return 1;
+      });
   // [END transit_callback]
 
   // Define cost of each arc.

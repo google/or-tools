@@ -32,13 +32,13 @@
 namespace operations_research {
 
 // Helper functions.
-IntVar* const MakeBaseLine2(Solver* s, IntVar* const v1, IntVar* const v2,
-                            const int64_t base) {
+IntVar* MakeBaseLine2(Solver* s, IntVar* const v1, IntVar* const v2,
+                      const int64_t base) {
   return s->MakeSum(s->MakeProd(v1, base), v2)->Var();
 }
 
-IntVar* const MakeBaseLine3(Solver* s, IntVar* const v1, IntVar* const v2,
-                            IntVar* const v3, const int64_t base) {
+IntVar* MakeBaseLine3(Solver* s, IntVar* const v1, IntVar* const v2,
+                      IntVar* const v3, const int64_t base) {
   std::vector<IntVar*> tmp_vars;
   std::vector<int64_t> coefficients;
   tmp_vars.push_back(v1);
@@ -51,9 +51,8 @@ IntVar* const MakeBaseLine3(Solver* s, IntVar* const v1, IntVar* const v2,
   return s->MakeScalProd(tmp_vars, coefficients)->Var();
 }
 
-IntVar* const MakeBaseLine4(Solver* s, IntVar* const v1, IntVar* const v2,
-                            IntVar* const v3, IntVar* const v4,
-                            const int64_t base) {
+IntVar* MakeBaseLine4(Solver* s, IntVar* const v1, IntVar* const v2,
+                      IntVar* const v3, IntVar* const v4, const int64_t base) {
   std::vector<IntVar*> tmp_vars;
   std::vector<int64_t> coefficients;
   tmp_vars.push_back(v1);
@@ -91,17 +90,7 @@ void CPIsFunCp() {
 
   // We need to group variables in a vector to be able to use
   // the global constraint AllDifferent
-  std::vector<IntVar*> letters;
-  letters.push_back(c);
-  letters.push_back(p);
-  letters.push_back(i);
-  letters.push_back(s);
-  letters.push_back(f);
-  letters.push_back(u);
-  letters.push_back(n);
-  letters.push_back(t);
-  letters.push_back(r);
-  letters.push_back(e);
+  std::vector<IntVar*> letters{c, p, i, s, f, u, n, t, r, e};
 
   // Check if we have enough digits
   CHECK_GE(kBase, letters.size());

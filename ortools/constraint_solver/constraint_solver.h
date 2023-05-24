@@ -135,6 +135,7 @@ class LocalSearchPhaseParameters;
 class LocalSearchProfiler;
 class ModelCache;
 class ModelVisitor;
+class ObjectiveMonitor;
 class OptimizeVar;
 class Pack;
 class ProfiledDecisionBuilder;
@@ -1035,6 +1036,11 @@ class Solver {
   /// The number of neighbors created.
   int64_t neighbors() const { return neighbors_; }
 
+  /// Manipulate neighbors count; to be used for testing purposes only.
+  /// TODO(user): Find a workaround to avoid exposing this.
+  void ClearNeighbors() { neighbors_ = 0; }
+  void IncrementNeighbors() { ++neighbors_; }
+
   /// The number of filtered neighbors (neighbors accepted by filters).
   int64_t filtered_neighbors() const { return filtered_neighbors_; }
 
@@ -1618,6 +1624,19 @@ class Solver {
   Constraint* MakeLexicalLessOrEqual(const std::vector<IntVar*>& left,
                                      const std::vector<IntVar*>& right);
 
+  /// Creates a constraint that enforces that left is lexicographically less
+  /// than or equal to right with an offset. This means that for the first index
+  /// i such that left[i] is not in [right[i] - (offset[i] - 1), right[i]],
+  /// left[i] + offset[i] <= right[i]. Offset values must be > 0.
+  Constraint* MakeLexicalLessOrEqualWithOffsets(std::vector<IntVar*> left,
+                                                std::vector<IntVar*> right,
+                                                std::vector<int64_t> offsets);
+
+  // Semi-reified version of the above: boolvar -> LexLE(left, right, offsets).
+  Constraint* MakeIsLexicalLessOrEqualWithOffsetsCt(
+      std::vector<IntVar*> left, std::vector<IntVar*> right,
+      std::vector<int64_t> offsets, IntVar* boolvar);
+
   /// Creates a constraint that enforces that 'left' and 'right' both
   /// represent permutations of [0..left.size()-1], and that 'right' is
   /// the inverse permutation of 'left', i.e. for all i in
@@ -1749,6 +1768,34 @@ class Solver {
   Constraint* MakePathTransitPrecedenceConstraint(
       std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
       const std::vector<std::pair<int, int>>& precedences);
+
+  /// A constraint that maintains the energy cost of paths.
+  /// Energy is the integral of force applied over distance.
+  /// More formally, the energy used on a path is:
+  /// energy[path] = sum(node | paths[node] == path /\ node not end)
+  ///                    forces[next[node]] * distances[node]
+  /// where forces[n] is the force needed to move loads accumulated until, but
+  /// excluding weight and distances[n] is the distance from n to its successor.
+  /// For instance, if a path has a route with two pickup/delivery pairs
+  /// where the first shipment weighs 1 unit, the second weighs 2 units,
+  /// and the distance between nodes is one, the {force/distance} of nodes
+  /// would be: start{0/1} P1{0/1} P2{1/1} D1{3/1} D2{2/1} end{0/0}.
+  /// The energy would be 0*1 + 1*1 + 3*1 + 2*1 + 0*1.
+  /// The cost of each path is
+  /// costs[path] = energy[path] * path_unit_costs[path].
+  struct PathEnergyCostConstraintSpecification {
+    std::vector<IntVar*> nexts;
+    std::vector<IntVar*> paths;
+    std::vector<IntVar*> forces;
+    std::vector<IntVar*> distances;
+    std::vector<int64_t> path_unit_costs;
+    std::vector<bool> path_used_when_empty;
+    std::vector<int64_t> path_starts;
+    std::vector<int64_t> path_ends;
+    std::vector<IntVar*> costs;
+  };
+  Constraint* MakePathEnergyCostConstraint(
+      PathEnergyCostConstraintSpecification specification);
 #endif  // !SWIG
   /// This constraint maps the domain of 'var' onto the array of
   /// variables 'actives'. That is
@@ -2155,21 +2202,36 @@ class Solver {
   /// collected. This collector only collects one solution corresponding to the
   /// best objective value (the first one found).
   SolutionCollector* MakeBestValueSolutionCollector(
-      const Assignment* const assignment, bool maximize);
+      const Assignment* assignment, bool maximize);
+  /// Same as above, but supporting lexicographic objectives; 'maximize'
+  /// specifies the optimization direction for each objective in 'assignment'.
+  SolutionCollector* MakeBestLexicographicValueSolutionCollector(
+      const Assignment* assignment, std::vector<bool> maximize);
   /// Collect the solution corresponding to the optimal value of the
-  /// objective of 'assignment'; if 'assignment' does not have an objective no
-  /// solution is collected. This collector only collects one solution
-  /// corresponding to the best objective value (the first one
-  /// found). The variables will need to be added later.
+  /// objective of the internal assignment; if this assignment does not have an
+  /// objective no solution is collected. This collector only collects one
+  /// solution corresponding to the best objective value (the first one found).
+  /// The variables and objective(s) will need to be added later.
   SolutionCollector* MakeBestValueSolutionCollector(bool maximize);
+  /// Same as above, but supporting lexicographic objectives; 'maximize'
+  /// specifies the optimization direction for each objective.
+  SolutionCollector* MakeBestLexicographicValueSolutionCollector(
+      std::vector<bool> maximize);
 
   /// Same as MakeBestValueSolutionCollector but collects the best
   /// solution_count solutions. Collected solutions are sorted in increasing
   /// optimality order (the best solution is the last one).
   SolutionCollector* MakeNBestValueSolutionCollector(
-      const Assignment* const assignment, int solution_count, bool maximize);
+      const Assignment* assignment, int solution_count, bool maximize);
   SolutionCollector* MakeNBestValueSolutionCollector(int solution_count,
                                                      bool maximize);
+  /// Same as above but supporting lexicographic objectives; 'maximize'
+  /// specifies the optimization direction for each objective.
+  SolutionCollector* MakeNBestLexicographicValueSolutionCollector(
+      const Assignment* assignment, int solution_count,
+      std::vector<bool> maximize);
+  SolutionCollector* MakeNBestLexicographicValueSolutionCollector(
+      int solution_count, std::vector<bool> maximize);
 
   /// Collect all solutions of the search.
   SolutionCollector* MakeAllSolutionCollector(
@@ -2221,6 +2283,12 @@ class Solver {
                                     const std::vector<int>& weights,
                                     int64_t step);
 
+  /// Creates a lexicographic objective, following the order of the variables
+  /// given. Each variable has a corresponding optimization direction and step.
+  OptimizeVar* MakeLexicographicOptimize(std::vector<bool> maximize,
+                                         std::vector<IntVar*> variables,
+                                         std::vector<int64_t> steps);
+
   /// MetaHeuristics which try to get the search out of local optima.
 
   /// Creates a Tabu Search monitor.
@@ -2239,31 +2307,40 @@ class Solver {
   /// of "tabu" violations which is tolerated; a factor of 1 means no violations
   /// allowed; a factor of 0 means all violations are allowed.
 
-  SearchMonitor* MakeTabuSearch(bool maximize, IntVar* const v, int64_t step,
-                                const std::vector<IntVar*>& vars,
-                                int64_t keep_tenure, int64_t forbid_tenure,
-                                double tabu_factor);
+  ObjectiveMonitor* MakeTabuSearch(bool maximize, IntVar* objective,
+                                   int64_t step,
+                                   const std::vector<IntVar*>& vars,
+                                   int64_t keep_tenure, int64_t forbid_tenure,
+                                   double tabu_factor);
+
+  ObjectiveMonitor* MakeLexicographicTabuSearch(
+      const std::vector<bool>& maximize, std::vector<IntVar*> objectives,
+      std::vector<int64_t> steps, const std::vector<IntVar*>& vars,
+      int64_t keep_tenure, int64_t forbid_tenure, double tabu_factor);
 
   /// Creates a Tabu Search based on the vars |vars|.
   /// A solution is "tabu" if all the vars in |vars| keep their value.
-  SearchMonitor* MakeGenericTabuSearch(bool maximize, IntVar* const v,
-                                       int64_t step,
-                                       const std::vector<IntVar*>& tabu_vars,
-                                       int64_t forbid_tenure);
+  ObjectiveMonitor* MakeGenericTabuSearch(bool maximize, IntVar* v,
+                                          int64_t step,
+                                          const std::vector<IntVar*>& tabu_vars,
+                                          int64_t forbid_tenure);
 
   /// Creates a Simulated Annealing monitor.
   // TODO(user): document behavior
-  SearchMonitor* MakeSimulatedAnnealing(bool maximize, IntVar* const v,
-                                        int64_t step,
-                                        int64_t initial_temperature);
+  ObjectiveMonitor* MakeSimulatedAnnealing(bool maximize, IntVar* v,
+                                           int64_t step,
+                                           int64_t initial_temperature);
+  ObjectiveMonitor* MakeLexicographicSimulatedAnnealing(
+      const std::vector<bool>& maximize, std::vector<IntVar*> vars,
+      std::vector<int64_t> steps, std::vector<int64_t> initial_temperatures);
 
   /// Creates a Guided Local Search monitor.
   /// Description here: http://en.wikipedia.org/wiki/Guided_Local_Search
-  SearchMonitor* MakeGuidedLocalSearch(
+  ObjectiveMonitor* MakeGuidedLocalSearch(
       bool maximize, IntVar* objective, IndexEvaluator2 objective_function,
       int64_t step, const std::vector<IntVar*>& vars, double penalty_factor,
       bool reset_penalties_on_new_best_solution = false);
-  SearchMonitor* MakeGuidedLocalSearch(
+  ObjectiveMonitor* MakeGuidedLocalSearch(
       bool maximize, IntVar* objective, IndexEvaluator3 objective_function,
       int64_t step, const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, double penalty_factor,
@@ -2340,6 +2417,15 @@ class Solver {
   ABSL_MUST_USE_RESULT ImprovementSearchLimit* MakeImprovementLimit(
       IntVar* objective_var, bool maximize, double objective_scaling_factor,
       double objective_offset, double improvement_rate_coefficient,
+      int improvement_rate_solutions_distance);
+  /// Same as MakeImprovementLimit on a lexicographic objective based on
+  /// 'objective_vars' and related arguments.
+  ABSL_MUST_USE_RESULT ImprovementSearchLimit*
+  MakeLexicographicImprovementLimit(
+      std::vector<IntVar*> objective_vars, std::vector<bool> maximize,
+      std::vector<double> objective_scaling_factors,
+      std::vector<double> objective_offsets,
+      double improvement_rate_coefficient,
       int improvement_rate_solutions_distance);
 
   /// Callback-based search limit. Search stops when limiter returns true; if
@@ -2668,11 +2754,13 @@ class Solver {
   DecisionBuilder* MakeStoreAssignment(Assignment* assignment);
 
   /// Local Search Operators.
-  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
-                                    LocalSearchOperators op);
-  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
-                                    const std::vector<IntVar*>& secondary_vars,
-                                    LocalSearchOperators op);
+  LocalSearchOperator* MakeOperator(
+      const std::vector<IntVar*>& vars, LocalSearchOperators op,
+      std::function<const std::vector<int>&(int, int)> get_neighbors = nullptr);
+  LocalSearchOperator* MakeOperator(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars, LocalSearchOperators op,
+      std::function<const std::vector<int>&(int, int)> get_neighbors = nullptr);
   // TODO(user): Make the callback an IndexEvaluator2 when there are no
   // secondary variables.
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
@@ -4226,20 +4314,21 @@ class IntVar : public IntExpr {
 /// of the collector used.
 class SolutionCollector : public SearchMonitor {
  public:
-  SolutionCollector(Solver* const solver, const Assignment* assignment);
-  explicit SolutionCollector(Solver* const solver);
+  SolutionCollector(Solver* solver, const Assignment* assignment);
+  explicit SolutionCollector(Solver* solver);
   ~SolutionCollector() override;
   void Install() override;
   std::string DebugString() const override { return "SolutionCollector"; }
 
   /// Add API.
-  void Add(IntVar* const var);
+  void Add(IntVar* var);
   void Add(const std::vector<IntVar*>& vars);
-  void Add(IntervalVar* const var);
+  void Add(IntervalVar* var);
   void Add(const std::vector<IntervalVar*>& vars);
-  void Add(SequenceVar* const var);
+  void Add(SequenceVar* var);
   void Add(const std::vector<SequenceVar*>& vars);
-  void AddObjective(IntVar* const objective);
+  void AddObjective(IntVar* objective);
+  void AddObjectives(const std::vector<IntVar*>& objectives);
 
   /// Beginning of the search.
   void EnterSearch() override;
@@ -4263,32 +4352,35 @@ class SolutionCollector : public SearchMonitor {
   /// Returns the objective value of the nth solution.
   int64_t objective_value(int n) const;
 
+  /// Returns the value of the index-th objective of the nth solution.
+  int64_t ObjectiveValueFromIndex(int n, int index) const;
+
   /// This is a shortcut to get the Value of 'var' in the nth solution.
-  int64_t Value(int n, IntVar* const var) const;
+  int64_t Value(int n, IntVar* var) const;
 
   /// This is a shortcut to get the StartValue of 'var' in the nth solution.
-  int64_t StartValue(int n, IntervalVar* const var) const;
+  int64_t StartValue(int n, IntervalVar* var) const;
 
   /// This is a shortcut to get the EndValue of 'var' in the nth solution.
-  int64_t EndValue(int n, IntervalVar* const var) const;
+  int64_t EndValue(int n, IntervalVar* var) const;
 
   /// This is a shortcut to get the DurationValue of 'var' in the nth solution.
-  int64_t DurationValue(int n, IntervalVar* const var) const;
+  int64_t DurationValue(int n, IntervalVar* var) const;
 
   /// This is a shortcut to get the PerformedValue of 'var' in the nth solution.
-  int64_t PerformedValue(int n, IntervalVar* const var) const;
+  int64_t PerformedValue(int n, IntervalVar* var) const;
 
   /// This is a shortcut to get the ForwardSequence of 'var' in the
   /// nth solution. The forward sequence is the list of ranked interval
   /// variables starting from the start of the sequence.
-  const std::vector<int>& ForwardSequence(int n, SequenceVar* const var) const;
+  const std::vector<int>& ForwardSequence(int n, SequenceVar* var) const;
   /// This is a shortcut to get the BackwardSequence of 'var' in the
   /// nth solution. The backward sequence is the list of ranked interval
   /// variables starting from the end of the sequence.
-  const std::vector<int>& BackwardSequence(int n, SequenceVar* const var) const;
+  const std::vector<int>& BackwardSequence(int n, SequenceVar* var) const;
   /// This is a shortcut to get the list of unperformed of 'var' in the
   /// nth solution.
-  const std::vector<int>& Unperformed(int n, SequenceVar* const var) const;
+  const std::vector<int>& Unperformed(int n, SequenceVar* var) const;
 
  protected:
   struct SolutionData {
@@ -4296,12 +4388,9 @@ class SolutionCollector : public SearchMonitor {
     int64_t time;
     int64_t branches;
     int64_t failures;
-    int64_t objective_value;
-    bool operator<(const SolutionData& other) const {
-      return std::tie(solution, time, branches, failures, objective_value) <
-             std::tie(other.solution, other.time, other.branches,
-                      other.failures, other.objective_value);
-    }
+    int64_t ObjectiveValue() const;
+    int64_t ObjectiveValueFromIndex(int index) const;
+    bool operator<(const SolutionData& other) const;
   };
 
   /// Push the current state as a new solution.
@@ -4316,50 +4405,124 @@ class SolutionCollector : public SearchMonitor {
   std::unique_ptr<Assignment> prototype_;
   std::vector<SolutionData> solution_data_;
   std::vector<Assignment*> recycle_solutions_;
+#if !defined(SWIG)
+  std::vector<std::unique_ptr<Assignment>> solution_pool_;
+#endif  // SWIG
 
  private:
   DISALLOW_COPY_AND_ASSIGN(SolutionCollector);
 };
 
-// TODO(user): Refactor this into an Objective class:
-//   - print methods for AtNode and AtSolution.
-//   - support for weighted objective and lexicographical objective.
+// Base objective monitor class. All metaheuristics derive from this.
+class ObjectiveMonitor : public SearchMonitor {
+ public:
+  ObjectiveMonitor(Solver* solver, const std::vector<bool>& maximize,
+                   std::vector<IntVar*> vars, std::vector<int64_t> steps);
+#ifndef SWIG
+  ~ObjectiveMonitor() override = default;
+  ObjectiveMonitor(const ObjectiveMonitor&) = delete;
+  ObjectiveMonitor& operator=(const ObjectiveMonitor&) = delete;
+#endif  // SWIG
+  IntVar* ObjectiveVar(int index) const { return objective_vars_[index]; }
+  IntVar* MinimizationVar(int index) const { return minimization_vars_[index]; }
+  int64_t Step(int index) const { return steps_[index]; }
+  bool Maximize(int index) const {
+    return ObjectiveVar(index) != MinimizationVar(index);
+  }
+  int64_t BestValue(int index) const {
+    return Maximize(index) ? CapOpp(BestInternalValue(index))
+                           : BestInternalValue(index);
+  }
+  int Size() const { return objective_vars_.size(); }
+  void EnterSearch() override;
+  bool AtSolution() override;
+  void Accept(ModelVisitor* visitor) const override;
+
+ protected:
+  const std::vector<IntVar*>& objective_vars() const { return objective_vars_; }
+  const std::vector<IntVar*>& minimization_vars() const {
+    return minimization_vars_;
+  }
+  int64_t BestInternalValue(int index) const { return best_values_[index]; }
+  int64_t CurrentInternalValue(int index) const {
+    return current_values_[index];
+  }
+  void SetCurrentInternalValue(int index, int64_t value) {
+    current_values_[index] = value;
+  }
+  template <typename T>
+  void MakeMinimizationVarsLessOrEqualWithSteps(const T& upper_bounds) {
+    if (Size() == 1) {
+      MinimizationVar(0)->SetMax(CapSub(upper_bounds(0), Step(0)));
+    } else {
+      Solver* const solver = this->solver();
+      for (int i = 0; i < Size(); ++i) {
+        upper_bounds_[i] = solver->MakeIntConst(upper_bounds(i));
+      }
+      solver->AddConstraint(solver->MakeLexicalLessOrEqualWithOffsets(
+          minimization_vars_, upper_bounds_, steps_));
+    }
+  }
+  template <typename T>
+  IntVar* MakeMinimizationVarsLessOrEqualWithStepsStatus(
+      const T& upper_bounds) {
+    Solver* const solver = this->solver();
+    IntVar* status = solver->MakeBoolVar();
+    if (Size() == 1) {
+      solver->AddConstraint(solver->MakeIsLessOrEqualCstCt(
+          MinimizationVar(0), CapSub(upper_bounds(0), Step(0)), status));
+    } else {
+      for (int i = 0; i < Size(); ++i) {
+        upper_bounds_[i] = solver->MakeIntConst(upper_bounds(i));
+      }
+      solver->AddConstraint(solver->MakeIsLexicalLessOrEqualWithOffsetsCt(
+          minimization_vars_, upper_bounds_, steps_, status));
+    }
+    return status;
+  }
+  bool CurrentInternalValuesAreConstraining() const;
+
+  bool found_initial_solution_;
+
+ private:
+  const std::vector<IntVar*> objective_vars_;
+  std::vector<IntVar*> minimization_vars_;
+  std::vector<IntVar*> upper_bounds_;
+  std::vector<int64_t> steps_;
+  std::vector<int64_t> best_values_;
+  std::vector<int64_t> current_values_;
+};
 
 /// This class encapsulates an objective. It requires the direction
 /// (minimize or maximize), the variable to optimize, and the
 /// improvement step.
-class OptimizeVar : public SearchMonitor {
+class OptimizeVar : public ObjectiveMonitor {
  public:
-  OptimizeVar(Solver* const s, bool maximize, IntVar* const a, int64_t step);
-  ~OptimizeVar() override;
+  OptimizeVar(Solver* solver, bool maximize, IntVar* var, int64_t step);
+  // Specifies a lexicographic objective. Each objective is specified in
+  // decreasing order with the corresponding direction and step.
+  OptimizeVar(Solver* solver, const std::vector<bool>& maximize,
+              std::vector<IntVar*> vars, std::vector<int64_t> steps);
+#ifndef SWIG
+  ~OptimizeVar() override = default;
+#endif  // SIWG
 
   /// Returns the best value found during search.
-  int64_t best() const { return best_; }
+  int64_t best() const { return BestValue(0); }
 
   /// Returns the variable that is optimized.
-  IntVar* Var() const { return var_; }
+  IntVar* var() const { return Size() == 0 ? nullptr : ObjectiveVar(0); }
+
   /// Internal methods.
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
-  void EnterSearch() override;
-  void BeginNextDecision(DecisionBuilder* const db) override;
-  void RefuteDecision(Decision* const d) override;
+  void BeginNextDecision(DecisionBuilder* db) override;
+  void RefuteDecision(Decision* d) override;
   bool AtSolution() override;
   bool AcceptSolution() override;
   virtual std::string Print() const;
   std::string DebugString() const override;
-  void Accept(ModelVisitor* const visitor) const override;
 
   void ApplyBound();
-
- protected:
-  IntVar* const var_;
-  int64_t step_;
-  int64_t best_;
-  bool maximize_;
-  bool found_initial_solution_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(OptimizeVar);
 };
 
 /// Base class of all search limits.
@@ -4473,9 +4636,10 @@ class RegularLimit : public SearchLimit {
   bool cumulative_;
 };
 
-// Limit based on the improvement rate of 'objective_var'.
+// Limit based on the improvement rate of 'objective_var' or a lexicographic
+// objective composed of 'objective_vars'.
 // This limit proceeds in two stages:
-// 1) During the phase of the search in which the objective_var is strictly
+// 1) During the phase of the search in which the objective is strictly
 // improving, a threshold value is computed as the minimum improvement rate of
 // the objective, based on the 'improvement_rate_coefficient' and
 // 'improvement_rate_solutions_distance' parameters.
@@ -4484,13 +4648,19 @@ class RegularLimit : public SearchLimit {
 // this threshold value.
 class ImprovementSearchLimit : public SearchLimit {
  public:
-  ImprovementSearchLimit(Solver* const s, IntVar* objective_var, bool maximize,
+  ImprovementSearchLimit(Solver* solver, IntVar* objective_var, bool maximize,
                          double objective_scaling_factor,
                          double objective_offset,
                          double improvement_rate_coefficient,
                          int improvement_rate_solutions_distance);
+  ImprovementSearchLimit(Solver* solver, std::vector<IntVar*> objective_vars,
+                         std::vector<bool> maximize,
+                         std::vector<double> objective_scaling_factors,
+                         std::vector<double> objective_offsets,
+                         double improvement_rate_coefficient,
+                         int improvement_rate_solutions_distance);
   ~ImprovementSearchLimit() override;
-  void Copy(const SearchLimit* const limit) override;
+  void Copy(const SearchLimit* limit) override;
   SearchLimit* MakeClone() const override;
   bool CheckWithOffset(absl::Duration offset) override;
   bool AtSolution() override;
@@ -4498,18 +4668,18 @@ class ImprovementSearchLimit : public SearchLimit {
   void Install() override;
 
  private:
-  IntVar* objective_var_;
-  bool maximize_;
-  double objective_scaling_factor_;
-  double objective_offset_;
+  std::vector<IntVar*> objective_vars_;
+  std::vector<bool> maximize_;
+  std::vector<double> objective_scaling_factors_;
+  std::vector<double> objective_offsets_;
   double improvement_rate_coefficient_;
   int improvement_rate_solutions_distance_;
 
-  double best_objective_;
+  std::vector<double> best_objectives_;
   // clang-format off
-  std::deque<std::pair<double, int64_t> > improvements_;
+  std::vector<std::deque<std::pair<double, int64_t> > > improvements_;
   // clang-format on
-  double threshold_;
+  std::vector<double> thresholds_;
   bool objective_updated_;
   bool gradient_stage_;
 };
@@ -5176,7 +5346,7 @@ class Assignment : public PropagationBaseObject {
   typedef AssignmentContainer<SequenceVar, SequenceVarElement>
       SequenceContainer;
 
-  explicit Assignment(Solver* const s);
+  explicit Assignment(Solver* solver);
   explicit Assignment(const Assignment* const copy);
   ~Assignment() override;
 
@@ -5208,22 +5378,74 @@ class Assignment : public PropagationBaseObject {
 #endif  // #if !defined(SWIG)
   void Save(AssignmentProto* const assignment_proto) const;
 
-  void AddObjective(IntVar* const v) {
+  void AddObjective(IntVar* const v) { AddObjectives({v}); }
+  void AddObjectives(const std::vector<IntVar*>& vars) {
     // Objective can only set once.
     DCHECK(!HasObjective());
-    objective_element_.Reset(v);
+    objective_elements_.reserve(vars.size());
+    for (IntVar* const var : vars) {
+      if (var != nullptr) {
+        objective_elements_.emplace_back(var);
+      }
+    }
   }
-  void ClearObjective() { objective_element_.Reset(nullptr); }
-  IntVar* Objective() const { return objective_element_.Var(); }
-  bool HasObjective() const { return (Objective() != nullptr); }
-  int64_t ObjectiveMin() const;
-  int64_t ObjectiveMax() const;
-  int64_t ObjectiveValue() const;
-  bool ObjectiveBound() const;
-  void SetObjectiveMin(int64_t m);
-  void SetObjectiveMax(int64_t m);
-  void SetObjectiveValue(int64_t value);
-  void SetObjectiveRange(int64_t l, int64_t u);
+  void ClearObjective() { objective_elements_.clear(); }
+  int NumObjectives() const { return objective_elements_.size(); }
+  IntVar* Objective() const { return ObjectiveFromIndex(0); }
+  IntVar* ObjectiveFromIndex(int index) const {
+    return HasObjectiveFromIndex(index) ? objective_elements_[index].Var()
+                                        : nullptr;
+  }
+  bool HasObjective() const { return !objective_elements_.empty(); }
+  bool HasObjectiveFromIndex(int index) const {
+    return index < objective_elements_.size();
+  }
+  int64_t ObjectiveMin() const { return ObjectiveMinFromIndex(0); }
+  int64_t ObjectiveMax() const { return ObjectiveMaxFromIndex(0); }
+  int64_t ObjectiveValue() const { return ObjectiveValueFromIndex(0); }
+  bool ObjectiveBound() const { return ObjectiveBoundFromIndex(0); }
+  void SetObjectiveMin(int64_t m) { SetObjectiveMinFromIndex(0, m); }
+  void SetObjectiveMax(int64_t m) { SetObjectiveMaxFromIndex(0, m); }
+  void SetObjectiveValue(int64_t value) {
+    SetObjectiveValueFromIndex(0, value);
+  }
+  void SetObjectiveRange(int64_t l, int64_t u) {
+    SetObjectiveRangeFromIndex(0, l, u);
+  }
+  int64_t ObjectiveMinFromIndex(int index) const {
+    return HasObjectiveFromIndex(index) ? objective_elements_[index].Min() : 0;
+  }
+  int64_t ObjectiveMaxFromIndex(int index) const {
+    return HasObjectiveFromIndex(index) ? objective_elements_[index].Max() : 0;
+  }
+  int64_t ObjectiveValueFromIndex(int index) const {
+    return HasObjectiveFromIndex(index) ? objective_elements_[index].Value()
+                                        : 0;
+  }
+  bool ObjectiveBoundFromIndex(int index) const {
+    return HasObjectiveFromIndex(index) ? objective_elements_[index].Bound()
+                                        : true;
+  }
+  void SetObjectiveMinFromIndex(int index, int64_t m) {
+    if (HasObjectiveFromIndex(index)) {
+      objective_elements_[index].SetMin(m);
+    }
+  }
+  void SetObjectiveMaxFromIndex(int index, int64_t m) {
+    if (HasObjectiveFromIndex(index)) {
+      objective_elements_[index].SetMax(m);
+    }
+  }
+  void SetObjectiveValueFromIndex(int index, int64_t value) {
+    if (HasObjectiveFromIndex(index)) {
+      objective_elements_[index].SetValue(value);
+    }
+  }
+  void SetObjectiveRangeFromIndex(int index, int64_t l, int64_t u) {
+    if (HasObjectiveFromIndex(index)) {
+      objective_elements_[index].SetRange(l, u);
+    }
+  }
 
   IntVarElement* Add(IntVar* const var);
   void Add(const std::vector<IntVar*>& vars);
@@ -5301,9 +5523,23 @@ class Assignment : public PropagationBaseObject {
   void Deactivate(const SequenceVar* const var);
   bool Activated(const SequenceVar* const var) const;
 
-  void ActivateObjective();
-  void DeactivateObjective();
-  bool ActivatedObjective() const;
+  void ActivateObjective() { ActivateObjectiveFromIndex(0); }
+  void DeactivateObjective() { DeactivateObjectiveFromIndex(0); }
+  bool ActivatedObjective() const { return ActivatedObjectiveFromIndex(0); }
+  void ActivateObjectiveFromIndex(int index) {
+    if (HasObjectiveFromIndex(index)) {
+      objective_elements_[index].Activate();
+    }
+  }
+  void DeactivateObjectiveFromIndex(int index) {
+    if (HasObjectiveFromIndex(index)) {
+      objective_elements_[index].Deactivate();
+    }
+  }
+  bool ActivatedObjectiveFromIndex(int index) const {
+    return HasObjectiveFromIndex(index) ? objective_elements_[index].Activated()
+                                        : true;
+  }
 
   std::string DebugString() const override;
 
@@ -5316,7 +5552,8 @@ class Assignment : public PropagationBaseObject {
   bool Contains(const IntVar* const var) const;
   bool Contains(const IntervalVar* const var) const;
   bool Contains(const SequenceVar* const var) const;
-  /// Copies the intersection of the two assignments to the current assignment.
+  /// Copies the intersection of the two assignments to the current
+  /// assignment.
   void CopyIntersection(const Assignment* assignment);
   /// Copies 'assignment' to the current assignment, clearing its previous
   /// content.
@@ -5341,7 +5578,7 @@ class Assignment : public PropagationBaseObject {
     return int_var_container_ == assignment.int_var_container_ &&
            interval_var_container_ == assignment.interval_var_container_ &&
            sequence_var_container_ == assignment.sequence_var_container_ &&
-           objective_element_ == assignment.objective_element_;
+           objective_elements_ == assignment.objective_elements_;
   }
   bool operator!=(const Assignment& assignment) const {
     return !(*this == assignment);
@@ -5351,7 +5588,7 @@ class Assignment : public PropagationBaseObject {
   IntContainer int_var_container_;
   IntervalContainer interval_var_container_;
   SequenceContainer sequence_var_container_;
-  IntVarElement objective_element_;
+  std::vector<IntVarElement> objective_elements_;
   DISALLOW_COPY_AND_ASSIGN(Assignment);
 };
 

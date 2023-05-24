@@ -131,8 +131,8 @@ void VrpBreaks() {
       [&data, &manager](const int64_t from_index,
                         const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
-        int from_node = manager.IndexToNode(from_index).value();
-        int to_node = manager.IndexToNode(to_index).value();
+        const int from_node = manager.IndexToNode(from_index).value();
+        const int to_node = manager.IndexToNode(to_index).value();
         return data.time_matrix[from_node][to_node] +
                data.service_time[from_node];
       });

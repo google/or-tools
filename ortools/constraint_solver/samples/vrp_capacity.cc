@@ -82,19 +82,19 @@ struct DataModel {
 //! @param[in] solution Solution found by the solver.
 void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
-  int64_t total_distance{0};
-  int64_t total_load{0};
+  int64_t total_distance = 0;
+  int64_t total_load = 0;
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64_t route_distance{0};
-    int64_t route_load{0};
+    int64_t route_distance = 0;
+    int64_t route_load = 0;
     std::stringstream route;
-    while (routing.IsEnd(index) == false) {
-      int64_t node_index = manager.IndexToNode(index).value();
+    while (!routing.IsEnd(index)) {
+      const int node_index = manager.IndexToNode(index).value();
       route_load += data.demands[node_index];
       route << node_index << " Load(" << route_load << ") -> ";
-      int64_t previous_index = index;
+      const int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
       route_distance += routing.GetArcCostForVehicle(previous_index, index,
                                                      int64_t{vehicle_id});
@@ -133,10 +133,11 @@ void VrpCapacity() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
+      [&data, &manager](const int64_t from_index,
+                        const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
-        int from_node = manager.IndexToNode(from_index).value();
-        int to_node = manager.IndexToNode(to_index).value();
+        const int from_node = manager.IndexToNode(from_index).value();
+        const int to_node = manager.IndexToNode(to_index).value();
         return data.distance_matrix[from_node][to_node];
       });
   // [END transit_callback]
@@ -149,9 +150,9 @@ void VrpCapacity() {
   // Add Capacity constraint.
   // [START capacity_constraint]
   const int demand_callback_index = routing.RegisterUnaryTransitCallback(
-      [&data, &manager](int64_t from_index) -> int64_t {
+      [&data, &manager](const int64_t from_index) -> int64_t {
         // Convert from routing variable Index to demand NodeIndex.
-        int from_node = manager.IndexToNode(from_index).value();
+        const int from_node = manager.IndexToNode(from_index).value();
         return data.demands[from_node];
       });
   routing.AddDimensionWithVehicleCapacity(

@@ -1649,4 +1649,128 @@ Constraint* Solver::MakePathTransitPrecedenceConstraint(
   return MakePathTransitTypedPrecedenceConstraint(
       this, std::move(nexts), std::move(transits), precedences, {{}});
 }
+
+namespace {
+
+class PathEnergyCostConstraint : public Constraint {
+ public:
+  PathEnergyCostConstraint(
+      Solver* solver,
+      Solver::PathEnergyCostConstraintSpecification specification)
+      : Constraint(solver), specification_(std::move(specification)) {
+    const int num_nexts = specification_.nexts.size();
+    DCHECK_EQ(num_nexts, specification_.distances.size());
+
+    const int num_paths = specification_.path_unit_costs.size();
+    DCHECK_EQ(num_paths, specification_.costs.size());
+    DCHECK_EQ(num_paths, specification_.path_used_when_empty.size());
+    DCHECK_EQ(num_paths, specification_.path_starts.size());
+    DCHECK_EQ(num_paths, specification_.path_ends.size());
+
+    const int num_nodes = specification_.forces.size();
+    DCHECK_EQ(num_nodes, specification_.paths.size());
+  }
+
+  void Post() override;
+  void InitialPropagate() override;
+
+ private:
+  void NodeDispatcher(int node);
+  void PropagatePath(int path);
+  Solver::PathEnergyCostConstraintSpecification specification_;
+  std::vector<Demon*> path_demons_;
+};
+
+// This constraint avoids unnecessary work by grouping per-path calls
+// after all per-node calls have triggered.
+void PathEnergyCostConstraint::Post() {
+  // path demons are delayed, to be run after all node demons.
+  path_demons_.resize(specification_.path_unit_costs.size(), nullptr);
+  for (int path = 0; path < specification_.path_unit_costs.size(); ++path) {
+    // If unit cost is 0, initial propagation takes care of setting the cost
+    // to 0, no need to register a demon.
+    if (specification_.path_unit_costs[path] == 0) continue;
+    path_demons_[path] = MakeDelayedConstraintDemon1(
+        solver(), this, &PathEnergyCostConstraint::PropagatePath,
+        "PropagatePath", path);
+  }
+  // Node demons are not delayed, so they are all called before path demons.
+  const int num_nodes = specification_.forces.size();
+  const int num_nexts = specification_.nexts.size();
+  for (int node = 0; node < num_nodes; ++node) {
+    auto* demon = MakeConstraintDemon1(
+        solver(), this, &PathEnergyCostConstraint::NodeDispatcher,
+        "NodeDispatcher", node);
+    specification_.forces[node]->WhenRange(demon);
+    specification_.paths[node]->WhenBound(demon);
+    if (node < num_nexts) {
+      specification_.nexts[node]->WhenBound(demon);
+      specification_.distances[node]->WhenRange(demon);
+    }
+  }
+}
+
+void PathEnergyCostConstraint::InitialPropagate() {
+  const int num_paths = specification_.path_unit_costs.size();
+  for (int path = 0; path < num_paths; ++path) {
+    if (specification_.path_unit_costs[path] == 0) {
+      specification_.costs[path]->SetValue(0);
+    } else {
+      PropagatePath(path);
+    }
+  }
+}
+
+// When a node has its path decided, schedule path propagation.
+void PathEnergyCostConstraint::NodeDispatcher(int node) {
+  if (!specification_.paths[node]->Bound()) return;
+  const int path = specification_.paths[node]->Min();
+  if (path < 0) return;
+  if (path_demons_[path] == nullptr) return;
+  EnqueueDelayedDemon(path_demons_[path]);
+}
+
+// Propagate only forces, distance -> energy.
+void PathEnergyCostConstraint::PropagatePath(int path) {
+  // Compute energy along mandatory path.
+  int64_t energy_min = 0;
+  int64_t energy_max = 0;
+  int current = specification_.path_starts[path];
+  const int num_nodes = specification_.nexts.size();
+  int num_nonend_nodes = 0;
+  while (current < num_nodes) {
+    ++num_nonend_nodes;
+    if (!specification_.nexts[current]->Bound()) break;
+    const int next = specification_.nexts[current]->Min();
+    // Energy += force * distance.
+    const int64_t distance_min = specification_.distances[current]->Min();
+    const int64_t distance_max = specification_.distances[current]->Max();
+    DCHECK_GE(distance_min, 0);  // Bounds are correct when distance is >= 0.
+    energy_min = CapAdd(
+        energy_min, CapProd(specification_.forces[next]->Min(), distance_min));
+    energy_max = CapAdd(
+        energy_max, CapProd(specification_.forces[next]->Max(), distance_max));
+    current = next;
+  }
+  // TODO(user): test more incremental propagation. Energy can be computed
+  // as unordered sum of force[next] * distance[node], it can be done without
+  // browsing the whole path at every trigger.
+  if (current == specification_.path_ends[path]) {
+    if (num_nonend_nodes == 1 && !specification_.path_used_when_empty[path]) {
+      specification_.costs[path]->SetValue(0);
+    } else {
+      specification_.costs[path]->SetRange(
+          CapProd(energy_min, specification_.path_unit_costs[path]),
+          CapProd(energy_max, specification_.path_unit_costs[path]));
+    }
+  }
+}
+
+}  // namespace
+
+Constraint* Solver::MakePathEnergyCostConstraint(
+    PathEnergyCostConstraintSpecification specification) {
+  return RevAlloc(new PathEnergyCostConstraint(this, std::move(specification)));
+}
+
 }  // namespace operations_research

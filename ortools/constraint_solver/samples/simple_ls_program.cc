@@ -29,7 +29,7 @@ class OneVarLns : public BaseLns {
   explicit OneVarLns(const std::vector<IntVar*>& vars)
       : BaseLns(vars), index_(0) {}
 
-  ~OneVarLns() override = default;
+  ~OneVarLns() override {}
 
   void InitFragments() override { index_ = 0; }
 
@@ -54,7 +54,7 @@ class MoveOneVar : public IntVarLocalSearchOperator {
         variable_index_(0),
         move_up_(false) {}
 
-  ~MoveOneVar() override = default;
+  ~MoveOneVar() override {}
 
  protected:
   // Make a neighbor assigning one variable to its target value.
@@ -87,7 +87,7 @@ class SumFilter : public IntVarLocalSearchFilter {
   explicit SumFilter(const std::vector<IntVar*>& vars)
       : IntVarLocalSearchFilter(vars), sum_(0) {}
 
-  ~SumFilter() override = default;
+  ~SumFilter() override {}
 
   void OnSynchronize(const Assignment* delta) override {
     sum_ = 0;

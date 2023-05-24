@@ -6784,7 +6784,7 @@ IntExpr* Solver::MakeDifference(int64_t value, IntExpr* const expr) {
 IntExpr* Solver::MakeOpposite(IntExpr* const expr) {
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
-    return MakeIntConst(-expr->Min());
+    return MakeIntConst(CapOpp(expr->Min()));
   }
   IntExpr* result =
       Cache()->FindExprExpression(expr, ModelCache::EXPR_OPPOSITE);
@@ -7408,7 +7408,7 @@ void IntVar::SetValues(const std::vector<int64_t>& values) {
       // that uses a global, static shared (and locked) storage.
       // TODO(user): [optional] consider porting
       // STLSortAndRemoveDuplicates from ortools/base/stl_util.h to the
-      // existing open_source/base/stl_util.h and using it here.
+      // existing base/stl_util.h and using it here.
       // TODO(user): We could filter out values not in the var.
       std::vector<int64_t>& tmp = solver()->tmp_vector_;
       tmp.clear();

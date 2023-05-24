@@ -39,25 +39,43 @@ MakeRelocateNeighborsOperator::MakeRelocateNeighborsOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_neighbors,
     RoutingTransitCallback2 arc_evaluator)
-    : PathOperator(vars, secondary_vars, 2, true, false,
-                   std::move(start_empty_path_class)),
+    : PathOperator(vars, secondary_vars, get_neighbors == nullptr ? 2 : 1, true,
+                   false, std::move(start_empty_path_class),
+                   std::move(get_neighbors)),
       arc_evaluator_(std::move(arc_evaluator)) {}
 
 bool MakeRelocateNeighborsOperator::MakeNeighbor() {
-  const int64_t before_chain = BaseNode(0);
-  int64_t chain_end = Next(before_chain);
-  if (IsPathEnd(chain_end)) return false;
-  const int64_t destination = BaseNode(1);
-  if (chain_end == destination) return false;
-  const int64_t max_arc_value = arc_evaluator_(destination, chain_end);
-  int64_t next = Next(chain_end);
-  while (!IsPathEnd(next) && arc_evaluator_(chain_end, next) <= max_arc_value) {
-    if (next == destination) return false;
-    chain_end = next;
-    next = Next(chain_end);
+  const auto do_move = [this](int64_t before_chain, int64_t destination) {
+    int64_t chain_end = Next(before_chain);
+    if (IsPathEnd(chain_end)) return false;
+    if (chain_end == destination) return false;
+    const int64_t max_arc_value = arc_evaluator_(destination, chain_end);
+    int64_t next = Next(chain_end);
+    while (!IsPathEnd(next) &&
+           arc_evaluator_(chain_end, next) <= max_arc_value) {
+      // We return false here to avoid symmetric moves. The rationale is that
+      // if destination is part of the same group as the chain, we probably want
+      // to extend the chain to contain it, which means finding another
+      // destination further down the path.
+      // TODO(user): Add a parameter to either return false or break here,
+      // depending if we want to permutate nodes within the same chain.
+      if (next == destination) return false;
+      chain_end = next;
+      next = Next(chain_end);
+    }
+    return MoveChainAndRepair(before_chain, chain_end, destination);
+  };
+  if (HasNeighbors()) {
+    const int64_t node = GetNeighborForBaseNode(0);
+    if (IsInactive(node)) return false;
+    return do_move(/*before_chain=*/Prev(node),
+                   /*destination=*/BaseNode(0));
+  } else {
+    return do_move(/*before_chain=*/BaseNode(0),
+                   /*destination=*/BaseNode(1));
   }
-  return MoveChainAndRepair(before_chain, chain_end, destination);
 }
 
 bool MakeRelocateNeighborsOperator::MoveChainAndRepair(int64_t before_chain,
@@ -112,7 +130,7 @@ SwapActiveToShortestPathOperator::SwapActiveToShortestPathOperator(
     std::vector<std::vector<int64_t>> alternative_sets,
     RoutingTransitCallback2 arc_evaluator)
     : PathOperator(vars, secondary_vars, 1, true, false,
-                   std::move(start_empty_path_class)),
+                   std::move(start_empty_path_class), nullptr),
       arc_evaluator_(std::move(arc_evaluator)),
       alternative_sets_(std::move(alternative_sets)),
       to_alternative_set_(vars.size(), -1),
@@ -219,7 +237,7 @@ MakePairActiveOperator::MakePairActiveOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const RoutingIndexPairs& pairs)
     : PathOperator(vars, secondary_vars, 2, false, true,
-                   std::move(start_empty_path_class)),
+                   std::move(start_empty_path_class), nullptr),
       inactive_pair_(0),
       inactive_pair_first_index_(0),
       inactive_pair_second_index_(0),
@@ -296,7 +314,7 @@ MakePairInactiveOperator::MakePairInactiveOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathOperator(vars, secondary_vars, 1, true, false,
-                   std::move(start_empty_path_class)) {
+                   std::move(start_empty_path_class), nullptr) {
   AddPairAlternativeSets(index_pairs);
 }
 
@@ -317,7 +335,7 @@ PairRelocateOperator::PairRelocateOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathOperator(vars, secondary_vars, 3, true, false,
-                   std::move(start_empty_path_class)) {
+                   std::move(start_empty_path_class), nullptr) {
   AddPairAlternativeSets(index_pairs);
 }
 
@@ -384,23 +402,42 @@ GroupPairAndRelocateOperator::GroupPairAndRelocateOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_neighbors,
     const RoutingIndexPairs& index_pairs)
-    : PathOperator(vars, secondary_vars, 2, true, false,
-                   std::move(start_empty_path_class)) {
+    : PathOperator(vars, secondary_vars, get_neighbors == nullptr ? 2 : 1, true,
+                   false, std::move(start_empty_path_class),
+                   std::move(get_neighbors)) {
   AddPairAlternativeSets(index_pairs);
 }
 
 bool GroupPairAndRelocateOperator::MakeNeighbor() {
-  const int64_t prev1 = BaseNode(0);
-  const int64_t node1 = Next(prev1);
-  if (IsPathEnd(node1)) return false;
-  const int64_t sibling1 = GetActiveAlternativeSibling(node1);
-  if (sibling1 == -1) return false;
-  const int64_t node2 = BaseNode(1);
-  // Skip redundant cases.
-  if (node2 == node1 || node2 == sibling1) return false;
-  const bool ok = MoveChain(prev1, node1, node2);
-  return MoveChain(Prev(sibling1), sibling1, node1) || ok;
+  const auto do_move = [this](int64_t node, int64_t destination) {
+    if (IsPathEnd(node) || IsInactive(node)) return false;
+    const int64_t sibling = GetActiveAlternativeSibling(node);
+    if (sibling == -1) return false;
+    // Skip redundant cases.
+    if (destination == node || destination == sibling) return false;
+    const bool ok = MoveChain(Prev(node), node, destination);
+    return MoveChain(Prev(sibling), sibling, node) || ok;
+  };
+  return HasNeighbors()
+             ? do_move(/*node=*/GetNeighborForBaseNode(0),
+                       /*destination=*/BaseNode(0))
+             : do_move(/*node=*/Next(BaseNode(0)), /*destination=*/BaseNode(1));
+}
+
+LightPairRelocateOperator::LightPairRelocateOperator(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_neighbors,
+    const RoutingIndexPairs& index_pairs,
+    std::function<bool(int64_t)> force_lifo)
+    : PathOperator(vars, secondary_vars, get_neighbors == nullptr ? 2 : 1, true,
+                   false, std::move(start_empty_path_class),
+                   std::move(get_neighbors)),
+      force_lifo_(std::move(force_lifo)) {
+  AddPairAlternativeSets(index_pairs);
 }
 
 LightPairRelocateOperator::LightPairRelocateOperator(
@@ -409,68 +446,80 @@ LightPairRelocateOperator::LightPairRelocateOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs,
     std::function<bool(int64_t)> force_lifo)
-    : PathOperator(vars, secondary_vars, 2, true, false,
-                   std::move(start_empty_path_class)),
-      force_lifo_(std::move(force_lifo)) {
-  AddPairAlternativeSets(index_pairs);
-}
+    : LightPairRelocateOperator(vars, secondary_vars, start_empty_path_class,
+                                nullptr, index_pairs, std::move(force_lifo)) {}
 
 bool LightPairRelocateOperator::MakeNeighbor() {
-  const int64_t prev1 = BaseNode(0);
-  const int64_t node1 = Next(prev1);
-  if (IsPathEnd(node1)) return false;
-  const int64_t sibling1 = GetActiveAlternativeSibling(node1);
-  if (sibling1 == -1) return false;
-  const int64_t node2 = BaseNode(1);
-  if (node2 == sibling1) return false;
-  const bool path2_is_lifo =
-      (force_lifo_ != nullptr && force_lifo_(StartNode(1)));
-  // Note: MoveChain will return false if it is a no-op (moving the chain to its
-  // current position). However we want to accept the move if at least node1 or
-  // sibling1 gets moved to a new position. Therefore we want to be sure both
-  // MoveChains are called and at least one succeeds.
+  const auto do_move = [this](int64_t node, int64_t destination,
+                              bool destination_is_lifo) {
+    if (IsPathStart(node) || IsPathEnd(node) || IsInactive(node)) return false;
+    const int64_t prev = Prev(node);
+    if (IsPathEnd(node)) return false;
+    const int64_t sibling = GetActiveAlternativeSibling(node);
+    if (sibling == -1 || destination == sibling) return false;
 
-  // Special case handling relocating the first node of a pair "before" the
-  // first node of another pair. Limiting this to relocating after the start of
-  // the path as other moves will be mostly equivalent to relocating "after".
-  // TODO(user): extend to relocating before the start of sub-tours (when all
-  // pairs have been matched).
-  if (IsPathStart(node2)) {
-    const bool ok = MoveChain(prev1, node1, node2);
-    const int64_t sibling2 = GetActiveAlternativeSibling(Next(node1));
-    if (sibling2 == -1) {
-      // Not inserting before a pair node: insert sibling1 after node1.
-      return MoveChain(Prev(sibling1), sibling1, node1) || ok;
-    } else {
-      // Depending on the lifo status of the path, insert sibling1 before or
-      // after sibling2 since node1 is being inserted before next2.
-      if (!path2_is_lifo) {
-        if (Prev(sibling2) == sibling1) return ok;
-        return MoveChain(Prev(sibling1), sibling1, Prev(sibling2)) || ok;
+    // Note: MoveChain will return false if it is a no-op (moving the chain to
+    // its current position). However we want to accept the move if at least
+    // node or sibling gets moved to a new position. Therefore we want to be
+    // sure both MoveChains are called and at least one succeeds.
+
+    // Special case handling relocating the first node of a pair "before" the
+    // first node of another pair. Limiting this to relocating after the start
+    // of the path as other moves will be mostly equivalent to relocating
+    // "after".
+    // TODO(user): extend to relocating before the start of sub-tours (when
+    // all pairs have been matched).
+    if (IsPathStart(destination)) {
+      const bool ok = MoveChain(prev, node, destination);
+      const int64_t destination_sibling =
+          GetActiveAlternativeSibling(Next(node));
+      if (destination_sibling == -1) {
+        // Not inserting before a pair node: insert sibling after node.
+        return MoveChain(Prev(sibling), sibling, node) || ok;
       } else {
-        return MoveChain(Prev(sibling1), sibling1, sibling2) || ok;
+        // Depending on the lifo status of the path, insert sibling before or
+        // after destination_sibling since node is being inserted before
+        // next(destination).
+        if (!destination_is_lifo) {
+          if (Prev(destination_sibling) == sibling) return ok;
+          return MoveChain(Prev(sibling), sibling, Prev(destination_sibling)) ||
+                 ok;
+        } else {
+          return MoveChain(Prev(sibling), sibling, destination_sibling) || ok;
+        }
       }
     }
-  }
-  // Relocating the first node of a pair "after" the first node of another pair.
-  const int64_t sibling2 = GetActiveAlternativeSibling(node2);
-  if (sibling2 == -1) return false;
-  const bool ok = MoveChain(prev1, node1, node2);
-  if (!path2_is_lifo) {
-    return MoveChain(Prev(sibling1), sibling1, sibling2) || ok;
-  } else {
-    if (Prev(sibling2) == sibling1) return ok;
-    return MoveChain(Prev(sibling1), sibling1, Prev(sibling2)) || ok;
-  }
+    // Relocating the first node of a pair "after" the first node of another
+    // pair.
+    const int64_t destination_sibling =
+        GetActiveAlternativeSibling(destination);
+    if (destination_sibling == -1) return false;
+    const bool ok = MoveChain(prev, node, destination);
+    if (!destination_is_lifo) {
+      return MoveChain(Prev(sibling), sibling, destination_sibling) || ok;
+    } else {
+      if (Prev(destination_sibling) == sibling) return ok;
+      return MoveChain(Prev(sibling), sibling, Prev(destination_sibling)) || ok;
+    }
+  };
+  // TODO(user): Add support for lifo for neighbor-based move.
+  return HasNeighbors()
+             ? do_move(/*node=*/GetNeighborForBaseNode(0),
+                       /*destination=*/BaseNode(0),
+                       /*destination_is_lifo=*/false)
+             : do_move(/*node=*/Next(BaseNode(0)), /*destination=*/BaseNode(1),
+                       force_lifo_ != nullptr && force_lifo_(StartNode(1)));
 }
 
 PairExchangeOperator::PairExchangeOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_neighbors,
     const RoutingIndexPairs& index_pairs)
-    : PathOperator(vars, secondary_vars, 2, true, true,
-                   std::move(start_empty_path_class)) {
+    : PathOperator(vars, secondary_vars, get_neighbors == nullptr ? 2 : 1, true,
+                   true, std::move(start_empty_path_class),
+                   std::move(get_neighbors)) {
   AddPairAlternativeSets(index_pairs);
 }
 
@@ -542,7 +591,7 @@ PairExchangeRelocateOperator::PairExchangeRelocateOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathOperator(vars, secondary_vars, 6, true, false,
-                   std::move(start_empty_path_class)) {
+                   std::move(start_empty_path_class), nullptr) {
   AddPairAlternativeSets(index_pairs);
 }
 
@@ -790,7 +839,7 @@ IndexPairSwapActiveOperator::IndexPairSwapActiveOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathOperator(vars, secondary_vars, 1, true, false,
-                   std::move(start_empty_path_class)),
+                   std::move(start_empty_path_class), nullptr),
       inactive_node_(0) {
   AddPairAlternativeSets(index_pairs);
 }
@@ -1416,7 +1465,7 @@ RelocateExpensiveChain::RelocateExpensiveChain(
     int num_arcs_to_consider,
     std::function<int64_t(int64_t, int64_t, int64_t)> arc_cost_for_path_start)
     : PathOperator(vars, secondary_vars, 1, false, false,
-                   std::move(start_empty_path_class)),
+                   std::move(start_empty_path_class), nullptr),
       num_arcs_to_consider_(num_arcs_to_consider),
       current_path_(0),
       current_expensive_arc_indices_({-1, -1}),
@@ -1519,10 +1568,12 @@ RelocateSubtrip::RelocateSubtrip(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_neighbors,
     const RoutingIndexPairs& pairs)
     : PathOperator(vars, secondary_vars,
-                   /*number_of_base_nodes*/ 2, true, false,
-                   std::move(start_empty_path_class)) {
+                   /*number_of_base_nodes*/ get_neighbors == nullptr ? 2 : 1,
+                   true, false, std::move(start_empty_path_class),
+                   std::move(get_neighbors)) {
   is_pickup_node_.resize(number_of_nexts_, false);
   is_delivery_node_.resize(number_of_nexts_, false);
   pair_of_node_.resize(number_of_nexts_, -1);
@@ -1642,22 +1693,32 @@ bool RelocateSubtrip::RelocateSubTripFromDelivery(
 }
 
 bool RelocateSubtrip::MakeNeighbor() {
-  if (is_pickup_node_[BaseNode(0)]) {
-    return RelocateSubTripFromPickup(BaseNode(0), BaseNode(1));
-  } else if (is_delivery_node_[BaseNode(0)]) {
-    return RelocateSubTripFromDelivery(BaseNode(0), BaseNode(1));
-  } else {
-    return false;
-  }
+  const auto do_move = [this](int64_t node, int64_t insertion_node) {
+    if (IsInactive(node)) return false;
+    if (is_pickup_node_[node]) {
+      return RelocateSubTripFromPickup(node, insertion_node);
+    } else if (is_delivery_node_[node]) {
+      return RelocateSubTripFromDelivery(node, insertion_node);
+    } else {
+      return false;
+    }
+  };
+  return HasNeighbors()
+             ? do_move(/*node=*/GetNeighborForBaseNode(0),
+                       /*insertion_node=*/BaseNode(0))
+             : do_move(/*node=*/BaseNode(0), /*insertion_node=*/BaseNode(1));
 }
 
 ExchangeSubtrip::ExchangeSubtrip(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
+    std::function<const std::vector<int>&(int, int)> get_neighbors,
     const RoutingIndexPairs& pairs)
-    : PathOperator(vars, secondary_vars, 2, true, false,
-                   std::move(start_empty_path_class)) {
+    : PathOperator(vars, secondary_vars,
+                   /*number_of_base_nodes*/ get_neighbors == nullptr ? 2 : 1,
+                   true, false, std::move(start_empty_path_class),
+                   std::move(get_neighbors)) {
   is_pickup_node_.resize(number_of_nexts_, false);
   is_delivery_node_.resize(number_of_nexts_, false);
   pair_of_node_.resize(number_of_nexts_, -1);
@@ -1687,24 +1748,44 @@ bool VectorContains(const std::vector<int64_t>& values, int64_t target) {
 }  // namespace
 
 bool ExchangeSubtrip::MakeNeighbor() {
-  if (pair_of_node_[BaseNode(0)] == -1) return false;
-  if (pair_of_node_[BaseNode(1)] == -1) return false;
-  // Break symmetry: a move generated from (BaseNode(0), BaseNode(1)) is the
-  // same as from (BaseNode(1), BaseNode(1)): no need to do it twice.
-  if (BaseNode(0) >= BaseNode(1)) return false;
+  int64_t node0 = -1;
+  int64_t node1 = -1;
+  if (HasNeighbors()) {
+    const int64_t node = BaseNode(0);
+    const int64_t neighbor = GetNeighborForBaseNode(0);
+    if (IsInactive(neighbor)) return false;
+    if (is_delivery_node_[node] && is_delivery_node_[Prev(neighbor)]) {
+      node0 = node;
+      node1 = Prev(neighbor);
+    } else if (is_pickup_node_[neighbor] && is_pickup_node_[Next(node)]) {
+      node0 = Next(node);
+      node1 = neighbor;
+    } else {
+      return false;
+    }
+  } else {
+    node0 = BaseNode(0);
+    node1 = BaseNode(1);
+  }
+
+  if (pair_of_node_[node0] == -1) return false;
+  if (pair_of_node_[node1] == -1) return false;
+  // Break symmetry: a move generated from (node0, node1) is the
+  // same as from (node1, node0): no need to do it twice.
+  if (node0 >= node1) return false;
   rejects0_.clear();
   subtrip0_.clear();
-  if (!ExtractChainsAndCheckCanonical(BaseNode(0), &rejects0_, &subtrip0_)) {
+  if (!ExtractChainsAndCheckCanonical(node0, &rejects0_, &subtrip0_)) {
     return false;
   }
   rejects1_.clear();
   subtrip1_.clear();
-  if (!ExtractChainsAndCheckCanonical(BaseNode(1), &rejects1_, &subtrip1_)) {
+  if (!ExtractChainsAndCheckCanonical(node1, &rejects1_, &subtrip1_)) {
     return false;
   }
 
   // If paths intersect, skip the move.
-  if (Path(BaseNode(0)) == Path(BaseNode(1))) {
+  if (HasNeighbors() || StartNode(0) == StartNode(1)) {
     if (VectorContains(rejects0_, subtrip1_.front())) return false;
     if (VectorContains(rejects1_, subtrip0_.front())) return false;
     if (VectorContains(subtrip0_, subtrip1_.front())) return false;
@@ -1719,12 +1800,12 @@ bool ExchangeSubtrip::MakeNeighbor() {
   const bool concatenated01 = last0 == subtrip1_.front();
   const bool concatenated10 = last1 == subtrip0_.front();
 
-  if (is_delivery_node_[BaseNode(0)]) std::swap(subtrip1_, rejects0_);
+  if (is_delivery_node_[node0]) std::swap(subtrip1_, rejects0_);
   path0_.insert(path0_.end(), subtrip1_.begin(), subtrip1_.end());
   path0_.insert(path0_.end(), rejects0_.begin(), rejects0_.end());
   path0_.push_back(last0);
 
-  if (is_delivery_node_[BaseNode(1)]) std::swap(subtrip0_, rejects1_);
+  if (is_delivery_node_[node1]) std::swap(subtrip0_, rejects1_);
   path1_.insert(path1_.end(), subtrip0_.begin(), subtrip0_.end());
   path1_.insert(path1_.end(), rejects1_.begin(), rejects1_.end());
   path1_.push_back(last1);
@@ -1740,8 +1821,8 @@ bool ExchangeSubtrip::MakeNeighbor() {
 
   // Change the paths. Since SetNext() modifies Path() values,
   // record path_id0 and path_id11 before calling SetPath();
-  const int64_t path0_id = Path(BaseNode(0));
-  const int64_t path1_id = Path(BaseNode(1));
+  const int64_t path0_id = Path(node0);
+  const int64_t path1_id = Path(node1);
   SetPath(path0_, path0_id);
   SetPath(path1_, path1_id);
   return true;

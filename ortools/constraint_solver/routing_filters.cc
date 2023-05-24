@@ -35,6 +35,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -3049,6 +3050,145 @@ void CPFeasibilityFilter::AddDeltaToAssignment(const Assignment* delta,
 IntVarLocalSearchFilter* MakeCPFeasibilityFilter(RoutingModel* routing_model) {
   return routing_model->solver()->RevAlloc(
       new CPFeasibilityFilter(routing_model));
+}
+
+PathEnergyCostChecker::PathEnergyCostChecker(
+    const PathState* path_state, std::vector<int> force_class,
+    std::vector<const std::function<int64_t(int64_t)>*> force_per_class,
+    std::vector<int> distance_class,
+    std::vector<const std::function<int64_t(int64_t, int64_t)>*>
+        distance_per_class,
+    std::vector<int64_t> path_unit_costs,
+    std::vector<bool> path_has_cost_when_empty)
+    : path_state_(path_state),
+      force_class_(std::move(force_class)),
+      distance_class_(std::move(distance_class)),
+      force_per_class_(std::move(force_per_class)),
+      distance_per_class_(std::move(distance_per_class)),
+      path_unit_costs_(std::move(path_unit_costs)),
+      path_has_cost_when_empty_(std::move(path_has_cost_when_empty)) {
+  committed_total_cost_ = 0;
+  committed_path_cost_.assign(path_state_->NumPaths(), 0);
+  const int num_paths = path_state_->NumPaths();
+  for (int path = 0; path < num_paths; ++path) {
+    committed_path_cost_[path] = ComputePathCost(path);
+    committed_total_cost_ =
+        CapAdd(committed_total_cost_, committed_path_cost_[path]);
+  }
+  accepted_total_cost_ = committed_total_cost_;
+}
+
+bool PathEnergyCostChecker::Check() {
+  if (path_state_->IsInvalid()) return true;
+  accepted_total_cost_ = committed_total_cost_;
+  for (const int path : path_state_->ChangedPaths()) {
+    accepted_total_cost_ =
+        CapSub(accepted_total_cost_, committed_path_cost_[path]);
+    accepted_total_cost_ = CapAdd(accepted_total_cost_, ComputePathCost(path));
+    if (accepted_total_cost_ == kint64max) return false;
+  }
+  return true;
+}
+
+void PathEnergyCostChecker::Commit() {
+  for (const int path : path_state_->ChangedPaths()) {
+    committed_total_cost_ =
+        CapSub(committed_total_cost_, committed_path_cost_[path]);
+    committed_path_cost_[path] = ComputePathCost(path);
+    committed_total_cost_ =
+        CapAdd(committed_total_cost_, committed_path_cost_[path]);
+  }
+}
+
+int64_t PathEnergyCostChecker::ComputePathCost(int64_t path) const {
+  const int force_class = force_class_[path];
+  const auto& force_evaluator = *force_per_class_[force_class];
+  const int distance_class = distance_class_[path];
+  const auto& distance_evaluator = *distance_per_class_[distance_class];
+
+  int64_t total_energy = 0;
+  int64_t total_force = 0;
+  int64_t min_total_force = kint64max;
+  int64_t total_distance = 0;
+  int num_path_nodes = 0;
+  int prev_node = path_state_->Start(path);
+  for (const auto chain : path_state_->Chains(path)) {
+    num_path_nodes += chain.NumNodes();
+    const int first = chain.First();
+    // Add energy needed to go from prev_node to chain.First().
+    if (first != prev_node) {  // At path start, first == prev_node.
+      const int64_t force = force_evaluator(prev_node);
+      const int64_t distance = distance_evaluator(prev_node, first);
+      total_force = CapAdd(total_force, force);
+      total_energy = CapAdd(total_energy, CapProd(total_force, distance));
+      total_distance = CapAdd(total_distance, distance);
+      min_total_force = std::min(min_total_force, total_force);
+      prev_node = first;
+    }
+    // Add energy needed to go from chain.First() to chain.Last().
+    for (const int node : chain.WithoutFirstNode()) {
+      const int64_t force = force_evaluator(prev_node);
+      const int64_t distance = distance_evaluator(prev_node, node);
+      total_force = CapAdd(total_force, force);
+      total_energy = CapAdd(total_energy, CapProd(total_force, distance));
+      total_distance = CapAdd(total_distance, distance);
+      min_total_force = std::min(min_total_force, total_force);
+      prev_node = node;
+    }
+  }
+  // If total_force was ever < 0, offset it to 0.
+  if (min_total_force < 0) {
+    const int64_t offset = CapProd(total_distance, CapOpp(min_total_force));
+    total_energy = CapAdd(total_energy, offset);
+  }
+  return (num_path_nodes == 2 && !path_has_cost_when_empty_[path])
+             ? 0
+             : CapProd(total_energy, path_unit_costs_[path]);
+}
+
+namespace {
+
+class PathEnergyCostFilter : public LocalSearchFilter {
+ public:
+  std::string DebugString() const override { return name_; }
+  PathEnergyCostFilter(std::unique_ptr<PathEnergyCostChecker> checker,
+                       const std::string& energy_name)
+      : checker_(std::move(checker)),
+        name_(absl::StrCat("PathEnergyCostFilter(", energy_name, ")")) {}
+
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64_t objective_min, int64_t objective_max) override {
+    if (objective_max > kint64max / 2) return true;
+    if (!checker_->Check()) return false;
+    const int64_t cost = checker_->AcceptedCost();
+    return objective_min <= cost && cost <= objective_max;
+  }
+
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override {
+    checker_->Commit();
+  }
+
+  int64_t GetSynchronizedObjectiveValue() const override {
+    return checker_->CommittedCost();
+  }
+  int64_t GetAcceptedObjectiveValue() const override {
+    return checker_->AcceptedCost();
+  }
+
+ private:
+  std::unique_ptr<PathEnergyCostChecker> checker_;
+  const std::string name_;
+};
+
+}  // namespace
+
+LocalSearchFilter* MakePathEnergyCostFilter(
+    Solver* solver, std::unique_ptr<PathEnergyCostChecker> checker,
+    const std::string& dimension_name) {
+  PathEnergyCostFilter* filter =
+      new PathEnergyCostFilter(std::move(checker), dimension_name);
+  return solver->RevAlloc(filter);
 }
 
 // TODO(user): Implement same-vehicle filter. Could be merged with node

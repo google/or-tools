@@ -117,8 +117,8 @@ void Tsp() {
       [&data, &manager](const int64_t from_index,
                         const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
-        auto from_node = manager.IndexToNode(from_index).value();
-        auto to_node = manager.IndexToNode(to_index).value();
+        const int from_node = manager.IndexToNode(from_index).value();
+        const int to_node = manager.IndexToNode(to_index).value();
         return data.distance_matrix[from_node][to_node];
       });
   // [END transit_callback]

@@ -102,7 +102,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
     int64_t route_distance{0};
     std::stringstream route;
-    while (routing.IsEnd(index) == false) {
+    while (!routing.IsEnd(index)) {
       route << manager.IndexToNode(index).value() << " -> ";
       int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
@@ -140,10 +140,11 @@ void VrpGlobalSpan() {
   // Define cost of each arc.
   // [START arc_cost]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
+      [&data, &manager](const int64_t from_index,
+                        const int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
-        auto from_node = manager.IndexToNode(from_index).value();
-        auto to_node = manager.IndexToNode(to_index).value();
+        const int from_node = manager.IndexToNode(from_index).value();
+        const int to_node = manager.IndexToNode(to_index).value();
         return data.distance_matrix[from_node][to_node];
       });
   routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index);
@@ -165,8 +166,8 @@ void VrpGlobalSpan() {
   // [START pickup_delivery_constraint]
   Solver* const solver = routing.solver();
   for (const auto& request : data.pickups_deliveries) {
-    int64_t pickup_index = manager.NodeToIndex(request[0]);
-    int64_t delivery_index = manager.NodeToIndex(request[1]);
+    const int64_t pickup_index = manager.NodeToIndex(request[0]);
+    const int64_t delivery_index = manager.NodeToIndex(request[1]);
     routing.AddPickupAndDelivery(pickup_index, delivery_index);
     solver->AddConstraint(solver->MakeEquality(
         routing.VehicleVar(pickup_index), routing.VehicleVar(delivery_index)));

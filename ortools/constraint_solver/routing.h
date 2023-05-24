@@ -1084,6 +1084,15 @@ class RoutingModel {
   /// vehicle is not empty, aka there's at least one node on the route other
   /// than the first and last nodes.
   int64_t GetFixedCostOfVehicle(int vehicle) const;
+  // Sets the energy cost of a vehicle.
+  // The energy used by a vehicle is the integral of the force dimension over
+  // the distance dimension: it is the sum over nodes visited by the vehicle of
+  // force.CumulVar(Next(node)) * distance.TransitVar(node).
+  // The energy cost of a vehicle is linear in the energy used by the vehicle,
+  // this call sets the coefficient to unit_cost, it is zero if unset.
+  void SetPathEnergyCostOfVehicle(const std::string& force,
+                                  const std::string& distance,
+                                  int64_t unit_cost, int vehicle);
 
   /// The following methods set the linear and quadratic cost factors of
   /// vehicles (must be positive values). The default value of these parameters
@@ -1411,7 +1420,8 @@ class RoutingModel {
 
     /// Computes num_neighbors neighbors of all nodes for every cost class in
     /// routing_model.
-    void ComputeNeighbors(const RoutingModel& routing_model, int num_neighbors);
+    void ComputeNeighbors(const RoutingModel& routing_model, int num_neighbors,
+                          bool add_vehicle_starts_to_neighbors);
     /// Returns the neighbors of the given node for the given cost_class.
     const std::vector<int>& GetNeighborsOfNodeForCostClass(
         int cost_class, int node_index) const {
@@ -1427,10 +1437,18 @@ class RoutingModel {
     std::vector<int> all_nodes_;
   };
 
-  /// Returns num_neighbors neighbors of all nodes for every cost class. The
-  /// result is cached and is computed once.
+  /// Returns neighbors of all nodes for every cost class. The result is cached
+  /// and is computed once. The number of neighbors considered is based on a
+  /// ratio of non-vehicle nodes, specified by neighbors_ratio, with a minimum
+  /// of min-neighbors node considered.
   const NodeNeighborsByCostClass* GetOrCreateNodeNeighborsByCostClass(
-      int num_neighbors);
+      double neighbors_ratio, int64_t min_neighbors,
+      double& neighbors_ratio_used,
+      bool add_vehicle_starts_to_neighbors = true);
+  /// Returns parameters.num_neighbors neighbors of all nodes for every cost
+  /// class. The result is cached and is computed once.
+  const NodeNeighborsByCostClass* GetOrCreateNodeNeighborsByCostClass(
+      int num_neighbors, bool add_vehicle_starts_to_neighbors = true);
   /// Adds a custom local search filter to the list of filters used to speed up
   /// local search by pruning unfeasible variable assignments.
   /// Calling this method after the routing model has been closed (CloseModel()
@@ -1932,7 +1950,8 @@ class RoutingModel {
   /// Append an assignment to a vector of assignments if it is feasible.
   bool AppendAssignmentIfFeasible(
       const Assignment& assignment,
-      std::vector<std::unique_ptr<Assignment>>* assignments);
+      std::vector<std::unique_ptr<Assignment>>* assignments,
+      bool call_at_solution_monitors = true);
 #endif
   /// Log a solution.
   void LogSolution(const RoutingSearchParameters& parameters,
@@ -1960,6 +1979,7 @@ class RoutingModel {
   RegularLimit* GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
   LocalSearchOperator* CreateInsertionOperator();
   LocalSearchOperator* CreateMakeInactiveOperator();
+#ifndef SWIG
   template <class T>
   LocalSearchOperator* CreateCPOperator(const T& operator_factory) {
     return operator_factory(solver_.get(), nexts_,
@@ -1972,6 +1992,29 @@ class RoutingModel {
   LocalSearchOperator* CreateCPOperator() {
     return CreateCPOperator(MakeLocalSearchOperator<T>);
   }
+  using NeighborAccessor = std::function<const std::vector<int>&(int, int)>;
+  template <class T>
+  LocalSearchOperator* CreateCPOperatorWithNeighbors(
+      NeighborAccessor get_neighbors) {
+    return CreateCPOperatorWithNeighbors(
+        MakeLocalSearchOperatorWithNeighbors<T>, std::move(get_neighbors));
+  }
+  template <class T>
+  LocalSearchOperator* CreateOperatorWithNeighborsRatio(
+      int neighbors_ratio_used, NeighborAccessor get_neighbors) {
+    return neighbors_ratio_used == 1
+               ? CreateCPOperator<T>()
+               : CreateCPOperatorWithNeighbors<T>(std::move(get_neighbors));
+  }
+  template <class T>
+  LocalSearchOperator* CreateCPOperatorWithNeighbors(
+      const T& operator_factory, NeighborAccessor get_neighbors) {
+    return operator_factory(
+        solver_.get(), nexts_,
+        CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
+                                            : vehicle_vars_,
+        vehicle_start_class_callback_, std::move(get_neighbors));
+  }
   template <class T, class Arg>
   LocalSearchOperator* CreateOperator(const Arg& arg) {
     return solver_->RevAlloc(new T(nexts_,
@@ -1979,6 +2022,23 @@ class RoutingModel {
                                        ? std::vector<IntVar*>()
                                        : vehicle_vars_,
                                    vehicle_start_class_callback_, arg));
+  }
+  template <class T, class Arg>
+  LocalSearchOperator* CreateOperatorWithNeighbors(
+      NeighborAccessor get_neighbors, const Arg& arg) {
+    return solver_->RevAlloc(
+        new T(nexts_,
+              CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
+                                                  : vehicle_vars_,
+              vehicle_start_class_callback_, std::move(get_neighbors), arg));
+  }
+  template <class T, class Arg>
+  LocalSearchOperator* CreateOperatorWithNeighborsRatio(
+      int neighbors_ratio_used, NeighborAccessor get_neighbors,
+      const Arg& arg) {
+    return neighbors_ratio_used == 1
+               ? CreateOperator<T>(arg)
+               : CreateOperatorWithNeighbors<T>(std::move(get_neighbors), arg);
   }
   template <class T, class Arg1, class MoveableArg2>
   LocalSearchOperator* CreateOperator(const Arg1& arg1, MoveableArg2 arg2) {
@@ -1988,10 +2048,33 @@ class RoutingModel {
                                                   : vehicle_vars_,
               vehicle_start_class_callback_, arg1, std::move(arg2)));
   }
+  template <class T, class Arg1, class MoveableArg2>
+  LocalSearchOperator* CreateOperatorWithNeighborsRatio(
+      int neighbors_ratio_used, NeighborAccessor get_neighbors,
+      const Arg1& arg1, MoveableArg2 arg2) {
+    return neighbors_ratio_used == 1
+               ? CreateOperator<T>(arg1, std::move(arg2))
+               : solver_->RevAlloc(new T(nexts_,
+                                         CostsAreHomogeneousAcrossVehicles()
+                                             ? std::vector<IntVar*>()
+                                             : vehicle_vars_,
+                                         vehicle_start_class_callback_,
+                                         std::move(get_neighbors), arg1,
+                                         std::move(arg2)));
+  }
   template <class T>
   LocalSearchOperator* CreatePairOperator() {
     return CreateOperator<T>(pickup_delivery_pairs_);
   }
+  template <class T>
+  LocalSearchOperator* CreatePairOperator(int neighbors_ratio_used,
+                                          NeighborAccessor get_neighbors) {
+    return neighbors_ratio_used == 1
+               ? CreateOperator<T>(pickup_delivery_pairs_)
+               : CreateOperatorWithNeighbors<T>(std::move(get_neighbors),
+                                                pickup_delivery_pairs_);
+  }
+#endif  // SWIG
   void CreateNeighborhoodOperators(const RoutingSearchParameters& parameters);
   LocalSearchOperator* ConcatenateOperators(
       const RoutingSearchParameters& search_parameters,
@@ -2141,6 +2224,9 @@ class RoutingModel {
   /// considered for constraints.
   std::vector<bool> vehicle_used_when_empty_;
 #ifndef SWIG
+  absl::flat_hash_map<std::pair<std::string, std::string>, std::vector<int64_t>,
+                      absl::Hash<std::pair<std::string, std::string>>>
+      force_distance_to_vehicle_unit_costs_;
   absl::StrongVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
@@ -2247,6 +2333,7 @@ class RoutingModel {
       FirstSolutionStrategy::UNSET;
   std::vector<LocalSearchOperator*> local_search_operators_;
   std::vector<SearchMonitor*> monitors_;
+  std::vector<SearchMonitor*> at_solution_monitors_;
   bool local_optimum_reached_ = false;
   // Best lower bound found during the search.
   int64_t objective_lower_bound_ = kint64min;
@@ -2266,7 +2353,23 @@ class RoutingModel {
   absl::flat_hash_map<FilterOptions, LocalSearchFilterManager*>
       local_search_filter_managers_;
   std::vector<LocalSearchFilterManager::FilterEvent> extra_filters_;
-  absl::flat_hash_map<int, std::unique_ptr<NodeNeighborsByCostClass>>
+  struct NodeNeighborsParameters {
+    int num_neighbors;
+    bool add_vehicle_starts_to_neighbors;
+
+    bool operator==(const NodeNeighborsParameters& other) const {
+      return num_neighbors == other.num_neighbors &&
+             add_vehicle_starts_to_neighbors ==
+                 other.add_vehicle_starts_to_neighbors;
+    }
+    template <typename H>
+    friend H AbslHashValue(H h, const NodeNeighborsParameters& params) {
+      return H::combine(std::move(h), params.num_neighbors,
+                        params.add_vehicle_starts_to_neighbors);
+    }
+  };
+  absl::flat_hash_map<NodeNeighborsParameters,
+                      std::unique_ptr<NodeNeighborsByCostClass>>
       node_neighbors_by_cost_class_per_size_;
 #ifndef SWIG
   struct VarTarget {

@@ -17,8 +17,10 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <deque>
 #include <functional>
+#include <initializer_list>
 #include <iterator>
 #include <limits>
 #include <map>
@@ -32,6 +34,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -769,16 +772,6 @@ class GlobalCheapestInsertionFilteredHeuristic
   void AddNodeEntry(int64_t node, int64_t insert_after, int vehicle,
                     bool all_vehicles, NodeEntryQueue* queue) const;
 
-  int64_t NumNonStartEndNodes() const {
-    return model()->Size() - model()->vehicles();
-  }
-
-  int64_t NumNeighbors() const {
-    return std::max(gci_params_.min_neighbors,
-                    MathUtil::FastInt64Round(gci_params_.neighbors_ratio *
-                                             NumNonStartEndNodes()));
-  }
-
   void ResetVehicleIndices() override {
     node_index_to_vehicle_.assign(node_index_to_vehicle_.size(), -1);
   }
@@ -835,24 +828,155 @@ class GlobalCheapestInsertionFilteredHeuristic
   mutable EntryAllocator<PairEntry> pair_entry_allocator_;
 };
 
-// Generates insertion positions respecting structural constraints.
-class InsertionGenerator {
- public:
-  InsertionGenerator() = default;
-
-  struct PickupDeliveryInsertion {
-    int64_t insert_pickup_after;
-    int64_t insert_delivery_after;
-    int64_t value;
+// Holds sequences of insertions.
+// A sequence of insertions must be in the same path, each insertion must
+// take place either after the previously inserted node or further down the
+// path, never before.
+class InsertionSequenceContainer {
+ private:
+  // InsertionSequenceContainer holds all insertion sequences in the same vector
+  // contiguously, each insertion sequence is defined by a pair of bounds.
+  // Using Insertion* directly to delimit bounds would cause out-of-memory reads
+  // when the underlying vector<Insertion> is extended and reallocated,
+  // so this stores integer bounds in InsertionBounds to delimit sequences,
+  // and InsertionSequenceIterator translates those bounds to
+  // Insertion*-based ranges (InsertionSequence) on-the-fly when iterating over
+  // all sequences.
+  struct InsertionBounds {
+    size_t begin;
+    size_t end;
     int vehicle;
+    int64_t cost;
+    bool operator<(const InsertionBounds& other) const {
+      return std::tie(cost, vehicle, begin) <
+             std::tie(other.cost, other.vehicle, other.begin);
+    }
+    size_t Size() const { return end - begin; }
+  };
 
-    bool operator<(const PickupDeliveryInsertion& other) const {
-      return std::tie(value, insert_pickup_after, insert_delivery_after,
-                      vehicle) <
-             std::tie(other.value, other.insert_pickup_after,
-                      other.insert_delivery_after, other.vehicle);
+ public:
+  struct Insertion {
+    int pred;
+    int node;
+    bool operator==(const Insertion& other) const {
+      return pred == other.pred && node == other.node;
     }
   };
+
+  // Represents an insertion sequence as passed to AddInsertionSequence.
+  // This only allows to modify the cost, as a means to reorder sequences.
+  class InsertionSequence {
+   public:
+    InsertionSequence(Insertion* data, InsertionBounds* bounds)
+        : data_(data), bounds_(bounds) {}
+
+    bool operator!=(const InsertionSequence& other) const {
+      DCHECK_NE(data_, other.data_);
+      return bounds_ != other.bounds_;
+    }
+
+    const Insertion* begin() const { return data_ + bounds_->begin; }
+    const Insertion* end() const { return data_ + bounds_->end; }
+    size_t Size() const { return bounds_->Size(); }
+    int Vehicle() const { return bounds_->vehicle; }
+    int64_t Cost() const { return bounds_->cost; }
+    int64_t& Cost() { return bounds_->cost; }
+
+   private:
+    const Insertion* const data_;
+    InsertionBounds* const bounds_;
+  };
+  class InsertionSequenceIterator {
+   public:
+    InsertionSequenceIterator(Insertion* data, InsertionBounds* bounds)
+        : data_(data), bounds_(bounds) {}
+    bool operator!=(const InsertionSequenceIterator& other) const {
+      DCHECK_EQ(data_, other.data_);
+      return bounds_ != other.bounds_;
+    }
+    InsertionSequenceIterator& operator++() {
+      ++bounds_;
+      return *this;
+    }
+    InsertionSequence operator*() const { return {data_, bounds_}; }
+
+   private:
+    Insertion* data_;
+    InsertionBounds* bounds_;
+  };
+
+  // InsertionSequenceContainer is a range over insertion sequences.
+  InsertionSequenceIterator begin() {
+    return {insertions_.data(), insertion_bounds_.data()};
+  }
+  InsertionSequenceIterator end() {
+    return {insertions_.data(),
+            insertion_bounds_.data() + insertion_bounds_.size()};
+  }
+  // Returns the number of sequences of this container.
+  size_t Size() const { return insertion_bounds_.size(); }
+
+  // Adds an insertion sequence to the container.
+  // Passing an initializer_list allows deeper optimizations by the compiler
+  // for cases where the sequence has a compile-time fixed size.
+  void AddInsertionSequence(
+      int vehicle, std::initializer_list<Insertion> insertion_sequence) {
+    insertion_bounds_.push_back(
+        {.begin = insertions_.size(),
+         .end = insertions_.size() + insertion_sequence.size(),
+         .vehicle = vehicle,
+         .cost = 0});
+    insertions_.insert(insertions_.end(), insertion_sequence.begin(),
+                       insertion_sequence.end());
+  }
+
+  // Adds an insertion sequence to the container.
+  void AddInsertionSequence(int vehicle,
+                            const std::vector<Insertion>& insertion_sequence) {
+    insertion_bounds_.push_back(
+        {.begin = insertions_.size(),
+         .end = insertions_.size() + insertion_sequence.size(),
+         .vehicle = vehicle,
+         .cost = 0});
+    insertions_.insert(insertions_.end(), insertion_sequence.begin(),
+                       insertion_sequence.end());
+  }
+
+  // Similar to std::remove_if(), removes all sequences that match a predicate.
+  // This keeps original order, and removes selected sequences.
+  void RemoveIf(const std::function<bool(const InsertionSequence&)>& p) {
+    size_t from = 0;
+    size_t to = 0;
+    for (const InsertionSequence& sequence : *this) {
+      // TODO(user): Benchmark this against std::swap().
+      if (!p(sequence)) insertion_bounds_[to++] = insertion_bounds_[from];
+      ++from;
+    }
+    insertion_bounds_.resize(to);
+  }
+
+  // Sorts sequences according to (cost, vehicle).
+  // TODO(user): benchmark this against other ways to get insertion
+  // sequence in order, for instance sorting by index, separating {cost, index},
+  // making a heap.
+  void Sort() { std::sort(insertion_bounds_.begin(), insertion_bounds_.end()); }
+
+  // Removes all sequences.
+  void Clear() {
+    insertions_.clear();
+    insertion_bounds_.clear();
+  }
+
+ private:
+  std::vector<Insertion> insertions_;
+  std::vector<InsertionBounds> insertion_bounds_;
+};
+
+// Generates insertion positions respecting structural constraints.
+class InsertionSequenceGenerator {
+ public:
+  InsertionSequenceGenerator() = default;
+
   /// Generates insertions for a pickup and delivery pair in a multitour path:
   /// - a series of pickups may only start if all the deliveries of previous
   ///   pickups have been performed.
@@ -871,10 +995,10 @@ class InsertionGenerator {
   ///   are made on the subpath of paired nodes, all extensions to the original
   ///   path that conserve order are equivalent.
   void AppendPickupDeliveryMultitourInsertions(
-      int pickup, const std::vector<int>& path,
+      int pickup, int delivery, int vehicle, const std::vector<int>& path,
       const std::vector<bool>& node_is_pickup,
       const std::vector<bool>& node_is_delivery,
-      std::vector<PickupDeliveryInsertion>& insertions);
+      InsertionSequenceContainer& insertions);
 
  private:
   // Information[i] describes the insertion between path[i] and path[i+1].
@@ -882,6 +1006,20 @@ class InsertionGenerator {
   std::vector<int> next_increase_;  // next position after a pickup.
   std::vector<int> prev_decrease_;  // previous position after delivery.
   std::vector<int> prev_increase_;  // previous position after pickup.
+};
+
+struct PickupDeliveryInsertion {
+  int64_t insert_pickup_after;
+  int64_t insert_delivery_after;
+  int64_t value;
+  int vehicle;
+
+  bool operator<(const PickupDeliveryInsertion& other) const {
+    return std::tie(value, insert_pickup_after, insert_delivery_after,
+                    vehicle) < std::tie(other.value, other.insert_pickup_after,
+                                        other.insert_delivery_after,
+                                        other.vehicle);
+  }
 };
 
 /// Filter-base decision builder which builds a solution by inserting
@@ -922,7 +1060,7 @@ class LocalCheapestInsertionFilteredHeuristic
   /// Computes the possible simultaneous insertion positions of the pair
   /// 'pickup' and 'delivery'. Sorts them according to the current cost
   /// evaluator. If a timeout is detected returns std::nullopt.
-  std::optional<std::vector<InsertionGenerator::PickupDeliveryInsertion>>
+  std::optional<std::vector<PickupDeliveryInsertion>>
   ComputeEvaluatorSortedPairPositions(int64_t pickup, int64_t delivery);
 
   // Tries to insert any alternative of the given pair,
@@ -946,7 +1084,8 @@ class LocalCheapestInsertionFilteredHeuristic
   bool update_start_end_distances_per_node_;
   std::vector<std::vector<StartEndValue>> start_end_distances_per_node_;
   const RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy_;
-  InsertionGenerator insertion_generator_;
+  InsertionSequenceContainer insertion_container_;
+  InsertionSequenceGenerator insertion_generator_;
 
   // Marks whether a node has already been tried for insertion.
   std::vector<bool> visited_;
