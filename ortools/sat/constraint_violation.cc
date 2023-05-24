@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <utility>
 #include <vector>
 

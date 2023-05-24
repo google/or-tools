@@ -14,8 +14,11 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_EXPAND_H_
 #define OR_TOOLS_SAT_CP_MODEL_EXPAND_H_
 
+#include <stdint.h>
+
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/presolve_context.h"
 

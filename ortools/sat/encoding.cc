@@ -13,15 +13,17 @@
 
 #include "ortools/sat/encoding.h"
 
+#include <stddef.h>
+
 #include <algorithm>
-#include <cstdint>
 #include <deque>
 #include <functional>
 #include <queue>
 #include <string>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"

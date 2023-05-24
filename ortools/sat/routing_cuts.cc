@@ -20,10 +20,20 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_constraint_manager.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {

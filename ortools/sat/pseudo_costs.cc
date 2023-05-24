@@ -15,9 +15,10 @@
 
 #include <algorithm>
 #include <limits>
+#include <tuple>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"

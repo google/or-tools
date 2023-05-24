@@ -49,7 +49,7 @@ class DratProofHandler {
   // store it in memory as well (in which case the proof can be checked with
   // Check() when it is complete).
   DratProofHandler(bool in_binary_format, File* output, bool check = false);
-  ~DratProofHandler() {}
+  ~DratProofHandler() = default;
 
   // During the presolve step, variable get deleted and the set of non-deleted
   // variable is remaped in a dense set. This allows to keep track of that and

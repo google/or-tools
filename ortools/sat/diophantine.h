@@ -34,8 +34,7 @@ namespace operations_research::sat {
 // the end of the reduction, we have
 //     -floor(|P|/2) <= v < ceil(|P|/2).
 void ReduceModuloBasis(const std::vector<std::vector<absl::int128>>& basis,
-                       const int elements_to_consider,
-                       std::vector<absl::int128>& v);
+                       int elements_to_consider, std::vector<absl::int128>& v);
 
 // Returns an ordering of the indices of coefficients such that the GCD of its
 // initial segments decreases fast. As the product of the 15 smallest prime

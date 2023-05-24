@@ -13,16 +13,27 @@
 
 #include "ortools/sat/swig_helper.h"
 
+#include <stdint.h>
+
 #include <atomic>
 #include <functional>
 #include <string>
 
 #include "ortools/base/logging.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
-SolutionCallback::~SolutionCallback() {}
+SolutionCallback::~SolutionCallback() = default;
 
 void SolutionCallback::Run(
     const operations_research::sat::CpSolverResponse& response) const {

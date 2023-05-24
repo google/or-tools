@@ -85,7 +85,7 @@ class SolutionCallback {
 // Simple director class for C#.
 class LogCallback {
  public:
-  virtual ~LogCallback() {}
+  virtual ~LogCallback() = default;
   virtual void NewMessage(const std::string& message) = 0;
 };
 

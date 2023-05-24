@@ -13,11 +13,11 @@
 
 #include "ortools/sat/work_assignment.h"
 
-#include <math.h>
-
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <limits>
 #include <optional>
@@ -28,7 +28,6 @@
 
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
-#include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
@@ -42,6 +41,8 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {

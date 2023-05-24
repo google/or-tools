@@ -13,6 +13,8 @@
 
 #include "ortools/sat/precedences.h"
 
+#include <stdint.h>
+
 #include <algorithm>
 #include <deque>
 #include <string>
@@ -20,7 +22,11 @@
 #include <vector>
 
 #include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
+#include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
@@ -33,6 +39,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"

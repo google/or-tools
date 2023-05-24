@@ -27,6 +27,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
@@ -69,8 +70,8 @@ class SatClause {
   int empty() const { return size_ == 0; }
 
   // Allows for range based iteration: for (Literal literal : clause) {}.
-  const Literal* const begin() const { return &(literals_[0]); }
-  const Literal* const end() const { return &(literals_[size_]); }
+  const Literal* begin() const { return &(literals_[0]); }
+  const Literal* end() const { return &(literals_[size_]); }
 
   // Returns the first and second literals. These are always the watched
   // literals if the clause is attached in the LiteralWatchers.
@@ -288,7 +289,7 @@ class LiteralWatchers : public SatPropagator {
   // Contains, for each literal, the list of clauses that need to be inspected
   // when the corresponding literal becomes false.
   struct Watcher {
-    Watcher() {}
+    Watcher() = default;
     Watcher(SatClause* c, Literal b, int i = 2)
         : blocking_literal(b), start_index(i), clause(c) {}
 
@@ -384,7 +385,7 @@ struct BinaryClause {
 // A simple class to manage a set of binary clauses.
 class BinaryClauseManager {
  public:
-  BinaryClauseManager() {}
+  BinaryClauseManager() = default;
   int NumClauses() const { return set_.size(); }
 
   // Adds a new binary clause to the manager and returns true if it wasn't
@@ -726,7 +727,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
   template <bool use_weight = true>
   std::vector<Literal> ExpandAtMostOneWithWeight(
-      const absl::Span<const Literal> at_most_one,
+      absl::Span<const Literal> at_most_one,
       const absl::StrongVector<LiteralIndex, bool>& can_be_included,
       const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
 
@@ -752,15 +753,14 @@ class BinaryImplicationGraph : public SatPropagator {
   // the underlying incompatibility graph. Note that there is no guarantee that
   // if this is called with any sub-clique of the result we will get the same
   // maximal clique.
-  std::vector<Literal> ExpandAtMostOne(
-      const absl::Span<const Literal> at_most_one,
-      int64_t max_num_explored_nodes);
+  std::vector<Literal> ExpandAtMostOne(absl::Span<const Literal> at_most_one,
+                                       int64_t max_num_explored_nodes);
 
   // Process all at most one constraints starting at or after base_index in
   // at_most_one_buffer_. This replace literal by their representative, remove
   // fixed literals and deal with duplicates. Return false iff the model is
   // UNSAT.
-  bool CleanUpAndAddAtMostOnes(const int base_index);
+  bool CleanUpAndAddAtMostOnes(int base_index);
 
   mutable StatsGroup stats_;
   TimeLimit* time_limit_;

@@ -292,7 +292,7 @@ class LinearExpr {
   const std::vector<int64_t>& coefficients() const { return coefficients_; }
 
   /// Returns true if the expression has no variables.
-  const bool IsConstant() const { return variables_.empty(); }
+  bool IsConstant() const { return variables_.empty(); }
 
   /// Returns the constant term.
   int64_t constant() const { return constant_; }
@@ -406,7 +406,7 @@ class DoubleLinearExpr {
   const std::vector<double>& coefficients() const { return coefficients_; }
 
   // Returns true if the expression has no variable.
-  const bool IsConstant() const { return variables_.empty(); }
+  bool IsConstant() const { return variables_.empty(); }
 
   /// Returns the constant term.
   double constant() const { return constant_; }

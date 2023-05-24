@@ -27,6 +27,8 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
+#include "ortools/glop/variables_info.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"

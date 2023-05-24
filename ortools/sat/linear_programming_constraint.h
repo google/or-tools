@@ -23,11 +23,16 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/numeric/int128.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
+#include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"

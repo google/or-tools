@@ -27,6 +27,7 @@
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
@@ -220,7 +221,7 @@ class CpModelPresolver {
   void ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
                                                      ConstraintProto* ct);
   void LowerThanCoeffStrengthening(bool from_lower_bound, int64_t min_magnitude,
-                                   int64_t threshold, ConstraintProto* ct);
+                                   int64_t rhs, ConstraintProto* ct);
 
   // Extracts cliques from bool_and and small at_most_one constraints and
   // transforms them into maximal cliques.

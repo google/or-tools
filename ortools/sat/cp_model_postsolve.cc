@@ -18,6 +18,7 @@
 #include <limits>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"

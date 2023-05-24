@@ -51,7 +51,7 @@ namespace sat {
 // any. Try to improve the situation.
 class VarDomination {
  public:
-  VarDomination() {}
+  VarDomination() = default;
 
   // This is the translation used from "ref" to IntegerVariable. The API
   // understand the cp_model.proto ref, but internally we only store

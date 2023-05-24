@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"

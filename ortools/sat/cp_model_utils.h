@@ -21,16 +21,18 @@
 #include <string>
 #include <vector>
 
-#include "absl/log/check.h"
-#include "absl/strings/match.h"
-#include "absl/types/span.h"
-#include "google/protobuf/text_format.h"
-#include "ortools/base/options.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
+#include "absl/log/check.h"
+#include "absl/status/status.h"
+#include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
+#include "google/protobuf/message.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/options.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 

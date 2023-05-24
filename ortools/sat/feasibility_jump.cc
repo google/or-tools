@@ -14,9 +14,9 @@
 #include "ortools/sat/feasibility_jump.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -27,7 +27,6 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
-#include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
@@ -37,11 +36,14 @@
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_model.h"
 #include "ortools/sat/restart.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research::sat {
 

@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/logging.h"
@@ -35,7 +36,7 @@ namespace sat {
 //   http://www.cril.univ-artois.fr/PB12/format.pdf
 class OpbReader {
  public:
-  OpbReader() {}
+  OpbReader() = default;
 
   // Loads the given opb filename into the given problem.
   bool Load(const std::string& filename, LinearBooleanProblem* problem) {

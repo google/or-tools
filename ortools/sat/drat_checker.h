@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_DRAT_CHECKER_H_
 #define OR_TOOLS_SAT_DRAT_CHECKER_H_
 
+#include <stddef.h>
+
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -44,7 +46,7 @@ const ClauseIndex kNoClauseIndex(-1);
 class DratChecker {
  public:
   DratChecker();
-  ~DratChecker() {}
+  ~DratChecker() = default;
 
   // Returns the number of Boolean variables used in the problem and infered
   // clauses.
@@ -162,15 +164,14 @@ class DratChecker {
   struct ClauseHash {
     DratChecker* checker;
     explicit ClauseHash(DratChecker* checker) : checker(checker) {}
-    std::size_t operator()(const ClauseIndex clause_index) const;
+    std::size_t operator()(ClauseIndex clause_index) const;
   };
 
   // Equality function for clauses.
   struct ClauseEquiv {
     DratChecker* checker;
     explicit ClauseEquiv(DratChecker* checker) : checker(checker) {}
-    bool operator()(const ClauseIndex clause_index1,
-                    const ClauseIndex clause_index2) const;
+    bool operator()(ClauseIndex clause_index1, ClauseIndex clause_index2) const;
   };
 
   // Adds a clause and returns its index.

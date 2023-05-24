@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -57,7 +58,7 @@ namespace sat {
 // Constraints", In Proc. of CP 2003, pages 108-122, 2003.
 class EncodingNode {
  public:
-  EncodingNode() {}
+  EncodingNode() = default;
 
   // Constructs a EncodingNode of size one, just formed by the given literal.
   explicit EncodingNode(Literal l);

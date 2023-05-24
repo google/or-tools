@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -77,7 +78,7 @@ class Literal {
     CHECK_NE(signed_value, 0);
   }
 
-  Literal() {}
+  Literal() = default;
   explicit Literal(LiteralIndex index) : index_(index.value()) {}
   Literal(BooleanVariable variable, bool is_positive)
       : index_(is_positive ? (variable.value() << 1)
@@ -135,7 +136,7 @@ inline std::ostream& operator<<(std::ostream& os,
 // Each variable can be unassigned or be assigned to true or false.
 class VariablesAssignment {
  public:
-  VariablesAssignment() {}
+  VariablesAssignment() = default;
   explicit VariablesAssignment(int num_variables) { Resize(num_variables); }
   void Resize(int num_variables) {
     assignment_.Resize(LiteralIndex(num_variables << 1));
@@ -395,7 +396,7 @@ class Trail {
   int Index() const { return current_info_.trail_index; }
   // This accessor can return trail_.end(). operator[] cannot. This allows
   // normal std:vector operations, such as assign(begin, end).
-  const std::vector<Literal>::const_iterator IteratorAt(int index) const {
+  std::vector<Literal>::const_iterator IteratorAt(int index) const {
     return trail_.begin() + index;
   }
   const Literal& operator[](int index) const { return trail_[index]; }
@@ -476,7 +477,7 @@ class SatPropagator {
  public:
   explicit SatPropagator(const std::string& name)
       : name_(name), propagator_id_(-1), propagation_trail_index_(0) {}
-  virtual ~SatPropagator() {}
+  virtual ~SatPropagator() = default;
 
   // Sets/Gets this propagator unique id.
   void SetPropagatorId(int id) { propagator_id_ = id; }

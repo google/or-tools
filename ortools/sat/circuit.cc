@@ -13,14 +13,16 @@
 
 #include "ortools/sat/circuit.h"
 
-#include <algorithm>
 #include <functional>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"

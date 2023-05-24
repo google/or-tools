@@ -16,14 +16,14 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/sat/integer.h"
 
 namespace operations_research {
 namespace sat {
 
 template <typename IntegerType>
-ThetaLambdaTree<IntegerType>::ThetaLambdaTree() {}
+ThetaLambdaTree<IntegerType>::ThetaLambdaTree() = default;
 
 template <typename IntegerType>
 typename ThetaLambdaTree<IntegerType>::TreeNode

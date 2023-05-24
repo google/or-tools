@@ -21,8 +21,10 @@
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_util.h"
+#include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {

@@ -60,7 +60,7 @@ class ReservoirTimeTabling : public PropagatorInterface {
   // will be equal to the start of the next one. The height correspond to the
   // one from start (inclusive) until the next one (exclusive).
   struct ProfileRectangle {
-    ProfileRectangle() {}
+    ProfileRectangle() = default;
     ProfileRectangle(IntegerValue start, IntegerValue height)
         : start(start), height(height) {}
 

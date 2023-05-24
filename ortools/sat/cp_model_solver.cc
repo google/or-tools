@@ -14,13 +14,14 @@
 #include "ortools/sat/cp_model_solver.h"
 
 #include <algorithm>
-#include <cmath>
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <deque>
 #include <functional>
 #include <limits>
 #include <memory>
+#include <new>
 #include <random>
 #include <string>
 #include <thread>
@@ -28,10 +29,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/sat/linear_model.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
@@ -42,6 +41,9 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/meta/type_traits.h"
+#include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -49,7 +51,10 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/cleanup.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
@@ -74,6 +79,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/lb_tree_search.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_model.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/lp_utils.h"

@@ -23,6 +23,7 @@
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/model.h"
 
 namespace operations_research {
 namespace sat {
@@ -76,8 +77,8 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
 // the completion time cumulative cuts in both axis.
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& x_intervals,
-    const std::vector<IntervalVariable>& y_intervals, Model* model);
+    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
+    Model* model);
 
 // Energetic cuts for the no_overlap_2d constraint.
 //
@@ -94,8 +95,10 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
 // The maximum area is the area of the bounding rectangle of each intervals
 // at level 0.
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
-    const std::vector<IntervalVariable>& x_intervals,
-    const std::vector<IntervalVariable>& y_intervals, Model* model);
+    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
+    SchedulingDemandHelper* x_demands_helper,
+    SchedulingDemandHelper* y_demands_helper,
+    const std::vector<std::vector<LiteralValueValue>>& energies, Model* model);
 
 // For a given set of intervals, we first compute the min and max of all
 // intervals. Then we create a cut that indicates that all intervals must fit

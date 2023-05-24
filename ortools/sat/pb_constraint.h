@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
@@ -50,7 +51,7 @@ const Coefficient kCoefficientMax(
 
 // Represents a term in a pseudo-Boolean formula.
 struct LiteralWithCoeff {
-  LiteralWithCoeff() {}
+  LiteralWithCoeff() = default;
   LiteralWithCoeff(Literal l, Coefficient c) : literal(l), coefficient(c) {}
   LiteralWithCoeff(Literal l, int64_t c) : literal(l), coefficient(c) {}
   Literal literal;
@@ -150,7 +151,7 @@ void SimplifyCanonicalBooleanLinearConstraint(
 // symmetries of the associated graph that are not useful.
 class CanonicalBooleanLinearProblem {
  public:
-  CanonicalBooleanLinearProblem() {}
+  CanonicalBooleanLinearProblem() = default;
 
   // Adds a new constraint to the problem. The bounds are inclusive.
   // Returns false in case of a possible overflow or if the constraint is
@@ -163,7 +164,7 @@ class CanonicalBooleanLinearProblem {
 
   // Getters. All the constraints are guaranteed to be in canonical form.
   int NumConstraints() const { return constraints_.size(); }
-  const Coefficient Rhs(int i) const { return rhs_[i]; }
+  Coefficient Rhs(int i) const { return rhs_[i]; }
   const std::vector<LiteralWithCoeff>& Constraint(int i) const {
     return constraints_[i];
   }
@@ -638,7 +639,7 @@ class PbConstraints : public SatPropagator {
   // probably that the thresholds_ vector is a lot more efficient cache-wise.
   DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
   struct ConstraintIndexWithCoeff {
-    ConstraintIndexWithCoeff() {}  // Needed for vector.resize()
+    ConstraintIndexWithCoeff() = default;  // Needed for vector.resize()
     ConstraintIndexWithCoeff(bool n, ConstraintIndex i, Coefficient c)
         : need_untrail_inspection(n), index(i), coefficient(c) {}
     bool need_untrail_inspection;

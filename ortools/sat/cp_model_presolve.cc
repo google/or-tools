@@ -14,9 +14,11 @@
 #include "ortools/sat/cp_model_presolve.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <deque>
+#include <functional>
 #include <limits>
 #include <numeric>
 #include <string>
@@ -31,14 +33,17 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
+#include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/vlog_is_on.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/graph/topologicalsorter.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/clause.h"
@@ -67,6 +72,7 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -8773,6 +8779,17 @@ void CpModelPresolver::RemoveCommonPart(
   }
 }
 
+namespace {
+
+int64_t ComputeNonZeroReduction(size_t block_size, size_t common_part_size) {
+  // We replace the block by a column of new variable.
+  // But we also need to define this new variable.
+  return static_cast<int64_t>(block_size * (common_part_size - 1) -
+                              common_part_size - 1);
+}
+
+}  // namespace
+
 // This helps on neos-5045105-creuse.pb.gz for instance.
 void CpModelPresolver::FindBigVerticalLinearOverlap() {
   if (context_->time_limit()->LimitReached()) return;
@@ -8899,10 +8916,8 @@ void CpModelPresolver::FindBigVerticalLinearOverlap() {
     }
 
     // We have a candidate.
-    const int64_t saved_nz = block.size() * common_part.size()  // removed
-                             - block.size()  // replaced by new_var
-                             -
-                             (1 + common_part.size());  // new_var = common_part
+    const int64_t saved_nz =
+        ComputeNonZeroReduction(block.size(), common_part.size());
     if (saved_nz < 20) continue;
 
     // Fix multiples, currently this contain the coeff of x for each constraint.
@@ -8986,6 +9001,7 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap() {
     std::vector<int> used_sorted_linear = {i};
     std::vector<std::pair<int, int64_t>> block = {{c, 1}};
     std::vector<std::pair<int, int64_t>> common_part;
+    std::vector<std::pair<int, int>> old_matches;
 
     for (int j = 0; j < sorted_linear.size(); ++j) {
       if (i == j) continue;
@@ -8995,7 +9011,8 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap() {
 
       // No need to continue if linear is not large enough.
       const int num_terms = ct.linear().vars().size();
-      const int best_saved_nz = block.size() * (num_terms - 1) - 2;
+      const int best_saved_nz =
+          ComputeNonZeroReduction(block.size() + 1, num_terms);
       if (best_saved_nz <= saved_nz) break;
 
       work_done += num_terms;
@@ -9012,7 +9029,8 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap() {
       // 2/ new_block_size variable
       // So new_block_size * common_size - common_size - 1 - new_block_size
       // which is (new_block_size - 1) * (common_size - 1) - 2;
-      const int64_t new_saved_nz = block.size() * (common_part.size() - 1) - 2;
+      const int64_t new_saved_nz =
+          ComputeNonZeroReduction(block.size() + 1, common_part.size());
       if (new_saved_nz > saved_nz) {
         saved_nz = new_saved_nz;
         used_sorted_linear.push_back(j);
@@ -9021,18 +9039,43 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap() {
         for (const auto [var, coeff] : common_part) {
           coeff_map[var] = coeff;
         }
+      } else {
+        if (common_part.size() > 1) {
+          old_matches.push_back({j, common_part.size()});
+        }
       }
     }
 
     // Introduce a new variable = common_part.
     // Use it in all linear constraint.
-    //
-    // TODO(user): Given our heuristic above, it is maybe possible to extend
-    // this block vertically.
     if (block.size() > 1) {
       context_->UpdateRuleStats("linear matrix: common horizontal rectangle");
+
+      // Try to extend with exact matches that were skipped.
+      for (const auto [index, old_match_size] : old_matches) {
+        if (old_match_size < coeff_map.size()) continue;
+
+        int new_match_size = 0;
+        const int other_c = sorted_linear[index];
+        const ConstraintProto& ct =
+            context_->working_model->constraints(other_c);
+        const int num_terms = ct.linear().vars().size();
+        for (int k = 0; k < num_terms; ++k) {
+          const auto it = coeff_map.find(ct.linear().vars(k));
+          if (it != coeff_map.end() && it->second == ct.linear().coeffs(k)) {
+            ++new_match_size;
+          }
+        }
+        if (new_match_size == coeff_map.size()) {
+          context_->UpdateRuleStats(
+              "linear matrix: common horizontal rectangle extension");
+          used_sorted_linear.push_back(index);
+          block.push_back({other_c, 1});
+        }
+      }
+
       ++num_blocks;
-      nz_reduction += saved_nz;
+      nz_reduction += ComputeNonZeroReduction(block.size(), coeff_map.size());
       RemoveCommonPart(coeff_map, block);
       for (const int i : used_sorted_linear) sorted_linear[i] = -1;
     }
@@ -10957,8 +11000,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
     DetectDominatedLinearConstraints();
     ProcessSetPPC();
     if (context_->params().find_big_linear_overlap()) {
-      FindBigVerticalLinearOverlap();
       FindBigHorizontalLinearOverlap();
+      FindBigVerticalLinearOverlap();
     }
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 

@@ -14,10 +14,10 @@
 #include "ortools/sat/synchronization.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <deque>
 #include <functional>
 #include <limits>

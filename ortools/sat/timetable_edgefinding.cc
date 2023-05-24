@@ -14,14 +14,13 @@
 #include "ortools/sat/timetable_edgefinding.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/logging.h"
-#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/model.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

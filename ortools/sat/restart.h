@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_decision.h"

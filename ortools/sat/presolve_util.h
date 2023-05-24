@@ -110,7 +110,7 @@ bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
 // graph.
 class ActivityBoundHelper {
  public:
-  ActivityBoundHelper() {}
+  ActivityBoundHelper() = default;
 
   // The at most one constraint must be added before linear constraint are
   // processed. The functions below will still works, but do nothing more than

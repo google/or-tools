@@ -31,6 +31,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -250,7 +251,7 @@ using InlinedIntegerValueVector =
 // related constraints.
 struct AffineExpression {
   // Helper to construct an AffineExpression.
-  AffineExpression() {}
+  AffineExpression() = default;
   AffineExpression(IntegerValue cst)  // NOLINT(runtime/explicit)
       : constant(cst) {}
   AffineExpression(IntegerVariable v)  // NOLINT(runtime/explicit)
@@ -301,7 +302,7 @@ struct AffineExpression {
 
   bool IsConstant() const { return var == kNoIntegerVariable; }
 
-  const std::string DebugString() const {
+  std::string DebugString() const {
     if (var == kNoIntegerVariable) return absl::StrCat(constant.value());
     if (constant == 0) {
       return absl::StrCat("(", coeff.value(), " * X", var.value(), ")");
@@ -555,7 +556,7 @@ class IntegerEncoder {
   // given literal is true. Returns kNoIntegerVariable if such variable does not
   // exist. Note that one can create one by creating a new IntegerVariable and
   // calling AssociateToIntegerEqualValue().
-  const IntegerVariable GetLiteralView(Literal lit) const {
+  IntegerVariable GetLiteralView(Literal lit) const {
     if (lit.Index() >= literal_view_.size()) return kNoIntegerVariable;
     return literal_view_[lit.Index()];
   }
@@ -1274,8 +1275,8 @@ class IntegerTrail : public SatPropagator {
 // Base class for CP like propagators.
 class PropagatorInterface {
  public:
-  PropagatorInterface() {}
-  virtual ~PropagatorInterface() {}
+  PropagatorInterface() = default;
+  virtual ~PropagatorInterface() = default;
 
   // This will be called after one or more literals that are watched by this
   // propagator changed. It will also always be called on the first propagation
@@ -1323,7 +1324,7 @@ class RevIntegerValueRepository : public RevRepository<IntegerValue> {
 class GenericLiteralWatcher : public SatPropagator {
  public:
   explicit GenericLiteralWatcher(Model* model);
-  ~GenericLiteralWatcher() final {}
+  ~GenericLiteralWatcher() final = default;
 
   // Memory optimization: you can call this before registering watchers.
   void ReserveSpaceForNumVariables(int num_vars);

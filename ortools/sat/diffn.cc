@@ -13,6 +13,8 @@
 
 #include "ortools/sat/diffn.h"
 
+#include <stddef.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <limits>
@@ -20,6 +22,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/diffn_util.h"

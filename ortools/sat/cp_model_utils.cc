@@ -17,10 +17,15 @@
 #include <cstdlib>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/types/span.h"
+#include "google/protobuf/message.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"

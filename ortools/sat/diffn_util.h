@@ -225,15 +225,13 @@ class CapacityProfile {
     EventType type;
     int index;
 
-    const bool operator<(const Event& other) const { return time < other.time; }
+    bool operator<(const Event& other) const { return time < other.time; }
   };
 
   // Element of the integer_pq heap.
   struct QueueElement {
     int Index() const { return index; }
-    const bool operator<(const QueueElement& o) const {
-      return value < o.value;
-    }
+    bool operator<(const QueueElement& o) const { return value < o.value; }
 
     int index;
     IntegerValue value;

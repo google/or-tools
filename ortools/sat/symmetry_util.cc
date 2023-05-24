@@ -18,6 +18,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"

@@ -16,10 +16,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <deque>
+#include <functional>
 #include <limits>
-#include <numeric>
 #include <random>
 #include <string>
 #include <tuple>
@@ -55,7 +54,6 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {

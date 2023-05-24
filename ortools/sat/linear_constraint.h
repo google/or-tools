@@ -44,7 +44,7 @@ struct LinearConstraint {
   std::vector<IntegerVariable> vars;
   std::vector<IntegerValue> coeffs;
 
-  LinearConstraint() {}
+  LinearConstraint() = default;
   LinearConstraint(IntegerValue _lb, IntegerValue _ub) : lb(_lb), ub(_ub) {}
 
   void AddTerm(IntegerVariable var, IntegerValue coeff) {
@@ -141,9 +141,8 @@ LinearExpression PositiveVarExpr(const LinearExpression& expr);
 // Returns the coefficient of the variable in the expression. Works in linear
 // time.
 // Note: GetCoefficient(NegationOf(var, expr)) == -GetCoefficient(var, expr).
-IntegerValue GetCoefficient(const IntegerVariable var,
-                            const LinearExpression& expr);
-IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
+IntegerValue GetCoefficient(IntegerVariable var, const LinearExpression& expr);
+IntegerValue GetCoefficientOfPositiveVar(IntegerVariable var,
                                          const LinearExpression& expr);
 
 // Allow to build a LinearConstraint while making sure there is no duplicate

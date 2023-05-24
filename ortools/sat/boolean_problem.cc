@@ -14,7 +14,6 @@
 #include "ortools/sat/boolean_problem.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
@@ -26,6 +25,8 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -512,7 +513,7 @@ namespace {
 // GenerateGraphForSymmetryDetection().
 class IdGenerator {
  public:
-  IdGenerator() {}
+  IdGenerator() = default;
 
   // If the pair (type, coefficient) was never seen before, then generate
   // a new id, otherwise return the previously generated id.
@@ -716,10 +717,8 @@ void FindLinearBooleanProblemSymmetries(
                                       /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   // TODO(user): inject the appropriate time limit here.
-  CHECK(symmetry_finder
-            .FindSymmetries(&equivalence_classes, generators,
-                            &factorized_automorphism_group_size)
-            .ok());
+  CHECK_OK(symmetry_finder.FindSymmetries(&equivalence_classes, generators,
+                                          &factorized_automorphism_group_size));
 
   // Remove from the permutations the part not concerning the literals.
   // Note that some permutation may becomes empty, which means that we had

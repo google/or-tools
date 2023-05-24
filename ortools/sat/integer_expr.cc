@@ -18,11 +18,12 @@
 #include <cstdlib>
 #include <functional>
 #include <limits>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -823,7 +824,7 @@ bool ProductPropagator::CanonicalizeCases() {
         p_.GreaterOrEqual(0), {a_.GreaterOrEqual(0), b_.GreaterOrEqual(0)});
   }
 
-  // Otherwise, make sure p is non-negative or across zero.
+  // Otherwise, make sure p is non-negative or accros zero.
   if (integer_trail_->UpperBound(p_) <= 0) {
     if (integer_trail_->LowerBound(a_) < 0) {
       DCHECK_GT(integer_trail_->UpperBound(a_), 0);

@@ -15,15 +15,13 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

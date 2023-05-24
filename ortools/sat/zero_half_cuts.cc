@@ -14,10 +14,10 @@
 #include "ortools/sat/zero_half_cuts.h"
 
 #include <algorithm>
-#include <functional>
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer.h"

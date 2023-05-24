@@ -20,6 +20,7 @@
 
 #include "absl/flags/flag.h"
 #include "absl/flags/usage.h"
+#include "absl/log/check.h"
 #include "absl/log/flags.h"
 #include "absl/log/initialize.h"
 #include "absl/random/random.h"
@@ -29,8 +30,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/helpers.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

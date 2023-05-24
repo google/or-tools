@@ -14,20 +14,23 @@
 #include "ortools/sat/cuts.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <functional>
 #include <limits>
-#include <memory>
-#include <sstream>      // std::ostringstream
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/meta/type_traits.h"
+#include "absl/numeric/int128.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -38,10 +41,10 @@
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
-#include "ortools/util/time_limit.h"
 
 namespace absl {
 template <typename Sink>

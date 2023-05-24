@@ -27,6 +27,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -62,7 +63,7 @@ class SatDecisionPolicy {
   // must be currently assigned. See VSIDS decision heuristic: Chaff:
   // Engineering an Efficient SAT Solver. M.W. Moskewicz et al. ANNUAL ACM IEEE
   // DESIGN AUTOMATION CONFERENCE 2001.
-  void BumpVariableActivities(const std::vector<Literal>& literals);
+  void BumpVariableActivities(absl::Span<const Literal> literals);
 
   // Updates the increment used for activity bumps. This is basically the same
   // as decaying all the variable activities, but it is a lot more efficient.

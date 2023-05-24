@@ -14,9 +14,9 @@
 #include "ortools/sat/linear_programming_constraint.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -27,10 +27,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/container/inlined_vector.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
-#include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
@@ -40,6 +38,7 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
+#include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
@@ -55,6 +54,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/bitset.h"

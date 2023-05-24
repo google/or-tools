@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_WORK_ASSIGNMENT_H_
 #define OR_TOOLS_SAT_WORK_ASSIGNMENT_H_
 
+#include <stdint.h>
+
 #include <array>
 #include <deque>
 #include <functional>
@@ -25,16 +27,20 @@
 #include <vector>
 
 #include "absl/base/thread_annotations.h"
+#include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {

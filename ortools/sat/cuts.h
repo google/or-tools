@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_CUTS_H_
 #define OR_TOOLS_SAT_CUTS_H_
 
+#include <stdint.h>
+
 #include <array>
 #include <functional>
 #include <limits>
@@ -21,8 +23,11 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"

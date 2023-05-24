@@ -16,30 +16,31 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <deque>
+#include <functional>
 #include <limits>
 #include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#include "google/protobuf/descriptor.h"
-#endif  // __PORTABLE_PLATFORM__
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "google/protobuf/descriptor.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

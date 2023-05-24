@@ -25,6 +25,7 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
@@ -193,7 +194,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   }
 
   // Returns all the constraints indices of a given type.
-  const absl::Span<const int> TypeToConstraints(
+  absl::Span<const int> TypeToConstraints(
       ConstraintProto::ConstraintCase type) const {
     if (type >= type_to_constraints_.size()) return {};
     return absl::MakeSpan(type_to_constraints_[type]);
@@ -324,7 +325,7 @@ class NeighborhoodGenerator {
   NeighborhoodGenerator(const std::string& name,
                         NeighborhoodGeneratorHelper const* helper)
       : name_(name), helper_(*helper), difficulty_(0.5) {}
-  virtual ~NeighborhoodGenerator() {}
+  virtual ~NeighborhoodGenerator() = default;
 
   // Generates a "local" subproblem for the given seed.
   //
@@ -529,7 +530,7 @@ class RelaxObjectiveVariablesGenerator : public NeighborhoodGenerator {
 // scheduling constraint, it adds strict relation order between the non-relaxed
 // intervals.
 Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
-    const absl::Span<const int> intervals_to_relax,
+    absl::Span<const int> intervals_to_relax,
     const CpSolverResponse& initial_solution, absl::BitGenRef random,
     const NeighborhoodGeneratorHelper& helper);
 
@@ -537,7 +538,7 @@ Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
 // full neighborhood enriched with the set or precedences passed to the generate
 // method.
 Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
-    const absl::Span<const std::pair<int, int>> precedences,
+    absl::Span<const std::pair<int, int>> precedences,
     const CpSolverResponse& initial_solution,
     const NeighborhoodGeneratorHelper& helper);
 

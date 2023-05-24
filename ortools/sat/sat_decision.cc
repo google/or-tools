@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
@@ -301,7 +302,7 @@ void SatDecisionPolicy::UpdateWeightedSign(
 }
 
 void SatDecisionPolicy::BumpVariableActivities(
-    const std::vector<Literal>& literals) {
+    absl::Span<const Literal> literals) {
   if (parameters_.use_erwa_heuristic()) {
     if (num_bumps_.size() != activities_.size()) {
       num_bumps_.resize(activities_.size(), 0);

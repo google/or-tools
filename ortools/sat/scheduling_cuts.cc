@@ -13,21 +13,23 @@
 
 #include "ortools/sat/scheduling_cuts.h"
 
+#include <stdint.h>
+
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <functional>
 #include <limits>
-#include <numeric>
 #include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -42,7 +44,10 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -912,32 +917,15 @@ void GenerateNoOverlap2dEnergyCut(
 }
 
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
-    const std::vector<IntervalVariable>& x_intervals,
-    const std::vector<IntervalVariable>& y_intervals, Model* model) {
-  SchedulingConstraintHelper* x_helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(x_intervals);
-  SchedulingConstraintHelper* y_helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(y_intervals);
-
+    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
+    SchedulingDemandHelper* x_demands_helper,
+    SchedulingDemandHelper* y_demands_helper,
+    const std::vector<std::vector<LiteralValueValue>>& energies, Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
   AddIntegerVariableFromIntervals(x_helper, model, &result.vars);
   AddIntegerVariableFromIntervals(y_helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
-
-  SchedulingDemandHelper* x_demands_helper =
-      new SchedulingDemandHelper(x_helper->Sizes(), y_helper, model);
-  model->TakeOwnership(x_demands_helper);
-  SchedulingDemandHelper* y_demands_helper =
-      new SchedulingDemandHelper(y_helper->Sizes(), x_helper, model);
-  model->TakeOwnership(y_demands_helper);
-
-  std::vector<std::vector<LiteralValueValue>> energies;
-  const int num_rectangles = x_intervals.size();
-  for (int i = 0; i < num_rectangles; ++i) {
-    energies.push_back(TryToDecomposeProduct(x_helper->Sizes()[i],
-                                             y_helper->Sizes()[i], model));
-  }
 
   result.generate_cuts =
       [x_helper, y_helper, x_demands_helper, y_demands_helper, model, energies](
@@ -1016,9 +1004,8 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
     bool is_optional = false;
   };
 
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
-      [helper, capacity, demands_helper, integer_trail, model](
+      [helper, capacity, demands_helper, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
@@ -1578,7 +1565,7 @@ void GenerateShortCompletionTimeCutsWithExactBound(
 // The original cut is:
 //    sum(end_min_i * duration_min_i) >=
 //        (sum(duration_min_i^2) + sum(duration_min_i)^2) / 2
-// We strenghten this cuts by noticing that if all tasks starts after S,
+// We strengthen this cuts by noticing that if all tasks starts after S,
 // then replacing end_min_i by (end_min_i - S) is still valid.
 //
 // A second difference is that we look at a set of intervals starting
@@ -1849,13 +1836,8 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
 
 // TODO(user): Use demands_helper and decomposed energy.
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& x_intervals,
-    const std::vector<IntervalVariable>& y_intervals, Model* model) {
-  SchedulingConstraintHelper* x_helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(x_intervals);
-  SchedulingConstraintHelper* y_helper =
-      model->GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(y_intervals);
-
+    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
+    Model* model) {
   CutGenerator result;
   result.only_run_at_level_zero = true;
   AddIntegerVariableFromIntervals(x_helper, model, &result.vars);
@@ -1902,8 +1884,7 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
         for (absl::Span<int> rectangles : components) {
           if (rectangles.size() <= 1) continue;
 
-          auto generate_cuts = [&lp_values, model, manager, &rectangles,
-                                &cached_areas](
+          auto generate_cuts = [&lp_values, model, manager, &rectangles](
                                    const std::string& cut_name,
                                    SchedulingConstraintHelper* x_helper,
                                    SchedulingConstraintHelper* y_helper) {

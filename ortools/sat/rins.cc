@@ -15,13 +15,12 @@
 
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <limits>
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"

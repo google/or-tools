@@ -21,10 +21,10 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -319,7 +319,7 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e) {
   return os;
 }
 
-DoubleLinearExpr::DoubleLinearExpr() {}
+DoubleLinearExpr::DoubleLinearExpr() = default;
 
 DoubleLinearExpr::DoubleLinearExpr(BoolVar var) { AddTerm(var, 1); }
 

@@ -174,7 +174,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // least one of" type of constraints. Returns the number of such constraint
   // added.
   int AddGreaterThanAtLeastOneOfConstraintsFromClause(
-      const absl::Span<const Literal> clause, Model* model);
+      absl::Span<const Literal> clause, Model* model);
 
   // Another approach for AddGreaterThanAtLeastOneOfConstraints(), this one
   // might be a bit slow as it relies on the propagation engine to detect

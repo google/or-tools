@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_LINEAR_PROPAGATION_H_
 #define OR_TOOLS_SAT_LINEAR_PROPAGATION_H_
 
+#include <stdint.h>
+
 #include <deque>
 #include <functional>
 #include <ostream>
@@ -21,13 +23,20 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/rev.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -37,7 +46,7 @@ DEFINE_STRONG_INDEX_TYPE(EnforcementId);
 // A FIFO queue that allows some form of reordering of its element.
 class CustomFifoQueue {
  public:
-  CustomFifoQueue() {}
+  CustomFifoQueue() = default;
 
   // Note that this requires the queue to be empty or to never have been poped
   // before.

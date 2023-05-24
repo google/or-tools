@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -71,11 +72,12 @@ class BooleanXorPropagator : public PropagatorInterface {
 // This constraint support duplicate selectors.
 class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
  public:
-  GreaterThanAtLeastOneOfPropagator(
-      IntegerVariable target_var, const absl::Span<const IntegerVariable> vars,
-      const absl::Span<const IntegerValue> offsets,
-      const absl::Span<const Literal> selectors,
-      const absl::Span<const Literal> enforcements, Model* model);
+  GreaterThanAtLeastOneOfPropagator(IntegerVariable target_var,
+                                    absl::Span<const IntegerVariable> vars,
+                                    absl::Span<const IntegerValue> offsets,
+                                    absl::Span<const Literal> selectors,
+                                    absl::Span<const Literal> enforcements,
+                                    Model* model);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);

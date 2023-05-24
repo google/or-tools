@@ -14,22 +14,25 @@
 #ifndef OR_TOOLS_SAT_UTIL_H_
 #define OR_TOOLS_SAT_UTIL_H_
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <deque>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#include "google/protobuf/descriptor.h"
-#endif  // __PORTABLE_PLATFORM__
 #include "absl/container/btree_set.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
+#include "absl/log/log_streamer.h"
+#include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -343,7 +346,7 @@ class IncrementalAverage {
   // Initializes the average with 'initial_average' and number of records to 0.
   explicit IncrementalAverage(double initial_average)
       : average_(initial_average) {}
-  IncrementalAverage() {}
+  IncrementalAverage() = default;
 
   // Sets the number of records to 0 and average to 'reset_value'.
   void Reset(double reset_value);

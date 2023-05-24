@@ -46,7 +46,7 @@ class SubSolver {
 
   SubSolver(const std::string& name, SubsolverType type)
       : name_(name), type_(type) {}
-  virtual ~SubSolver() {}
+  virtual ~SubSolver() = default;
 
   // Synchronizes with the external world from this SubSolver point of view.
   // Also incorporate the results of the latest completed tasks if any.

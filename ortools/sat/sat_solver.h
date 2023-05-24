@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
@@ -374,7 +375,7 @@ class SatSolver {
   void ClearNewlyAddedBinaryClauses();
 
   struct Decision {
-    Decision() {}
+    Decision() = default;
     Decision(int i, Literal l) : trail_index(i), literal(l) {}
     int trail_index = 0;
     Literal literal;
@@ -492,7 +493,7 @@ class SatSolver {
   bool ClauseIsValidUnderDebugAssignment(
       const std::vector<Literal>& clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
-      const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const;
+      const std::vector<LiteralWithCoeff>& cst, Coefficient rhs) const;
 
   // Logs the given status if parameters_.log_search_progress() is true.
   // Also returns it.

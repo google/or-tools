@@ -24,6 +24,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
@@ -35,6 +39,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/presolve_util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -1380,13 +1385,24 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
     // implies one of its dominant to zero, then it can be set to zero. It seems
     // adding the implication below should have the same effect? but currently
     // it requires a lot of presolve rounds.
+    const auto add_implications = [&implications](absl::Span<const int> lits) {
+      if (lits.size() > 3) return;
+      for (int i = 0; i < lits.size(); ++i) {
+        for (int j = 0; j < lits.size(); ++j) {
+          if (i == j) continue;
+          implications.insert({lits[i], NegatedRef(lits[j])});
+        }
+      }
+    };
     if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+      add_implications(ct.at_most_one().literals());
       if (!ProcessAtMostOne(ct.at_most_one().literals(),
                             "domination: in at most one", var_domination,
                             &in_constraints, context)) {
         return false;
       }
     } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      add_implications(ct.exactly_one().literals());
       if (!ProcessAtMostOne(ct.exactly_one().literals(),
                             "domination: in exactly one", var_domination,
                             &in_constraints, context)) {
@@ -1555,8 +1571,6 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   // implications?
   //
   // TODO(user): generalize to non Booleans?
-  // TODO(user): We always keep adding the same relations. Investigate?
-  // it seems pure SAT presolve remove them.
   int num_added = 0;
   absl::StrongVector<IntegerVariable, bool> increase_is_forbidden(2 * num_vars,
                                                                   false);

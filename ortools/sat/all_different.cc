@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/strongly_connected_components.h"

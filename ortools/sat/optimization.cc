@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <deque>
 #include <functional>
 #include <limits>
@@ -27,17 +26,21 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/encoding.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
@@ -49,6 +52,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -138,7 +142,7 @@ void DeleteVectorIndices(const std::vector<int>& indices, Vector* v) {
 // Artificial Intelligence, 2013 - Elsevier.
 class FuMalikSymmetryBreaker {
  public:
-  FuMalikSymmetryBreaker() {}
+  FuMalikSymmetryBreaker() = default;
 
   // Must be called before a new core is processed.
   void StartResolvingNewCore(int new_core_index) {

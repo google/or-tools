@@ -14,16 +14,13 @@
 #include "ortools/sat/drat_proof_handler.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstdlib>
 #include <memory>
-#include <utility>
 #include <vector>
-
-#include "ortools/base/logging.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/drat_checker.h"

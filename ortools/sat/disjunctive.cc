@@ -15,10 +15,9 @@
 
 #include <algorithm>
 #include <functional>
-#include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"

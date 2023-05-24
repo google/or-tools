@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -41,7 +42,7 @@ namespace sat {
  */
 class Model {
  public:
-  Model() {}
+  Model() = default;
 
   ~Model() {
     // The order of deletion seems to be platform dependent.

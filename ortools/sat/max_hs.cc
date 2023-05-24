@@ -24,12 +24,14 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/presolve_util.h"
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
 #include "ortools/linear_solver/linear_solver.h"
 #endif  // __PORTABLE_PLATFORM__

@@ -21,6 +21,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"

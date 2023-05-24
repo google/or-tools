@@ -54,7 +54,7 @@ class SatPostsolver {
   // The postsolver will process the Add() calls in reverse order. If the given
   // clause has all its literals at false, it simply sets the literal x to true.
   // Note that x must be a literal of the given clause.
-  void Add(Literal x, const absl::Span<const Literal> clause);
+  void Add(Literal x, absl::Span<const Literal> clause);
 
   // Tells the postsolver that the given literal must be true in any solution.
   // We currently check that the variable is not already fixed.

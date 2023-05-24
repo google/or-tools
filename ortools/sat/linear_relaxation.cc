@@ -25,6 +25,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/meta/type_traits.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -1492,12 +1494,18 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
-  relaxation->cut_generators.push_back(
-      CreateNoOverlap2dCompletionTimeCutGenerator(x_intervals, y_intervals, m));
 
-  // Checks if at least one rectangle has a variable dimension or is optional.
   IntervalsRepository* intervals_repository =
       m->GetOrCreate<IntervalsRepository>();
+  SchedulingConstraintHelper* x_helper =
+      intervals_repository->GetOrCreateHelper(x_intervals);
+  SchedulingConstraintHelper* y_helper =
+      intervals_repository->GetOrCreateHelper(y_intervals);
+
+  relaxation->cut_generators.push_back(
+      CreateNoOverlap2dCompletionTimeCutGenerator(x_helper, y_helper, m));
+
+  // Checks if at least one rectangle has a variable dimension or is optional.
   bool has_variable_part = false;
   for (int i = 0; i < x_intervals.size(); ++i) {
     // Ignore absent rectangles.
@@ -1522,10 +1530,25 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
       break;
     }
   }
-  if (has_variable_part) {
-    relaxation->cut_generators.push_back(
-        CreateNoOverlap2dEnergyCutGenerator(x_intervals, y_intervals, m));
+
+  if (!has_variable_part) return;
+
+  SchedulingDemandHelper* x_demands_helper =
+      new SchedulingDemandHelper(x_helper->Sizes(), y_helper, m);
+  m->TakeOwnership(x_demands_helper);
+  SchedulingDemandHelper* y_demands_helper =
+      new SchedulingDemandHelper(y_helper->Sizes(), x_helper, m);
+  m->TakeOwnership(y_demands_helper);
+
+  std::vector<std::vector<LiteralValueValue>> energies;
+  const int num_rectangles = x_helper->NumTasks();
+  for (int i = 0; i < num_rectangles; ++i) {
+    energies.push_back(
+        TryToDecomposeProduct(x_helper->Sizes()[i], y_helper->Sizes()[i], m));
   }
+
+  relaxation->cut_generators.push_back(CreateNoOverlap2dEnergyCutGenerator(
+      x_helper, y_helper, x_demands_helper, y_demands_helper, energies, m));
 }
 
 void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,

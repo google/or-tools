@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
@@ -151,7 +152,7 @@ class InclusionDetector {
   // Function that should only be used from within "process()".
   // Returns the bitset corresponsing to the elements of the current superset
   // passed to the process() function.
-  const std::vector<bool> IsInSuperset() const { return is_in_superset_; }
+  std::vector<bool> IsInSuperset() const { return is_in_superset_; }
 
   // Function that should only be used from within "process()".
   // Stop will abort the current search. The other two will cause the

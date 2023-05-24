@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -24,6 +25,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
@@ -65,7 +67,7 @@ struct VectorHash {
 // GenerateGraphForSymmetryDetection().
 class IdGenerator {
  public:
-  IdGenerator() {}
+  IdGenerator() = default;
 
   // If the color was never seen before, then generate a new id, otherwise
   // return the previously generated id.

@@ -53,7 +53,7 @@ namespace sat {
 //
 // At most one of the two options should be set.
 struct BooleanOrIntegerLiteral {
-  BooleanOrIntegerLiteral() {}
+  BooleanOrIntegerLiteral() = default;
   explicit BooleanOrIntegerLiteral(LiteralIndex index)
       : boolean_literal_index(index) {}
   explicit BooleanOrIntegerLiteral(IntegerLiteral i_lit)
@@ -301,7 +301,7 @@ class ContinuousProber {
  private:
   bool ImportFromSharedClasses();
   SatSolver::Status ShaveLiteral(Literal literal);
-  bool ReportStatus(const SatSolver::Status status);
+  bool ReportStatus(SatSolver::Status status);
   void LogStatistics();
 
   // Variables to probe.

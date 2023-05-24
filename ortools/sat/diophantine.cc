@@ -14,14 +14,15 @@
 #include "ortools/sat/diophantine.h"
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <numeric>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
+#include "absl/types/span.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research::sat {

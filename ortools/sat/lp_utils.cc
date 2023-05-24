@@ -16,13 +16,14 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <limits>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/lp_solver.h"
@@ -38,6 +39,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
