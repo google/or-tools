@@ -70,8 +70,8 @@ class BopCompleteLNSOptimizer : public BopOptimizerBase {
 // function here and a way to select between which one to call.
 class NeighborhoodGenerator {
  public:
-  NeighborhoodGenerator() {}
-  virtual ~NeighborhoodGenerator() {}
+  NeighborhoodGenerator() = default;
+  virtual ~NeighborhoodGenerator() = default;
 
   // Interface for the neighborhood generation.
   //
@@ -131,7 +131,7 @@ class ObjectiveBasedNeighborhood : public NeighborhoodGenerator {
   ObjectiveBasedNeighborhood(const BopConstraintTerms* objective_terms,
                              absl::BitGenRef random)
       : objective_terms_(*objective_terms), random_(random) {}
-  ~ObjectiveBasedNeighborhood() final {}
+  ~ObjectiveBasedNeighborhood() final = default;
 
  private:
   void GenerateNeighborhood(const ProblemState& problem_state,
@@ -149,7 +149,7 @@ class ConstraintBasedNeighborhood : public NeighborhoodGenerator {
   ConstraintBasedNeighborhood(const BopConstraintTerms* objective_terms,
                               absl::BitGenRef random)
       : objective_terms_(*objective_terms), random_(random) {}
-  ~ConstraintBasedNeighborhood() final {}
+  ~ConstraintBasedNeighborhood() final = default;
 
  private:
   void GenerateNeighborhood(const ProblemState& problem_state,
@@ -166,7 +166,7 @@ class RelationGraphBasedNeighborhood : public NeighborhoodGenerator {
  public:
   RelationGraphBasedNeighborhood(const sat::LinearBooleanProblem& problem,
                                  absl::BitGenRef random);
-  ~RelationGraphBasedNeighborhood() final {}
+  ~RelationGraphBasedNeighborhood() final = default;
 
  private:
   void GenerateNeighborhood(const ProblemState& problem_state,

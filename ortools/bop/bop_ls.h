@@ -164,7 +164,7 @@ class LocalSearchOptimizer : public BopOptimizerBase {
 template <typename IntType>
 class BacktrackableIntegerSet {
  public:
-  BacktrackableIntegerSet() {}
+  BacktrackableIntegerSet() = default;
 
   // Prepares the class for integers in [0, n) and initializes the set to the
   // empty one. Note that this run in O(n). Once resized, it is better to call

@@ -61,7 +61,7 @@ BopCompleteLNSOptimizer::BopCompleteLNSOptimizer(
       state_update_stamp_(ProblemState::kInitialStampValue),
       objective_terms_(objective_terms) {}
 
-BopCompleteLNSOptimizer::~BopCompleteLNSOptimizer() {}
+BopCompleteLNSOptimizer::~BopCompleteLNSOptimizer() = default;
 
 BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state, int num_relaxed_vars) {
@@ -223,7 +223,7 @@ BopAdaptiveLNSOptimizer::BopAdaptiveLNSOptimizer(
   CHECK(sat_propagator != nullptr);
 }
 
-BopAdaptiveLNSOptimizer::~BopAdaptiveLNSOptimizer() {}
+BopAdaptiveLNSOptimizer::~BopAdaptiveLNSOptimizer() = default;
 
 bool BopAdaptiveLNSOptimizer::ShouldBeRun(
     const ProblemState& problem_state) const {

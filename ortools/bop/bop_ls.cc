@@ -51,7 +51,7 @@ LocalSearchOptimizer::LocalSearchOptimizer(absl::string_view name,
       assignment_iterator_(),
       random_(random) {}
 
-LocalSearchOptimizer::~LocalSearchOptimizer() {}
+LocalSearchOptimizer::~LocalSearchOptimizer() = default;
 
 bool LocalSearchOptimizer::ShouldBeRun(
     const ProblemState& problem_state) const {

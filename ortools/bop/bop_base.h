@@ -130,7 +130,7 @@ class ProblemState {
   void set_assignment_preference(const std::vector<bool>& a) {
     assignment_preference_ = a;
   }
-  const std::vector<bool> assignment_preference() const {
+  std::vector<bool> assignment_preference() const {
     return assignment_preference_;
   }
 

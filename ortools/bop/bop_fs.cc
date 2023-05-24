@@ -88,7 +88,7 @@ GuidedSatFirstSolutionGenerator::GuidedSatFirstSolutionGenerator(
       state_update_stamp_(ProblemState::kInitialStampValue),
       sat_solver_() {}
 
-GuidedSatFirstSolutionGenerator::~GuidedSatFirstSolutionGenerator() {}
+GuidedSatFirstSolutionGenerator::~GuidedSatFirstSolutionGenerator() = default;
 
 BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
@@ -221,7 +221,7 @@ BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
       random_(random),
       sat_propagator_(sat_propagator) {}
 
-BopRandomFirstSolutionGenerator::~BopRandomFirstSolutionGenerator() {}
+BopRandomFirstSolutionGenerator::~BopRandomFirstSolutionGenerator() = default;
 
 // Only run the RandomFirstSolution when there is an objective to minimize.
 bool BopRandomFirstSolutionGenerator::ShouldBeRun(
@@ -359,7 +359,7 @@ LinearRelaxation::LinearRelaxation(const BopParameters& parameters,
       problem_already_solved_(false),
       scaled_solution_cost_(glop::kInfinity) {}
 
-LinearRelaxation::~LinearRelaxation() {}
+LinearRelaxation::~LinearRelaxation() = default;
 
 BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
     const ProblemState& problem_state) {

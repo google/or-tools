@@ -35,7 +35,7 @@ SatCoreBasedOptimizer::SatCoreBasedOptimizer(absl::string_view name)
   upper_bound_ = sat::kCoefficientMax;
 }
 
-SatCoreBasedOptimizer::~SatCoreBasedOptimizer() {}
+SatCoreBasedOptimizer::~SatCoreBasedOptimizer() = default;
 
 BopOptimizerBase::Status SatCoreBasedOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state) {

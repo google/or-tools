@@ -28,7 +28,7 @@ namespace bop {
 class IntegralSolver {
  public:
   IntegralSolver();
-  ~IntegralSolver() {}
+  ~IntegralSolver() = default;
 
   // Sets the solver parameters.
   // See the proto for an extensive documentation.
