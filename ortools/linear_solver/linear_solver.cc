@@ -948,7 +948,8 @@ void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
   response->Clear();
   response->set_status(
       ResultStatusToMPSolverResponseStatus(interface_->result_status_));
-  response->mutable_solve_info()->set_solve_wall_time_seconds(wall_time());
+  response->mutable_solve_info()->set_solve_wall_time_seconds(wall_time() /
+                                                              1000.0);
   if (interface_->result_status_ == MPSolver::OPTIMAL ||
       interface_->result_status_ == MPSolver::FEASIBLE) {
     response->set_objective_value(Objective().Value());

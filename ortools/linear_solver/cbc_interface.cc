@@ -47,7 +47,7 @@ namespace operations_research {
 class CBCInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying glpk solver.
-  explicit CBCInterface(MPSolver* const solver);
+  explicit CBCInterface(MPSolver* solver);
   ~CBCInterface() override;
 
   // ----- Reset -----
@@ -82,9 +82,9 @@ class CBCInterface : public MPSolverInterface {
   void SetConstraintBounds(int row_index, double lb, double ub) override;
 
   // Add constraint incrementally.
-  void AddRowConstraint(MPConstraint* const ct) override;
+  void AddRowConstraint(MPConstraint* ct) override;
   // Add variable incrementally.
-  void AddVariable(MPVariable* const var) override;
+  void AddVariable(MPVariable* var) override;
   // Change a coefficient in a constraint.
   void SetCoefficient(MPConstraint* const constraint,
                       const MPVariable* const variable, double new_value,

@@ -48,12 +48,20 @@ LinearExprT = Union['LinearExpr', NumberT]
 ConstraintT = Union['VarCompVar', 'BoundedLinearExpression', bool]
 ShapeT = Union[IntegerT, Sequence[IntegerT]]
 VariablesT = Union['VariableContainer', 'Variable']
-NumpyFuncT = Callable[[
-    'VariableContainer',
-    Optional[Union[NumberT, npt.NDArray[np.number], Sequence[NumberT]]],
-], LinearExprT,]
-SliceT = Union[slice, int, List[int], 'ellipsis',
-               Tuple[Union[int, slice, List[int], 'ellipsis'], ...],]
+NumpyFuncT = Callable[
+    [
+        'VariableContainer',
+        Optional[Union[NumberT, npt.NDArray[np.number], Sequence[NumberT]]],
+    ],
+    LinearExprT,
+]
+SliceT = Union[
+    slice,
+    int,
+    List[int],
+    'ellipsis',
+    Tuple[Union[int, slice, List[int], 'ellipsis'], ...],
+]
 
 # Forward solve statuses.
 SolveStatus = pwmb.SolveStatus
@@ -92,7 +100,8 @@ class LinearExpr:
   """
 
     @classmethod
-    def sum(cls,
+    def sum(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
+            cls,
             expressions: Sequence[LinearExprT],
             *,
             constant: NumberT = 0.0) -> LinearExprT:
@@ -119,7 +128,7 @@ class LinearExpr:
                                        constant=checked_constant)
 
     @classmethod
-    def weighted_sum(
+    def weighted_sum(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
         cls,
         expressions: Sequence[LinearExprT],
         coefficients: Sequence[NumberT],
@@ -173,7 +182,7 @@ class LinearExpr:
         return checked_constant
 
     @classmethod
-    def term(
+    def term(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
         cls,
         expression: LinearExprT,
         coefficient: NumberT,
@@ -227,7 +236,7 @@ class LinearExpr:
     def __add__(self, arg: LinearExprT) -> LinearExprT:
         if mbh.is_a_number(arg):
             return LinearExpr.sum([self], constant=arg)
-        return LinearExpr.weighted_sum([self, arg], [1.0, 1.0], constant=0.0)
+        return LinearExpr.weighted_sum([self, arg], [1.0, 1.0], constant=0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __radd__(self, arg: LinearExprT):
         return self.__add__(arg)
@@ -235,10 +244,10 @@ class LinearExpr:
     def __sub__(self, arg: LinearExprT):
         if mbh.is_a_number(arg):
             return LinearExpr.sum([self], constant=arg * -1.0)
-        return LinearExpr.weighted_sum([self, arg], [1.0, -1.0], constant=0.0)
+        return LinearExpr.weighted_sum([self, arg], [1.0, -1.0], constant=0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __rsub__(self, arg: LinearExprT):
-        return LinearExpr.weighted_sum([self, arg], [-1.0, 1.0], constant=0.0)
+        return LinearExpr.weighted_sum([self, arg], [-1.0, 1.0], constant=0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __mul__(self, arg: NumberT):
         arg = mbh.assert_is_a_number(arg)
@@ -286,7 +295,7 @@ class LinearExpr:
         return NotImplemented
 
     def __neg__(self):
-        return self.__mul__(-1.0)
+        return self.__mul__(-1.0)  # pytype: disable=unsupported-operands  # numpy-scalars
 
     def __bool__(self):
         raise NotImplementedError(
@@ -301,21 +310,21 @@ class LinearExpr:
             arg = mbh.assert_is_a_number(arg)
             return BoundedLinearExpression(self, arg, arg)
         else:
-            return BoundedLinearExpression(self - arg, 0, 0)
+            return BoundedLinearExpression(self - arg, 0, 0)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __ge__(self, arg: LinearExprT) -> 'BoundedLinearExpression':
         if mbh.is_a_number(arg):
             arg = mbh.assert_is_a_number(arg)
-            return BoundedLinearExpression(self, arg, math.inf)
+            return BoundedLinearExpression(self, arg, math.inf)  # pytype: disable=wrong-arg-types  # numpy-scalars
         else:
-            return BoundedLinearExpression(self - arg, 0, math.inf)
+            return BoundedLinearExpression(self - arg, 0, math.inf)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __le__(self, arg: LinearExprT) -> 'BoundedLinearExpression':
         if mbh.is_a_number(arg):
             arg = mbh.assert_is_a_number(arg)
-            return BoundedLinearExpression(self, -math.inf, arg)
+            return BoundedLinearExpression(self, -math.inf, arg)  # pytype: disable=wrong-arg-types  # numpy-scalars
         else:
-            return BoundedLinearExpression(self - arg, -math.inf, 0)
+            return BoundedLinearExpression(self - arg, -math.inf, 0)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __ne__(self, arg: LinearExprT):
         return NotImplemented
@@ -345,7 +354,7 @@ class _WeightedSum(LinearExpr):
 
     def multiply_by(self, arg: NumberT) -> LinearExprT:
         if mbh.is_zero(arg):
-            return 0.0
+            return 0.0  # pytype: disable=bad-return-type  # numpy-scalars
         if self.__variable_indices.size > 0:
             return _WeightedSum(
                 variable_indices=np.copy(self.__variable_indices),
@@ -548,7 +557,7 @@ class Variable(LinearExpr):
                 arg = mbh.assert_is_a_number(arg)
                 return BoundedLinearExpression(self, arg, arg)
             else:
-                return BoundedLinearExpression(self - arg, 0.0, 0.0)
+                return BoundedLinearExpression(self - arg, 0.0, 0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __ne__(self, arg: LinearExprT) -> ConstraintT:
         if arg is None:
@@ -561,7 +570,7 @@ class Variable(LinearExpr):
         return hash((self.__helper, self.__index))
 
     def multiply_by(self, arg: NumberT) -> LinearExprT:
-        return LinearExpr.weighted_sum([self], [arg], constant=0.0)
+        return LinearExpr.weighted_sum([self], [arg], constant=0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
 
 _REGISTERED_NUMPY_VARIABLE_FUNCS: Dict[Any, NumpyFuncT] = {}
@@ -639,26 +648,26 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
         **kwargs: Any,
     ) -> LinearExprT:
         if method != '__call__':
-            return NotImplemented
+            return NotImplemented  # pytype: disable=bad-return-type  # numpy-scalars
         function = _REGISTERED_NUMPY_VARIABLE_FUNCS.get(ufunc)
         if function is None:
-            return NotImplemented
+            return NotImplemented  # pytype: disable=bad-return-type  # numpy-scalars
         if len(inputs) <= 2 and isinstance(inputs[0], VariableContainer):
             return function(*inputs, **kwargs)
         if len(inputs) == 2 and isinstance(inputs[1], VariableContainer):
             return function(inputs[1], inputs[0], **kwargs)
-        return NotImplemented
+        return NotImplemented  # pytype: disable=bad-return-type  # numpy-scalars
 
     def __array_function__(self, func: Any, types: Any, inputs: Any,
                            kwargs: Any) -> LinearExprT:
         function = _REGISTERED_NUMPY_VARIABLE_FUNCS.get(func)
         if function is None:
-            return NotImplemented
+            return NotImplemented  # pytype: disable=bad-return-type  # numpy-scalars
         if len(inputs) <= 2 and isinstance(inputs[0], VariableContainer):
             return function(*inputs, **kwargs)
         if len(inputs) == 2 and isinstance(inputs[1], VariableContainer):
             return function(inputs[1], inputs[0], **kwargs)
-        return NotImplemented
+        return NotImplemented  # pytype: disable=bad-return-type  # numpy-scalars
 
 
 def _implements(np_function: Any) -> Callable[[NumpyFuncT], NumpyFuncT]:
@@ -672,8 +681,9 @@ def _implements(np_function: Any) -> Callable[[NumpyFuncT], NumpyFuncT]:
 
 
 @_implements(np.sum)
-def sum_variable_container(container: VariableContainer,
-                           constant: NumberT = 0.0) -> LinearExprT:
+def sum_variable_container(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
+        container: VariableContainer,
+        constant: NumberT = 0.0) -> LinearExprT:
     """Implementation of np.sum for VariableContainer objects."""
     indices: npt.NDArray[np.int32] = container.variable_indices
     return _WeightedSum(
@@ -908,7 +918,7 @@ class ModelBuilder:
 
     def new_bool_var(self, name: Optional[str] = None) -> Variable:
         """Creates a 0-1 variable with the given name."""
-        return self.new_var(0, 1, True, name)
+        return self.new_var(0, 1, True, name)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def new_constant(self, value: NumberT) -> Variable:
         """Declares a constant variable."""
@@ -1099,7 +1109,7 @@ class ModelBuilder:
 
     # Linear constraints.
 
-    def add_linear_constraint(
+    def add_linear_constraint(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
         self,
         linear_expr: LinearExprT,
         lb: NumberT = -math.inf,
@@ -1154,15 +1164,13 @@ class ModelBuilder:
             new_ct = LinearConstraint(self.__helper)
             new_ct.lower_bound = 0.0
             new_ct.upper_bound = 0.0
-            new_ct.add_term(ct.left, 1.0)
-            new_ct.add_term(ct.right, -1.0)
+            new_ct.add_term(ct.left, 1.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
+            new_ct.add_term(ct.right, -1.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
             return new_ct
         elif ct and isinstance(ct, bool):
-            return self.add_linear_constraint(
-                linear_expr=0.0)  # Evaluate to True.
+            return self.add_linear_constraint(linear_expr=0.0)  # Evaluate to True.  # pytype: disable=wrong-arg-types  # numpy-scalars
         elif not ct and isinstance(ct, bool):
-            return self.add_linear_constraint(1.0, 0.0,
-                                              0.0)  # Evaluate to False.
+            return self.add_linear_constraint(1.0, 0.0, 0.0)  # Evaluate to False.  # pytype: disable=wrong-arg-types  # numpy-scalars
         else:
             raise TypeError('Not supported: ModelBuilder.Add(' + str(ct) + ')')
 

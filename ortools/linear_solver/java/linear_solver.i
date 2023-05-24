@@ -84,12 +84,24 @@ PROTO2_RETURN(
 %extend operations_research::MPSolver {
   /**
    * Loads a model and returns the error message, which will be empty iff the
-   * model is valid.
+   * model is valid. Clears all names (see also loadModelFromProtoKeepNames()).
    */
   std::string loadModelFromProto(
       const operations_research::MPModelProto& input_model) {
     std::string error_message;
     $self->LoadModelFromProto(input_model, &error_message);
+    return error_message;
+  }
+
+  /**
+   * Like loadModelFromProto(), but keeps the names and returns an error if
+   * there are duplicate names.
+   */
+  std::string loadModelFromProtoKeepNames(
+      const operations_research::MPModelProto& input_model) {
+    std::string error_message;
+    $self->LoadModelFromProto(input_model, &error_message,
+                              /*clear_names=*/false);
     return error_message;
   }
 

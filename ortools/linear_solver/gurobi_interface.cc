@@ -79,7 +79,7 @@ namespace operations_research {
 class GurobiInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying GRB solver.
-  explicit GurobiInterface(MPSolver* const solver, bool mip);
+  explicit GurobiInterface(MPSolver* solver, bool mip);
   ~GurobiInterface() override;
 
   // Sets the optimization direction (min/max).
@@ -103,18 +103,17 @@ class GurobiInterface : public MPSolverInterface {
   void SetConstraintBounds(int row_index, double lb, double ub) override;
 
   // Adds Constraint incrementally.
-  void AddRowConstraint(MPConstraint* const ct) override;
-  bool AddIndicatorConstraint(MPConstraint* const ct) override;
+  void AddRowConstraint(MPConstraint* ct) override;
+  bool AddIndicatorConstraint(MPConstraint* ct) override;
   // Adds variable incrementally.
-  void AddVariable(MPVariable* const var) override;
+  void AddVariable(MPVariable* var) override;
   // Changes a coefficient in a constraint.
-  void SetCoefficient(MPConstraint* const constraint,
-                      const MPVariable* const variable, double new_value,
-                      double old_value) override;
+  void SetCoefficient(MPConstraint* constraint, const MPVariable* variable,
+                      double new_value, double old_value) override;
   // Clears a constraint from all its terms.
-  void ClearConstraint(MPConstraint* const constraint) override;
+  void ClearConstraint(MPConstraint* constraint) override;
   // Changes a coefficient in the linear objective
-  void SetObjectiveCoefficient(const MPVariable* const variable,
+  void SetObjectiveCoefficient(const MPVariable* variable,
                                double coefficient) override;
   // Changes the constant term in the linear objective.
   void SetObjectiveOffset(double value) override;

@@ -44,6 +44,7 @@ namespace operations_research {
 class MPModelProto;
 class MPModelRequest;
 class MPSolutionResponse;
+class IISResponse;
 }  // namespace operations_research
 
 %{
@@ -80,17 +81,37 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   }  // %pythoncode
 }
 
+%exception operations_research::MPSolver::Solve {
+  Py_BEGIN_ALLOW_THREADS
+  $action
+  Py_END_ALLOW_THREADS
+}
+
 %extend operations_research::MPSolver {
   // Change the API of LoadModelFromProto() to simply return the error message:
-  // it will always be empty iff the model was valid.
-  std::string LoadModelFromProto(const operations_research::MPModelProto& input_model) {
+  // it will always be empty iff the model was valid. This clears all names in
+  // the model, see also LoadModelFromProtoKeepNames().
+  std::string LoadModelFromProto(
+      const operations_research::MPModelProto& input_model) {
     std::string error_message;
     $self->LoadModelFromProto(input_model, &error_message);
     return error_message;
   }
 
-  // Ditto for LoadModelFromProtoWithUniqueNamesOrDie()
-  std::string LoadModelFromProtoWithUniqueNamesOrDie(const operations_research::MPModelProto& input_model) {
+  // Like LoadModelFromProto(), but keeps the names and verifies that they are
+  // unique.
+  std::string LoadModelFromProtoKeepNames(
+      const operations_research::MPModelProto& input_model) {
+    std::string error_message;
+    $self->LoadModelFromProto(input_model, &error_message,
+                              /*clear_names=*/false);
+    return error_message;
+  }
+
+  // DEPRECATED: Use LoadModelFromProtoKeepNames() and test that the returned
+  // error is empty.
+  std::string LoadModelFromProtoWithUniqueNamesOrDie(
+      const operations_research::MPModelProto& input_model) {
     std::string error_message;
     $self->LoadModelFromProtoWithUniqueNamesOrDie(input_model, &error_message);
     return error_message;
@@ -243,6 +264,10 @@ PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
                  MPSolutionResponse,
                  operations_research::MPSolutionResponse);
 
+PY_PROTO_TYPEMAP(ortools.linear_solver.iis_pb2,
+                 IISResponse,
+                 operations_research::IISResponse);
+
 // Actual conversions. This also includes the conversion to std::vector<Class>.
 PY_CONVERT_HELPER_PTR(MPConstraint);
 PY_CONVERT(MPConstraint);
@@ -281,7 +306,6 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
 
-
 // Expose the MPSolver::ResultStatus enum.
 %unignore operations_research::MPSolver::ResultStatus;
 %unignore operations_research::MPSolver::OPTIMAL;
@@ -309,7 +333,6 @@ PY_CONVERT(MPVariable);
 %newobject operations_research::MPSolver::CreateSolver;
 %unignore operations_research::MPSolver::CreateSolver;
 %unignore operations_research::MPSolver::ParseAndCheckSupportForProblemType;
-
 %unignore operations_research::MPSolver::Solve;
 %unignore operations_research::MPSolver::VerifySolution;
 %unignore operations_research::MPSolver::infinity;
@@ -317,6 +340,7 @@ PY_CONVERT(MPVariable);
 
 // Proto-based API of the MPSolver. Use is encouraged.
 %unignore operations_research::MPSolver::SolveWithProto;
+%unignore operations_research::MPSolver::ComputeIrreducibleInfeasibleSubset;
 %unignore operations_research::MPSolver::ExportModelToProto;
 %unignore operations_research::MPSolver::FillSolutionResponseProto;
 // LoadModelFromProto() is also visible: it's overridden by an %extend, above.

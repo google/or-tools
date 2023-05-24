@@ -226,12 +226,11 @@ class ScipConstraintHandlerForMPCallback
   std::vector<CallbackRangeConstraint> SeparateIntegerSolution(
       const ScipConstraintHandlerContext& context, const EmptyStruct&) override;
 
-  MPCallback* const mp_callback() const { return mp_callback_; }
+  MPCallback* mp_callback() const { return mp_callback_; }
 
  private:
   std::vector<CallbackRangeConstraint> SeparateSolution(
-      const ScipConstraintHandlerContext& context,
-      const bool at_integer_solution);
+      const ScipConstraintHandlerContext& context, bool at_integer_solution);
 
   MPCallback* const mp_callback_;
 };

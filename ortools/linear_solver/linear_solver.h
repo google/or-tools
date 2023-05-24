@@ -996,14 +996,14 @@ class MPObjective {
    * If the variable does not belong to the solver, the function just returns,
    * or crashes in non-opt mode.
    */
-  void SetCoefficient(const MPVariable* const var, double coeff);
+  void SetCoefficient(const MPVariable* var, double coeff);
 
   /**
    *  Gets the coefficient of a given variable in the objective
    *
    * It returns 0 if the variable does not appear in the objective).
    */
-  double GetCoefficient(const MPVariable* const var) const;
+  double GetCoefficient(const MPVariable* var) const;
 
   /**
    * Returns a map from variables to their coefficients in the objective.
@@ -1252,13 +1252,13 @@ class MPConstraint {
    * If the variable does not belong to the solver, the function just returns,
    * or crashes in non-opt mode.
    */
-  void SetCoefficient(const MPVariable* const var, double coeff);
+  void SetCoefficient(const MPVariable* var, double coeff);
 
   /**
    * Gets the coefficient of a given variable on the constraint (which is 0 if
    * the variable does not appear in the constraint).
    */
-  double GetCoefficient(const MPVariable* const var) const;
+  double GetCoefficient(const MPVariable* var) const;
 
   /**
    * Returns a map from variables to their coefficients in the constraint.
@@ -1603,7 +1603,7 @@ class MPSolverInterface {
 
   // Constructor. The user will access the MPSolverInterface through the
   // MPSolver passed as argument.
-  explicit MPSolverInterface(MPSolver* const solver);
+  explicit MPSolverInterface(MPSolver* solver);
   virtual ~MPSolverInterface();
 
   // ----- Solve -----
@@ -1646,7 +1646,7 @@ class MPSolverInterface {
   virtual void SetConstraintBounds(int index, double lb, double ub) = 0;
 
   // Adds a linear constraint.
-  virtual void AddRowConstraint(MPConstraint* const ct) = 0;
+  virtual void AddRowConstraint(MPConstraint* ct) = 0;
 
   // Adds an indicator constraint. Returns true if the feature is supported by
   // the underlying solver.
@@ -1656,18 +1656,18 @@ class MPSolverInterface {
   }
 
   // Add a variable.
-  virtual void AddVariable(MPVariable* const var) = 0;
+  virtual void AddVariable(MPVariable* var) = 0;
 
   // Changes a coefficient in a constraint.
-  virtual void SetCoefficient(MPConstraint* const constraint,
-                              const MPVariable* const variable,
-                              double new_value, double old_value) = 0;
+  virtual void SetCoefficient(MPConstraint* constraint,
+                              const MPVariable* variable, double new_value,
+                              double old_value) = 0;
 
   // Clears a constraint from all its terms.
-  virtual void ClearConstraint(MPConstraint* const constraint) = 0;
+  virtual void ClearConstraint(MPConstraint* constraint) = 0;
 
   // Changes a coefficient in the linear objective.
-  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
+  virtual void SetObjectiveCoefficient(const MPVariable* variable,
                                        double coefficient) = 0;
 
   // Changes the constant term in the linear objective.

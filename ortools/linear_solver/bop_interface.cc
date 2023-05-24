@@ -54,7 +54,7 @@ MPSolver::ResultStatus TranslateProblemStatus(bop::BopSolveStatus status) {
 
 class BopInterface : public MPSolverInterface {
  public:
-  explicit BopInterface(MPSolver* const solver);
+  explicit BopInterface(MPSolver* solver);
   ~BopInterface() override;
 
   // ----- Solve -----
@@ -66,13 +66,12 @@ class BopInterface : public MPSolverInterface {
   void SetVariableBounds(int index, double lb, double ub) override;
   void SetVariableInteger(int index, bool integer) override;
   void SetConstraintBounds(int index, double lb, double ub) override;
-  void AddRowConstraint(MPConstraint* const ct) override;
-  void AddVariable(MPVariable* const var) override;
-  void SetCoefficient(MPConstraint* const constraint,
-                      const MPVariable* const variable, double new_value,
-                      double old_value) override;
-  void ClearConstraint(MPConstraint* const constraint) override;
-  void SetObjectiveCoefficient(const MPVariable* const variable,
+  void AddRowConstraint(MPConstraint* ct) override;
+  void AddVariable(MPVariable* var) override;
+  void SetCoefficient(MPConstraint* constraint, const MPVariable* variable,
+                      double new_value, double old_value) override;
+  void ClearConstraint(MPConstraint* constraint) override;
+  void SetObjectiveCoefficient(const MPVariable* variable,
                                double coefficient) override;
   void SetObjectiveOffset(double value) override;
   void ClearObjective() override;
