@@ -12,6 +12,10 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(REMOVE_ITEM _SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_benchmarks.cc
+)
+
 set(NAME ${PROJECT_NAME}_graph)
 
 # Will be merge in libortools.so
