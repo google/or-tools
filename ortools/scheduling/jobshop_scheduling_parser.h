@@ -55,7 +55,7 @@ class JsspParser {
     DONE
   };
 
-  ~JsspParser() {}
+  ~JsspParser() = default;
 
   // Parses a file to load a jobshop problem.
   // Tries to auto detect the file format.

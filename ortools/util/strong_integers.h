@@ -53,15 +53,11 @@
 #include <stddef.h>
 
 #include <cstdint>
-#include <functional>
 #include <iosfwd>
 #include <ostream>  // NOLINT
-#include <type_traits>
 
-#include "absl/base/port.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 
 namespace operations_research {
 
@@ -169,8 +165,8 @@ class StrongIndex {
     return static_cast<ValType>(value_);
   }
 
-  constexpr const ThisType operator+() const { return ThisType(value_); }
-  constexpr const ThisType operator-() const { return ThisType(-value_); }
+  constexpr ThisType operator+() const { return ThisType(value_); }
+  constexpr ThisType operator-() const { return ThisType(-value_); }
 
   INCREMENT_AND_DECREMENT_OPERATORS;
 
@@ -225,9 +221,9 @@ class StrongInt64 {
 
   INCREMENT_AND_DECREMENT_OPERATORS;
 
-  constexpr const ThisType operator+() const { return ThisType(value_); }
-  constexpr const ThisType operator-() const { return ThisType(-value_); }
-  constexpr const ThisType operator~() const { return ThisType(~value_); }
+  constexpr ThisType operator+() const { return ThisType(value_); }
+  constexpr ThisType operator-() const { return ThisType(-value_); }
+  constexpr ThisType operator~() const { return ThisType(~value_); }
 
   STRONG_ASSIGNMENT_OP(StrongInt64, int64_t, +=);
   STRONG_ASSIGNMENT_OP(StrongInt64, int64_t, -=);
@@ -253,10 +249,20 @@ std::ostream& operator<<(std::ostream& os,  // NOLINT
   return os << arg.value();
 }
 
+template <typename Sink, typename... T>
+void AbslStringify(Sink& sink, StrongIndex<T...> arg) {
+  absl::Format(&sink, "%v", arg.value());
+}
+
 template <typename StrongIntegerName>
 std::ostream& operator<<(std::ostream& os,  // NOLINT
                          StrongInt64<StrongIntegerName> arg) {
   return os << arg.value();
+}
+
+template <typename Sink, typename... T>
+void AbslStringify(Sink& sink, StrongInt64<T...> arg) {
+  absl::Format(&sink, "%v", arg.value());
 }
 
 // -- NON-MEMBER ARITHMETIC OPERATORS ------------------------------------------

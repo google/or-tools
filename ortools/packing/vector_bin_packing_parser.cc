@@ -19,6 +19,7 @@
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/packing/vector_bin_packing.pb.h"
 #include "ortools/util/filelineiter.h"
 
@@ -106,13 +107,13 @@ void VbpParser::ProcessLine(const std::string& line) {
   }
 }
 
-int VbpParser::strtoint32(const std::string& word) {
+int VbpParser::strtoint32(absl::string_view word) {
   int result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }
 
-int64_t VbpParser::strtoint64(const std::string& word) {
+int64_t VbpParser::strtoint64(absl::string_view word) {
   int64_t result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;

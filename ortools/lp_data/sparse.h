@@ -220,7 +220,7 @@ class SparseMatrix {
 // this class (and keep the same address in memory).
 class MatrixView {
  public:
-  MatrixView() {}
+  MatrixView() = default;
   explicit MatrixView(const SparseMatrix& matrix) {
     PopulateFromMatrix(matrix);
   }
@@ -330,7 +330,7 @@ class CompactSparseMatrix {
     const EntryIndex* const starts_;
   };
 
-  CompactSparseMatrix() {}
+  CompactSparseMatrix() = default;
   ConstView view() const { return ConstView(this); }
 
   // Convenient constructors for tests.
@@ -559,7 +559,7 @@ class CompactSparseMatrixView {
   bool IsEmpty() const { return compact_matrix_.IsEmpty(); }
   RowIndex num_rows() const { return compact_matrix_.num_rows(); }
   ColIndex num_cols() const { return ColIndex(columns_.size()); }
-  const ColumnView column(ColIndex col) const {
+  ColumnView column(ColIndex col) const {
     return compact_matrix_.column(columns_[col.value()]);
   }
   EntryIndex num_entries() const;

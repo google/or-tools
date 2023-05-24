@@ -81,7 +81,7 @@ class DoxygenFormatter(object):
         # doesn't treat it like a code block.
         (re.compile(r'(^\s*)//\s{4,}([-\d*].*)'), r'\1 \2', self.COMMENT),
 
-        # Replace TODO(someone) in a comment with @todo (someone)
+        # Replace TODO(user) in a comment with @todo (someone)
         (re.compile(r'TODO'), r'@todo ', self.COMMENT),
 
         # Replace leading 'Note:' or 'Note that' in a comment with @note

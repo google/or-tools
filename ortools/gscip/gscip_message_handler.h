@@ -56,11 +56,11 @@ using MessageHandlerPtr =
 
 // Captures the input handler and returns a unique pointer that will release it
 // when destroyed.
-MessageHandlerPtr CaptureMessageHandlerPtr(SCIP_MESSAGEHDLR* const handler);
+MessageHandlerPtr CaptureMessageHandlerPtr(SCIP_MESSAGEHDLR* handler);
 
 // Make a message handler for SCIP that calls the input function.
 absl::StatusOr<MessageHandlerPtr> MakeSCIPMessageHandler(
-    const GScipMessageHandler gscip_message_handler);
+    GScipMessageHandler gscip_message_handler);
 
 // Object to be instantiated on stack that, when destroyed, will disable the
 // custom handler so that it does not call the GScipMessageHandler.

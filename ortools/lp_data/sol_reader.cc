@@ -22,6 +22,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -31,13 +32,13 @@
 
 namespace operations_research {
 
-absl::StatusOr<glop::DenseRow> ParseSolFile(const std::string& file_name,
+absl::StatusOr<glop::DenseRow> ParseSolFile(absl::string_view file_name,
                                             const glop::LinearProgram& model) {
   ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
   return ParseSolString(sol_file, model);
 }
 
-absl::StatusOr<MPSolutionResponse> ParseSolFile(const std::string& file_name,
+absl::StatusOr<MPSolutionResponse> ParseSolFile(absl::string_view file_name,
                                                 const MPModelProto& model) {
   ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
   return ParseSolString(sol_file, model);

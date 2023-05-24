@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/packing/vector_bin_packing.pb.h"
 
@@ -54,8 +55,8 @@ class VbpParser {
 
   void ProcessLine(const std::string& line);
   void ReportError(const std::string& line);
-  int strtoint32(const std::string& word);
-  int64_t strtoint64(const std::string& word);
+  int strtoint32(absl::string_view word);
+  int64_t strtoint64(absl::string_view word);
 
   LoadStatus load_status_ = NOT_STARTED;
   int num_declared_items_ = -1;

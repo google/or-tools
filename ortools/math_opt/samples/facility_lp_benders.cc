@@ -274,7 +274,7 @@ struct FirstStageProblem {
   std::vector<math_opt::Variable> z;
   math_opt::Variable w;
 
-  FirstStageProblem(const Network& network, const double facility_cost);
+  FirstStageProblem(const Network& network, double facility_cost);
 };
 
 FirstStageProblem::FirstStageProblem(const Network& network,

@@ -52,7 +52,7 @@ class GraphExporter {
                          const std::string& label) = 0;
 
   // Creates a graph exporter that will write to file with a given format.
-  static GraphExporter* MakeFileExporter(File* const file,
+  static GraphExporter* MakeFileExporter(File* file,
                                          GraphExporter::GraphFormat format);
 };
 }  // namespace operations_research

@@ -67,9 +67,7 @@ class TspLibParser final {
   const std::vector<int64_t>& demands() const { return demands_; }
   // Returns the pairs of nodes corresponding to forced edges (second node is
   // directly after the first).
-  const std::set<std::pair<int, int>> fixed_edges() const {
-    return fixed_edges_;
-  }
+  std::set<std::pair<int, int>> fixed_edges() const { return fixed_edges_; }
   // Returns edges of the graph on which Hamiltonian cycles need to be built.
   // Edges are represented as adjacency lists for each node.
   const std::vector<std::vector<int>>& edges() const { return edges_; }

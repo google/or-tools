@@ -385,7 +385,7 @@ class Domain {
    *
    * For instance Domain(1, 7).InverseMultiplicationBy(2) == Domain(1, 3).
    */
-  Domain InverseMultiplicationBy(const int64_t coeff) const;
+  Domain InverseMultiplicationBy(int64_t coeff) const;
 
   /**
    * Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ m ∈ modulo, x = e % m }.

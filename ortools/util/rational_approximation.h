@@ -30,7 +30,7 @@ typedef std::pair<int64_t, int64_t> Fraction;
 // output fraction and the input "x" will not exceed "precision".
 // TODO(user): make a parameterized template with integer and floating-point
 // type parameters.
-Fraction RationalApproximation(const double x, const double precision);
+Fraction RationalApproximation(double x, double precision);
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_RATIONAL_APPROXIMATION_H_

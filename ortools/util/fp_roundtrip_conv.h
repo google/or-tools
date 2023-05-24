@@ -78,7 +78,7 @@ class RoundTripDoubleFormat {
   //
   // This function offers a round-trip from string printed/built by this
   // formatter.
-  static absl::StatusOr<double> Parse(const absl::string_view str_value);
+  static absl::StatusOr<double> Parse(absl::string_view str_value);
 
  private:
   const double value_;

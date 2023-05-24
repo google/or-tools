@@ -62,7 +62,7 @@ class Permutation {
 
   IndexType& operator[](IndexType i) { return perm_[i]; }
 
-  const IndexType operator[](IndexType i) const { return perm_[i]; }
+  IndexType operator[](IndexType i) const { return perm_[i]; }
 
   // Populates the calling object with the inverse permutation of the parameter
   // inverse.

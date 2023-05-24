@@ -20,6 +20,7 @@
 #include <string>
 
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -27,9 +28,9 @@
 namespace operations_research {
 
 // Parse a solution to `model` from a file.
-absl::StatusOr<glop::DenseRow> ParseSolFile(const std::string& file_name,
+absl::StatusOr<glop::DenseRow> ParseSolFile(absl::string_view file_name,
                                             const glop::LinearProgram& model);
-absl::StatusOr<MPSolutionResponse> ParseSolFile(const std::string& file_name,
+absl::StatusOr<MPSolutionResponse> ParseSolFile(absl::string_view file_name,
                                                 const MPModelProto& model);
 
 // Parse a solution to `model` from a string.

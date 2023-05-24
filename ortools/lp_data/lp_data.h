@@ -235,7 +235,7 @@ class LinearProgram {
   }
 
   // Returns a row vector of VariableType representing types of variables.
-  const StrictITIVector<ColIndex, VariableType> variable_types() const {
+  StrictITIVector<ColIndex, VariableType> variable_types() const {
     return variable_types_;
   }
 
@@ -565,11 +565,11 @@ class LinearProgram {
 
   // A helper function to format problem statistics. Used by GetProblemStats()
   // and GetPrettyProblemStats().
-  std::string ProblemStatFormatter(const absl::string_view format) const;
+  std::string ProblemStatFormatter(absl::string_view format) const;
 
   // A helper function to format non-zero statistics. Used by GetNonZeroStats()
   // and GetPrettyNonZeroStats().
-  std::string NonZeroStatFormatter(const absl::string_view format) const;
+  std::string NonZeroStatFormatter(absl::string_view format) const;
 
   // Resizes all row vectors to include index 'row'.
   void ResizeRowsIfNeeded(RowIndex row);

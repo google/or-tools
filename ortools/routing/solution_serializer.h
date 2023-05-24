@@ -25,6 +25,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
@@ -243,7 +244,7 @@ class RoutingSolution {
 
 // Formats a solution or solver statistic according to the given format.
 template <typename T>
-std::string FormatStatistic(const std::string& name, T value,
+std::string FormatStatistic(absl::string_view name, T value,
                             RoutingOutputFormat format) {
   // TODO(user): think about using an enum instead of names (or even a
   // full-fledged struct/class) for the various types of fields.
@@ -266,7 +267,7 @@ std::string FormatStatistic(const std::string& name, T value,
 // Specialization for doubles to show a higher precision: without this
 // specialization, 591.556557 is displayed as 591.557.
 template <>
-inline std::string FormatStatistic(const std::string& name, double value,
+inline std::string FormatStatistic(absl::string_view name, double value,
                                    RoutingOutputFormat format) {
   switch (format) {
     case RoutingOutputFormat::kNone:
@@ -285,7 +286,7 @@ inline std::string FormatStatistic(const std::string& name, double value,
 // Prints a formatted solution or solver statistic according to the given
 // format.
 template <typename T>
-void PrintStatistic(const std::string& name, T value,
+void PrintStatistic(absl::string_view name, T value,
                     RoutingOutputFormat format) {
   absl::PrintF("%s\n", FormatStatistic(name, value, format));
 }

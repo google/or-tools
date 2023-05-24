@@ -65,8 +65,7 @@ GScipLinearExpr GScipNegate(GScipLinearExpr expr);
 
 // Returns the range -inf <= left.terms - right.terms <= right.offset -
 // left.offset
-GScipLinearRange GScipLe(const GScipLinearExpr left,
-                         const GScipLinearExpr& right);
+GScipLinearRange GScipLe(GScipLinearExpr left, const GScipLinearExpr& right);
 
 // Adds the constraint resultant = maximum(terms). Supports unbounded variables
 // in terms.

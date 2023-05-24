@@ -20,6 +20,7 @@
 #include <string>
 
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
@@ -52,7 +53,7 @@ std::string Stringify(const Fractional x, bool fraction) {
 
 // Returns a string that pretty-prints a monomial ax with coefficient
 // a and variable name x
-std::string StringifyMonomial(const Fractional a, const std::string& x,
+std::string StringifyMonomial(const Fractional a, absl::string_view x,
                               bool fraction) {
   if (a == 0.0) return "";
   return a > 0.0

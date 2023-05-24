@@ -229,10 +229,10 @@ bool CanConvertTo ## Class(PyObject *py_obj) {
 }
 %}
 
-%typemap(in) operations_research::Class* const {
+%typemap(in) operations_research::Class* const, operations_research::Class* {
   if (!PyObjAs($input, &$1)) SWIG_fail;
 }
-%typecheck(SWIG_TYPECHECK_POINTER) operations_research::Class* const {
+%typecheck(SWIG_TYPECHECK_POINTER) operations_research::Class* const, operations_research::Class* {
   $1 = CanConvertTo ## Class($input);
   if ($1 == 0) PyErr_Clear();
 }

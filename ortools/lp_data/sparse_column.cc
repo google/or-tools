@@ -26,7 +26,7 @@ namespace glop {
 RandomAccessSparseColumn::RandomAccessSparseColumn(RowIndex num_rows)
     : column_(num_rows, 0.0), changed_(num_rows, false), row_change_() {}
 
-RandomAccessSparseColumn::~RandomAccessSparseColumn() {}
+RandomAccessSparseColumn::~RandomAccessSparseColumn() = default;
 
 void RandomAccessSparseColumn::Clear() {
   const size_t num_changes = row_change_.size();

@@ -132,7 +132,7 @@ class FileLines {
   //     ...
   //   }
   //
-  FileLines(const std::string& filename, File* const file,
+  FileLines(absl::string_view filename, File* const file,
             const int options = FileLineIterator::DEFAULT)
       : file_(file), options_(options) {
     if (!file_) {

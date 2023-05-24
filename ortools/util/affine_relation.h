@@ -83,7 +83,7 @@ class AffineRelation {
         : representative(r), coeff(c), offset(o) {}
     explicit Relation(int r) : representative(r) {}
 
-    const bool operator==(const Relation& other) const {
+    bool operator==(const Relation& other) const {
       return representative == other.representative && coeff == other.coeff &&
              offset == other.offset;
     }
