@@ -150,7 +150,7 @@ class linked_hash_map {
   using node_type = NodeHandle;
   using insert_return_type = InsertReturnType<iterator, node_type>;
 
-  linked_hash_map() {}
+  linked_hash_map() = default;
 
   explicit linked_hash_map(size_t bucket_count, const hasher& hash = hasher(),
                            const key_equal& eq = key_equal(),
