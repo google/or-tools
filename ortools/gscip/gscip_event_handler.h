@@ -134,7 +134,7 @@ class GScipEventHandler {
   virtual SCIP_RETCODE Exit(GScip* gscip) { return SCIP_OKAY; }
 
  protected:
-  // Catches a global event (i.e. not a variable or row depedent one) based on
+  // Catches a global event (i.e. not a variable or row dependent one) based on
   // the input event_type mask.
   //
   // This method must only be called after the problem is transformed; typically

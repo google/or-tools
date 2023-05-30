@@ -221,12 +221,12 @@ class GScip {
   // Warning: you need to ensure that no constraint has a reference to this
   // variable before deleting it, or undefined behavior will occur. For linear
   // constraints, you can set the coefficient of this variable to zero to remove
-  // the variable from the constriant.
+  // the variable from the constraint.
   absl::Status DeleteVariable(SCIP_VAR* var);
 
   // Checks if SafeBulkDelete will succeed for vars, and returns a description
   // the problematic variables/constraints on a failure (the returned status
-  // will not contain a propagated SCIP error). Will not modify the underyling
+  // will not contain a propagated SCIP error). Will not modify the underlying
   // SCIP, it is safe to continue using this if an error is returned.
   absl::Status CanSafeBulkDelete(const absl::flat_hash_set<SCIP_VAR*>& vars);
 

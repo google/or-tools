@@ -61,7 +61,7 @@ ABSL_FLAG(std::string, routing_search_parameters, "",
 
 static const char kTime[] = "Time";
 static const char kCapacity[] = "Capacity";
-static const char kTimeDepedentCost[] = "TimeDependentCost";
+static const char kTimeDependentCost[] = "TimeDependentCost";
 
 // This class implements the Pólya urn stochastic process, for more information:
 // https://en.wikipedia.org/wiki/P%C3%B3lya_urn_model
@@ -208,8 +208,8 @@ int main(int argc, char** argv) {
       routing.RegisterStateDependentTransitCallback(::absl::bind_front(
           &TrafficTransitionEvaluator::Run, &traffic_evaluator, manager)),
       &routing.GetDimensionOrDie(kTime), kHorizon, kHorizon,
-      /*fix_start_cumul_to_zero=*/true, kTimeDepedentCost);
-  routing.GetMutableDimension(kTimeDepedentCost)
+      /*fix_start_cumul_to_zero=*/true, kTimeDependentCost);
+  routing.GetMutableDimension(kTimeDependentCost)
       ->SetSpanCostCoefficientForAllVehicles(1);
 
   // Adding time windows.
