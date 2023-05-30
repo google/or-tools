@@ -44,7 +44,12 @@ public class Issue18
         while (solver.NextSolution())
         {
             count++;
+            Console.WriteLine("solution " + count + " found");
             // Console.WriteLine("solution " + globalSum.Var().Value());
+            if (count > 10)
+            {
+              break;
+            }
         }
         Console.WriteLine("Solutions: " + count);
     }
