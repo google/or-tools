@@ -12,6 +12,6 @@
 # limitations under the License.
 
 exports_files([
-    "re2-2022-02-01.patch",
+    "re2-2023-03-01.patch",
     "pybind11_bazel.patch",
 ])
