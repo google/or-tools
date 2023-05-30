@@ -410,7 +410,7 @@ void ReducedCosts::ComputeReducedCosts() {
   are_reduced_costs_recomputed_ = true;
   are_reduced_costs_precise_ = basis_factorization_.IsRefactorized();
 
-  // It is not resonable to have a dual tolerance lower than the current
+  // It is not reasonable to have a dual tolerance lower than the current
   // dual_residual_error, otherwise we may never terminate (This is happening on
   // dfl001.mps with a low dual_feasibility_tolerance). Note that since we
   // recompute the reduced costs with maximum precision before really exiting,

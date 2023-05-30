@@ -515,7 +515,7 @@ void GenericMinCostFlow<Graph, ArcFlowType,
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::ScaleCosts() {
   SCOPED_TIME_STAT(&stats_);
-  cost_scaling_factor_ = graph_->num_nodes() + 1;
+  cost_scaling_factor_ = scale_prices_ ? graph_->num_nodes() + 1 : 1;
   epsilon_ = 1LL;
   VLOG(3) << "Number of nodes in the graph = " << graph_->num_nodes();
   VLOG(3) << "Number of arcs in the graph = " << graph_->num_arcs();
@@ -1157,6 +1157,7 @@ SimpleMinCostFlow::Status SimpleMinCostFlow::SolveWithPossibleAdjustment(
   min_cost_flow.SetNodeSupply(source, maximum_flow_);
   min_cost_flow.SetNodeSupply(sink, -maximum_flow_);
   min_cost_flow.SetCheckFeasibility(false);
+  min_cost_flow.SetPriceScaling(scale_prices_);
 
   arc_flow_.resize(num_arcs);
   if (min_cost_flow.Solve()) {

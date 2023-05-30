@@ -84,7 +84,7 @@
 // is optimal. The integer cost case is handled by multiplying all the arc costs
 // and the initial value of epsilon by (n+1). When epsilon reaches 1, and
 // the solution is epsilon-optimal, it means: for all residual arc (v,w) in E,
-//    (n+1) * c_p(v,w) >= -1, thus c_p(v,w) >= -1/(n+1) >= 1/n, and the
+//    (n+1) * c_p(v,w) >= -1, thus c_p(v,w) >= -1/(n+1) > -1/n, and the
 // solution is optimal.
 //
 // A node v is said to be *active* if excess(v) > 0.
@@ -310,6 +310,25 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   FlowQuantity Supply(NodeIndex node) const;
   CostValue UnitCost(ArcIndex arc) const;
 
+  // Advanced usage. The default is true.
+  //
+  // Without cost scaling, the algorithm will return a 1-optimal solution to the
+  // given problem. The solution will be an optimal solution to a perturbed
+  // problem where some of the arc unit costs are changed by at most 1.
+  //
+  // If the cost are initially integer and we scale them by (num_nodes + 1),
+  // then we can show that such 1-optimal solution is actually optimal. This
+  // is what happen by default or when SetPriceScaling(true) is called.
+  //
+  // However, if your cost were originally double, you don't really care to
+  // solve optimally a problem where the weights are approximated in the first
+  // place. It is better to multiply your double by a scaling_factor (prefer a
+  // power of 2) so that the maximum rounded arc unit cost is under kint64max /
+  // (num_nodes + 1) to prevent any overflow. You can then solve without any
+  // cost scaling. The final result will be the optimal to a problem were the
+  // unit cost of some arc as been changed by at most 1 / scaling_factor.
+  void SetPriceScaling(bool value) { scale_prices_ = value; }
+
  private:
   typedef ::util::ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
   enum SupplyAdjustment { ADJUST, DONT_ADJUST };
@@ -330,6 +349,8 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   std::vector<FlowQuantity> arc_flow_;
   CostValue optimal_cost_;
   FlowQuantity maximum_flow_;
+
+  bool scale_prices_ = true;
 
   DISALLOW_COPY_AND_ASSIGN(SimpleMinCostFlow);
 };
@@ -441,9 +462,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // and demand given as input.
   FlowQuantity FeasibleSupply(NodeIndex node) const;
 
-  // Whether to use the UpdatePrices() heuristic.
-  void SetUseUpdatePrices(bool value) { use_price_update_ = value; }
-
   // Whether to check the feasibility of the problem with a max-flow, prior to
   // solving it. This uses about twice as much memory, but detects infeasible
   // problems (where the flow can't be satisfied) and makes Solve() return
@@ -451,6 +469,10 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // make sure that your problem is feasible, otherwise the code can loop
   // forever.
   void SetCheckFeasibility(bool value) { check_feasibility_ = value; }
+
+  // Algorithm options.
+  void SetUseUpdatePrices(bool value) { use_price_update_ = value; }
+  void SetPriceScaling(bool value) { scale_prices_ = value; }
 
  private:
   // Returns true if the given arc is admissible i.e. if its residual capacity
@@ -635,6 +657,9 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // Whether to check the problem feasibility with a max-flow.
   bool check_feasibility_ = false;
+
+  // Whether to scale prices, see SimpleMinCostFlow::SetPriceScaling().
+  bool scale_prices_ = true;
 
   DISALLOW_COPY_AND_ASSIGN(GenericMinCostFlow);
 };

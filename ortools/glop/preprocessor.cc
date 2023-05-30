@@ -3394,7 +3394,7 @@ void DoubletonEqualityRowPreprocessor::RecoverSolution(
   // There is always an order that make this matrix triangular. We start with a
   // singleton column which fix its corresponding row and then work on the
   // square submatrix left. We can always start and continue, because if we take
-  // the first substitued row of the current submatrix, if its deleted column
+  // the first substituted row of the current submatrix, if its deleted column
   // was in the submatrix we have a singleton column. If it is outside, we have
   // 2 n - 1 entries for a matrix with n columns, so one must be singleton.
   //

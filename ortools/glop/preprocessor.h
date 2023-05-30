@@ -456,8 +456,8 @@ class SingletonPreprocessor : public Preprocessor {
   void DeleteSingletonRow(MatrixEntry e, LinearProgram* lp);
 
   // Internal operation when removing a zero-cost singleton column corresponding
-  // to the given entry. This modifies the constraint bounds to take into acount
-  // the bounds of the corresponding variable.
+  // to the given entry. This modifies the constraint bounds to take into
+  // account the bounds of the corresponding variable.
   void UpdateConstraintBoundsWithVariableBounds(MatrixEntry e,
                                                 LinearProgram* lp);
 
@@ -467,7 +467,7 @@ class SingletonPreprocessor : public Preprocessor {
                                          const LinearProgram& lp) const;
 
   // A singleton column with a cost of zero can always be removed by changing
-  // the corresponding constraint bounds to take into acount the bound of this
+  // the corresponding constraint bounds to take into account the bound of this
   // singleton column.
   void DeleteZeroCostSingletonColumn(const SparseMatrix& matrix_transpose,
                                      MatrixEntry e, LinearProgram* lp);
@@ -856,7 +856,7 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
   enum ColChoice {
     DELETED = 0,
     MODIFIED = 1,
-    // For for() loops iterating over the ColChoice values, and/or arrays.
+    // for() loops iterating over the ColChoice values, and/or arrays.
     NUM_DOUBLETON_COLS = 2,
   };
   static ColChoice OtherColChoice(ColChoice x) {

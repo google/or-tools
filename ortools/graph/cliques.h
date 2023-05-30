@@ -348,7 +348,7 @@ class BronKerboschAlgorithm {
   // A vector that receives the current clique found by the algorithm.
   std::vector<NodeIndex> current_clique_;
 
-  // Set to true if the algorithm is active (it was not stopped by an the clique
+  // Set to true if the algorithm is active (it was not stopped by a the clique
   // callback).
   int64_t num_remaining_iterations_;
 

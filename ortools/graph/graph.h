@@ -1366,7 +1366,7 @@ NodeIndexType StaticGraph<NodeIndexType, ArcIndexType>::Head(
 // This is because it is a lot more efficient cache-wise to do it this way.
 // This was determined by various experiments, but can also be understood:
 // - during repetitive call to AddArc() a client usually accesses various
-//   areas of memory, and there is no reason to polute the cache with
+//   areas of memory, and there is no reason to pollute the cache with
 //   possibly random access to degree[i].
 // - When the degrees are needed, we compute them in one go, maximizing the
 //   chance of cache hit during the computation.

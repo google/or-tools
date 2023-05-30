@@ -483,7 +483,7 @@ int64_t CBCInterface::nodes() const {
 
 // The support for parameters in CBC is intentionally sparse. There is
 // a memory leak in callCbc that prevents to pass parameters through
-// it, so handling parameters would require an comprehensive rewrite
+// it, so handling parameters would require a comprehensive rewrite
 // of the code. I will improve the parameter support only if there is
 // a relevant use case.
 

@@ -133,26 +133,26 @@ class MPSReaderImpl {
 
   // Different types of variables, as defined in the MPS file specification.
   // Note these are more precise than the ones in PrimalSimplex.
-  enum BoundTypeId {
-    UNKNOWN_BOUND_TYPE,
-    LOWER_BOUND,
-    UPPER_BOUND,
-    FIXED_VARIABLE,
-    FREE_VARIABLE,
-    INFINITE_LOWER_BOUND,
-    INFINITE_UPPER_BOUND,
-    BINARY,
-    SEMI_CONTINUOUS
+  enum class BoundTypeId {
+    kUnknownBoundType,
+    kLowerBound,
+    kUpperBound,
+    kFixedVariable,
+    kFreeVariable,
+    kInfiniteLowerBound,
+    kInfiniteUpperBound,
+    kBinary,
+    kSemiContinuous
   };
 
   // Different types of constraints for a given row.
-  enum RowTypeId {
-    UNKNOWN_ROW_TYPE,
-    EQUALITY,
-    LESS_THAN,
-    GREATER_THAN,
-    OBJECTIVE,
-    NONE
+  enum class RowTypeId {
+    kUnknownRowType,
+    kEquality,
+    kLessThan,
+    kGreaterThan,
+    kObjective,
+    kNone
   };
 
   // Stores a bound value of a given type, for a given column name.
@@ -196,21 +196,21 @@ class MPSReaderImpl {
   std::string objective_name_;
 
   // Enum for section ids.
-  typedef enum {
-    UNKNOWN_SECTION,
-    COMMENT,
-    NAME,
-    OBJSENSE,
-    ROWS,
-    LAZYCONS,
-    COLUMNS,
-    RHS,
-    RANGES,
-    BOUNDS,
-    INDICATORS,
-    SOS,
-    ENDATA
-  } SectionId;
+  enum class SectionId {
+    kUnknownSection,
+    kComment,
+    kName,
+    kObjsense,
+    kRows,
+    kLazycons,
+    kColumns,
+    kRhs,
+    kRanges,
+    kBounds,
+    kIndicators,
+    kSos,
+    kEndData
+  };
 
   // Id of the current section of MPS file.
   SectionId section_;
@@ -587,20 +587,20 @@ absl::Status MPSReaderImpl::ProcessLine(absl::string_view line,
     return InvalidArgumentError("File contains tabs.");
   }
   std::string section;
-  if (line[0] != '\0' && line[0] != ' ') {
+  if (line_[0] != '\0' && line_[0] != ' ') {
     section = GetFirstWord();
-    section_ =
-        gtl::FindWithDefault(section_name_to_id_map_, section, UNKNOWN_SECTION);
-    if (section_ == UNKNOWN_SECTION) {
+    section_ = gtl::FindWithDefault(section_name_to_id_map_, section,
+                                    SectionId::kUnknownSection);
+    if (section_ == SectionId::kUnknownSection) {
       return InvalidArgumentError("Unknown section.");
     }
-    if (section_ == COMMENT) {
+    if (section_ == SectionId::kComment) {
       return absl::OkStatus();
     }
-    if (section_ == OBJSENSE) {
+    if (section_ == SectionId::kObjsense) {
       return absl::OkStatus();
     }
-    if (section_ == NAME) {
+    if (section_ == SectionId::kName) {
       RETURN_IF_ERROR(SplitLineIntoFields());
       // NOTE(user): The name may differ between fixed and free forms. In
       // fixed form, the name has at most 8 characters, and starts at a specific
@@ -630,27 +630,27 @@ absl::Status MPSReaderImpl::ProcessLine(absl::string_view line,
   }
   RETURN_IF_ERROR(SplitLineIntoFields());
   switch (section_) {
-    case NAME:
+    case SectionId::kName:
       return InvalidArgumentError("Second NAME field.");
-    case OBJSENSE:
+    case SectionId::kObjsense:
       return ProcessObjectiveSenseSection(data);
-    case ROWS:
+    case SectionId::kRows:
       return ProcessRowsSection(/*is_lazy=*/false, data);
-    case LAZYCONS:
+    case SectionId::kLazycons:
       return ProcessRowsSection(/*is_lazy=*/true, data);
-    case COLUMNS:
+    case SectionId::kColumns:
       return ProcessColumnsSection(data);
-    case RHS:
+    case SectionId::kRhs:
       return ProcessRhsSection(data);
-    case RANGES:
+    case SectionId::kRanges:
       return ProcessRangesSection(data);
-    case BOUNDS:
+    case SectionId::kBounds:
       return ProcessBoundsSection(data);
-    case INDICATORS:
+    case SectionId::kIndicators:
       return ProcessIndicatorsSection(data);
-    case SOS:
+    case SectionId::kSos:
       return ProcessSosSection();
-    case ENDATA:  // Do nothing.
+    case SectionId::kEndData:  // Do nothing.
       break;
     default:
       return InvalidArgumentError("Unknown section.");
@@ -676,17 +676,17 @@ absl::Status MPSReaderImpl::ProcessRowsSection(bool is_lazy,
   const std::string row_type_name = fields_[0];
   const std::string row_name = fields_[1];
   RowTypeId row_type = gtl::FindWithDefault(row_name_to_id_map_, row_type_name,
-                                            UNKNOWN_ROW_TYPE);
-  if (row_type == UNKNOWN_ROW_TYPE) {
+                                            RowTypeId::kUnknownRowType);
+  if (row_type == RowTypeId::kUnknownRowType) {
     return InvalidArgumentError("Unknown row type.");
   }
 
   // The first NONE constraint is used as the objective.
-  if (objective_name_.empty() && row_type == NONE) {
-    row_type = OBJECTIVE;
+  if (objective_name_.empty() && row_type == RowTypeId::kNone) {
+    row_type = RowTypeId::kObjective;
     objective_name_ = row_name;
   } else {
-    if (row_type == NONE) {
+    if (row_type == RowTypeId::kNone) {
       ++num_unconstrained_rows_;
     }
     const int row = data->FindOrCreateConstraint(row_name);
@@ -695,18 +695,18 @@ absl::Status MPSReaderImpl::ProcessRowsSection(bool is_lazy,
     // The initial row range is [0, 0]. We encode the type in the range by
     // setting one of the bounds to +/- infinity.
     switch (row_type) {
-      case LESS_THAN:
+      case RowTypeId::kLessThan:
         data->SetConstraintBounds(row, -kInfinity,
                                   data->ConstraintUpperBound(row));
         break;
-      case GREATER_THAN:
+      case RowTypeId::kGreaterThan:
         data->SetConstraintBounds(row, data->ConstraintLowerBound(row),
                                   kInfinity);
         break;
-      case NONE:
+      case RowTypeId::kNone:
         data->SetConstraintBounds(row, -kInfinity, kInfinity);
         break;
-      case EQUALITY:
+      case RowTypeId::kEquality:
       default:
         break;
     }
@@ -937,9 +937,10 @@ absl::Status MPSReaderImpl::StoreBound(const std::string& bound_type_mnemonic,
                                        const std::string& column_name,
                                        const std::string& bound_value,
                                        DataWrapper* data) {
-  const BoundTypeId bound_type_id = gtl::FindWithDefault(
-      bound_name_to_id_map_, bound_type_mnemonic, UNKNOWN_BOUND_TYPE);
-  if (bound_type_id == UNKNOWN_BOUND_TYPE) {
+  const BoundTypeId bound_type_id =
+      gtl::FindWithDefault(bound_name_to_id_map_, bound_type_mnemonic,
+                           BoundTypeId::kUnknownBoundType);
+  if (bound_type_id == BoundTypeId::kUnknownBoundType) {
     return InvalidArgumentError("Unknown bound type.");
   }
   const int col = data->FindOrCreateVariable(column_name);
@@ -962,7 +963,7 @@ absl::Status MPSReaderImpl::StoreBound(const std::string& bound_type_mnemonic,
     upper_bound = kInfinity;
   }
   switch (bound_type_id) {
-    case LOWER_BOUND: {
+    case BoundTypeId::kLowerBound: {
       ASSIGN_OR_RETURN(lower_bound, GetDoubleFromString(bound_value));
       // LI with the value 0.0 specifies general integers with no upper bound.
       if (bound_type_mnemonic == "LI" && lower_bound == 0.0) {
@@ -970,35 +971,35 @@ absl::Status MPSReaderImpl::StoreBound(const std::string& bound_type_mnemonic,
       }
       break;
     }
-    case UPPER_BOUND: {
+    case BoundTypeId::kUpperBound: {
       ASSIGN_OR_RETURN(upper_bound, GetDoubleFromString(bound_value));
       break;
     }
-    case SEMI_CONTINUOUS: {
+    case BoundTypeId::kSemiContinuous: {
       ASSIGN_OR_RETURN(upper_bound, GetDoubleFromString(bound_value));
       data->SetVariableTypeToSemiContinuous(col);
       break;
     }
-    case FIXED_VARIABLE: {
+    case BoundTypeId::kFixedVariable: {
       ASSIGN_OR_RETURN(lower_bound, GetDoubleFromString(bound_value));
       upper_bound = lower_bound;
       break;
     }
-    case FREE_VARIABLE:
+    case BoundTypeId::kFreeVariable:
       lower_bound = -kInfinity;
       upper_bound = +kInfinity;
       break;
-    case INFINITE_LOWER_BOUND:
+    case BoundTypeId::kInfiniteLowerBound:
       lower_bound = -kInfinity;
       break;
-    case INFINITE_UPPER_BOUND:
+    case BoundTypeId::kInfiniteUpperBound:
       upper_bound = +kInfinity;
       break;
-    case BINARY:
+    case BoundTypeId::kBinary:
       lower_bound = Fractional(0.0);
       upper_bound = Fractional(1.0);
       break;
-    case UNKNOWN_BOUND_TYPE:
+    case BoundTypeId::kUnknownBoundType:
     default:
       return InvalidArgumentError("Unknown bound type.");
   }
@@ -1016,7 +1017,7 @@ const int MPSReaderImpl::kSpacePos[12] = {12, 13, 22, 23, 36, 37,
 MPSReaderImpl::MPSReaderImpl()
     : free_form_(true),
       fields_(kNumFields),
-      section_(UNKNOWN_SECTION),
+      section_(SectionId::kUnknownSection),
       section_name_to_id_map_(),
       row_name_to_id_map_(),
       bound_name_to_id_map_(),
@@ -1025,31 +1026,30 @@ MPSReaderImpl::MPSReaderImpl()
       line_(),
       in_integer_section_(false),
       num_unconstrained_rows_(0) {
-  section_name_to_id_map_["*"] = COMMENT;
-  section_name_to_id_map_["NAME"] = NAME;
-  section_name_to_id_map_["OBJSENSE"] = OBJSENSE;
-  section_name_to_id_map_["ROWS"] = ROWS;
-  section_name_to_id_map_["LAZYCONS"] = LAZYCONS;
-  section_name_to_id_map_["COLUMNS"] = COLUMNS;
-  section_name_to_id_map_["RHS"] = RHS;
-  section_name_to_id_map_["RANGES"] = RANGES;
-  section_name_to_id_map_["BOUNDS"] = BOUNDS;
-  section_name_to_id_map_["INDICATORS"] = INDICATORS;
-  section_name_to_id_map_["ENDATA"] = ENDATA;
-  row_name_to_id_map_["E"] = EQUALITY;
-  row_name_to_id_map_["L"] = LESS_THAN;
-  row_name_to_id_map_["G"] = GREATER_THAN;
-  row_name_to_id_map_["N"] = NONE;
-  bound_name_to_id_map_["LO"] = LOWER_BOUND;
-  bound_name_to_id_map_["UP"] = UPPER_BOUND;
-  bound_name_to_id_map_["FX"] = FIXED_VARIABLE;
-  bound_name_to_id_map_["FR"] = FREE_VARIABLE;
-  bound_name_to_id_map_["MI"] = INFINITE_LOWER_BOUND;
-  bound_name_to_id_map_["PL"] = INFINITE_UPPER_BOUND;
-  bound_name_to_id_map_["BV"] = BINARY;
-  bound_name_to_id_map_["LI"] = LOWER_BOUND;
-  bound_name_to_id_map_["UI"] = UPPER_BOUND;
-  bound_name_to_id_map_["SC"] = SEMI_CONTINUOUS;
+  section_name_to_id_map_["NAME"] = SectionId::kName;
+  section_name_to_id_map_["OBJSENSE"] = SectionId::kObjsense;
+  section_name_to_id_map_["ROWS"] = SectionId::kRows;
+  section_name_to_id_map_["LAZYCONS"] = SectionId::kLazycons;
+  section_name_to_id_map_["COLUMNS"] = SectionId::kColumns;
+  section_name_to_id_map_["RHS"] = SectionId::kRhs;
+  section_name_to_id_map_["RANGES"] = SectionId::kRanges;
+  section_name_to_id_map_["BOUNDS"] = SectionId::kBounds;
+  section_name_to_id_map_["INDICATORS"] = SectionId::kIndicators;
+  section_name_to_id_map_["ENDATA"] = SectionId::kEndData;
+  row_name_to_id_map_["E"] = RowTypeId::kEquality;
+  row_name_to_id_map_["L"] = RowTypeId::kLessThan;
+  row_name_to_id_map_["G"] = RowTypeId::kGreaterThan;
+  row_name_to_id_map_["N"] = RowTypeId::kNone;
+  bound_name_to_id_map_["LO"] = BoundTypeId::kLowerBound;
+  bound_name_to_id_map_["UP"] = BoundTypeId::kUpperBound;
+  bound_name_to_id_map_["FX"] = BoundTypeId::kFixedVariable;
+  bound_name_to_id_map_["FR"] = BoundTypeId::kFreeVariable;
+  bound_name_to_id_map_["MI"] = BoundTypeId::kInfiniteLowerBound;
+  bound_name_to_id_map_["PL"] = BoundTypeId::kInfiniteUpperBound;
+  bound_name_to_id_map_["BV"] = BoundTypeId::kBinary;
+  bound_name_to_id_map_["LI"] = BoundTypeId::kLowerBound;
+  bound_name_to_id_map_["UI"] = BoundTypeId::kUpperBound;
+  bound_name_to_id_map_["SC"] = BoundTypeId::kSemiContinuous;
   // TODO(user): Support 'SI' (semi integer).
   integer_type_names_set_.insert("BV");
   integer_type_names_set_.insert("LI");
@@ -1091,16 +1091,17 @@ absl::Status MPSReaderImpl::SplitLineIntoFields() {
     // (maximum 8 characters) but in practice there are many problem files in
     // our netlib archive that are in fixed format and have a long name. We
     // choose to ignore these cases and treat them as fixed format anyway.
-    if (section_ != NAME && !IsFixedFormat()) {
+    if (section_ != SectionId::kName && !IsFixedFormat()) {
       return InvalidArgumentError("Line is not in fixed format.");
     }
     const int length = line_.length();
+    // Several parts of the code assume that `fields_` has the right number of
+    // fields detected.
+    fields_.clear();
     for (int i = 0; i < kNumFields; ++i) {
       if (kFieldStartPos[i] < length) {
-        fields_[i] = line_.substr(kFieldStartPos[i], kFieldLength[i]);
-        fields_[i].erase(fields_[i].find_last_not_of(" ") + 1);
-      } else {
-        fields_[i] = "";
+        fields_.push_back(line_.substr(kFieldStartPos[i], kFieldLength[i]));
+        fields_.back().erase(fields_.back().find_last_not_of(" ") + 1);
       }
     }
   }

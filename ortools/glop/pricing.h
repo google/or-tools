@@ -53,7 +53,7 @@ namespace glop {
 // this case, which is not even the biggest size we can tackle.
 //
 // Note(user): This could be moved to util/ as a general class if someone wants
-// to reuse it, it is however tunned for use in Glop pricing step and might
+// to reuse it, it is however tuned for use in Glop pricing step and might
 // becomes even more specific in the future.
 template <typename Index>
 class DynamicMaximum {

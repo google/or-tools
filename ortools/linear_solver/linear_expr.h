@@ -17,7 +17,7 @@
 /**
  * \file
  * This file allows you to write natural code (like a mathematical equation) to
- * model optimization problems with MPSolver. It is syntatic sugar on top of
+ * model optimization problems with MPSolver. It is syntactic sugar on top of
  * the MPSolver API, it provides no additional functionality. Use of these APIs
  * makes it much easier to write code that is both simple and big-O optimal for
  * creating your model, at the cost of some additional constant factor

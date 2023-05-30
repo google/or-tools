@@ -338,7 +338,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
            problem_status_ == ProblemStatus::DUAL_FEASIBLE ||
            basis_factorization_.IsRefactorized());
 
-    // If SetIntegralityScale() was called, we preform a polish operation.
+    // If SetIntegralityScale() was called, we perform a polish operation.
     if (!integrality_scale_.empty() &&
         problem_status_ == ProblemStatus::OPTIMAL) {
       GLOP_RETURN_IF_ERROR(Polish(time_limit));
@@ -836,8 +836,8 @@ class ColumnComparator {
 void RevisedSimplex::UseSingletonColumnInInitialBasis(RowToColMapping* basis) {
   SCOPED_TIME_STAT(&function_stats_);
   // Computes the singleton columns and the cost variation of the corresponding
-  // variables (in the only possible direction, i.e away from its current bound)
-  // for a unit change in the infeasibility of the corresponding row.
+  // variables (in the only possible direction, i.e. away from its current
+  // bound) for a unit change in the infeasibility of the corresponding row.
   //
   // Note that the slack columns will be treated as normal singleton columns.
   std::vector<ColIndex> singleton_column;
@@ -3049,7 +3049,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
 // - The subproblem approach, which enables one to use a normal phase II dual,
 //   but requires an efficient bound-flipping ratio test since the new problem
 //   has all its variables boxed. This one is implemented now, but require
-//   a bit more tunning.
+//   a bit more tuning.
 // - Pan's method, which is really fast but have no theoretical guarantee of
 //   terminating and thus needs to use one of the other methods as a fallback if
 //   it fails to make progress.

@@ -172,7 +172,7 @@ message BopParameters {
   // "complete", but it should be faster.
   optional bool use_transposition_table_in_ls = 22 [default = true];
 
-  // Wheter we keep a list of variable that can potentially repair in one flip
+  // Whether we keep a list of variable that can potentially repair in one flip
   // all the current infeasible constraints (such variable must at least appear
   // in all the infeasible constraints for this to happen).
   optional bool use_potential_one_flip_repairs_in_ls = 39 [default = false];

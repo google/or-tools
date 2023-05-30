@@ -166,7 +166,7 @@ void LpScalingHelper::UnscaleColumnRightSolve(
   const Fractional global_factor = scaler_.ColScalingFactor(col);
 
   // [RowScale * B * BColScale] * inverse = RowScale * column * ColScale.
-  // That is B * (BColScale * inverse) = columm * ColScale[col].
+  // That is B * (BColScale * inverse) = column * ColScale[col].
   if (right_inverse->non_zeros.empty()) {
     const RowIndex num_rows = right_inverse->values.size();
     for (RowIndex row(0); row < num_rows; ++row) {

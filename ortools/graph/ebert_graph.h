@@ -1405,7 +1405,7 @@ class EbertGraph
     return std::min(arc, Opposite(arc));
   }
 
-  // Returns the opposite arc, i.e the direct arc is the arc is in reverse
+  // Returns the opposite arc, i.e. the direct arc is the arc is in reverse
   // direction, and the reverse arc if the arc is direct.
   ArcIndexType Opposite(const ArcIndexType arc) const {
     const ArcIndexType opposite = ~arc;

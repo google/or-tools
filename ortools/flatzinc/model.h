@@ -117,7 +117,7 @@ struct Domain {
 };
 
 // An int var is a name with a domain of possible values, along with
-// some tags. Typically, an Variable is on the heap, and owned by the
+// some tags. Typically, a Variable is on the heap, and owned by the
 // global Model object.
 struct Variable {
   // This method tries to unify two variables. This can happen during the

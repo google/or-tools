@@ -116,7 +116,7 @@ ComputeMinimumWeightMatching(const GraphType& graph,
   for (NodeIndex tail : graph.AllNodes()) {
     for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
       const NodeIndex head = graph.Head(arc);
-      // Adding both arcs is redudant for MinCostPerfectMatching.
+      // Adding both arcs is redundant for MinCostPerfectMatching.
       if (tail < head) {
         matching.AddEdgeWithCost(tail, head, weight(arc));
       }

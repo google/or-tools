@@ -96,7 +96,7 @@ class MPCallbackContext {
   //
   // This constraint must not cut off integer solutions, it should only
   // strengthen the LP (behavior is undefined otherwise).  Use
-  // MPCallbackContext::AddLazyConstriant() if you are cutting off integer
+  // MPCallbackContext::AddLazyConstraint() if you are cutting off integer
   // solutions.
   virtual void AddCut(const LinearRange& cutting_plane) = 0;
 

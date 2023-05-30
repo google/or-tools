@@ -233,8 +233,8 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
       if (!non_zero_position_set_.IsSet(pos)) {
         // Note that we could create the non_zero_position_list_ here, but we
         // prefer to keep the non-zero positions sorted, so using the bitset is
-        // a good alernative. Of course if the solution is really really sparse,
-        // then sorting non_zero_position_list_ will be faster.
+        // a good alternative. Of course if the solution is really really
+        // sparse, then sorting non_zero_position_list_ will be faster.
         output_coeffs[pos] = v;
         non_zero_position_set_.Set(pos);
       } else {

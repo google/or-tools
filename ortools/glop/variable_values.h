@@ -93,7 +93,7 @@ class VariableValues {
   Fractional ComputeSumOfPrimalInfeasibilities() const;
 
   // Updates the variable during a simplex pivot:
-  // - step * direction is substracted from the basic variables value.
+  // - step * direction is subtracted from the basic variables value.
   // - step is added to the entering column value.
   void UpdateOnPivoting(const ScatteredColumn& direction, ColIndex entering_col,
                         Fractional step);

@@ -889,7 +889,7 @@ bool LocalSearchAssignmentIterator::NewStateIsInTranspositionTable(
     sat::Literal l) {
   if (search_nodes_.size() + 1 > kStoredMaxDecisions) return false;
 
-  // Fill the transposition table element, i.e the array 'a' of decisions.
+  // Fill the transposition table element, i.e. the array 'a' of decisions.
   std::array<int32_t, kStoredMaxDecisions> a;
   InitializeTranspositionTableKey(&a);
   a[search_nodes_.size()] = l.SignedValue();
@@ -907,7 +907,7 @@ void LocalSearchAssignmentIterator::InsertInTranspositionTable() {
   // If there is more decision that kStoredMaxDecisions, do nothing.
   if (search_nodes_.size() > kStoredMaxDecisions) return;
 
-  // Fill the transposition table element, i.e the array 'a' of decisions.
+  // Fill the transposition table element, i.e. the array 'a' of decisions.
   std::array<int32_t, kStoredMaxDecisions> a;
   InitializeTranspositionTableKey(&a);
   std::sort(a.begin(), a.begin() + search_nodes_.size());
