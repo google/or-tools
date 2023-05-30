@@ -1293,7 +1293,7 @@ class ModelSolver:
         """Checks that solve has run and has found a feasible solution."""
         if not self.__solve_helper.has_solution():
             raise RuntimeError(
-                'solve() has not be called, or no solution has been found.')
+                'solve() has not been called, or no solution has been found.')
 
     def stop_search(self):
         """Stops the current search asynchronously."""
