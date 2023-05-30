@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Encodes an convex piecewise linear function."""
+"""Encodes a convex piecewise linear function."""
 
 from ortools.sat.python import cp_model
 

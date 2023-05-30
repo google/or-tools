@@ -92,7 +92,7 @@ public class CpModel
 
     /**
      * <summary>
-     * Creates an Boolean variable with given domain.
+     * Creates a Boolean variable with given domain.
      * </summary>
      */
     public BoolVar NewBoolVar(string name)

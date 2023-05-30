@@ -3219,7 +3219,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     if (params.test_feasibility_jump()) {
       for (int i = 0; i < params.num_workers(); ++i) {
         SatParameters local_params = params;
-        local_params.set_random_seed(params.random_seed() + i);
+        local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));
         local_params.set_feasibility_jump_decay(((i / 2) % 2) == 1 ? 0.95
                                                                    : 1.0);
         incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
@@ -3283,7 +3283,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     //   - randomly select random or no randoms?
     for (int i = 0; i < num_feasibility_jump; ++i) {
       SatParameters local_params = params;
-      local_params.set_random_seed(params.random_seed() + i);
+      local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));
       std::string name;
       switch (i) {
         case 0: {  // Use defaults.

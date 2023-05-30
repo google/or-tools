@@ -51,7 +51,7 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
 /**
  * Solves the given CpModelProto.
  *
- * This advanced API accept a Model* which allows to access more adavanced
+ * This advanced API accept a Model* which allows to access more advanced
  * features by configuring some classes in the Model before solve.
  *
  * For instance:

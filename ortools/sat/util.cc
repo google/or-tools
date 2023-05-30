@@ -494,7 +494,7 @@ void MaxBoundedSubsetSum::AddMultiples(int64_t coeff, int64_t max_value) {
 
 void MaxBoundedSubsetSum::AddChoicesInternal(absl::Span<const int64_t> values) {
   // Mode 1: vector of all possible sums (with duplicates).
-  if (!sums_.empty() && sums_.size() <= kMaxComplexityPerAdd) {
+  if (!sums_.empty() && sums_.size() <= max_complexity_per_add_) {
     const int old_size = sums_.size();
     for (int i = 0; i < old_size; ++i) {
       for (const int64_t value : values) {
@@ -510,7 +510,7 @@ void MaxBoundedSubsetSum::AddChoicesInternal(absl::Span<const int64_t> values) {
   }
 
   // Mode 2: bitset of all possible sums.
-  if (bound_ <= kMaxComplexityPerAdd) {
+  if (bound_ <= max_complexity_per_add_) {
     if (!sums_.empty()) {
       expanded_sums_.assign(bound_ + 1, false);
       for (const int64_t s : sums_) {

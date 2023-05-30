@@ -844,7 +844,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           }
 
           // Note(user): If we have enforced => var fixed, we could actually
-          // just have removed var from the constraint it it was implied by
+          // just have removed var from the constraint it was implied by
           // another constraint. If not, because of the new affine relation we
           // could remove it right away.
           processed[PositiveRef(enf)] = true;
@@ -1088,7 +1088,7 @@ void DetectDominanceRelations(
   dual_bound_strengthening->Reset(num_vars);
 
   for (int var = 0; var < num_vars; ++var) {
-    // Ignore variables that have been substitued already or are unused.
+    // Ignore variables that have been substituted already or are unused.
     if (context.IsFixed(var) || context.VariableWasRemoved(var) ||
         context.VariableIsNotUsedAnymore(var)) {
       dual_bound_strengthening->CannotMove({var});

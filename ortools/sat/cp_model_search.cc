@@ -417,8 +417,6 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
   };
 }
 
-namespace {
-
 // This generates a valid random seed (base_seed + delta) without overflow.
 // We assume |delta| is small.
 int ValidSumSeed(int base_seed, int delta) {
@@ -430,8 +428,6 @@ int ValidSumSeed(int base_seed, int delta) {
   }
   return static_cast<int>(result);
 }
-
-}  // namespace
 
 // Note: in flatzinc setting, we know we always have a fixed search defined.
 //

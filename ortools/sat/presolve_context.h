@@ -138,6 +138,11 @@ class PresolveContext {
   int64_t MaxOf(const LinearExpressionProto& expr) const;
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
+  // Returns a constant factor that divides the expression.
+  // If the expression is fixed, then the result is equal to the fixed value of
+  // the expression.
+  // Currently, it only works with expression with 0 or 1 term.
+  int64_t ExpressionDivisor(const LinearExpressionProto& expr) const;
 
   // Accepts any proto with two parallel vector .vars() and .coeffs(), like
   // LinearConstraintProto or ObjectiveProto or LinearExpressionProto but beware

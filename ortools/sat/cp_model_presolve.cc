@@ -1192,21 +1192,18 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   LinearArgumentProto* proto = ct->mutable_int_prod();
   for (int i = 0; i < ct->int_prod().exprs().size(); ++i) {
     LinearExpressionProto expr = ct->int_prod().exprs(i);
+    const int64_t local_constant_factor = context_->ExpressionDivisor(expr);
     if (context_->IsFixed(expr)) {
       context_->UpdateRuleStats("int_prod: removed constant expressions.");
       changed = true;
-      constant_factor = CapProd(constant_factor, context_->FixedValue(expr));
+      constant_factor = CapProd(constant_factor, local_constant_factor);
       continue;
     } else {
-      const int64_t coeff = expr.coeffs(0);
-      const int64_t offset = expr.offset();
-      const int64_t gcd =
-          MathUtil::GCD64(static_cast<uint64_t>(std::abs(coeff)),
-                          static_cast<uint64_t>(std::abs(offset)));
-      if (gcd != 1) {
-        constant_factor = CapProd(constant_factor, gcd);
-        expr.set_coeffs(0, coeff / gcd);
-        expr.set_offset(offset / gcd);
+      // Transfer the local_constant_factor to the constant_factor.
+      if (local_constant_factor != 1) {
+        constant_factor = CapProd(constant_factor, local_constant_factor);
+        expr.set_coeffs(0, expr.coeffs(0) / local_constant_factor);
+        expr.set_offset(expr.offset() / local_constant_factor);
       }
     }
     *proto->mutable_exprs(new_size++) = expr;
@@ -1233,8 +1230,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
   // In this case, the only possible value that fit in the domains is zero.
   // We will check for UNSAT if zero is not achievable by the rhs below.
-  if (constant_factor == std::numeric_limits<int64_t>::min() ||
-      constant_factor == std::numeric_limits<int64_t>::max()) {
+  if (AtMinOrMaxInt64(constant_factor)) {
     context_->UpdateRuleStats("int_prod: overflow if non zero");
     if (!context_->IntersectDomainWith(ct->int_prod().target(), Domain(0))) {
       return false;
@@ -1242,18 +1238,47 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     constant_factor = 1;
   }
 
-  // Replace by linear!
+  // Replace by linear if it cannot overflow.
   if (ct->int_prod().exprs().size() == 1) {
-    LinearConstraintProto* const lin =
-        context_->working_model->add_constraints()->mutable_linear();
-    lin->add_domain(0);
-    lin->add_domain(0);
-    AddLinearExpressionToLinearConstraint(ct->int_prod().target(), 1, lin);
-    AddLinearExpressionToLinearConstraint(ct->int_prod().exprs(0),
-                                          -constant_factor, lin);
-    context_->UpdateNewConstraintsVariableUsage();
-    context_->UpdateRuleStats("int_prod: linearize product by constant.");
-    return RemoveConstraint(ct);
+    const LinearExpressionProto& target = ct->int_prod().target();
+    const int64_t target_constant_factor = context_->ExpressionDivisor(target);
+    const int64_t gcd = MathUtil::GCD64(
+        static_cast<uint64_t>(std::abs(constant_factor)),
+        static_cast<uint64_t>(std::abs(target_constant_factor)));
+
+    if (gcd != 1) {
+      constant_factor /= gcd;
+      ct->mutable_int_prod()->mutable_target()->set_offset(target.offset() /
+                                                           gcd);
+      if (target.coeffs_size() == 1) {
+        ct->mutable_int_prod()->mutable_target()->set_coeffs(
+            0, target.coeffs(0) / gcd);
+      }
+    }
+
+    // Overflow ?
+    const Domain expr_domain =
+        context_->DomainSuperSetOf(ct->int_prod().exprs(0));
+    const Domain expanded =
+        expr_domain.ContinuousMultiplicationBy(constant_factor)
+            .AdditionWith(context_->DomainSuperSetOf(target));
+    const bool possible_overflow =
+        AtMinOrMaxInt64(expanded.Min()) || AtMinOrMaxInt64(expanded.Max());
+    if (possible_overflow) {
+      // Re-add a new term with the constant factor.
+      ct->mutable_int_prod()->add_exprs()->set_offset(constant_factor);
+    } else {  // Replace with a linear equation.
+      LinearConstraintProto* const lin =
+          context_->working_model->add_constraints()->mutable_linear();
+      lin->add_domain(0);
+      lin->add_domain(0);
+      AddLinearExpressionToLinearConstraint(ct->int_prod().target(), 1, lin);
+      AddLinearExpressionToLinearConstraint(ct->int_prod().exprs(0),
+                                            -constant_factor, lin);
+      context_->UpdateNewConstraintsVariableUsage();
+      context_->UpdateRuleStats("int_prod: linearize product by constant.");
+      return RemoveConstraint(ct);
+    }
   }
 
   if (constant_factor != 1) {

@@ -206,6 +206,18 @@ Domain PresolveContext::DomainSuperSetOf(
   return result;
 }
 
+int64_t PresolveContext::ExpressionDivisor(
+    const LinearExpressionProto& expr) const {
+  DCHECK_LE(expr.vars_size(), 1);
+  if (IsFixed(expr)) return FixedValue(expr);
+
+  const int64_t coeff = expr.coeffs(0);
+  const int64_t offset = expr.offset();
+  return static_cast<int64_t>(
+      MathUtil::GCD64(static_cast<uint64_t>(std::abs(coeff)),
+                      static_cast<uint64_t>(std::abs(offset))));
+}
+
 bool PresolveContext::ExpressionIsAffineBoolean(
     const LinearExpressionProto& expr) const {
   if (expr.vars().size() != 1) return false;

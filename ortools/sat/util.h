@@ -202,8 +202,11 @@ int MoveOneUnprocessedLiteralLast(
 // Precondition: Both bound and all added values must be >= 0.
 class MaxBoundedSubsetSum {
  public:
-  MaxBoundedSubsetSum() { Reset(0); }
-  explicit MaxBoundedSubsetSum(int64_t bound) { Reset(bound); }
+  MaxBoundedSubsetSum() : max_complexity_per_add_(/*default=*/50) { Reset(0); }
+  explicit MaxBoundedSubsetSum(int64_t bound, int max_complexity_per_add = 50)
+      : max_complexity_per_add_(max_complexity_per_add) {
+    Reset(bound);
+  }
 
   // Resets to an empty set of values.
   // We look for the maximum sum <= bound.
@@ -230,8 +233,8 @@ class MaxBoundedSubsetSum {
   // This assumes filtered values.
   void AddChoicesInternal(absl::Span<const int64_t> values);
 
-  static constexpr int kMaxComplexityPerAdd = 50;
-
+  // Max_complexity we are willing to pay on each Add() call.
+  const int max_complexity_per_add_;
   int64_t gcd_;
   int64_t bound_;
   int64_t current_max_;

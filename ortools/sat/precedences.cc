@@ -559,7 +559,7 @@ void PrecedencesPropagator::AddArc(
 }
 
 // TODO(user): On jobshop problems with a lot of tasks per machine (500), this
-// takes up a big chunck of the running time even before we find a solution.
+// takes up a big chunk of the running time even before we find a solution.
 // This is because, for each lower bound changed, we inspect 500 arcs even
 // though they will never be propagated because the other bound is still at the
 // horizon. Find an even sparser algorithm?

@@ -103,7 +103,7 @@ bool MPModelProtoValidationBeforeConversion(const SatParameters& params,
 
 // To satisfy our scaling requirements, any terms that is almost zero can just
 // be set to zero. We need to do that before operations like
-// DetectImpliedIntegers(), becauses really low coefficients can cause issues
+// DetectImpliedIntegers(), because really low coefficients can cause issues
 // and might lead to less detection.
 void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
                          SolverLogger* logger);

@@ -2053,6 +2053,7 @@ bool FlowCoverCutHelper::GenerateCut(const SingleNodeFlow& data) {
   num_out_flow_ = 0;
   num_out_bin_ = 0;
 
+  // Note that we need to generate a <= version, so we negate everything.
   cut_builder_.Clear();
   for (int i = 0; i < data.in_flow.size(); ++i) {
     const FlowInfo& info = data.in_flow[i];
@@ -2061,30 +2062,30 @@ bool FlowCoverCutHelper::GenerateCut(const SingleNodeFlow& data) {
       continue;
     }
     num_in_flow_++;
-    cut_builder_.AddTerm(info.flow_expr, -1);
+    cut_builder_.AddTerm(info.flow_expr, 1);
     if (info.capacity > slack) {
       num_in_bin_++;
       const IntegerValue coeff = info.capacity - slack;
-      cut_builder_.AddConstant(-coeff);
-      cut_builder_.AddTerm(info.bool_expr, coeff);
+      cut_builder_.AddConstant(coeff);
+      cut_builder_.AddTerm(info.bool_expr, -coeff);
     }
   }
   for (int i = 0; i < data.out_flow.size(); ++i) {
     const FlowInfo& info = data.out_flow[i];
     if (out_cover[i]) {
       num_out_capa_++;
-      cut_builder_.AddConstant(info.capacity);
+      cut_builder_.AddConstant(-info.capacity);
     } else if (info.capacity > slack) {
       num_out_bin_++;
-      cut_builder_.AddTerm(info.bool_expr, slack);
+      cut_builder_.AddTerm(info.bool_expr, -slack);
     } else {
       num_out_flow_++;
-      cut_builder_.AddTerm(info.flow_expr, 1);
+      cut_builder_.AddTerm(info.flow_expr, -1);
     }
   }
 
   // TODO(user): Lift the cut.
-  cut_ = cut_builder_.BuildConstraint(-demand, kMaxIntegerValue);
+  cut_ = cut_builder_.BuildConstraint(kMinIntegerValue, demand);
   return true;
 }
 
