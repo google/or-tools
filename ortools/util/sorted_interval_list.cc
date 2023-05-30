@@ -152,6 +152,9 @@ Domain Domain::FromValues(std::vector<int64_t> values) {
     } else {
       result.intervals_.back().end = v;
     }
+    if (result.intervals_.back().end == std::numeric_limits<int64_t>::max()) {
+      break;
+    }
   }
   return result;
 }
