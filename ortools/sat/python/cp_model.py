@@ -2272,13 +2272,13 @@ class CpSolver(object):
     def Value(self, expression):
         """Returns the value of a linear expression after solve."""
         if not self.__solution:
-            raise RuntimeError('Solve() has not be called.')
+            raise RuntimeError('Solve() has not been called.')
         return EvaluateLinearExpr(expression, self.__solution)
 
     def BooleanValue(self, literal):
         """Returns the boolean value of a literal after solve."""
         if not self.__solution:
-            raise RuntimeError('Solve() has not be called.')
+            raise RuntimeError('Solve() has not been called.')
         return EvaluateBooleanExpression(literal, self.__solution)
 
     def ObjectiveValue(self):
@@ -2381,7 +2381,7 @@ class CpSolverSolutionCallback(swig_helper.SolutionCallback):
         RuntimeError: if `lit` is not a boolean variable or its negation.
     """
         if not self.HasResponse():
-            raise RuntimeError('Solve() has not be called.')
+            raise RuntimeError('Solve() has not been called.')
         if cmh.is_integral(lit):
             return bool(lit)
         elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
@@ -2404,7 +2404,7 @@ class CpSolverSolutionCallback(swig_helper.SolutionCallback):
         RuntimeError: if 'expression' is not a LinearExpr.
     """
         if not self.HasResponse():
-            raise RuntimeError('Solve() has not be called.')
+            raise RuntimeError('Solve() has not been called.')
 
         value = 0
         to_process = [(expression, 1)]
