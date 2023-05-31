@@ -1,5 +1,5 @@
 if(NOT BUILD_EXAMPLES)
-	return()
+  return()
 endif()
 
 if(BUILD_CXX_EXAMPLES)
