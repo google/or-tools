@@ -46,7 +46,7 @@ namespace operations_research {
 namespace {
 class EqualityExprCst : public Constraint {
  public:
-  EqualityExprCst(Solver* const s, IntExpr* const e, int64_t v);
+  EqualityExprCst(Solver* s, IntExpr* e, int64_t v);
   ~EqualityExprCst() override {}
   void Post() override;
   void InitialPropagate() override;
@@ -121,7 +121,7 @@ Constraint* Solver::MakeEquality(IntExpr* const e, int v) {
 namespace {
 class GreaterEqExprCst : public Constraint {
  public:
-  GreaterEqExprCst(Solver* const s, IntExpr* const e, int64_t v);
+  GreaterEqExprCst(Solver* s, IntExpr* e, int64_t v);
   ~GreaterEqExprCst() override {}
   void Post() override;
   void InitialPropagate() override;
@@ -219,7 +219,7 @@ Constraint* Solver::MakeGreater(IntExpr* const e, int v) {
 namespace {
 class LessEqExprCst : public Constraint {
  public:
-  LessEqExprCst(Solver* const s, IntExpr* const e, int64_t v);
+  LessEqExprCst(Solver* s, IntExpr* e, int64_t v);
   ~LessEqExprCst() override {}
   void Post() override;
   void InitialPropagate() override;
@@ -316,7 +316,7 @@ Constraint* Solver::MakeLess(IntExpr* const e, int v) {
 namespace {
 class DiffCst : public Constraint {
  public:
-  DiffCst(Solver* const s, IntVar* const var, int64_t value);
+  DiffCst(Solver* s, IntVar* var, int64_t value);
   ~DiffCst() override {}
   void Post() override {}
   void InitialPropagate() override;

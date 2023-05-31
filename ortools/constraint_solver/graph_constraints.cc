@@ -48,7 +48,7 @@ namespace operations_research {
 namespace {
 class NoCycle : public Constraint {
  public:
-  NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
+  NoCycle(Solver* s, const std::vector<IntVar*>& nexts,
           const std::vector<IntVar*>& active, Solver::IndexFilter1 sink_handler,
           bool assume_paths);
   ~NoCycle() override {}
@@ -649,7 +649,7 @@ Constraint* Solver::MakeSubCircuit(const std::vector<IntVar*>& nexts) {
 namespace {
 class BasePathCumul : public Constraint {
  public:
-  BasePathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+  BasePathCumul(Solver* s, const std::vector<IntVar*>& nexts,
                 const std::vector<IntVar*>& active,
                 const std::vector<IntVar*>& cumuls);
   ~BasePathCumul() override {}
@@ -1134,7 +1134,7 @@ class DelayedPathCumul : public Constraint {
 
 class IndexEvaluator2PathCumul : public BasePathCumul {
  public:
-  IndexEvaluator2PathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+  IndexEvaluator2PathCumul(Solver* s, const std::vector<IntVar*>& nexts,
                            const std::vector<IntVar*>& active,
                            const std::vector<IntVar*>& cumuls,
                            Solver::IndexEvaluator2 transit_evaluator);
@@ -1195,8 +1195,7 @@ bool IndexEvaluator2PathCumul::AcceptLink(int i, int j) const {
 
 class IndexEvaluator2SlackPathCumul : public BasePathCumul {
  public:
-  IndexEvaluator2SlackPathCumul(Solver* const s,
-                                const std::vector<IntVar*>& nexts,
+  IndexEvaluator2SlackPathCumul(Solver* s, const std::vector<IntVar*>& nexts,
                                 const std::vector<IntVar*>& active,
                                 const std::vector<IntVar*>& cumuls,
                                 const std::vector<IntVar*>& slacks,

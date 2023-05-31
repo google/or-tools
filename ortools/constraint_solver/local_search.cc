@@ -63,16 +63,15 @@ namespace operations_research {
 // search.
 
 // Returns true if a local optimum has been reached and cannot be improved.
-bool LocalOptimumReached(Search* const search);
+bool LocalOptimumReached(Search* search);
 
 // Returns true if the search accepts the delta (actually checking this by
 // calling AcceptDelta on the monitors of the search).
-bool AcceptDelta(Search* const search, Assignment* delta,
-                 Assignment* deltadelta);
+bool AcceptDelta(Search* search, Assignment* delta, Assignment* deltadelta);
 
 // Notifies the search that a neighbor has been accepted by local search.
-void AcceptNeighbor(Search* const search);
-void AcceptUncheckedNeighbor(Search* const search);
+void AcceptNeighbor(Search* search);
+void AcceptUncheckedNeighbor(Search* search);
 
 // ----- Base operator class for operators manipulating IntVars -----
 
@@ -4376,14 +4375,13 @@ void LocalSearchFilterManager::Synchronize(const Assignment* assignment,
 
 class FindOneNeighbor : public DecisionBuilder {
  public:
-  FindOneNeighbor(Assignment* const assignment, IntVar* objective,
-                  SolutionPool* const pool,
-                  LocalSearchOperator* const ls_operator,
-                  DecisionBuilder* const sub_decision_builder,
-                  const RegularLimit* const limit,
+  FindOneNeighbor(Assignment* assignment, IntVar* objective, SolutionPool* pool,
+                  LocalSearchOperator* ls_operator,
+                  DecisionBuilder* sub_decision_builder,
+                  const RegularLimit* limit,
                   LocalSearchFilterManager* filter_manager);
   ~FindOneNeighbor() override {}
-  Decision* Next(Solver* const solver) override;
+  Decision* Next(Solver* solver) override;
   std::string DebugString() const override { return "FindOneNeighbor"; }
 
  private:
@@ -4737,9 +4735,7 @@ class LocalSearchPhaseParameters : public BaseObject {
     return sub_decision_builder_;
   }
   RegularLimit* limit() const { return limit_; }
-  LocalSearchFilterManager* const filter_manager() const {
-    return filter_manager_;
-  }
+  LocalSearchFilterManager* filter_manager() const { return filter_manager_; }
 
  private:
   IntVar* const objective_;
@@ -4816,12 +4812,12 @@ class NestedSolveDecision : public Decision {
   // This enum is used internally to tag states in the local search tree.
   enum StateType { DECISION_PENDING, DECISION_FAILED, DECISION_FOUND };
 
-  NestedSolveDecision(DecisionBuilder* const db, bool restore,
+  NestedSolveDecision(DecisionBuilder* db, bool restore,
                       const std::vector<SearchMonitor*>& monitors);
-  NestedSolveDecision(DecisionBuilder* const db, bool restore);
+  NestedSolveDecision(DecisionBuilder* db, bool restore);
   ~NestedSolveDecision() override {}
-  void Apply(Solver* const solver) override;
-  void Refute(Solver* const solver) override;
+  void Apply(Solver* solver) override;
+  void Refute(Solver* solver) override;
   std::string DebugString() const override { return "NestedSolveDecision"; }
   int state() const { return state_; }
 
@@ -4878,36 +4874,32 @@ void NestedSolveDecision::Refute(Solver* const solver) {}
 
 class LocalSearch : public DecisionBuilder {
  public:
-  LocalSearch(Assignment* const assignment, IntVar* objective,
-              SolutionPool* const pool, LocalSearchOperator* const ls_operator,
-              DecisionBuilder* const sub_decision_builder,
-              RegularLimit* const limit,
+  LocalSearch(Assignment* assignment, IntVar* objective, SolutionPool* pool,
+              LocalSearchOperator* ls_operator,
+              DecisionBuilder* sub_decision_builder, RegularLimit* limit,
               LocalSearchFilterManager* filter_manager);
   // TODO(user): find a way to not have to pass vars here: redundant with
   // variables in operators
   LocalSearch(const std::vector<IntVar*>& vars, IntVar* objective,
-              SolutionPool* const pool, DecisionBuilder* const first_solution,
-              LocalSearchOperator* const ls_operator,
-              DecisionBuilder* const sub_decision_builder,
-              RegularLimit* const limit,
+              SolutionPool* pool, DecisionBuilder* first_solution,
+              LocalSearchOperator* ls_operator,
+              DecisionBuilder* sub_decision_builder, RegularLimit* limit,
               LocalSearchFilterManager* filter_manager);
   LocalSearch(const std::vector<IntVar*>& vars, IntVar* objective,
-              SolutionPool* const pool, DecisionBuilder* const first_solution,
-              DecisionBuilder* const first_solution_sub_decision_builder,
-              LocalSearchOperator* const ls_operator,
-              DecisionBuilder* const sub_decision_builder,
-              RegularLimit* const limit,
+              SolutionPool* pool, DecisionBuilder* first_solution,
+              DecisionBuilder* first_solution_sub_decision_builder,
+              LocalSearchOperator* ls_operator,
+              DecisionBuilder* sub_decision_builder, RegularLimit* limit,
               LocalSearchFilterManager* filter_manager);
   LocalSearch(const std::vector<SequenceVar*>& vars, IntVar* objective,
-              SolutionPool* const pool, DecisionBuilder* const first_solution,
-              LocalSearchOperator* const ls_operator,
-              DecisionBuilder* const sub_decision_builder,
-              RegularLimit* const limit,
+              SolutionPool* pool, DecisionBuilder* first_solution,
+              LocalSearchOperator* ls_operator,
+              DecisionBuilder* sub_decision_builder, RegularLimit* limit,
               LocalSearchFilterManager* filter_manager);
   ~LocalSearch() override;
-  Decision* Next(Solver* const solver) override;
+  Decision* Next(Solver* solver) override;
   std::string DebugString() const override { return "LocalSearch"; }
-  void Accept(ModelVisitor* const visitor) const override;
+  void Accept(ModelVisitor* visitor) const override;
 
  protected:
   void PushFirstSolutionDecision(DecisionBuilder* first_solution);

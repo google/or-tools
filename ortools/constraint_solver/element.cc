@@ -36,7 +36,7 @@ ABSL_FLAG(bool, cp_disable_element_cache, true,
 namespace operations_research {
 
 // ----- IntExprElement -----
-void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var);
+void LinkVarExpr(Solver* s, IntExpr* expr, IntVar* var);
 
 namespace {
 
@@ -68,7 +68,7 @@ class VectorGreater {
 
 class BaseIntExprElement : public BaseIntExpr {
  public:
-  BaseIntExprElement(Solver* const s, IntVar* const e);
+  BaseIntExprElement(Solver* s, IntVar* e);
   ~BaseIntExprElement() override {}
   int64_t Min() const override;
   int64_t Max() const override;
@@ -285,7 +285,7 @@ class IntElementConstraint : public CastConstraint {
 
 // ----- IntExprElement
 
-IntVar* BuildDomainIntVar(Solver* const solver, std::vector<int64_t>* values);
+IntVar* BuildDomainIntVar(Solver* solver, std::vector<int64_t>* values);
 
 class IntExprElement : public BaseIntExprElement {
  public:
@@ -461,8 +461,8 @@ void RangeMinimumQueryExprElement::SetRange(int64_t mi, int64_t ma) {
 
 class IncreasingIntExprElement : public BaseIntExpr {
  public:
-  IncreasingIntExprElement(Solver* const s, const std::vector<int64_t>& values,
-                           IntVar* const index);
+  IncreasingIntExprElement(Solver* s, const std::vector<int64_t>& values,
+                           IntVar* index);
   ~IncreasingIntExprElement() override {}
 
   int64_t Min() const override;
@@ -680,8 +680,7 @@ IntExpr* Solver::MakeElement(const std::vector<int>& values,
 namespace {
 class IntExprFunctionElement : public BaseIntExprElement {
  public:
-  IntExprFunctionElement(Solver* const s, Solver::IndexEvaluator1 values,
-                         IntVar* const e);
+  IntExprFunctionElement(Solver* s, Solver::IndexEvaluator1 values, IntVar* e);
   ~IntExprFunctionElement() override;
 
   std::string name() const override {
@@ -889,8 +888,8 @@ IntExpr* Solver::MakeMonotonicElement(Solver::IndexEvaluator1 values,
 namespace {
 class IntIntExprFunctionElement : public BaseIntExpr {
  public:
-  IntIntExprFunctionElement(Solver* const s, Solver::IndexEvaluator2 values,
-                            IntVar* const expr1, IntVar* const expr2);
+  IntIntExprFunctionElement(Solver* s, Solver::IndexEvaluator2 values,
+                            IntVar* expr1, IntVar* expr2);
   ~IntIntExprFunctionElement() override;
   std::string DebugString() const override {
     return absl::StrFormat("IntIntFunctionElement(%s,%s)",
@@ -1201,9 +1200,9 @@ class IfThenElseCt : public CastConstraint {
 namespace {
 class IntExprEvaluatorElementCt : public CastConstraint {
  public:
-  IntExprEvaluatorElementCt(Solver* const s, Solver::Int64ToIntVar evaluator,
+  IntExprEvaluatorElementCt(Solver* s, Solver::Int64ToIntVar evaluator,
                             int64_t range_start, int64_t range_end,
-                            IntVar* const index, IntVar* const target_var);
+                            IntVar* index, IntVar* target_var);
   ~IntExprEvaluatorElementCt() override {}
 
   void Post() override;
@@ -1214,7 +1213,7 @@ class IntExprEvaluatorElementCt : public CastConstraint {
   void UpdateExpr();
 
   std::string DebugString() const override;
-  void Accept(ModelVisitor* const visitor) const override;
+  void Accept(ModelVisitor* visitor) const override;
 
  protected:
   IntVar* const index_;
@@ -1377,11 +1376,11 @@ void IntExprEvaluatorElementCt::Accept(ModelVisitor* const visitor) const {
 
 class IntExprArrayElementCt : public IntExprEvaluatorElementCt {
  public:
-  IntExprArrayElementCt(Solver* const s, std::vector<IntVar*> vars,
-                        IntVar* const index, IntVar* const target_var);
+  IntExprArrayElementCt(Solver* s, std::vector<IntVar*> vars, IntVar* index,
+                        IntVar* target_var);
 
   std::string DebugString() const override;
-  void Accept(ModelVisitor* const visitor) const override;
+  void Accept(ModelVisitor* visitor) const override;
 
  private:
   const std::vector<IntVar*> vars_;

@@ -43,7 +43,7 @@ IntExpr* BuildEndExpr(IntervalVar* var);
 IntExpr* BuildSafeStartExpr(IntervalVar* var, int64_t unperformed_value);
 IntExpr* BuildSafeDurationExpr(IntervalVar* var, int64_t unperformed_value);
 IntExpr* BuildSafeEndExpr(IntervalVar* var, int64_t unperformed_value);
-void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var);
+void LinkVarExpr(Solver* s, IntExpr* expr, IntVar* var);
 
 // It's good to have the two extreme values being symmetrical around zero: it
 // makes mirroring easier.
@@ -275,7 +275,7 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
   IntExpr* SafeEndExpr(int64_t unperformed_value) override { return EndExpr(); }
 
  protected:
-  IntervalVar* const underlying() const { return t_; }
+  IntervalVar* underlying() const { return t_; }
   bool MayUnderlyingBePerformed() const {
     return underlying()->MayBePerformed();
   }
@@ -747,11 +747,11 @@ class PerformedVar : public BooleanVar {
 
 class FixedDurationIntervalVar : public BaseIntervalVar {
  public:
-  FixedDurationIntervalVar(Solver* const s, int64_t start_min,
-                           int64_t start_max, int64_t duration, bool optional,
+  FixedDurationIntervalVar(Solver* s, int64_t start_min, int64_t start_max,
+                           int64_t duration, bool optional,
                            const std::string& name);
   // Unperformed interval.
-  FixedDurationIntervalVar(Solver* const s, const std::string& name);
+  FixedDurationIntervalVar(Solver* s, const std::string& name);
   ~FixedDurationIntervalVar() override {}
 
   int64_t StartMin() const override;
@@ -988,11 +988,11 @@ std::string FixedDurationIntervalVar::DebugString() const {
 
 class FixedDurationPerformedIntervalVar : public BaseIntervalVar {
  public:
-  FixedDurationPerformedIntervalVar(Solver* const s, int64_t start_min,
+  FixedDurationPerformedIntervalVar(Solver* s, int64_t start_min,
                                     int64_t start_max, int64_t duration,
                                     const std::string& name);
   // Unperformed interval.
-  FixedDurationPerformedIntervalVar(Solver* const s, const std::string& name);
+  FixedDurationPerformedIntervalVar(Solver* s, const std::string& name);
   ~FixedDurationPerformedIntervalVar() override {}
 
   int64_t StartMin() const override;
@@ -1185,8 +1185,8 @@ std::string FixedDurationPerformedIntervalVar::DebugString() const {
 
 class StartVarPerformedIntervalVar : public IntervalVar {
  public:
-  StartVarPerformedIntervalVar(Solver* const s, IntVar* const var,
-                               int64_t duration, const std::string& name);
+  StartVarPerformedIntervalVar(Solver* s, IntVar* var, int64_t duration,
+                               const std::string& name);
   ~StartVarPerformedIntervalVar() override {}
 
   int64_t StartMin() const override;
@@ -1351,8 +1351,8 @@ std::string StartVarPerformedIntervalVar::DebugString() const {
 
 class StartVarIntervalVar : public BaseIntervalVar {
  public:
-  StartVarIntervalVar(Solver* const s, IntVar* const start, int64_t duration,
-                      IntVar* const performed, const std::string& name);
+  StartVarIntervalVar(Solver* s, IntVar* start, int64_t duration,
+                      IntVar* performed, const std::string& name);
   ~StartVarIntervalVar() override {}
 
   int64_t StartMin() const override;
@@ -1626,7 +1626,7 @@ class LinkStartVarIntervalVar : public Constraint {
 
 class FixedInterval : public IntervalVar {
  public:
-  FixedInterval(Solver* const s, int64_t start, int64_t duration,
+  FixedInterval(Solver* s, int64_t start, int64_t duration,
                 const std::string& name);
   ~FixedInterval() override {}
 

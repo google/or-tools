@@ -123,7 +123,7 @@ class SwapActiveToShortestPathOperator : public PathOperator {
       std::function<int(int64_t)> start_empty_path_class,
       std::vector<std::vector<int64_t>> alternative_sets,
       RoutingTransitCallback2 arc_evaluator);
-  ~SwapActiveToShortestPathOperator() override = default;
+  ~SwapActiveToShortestPathOperator() override {}
   bool MakeNeighbor() override;
   std::string DebugString() const override {
     return "SwapActiveToShortestPath";

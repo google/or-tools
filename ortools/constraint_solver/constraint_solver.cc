@@ -171,9 +171,9 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
 }
 
 // ----- Forward Declarations and Profiling Support -----
-extern DemonProfiler* BuildDemonProfiler(Solver* const solver);
-extern void DeleteDemonProfiler(DemonProfiler* const monitor);
-extern void InstallDemonProfiler(DemonProfiler* const monitor);
+extern DemonProfiler* BuildDemonProfiler(Solver* solver);
+extern void DeleteDemonProfiler(DemonProfiler* monitor);
+extern void InstallDemonProfiler(DemonProfiler* monitor);
 extern LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver);
 extern void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
 extern void InstallLocalSearchProfiler(LocalSearchProfiler* monitor);
@@ -225,7 +225,7 @@ void Demon::desinhibit(Solver* const s) {
 
 // ------------------ Queue class ------------------
 
-extern void CleanVariableOnFail(IntVar* const var);
+extern void CleanVariableOnFail(IntVar* var);
 
 class Queue {
  public:
@@ -733,7 +733,7 @@ class CompressedTrail {
 // passing and storing a pointer. As objects are small, copying is
 // much faster than allocating (around 35% on a complete solve).
 
-extern void RestoreBoolValue(IntVar* const var);
+extern void RestoreBoolValue(IntVar* var);
 
 struct Trail {
   CompressedTrail<int> rev_ints_;
@@ -1009,11 +1009,11 @@ class Search {
   void EnterSearch();
   void RestartSearch();
   void ExitSearch();
-  void BeginNextDecision(DecisionBuilder* const db);
-  void EndNextDecision(DecisionBuilder* const db, Decision* const d);
-  void ApplyDecision(Decision* const d);
-  void AfterDecision(Decision* const d, bool apply);
-  void RefuteDecision(Decision* const d);
+  void BeginNextDecision(DecisionBuilder* db);
+  void EndNextDecision(DecisionBuilder* db, Decision* d);
+  void ApplyDecision(Decision* d);
+  void AfterDecision(Decision* d, bool apply);
+  void RefuteDecision(Decision* d);
   void BeginFail();
   void EndFail();
   void BeginInitialPropagation();
@@ -1028,7 +1028,7 @@ class Search {
   bool IsUncheckedSolutionLimitReached();
   void PeriodicCheck();
   int ProgressPercent();
-  void Accept(ModelVisitor* const visitor) const;
+  void Accept(ModelVisitor* visitor) const;
   void AddEventListener(Solver::MonitorEvent event, SearchMonitor* monitor) {
     if (monitor != nullptr) {
       monitor_event_listeners_[to_underlying(event)].push_back(monitor);
@@ -1421,9 +1421,9 @@ enum SentinelMarker {
 };
 }  // namespace
 
-extern PropagationMonitor* BuildTrace(Solver* const s);
-extern LocalSearchMonitor* BuildLocalSearchMonitorPrimary(Solver* const s);
-extern ModelCache* BuildModelCache(Solver* const solver);
+extern PropagationMonitor* BuildTrace(Solver* s);
+extern LocalSearchMonitor* BuildLocalSearchMonitorPrimary(Solver* s);
+extern ModelCache* BuildModelCache(Solver* solver);
 
 std::string Solver::model_name() const { return name_; }
 
@@ -1870,7 +1870,7 @@ void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
   return NewSearch(db, monitors);
 }
 
-extern PropagationMonitor* BuildPrintTrace(Solver* const s);
+extern PropagationMonitor* BuildPrintTrace(Solver* s);
 
 // Opens a new top level search.
 void Solver::NewSearch(DecisionBuilder* const db,

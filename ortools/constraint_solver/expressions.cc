@@ -402,7 +402,7 @@ class DomainIntVar : public IntVar {
 
     virtual IntVar* GetOrMakeValueWatcher(int64_t value) = 0;
 
-    virtual void SetValueWatcher(IntVar* const boolvar, int64_t value) = 0;
+    virtual void SetValueWatcher(IntVar* boolvar, int64_t value) = 0;
   };
 
   // This class monitors the domain of the variable and updates the
@@ -886,7 +886,7 @@ class DomainIntVar : public IntVar {
 
     virtual IntVar* GetOrMakeUpperBoundWatcher(int64_t value) = 0;
 
-    virtual void SetUpperBoundWatcher(IntVar* const boolvar, int64_t value) = 0;
+    virtual void SetUpperBoundWatcher(IntVar* boolvar, int64_t value) = 0;
   };
 
   // This class watches the bounds of the variable and updates the
@@ -1330,9 +1330,8 @@ class DomainIntVar : public IntVar {
   };
 
   // ----- Main Class -----
-  DomainIntVar(Solver* const s, int64_t vmin, int64_t vmax,
-               const std::string& name);
-  DomainIntVar(Solver* const s, const std::vector<int64_t>& sorted_values,
+  DomainIntVar(Solver* s, int64_t vmin, int64_t vmax, const std::string& name);
+  DomainIntVar(Solver* s, const std::vector<int64_t>& sorted_values,
                const std::string& name);
   ~DomainIntVar() override;
 
@@ -2899,7 +2898,7 @@ class SubCstIntVar : public IntVar {
     const int64_t cst_;
   };
 
-  SubCstIntVar(Solver* const s, IntVar* v, int64_t c);
+  SubCstIntVar(Solver* s, IntVar* v, int64_t c);
   ~SubCstIntVar() override;
 
   int64_t Min() const override;
@@ -3033,7 +3032,7 @@ class OppIntVar : public IntVar {
     int64_t Value() const override { return -iterator_->Value(); }
   };
 
-  OppIntVar(Solver* const s, IntVar* v);
+  OppIntVar(Solver* s, IntVar* v);
   ~OppIntVar() override;
 
   int64_t Min() const override;
@@ -3209,7 +3208,7 @@ class TimesPosCstIntVar : public TimesCstIntVar {
     const int64_t cst_;
   };
 
-  TimesPosCstIntVar(Solver* const s, IntVar* v, int64_t c);
+  TimesPosCstIntVar(Solver* s, IntVar* v, int64_t c);
   ~TimesPosCstIntVar() override;
 
   int64_t Min() const override;
@@ -3324,7 +3323,7 @@ class TimesPosCstBoolVar : public TimesCstIntVar {
     const int64_t cst_;
   };
 
-  TimesPosCstBoolVar(Solver* const s, BooleanVar* v, int64_t c);
+  TimesPosCstBoolVar(Solver* s, BooleanVar* v, int64_t c);
   ~TimesPosCstBoolVar() override;
 
   int64_t Min() const override;
@@ -3475,7 +3474,7 @@ class TimesNegCstIntVar : public TimesCstIntVar {
     const int64_t cst_;
   };
 
-  TimesNegCstIntVar(Solver* const s, IntVar* v, int64_t c);
+  TimesNegCstIntVar(Solver* s, IntVar* v, int64_t c);
   ~TimesNegCstIntVar() override;
 
   int64_t Min() const override;

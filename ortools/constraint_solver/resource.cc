@@ -449,7 +449,7 @@ class CumulativeLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
 // resource constraint.
 class NotLast {
  public:
-  NotLast(Solver* const solver, const std::vector<IntervalVar*>& intervals,
+  NotLast(Solver* solver, const std::vector<IntervalVar*>& intervals,
           bool mirror, bool strict);
 
   ~NotLast() { gtl::STLDeleteElements(&by_start_min_); }
@@ -551,7 +551,7 @@ bool NotLast::Propagate() {
 // which is why they are grouped together.
 class EdgeFinderAndDetectablePrecedences {
  public:
-  EdgeFinderAndDetectablePrecedences(Solver* const solver,
+  EdgeFinderAndDetectablePrecedences(Solver* solver,
                                      const std::vector<IntervalVar*>& intervals,
                                      bool mirror, bool strict);
   ~EdgeFinderAndDetectablePrecedences() {
@@ -1379,7 +1379,7 @@ class UpdatesForADemand {
   explicit UpdatesForADemand(int size)
       : updates_(size, 0), up_to_date_(false) {}
 
-  const int64_t Update(int index) { return updates_[index]; }
+  int64_t Update(int index) { return updates_[index]; }
   void Reset() { up_to_date_ = false; }
   void SetUpdate(int index, int64_t update) {
     DCHECK(!up_to_date_);

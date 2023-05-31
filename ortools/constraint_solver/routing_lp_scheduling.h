@@ -660,7 +660,7 @@ class DimensionCumulOptimizerCore {
       int64_t* transit_cost, int64_t* cost_offset = nullptr,
       bool reuse_previous_model_if_possible = true, bool clear_lp = false,
       bool clear_solution_constraints = true,
-      absl::Duration* const solve_duration = nullptr);
+      absl::Duration* solve_duration = nullptr);
 
   std::vector<DimensionSchedulingStatus> OptimizeSingleRouteWithResources(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
@@ -712,7 +712,7 @@ class DimensionCumulOptimizerCore {
                        RoutingLinearSolverWrapper* solver,
                        std::vector<int64_t>* cumul_values, int64_t* cost,
                        int64_t* transit_cost, int64_t* cumul_offset,
-                       int64_t* const cost_offset);
+                       int64_t* cost_offset);
 
   // Computes the minimum/maximum of cumuls for nodes on "route", and sets them
   // in current_route_[min|max]_cumuls_ respectively.

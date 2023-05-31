@@ -1555,8 +1555,7 @@ class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
 
 class SumBooleanGreaterOrEqualToOne : public BaseSumBooleanConstraint {
  public:
-  SumBooleanGreaterOrEqualToOne(Solver* const s,
-                                const std::vector<IntVar*>& vars);
+  SumBooleanGreaterOrEqualToOne(Solver* s, const std::vector<IntVar*>& vars);
   ~SumBooleanGreaterOrEqualToOne() override {}
 
   void Post() override;

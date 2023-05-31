@@ -13,7 +13,6 @@
 
 // [START program]
 // [START import]
-#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <sstream>

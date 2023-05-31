@@ -3683,7 +3683,7 @@ void RoutingModel::SetAssignmentFromOtherModelAssignment(
 // A bipartite graph is created with left nodes representing the nodes of the
 // routing problem and right nodes representing possible node successors; an
 // arc between a left node l and a right node r is created if r can be the
-// node folowing l in a route (Next(l) = r); the cost of the arc is the transit
+// node following l in a route (Next(l) = r); the cost of the arc is the transit
 // cost between l and r in the routing problem.
 // This is a lower bound given the solution to assignment problem does not
 // necessarily produce a (set of) closed route(s) from a starting node to an
@@ -6701,7 +6701,7 @@ namespace {
 // routing.
 class LightRangeLessOrEqual : public Constraint {
  public:
-  LightRangeLessOrEqual(Solver* const s, IntExpr* const l, IntExpr* const r);
+  LightRangeLessOrEqual(Solver* s, IntExpr* l, IntExpr* r);
   ~LightRangeLessOrEqual() override {}
   void Post() override;
   void InitialPropagate() override;

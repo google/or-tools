@@ -283,7 +283,7 @@ bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
         }
       }
     } else {
-      // Zero the word as the mask is implicitely null.
+      // Zero the word as the mask is implicitly null.
       changed = true;
       bits_.SetValue(solver, index, 0);
       to_remove_.push_back(index);

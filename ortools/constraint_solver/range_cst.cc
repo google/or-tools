@@ -71,7 +71,7 @@ class RangeEquality : public Constraint {
 
 class RangeLessOrEqual : public Constraint {
  public:
-  RangeLessOrEqual(Solver* const s, IntExpr* const l, IntExpr* const r);
+  RangeLessOrEqual(Solver* s, IntExpr* l, IntExpr* r);
   ~RangeLessOrEqual() override {}
   void Post() override;
   void InitialPropagate() override;
@@ -120,7 +120,7 @@ std::string RangeLessOrEqual::DebugString() const {
 
 class RangeLess : public Constraint {
  public:
-  RangeLess(Solver* const s, IntExpr* const l, IntExpr* const r);
+  RangeLess(Solver* s, IntExpr* l, IntExpr* r);
   ~RangeLess() override {}
   void Post() override;
   void InitialPropagate() override;
@@ -168,7 +168,7 @@ std::string RangeLess::DebugString() const {
 
 class DiffVar : public Constraint {
  public:
-  DiffVar(Solver* const s, IntVar* const l, IntVar* const r);
+  DiffVar(Solver* s, IntVar* l, IntVar* r);
   ~DiffVar() override {}
   void Post() override;
   void InitialPropagate() override;
@@ -233,7 +233,7 @@ std::string DiffVar::DebugString() const {
 }
 
 // --------------------- Reified API -------------------
-// A reified API transforms an constraint into a status variables.
+// A reified API transforms a constraint into a status variables.
 // For example x == y is transformed into IsEqual(x, y, b) where
 // b is a boolean variable which is true if and only if x is equal to b.
 

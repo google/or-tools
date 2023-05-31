@@ -100,7 +100,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64_t route_distance =0;
+    int64_t route_distance = 0;
     std::stringstream route;
     while (!routing.IsEnd(index)) {
       route << manager.IndexToNode(index).value() << " -> ";

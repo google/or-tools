@@ -324,7 +324,7 @@ void Distribute::CardMax(int cindex) {
 
 class FastDistribute : public Constraint {
  public:
-  FastDistribute(Solver* const s, const std::vector<IntVar*>& vars,
+  FastDistribute(Solver* s, const std::vector<IntVar*>& vars,
                  const std::vector<IntVar*>& cards);
   ~FastDistribute() override {}
 
@@ -510,7 +510,7 @@ void FastDistribute::CardMax(int card_index) {
 
 class BoundedDistribute : public Constraint {
  public:
-  BoundedDistribute(Solver* const s, const std::vector<IntVar*>& vars,
+  BoundedDistribute(Solver* s, const std::vector<IntVar*>& vars,
                     const std::vector<int64_t>& values,
                     const std::vector<int64_t>& card_min,
                     const std::vector<int64_t>& card_max);
@@ -713,7 +713,7 @@ void BoundedDistribute::CardMax(int card_index) {
 
 class BoundedFastDistribute : public Constraint {
  public:
-  BoundedFastDistribute(Solver* const s, const std::vector<IntVar*>& vars,
+  BoundedFastDistribute(Solver* s, const std::vector<IntVar*>& vars,
                         const std::vector<int64_t>& card_min,
                         const std::vector<int64_t>& card_max);
   ~BoundedFastDistribute() override {}

@@ -927,7 +927,7 @@ namespace operations_research {
 // See the occurrences of "DecisionBuilder*" in this file.
 %unignore Solver::Try(const std::vector<DecisionBuilder*>&);
 %unignore Solver::Compose(const std::vector<DecisionBuilder*>&);
-%rename (SolveOnce) Solver::MakeSolveOnce(DecisionBuilder* const,
+%rename (SolveOnce) Solver::MakeSolveOnce(DecisionBuilder*,
                                           const std::vector<SearchMonitor*>&);
 %rename (Phase) Solver::MakePhase(const std::vector<IntVar*>&,
                                   IntVarStrategy, IntValueStrategy);

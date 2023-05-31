@@ -177,7 +177,7 @@ class IntVarFilteredHeuristic {
                           const std::vector<IntVar*>& secondary_vars,
                           LocalSearchFilterManager* filter_manager);
 
-  virtual ~IntVarFilteredHeuristic() = default;
+  virtual ~IntVarFilteredHeuristic() {}
 
   /// Builds a solution. Returns the resulting assignment if a solution was
   /// found, and nullptr otherwise.
@@ -274,7 +274,7 @@ class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
                            std::function<bool()> stop_search,
                            LocalSearchFilterManager* filter_manager,
                            bool omit_secondary_vars = true);
-  ~RoutingFilteredHeuristic() override = default;
+  ~RoutingFilteredHeuristic() override {}
   /// Builds a solution starting from the routes formed by the next accessor.
   const Assignment* BuildSolutionFromRoutes(
       const std::function<int64_t(int64_t)>& next_accessor);
@@ -320,7 +320,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager);
-  ~CheapestInsertionFilteredHeuristic() override = default;
+  ~CheapestInsertionFilteredHeuristic() override {}
 
  protected:
   struct NodeInsertion {
@@ -439,7 +439,7 @@ class GlobalCheapestInsertionFilteredHeuristic
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager,
       GlobalCheapestInsertionParameters parameters);
-  ~GlobalCheapestInsertionFilteredHeuristic() override = default;
+  ~GlobalCheapestInsertionFilteredHeuristic() override {}
   bool BuildSolutionInternal() override;
   std::string DebugString() const override {
     return "GlobalCheapestInsertionFilteredHeuristic";
@@ -571,7 +571,7 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// NOTE: Assumes (DCHECKS) that
   /// UseEmptyVehicleTypeCuratorForVehicle(pair_entry.vehicle()) is true.
   bool InsertPairEntryUsingEmptyVehicleTypeCurator(
-      const absl::flat_hash_set<int>& pair_indices, PairEntry* const pair_entry,
+      const absl::flat_hash_set<int>& pair_indices, PairEntry* pair_entry,
       AdjustablePriorityQueue<PairEntry>* priority_queue,
       std::vector<PairEntries>* pickup_to_entries,
       std::vector<PairEntries>* delivery_to_entries);
@@ -723,7 +723,7 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// Updates the pair entry's value and rearranges the priority queue
   /// accordingly.
   void UpdatePairEntry(
-      PairEntry* const pair_entry,
+      PairEntry* pair_entry,
       AdjustablePriorityQueue<PairEntry>* priority_queue) const;
   /// Computes and returns the insertion value of inserting 'pickup' and
   /// 'delivery' respectively after 'pickup_insert_after' and
@@ -975,7 +975,7 @@ class InsertionSequenceContainer {
 // Generates insertion positions respecting structural constraints.
 class InsertionSequenceGenerator {
  public:
-  InsertionSequenceGenerator() = default;
+  InsertionSequenceGenerator() {}
 
   /// Generates insertions for a pickup and delivery pair in a multitour path:
   /// - a series of pickups may only start if all the deliveries of previous
@@ -1036,7 +1036,7 @@ class LocalCheapestInsertionFilteredHeuristic
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
       LocalSearchFilterManager* filter_manager);
-  ~LocalCheapestInsertionFilteredHeuristic() override = default;
+  ~LocalCheapestInsertionFilteredHeuristic() override {}
   bool BuildSolutionInternal() override;
   std::string DebugString() const override {
     return "LocalCheapestInsertionFilteredHeuristic";
@@ -1098,7 +1098,7 @@ class CheapestAdditionFilteredHeuristic : public RoutingFilteredHeuristic {
   CheapestAdditionFilteredHeuristic(RoutingModel* model,
                                     std::function<bool()> stop_search,
                                     LocalSearchFilterManager* filter_manager);
-  ~CheapestAdditionFilteredHeuristic() override = default;
+  ~CheapestAdditionFilteredHeuristic() override {}
   bool BuildSolutionInternal() override;
 
  private:
@@ -1144,7 +1144,7 @@ class EvaluatorCheapestAdditionFilteredHeuristic
       RoutingModel* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t)> evaluator,
       LocalSearchFilterManager* filter_manager);
-  ~EvaluatorCheapestAdditionFilteredHeuristic() override = default;
+  ~EvaluatorCheapestAdditionFilteredHeuristic() override {}
   std::string DebugString() const override {
     return "EvaluatorCheapestAdditionFilteredHeuristic";
   }
@@ -1168,7 +1168,7 @@ class ComparatorCheapestAdditionFilteredHeuristic
       RoutingModel* model, std::function<bool()> stop_search,
       Solver::VariableValueComparator comparator,
       LocalSearchFilterManager* filter_manager);
-  ~ComparatorCheapestAdditionFilteredHeuristic() override = default;
+  ~ComparatorCheapestAdditionFilteredHeuristic() override {}
   std::string DebugString() const override {
     return "ComparatorCheapestAdditionFilteredHeuristic";
   }
@@ -1301,7 +1301,7 @@ class SequentialSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
                                      LocalSearchFilterManager* filter_manager)
       : SavingsFilteredHeuristic(model, std::move(stop_search), parameters,
                                  filter_manager) {}
-  ~SequentialSavingsFilteredHeuristic() override = default;
+  ~SequentialSavingsFilteredHeuristic() override {}
   std::string DebugString() const override {
     return "SequentialSavingsFilteredHeuristic";
   }
@@ -1323,7 +1323,7 @@ class ParallelSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
                                    LocalSearchFilterManager* filter_manager)
       : SavingsFilteredHeuristic(model, std::move(stop_search), parameters,
                                  filter_manager) {}
-  ~ParallelSavingsFilteredHeuristic() override = default;
+  ~ParallelSavingsFilteredHeuristic() override {}
   std::string DebugString() const override {
     return "ParallelSavingsFilteredHeuristic";
   }
@@ -1369,7 +1369,7 @@ class ChristofidesFilteredHeuristic : public RoutingFilteredHeuristic {
                                 std::function<bool()> stop_search,
                                 LocalSearchFilterManager* filter_manager,
                                 bool use_minimum_matching);
-  ~ChristofidesFilteredHeuristic() override = default;
+  ~ChristofidesFilteredHeuristic() override {}
   bool BuildSolutionInternal() override;
   std::string DebugString() const override {
     return "ChristofidesFilteredHeuristic";

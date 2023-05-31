@@ -488,10 +488,10 @@ class CompositeDecisionBuilder : public DecisionBuilder {
   CompositeDecisionBuilder();
   explicit CompositeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
   ~CompositeDecisionBuilder() override;
-  void Add(DecisionBuilder* const db);
-  void AppendMonitors(Solver* const solver,
-                      std::vector<SearchMonitor*>* const monitors) override;
-  void Accept(ModelVisitor* const visitor) const override;
+  void Add(DecisionBuilder* db);
+  void AppendMonitors(Solver* solver,
+                      std::vector<SearchMonitor*>* monitors) override;
+  void Accept(ModelVisitor* visitor) const override;
 
  protected:
   std::vector<DecisionBuilder*> builders_;
@@ -536,7 +536,7 @@ class ComposeDecisionBuilder : public CompositeDecisionBuilder {
   ComposeDecisionBuilder();
   explicit ComposeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
   ~ComposeDecisionBuilder() override;
-  Decision* Next(Solver* const s) override;
+  Decision* Next(Solver* s) override;
   std::string DebugString() const override;
 
  private:
@@ -640,10 +640,10 @@ class TryDecisionBuilder;
 
 class TryDecision : public Decision {
  public:
-  explicit TryDecision(TryDecisionBuilder* const try_builder);
+  explicit TryDecision(TryDecisionBuilder* try_builder);
   ~TryDecision() override;
-  void Apply(Solver* const solver) override;
-  void Refute(Solver* const solver) override;
+  void Apply(Solver* solver) override;
+  void Refute(Solver* solver) override;
   std::string DebugString() const override { return "TryDecision"; }
 
  private:
@@ -655,9 +655,9 @@ class TryDecisionBuilder : public CompositeDecisionBuilder {
   TryDecisionBuilder();
   explicit TryDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
   ~TryDecisionBuilder() override;
-  Decision* Next(Solver* const solver) override;
+  Decision* Next(Solver* solver) override;
   std::string DebugString() const override;
-  void AdvanceToNextBuilder(Solver* const solver);
+  void AdvanceToNextBuilder(Solver* solver);
 
  private:
   TryDecision try_decision_;
@@ -989,8 +989,8 @@ class HighestRegretSelectorOnMin : public BaseObject {
       iterators_[i] = vars[i]->MakeDomainIterator(true);
     }
   }
-  ~HighestRegretSelectorOnMin() override {}
-  int64_t Choose(Solver* const s, const std::vector<IntVar*>& vars,
+  ~HighestRegretSelectorOnMin() override{};
+  int64_t Choose(Solver* s, const std::vector<IntVar*>& vars,
                  int64_t first_unbound, int64_t last_unbound);
   std::string DebugString() const override { return "MaxRegretSelector"; }
 
@@ -1047,8 +1047,8 @@ class CheapestVarSelector : public BaseObject {
  public:
   explicit CheapestVarSelector(std::function<int64_t(int64_t)> var_evaluator)
       : var_evaluator_(std::move(var_evaluator)) {}
-  ~CheapestVarSelector() override {}
-  int64_t Choose(Solver* const s, const std::vector<IntVar*>& vars,
+  ~CheapestVarSelector() override{};
+  int64_t Choose(Solver* s, const std::vector<IntVar*>& vars,
                  int64_t first_unbound, int64_t last_unbound);
   std::string DebugString() const override { return "CheapestVarSelector"; }
 
@@ -1080,8 +1080,8 @@ int64_t CheapestVarSelector::Choose(Solver* const s,
 class PathSelector : public BaseObject {
  public:
   PathSelector() : first_(std::numeric_limits<int64_t>::max()) {}
-  ~PathSelector() override {}
-  int64_t Choose(Solver* const s, const std::vector<IntVar*>& vars,
+  ~PathSelector() override{};
+  int64_t Choose(Solver* s, const std::vector<IntVar*>& vars,
                  int64_t first_unbound, int64_t last_unbound);
   std::string DebugString() const override { return "ChooseNextOnPath"; }
 
@@ -1551,10 +1551,10 @@ std::string StaticEvaluatorSelector::DebugString() const {
 
 class AssignOneVariableValue : public Decision {
  public:
-  AssignOneVariableValue(IntVar* const v, int64_t val);
+  AssignOneVariableValue(IntVar* v, int64_t val);
   ~AssignOneVariableValue() override {}
-  void Apply(Solver* const s) override;
-  void Refute(Solver* const s) override;
+  void Apply(Solver* s) override;
+  void Refute(Solver* s) override;
   std::string DebugString() const override;
   void Accept(DecisionVisitor* const visitor) const override {
     visitor->VisitSetVariableValue(var_, value_);
@@ -1589,10 +1589,10 @@ Decision* Solver::MakeAssignVariableValue(IntVar* const var, int64_t val) {
 namespace {
 class AssignOneVariableValueOrFail : public Decision {
  public:
-  AssignOneVariableValueOrFail(IntVar* const v, int64_t value);
+  AssignOneVariableValueOrFail(IntVar* v, int64_t value);
   ~AssignOneVariableValueOrFail() override {}
-  void Apply(Solver* const s) override;
-  void Refute(Solver* const s) override;
+  void Apply(Solver* s) override;
+  void Refute(Solver* s) override;
   std::string DebugString() const override;
   void Accept(DecisionVisitor* const visitor) const override {
     visitor->VisitSetVariableValue(var_, value_);
@@ -1657,10 +1657,10 @@ Decision* Solver::MakeAssignVariableValueOrDoNothing(IntVar* const var,
 namespace {
 class SplitOneVariable : public Decision {
  public:
-  SplitOneVariable(IntVar* const v, int64_t val, bool start_with_lower_half);
+  SplitOneVariable(IntVar* v, int64_t val, bool start_with_lower_half);
   ~SplitOneVariable() override {}
-  void Apply(Solver* const s) override;
-  void Refute(Solver* const s) override;
+  void Apply(Solver* s) override;
+  void Refute(Solver* s) override;
   std::string DebugString() const override;
   void Accept(DecisionVisitor* const visitor) const override {
     visitor->VisitSplitVariableDomain(var_, value_, start_with_lower_half_);
@@ -1730,8 +1730,8 @@ class AssignVariablesValues : public Decision {
       const std::vector<IntVar*>& vars, const std::vector<int64_t>& values,
       RefutationBehavior refutation = RefutationBehavior::kForbidAssignment);
   ~AssignVariablesValues() override {}
-  void Apply(Solver* const s) override;
-  void Refute(Solver* const s) override;
+  void Apply(Solver* s) override;
+  void Refute(Solver* s) override;
   std::string DebugString() const override;
   void Accept(DecisionVisitor* const visitor) const override {
     for (int i = 0; i < vars_.size(); ++i) {
@@ -1847,10 +1847,10 @@ class BaseAssignVariables : public DecisionBuilder {
       : selector_(selector), mode_(mode) {}
 
   ~BaseAssignVariables() override;
-  Decision* Next(Solver* const s) override;
+  Decision* Next(Solver* s) override;
   std::string DebugString() const override;
   static BaseAssignVariables* MakePhase(
-      Solver* const s, const std::vector<IntVar*>& vars,
+      Solver* s, const std::vector<IntVar*>& vars,
       Solver::VariableIndexSelector var_selector,
       Solver::VariableValueSelector value_selector,
       const std::string& value_selector_name, BaseAssignVariables::Mode mode);
@@ -2288,7 +2288,7 @@ SolutionCollector::SolutionCollector(Solver* solver,
 SolutionCollector::SolutionCollector(Solver* solver)
     : SearchMonitor(solver), prototype_(new Assignment(solver)) {}
 
-SolutionCollector::~SolutionCollector() = default;
+SolutionCollector::~SolutionCollector() {}
 
 int64_t SolutionCollector::SolutionData::ObjectiveValue() const {
   return solution != nullptr ? solution->ObjectiveValue() : 0;
@@ -2491,8 +2491,8 @@ namespace {
 // Collect first solution, useful when looking satisfaction problems
 class FirstSolutionCollector : public SolutionCollector {
  public:
-  FirstSolutionCollector(Solver* const s, const Assignment* const a);
-  explicit FirstSolutionCollector(Solver* const s);
+  FirstSolutionCollector(Solver* s, const Assignment* a);
+  explicit FirstSolutionCollector(Solver* s);
   ~FirstSolutionCollector() override;
   void EnterSearch() override;
   bool AtSolution() override;
@@ -2554,8 +2554,8 @@ SolutionCollector* Solver::MakeFirstSolutionCollector() {
 namespace {
 class LastSolutionCollector : public SolutionCollector {
  public:
-  LastSolutionCollector(Solver* const s, const Assignment* const a);
-  explicit LastSolutionCollector(Solver* const s);
+  LastSolutionCollector(Solver* s, const Assignment* a);
+  explicit LastSolutionCollector(Solver* s);
   ~LastSolutionCollector() override;
   bool AtSolution() override;
   void Install() override;
@@ -2608,7 +2608,7 @@ class BestValueSolutionCollector : public SolutionCollector {
   BestValueSolutionCollector(Solver* solver, const Assignment* assignment,
                              std::vector<bool> maximize);
   BestValueSolutionCollector(Solver* solver, std::vector<bool> maximize);
-  ~BestValueSolutionCollector() override = default;
+  ~BestValueSolutionCollector() override {}
   void EnterSearch() override;
   bool AtSolution() override;
   void Install() override;
@@ -2861,8 +2861,8 @@ SolutionCollector* Solver::MakeNBestLexicographicValueSolutionCollector(
 namespace {
 class AllSolutionCollector : public SolutionCollector {
  public:
-  AllSolutionCollector(Solver* const s, const Assignment* const a);
-  explicit AllSolutionCollector(Solver* const s);
+  AllSolutionCollector(Solver* s, const Assignment* a);
+  explicit AllSolutionCollector(Solver* s);
   ~AllSolutionCollector() override;
   bool AtSolution() override;
   void Install() override;
@@ -3125,7 +3125,7 @@ class WeightedOptimizeVar : public OptimizeVar {
     CHECK_EQ(sub_objectives.size(), weights.size());
   }
 
-  ~WeightedOptimizeVar() override = default;
+  ~WeightedOptimizeVar() override {}
   std::string Print() const override;
 
  private:
@@ -3195,7 +3195,7 @@ class Metaheuristic : public ObjectiveMonitor {
   ~Metaheuristic() override {}
 
   void EnterSearch() override;
-  void RefuteDecision(Decision* const d) override;
+  void RefuteDecision(Decision* d) override;
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
 };
 
@@ -3250,7 +3250,7 @@ class TabuSearch : public Metaheuristic {
              std::vector<IntVar*> objectives, std::vector<int64_t> steps,
              const std::vector<IntVar*>& vars, int64_t keep_tenure,
              int64_t forbid_tenure, double tabu_factor);
-  ~TabuSearch() override = default;
+  ~TabuSearch() override {}
   void EnterSearch() override;
   void ApplyDecision(Decision* d) override;
   bool AtSolution() override;
@@ -3490,7 +3490,7 @@ class SimulatedAnnealing : public Metaheuristic {
                      std::vector<IntVar*> objectives,
                      std::vector<int64_t> steps,
                      std::vector<int64_t> initial_temperatures);
-  ~SimulatedAnnealing() override = default;
+  ~SimulatedAnnealing() override {}
   void ApplyDecision(Decision* d) override;
   bool LocalOptimum() override;
   void AcceptNeighbor() override;
@@ -3691,7 +3691,7 @@ class GuidedLocalSearch : public Metaheuristic {
                     int64_t step, const std::vector<IntVar*>& vars,
                     double penalty_factor,
                     bool reset_penalties_on_new_best_solution);
-  ~GuidedLocalSearch() override = default;
+  ~GuidedLocalSearch() override {}
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void ApplyDecision(Decision* d) override;
   bool AtSolution() override;
@@ -3989,7 +3989,7 @@ template <typename P>
 class BinaryGuidedLocalSearch : public GuidedLocalSearch<P> {
  public:
   BinaryGuidedLocalSearch(
-      Solver* const solver, IntVar* const objective,
+      Solver* solver, IntVar* objective,
       std::function<int64_t(int64_t, int64_t)> objective_function,
       bool maximize, int64_t step, const std::vector<IntVar*>& vars,
       double penalty_factor, bool reset_penalties_on_new_best_solution);
@@ -4074,7 +4074,7 @@ template <typename P>
 class TernaryGuidedLocalSearch : public GuidedLocalSearch<P> {
  public:
   TernaryGuidedLocalSearch(
-      Solver* const solver, IntVar* const objective,
+      Solver* solver, IntVar* objective,
       std::function<int64_t(int64_t, int64_t, int64_t)> objective_function,
       bool maximize, int64_t step, const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, double penalty_factor,
@@ -4733,10 +4733,10 @@ SearchLimit* Solver::MakeLimit(SearchLimit* const limit_1,
 namespace {
 class CustomLimit : public SearchLimit {
  public:
-  CustomLimit(Solver* const s, std::function<bool()> limiter);
+  CustomLimit(Solver* s, std::function<bool()> limiter);
   bool CheckWithOffset(absl::Duration offset) override;
   void Init() override;
-  void Copy(const SearchLimit* const limit) override;
+  void Copy(const SearchLimit* limit) override;
   SearchLimit* MakeClone() const override;
 
  private:

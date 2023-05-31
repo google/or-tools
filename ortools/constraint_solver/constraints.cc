@@ -241,7 +241,7 @@ class LexicalLessOrEqual : public Constraint {
                       [](int step) { return step > 0; }));
   }
 
-  ~LexicalLessOrEqual() override = default;
+  ~LexicalLessOrEqual() override {}
 
   void Post() override {
     const int position = JumpEqualVariables(0);

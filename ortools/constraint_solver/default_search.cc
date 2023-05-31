@@ -96,13 +96,13 @@ class FindVar : public DecisionVisitor {
 
   ~FindVar() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
+  void VisitSetVariableValue(IntVar* var, int64_t value) override {
     var_ = var;
     value_ = value;
     operation_ = ASSIGN;
   }
 
-  void VisitSplitVariableDomain(IntVar* const var, int64_t value,
+  void VisitSplitVariableDomain(IntVar* var, int64_t value,
                                 bool start_with_lower_half) override {
     var_ = var;
     value_ = value;
@@ -124,7 +124,7 @@ class FindVar : public DecisionVisitor {
   void VisitUnknownDecision() override { operation_ = NONE; }
 
   // Returns the current variable.
-  IntVar* const var() const {
+  IntVar* var() const {
     CHECK_NE(operation_, NONE);
     return var_;
   }

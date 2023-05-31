@@ -50,7 +50,7 @@ class Dimension : public BaseObject {
                                    const std::vector<int>& unassigned) = 0;
   virtual void EndPropagate() = 0;
   std::string DebugString() const override { return "Dimension"; }
-  virtual void Accept(ModelVisitor* const visitor) const = 0;
+  virtual void Accept(ModelVisitor* visitor) const = 0;
 
   Solver* solver() const { return solver_; }
 

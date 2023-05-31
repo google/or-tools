@@ -62,7 +62,6 @@ class RoutingIndexManager {
   RoutingIndexManager(
       int num_nodes, int num_vehicles,
       const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
-  ~RoutingIndexManager() {}
 
   // Returns the number of nodes in the manager.
   int num_nodes() const { return num_nodes_; }

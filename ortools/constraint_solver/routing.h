@@ -1149,7 +1149,7 @@ class RoutingModel {
   /// vehicle routing problem.
   void AddLocalSearchOperator(LocalSearchOperator* ls_operator);
   /// Adds a search monitor to the search used to solve the routing model.
-  void AddSearchMonitor(SearchMonitor* const monitor);
+  void AddSearchMonitor(SearchMonitor* monitor);
   /// Adds a callback called each time a solution is found during the search.
   /// This is a shortcut to creating a monitor to call the callback on
   /// AtSolution() and adding it with AddSearchMonitor.
@@ -1296,13 +1296,12 @@ class RoutingModel {
   /// it is advisible to call solver()->CheckSolution() afterwards.
   bool RoutesToAssignment(const std::vector<std::vector<int64_t>>& routes,
                           bool ignore_inactive_indices, bool close_routes,
-                          Assignment* const assignment) const;
+                          Assignment* assignment) const;
   /// Converts the solution in the given assignment to routes for all vehicles.
   /// Expects that assignment contains a valid solution (i.e. routes for all
   /// vehicles end with an end index for that vehicle).
-  void AssignmentToRoutes(
-      const Assignment& assignment,
-      std::vector<std::vector<int64_t>>* const routes) const;
+  void AssignmentToRoutes(const Assignment& assignment,
+                          std::vector<std::vector<int64_t>>* routes) const;
   /// Converts the solution in the given assignment to routes for all vehicles.
   /// If the returned vector is route_indices, route_indices[i][j] is the index
   /// for jth location visited on route i. Note that contrary to
@@ -1334,8 +1333,8 @@ class RoutingModel {
   /// (instead, the method returns nullptr).
   Assignment* CompactAndCheckAssignment(const Assignment& assignment) const;
   /// Adds an extra variable to the vehicle routing assignment.
-  void AddToAssignment(IntVar* const var);
-  void AddIntervalToAssignment(IntervalVar* const interval);
+  void AddToAssignment(IntVar* var);
+  void AddIntervalToAssignment(IntervalVar* interval);
   /// For every dimension in the model with an optimizer in
   /// local/global_dimension_optimizers_, this method tries to pack the cumul
   /// values of the dimension, such that:
@@ -1416,7 +1415,7 @@ class RoutingModel {
 #endif
   class NodeNeighborsByCostClass {
    public:
-    NodeNeighborsByCostClass() = default;
+    NodeNeighborsByCostClass() {}
 
     /// Computes num_neighbors neighbors of all nodes for every cost class in
     /// routing_model.
@@ -2584,7 +2583,7 @@ class GlobalVehicleBreaksConstraint : public Constraint {
           before_start_(before_start),
           after_start_(after_start) {}
     explicit TaskTranslator(IntervalVar* interval) : interval_(interval) {}
-    TaskTranslator() = default;
+    TaskTranslator() {}
 
     void SetStartMin(int64_t value) {
       if (start_ != nullptr) {
@@ -2641,7 +2640,7 @@ class GlobalVehicleBreaksConstraint : public Constraint {
 class TypeRegulationsChecker {
  public:
   explicit TypeRegulationsChecker(const RoutingModel& model);
-  virtual ~TypeRegulationsChecker() = default;
+  virtual ~TypeRegulationsChecker() {}
 
   bool CheckVehicle(int vehicle,
                     const std::function<int64_t(int64_t)>& next_accessor);
@@ -2702,7 +2701,7 @@ class TypeIncompatibilityChecker : public TypeRegulationsChecker {
  public:
   TypeIncompatibilityChecker(const RoutingModel& model,
                              bool check_hard_incompatibilities);
-  ~TypeIncompatibilityChecker() override = default;
+  ~TypeIncompatibilityChecker() override {}
 
  private:
   bool HasRegulationsToCheck() const override;
@@ -2718,7 +2717,7 @@ class TypeRequirementChecker : public TypeRegulationsChecker {
  public:
   explicit TypeRequirementChecker(const RoutingModel& model)
       : TypeRegulationsChecker(model) {}
-  ~TypeRequirementChecker() override = default;
+  ~TypeRequirementChecker() override {}
 
  private:
   bool HasRegulationsToCheck() const override;

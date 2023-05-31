@@ -398,9 +398,9 @@ class SmallRevBitSet {
  public:
   explicit SmallRevBitSet(int64_t size);
   /// Sets the 'pos' bit.
-  void SetToOne(Solver* const solver, int64_t pos);
+  void SetToOne(Solver* solver, int64_t pos);
   /// Erases the 'pos' bit.
-  void SetToZero(Solver* const solver, int64_t pos);
+  void SetToZero(Solver* solver, int64_t pos);
   /// Returns the number of bits set to one.
   int64_t Cardinality() const;
   /// Is bitset null?
@@ -425,9 +425,9 @@ class RevBitSet {
   ~RevBitSet();
 
   /// Sets the 'index' bit.
-  void SetToOne(Solver* const solver, int64_t index);
+  void SetToOne(Solver* solver, int64_t index);
   /// Erases the 'index' bit.
-  void SetToZero(Solver* const solver, int64_t index);
+  void SetToZero(Solver* solver, int64_t index);
   /// Returns whether the 'index' bit is set.
   bool IsSet(int64_t index) const;
   /// Returns the number of bits set to one.
@@ -440,13 +440,13 @@ class RevBitSet {
   /// It returns -1 if the bitset is empty after start.
   int64_t GetFirstBit(int start) const;
   /// Cleans all bits.
-  void ClearAll(Solver* const solver);
+  void ClearAll(Solver* solver);
 
   friend class RevBitMatrix;
 
  private:
   /// Save the offset's part of the bitset.
-  void Save(Solver* const solver, int offset);
+  void Save(Solver* solver, int offset);
   const int64_t size_;
   const int64_t length_;
   uint64_t* bits_;
@@ -460,9 +460,9 @@ class RevBitMatrix : private RevBitSet {
   ~RevBitMatrix();
 
   /// Sets the 'column' bit in the 'row' row.
-  void SetToOne(Solver* const solver, int64_t row, int64_t column);
+  void SetToOne(Solver* solver, int64_t row, int64_t column);
   /// Erases the 'column' bit in the 'row' row.
-  void SetToZero(Solver* const solver, int64_t row, int64_t column);
+  void SetToZero(Solver* solver, int64_t row, int64_t column);
   /// Returns whether the 'column' bit in the 'row' row is set.
   bool IsSet(int64_t row, int64_t column) const {
     DCHECK_GE(row, 0);
@@ -481,7 +481,7 @@ class RevBitMatrix : private RevBitSet {
   /// It returns -1 if there are none.
   int64_t GetFirstBit(int row, int start) const;
   /// Cleans all bits.
-  void ClearAll(Solver* const solver);
+  void ClearAll(Solver* solver);
 
  private:
   const int64_t rows_;
@@ -1815,7 +1815,7 @@ class LocalSearchFilterManager : public BaseObject {
   /// Returns true iff all filters return true, and the sum of their accepted
   /// objectives is between objective_min and objective_max.
   /// The monitor has its Begin/EndFiltering events triggered.
-  bool Accept(LocalSearchMonitor* const monitor, const Assignment* delta,
+  bool Accept(LocalSearchMonitor* monitor, const Assignment* delta,
               const Assignment* deltadelta, int64_t objective_min,
               int64_t objective_max);
   /// Synchronizes all filters to assignment.
@@ -1881,64 +1881,58 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
 
 class PropagationMonitor : public SearchMonitor {
  public:
-  explicit PropagationMonitor(Solver* const solver);
+  explicit PropagationMonitor(Solver* solver);
   ~PropagationMonitor() override;
   std::string DebugString() const override { return "PropagationMonitor"; }
 
   /// Propagation events.
-  virtual void BeginConstraintInitialPropagation(
-      Constraint* const constraint) = 0;
-  virtual void EndConstraintInitialPropagation(
-      Constraint* const constraint) = 0;
-  virtual void BeginNestedConstraintInitialPropagation(
-      Constraint* const parent, Constraint* const nested) = 0;
-  virtual void EndNestedConstraintInitialPropagation(
-      Constraint* const parent, Constraint* const nested) = 0;
-  virtual void RegisterDemon(Demon* const demon) = 0;
-  virtual void BeginDemonRun(Demon* const demon) = 0;
-  virtual void EndDemonRun(Demon* const demon) = 0;
-  virtual void StartProcessingIntegerVariable(IntVar* const var) = 0;
-  virtual void EndProcessingIntegerVariable(IntVar* const var) = 0;
+  virtual void BeginConstraintInitialPropagation(Constraint* constraint) = 0;
+  virtual void EndConstraintInitialPropagation(Constraint* constraint) = 0;
+  virtual void BeginNestedConstraintInitialPropagation(Constraint* parent,
+                                                       Constraint* nested) = 0;
+  virtual void EndNestedConstraintInitialPropagation(Constraint* parent,
+                                                     Constraint* nested) = 0;
+  virtual void RegisterDemon(Demon* demon) = 0;
+  virtual void BeginDemonRun(Demon* demon) = 0;
+  virtual void EndDemonRun(Demon* demon) = 0;
+  virtual void StartProcessingIntegerVariable(IntVar* var) = 0;
+  virtual void EndProcessingIntegerVariable(IntVar* var) = 0;
   virtual void PushContext(const std::string& context) = 0;
   virtual void PopContext() = 0;
   /// IntExpr modifiers.
-  virtual void SetMin(IntExpr* const expr, int64_t new_min) = 0;
-  virtual void SetMax(IntExpr* const expr, int64_t new_max) = 0;
-  virtual void SetRange(IntExpr* const expr, int64_t new_min,
-                        int64_t new_max) = 0;
+  virtual void SetMin(IntExpr* expr, int64_t new_min) = 0;
+  virtual void SetMax(IntExpr* expr, int64_t new_max) = 0;
+  virtual void SetRange(IntExpr* expr, int64_t new_min, int64_t new_max) = 0;
   /// IntVar modifiers.
-  virtual void SetMin(IntVar* const var, int64_t new_min) = 0;
-  virtual void SetMax(IntVar* const var, int64_t new_max) = 0;
-  virtual void SetRange(IntVar* const var, int64_t new_min,
-                        int64_t new_max) = 0;
-  virtual void RemoveValue(IntVar* const var, int64_t value) = 0;
-  virtual void SetValue(IntVar* const var, int64_t value) = 0;
-  virtual void RemoveInterval(IntVar* const var, int64_t imin,
-                              int64_t imax) = 0;
-  virtual void SetValues(IntVar* const var,
-                         const std::vector<int64_t>& values) = 0;
-  virtual void RemoveValues(IntVar* const var,
+  virtual void SetMin(IntVar* var, int64_t new_min) = 0;
+  virtual void SetMax(IntVar* var, int64_t new_max) = 0;
+  virtual void SetRange(IntVar* var, int64_t new_min, int64_t new_max) = 0;
+  virtual void RemoveValue(IntVar* var, int64_t value) = 0;
+  virtual void SetValue(IntVar* var, int64_t value) = 0;
+  virtual void RemoveInterval(IntVar* var, int64_t imin, int64_t imax) = 0;
+  virtual void SetValues(IntVar* var, const std::vector<int64_t>& values) = 0;
+  virtual void RemoveValues(IntVar* var,
                             const std::vector<int64_t>& values) = 0;
   /// IntervalVar modifiers.
-  virtual void SetStartMin(IntervalVar* const var, int64_t new_min) = 0;
-  virtual void SetStartMax(IntervalVar* const var, int64_t new_max) = 0;
-  virtual void SetStartRange(IntervalVar* const var, int64_t new_min,
+  virtual void SetStartMin(IntervalVar* var, int64_t new_min) = 0;
+  virtual void SetStartMax(IntervalVar* var, int64_t new_max) = 0;
+  virtual void SetStartRange(IntervalVar* var, int64_t new_min,
                              int64_t new_max) = 0;
-  virtual void SetEndMin(IntervalVar* const var, int64_t new_min) = 0;
-  virtual void SetEndMax(IntervalVar* const var, int64_t new_max) = 0;
-  virtual void SetEndRange(IntervalVar* const var, int64_t new_min,
+  virtual void SetEndMin(IntervalVar* var, int64_t new_min) = 0;
+  virtual void SetEndMax(IntervalVar* var, int64_t new_max) = 0;
+  virtual void SetEndRange(IntervalVar* var, int64_t new_min,
                            int64_t new_max) = 0;
-  virtual void SetDurationMin(IntervalVar* const var, int64_t new_min) = 0;
-  virtual void SetDurationMax(IntervalVar* const var, int64_t new_max) = 0;
-  virtual void SetDurationRange(IntervalVar* const var, int64_t new_min,
+  virtual void SetDurationMin(IntervalVar* var, int64_t new_min) = 0;
+  virtual void SetDurationMax(IntervalVar* var, int64_t new_max) = 0;
+  virtual void SetDurationRange(IntervalVar* var, int64_t new_min,
                                 int64_t new_max) = 0;
-  virtual void SetPerformed(IntervalVar* const var, bool value) = 0;
+  virtual void SetPerformed(IntervalVar* var, bool value) = 0;
   /// SequenceVar modifiers
-  virtual void RankFirst(SequenceVar* const var, int index) = 0;
-  virtual void RankNotFirst(SequenceVar* const var, int index) = 0;
-  virtual void RankLast(SequenceVar* const var, int index) = 0;
-  virtual void RankNotLast(SequenceVar* const var, int index) = 0;
-  virtual void RankSequence(SequenceVar* const var,
+  virtual void RankFirst(SequenceVar* var, int index) = 0;
+  virtual void RankNotFirst(SequenceVar* var, int index) = 0;
+  virtual void RankLast(SequenceVar* var, int index) = 0;
+  virtual void RankNotLast(SequenceVar* var, int index) = 0;
+  virtual void RankSequence(SequenceVar* var,
                             const std::vector<int>& rank_first,
                             const std::vector<int>& rank_last,
                             const std::vector<int>& unperformed) = 0;
@@ -1949,7 +1943,7 @@ class PropagationMonitor : public SearchMonitor {
 class LocalSearchMonitor : public SearchMonitor {
   // TODO(user): Add monitoring of local search filters.
  public:
-  explicit LocalSearchMonitor(Solver* const solver);
+  explicit LocalSearchMonitor(Solver* solver);
   ~LocalSearchMonitor() override;
   std::string DebugString() const override { return "LocalSearchMonitor"; }
 
@@ -2031,11 +2025,9 @@ class SymmetryBreaker : public DecisionVisitor {
       : symmetry_manager_(nullptr), index_in_symmetry_manager_(-1) {}
   ~SymmetryBreaker() override {}
 
-  void AddIntegerVariableEqualValueClause(IntVar* const var, int64_t value);
-  void AddIntegerVariableGreaterOrEqualValueClause(IntVar* const var,
-                                                   int64_t value);
-  void AddIntegerVariableLessOrEqualValueClause(IntVar* const var,
-                                                int64_t value);
+  void AddIntegerVariableEqualValueClause(IntVar* var, int64_t value);
+  void AddIntegerVariableGreaterOrEqualValueClause(IntVar* var, int64_t value);
+  void AddIntegerVariableLessOrEqualValueClause(IntVar* var, int64_t value);
 
  private:
   friend class SymmetryManager;
@@ -2057,9 +2049,8 @@ class SymmetryBreaker : public DecisionVisitor {
 /// the search is running.
 class SearchLog : public SearchMonitor {
  public:
-  SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
-            double scaling_factor, double offset,
-            std::function<std::string()> display_callback,
+  SearchLog(Solver* s, OptimizeVar* obj, IntVar* var, double scaling_factor,
+            double offset, std::function<std::string()> display_callback,
             bool display_on_new_solutions_only, int period);
   ~SearchLog() override;
   void EnterSearch() override;
@@ -2068,8 +2059,8 @@ class SearchLog : public SearchMonitor {
   void BeginFail() override;
   void NoMoreSolutions() override;
   void AcceptUncheckedNeighbor() override;
-  void ApplyDecision(Decision* const decision) override;
-  void RefuteDecision(Decision* const decision) override;
+  void ApplyDecision(Decision* decision) override;
+  void RefuteDecision(Decision* decision) override;
   void OutputDecision();
   void Maintain();
   void BeginInitialPropagation() override;
@@ -2202,7 +2193,7 @@ class ModelCache {
     VAR_ARRAY_CONSTANT_EXPRESSION_MAX,
   };
 
-  explicit ModelCache(Solver* const solver);
+  explicit ModelCache(Solver* solver);
   virtual ~ModelCache();
 
   virtual void Clear() = 0;
@@ -2211,98 +2202,90 @@ class ModelCache {
 
   virtual Constraint* FindVoidConstraint(VoidConstraintType type) const = 0;
 
-  virtual void InsertVoidConstraint(Constraint* const ct,
+  virtual void InsertVoidConstraint(Constraint* ct,
                                     VoidConstraintType type) = 0;
 
   /// Var Constant Constraints.
   virtual Constraint* FindVarConstantConstraint(
-      IntVar* const var, int64_t value,
-      VarConstantConstraintType type) const = 0;
+      IntVar* var, int64_t value, VarConstantConstraintType type) const = 0;
 
-  virtual void InsertVarConstantConstraint(Constraint* const ct,
-                                           IntVar* const var, int64_t value,
+  virtual void InsertVarConstantConstraint(Constraint* ct, IntVar* var,
+                                           int64_t value,
                                            VarConstantConstraintType type) = 0;
 
   /// Var Constant Constant Constraints.
 
   virtual Constraint* FindVarConstantConstantConstraint(
-      IntVar* const var, int64_t value1, int64_t value2,
+      IntVar* var, int64_t value1, int64_t value2,
       VarConstantConstantConstraintType type) const = 0;
 
   virtual void InsertVarConstantConstantConstraint(
-      Constraint* const ct, IntVar* const var, int64_t value1, int64_t value2,
+      Constraint* ct, IntVar* var, int64_t value1, int64_t value2,
       VarConstantConstantConstraintType type) = 0;
 
   /// Expr Expr Constraints.
 
   virtual Constraint* FindExprExprConstraint(
-      IntExpr* const expr1, IntExpr* const expr2,
-      ExprExprConstraintType type) const = 0;
+      IntExpr* expr1, IntExpr* expr2, ExprExprConstraintType type) const = 0;
 
-  virtual void InsertExprExprConstraint(Constraint* const ct,
-                                        IntExpr* const expr1,
-                                        IntExpr* const expr2,
+  virtual void InsertExprExprConstraint(Constraint* ct, IntExpr* expr1,
+                                        IntExpr* expr2,
                                         ExprExprConstraintType type) = 0;
 
   /// Expr Expressions.
 
-  virtual IntExpr* FindExprExpression(IntExpr* const expr,
+  virtual IntExpr* FindExprExpression(IntExpr* expr,
                                       ExprExpressionType type) const = 0;
 
-  virtual void InsertExprExpression(IntExpr* const expression,
-                                    IntExpr* const expr,
+  virtual void InsertExprExpression(IntExpr* expression, IntExpr* expr,
                                     ExprExpressionType type) = 0;
 
   /// Expr Constant Expressions.
 
   virtual IntExpr* FindExprConstantExpression(
-      IntExpr* const expr, int64_t value,
-      ExprConstantExpressionType type) const = 0;
+      IntExpr* expr, int64_t value, ExprConstantExpressionType type) const = 0;
 
   virtual void InsertExprConstantExpression(
-      IntExpr* const expression, IntExpr* const var, int64_t value,
+      IntExpr* expression, IntExpr* var, int64_t value,
       ExprConstantExpressionType type) = 0;
 
   /// Expr Expr Expressions.
 
   virtual IntExpr* FindExprExprExpression(
-      IntExpr* const var1, IntExpr* const var2,
-      ExprExprExpressionType type) const = 0;
+      IntExpr* var1, IntExpr* var2, ExprExprExpressionType type) const = 0;
 
-  virtual void InsertExprExprExpression(IntExpr* const expression,
-                                        IntExpr* const var1,
-                                        IntExpr* const var2,
+  virtual void InsertExprExprExpression(IntExpr* expression, IntExpr* var1,
+                                        IntExpr* var2,
                                         ExprExprExpressionType type) = 0;
 
   /// Expr Expr Constant Expressions.
 
   virtual IntExpr* FindExprExprConstantExpression(
-      IntExpr* const var1, IntExpr* const var2, int64_t constant,
+      IntExpr* var1, IntExpr* var2, int64_t constant,
       ExprExprConstantExpressionType type) const = 0;
 
   virtual void InsertExprExprConstantExpression(
-      IntExpr* const expression, IntExpr* const var1, IntExpr* const var2,
-      int64_t constant, ExprExprConstantExpressionType type) = 0;
+      IntExpr* expression, IntExpr* var1, IntExpr* var2, int64_t constant,
+      ExprExprConstantExpressionType type) = 0;
 
   /// Var Constant Constant Expressions.
 
   virtual IntExpr* FindVarConstantConstantExpression(
-      IntVar* const var, int64_t value1, int64_t value2,
+      IntVar* var, int64_t value1, int64_t value2,
       VarConstantConstantExpressionType type) const = 0;
 
   virtual void InsertVarConstantConstantExpression(
-      IntExpr* const expression, IntVar* const var, int64_t value1,
-      int64_t value2, VarConstantConstantExpressionType type) = 0;
+      IntExpr* expression, IntVar* var, int64_t value1, int64_t value2,
+      VarConstantConstantExpressionType type) = 0;
 
   /// Var Constant Array Expressions.
 
   virtual IntExpr* FindVarConstantArrayExpression(
-      IntVar* const var, const std::vector<int64_t>& values,
+      IntVar* var, const std::vector<int64_t>& values,
       VarConstantArrayExpressionType type) const = 0;
 
   virtual void InsertVarConstantArrayExpression(
-      IntExpr* const expression, IntVar* const var,
-      const std::vector<int64_t>& values,
+      IntExpr* expression, IntVar* var, const std::vector<int64_t>& values,
       VarConstantArrayExpressionType type) = 0;
 
   /// Var Array Expressions.
@@ -2310,7 +2293,7 @@ class ModelCache {
   virtual IntExpr* FindVarArrayExpression(
       const std::vector<IntVar*>& vars, VarArrayExpressionType type) const = 0;
 
-  virtual void InsertVarArrayExpression(IntExpr* const expression,
+  virtual void InsertVarArrayExpression(IntExpr* expression,
                                         const std::vector<IntVar*>& vars,
                                         VarArrayExpressionType type) = 0;
 
@@ -2321,7 +2304,7 @@ class ModelCache {
       VarArrayConstantArrayExpressionType type) const = 0;
 
   virtual void InsertVarArrayConstantArrayExpression(
-      IntExpr* const expression, const std::vector<IntVar*>& var,
+      IntExpr* expression, const std::vector<IntVar*>& var,
       const std::vector<int64_t>& values,
       VarArrayConstantArrayExpressionType type) = 0;
 
@@ -2332,7 +2315,7 @@ class ModelCache {
       VarArrayConstantExpressionType type) const = 0;
 
   virtual void InsertVarArrayConstantExpression(
-      IntExpr* const expression, const std::vector<IntVar*>& var, int64_t value,
+      IntExpr* expression, const std::vector<IntVar*>& var, int64_t value,
       VarArrayConstantExpressionType type) = 0;
 
   Solver* solver() const;
@@ -2355,14 +2338,13 @@ class ArgumentHolder {
                                const std::vector<int64_t>& values);
   void SetIntegerMatrixArgument(const std::string& arg_name,
                                 const IntTupleSet& values);
-  void SetIntegerExpressionArgument(const std::string& arg_name,
-                                    IntExpr* const expr);
+  void SetIntegerExpressionArgument(const std::string& arg_name, IntExpr* expr);
   void SetIntegerVariableArrayArgument(const std::string& arg_name,
                                        const std::vector<IntVar*>& vars);
-  void SetIntervalArgument(const std::string& arg_name, IntervalVar* const var);
+  void SetIntervalArgument(const std::string& arg_name, IntervalVar* var);
   void SetIntervalArrayArgument(const std::string& arg_name,
                                 const std::vector<IntervalVar*>& vars);
-  void SetSequenceArgument(const std::string& arg_name, SequenceVar* const var);
+  void SetSequenceArgument(const std::string& arg_name, SequenceVar* var);
   void SetSequenceArrayArgument(const std::string& arg_name,
                                 const std::vector<SequenceVar*>& vars);
 
@@ -2412,22 +2394,21 @@ class ModelParser : public ModelVisitor {
   void BeginVisitModel(const std::string& solver_name) override;
   void EndVisitModel(const std::string& solver_name) override;
   void BeginVisitConstraint(const std::string& type_name,
-                            const Constraint* const constraint) override;
+                            const Constraint* constraint) override;
   void EndVisitConstraint(const std::string& type_name,
-                          const Constraint* const constraint) override;
+                          const Constraint* constraint) override;
   void BeginVisitIntegerExpression(const std::string& type_name,
-                                   const IntExpr* const expr) override;
+                                   const IntExpr* expr) override;
   void EndVisitIntegerExpression(const std::string& type_name,
-                                 const IntExpr* const expr) override;
-  void VisitIntegerVariable(const IntVar* const variable,
-                            IntExpr* const delegate) override;
-  void VisitIntegerVariable(const IntVar* const variable,
+                                 const IntExpr* expr) override;
+  void VisitIntegerVariable(const IntVar* variable, IntExpr* delegate) override;
+  void VisitIntegerVariable(const IntVar* variable,
                             const std::string& operation, int64_t value,
-                            IntVar* const delegate) override;
-  void VisitIntervalVariable(const IntervalVar* const variable,
+                            IntVar* delegate) override;
+  void VisitIntervalVariable(const IntervalVar* variable,
                              const std::string& operation, int64_t value,
-                             IntervalVar* const delegate) override;
-  void VisitSequenceVariable(const SequenceVar* const variable) override;
+                             IntervalVar* delegate) override;
+  void VisitSequenceVariable(const SequenceVar* variable) override;
   /// Integer arguments
   void VisitIntegerArgument(const std::string& arg_name,
                             int64_t value) override;
@@ -2437,19 +2418,19 @@ class ModelParser : public ModelVisitor {
                                   const IntTupleSet& values) override;
   /// Variables.
   void VisitIntegerExpressionArgument(const std::string& arg_name,
-                                      IntExpr* const argument) override;
+                                      IntExpr* argument) override;
   void VisitIntegerVariableArrayArgument(
       const std::string& arg_name,
       const std::vector<IntVar*>& arguments) override;
   /// Visit interval argument.
   void VisitIntervalArgument(const std::string& arg_name,
-                             IntervalVar* const argument) override;
+                             IntervalVar* argument) override;
   void VisitIntervalArrayArgument(
       const std::string& arg_name,
       const std::vector<IntervalVar*>& arguments) override;
   /// Visit sequence argument.
   void VisitSequenceArgument(const std::string& arg_name,
-                             SequenceVar* const argument) override;
+                             SequenceVar* argument) override;
   void VisitSequenceArrayArgument(
       const std::string& arg_name,
       const std::vector<SequenceVar*>& arguments) override;
@@ -2819,15 +2800,15 @@ class UnsortedNullableRevBitset {
 
   /// This methods overwrites the active bitset with the mask. This method
   /// should be called only once.
-  void Init(Solver* const solver, const std::vector<uint64_t>& mask);
+  void Init(Solver* solver, const std::vector<uint64_t>& mask);
 
   /// This method subtracts the mask from the active bitset. It returns true if
   /// the active bitset was changed in the process.
-  bool RevSubtract(Solver* const solver, const std::vector<uint64_t>& mask);
+  bool RevSubtract(Solver* solver, const std::vector<uint64_t>& mask);
 
   /// This method ANDs the mask with the active bitset. It returns true if
   /// the active bitset was changed in the process.
-  bool RevAnd(Solver* const solver, const std::vector<uint64_t>& mask);
+  bool RevAnd(Solver* solver, const std::vector<uint64_t>& mask);
 
   /// This method returns the number of non null 64 bit words in the bitset
   /// representation.
@@ -2853,7 +2834,7 @@ class UnsortedNullableRevBitset {
   const RevIntSet<int>& active_words() const { return active_words_; }
 
  private:
-  void CleanUpActives(Solver* const solver);
+  void CleanUpActives(Solver* solver);
 
   const int64_t bit_size_;
   const int64_t word_size_;
@@ -3093,7 +3074,7 @@ class PathState {
   class NodeRange;
 
   struct ChainBounds {
-    ChainBounds() = default;
+    ChainBounds() {}
     ChainBounds(int begin_index, int end_index)
         : begin_index(begin_index), end_index(end_index) {}
     int begin_index;
