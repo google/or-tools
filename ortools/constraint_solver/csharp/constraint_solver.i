@@ -118,14 +118,14 @@ PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64_t m), arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64_t mi, int64_t ma),
                      arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetPerformed(bool val), arg1->solver());
-PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const c), arg1);
+PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* c), arg1);
 PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 #undef PROTECT_FROM_FAILURE
 }  // namespace operations_research
 
 // ############ END DUPLICATED CODE BLOCK ############
 
-%apply int64_t * INOUT { int64_t *const marker };
+%apply int64_t * INOUT { int64_t * marker };
 %apply int64_t * OUTPUT { int64_t *l, int64_t *u, int64_t *value };
 
 // Since knapsack_solver.i and constraint_solver.i both need to
@@ -462,22 +462,22 @@ namespace operations_research {
   Constraint* Member(const std::vector<int>& values) {
     return $self->solver()->MakeMemberCt($self->Var(), values);
   }
-  IntVar* IsEqual(IntExpr* const other) {
+  IntVar* IsEqual(IntExpr* other) {
     return $self->solver()->MakeIsEqualVar($self->Var(), other->Var());
   }
-  IntVar* IsDifferent(IntExpr* const other) {
+  IntVar* IsDifferent(IntExpr* other) {
     return $self->solver()->MakeIsDifferentVar($self->Var(), other->Var());
   }
-  IntVar* IsGreater(IntExpr* const other) {
+  IntVar* IsGreater(IntExpr* other) {
     return $self->solver()->MakeIsGreaterVar($self->Var(), other->Var());
   }
-  IntVar* IsGreaterOrEqual(IntExpr* const other) {
+  IntVar* IsGreaterOrEqual(IntExpr* other) {
     return $self->solver()->MakeIsGreaterOrEqualVar($self->Var(), other->Var());
   }
-  IntVar* IsLess(IntExpr* const other) {
+  IntVar* IsLess(IntExpr* other) {
     return $self->solver()->MakeIsLessVar($self->Var(), other->Var());
   }
-  IntVar* IsLessOrEqual(IntExpr* const other) {
+  IntVar* IsLessOrEqual(IntExpr* other) {
     return $self->solver()->MakeIsLessOrEqualVar($self->Var(), other->Var());
   }
   OptimizeVar* Minimize(int64_t step) {
@@ -702,7 +702,7 @@ namespace operations_research {
 // Ignored:
 // No custom wrapping for this method, we simply ignore it.
 %ignore SearchLog::SearchLog(
-    Solver* const s, OptimizeVar* const obj, IntVar* const var,
+    Solver* s, OptimizeVar* obj, IntVar* var,
     double scaling_factor, double offset,
     std::function<std::string()> display_callback,
     bool display_on_new_solutions_only, int period);
@@ -826,7 +826,7 @@ namespace operations_research {
 %unignore IntVarLocalSearchFilter::Var;  // Inherited.
 // Extend IntVarLocalSearchFilter with an intuitive API.
 %extend IntVarLocalSearchFilter {
-  int Index(IntVar* const var) {
+  int Index(IntVar* var) {
     int64_t index = -1;
     $self->FindIndex(var, &index);
     return index;
