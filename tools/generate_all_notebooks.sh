@@ -20,7 +20,7 @@ if [[ ! -d "${DIR}" ]]; then
   DIR="${PWD}";
 fi
 
-echo "Intalling python3 notebook..."
+echo "Installing python3 notebook..."
 /usr/bin/env python3 -m pip install --user notebook
 
 ###############
