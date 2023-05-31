@@ -17,7 +17,6 @@ $$L,U\in\mathbb{R}^m$$, $$n,m\in\mathbb{N}^+$$ and $$I\subseteq\{1,\ldots,n\}$$.
 This module provides an unified wrapper (MPSolver) around different linear and
 integer solvers (Glop, Bop, Sat, SCIP, Gurobi etc.).
 
-
 To begin, skim
 
 *   [linear_solver.h](../linear_solver/linear_solver.h):
@@ -52,18 +51,29 @@ through the wrapper.
 * Gurobi (MIP) solver: [gurobi_interface.cc]
 (../linear_solver/gurobi_interface.cc)
 
+* Google's PLDP solver: [pdlp_interface.cc]
+(../linear_solver/pdlp_interface.cc)
+
 * SCIP (MIP) solver: [scip_interface.cc]
 (../linear_solver/scip_interface.cc)
 
-* Google's CP-SAT Solver: [sat_interface.cc]
+* Google's CP-SAT solver: [sat_interface.cc]
 (../linear_solver/sat_interface.cc)
-
 
 * Coin-OR Cbc (MIP) solver: [cbc_interface.cc]
 (../linear_solver/cbc_interface.cc)
 
 * Coin-OR Clp (LP) solver: [clp_interface.cc]
 (../linear_solver/clp_interface.cc)
+
+* CPLEX (MIP) solver: [cplex_interface.cc]
+(../linear_solver/cplex_interface.cc)
+
+* GLPK (MIP) solver: [glpk_interface.cc]
+(../linear_solver/glpk_interface.cc)
+
+* Xpress (MIP) solver: [xpress_interface.cc]
+(../linear_solver/xpress_interface.cc)
 
 ## Wrappers
 
@@ -79,4 +89,3 @@ through the wrapper.
 ## Samples
 
 You can find some canonical examples in [samples](../linear_solver/samples/)
-

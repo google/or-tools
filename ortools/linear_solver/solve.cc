@@ -275,7 +275,7 @@ void Run() {
   if (!absl::GetFlag(FLAGS_sol_hint).empty()) {
     const auto read_sol =
         ParseSolFile(absl::GetFlag(FLAGS_sol_hint), request_proto.model());
-    CHECK(read_sol.ok());
+    CHECK_OK(read_sol.status());
     const MPSolutionResponse sol = read_sol.value();
     if (request_proto.model().has_solution_hint()) {
       LOG(WARNING) << "Overwriting solution hint found in the request with "

@@ -29,8 +29,8 @@ def main():
 
     # [START variables]
     # x and y are integer non-negative variables.
-    x = model.new_int_var(0.0, math.inf, 'x')
-    y = model.new_int_var(0.0, math.inf, 'y')
+    x = model.new_int_var(0.0, math.inf, 'x')  # pytype: disable=wrong-arg-types  # numpy-scalars
+    y = model.new_int_var(0.0, math.inf, 'y')  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     print('Number of variables =', model.num_variables)
     # [END variables]

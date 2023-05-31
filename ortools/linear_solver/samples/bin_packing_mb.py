@@ -52,10 +52,10 @@ def main():
     # [START variables]
     # Variables
     # x[i, j] = 1 if item i is packed in bin j.
-    x = model.new_bool_var_array(shape=[num_items, num_bins], name='x')
+    x = model.new_bool_var_array(shape=[num_items, num_bins], name='x')  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     # y[j] = 1 if bin j is used.
-    y = model.new_bool_var_array(shape=[num_bins], name='y')
+    y = model.new_bool_var_array(shape=[num_bins], name='y')  # pytype: disable=wrong-arg-types  # numpy-scalars
     # [END variables]
 
     # [START constraints]
