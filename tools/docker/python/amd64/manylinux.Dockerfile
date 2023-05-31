@@ -1,7 +1,5 @@
 FROM quay.io/pypa/manylinux2014_x86_64:latest AS env
 
-# gawk subversion \
-
 RUN yum -y update \
 && yum -y install \
  curl wget \
