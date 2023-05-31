@@ -110,7 +110,7 @@ class KnapsackSearchNodeForCuts {
       delete;
 
   int depth() const { return depth_; }
-  const KnapsackSearchNodeForCuts* const parent() const { return parent_; }
+  const KnapsackSearchNodeForCuts* parent() const { return parent_; }
   const KnapsackAssignmentForCuts& assignment() const { return assignment_; }
 
   double current_profit() const { return current_profit_; }
@@ -307,7 +307,7 @@ class KnapsackSolverForCuts {
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<double>& profits,
-            const std::vector<double>& weights, const double capacity);
+            const std::vector<double>& weights, double capacity);
   int GetNumberOfItems() const { return state_.GetNumberOfItems(); }
 
   // Gets the lower and the upper bound when the item is in or out of the

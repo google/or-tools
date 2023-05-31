@@ -51,36 +51,36 @@ double SolveKnapsackProblem(KnapsackSolverForCuts* solver) {
 }
 
 TEST(KnapsackSearchNodeForCutsTest, Depth) {
-  KnapsackAssignmentForCuts assignement(0, false);
-  KnapsackSearchNodeForCuts root(nullptr, assignement);
+  KnapsackAssignmentForCuts assignment(0, false);
+  KnapsackSearchNodeForCuts root(nullptr, assignment);
   EXPECT_EQ(0, root.depth());
 
-  KnapsackSearchNodeForCuts node_0(&root, assignement);
+  KnapsackSearchNodeForCuts node_0(&root, assignment);
   EXPECT_EQ(1, node_0.depth());
 
-  KnapsackSearchNodeForCuts node_00(&node_0, assignement);
+  KnapsackSearchNodeForCuts node_00(&node_0, assignment);
   EXPECT_EQ(2, node_00.depth());
 }
 
 TEST(KnapsackSearchPathTest, MoveUpToDepth) {
-  KnapsackAssignmentForCuts assignement(0, false);
-  KnapsackSearchNodeForCuts root(nullptr, assignement);
-  KnapsackSearchNodeForCuts node_0(&root, assignement);
+  KnapsackAssignmentForCuts assignment(0, false);
+  KnapsackSearchNodeForCuts root(nullptr, assignment);
+  KnapsackSearchNodeForCuts node_0(&root, assignment);
   KnapsackSearchPathForCuts from_root_to_0(&root, &node_0);
   const KnapsackSearchNodeForCuts* root_ptr = MoveUpToDepth(&node_0, 0);
   EXPECT_EQ(&root, root_ptr);
 }
 
 TEST(KnapsackSearchPathTest, InitAndMoveUpToDepth) {
-  KnapsackAssignmentForCuts assignement(0, false);
-  KnapsackSearchNodeForCuts root(nullptr, assignement);
-  KnapsackSearchNodeForCuts node_0(&root, assignement);
-  KnapsackSearchNodeForCuts node_00(&node_0, assignement);
-  KnapsackSearchNodeForCuts node_01(&node_0, assignement);
-  KnapsackSearchNodeForCuts node_001(&node_00, assignement);
-  KnapsackSearchNodeForCuts node_010(&node_01, assignement);
-  KnapsackSearchNodeForCuts node_0101(&node_010, assignement);
-  KnapsackSearchNodeForCuts node_01011(&node_0101, assignement);
+  KnapsackAssignmentForCuts assignment(0, false);
+  KnapsackSearchNodeForCuts root(nullptr, assignment);
+  KnapsackSearchNodeForCuts node_0(&root, assignment);
+  KnapsackSearchNodeForCuts node_00(&node_0, assignment);
+  KnapsackSearchNodeForCuts node_01(&node_0, assignment);
+  KnapsackSearchNodeForCuts node_001(&node_00, assignment);
+  KnapsackSearchNodeForCuts node_010(&node_01, assignment);
+  KnapsackSearchNodeForCuts node_0101(&node_010, assignment);
+  KnapsackSearchNodeForCuts node_01011(&node_0101, assignment);
 
   KnapsackSearchPathForCuts from_01011_to_001(&node_01011, &node_001);
   const KnapsackSearchNodeForCuts* node_01_ptr = MoveUpToDepth(&node_01011, 2);

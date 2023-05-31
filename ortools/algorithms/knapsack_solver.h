@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -336,10 +337,10 @@ typedef KnapsackItem* KnapsackItemPtr;
 // a previous search node.
 class KnapsackSearchNode {
  public:
-  KnapsackSearchNode(const KnapsackSearchNode* const parent,
+  KnapsackSearchNode(const KnapsackSearchNode* parent,
                      const KnapsackAssignment& assignment);
   int depth() const { return depth_; }
-  const KnapsackSearchNode* const parent() const { return parent_; }
+  const KnapsackSearchNode* parent() const { return parent_; }
   const KnapsackAssignment& assignment() const { return assignment_; }
 
   int64_t current_profit() const { return current_profit_; }
@@ -572,9 +573,9 @@ class KnapsackCapacityPropagator : public KnapsackPropagator {
 // This is the base class for knapsack solvers.
 class BaseKnapsackSolver {
  public:
-  explicit BaseKnapsackSolver(const std::string& solver_name)
+  explicit BaseKnapsackSolver(absl::string_view solver_name)
       : solver_name_(solver_name) {}
-  virtual ~BaseKnapsackSolver() {}
+  virtual ~BaseKnapsackSolver() = default;
 
   // Initializes the solver and enters the problem to be solved.
   virtual void Init(const std::vector<int64_t>& profits,

@@ -136,7 +136,7 @@ KnapsackPropagatorForCuts::KnapsackPropagatorForCuts(
       profit_upper_bound_(kInfinity),
       state_(state) {}
 
-KnapsackPropagatorForCuts::~KnapsackPropagatorForCuts() {}
+KnapsackPropagatorForCuts::~KnapsackPropagatorForCuts() = default;
 
 void KnapsackPropagatorForCuts::Init(const std::vector<double>& profits,
                                      const std::vector<double>& weights,

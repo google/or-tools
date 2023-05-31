@@ -217,7 +217,7 @@ KnapsackCapacityPropagator::KnapsackCapacityPropagator(
       sorted_items_(),
       profit_max_(0) {}
 
-KnapsackCapacityPropagator::~KnapsackCapacityPropagator() {}
+KnapsackCapacityPropagator::~KnapsackCapacityPropagator() = default;
 
 // TODO(user): Make it more incremental, by saving the break item in a
 // search node for instance.
@@ -1312,7 +1312,7 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
   }
 }
 
-KnapsackSolver::~KnapsackSolver() {}
+KnapsackSolver::~KnapsackSolver() = default;
 
 void KnapsackSolver::Init(const std::vector<int64_t>& profits,
                           const std::vector<std::vector<int64_t>>& weights,

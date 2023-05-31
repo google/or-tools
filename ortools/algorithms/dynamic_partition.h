@@ -60,7 +60,7 @@ class DynamicPartition {
 
   // Accessors.
   int NumElements() const { return element_.size(); }
-  const int NumParts() const { return part_.size(); }
+  int NumParts() const { return part_.size(); }
 
   // To iterate over the elements in part #i:
   // for (int element : partition.ElementsInPart(i)) { ... }
@@ -190,7 +190,7 @@ struct DynamicPartition::IterablePart {
 
   int size() const { return end_ - begin_; }
 
-  IterablePart() {}
+  IterablePart() = default;
   IterablePart(const std::vector<int>::const_iterator& b,
                const std::vector<int>::const_iterator& e)
       : begin_(b), end_(e) {}
@@ -283,7 +283,7 @@ class SimpleDynamicPartition {
         size_of_part_(num_elements > 0 ? 1 : 0, num_elements) {}
 
   int NumElements() const { return part_of_.size(); }
-  const int NumParts() const { return size_of_part_.size(); }
+  int NumParts() const { return size_of_part_.size(); }
   int PartOf(int element) const { return part_of_[element]; }
   int SizeOfPart(int part) const { return size_of_part_[part]; }
 

@@ -101,7 +101,7 @@ struct SparsePermutation::Iterator {
   typedef int value_type;
   typedef std::vector<int>::const_iterator const_iterator;
 
-  Iterator() {}
+  Iterator() = default;
   Iterator(const std::vector<int>::const_iterator& b,
            const std::vector<int>::const_iterator& e)
       : begin_(b), end_(e) {}

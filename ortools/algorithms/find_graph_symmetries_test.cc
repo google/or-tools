@@ -705,7 +705,7 @@ TEST_P(BigGraphFindSymmetriesTest, VerifyAutomorphismGroupSize) {
   int num_nodes = -1;
   int num_edges = -1;
   // The size of the automorphism group can be huge, and overflow (by far) an
-  // extended double; so we parse its mantissa and its exponent seprately. We
+  // extended double; so we parse its mantissa and its exponent separately. We
   // even support double exponents -- like a googolplex: 1(1e100).
   int dig0_size = -1;
   int64_t frac_size = -1;
