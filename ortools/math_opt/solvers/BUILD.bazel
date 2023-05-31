@@ -341,3 +341,13 @@ proto_library(
     name = "glpk_proto",
     srcs = ["glpk.proto"],
 )
+
+cc_proto_library(
+    name = "highs_cc_proto",
+    deps = [":highs_proto"],
+)
+
+proto_library(
+    name = "highs_proto",
+    srcs = ["highs.proto"],
+)
