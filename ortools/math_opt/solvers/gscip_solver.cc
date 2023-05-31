@@ -594,12 +594,15 @@ absl::StatusOr<std::pair<GScipSOSData, GScipSolver::AuxiliaryStructureHandler>>
 GScipSolver::ProcessSosProto(const SosConstraintProto& sos_constraint) {
   GScipSOSData data;
   AuxiliaryStructureHandler handler;
+  absl::flat_hash_set<int64_t> reused_variables;
   for (const LinearExpressionProto& expr : sos_constraint.expressions()) {
     // If the expression is equivalent to 1 * some_variable, there is no need to
-    // add a slack variable.
+    // add a slack variable. But, SCIP crashes in debug mode if you repeat a
+    // variable twice within an SOS constraint, so we track the ones we reuse.
     if (expr.ids_size() == 1 && expr.coefficients(0) == 1.0 &&
-        expr.offset() == 0.0) {
+        expr.offset() == 0.0 && !reused_variables.contains(expr.ids(0))) {
       data.variables.push_back(variables_.at(expr.ids(0)));
+      reused_variables.insert(expr.ids(0));
     } else {
       ASSIGN_OR_RETURN((const auto [slack_var, slack_constr]),
                        AddSlackVariableEqualToExpression(expr));
@@ -853,7 +856,7 @@ ProblemStatusProto GetProblemStatusProto(const GScipOutput::Status gscip_status,
 
 absl::StatusOr<TerminationProto> ConvertTerminationReason(
     const GScipOutput::Status gscip_status,
-    const std::string& gscip_status_detail, const bool has_feasible_solution,
+    absl::string_view gscip_status_detail, const bool has_feasible_solution,
     const bool had_cutoff) {
   switch (gscip_status) {
     case GScipOutput::USER_INTERRUPT:
@@ -1037,9 +1040,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
 }
 
 GScipSolver::GScipSolver(std::unique_ptr<GScip> gscip)
-    : gscip_(std::move(ABSL_DIE_IF_NULL(gscip))) {
-  interrupt_event_handler_.Register(gscip_.get());
-}
+    : gscip_(std::move(ABSL_DIE_IF_NULL(gscip))) {}
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GScipSolver::New(
     const ModelProto& model, const InitArgs& init_args) {
@@ -1047,9 +1048,8 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GScipSolver::New(
   ASSIGN_OR_RETURN(std::unique_ptr<GScip> gscip, GScip::Create(model.name()));
   RETURN_IF_ERROR(gscip->SetMaximize(model.objective().maximize()));
   RETURN_IF_ERROR(gscip->SetObjectiveOffset(model.objective().offset()));
-  // Can't be const because it had to be moved into the StatusOr and be
-  // convereted to std::unique_ptr<SolverInterface>.
   auto solver = absl::WrapUnique(new GScipSolver(std::move(gscip)));
+  RETURN_IF_ERROR(solver->RegisterHandlers());
 
   RETURN_IF_ERROR(solver->AddVariables(
       model.variables(),
@@ -1370,6 +1370,11 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
       model_update.sos2_constraint_updates().new_constraints()));
 
   return true;
+}
+
+absl::Status GScipSolver::RegisterHandlers() {
+  RETURN_IF_ERROR(interrupt_event_handler_.Register(gscip_.get()));
+  return absl::OkStatus();
 }
 
 GScipSolver::InterruptEventHandler::InterruptEventHandler()

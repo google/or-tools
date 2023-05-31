@@ -1,0 +1,37 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
+// The options exposed by HiGHS. Use at your own risk, these are completely
+// undocumented.
+//
+// Option names are given as strings in HighsOptions.h, see:
+// https://github.com/ERGO-Code/HiGHS/blob/7421e44b09563f637dc6422ea461a8832b29e543/src/lp_data/HighsOptions.h
+// Each member of HighsOptionsStruct has a corresponding OptionRecord with a
+// string name (that appears to match the field name), use these as keys below.
+message HighsOptionsProto {
+  // Example keys: "presolve", "solver", "parallel"
+  map<string, string> string_options = 1;
+  // Example keys: "time_limit", "primal_feasibility_tolerance"
+  map<string, double> double_options = 2;
+  // Example keys: "random_seed", "simplex_strategy"
+  map<string, int32> int_options = 3;
+  // Example keys: "log_to_console", "allow_unbounded_or_infeasible"
+  map<string, bool> bool_options = 4;
+}

@@ -174,7 +174,7 @@ class Model {
   // Adds a continuous unbounded variable to the model.
   inline Variable AddVariable(absl::string_view name = "");
 
-  // Adds an variable to the model with domain {0, 1}.
+  // Adds a variable to the model with domain {0, 1}.
   inline Variable AddBinaryVariable(absl::string_view name = "");
 
   // Adds a variable to the model with domain [lower_bound, upper_bound].

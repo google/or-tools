@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -483,10 +484,99 @@ std::vector<int> IndexUpdateMap(const int size_before_delete,
   return result;
 }
 
+absl::StatusOr<bool> GetIntAttrElementAsBool(Gurobi& gurobi,
+                                             const char* const name,
+                                             const int element) {
+  ASSIGN_OR_RETURN(const int value, gurobi.GetIntAttrElement(name, element));
+  const bool cast_value(value);
+  if (static_cast<int>(cast_value) != value) {
+    return util::InternalErrorBuilder()
+           << "Gurobi unexpectedly returned non-boolean value for " << name
+           << ": " << value;
+  }
+  return cast_value;
+}
+
+class OrAccumulator {
+ public:
+  OrAccumulator() = default;
+  // Propagates any error in `update`. Otherwise, ORs the internal state with
+  // the value in `update`.
+  absl::Status Or(absl::StatusOr<bool> update) {
+    RETURN_IF_ERROR(update.status());
+    value_ |= *update;
+    return absl::OkStatus();
+  }
+  bool value() const { return value_; }
+
+ private:
+  bool value_ = false;
+};
+
+// Propagate any error in `maybe_value`. Otherwise, if `maybe_value` is set,
+// add (`id`, `maybe_value`) as an entry to `target`.
+absl::Status AddMapEntryIfPresent(
+    const int64_t map_id,
+    absl::StatusOr<std::optional<ModelSubsetProto::Bounds>> maybe_value,
+    google::protobuf::Map<int64_t, ModelSubsetProto::Bounds>& target) {
+  RETURN_IF_ERROR(maybe_value.status());
+  if (maybe_value->has_value()) {
+    target[map_id] = **std::move(maybe_value);
+  }
+  return absl::OkStatus();
+}
+
+// Propagate any error in `should_append`. Otherwise, if `should_append` is
+// true, append `id` to `target`.
+absl::Status AppendEntryIfTrue(
+    const int64_t id, absl::StatusOr<bool> should_append,
+    google::protobuf::RepeatedField<int64_t>& target) {
+  RETURN_IF_ERROR(should_append.status());
+  if (*should_append) {
+    target.Add(id);
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 GurobiSolver::GurobiSolver(std::unique_ptr<Gurobi> g_gurobi)
     : gurobi_(std::move(g_gurobi)) {}
+
+GurobiSolver::GurobiModelElements
+GurobiSolver::LinearConstraintData::DependentElements() const {
+  GurobiModelElements elements;
+  CHECK_NE(constraint_index, kUnspecifiedConstraint);
+  elements.linear_constraints.push_back(constraint_index);
+  if (slack_index != kUnspecifiedIndex) {
+    elements.variables.push_back(slack_index);
+  }
+  return elements;
+}
+
+GurobiSolver::GurobiModelElements
+GurobiSolver::SecondOrderConeConstraintData::DependentElements() const {
+  const auto index_is_valid = [](const auto index) { return index >= 0; };
+  CHECK(absl::c_all_of(slack_variables, index_is_valid));
+  CHECK(absl::c_all_of(slack_constraints, index_is_valid));
+  CHECK_NE(constraint_index, kUnspecifiedConstraint);
+  GurobiModelElements elements{.variables = slack_variables,
+                               .linear_constraints = slack_constraints};
+  elements.quadratic_constraints.push_back(constraint_index);
+  return elements;
+}
+
+GurobiSolver::GurobiModelElements
+GurobiSolver::SosConstraintData::DependentElements() const {
+  const auto index_is_valid = [](const auto index) { return index >= 0; };
+  CHECK(absl::c_all_of(slack_variables, index_is_valid));
+  CHECK(absl::c_all_of(slack_constraints, index_is_valid));
+  CHECK_NE(constraint_index, kUnspecifiedConstraint);
+  GurobiModelElements elements{.variables = slack_variables,
+                               .linear_constraints = slack_constraints};
+  elements.sos_constraints.push_back(constraint_index);
+  return elements;
+}
 
 absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
     const int gurobi_status, const SolutionClaims solution_claims) {
@@ -849,6 +939,179 @@ absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
   ASSIGN_OR_RETURN(*result.mutable_termination(),
                    ConvertTerminationReason(grb_termination, solution_claims));
   return std::move(result);
+}
+
+absl::StatusOr<bool> GurobiSolver::AnyElementInIIS(
+    const GurobiModelElements& grb_elements) {
+  OrAccumulator any_in_iis;
+  for (const GurobiVariableIndex grb_index : grb_elements.variables) {
+    RETURN_IF_ERROR(any_in_iis.Or(VariableInIIS(grb_index)));
+  }
+  for (const GurobiLinearConstraintIndex grb_index :
+       grb_elements.linear_constraints) {
+    RETURN_IF_ERROR(any_in_iis.Or(
+        GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_CONSTR, grb_index)));
+  }
+  for (const GurobiQuadraticConstraintIndex grb_index :
+       grb_elements.quadratic_constraints) {
+    RETURN_IF_ERROR(any_in_iis.Or(GetIntAttrElementAsBool(
+        *gurobi_, GRB_INT_ATTR_IIS_QCONSTR, grb_index)));
+  }
+  for (const GurobiSosConstraintIndex grb_index :
+       grb_elements.sos_constraints) {
+    RETURN_IF_ERROR(any_in_iis.Or(
+        GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_SOS, grb_index)));
+  }
+  for (const GurobiGeneralConstraintIndex grb_index :
+       grb_elements.general_constraints) {
+    RETURN_IF_ERROR(any_in_iis.Or(GetIntAttrElementAsBool(
+        *gurobi_, GRB_INT_ATTR_IIS_GENCONSTR, grb_index)));
+  }
+  return any_in_iis.value();
+}
+
+// If set, the returned value will have at least one of .lower and/or .upper set
+// to true.
+absl::StatusOr<std::optional<ModelSubsetProto::Bounds>>
+GurobiSolver::VariableBoundsInIIS(const GurobiVariableIndex grb_index) {
+  ASSIGN_OR_RETURN(
+      const bool var_lb_is_in_iis,
+      GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_LB, grb_index));
+  ASSIGN_OR_RETURN(
+      const bool var_ub_is_in_iis,
+      GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_UB, grb_index));
+  if (!var_lb_is_in_iis && !var_ub_is_in_iis) {
+    return std::nullopt;
+  }
+  ModelSubsetProto::Bounds bounds;
+  bounds.set_lower(var_lb_is_in_iis);
+  bounds.set_upper(var_ub_is_in_iis);
+  return bounds;
+}
+
+absl::StatusOr<bool> GurobiSolver::VariableInIIS(
+    const GurobiVariableIndex grb_index) {
+  ASSIGN_OR_RETURN(const std::optional<ModelSubsetProto::Bounds> bounds,
+                   VariableBoundsInIIS(grb_index));
+  return bounds.has_value();
+}
+
+absl::StatusOr<std::optional<ModelSubsetProto::Bounds>>
+GurobiSolver::LinearConstraintInIIS(const LinearConstraintData& grb_data) {
+  // Attributing which part of an equality/ranged constraint is part of the
+  // IIS can be tricky. So, we take a conservative approach: if anything
+  // associated with this linear constraint is part of the IIS (including
+  // slack variable/constraints), then we mark any finite bound as being part
+  // of the IIS.
+  ASSIGN_OR_RETURN(const bool constr_in_iis,
+                   AnyElementInIIS(grb_data.DependentElements()));
+  if (!constr_in_iis) {
+    return std::nullopt;
+  }
+  ModelSubsetProto::Bounds result;
+  result.set_lower(grb_data.lower_bound != -kInf);
+  result.set_upper(grb_data.upper_bound != kInf);
+  return result;
+}
+
+absl::StatusOr<std::optional<ModelSubsetProto::Bounds>>
+GurobiSolver::QuadraticConstraintInIIS(
+    const GurobiQuadraticConstraintIndex grb_index) {
+  ASSIGN_OR_RETURN(
+      const bool constr_in_iis,
+      GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_QCONSTR, grb_index));
+  if (!constr_in_iis) {
+    return std::nullopt;
+  }
+  ASSIGN_OR_RETURN(
+      const char constr_sense,
+      gurobi_->GetCharAttrElement(GRB_CHAR_ATTR_QCSENSE, grb_index));
+  ModelSubsetProto::Bounds result;
+  result.set_lower(constr_sense == GRB_EQUAL ||
+                   constr_sense == GRB_GREATER_EQUAL);
+  result.set_upper(constr_sense == GRB_EQUAL || constr_sense == GRB_LESS_EQUAL);
+  return result;
+}
+
+absl::StatusOr<InfeasibleSubsystemResultProto>
+GurobiSolver::ExtractInfeasibleSubsystemResultProto(
+    const bool proven_infeasible) {
+  InfeasibleSubsystemResultProto result;
+  if (!proven_infeasible) {
+    result.set_feasibility(FEASIBILITY_STATUS_UNDETERMINED);
+    return result;
+  }
+  result.set_feasibility(FEASIBILITY_STATUS_INFEASIBLE);
+  {
+    ASSIGN_OR_RETURN(const bool is_minimal,
+                     gurobi_->GetIntAttr(GRB_INT_ATTR_IIS_MINIMAL));
+    result.set_is_minimal(is_minimal);
+  }
+  for (const auto [id, grb_index] : variables_map_) {
+    RETURN_IF_ERROR(AddMapEntryIfPresent(
+        id, /*maybe_value=*/VariableBoundsInIIS(grb_index),
+        *result.mutable_infeasible_subsystem()->mutable_variable_bounds()));
+    {
+      // Gurobi does not report integrality in its IIS, so we mark any integer
+      // variable in the model as being involved.
+      ASSIGN_OR_RETURN(
+          const char var_type,
+          gurobi_->GetCharAttrElement(GRB_CHAR_ATTR_VTYPE, grb_index));
+      if (var_type == GRB_BINARY || var_type == GRB_INTEGER) {
+        result.mutable_infeasible_subsystem()->add_variable_integrality(
+            grb_index);
+      }
+    }
+  }
+
+  for (const auto [id, grb_data] : linear_constraints_map_) {
+    RETURN_IF_ERROR(AddMapEntryIfPresent(
+        id, /*maybe_value=*/LinearConstraintInIIS(grb_data),
+        *result.mutable_infeasible_subsystem()->mutable_linear_constraints()));
+  }
+
+  for (const auto [id, grb_index] : quadratic_constraints_map_) {
+    RETURN_IF_ERROR(AddMapEntryIfPresent(
+        id, /*maybe_value=*/QuadraticConstraintInIIS(grb_index),
+        *result.mutable_infeasible_subsystem()
+             ->mutable_quadratic_constraints()));
+  }
+
+  for (const auto& [id, grb_data] : soc_constraints_map_) {
+    RETURN_IF_ERROR(AppendEntryIfTrue(
+        id, /*should_append=*/AnyElementInIIS(grb_data.DependentElements()),
+        *result.mutable_infeasible_subsystem()
+             ->mutable_second_order_cone_constraints()));
+  }
+
+  for (const auto& [id, grb_data] : sos1_constraints_map_) {
+    RETURN_IF_ERROR(AppendEntryIfTrue(
+        id, /*should_append=*/AnyElementInIIS(grb_data.DependentElements()),
+        *result.mutable_infeasible_subsystem()->mutable_sos1_constraints()));
+  }
+
+  for (const auto& [id, grb_data] : sos2_constraints_map_) {
+    RETURN_IF_ERROR(AppendEntryIfTrue(
+        id, /*should_append=*/AnyElementInIIS(grb_data.DependentElements()),
+        *result.mutable_infeasible_subsystem()->mutable_sos2_constraints()));
+  }
+
+  for (const auto& [id, maybe_grb_data] : indicator_constraints_map_) {
+    if (!maybe_grb_data.has_value()) {
+      continue;
+    }
+    RETURN_IF_ERROR(AppendEntryIfTrue(
+        id,
+        /*should_append=*/
+        GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_GENCONSTR,
+                                maybe_grb_data->constraint_index),
+        *result.mutable_infeasible_subsystem()
+             ->mutable_indicator_constraints()));
+  }
+
+  // Since each xxx_map_ is in insertion order, we do not need to worry about
+  // sorting the repeated fields in `result`.
+  return result;
 }
 
 absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetSolutions(
@@ -1295,17 +1558,14 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQpSolution(
   // other edge cases.
   ASSIGN_OR_RETURN((auto [dual_solution, found_dual_feasible_solution]),
                    GetLpDualSolutionIfAvailable(model_parameters));
-  // Basis information is available when Gurobi uses QP simplex. As of v9.1 this
-  // is not the default [1], so a user will need to explicitly set the Method
-  // parameter in order for the following call to do anything interesting.
-  //  [1] https://www.gurobi.com/documentation/9.1/refman/method.html
-  ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable());
+  // TODO(b/280353996): we want to extract the basis here (when we solve via
+  // simplex), but the existing code extracts a basis which fails our validator.
 
   const SolutionClaims solution_claims = {
       .primal_feasible_solution_exists = found_primal_feasible_solution,
       .dual_feasible_solution_exists = found_dual_feasible_solution};
 
-  if (!primal_solution.has_value() && !basis.has_value()) {
+  if (!primal_solution.has_value()) {
     return GurobiSolver::SolutionsAndClaims{.solution_claims = solution_claims};
   }
   SolutionsAndClaims solution_and_claims{.solution_claims = solution_claims};
@@ -1316,9 +1576,6 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQpSolution(
   }
   if (dual_solution.has_value()) {
     *solution.mutable_dual_solution() = *std::move(dual_solution);
-  }
-  if (basis.has_value()) {
-    *solution.mutable_basis() = *std::move(basis);
   }
   return solution_and_claims;
 }
@@ -1643,19 +1900,18 @@ absl::Status GurobiSolver::AddNewQuadraticConstraints(
   return absl::OkStatus();
 }
 
-absl::StatusOr<GurobiSolver::VariableEqualToExpression>
-GurobiSolver::ExtractVariableEqualToExpression(
-    const LinearExpressionProto& expression, const bool allow_reuse) {
-  if (allow_reuse && expression.offset() == 0 && expression.ids_size() == 1 &&
+std::optional<GurobiSolver::VariableId> GurobiSolver::TryExtractVariable(
+    const LinearExpressionProto& expression) {
+  if (expression.offset() == 0 && expression.ids_size() == 1 &&
       expression.coefficients(0) == 1) {
-    const VariableId var_id = expression.ids(0);
-    // In this case, the expression is equivalent to just a single variable, and
-    // hence we just return it.
-    return VariableEqualToExpression{.variable_index =
-                                         variables_map_.at(var_id)};
+    return expression.ids(0);
   }
-  // This `expression` is nontrivial, so we introduce a new `slack_variable` and
-  // the linear constraint: `expression` == `slack_variable`.
+  return std::nullopt;
+}
+
+absl::StatusOr<GurobiSolver::VariableEqualToExpression>
+GurobiSolver::CreateSlackVariableEqualToExpression(
+    const LinearExpressionProto& expression) {
   const GurobiVariableIndex slack_variable = num_gurobi_variables_;
   std::vector<GurobiVariableIndex> slack_col_indices = {slack_variable};
   std::vector<double> slack_coeffs = {-1.0};
@@ -1692,26 +1948,29 @@ absl::Status GurobiSolver::AddNewSecondOrderConeConstraints(
     // We force a new variable to be added so that we can add a lower bound on
     // it. Otherwise, we must update the model to flush bounds, or risk either
     // a Gurobi error, or stomping on a potentially stronger bound.
-    ASSIGN_OR_RETURN((const auto [ub_var, ub_cons]),
-                     ExtractVariableEqualToExpression(constraint.upper_bound(),
-                                                      /*allow_reuse=*/false));
+    ASSIGN_OR_RETURN(
+        (const auto [ub_var, ub_cons]),
+        CreateSlackVariableEqualToExpression(constraint.upper_bound()));
     RETURN_IF_ERROR(
         gurobi_->SetDoubleAttrElement(GRB_DBL_ATTR_LB, ub_var, 0.0));
-    CHECK(ub_cons.has_value());
     constraint_data.slack_variables.push_back(ub_var);
-    constraint_data.slack_constraints.push_back(*ub_cons);
+    constraint_data.slack_constraints.push_back(ub_cons);
     std::vector<GurobiVariableIndex> quad_var_indices = {ub_var};
     std::vector<double> quad_coeffs = {-1.0};
     for (const LinearExpressionProto& expression :
          constraint.arguments_to_norm()) {
-      ASSIGN_OR_RETURN((const auto [arg_var, maybe_arg_cons]),
-                       ExtractVariableEqualToExpression(expression));
-      quad_var_indices.push_back(arg_var);
       quad_coeffs.push_back(1.0);
-      if (maybe_arg_cons.has_value()) {
-        constraint_data.slack_variables.push_back(arg_var);
-        constraint_data.slack_constraints.push_back(*maybe_arg_cons);
+      if (const std::optional<VariableId> maybe_variable =
+              TryExtractVariable(expression);
+          maybe_variable.has_value()) {
+        quad_var_indices.push_back(variables_map_.at(*maybe_variable));
+        continue;
       }
+      ASSIGN_OR_RETURN((const auto [arg_var, arg_cons]),
+                       CreateSlackVariableEqualToExpression(expression));
+      quad_var_indices.push_back(arg_var);
+      constraint_data.slack_variables.push_back(arg_var);
+      constraint_data.slack_constraints.push_back(arg_cons);
     }
     RETURN_IF_ERROR(gurobi_->AddQConstr({}, {}, quad_var_indices,
                                         quad_var_indices, quad_coeffs,
@@ -1732,21 +1991,35 @@ absl::Status GurobiSolver::AddNewSosConstraints(
     constraint_data.constraint_index = num_gurobi_sos_cons_;
     std::vector<GurobiVariableIndex> sos_var_indices;
     std::vector<double> weights;
+    // As of v9.0.2, Gurobi does not allow SOS constraints to contain repeated
+    // variables. So, we track the variables we "reuse" (i.e., were already
+    // present in the model). Slack variables introduced in
+    // `ExtractVariableEqualToExpression()` will not be present in the proto
+    // inputs, so we can safely ignore tracking them.
+    absl::flat_hash_set<VariableId> reused_variables;
     for (int i = 0; i < constraint.expressions_size(); ++i) {
       weights.push_back(constraint.weights().empty() ? i + 1
                                                      : constraint.weights(i));
-      ASSIGN_OR_RETURN(
-          (const auto [var_index, maybe_cons_index]),
-          ExtractVariableEqualToExpression(constraint.expressions(i)));
-      sos_var_indices.push_back(var_index);
-      if (maybe_cons_index.has_value()) {
-        constraint_data.slack_variables.push_back(var_index);
-        constraint_data.slack_constraints.push_back(*maybe_cons_index);
-      } else if (sos_type == 2) {
-        // If this variable is deleted, Gurobi will drop the corresponding term
-        // from the SOS constraint, potentially changing the meaning of an SOS2.
-        undeletable_variables_.insert(var_index);
+      if (const std::optional<VariableId> maybe_variable =
+              TryExtractVariable(constraint.expressions(i));
+          maybe_variable.has_value() &&
+          !reused_variables.contains(*maybe_variable)) {
+        sos_var_indices.push_back(variables_map_.at(*maybe_variable));
+        reused_variables.insert(*maybe_variable);
+        if (sos_type == 2) {
+          // If this variable is deleted, Gurobi will drop the corresponding
+          // term from the SOS constraint, potentially changing the meaning of
+          // the constraint.
+          undeletable_variables_.insert(*maybe_variable);
+        }
+        continue;
       }
+      ASSIGN_OR_RETURN(
+          (const auto [var_index, cons_index]),
+          CreateSlackVariableEqualToExpression(constraint.expressions(i)));
+      sos_var_indices.push_back(var_index);
+      constraint_data.slack_variables.push_back(var_index);
+      constraint_data.slack_constraints.push_back(cons_index);
     }
     RETURN_IF_ERROR(gurobi_->AddSos({sos_type}, {0}, sos_var_indices, weights));
     ++num_gurobi_sos_cons_;
@@ -2599,6 +2872,22 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   // We just run it first.
   RETURN_IF_ERROR(gurobi_->UpdateModel());
 
+  // Gurobi returns "infeasible" when bounds are inverted.
+  {
+    ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
+                     ListInvertedBounds());
+    RETURN_IF_ERROR(inverted_bounds.ToStatus());
+  }
+
+  // Gurobi will silently impose that indicator variables are binary even if
+  // not so specified by the user in the model. We return an error here if
+  // this is the case to be consistent across solvers.
+  {
+    ASSIGN_OR_RETURN(const InvalidIndicators invalid_indicators,
+                     ListInvalidIndicators());
+    RETURN_IF_ERROR(invalid_indicators.ToStatus());
+  }
+
   // We must set the parameters before calling RegisterCallback since it
   // changes some parameters depending on the callback registration.
   RETURN_IF_ERROR(SetParameters(parameters));
@@ -2663,22 +2952,6 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     };
   }
 
-  // Gurobi returns "infeasible" when bounds are inverted.
-  {
-    ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
-                     ListInvertedBounds());
-    RETURN_IF_ERROR(inverted_bounds.ToStatus());
-  }
-
-  // Gurobi will silently impose that indicator variables are binary even if
-  // not so specified by the user in the model. We return an error here if
-  // this is the case to be consistent across solvers.
-  {
-    ASSIGN_OR_RETURN(const InvalidIndicators invalid_indicators,
-                     ListInvalidIndicators());
-    RETURN_IF_ERROR(invalid_indicators.ToStatus());
-  }
-
   RETURN_IF_ERROR(gurobi_->Optimize(grb_cb));
 
   // We flush message callbacks before testing for Gurobi error in case where
@@ -2691,19 +2964,101 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   ASSIGN_OR_RETURN(SolveResultProto solve_result,
                    ExtractSolveResultProto(start, model_parameters));
   // Reset Gurobi parameters.
-  // TODO(user): ensure that resetting parameters does not degrade
+  // TODO(b/277246682): ensure that resetting parameters does not degrade
   // incrementalism performance.
   RETURN_IF_ERROR(gurobi_->ResetParameters());
 
   return solve_result;
 }
 
+// TODO(b/277339044): Remove code duplication with GurobiSolver::Solve().
 absl::StatusOr<InfeasibleSubsystemResultProto>
 GurobiSolver::InfeasibleSubsystem(const SolveParametersProto& parameters,
                                   MessageCallback message_cb,
                                   SolveInterrupter* const interrupter) {
-  return absl::UnimplementedError(
-      "MathOpt does not currently support Gurobi's IIS functionality");
+  const absl::Time start = absl::Now();
+
+  // Need to run GRBupdatemodel before:
+  //  1. setting parameters (to test if the problem is a MIP)
+  //  2. registering callbacks (to test if the problem is a MIP),
+  RETURN_IF_ERROR(gurobi_->UpdateModel());
+
+  // Gurobi will silently impose that indicator variables are binary even if
+  // not so specified by the user in the model. We return an error here if
+  // this is the case to be consistent across solvers.
+  {
+    ASSIGN_OR_RETURN(const InvalidIndicators invalid_indicators,
+                     ListInvalidIndicators());
+    RETURN_IF_ERROR(invalid_indicators.ToStatus());
+  }
+
+  // We must set the parameters before calling RegisterCallback since it
+  // changes some parameters depending on the callback registration.
+  RETURN_IF_ERROR(SetParameters(parameters));
+
+  // We use a local interrupter that will triggers the calls to
+  // GRBterminate() when either the user interrupter is triggered or when a
+  // callback returns a true `terminate`.
+  std::unique_ptr<SolveInterrupter> local_interrupter;
+  if (interrupter != nullptr) {
+    local_interrupter = std::make_unique<SolveInterrupter>();
+  }
+  const ScopedSolveInterrupterCallback scoped_terminate_callback(
+      local_interrupter.get(), [&]() {
+        // Make an immediate call to GRBterminate() as soon as this
+        // interrupter is triggered (which may immediately happen in the
+        // code below when it is chained with the optional user
+        // interrupter).
+        //
+        // This call may happen too early. This is not an issue since we
+        // will repeat this call at each call of the Gurobi callback. See
+        // the comment in GurobiCallbackImpl() for details.
+        gurobi_->Terminate();
+      });
+
+  // Chain the user interrupter to the local interrupter. If/when the user
+  // interrupter is triggered, this triggers the local interrupter. This may
+  // happen immediately if the user interrupter is already triggered.
+  //
+  // The local interrupter can also be triggered by a callback returning a
+  // true `terminate`.
+  const ScopedSolveInterrupterCallback scoped_chaining_callback(
+      interrupter, [&]() { local_interrupter->Interrupt(); });
+
+  // Here we register the callback when we either have a message callback or a
+  // local interrupter. The rationale for doing so when we have only an
+  // interrupter is explained in GurobiCallbackImpl().
+  Gurobi::Callback grb_cb = nullptr;
+  std::unique_ptr<GurobiCallbackData> gurobi_cb_data;
+  if (local_interrupter != nullptr || message_cb != nullptr) {
+    ASSIGN_OR_RETURN(gurobi_cb_data,
+                     RegisterCallback({}, nullptr, message_cb, start,
+                                      local_interrupter.get()));
+    grb_cb = [&gurobi_cb_data](
+                 const Gurobi::CallbackContext& cb_context) -> absl::Status {
+      return GurobiCallbackImpl(cb_context, gurobi_cb_data->callback_input,
+                                gurobi_cb_data->message_callback_data,
+                                gurobi_cb_data->local_interrupter);
+    };
+  }
+
+  ASSIGN_OR_RETURN(const bool proven_infeasible, gurobi_->ComputeIIS(grb_cb));
+
+  // We flush message callbacks before testing for Gurobi error in case
+  // where the unfinished line of message would help with the error.
+  if (gurobi_cb_data != nullptr) {
+    GurobiCallbackImplFlush(gurobi_cb_data->callback_input,
+                            gurobi_cb_data->message_callback_data);
+  }
+
+  ASSIGN_OR_RETURN(InfeasibleSubsystemResultProto iis_result,
+                   ExtractInfeasibleSubsystemResultProto(proven_infeasible));
+  // Reset Gurobi parameters.
+  // TODO(b/277246682): ensure that resetting parameters does not degrade
+  // incrementalism performance.
+  RETURN_IF_ERROR(gurobi_->ResetParameters());
+
+  return iis_result;
 }
 
 MATH_OPT_REGISTER_SOLVER(SOLVER_TYPE_GUROBI, GurobiSolver::New)

@@ -13,6 +13,7 @@
 
 #include "ortools/math_opt/cpp/message_callback.h"
 
+#include <algorithm>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -21,6 +22,8 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "google/protobuf/repeated_field.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/source_location.h"
 
@@ -47,19 +50,31 @@ class PrinterMessageCallbackImpl {
   const std::string prefix_;
 };
 
-class VectorMessageCallbackImpl {
+void PushBack(const std::vector<std::string>& messages,
+              std::vector<std::string>* const sink) {
+  sink->insert(sink->end(), messages.begin(), messages.end());
+}
+
+void PushBack(const std::vector<std::string>& messages,
+              google::protobuf::RepeatedPtrField<std::string>* const sink) {
+  std::copy(messages.begin(), messages.end(),
+            google::protobuf::RepeatedFieldBackInserter(sink));
+}
+
+template <typename Sink>
+class VectorLikeMessageCallbackImpl {
  public:
-  explicit VectorMessageCallbackImpl(std::vector<std::string>* const sink)
+  explicit VectorLikeMessageCallbackImpl(Sink* const sink)
       : sink_(ABSL_DIE_IF_NULL(sink)) {}
 
   void Call(const std::vector<std::string>& messages) {
     const absl::MutexLock lock(&mutex_);
-    sink_->insert(sink_->end(), messages.begin(), messages.end());
+    PushBack(messages, sink_);
   }
 
  private:
   absl::Mutex mutex_;
-  std::vector<std::string>* const sink_;
+  Sink* const sink_;
 };
 
 }  // namespace
@@ -80,7 +95,21 @@ MessageCallback VectorMessageCallback(std::vector<std::string>* sink) {
   // Here we must use an std::shared_ptr since std::function requires that its
   // input is copyable. And VectorMessageCallbackImpl can't be copyable since it
   // uses an absl::Mutex that is not.
-  const auto impl = std::make_shared<VectorMessageCallbackImpl>(sink);
+  const auto impl =
+      std::make_shared<VectorLikeMessageCallbackImpl<std::vector<std::string>>>(
+          sink);
+  return
+      [=](const std::vector<std::string>& messages) { impl->Call(messages); };
+}
+
+MessageCallback RepeatedPtrFieldMessageCallback(
+    google::protobuf::RepeatedPtrField<std::string>* sink) {
+  CHECK(sink != nullptr);
+  // Here we must use an std::shared_ptr since std::function requires that its
+  // input is copyable. And VectorMessageCallbackImpl can't be copyable since
+  // it uses an absl::Mutex that is not.
+  const auto impl = std::make_shared<VectorLikeMessageCallbackImpl<
+      google::protobuf::RepeatedPtrField<std::string>>>(sink);
   return
       [=](const std::vector<std::string>& messages) { impl->Call(messages); };
 }

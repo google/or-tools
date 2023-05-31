@@ -17,20 +17,24 @@
 #include <optional>
 #include <ostream>
 #include <string>
-#include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
+#include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
+#include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"
+#include "ortools/math_opt/constraints/sos/sos1_constraint.h"
+#include "ortools/math_opt/constraints/sos/sos2_constraint.h"
 #include "ortools/math_opt/cpp/enums.h"
 #include "ortools/math_opt/cpp/key_types.h"
+#include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/solve_result.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"

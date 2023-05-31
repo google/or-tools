@@ -61,7 +61,7 @@ struct GurobiIsvKey {
 // Functor to use as deleter for std::unique_ptr that stores a primary GRBenv,
 // used by GRBenvUniquePtr. Most users will not use this directly.
 struct GurobiFreeEnv {
-  void operator()(GRBenv* const env) const;
+  void operator()(GRBenv* env) const;
 };
 
 // Unique pointer to a GRBenv. It destroys the environment on destruction
@@ -386,7 +386,7 @@ class Gurobi {
   // Calls GRBdelqconstrs().
   //
   // Deletes the specified quadratic constraints.
-  absl::Status DelQConstrs(const absl::Span<const int> ind);
+  absl::Status DelQConstrs(absl::Span<const int> ind);
 
   // Calls GRBaddsos().
   //

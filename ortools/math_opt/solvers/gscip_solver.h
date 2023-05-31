@@ -144,7 +144,7 @@ class GScipSolver : public SolverInterface {
   // Updates the existing constraints and the coefficients of the existing
   // variables of these constraints.
   absl::Status UpdateLinearConstraints(
-      const LinearConstraintUpdatesProto linear_constraint_updates,
+      LinearConstraintUpdatesProto linear_constraint_updates,
       const SparseDoubleMatrixProto& linear_constraint_matrix,
       std::optional<int64_t> first_new_var_id,
       std::optional<int64_t> first_new_cstr_id);
@@ -189,6 +189,9 @@ class GScipSolver : public SolverInterface {
 
   // Returns the indicator constraints with non-binary indicator variables.
   InvalidIndicators ListInvalidIndicators() const;
+
+  // Registers handlers with SCIP (e.g. event handlers, constraint handlers).
+  absl::Status RegisterHandlers();
 
   const std::unique_ptr<GScip> gscip_;
   InterruptEventHandler interrupt_event_handler_;

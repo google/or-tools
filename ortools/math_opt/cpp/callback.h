@@ -92,52 +92,47 @@ struct CallbackResult;
 
 using Callback = std::function<CallbackResult(const CallbackData&)>;
 
-// The supported events for LP/MIP callbacks.
+// The supported events during a solve for callbacks.
 enum class CallbackEvent {
   // The solver is currently running presolve.
   //
-  // This event is supported for MIP & LP models by SolverType::kGurobi. Other
-  // solvers don't support this event.
+  // This event is supported for SolverType::kGurobi only.
   kPresolve = CALLBACK_EVENT_PRESOLVE,
 
   // The solver is currently running the simplex method.
   //
-  // This event is supported for MIP & LP models by SolverType::kGurobi. Other
-  // solvers don't support this event.
+  // This event is supported for SolverType::kGurobi only.
   kSimplex = CALLBACK_EVENT_SIMPLEX,
 
   // The solver is in the MIP loop (called periodically before starting a new
   // node). Useful for early termination. Note that this event does not provide
   // information on LP relaxations nor about new incumbent solutions.
   //
-  // This event is supported for MIP models only by SolverType::kGurobi. Other
-  // solvers don't support this event.
+  // This event is supported for MIP models with SolverType::kGurobi only.
   kMip = CALLBACK_EVENT_MIP,
 
   // Called every time a new MIP incumbent is found.
   //
-  // This event is fully supported for MIP models by SolverType::kGurobi. CP-SAT
-  // has partial support: you can view the solutions and request termination,
-  // but you cannot add lazy constraints. Other solvers don't support this
-  // event.
+  // This event is fully supported for MIP models by SolverType::kGurobi.
+  // SolverType::kCpSat has partial support: you can view the solutions and
+  // request termination, but you cannot add lazy constraints. Other solvers
+  // don't support this event.
   kMipSolution = CALLBACK_EVENT_MIP_SOLUTION,
 
   // Called inside a MIP node. Note that there is no guarantee that the
   // callback function will be called on every node. That behavior is
   // solver-dependent.
   //
-  // Disabling cuts using CommonSolveParameters may interfere with this event
+  // Disabling cuts using SolveParameters may interfere with this event
   // being called and/or adding cuts at this event, the behavior is solver
   // specific.
   //
-  // This event is supported for MIP models only by SolverType::kGurobi. Other
-  // solvers don't support this event.
+  // This event is supported for MIP models with SolverType::kGurobi only.
   kMipNode = CALLBACK_EVENT_MIP_NODE,
 
   // Called in each iterate of an interior point/barrier method.
   //
-  // This event is supported for LP models only by SolverType::kGurobi. Other
-  // solvers don't support this event.
+  // This event is supported for SolverType::kGurobi only.
   kBarrier = CALLBACK_EVENT_BARRIER,
 };
 
@@ -159,12 +154,11 @@ struct CallbackRegistration {
 
   // The events the solver should invoke the callback at.
   //
-  // A solver will return an InvalidArgument status when called with registered
-  // events that are not supported for the selected solver and the type of
-  // model. For example registring for CallbackEvent::kMip with a model that
-  // only contains continuous variables will fail for most solvers (see the
-  // documentation of each event to see which solvers support them and in which
-  // case).
+  // When a solver is called with registered events that are not supported,
+  // an InvalidArgument is returned. The supported events may depend on the
+  // model. For example registering for CallbackEvent::kMip with a model that
+  // only contains continuous variables will fail for most solvers. See the
+  // documentation of each event to see their supported solvers/model types.
   absl::flat_hash_set<CallbackEvent> events;
 
   // Restricts the variable returned in CallbackData.solution for event
@@ -210,8 +204,7 @@ struct CallbackData {
   // Otherwise, the primal_solution is not available.
   std::optional<VariableMap<double>> solution;
 
-  // Time since `Solve()` was called. Available for all events except
-  // CallbackEvent::kPolling.
+  // Time since `Solve()` was called. Available for all events.
   absl::Duration runtime;
 
   // Only available for event == CallbackEvent::kPresolve.

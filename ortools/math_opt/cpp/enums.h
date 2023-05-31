@@ -186,19 +186,19 @@ struct EnumProto {
 // Returns the Proto enum that matches the input C++ proto, returns
 // Enum<E>::kProtoUnspecifiedValue if the input is std::nullopt.
 template <typename E>
-typename Enum<E>::Proto EnumToProto(const std::optional<E> value);
+typename Enum<E>::Proto EnumToProto(std::optional<E> value);
 
 // Returns the Proto enum that matches the input C++ proto.
 //
 // Implementation note: this overload is necessary for EnumToProto(Xxx::kXxx)
 // since C++ won't deduce E in std::optional<E> with the other overload.
 template <typename E>
-typename Enum<E>::Proto EnumToProto(const E value);
+typename Enum<E>::Proto EnumToProto(E value);
 
 // Returns the C++ enum that matches the input Proto enum, returns
 // std::nullopt if the input is kProtoUnspecifiedValue.
 template <typename P>
-std::optional<typename EnumProto<P>::Cpp> EnumFromProto(const P proto_value);
+std::optional<typename EnumProto<P>::Cpp> EnumFromProto(P proto_value);
 
 // Returns a unique string that represent the enum.
 //
@@ -208,12 +208,12 @@ std::optional<typename EnumProto<P>::Cpp> EnumFromProto(const P proto_value);
 // Prefer using operator<< when possible though. As a side benefice it does not
 // CHECK but instead prints the integer value of the invalid input.
 template <typename E>
-absl::string_view EnumToString(const E value);
+absl::string_view EnumToString(E value);
 
 // Returns a unique string that represent the enum. Returns nullopt if the input
 // value is not a valid value of the enum.
 template <typename E>
-std::optional<absl::string_view> EnumToOptString(const E value);
+std::optional<absl::string_view> EnumToOptString(E value);
 
 // Returns the enum value that corresponds to the input string or nullopt if no
 // enum matches.
@@ -222,7 +222,7 @@ std::optional<absl::string_view> EnumToOptString(const E value);
 //
 // This is O(n) in complexity so use with care.
 template <typename E>
-std::optional<E> EnumFromString(const absl::string_view str);
+std::optional<E> EnumFromString(absl::string_view str);
 
 // Overload of operator<< for enum types that implements Enum<E>.
 //

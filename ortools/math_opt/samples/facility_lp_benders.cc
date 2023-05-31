@@ -220,12 +220,12 @@ absl::Status FullProblem(const FacilityLocationInstance& instance,
 
   // Demand constraints
   for (int location = 0; location < num_locations; ++location) {
-    math_opt::LinearExpression incomming_supply;
+    math_opt::LinearExpression incoming_supply;
     for (const auto& edge :
          instance.network.edges_incident_to_location(location)) {
-      incomming_supply += x.at(edge);
+      incoming_supply += x.at(edge);
     }
-    model.AddLinearConstraint(incomming_supply >= instance.location_demand);
+    model.AddLinearConstraint(incoming_supply >= instance.location_demand);
   }
 
   // Supply constraints
@@ -409,12 +409,12 @@ SecondStageSolver::SecondStageSolver(
 
   // Demand constraints
   for (int location = 0; location < num_locations; ++location) {
-    math_opt::LinearExpression incomming_supply;
+    math_opt::LinearExpression incoming_supply;
     for (const auto& edge : network_.edges_incident_to_location(location)) {
-      incomming_supply += x_.at(edge);
+      incoming_supply += x_.at(edge);
     }
     demand_constraints_.push_back(second_stage_model_.AddLinearConstraint(
-        incomming_supply >= instance.location_demand));
+        incoming_supply >= instance.location_demand));
   }
 
   // Supply constraints

@@ -31,6 +31,7 @@
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"  // IWYU pragma: export
+#include "ortools/math_opt/solvers/highs.pb.h"   // IWYU pragma: export
 #include "ortools/sat/sat_parameters.pb.h"       // IWYU pragma: export
 
 namespace operations_research {
@@ -406,6 +407,7 @@ struct SolveParameters {
   sat::SatParameters cp_sat;
 
   GlpkParameters glpk;
+  HighsOptionsProto highs;
 
   SolveParametersProto Proto() const;
   static absl::StatusOr<SolveParameters> FromProto(

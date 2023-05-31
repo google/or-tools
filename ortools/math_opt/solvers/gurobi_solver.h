@@ -116,6 +116,14 @@ class GurobiSolver : public SolverInterface {
   static constexpr GurobiAnyConstraintIndex kUnspecifiedConstraint = -2;
   static constexpr double kInf = std::numeric_limits<double>::infinity();
 
+  struct GurobiModelElements {
+    std::vector<GurobiVariableIndex> variables;
+    std::vector<GurobiLinearConstraintIndex> linear_constraints;
+    std::vector<GurobiQuadraticConstraintIndex> quadratic_constraints;
+    std::vector<GurobiSosConstraintIndex> sos_constraints;
+    std::vector<GurobiGeneralConstraintIndex> general_constraints;
+  };
+
   // Data associated with each linear constraint. With it we know if the
   // underlying representation is either:
   //   linear_terms <= upper_bound (if lower bound <= -GRB_INFINITY)
@@ -123,6 +131,10 @@ class GurobiSolver : public SolverInterface {
   //   linear_terms == xxxxx_bound (if upper_bound == lower_bound)
   //   linear_term - slack == 0 (with slack bounds equal to xxxxx_bound)
   struct LinearConstraintData {
+    // Returns all Gurobi elements related to this constraint (including the
+    // linear constraint itself). Will CHECK-fail if any element is unspecified.
+    GurobiModelElements DependentElements() const;
+
     GurobiLinearConstraintIndex constraint_index = kUnspecifiedConstraint;
     // only valid for true ranged constraints.
     GurobiVariableIndex slack_index = kUnspecifiedIndex;
@@ -131,12 +143,20 @@ class GurobiSolver : public SolverInterface {
   };
 
   struct SecondOrderConeConstraintData {
+    // Returns all Gurobi elements related to this constraint (including the
+    // linear constraint itself). Will CHECK-fail if any element is unspecified.
+    GurobiModelElements DependentElements() const;
+
     GurobiQuadraticConstraintIndex constraint_index = kUnspecifiedConstraint;
     std::vector<GurobiVariableIndex> slack_variables;
     std::vector<GurobiLinearConstraintIndex> slack_constraints;
   };
 
   struct SosConstraintData {
+    // Returns all Gurobi elements related to this constraint (including the
+    // linear constraint itself). Will CHECK-fail if any element is unspecified.
+    GurobiModelElements DependentElements() const;
+
     GurobiSosConstraintIndex constraint_index = kUnspecifiedConstraint;
     std::vector<GurobiVariableIndex> slack_variables;
     std::vector<GurobiLinearConstraintIndex> slack_constraints;
@@ -185,6 +205,24 @@ class GurobiSolver : public SolverInterface {
   absl::StatusOr<double> GetBestPrimalBound(bool has_primal_feasible_solution);
   bool PrimalSolutionQualityAvailable() const;
   absl::StatusOr<double> GetPrimalSolutionQuality() const;
+
+  // Returns true if any entry in `grb_elements` is contained in the IIS.
+  absl::StatusOr<bool> AnyElementInIIS(const GurobiModelElements& grb_elements);
+  // Returns which variable bounds are in the IIS, or unset if neither are.
+  absl::StatusOr<std::optional<ModelSubsetProto::Bounds>> VariableBoundsInIIS(
+      GurobiVariableIndex grb_index);
+  // Returns true if any variable bound is contained in the IIS.
+  absl::StatusOr<bool> VariableInIIS(GurobiVariableIndex grb_index);
+  absl::StatusOr<std::optional<ModelSubsetProto::Bounds>> LinearConstraintInIIS(
+      const LinearConstraintData& grb_data);
+  absl::StatusOr<std::optional<ModelSubsetProto::Bounds>>
+  QuadraticConstraintInIIS(GurobiQuadraticConstraintIndex grb_index);
+  // NOTE: Gurobi may claim that an IIS is minimal when the returned message is
+  // not. This occurs because Gurobi does not return variable integrality IIS
+  // attributes, and because internally we apply model transformations to handle
+  // ranged constraints and linear expressions in nonlinear constraints.
+  absl::StatusOr<InfeasibleSubsystemResultProto>
+  ExtractInfeasibleSubsystemResultProto(bool proven_infeasible);
 
   // Warning: is read from gurobi, take care with gurobi update.
   absl::StatusOr<bool> IsMaximize() const;
@@ -326,20 +364,22 @@ class GurobiSolver : public SolverInterface {
 
   struct VariableEqualToExpression {
     GurobiVariableIndex variable_index;
-    std::optional<GurobiLinearConstraintIndex> constraint_index;
+    GurobiLinearConstraintIndex constraint_index;
   };
 
+  // If `expression` is equivalent to a single variable in the model, returns
+  // the corresponding MathOpt variable ID. Otherwise, returns nullopt.
+  std::optional<VariableId> TryExtractVariable(
+      const LinearExpressionProto& expression);
   // Returns a Gurobi variable that is constrained to be equal to `expression`
-  // in `.variable_index`. If `expression` is equal to a single variable in the
-  // model, we return it. Otherwise, the variable is newly added to the model
-  // and `.constraint_index` is set and refers to the Gurobi linear constraint
-  // index for a slack constraint just added to the model.
-  // If `allow_reuse` is false, we require that a new slack variable/constraint
-  // are introduced.
+  // in `.variable_index`. The variable is newly added to the model and
+  // `.constraint_index` is set and refers to the Gurobi linear constraint index
+  // for a slack constraint just added to the model such that:
+  // `expression` == `.variable_index`.
   // TODO(b/267310257): Use this for linear constraint slacks, and maybe move it
   // up the stack to a bridge.
-  absl::StatusOr<VariableEqualToExpression> ExtractVariableEqualToExpression(
-      const LinearExpressionProto& expression, bool allow_reuse = true);
+  absl::StatusOr<VariableEqualToExpression>
+  CreateSlackVariableEqualToExpression(const LinearExpressionProto& expression);
 
   const std::unique_ptr<Gurobi> gurobi_;
 

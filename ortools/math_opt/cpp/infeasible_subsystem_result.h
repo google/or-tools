@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
+// IWYU pragma: friend "ortools/math_opt/cpp/.*"
 #ifndef OR_TOOLS_MATH_OPT_CPP_INFEASIBLE_SUBSYSTEM_RESULT_H_
 #define OR_TOOLS_MATH_OPT_CPP_INFEASIBLE_SUBSYSTEM_RESULT_H_
 
@@ -115,9 +117,11 @@ struct InfeasibleSubsystemResult {
   // subsystem: lower bound, upper bound, or both.
   ModelSubset infeasible_subsystem;
 
-  // True if the solver has certified that the returned infeasible subsystem is
-  // minimal (i.e., the instance is feasible if any additional constraint is
-  // removed).
+  // True if the solver has certified that the returned subsystem is minimal
+  // (the instance is feasible if any additional constraint is removed). Note
+  // that, due to problem transformations MathOpt applies or idiosyncrasies of
+  // the solvers contract, the returned infeasible subsystem may not actually be
+  // minimal.
   bool is_minimal = false;
 };
 

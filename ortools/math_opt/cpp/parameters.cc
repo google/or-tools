@@ -26,13 +26,13 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/enums.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/glpk.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
+#include "ortools/math_opt/solvers/highs.pb.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/status_macros.h"
 
@@ -257,6 +257,7 @@ SolveParametersProto SolveParameters::Proto() const {
   *result.mutable_glop() = glop;
   *result.mutable_cp_sat() = cp_sat;
   *result.mutable_glpk() = glpk.Proto();
+  *result.mutable_highs() = highs;
   return result;
 }
 
@@ -314,6 +315,7 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   result.glop = proto.glop();
   result.cp_sat = proto.cp_sat();
   result.glpk = GlpkParameters::FromProto(proto.glpk());
+  result.highs = proto.highs();
   return result;
 }
 

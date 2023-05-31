@@ -67,7 +67,7 @@ class GlpkSparseVector {
   //
   // This operation has O(capacity) complexity (see the class documentation for
   // allocated memory).
-  explicit GlpkSparseVector(const int capacity);
+  explicit GlpkSparseVector(int capacity);
 
   // Returns the capacity (the size of the vector if it was dense).
   int capacity() const { return capacity_; }

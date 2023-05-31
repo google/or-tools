@@ -38,10 +38,10 @@ class SparseCoefficientMap {
       absl::flat_hash_map<VariableId, double> terms);
 
   // Returns 0.0 by default if no value is set.
-  inline double get(const VariableId id) const;
+  inline double get(VariableId id) const;
 
   // Returns true if the stored value changes.
-  inline bool set(const VariableId id, const double coeff);
+  inline bool set(VariableId id, double coeff);
 
   const absl::flat_hash_map<VariableId, double>& terms() const {
     return terms_;

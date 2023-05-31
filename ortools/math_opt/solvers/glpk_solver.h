@@ -77,7 +77,7 @@ class GlpkSolver : public SolverInterface {
     static constexpr auto kDelElts = glp_del_cols;
 
     // Returns true if the given one-based column is an integer variable.
-    static inline bool IsInteger(glp_prob* const problem, const int j);
+    static inline bool IsInteger(glp_prob* problem, int j);
 
     // The MathOpt variable id of each column in GLPK. This is zero-based, the
     // first column corresponds to the 0 and the ids.size() matches the number

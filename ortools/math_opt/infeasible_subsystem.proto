@@ -77,6 +77,9 @@ message InfeasibleSubsystemResultProto {
   ModelSubsetProto infeasible_subsystem = 2;
 
   // True if the solver has certified that the returned subsystem is minimal
-  // (the instance is feasible if any additional constraint is removed).
+  // (the instance is feasible if any additional constraint is removed). Note
+  // that, due to problem transformations MathOpt applies or idiosyncrasies of
+  // the solvers contract, the returned infeasible subsystem may not actually be
+  // minimal.
   bool is_minimal = 3;
 }

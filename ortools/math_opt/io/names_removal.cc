@@ -18,15 +18,44 @@
 
 namespace operations_research::math_opt {
 
+namespace {
+
+template <typename T>
+void RemoveMapNames(google::protobuf::Map<int64_t, T>& map) {
+  for (auto& [unused, value] : map) {
+    value.clear_name();
+  }
+}
+
+}  // namespace
+
 void RemoveNames(ModelProto& model) {
   model.clear_name();
   model.mutable_variables()->clear_names();
   model.mutable_linear_constraints()->clear_names();
+  RemoveMapNames(*model.mutable_auxiliary_objectives());
+  RemoveMapNames(*model.mutable_quadratic_constraints());
+  RemoveMapNames(*model.mutable_second_order_cone_constraints());
+  RemoveMapNames(*model.mutable_sos1_constraints());
+  RemoveMapNames(*model.mutable_sos2_constraints());
+  RemoveMapNames(*model.mutable_indicator_constraints());
 }
 
 void RemoveNames(ModelUpdateProto& update) {
   update.mutable_new_variables()->clear_names();
   update.mutable_new_linear_constraints()->clear_names();
+  RemoveMapNames(
+      *update.mutable_auxiliary_objectives_updates()->mutable_new_objectives());
+  RemoveMapNames(*update.mutable_quadratic_constraint_updates()
+                      ->mutable_new_constraints());
+  RemoveMapNames(*update.mutable_second_order_cone_constraint_updates()
+                      ->mutable_new_constraints());
+  RemoveMapNames(
+      *update.mutable_sos1_constraint_updates()->mutable_new_constraints());
+  RemoveMapNames(
+      *update.mutable_sos2_constraint_updates()->mutable_new_constraints());
+  RemoveMapNames(*update.mutable_indicator_constraint_updates()
+                      ->mutable_new_constraints());
 }
 
 }  // namespace operations_research::math_opt

@@ -29,54 +29,49 @@ import "ortools/math_opt/sparse_containers.proto";
 option java_package = "com.google.ortools.mathopt";
 option java_multiple_files = true;
 
-// This is the list of supported events.
+// The supported events during a solve for callbacks.
 enum CallbackEventProto {
   CALLBACK_EVENT_UNSPECIFIED = 0;
 
   // The solver is currently running presolve.
   //
-  // This event is supported for MIP & LP models by SOLVER_TYPE_GUROBI. Other
-  // solvers don't support this event.
+  // This event is supported by SOLVER_TYPE_GUROBI only.
   CALLBACK_EVENT_PRESOLVE = 1;
 
   // The solver is currently running the simplex method.
   //
-  // This event is supported for MIP & LP models by SOLVER_TYPE_GUROBI. Other
-  // solvers don't support this event.
+  // This event is supported by SOLVER_TYPE_GUROBI only.
   CALLBACK_EVENT_SIMPLEX = 2;
 
   // The solver is in the MIP loop (called periodically before starting a new
   // node). Useful for early termination. Note that this event does not provide
   // information on LP relaxations nor about new incumbent solutions.
   //
-  // This event is supported for MIP models only by SOLVER_TYPE_GUROBI. Other
-  // solvers don't support this event.
+  // This event is supported for MIP models by SOLVER_TYPE_GUROBI only.
   CALLBACK_EVENT_MIP = 3;
 
   // Called every time a new MIP incumbent is found.
   //
-  // This event is fully supported for MIP models by SOLVER_TYPE_GUROBI. CP-SAT
-  // has partial support: you can view the solutions and request termination,
-  // but you cannot add lazy constraints. Other solvers don't support this
-  // event.
+  // This event is fully supported for MIP models by SOLVER_TYPE_GUROBI.
+  // SOLVER_TYPE_CP_SAT has partial support: you can view the solutions and
+  // request termination, but you cannot add lazy constraints. Other solvers
+  // don't support this event.
   CALLBACK_EVENT_MIP_SOLUTION = 4;
 
   // Called inside a MIP node. Note that there is no guarantee that the
   // callback function will be called on every node. That behavior is
   // solver-dependent.
   //
-  // Disabling cuts using CommonSolveParametersProto may interfere with this
-  // event being called and/or adding cuts at this event, the behavior is solver
+  // Disabling cuts using SolveParametersProto may interfere with this event
+  // being called and/or adding cuts at this event, the behavior is solver
   // specific.
   //
-  // This event is supported for MIP models only by SOLVER_TYPE_GUROBI. Other
-  // solvers don't support this event.
+  // This event is supported for MIP models by SOLVER_TYPE_GUROBI only.
   CALLBACK_EVENT_MIP_NODE = 5;
 
   // Called in each iterate of an interior point/barrier method.
   //
-  // This event is supported for LP models only by SOLVER_TYPE_GUROBI. Other
-  // solvers don't support this event.
+  // This event is supported for SOLVER_TYPE_GUROBI only.
   CALLBACK_EVENT_BARRIER = 6;
 }
 
@@ -184,15 +179,17 @@ message CallbackResultProto {
   repeated SparseDoubleVectorProto suggested_solutions = 5;
 }
 
+// Provided with a callback at the start of a Solve() to inform the solver:
+//   * what information the callback needs,
+//   * how the callback might alter the solve process.
 message CallbackRegistrationProto {
   // The events the solver should invoke the callback at.
   //
-  // A solver will return an InvalidArgument status when called with registered
-  // events that are not supported for the selected solver and the type of
-  // model. For example registring for CALLBACK_EVENT_MIP with a model that only
-  // contains continuous variables will fail for most solvers (see the
-  // documentation of each event to see which solvers support them and in which
-  // case).
+  // When a solver is called with registered events that are not supported,
+  // an InvalidArgument is returned. The supported events may depend on the
+  // model. For example registering for CALLBACK_EVENT_MIP with a model that
+  // only contains continuous variables will fail for most solvers. See the
+  // documentation of each event to see their supported solvers/model types.
   repeated CallbackEventProto request_registration = 1;
 
   // If CALLBACK_EVENT_MIP_SOLUTION is in `request_registration`, then

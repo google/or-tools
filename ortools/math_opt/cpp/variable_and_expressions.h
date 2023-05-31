@@ -676,8 +676,8 @@ class QuadraticTermKey {
 inline std::ostream& operator<<(std::ostream& ostr,
                                 const QuadraticTermKey& key);
 
-inline bool operator==(const QuadraticTermKey lhs, const QuadraticTermKey rhs);
-inline bool operator!=(const QuadraticTermKey lhs, const QuadraticTermKey rhs);
+inline bool operator==(QuadraticTermKey lhs, QuadraticTermKey rhs);
+inline bool operator!=(QuadraticTermKey lhs, QuadraticTermKey rhs);
 
 // Represents a quadratic term in a sum: coefficient * variable_1 * variable_2.
 // Invariant:

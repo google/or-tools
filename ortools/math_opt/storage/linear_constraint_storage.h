@@ -173,7 +173,7 @@ class LinearConstraintStorage {
   };
 
   std::vector<LinearConstraintId> ConstraintsFrom(
-      const LinearConstraintId start) const;
+      LinearConstraintId start) const;
 
   void AppendConstraint(LinearConstraintId constraint,
                         LinearConstraintsProto* proto) const;
