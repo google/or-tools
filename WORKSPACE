@@ -34,9 +34,9 @@ git_repository(
 )
 
 git_repository(
-  name = "rules_cc",
-  tag = "0.0.6",
-  remote = "https://github.com/bazelbuild/rules_cc.git",
+    name = "rules_cc",
+    tag = "0.0.6",
+    remote = "https://github.com/bazelbuild/rules_cc.git",
 )
 
 git_repository(
@@ -45,7 +45,7 @@ git_repository(
     remote = "https://github.com/bazelbuild/rules_proto.git",
 )
 
-#Dependencies
+# Dependencies
 ## ZLIB
 new_git_repository(
     name = "zlib",
@@ -82,6 +82,7 @@ git_repository(
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
+## Testing
 git_repository(
     name = "com_google_googletest",
     tag = "v1.13.0",
