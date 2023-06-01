@@ -334,7 +334,7 @@ export TARGET=aarch64-linux-gnu
 $0
 
 * One-liner:
-PROJECT=or-tools TARGET=aarch64-linux-gnu $0"
+PROJECT=or-tools TARGET=aarch64 $0"
 }
 
 # Main
