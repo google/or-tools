@@ -1746,7 +1746,6 @@ class Solver {
   Constraint* MakePathTransitPrecedenceConstraint(
       std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
       const std::vector<std::pair<int, int>>& precedences);
-
   /// A constraint that maintains the energy cost of paths.
   /// Energy is the integral of force applied over distance.
   /// More formally, the energy used on a path is:
