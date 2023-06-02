@@ -240,10 +240,18 @@ struct Basis {
   LinearConstraintMap<BasisStatus> constraint_status;
   VariableMap<BasisStatus> variable_status;
 
-  // This is an advanced status. For single-sided LPs it should be equal to the
-  // feasibility status of the associated dual solution. For two-sided LPs it
-  // may be different in some edge cases (e.g. incomplete solves with primal
-  // simplex). For more details see go/mathopt-basis-advanced#dualfeasibility.
+  // This is an advanced feature used by MathOpt to characterize feasibility of
+  // suboptimal LP solutions (optimal solutions will always have status
+  // SolutionStatus::kFeasible).
+  //
+  // For single-sided LPs it should be equal to the feasibility status of the
+  // associated dual solution. For two-sided LPs it may be different in some
+  // edge cases (e.g. incomplete solves with primal simplex). For more details
+  // see go/mathopt-basis-advanced#dualfeasibility.
+  //
+  // If you are providing a starting basis via
+  // `ModelSolveParameters.initial_basis`, this value is ignored. It is only
+  // relevant for the basis returned by `Solution.basis`.
   SolutionStatus basic_dual_feasibility = SolutionStatus::kUndetermined;
 };
 

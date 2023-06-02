@@ -116,7 +116,7 @@ class SparseVectorView {
 
   SparseVectorView(absl::Span<const int64_t> ids, absl::Span<const T> values)
       : ids_(std::move(ids)), values_(std::move(values)) {}
-  SparseVectorView() {}
+  SparseVectorView() = default;
 
   inline const_iterator begin() const;
   inline const_iterator end() const;

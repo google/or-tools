@@ -229,10 +229,18 @@ message BasisProto {
   //  * constraint_status.ids is equal to VariablesProto.ids.
   SparseBasisStatusVector variable_status = 2;
 
-  // This is an advanced status. For single-sided LPs it should be equal to the
-  // feasibility status of the associated dual solution. For two-sided LPs it
-  // may be different in some edge cases (e.g. incomplete solves with primal
-  // simplex). For more details see go/mathopt-basis-advanced#dualfeasibility.
+  // This is an advanced feature used by MathOpt to characterize feasibility of
+  // suboptimal LP solutions (optimal solutions will always have status
+  // SOLUTION_STATUS_FEASIBLE).
+  //
+  // For single-sided LPs it should be equal to the feasibility status of the
+  // associated dual solution. For two-sided LPs it may be different in some
+  // edge cases (e.g. incomplete solves with primal simplex). For more details
+  // see go/mathopt-basis-advanced#dualfeasibility.
+  //
+  // If you are providing a starting basis via
+  // ModelSolveParametersProto.initial_basis, this value is ignored. It is only
+  // relevant for the basis returned by SolutionProto.basis.
   SolutionStatusProto basic_dual_feasibility = 3;
 }
 

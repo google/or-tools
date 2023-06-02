@@ -93,10 +93,30 @@ struct ModelSolveParameters {
   // expected to be valid.
   std::optional<Basis> initial_basis;
 
-  // A solution hint. It can be partial and does not need to be feasible; see
-  // solution_hints for details.
+  // A suggested starting solution for the solver.
+  //
+  // MIP solvers generally only want primal information (`variable_values`),
+  // while LP solvers want both primal and dual information (`dual_values`).
+  //
+  // Many MIP solvers can work with: (1) partial solutions that do not specify
+  // all variables or (2) infeasible solutions. In these cases, solvers
+  // typically solve a sub-MIP to complete/correct the hint.
+  //
+  // How the hint is used by the solver, if at all, is highly dependent on the
+  // solver, the problem type, and the algorithm used. The most reliable way to
+  // ensure your hint has an effect is to read the underlying solvers logs with
+  // and without the hint.
+  //
+  // Simplex-based LP solvers typically prefer an initial basis to a solution
+  // hint (they need to crossover to convert the hint to a basic feasible
+  // solution otherwise).
   struct SolutionHint {
+    // Values should be finite and not NaN (otherwise, `Solve()` will return a
+    // `Status` error).
     VariableMap<double> variable_values;
+
+    // Values should be finite and not NaN (otherwise, `Solve()` will return a
+    // `Status` error).
     LinearConstraintMap<double> dual_values;
 
     // Returns a failure if the referenced variables and constraints don't
@@ -117,16 +137,13 @@ struct ModelSolveParameters {
         const Model& model, const SolutionHintProto& hint_proto);
   };
 
-  // Optional solution hints. If set, they are expected to consist of
-  // assignments of finite values to primal or dual variables in the model (some
-  // variables may lack assignments and the assignment does not necessarily have
-  // to lead to a feasible solution).
+  // Optional solution hints. If the underlying solver only accepts a single
+  // hint, the first hint is used.
   std::vector<SolutionHint> solution_hints;
 
   // Optional branching priorities. Variables with higher values will be
   // branched on first. Variables for which priorities are not set get the
-  // solver's default priority (usualy zero). If set, they are expected to
-  // consist of finite priorities for primal variables in the model.
+  // solver's default priority (usually zero).
   VariableMap<int32_t> branching_priorities;
 
   // Returns a failure if the referenced variables don't belong to the input
