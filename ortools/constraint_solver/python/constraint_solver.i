@@ -690,7 +690,7 @@ PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64_t m), arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64_t mi, int64_t ma),
                      arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetPerformed(bool val), arg1->solver());
-PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const c), arg1);
+PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* c), arg1);
 PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 }  // namespace operations_research
 #undef PROTECT_FROM_FAILURE
@@ -1821,7 +1821,7 @@ namespace operations_research {
 // - Empty()
 // - Copy()
 // - elements()
-// - All Element() method taking (const V* const var)
+// - All Element() method taking (const V* var)
 // - operator==()
 // - operator!=()
 %unignore AssignmentContainer;
