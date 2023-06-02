@@ -2808,6 +2808,12 @@ SolverResult PrimalDualHybridGradient(
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
                              "The objective scaling factor cannot be zero.");
   }
+  if (qp.objective_matrix.has_value() &&
+      qp.objective_matrix->diagonal().minCoeff() < 0.0) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "The objective is not convex (i.e., the objective "
+                             "matrix contains negative entries).");
+  }
   if (params.use_feasibility_polishing() && !IsLinearProgram(qp)) {
     return ErrorSolverResult(
         TERMINATION_REASON_INVALID_PARAMETER,

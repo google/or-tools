@@ -14,6 +14,7 @@
 #include "ortools/pdlp/solvers_proto_validation.h"
 
 #include <cmath>
+#include <limits>
 
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
@@ -271,9 +272,11 @@ absl::Status ValidatePrimalDualHybridGradientParams(
     return InvalidArgumentError(
         "diagonal_qp_trust_region_solver_tolerance is NAN");
   }
-  if (params.diagonal_qp_trust_region_solver_tolerance() < 0.0) {
-    return InvalidArgumentError(
-        "diagonal_qp_trust_region_solver_tolerance must be non-negative");
+  if (params.diagonal_qp_trust_region_solver_tolerance() <
+      10 * std::numeric_limits<double>::epsilon()) {
+    return InvalidArgumentError(absl::StrCat(
+        "diagonal_qp_trust_region_solver_tolerance must be at least ",
+        10 * std::numeric_limits<double>::epsilon()));
   }
   if (params.use_feasibility_polishing() &&
       params.handle_some_primal_gradients_on_finite_bounds_as_residuals()) {

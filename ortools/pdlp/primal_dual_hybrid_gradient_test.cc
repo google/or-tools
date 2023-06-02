@@ -1052,6 +1052,15 @@ TEST(PrimalDualHybridGradientTest, DetectsProblemWithInconsistentBounds) {
             TERMINATION_REASON_INVALID_PROBLEM);
 }
 
+TEST(PrimalDualHybridGradientTest, DetectsNonconvexQp) {
+  QuadraticProgram qp = TestDiagonalQp1();
+  qp.objective_matrix->diagonal()[0] = -1.0;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
 TEST(PrimalDualHybridGradientTest, DetectsProblemWithInconsistentSizes) {
   QuadraticProgram qp = TinyLp();
   qp.objective_vector.resize(0);

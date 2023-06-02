@@ -18,7 +18,6 @@
 #include <limits>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
 
 #include "Eigen/Core"
@@ -205,7 +204,7 @@ absl::StatusOr<QuadraticProgram> QpFromMpModelProto(
     }
     qp.objective_scaling_factor = -1;
   }
-  return std::move(qp);
+  return qp;
 }
 
 absl::Status CanFitInMpModelProto(const QuadraticProgram& qp) {

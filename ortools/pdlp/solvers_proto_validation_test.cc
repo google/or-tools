@@ -652,6 +652,15 @@ TEST(ValidatePrimalDualHybridGradientParams,
   EXPECT_EQ(status_nan.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_nan.message(),
               HasSubstr("diagonal_qp_trust_region_solver_tolerance"));
+
+  PrimalDualHybridGradientParams params_tiny;
+  params_tiny.set_diagonal_qp_trust_region_solver_tolerance(
+      std::numeric_limits<double>::epsilon());
+  const absl::Status status_tiny =
+      ValidatePrimalDualHybridGradientParams(params_tiny);
+  EXPECT_EQ(status_tiny.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_tiny.message(),
+              HasSubstr("diagonal_qp_trust_region_solver_tolerance"));
 }
 
 TEST(ValidatePrimalDualHybridGradientParams, FeasibilityPolishingValidOptions) {
