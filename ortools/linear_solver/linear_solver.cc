@@ -364,11 +364,17 @@ bool MPSolver::SetSolverSpecificParametersAsString(
 
 // ----- Solver -----
 
-#if defined(USE_CLP) || defined(USE_CBC)
-extern MPSolverInterface* BuildCLPInterface(MPSolver* const solver);
+#if defined(USE_BOP)
+extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
 #endif
 #if defined(USE_CBC)
 extern MPSolverInterface* BuildCBCInterface(MPSolver* const solver);
+#endif
+#if defined(USE_CLP) || defined(USE_CBC)
+extern MPSolverInterface* BuildCLPInterface(MPSolver* const solver);
+#endif
+#if defined(USE_GLOP)
+extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
 #if defined(USE_GLPK)
 extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
@@ -376,9 +382,9 @@ extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
 #if defined(USE_HIGHS)
 extern MPSolverInterface* BuildHighsInterface(bool mip, MPSolver* const solver);
 #endif
-extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
-extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
+#if defined(USE_PDLP)
 extern MPSolverInterface* BuildPdlpInterface(MPSolver* const solver);
+#endif
 extern MPSolverInterface* BuildSatInterface(MPSolver* const solver);
 #if defined(USE_SCIP)
 extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
@@ -397,21 +403,21 @@ namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
   DCHECK(solver != nullptr);
   switch (solver->ProblemType()) {
+#if defined(USE_BOP)
     case MPSolver::BOP_INTEGER_PROGRAMMING:
       return BuildBopInterface(solver);
-    case MPSolver::GLOP_LINEAR_PROGRAMMING:
-      return BuildGLOPInterface(solver);
-    case MPSolver::PDLP_LINEAR_PROGRAMMING:
-      return BuildPdlpInterface(solver);
-    case MPSolver::SAT_INTEGER_PROGRAMMING:
-      return BuildSatInterface(solver);
-#if defined(USE_CLP) || defined(USE_CBC)
-    case MPSolver::CLP_LINEAR_PROGRAMMING:
-      return BuildCLPInterface(solver);
 #endif
 #if defined(USE_CBC)
     case MPSolver::CBC_MIXED_INTEGER_PROGRAMMING:
       return BuildCBCInterface(solver);
+#endif
+#if defined(USE_CLP) || defined(USE_CBC)
+    case MPSolver::CLP_LINEAR_PROGRAMMING:
+      return BuildCLPInterface(solver);
+#endif
+#if defined(USE_GLOP)
+    case MPSolver::GLOP_LINEAR_PROGRAMMING:
+      return BuildGLOPInterface(solver);
 #endif
 #if defined(USE_GLPK)
     case MPSolver::GLPK_LINEAR_PROGRAMMING:
@@ -425,6 +431,12 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
     case MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING:
       return BuildHighsInterface(true, solver);
 #endif
+#if defined(USE_PDLP)
+    case MPSolver::PDLP_LINEAR_PROGRAMMING:
+      return BuildPdlpInterface(solver);
+#endif
+    case MPSolver::SAT_INTEGER_PROGRAMMING:
+      return BuildSatInterface(solver);
 #if defined(USE_SCIP)
     case MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING:
       return BuildSCIPInterface(solver);
@@ -483,8 +495,17 @@ extern bool GurobiIsCorrectlyInstalled();
 
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
+#ifdef USE_BOP
+  if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
+#endif
+#ifdef USE_CBC
+  if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
+#endif
 #ifdef USE_CLP
   if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
+#endif
+#ifdef USE_GLOP
+  if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
 #endif
 #ifdef USE_GLPK
   if (problem_type == GLPK_LINEAR_PROGRAMMING ||
@@ -498,29 +519,26 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     return true;
   }
 #endif
-  if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
-  if (problem_type == SAT_INTEGER_PROGRAMMING) return true;
-  if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
+#ifdef USE_PDLP
   if (problem_type == PDLP_LINEAR_PROGRAMMING) return true;
+#endif
   if (problem_type == GUROBI_LINEAR_PROGRAMMING ||
       problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) {
     return GurobiIsCorrectlyInstalled();
   }
+  if (problem_type == SAT_INTEGER_PROGRAMMING) return true;
 #ifdef USE_SCIP
   if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
-#endif
-#ifdef USE_CBC
-  if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
-#endif
-#ifdef USE_XPRESS
-  if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
-      problem_type == XPRESS_LINEAR_PROGRAMMING) {
-    return true;
-  }
 #endif
 #ifdef USE_CPLEX
   if (problem_type == CPLEX_LINEAR_PROGRAMMING ||
       problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) {
+    return true;
+  }
+#endif
+#ifdef USE_XPRESS
+  if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
+      problem_type == XPRESS_LINEAR_PROGRAMMING) {
     return true;
   }
 #endif
