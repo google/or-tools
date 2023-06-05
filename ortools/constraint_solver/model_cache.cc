@@ -843,7 +843,7 @@ class NonReversibleCache : public ModelCache {
 };
 }  // namespace
 
-ModelCache* BuildModelCache(Solver* const solver) {
+ModelCache* BuildModelCache(Solver* solver) {
   return new NonReversibleCache(solver);
 }
 

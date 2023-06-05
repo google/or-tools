@@ -876,7 +876,7 @@ IntervalVar* Solver::RegisterIntervalVar(IntervalVar* const var) {
   }
 }
 
-PropagationMonitor* BuildPrintTrace(Solver* const s) {
+PropagationMonitor* BuildPrintTrace(Solver* s) {
   return s->RevAlloc(new PrintTrace(s));
 }
 }  // namespace operations_research

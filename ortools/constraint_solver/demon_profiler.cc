@@ -439,9 +439,9 @@ void Solver::ExportProfilingOverview(const std::string& filename) {
 
 // ----- Exported Functions -----
 
-void InstallDemonProfiler(DemonProfiler* const monitor) { monitor->Install(); }
+void InstallDemonProfiler(DemonProfiler* monitor) { monitor->Install(); }
 
-DemonProfiler* BuildDemonProfiler(Solver* const solver) {
+DemonProfiler* BuildDemonProfiler(Solver* solver) {
   if (solver->IsProfilingEnabled()) {
     return new DemonProfiler(solver);
   } else {
@@ -449,7 +449,7 @@ DemonProfiler* BuildDemonProfiler(Solver* const solver) {
   }
 }
 
-void DeleteDemonProfiler(DemonProfiler* const monitor) { delete monitor; }
+void DeleteDemonProfiler(DemonProfiler* monitor) { delete monitor; }
 
 Demon* Solver::RegisterDemon(Demon* const demon) {
   CHECK(demon != nullptr);

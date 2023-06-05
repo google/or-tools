@@ -171,12 +171,12 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
 }
 
 // ----- Forward Declarations and Profiling Support -----
+extern void InstallDemonProfiler(DemonProfiler* monitor);
 extern DemonProfiler* BuildDemonProfiler(Solver* solver);
 extern void DeleteDemonProfiler(DemonProfiler* monitor);
-extern void InstallDemonProfiler(DemonProfiler* monitor);
+extern void InstallLocalSearchProfiler(LocalSearchProfiler* monitor);
 extern LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver);
 extern void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
-extern void InstallLocalSearchProfiler(LocalSearchProfiler* monitor);
 
 // TODO(user): remove this complex logic.
 // We need the double test because parameters are set too late when using
@@ -1372,18 +1372,18 @@ void Search::Accept(ModelVisitor* const visitor) const {
 
 #undef CALL_EVENT_LISTENERS
 
-bool LocalOptimumReached(Search* const search) {
+bool LocalOptimumReached(Search* search) {
   return search->LocalOptimum();
 }
 
-bool AcceptDelta(Search* const search, Assignment* delta,
+bool AcceptDelta(Search* search, Assignment* delta,
                  Assignment* deltadelta) {
   return search->AcceptDelta(delta, deltadelta);
 }
 
-void AcceptNeighbor(Search* const search) { search->AcceptNeighbor(); }
+void AcceptNeighbor(Search* search) { search->AcceptNeighbor(); }
 
-void AcceptUncheckedNeighbor(Search* const search) {
+void AcceptUncheckedNeighbor(Search* search) {
   search->AcceptUncheckedNeighbor();
 }
 

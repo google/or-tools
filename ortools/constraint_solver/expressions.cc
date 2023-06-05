@@ -6378,7 +6378,7 @@ IntVarIterator* BooleanVar::MakeDomainIterator(bool reversible) const {
 
 // ----- API -----
 
-void CleanVariableOnFail(IntVar* const var) {
+void CleanVariableOnFail(IntVar* var) {
   DCHECK_EQ(DOMAIN_INT_VAR, var->VarType());
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   dvar->CleanInProcess();
@@ -6399,7 +6399,7 @@ Constraint* SetIsGreaterOrEqual(IntVar* const var,
   return dvar->SetIsGreaterOrEqual(values, vars);
 }
 
-void RestoreBoolValue(IntVar* const var) {
+void RestoreBoolValue(IntVar* var) {
   DCHECK_EQ(BOOLEAN_VAR, var->VarType());
   BooleanVar* const boolean_var = reinterpret_cast<BooleanVar*>(var);
   boolean_var->RestoreValue();
@@ -7448,7 +7448,7 @@ void IntVar::SetValues(const std::vector<int64_t>& values) {
 }
 // ---------- BaseIntExpr ---------
 
-void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var) {
+void LinkVarExpr(Solver* s, IntExpr* expr, IntVar* var) {
   if (!var->Bound()) {
     if (var->VarType() == DOMAIN_INT_VAR) {
       DomainIntVar* dvar = reinterpret_cast<DomainIntVar*>(var);
