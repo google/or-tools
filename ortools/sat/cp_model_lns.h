@@ -27,6 +27,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
@@ -322,7 +323,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 // Base class for a CpModelProto neighborhood generator.
 class NeighborhoodGenerator {
  public:
-  NeighborhoodGenerator(const std::string& name,
+  NeighborhoodGenerator(absl::string_view name,
                         NeighborhoodGeneratorHelper const* helper)
       : name_(name), helper_(*helper), difficulty_(0.5) {}
   virtual ~NeighborhoodGenerator() = default;

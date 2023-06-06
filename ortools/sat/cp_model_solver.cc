@@ -183,8 +183,8 @@ std::string CpSatSolverVersion() {
 namespace {
 
 // Makes the string fit in one line by cutting it in the middle if necessary.
-std::string Summarize(const std::string& input) {
-  if (input.size() < 105) return input;
+std::string Summarize(absl::string_view input) {
+  if (input.size() < 105) return std::string(input);
   const int half = 50;
   return absl::StrCat(input.substr(0, half), " ... ",
                       input.substr(input.size() - half, half));

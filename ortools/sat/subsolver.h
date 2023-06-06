@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
@@ -44,7 +45,7 @@ class SubSolver {
  public:
   enum SubsolverType { FULL_PROBLEM, FIRST_SOLUTION, INCOMPLETE, HELPER };
 
-  SubSolver(const std::string& name, SubsolverType type)
+  SubSolver(absl::string_view name, SubsolverType type)
       : name_(name), type_(type) {}
   virtual ~SubSolver() = default;
 

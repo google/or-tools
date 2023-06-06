@@ -1091,20 +1091,29 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   }
 
   bool at_least_one_added = false;
+  DCHECK(base_ct_.AllCoefficientsArePositive());
 
   // Try single node flow cover cut.
-  if (flow_cover_cut_helper_.ComputeFlowCoverRelaxationAndGenerateCut(
-          base_ct_, &implied_bounds_processor_)) {
-    at_least_one_added |= PostprocessAndAddCut(
-        absl::StrCat(name, "_F"), flow_cover_cut_helper_.Info(), first_slack,
-        flow_cover_cut_helper_.cut());
+  //
+  // TODO(user): Properly evaluate that this is super-seeded by
+  // TrySingleNodeFlow() below.
+  if (/*DISABLES CODE*/ (false)) {
+    if (flow_cover_cut_helper_.ComputeFlowCoverRelaxationAndGenerateCut(
+            base_ct_, &implied_bounds_processor_)) {
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_F"), flow_cover_cut_helper_.Info(), first_slack,
+          flow_cover_cut_helper_.cut());
+    }
   }
 
   // Try cover approach to find cut.
-  // TODO(user): Share common computation between two kinds.
+  // TODO(user): Share common computation between kinds.
   {
-    DCHECK(base_ct_.AllCoefficientsArePositive());
-
+    if (cover_cut_helper_.TrySingleNodeFlow(base_ct_, ib_processor)) {
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_FF"), cover_cut_helper_.Info(), first_slack,
+          cover_cut_helper_.cut());
+    }
     if (cover_cut_helper_.TrySimpleKnapsack(base_ct_, ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
           absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_slack,
