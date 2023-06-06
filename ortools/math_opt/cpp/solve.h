@@ -24,6 +24,7 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_SOLVE_H_
 #define OR_TOOLS_MATH_OPT_CPP_SOLVE_H_
 
+#include <functional>
 #include <memory>
 
 #include "absl/status/statusor.h"
@@ -64,6 +65,28 @@ namespace math_opt {
 absl::StatusOr<SolveResult> Solve(const Model& model, SolverType solver_type,
                                   const SolveArguments& solve_args = {},
                                   const SolverInitArguments& init_args = {});
+
+// The type of a standard function with the same signature as Solve() above.
+//
+// If you want mock the Solve() for testing, you can take a SolveFunction as
+// an argument, e.g.
+//    absl::Status DoMySolve(SolveFunction solve_function=Solve) {
+//      Model model;
+//      // fill in model...
+//      SolveArguments args;
+//      SolveInitArguments init_args;
+//      ASSIGN_OR_RETURN(
+//        const SolveResult result,
+//        solve_function(model, SolverType::kGscip, args, init_args));
+//      // process result...
+//      return absl::OkStatus();
+//    }
+using SolveFunction =
+    std::function<absl::StatusOr<operations_research::math_opt::SolveResult>(
+        const operations_research::math_opt::Model&,
+        operations_research::math_opt::SolverType,
+        const operations_research::math_opt::SolveArguments&,
+        const operations_research::math_opt::SolverInitArguments&)>;
 
 // Computes an infeasible subsystem of the input model.
 //
