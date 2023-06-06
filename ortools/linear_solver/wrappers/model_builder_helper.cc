@@ -226,6 +226,11 @@ void ModelBuilderHelper::SetObjectiveOffset(double offset) {
 
 std::optional<MPSolutionResponse> ModelSolverHelper::SolveRequest(
     const MPModelRequest& request) {
+  if (!MPSolver::SupportsProblemType(
+          static_cast<MPSolver::OptimizationProblemType>(
+              request.solver_type()))) {
+    return std::nullopt;
+  }
   MPSolutionResponse temp;
   MPSolver::SolveWithProto(request, &temp, &interrupt_solve_);
   return temp;

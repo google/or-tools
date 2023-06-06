@@ -48,20 +48,12 @@ LinearExprT = Union['LinearExpr', NumberT]
 ConstraintT = Union['VarCompVar', 'BoundedLinearExpression', bool]
 ShapeT = Union[IntegerT, Sequence[IntegerT]]
 VariablesT = Union['VariableContainer', 'Variable']
-NumpyFuncT = Callable[
-    [
-        'VariableContainer',
-        Optional[Union[NumberT, npt.NDArray[np.number], Sequence[NumberT]]],
-    ],
-    LinearExprT,
-]
-SliceT = Union[
-    slice,
-    int,
-    List[int],
-    'ellipsis',
-    Tuple[Union[int, slice, List[int], 'ellipsis'], ...],
-]
+NumpyFuncT = Callable[[
+    'VariableContainer',
+    Optional[Union[NumberT, npt.NDArray[np.number], Sequence[NumberT]]],
+], LinearExprT,]
+SliceT = Union[slice, int, List[int], 'ellipsis',
+               Tuple[Union[int, slice, List[int], 'ellipsis'], ...],]
 
 # Forward solve statuses.
 SolveStatus = pwmb.SolveStatus

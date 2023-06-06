@@ -112,11 +112,15 @@ class PywrapModelBuilderHelperTest(unittest.TestCase):
         solver_helper = pywrap_model_builder_helper.ModelSolverHelper('')
         result = solver_helper.solve_serialized_request(
             request.SerializeToString())
-        response = linear_solver_pb2.MPSolutionResponse().FromString(result)
-        self.assertEqual(
-            response.status,
-            linear_solver_pb2.MPSolverResponseStatus.MPSOLVER_OPTIMAL)
-        self.assertAlmostEqual(response.objective_value, 1.0)
+        if result:
+            response = linear_solver_pb2.MPSolutionResponse().FromString(result)
+            self.assertEqual(
+                response.status,
+                linear_solver_pb2.MPSolverResponseStatus.MPSOLVER_OPTIMAL,
+            )
+            self.assertAlmostEqual(response.objective_value, 1.0)
+        else:
+            print('Solver not supported.')
 
     # TODO(user): Test the log callback after the implementation is completed.
 
