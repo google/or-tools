@@ -493,7 +493,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // Checks the consistency of the input, i.e., whether the sum of the supplies
   // for all nodes is equal to zero. To be used in a DCHECK.
-  bool CheckInputConsistency() const;
+  bool CheckInputConsistency();
 
   // Checks whether the result is valid, i.e. whether for each arc,
   // residual_arc_capacity_[arc] == 0 || ReducedCost(arc) >= -epsilon_.

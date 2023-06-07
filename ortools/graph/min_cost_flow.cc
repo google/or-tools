@@ -141,7 +141,7 @@ void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::SetArcFlow(
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType,
-                        ArcScaledCostType>::CheckInputConsistency() const {
+                        ArcScaledCostType>::CheckInputConsistency() {
   FlowQuantity total_supply = 0;
   uint64_t max_capacity = 0;  // uint64_t because it is positive and will be
                               // used to check against FlowQuantity overflows.
@@ -158,14 +158,16 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
       total_flow += excess;
       if (std::numeric_limits<FlowQuantity>::max() <
           max_capacity + total_flow) {
-        LOG(DFATAL) << "Input consistency error: max capacity + flow exceed "
-                    << "precision";
+        status_ = BAD_COST_RANGE;
+        LOG(ERROR) << "Input consistency error: max capacity + flow exceed "
+                   << "precision";
         return false;
       }
     }
   }
   if (total_supply != 0) {
-    LOG(DFATAL) << "Input consistency error: unbalanced problem";
+    status_ = UNBALANCED;
+    LOG(ERROR) << "Input consistency error: unbalanced problem";
     return false;
   }
   return true;
@@ -452,7 +454,6 @@ template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
   if (absl::GetFlag(FLAGS_min_cost_flow_check_balance) &&
       !CheckInputConsistency()) {
-    status_ = UNBALANCED;
     return false;
   }
   if (check_feasibility_ && !CheckFeasibility(nullptr, nullptr)) {
@@ -522,7 +523,8 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::ScaleCosts() {
   const CostValue threshold =
       std::numeric_limits<CostValue>::max() / (2 * cost_scaling_factor_);
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
-    if (scaled_arc_unit_cost_[arc] > threshold) {
+    if (scaled_arc_unit_cost_[arc] > threshold ||
+        scaled_arc_unit_cost_[arc] < -threshold) {
       status_ = BAD_COST_RANGE;
       return false;
     }
