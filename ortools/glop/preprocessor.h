@@ -856,7 +856,7 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
   enum ColChoice {
     DELETED = 0,
     MODIFIED = 1,
-    // for() loops iterating over the ColChoice values, and/or arrays.
+    // For `for()` loops iterating over the ColChoice values and/or arrays.
     NUM_DOUBLETON_COLS = 2,
   };
   static ColChoice OtherColChoice(ColChoice x) {
