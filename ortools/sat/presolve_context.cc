@@ -208,14 +208,32 @@ Domain PresolveContext::DomainSuperSetOf(
 
 int64_t PresolveContext::ExpressionDivisor(
     const LinearExpressionProto& expr) const {
+  int64_t result = 0;
   DCHECK_LE(expr.vars_size(), 1);
-  if (IsFixed(expr)) return FixedValue(expr);
+  if (IsFixed(expr)) {
+    result = std::abs(FixedValue(expr));
+  } else {
+    const int64_t coeff = expr.coeffs(0);
+    const int64_t offset = expr.offset();
+    result = static_cast<int64_t>(
+        MathUtil::GCD64(static_cast<uint64_t>(std::abs(coeff)),
+                        static_cast<uint64_t>(std::abs(offset))));
+  }
+  return result == 0 ? 1 : result;
+}
 
-  const int64_t coeff = expr.coeffs(0);
-  const int64_t offset = expr.offset();
-  return static_cast<int64_t>(
-      MathUtil::GCD64(static_cast<uint64_t>(std::abs(coeff)),
-                      static_cast<uint64_t>(std::abs(offset))));
+void PresolveContext::DivideExpression(LinearExpressionProto* expr,
+                                       int64_t divisor) const {
+  CHECK_NE(divisor, 0);
+  if (divisor == 1) return;
+
+  const int64_t pos_divisor = std::abs(divisor);
+  DCHECK_EQ(expr->offset() % pos_divisor, 0);
+  expr->set_offset(expr->offset() / divisor);
+  for (int i = 0; i < expr->vars_size(); ++i) {
+    DCHECK_EQ(expr->coeffs(i) % pos_divisor, 0);
+    expr->set_coeffs(i, expr->coeffs(i) / divisor);
+  }
 }
 
 bool PresolveContext::ExpressionIsAffineBoolean(

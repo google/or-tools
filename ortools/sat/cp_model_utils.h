@@ -194,6 +194,11 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
                                            int64_t coefficient,
                                            LinearConstraintProto* linear);
 
+// Same method, but returns if the addition was possible without overflowing.
+bool SafeAddLinearExpressionToLinearConstraint(
+    const LinearExpressionProto& expr, int64_t coefficient,
+    LinearConstraintProto* linear);
+
 // Returns true iff a == b * b_scaling.
 bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
                                     const LinearExpressionProto& b,

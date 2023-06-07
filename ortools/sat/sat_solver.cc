@@ -2618,12 +2618,14 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   // Tricky: Because the order of the clauses_info iteration is NOT
   // deterministic (pointer keys), we also keep all the clauses which have the
   // same LBD and activity as the last one so the behavior is deterministic.
-  while (num_deleted_clauses > 0) {
-    const ClauseInfo& a = entries[num_deleted_clauses].second;
-    const ClauseInfo& b = entries[num_deleted_clauses - 1].second;
-    if (a.activity != b.activity || a.lbd != b.lbd) break;
-    --num_deleted_clauses;
-    ++num_kept_clauses;
+  if (num_kept_clauses > 0) {
+    while (num_deleted_clauses > 0) {
+      const ClauseInfo& a = entries[num_deleted_clauses].second;
+      const ClauseInfo& b = entries[num_deleted_clauses - 1].second;
+      if (a.activity != b.activity || a.lbd != b.lbd) break;
+      --num_deleted_clauses;
+      ++num_kept_clauses;
+    }
   }
   if (num_deleted_clauses > 0) {
     entries.resize(num_deleted_clauses);

@@ -28,6 +28,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -563,6 +564,25 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
     FillDomainInProto(ReadDomainFromProto(*linear).AdditionWith(Domain(-shift)),
                       linear);
   }
+}
+
+bool SafeAddLinearExpressionToLinearConstraint(
+    const LinearExpressionProto& expr, int64_t coefficient,
+    LinearConstraintProto* linear) {
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    linear->add_vars(expr.vars(i));
+    const int64_t prod = CapProd(expr.coeffs(i), coefficient);
+    if (AtMinOrMaxInt64(prod)) return false;
+    linear->add_coeffs(prod);
+  }
+  DCHECK(!linear->domain().empty());
+
+  const int64_t shift = CapProd(coefficient, expr.offset());
+  if (AtMinOrMaxInt64(shift)) return false;
+  Domain d = ReadDomainFromProto(*linear).AdditionWith(Domain(-shift));
+  if (AtMinOrMaxInt64(d.Min()) || AtMinOrMaxInt64(d.Max())) return false;
+  FillDomainInProto(d, linear);
+  return true;
 }
 
 bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,

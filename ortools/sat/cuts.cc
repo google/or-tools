@@ -510,6 +510,71 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   }
 }
 
+std::function<IntegerValue(IntegerValue)> GetSuperAdditiveStrengtheningFunction(
+    IntegerValue positive_rhs, IntegerValue min_magnitude) {
+  CHECK_GT(positive_rhs, 0);
+  CHECK_GT(min_magnitude, 0);
+
+  if (min_magnitude >= CeilRatio(positive_rhs, 2)) {
+    return [positive_rhs](IntegerValue v) {
+      if (v >= 0) return IntegerValue(0);
+      if (v > -positive_rhs) return IntegerValue(-1);
+      return IntegerValue(-2);
+    };
+  }
+
+  // The transformation only work if 2 * second_threshold >= positive_rhs.
+  //
+  // TODO(user): Limit the number of value used with scaling like above.
+  min_magnitude = std::min(min_magnitude, FloorRatio(positive_rhs, 2));
+  const IntegerValue second_threshold = positive_rhs - min_magnitude;
+  return [positive_rhs, min_magnitude, second_threshold](IntegerValue v) {
+    if (v >= 0) return IntegerValue(0);
+    if (v <= -positive_rhs) return -positive_rhs;
+    if (v <= -second_threshold) return -second_threshold;
+
+    // This should actually never happen by the definition of min_magnitude.
+    // But with it, the function is supper-additive even if min_magnitude is not
+    // correct.
+    if (v >= -min_magnitude) return -min_magnitude;
+
+    // TODO(user): we might want to intoduce some step to reduce the final
+    // magnitude of the cut.
+    return v;
+  };
+}
+
+std::function<IntegerValue(IntegerValue)>
+GetSuperAdditiveStrengtheningMirFunction(IntegerValue positive_rhs,
+                                         IntegerValue scaling) {
+  if (scaling >= positive_rhs) {
+    // Simple case, no scaling required.
+    return [positive_rhs](IntegerValue v) {
+      if (v >= 0) return IntegerValue(0);
+      if (v <= -positive_rhs) return -positive_rhs;
+      return v;
+    };
+  }
+
+  // We need to scale.
+  scaling =
+      std::min(scaling, IntegerValue(std::numeric_limits<int64_t>::max()) /
+                            positive_rhs);
+  if (scaling == 1) {
+    return [](IntegerValue v) {
+      if (v >= 0) return IntegerValue(0);
+      return IntegerValue(-1);
+    };
+  }
+
+  // We divide [-positive_rhs + 1, 0] into (scaling - 1) bucket.
+  return [positive_rhs, scaling](IntegerValue v) {
+    if (v >= 0) return IntegerValue(0);
+    if (v <= -positive_rhs) return -scaling;
+    return FloorRatio(v * (scaling - 1), (positive_rhs - 1));
+  };
+}
+
 IntegerRoundingCutHelper::~IntegerRoundingCutHelper() {
   if (!VLOG_IS_ON(1)) return;
   if (shared_stats_ == nullptr) return;
@@ -1269,11 +1334,12 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
                                        ImpliedBoundsProcessor* ib_processor) {
   InitializeCut(input_ct);
 
-  // TODO(user): Remove when we use scaling in the function f() below.
+  bool has_large_coeff = false;
   for (const CutTerm& term : base_ct_.terms) {
-    // Hack: abort if coefficient in the base constraint are too large.
-    // Otherwise we can generate cut with coeff too large as well...
-    if (IntTypeAbs(term.coeff) > 1'000'000) return false;
+    if (IntTypeAbs(term.coeff) > 1'000'000) {
+      has_large_coeff = true;
+      break;
+    }
   }
 
   // TODO(user): Change the heuristic to depends on the lp_value of the implied
@@ -1318,7 +1384,12 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
     const IntegerValue magnitude = IntTypeAbs(base_ct_.terms[i].coeff);
     min_magnitude = std::min(min_magnitude, magnitude);
   }
-  auto f = GetSuperAdditiveStrengtheningFunction(positive_rhs, min_magnitude);
+  const bool use_scaling =
+      has_large_coeff || min_magnitude == 1 || min_magnitude >= positive_rhs;
+  auto f = use_scaling ? GetSuperAdditiveStrengtheningMirFunction(
+                             positive_rhs, /*scaling=*/6000)
+                       : GetSuperAdditiveStrengtheningFunction(positive_rhs,
+                                                               min_magnitude);
 
   if (ib_processor != nullptr) {
     const auto [num_lb, num_ub] = ib_processor->PostprocessWithImpliedBound(
@@ -1338,6 +1409,9 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
 
     // Compute good period.
     // We don't want to extend it in the simpler case where f(x)=-1 if x < 0.
+    //
+    // TODO(user): If the Mir*() function is used, we don't need to extend that
+    // much the period. Fix.
     if (f(-period + FloorRatio(period, 2)) != f(-period)) {
       // TODO(user): do exact binary search to find highest x in
       // [-max_neg_magnitude, 0] such that f(x) == f(-max_neg_magnitude) ? not

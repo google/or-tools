@@ -430,60 +430,21 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 //
 // TODO(user): Extend it for ci >= max_magnitude, we can probaly "lift" such
 // coefficient.
-inline std::function<IntegerValue(IntegerValue)>
-GetSuperAdditiveStrengtheningFunction(IntegerValue positive_rhs,
-                                      IntegerValue min_magnitude) {
-  CHECK_GT(positive_rhs, 0);
-  CHECK_GT(min_magnitude, 0);
-  if (min_magnitude >= positive_rhs || min_magnitude == 1) {
-    return [](IntegerValue v) {
-      if (v >= 0) return IntegerValue(0);
-      return IntegerValue(-1);
-    };
-  }
+std::function<IntegerValue(IntegerValue)> GetSuperAdditiveStrengtheningFunction(
+    IntegerValue positive_rhs, IntegerValue min_magnitude);
 
-  if (min_magnitude >= CeilRatio(positive_rhs, 2)) {
-    return [positive_rhs](IntegerValue v) {
-      if (v >= 0) return IntegerValue(0);
-      if (v > -positive_rhs) return IntegerValue(-1);
-      return IntegerValue(-2);
-    };
-  }
-
-  // The transformation only work if 2 * second_threshold >= positive_rhs.
-  //
-  // TODO(user): Limit the number of value used with scaling like above.
-  min_magnitude = std::min(min_magnitude, FloorRatio(positive_rhs, 2));
-  const IntegerValue second_threshold = positive_rhs - min_magnitude;
-  return [positive_rhs, min_magnitude, second_threshold](IntegerValue v) {
-    if (v >= 0) return IntegerValue(0);
-    if (v <= -positive_rhs) return -positive_rhs;
-    if (v <= -second_threshold) return -second_threshold;
-
-    // This should actually never happen by the definition of min_magnitude.
-    // But with it, the function is supper-additive even if min_magnitude is not
-    // correct.
-    if (v >= -min_magnitude) return -min_magnitude;
-
-    // TODO(user): we might want to intoduce some step to reduce the final
-    // magnitude of the cut.
-    return v;
-  };
-}
+// Similar to above but with scaling of the linear part to just have at most
+// scaling values.
+std::function<IntegerValue(IntegerValue)>
+GetSuperAdditiveStrengtheningMirFunction(IntegerValue positive_rhs,
+                                         IntegerValue scaling);
 
 // Given a super-additive non-decreasing function f(), we periodically extend
 // its restriction from [-period, 0] to Z. Such extension is not always
-// super-additive and we use a simple criteria do decide. We return f() on
-// failure.
+// super-additive and it is up to the caller to know when this is true or not.
 inline std::function<IntegerValue(IntegerValue)> ExtendNegativeFunction(
     std::function<IntegerValue(IntegerValue)> base_f, IntegerValue period) {
   const IntegerValue m = -base_f(-period);
-
-  // A simple criteria is for the extension to be zero on [0, period/2].
-  if (-m != base_f(-period + FloorRatio(period, 2))) {
-    return base_f;
-  }
-
   return [m, period, base_f](IntegerValue v) {
     const IntegerValue r = PositiveRemainder(v, period);
     const IntegerValue output_r = m + base_f(r - period);

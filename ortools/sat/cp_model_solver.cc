@@ -1769,6 +1769,12 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   if (shared_response_manager->ProblemIsSolved()) return;
 
+  const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
+  if (parameters.stop_after_root_propagation()) {
+    model->GetOrCreate<ModelSharedTimeLimit>()->Stop();
+    return;
+  }
+
   auto solution_observer = [&model_proto, model, shared_response_manager,
                             best_obj_ub = kMaxIntegerValue]() mutable {
     const std::vector<int64_t> solution =
@@ -1790,7 +1796,6 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
 
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
   SatSolver::Status status;
-  const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
 
   if (parameters.use_probing_search()) {
     ContinuousProber prober(model_proto, model);
@@ -3650,7 +3655,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   logger->SetLogToStdOut(params.log_to_stdout());
   std::string log_string;
   if (params.log_to_response()) {
-    logger->AddInfoLoggingCallback([&log_string](const std::string& message) {
+    logger->AddInfoLoggingCallback([&log_string](absl::string_view message) {
       absl::StrAppend(&log_string, message, "\n");
     });
   }

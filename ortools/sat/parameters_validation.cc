@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <string>
@@ -144,8 +145,10 @@ std::string ValidateParameters(const SatParameters& params) {
   }
 
   if (params.has_shared_tree_num_workers() &&
-      params.shared_tree_num_workers() + params.min_num_lns_workers() >
-          params.num_workers() + params.num_search_workers()) {
+      static_cast<int64_t>(params.shared_tree_num_workers()) +
+              static_cast<int64_t>(params.min_num_lns_workers()) >
+          std::max<int64_t>(params.num_workers(),
+                            params.num_search_workers())) {
     return "Cannot have more shared tree + lns workers than total workers";
   }
 
