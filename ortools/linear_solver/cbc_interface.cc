@@ -12,6 +12,7 @@
 // limitations under the License.
 
 //
+#if defined(USE_CBC)
 
 #include <cstdint>
 #include <limits>
@@ -29,8 +30,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
-
-#if defined(USE_CBC)
 
 #undef PACKAGE
 #undef VERSION

@@ -12,7 +12,6 @@
 // limitations under the License.
 
 //
-
 #if defined(USE_GLPK)
 
 #include <algorithm>

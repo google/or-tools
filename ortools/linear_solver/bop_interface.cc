@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if defined(USE_BOP)
+
 #include <atomic>
 #include <cstdint>
 #include <memory>
@@ -392,3 +394,4 @@ MPSolverInterface* BuildBopInterface(MPSolver* const solver) {
 }
 
 }  // namespace operations_research
+#endif  //  #if defined(USE_BOP)

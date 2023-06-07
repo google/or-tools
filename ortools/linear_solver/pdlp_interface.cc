@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if defined(USE_PDLP)
+
 #include <atomic>
 #include <cstdint>
 #include <optional>
@@ -320,3 +322,4 @@ MPSolverInterface* BuildPdlpInterface(MPSolver* const solver) {
 }
 
 }  // namespace operations_research
+#endif  //  #if defined(USE_PDLP)

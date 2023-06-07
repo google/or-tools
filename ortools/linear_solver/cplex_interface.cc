@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // Initial version of this code was written by Daniel Junglas (IBM)
+#if defined(USE_CPLEX)
 
 #include <limits>
 #include <memory>
@@ -23,9 +24,8 @@
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 
-#if defined(USE_CPLEX)
-
 extern "C" {
+
 #include "ilcplex/cplexx.h"
 // This is an undocumented function, setting the objective offset
 // is not supported everywhere (for example it may not be exported if a
@@ -1309,7 +1309,7 @@ bool CplexInterface::SetSolverSpecificParametersAsString(
 
       std::string value = key_value[1];
       absl::RemoveExtraAsciiWhitespace(&value);
-      
+
       try {
         if(identifier.find("LogFile") != std::string::npos) {
           CPXXsetlogfilename (mEnv, value.c_str(), "w");
@@ -1326,7 +1326,7 @@ bool CplexInterface::SetSolverSpecificParametersAsString(
         LOG(WARNING) << absl::StrFormat(
             "Cannot parse parameter '%s'. Expected format is 'parameter/name = value'",
             identifier);
-      }    
+      }
     }
     return true;
   }
