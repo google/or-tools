@@ -16,13 +16,13 @@
 #if defined(USE_XPRESS)
 
 #include <algorithm>
+#include <cctype>
+#include <fstream>
+#include <istream>
 #include <limits>
 #include <memory>
-#include <string>
 #include <sstream>
-#include <istream>
-#include <fstream>
-#include <cctype>
+#include <string>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
@@ -40,68 +40,71 @@ extern "C" {
 #define STRINGIFY(X) STRINGIFY2(X)
 
 extern "C" {
-  static void XPRS_CC
-  cbmessage(XPRSprob, void *cbdata, char const *msg, int msglen, int msgtype)
-  {
-    if (msgtype < 0) {
-      // msgtype < 0 is a request to flush all output.
-      LOG(INFO) << std::flush;
-      LOG(WARNING) << std::flush;
-      LOG(ERROR) << std::flush;
-    }
-    else if (msglen > 0 || msg) { // Empty lines have msglen=0, msg!=NULL
-      switch (msgtype) {
-      case 1: /* info */ LOG(INFO) << msg << std::endl; break;
-      case 2: /* unused */ break;
-      case 3: /* warn */ LOG(WARNING) << msg << std::endl; break;
-      case 4: /* error */ LOG(ERROR) << msg << std::endl; break;
-      }
+static void XPRS_CC cbmessage(XPRSprob, void* cbdata, char const* msg,
+                              int msglen, int msgtype) {
+  if (msgtype < 0) {
+    // msgtype < 0 is a request to flush all output.
+    LOG(INFO) << std::flush;
+    LOG(WARNING) << std::flush;
+    LOG(ERROR) << std::flush;
+  } else if (msglen > 0 || msg) {  // Empty lines have msglen=0, msg!=NULL
+    switch (msgtype) {
+      case 1: /* info */
+        LOG(INFO) << msg << std::endl;
+        break;
+      case 2: /* unused */
+        break;
+      case 3: /* warn */
+        LOG(WARNING) << msg << std::endl;
+        break;
+      case 4: /* error */
+        LOG(ERROR) << msg << std::endl;
+        break;
     }
   }
 }
+}
 
 namespace {
-  // Get the solver version for prob as string.
-  std::string getSolverVersion(XPRSprob const &prob) {
-    // XPRS_VERSION gives the version number as MAJOR*100 + RELEASE.
-    // It does not include the build number.
-    int version;
-    if ( !prob || XPRSgetintcontrol(prob, XPRS_VERSION, &version) )
-      return "XPRESS library version unknown";
+// Get the solver version for prob as string.
+std::string getSolverVersion(XPRSprob const& prob) {
+  // XPRS_VERSION gives the version number as MAJOR*100 + RELEASE.
+  // It does not include the build number.
+  int version;
+  if (!prob || XPRSgetintcontrol(prob, XPRS_VERSION, &version))
+    return "XPRESS library version unknown";
 
-    int const major = version / 100;
-    version -= major * 100;
-    int const release = version;
+  int const major = version / 100;
+  version -= major * 100;
+  int const release = version;
 
-    return absl::StrFormat("XPRESS library version %d.%02d", major, release);
+  return absl::StrFormat("XPRESS library version %d.%02d", major, release);
+}
+
+// Apply the specified name=value setting to prob.
+bool readParameter(XPRSprob const& prob, std::string const& name,
+                   std::string const& value) {
+  // We cannot set empty parameters.
+  if (!value.size()) {
+    LOG(DFATAL) << "Empty value for parameter '" << name << "' in "
+                << getSolverVersion(prob);
+    return false;
   }
-  
-  // Apply the specified name=value setting to prob.
-  bool readParameter(XPRSprob const &prob, std::string const &name, std::string const &value)
-  {
-    // We cannot set empty parameters.
-    if (!value.size()) {
-      LOG(DFATAL) << "Empty value for parameter '" << name << "' in "
-                  << getSolverVersion(prob);
-      return false;
-    }
 
-    // Figure out the type of the control.
-    int id, type;
-    if (XPRSgetcontrolinfo(prob, name.c_str(), &id, &type) ||
-        type == XPRS_TYPE_NOTDEFINED)
-    {
-      LOG(DFATAL) << "Unknown parameter '" << name << "' in "
-                  << getSolverVersion(prob);
-      return false;
-    }
+  // Figure out the type of the control.
+  int id, type;
+  if (XPRSgetcontrolinfo(prob, name.c_str(), &id, &type) ||
+      type == XPRS_TYPE_NOTDEFINED) {
+    LOG(DFATAL) << "Unknown parameter '" << name << "' in "
+                << getSolverVersion(prob);
+    return false;
+  }
 
-    // Depending on the type, parse the text in value and apply it.
-    std::stringstream v(value);
-    v.imbue(std::locale("C"));
-    switch (type) {
-    case XPRS_TYPE_INT:
-    {
+  // Depending on the type, parse the text in value and apply it.
+  std::stringstream v(value);
+  v.imbue(std::locale("C"));
+  switch (type) {
+    case XPRS_TYPE_INT: {
       int i;
       v >> i;
       if (!v.eof()) {
@@ -111,33 +114,27 @@ namespace {
         return false;
       }
       if (XPRSsetintcontrol(prob, id, i)) {
-        LOG(DFATAL) << "Failed to set int parameter '" << name
-                    << "' to " << value << " (" << i << ") in "
-                    << getSolverVersion(prob);
+        LOG(DFATAL) << "Failed to set int parameter '" << name << "' to "
+                    << value << " (" << i << ") in " << getSolverVersion(prob);
         return false;
       }
-    }
-    break;
-    case XPRS_TYPE_INT64:
-    {
+    } break;
+    case XPRS_TYPE_INT64: {
       XPRSint64 i;
       v >> i;
       if (!v.eof()) {
         LOG(DFATAL) << "Failed to parse value '" << value
-                    << "' for int64 parameter '" << name << "' in "
+                    << "' for int64_t parameter '" << name << "' in "
                     << getSolverVersion(prob);
         return false;
       }
       if (XPRSsetintcontrol64(prob, id, i)) {
-        LOG(DFATAL) << "Failed to set int64 parameter '" << name
-                    << "' to " << value << " (" << i << ") in "
-                    << getSolverVersion(prob);
+        LOG(DFATAL) << "Failed to set int64_t parameter '" << name << "' to "
+                    << value << " (" << i << ") in " << getSolverVersion(prob);
         return false;
       }
-    }
-    break;
-    case XPRS_TYPE_DOUBLE:
-    {
+    } break;
+    case XPRS_TYPE_DOUBLE: {
       double d;
       v >> d;
       if (!v.eof()) {
@@ -147,54 +144,51 @@ namespace {
         return false;
       }
       if (XPRSsetdblcontrol(prob, id, d)) {
-        LOG(DFATAL) << "Failed to set double parameter '" << name
-                    << "' to " << value << " (" << d << ") in "
-                    << getSolverVersion(prob);
+        LOG(DFATAL) << "Failed to set double parameter '" << name << "' to "
+                    << value << " (" << d << ") in " << getSolverVersion(prob);
         return false;
       }
-    }
-    break;
+    } break;
     default:
       // Note that string parameters are not supported at the moment since
       // we don't want to deal with potential encoding or escaping issues.
-      LOG(DFATAL) << "Unsupported parameter type " << type
-                  << " for parameter '" << name << "' in "
-                  << getSolverVersion(prob);
+      LOG(DFATAL) << "Unsupported parameter type " << type << " for parameter '"
+                  << name << "' in " << getSolverVersion(prob);
       return false;
-    }
-    
-    return true;
   }
 
-  int XPRSgetnumcols(const XPRSprob& mLp) {
-    int nCols = 0;
-    XPRSgetintattrib(mLp, XPRS_ORIGINALCOLS, &nCols);
-    return nCols;
-  }
-
-  int XPRSgetnumrows(const XPRSprob& mLp) {
-    int nRows = 0;
-    XPRSgetintattrib(mLp, XPRS_ORIGINALROWS, &nRows);
-    return nRows;
-  }
-
-  int XPRSgetitcnt(const XPRSprob& mLp) {
-    int nIters = 0;
-    XPRSgetintattrib(mLp, XPRS_SIMPLEXITER, &nIters);
-    return nIters;
-  }
-
-  int XPRSgetnodecnt(const XPRSprob& mLp) {
-    int nNodes = 0;
-    XPRSgetintattrib(mLp, XPRS_NODES, &nNodes);
-    return nNodes;
-  }
-
-  int XPRSsetobjoffset(const XPRSprob& mLp, double value) {
-    XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
-    return 0;
-  }
+  return true;
 }
+
+int XPRSgetnumcols(const XPRSprob& mLp) {
+  int nCols = 0;
+  XPRSgetintattrib(mLp, XPRS_ORIGINALCOLS, &nCols);
+  return nCols;
+}
+
+int XPRSgetnumrows(const XPRSprob& mLp) {
+  int nRows = 0;
+  XPRSgetintattrib(mLp, XPRS_ORIGINALROWS, &nRows);
+  return nRows;
+}
+
+int XPRSgetitcnt(const XPRSprob& mLp) {
+  int nIters = 0;
+  XPRSgetintattrib(mLp, XPRS_SIMPLEXITER, &nIters);
+  return nIters;
+}
+
+int XPRSgetnodecnt(const XPRSprob& mLp) {
+  int nNodes = 0;
+  XPRSgetintattrib(mLp, XPRS_NODES, &nNodes);
+  return nNodes;
+}
+
+int XPRSsetobjoffset(const XPRSprob& mLp, double value) {
+  XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
+  return 0;
+}
+}  // namespace
 
 enum XPRS_BASIS_STATUS {
   XPRS_AT_LOWER = 0,
@@ -307,10 +301,10 @@ class XpressInterface : public MPSolverInterface {
     return 0.0;
   }
 
-  bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
+  bool SetSolverSpecificParametersAsString(
+      const std::string& parameters) override;
   bool InterruptSolve() override {
-    if (mLp)
-      XPRSinterrupt(mLp, XPRS_STOP_USER);
+    if (mLp) XPRSinterrupt(mLp, XPRS_STOP_USER);
     return true;
   }
 
@@ -341,7 +335,7 @@ class XpressInterface : public MPSolverInterface {
   // Transform XPRESS basis status to MPSolver basis status.
   static MPSolver::BasisStatus xformBasisStatus(int xpress_basis_status);
 
-  bool readParameters(std::istream &is, char sep);
+  bool readParameters(std::istream& is, char sep);
 
  private:
   XPRSprob mLp;
@@ -617,11 +611,15 @@ void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
     //   [ rhs-rngval, rhs ]
     // Xpress does not support contradictory bounds. Instead the sign on
     // rndval is always ignored.
-    if ( lb > ub ) {
-      LOG(DFATAL) << "XPRESS does not support contradictory bounds on range constraints! [" << lb << ", " << ub << "] will be converted to " << ub << ", " << (ub - std::abs(ub - lb)) << "]";
+    if (lb > ub) {
+      LOG(DFATAL) << "XPRESS does not support contradictory bounds on range "
+                     "constraints! ["
+                  << lb << ", " << ub << "] will be converted to " << ub << ", "
+                  << (ub - std::abs(ub - lb)) << "]";
     }
     rhs = ub;
-    range = std::abs(ub - lb); // This happens implicitly by XPRSaddrows() and XPRSloadlp()
+    range = std::abs(
+        ub - lb);  // This happens implicitly by XPRSaddrows() and XPRSloadlp()
     sense = 'R';
   } else if (ub < XPRS_PLUSINFINITY || (std::abs(ub) == XPRS_PLUSINFINITY &&
                                         std::abs(lb) > XPRS_PLUSINFINITY)) {
@@ -680,8 +678,7 @@ void XpressInterface::SetConstraintBounds(int index, double lb, double ub) {
         CHECK_STATUS(XPRSchgrowtype(mLp, 1, &index, "L"));
         CHECK_STATUS(XPRSchgrhs(mLp, 1, &index, &rhs));
         CHECK_STATUS(XPRSchgrhsrange(mLp, 1, &index, &range));
-      }
-      else {
+      } else {
         CHECK_STATUS(XPRSchgrowtype(mLp, 1, &index, &sense));
         CHECK_STATUS(XPRSchgrhs(mLp, 1, &index, &rhs));
       }
@@ -1187,8 +1184,8 @@ void XpressInterface::ExtractNewConstraints() {
         }
         if (nextRow > 0) {
           CHECK_STATUS(XPRSaddrows(mLp, nextRow, nextNz, sense.get(), rhs.get(),
-                                   haveRanges ? rngval.get() : 0,
-                                   rmatbeg.get(), rmatind.get(), rmatval.get()));
+                                   haveRanges ? rngval.get() : 0, rmatbeg.get(),
+                                   rmatind.get(), rmatval.get()));
         }
       }
     } catch (...) {
@@ -1319,7 +1316,7 @@ void XpressInterface::SetLpAlgorithm(int value) {
   }
 }
 
-bool XpressInterface::readParameters(std::istream &is, char sep) {
+bool XpressInterface::readParameters(std::istream& is, char sep) {
   // - parameters must be specified as NAME=VALUE
   // - settings must be separated by sep
   // - any whitespace is ignored
@@ -1330,44 +1327,36 @@ bool XpressInterface::readParameters(std::istream &is, char sep) {
 
   while (is) {
     int c = is.get();
-    if (is.eof())
-      break;
+    if (is.eof()) break;
     if (c == '=') {
       if (inValue) {
         LOG(DFATAL) << "Failed to parse parameters in " << SolverVersion();
         return false;
       }
       inValue = true;
-    }
-    else if (c == sep) {
+    } else if (c == sep) {
       // End of parameter setting
       if (name.size() == 0 && value.size() == 0) {
         // Ok to have empty "lines".
         continue;
-      }
-      else if (name.size() == 0) {
+      } else if (name.size() == 0) {
         LOG(DFATAL) << "Parameter setting without name in " << SolverVersion();
-      }
-      else if (!readParameter(mLp, name, value))
+      } else if (!readParameter(mLp, name, value))
         return false;
 
       // Reset for parsing the next parameter setting.
       name = "";
       value = "";
       inValue = false;
-    }
-    else if (std::isspace(c)) {
+    } else if (std::isspace(c)) {
       continue;
-    }
-    else if (inValue) {
+    } else if (inValue) {
       value += (char)c;
-    }
-    else {
+    } else {
       name += (char)c;
     }
   }
-  if (inValue)
-    return readParameter(mLp, name, value);
+  if (inValue) return readParameter(mLp, name, value);
 
   return true;
 }
@@ -1375,8 +1364,7 @@ bool XpressInterface::readParameters(std::istream &is, char sep) {
 bool XpressInterface::ReadParameterFile(std::string const& filename) {
   // Return true on success and false on error.
   std::ifstream s(filename);
-  if ( !s )
-    return false;
+  if (!s) return false;
   return readParameters(s, '\n');
 }
 
@@ -1384,7 +1372,8 @@ std::string XpressInterface::ValidFileExtensionForParameterFile() const {
   return ".prm";
 }
 
-bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& parameters) {
+bool XpressInterface::SetSolverSpecificParametersAsString(
+    const std::string& parameters) {
   if (parameters.empty()) {
     return true;
   }
@@ -1426,8 +1415,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
 
   // Enable log output.
-  if (!quiet())
-    XPRSaddcbmessage(mLp, cbmessage, nullptr, 0);
+  if (!quiet()) XPRSaddcbmessage(mLp, cbmessage, nullptr, 0);
   // Set parameters.
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
