@@ -403,7 +403,6 @@ class linked_hash_map {
 
   template <class K = key_type, K* = nullptr>
   mapped_type& operator[](key_arg<K>&& key) {
-    // K* = nullptr parameter above.
     return LazyEmplaceInternal(std::forward<K>(key)).first->second;
   }
 

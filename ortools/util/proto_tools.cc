@@ -21,6 +21,7 @@
 #include "google/protobuf/text_format.h"
 
 namespace operations_research {
+
 namespace {
 using ::google::protobuf::Descriptor;
 using ::google::protobuf::FieldDescriptor;

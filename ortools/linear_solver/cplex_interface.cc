@@ -25,7 +25,6 @@
 #include "ortools/linear_solver/linear_solver.h"
 
 extern "C" {
-
 #include "ilcplex/cplexx.h"
 // This is an undocumented function, setting the objective offset
 // is not supported everywhere (for example it may not be exported if a

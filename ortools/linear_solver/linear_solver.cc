@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-
 #include "ortools/linear_solver/linear_solver.h"
 
 #if !defined(_MSC_VER)
