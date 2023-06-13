@@ -1,33 +1,28 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 0fe939d..6ae9991 100644
+index b412dc7..a9dde38 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -1,24 +1,24 @@
+@@ -1,21 +1,21 @@
 -cmake_minimum_required(VERSION 2.4.4)
 -set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 +cmake_minimum_required(VERSION 2.8.12)
 +cmake_policy(SET CMP0048 NEW)
 +cmake_policy(SET CMP0077 NEW)
-+project(zlib VERSION 1.2.11.1 LANGUAGES C)
++project(zlib VERSION 1.2.13 LANGUAGES C)
  
 -project(zlib C)
-+option(ASM686 "Enable building i686 assembly implementation" OFF)
-+option(AMD64 "Enable building amd64 assembly implementation" OFF)
  
--set(VERSION "1.2.11")
-+include(GNUInstallDirs)
-+set(INSTALL_BIN_DIR "${CMAKE_INSTALL_BINDIR}" CACHE PATH "Installation directory for executables")
-+set(INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}" CACHE PATH "Installation directory for libraries")
-+set(INSTALL_INC_DIR "${CMAKE_INSTALL_INCLUDEDIR}" CACHE PATH "Installation directory for headers")
- 
--option(ASM686 "Enable building i686 assembly implementation")
--option(AMD64 "Enable building amd64 assembly implementation")
+-set(VERSION "1.2.13")
 -
 -set(INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE PATH "Installation directory for executables")
 -set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Installation directory for libraries")
 -set(INSTALL_INC_DIR "${CMAKE_INSTALL_PREFIX}/include" CACHE PATH "Installation directory for headers")
 -set(INSTALL_MAN_DIR "${CMAKE_INSTALL_PREFIX}/share/man" CACHE PATH "Installation directory for manual pages")
 -set(INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/share/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
++include(GNUInstallDirs)
++set(INSTALL_BIN_DIR "${CMAKE_INSTALL_BINDIR}" CACHE PATH "Installation directory for executables")
++set(INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}" CACHE PATH "Installation directory for libraries")
++set(INSTALL_INC_DIR "${CMAKE_INSTALL_INCLUDEDIR}" CACHE PATH "Installation directory for headers")
 +set(INSTALL_MAN_DIR "${CMAKE_INSTALL_MANDIR}" CACHE PATH "Installation directory for manual pages")
 +set(INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_DATADIR}/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
  
@@ -40,7 +35,7 @@ index 0fe939d..6ae9991 100644
  
  check_include_file(sys/types.h HAVE_SYS_TYPES_H)
  check_include_file(stdint.h    HAVE_STDINT_H)
-@@ -63,7 +63,6 @@ if(MSVC)
+@@ -60,7 +60,6 @@ if(MSVC)
      set(CMAKE_DEBUG_POSTFIX "d")
      add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
      add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
@@ -48,7 +43,7 @@ index 0fe939d..6ae9991 100644
  endif()
  
  if(NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
-@@ -83,7 +82,6 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib.pc.cmakein
+@@ -80,7 +79,6 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib.pc.cmakein
  		${ZLIB_PC} @ONLY)
  configure_file(	${CMAKE_CURRENT_SOURCE_DIR}/zconf.h.cmakein
  		${CMAKE_CURRENT_BINARY_DIR}/zconf.h @ONLY)
@@ -56,62 +51,21 @@ index 0fe939d..6ae9991 100644
  
  
  #============================================================================
-@@ -132,9 +130,9 @@ endif()
- if(CMAKE_COMPILER_IS_GNUCC)
-     if(ASM686)
-         set(ZLIB_ASMS contrib/asm686/match.S)
--    elseif (AMD64)
-+			elseif(AMD64)
-         set(ZLIB_ASMS contrib/amd64/amd64-match.S)
--    endif ()
-+    endif()
- 
- 	if(ZLIB_ASMS)
- 		add_definitions(-DASMV)
-@@ -143,20 +141,20 @@ if(CMAKE_COMPILER_IS_GNUCC)
- endif()
- 
- if(MSVC)
--    if(ASM686)
-+	if(ASM686)
- 		ENABLE_LANGUAGE(ASM_MASM)
--        set(ZLIB_ASMS
-+		set(ZLIB_ASMS
- 			contrib/masmx86/inffas32.asm
- 			contrib/masmx86/match686.asm
--		)
--    elseif (AMD64)
-+			)
-+	elseif(AMD64)
- 		ENABLE_LANGUAGE(ASM_MASM)
--        set(ZLIB_ASMS
-+		set(ZLIB_ASMS
- 			contrib/masmx64/gvmat64.asm
- 			contrib/masmx64/inffasx64.asm
--		)
--    endif()
--
-+			)
-+		# set(ZLIB_SRCS ${ZLIB_SRCS} contrib/masmx64/inffas8664.c)
-+	endif()
- 	if(ZLIB_ASMS)
- 		add_definitions(-DASMV -DASMINF)
- 	endif()
-@@ -183,10 +181,21 @@ if(MINGW)
+@@ -147,10 +145,21 @@ if(MINGW)
      set(ZLIB_DLL_SRCS ${CMAKE_CURRENT_BINARY_DIR}/zlib1rc.obj)
  endif(MINGW)
  
--add_library(zlib SHARED ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_DLL_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
--add_library(zlibstatic STATIC ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
+-add_library(zlib SHARED ${ZLIB_SRCS} ${ZLIB_DLL_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
+-add_library(zlibstatic STATIC ${ZLIB_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
 -set_target_properties(zlib PROPERTIES DEFINE_SYMBOL ZLIB_DLL)
 -set_target_properties(zlib PROPERTIES SOVERSION 1)
 +if(BUILD_SHARED_LIBS)
-+	add_library(ZLIB SHARED ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_DLL_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
++	add_library(ZLIB SHARED ${ZLIB_SRCS} ${ZLIB_DLL_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
 +  set_target_properties(zlib PROPERTIES
 +	  DEFINE_SYMBOL ZLIB_DLL
 +	  SOVERSION 1)
 +else()
-+	add_library(ZLIB STATIC ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
++	add_library(ZLIB STATIC ${ZLIB_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
 +endif()
 +
 +target_include_directories(ZLIB PUBLIC
@@ -123,7 +77,7 @@ index 0fe939d..6ae9991 100644
  
  if(NOT CYGWIN)
      # This property causes shared libraries on Linux to have the full version
-@@ -196,26 +205,48 @@ if(NOT CYGWIN)
+@@ -160,26 +169,48 @@ if(NOT CYGWIN)
      #
      # This has no effect with MSVC, on that platform the version info for
      # the DLL comes from the resource file win32/zlib1.rc
@@ -184,7 +138,7 @@ index 0fe939d..6ae9991 100644
  if(NOT SKIP_INSTALL_HEADERS AND NOT SKIP_INSTALL_ALL )
      install(FILES ${ZLIB_PUBLIC_HDRS} DESTINATION "${INSTALL_INC_DIR}")
  endif()
-@@ -229,21 +260,22 @@ endif()
+@@ -193,21 +224,22 @@ endif()
  #============================================================================
  # Example binaries
  #============================================================================
@@ -226,10 +180,10 @@ index 0fe939d..6ae9991 100644
  endif()
 diff --git a/zconf.h b/zconf.h
 deleted file mode 100644
-index 5e1d68a..0000000
+index bf977d3..0000000
 --- a/zconf.h
 +++ /dev/null
-@@ -1,534 +0,0 @@
+@@ -1,547 +0,0 @@
 -/* zconf.h -- configuration of the zlib compression library
 - * Copyright (C) 1995-2016 Jean-loup Gailly, Mark Adler
 - * For conditions of distribution and use, see copyright notice in zlib.h
@@ -270,6 +224,9 @@ index 5e1d68a..0000000
 -#  define crc32                 z_crc32
 -#  define crc32_combine         z_crc32_combine
 -#  define crc32_combine64       z_crc32_combine64
+-#  define crc32_combine_gen     z_crc32_combine_gen
+-#  define crc32_combine_gen64   z_crc32_combine_gen64
+-#  define crc32_combine_op      z_crc32_combine_op
 -#  define crc32_z               z_crc32_z
 -#  define deflate               z_deflate
 -#  define deflateBound          z_deflateBound
@@ -581,6 +538,9 @@ index 5e1d68a..0000000
 -#    ifdef FAR
 -#      undef FAR
 -#    endif
+-#    ifndef WIN32_LEAN_AND_MEAN
+-#      define WIN32_LEAN_AND_MEAN
+-#    endif
 -#    include <windows.h>
 -     /* No need for _export, use ZLIB.DEF instead. */
 -     /* For complete Windows compatibility, use WINAPI, not __stdcall. */
@@ -699,11 +659,18 @@ index 5e1d68a..0000000
 -#  undef _LARGEFILE64_SOURCE
 -#endif
 -
--#if defined(__WATCOMC__) && !defined(Z_HAVE_UNISTD_H)
--#  define Z_HAVE_UNISTD_H
+-#ifndef Z_HAVE_UNISTD_H
+-#  ifdef __WATCOMC__
+-#    define Z_HAVE_UNISTD_H
+-#  endif
+-#endif
+-#ifndef Z_HAVE_UNISTD_H
+-#  if defined(_LARGEFILE64_SOURCE) && !defined(_WIN32)
+-#    define Z_HAVE_UNISTD_H
+-#  endif
 -#endif
 -#ifndef Z_SOLO
--#  if defined(Z_HAVE_UNISTD_H) || defined(_LARGEFILE64_SOURCE)
+-#  if defined(Z_HAVE_UNISTD_H)
 -#    include <unistd.h>         /* for SEEK_*, off_t, and _LFS64_LARGEFILE */
 -#    ifdef VMS
 -#      include <unixio.h>       /* for off_t */

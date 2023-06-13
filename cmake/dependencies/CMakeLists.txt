@@ -63,7 +63,7 @@ if(BUILD_ZLIB)
   FetchContent_Declare(
     zlib
     GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
-    GIT_TAG "v1.2.11"
+    GIT_TAG "v1.2.13"
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB.patch")
   FetchContent_MakeAvailable(zlib)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
