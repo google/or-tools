@@ -1,19 +1,12 @@
 FROM ortools/make:opensuse_swig AS env
 
 # Install .Net
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
 RUN zypper refresh \
 && zypper install -y wget tar gzip libicu-devel
 RUN mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
-## .Net 3.1
-## see: https://dotnet.microsoft.com/download/dotnet-core/3.1
-RUN dotnet_sdk_version=3.1.415 \
-&& wget -qO dotnet.tar.gz \
-"https://dotnetcli.azureedge.net/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-x64.tar.gz" \
-&& dotnet_sha512='df7a6d1abed609c382799a8f69f129ec72ce68236b2faecf01aed4c957a40a9cfbbc9126381bf517dff3dbe0e488f1092188582701dd0fef09a68b8c5707c747' \
-&& echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
-&& tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
-&& rm dotnet.tar.gz
+
 ## .Net 6.0
 ## see: https://dotnet.microsoft.com/download/dotnet-core/6.0
 RUN dotnet_sdk_version=6.0.100 \
