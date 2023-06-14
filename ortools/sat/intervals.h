@@ -591,6 +591,11 @@ class SchedulingDemandHelper {
   IntegerValue DecomposedEnergyMin(int t) const;
   IntegerValue DecomposedEnergyMax(int t) const;
 
+  IntegerValue SimpleDemandMin(int t) const;
+  IntegerValue SimpleDemandMax(int t) const;
+  IntegerValue DecomposedDemandMin(int t) const;
+  IntegerValue DecomposedDemandMax(int t) const;
+
   IntegerTrail* integer_trail_;
   SatSolver* sat_solver_;  // To get the current propagation level.
   const VariablesAssignment& assignment_;

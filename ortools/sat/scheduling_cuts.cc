@@ -274,25 +274,20 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
   return possible_demands;
 }
 
-// Will scan all event, compute the cumulated energy of all events, and returns
-// whether it exceeds available_energy_lp.
+// This generates the actual cut and compute its activity vs the
+// available_energy_lp.
 bool CutIsEfficient(
     const std::vector<EnergyEvent>& events, IntegerValue window_start,
     IntegerValue window_end, double available_energy_lp,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    Model* model) {
-  // Scan all events and sum their energetic contributions.
-  double energy_from_events_lp = 0.0;
-  LinearConstraintBuilder tmp_energy(model);
+    LinearConstraintBuilder* temp_builder) {
+  temp_builder->Clear();
   for (const EnergyEvent& event : events) {
-    tmp_energy.Clear();
-    if (!AddOneEvent(event, window_start, window_end, &tmp_energy)) {
+    if (!AddOneEvent(event, window_start, window_end, temp_builder)) {
       return false;
     }
-    energy_from_events_lp += tmp_energy.BuildExpression().LpValue(lp_values);
   }
-
-  return energy_from_events_lp >=
+  return temp_builder->BuildExpression().LpValue(lp_values) >=
          available_energy_lp * (1.0 + kMinCutViolation);
 }
 
@@ -398,6 +393,7 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
   const double capacity_lp = ToDouble(capacity);
   const double makespan_lp = makespan.LpValue(lp_values);
   const double makespan_min_lp = ToDouble(makespan_min);
+  LinearConstraintBuilder temp_builder(model);
   for (int i = 0; i + 1 < num_time_points; ++i) {
     // Checks the time limit if the problem is too big.
     if (events.size() > 50 && time_limit->LimitReached()) return;
@@ -455,7 +451,7 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
                                              ? max_energy_up_to_makespan_lp
                                              : ToDouble(cumulated_max_energy);
       if (CutIsEfficient(events, window_start, window_end, available_energy_lp,
-                         lp_values, model)) {
+                         lp_values, &temp_builder)) {
         OverloadedTimeWindowWithMakespan w;
         w.start = window_start;
         w.end = window_end;
@@ -555,6 +551,7 @@ void GenerateCumulativeEnergeticCuts(
                                               time_points_set.end());
   const int num_time_points = time_points.size();
 
+  LinearConstraintBuilder temp_builder(model);
   for (int i = 0; i + 1 < num_time_points; ++i) {
     // Checks the time limit if the problem is too big.
     if (events.size() > 50 && time_limit->LimitReached()) return;
@@ -569,7 +566,7 @@ void GenerateCumulativeEnergeticCuts(
           ToDouble(window_end - window_start) * capacity_lp;
       if (available_energy_lp >= max_possible_energy_lp) break;
       if (CutIsEfficient(events, window_start, window_end, available_energy_lp,
-                         lp_values, model)) {
+                         lp_values, &temp_builder)) {
         overloaded_time_windows.push_back({window_start, window_end});
       }
     }

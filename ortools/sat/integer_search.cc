@@ -364,6 +364,7 @@ std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
 
     const IntegerValue obj_lb = integer_trail->LowerBound(obj_var);
     const IntegerValue obj_ub = integer_trail->UpperBound(obj_var);
+    if (obj_lb == obj_ub) return result;
     const IntegerValue mid = (obj_ub - obj_lb) / 2;
     const IntegerValue new_ub =
         obj_lb + absl::LogUniform<int64_t>(*random, 0, mid.value());

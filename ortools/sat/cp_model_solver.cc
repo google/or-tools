@@ -1413,6 +1413,10 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   // Fully encode variables as needed by the search strategy.
   AddFullEncodingFromSearchBranching(model_proto, model);
 
+  // Reserve space for the precedence relations.
+  model->GetOrCreate<PrecedenceRelations>()->Resize(
+      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
+
   // Load the constraints.
   absl::btree_set<std::string> unsupported_types;
   int num_ignored_constraints = 0;
@@ -2626,6 +2630,111 @@ class FullProblemSolver : public SubSolver {
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
+class ObjectiveLbSolver : public SubSolver {
+ public:
+  ObjectiveLbSolver(const std::string& name,
+                    const SatParameters& local_parameters,
+                    SharedClasses* shared)
+      : SubSolver(name, FULL_PROBLEM),
+        local_params_(local_parameters),
+        shared_(shared),
+        local_cp_model_(*shared->model_proto) {}
+
+  ~ObjectiveLbSolver() override = default;
+
+  bool IsDone() override {
+    {
+      absl::MutexLock mutex_lock(&mutex_);
+      if (!previous_task_is_completed_) return false;
+    }
+    return false;
+  }
+
+  bool TaskIsAvailable() override {
+    if (shared_->SearchIsDone()) return false;
+
+    absl::MutexLock mutex_lock(&mutex_);
+    return previous_task_is_completed_;
+    return false;
+  }
+
+  std::function<void()> GenerateTask(int64_t /*task_id*/) override {
+    {
+      absl::MutexLock mutex_lock(&mutex_);
+      previous_task_is_completed_ = false;
+    }
+    return [this]() {
+      Model m;
+      *m.GetOrCreate<SatParameters>() = local_params_;
+      auto* local_time_limit = m.GetOrCreate<TimeLimit>();
+      shared_->time_limit->UpdateLocalLimit(local_time_limit);
+
+      auto* obj = local_cp_model_.mutable_objective();
+      const IntegerValue lb = shared_->response->GetInnerObjectiveLowerBound();
+      obj->clear_domain();
+      obj->add_domain(lb.value());
+      obj->add_domain(lb.value());
+      if (obj->vars().size() == 1 && obj->coeffs(0) == 1) {
+        // In this case we can reduce the domain of the variable directly.
+        // This is better otherwise we will not propagate proper level zero
+        // bound before the linear relaxation is computed.
+        const int obj_var = obj->vars(0);
+        local_cp_model_.mutable_variables(obj_var)->clear_domain();
+        local_cp_model_.mutable_variables(obj_var)->add_domain(lb.value());
+        local_cp_model_.mutable_variables(obj_var)->add_domain(lb.value());
+      }
+
+      // We cannot export bounds since our model is more constrained, but we can
+      // import them.
+      if (shared_->bounds != nullptr) {
+        RegisterVariableBoundsLevelZeroImport(local_cp_model_,
+                                              shared_->bounds.get(), &m);
+      }
+
+      auto* local_response_manager = m.GetOrCreate<SharedResponseManager>();
+      local_response_manager->InitializeObjective(local_cp_model_);
+      local_response_manager->SetSynchronizationMode(true);
+
+      LoadCpModel(local_cp_model_, &m);
+      SolveLoadedCpModel(local_cp_model_, &m);
+      CpSolverResponse local_response = local_response_manager->GetResponse();
+
+      if (local_response.status() == CpSolverStatus::OPTIMAL ||
+          local_response.status() == CpSolverStatus::FEASIBLE) {
+        shared_->response->NewSolution(local_response.solution(), name());
+      } else if (local_response.status() == CpSolverStatus::INFEASIBLE) {
+        shared_->response->UpdateInnerObjectiveBounds(name(), lb + 1,
+                                                      kMaxIntegerValue);
+      }
+
+      absl::MutexLock mutex_lock(&mutex_);
+      previous_task_is_completed_ = true;
+      deterministic_time_since_last_synchronize_ +=
+          local_time_limit->GetElapsedDeterministicTime();
+    };
+  }
+
+  void Synchronize() override {
+    absl::MutexLock mutex_lock(&mutex_);
+    deterministic_time_ += deterministic_time_since_last_synchronize_;
+    shared_->time_limit->AdvanceDeterministicTime(
+        deterministic_time_since_last_synchronize_);
+    deterministic_time_since_last_synchronize_ = 0.0;
+  }
+
+  std::string StatisticsString() const override { return ""; }
+
+ private:
+  SatParameters local_params_;
+  SharedClasses* shared_;
+  CpModelProto local_cp_model_;
+
+  absl::Mutex mutex_;
+  double deterministic_time_since_last_synchronize_ ABSL_GUARDED_BY(mutex_) =
+      0.0;
+  bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
+};
+
 class FeasibilityPumpSolver : public SubSolver {
  public:
   FeasibilityPumpSolver(const SatParameters& local_parameters,
@@ -3166,11 +3275,17 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
          GetDiverseSetOfParameters(params, model_proto)) {
       // TODO(user): This is currently not supported here.
       if (params.optimize_with_max_hs()) continue;
+      ++num_full_problem_solvers;
+
+      if (local_params.use_objective_shaving_search()) {
+        subsolvers.push_back(std::make_unique<ObjectiveLbSolver>(
+            local_params.name(), local_params, &shared));
+        continue;
+      }
 
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
           /*split_in_chunks=*/params.interleave_search(), &shared));
-      num_full_problem_solvers++;
     }
   }
 
@@ -3188,8 +3303,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   subsolvers.push_back(std::move(unique_helper));
 
   // By default we use the user provided parameters.
-  SatParameters local_params = params;
-  local_params.set_name("default");
   // TODO(user): for now this is not deterministic so we disable it on
   // interleave search. Fix.
   if (!testing && params.use_rins_lns() && !params.interleave_search()) {
@@ -3202,17 +3315,16 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     incomplete_subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<RelaxationInducedNeighborhoodGenerator>(
             helper, shared.response, nullptr, shared.lp_solutions.get(),
-            /*incomplete_solutions=*/nullptr,
-            absl::StrCat("rins_lns_", local_params.name())),
-        local_params, helper, &shared));
+            /*incomplete_solutions=*/nullptr, "rins_lns"),
+        params, helper, &shared));
 
     // RENS.
     incomplete_subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<RelaxationInducedNeighborhoodGenerator>(
             helper, /*response_manager=*/nullptr, nullptr,
             shared.lp_solutions.get(), shared.incomplete_solutions.get(),
-            absl::StrCat("rens_lns_", local_params.name())),
-        local_params, helper, &shared));
+            "rens_lns"),
+        params, helper, &shared));
   }
 
   const bool feasibility_jump_possible =
@@ -3362,21 +3474,20 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // Enqueue all the possible LNS neighborhood subsolvers.
     // Each will have their own metrics.
     subsolvers.push_back(std::make_unique<LnsSolver>(
-        std::make_unique<RelaxRandomVariablesGenerator>(
-            helper, absl::StrCat("rnd_var_lns_", local_params.name())),
-        local_params, helper, &shared));
+        std::make_unique<RelaxRandomVariablesGenerator>(helper, "rnd_var_lns"),
+        params, helper, &shared));
     subsolvers.push_back(std::make_unique<LnsSolver>(
-        std::make_unique<RelaxRandomConstraintsGenerator>(
-            helper, absl::StrCat("rnd_cst_lns_", local_params.name())),
-        local_params, helper, &shared));
+        std::make_unique<RelaxRandomConstraintsGenerator>(helper,
+                                                          "rnd_cst_lns"),
+        params, helper, &shared));
     subsolvers.push_back(std::make_unique<LnsSolver>(
-        std::make_unique<VariableGraphNeighborhoodGenerator>(
-            helper, absl::StrCat("graph_var_lns_", local_params.name())),
-        local_params, helper, &shared));
+        std::make_unique<VariableGraphNeighborhoodGenerator>(helper,
+                                                             "graph_var_lns"),
+        params, helper, &shared));
     subsolvers.push_back(std::make_unique<LnsSolver>(
-        std::make_unique<ConstraintGraphNeighborhoodGenerator>(
-            helper, absl::StrCat("graph_cst_lns_", local_params.name())),
-        local_params, helper, &shared));
+        std::make_unique<ConstraintGraphNeighborhoodGenerator>(helper,
+                                                               "graph_cst_lns"),
+        params, helper, &shared));
 
     // Create the rnd_obj_lns worker if the number of terms in the objective is
     // big enough, and it is no more than half the number of variables in the
@@ -3386,9 +3497,9 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         model_proto.objective().vars_size() >=
             model_proto.objective().vars().size() * 2) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RelaxObjectiveVariablesGenerator>(
-              helper, absl::StrCat("rnd_obj_lns_", local_params.name())),
-          local_params, helper, &shared));
+          std::make_unique<RelaxObjectiveVariablesGenerator>(helper,
+                                                             "rnd_obj_lns"),
+          params, helper, &shared));
     }
 
     // TODO(user): If we have a model with scheduling + routing. We create
@@ -3398,19 +3509,16 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         !helper->TypeToConstraints(ConstraintProto::kCumulative).empty()) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
-              helper, absl::StrCat("scheduling_random_intervals_lns_",
-                                   local_params.name())),
-          local_params, helper, &shared));
+              helper, "scheduling_random_intervals_lns"),
+          params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
-              helper, absl::StrCat("scheduling_random_precedences_lns_",
-                                   local_params.name())),
-          local_params, helper, &shared));
+              helper, "scheduling_random_precedences_lns"),
+          params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
-              helper,
-              absl::StrCat("scheduling_time_window_lns_", local_params.name())),
-          local_params, helper, &shared));
+              helper, "scheduling_time_window_lns"),
+          params, helper, &shared));
 
       const std::vector<std::vector<int>> intervals_in_constraints =
           helper->GetUniqueIntervalSets();
@@ -3418,9 +3526,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
                 helper, intervals_in_constraints,
-                absl::StrCat("scheduling_resource_windows_lns_",
-                             local_params.name())),
-            local_params, helper, &shared));
+                "scheduling_resource_windows_lns"),
+            params, helper, &shared));
       }
     }
 
@@ -3431,20 +3538,19 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     if (num_circuit + num_routes > 0) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RoutingRandomNeighborhoodGenerator>(
-              helper, absl::StrCat("routing_random_lns_", local_params.name())),
-          local_params, helper, &shared));
+              helper, "routing_random_lns"),
+          params, helper, &shared));
 
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RoutingPathNeighborhoodGenerator>(
-              helper, absl::StrCat("routing_path_lns_", local_params.name())),
-          local_params, helper, &shared));
+              helper, "routing_path_lns"),
+          params, helper, &shared));
     }
     if (num_routes > 0 || num_circuit > 1) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RoutingFullPathNeighborhoodGenerator>(
-              helper,
-              absl::StrCat("routing_full_path_lns_", local_params.name())),
-          local_params, helper, &shared));
+              helper, "routing_full_path_lns"),
+          params, helper, &shared));
     }
   }
 

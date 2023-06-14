@@ -47,6 +47,158 @@
 namespace operations_research {
 namespace sat {
 
+void PrecedenceRelations::Add(IntegerVariable tail, IntegerVariable head,
+                              IntegerValue offset) {
+  // In some case we load new linear constraint as part of the linear
+  // relaxation. We just ignore anything after the first
+  // ComputeFullPrecedences() call.
+  if (is_built_) return;
+
+  // Ignore trivial relation: tail + offset <= head.
+  if (integer_trail_->UpperBound(tail) + offset <=
+      integer_trail_->LowerBound(head)) {
+    return;
+  }
+  if (PositiveVariable(tail) == PositiveVariable(head)) return;
+
+  // TODO(user): Remove once we support non-DAG.
+  if (offset < 0) return;
+
+  graph_.AddArc(tail.value(), head.value());
+  graph_.AddArc(NegationOf(head).value(), NegationOf(tail).value());
+  arc_offset_.push_back(offset);
+  arc_offset_.push_back(offset);
+}
+
+void PrecedenceRelations::Build() {
+  CHECK(!is_built_);
+
+  is_built_ = true;
+  std::vector<int> permutation;
+  graph_.Build(&permutation);
+  util::Permute(permutation, &arc_offset_);
+
+  // Is it a DAG?
+  // Get a topological order of the DAG formed by all the arcs that are present.
+  //
+  // TODO(user): This can fail if we don't have a DAG. We could just skip Bad
+  // edges instead, and have a sub-DAG as an heuristic. Or analyze the arc
+  // weight and make sure cycle are not an issue. We can also start with arcs
+  // with strictly positive weight.
+  //
+  // TODO(user): Only explore the sub-graph reachable from "vars".
+  const int num_nodes = graph_.num_nodes();
+  DenseIntStableTopologicalSorter sorter(num_nodes);
+  for (int arc = 0; arc < graph_.num_arcs(); ++arc) {
+    sorter.AddEdge(graph_.Tail(arc), graph_.Head(arc));
+  }
+  int next;
+  bool graph_has_cycle = false;
+  topological_order_.clear();
+  while (sorter.GetNext(&next, &graph_has_cycle, nullptr)) {
+    topological_order_.push_back(IntegerVariable(next));
+    if (graph_has_cycle) {
+      is_dag_ = false;
+      return;
+    }
+  }
+  is_dag_ = !graph_has_cycle;
+}
+
+void PrecedenceRelations::ComputeFullPrecedences(
+    const std::vector<IntegerVariable>& vars,
+    std::vector<FullIntegerPrecedence>* output) {
+  output->clear();
+  if (!is_built_) Build();
+  if (!is_dag_) return;
+
+  VLOG(2) << "num_nodes: " << graph_.num_nodes()
+          << " num_arcs: " << graph_.num_arcs() << " is_dag: " << is_dag_;
+
+  // Compute all precedences.
+  // We loop over the node in topological order, and we maintain for all
+  // variable we encounter, the list of "to_consider" variables that are before.
+  //
+  // TODO(user): use vector of fixed size.
+  absl::flat_hash_set<IntegerVariable> is_interesting;
+  absl::flat_hash_set<IntegerVariable> to_consider(vars.begin(), vars.end());
+  absl::flat_hash_map<IntegerVariable,
+                      absl::flat_hash_map<IntegerVariable, IntegerValue>>
+      vars_before_with_offset;
+  absl::flat_hash_map<IntegerVariable, IntegerValue> tail_map;
+  for (const IntegerVariable tail_var : topological_order_) {
+    if (!to_consider.contains(tail_var) &&
+        !vars_before_with_offset.contains(tail_var)) {
+      continue;
+    }
+
+    // We copy the data for tail_var here, because the pointer is not stable.
+    // TODO(user): optimize when needed.
+    tail_map.clear();
+    {
+      const auto it = vars_before_with_offset.find(tail_var);
+      if (it != vars_before_with_offset.end()) {
+        tail_map = it->second;
+      }
+    }
+
+    for (const int arc : graph_.OutgoingArcs(tail_var.value())) {
+      CHECK_EQ(tail_var.value(), graph_.Tail(arc));
+      const IntegerVariable head_var = IntegerVariable(graph_.Head(arc));
+      const IntegerValue arc_offset = arc_offset_[arc];
+
+      // No need to create an empty entry in this case.
+      if (tail_map.empty() && !to_consider.contains(tail_var)) continue;
+
+      auto& to_update = vars_before_with_offset[head_var];
+      for (const auto& [var_before, offset] : tail_map) {
+        if (!to_update.contains(var_before)) {
+          to_update[var_before] = arc_offset + offset;
+        } else {
+          to_update[var_before] =
+              std::max(arc_offset + offset, to_update[var_before]);
+        }
+      }
+      if (to_consider.contains(tail_var)) {
+        if (!to_update.contains(tail_var)) {
+          to_update[tail_var] = arc_offset;
+        } else {
+          to_update[tail_var] = std::max(arc_offset, to_update[tail_var]);
+        }
+      }
+
+      // Small filtering heuristic: if we have (before) < tail, and tail < head,
+      // we really do not need to list (before, tail) < head. We only need that
+      // if the list of variable before head contains some variable that are not
+      // already before tail.
+      if (to_update.size() > tail_map.size() + 1) {
+        is_interesting.insert(head_var);
+      } else {
+        is_interesting.erase(head_var);
+      }
+    }
+
+    // Extract the output for tail_var. Because of the topological ordering, the
+    // data for tail_var is already final now.
+    //
+    // TODO(user): Release the memory right away.
+    if (!is_interesting.contains(tail_var)) continue;
+    if (tail_map.size() == 1) continue;
+
+    FullIntegerPrecedence data;
+    data.var = tail_var;
+    IntegerValue min_offset = kMaxIntegerValue;
+    for (int i = 0; i < vars.size(); ++i) {
+      const auto offset_it = tail_map.find(vars[i]);
+      if (offset_it == tail_map.end()) continue;
+      data.indices.push_back(i);
+      data.offsets.push_back(offset_it->second);
+      min_offset = std::min(data.offsets.back(), min_offset);
+    }
+    output->push_back(std::move(data));
+  }
+}
+
 namespace {
 
 void AppendLowerBoundReasonIfValid(IntegerVariable var,
@@ -241,146 +393,25 @@ void PrecedencesPropagator::ComputePrecedences(
   }
 }
 
-void PrecedencesPropagator::ComputeFullPrecedences(
-    bool call_compute_precedences, const std::vector<IntegerVariable>& vars,
+void PrecedencesPropagator::ComputePartialPrecedences(
+    const std::vector<IntegerVariable>& vars,
     std::vector<FullIntegerPrecedence>* output) {
   output->clear();
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
 
-  if (call_compute_precedences) {
-    std::vector<PrecedencesPropagator::IntegerPrecedences> before;
-    ComputePrecedences(vars, &before);
+  std::vector<PrecedencesPropagator::IntegerPrecedences> before;
+  ComputePrecedences(vars, &before);
 
-    // Convert format.
-    const int size = before.size();
-    for (int i = 0; i < size;) {
-      FullIntegerPrecedence data;
-      data.var = before[i].var;
-      const IntegerVariable var = before[i].var;
-      DCHECK_NE(var, kNoIntegerVariable);
-      for (; i < size && before[i].var == var; ++i) {
-        data.indices.push_back(before[i].index);
-        data.offsets.push_back(before[i].offset);
-      }
-      output->push_back(std::move(data));
-    }
-    return;
-  }
-
-  // Get a topological order of the DAG formed by all the arcs that are present.
-  //
-  // TODO(user): This can fail if we don't have a DAG. We could just skip Bad
-  // edges instead, and have a sub-DAG as an heuristic. Or analyze the arc
-  // weight and make sure cycle are not an issue. We can also start with arcs
-  // with strictly positive weight.
-  //
-  // TODO(user): Only explore the sub-graph reachable from "vars".
-  const int num_nodes = integer_trail_->NumIntegerVariables().value();
-  DenseIntStableTopologicalSorter sorter(num_nodes);
-  for (const auto& arcs : impacted_arcs_) {
-    for (const ArcIndex arc_index : arcs) {
-      const ArcInfo& arc = arcs_[arc_index];
-      if (arc.tail_var == arc.head_var) continue;
-      if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
-      sorter.AddEdge(arc.tail_var.value(), arc.head_var.value());
-    }
-  }
-  int next;
-  bool graph_has_cycle = false;
-  std::vector<IntegerVariable> topological_order;
-  while (sorter.GetNext(&next, &graph_has_cycle, nullptr)) {
-    topological_order.push_back(IntegerVariable(next));
-    if (graph_has_cycle) return;
-  }
-
-  // Compute all precedences.
-  // We loop over the node in topological order, and we maintain for all
-  // variable we encounter, the list of "to_consider" variables that are before.
-  //
-  // TODO(user): use vector of fixed size.
-  absl::flat_hash_set<IntegerVariable> is_interesting;
-  absl::flat_hash_set<IntegerVariable> to_consider(vars.begin(), vars.end());
-  absl::flat_hash_map<IntegerVariable,
-                      absl::flat_hash_map<IntegerVariable, IntegerValue>>
-      vars_before_with_offset;
-  absl::flat_hash_map<IntegerVariable, IntegerValue> tail_map;
-  for (const IntegerVariable tail_var : topological_order) {
-    if (!to_consider.contains(tail_var) &&
-        !vars_before_with_offset.contains(tail_var)) {
-      continue;
-    }
-
-    // Update the relation for the variable that are after.
-    if (tail_var >= impacted_arcs_.size()) continue;
-
-    // We copy the data for tail_var here, because the pointer is not stable.
-    // TODO(user): optimize when needed.
-    tail_map.clear();
-    {
-      const auto it = vars_before_with_offset.find(tail_var);
-      if (it != vars_before_with_offset.end()) {
-        tail_map = it->second;
-      }
-    }
-
-    for (const ArcIndex arc_index : impacted_arcs_[tail_var]) {
-      const ArcInfo& arc = arcs_[arc_index];
-      if (arc.tail_var == arc.head_var) continue;
-      if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
-      CHECK_EQ(arc.tail_var, tail_var);
-
-      // No need to create an empty entry in this case.
-      if (tail_map.empty() && !to_consider.contains(tail_var)) continue;
-
-      IntegerValue arc_offset = arc.offset;
-      if (arc.offset_var != kNoIntegerVariable) {
-        arc_offset += integer_trail_->LowerBound(arc.offset_var);
-      }
-
-      auto& to_update = vars_before_with_offset[arc.head_var];
-      for (const auto& [var_before, offset] : tail_map) {
-        if (!to_update.contains(var_before)) {
-          to_update[var_before] = arc_offset + offset;
-        } else {
-          to_update[var_before] =
-              std::max(arc_offset + offset, to_update[var_before]);
-        }
-      }
-      if (to_consider.contains(tail_var)) {
-        if (!to_update.contains(tail_var)) {
-          to_update[tail_var] = arc_offset;
-        } else {
-          to_update[tail_var] = std::max(arc_offset, to_update[tail_var]);
-        }
-      }
-
-      // Small filtering heuristic: if we have (before) < tail, and tail < head,
-      // we really do not need to list (before, tail) < head. We only need that
-      // if the list of variable before head contains some variable that are not
-      // already before tail.
-      if (to_update.size() > tail_map.size() + 1) {
-        is_interesting.insert(arc.head_var);
-      } else {
-        is_interesting.erase(arc.head_var);
-      }
-    }
-
-    // Extract the output for tail_var. Because of the topological ordering, the
-    // data for tail_var is already final now.
-    //
-    // TODO(user): Release the memory right away.
-    if (!is_interesting.contains(tail_var)) continue;
-    if (tail_map.size() == 1) continue;
-
+  // Convert format.
+  const int size = before.size();
+  for (int i = 0; i < size;) {
     FullIntegerPrecedence data;
-    data.var = tail_var;
-    IntegerValue min_offset = kMaxIntegerValue;
-    for (int i = 0; i < vars.size(); ++i) {
-      const auto offset_it = tail_map.find(vars[i]);
-      if (offset_it == tail_map.end()) continue;
-      data.indices.push_back(i);
-      data.offsets.push_back(offset_it->second);
-      min_offset = std::min(data.offsets.back(), min_offset);
+    data.var = before[i].var;
+    const IntegerVariable var = before[i].var;
+    DCHECK_NE(var, kNoIntegerVariable);
+    for (; i < size && before[i].var == var; ++i) {
+      data.indices.push_back(before[i].index);
+      data.offsets.push_back(before[i].offset);
     }
     output->push_back(std::move(data));
   }

@@ -22,6 +22,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
+#include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
@@ -160,53 +161,27 @@ std::string ValidateParameters(const SatParameters& params) {
     return "Enumerating all solutions does not work with interleaved search";
   }
 
-  absl::flat_hash_set<std::string> valid_subsolvers({
-      "auto",
-      "core_default_lp",
-      "core_max_lp",
-      "core_or_no_lp",
-      "core",
-      "default_lp",
-      "default",
-      "fixed",
-      "lb_tree_search",
-      "less_encoding",
-      "max_hs",
-      "max_lp",
-      "no_lp",
-      "objective_lb_search_max_lp",
-      "objective_lb_search_no_lp",
-      "objective_lb_search",
-      "probing_max_lp",
-      "probing_no_lp",
-      "probing",
-      "pseudo_costs",
-      "quick_restart_max_lp",
-      "quick_restart_no_lp",
-      "quick_restart",
-      "reduced_costs",
-  });
   for (const SatParameters& new_subsolver : params.subsolver_params()) {
     if (new_subsolver.name().empty()) {
       return "New subsolver parameter defined without a name";
     }
-    valid_subsolvers.insert(new_subsolver.name());
   }
 
+  const auto strategies = GetNamedParameters(params);
   for (const std::string& subsolver : params.subsolvers()) {
-    if (!valid_subsolvers.contains(subsolver)) {
+    if (!strategies.contains(subsolver)) {
       return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
     }
   }
 
   for (const std::string& subsolver : params.extra_subsolvers()) {
-    if (!valid_subsolvers.contains(subsolver)) {
+    if (!strategies.contains(subsolver)) {
       return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
     }
   }
 
   for (const std::string& subsolver : params.ignore_subsolvers()) {
-    if (!valid_subsolvers.contains(subsolver)) {
+    if (!strategies.contains(subsolver)) {
       return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
     }
   }

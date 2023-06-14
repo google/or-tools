@@ -610,7 +610,7 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
 
 // Scan the intervals of a cumulative/no_overlap constraint, and its capacity (1
 // for the no_overlap). It returns the index of the makespan interval if found,
-// or -1 otherwise.
+// or std::nullopt otherwise.
 //
 // Currently, this requires the capacity to be fixed in order to scan for a
 // makespan interval.
@@ -623,15 +623,16 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
 //
 // These property ensures that all other intervals ends before the start of
 // the makespan interval.
-int DetectMakespan(const std::vector<IntervalVariable>& intervals,
-                   const std::vector<AffineExpression>& demands,
-                   const AffineExpression& capacity, Model* model) {
+std::optional<int> DetectMakespan(
+    const std::vector<IntervalVariable>& intervals,
+    const std::vector<AffineExpression>& demands,
+    const AffineExpression& capacity, Model* model) {
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
 
   // TODO(user): Supports variable capacity.
   if (!integer_trail->IsFixed(capacity)) {
-    return -1;
+    return std::nullopt;
   }
 
   // Detect the horizon (max of all end max of all intervals).
@@ -644,46 +645,95 @@ int DetectMakespan(const std::vector<IntervalVariable>& intervals,
 
   const IntegerValue capacity_value = integer_trail->FixedValue(capacity);
   for (int i = 0; i < intervals.size(); ++i) {
-    if (repository->IsAbsent(intervals[i])) continue;
+    if (!repository->IsPresent(intervals[i])) continue;
     const AffineExpression& end = repository->End(intervals[i]);
     if (integer_trail->IsFixed(demands[i]) &&
         integer_trail->FixedValue(demands[i]) == capacity_value &&
         integer_trail->IsFixed(end) &&
         integer_trail->FixedValue(end) == horizon &&
-        integer_trail->LowerBound(repository->Size(intervals[i])) > 0 &&
-        repository->IsPresent(intervals[i])) {
+        integer_trail->LowerBound(repository->Size(intervals[i])) > 0) {
       return i;
     }
   }
-  return -1;
+  return std::nullopt;
 }
+
+namespace {
+
+std::optional<AffineExpression> DetectMakespanFromPrecedences(
+    const SchedulingConstraintHelper& helper, Model* model) {
+  if (helper.NumTasks() == 0) return {};
+
+  const std::vector<AffineExpression>& ends = helper.Ends();
+  std::vector<IntegerVariable> end_vars;
+  for (const AffineExpression& end : ends) {
+    // TODO(user): Deal with constant end.
+    if (end.var == kNoIntegerVariable) return {};
+    if (end.coeff != 1) return {};
+    end_vars.push_back(end.var);
+  }
+
+  std::vector<FullIntegerPrecedence> output;
+  auto* precedences = model->GetOrCreate<PrecedenceRelations>();
+  precedences->ComputeFullPrecedences(end_vars, &output);
+  for (const auto& p : output) {
+    // TODO(user): What if we have more than one candidate makespan ?
+    if (p.indices.size() != ends.size()) continue;
+
+    // We have a Makespan!
+    // We want p.var - min_delta >= max(end).
+    IntegerValue min_delta = kMaxIntegerValue;
+    for (int i = 0; i < p.indices.size(); ++i) {
+      // end_vars[indices[i]] + p.offset[i] <= p.var
+      // [interval_end - end_offset][indices[i]] + p.offset[i] <= p.var
+      //
+      // TODO(user): It is possible this min_delta becomes positive but for a
+      // real makespan, we could make sure it is <= 0. This can happen if we
+      // have an optional interval because we didn't compute the offset assuming
+      // this interval was present. We could potentially fix it if we know that
+      // presence_literal => p.var >= end.
+      min_delta =
+          std::min(min_delta, p.offsets[i] - ends[p.indices[i]].constant);
+    }
+    VLOG(2) << "Makespan detected >= ends + " << min_delta;
+    return AffineExpression(p.var, IntegerValue(1), -min_delta);
+  }
+
+  return {};
+}
+
+}  // namespace
 
 void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
                                               Model* model,
                                               LinearRelaxation* relaxation) {
   if (HasEnforcementLiteral(ct)) return;
+
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.no_overlap().intervals());
   const IntegerValue one(1);
   std::vector<AffineExpression> demands(intervals.size(), one);
-  const int makespan_index =
-      DetectMakespan(intervals, demands, /*capacity=*/one, model);
-  std::optional<AffineExpression> makespan;
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
 
-  if (makespan_index != -1) {
-    makespan = repository->Start(intervals[makespan_index]);
+  std::optional<AffineExpression> makespan;
+  const std::optional<int> makespan_index =
+      DetectMakespan(intervals, demands, /*capacity=*/one, model);
+  if (makespan_index.has_value()) {
+    makespan = repository->Start(intervals[makespan_index.value()]);
     demands.pop_back();  // the vector is filled with ones.
-    intervals.erase(intervals.begin() + makespan_index);
+    intervals.erase(intervals.begin() + makespan_index.value());
   }
 
   SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
   if (!helper->SynchronizeAndSetTimeDirection(true)) return;
-
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, model);
   model->TakeOwnership(demands_helper);
+
+  if (!makespan.has_value()) {
+    makespan = DetectMakespanFromPrecedences(*helper, model);
+  }
 
   AddCumulativeRelaxation(/*capacity=*/one, helper, demands_helper, makespan,
                           model, relaxation);
@@ -702,15 +752,15 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
   std::vector<AffineExpression> demands =
       mapping->Affines(ct.cumulative().demands());
   const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
-  const int makespan_index =
+  const std::optional<int> makespan_index =
       DetectMakespan(intervals, demands, capacity, model);
   std::optional<AffineExpression> makespan;
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-  if (makespan_index != -1) {
+  if (makespan_index.has_value()) {
     // We remove the makespan data from the intervals the demands vector.
-    makespan = repository->Start(intervals[makespan_index]);
-    demands.erase(demands.begin() + makespan_index);
-    intervals.erase(intervals.begin() + makespan_index);
+    makespan = repository->Start(intervals[makespan_index.value()]);
+    demands.erase(demands.begin() + makespan_index.value());
+    intervals.erase(intervals.begin() + makespan_index.value());
   }
 
   // We try to linearize the energy of each task (size * demand).
@@ -719,6 +769,10 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, model);
   model->TakeOwnership(demands_helper);
+
+  if (!makespan.has_value()) {
+    makespan = DetectMakespanFromPrecedences(*helper, model);
+  }
 
   // We can now add the relaxation and the cut generators.
   AddCumulativeRelaxation(capacity, helper, demands_helper, makespan, model,

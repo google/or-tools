@@ -1146,6 +1146,64 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     max_sum += std::max(term_a, term_b);
   }
 
+  // Load precedences.
+  if (!HasEnforcementLiteral(ct)) {
+    auto* precedences = m->GetOrCreate<PrecedenceRelations>();
+
+    // To avoid overflow in the code below, we tighten the bounds.
+    // Note that we detect and do not add trivial relation.
+    int64_t rhs_min = ct.linear().domain(0);
+    int64_t rhs_max = ct.linear().domain(ct.linear().domain().size() - 1);
+    rhs_min = std::max(rhs_min, min_sum.value());
+    rhs_max = std::min(rhs_max, max_sum.value());
+
+    if (vars.size() == 2) {
+      if (std::abs(coeffs[0]) == std::abs(coeffs[1])) {
+        const int64_t magnitude = std::abs(coeffs[0]);
+        IntegerVariable v1 = vars[0];
+        IntegerVariable v2 = vars[1];
+        if (coeffs[0] < 0) v1 = NegationOf(v1);
+        if (coeffs[1] > 0) v2 = NegationOf(v2);
+
+        // magnitude * v1 <= magnitude * v2 + rhs_max.
+        precedences->Add(v1, v2, CeilOfRatio(-rhs_max, magnitude));
+
+        // magnitude * v1 >= magnitude * v2 + rhs_min.
+        precedences->Add(v2, v1, CeilOfRatio(rhs_min, magnitude));
+      }
+    } else if (vars.size() == 3) {
+      for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+          if (i == j) continue;
+          if (std::abs(coeffs[i]) != std::abs(coeffs[j])) continue;
+          const int other = 3 - i - j;  // i + j + other = 0 + 1 + 2.
+
+          // Make the terms magnitude * v1 - magnitude * v2 ...
+          const int64_t magnitude = std::abs(coeffs[i]);
+          IntegerVariable v1 = vars[i];
+          IntegerVariable v2 = vars[j];
+          if (coeffs[i] < 0) v1 = NegationOf(v1);
+          if (coeffs[j] > 0) v2 = NegationOf(v2);
+
+          // magnitude * v1 + other_lb <= magnitude * v2 + rhs_max
+          const int64_t coeff = coeffs[other];
+          const int64_t other_lb =
+              coeff > 0
+                  ? coeff * integer_trail->LowerBound(vars[other]).value()
+                  : coeff * integer_trail->UpperBound(vars[other]).value();
+          precedences->Add(v1, v2, CeilOfRatio(other_lb - rhs_max, magnitude));
+
+          // magnitude * v1 + other_ub >= magnitude * v2 + rhs_min
+          const int64_t other_ub =
+              coeff > 0
+                  ? coeff * integer_trail->UpperBound(vars[other]).value()
+                  : coeff * integer_trail->LowerBound(vars[other]).value();
+          precedences->Add(v2, v1, CeilOfRatio(rhs_min - other_ub, magnitude));
+        }
+      }
+    }
+  }
+
   const SatParameters& params = *m->GetOrCreate<SatParameters>();
   const IntegerValue domain_size_limit(
       params.max_domain_size_when_encoding_eq_neq_constraints());

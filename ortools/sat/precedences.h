@@ -25,6 +25,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/graph/graph.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -35,6 +36,61 @@
 
 namespace operations_research {
 namespace sat {
+
+struct FullIntegerPrecedence {
+  IntegerVariable var;
+  std::vector<int> indices;
+  std::vector<IntegerValue> offsets;
+};
+
+// Stores all the precedences relation of the form "tail_X + offset <= head_X"
+// that we could extract from the linear constraint of the model. These are
+// stored in a directed graph.
+//
+// TODO(user): Support conditional relation.
+// TODO(user): Support non-DAG like graph.
+// TODO(user): Support variable offset that can be updated as search progress.
+class PrecedenceRelations {
+ public:
+  explicit PrecedenceRelations(Model* model)
+      : integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
+
+  void Resize(int num_variables) {
+    graph_.ReserveNodes(num_variables);
+    graph_.AddNode(num_variables - 1);
+  }
+
+  // Add a relation tail + offset <= head.
+  void Add(IntegerVariable tail, IntegerVariable head, IntegerValue offset);
+
+  // Returns a set of relations var >= max_i(vars[index[i]] + offsets[i]).
+  //
+  // This currently only works if the precedence relation form a DAG.
+  // If not we will just abort. TODO(user): generalize.
+  //
+  // TODO(user): Put some work limit in place, as this can be slow. Complexity
+  // is in O(vars.size()) * num_arcs.
+  //
+  // TODO(user): Since we don't need ALL precedences, we could just work on a
+  // sub-DAG of the full precedence graph instead of aborting. Or we can just
+  // support the general non-DAG cases.
+  //
+  // TODO(user): Many relations can be redundant. Filter them.
+  void ComputeFullPrecedences(const std::vector<IntegerVariable>& vars,
+                              std::vector<FullIntegerPrecedence>* output);
+
+ private:
+  void Build();
+
+  IntegerTrail* integer_trail_;
+
+  util::StaticGraph<> graph_;
+  std::vector<IntegerValue> arc_offset_;
+
+  bool is_built_ = false;
+  bool is_dag_ = false;
+  std::vector<IntegerVariable> topological_order_;
+};
 
 // This class implement a propagator on simple inequalities between integer
 // variables of the form (i1 + offset <= i2). The offset can be constant or
@@ -126,35 +182,15 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
                            std::vector<Literal>* literal_reason,
                            std::vector<IntegerLiteral>* integer_reason) const;
 
-  // Similar to ComputePrecedences() but this uses a "slow algorithm". It is not
-  // meant to be called often and explore the full precedences graph.
+  // This just wrap ComputePrecedences() above and convert its output format to
+  // the same format as PrecedenceRelations::ComputeFullPrecedences(). This is
+  // less efficient but more convenient to use.
   //
-  // If call_compute_precedence is true, this just wrap ComputePrecedences() and
-  // convert its output to this function format, which is less efficient but
-  // more convenient to use.
-  //
-  // Important: This currently assumes the full precedence graph form a DAG.
-  // Otherwise it will just fail and returns no precedence. By contrast
-  // ComputePrecedences() still work.
-  //
-  // TODO(user): Put some work limit in place, as this can be slow. Complexity
-  // is in O(vars.size()) * num_arcs.
-  //
-  // TODO(user): Since we don't need ALL precedences, we could just work on a
-  // sub-DAG of the full precedence graph instead of aborting.
-  //
-  // TODO(user): Many relations can be redundant. Filter them.
   //
   // Returns a bunch of precedences relations:
   // An IntegerVariable >= to vars[indices[i]] + offset[i], for i in indices.
-  struct FullIntegerPrecedence {
-    IntegerVariable var;
-    std::vector<int> indices;
-    std::vector<IntegerValue> offsets;
-  };
-  void ComputeFullPrecedences(bool call_compute_precedences,
-                              const std::vector<IntegerVariable>& vars,
-                              std::vector<FullIntegerPrecedence>* output);
+  void ComputePartialPrecedences(const std::vector<IntegerVariable>& vars,
+                                 std::vector<FullIntegerPrecedence>* output);
 
   // Advanced usage. To be called once all the constraints have been added to
   // the model. This will loop over all "node" in this class, and if one of its
@@ -385,7 +421,8 @@ inline std::function<void(Model*)> LowerOrEqualWithOffset(IntegerVariable a,
                                                           IntegerVariable b,
                                                           int64_t offset) {
   return [=](Model* model) {
-    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedenceWithOffset(
+    model->GetOrCreate<PrecedenceRelations>()->Add(a, b, IntegerValue(offset));
+    model->GetOrCreate<PrecedencesPropagator>()->AddPrecedenceWithOffset(
         a, b, IntegerValue(offset));
   };
 }

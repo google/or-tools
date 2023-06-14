@@ -429,17 +429,8 @@ int ValidSumSeed(int base_seed, int delta) {
   return static_cast<int>(result);
 }
 
-// Note: in flatzinc setting, we know we always have a fixed search defined.
-//
-// Things to try:
-//   - Specialize for purely boolean problems
-//   - Disable linearization_level options for non linear problems
-//   - Fast restart in randomized search
-//   - Different propatation levels for scheduling constraints
-std::vector<SatParameters> GetDiverseSetOfParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model) {
-  // Defines a set of named strategies so it is easier to read in one place
-  // the one that are used. See below.
+absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
+    const SatParameters& base_params) {
   absl::flat_hash_map<std::string, SatParameters> strategies;
 
   // The "default" name can be used for the base_params unchanged.
@@ -532,6 +523,19 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
   {
     SatParameters new_params = base_params;
+    new_params.set_linearization_level(2);
+    new_params.set_use_objective_shaving_search(true);
+    new_params.set_cp_model_presolve(false);
+    new_params.set_cp_model_probing_level(0);
+    new_params.set_symmetry_level(0);
+    if (base_params.use_dual_scheduling_heuristics()) {
+      AddDualSchedulingHeuristics(new_params);
+    }
+    strategies["objective_shaving_search"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
     if (base_params.use_dual_scheduling_heuristics()) {
@@ -596,9 +600,26 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   }
 
   // Add user defined ones.
+  // Note that this might overwrite our default ones.
   for (const SatParameters& params : base_params.subsolver_params()) {
     strategies[params.name()] = params;
   }
+
+  return strategies;
+}
+
+// Note: in flatzinc setting, we know we always have a fixed search defined.
+//
+// Things to try:
+//   - Specialize for purely boolean problems
+//   - Disable linearization_level options for non linear problems
+//   - Fast restart in randomized search
+//   - Different propatation levels for scheduling constraints
+std::vector<SatParameters> GetDiverseSetOfParameters(
+    const SatParameters& base_params, const CpModelProto& cp_model) {
+  // Defines a set of named strategies so it is easier to read in one place
+  // the one that are used. See below.
+  const auto strategies = GetNamedParameters(base_params);
 
   // We only use a "fixed search" worker if some strategy is specified or
   // if we have a scheduling model.
@@ -614,6 +635,11 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   // TODO(user): Avoid launching two strategies if they are the same,
   // like if there is no lp, or everything is already linearized at level 1.
   std::vector<std::string> names;
+
+  // Starts by adding user specified ones.
+  for (const std::string& name : base_params.extra_subsolvers()) {
+    names.push_back(name);
+  }
 
   const int num_workers_to_generate =
       base_params.num_workers() - base_params.shared_tree_num_workers();
@@ -644,7 +670,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       names.push_back("probing_max_lp");
     }
     if (num_workers_to_generate >= 24) {
-      names.push_back("objective_lb_search_max_lp");
+      names.push_back("objective_shaving_search");
     }
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
     if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
@@ -666,11 +692,6 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     }
   }
 
-  // Add subsolvers.
-  for (const std::string& name : base_params.extra_subsolvers()) {
-    names.push_back(name);
-  }
-
   // Remove the names that should be ignored.
   absl::flat_hash_set<std::string> to_ignore;
   for (const std::string& name : base_params.ignore_subsolvers()) {
@@ -686,12 +707,6 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   // Creates the diverse set of parameters with names and seed.
   std::vector<SatParameters> result;
   for (const std::string& name : names) {
-    if (!strategies.contains(name)) {
-      // TODO(user): Check that at parameter validation and return nice error
-      // instead.
-      LOG(WARNING) << "Unknown parameter name '" << name << "'";
-      continue;
-    }
     SatParameters params = strategies.at(name);
 
     // Do some filtering.
@@ -717,7 +732,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
       if (name == "less_encoding") continue;
 
-      // Disable subsolvers that do not implement the determistic mode.
+      // Disable subsolvers that do not implement the deterministic mode.
       //
       // TODO(user): Enable lb_tree_search in deterministic mode.
       if (params.interleave_search() &&
@@ -730,6 +745,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
       if (params.optimize_with_lb_tree_search()) continue;
       if (params.optimize_with_core()) continue;
       if (params.use_objective_lb_search()) continue;
+      if (params.use_objective_shaving_search()) continue;
       if (params.search_branching() == SatParameters::LP_SEARCH) continue;
       if (params.search_branching() == SatParameters::PSEUDO_COST_SEARCH) {
         continue;

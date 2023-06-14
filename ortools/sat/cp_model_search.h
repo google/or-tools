@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
@@ -93,6 +94,14 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const std::vector<IntegerVariable>& variable_mapping,
     const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
     Model* model);
+
+// Returns all the named set of parameters known to the solver. This include our
+// default strategies like "max_lp", "core", etc... It is visible here so that
+// this can be reused by parameter validation.
+//
+// Usually, named strategies just override a few field from the base_params.
+absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
+    const SatParameters& base_params);
 
 // Returns up to base_params.num_workers() different parameters.
 // We do not always return num_worker parameters to leave room for strategies
