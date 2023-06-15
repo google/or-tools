@@ -1,7 +1,8 @@
 FROM ortools/cmake:archlinux_swig AS env
 ENV PATH=/root/.local/bin:$PATH
 RUN pacman -Syu --noconfirm python python-pip \
- python-wheel python-numpy python-pandas
+ python-wheel python-virtualenv \
+ python-numpy python-pandas
 RUN python -m pip install --break-system-package \
  absl-py mypy-protobuf
 
