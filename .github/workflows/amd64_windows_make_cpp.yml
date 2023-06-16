@@ -5,7 +5,13 @@ on: [push, pull_request]
 jobs:
   # Building using the github runner environement directly.
   make:
-    runs-on: windows-latest
+    # ref: https://github.com/actions/runner-images
+    strategy:
+      matrix:
+        runner: [windows-2022, windows-2019]
+      fail-fast: false # Don't cancel all jobs if one fails.
+    runs-on: ${{ matrix.runner }}
+    #runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
     - uses: ilammy/msvc-dev-cmd@v1

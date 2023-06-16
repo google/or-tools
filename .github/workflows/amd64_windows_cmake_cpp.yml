@@ -5,16 +5,24 @@ on: [push, pull_request]
 jobs:
   # Building using the github runner environement directly.
   cmake:
-    runs-on: windows-latest
+    # ref: https://github.com/actions/runner-images
+    strategy:
+      matrix:
+        runner: [windows-2022, windows-2019]
+      fail-fast: false # Don't cancel all jobs if one fails.
+    runs-on: ${{ matrix.runner }}
+    #runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
     - name: Check cmake
-      run: cmake --version
+      run: |
+        cmake --version
+        cmake -G || true
     - name: Configure
-      run: cmake -S. -Bbuild -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
+      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
     - name: Build
-      run: cmake --build build --config Release --target ALL_BUILD -v -- /maxcpucount
+      run: cmake --build build --config Release --target ALL_BUILD -v -- /verbosity:d
     - name: Test
-      run: cmake --build build --config Release --target RUN_TESTS -v -- /maxcpucount
+      run: cmake --build build --config Release --target RUN_TESTS -v -- /verbosity:d
     - name: Install
-      run: cmake --build build --config Release --target INSTALL -v -- /maxcpucount
+      run: cmake --build build --config Release --target INSTALL -v -- /verbosity:d
