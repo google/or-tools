@@ -73,6 +73,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/timer.h"
 
@@ -233,6 +234,9 @@ class TimeDistribution : public DistributionStat {
 
   // Adds a time in seconds to this distribution.
   void AddTimeInSec(double seconds);
+  void AddTime(absl::Duration duration) {
+    AddTimeInSec(absl::ToDoubleSeconds(duration));
+  }
 
   // Adds a time in CPU cycles to this distribution.
   void AddTimeInCycles(double cycles);
