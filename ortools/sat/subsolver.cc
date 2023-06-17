@@ -174,12 +174,25 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     bool all_done = false;
     {
       // Wait if num_in_flight == num_threads.
-      const absl::MutexLock mutex_lock(
-          &mutex, absl::Condition(&num_in_flight_lt_num_threads));
+      const bool condition = mutex.LockWhenWithTimeout(
+          absl::Condition(&num_in_flight_lt_num_threads),
+          absl::Milliseconds(100));
+
+      // To support some "advanced" cancelation of subsolve, we still call
+      // synchronize every 0.1 seconds even if there is no worker available.
+      //
+      // TODO(user): We could also directly register callback to set stopping
+      // Boolean to false in a few places.
+      if (!condition) {
+        mutex.Unlock();
+        SynchronizeAll(subsolvers);
+        continue;
+      }
 
       // The stopping condition is that we do not have anything else to generate
       // once all the task are done and synchronized.
       if (num_in_flight == 0) all_done = true;
+      mutex.Unlock();
     }
 
     SynchronizeAll(subsolvers);

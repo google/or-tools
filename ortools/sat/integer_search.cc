@@ -310,20 +310,6 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
     }
   }
 
-  // Relaxation Solution based value.
-  if (parameters.exploit_relaxation_solution()) {
-    auto* relaxation_solutions =
-        model->Get<SharedRelaxationSolutionRepository>();
-    if (relaxation_solutions != nullptr) {
-      value_selection_heuristics.push_back(
-          [model, relaxation_solutions](IntegerVariable var) {
-            VLOG(3) << "Using relaxation solution value selection heuristic.";
-            return SplitUsingBestSolutionValueInRepository(
-                var, *relaxation_solutions, model);
-          });
-    }
-  }
-
   // Objective based value.
   if (parameters.exploit_objective()) {
     value_selection_heuristics.push_back([model](IntegerVariable var) {
@@ -544,17 +530,6 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
               var, response_manager->SolutionsRepository(), model);
         });
     value_selection_weight.push_back(5);
-  }
-
-  // Relaxation solution based value.
-  auto* relaxation_solutions = model->Get<SharedRelaxationSolutionRepository>();
-  if (relaxation_solutions != nullptr) {
-    value_selection_heuristics.push_back(
-        [model, relaxation_solutions](IntegerVariable var) {
-          return SplitUsingBestSolutionValueInRepository(
-              var, *relaxation_solutions, model);
-        });
-    value_selection_weight.push_back(3);
   }
 
   // Middle value.

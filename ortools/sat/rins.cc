@@ -13,14 +13,18 @@
 
 #include "ortools/sat/rins.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <random>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
+#include "absl/random/distributions.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
@@ -60,32 +64,12 @@ std::vector<double> GetLPRelaxationValues(
     return relaxation_values;
   }
 
-  // TODO(user): Experiment with random biased solutions.
   const SharedSolutionRepository<double>::Solution lp_solution =
       lp_solutions->GetRandomBiasedSolution(random);
 
   for (int model_var = 0; model_var < lp_solution.variable_values.size();
        ++model_var) {
     relaxation_values.push_back(lp_solution.variable_values[model_var]);
-  }
-  return relaxation_values;
-}
-
-std::vector<double> GetGeneralRelaxationValues(
-    const SharedRelaxationSolutionRepository* relaxation_solutions,
-    absl::BitGenRef random) {
-  std::vector<double> relaxation_values;
-
-  if (relaxation_solutions == nullptr ||
-      relaxation_solutions->NumSolutions() == 0) {
-    return relaxation_values;
-  }
-  const SharedSolutionRepository<int64_t>::Solution relaxation_solution =
-      relaxation_solutions->GetRandomBiasedSolution(random);
-
-  for (int model_var = 0;
-       model_var < relaxation_solution.variable_values.size(); ++model_var) {
-    relaxation_values.push_back(relaxation_solution.variable_values[model_var]);
   }
   return relaxation_values;
 }
@@ -101,83 +85,149 @@ std::vector<double> GetIncompleteSolutionValues(
 
   return incomplete_solutions->GetNewSolution();
 }
-}  // namespace
 
-RINSNeighborhood GetRINSNeighborhood(
-    const SharedResponseManager* response_manager,
-    const SharedRelaxationSolutionRepository* relaxation_solutions,
-    const SharedLPSolutionRepository* lp_solutions,
-    SharedIncompleteSolutionManager* incomplete_solutions,
-    absl::BitGenRef random) {
-  RINSNeighborhood rins_neighborhood;
+static double kEpsilon = 1e-7;
 
-  const bool use_only_relaxation_values =
-      (response_manager == nullptr ||
-       response_manager->SolutionsRepository().NumSolutions() == 0);
+struct VarWeightTieBreak {
+  int model_var;
+  // Variables with minimum weight will be fixed in the neighborhood.
+  double weight;
 
-  if (use_only_relaxation_values && lp_solutions == nullptr &&
-      incomplete_solutions == nullptr) {
-    // As of now RENS doesn't generate good neighborhoods from integer
-    // relaxation solutions.
-    return rins_neighborhood;
-  }
+  // Comparator with tolerance and random tie breaking.
+  bool operator<(const VarWeightTieBreak& o) const { return weight < o.weight; }
+};
 
-  std::vector<double> relaxation_values;
-  if (incomplete_solutions != nullptr) {
-    relaxation_values = GetIncompleteSolutionValues(incomplete_solutions);
-  } else if (lp_solutions != nullptr) {
-    relaxation_values = GetLPRelaxationValues(lp_solutions, random);
-  } else {
-    CHECK(relaxation_solutions != nullptr)
-        << "No relaxation solutions repository or lp solutions repository "
-           "provided.";
-    relaxation_values =
-        GetGeneralRelaxationValues(relaxation_solutions, random);
-  }
-  if (relaxation_values.empty()) return rins_neighborhood;
-
-  const double tolerance = 1e-6;
-  const SharedSolutionRepository<int64_t>::Solution solution =
-      use_only_relaxation_values
-          ? SharedSolutionRepository<int64_t>::Solution()
-          : response_manager->SolutionsRepository().GetRandomBiasedSolution(
-                random);
+void FillRinsNeighborhood(const std::vector<int64_t>& solution,
+                          const std::vector<double>& relaxation_values,
+                          double difficulty, absl::BitGenRef random,
+                          ReducedDomainNeighborhood& reduced_domains) {
+  std::vector<VarWeightTieBreak> var_lp_gap_pairs;
   for (int model_var = 0; model_var < relaxation_values.size(); ++model_var) {
     const double relaxation_value = relaxation_values[model_var];
+    if (relaxation_value == std::numeric_limits<double>::infinity()) continue;
 
-    if (relaxation_value == std::numeric_limits<double>::infinity()) {
-      continue;
-    }
+    const int64_t best_solution_value = solution[model_var];
+    const double pertubation = absl::Uniform(random, -kEpsilon, kEpsilon);
+    var_lp_gap_pairs.push_back({
+        model_var,
+        std::abs(relaxation_value - static_cast<double>(best_solution_value)) +
+            pertubation,
+    });
+  }
+  std::sort(var_lp_gap_pairs.begin(), var_lp_gap_pairs.end());
 
-    if (use_only_relaxation_values) {
-      // The tolerance make sure that if the relaxation_value is close to an
-      // integer, then we fix the variable to this integer value.
-      //
+  const int target_size = std::min(
+      static_cast<int>(std::round(
+          static_cast<double>(relaxation_values.size()) * (1.0 - difficulty))),
+      static_cast<int>(var_lp_gap_pairs.size()));
+  for (int i = 0; i < target_size; ++i) {
+    const int model_var = var_lp_gap_pairs[i].model_var;
+    reduced_domains.fixed_vars.push_back({model_var, solution[model_var]});
+  }
+}
+
+void FillRensNeighborhood(const std::vector<double>& relaxation_values,
+                          double difficulty, absl::BitGenRef random,
+                          ReducedDomainNeighborhood& reduced_domains) {
+  const double kTolerance = 1e-6;
+  std::vector<VarWeightTieBreak> var_fractionality_pairs;
+  for (int model_var = 0; model_var < relaxation_values.size(); ++model_var) {
+    const double relaxation_value = relaxation_values[model_var];
+    if (relaxation_value == std::numeric_limits<double>::infinity()) continue;
+
+    const double pertubation = absl::Uniform(random, -kEpsilon, kEpsilon);
+    var_fractionality_pairs.push_back(
+        {model_var, std::abs(std::round(relaxation_value) - relaxation_value) +
+                        pertubation});
+  }
+  std::sort(var_fractionality_pairs.begin(), var_fractionality_pairs.end());
+  const int target_size = static_cast<int>(std::round(
+      static_cast<double>(relaxation_values.size()) * (1.0 - difficulty)));
+  for (int i = 0; i < var_fractionality_pairs.size(); ++i) {
+    const int model_var = var_fractionality_pairs[i].model_var;
+    const double relaxation_value = relaxation_values[model_var];
+    if (i < target_size) {
+      // Fix the variable.
+      reduced_domains.fixed_vars.push_back(
+          {model_var, static_cast<int64_t>(std::round(relaxation_value))});
+    } else {
       // Important: the LP relaxation doesn't know about holes in the variable
       // domains, so the intersection of [domain_lb, domain_ub] with the
       // initial variable domain might be empty.
       const int64_t domain_lb =
-          static_cast<int64_t>(std::floor(relaxation_value + tolerance));
+          static_cast<int64_t>(std::floor(relaxation_value - kTolerance));
       const int64_t domain_ub =
-          static_cast<int64_t>(std::ceil(relaxation_value - tolerance));
-      if (domain_lb == domain_ub) {
-        rins_neighborhood.fixed_vars.push_back({model_var, domain_lb});
-      } else {
-        rins_neighborhood.reduced_domain_vars.push_back(
+          static_cast<int64_t>(std::ceil(relaxation_value + kTolerance));
+      if (domain_ub - domain_lb == 1) {
+        reduced_domains.reduced_domain_vars.push_back(
             {model_var, {domain_lb, domain_ub}});
-      }
-
-    } else {
-      const IntegerValue best_solution_value =
-          IntegerValue(solution.variable_values[model_var]);
-      if (std::abs(best_solution_value.value() - relaxation_value) < 1e-4) {
-        rins_neighborhood.fixed_vars.push_back(
-            {model_var, best_solution_value.value()});
+      } else if (std::floor(relaxation_value - kTolerance) !=
+                 std::floor(relaxation_value)) {
+        // The tolerance crosses the integer value of the lb.
+        reduced_domains.reduced_domain_vars.push_back(
+            {model_var, {domain_lb + 1, domain_ub}});
+      } else {
+        // The tolerance crosses the integer value of the ub.
+        reduced_domains.reduced_domain_vars.push_back(
+            {model_var, {domain_lb, domain_ub - 1}});
       }
     }
   }
+}
 
-  return rins_neighborhood;
+}  // namespace
+
+ReducedDomainNeighborhood GetRinsRensNeighborhood(
+    const SharedResponseManager* response_manager,
+    const SharedLPSolutionRepository* lp_solutions,
+    SharedIncompleteSolutionManager* incomplete_solutions, double difficulty,
+    absl::BitGenRef random) {
+  ReducedDomainNeighborhood reduced_domains;
+  CHECK(lp_solutions != nullptr);
+  CHECK(incomplete_solutions != nullptr);
+  const bool lp_solution_available = lp_solutions->NumSolutions() > 0;
+  const bool incomplete_solution_available =
+      incomplete_solutions->HasNewSolution();
+
+  if (!lp_solution_available && !incomplete_solution_available) {
+    return reduced_domains;  // Not generated.
+  }
+
+  // Using a partial LP relaxation computed by feasibility_pump, and a full lp
+  // relaxation periodically dumped by linearization=2 workers is equiprobable.
+  std::bernoulli_distribution random_bool(0.5);
+
+  const bool use_lp_relaxation =
+      lp_solution_available && incomplete_solution_available
+          ? random_bool(random)
+          : lp_solution_available;
+
+  const std::vector<double> relaxation_values =
+      use_lp_relaxation ? GetLPRelaxationValues(lp_solutions, random)
+                        : GetIncompleteSolutionValues(incomplete_solutions);
+  if (relaxation_values.empty()) return reduced_domains;  // Not generated.
+
+  std::bernoulli_distribution three_out_of_four(0.75);
+
+  if (response_manager != nullptr &&
+      response_manager->SolutionsRepository().NumSolutions() > 0 &&
+      three_out_of_four(random)) {  // Rins.
+    const std::vector<int64_t> solution =
+        response_manager->SolutionsRepository()
+            .GetRandomBiasedSolution(random)
+            .variable_values;
+    FillRinsNeighborhood(solution, relaxation_values, difficulty, random,
+                         reduced_domains);
+    reduced_domains.source_info = "rins_";
+  } else {  // Rens.
+    FillRensNeighborhood(relaxation_values, difficulty, random,
+                         reduced_domains);
+    reduced_domains.source_info = "rens_";
+  }
+
+  absl::StrAppend(&reduced_domains.source_info,
+                  use_lp_relaxation ? "lp" : "pump", "_lns");
+  return reduced_domains;
 }
 
 }  // namespace sat

@@ -20,7 +20,6 @@
 #include <limits>
 #include <string>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/sat_parameters.pb.h"

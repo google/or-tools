@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "absl/base/thread_annotations.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
@@ -31,19 +30,12 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/adaptative_parameter_value.h"
-#include "ortools/util/logging.h"
-#include "ortools/util/strong_integers.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -73,8 +65,7 @@ struct Neighborhood {
   // neighborhood for each generator.
   int64_t id = 0;
 
-  // Used for identifying the source of the neighborhood if it is generated
-  // using solution repositories.
+  // Overwrites the name of the neighborhood generator in the logs.
   std::string source_info = "";
 
   // Statistic, only filled when is_simple is true.
@@ -666,17 +657,14 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit RelaxationInducedNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper,
       const SharedResponseManager* response_manager,
-      const SharedRelaxationSolutionRepository* relaxation_solutions,
       const SharedLPSolutionRepository* lp_solutions,
       SharedIncompleteSolutionManager* incomplete_solutions,
       const std::string& name)
       : NeighborhoodGenerator(name, helper),
         response_manager_(response_manager),
-        relaxation_solutions_(relaxation_solutions),
         lp_solutions_(lp_solutions),
         incomplete_solutions_(incomplete_solutions) {
-    CHECK(lp_solutions_ != nullptr || relaxation_solutions_ != nullptr ||
-          incomplete_solutions != nullptr);
+    CHECK(lp_solutions_ != nullptr || incomplete_solutions != nullptr);
   }
 
   // Both initial solution and difficulty values are ignored.
@@ -688,7 +676,6 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
 
  private:
   const SharedResponseManager* response_manager_;
-  const SharedRelaxationSolutionRepository* relaxation_solutions_;
   const SharedLPSolutionRepository* lp_solutions_;
   SharedIncompleteSolutionManager* incomplete_solutions_;
 };

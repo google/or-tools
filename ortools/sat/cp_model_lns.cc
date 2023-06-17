@@ -1752,85 +1752,30 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
-  if (incomplete_solutions_ != nullptr) {
-    return incomplete_solutions_->HasNewSolution();
-  }
-
-  if (response_manager_ != nullptr) {
-    if (response_manager_->SolutionsRepository().NumSolutions() == 0) {
-      return false;
-    }
-  }
-
-  // At least one relaxation solution should be available to generate a
-  // neighborhood.
-  if (lp_solutions_ != nullptr && lp_solutions_->NumSolutions() > 0) {
-    return true;
-  }
-
-  if (relaxation_solutions_ != nullptr &&
-      relaxation_solutions_->NumSolutions() > 0) {
-    return true;
-  }
-  return false;
+  return (incomplete_solutions_->HasNewSolution() ||
+          lp_solutions_->NumSolutions() > 0);
 }
 
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
-    const CpSolverResponse& /*initial_solution*/, double /*difficulty*/,
+    const CpSolverResponse& /*initial_solution*/, double difficulty,
     absl::BitGenRef random) {
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
 
-  const bool lp_solution_available =
-      (lp_solutions_ != nullptr && lp_solutions_->NumSolutions() > 0);
+  const ReducedDomainNeighborhood reduced_domains =
+      GetRinsRensNeighborhood(response_manager_, lp_solutions_,
+                              incomplete_solutions_, difficulty, random);
 
-  const bool relaxation_solution_available =
-      (relaxation_solutions_ != nullptr &&
-       relaxation_solutions_->NumSolutions() > 0);
-
-  const bool incomplete_solution_available =
-      (incomplete_solutions_ != nullptr &&
-       incomplete_solutions_->HasNewSolution());
-
-  if (!lp_solution_available && !relaxation_solution_available &&
-      !incomplete_solution_available) {
+  if (reduced_domains.fixed_vars.empty() &&
+      reduced_domains.reduced_domain_vars.empty()) {
     return neighborhood;
   }
-
-  RINSNeighborhood rins_neighborhood;
-  // Randomly select the type of relaxation if both lp and relaxation solutions
-  // are available.
-  // TODO(user): Tune the probability value for this.
-  std::bernoulli_distribution random_bool(0.5);
-  const bool use_lp_relaxation =
-      (lp_solution_available && relaxation_solution_available)
-          ? random_bool(random)
-          : lp_solution_available;
-  if (use_lp_relaxation) {
-    rins_neighborhood =
-        GetRINSNeighborhood(response_manager_,
-                            /*relaxation_solutions=*/nullptr, lp_solutions_,
-                            incomplete_solutions_, random);
-    neighborhood.source_info =
-        incomplete_solution_available ? "incomplete" : "lp";
-  } else {
-    CHECK(relaxation_solution_available || incomplete_solution_available);
-    rins_neighborhood = GetRINSNeighborhood(
-        response_manager_, relaxation_solutions_,
-        /*lp_solutions=*/nullptr, incomplete_solutions_, random);
-    neighborhood.source_info =
-        incomplete_solution_available ? "incomplete" : "relaxation";
-  }
-
-  if (rins_neighborhood.fixed_vars.empty() &&
-      rins_neighborhood.reduced_domain_vars.empty()) {
-    return neighborhood;
-  }
+  neighborhood.source_info = reduced_domains.source_info;
 
   absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
   // Fix the variables in the local model.
   for (const std::pair</*model_var*/ int, /*value*/ int64_t>& fixed_var :
-       rins_neighborhood.fixed_vars) {
+       reduced_domains.fixed_vars) {
     const int var = fixed_var.first;
     const int64_t value = fixed_var.second;
     if (var >= neighborhood.delta.variables_size()) continue;
@@ -1849,18 +1794,18 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
 
   for (const std::pair</*model_var*/ int,
                        /*domain*/ std::pair<int64_t, int64_t>>& reduced_var :
-       rins_neighborhood.reduced_domain_vars) {
+       reduced_domains.reduced_domain_vars) {
     const int var = reduced_var.first;
     const int64_t lb = reduced_var.second.first;
     const int64_t ub = reduced_var.second.second;
     if (var >= neighborhood.delta.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
-    Domain domain = ReadDomainFromProto(neighborhood.delta.variables(var));
-    domain = domain.IntersectionWith(Domain(lb, ub));
-    if (domain.IsEmpty()) {
-      // TODO(user): Instead of aborting, pick the closest point in the
-      // domain?
-      return neighborhood;
+    const Domain domain =
+        ReadDomainFromProto(neighborhood.delta.variables(var));
+    Domain new_domain = domain.IntersectionWith(Domain(lb, ub));
+    if (new_domain.IsEmpty()) {
+      new_domain = Domain::FromValues(
+          {domain.ClosestValue(lb), domain.ClosestValue(ub)});
     }
     FillDomainInProto(domain, neighborhood.delta.mutable_variables(var));
     neighborhood.is_reduced = true;

@@ -130,7 +130,7 @@ examples below.
 ### Limitations
 
 -   Everything must be linear. Multiplying two variables is not supported
-    with this API; instead, `model.AddProductEquality()` must be used.
+    with this API; instead, `model.AddMultiplicationEquality()` must be used.
 
 -   In C++, there is a typing issue when using an array of Boolean variables in
     a sum or a scalar product. Use the `LinearExpr.BooleanSum()` method instead.
@@ -170,8 +170,7 @@ def RabbitsAndPheasantsSat():
     status = solver.Solve(model)
 
     if status == cp_model.OPTIMAL:
-        print('%i rabbits and %i pheasants' %
-              (solver.Value(r), solver.Value(p)))
+        print(f'{solver.Value(r)} rabbits and {solver.Value(p)} pheasants')
 
 
 RabbitsAndPheasantsSat()
@@ -346,7 +345,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print('%s=%i' % (v, self.Value(v)), end=' ')
+            print(f'{v}={self.Value(v)}', end=' ')
         print()
 
     def solution_count(self):
@@ -688,7 +687,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print('%s=%i' % (v, self.Value(v)), end=' ')
+            print(f'{v}={self.Value(v)}', end=' ')
         print()
 
     def solution_count(self):

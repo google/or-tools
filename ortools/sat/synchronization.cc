@@ -63,27 +63,6 @@ ABSL_FLAG(bool, cp_model_dump_solutions, false,
 namespace operations_research {
 namespace sat {
 
-void SharedRelaxationSolutionRepository::NewRelaxationSolution(
-    absl::Span<const int64_t> solution_values,
-    IntegerValue inner_objective_value) {
-  // Note that the Add() method already applies mutex lock. So we don't need it
-  // here.
-  if (solution_values.empty()) return;
-
-  // Add this solution to the pool.
-  SharedSolutionRepository<int64_t>::Solution solution;
-  solution.variable_values.assign(solution_values.begin(),
-                                  solution_values.end());
-  // For now we use the negated lower bound as the "internal objective" to
-  // prefer solution with an higher bound.
-  //
-  // Note: If the model doesn't have objective, the best_objective_bound is set
-  // to default value 0.
-  solution.rank = -inner_objective_value.value();
-
-  Add(solution);
-}
-
 void SharedLPSolutionRepository::NewLPSolution(
     std::vector<double> lp_solution) {
   if (lp_solution.empty()) return;
