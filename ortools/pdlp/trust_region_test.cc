@@ -193,6 +193,42 @@ TEST_P(TrustRegion, SolvesWithInactiveRadius) {
   }
 }
 
+TEST_P(TrustRegion, SolvesWithZeroRadius) {
+  // min x - y + z
+  // ||(x - 2.0, y - (-5.0), z - 1.0)||_2 <= 0.0
+  // x >= 2.0, y <= -5.0, z >= 0.5
+  // [x*, y*, z*] = [2.0, -5.0, 0.5]
+  const VectorXd variable_lower_bounds{{2.0, -kInfinity, 0.5}};
+  const VectorXd variable_upper_bounds{{kInfinity, -5.0, kInfinity}};
+  const VectorXd center_point{{2.0, -5.0, 1.0}};
+  const VectorXd objective_vector{{1.0, -1.0, 1.0}};
+  const double target_radius = 0.0;
+
+  Sharder sharder(/*num_elements=*/3, /*num_shards=*/2, nullptr);
+
+  const VectorXd expected_solution{{2.0, -5.0, 1.0}};
+  const double expected_objective_value = 0.0;
+
+  if (GetParam()) {
+    TrustRegionResult result = SolveDiagonalTrustRegion(
+        objective_vector, /*objective_matrix_diagonal=*/VectorXd::Zero(3),
+        variable_lower_bounds, variable_upper_bounds, center_point,
+        /*norm_weights=*/VectorXd::Ones(3), target_radius, sharder,
+        /*solve_tolerance=*/1.0e-6);
+
+    EXPECT_THAT(result.solution, EigenArrayNear(expected_solution, 1.0e-6));
+    EXPECT_NEAR(result.objective_value, expected_objective_value, 1.0e-6);
+  } else {
+    TrustRegionResult result = SolveTrustRegion(
+        objective_vector, variable_lower_bounds, variable_upper_bounds,
+        center_point, /*norm_weights=*/VectorXd::Ones(3), target_radius,
+        sharder);
+
+    EXPECT_THAT(result.solution, EigenArrayEq(expected_solution));
+    EXPECT_DOUBLE_EQ(result.objective_value, expected_objective_value);
+  }
+}
+
 TEST_P(TrustRegion, SolvesWithInfiniteRadius) {
   // min x - y + z
   // ||(x - 2.0, y - (-5.0), z - 1.0)||_2 <= Infinity

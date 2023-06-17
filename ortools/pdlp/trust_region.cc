@@ -707,6 +707,19 @@ TrustRegionResult SolveDiagonalTrustRegionProblem(
         return true;
       });
   CHECK(norm_weights_are_positive);
+  if (target_radius == 0.0) {
+    VectorXd solution(sharder.NumElements());
+    sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
+      const int64_t shard_start = sharder.ShardStart(shard.Index());
+      const int64_t shard_size = sharder.ShardSize(shard.Index());
+      for (int64_t i = shard_start; i < shard_start + shard_size; ++i) {
+        solution[i] = problem.CenterPoint(i);
+      }
+    });
+    return {.solution_step_size = 0.0,
+            .objective_value = 0.0,
+            .solution = std::move(solution)};
+  }
   const double optimal_scaling =
       FindScalingFactor(problem, sharder, target_radius, solve_tol);
   VectorXd solution(sharder.NumElements());

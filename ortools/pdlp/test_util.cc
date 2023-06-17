@@ -26,22 +26,23 @@
 
 namespace operations_research::pdlp {
 
+using ::Eigen::VectorXd;
 using ::testing::ElementsAre;
 
 constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
 QuadraticProgram TestLp() {
   QuadraticProgram lp(4, 4);
-  lp.constraint_lower_bounds << 12, -kInfinity, -4, -1;
-  lp.constraint_upper_bounds << 12, 7, kInfinity, 1;
-  lp.variable_lower_bounds << -kInfinity, -2, -kInfinity, 2.5;
-  lp.variable_upper_bounds << kInfinity, kInfinity, 6, 3.5;
+  lp.constraint_lower_bounds = VectorXd{{12, -kInfinity, -4, -1}};
+  lp.constraint_upper_bounds = VectorXd{{12, 7, kInfinity, 1}};
+  lp.variable_lower_bounds = VectorXd{{-kInfinity, -2, -kInfinity, 2.5}};
+  lp.variable_upper_bounds = VectorXd{{kInfinity, kInfinity, 6, 3.5}};
   std::vector<Eigen::Triplet<double, int64_t>> triplets = {
       {0, 0, 2}, {0, 1, 1}, {0, 2, 1},   {0, 3, 2}, {1, 0, 1},
       {1, 2, 1}, {2, 0, 4}, {3, 2, 1.5}, {3, 3, -1}};
   lp.constraint_matrix.setFromTriplets(triplets.begin(), triplets.end());
 
-  lp.objective_vector << 5.5, -2, -1, 1;
+  lp.objective_vector = VectorXd{{5.5, -2, -1, 1}};
   lp.objective_offset = -14;
   return lp;
 }
@@ -67,11 +68,11 @@ void VerifyTestLp(const QuadraticProgram& qp, bool maximize) {
 QuadraticProgram TinyLp() {
   QuadraticProgram lp(4, 3);
   lp.objective_offset = -14;
-  lp.objective_vector << 5, 2, 1, 1;
-  lp.constraint_lower_bounds << 12, 7, 1;
-  lp.constraint_upper_bounds << 12, kInfinity, kInfinity;
-  lp.variable_lower_bounds << 0, 0, 0, 0;
-  lp.variable_upper_bounds << 2, 4, 6, 3;
+  lp.objective_vector = VectorXd{{5, 2, 1, 1}};
+  lp.constraint_lower_bounds = VectorXd{{12, 7, 1}};
+  lp.constraint_upper_bounds = VectorXd{{12, kInfinity, kInfinity}};
+  lp.variable_lower_bounds = VectorXd{{0, 0, 0, 0}};
+  lp.variable_upper_bounds = VectorXd{{2, 4, 6, 3}};
   lp.constraint_matrix.coeffRef(0, 0) = 2.0;
   lp.constraint_matrix.coeffRef(0, 1) = 1.0;
   lp.constraint_matrix.coeffRef(0, 2) = 1.0;
@@ -87,11 +88,11 @@ QuadraticProgram TinyLp() {
 QuadraticProgram CorrelationClusteringLp() {
   QuadraticProgram lp(6, 3);
   lp.objective_offset = 4;
-  lp.objective_vector << -1.0, -1.0, 1.0, -1.0, 1.0, -1.0;
-  lp.constraint_lower_bounds << -1.0, -1.0, -1.0;
-  lp.constraint_upper_bounds << kInfinity, kInfinity, kInfinity;
-  lp.variable_lower_bounds << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-  lp.variable_upper_bounds << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+  lp.objective_vector = VectorXd{{-1.0, -1.0, 1.0, -1.0, 1.0, -1.0}};
+  lp.constraint_lower_bounds = VectorXd{{-1.0, -1.0, -1.0}};
+  lp.constraint_upper_bounds = VectorXd{{kInfinity, kInfinity, kInfinity}};
+  lp.variable_lower_bounds = VectorXd{{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
+  lp.variable_upper_bounds = VectorXd{{1.0, 1.0, 1.0, 1.0, 1.0, 1.0}};
   lp.constraint_matrix.coeffRef(0, 1) = -1.0;
   lp.constraint_matrix.coeffRef(0, 2) = 1.0;
   lp.constraint_matrix.coeffRef(0, 5) = -1.0;
@@ -108,11 +109,11 @@ QuadraticProgram CorrelationClusteringLp() {
 QuadraticProgram CorrelationClusteringStarLp() {
   QuadraticProgram lp(6, 3);
   lp.objective_offset = 3;
-  lp.objective_vector << -1.0, -1.0, -1.0, 1.0, 1.0, 1.0;
-  lp.constraint_lower_bounds << -1.0, -1.0, -1.0;
-  lp.constraint_upper_bounds << kInfinity, kInfinity, kInfinity;
-  lp.variable_lower_bounds << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-  lp.variable_upper_bounds << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+  lp.objective_vector = VectorXd{{-1.0, -1.0, -1.0, 1.0, 1.0, 1.0}};
+  lp.constraint_lower_bounds = VectorXd{{-1.0, -1.0, -1.0}};
+  lp.constraint_upper_bounds = VectorXd{{kInfinity, kInfinity, kInfinity}};
+  lp.variable_lower_bounds = VectorXd{{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
+  lp.variable_upper_bounds = VectorXd{{1.0, 1.0, 1.0, 1.0, 1.0, 1.0}};
   lp.constraint_matrix.coeffRef(0, 0) = -1.0;
   lp.constraint_matrix.coeffRef(0, 1) = -1.0;
   lp.constraint_matrix.coeffRef(0, 3) = 1.0;
@@ -126,65 +127,54 @@ QuadraticProgram CorrelationClusteringStarLp() {
   return lp;
 }
 
-namespace {
-
-Eigen::DiagonalMatrix<double, Eigen::Dynamic> ConstructDiagonal(
-    const std::vector<double>& vec) {
-  Eigen::DiagonalMatrix<double, Eigen::Dynamic> diag;
-  diag.resize(vec.size());
-  for (int i = 0; i < vec.size(); ++i) {
-    diag.diagonal()[i] = vec[i];
-  }
-  return diag;
-}
-
-}  // namespace
-
 QuadraticProgram TestDiagonalQp1() {
   QuadraticProgram qp(2, 1);
-  qp.constraint_lower_bounds << -kInfinity;
-  qp.constraint_upper_bounds << 1;
-  qp.variable_lower_bounds << 1, -2;
-  qp.variable_upper_bounds << 2, 4;
-  qp.objective_vector << -1, -1;
+  qp.constraint_lower_bounds = VectorXd{{-kInfinity}};
+  qp.constraint_upper_bounds = VectorXd{{1}};
+  qp.variable_lower_bounds = VectorXd{{1, -2}};
+  qp.variable_upper_bounds = VectorXd{{2, 4}};
+  qp.objective_vector = VectorXd{{-1, -1}};
   qp.objective_offset = 5;
   std::vector<Eigen::Triplet<double, int64_t>> constraint_triplets = {
       {0, 0, 1}, {0, 1, 1}};
   qp.constraint_matrix.setFromTriplets(constraint_triplets.begin(),
                                        constraint_triplets.end());
-  qp.objective_matrix = ConstructDiagonal({4.0, 1.0});
+  qp.objective_matrix =
+      Eigen::DiagonalMatrix<double, Eigen::Dynamic>{{4.0, 1.0}};
   return qp;
 }
 
 QuadraticProgram TestDiagonalQp2() {
   QuadraticProgram qp(2, 1);
-  qp.constraint_lower_bounds << 2;
-  qp.constraint_upper_bounds << 2;
-  qp.variable_lower_bounds << 0, 0;
-  qp.variable_upper_bounds << kInfinity, kInfinity;
-  qp.objective_vector << -3, -1;
+  qp.constraint_lower_bounds = VectorXd{{2}};
+  qp.constraint_upper_bounds = VectorXd{{2}};
+  qp.variable_lower_bounds = VectorXd{{0, 0}};
+  qp.variable_upper_bounds = VectorXd{{kInfinity, kInfinity}};
+  qp.objective_vector = VectorXd{{-3, -1}};
   qp.objective_offset = 0;
   std::vector<Eigen::Triplet<double, int64_t>> constraint_triplets = {
       {0, 0, 1}, {0, 1, -1}};
   qp.constraint_matrix.setFromTriplets(constraint_triplets.begin(),
                                        constraint_triplets.end());
-  qp.objective_matrix = ConstructDiagonal({1.0, 1.0});
+  qp.objective_matrix =
+      Eigen::DiagonalMatrix<double, Eigen::Dynamic>({{1.0, 1.0}});
   return qp;
 }
 
 QuadraticProgram TestDiagonalQp3() {
   QuadraticProgram qp(3, 2);
-  qp.constraint_lower_bounds << 1, 4;
-  qp.constraint_upper_bounds << 1, 4;
-  qp.variable_lower_bounds << 0, 0, 0;
-  qp.variable_upper_bounds << kInfinity, kInfinity, kInfinity;
-  qp.objective_vector << 1, 0, -1;
+  qp.constraint_lower_bounds = VectorXd{{1, 4}};
+  qp.constraint_upper_bounds = VectorXd{{1, 4}};
+  qp.variable_lower_bounds = VectorXd{{0, 0, 0}};
+  qp.variable_upper_bounds = VectorXd{{kInfinity, kInfinity, kInfinity}};
+  qp.objective_vector = VectorXd{{1, 0, -1}};
   qp.objective_offset = 0;
   std::vector<Eigen::Triplet<double, int64_t>> constraint_triplets = {
       {0, 0, 1}, {0, 2, -1}, {1, 0, 2}};
   qp.constraint_matrix.setFromTriplets(constraint_triplets.begin(),
                                        constraint_triplets.end());
-  qp.objective_matrix = ConstructDiagonal({0.0, 1.0, 2.0});
+  qp.objective_matrix =
+      Eigen::DiagonalMatrix<double, Eigen::Dynamic>({{0.0, 1.0, 2.0}});
   return qp;
 }
 
@@ -192,12 +182,12 @@ QuadraticProgram SmallInvalidProblemLp() {
   QuadraticProgram lp(2, 1);
   lp.constraint_matrix.coeffRef(0, 0) = 1.0;
   lp.constraint_matrix.coeffRef(0, 1) = -1.0;
-  lp.constraint_lower_bounds << 2.0;
-  lp.constraint_upper_bounds << 1.0;
-  lp.variable_lower_bounds << 0.0, 0.0;
-  lp.variable_upper_bounds << kInfinity, kInfinity;
+  lp.constraint_lower_bounds = VectorXd{{2.0}};
+  lp.constraint_upper_bounds = VectorXd{{1.0}};
+  lp.variable_lower_bounds = VectorXd{{0.0, 0.0}};
+  lp.variable_upper_bounds = VectorXd{{kInfinity, kInfinity}};
   lp.constraint_matrix.makeCompressed();
-  lp.objective_vector << 1.0, 1.0;
+  lp.objective_vector = VectorXd{{1.0, 1.0}};
   return lp;
 }
 
@@ -206,11 +196,11 @@ QuadraticProgram SmallInconsistentVariableBoundsLp() {
   lp.constraint_matrix.coeffRef(0, 0) = 1.0;
   lp.constraint_matrix.coeffRef(0, 1) = -1.0;
   lp.constraint_matrix.makeCompressed();
-  lp.constraint_lower_bounds << -kInfinity;
-  lp.constraint_upper_bounds << 1.0;
-  lp.variable_lower_bounds << 2.0, 0.0;
-  lp.variable_upper_bounds << 1.0, kInfinity;
-  lp.objective_vector << 1.0, 1.0;
+  lp.constraint_lower_bounds = VectorXd{{-kInfinity}};
+  lp.constraint_upper_bounds = VectorXd{{1.0}};
+  lp.variable_lower_bounds = VectorXd{{2.0, 0.0}};
+  lp.variable_upper_bounds = VectorXd{{1.0, kInfinity}};
+  lp.objective_vector = VectorXd{{1.0, 1.0}};
   return lp;
 }
 
@@ -220,13 +210,13 @@ QuadraticProgram SmallPrimalInfeasibleLp() {
   lp.constraint_matrix.coeffRef(0, 1) = -1.0;
   lp.constraint_matrix.coeffRef(1, 0) = -1.0;
   lp.constraint_matrix.coeffRef(1, 1) = 1.0;
-  lp.constraint_lower_bounds << -kInfinity, -kInfinity;
-  lp.variable_lower_bounds << 0.0, 0.0;
-  lp.variable_upper_bounds << kInfinity, kInfinity;
+  lp.constraint_lower_bounds = VectorXd{{-kInfinity, -kInfinity}};
+  lp.variable_lower_bounds = VectorXd{{0.0, 0.0}};
+  lp.variable_upper_bounds = VectorXd{{kInfinity, kInfinity}};
   lp.constraint_matrix.makeCompressed();
 
-  lp.constraint_upper_bounds << 1.0, -2.0;
-  lp.objective_vector << 1.0, 1.0;
+  lp.constraint_upper_bounds = VectorXd{{1.0, -2.0}};
+  lp.objective_vector = VectorXd{{1.0, 1.0}};
   return lp;
 }
 
@@ -249,21 +239,21 @@ QuadraticProgram SmallInitializationLp() {
   lp.constraint_matrix.coeffRef(0, 1) = 1.0;
   lp.constraint_matrix.coeffRef(1, 0) = 1.0;
   lp.constraint_matrix.coeffRef(1, 1) = 2.0;
-  lp.constraint_lower_bounds << -kInfinity, -kInfinity;
-  lp.constraint_upper_bounds << 2.0, 2.0;
-  lp.variable_lower_bounds << 0.5, 0.5;
-  lp.variable_upper_bounds << 2.0, 2.0;
+  lp.constraint_lower_bounds = VectorXd{{-kInfinity, -kInfinity}};
+  lp.constraint_upper_bounds = VectorXd{{2.0, 2.0}};
+  lp.variable_lower_bounds = VectorXd{{0.5, 0.5}};
+  lp.variable_upper_bounds = VectorXd{{2.0, 2.0}};
   lp.constraint_matrix.makeCompressed();
 
-  lp.objective_vector << -4.0, 0.0;
+  lp.objective_vector = VectorXd{{-4.0, 0.0}};
   return lp;
 }
 
 QuadraticProgram LpWithoutConstraints() {
   QuadraticProgram lp(2, 0);
-  lp.variable_lower_bounds << 0.0, -kInfinity;
-  lp.variable_upper_bounds << kInfinity, 0.0;
-  lp.objective_vector << 4.0, 0.0;
+  lp.variable_lower_bounds = VectorXd{{0.0, -kInfinity}};
+  lp.variable_upper_bounds = VectorXd{{kInfinity, 0.0}};
+  lp.objective_vector = VectorXd{{4.0, 0.0}};
   return lp;
 }
 
