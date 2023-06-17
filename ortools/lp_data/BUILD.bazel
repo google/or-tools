@@ -295,6 +295,23 @@ cc_library(
 )
 
 cc_library(
+    name = "mps_reader_template",
+    hdrs = ["mps_reader_template.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:status_macros",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "mps_reader",
     srcs = ["mps_reader.cc"],
     hdrs = ["mps_reader.h"],
@@ -303,6 +320,7 @@ cc_library(
         ":base",
         ":lp_data",
         ":lp_print_utils",
+        ":mps_reader_template",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:hash",
