@@ -3273,7 +3273,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   const bool use_feasibility_pump = params.use_feasibility_pump() &&
                                     params.linearization_level() > 0 &&
                                     !testing && !params.interleave_search();
-  if (use_feasibility_pump) {
+  if (use_feasibility_pump || params.use_rins_lns()) {
     shared.incomplete_solutions =
         std::make_unique<SharedIncompleteSolutionManager>();
     global_model->Register<SharedIncompleteSolutionManager>(
@@ -3375,20 +3375,12 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // the requirement of having a SharedLPSolutionRepository to
     // create RINS/RENS lns generators.
 
-    // TODO(user):
-    // - Do we keep rens working after the first solution has been found
-    // - Do we create a variable number of these workers.
+    // TODO(user): Do we create a variable number of these workers.
     incomplete_subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<RelaxationInducedNeighborhoodGenerator>(
             helper, shared.response, shared.lp_solutions.get(),
             shared.incomplete_solutions.get(), "rins/rens"),
         params, helper, &shared));
-
-    // incomplete_subsolvers.push_back(std::make_unique<LnsSolver>(
-    //     std::make_unique<RelaxationInducedNeighborhoodGenerator>(
-    //         helper, /*shared_response=*/nullptr, shared.lp_solutions.get(),
-    //         shared.incomplete_solutions.get(), "rens_lns"),
-    //     params, helper, &shared));
   }
 
   const bool feasibility_jump_possible =

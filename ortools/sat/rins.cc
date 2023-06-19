@@ -88,20 +88,20 @@ std::vector<double> GetIncompleteSolutionValues(
 
 static double kEpsilon = 1e-7;
 
-struct VarWeightTieBreak {
+struct VarWeight {
   int model_var;
   // Variables with minimum weight will be fixed in the neighborhood.
   double weight;
 
   // Comparator with tolerance and random tie breaking.
-  bool operator<(const VarWeightTieBreak& o) const { return weight < o.weight; }
+  bool operator<(const VarWeight& o) const { return weight < o.weight; }
 };
 
 void FillRinsNeighborhood(const std::vector<int64_t>& solution,
                           const std::vector<double>& relaxation_values,
                           double difficulty, absl::BitGenRef random,
                           ReducedDomainNeighborhood& reduced_domains) {
-  std::vector<VarWeightTieBreak> var_lp_gap_pairs;
+  std::vector<VarWeight> var_lp_gap_pairs;
   for (int model_var = 0; model_var < relaxation_values.size(); ++model_var) {
     const double relaxation_value = relaxation_values[model_var];
     if (relaxation_value == std::numeric_limits<double>::infinity()) continue;
@@ -129,8 +129,7 @@ void FillRinsNeighborhood(const std::vector<int64_t>& solution,
 void FillRensNeighborhood(const std::vector<double>& relaxation_values,
                           double difficulty, absl::BitGenRef random,
                           ReducedDomainNeighborhood& reduced_domains) {
-  const double kTolerance = 1e-6;
-  std::vector<VarWeightTieBreak> var_fractionality_pairs;
+  std::vector<VarWeight> var_fractionality_pairs;
   for (int model_var = 0; model_var < relaxation_values.size(); ++model_var) {
     const double relaxation_value = relaxation_values[model_var];
     if (relaxation_value == std::numeric_limits<double>::infinity()) continue;
@@ -155,22 +154,10 @@ void FillRensNeighborhood(const std::vector<double>& relaxation_values,
       // domains, so the intersection of [domain_lb, domain_ub] with the
       // initial variable domain might be empty.
       const int64_t domain_lb =
-          static_cast<int64_t>(std::floor(relaxation_value - kTolerance));
-      const int64_t domain_ub =
-          static_cast<int64_t>(std::ceil(relaxation_value + kTolerance));
-      if (domain_ub - domain_lb == 1) {
-        reduced_domains.reduced_domain_vars.push_back(
-            {model_var, {domain_lb, domain_ub}});
-      } else if (std::floor(relaxation_value - kTolerance) !=
-                 std::floor(relaxation_value)) {
-        // The tolerance crosses the integer value of the lb.
-        reduced_domains.reduced_domain_vars.push_back(
-            {model_var, {domain_lb + 1, domain_ub}});
-      } else {
-        // The tolerance crosses the integer value of the ub.
-        reduced_domains.reduced_domain_vars.push_back(
-            {model_var, {domain_lb, domain_ub - 1}});
-      }
+          static_cast<int64_t>(std::floor(relaxation_value));
+      // TODO(user): Use the domain here.
+      reduced_domains.reduced_domain_vars.push_back(
+          {model_var, {domain_lb, domain_lb + 1}});
     }
   }
 }

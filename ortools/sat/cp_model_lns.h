@@ -228,7 +228,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   }
 
   // TODO(user): Refactor the class to be thread-safe instead, it should be
-  // safer and more easily maintenable. Some complication with accessing the
+  // safer and more easily maintainable. Some complication with accessing the
   // variable<->constraint graph efficiently though.
 
   // Note: This mutex needs to be public for thread annotations.
@@ -664,7 +664,8 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
         response_manager_(response_manager),
         lp_solutions_(lp_solutions),
         incomplete_solutions_(incomplete_solutions) {
-    CHECK(lp_solutions_ != nullptr || incomplete_solutions != nullptr);
+    CHECK(lp_solutions_ != nullptr);
+    CHECK(incomplete_solutions != nullptr);
   }
 
   // Both initial solution and difficulty values are ignored.
