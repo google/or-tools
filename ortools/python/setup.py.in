@@ -46,7 +46,6 @@ setup(
         'absl-py >= 0.13',
         'numpy >= 1.13.3',
         'protobuf >= 4.23.2',
-        'scipy >= 1.10.0',
     ],
     package_data={
         '@PYTHON_PROJECT@':[$<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:'.libs/*','../$<TARGET_SONAME_FILE_NAME:@PROJECT_NAME@>'>],

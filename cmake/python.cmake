@@ -382,7 +382,7 @@ if(BUILD_VENV)
     COMMAND ${VENV_Python3_EXECUTABLE} -m pip install
       --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PYTHON_PROJECT}==${PROJECT_VERSION}
     # install modules only required to run examples
-    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install pandas matplotlib pytest
+    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install pandas matplotlib pytest scipy
     BYPRODUCTS ${VENV_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Create venv and install ${PYTHON_PROJECT}"
